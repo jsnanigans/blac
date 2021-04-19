@@ -1,8 +1,9 @@
 import {BlocReact} from "../lib/blocReact";
 import CounterBloc from "./bloc/CounterBloc";
+import PreferencesCubit from "./bloc/PreferencesCubit";
 
 const state = new BlocReact(() => [
-    new CounterBloc(),
+    new PreferencesCubit(),
 ], {debug: true});
 
 state.observer = console.log;

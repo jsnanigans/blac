@@ -1,25 +1,51 @@
 import React from 'react'
-import logo from '../logo.svg'
-import '../App.css'
-import Other from "./Other";
-import Buttons from "./Buttonts";
+import Layout from "./Layout";
+import {createMuiTheme} from '@material-ui/core/styles';
+import {ThemeProvider} from '@material-ui/styles';
+import CssBaseline from "@material-ui/core/CssBaseline";
+import {purple} from "@material-ui/core/colors";
+import {BrowserRouter as Router} from "react-router-dom";
+import {useBloc} from "../state";
+import PreferencesCubit from "../bloc/PreferencesCubit";
+
+
+const darkTheme = createMuiTheme({
+    palette: {
+        type: 'dark',
+        primary: {
+            // Purple and green play nicely together.
+            main: purple[500],
+        },
+        secondary: {
+            // This is green.A700 as hex.
+            main: '#11cb5f',
+        },
+    },
+});
+
+const lightTheme = createMuiTheme({
+    palette: {
+        type: 'light',
+        primary: {
+            // Purple and green play nicely together.
+            main: purple[500],
+        },
+        secondary: {
+            // This is green.A700 as hex.
+            main: '#11cb5f',
+        },
+    },
+});
 
 function App() {
+    const [{darkMode}] = useBloc<PreferencesCubit>(PreferencesCubit);
     return (
-        <div className="App">
-            <header className="App-header">
-                <img src={logo} className="App-logo" alt="logo"/>
-                <p>Hello Vite! + React!</p>
-                <p>
-                    <Other/>
-                </p>
-                <p>
-                    Edit <code>App.tsx</code> and save to test HMR updates.
-                    <Other/>
-                </p>
-                <Buttons/>
-            </header>
-        </div>
+        <ThemeProvider theme={darkMode ? darkTheme : lightTheme}>
+            <CssBaseline/>
+            <Router>
+                <Layout/>
+            </Router>
+        </ThemeProvider>
     )
 }
 

@@ -64,10 +64,10 @@ export class BlocReact {
             throw new Error(`No block found for ${blocClass}`);
         }
 
-        const [data, setData] = useState((null as unknown) as ValueType<T>);
+        const streamRef = useRef(blocInstance.subject);
+        const [data, setData] = useState(streamRef.current.getValue());
         const [error, setError] = useState();
         const [complete, setComplete] = useState(false);
-        const streamRef = useRef(blocInstance.subject);
 
         const updateData = useCallback((newState: ValueType<T>) => {
             if (shouldUpdate === true || shouldUpdate(data, newState)) {
