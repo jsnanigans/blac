@@ -13,6 +13,7 @@ export const cubitDefaultOptions: CubitOptions = {
 export default class Cubit<T> {
     protected readonly _subject: BehaviorSubject<T>;
     private readonly _options: CubitOptions;
+    localProviderRef: string = '';
     onChange: null | ((change: {currentState: T, nextState: T}) => void) = null;
 
     constructor(initialValue: T, cubitOptions: CubitOptions = {}) {
@@ -30,7 +31,7 @@ export default class Cubit<T> {
         this._subject = new BehaviorSubject(value);
     }
 
-    protected emit(value: T): void {
+    protected emit = (value: T): void => {
         this.notifyChange(value);
         this.subject.next(value);
         this.updateCache();

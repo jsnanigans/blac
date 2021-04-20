@@ -7,7 +7,7 @@ export default function Auth() {
     const [data, auth] = useBloc<AuthBloc>(AuthBloc);
     return <Card >
         <CardContent>
-            <Typography>data: {JSON.stringify(data)}</Typography>
+            <Typography>State: {JSON.stringify(data)}</Typography>
             <ButtonGroup>
                 <Button onClick={() => auth.add(AuthEvent.authenticated)}>Login</Button>
                 <Button onClick={() => auth.add(AuthEvent.unknown)}>Unknown</Button>

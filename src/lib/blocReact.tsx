@@ -1,4 +1,4 @@
-import React, {ReactElement, useCallback, useContext, useEffect, useRef, useState} from 'react';
+import React, {ReactElement, useCallback, useContext, useEffect, useMemo, useRef, useState} from 'react';
 import Cubit from "./cubit";
 import {BehaviorSubject} from "rxjs";
 
@@ -32,6 +32,10 @@ export class BlocReact {
     debug: boolean;
     private _blocListGlobal: Cubit<any>[];
     private _contextGlobal: React.Context<Cubit<any>[]>;
+    private _contextLocalProviderKey = React.createContext('');
+
+    private _blocMapLocal: Record<string, Cubit<any>> = {};
+    // private _contextMapLocal: Record<string, React.Context<Cubit<any>>> = {}
 
     constructor(blocs: Cubit<any>[], options: BlocLordOptions = {}) {
         this._blocListGlobal = blocs;
@@ -57,9 +61,13 @@ export class BlocReact {
             ...options,
         };
 
+        const localProviderKey = useContext(this._contextLocalProviderKey);
+        const localBlocInstance = this._blocMapLocal[localProviderKey];
+        console.log({localBlocInstance})
+
         const {subscribe, shouldUpdate = true} = mergedOptions;
         const blocs = useContext(this._contextGlobal);
-        const blocInstance = blocs.find(c => c instanceof blocClass);
+        const blocInstance = localBlocInstance || blocs.find(c => c instanceof blocClass)
 
         if (!blocInstance) {
             throw new Error(`No block found for ${blocClass}`);
@@ -95,7 +103,6 @@ export class BlocReact {
             }];
     };
 
-
     // Components
     BlocBuilder = <T extends Cubit<any>>(props: {
         bloc: new (...args: never[]) => T;
@@ -108,11 +115,38 @@ export class BlocReact {
     };
 
     GlobalBlocProvider = (props: {
-        children: ReactElement | ReactElement[],
+        children?: ReactElement | ReactElement[],
     }) => {
-        console.log('rerender');
         return (
             <this._contextGlobal.Provider value={this._blocListGlobal}>{props.children}</this._contextGlobal.Provider>);
+    };
+
+    BlocProvider = <T extends Cubit<any>>(props: {
+        children?: ReactElement | ReactElement[],
+        create: () => T
+    }) => {
+        const providerRef = useMemo<string>(() => `${Math.random()}`, []);
+
+        const bloc = useMemo<T>(() => {
+            const newBloc = props.create();
+            newBloc.localProviderRef = providerRef;
+            this._blocMapLocal[providerRef] = newBloc;
+            return newBloc;
+        }, []);
+
+        const context = useMemo<React.Context<Cubit<any>>>(() => {
+            const newContext = React.createContext<Cubit<any>>(bloc);
+            // this._contextMapLocal[providerRef] = newContext;
+            return newContext;
+        }, [bloc]);
+
+        console.log({providerRef, context})
+
+        return (
+            <this._contextLocalProviderKey.Provider value={providerRef}>
+                <context.Provider value={bloc}>{props.children}</context.Provider>
+            </this._contextLocalProviderKey.Provider>
+        )
     };
 }
 

@@ -1,10 +1,12 @@
 import Typography from "@material-ui/core/Typography";
 import React from "react";
 import {makeStyles} from "@material-ui/core/styles";
-import {BlocBuilder} from '../state';
+import {BlocBuilder, BlocProvider} from '../state';
 import Buttons from "./Buttonts";
-import CounterCubit from "../bloc/CounterCubit";
+import CounterCubit, {LocalCounterCubit} from "../bloc/CounterCubit";
 import Auth from "./Auth";
+import {Box, Button, Card, CardContent} from "@material-ui/core";
+import AuthBloc, {AuthEvent} from "../bloc/AuthBloc";
 
 const useStyles = makeStyles((theme) => ({
     // necessary for content to be below app bar
@@ -40,16 +42,87 @@ export default function Sandbox() {
                 accumsan lacus vel facilisis. Nulla posuere sollicitudin aliquam ultrices sagittis orci a.
             </Typography>
 
-            <Auth />
 
-            <BlocBuilder<CounterCubit>
-                bloc={CounterCubit}
-                builder={([value, {increment}]) => <div>
-                    <b onClick={() => increment()}>{value}</b>
-                </div>}
-            />
+            <Typography variant="h3">Bloc</Typography>
+            <Auth/>
 
-            <Buttons/>
+            <Box m={2}/>
+
+            <Typography variant="h3">BlocBuilder</Typography>
+            <Card>
+                <CardContent>
+                    <BlocBuilder<CounterCubit>
+                        bloc={CounterCubit}
+                        builder={([value, {increment}]) => <div>
+                            <Button onClick={() => increment()}>{value}</Button>
+                        </div>}
+                    />
+
+                    <Buttons/>
+
+                    <Box m={2} />
+
+                    <BlocBuilder<AuthBloc>
+                        bloc={AuthBloc}
+                        builder={([value, {add}]) => <div>
+                            <Button  onClick={() => add(AuthEvent.authenticated)}>Auth Bloc State:{' '}<b>{value.toString()}</b></Button>
+                        </div>}
+                    />
+                </CardContent>
+            </Card>
+
+            <Box m={2}/>
+
+            <Typography variant="h3">Local Providers</Typography>
+            <Card>
+                <CardContent>
+                    <BlocProvider<CounterCubit>
+                        create={() => new CounterCubit()}
+                    >
+                        <Typography variant="h4">Local Provider #1</Typography>
+                        <BlocBuilder<CounterCubit>
+                            bloc={CounterCubit}
+                            builder={([value, {increment}]) => <div>
+                                <Button onClick={() => increment()}>{value}</Button>
+                            </div>}
+                        />
+                    </BlocProvider>
+
+                    <BlocProvider<CounterCubit>
+                        create={() => new CounterCubit()}
+                    >
+                        <Typography variant="h4">Local Provider #2</Typography>
+                        <BlocBuilder<CounterCubit>
+                            bloc={CounterCubit}
+                            builder={([value, {increment}]) => <div>
+                                <Button onClick={() => increment()}>{value}</Button>
+                            </div>}
+                        />
+                    </BlocProvider>
+
+                    {/*<BlocProvider<LocalCounterCubit>*/}
+                    {/*    create={() => new LocalCounterCubit()}*/}
+                    {/*>*/}
+                    {/*    <BlocBuilder<LocalCounterCubit>*/}
+                    {/*        bloc={LocalCounterCubit}*/}
+                    {/*        builder={([value, {increment}]) => <div>*/}
+                    {/*            <Button onClick={() => increment()}>{value}</Button>*/}
+                    {/*        </div>}*/}
+                    {/*    />*/}
+                    {/*</BlocProvider>*/}
+
+                    {/*<BlocProvider<LocalCounterCubit>*/}
+                    {/*    create={() => new LocalCounterCubit()}*/}
+                    {/*>*/}
+                    {/*    <BlocBuilder<LocalCounterCubit>*/}
+                    {/*        bloc={LocalCounterCubit}*/}
+                    {/*        builder={([value, {increment}]) => <div>*/}
+                    {/*            <Button onClick={() => increment()}>{value}</Button>*/}
+                    {/*        </div>}*/}
+                    {/*    />*/}
+                    {/*</BlocProvider>*/}
+                </CardContent>
+            </Card>
         </>
     )
 }

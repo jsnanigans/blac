@@ -15,6 +15,7 @@ export const {
     useBloc,
     GlobalBlocProvider,
     BlocBuilder,
+    BlocProvider,
 } = state;
 
 export default state;

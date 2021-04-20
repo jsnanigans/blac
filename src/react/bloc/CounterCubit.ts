@@ -12,3 +12,5 @@ export default class CounterCubit extends Cubit<number> {
         this.emit(this.state + 1);
     }
 }
+
+export class LocalCounterCubit extends CounterCubit {}

@@ -1,4 +1,3 @@
-import Cubit from "../../lib/cubit";
 import Bloc from "../../lib/bloc";
 
 export enum AuthEvent {

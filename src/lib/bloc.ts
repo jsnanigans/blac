@@ -18,15 +18,11 @@ export default class Bloc<E, T> extends Cubit<T> {
         })
     }
 
-    add(event: E) {
+    add = (event: E) => {
         const newState = this.mapEventToState(event);
         this.notifyChange(newState);
         this.notifyTransition(newState, event);
         this.subject.next(newState);
         this.updateCache();
     }
-
-    // mapEventToState(event: E): T {
-    //     return this.state
-    // }
 }
