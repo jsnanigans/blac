@@ -24,8 +24,7 @@ export class BlocReact {
     private _blocListGlobal: Cubit<any>[];
     private _contextGlobal: React.Context<Cubit<any>[]>;
 
-    constructor(createBlocs: () => Cubit<any>[], options: BlocLordOptions = {}) {
-        const blocs = createBlocs();
+    constructor(blocs: Cubit<any>[], options: BlocLordOptions = {}) {
         this._blocListGlobal = blocs;
         this._contextGlobal = React.createContext(blocs);
         this.debug = options.debug || false;

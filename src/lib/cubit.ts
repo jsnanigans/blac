@@ -1,21 +1,22 @@
 import {BehaviorSubject} from "rxjs";
 
-export interface BlocOptions {
+export interface CubitOptions {
     persistKey?: string;
     persistData?: boolean;
 }
 
-export const blocDefaultOptions: BlocOptions = {
+export const cubitDefaultOptions: CubitOptions = {
     persistKey: '',
     persistData: true,
 };
 
 export default class Cubit<T> {
-    private readonly _subject: BehaviorSubject<T>;
-    private readonly _options: BlocOptions;
+    protected readonly _subject: BehaviorSubject<T>;
+    private readonly _options: CubitOptions;
+    onChange: null | ((change: {currentState: T, nextState: T}) => void) = null;
 
-    constructor(initialValue: T, blocOptions: BlocOptions = {}) {
-        const options = {...blocDefaultOptions, ...blocOptions};
+    constructor(initialValue: T, cubitOptions: CubitOptions = {}) {
+        const options = {...cubitDefaultOptions, ...cubitOptions};
         this._options = options;
         let value = initialValue;
 
@@ -27,6 +28,19 @@ export default class Cubit<T> {
         }
 
         this._subject = new BehaviorSubject(value);
+    }
+
+    protected emit(value: T): void {
+        this.notifyChange(value);
+        this.subject.next(value);
+        this.updateCache();
+    }
+
+    protected notifyChange(value: T) {
+        this.onChange?.({
+            currentState: this._subject.getValue(),
+            nextState: value,
+        })
     }
 
     get subject(): BehaviorSubject<T> {
@@ -47,11 +61,6 @@ export default class Cubit<T> {
         }
     }
 
-    public emit(value: T): void {
-        this.subject.next(value);
-        this.updateCache();
-    }
-
     parseFromCache(value: string): T {
         return JSON.parse(value).value;
     }
@@ -61,7 +70,7 @@ export default class Cubit<T> {
     }
 
     // caching
-    private getCachedValue(): T | undefined {
+    protected getCachedValue(): T | undefined {
         const cachedValue = localStorage.getItem(`data.${this._options.persistKey}`);
         if (cachedValue) {
             try {
@@ -73,7 +82,7 @@ export default class Cubit<T> {
         return;
     }
 
-    private updateCache(): void {
+    protected updateCache(): void {
         const {persistData, persistKey} = this._options;
         if (persistData && persistKey) {
             localStorage.setItem(`data.${persistKey}`, this.parseToCache(this.subject.getValue()));
@@ -82,7 +91,7 @@ export default class Cubit<T> {
         }
     }
 
-    private clearCache(): void {
+    protected clearCache(): void {
         const key = this._options.persistKey;
         if (key && this._options.persistData) {
             localStorage.removeItem(`data.${key}`);

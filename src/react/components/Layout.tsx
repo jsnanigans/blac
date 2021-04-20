@@ -21,6 +21,7 @@ import Routes from "./Routes";
 import {Link} from "react-router-dom";
 import {useBloc} from "../state";
 import PreferencesCubit from "../bloc/PreferencesCubit";
+import Other from "./Other";
 
 const drawerWidth = 240;
 

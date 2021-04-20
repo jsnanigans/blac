@@ -21,4 +21,9 @@ export default class PreferencesCubit extends Cubit<PreferencesState> {
             darkMode: !this.state.darkMode,
         }))
     }
+
+    parseFromCache(value: string): PreferencesState {
+        const parsed = super.parseFromCache(value);
+        return new PreferencesState(parsed);
+    }
 }

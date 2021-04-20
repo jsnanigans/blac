@@ -1,6 +1,10 @@
 import Typography from "@material-ui/core/Typography";
 import React from "react";
 import {makeStyles} from "@material-ui/core/styles";
+import {BlocBuilder} from '../state';
+import Buttons from "./Buttonts";
+import CounterCubit from "../bloc/CounterCubit";
+import Auth from "./Auth";
 
 const useStyles = makeStyles((theme) => ({
     // necessary for content to be below app bar
@@ -11,7 +15,7 @@ export default function Sandbox() {
     const classes = useStyles();
     return (
         <>
-            <div className={classes.toolbar} />
+            <div className={classes.toolbar}/>
             <Typography paragraph>
                 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt
                 ut labore et dolore magna aliqua. Rhoncus dolor purus non enim praesent elementum
@@ -35,6 +39,17 @@ export default function Sandbox() {
                 nibh sit. Ornare aenean euismod elementum nisi quis eleifend. Commodo viverra maecenas
                 accumsan lacus vel facilisis. Nulla posuere sollicitudin aliquam ultrices sagittis orci a.
             </Typography>
+
+            <Auth />
+
+            <BlocBuilder<CounterCubit>
+                bloc={CounterCubit}
+                builder={(value) => <div>
+                    <b>{value}</b>
+                </div>}
+            />
+
+            <Buttons/>
         </>
     )
 }

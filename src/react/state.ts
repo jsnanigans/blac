@@ -1,9 +1,12 @@
 import {BlocReact} from "../lib/blocReact";
-import CounterBloc from "./bloc/CounterBloc";
+import CounterCubit from "./bloc/CounterCubit";
 import PreferencesCubit from "./bloc/PreferencesCubit";
+import AuthBloc from "./bloc/AuthBloc";
 
-const state = new BlocReact(() => [
+const state = new BlocReact([
     new PreferencesCubit(),
+    new AuthBloc(),
+    new CounterCubit(),
 ], {debug: true});
 
 state.observer = console.log;
@@ -11,6 +14,7 @@ state.observer = console.log;
 export const {
     useBloc,
     GlobalBlocProvider,
+    BlocBuilder,
 } = state;
 
 export default state;
