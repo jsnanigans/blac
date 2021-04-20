@@ -1,6 +1,8 @@
 import React, {ReactElement, useCallback, useContext, useEffect, useMemo, useRef, useState} from 'react';
 import Cubit from "./cubit";
 import {BehaviorSubject} from "rxjs";
+import hyperid from "hyperid";
+import {nanoid} from "nanoid";
 
 interface BlocLordOptions {
     /** Enables debugging which calls BlocReact.observer every time a Subject is updated. Defaults to false */
@@ -123,27 +125,27 @@ export class BlocReact {
 
     BlocProvider = <T extends Cubit<any>>(props: {
         children?: ReactElement | ReactElement[],
-        create: () => T
+        create: (providerKey: string) => T
     }) => {
-        const providerRef = useMemo<string>(() => `${Math.random()}`, []);
+        const providerKey = useMemo<string>(() =>  'p_' + nanoid(), []);
 
         const bloc = useMemo<T>(() => {
-            const newBloc = props.create();
-            newBloc.localProviderRef = providerRef;
-            this._blocMapLocal[providerRef] = newBloc;
+            const newBloc = props.create(providerKey);
+            newBloc._localProviderRef = providerKey;
+            this._blocMapLocal[providerKey] = newBloc;
             return newBloc;
         }, []);
 
         const context = useMemo<React.Context<Cubit<any>>>(() => {
             const newContext = React.createContext<Cubit<any>>(bloc);
-            // this._contextMapLocal[providerRef] = newContext;
+            // this._contextMapLocal[providerKey] = newContext;
             return newContext;
         }, [bloc]);
 
-        console.log({providerRef, context})
+        console.log({providerRef: providerKey, context})
 
         return (
-            <this._contextLocalProviderKey.Provider value={providerRef}>
+            <this._contextLocalProviderKey.Provider value={providerKey}>
                 <context.Provider value={bloc}>{props.children}</context.Provider>
             </this._contextLocalProviderKey.Provider>
         )

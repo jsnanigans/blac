@@ -2,7 +2,7 @@ import Cubit from "../../lib/cubit";
 
 export default class CounterCubit extends Cubit<number> {
     constructor() {
-        super(0);
+        super(0, {persistKey: 'count'});
         this.onChange = (state) => {
             console.log(state);
         }

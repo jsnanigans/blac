@@ -13,8 +13,8 @@ export const cubitDefaultOptions: CubitOptions = {
 export default class Cubit<T> {
     protected readonly _subject: BehaviorSubject<T>;
     private readonly _options: CubitOptions;
-    localProviderRef: string = '';
     onChange: null | ((change: {currentState: T, nextState: T}) => void) = null;
+    _localProviderRef: string = '';
 
     constructor(initialValue: T, cubitOptions: CubitOptions = {}) {
         const options = {...cubitDefaultOptions, ...cubitOptions};
@@ -44,11 +44,11 @@ export default class Cubit<T> {
         })
     }
 
-    get subject(): BehaviorSubject<T> {
+    public get subject(): BehaviorSubject<T> {
         return this._subject;
     }
 
-    get state(): T {
+    public get state(): T {
         return this.subject.getValue();
     }
 

@@ -7,6 +7,7 @@
     "serve": "vite preview"
   },
   "dependencies": {
+    "nanoid": "^3.1.22",
     "rxjs": "^6.6.7"
   },
   "devDependencies": {
