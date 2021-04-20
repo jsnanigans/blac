@@ -44,8 +44,8 @@ export default function Sandbox() {
 
             <BlocBuilder<CounterCubit>
                 bloc={CounterCubit}
-                builder={(value) => <div>
-                    <b>{value}</b>
+                builder={([value, {increment}]) => <div>
+                    <b onClick={() => increment()}>{value}</b>
                 </div>}
             />
 

@@ -2,7 +2,6 @@ import {useBloc} from "../state";
 import AuthBloc, {AuthEvent} from "../bloc/AuthBloc";
 import {Button, ButtonGroup, Card, CardContent, Typography} from "@material-ui/core";
 import React from "react";
-import Divider from "@material-ui/core/Divider";
 
 export default function Auth() {
     const [data, auth] = useBloc<AuthBloc>(AuthBloc);

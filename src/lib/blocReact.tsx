@@ -9,6 +9,15 @@ interface BlocLordOptions {
 
 type ValueType<T extends Cubit<any>> = T extends Cubit<infer U> ? U : never;
 
+type BlocHookData<T extends Cubit<any>> = [
+    value: ValueType<T>,
+    instance: T,
+    stream: {
+        stream: BehaviorSubject<T>,
+        error: any,
+        complete: boolean,
+    }]
+
 interface BlocHookOptions<T extends Cubit<any>> {
     subscribe?: boolean;
     shouldUpdate?: (previousState: ValueType<T>, state: ValueType<T>) => boolean;
@@ -42,14 +51,7 @@ export class BlocReact {
         }
     }
 
-    useBloc = <T extends Cubit<any>>(blocClass: new (...args: never[]) => T, options: BlocHookOptions<T> = {}): [
-        value: ValueType<T>,
-        instance: T,
-        stream: {
-            stream: BehaviorSubject<T>,
-            error: any,
-            complete: boolean,
-        }] => {
+    useBloc = <T extends Cubit<any>>(blocClass: new (...args: never[]) => T, options: BlocHookOptions<T> = {}): BlocHookData<T> => {
         const mergedOptions: BlocHookOptions<T> = {
             ...defaultBlocHookOptions,
             ...options,
@@ -97,13 +99,12 @@ export class BlocReact {
     // Components
     BlocBuilder = <T extends Cubit<any>>(props: {
         bloc: new (...args: never[]) => T;
-        builder: (state: ValueType<T>) => ReactElement;
+        builder: (data: BlocHookData<T>) => ReactElement;
         shouldUpdate?: (previousState: ValueType<T>, state: ValueType<T>) => boolean,
     }): ReactElement => {
-        const [value] = this.useBloc(props.bloc, {
+        return props.builder(this.useBloc(props.bloc, {
             shouldUpdate: props.shouldUpdate,
-        });
-        return props.builder(value);
+        }));
     };
 
     GlobalBlocProvider = (props: {

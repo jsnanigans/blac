@@ -11,5 +11,4 @@ export default class CounterCubit extends Cubit<number> {
     increment = () => {
         this.emit(this.state + 1);
     }
-
 }
