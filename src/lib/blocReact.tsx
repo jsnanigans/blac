@@ -142,7 +142,12 @@ export class BlocReact {
             return newContext;
         }, [bloc]);
 
-        console.log({providerRef: providerKey, context})
+        useEffect(() => {
+            return () => {
+                bloc.subject.complete();
+                delete this._blocMapLocal[providerKey];
+            }
+        }, [])
 
         return (
             <this._contextLocalProviderKey.Provider value={providerKey}>

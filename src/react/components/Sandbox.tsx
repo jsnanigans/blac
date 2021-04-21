@@ -84,6 +84,7 @@ export default function Sandbox() {
                             bloc={CounterCubit}
                             builder={([value, {increment}]) => <div>
                                 <Button onClick={() => increment()}>{value}</Button>
+                                <Buttons/>
                             </div>}
                         />
                     </BlocProvider>
@@ -96,6 +97,7 @@ export default function Sandbox() {
                             bloc={CounterCubit}
                             builder={([value, {increment}]) => <div>
                                 <Button onClick={() => increment()}>{value}</Button>
+                                <Buttons/>
                             </div>}
                         />
                     </BlocProvider>
