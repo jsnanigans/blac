@@ -1,4 +1,4 @@
-import {BlocReact} from "../lib/blocReact";
+import {BlocReact} from "../lib/react/blocReact";
 import CounterCubit from "./bloc/CounterCubit";
 import PreferencesCubit from "./bloc/PreferencesCubit";
 import AuthBloc from "./bloc/AuthBloc";

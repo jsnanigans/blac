@@ -1,16 +1,16 @@
 import React, {ReactElement, useCallback, useContext, useEffect, useMemo, useRef, useState} from 'react';
-import Cubit from "./cubit";
 import {BehaviorSubject} from "rxjs";
 import {nanoid} from "nanoid";
+import BlocBase from "../blocBase";
 
 interface BlocLordOptions {
     /** Enables debugging which calls BlocReact.observer every time a Subject is updated. Defaults to false */
     debug?: boolean;
 }
 
-type ValueType<T extends Cubit<any>> = T extends Cubit<infer U> ? U : never;
+type ValueType<T extends BlocBase<any>> = T extends BlocBase<infer U> ? U : never;
 
-type BlocHookData<T extends Cubit<any>> = [
+type BlocHookData<T extends BlocBase<any>> = [
     value: ValueType<T>,
     instance: T,
     stream: {
@@ -19,7 +19,7 @@ type BlocHookData<T extends Cubit<any>> = [
         complete: boolean,
     }]
 
-interface BlocHookOptions<T extends Cubit<any>> {
+interface BlocHookOptions<T extends BlocBase<any>> {
     subscribe?: boolean;
     shouldUpdate?: (previousState: ValueType<T>, state: ValueType<T>) => boolean;
 }
@@ -29,17 +29,17 @@ const defaultBlocHookOptions: BlocHookOptions<any> = {
 };
 
 export class BlocReact {
-    observer: null | ((bloc: Cubit<any>, value: any) => void) = null;
+    observer: null | ((bloc: BlocBase<any>, value: any) => void) = null;
     debug: boolean;
-    private _blocListGlobal: Cubit<any>[];
-    private _contextGlobal: React.Context<Cubit<any>[]>;
+    private _blocListGlobal: BlocBase<any>[];
+    private _contextGlobal: React.Context<BlocBase<any>[]>;
     private _contextLocalProviderKey = React.createContext('');
 
-    private _blocMapLocal: Record<string, Cubit<any>> = {};
+    private _blocMapLocal: Record<string, BlocBase<any>> = {};
 
     // private _contextMapLocal: Record<string, React.Context<Cubit<any>>> = {}
 
-    constructor(blocs: Cubit<any>[], options: BlocLordOptions = {}) {
+    constructor(blocs: BlocBase<any>[], options: BlocLordOptions = {}) {
         this._blocListGlobal = blocs;
         this._contextGlobal = React.createContext(blocs);
         this.debug = options.debug || false;
@@ -51,13 +51,13 @@ export class BlocReact {
         }
     }
 
-    notify(bloc: Cubit<any>, value: any) {
+    notify(bloc: BlocBase<any>, value: any) {
         if (this.observer) {
             this.observer(bloc, value);
         }
     }
 
-    useBloc = <T extends Cubit<any>>(blocClass: new (...args: never[]) => T, options: BlocHookOptions<T> = {}): BlocHookData<T> => {
+    useBloc = <T extends BlocBase<any>>(blocClass: new (...args: never[]) => T, options: BlocHookOptions<T> = {}): BlocHookData<T> => {
         const mergedOptions: BlocHookOptions<T> = {
             ...defaultBlocHookOptions,
             ...options,
@@ -106,7 +106,7 @@ export class BlocReact {
     };
 
     // Components
-    BlocBuilder = <T extends Cubit<any>>(props: {
+    BlocBuilder = <T extends BlocBase<any>>(props: {
         bloc: new (...args: never[]) => T;
         builder: (data: BlocHookData<T>) => ReactElement;
         shouldUpdate?: (previousState: ValueType<T>, state: ValueType<T>) => boolean,
@@ -123,7 +123,7 @@ export class BlocReact {
             <this._contextGlobal.Provider value={this._blocListGlobal}>{props.children}</this._contextGlobal.Provider>);
     };
 
-    BlocProvider = <T extends Cubit<any>>(props: {
+    BlocProvider = <T extends BlocBase<any>>(props: {
         children?: ReactElement | ReactElement[],
         create: (providerKey: string) => T
     }) => {
@@ -136,8 +136,8 @@ export class BlocReact {
             return newBloc;
         }, []);
 
-        const context = useMemo<React.Context<Cubit<any>>>(() => {
-            const newContext = React.createContext<Cubit<any>>(bloc);
+        const context = useMemo<React.Context<BlocBase<any>>>(() => {
+            const newContext = React.createContext<BlocBase<any>>(bloc);
             // this._contextMapLocal[providerKey] = newContext;
             return newContext;
         }, [bloc]);

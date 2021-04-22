@@ -1,16 +1,15 @@
-import Cubit, {CubitOptions} from "./cubit";
+import BlocBase, {BlocOptions} from "./blocBase";
 
-export default class Bloc<E, T> extends Cubit<T> {
+export default class Bloc<E, T> extends BlocBase<T> {
     mapEventToState: (event: E) => T;
     onTransition: null | ((change: { currentState: T, event: E, nextState: T }) => void) = null;
 
-    constructor(initialState: T, options?: CubitOptions) {
+    constructor(initialState: T, options?: BlocOptions) {
         super(initialState, options);
-        this.emit = () => console.warn('`.emit` is disabled for Bloc`s, instead use `mapEventToState` and `.add`')
         this.mapEventToState = () => initialState;
     }
 
-    add = (event: E) => {
+    public add = (event: E) => {
         const newState = this.mapEventToState(event);
         this.notifyChange(newState);
         this.notifyTransition(newState, event);
@@ -18,7 +17,7 @@ export default class Bloc<E, T> extends Cubit<T> {
         this.updateCache();
     }
 
-    protected notifyTransition(value: T, event: E) {
+    protected notifyTransition = (value: T, event: E) => {
         this.onTransition?.({
             currentState: this._subject.getValue(),
             event,

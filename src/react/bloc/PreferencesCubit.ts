@@ -13,6 +13,11 @@ export default class PreferencesCubit extends Cubit<PreferencesState> {
         super(new PreferencesState({darkMode: true}), {
             persistKey: 'preferences'
         });
+
+        this.parseFromCache = (v) => {
+            const parsed = super.parseFromCache(v);
+            return new PreferencesState(parsed);
+        }
     }
 
     toggleTheme = () => {
@@ -20,10 +25,5 @@ export default class PreferencesCubit extends Cubit<PreferencesState> {
             ...this.state,
             darkMode: !this.state.darkMode,
         }))
-    }
-
-    parseFromCache(value: string): PreferencesState {
-        const parsed = super.parseFromCache(value);
-        return new PreferencesState(parsed);
     }
 }
