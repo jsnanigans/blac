@@ -3,7 +3,7 @@ import React from "react";
 import {makeStyles} from "@material-ui/core/styles";
 import {BlocBuilder, BlocProvider} from '../state';
 import Buttons from "./Buttonts";
-import CounterCubit, {LocalCounterCubit} from "../bloc/CounterCubit";
+import CounterCubit from "../bloc/CounterCubit";
 import Auth from "./Auth";
 import {Box, Button, Card, CardContent} from "@material-ui/core";
 import AuthBloc, {AuthEvent} from "../bloc/AuthBloc";
@@ -60,12 +60,13 @@ export default function Sandbox() {
 
                     <Buttons/>
 
-                    <Box m={2} />
+                    <Box m={2}/>
 
                     <BlocBuilder<AuthBloc>
                         bloc={AuthBloc}
                         builder={([value, {add}]) => <div>
-                            <Button  onClick={() => add(AuthEvent.authenticated)}>Auth Bloc State:{' '}<b>{value.toString()}</b></Button>
+                            <Button onClick={() => add(AuthEvent.authenticated)}>Auth Bloc
+                                State:{' '}<b>{value.toString()}</b></Button>
                         </div>}
                     />
                 </CardContent>

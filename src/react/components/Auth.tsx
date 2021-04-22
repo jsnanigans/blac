@@ -5,7 +5,7 @@ import React from "react";
 
 export default function Auth() {
     const [data, auth] = useBloc<AuthBloc>(AuthBloc);
-    return <Card >
+    return <Card>
         <CardContent>
             <Typography>State: {JSON.stringify(data)}</Typography>
             <ButtonGroup>

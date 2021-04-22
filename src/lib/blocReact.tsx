@@ -1,7 +1,6 @@
 import React, {ReactElement, useCallback, useContext, useEffect, useMemo, useRef, useState} from 'react';
 import Cubit from "./cubit";
 import {BehaviorSubject} from "rxjs";
-import hyperid from "hyperid";
 import {nanoid} from "nanoid";
 
 interface BlocLordOptions {
@@ -37,6 +36,7 @@ export class BlocReact {
     private _contextLocalProviderKey = React.createContext('');
 
     private _blocMapLocal: Record<string, Cubit<any>> = {};
+
     // private _contextMapLocal: Record<string, React.Context<Cubit<any>>> = {}
 
     constructor(blocs: Cubit<any>[], options: BlocLordOptions = {}) {
@@ -127,7 +127,7 @@ export class BlocReact {
         children?: ReactElement | ReactElement[],
         create: (providerKey: string) => T
     }) => {
-        const providerKey = useMemo<string>(() =>  'p_' + nanoid(), []);
+        const providerKey = useMemo<string>(() => 'p_' + nanoid(), []);
 
         const bloc = useMemo<T>(() => {
             const newBloc = props.create(providerKey);
@@ -156,4 +156,3 @@ export class BlocReact {
         )
     };
 }
-

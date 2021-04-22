@@ -14,14 +14,11 @@ import MenuIcon from '@material-ui/icons/Menu';
 import Toolbar from '@material-ui/core/Toolbar';
 import Typography from '@material-ui/core/Typography';
 import {makeStyles, useTheme} from '@material-ui/core/styles';
-import Sandbox from "./Sandbox";
-import {SpaceBar} from "@material-ui/icons";
 import {Container, FormControlLabel, Switch} from "@material-ui/core";
 import Routes from "./Routes";
 import {Link} from "react-router-dom";
 import {useBloc} from "../state";
 import PreferencesCubit from "../bloc/PreferencesCubit";
-import Other from "./Other";
 
 const drawerWidth = 240;
 
@@ -80,7 +77,7 @@ function ResponsiveDrawer() {
             </List>
             <Container>
                 <FormControlLabel
-                    control={<Switch checked={darkMode} onChange={() => t.toggleTheme()} name="Dark mode" />}
+                    control={<Switch checked={darkMode} onChange={() => t.toggleTheme()} name="Dark mode"/>}
                     label="Dark Mode"
                 />
             </Container>
@@ -139,7 +136,7 @@ function ResponsiveDrawer() {
                 </Hidden>
             </nav>
             <main className={classes.content}>
-                <Routes />
+                <Routes/>
             </main>
         </div>
     );

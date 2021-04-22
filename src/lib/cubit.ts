@@ -11,10 +11,10 @@ export const cubitDefaultOptions: CubitOptions = {
 };
 
 export default class Cubit<T> {
+    onChange: null | ((change: { currentState: T, nextState: T }) => void) = null;
+    _localProviderRef: string = '';
     protected readonly _subject: BehaviorSubject<T>;
     private readonly _options: CubitOptions;
-    onChange: null | ((change: {currentState: T, nextState: T}) => void) = null;
-    _localProviderRef: string = '';
 
     constructor(initialValue: T, cubitOptions: CubitOptions = {}) {
         const options = {...cubitDefaultOptions, ...cubitOptions};
@@ -29,19 +29,6 @@ export default class Cubit<T> {
         }
 
         this._subject = new BehaviorSubject(value);
-    }
-
-    protected emit = (value: T): void => {
-        this.notifyChange(value);
-        this.subject.next(value);
-        this.updateCache();
-    }
-
-    protected notifyChange(value: T) {
-        this.onChange?.({
-            currentState: this._subject.getValue(),
-            nextState: value,
-        })
     }
 
     public get subject(): BehaviorSubject<T> {
@@ -68,6 +55,19 @@ export default class Cubit<T> {
 
     parseToCache(value: T): string {
         return JSON.stringify({value});
+    }
+
+    protected emit = (value: T): void => {
+        this.notifyChange(value);
+        this.subject.next(value);
+        this.updateCache();
+    }
+
+    protected notifyChange(value: T) {
+        this.onChange?.({
+            currentState: this._subject.getValue(),
+            nextState: value,
+        })
     }
 
     // caching
