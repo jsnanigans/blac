@@ -1,52 +1,51 @@
-import React from 'react'
+import React from "react";
 import Layout from "./Layout";
-import {createMuiTheme} from '@material-ui/core/styles';
-import {ThemeProvider} from '@material-ui/styles';
+import { createMuiTheme } from "@material-ui/core/styles";
+import { ThemeProvider } from "@material-ui/styles";
 import CssBaseline from "@material-ui/core/CssBaseline";
-import {purple} from "@material-ui/core/colors";
-import {BrowserRouter as Router} from "react-router-dom";
-import {useBloc} from "../state";
+import { purple } from "@material-ui/core/colors";
+import { BrowserRouter as Router } from "react-router-dom";
+import { useBloc } from "../state";
 import PreferencesCubit from "../bloc/PreferencesCubit";
 
-
 const darkTheme = createMuiTheme({
-    palette: {
-        type: 'dark',
-        primary: {
-            // Purple and green play nicely together.
-            main: purple[500],
-        },
-        secondary: {
-            // This is green.A700 as hex.
-            main: '#11cb5f',
-        },
+  palette: {
+    type: "dark",
+    primary: {
+      // Purple and green play nicely together.
+      main: purple[500],
     },
+    secondary: {
+      // This is green.A700 as hex.
+      main: "#11cb5f",
+    },
+  },
 });
 
 const lightTheme = createMuiTheme({
-    palette: {
-        type: 'light',
-        primary: {
-            // Purple and green play nicely together.
-            main: purple[500],
-        },
-        secondary: {
-            // This is green.A700 as hex.
-            main: '#11cb5f',
-        },
+  palette: {
+    type: "light",
+    primary: {
+      // Purple and green play nicely together.
+      main: purple[500],
     },
+    secondary: {
+      // This is green.A700 as hex.
+      main: "#11cb5f",
+    },
+  },
 });
 
 function App() {
-    const [{darkMode}] = useBloc<PreferencesCubit>(PreferencesCubit);
-    return (
-        <ThemeProvider theme={darkMode ? darkTheme : lightTheme}>
-            <CssBaseline/>
-            <Router>
-                <Layout/>
-            </Router>
-        </ThemeProvider>
-    )
+  const [{ darkMode }] = useBloc<PreferencesCubit>(PreferencesCubit);
+  return (
+    <ThemeProvider theme={darkMode ? darkTheme : lightTheme}>
+      <CssBaseline />
+      <Router>
+        <Layout />
+      </Router>
+    </ThemeProvider>
+  );
 }
 
-export default App
+export default App;
