@@ -65,7 +65,6 @@ export class BlocReact {
 
         const localProviderKey = useContext(this._contextLocalProviderKey);
         const localBlocInstance = this._blocMapLocal[localProviderKey];
-        console.log({localBlocInstance})
 
         const {subscribe, shouldUpdate = true} = mergedOptions;
         const blocs = useContext(this._contextGlobal);
