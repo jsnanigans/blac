@@ -11,7 +11,7 @@ class PreferencesState {
 export default class PreferencesCubit extends Cubit<PreferencesState> {
   constructor() {
     super(new PreferencesState({ darkMode: true }), {
-      persistKey: "preferences"
+      persistKey: "preferences",
     });
 
     this.parseFromCache = (v) => {
@@ -24,7 +24,7 @@ export default class PreferencesCubit extends Cubit<PreferencesState> {
     this.emit(
       new PreferencesState({
         ...this.state,
-        darkMode: !this.state.darkMode
+        darkMode: !this.state.darkMode,
       })
     );
   };

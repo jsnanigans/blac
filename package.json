@@ -4,7 +4,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "serve": "vite preview"
+    "serve": "vite preview",
+    "prettier": "prettier --write ./src"
   },
   "dependencies": {
     "@typescript-eslint/eslint-plugin": "^4.22.0",
