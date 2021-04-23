@@ -1,4 +1,5 @@
-import { BehaviorSubject } from "rxjs";
+import { BehaviorSubject, Subscription } from "rxjs";
+import { PartialObserver } from "rxjs/src/internal/types";
 
 export interface BlocOptions {
   persistKey?: string;
@@ -7,13 +8,13 @@ export interface BlocOptions {
 
 export const cubitDefaultOptions: BlocOptions = {
   persistKey: "",
-  persistData: true,
+  persistData: true
 };
 
 export default class BlocBase<T> {
   onChange: null | ((change: { currentState: T; nextState: T }) => void) = null;
   _localProviderRef = "";
-  protected readonly _subject: BehaviorSubject<T>;
+  private readonly _subject: BehaviorSubject<T>;
   private readonly _options: BlocOptions;
 
   constructor(initialValue: T, cubitOptions: BlocOptions = {}) {
@@ -49,6 +50,10 @@ export default class BlocBase<T> {
     }
   }
 
+  public getValue = (): T => this._subject.getValue();
+
+  public subscribe = (next?: (value: T) => void, error?: (error: any) => void, complete?: () => void): Subscription => this._subject.subscribe(next, error, complete);
+
   protected parseFromCache = (value: string): T => {
     return JSON.parse(value).value;
   };
@@ -57,16 +62,10 @@ export default class BlocBase<T> {
     return JSON.stringify({ value });
   };
 
-  protected emit = (value: T): void => {
-    this.notifyChange(value);
-    this.subject.next(value);
-    this.updateCache();
-  };
-
   protected notifyChange = (value: T): void => {
     this.onChange?.({
       currentState: this._subject.getValue(),
-      nextState: value,
+      nextState: value
     });
   };
 

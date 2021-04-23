@@ -4,10 +4,8 @@ import React, {
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from "react";
-import { BehaviorSubject } from "rxjs";
 import { nanoid } from "nanoid";
 import BlocBase from "../blocBase";
 
@@ -24,7 +22,7 @@ type BlocHookData<T extends BlocBase<any>> = [
   value: ValueType<T>,
   instance: T,
   stream: {
-    stream: BehaviorSubject<T>;
+    // stream: BehaviorSubject<T>;
     error: any;
     complete: boolean;
   }
@@ -42,8 +40,8 @@ const defaultBlocHookOptions: BlocHookOptions<any> = {
 export class BlocReact {
   observer: null | ((bloc: BlocBase<any>, value: any) => void) = null;
   debug: boolean;
-  private _blocListGlobal: BlocBase<any>[];
-  private _contextGlobal: React.Context<BlocBase<any>[]>;
+  private readonly _blocListGlobal: BlocBase<any>[];
+  private readonly _contextGlobal: React.Context<BlocBase<any>[]>;
   private _contextLocalProviderKey = React.createContext("");
 
   private _blocMapLocal: Record<string, BlocBase<any>> = {};
@@ -62,7 +60,7 @@ export class BlocReact {
     }
   }
 
-  notify(bloc: BlocBase<any>, value: any) {
+  notify(bloc: BlocBase<ValueType<any>>, value: ValueType<any>): void {
     if (this.observer) {
       this.observer(bloc, value);
     }
@@ -89,8 +87,7 @@ export class BlocReact {
       throw new Error(`No block found for ${blocClass}`);
     }
 
-    const streamRef = useRef(blocInstance.subject);
-    const [data, setData] = useState(streamRef.current.getValue());
+    const [data, setData] = useState(blocInstance.getValue());
     const [error, setError] = useState();
     const [complete, setComplete] = useState(false);
 
@@ -102,7 +99,7 @@ export class BlocReact {
 
     useEffect(() => {
       if (subscribe) {
-        const subscription = streamRef.current.subscribe(
+        const subscription = blocInstance.subscribe(
           updateData,
           setError,
           () => setComplete(true)
@@ -115,7 +112,6 @@ export class BlocReact {
       data,
       blocInstance as T,
       {
-        stream: streamRef.current,
         error,
         complete,
       },
@@ -140,7 +136,7 @@ export class BlocReact {
 
   GlobalBlocProvider = (props: {
     children?: ReactElement | ReactElement[];
-  }) => {
+  }): ReactElement => {
     return (
       <this._contextGlobal.Provider value={this._blocListGlobal}>
         {props.children}
@@ -151,20 +147,24 @@ export class BlocReact {
   BlocProvider = <T extends BlocBase<any>>(props: {
     children?: ReactElement | ReactElement[];
     create: (providerKey: string) => T;
-  }) => {
+  }): ReactElement => {
     const providerKey = useMemo<string>(() => "p_" + nanoid(), []);
 
     const bloc = useMemo<T>(() => {
       const newBloc = props.create(providerKey);
       newBloc._localProviderRef = providerKey;
       this._blocMapLocal[providerKey] = newBloc;
+
+      if (this.debug) {
+        newBloc.subject.subscribe((v: any) => this.notify(newBloc, v));
+      }
+
       return newBloc;
     }, []);
 
     const context = useMemo<React.Context<BlocBase<any>>>(() => {
-      const newContext = React.createContext<BlocBase<any>>(bloc);
+      return React.createContext<BlocBase<any>>(bloc);
       // this._contextMapLocal[providerKey] = newContext;
-      return newContext;
     }, [bloc]);
 
     useEffect(() => {

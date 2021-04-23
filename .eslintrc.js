@@ -16,7 +16,6 @@ module.exports = {
       jsx: true
     },
     ecmaVersion: 12,
-    sourceType: "module"
   },
   "settings": {
     "react": {
@@ -28,5 +27,7 @@ module.exports = {
     "react",
     "@typescript-eslint"
   ],
-  rules: {}
+  rules: {
+    '@typescript-eslint/no-explicit-any': 'off',
+  }
 };

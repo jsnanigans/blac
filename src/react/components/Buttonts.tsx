@@ -1,15 +1,20 @@
 import { useBloc } from "../state";
 import CounterCubit from "../bloc/CounterCubit";
 import React from "react";
-import { Button } from "@material-ui/core";
+import { Button, ButtonGroup } from "@material-ui/core";
 
 export default function Buttons() {
-  const [, { increment }] = useBloc<CounterCubit>(CounterCubit, {
-    subscribe: false,
+  const [, { increment, decrement }] = useBloc<CounterCubit>(CounterCubit, {
+    subscribe: false
   });
   return (
-    <Button color="primary" onClick={increment}>
-      INCREMENT
-    </Button>
+    <div>
+      <Button color="secondary" onClick={decrement}>
+        DECREMENT
+      </Button>
+      <Button color="primary" onClick={increment}>
+        INCREMENT
+      </Button>
+    </div>
   );
 }
