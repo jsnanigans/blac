@@ -1,4 +1,5 @@
 import Bloc from "../../lib/bloc";
+import CounterCubit from "./CounterCubit";
 
 export enum AuthEvent {
   unknown = "unknown",
@@ -23,7 +24,12 @@ export default class AuthBloc extends Bloc<AuthEvent, boolean> {
       }
     };
 
-    // this.onChange = console.log;
-    // this.onTransition = console.log;
+    this.onRegister = (consumer) => {
+      consumer.addBlocObserver<CounterCubit>(CounterCubit, (bloc, state) => {
+        if (state === 10) {
+          this.add(AuthEvent.unknown);
+        }
+      });
+    };
   }
 }

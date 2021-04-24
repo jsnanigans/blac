@@ -1,5 +1,7 @@
 import { BehaviorSubject, Subscription } from "rxjs";
 import { PartialObserver } from "rxjs/src/internal/types";
+import { ValueType } from "./types";
+import { BlocConsumer } from "./blocConsumer";
 
 export interface BlocOptions {
   persistKey?: string;
@@ -8,12 +10,13 @@ export interface BlocOptions {
 
 export const cubitDefaultOptions: BlocOptions = {
   persistKey: "",
-  persistData: true
+  persistData: true,
 };
 
 export default class BlocBase<T> {
-  onChange: null | ((change: { currentState: T; nextState: T }) => void) = null;
   _localProviderRef = "";
+  onRegister: null | ((consumer: BlocConsumer) => void) = null;
+  onChange: null | ((change: { currentState: T; nextState: T }) => void) = null;
   private readonly _subject: BehaviorSubject<T>;
   private readonly _options: BlocOptions;
 
@@ -30,6 +33,12 @@ export default class BlocBase<T> {
     }
 
     this._subject = new BehaviorSubject(value);
+  }
+
+  _consumer: BlocConsumer | null = null;
+
+  set consumer(consumer: BlocConsumer) {
+    this._consumer = consumer;
   }
 
   public get subject(): BehaviorSubject<T> {
@@ -52,7 +61,11 @@ export default class BlocBase<T> {
 
   public getValue = (): T => this._subject.getValue();
 
-  public subscribe = (next?: (value: T) => void, error?: (error: any) => void, complete?: () => void): Subscription => this._subject.subscribe(next, error, complete);
+  public subscribe = (
+    next?: (value: T) => void,
+    error?: (error: any) => void,
+    complete?: () => void
+  ): Subscription => this._subject.subscribe(next, error, complete);
 
   protected parseFromCache = (value: string): T => {
     return JSON.parse(value).value;
@@ -65,7 +78,7 @@ export default class BlocBase<T> {
   protected notifyChange = (value: T): void => {
     this.onChange?.({
       currentState: this._subject.getValue(),
-      nextState: value
+      nextState: value,
     });
   };
 
@@ -100,5 +113,15 @@ export default class BlocBase<T> {
     if (key && this._options.persistData) {
       localStorage.removeItem(`data.${key}`);
     }
+  };
+
+  // b2b com
+  protected addBlocObserver = <O extends BlocBase<any>>(
+    blocClass: new (...args: never[]) => O,
+    callback: (error: boolean, state: ValueType<O>, bloc: O) => unknown
+  ): void => {
+    console.log({ blocClass });
+    console.log(this._consumer?.blocListGlobal);
+    console.log({ callback });
   };
 }

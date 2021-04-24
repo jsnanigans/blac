@@ -5,7 +5,7 @@ import { Button, ButtonGroup } from "@material-ui/core";
 
 export default function Buttons() {
   const [, { increment, decrement }] = useBloc<CounterCubit>(CounterCubit, {
-    subscribe: false
+    subscribe: false,
   });
   return (
     <div>

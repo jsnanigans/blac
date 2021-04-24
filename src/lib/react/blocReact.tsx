@@ -4,29 +4,17 @@ import React, {
   useContext,
   useEffect,
   useMemo,
-  useState
+  useState,
 } from "react";
 import { nanoid } from "nanoid";
 import BlocBase from "../blocBase";
+import { BlocHookData, BlocClass, ValueType } from "../types";
+import { BlocConsumer } from "../blocConsumer";
 
-interface BlocLordOptions {
+interface ReactBlocOptions {
   /** Enables debugging which calls BlocReact.observer every time a Subject is updated. Defaults to false */
   debug?: boolean;
 }
-
-type ValueType<T extends BlocBase<any>> = T extends BlocBase<infer U>
-  ? U
-  : never;
-
-type BlocHookData<T extends BlocBase<any>> = [
-  value: ValueType<T>,
-  instance: T,
-  stream: {
-    // stream: BehaviorSubject<T>;
-    error: any;
-    complete: boolean;
-  }
-];
 
 interface BlocHookOptions<T extends BlocBase<any>> {
   subscribe?: boolean;
@@ -34,7 +22,7 @@ interface BlocHookOptions<T extends BlocBase<any>> {
 }
 
 const defaultBlocHookOptions: BlocHookOptions<any> = {
-  subscribe: true
+  subscribe: true,
 };
 
 class BlocRuntimeError {
@@ -45,42 +33,25 @@ class BlocRuntimeError {
   }
 }
 
-export class BlocReact {
-  observer: null | ((bloc: BlocBase<any>, value: any) => void) = null;
-  debug: boolean;
-  private readonly _blocListGlobal: BlocBase<any>[];
+export class BlocReact extends BlocConsumer {
   private readonly _contextGlobal: React.Context<BlocBase<any>[]>;
   private _contextLocalProviderKey = React.createContext("");
-
   private _blocMapLocal: Record<string, BlocBase<any>> = {};
 
   // private _contextMapLocal: Record<string, React.Context<Cubit<any>>> = {}
 
-  constructor(blocs: BlocBase<any>[], options: BlocLordOptions = {}) {
-    this._blocListGlobal = blocs;
+  constructor(blocs: BlocBase<any>[], options: ReactBlocOptions = {}) {
+    super(blocs, options);
     this._contextGlobal = React.createContext(blocs);
-    this.debug = options.debug || false;
-
-    if (this.debug) {
-      for (const b of blocs) {
-        b.subject.subscribe((v: any) => this.notify(b, v));
-      }
-    }
-  }
-
-  notify(bloc: BlocBase<ValueType<any>>, value: ValueType<any>): void {
-    if (this.observer) {
-      this.observer(bloc, value);
-    }
   }
 
   useBloc = <T extends BlocBase<any>>(
-    blocClass: new (...args: never[]) => T,
+    blocClass: BlocClass<T>,
     options: BlocHookOptions<T> = {}
   ): BlocHookData<T> => {
     const mergedOptions: BlocHookOptions<T> = {
       ...defaultBlocHookOptions,
-      ...options
+      ...options,
     };
 
     const localProviderKey = useContext(this._contextLocalProviderKey);
@@ -116,10 +87,14 @@ export class BlocReact {
         </GlobalBlocProvider>
       `);
       console.error(error.error);
-      return [(e: null) => e, {}, {
-        error,
-        complete: true
-      }] as unknown as BlocHookData<T>;
+      return ([
+        (e: null) => e,
+        {},
+        {
+          error,
+          complete: true,
+        },
+      ] as unknown) as BlocHookData<T>;
     }
 
     const [data, setData] = useState(blocInstance.getValue());
@@ -134,10 +109,8 @@ export class BlocReact {
 
     useEffect(() => {
       if (subscribe) {
-        const subscription = blocInstance.subscribe(
-          updateData,
-          setError,
-          () => setComplete(true)
+        const subscription = blocInstance.subscribe(updateData, setError, () =>
+          setComplete(true)
         );
         return () => subscription.unsubscribe();
       }
@@ -148,22 +121,22 @@ export class BlocReact {
       blocInstance as T,
       {
         error,
-        complete
-      }
+        complete,
+      },
     ];
   };
 
   // Components
   BlocBuilder = <T extends BlocBase<any>>(props: {
-    bloc: new (...args: never[]) => T;
+    blocClass: BlocClass<T>;
     builder: (data: BlocHookData<T>) => ReactElement;
     shouldUpdate?: (
       previousState: ValueType<T>,
       state: ValueType<T>
     ) => boolean;
   }): ReactElement | null => {
-    const hook = this.useBloc(props.bloc, {
-      shouldUpdate: props.shouldUpdate
+    const hook = this.useBloc(props.blocClass, {
+      shouldUpdate: props.shouldUpdate,
     });
     return props.builder(hook);
   };
@@ -172,7 +145,7 @@ export class BlocReact {
     children?: ReactElement | ReactElement[];
   }): ReactElement => {
     return (
-      <this._contextGlobal.Provider value={this._blocListGlobal}>
+      <this._contextGlobal.Provider value={this.blocListGlobal}>
         {props.children}
       </this._contextGlobal.Provider>
     );

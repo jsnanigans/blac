@@ -56,7 +56,7 @@ export default function Sandbox() {
       <Card>
         <CardContent>
           <BlocBuilder<CounterCubit>
-            bloc={CounterCubit}
+            blocClass={CounterCubit}
             builder={([value, { increment }]) => (
               <div>
                 <Button onClick={() => increment()}>{value}</Button>
@@ -69,7 +69,7 @@ export default function Sandbox() {
           <Box m={2} />
 
           <BlocBuilder<AuthBloc>
-            bloc={AuthBloc}
+            blocClass={AuthBloc}
             builder={([value, { add }]) => (
               <div>
                 <Button onClick={() => add(AuthEvent.authenticated)}>
@@ -91,7 +91,7 @@ export default function Sandbox() {
           >
             <Typography variant="h4">Local Provider #1</Typography>
             <BlocBuilder<CounterCubit>
-              bloc={CounterCubit}
+              blocClass={CounterCubit}
               builder={([value, { increment }]) => (
                 <div>
                   <Button onClick={() => increment()}>{value}</Button>
@@ -106,7 +106,7 @@ export default function Sandbox() {
           >
             <Typography variant="h4">Local Provider #2</Typography>
             <BlocBuilder<CounterCubit>
-              bloc={CounterCubit}
+              blocClass={CounterCubit}
               builder={([value, { increment }]) => (
                 <div>
                   <Button onClick={() => increment()}>{value}</Button>
