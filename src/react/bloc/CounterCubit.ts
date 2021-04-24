@@ -1,4 +1,4 @@
-import Cubit from "../../lib/cubit";
+import Cubit from "../../lib/Cubit";
 
 export default class CounterCubit extends Cubit<number> {
   constructor(cacheKey = "") {

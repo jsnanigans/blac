@@ -1,9 +1,8 @@
-import BlocBase from "./blocBase";
+import BlocBase from "./BlocBase";
 
 export default class Cubit<T> extends BlocBase<T> {
   protected emit = (value: T): void => {
     this.notifyChange(value);
-    this.subject.next(value);
-    this.updateCache();
+    this.next(value);
   };
 }

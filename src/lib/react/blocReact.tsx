@@ -1,15 +1,8 @@
-import React, {
-  ReactElement,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import React, { ReactElement, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { nanoid } from "nanoid";
-import BlocBase from "../blocBase";
-import { BlocHookData, BlocClass, ValueType } from "../types";
-import { BlocConsumer } from "../blocConsumer";
+import BlocBase from "../BlocBase";
+import { BlocClass, BlocHookData, ValueType } from "../types";
+import { BlocConsumer } from "../BlocConsumer";
 
 interface ReactBlocOptions {
   /** Enables debugging which calls BlocReact.observer every time a Subject is updated. Defaults to false */
@@ -97,7 +90,7 @@ export class BlocReact extends BlocConsumer {
       ] as unknown) as BlocHookData<T>;
     }
 
-    const [data, setData] = useState(blocInstance.getValue());
+    const [data, setData] = useState(blocInstance.state);
     const [error, setError] = useState();
     const [complete, setComplete] = useState(false);
 
@@ -163,7 +156,7 @@ export class BlocReact extends BlocConsumer {
       this._blocMapLocal[providerKey] = newBloc;
 
       if (this.debug) {
-        newBloc.subject.subscribe((v: any) => this.notify(newBloc, v));
+        newBloc.subscribe((v: any) => this.notify(newBloc, v));
       }
 
       return newBloc;
@@ -176,7 +169,7 @@ export class BlocReact extends BlocConsumer {
 
     useEffect(() => {
       return () => {
-        bloc.subject.complete();
+        bloc.complete();
         delete this._blocMapLocal[providerKey];
       };
     }, []);

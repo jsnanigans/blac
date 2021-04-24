@@ -97,7 +97,7 @@ class Bloc extends BlocBase {
     };
     this.notifyTransition = (value, event) => {
       this.onTransition?.({
-        currentState: this.getValue(),
+        currentState: this.getState(),
         event,
         nextState: value
       });

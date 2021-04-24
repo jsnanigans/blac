@@ -5,6 +5,7 @@
       <set>
         <option value="activate" />
         <option value="activateOnShortcut" />
+        <option value="organizeImports" />
         <option value="rearrange" />
       </set>
     </option>

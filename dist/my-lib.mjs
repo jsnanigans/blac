@@ -1,6 +1,6 @@
-import { BehaviorSubject } from 'rxjs';
-import React, { useContext, useState, useCallback, useEffect, useMemo } from 'react';
-import { nanoid } from 'nanoid';
+import { BehaviorSubject } from "rxjs";
+import React, { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { nanoid } from "nanoid";
 
 const cubitDefaultOptions = {
   persistKey: "",
@@ -89,7 +89,7 @@ class Bloc extends BlocBase {
     };
     this.notifyTransition = (value, event) => {
       this.onTransition?.({
-        currentState: this.getValue(),
+        currentState: this.getState(),
         event,
         nextState: value
       });

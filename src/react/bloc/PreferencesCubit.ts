@@ -1,4 +1,4 @@
-import Cubit from "../../lib/cubit";
+import Cubit from "../../lib/Cubit";
 
 class PreferencesState {
   darkMode: boolean;

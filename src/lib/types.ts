@@ -1,4 +1,4 @@
-import BlocBase from "./blocBase";
+import BlocBase from "./BlocBase";
 
 export type ValueType<T extends BlocBase<any>> = T extends BlocBase<infer U>
   ? U
@@ -15,3 +15,8 @@ export type BlocHookData<T extends BlocBase<any>> = [
     complete: boolean;
   }
 ];
+
+export interface BlocOptions {
+  persistKey?: string;
+  persistData?: boolean;
+}

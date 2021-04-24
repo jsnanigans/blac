@@ -1,4 +1,4 @@
-import BlocBase from "./blocBase";
+import BlocBase from "./BlocBase";
 import { BlocClass, ValueType } from "./types";
 
 export interface ReactBlocOptions {
@@ -29,7 +29,7 @@ export class BlocConsumer {
 
     for (const b of blocs) {
       b.consumer = this;
-      b.subject.subscribe((v: any) => this.notify(b, v));
+      b.subscribe((v: any) => this.notify(b, v));
       b.onRegister?.(this);
     }
   }
