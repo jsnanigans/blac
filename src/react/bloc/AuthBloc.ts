@@ -23,7 +23,7 @@ export default class AuthBloc extends Bloc<AuthEvent, boolean> {
       }
     };
 
-    this.onChange = console.log;
-    this.onTransition = console.log;
+    // this.onChange = console.log;
+    // this.onTransition = console.log;
   }
 }

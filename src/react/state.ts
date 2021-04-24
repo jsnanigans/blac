@@ -1,10 +1,14 @@
-import { BlocReact } from "../lib/react/blocReact";
 import CounterCubit from "./bloc/CounterCubit";
 import PreferencesCubit from "./bloc/PreferencesCubit";
 import AuthBloc from "./bloc/AuthBloc";
+import { BlocReact } from "../lib";
 
 const state = new BlocReact(
-  [new PreferencesCubit(), new AuthBloc(), new CounterCubit()],
+  [
+    new PreferencesCubit(),
+    new AuthBloc(),
+    new CounterCubit()
+  ],
   { debug: true }
 );
 

@@ -4,7 +4,7 @@ import React, {
   useContext,
   useEffect,
   useMemo,
-  useState,
+  useState
 } from "react";
 import { nanoid } from "nanoid";
 import BlocBase from "../blocBase";
@@ -34,8 +34,16 @@ interface BlocHookOptions<T extends BlocBase<any>> {
 }
 
 const defaultBlocHookOptions: BlocHookOptions<any> = {
-  subscribe: true,
+  subscribe: true
 };
+
+class BlocRuntimeError {
+  error: Error;
+
+  constructor(message?: string) {
+    this.error = new Error(message);
+  }
+}
 
 export class BlocReact {
   observer: null | ((bloc: BlocBase<any>, value: any) => void) = null;
@@ -72,7 +80,7 @@ export class BlocReact {
   ): BlocHookData<T> => {
     const mergedOptions: BlocHookOptions<T> = {
       ...defaultBlocHookOptions,
-      ...options,
+      ...options
     };
 
     const localProviderKey = useContext(this._contextLocalProviderKey);
@@ -84,7 +92,34 @@ export class BlocReact {
       localBlocInstance || blocs.find((c) => c instanceof blocClass);
 
     if (!blocInstance) {
-      throw new Error(`No block found for ${blocClass}`);
+      const name = blocClass.prototype.constructor.name;
+      const error = new BlocRuntimeError(`"${name}" 
+      no bloc with this name was found in the global context.
+      
+      # Solutions:
+      
+      1. Wrap your code in a BlocProvider.
+      
+      2. Add "${name}" to the "BlocReact" constructor:
+        const state = new BlocReact(
+          [
+            ...
+            new ${name}(),
+          ]
+        )
+        
+      and mame sure you add the global state provider to your app:
+        const { GlobalBlocProvider } = state;
+        ...
+        <GlobalBlocProvider>
+          <App />
+        </GlobalBlocProvider>
+      `);
+      console.error(error.error);
+      return [(e: null) => e, {}, {
+        error,
+        complete: true
+      }] as unknown as BlocHookData<T>;
     }
 
     const [data, setData] = useState(blocInstance.getValue());
@@ -113,8 +148,8 @@ export class BlocReact {
       blocInstance as T,
       {
         error,
-        complete,
-      },
+        complete
+      }
     ];
   };
 
@@ -126,12 +161,11 @@ export class BlocReact {
       previousState: ValueType<T>,
       state: ValueType<T>
     ) => boolean;
-  }): ReactElement => {
-    return props.builder(
-      this.useBloc(props.bloc, {
-        shouldUpdate: props.shouldUpdate,
-      })
-    );
+  }): ReactElement | null => {
+    const hook = this.useBloc(props.bloc, {
+      shouldUpdate: props.shouldUpdate
+    });
+    return props.builder(hook);
   };
 
   GlobalBlocProvider = (props: {
