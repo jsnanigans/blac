@@ -3,4 +3,5 @@ node_modules
 site
 site-ssr
 coverage
+yarn-error.log
 *.local

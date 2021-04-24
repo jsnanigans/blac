@@ -60,6 +60,9 @@
     ],
     "setupFilesAfterEnv": [
       "jest-mock-console/dist/setupTestFramework.js"
+    ],
+    "collectCoverageFrom": [
+      "src/lib/**/*.{ts,tsx}"
     ]
   }
 }
