@@ -1,78 +1,86 @@
-import { BehaviorSubject } from "rxjs";
-import React, { useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { nanoid } from "nanoid";
+import { BehaviorSubject } from 'rxjs';
+import React, { useContext, useState, useCallback, useEffect, useMemo } from 'react';
+import { nanoid } from 'nanoid';
 
+const LOCAL_STORAGE_PREFIX = "data.";
 const cubitDefaultOptions = {
   persistKey: "",
   persistData: true
 };
-class BlocBase {
-  constructor(initialValue, cubitOptions = {}) {
-    this.onChange = null;
-    this._localProviderRef = "";
-    this.getValue = () => this._subject.getValue();
+
+class StreamAbstraction {
+  constructor(initialValue, blocOptions = {}) {
     this.subscribe = (next, error, complete) => this._subject.subscribe(next, error, complete);
-    this.parseFromCache = (value) => {
-      return JSON.parse(value).value;
+    this.complete = () => this._subject.complete();
+    this.clearCache = () => {
+      const key = this._options.persistKey;
+      if (key) {
+        localStorage.removeItem(`${LOCAL_STORAGE_PREFIX}${key}`);
+      }
     };
-    this.parseToCache = (value) => {
-      return JSON.stringify({value});
+    this.next = (value) => {
+      this._subject.next(value);
+      this.updateCache();
     };
-    this.notifyChange = (value) => {
-      this.onChange?.({
-        currentState: this._subject.getValue(),
-        nextState: value
-      });
+    this.parseFromCache = (state) => {
+      return JSON.parse(state).state;
+    };
+    this.parseToCache = (state) => {
+      return JSON.stringify({state});
     };
     this.getCachedValue = () => {
-      const cachedValue = localStorage.getItem(`data.${this._options.persistKey}`);
+      const cachedValue = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}${this._options.persistKey}`);
       if (cachedValue) {
         try {
           return this.parseFromCache(cachedValue);
         } catch (e) {
-          console.error(e);
+          const error = new Error(`Failed to parse JSON in localstorage for the key: "${LOCAL_STORAGE_PREFIX}${this._options.persistKey}"`);
+          console.error(error);
+          return error;
         }
       }
+      return new Error("Key not found");
     };
     this.updateCache = () => {
       const {persistData, persistKey} = this._options;
       if (persistData && persistKey) {
-        localStorage.setItem(`data.${persistKey}`, this.parseToCache(this.subject.getValue()));
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}${persistKey}`, this.parseToCache(this.state));
       } else {
         this.clearCache();
       }
     };
-    this.clearCache = () => {
-      const key = this._options.persistKey;
-      if (key && this._options.persistData) {
-        localStorage.removeItem(`data.${key}`);
-      }
-    };
-    const options = {...cubitDefaultOptions, ...cubitOptions};
-    this._options = options;
     let value = initialValue;
+    const options = {...cubitDefaultOptions, ...blocOptions};
+    this._options = options;
     if (options.persistKey && options.persistData) {
       const cachedValue = this.getCachedValue();
-      if (cachedValue) {
+      if (!(cachedValue instanceof Error)) {
         value = cachedValue;
       }
     }
     this._subject = new BehaviorSubject(value);
   }
-  get subject() {
-    return this._subject;
-  }
   get state() {
-    return this.subject.getValue();
+    return this._subject.getValue();
   }
-  set persistData(setTo) {
-    const previousOptions = {...this._options};
-    this._options.persistData = setTo;
-    if (!setTo) {
-      this.clearCache();
-    } else if (previousOptions.persistData === false) {
-      this.updateCache();
-    }
+}
+
+class BlocBase extends StreamAbstraction {
+  constructor(initialValue, blocOptions = {}) {
+    super(initialValue, blocOptions);
+    this._localProviderRef = "";
+    this.onRegister = null;
+    this.onChange = null;
+    this._consumer = null;
+    this.notifyChange = (state) => {
+      this.onChange?.({
+        currentState: this.state,
+        nextState: state
+      });
+    };
+  }
+  set consumer(consumer) {
+    this._consumer = consumer;
   }
 }
 
@@ -80,21 +88,24 @@ class Bloc extends BlocBase {
   constructor(initialState, options) {
     super(initialState, options);
     this.onTransition = null;
+    this.mapEventToState = null;
     this.add = (event) => {
-      const newState = this.mapEventToState(event);
-      this.notifyChange(newState);
-      this.notifyTransition(newState, event);
-      this.subject.next(newState);
-      this.updateCache();
+      if (this.mapEventToState) {
+        const newState = this.mapEventToState(event);
+        this.notifyChange(newState);
+        this.notifyTransition(newState, event);
+        this.next(newState);
+      } else {
+        console.error(`"mapEventToState" not implemented for "${this.constructor.name}"`);
+      }
     };
     this.notifyTransition = (value, event) => {
       this.onTransition?.({
-        currentState: this.getState(),
+        currentState: this.state,
         event,
         nextState: value
       });
     };
-    this.mapEventToState = () => initialState;
   }
 }
 
@@ -103,18 +114,51 @@ class Cubit extends BlocBase {
     super(...arguments);
     this.emit = (value) => {
       this.notifyChange(value);
-      this.subject.next(value);
-      this.updateCache();
+      this.next(value);
     };
+  }
+}
+
+class BlocConsumer {
+  constructor(blocs, options = {}) {
+    this.observer = null;
+    this.blocObservers = [];
+    this.blocListGlobal = blocs;
+    this.debug = options.debug || false;
+    for (const b of blocs) {
+      b.consumer = this;
+      b.subscribe((v) => this.notify(b, v));
+      b.onRegister?.(this);
+    }
+  }
+  notify(bloc, state) {
+    if (this.observer) {
+      this.observer(bloc, state);
+    }
+    for (const [blocClass, callback, scope] of this.blocObservers) {
+      const isGlobal = this.blocListGlobal.indexOf(bloc) !== -1;
+      const matchesScope = scope === "all" || isGlobal && scope === "global" || !isGlobal && scope === "local";
+      if (matchesScope && bloc instanceof blocClass) {
+        callback(bloc, state);
+      }
+    }
+  }
+  addBlocObserver(blocClass, callback, scope = "all") {
+    this.blocObservers.push([blocClass, callback, scope]);
   }
 }
 
 const defaultBlocHookOptions = {
   subscribe: true
 };
-class BlocReact {
+class BlocRuntimeError {
+  constructor(message) {
+    this.error = new Error(message);
+  }
+}
+class BlocReact extends BlocConsumer {
   constructor(blocs, options = {}) {
-    this.observer = null;
+    super(blocs, options);
     this._contextLocalProviderKey = React.createContext("");
     this._blocMapLocal = {};
     this.useBloc = (blocClass, options = {}) => {
@@ -128,9 +172,40 @@ class BlocReact {
       const blocs = useContext(this._contextGlobal);
       const blocInstance = localBlocInstance || blocs.find((c) => c instanceof blocClass);
       if (!blocInstance) {
-        throw new Error(`No block found for ${blocClass}`);
+        const name = blocClass.prototype.constructor.name;
+        const error2 = new BlocRuntimeError(`"${name}" 
+      no bloc with this name was found in the global context.
+      
+      # Solutions:
+      
+      1. Wrap your code in a BlocProvider.
+      
+      2. Add "${name}" to the "BlocReact" constructor:
+        const state = new BlocReact(
+          [
+            ...
+            new ${name}(),
+          ]
+        )
+        
+      and mame sure you add the global state provider to your app:
+        const { GlobalBlocProvider } = state;
+        ...
+        <GlobalBlocProvider>
+          <App />
+        </GlobalBlocProvider>
+      `);
+        console.error(error2.error);
+        return [
+          (e) => e,
+          {},
+          {
+            error: error2,
+            complete: true
+          }
+        ];
       }
-      const [data, setData] = useState(blocInstance.getValue());
+      const [data, setData] = useState(blocInstance.state);
       const [error, setError] = useState();
       const [complete, setComplete] = useState(false);
       const updateData = useCallback((newState) => {
@@ -154,13 +229,14 @@ class BlocReact {
       ];
     };
     this.BlocBuilder = (props) => {
-      return props.builder(this.useBloc(props.bloc, {
+      const hook = this.useBloc(props.blocClass, {
         shouldUpdate: props.shouldUpdate
-      }));
+      });
+      return props.builder(hook);
     };
     this.GlobalBlocProvider = (props) => {
       return /* @__PURE__ */ React.createElement(this._contextGlobal.Provider, {
-        value: this._blocListGlobal
+        value: this.blocListGlobal
       }, props.children);
     };
     this.BlocProvider = (props) => {
@@ -170,7 +246,7 @@ class BlocReact {
         newBloc._localProviderRef = providerKey;
         this._blocMapLocal[providerKey] = newBloc;
         if (this.debug) {
-          newBloc.subject.subscribe((v) => this.notify(newBloc, v));
+          newBloc.subscribe((v) => this.notify(newBloc, v));
         }
         return newBloc;
       }, []);
@@ -179,7 +255,7 @@ class BlocReact {
       }, [bloc]);
       useEffect(() => {
         return () => {
-          bloc.subject.complete();
+          bloc.complete();
           delete this._blocMapLocal[providerKey];
         };
       }, []);
@@ -189,19 +265,7 @@ class BlocReact {
         value: bloc
       }, props.children));
     };
-    this._blocListGlobal = blocs;
     this._contextGlobal = React.createContext(blocs);
-    this.debug = options.debug || false;
-    if (this.debug) {
-      for (const b of blocs) {
-        b.subject.subscribe((v) => this.notify(b, v));
-      }
-    }
-  }
-  notify(bloc, value) {
-    if (this.observer) {
-      this.observer(bloc, value);
-    }
   }
 }
 
