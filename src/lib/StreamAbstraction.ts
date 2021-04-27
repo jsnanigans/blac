@@ -43,7 +43,7 @@ export default class StreamAbstraction<T> {
   protected next = (value: T): void => {
     this._subject.next(value);
     this.updateCache();
-  }
+  };
 
   protected parseFromCache = (state: string): T => {
     return JSON.parse(state).state;
@@ -61,7 +61,9 @@ export default class StreamAbstraction<T> {
       try {
         return this.parseFromCache(cachedValue);
       } catch (e) {
-        const error = new Error(`Failed to parse JSON in localstorage for the key: "${LOCAL_STORAGE_PREFIX}${this._options.persistKey}"`);
+        const error = new Error(
+          `Failed to parse JSON in localstorage for the key: "${LOCAL_STORAGE_PREFIX}${this._options.persistKey}"`
+        );
         console.error(error);
         return error;
       }

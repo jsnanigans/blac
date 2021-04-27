@@ -6,4 +6,3 @@ export const cubitDefaultOptions: Required<BlocOptions> = {
   persistKey: "",
   persistData: true,
 };
-

@@ -10,6 +10,6 @@ const state = new BlocReact(
 
 state.observer = console.log;
 
-export const { useBloc, GlobalBlocProvider, BlocBuilder, BlocProvider } = state;
+export const { useBloc, BlocBuilder, BlocProvider } = state;
 
 export default state;

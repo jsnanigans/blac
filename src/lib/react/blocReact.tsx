@@ -1,4 +1,11 @@
-import React, { ReactElement, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import React, {
+  ReactElement,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { nanoid } from "nanoid";
 import BlocBase from "../BlocBase";
 import { BlocClass, BlocHookData, ValueType } from "../types";
@@ -29,7 +36,6 @@ class BlocRuntimeError {
 export class BlocReact extends BlocConsumer {
   private readonly _contextGlobal: React.Context<BlocBase<any>[]>;
   private _contextLocalProviderKey = React.createContext("");
-  private _blocMapLocal: Record<string, BlocBase<any>> = {};
 
   // private _contextMapLocal: Record<string, React.Context<Cubit<any>>> = {}
 
@@ -71,13 +77,6 @@ export class BlocReact extends BlocConsumer {
             new ${name}(),
           ]
         )
-        
-      and mame sure you add the global state provider to your app:
-        const { GlobalBlocProvider } = state;
-        ...
-        <GlobalBlocProvider>
-          <App />
-        </GlobalBlocProvider>
       `);
       console.error(error.error);
       return ([
@@ -153,7 +152,7 @@ export class BlocReact extends BlocConsumer {
     const bloc = useMemo<T>(() => {
       const newBloc = props.create(providerKey);
       newBloc._localProviderRef = providerKey;
-      this._blocMapLocal[providerKey] = newBloc;
+      this.addLocalBloc(providerKey, newBloc);
 
       if (this.debug) {
         newBloc.subscribe((v: any) => this.notify(newBloc, v));
@@ -169,8 +168,7 @@ export class BlocReact extends BlocConsumer {
 
     useEffect(() => {
       return () => {
-        bloc.complete();
-        delete this._blocMapLocal[providerKey];
+        this.removeLocalBloc(providerKey);
       };
     }, []);
 

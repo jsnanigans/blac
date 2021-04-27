@@ -2,7 +2,7 @@ import Cubit from "./Cubit";
 
 describe("Cubit", () => {
   const spy = {
-    onChange: jest.fn()
+    onChange: jest.fn(),
   };
 
   class TestCubit extends Cubit<number> {
@@ -36,7 +36,10 @@ describe("Cubit", () => {
       const cubit = new TestCubit();
       expect(spy.onChange).toHaveBeenCalledTimes(0);
       cubit.increment();
-      expect(spy.onChange).toHaveBeenCalledWith({ currentState: 0, nextState: 1 });
+      expect(spy.onChange).toHaveBeenCalledWith({
+        currentState: 0,
+        nextState: 1,
+      });
     });
   });
 });

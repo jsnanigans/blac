@@ -4,7 +4,7 @@ import mockConsole from "jest-mock-console";
 describe("Bloc", () => {
   const spy = {
     onChange: jest.fn(),
-    onTransition: jest.fn()
+    onTransition: jest.fn(),
   };
 
   enum AuthEvent {
@@ -60,7 +60,10 @@ describe("Bloc", () => {
       expect(spy.onChange).toHaveBeenCalledTimes(0);
       bloc.add(AuthEvent.authenticated);
       expect(spy.onChange).toHaveBeenCalledTimes(1);
-      expect(spy.onChange).toHaveBeenCalledWith({ currentState: false, nextState: true });
+      expect(spy.onChange).toHaveBeenCalledWith({
+        currentState: false,
+        nextState: true,
+      });
     });
 
     it("should call `onTransition` before the state changes with the event that was added", () => {
@@ -71,7 +74,7 @@ describe("Bloc", () => {
       expect(spy.onTransition).toHaveBeenCalledWith({
         currentState: false,
         event: AuthEvent.authenticated,
-        nextState: true
+        nextState: true,
       });
     });
   });

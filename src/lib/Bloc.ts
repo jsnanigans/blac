@@ -18,7 +18,9 @@ export default class Bloc<E, T> extends BlocBase<T> {
       this.notifyTransition(newState, event);
       this.next(newState);
     } else {
-      console.error(`"mapEventToState" not implemented for "${this.constructor.name}"`);
+      console.error(
+        `"mapEventToState" not implemented for "${this.constructor.name}"`
+      );
     }
   };
 
@@ -26,7 +28,7 @@ export default class Bloc<E, T> extends BlocBase<T> {
     this.onTransition?.({
       currentState: this.state,
       event,
-      nextState: value
+      nextState: value,
     });
   };
 }

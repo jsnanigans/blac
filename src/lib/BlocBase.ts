@@ -20,7 +20,7 @@ export default class BlocBase<T> extends StreamAbstraction<T> {
   protected notifyChange = (state: T): void => {
     this.onChange?.({
       currentState: this.state,
-      nextState: state
+      nextState: state,
     });
   };
 }

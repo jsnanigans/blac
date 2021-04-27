@@ -6,7 +6,7 @@ export interface ReactBlocOptions {
   debug?: boolean;
 }
 
-type BlocObserverScope = "local" | "global" | "all";
+export type BlocObserverScope = "local" | "global" | "all";
 type BlocObserver = [
   BlocClass<any>,
   (bloc: any, state: any) => unknown,
@@ -17,9 +17,9 @@ export class BlocConsumer {
   observer: null | ((bloc: BlocBase<any>, value: any) => void) = null;
   debug: boolean;
   readonly blocListGlobal: BlocBase<any>[];
+  protected _blocMapLocal: Record<string, BlocBase<any>> = {};
   private blocObservers: BlocObserver[] = [];
 
-  // private _blocMapLocal: Record<string, BlocBase<any>> = {};
   // private _contextMapLocal: Record<string, React.Context<Cubit<any>>> = {}
 
   constructor(blocs: BlocBase<any>[], options: ReactBlocOptions = {}) {
@@ -57,5 +57,17 @@ export class BlocConsumer {
     scope: BlocObserverScope = "all"
   ) {
     this.blocObservers.push([blocClass, callback, scope]);
+  }
+
+  public addLocalBloc(key: string, bloc: BlocBase<any>) {
+    this._blocMapLocal[key] = bloc;
+  }
+
+  public removeLocalBloc(key: string) {
+    const bloc = this._blocMapLocal[key];
+    if (bloc) {
+      bloc.complete();
+      delete this._blocMapLocal[key];
+    }
   }
 }
