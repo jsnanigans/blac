@@ -15,7 +15,7 @@ interface BlocHookOptions<T extends BlocBase<any>> {
 }
 
 const defaultBlocHookOptions: BlocHookOptions<any> = {
-  subscribe: true,
+  subscribe: true
 };
 
 class BlocRuntimeError {
@@ -26,11 +26,12 @@ class BlocRuntimeError {
   }
 }
 
+class NoValue {
+}
+
 export class BlocReact extends BlocConsumer {
   private readonly _contextGlobal: React.Context<BlocBase<any>[]>;
   private _contextLocalProviderKey = React.createContext("");
-
-  // private _contextMapLocal: Record<string, React.Context<Cubit<any>>> = {}
 
   constructor(blocs: BlocBase<any>[], options: ReactBlocOptions = {}) {
     super(blocs, options);
@@ -43,7 +44,7 @@ export class BlocReact extends BlocConsumer {
   ): BlocHookData<T> => {
     const mergedOptions: BlocHookOptions<T> = {
       ...defaultBlocHookOptions,
-      ...options,
+      ...options
     };
 
     const localProviderKey = useContext(this._contextLocalProviderKey);
@@ -73,18 +74,16 @@ export class BlocReact extends BlocConsumer {
       `);
       console.error(error.error);
       return ([
-        (e: null) => e,
+        NoValue,
         {},
         {
           error,
-          complete: true,
-        },
+          complete: true
+        }
       ] as unknown) as BlocHookData<T>;
     }
 
     const [data, setData] = useState(blocInstance.state);
-    const [error, setError] = useState();
-    const [complete, setComplete] = useState(false);
 
     const updateData = useCallback((newState: ValueType<T>) => {
       if (shouldUpdate === true || shouldUpdate(data, newState)) {
@@ -94,20 +93,14 @@ export class BlocReact extends BlocConsumer {
 
     useEffect(() => {
       if (subscribe) {
-        const subscription = blocInstance.subscribe(updateData, setError, () =>
-          setComplete(true)
-        );
+        const subscription = blocInstance.subscribe(updateData);
         return () => subscription.unsubscribe();
       }
     }, [this._contextGlobal]);
 
     return [
       data,
-      blocInstance as T,
-      {
-        error,
-        complete,
-      },
+      blocInstance as T
     ];
   };
 
@@ -121,19 +114,9 @@ export class BlocReact extends BlocConsumer {
     ) => boolean;
   }): ReactElement | null => {
     const hook = this.useBloc(props.blocClass, {
-      shouldUpdate: props.shouldUpdate,
+      shouldUpdate: props.shouldUpdate
     });
     return props.builder(hook);
-  };
-
-  GlobalBlocProvider = (props: {
-    children?: ReactElement | ReactElement[];
-  }): ReactElement => {
-    return (
-      <this._contextGlobal.Provider value={this.blocListGlobal}>
-        {props.children}
-      </this._contextGlobal.Provider>
-    );
   };
 
   BlocProvider = <T extends BlocBase<any>>(props: {
@@ -152,7 +135,6 @@ export class BlocReact extends BlocConsumer {
 
     const context = useMemo<React.Context<BlocBase<any>>>(() => {
       return React.createContext<BlocBase<any>>(bloc);
-      // this._contextMapLocal[providerKey] = newContext;
     }, [bloc]);
 
     useEffect(() => {

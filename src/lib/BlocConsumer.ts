@@ -20,11 +20,8 @@ export class BlocConsumer {
   protected _blocMapLocal: Record<string, BlocBase<any>> = {};
   private blocObservers: BlocObserver[] = [];
 
-  // private _contextMapLocal: Record<string, React.Context<Cubit<any>>> = {}
-
   constructor(blocs: BlocBase<any>[], options: ReactBlocOptions = {}) {
     this.blocListGlobal = blocs;
-    // this._contextGlobal = React.createContext(blocs);
     this.debug = options.debug || false;
 
     for (const b of blocs) {
@@ -66,9 +63,7 @@ export class BlocConsumer {
 
   public removeLocalBloc(key: string) {
     const bloc = this._blocMapLocal[key];
-    if (bloc) {
-      bloc.complete();
-      delete this._blocMapLocal[key];
-    }
+    bloc.complete();
+    delete this._blocMapLocal[key];
   }
 }

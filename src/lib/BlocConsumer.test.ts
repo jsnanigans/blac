@@ -20,7 +20,7 @@ class Listener extends Cubit<number> {
   constructor(
     notify: (bloc: any, state: any) => void,
     listenFor: BlocClass<any>,
-    scope: BlocObserverScope
+    scope?: BlocObserverScope
   ) {
     super(1);
 
@@ -65,7 +65,7 @@ describe("BlocConsumer", function () {
       const notify = jest.fn();
       const global = new Test1();
       const local = new Test1();
-      const listener = new Listener(notify, Test1, "all");
+      const listener = new Listener(notify, Test1);
       const consumer = new BlocConsumer([global, listener]);
       consumer.addLocalBloc('abc', local); // should trigger listener "all"
       expect(notify).toHaveBeenCalledTimes(1);

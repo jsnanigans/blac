@@ -9,11 +9,6 @@ export type BlocClass<T> = new (...args: never[]) => T;
 export type BlocHookData<T extends BlocBase<any>> = [
   value: ValueType<T>,
   instance: T,
-  stream: {
-    // stream: BehaviorSubject<T>;
-    error: any;
-    complete: boolean;
-  }
 ];
 
 export interface BlocOptions {
