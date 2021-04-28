@@ -130,6 +130,7 @@ class Cubit extends BlocBase {
 class BlocConsumer {
   constructor(blocs, options = {}) {
     this.observer = null;
+    this._blocMapLocal = {};
     this.blocObservers = [];
     this.blocListGlobal = blocs;
     this.debug = options.debug || false;
@@ -154,6 +155,17 @@ class BlocConsumer {
   addBlocObserver(blocClass, callback, scope = "all") {
     this.blocObservers.push([blocClass, callback, scope]);
   }
+  addLocalBloc(key, bloc) {
+    this._blocMapLocal[key] = bloc;
+    bloc.subscribe((v) => this.notify(bloc, v));
+  }
+  removeLocalBloc(key) {
+    const bloc = this._blocMapLocal[key];
+    if (bloc) {
+      bloc.complete();
+      delete this._blocMapLocal[key];
+    }
+  }
 }
 
 const defaultBlocHookOptions = {
@@ -168,7 +180,6 @@ class BlocReact extends BlocConsumer {
   constructor(blocs, options = {}) {
     super(blocs, options);
     this._contextLocalProviderKey = React__default['default'].createContext("");
-    this._blocMapLocal = {};
     this.useBloc = (blocClass, options = {}) => {
       const mergedOptions = {
         ...defaultBlocHookOptions,
@@ -195,13 +206,6 @@ class BlocReact extends BlocConsumer {
             new ${name}(),
           ]
         )
-        
-      and mame sure you add the global state provider to your app:
-        const { GlobalBlocProvider } = state;
-        ...
-        <GlobalBlocProvider>
-          <App />
-        </GlobalBlocProvider>
       `);
         console.error(error2.error);
         return [
@@ -252,10 +256,7 @@ class BlocReact extends BlocConsumer {
       const bloc = React.useMemo(() => {
         const newBloc = props.create(providerKey);
         newBloc._localProviderRef = providerKey;
-        this._blocMapLocal[providerKey] = newBloc;
-        if (this.debug) {
-          newBloc.subscribe((v) => this.notify(newBloc, v));
-        }
+        this.addLocalBloc(providerKey, newBloc);
         return newBloc;
       }, []);
       const context = React.useMemo(() => {
@@ -263,8 +264,7 @@ class BlocReact extends BlocConsumer {
       }, [bloc]);
       React.useEffect(() => {
         return () => {
-          bloc.complete();
-          delete this._blocMapLocal[providerKey];
+          this.removeLocalBloc(providerKey);
         };
       }, []);
       return /* @__PURE__ */ React__default['default'].createElement(this._contextLocalProviderKey.Provider, {

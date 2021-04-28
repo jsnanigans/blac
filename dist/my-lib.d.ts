@@ -25,10 +25,13 @@ declare class BlocConsumer {
     observer: null | ((bloc: BlocBase<any>, value: any) => void);
     debug: boolean;
     readonly blocListGlobal: BlocBase<any>[];
+    protected _blocMapLocal: Record<string, BlocBase<any>>;
     private blocObservers;
     constructor(blocs: BlocBase<any>[], options?: ReactBlocOptions$1);
     notify(bloc: BlocBase<any>, state: ValueType<any>): void;
     addBlocObserver<T extends BlocBase<any>>(blocClass: BlocClass<T>, callback: (bloc: T, state: ValueType<T>) => unknown, scope?: BlocObserverScope): void;
+    addLocalBloc(key: string, bloc: BlocBase<any>): void;
+    removeLocalBloc(key: string): void;
 }
 
 declare class StreamAbstraction<T> {
@@ -86,7 +89,6 @@ interface BlocHookOptions<T extends BlocBase<any>> {
 declare class BlocReact extends BlocConsumer {
     private readonly _contextGlobal;
     private _contextLocalProviderKey;
-    private _blocMapLocal;
     constructor(blocs: BlocBase<any>[], options?: ReactBlocOptions);
     useBloc: <T extends BlocBase<any>>(blocClass: BlocClass<T>, options?: BlocHookOptions<T>) => BlocHookData<T>;
     BlocBuilder: <T extends BlocBase<any>>(props: {
