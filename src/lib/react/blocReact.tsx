@@ -1,11 +1,4 @@
-import React, {
-  ReactElement,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import React, { ReactElement, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { nanoid } from "nanoid";
 import BlocBase from "../BlocBase";
 import { BlocClass, BlocHookData, ValueType } from "../types";
@@ -147,16 +140,12 @@ export class BlocReact extends BlocConsumer {
     children?: ReactElement | ReactElement[];
     create: (providerKey: string) => T;
   }): ReactElement => {
-    const providerKey = useMemo<string>(() => "p_" + nanoid(), []);
+    const providerKey = useMemo(() => "p_" + nanoid(), []);
 
     const bloc = useMemo<T>(() => {
       const newBloc = props.create(providerKey);
       newBloc._localProviderRef = providerKey;
       this.addLocalBloc(providerKey, newBloc);
-
-      if (this.debug) {
-        newBloc.subscribe((v: any) => this.notify(newBloc, v));
-      }
 
       return newBloc;
     }, []);

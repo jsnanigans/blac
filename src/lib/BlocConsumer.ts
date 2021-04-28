@@ -61,6 +61,7 @@ export class BlocConsumer {
 
   public addLocalBloc(key: string, bloc: BlocBase<any>) {
     this._blocMapLocal[key] = bloc;
+    bloc.subscribe((v: any) => this.notify(bloc, v));
   }
 
   public removeLocalBloc(key: string) {
