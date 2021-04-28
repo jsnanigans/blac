@@ -108,5 +108,22 @@ describe("BlocConsumer", function () {
       local.increment(); // should not trigger listener "global"
       expect(notify).toHaveBeenCalledTimes(1);
     });
+
+    it("should allow not notify changes after bloc has been removed", function () {
+      const notify = jest.fn();
+      const global = new Test1();
+      const local = new Test1();
+      const listener = new Listener(notify, Test1, "all");
+      const consumer = new BlocConsumer([global, listener]);
+      consumer.addLocalBloc('abc', local); // should trigger listener "all"
+      expect(notify).toHaveBeenCalledTimes(1);
+      expect(notify).toHaveBeenCalledWith(local, 1);
+      global.increment(); // should trigger listener "all"
+      expect(notify).toHaveBeenCalledTimes(2);
+      expect(notify).toHaveBeenCalledWith(global, 2);
+      consumer.removeLocalBloc('abc');
+      local.increment(); // should trigger listener "all"
+      expect(notify).toHaveBeenCalledTimes(2);
+    });
   });
 });
