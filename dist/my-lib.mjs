@@ -153,10 +153,8 @@ class BlocConsumer {
   }
   removeLocalBloc(key) {
     const bloc = this._blocMapLocal[key];
-    if (bloc) {
-      bloc.complete();
-      delete this._blocMapLocal[key];
-    }
+    bloc.complete();
+    delete this._blocMapLocal[key];
   }
 }
 
@@ -167,6 +165,8 @@ class BlocRuntimeError {
   constructor(message) {
     this.error = new Error(message);
   }
+}
+class NoValue {
 }
 class BlocReact extends BlocConsumer {
   constructor(blocs, options = {}) {
@@ -184,7 +184,7 @@ class BlocReact extends BlocConsumer {
       const blocInstance = localBlocInstance || blocs.find((c) => c instanceof blocClass);
       if (!blocInstance) {
         const name = blocClass.prototype.constructor.name;
-        const error2 = new BlocRuntimeError(`"${name}" 
+        const error = new BlocRuntimeError(`"${name}" 
       no bloc with this name was found in the global context.
       
       # Solutions:
@@ -199,19 +199,17 @@ class BlocReact extends BlocConsumer {
           ]
         )
       `);
-        console.error(error2.error);
+        console.error(error.error);
         return [
-          (e) => e,
+          NoValue,
           {},
           {
-            error: error2,
+            error,
             complete: true
           }
         ];
       }
       const [data, setData] = useState(blocInstance.state);
-      const [error, setError] = useState();
-      const [complete, setComplete] = useState(false);
       const updateData = useCallback((newState) => {
         if (shouldUpdate === true || shouldUpdate(data, newState)) {
           setData(newState);
@@ -219,17 +217,13 @@ class BlocReact extends BlocConsumer {
       }, []);
       useEffect(() => {
         if (subscribe) {
-          const subscription = blocInstance.subscribe(updateData, setError, () => setComplete(true));
+          const subscription = blocInstance.subscribe(updateData);
           return () => subscription.unsubscribe();
         }
       }, [this._contextGlobal]);
       return [
         data,
-        blocInstance,
-        {
-          error,
-          complete
-        }
+        blocInstance
       ];
     };
     this.BlocBuilder = (props) => {
@@ -237,11 +231,6 @@ class BlocReact extends BlocConsumer {
         shouldUpdate: props.shouldUpdate
       });
       return props.builder(hook);
-    };
-    this.GlobalBlocProvider = (props) => {
-      return /* @__PURE__ */ React.createElement(this._contextGlobal.Provider, {
-        value: this.blocListGlobal
-      }, props.children);
     };
     this.BlocProvider = (props) => {
       const providerKey = useMemo(() => "p_" + nanoid(), []);

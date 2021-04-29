@@ -5,11 +5,7 @@ declare type ValueType<T extends BlocBase<any>> = T extends BlocBase<infer U> ? 
 declare type BlocClass<T> = new (...args: never[]) => T;
 declare type BlocHookData<T extends BlocBase<any>> = [
     value: ValueType<T>,
-    instance: T,
-    stream: {
-        error: any;
-        complete: boolean;
-    }
+    instance: T
 ];
 interface BlocOptions {
     persistKey?: string;
@@ -96,9 +92,6 @@ declare class BlocReact extends BlocConsumer {
         builder: (data: BlocHookData<T>) => ReactElement;
         shouldUpdate?: ((previousState: ValueType<T>, state: ValueType<T>) => boolean) | undefined;
     }) => ReactElement | null;
-    GlobalBlocProvider: (props: {
-        children?: ReactElement | ReactElement[];
-    }) => ReactElement;
     BlocProvider: <T extends BlocBase<any>>(props: {
         children?: React.ReactElement<any, string | React.JSXElementConstructor<any>> | React.ReactElement<any, string | React.JSXElementConstructor<any>>[] | undefined;
         create: (providerKey: string) => T;
