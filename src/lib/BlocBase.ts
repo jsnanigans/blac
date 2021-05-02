@@ -1,11 +1,11 @@
 import { BlocConsumer } from "./BlocConsumer";
 import StreamAbstraction from "./StreamAbstraction";
-import { BlocOptions } from "./types";
+import { BlocOptions, ChangeEvent } from "./types";
 
 export default class BlocBase<T> extends StreamAbstraction<T> {
   _localProviderRef = "";
   onRegister: null | ((consumer: BlocConsumer) => void) = null;
-  onChange: null | ((change: { currentState: T; nextState: T }) => void) = null;
+  onChange: null | ((change: ChangeEvent<T>) => void) = null;
 
   constructor(initialValue: T, blocOptions: BlocOptions = {}) {
     super(initialValue, blocOptions);
@@ -19,5 +19,10 @@ export default class BlocBase<T> extends StreamAbstraction<T> {
 
   protected notifyChange = (state: T): void => {
     this._consumer?.notifyChange(this, state);
+
+    this.onChange?.({
+      currentState: this.state,
+      nextState: state,
+    });
   };
 }

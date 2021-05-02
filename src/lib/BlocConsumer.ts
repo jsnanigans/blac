@@ -1,5 +1,5 @@
 import BlocBase from "./BlocBase";
-import { BlocClass, ValueType } from "./types";
+import { BlocClass, ChangeEvent } from "./types";
 import BlocObserver from "./BlocObserver";
 
 export interface ReactBlocOptions {
@@ -10,7 +10,7 @@ export interface ReactBlocOptions {
 export type BlocObserverScope = "local" | "global" | "all";
 type BlocObserverList = [
   BlocClass<any>,
-  (bloc: any, state: any) => unknown,
+  (bloc: any, event: ChangeEvent<any>) => unknown,
   BlocObserverScope
 ];
 
@@ -44,7 +44,10 @@ export class BlocConsumer {
         (isGlobal && scope === "global") ||
         (!isGlobal && scope === "local");
       if (matchesScope && bloc instanceof blocClass) {
-        callback(bloc, state);
+        callback(bloc, {
+          nextState: state,
+          currentState: bloc.state
+        });
       }
     }
   }
@@ -57,7 +60,7 @@ export class BlocConsumer {
 
   public addBlocObserver<T extends BlocBase<any>>(
     blocClass: BlocClass<T>,
-    callback: (bloc: T, state: ValueType<T>) => unknown,
+    callback: (bloc: T, event: ChangeEvent<T>) => unknown,
     scope: BlocObserverScope = "all"
   ) {
     this.blocObservers.push([blocClass, callback, scope]);

@@ -1,6 +1,7 @@
 import { BlocConsumer, BlocObserverScope } from "./BlocConsumer";
 import Cubit from "./Cubit";
 import { BlocClass } from "./types";
+import BlocObserver from "./BlocObserver";
 
 class Test1 extends Cubit<number> {
   constructor(options: { register?: () => void } = {}) {
@@ -44,11 +45,11 @@ describe("BlocConsumer", function () {
   it("should call function set to observer prop on any state change", function () {
     const testCubit = new Test1();
     const testBlocConsumer = new BlocConsumer([testCubit]);
-    const fn = jest.fn();
-    testBlocConsumer.observer = fn;
+    const onChange = jest.fn();
+    testBlocConsumer.observer = new BlocObserver({onChange});
     testCubit.increment();
-    expect(fn).toHaveBeenCalledTimes(1);
-    expect(fn).toHaveBeenCalledWith(testCubit, 2);
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith(testCubit, {currentState: 1, nextState: 2});
   });
 
   it("should call `onRegister` when the class is registered", function () {
@@ -67,14 +68,13 @@ describe("BlocConsumer", function () {
       const local = new Test1();
       const listener = new Listener(notify, Test1);
       const consumer = new BlocConsumer([global, listener]);
-      consumer.addLocalBloc('abc', local); // should trigger listener "all"
-      expect(notify).toHaveBeenCalledTimes(1);
-      expect(notify).toHaveBeenCalledWith(local, 1);
+      consumer.addLocalBloc('abc', local);
+      expect(notify).toHaveBeenCalledTimes(0);
       global.increment(); // should trigger listener "all"
-      expect(notify).toHaveBeenCalledTimes(2);
-      expect(notify).toHaveBeenCalledWith(global, 2);
+      expect(notify).toHaveBeenCalledTimes(1);
+      expect(notify).toHaveBeenCalledWith(global, {currentState: 1, nextState: 2});
       local.increment(); // should trigger listener "all"
-      expect(notify).toHaveBeenCalledTimes(3);
+      expect(notify).toHaveBeenCalledTimes(2);
     });
 
     it("should allow filtering listener only for local blocs", function () {
@@ -83,15 +83,12 @@ describe("BlocConsumer", function () {
       const local = new Test1();
       const listener = new Listener(notify, Test1, "local");
       const consumer = new BlocConsumer([global, listener]);
-      // local blocs trigger listeners when added
       consumer.addLocalBloc('abc', local); // should trigger listener "local"
-      expect(notify).toHaveBeenCalledTimes(1);
-      expect(notify).toHaveBeenCalledWith(local, 1);
       global.increment(); // should not trigger listener "local"
-      expect(notify).toHaveBeenCalledTimes(1);
+      expect(notify).toHaveBeenCalledTimes(0);
       local.increment(); // should trigger listener "local"
-      expect(notify).toHaveBeenCalledTimes(2);
-      expect(notify).toHaveBeenCalledWith(local, 2);
+      expect(notify).toHaveBeenCalledTimes(1);
+      expect(notify).toHaveBeenCalledWith(local, {currentState: 1, nextState: 2});
     });
 
     it("should allow filtering listener only for global blocs", function () {
@@ -104,7 +101,7 @@ describe("BlocConsumer", function () {
       expect(notify).toHaveBeenCalledTimes(0);
       global.increment(); // should trigger listener "global"
       expect(notify).toHaveBeenCalledTimes(1);
-      expect(notify).toHaveBeenCalledWith(global, 2);
+      expect(notify).toHaveBeenCalledWith(global, {currentState: 1, nextState: 2});
       local.increment(); // should not trigger listener "global"
       expect(notify).toHaveBeenCalledTimes(1);
     });
@@ -116,11 +113,9 @@ describe("BlocConsumer", function () {
       const listener = new Listener(notify, Test1, "all");
       const consumer = new BlocConsumer([global, listener]);
       consumer.addLocalBloc('abc', local); // should trigger listener "all"
-      expect(notify).toHaveBeenCalledTimes(1);
-      expect(notify).toHaveBeenCalledWith(local, 1);
       global.increment(); // should trigger listener "all"
-      expect(notify).toHaveBeenCalledTimes(2);
-      expect(notify).toHaveBeenCalledWith(global, 2);
+      expect(notify).toHaveBeenCalledTimes(1);
+      expect(notify).toHaveBeenCalledWith(global, {currentState: 1, nextState: 2});
       consumer.removeLocalBloc('abc');
       local.increment(); // should trigger listener "all"
       expect(notify).toHaveBeenCalledTimes(2);
