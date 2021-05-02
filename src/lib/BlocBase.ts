@@ -11,16 +11,13 @@ export default class BlocBase<T> extends StreamAbstraction<T> {
     super(initialValue, blocOptions);
   }
 
-  private _consumer: BlocConsumer | null = null;
+  protected _consumer: BlocConsumer | null = null;
 
   set consumer(consumer: BlocConsumer) {
     this._consumer = consumer;
   }
 
   protected notifyChange = (state: T): void => {
-    this.onChange?.({
-      currentState: this.state,
-      nextState: state,
-    });
+    this._consumer?.notifyChange(this, state);
   };
 }

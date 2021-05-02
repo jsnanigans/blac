@@ -15,3 +15,15 @@ export interface BlocOptions {
   persistKey?: string;
   persistData?: boolean;
 }
+
+
+export interface ChangeEvent<T> {
+  currentState: T,
+  nextState: T,
+}
+
+export interface TransitionEvent<T, E> {
+  currentState: T,
+  event: E,
+  nextState: T,
+}

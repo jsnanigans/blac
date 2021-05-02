@@ -77,5 +77,12 @@ describe("Bloc", () => {
         nextState: true,
       });
     });
+
+    it("should accept payload", () => {
+      const bloc = new TestBloc();
+      expect(bloc.state).toBe(false);
+      bloc.add(AuthEvent.authenticated);
+      expect(bloc.state).toBe(true);
+    });
   });
 });
