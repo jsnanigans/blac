@@ -2,7 +2,7 @@ import BlocBase from "./BlocBase";
 import { BlocOptions } from "./types";
 
 export default class Bloc<E, T> extends BlocBase<T> {
-  protected onTransition:
+  onTransition:
     | null
     | ((change: { currentState: T; event: E; nextState: T }) => void) = null;
   protected mapEventToState: null | ((event: E) => T) = null;

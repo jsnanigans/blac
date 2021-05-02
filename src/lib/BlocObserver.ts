@@ -7,9 +7,12 @@ export interface BlocObserverOptions {
 }
 
 export default class BlocObserver {
+  onChange: (bloc: BlocBase<any>, event: ChangeEvent<any>) => void
+  onTransition: (bloc: BlocBase<any>, event: TransitionEvent<any, any>) => void
+
   constructor(methods: BlocObserverOptions = {}) {
-    if (methods.onChange) this.onChange = methods.onChange;
-    if (methods.onTransition) this.onTransition = methods.onTransition;
+    this.onChange = methods.onChange ? methods.onChange : () => {};
+    this.onTransition = methods.onTransition ? methods.onTransition : () => {};
   }
 
   readonly addChange = (bloc: BlocBase<any>, state: any) => {
@@ -20,13 +23,6 @@ export default class BlocObserver {
     this.onTransition(bloc, this.createTransitionEvent(bloc, state, event));
   }
 
-  onChange = (bloc: BlocBase<any>, event: ChangeEvent<any>) => {
-    console.log('Change', bloc, event)
-  }
-
-  onTransition = (bloc: BlocBase<any>, event: TransitionEvent<any, any>) => {
-    console.log('Transition', bloc, event)
-  }
 
   private createTransitionEvent(bloc: BlocBase<any>, state: any, event: any): TransitionEvent<any, any> {
     return {

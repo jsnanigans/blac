@@ -15,7 +15,7 @@ type BlocObserverList = [
 ];
 
 export class BlocConsumer {
-  observer: null | BlocObserver = null;
+  observer: BlocObserver;
   debug: boolean;
   readonly blocListGlobal: BlocBase<any>[];
   protected _blocMapLocal: Record<string, BlocBase<any>> = {};
@@ -24,6 +24,7 @@ export class BlocConsumer {
   constructor(blocs: BlocBase<any>[], options: ReactBlocOptions = {}) {
     this.blocListGlobal = blocs;
     this.debug = options.debug || false;
+    this.observer = new BlocObserver();
 
     for (const b of blocs) {
       b.consumer = this;
@@ -33,9 +34,7 @@ export class BlocConsumer {
   }
 
   notifyChange(bloc: BlocBase<any>, state: any): void {
-    if (this.observer?.addChange) {
-      this.observer.addChange(bloc, state);
-    }
+    this.observer.addChange(bloc, state);
 
     for (const [blocClass, callback, scope] of this.blocObservers) {
       const isGlobal = this.blocListGlobal.indexOf(bloc) !== -1;
@@ -53,9 +52,7 @@ export class BlocConsumer {
   }
 
   notifyTransition(bloc: BlocBase<any>, state: any, event: any): void {
-    if (this.observer?.addTransition) {
-      this.observer.addTransition(bloc, state, event);
-    }
+    this.observer.addTransition(bloc, state, event);
   }
 
   public addBlocObserver<T extends BlocBase<any>>(

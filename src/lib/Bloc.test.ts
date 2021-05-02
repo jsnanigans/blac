@@ -1,34 +1,12 @@
 import Bloc from "./Bloc";
 import mockConsole from "jest-mock-console";
+import { AuthEvent, TestBloc } from "../helpers/test.fixtures";
 
 describe("Bloc", () => {
   const spy = {
     onChange: jest.fn(),
-    onTransition: jest.fn(),
+    onTransition: jest.fn()
   };
-
-  enum AuthEvent {
-    authenticated = "authenticated",
-    unauthenticated = "unauthenticated",
-  }
-
-  class TestBloc extends Bloc<AuthEvent, boolean> {
-    constructor() {
-      super(false);
-
-      this.onChange = spy.onChange;
-      this.onTransition = spy.onTransition;
-
-      this.mapEventToState = (event) => {
-        switch (event) {
-          case AuthEvent.unauthenticated:
-            return false;
-          case AuthEvent.authenticated:
-            return true;
-        }
-      };
-    }
-  }
 
   beforeEach(() => {
     jest.resetAllMocks();
@@ -41,7 +19,10 @@ describe("Bloc", () => {
   describe("add", () => {
     it("should log error if `mapEventToState` is not implemented", () => {
       mockConsole();
-      class NotFullyImplemented extends Bloc<AuthEvent, boolean> {}
+
+      class NotFullyImplemented extends Bloc<AuthEvent, boolean> {
+      }
+
       const bloc = new NotFullyImplemented(false);
       expect(bloc.state).toBe(false);
       bloc.add(AuthEvent.authenticated);
@@ -57,24 +38,26 @@ describe("Bloc", () => {
 
     it("should call `onChange` before the state changes", () => {
       const bloc = new TestBloc();
+      bloc.onChange = spy.onChange;
       expect(spy.onChange).toHaveBeenCalledTimes(0);
       bloc.add(AuthEvent.authenticated);
       expect(spy.onChange).toHaveBeenCalledTimes(1);
       expect(spy.onChange).toHaveBeenCalledWith({
         currentState: false,
-        nextState: true,
+        nextState: true
       });
     });
 
     it("should call `onTransition` before the state changes with the event that was added", () => {
       const bloc = new TestBloc();
+      bloc.onTransition = spy.onTransition;
       expect(spy.onTransition).toHaveBeenCalledTimes(0);
       bloc.add(AuthEvent.authenticated);
       expect(spy.onTransition).toHaveBeenCalledTimes(1);
       expect(spy.onTransition).toHaveBeenCalledWith({
         currentState: false,
         event: AuthEvent.authenticated,
-        nextState: true,
+        nextState: true
       });
     });
 
