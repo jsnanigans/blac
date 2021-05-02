@@ -81,6 +81,7 @@ class BlocBase extends StreamAbstraction {
     this.onChange = null;
     this._consumer = null;
     this.notifyChange = (state) => {
+      this._consumer?.notifyChange(this, state);
       this.onChange?.({
         currentState: this.state,
         nextState: state
@@ -107,11 +108,12 @@ class Bloc extends BlocBase {
         console.error(`"mapEventToState" not implemented for "${this.constructor.name}"`);
       }
     };
-    this.notifyTransition = (value, event) => {
+    this.notifyTransition = (state, event) => {
+      this._consumer?.notifyTransition(this, state, event);
       this.onTransition?.({
         currentState: this.state,
         event,
-        nextState: value
+        nextState: state
       });
     };
   }
@@ -127,37 +129,68 @@ class Cubit extends BlocBase {
   }
 }
 
+class BlocObserver {
+  constructor(methods = {}) {
+    this.addChange = (bloc, state) => {
+      this.onChange(bloc, this.createChangeEvent(bloc, state));
+    };
+    this.addTransition = (bloc, state, event) => {
+      this.onTransition(bloc, this.createTransitionEvent(bloc, state, event));
+    };
+    this.onChange = methods.onChange ? methods.onChange : () => {
+    };
+    this.onTransition = methods.onTransition ? methods.onTransition : () => {
+    };
+  }
+  createTransitionEvent(bloc, state, event) {
+    return {
+      currentState: bloc.state,
+      event,
+      nextState: state
+    };
+  }
+  createChangeEvent(bloc, state) {
+    return {
+      currentState: bloc.state,
+      nextState: state
+    };
+  }
+}
+
 class BlocConsumer {
   constructor(blocs, options = {}) {
-    this.observer = null;
     this._blocMapLocal = {};
     this.blocObservers = [];
     this.blocListGlobal = blocs;
     this.debug = options.debug || false;
+    this.observer = new BlocObserver();
     for (const b of blocs) {
       b.consumer = this;
-      b.subscribe((v) => this.notify(b, v));
       b.onRegister?.(this);
     }
   }
-  notify(bloc, state) {
-    if (this.observer) {
-      this.observer(bloc, state);
-    }
+  notifyChange(bloc, state) {
+    this.observer.addChange(bloc, state);
     for (const [blocClass, callback, scope] of this.blocObservers) {
       const isGlobal = this.blocListGlobal.indexOf(bloc) !== -1;
       const matchesScope = scope === "all" || isGlobal && scope === "global" || !isGlobal && scope === "local";
       if (matchesScope && bloc instanceof blocClass) {
-        callback(bloc, state);
+        callback(bloc, {
+          nextState: state,
+          currentState: bloc.state
+        });
       }
     }
+  }
+  notifyTransition(bloc, state, event) {
+    this.observer.addTransition(bloc, state, event);
   }
   addBlocObserver(blocClass, callback, scope = "all") {
     this.blocObservers.push([blocClass, callback, scope]);
   }
   addLocalBloc(key, bloc) {
     this._blocMapLocal[key] = bloc;
-    bloc.subscribe((v) => this.notify(bloc, v));
+    bloc.consumer = this;
   }
   removeLocalBloc(key) {
     const bloc = this._blocMapLocal[key];
