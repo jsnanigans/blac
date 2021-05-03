@@ -14,11 +14,21 @@ export default class PreferencesCubit extends Cubit<PreferencesState> {
       persistKey: "preferences",
     });
 
-    this.parseFromCache = (v) => {
-      const parsed = super.parseFromCache(v);
-      return new PreferencesState(parsed);
-    };
+    // console.log("INIT");
+    // this.parseFromCache = (v) => {
+    //   console.log({v});
+    //   const parsed = super.parseFromCache(v);
+    //   return new PreferencesState(parsed);
+    // };
   }
+
+  // jsonToState(v) {
+  //   return new PreferencesState({darkMode: true});
+  // }
+
+  // stateToJson(v) {
+  //   return super.stateToJson(v)
+  // }
 
   toggleTheme = (): void => {
     this.emit(

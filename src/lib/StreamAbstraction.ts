@@ -40,17 +40,17 @@ export default class StreamAbstraction<T> {
     }
   };
 
-  protected next = (value: T): void => {
-    this._subject.next(value);
-    this.updateCache();
-  };
-
-  protected parseFromCache = (state: string): T => {
+  jsonToState(state: string): T {
     return JSON.parse(state).state;
   };
 
-  protected parseToCache = (state: T): string => {
+  stateToJson(state: T): string {
     return JSON.stringify({ state });
+  };
+
+  protected next = (value: T): void => {
+    this._subject.next(value);
+    this.updateCache();
   };
 
   protected getCachedValue = (): T | Error => {
@@ -59,7 +59,7 @@ export default class StreamAbstraction<T> {
     );
     if (cachedValue) {
       try {
-        return this.parseFromCache(cachedValue);
+        return this.jsonToState(cachedValue);
       } catch (e) {
         const error = new Error(
           `Failed to parse JSON in localstorage for the key: "${LOCAL_STORAGE_PREFIX}${this._options.persistKey}"`
@@ -76,7 +76,7 @@ export default class StreamAbstraction<T> {
     if (persistData && persistKey) {
       localStorage.setItem(
         `${LOCAL_STORAGE_PREFIX}${persistKey}`,
-        this.parseToCache(this.state)
+        this.stateToJson(this.state)
       );
     } else {
       this.clearCache();

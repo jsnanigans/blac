@@ -1,5 +1,5 @@
 import BlocBase from "./BlocBase";
-import { BlocClass, ChangeEvent } from "./types";
+import { BlocClass, ChangeEvent, ValueType } from "./types";
 import BlocObserver from "./BlocObserver";
 
 export interface ReactBlocOptions {
@@ -17,9 +17,11 @@ type BlocObserverList = [
 export class BlocConsumer {
   observer: BlocObserver;
   debug: boolean;
-  readonly blocListGlobal: BlocBase<any>[];
+  public mocksEnabled = false;
   protected _blocMapLocal: Record<string, BlocBase<any>> = {};
+  private blocListGlobal: BlocBase<any>[];
   private blocObservers: BlocObserverList[] = [];
+  private mockBlocs: BlocBase<any>[] = [];
 
   constructor(blocs: BlocBase<any>[], options: ReactBlocOptions = {}) {
     this.blocListGlobal = blocs;
@@ -57,7 +59,7 @@ export class BlocConsumer {
 
   public addBlocObserver<T extends BlocBase<any>>(
     blocClass: BlocClass<T>,
-    callback: (bloc: T, event: ChangeEvent<T>) => unknown,
+    callback: (bloc: T, event: ChangeEvent<ValueType<T>>) => unknown,
     scope: BlocObserverScope = "all"
   ) {
     this.blocObservers.push([blocClass, callback, scope]);
@@ -72,5 +74,27 @@ export class BlocConsumer {
     const bloc = this._blocMapLocal[key];
     bloc.complete();
     delete this._blocMapLocal[key];
+  }
+
+  public addBlocMock(bloc: BlocBase<any>): void {
+    if (this.mocksEnabled) {
+      this.mockBlocs = [bloc, ...this.mockBlocs];
+    }
+  }
+  public resetMocks(): void {
+    this.mockBlocs = [];
+  }
+
+  protected getBlocInstance<T>(global: BlocBase<any>[], blocClass: BlocClass<T>): BlocBase<T> | undefined {
+    if (this.mocksEnabled) {
+      for (const bloc of this.mockBlocs) {
+        if (bloc instanceof blocClass) {
+          return bloc;
+        }
+      }
+    }
+
+
+    return global.find((c) => c instanceof blocClass);
   }
 }

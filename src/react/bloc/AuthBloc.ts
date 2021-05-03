@@ -26,7 +26,7 @@ export default class AuthBloc extends Bloc<AuthEvent, boolean> {
 
     this.onRegister = (consumer) => {
       consumer.addBlocObserver<CounterCubit>(CounterCubit, (bloc, state) => {
-        if (state === 10) {
+        if (state.nextState === 10) {
           this.add(AuthEvent.unknown);
         }
       });

@@ -30,11 +30,13 @@ class NoValue {
 }
 
 export class BlocReact extends BlocConsumer {
+  // private readonly _blocsGlobal: BlocBase<any>[];
   private readonly _contextGlobal: React.Context<BlocBase<any>[]>;
   private _contextLocalProviderKey = React.createContext("");
 
   constructor(blocs: BlocBase<any>[], options: ReactBlocOptions = {}) {
     super(blocs, options);
+    // this._blocsGlobal = blocs;
     this._contextGlobal = React.createContext(blocs);
   }
 
@@ -51,9 +53,10 @@ export class BlocReact extends BlocConsumer {
     const localBlocInstance = this._blocMapLocal[localProviderKey];
 
     const { subscribe, shouldUpdate = true } = mergedOptions;
-    const blocs = useContext(this._contextGlobal);
-    const blocInstance =
-      localBlocInstance || blocs.find((c) => c instanceof blocClass);
+    // const blocs = useContext(this._contextGlobal);
+    // const blocInstance = localBlocInstance || blocs.find((c) => c instanceof blocClass);
+
+    const blocInstance = localBlocInstance || this.getBlocInstance(useContext(this._contextGlobal), blocClass);
 
     if (!blocInstance) {
       const name = blocClass.prototype.constructor.name;
@@ -149,4 +152,10 @@ export class BlocReact extends BlocConsumer {
       </this._contextLocalProviderKey.Provider>
     );
   };
+
+  // GlobalProvider: FC<{blocs?: BlocBase<any>[]}> = (props): ReactElement => {
+  //   return <this._contextGlobal.Provider value={props.blocs || this._blocsGlobal}>
+  //     {props.children}
+  //   </this._contextGlobal.Provider>
+  // }
 }
