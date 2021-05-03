@@ -30,14 +30,14 @@ class NoValue {
 }
 
 export class BlocReact extends BlocConsumer {
-  // private readonly _blocsGlobal: BlocBase<any>[];
-  private readonly _contextGlobal: React.Context<BlocBase<any>[]>;
+  private readonly _blocsGlobal: BlocBase<any>[];
+  // private readonly _contextGlobal: React.Context<BlocBase<any>[]>;
   private _contextLocalProviderKey = React.createContext("");
 
   constructor(blocs: BlocBase<any>[], options: ReactBlocOptions = {}) {
     super(blocs, options);
-    // this._blocsGlobal = blocs;
-    this._contextGlobal = React.createContext(blocs);
+    this._blocsGlobal = blocs;
+    // this._contextGlobal = React.createContext(blocs);
   }
 
   useBloc = <T extends BlocBase<any>>(
@@ -56,7 +56,7 @@ export class BlocReact extends BlocConsumer {
     // const blocs = useContext(this._contextGlobal);
     // const blocInstance = localBlocInstance || blocs.find((c) => c instanceof blocClass);
 
-    const blocInstance = localBlocInstance || this.getBlocInstance(useContext(this._contextGlobal), blocClass);
+    const blocInstance = localBlocInstance || this.getBlocInstance(this._blocsGlobal, blocClass);
 
     if (!blocInstance) {
       const name = blocClass.prototype.constructor.name;
@@ -99,7 +99,7 @@ export class BlocReact extends BlocConsumer {
         const subscription = blocInstance.subscribe(updateData);
         return () => subscription.unsubscribe();
       }
-    }, [this._contextGlobal]);
+    }, []);
 
     return [
       data,
