@@ -1,6 +1,6 @@
 {
   "name": "bloc-react",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -9,9 +9,9 @@
     "prettier": "prettier --write ./src",
     "test": "jest"
   },
-  "main": "dist/my-lib.js",
-  "module": "dist/my-lib.mjs",
-  "typings": "dist/my-lib.d.ts",
+  "main": "dist/bloc-react.js",
+  "module": "dist/bloc-react.mjs",
+  "typings": "dist/bloc-react.d.ts",
   "dependencies": {
     "nanoid": "^3.1.22",
     "rxjs": "^7.0.0"
