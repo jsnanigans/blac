@@ -22,17 +22,11 @@ class StreamAbstraction {
       this._subject.next(value);
       this.updateCache();
     };
-    this.parseFromCache = (state) => {
-      return JSON.parse(state).state;
-    };
-    this.parseToCache = (state) => {
-      return JSON.stringify({state});
-    };
     this.getCachedValue = () => {
       const cachedValue = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}${this._options.persistKey}`);
       if (cachedValue) {
         try {
-          return this.parseFromCache(cachedValue);
+          return this.jsonToState(cachedValue);
         } catch (e) {
           const error = new Error(`Failed to parse JSON in localstorage for the key: "${LOCAL_STORAGE_PREFIX}${this._options.persistKey}"`);
           console.error(error);
@@ -44,7 +38,7 @@ class StreamAbstraction {
     this.updateCache = () => {
       const {persistData, persistKey} = this._options;
       if (persistData && persistKey) {
-        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}${persistKey}`, this.parseToCache(this.state));
+        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}${persistKey}`, this.stateToJson(this.state));
       } else {
         this.clearCache();
       }
@@ -62,6 +56,12 @@ class StreamAbstraction {
   }
   get state() {
     return this._subject.getValue();
+  }
+  jsonToState(state) {
+    return JSON.parse(state).state;
+  }
+  stateToJson(state) {
+    return JSON.stringify({state});
   }
 }
 
@@ -151,8 +151,10 @@ class BlocObserver {
 
 class BlocConsumer {
   constructor(blocs, options = {}) {
+    this.mocksEnabled = false;
     this._blocMapLocal = {};
     this.blocObservers = [];
+    this.mockBlocs = [];
     this.blocListGlobal = blocs;
     this.debug = options.debug || false;
     this.observer = new BlocObserver();
@@ -189,6 +191,23 @@ class BlocConsumer {
     bloc.complete();
     delete this._blocMapLocal[key];
   }
+  addBlocMock(bloc) {
+    if (this.mocksEnabled) {
+      this.mockBlocs = [bloc, ...this.mockBlocs];
+    }
+  }
+  resetMocks() {
+    this.mockBlocs = [];
+  }
+  getBlocInstance(global, blocClass) {
+    if (this.mocksEnabled) {
+      const mockedBloc = this.mockBlocs.find((c) => c instanceof blocClass);
+      if (mockedBloc) {
+        return mockedBloc;
+      }
+    }
+    return global.find((c) => c instanceof blocClass);
+  }
 }
 
 const defaultBlocHookOptions = {
@@ -213,8 +232,7 @@ class BlocReact extends BlocConsumer {
       const localProviderKey = useContext(this._contextLocalProviderKey);
       const localBlocInstance = this._blocMapLocal[localProviderKey];
       const {subscribe, shouldUpdate = true} = mergedOptions;
-      const blocs = useContext(this._contextGlobal);
-      const blocInstance = localBlocInstance || blocs.find((c) => c instanceof blocClass);
+      const blocInstance = localBlocInstance || this.getBlocInstance(this._blocsGlobal, blocClass);
       if (!blocInstance) {
         const name = blocClass.prototype.constructor.name;
         const error = new BlocRuntimeError(`"${name}" 
@@ -253,7 +271,7 @@ class BlocReact extends BlocConsumer {
           const subscription = blocInstance.subscribe(updateData);
           return () => subscription.unsubscribe();
         }
-      }, [this._contextGlobal]);
+      }, []);
       return [
         data,
         blocInstance
@@ -287,9 +305,9 @@ class BlocReact extends BlocConsumer {
         value: bloc
       }, props.children));
     };
-    this._contextGlobal = React.createContext(blocs);
+    this._blocsGlobal = blocs;
   }
 }
 
 export { Bloc, BlocReact, Cubit };
-//# sourceMappingURL=my-lib.mjs.map
+//# sourceMappingURL=bloc-react.mjs.map

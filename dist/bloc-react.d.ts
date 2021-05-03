@@ -43,15 +43,20 @@ declare type BlocObserverScope = "local" | "global" | "all";
 declare class BlocConsumer {
     observer: BlocObserver;
     debug: boolean;
-    readonly blocListGlobal: BlocBase<any>[];
+    mocksEnabled: boolean;
     protected _blocMapLocal: Record<string, BlocBase<any>>;
+    private blocListGlobal;
     private blocObservers;
+    private mockBlocs;
     constructor(blocs: BlocBase<any>[], options?: ReactBlocOptions$1);
     notifyChange(bloc: BlocBase<any>, state: any): void;
     notifyTransition(bloc: BlocBase<any>, state: any, event: any): void;
-    addBlocObserver<T extends BlocBase<any>>(blocClass: BlocClass<T>, callback: (bloc: T, event: ChangeEvent<T>) => unknown, scope?: BlocObserverScope): void;
+    addBlocObserver<T extends BlocBase<any>>(blocClass: BlocClass<T>, callback: (bloc: T, event: ChangeEvent<ValueType<T>>) => unknown, scope?: BlocObserverScope): void;
     addLocalBloc(key: string, bloc: BlocBase<any>): void;
     removeLocalBloc(key: string): void;
+    addBlocMock(bloc: BlocBase<any>): void;
+    resetMocks(): void;
+    protected getBlocInstance<T>(global: BlocBase<any>[], blocClass: BlocClass<T>): BlocBase<T> | undefined;
 }
 
 declare class StreamAbstraction<T> {
@@ -62,9 +67,9 @@ declare class StreamAbstraction<T> {
     subscribe: (next?: ((value: T) => void) | undefined, error?: ((error: any) => void) | undefined, complete?: (() => void) | undefined) => Subscription;
     complete: () => void;
     clearCache: () => void;
+    jsonToState(state: string): T;
+    stateToJson(state: T): string;
     protected next: (value: T) => void;
-    protected parseFromCache: (state: string) => T;
-    protected parseToCache: (state: T) => string;
     protected getCachedValue: () => T | Error;
     protected updateCache: () => void;
 }
@@ -104,7 +109,7 @@ interface BlocHookOptions<T extends BlocBase<any>> {
     shouldUpdate?: (previousState: ValueType<T>, state: ValueType<T>) => boolean;
 }
 declare class BlocReact extends BlocConsumer {
-    private readonly _contextGlobal;
+    private readonly _blocsGlobal;
     private _contextLocalProviderKey;
     constructor(blocs: BlocBase<any>[], options?: ReactBlocOptions);
     useBloc: <T extends BlocBase<any>>(blocClass: BlocClass<T>, options?: BlocHookOptions<T>) => BlocHookData<T>;
