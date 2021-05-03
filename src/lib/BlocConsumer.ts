@@ -76,6 +76,7 @@ export class BlocConsumer {
     delete this._blocMapLocal[key];
   }
 
+  // TODO: Add direct unit tests for mocks
   public addBlocMock(bloc: BlocBase<any>): void {
     if (this.mocksEnabled) {
       this.mockBlocs = [bloc, ...this.mockBlocs];
@@ -87,10 +88,9 @@ export class BlocConsumer {
 
   protected getBlocInstance<T>(global: BlocBase<any>[], blocClass: BlocClass<T>): BlocBase<T> | undefined {
     if (this.mocksEnabled) {
-      for (const bloc of this.mockBlocs) {
-        if (bloc instanceof blocClass) {
-          return bloc;
-        }
+      const mockedBloc = this.mockBlocs.find((c) => c instanceof blocClass)
+      if (mockedBloc) {
+        return mockedBloc
       }
     }
 
