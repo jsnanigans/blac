@@ -97,7 +97,7 @@ declare class Bloc<E, T> extends BlocBase<T> {
 }
 
 declare class Cubit<T> extends BlocBase<T> {
-    protected emit: (value: T) => void;
+    emit: (value: T) => void;
 }
 
 interface ReactBlocOptions {
