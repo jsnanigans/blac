@@ -71,6 +71,7 @@ class BlocBase extends StreamAbstraction {
     this._localProviderRef = "";
     this.onRegister = null;
     this.onChange = null;
+    this.onValueChange = null;
     this._consumer = null;
     this.notifyChange = (state) => {
       this._consumer?.notifyChange(this, state);
@@ -78,6 +79,10 @@ class BlocBase extends StreamAbstraction {
         currentState: this.state,
         nextState: state
       });
+    };
+    this.notifyValueChange = () => {
+      this._consumer?.notifyValueChange(this);
+      this.onValueChange?.(this.state);
     };
   }
   set consumer(consumer) {
@@ -96,6 +101,7 @@ class Bloc extends BlocBase {
         this.notifyChange(newState);
         this.notifyTransition(newState, event);
         this.next(newState);
+        this.notifyValueChange();
       } else {
         console.error(`"mapEventToState" not implemented for "${this.constructor.name}"`);
       }
@@ -117,6 +123,7 @@ class Cubit extends BlocBase {
     this.emit = (value) => {
       this.notifyChange(value);
       this.next(value);
+      this.notifyValueChange();
     };
   }
 }
@@ -153,7 +160,8 @@ class BlocConsumer {
   constructor(blocs, options = {}) {
     this.mocksEnabled = false;
     this._blocMapLocal = {};
-    this.blocObservers = [];
+    this.blocChangeObservers = [];
+    this.blocValueChangeObservers = [];
     this.mockBlocs = [];
     this.blocListGlobal = blocs;
     this.debug = options.debug || false;
@@ -165,7 +173,7 @@ class BlocConsumer {
   }
   notifyChange(bloc, state) {
     this.observer.addChange(bloc, state);
-    for (const [blocClass, callback, scope] of this.blocObservers) {
+    for (const [blocClass, callback, scope] of this.blocChangeObservers) {
       const isGlobal = this.blocListGlobal.indexOf(bloc) !== -1;
       const matchesScope = scope === "all" || isGlobal && scope === "global" || !isGlobal && scope === "local";
       if (matchesScope && bloc instanceof blocClass) {
@@ -176,11 +184,23 @@ class BlocConsumer {
       }
     }
   }
+  notifyValueChange(bloc) {
+    for (const [blocClass, callback, scope] of this.blocValueChangeObservers) {
+      const isGlobal = this.blocListGlobal.indexOf(bloc) !== -1;
+      const matchesScope = scope === "all" || isGlobal && scope === "global" || !isGlobal && scope === "local";
+      if (matchesScope && bloc instanceof blocClass) {
+        callback(bloc);
+      }
+    }
+  }
   notifyTransition(bloc, state, event) {
     this.observer.addTransition(bloc, state, event);
   }
-  addBlocObserver(blocClass, callback, scope = "all") {
-    this.blocObservers.push([blocClass, callback, scope]);
+  addBlocChangeObserver(blocClass, callback, scope = "all") {
+    this.blocChangeObservers.push([blocClass, callback, scope]);
+  }
+  addBlocValueChangeObserver(blocClass, callback, scope = "all") {
+    this.blocValueChangeObservers.push([blocClass, callback, scope]);
   }
   addLocalBloc(key, bloc) {
     this._blocMapLocal[key] = bloc;

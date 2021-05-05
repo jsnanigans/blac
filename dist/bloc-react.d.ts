@@ -46,12 +46,15 @@ declare class BlocConsumer {
     mocksEnabled: boolean;
     protected _blocMapLocal: Record<string, BlocBase<any>>;
     private blocListGlobal;
-    private blocObservers;
+    private blocChangeObservers;
+    private blocValueChangeObservers;
     private mockBlocs;
     constructor(blocs: BlocBase<any>[], options?: ReactBlocOptions$1);
     notifyChange(bloc: BlocBase<any>, state: any): void;
+    notifyValueChange(bloc: BlocBase<any>): void;
     notifyTransition(bloc: BlocBase<any>, state: any, event: any): void;
-    addBlocObserver<T extends BlocBase<any>>(blocClass: BlocClass<T>, callback: (bloc: T, event: ChangeEvent<ValueType<T>>) => unknown, scope?: BlocObserverScope): void;
+    addBlocChangeObserver<T extends BlocBase<any>>(blocClass: BlocClass<T>, callback: (bloc: T, event: ChangeEvent<ValueType<T>>) => unknown, scope?: BlocObserverScope): void;
+    addBlocValueChangeObserver<T extends BlocBase<any>>(blocClass: BlocClass<T>, callback: (bloc: T) => unknown, scope?: BlocObserverScope): void;
     addLocalBloc(key: string, bloc: BlocBase<any>): void;
     removeLocalBloc(key: string): void;
     addBlocMock(bloc: BlocBase<any>): void;
@@ -79,10 +82,12 @@ declare class BlocBase<T> extends StreamAbstraction<T> {
     _localProviderRef: string;
     onRegister: null | ((consumer: BlocConsumer) => void);
     onChange: null | ((change: ChangeEvent<T>) => void);
+    onValueChange: null | ((value: T) => void);
     constructor(initialValue: T, blocOptions?: BlocOptions);
     protected _consumer: BlocConsumer | null;
     set consumer(consumer: BlocConsumer);
     protected notifyChange: (state: T) => void;
+    protected notifyValueChange: () => void;
 }
 
 declare class Bloc<E, T> extends BlocBase<T> {
