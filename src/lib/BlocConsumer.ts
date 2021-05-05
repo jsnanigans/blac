@@ -82,8 +82,13 @@ export class BlocConsumer {
       this.mockBlocs = [bloc, ...this.mockBlocs];
     }
   }
+
   public resetMocks(): void {
     this.mockBlocs = [];
+  }
+
+  public getGlobalBloc(blocClass: BlocClass<any>): undefined | BlocBase<any> {
+    return this.blocListGlobal.find(c => c instanceof blocClass)
   }
 
   protected getBlocInstance<T>(global: BlocBase<any>[], blocClass: BlocClass<T>): BlocBase<T> | undefined {

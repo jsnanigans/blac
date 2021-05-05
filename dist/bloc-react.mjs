@@ -199,6 +199,9 @@ class BlocConsumer {
   resetMocks() {
     this.mockBlocs = [];
   }
+  getGlobalBloc(blocClass) {
+    return this.blocListGlobal.find((c) => c instanceof blocClass);
+  }
   getBlocInstance(global, blocClass) {
     if (this.mocksEnabled) {
       const mockedBloc = this.mockBlocs.find((c) => c instanceof blocClass);

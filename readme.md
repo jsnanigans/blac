@@ -1,5 +1,6 @@
 # BLoC React
-[Coverage: 100%]
+
+[comment]: <> ([Coverage: 100%])
 
 TypeScript BLoC pattern implementation for react using RxJS and heavily inspired by flutter_react - https://bloclibrary.dev
 

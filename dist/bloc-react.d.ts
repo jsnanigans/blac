@@ -56,6 +56,7 @@ declare class BlocConsumer {
     removeLocalBloc(key: string): void;
     addBlocMock(bloc: BlocBase<any>): void;
     resetMocks(): void;
+    getGlobalBloc(blocClass: BlocClass<any>): undefined | BlocBase<any>;
     protected getBlocInstance<T>(global: BlocBase<any>[], blocClass: BlocClass<T>): BlocBase<T> | undefined;
 }
 
