@@ -17,6 +17,7 @@ export default class Bloc<E, T> extends BlocBase<T> {
       this.notifyChange(newState);
       this.notifyTransition(newState, event);
       this.next(newState);
+      this.notifyValueChange();
     } else {
       console.error(
         `"mapEventToState" not implemented for "${this.constructor.name}"`

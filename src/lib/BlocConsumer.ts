@@ -8,9 +8,15 @@ export interface ReactBlocOptions {
 }
 
 export type BlocObserverScope = "local" | "global" | "all";
-type BlocObserverList = [
+type BlocChangeObserverList = [
   BlocClass<any>,
   (bloc: any, event: ChangeEvent<any>) => unknown,
+  BlocObserverScope
+];
+
+type BlocValueChangeObserverList = [
+  BlocClass<any>,
+  (bloc: any) => unknown,
   BlocObserverScope
 ];
 
@@ -20,7 +26,8 @@ export class BlocConsumer {
   public mocksEnabled = false;
   protected _blocMapLocal: Record<string, BlocBase<any>> = {};
   private blocListGlobal: BlocBase<any>[];
-  private blocObservers: BlocObserverList[] = [];
+  private blocChangeObservers: BlocChangeObserverList[] = [];
+  private blocValueChangeObservers: BlocValueChangeObserverList[] = [];
   private mockBlocs: BlocBase<any>[] = [];
 
   constructor(blocs: BlocBase<any>[], options: ReactBlocOptions = {}) {
@@ -38,7 +45,7 @@ export class BlocConsumer {
   notifyChange(bloc: BlocBase<any>, state: any): void {
     this.observer.addChange(bloc, state);
 
-    for (const [blocClass, callback, scope] of this.blocObservers) {
+    for (const [blocClass, callback, scope] of this.blocChangeObservers) {
       const isGlobal = this.blocListGlobal.indexOf(bloc) !== -1;
       const matchesScope =
         scope === "all" ||
@@ -53,16 +60,37 @@ export class BlocConsumer {
     }
   }
 
+  notifyValueChange(bloc: BlocBase<any>): void {
+    for (const [blocClass, callback, scope] of this.blocValueChangeObservers) {
+      const isGlobal = this.blocListGlobal.indexOf(bloc) !== -1;
+      const matchesScope =
+        scope === "all" ||
+        (isGlobal && scope === "global") ||
+        (!isGlobal && scope === "local");
+      if (matchesScope && bloc instanceof blocClass) {
+        callback(bloc);
+      }
+    }
+  }
+
   notifyTransition(bloc: BlocBase<any>, state: any, event: any): void {
     this.observer.addTransition(bloc, state, event);
   }
 
-  public addBlocObserver<T extends BlocBase<any>>(
+  public addBlocChangeObserver<T extends BlocBase<any>>(
     blocClass: BlocClass<T>,
     callback: (bloc: T, event: ChangeEvent<ValueType<T>>) => unknown,
     scope: BlocObserverScope = "all"
   ) {
-    this.blocObservers.push([blocClass, callback, scope]);
+    this.blocChangeObservers.push([blocClass, callback, scope]);
+  }
+
+  public addBlocValueChangeObserver<T extends BlocBase<any>>(
+    blocClass: BlocClass<T>,
+    callback: (bloc: T) => unknown,
+    scope: BlocObserverScope = "all"
+  ) {
+    this.blocValueChangeObservers.push([blocClass, callback, scope]);
   }
 
   public addLocalBloc(key: string, bloc: BlocBase<any>) {

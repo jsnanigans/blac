@@ -26,7 +26,7 @@ export class Listener extends Cubit<number> {
     super(1);
 
     this.onRegister = (consumer) => {
-      consumer.addBlocObserver(
+      consumer.addBlocChangeObserver(
         listenFor,
         (bloc, state) => {
           notify(bloc, state);

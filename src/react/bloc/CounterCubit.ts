@@ -6,6 +6,9 @@ export default class CounterCubit extends Cubit<number> {
     // this.onChange = (state) => {
     //   console.log(state);
     // };
+    this.onRegister = (): void => {
+      console.log('reg counter');
+    }
   }
 
   increment = (): void => {
