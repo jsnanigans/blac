@@ -68,6 +68,7 @@ export class BlocConsumer {
   public addLocalBloc(key: string, bloc: BlocBase<any>) {
     this._blocMapLocal[key] = bloc;
     bloc.consumer = this;
+    bloc.onRegister?.(this);
   }
 
   public removeLocalBloc(key: string) {

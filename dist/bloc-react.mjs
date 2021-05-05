@@ -185,6 +185,7 @@ class BlocConsumer {
   addLocalBloc(key, bloc) {
     this._blocMapLocal[key] = bloc;
     bloc.consumer = this;
+    bloc.onRegister?.(this);
   }
   removeLocalBloc(key) {
     const bloc = this._blocMapLocal[key];
