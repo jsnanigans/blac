@@ -301,35 +301,35 @@ class BlocReact extends BlocConsumer {
         blocInstance
       ];
     };
-    this.BlocBuilder = (props) => {
-      const hook = this.useBloc(props.blocClass, {
-        shouldUpdate: props.shouldUpdate
-      });
-      return props.builder(hook);
-    };
-    this.BlocProvider = (props) => {
-      const providerKey = useMemo(() => "p_" + nanoid(), []);
-      const bloc = useMemo(() => {
-        const newBloc = props.create(providerKey);
-        newBloc._localProviderRef = providerKey;
-        this.addLocalBloc(providerKey, newBloc);
-        return newBloc;
-      }, []);
-      const context = useMemo(() => {
-        return React.createContext(bloc);
-      }, [bloc]);
-      useEffect(() => {
-        return () => {
-          this.removeLocalBloc(providerKey);
-        };
-      }, []);
-      return /* @__PURE__ */ React.createElement(this._contextLocalProviderKey.Provider, {
-        value: providerKey
-      }, /* @__PURE__ */ React.createElement(context.Provider, {
-        value: bloc
-      }, props.children));
-    };
     this._blocsGlobal = blocs;
+  }
+  BlocBuilder(props) {
+    const hook = this.useBloc(props.blocClass, {
+      shouldUpdate: props.shouldUpdate
+    });
+    return props.builder(hook);
+  }
+  BlocProvider(props) {
+    const providerKey = useMemo(() => "p_" + nanoid(), []);
+    const bloc = useMemo(() => {
+      const newBloc = props.create(providerKey);
+      newBloc._localProviderRef = providerKey;
+      this.addLocalBloc(providerKey, newBloc);
+      return newBloc;
+    }, []);
+    const context = useMemo(() => {
+      return React.createContext(bloc);
+    }, [bloc]);
+    useEffect(() => {
+      return () => {
+        this.removeLocalBloc(providerKey);
+      };
+    }, []);
+    return /* @__PURE__ */ React.createElement(this._contextLocalProviderKey.Provider, {
+      value: providerKey
+    }, /* @__PURE__ */ React.createElement(context.Provider, {
+      value: bloc
+    }, props.children));
   }
 }
 

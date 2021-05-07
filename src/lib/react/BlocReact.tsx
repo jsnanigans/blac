@@ -108,24 +108,24 @@ export class BlocReact extends BlocConsumer {
   };
 
   // Components
-  BlocBuilder = <T extends BlocBase<any>>(props: {
+  BlocBuilder <T extends BlocBase<any>>(props: {
     blocClass: BlocClass<T>;
     builder: (data: BlocHookData<T>) => ReactElement;
     shouldUpdate?: (
       previousState: ValueType<T>,
       state: ValueType<T>
     ) => boolean;
-  }): ReactElement | null => {
+  }): ReactElement | null {
     const hook = this.useBloc(props.blocClass, {
       shouldUpdate: props.shouldUpdate
     });
     return props.builder(hook);
   };
 
-  BlocProvider = <T extends BlocBase<any>>(props: {
+  BlocProvider <T extends BlocBase<any>>(props: {
     children?: ReactElement | ReactElement[];
     create: (providerKey: string) => T;
-  }): ReactElement => {
+  }): ReactElement {
     const providerKey = useMemo(() => "p_" + nanoid(), []);
 
     const bloc = useMemo<T>(() => {

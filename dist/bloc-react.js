@@ -309,35 +309,35 @@ class BlocReact extends BlocConsumer {
         blocInstance
       ];
     };
-    this.BlocBuilder = (props) => {
-      const hook = this.useBloc(props.blocClass, {
-        shouldUpdate: props.shouldUpdate
-      });
-      return props.builder(hook);
-    };
-    this.BlocProvider = (props) => {
-      const providerKey = React.useMemo(() => "p_" + nanoid.nanoid(), []);
-      const bloc = React.useMemo(() => {
-        const newBloc = props.create(providerKey);
-        newBloc._localProviderRef = providerKey;
-        this.addLocalBloc(providerKey, newBloc);
-        return newBloc;
-      }, []);
-      const context = React.useMemo(() => {
-        return React__default['default'].createContext(bloc);
-      }, [bloc]);
-      React.useEffect(() => {
-        return () => {
-          this.removeLocalBloc(providerKey);
-        };
-      }, []);
-      return /* @__PURE__ */ React__default['default'].createElement(this._contextLocalProviderKey.Provider, {
-        value: providerKey
-      }, /* @__PURE__ */ React__default['default'].createElement(context.Provider, {
-        value: bloc
-      }, props.children));
-    };
     this._blocsGlobal = blocs;
+  }
+  BlocBuilder(props) {
+    const hook = this.useBloc(props.blocClass, {
+      shouldUpdate: props.shouldUpdate
+    });
+    return props.builder(hook);
+  }
+  BlocProvider(props) {
+    const providerKey = React.useMemo(() => "p_" + nanoid.nanoid(), []);
+    const bloc = React.useMemo(() => {
+      const newBloc = props.create(providerKey);
+      newBloc._localProviderRef = providerKey;
+      this.addLocalBloc(providerKey, newBloc);
+      return newBloc;
+    }, []);
+    const context = React.useMemo(() => {
+      return React__default['default'].createContext(bloc);
+    }, [bloc]);
+    React.useEffect(() => {
+      return () => {
+        this.removeLocalBloc(providerKey);
+      };
+    }, []);
+    return /* @__PURE__ */ React__default['default'].createElement(this._contextLocalProviderKey.Provider, {
+      value: providerKey
+    }, /* @__PURE__ */ React__default['default'].createElement(context.Provider, {
+      value: bloc
+    }, props.children));
   }
 }
 

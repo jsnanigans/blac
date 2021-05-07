@@ -1,5 +1,5 @@
 import { Subscription } from 'rxjs';
-import React, { ReactElement } from 'react';
+import { ReactElement } from 'react';
 
 declare type ValueType<T extends BlocBase<any>> = T extends BlocBase<infer U> ? U : never;
 declare type BlocClass<T> = new (...args: never[]) => T;
@@ -119,15 +119,15 @@ declare class BlocReact extends BlocConsumer {
     private _contextLocalProviderKey;
     constructor(blocs: BlocBase<any>[], options?: ReactBlocOptions);
     useBloc: <T extends BlocBase<any>>(blocClass: BlocClass<T>, options?: BlocHookOptions<T>) => BlocHookData<T>;
-    BlocBuilder: <T extends BlocBase<any>>(props: {
+    BlocBuilder<T extends BlocBase<any>>(props: {
         blocClass: BlocClass<T>;
         builder: (data: BlocHookData<T>) => ReactElement;
-        shouldUpdate?: ((previousState: ValueType<T>, state: ValueType<T>) => boolean) | undefined;
-    }) => ReactElement | null;
-    BlocProvider: <T extends BlocBase<any>>(props: {
-        children?: React.ReactElement<any, string | React.JSXElementConstructor<any>> | React.ReactElement<any, string | React.JSXElementConstructor<any>>[] | undefined;
+        shouldUpdate?: (previousState: ValueType<T>, state: ValueType<T>) => boolean;
+    }): ReactElement | null;
+    BlocProvider<T extends BlocBase<any>>(props: {
+        children?: ReactElement | ReactElement[];
         create: (providerKey: string) => T;
-    }) => ReactElement;
+    }): ReactElement;
 }
 
 export { Bloc, BlocReact, Cubit };
