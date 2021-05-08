@@ -1,7 +1,9 @@
 
 # BLoC React
 
-[comment]: <> ([Coverage: 100%])
+[![codecov](https://codecov.io/gh/jsnanigans/bloc-react/branch/main/graph/badge.svg?token=0FPH6ZMZD3)](https://codecov.io/gh/jsnanigans/bloc-react)
+[![liscence](https://img.shields.io/badge/license-MIT-purple.svg)](https://opensource.org/licenses/MIT)
+[![Known Vulnerabilities](https://snyk.io/test/github/jsnanigans/bloc-react/badge.svg)](https://snyk.io/test/github/jsnanigans/bloc-react)
 
 TypeScript BLoC pattern implementation for react using RxJS and heavily inspired by flutter_react - https://bloclibrary.dev
 
