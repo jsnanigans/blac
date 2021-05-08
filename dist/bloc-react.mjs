@@ -302,6 +302,8 @@ class BlocReact extends BlocConsumer {
       ];
     };
     this._blocsGlobal = blocs;
+    this.BlocProvider = this.BlocProvider.bind(this);
+    this.BlocBuilder = this.BlocBuilder.bind(this);
   }
   BlocBuilder(props) {
     const hook = this.useBloc(props.blocClass, {
