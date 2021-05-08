@@ -1,6 +1,6 @@
 {
   "name": "bloc-react",
-  "version": "0.0.14-5",
+  "version": "0.0.14-6",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
