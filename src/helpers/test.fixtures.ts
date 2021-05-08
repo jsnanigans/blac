@@ -17,7 +17,7 @@ export class Test1 extends Cubit<number> {
   };
 }
 
-export class Listener extends Cubit<number> {
+export class ChangeListener extends Cubit<number> {
   constructor(
     notify: (bloc: any, state: any) => void,
     listenFor: BlocClass<any>,
@@ -40,6 +40,32 @@ export class Listener extends Cubit<number> {
     this.emit(this.state + 1);
   };
 }
+
+
+export class ValueChangeListener extends Cubit<number> {
+  constructor(
+    notify: (state: any) => void,
+    listenFor: BlocClass<any>,
+    scope?: BlocObserverScope
+  ) {
+    super(1);
+
+    this.onRegister = (consumer) => {
+      consumer.addBlocValueChangeObserver(
+        listenFor,
+        (state) => {
+          notify(state);
+        },
+        scope
+      );
+    };
+  }
+
+  increment = () => {
+    this.emit(this.state + 1);
+  };
+}
+
 
 
 export enum AuthEvent {

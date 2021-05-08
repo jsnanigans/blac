@@ -3,12 +3,6 @@ import Cubit from "../../lib/Cubit";
 export default class CounterCubit extends Cubit<number> {
   constructor(cacheKey = "") {
     super(0, { persistKey: `count_${cacheKey}` });
-    // this.onChange = (state) => {
-    //   console.log(state);
-    // };
-    this.onRegister = (): void => {
-      console.log('reg counter');
-    }
   }
 
   increment = (): void => {

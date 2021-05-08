@@ -1,6 +1,6 @@
 import { BlocConsumer } from "./BlocConsumer";
 import BlocObserver from "./BlocObserver";
-import { AuthEvent, Listener, Test1, TestBloc } from "../helpers/test.fixtures";
+import { AuthEvent, ChangeListener, Test1, TestBloc, ValueChangeListener } from "../helpers/test.fixtures";
 
 
 describe("BlocConsumer", function() {
@@ -37,12 +37,12 @@ describe("BlocConsumer", function() {
     expect(register).toHaveBeenCalledTimes(1);
   });
 
-  describe("observers", function() {
+  describe("ChangeListener", function() {
     it("should allow one bloc to listen to another bloc", function() {
       const notify = jest.fn();
       const global = new Test1();
       const local = new Test1();
-      const listener = new Listener(notify, Test1);
+      const listener = new ChangeListener(notify, Test1);
       const consumer = new BlocConsumer([global, listener]);
       consumer.addLocalBloc("abc", local);
       expect(notify).toHaveBeenCalledTimes(0);
@@ -57,7 +57,7 @@ describe("BlocConsumer", function() {
       const notify = jest.fn();
       const global = new Test1();
       const local = new Test1();
-      const listener = new Listener(notify, Test1, "local");
+      const listener = new ChangeListener(notify, Test1, "local");
       const consumer = new BlocConsumer([global, listener]);
       consumer.addLocalBloc("abc", local); // should trigger listener "local"
       global.increment(); // should not trigger listener "local"
@@ -71,7 +71,7 @@ describe("BlocConsumer", function() {
       const notify = jest.fn();
       const global = new Test1();
       const local = new Test1();
-      const listener = new Listener(notify, Test1, "global");
+      const listener = new ChangeListener(notify, Test1, "global");
       const consumer = new BlocConsumer([global, listener]);
       consumer.addLocalBloc("abc", local); // should not trigger listener "global"
       expect(notify).toHaveBeenCalledTimes(0);
@@ -86,7 +86,7 @@ describe("BlocConsumer", function() {
       const notify = jest.fn();
       const global = new Test1();
       const local = new Test1();
-      const listener = new Listener(notify, Test1, "all");
+      const listener = new ChangeListener(notify, Test1, "all");
       const consumer = new BlocConsumer([global, listener]);
       consumer.addLocalBloc("abc", local); // should trigger listener "all"
       global.increment(); // should trigger listener "all"
@@ -96,5 +96,76 @@ describe("BlocConsumer", function() {
       local.increment(); // should trigger listener "all"
       expect(notify).toHaveBeenCalledTimes(2);
     });
+  });
+
+  describe("ValueChangeListener", function() {
+    it("should allow one bloc to listen to another bloc", function() {
+      const notify = jest.fn();
+      const global = new Test1();
+      const local = new Test1();
+      const listener = new ValueChangeListener(notify, Test1);
+      const consumer = new BlocConsumer([global, listener]);
+      consumer.addLocalBloc("abc", local);
+      expect(notify).toHaveBeenCalledTimes(0);
+      global.increment(); // should trigger listener "all"
+      expect(notify).toHaveBeenCalledTimes(1);
+      expect(notify).toHaveBeenCalledWith(global);
+      local.increment(); // should trigger listener "all"
+      expect(notify).toHaveBeenCalledTimes(2);
+    });
+
+    it("should allow filtering listener only for local blocs", function() {
+      const notify = jest.fn();
+      const global = new Test1();
+      const local = new Test1();
+      const listener = new ValueChangeListener(notify, Test1, "local");
+      const consumer = new BlocConsumer([global, listener]);
+      consumer.addLocalBloc("abc", local); // should trigger listener "local"
+      global.increment(); // should not trigger listener "local"
+      expect(notify).toHaveBeenCalledTimes(0);
+      local.increment(); // should trigger listener "local"
+      expect(notify).toHaveBeenCalledTimes(1);
+      expect(notify).toHaveBeenCalledWith(local);
+    });
+
+    it("should allow filtering listener only for global blocs", function() {
+      const notify = jest.fn();
+      const global = new Test1();
+      const local = new Test1();
+      const listener = new ValueChangeListener(notify, Test1, "global");
+      const consumer = new BlocConsumer([global, listener]);
+      consumer.addLocalBloc("abc", local); // should not trigger listener "global"
+      expect(notify).toHaveBeenCalledTimes(0);
+      global.increment(); // should trigger listener "global"
+      expect(notify).toHaveBeenCalledTimes(1);
+      expect(notify).toHaveBeenCalledWith(global);
+      local.increment(); // should not trigger listener "global"
+      expect(notify).toHaveBeenCalledTimes(1);
+    });
+
+    it("should allow not notify changes after bloc has been removed", function() {
+      const notify = jest.fn();
+      const global = new Test1();
+      const local = new Test1();
+      const listener = new ValueChangeListener(notify, Test1, "all");
+      const consumer = new BlocConsumer([global, listener]);
+      consumer.addLocalBloc("abc", local); // should trigger listener "all"
+      global.increment(); // should trigger listener "all"
+      expect(notify).toHaveBeenCalledTimes(1);
+      expect(notify).toHaveBeenCalledWith(global);
+      consumer.removeLocalBloc("abc");
+      local.increment(); // should trigger listener "all"
+      expect(notify).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe("getGlobalBloc", function() {
+    it("should bloc from global state", function() {
+      const bloc = new Test1();
+      const consumer = new BlocConsumer([bloc]);
+      const out = consumer.getGlobalBloc(Test1);
+      expect(out instanceof Test1).toBe(true);
+    });
+
   });
 });

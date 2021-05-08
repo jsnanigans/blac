@@ -37,7 +37,6 @@ export class BlocConsumer {
 
     for (const b of blocs) {
       b.consumer = this;
-      // b.subscribe((v: any) => this.notifyChange(b, v));
       b.onRegister?.(this);
     }
   }
