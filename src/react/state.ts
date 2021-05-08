@@ -5,11 +5,13 @@ import { BlocReact } from "../lib";
 import BlocObserver from "../lib/BlocObserver";
 
 const state = new BlocReact(
-  [new PreferencesCubit(), new AuthBloc(), new CounterCubit()],
-  { debug: true }
+  [new PreferencesCubit(), new AuthBloc(), new CounterCubit()]
 );
 
-state.observer = new BlocObserver();
+state.observer = new BlocObserver({
+  onChange: (b, e) => console.log({b, e}),
+  onTransition: (b, e) => console.log({b, e})
+});
 
 export const { useBloc, BlocBuilder, BlocProvider } = state;
 

@@ -5,8 +5,6 @@ import { BlocClass, BlocHookData, ValueType } from "../types";
 import { BlocConsumer } from "../BlocConsumer";
 
 interface ReactBlocOptions {
-  /** Enables debugging which calls BlocReact.observer every time a Subject is updated. Defaults to false */
-  debug?: boolean;
 }
 
 interface BlocHookOptions<T extends BlocBase<any>> {
@@ -33,8 +31,8 @@ export class BlocReact extends BlocConsumer {
   private readonly _blocsGlobal: BlocBase<any>[];
   private _contextLocalProviderKey = React.createContext("");
 
-  constructor(blocs: BlocBase<any>[], options: ReactBlocOptions = {}) {
-    super(blocs, options);
+  constructor(blocs: BlocBase<any>[]) {
+    super(blocs);
     this._blocsGlobal = blocs;
     this.BlocProvider = this.BlocProvider.bind(this);
     this.BlocBuilder = this.BlocBuilder.bind(this);

@@ -2,7 +2,9 @@ import BlocBase from "./BlocBase";
 import { ChangeEvent, TransitionEvent } from "./types";
 
 export interface BlocObserverOptions {
+  /* Called whenever any state changes global or local, Bloc or Cubit. */
   onChange?: (bloc: BlocBase<any>, event: ChangeEvent<any>) => void;
+  /* Called only when a Bloc changes (global or local). */
   onTransition?: (bloc: BlocBase<any>, event: TransitionEvent<any, any>) => void;
 }
 

@@ -22,7 +22,6 @@ type BlocValueChangeObserverList = [
 
 export class BlocConsumer {
   observer: BlocObserver;
-  debug: boolean;
   public mocksEnabled = false;
   protected _blocMapLocal: Record<string, BlocBase<any>> = {};
   private blocListGlobal: BlocBase<any>[];
@@ -30,9 +29,8 @@ export class BlocConsumer {
   private blocValueChangeObservers: BlocValueChangeObserverList[] = [];
   private mockBlocs: BlocBase<any>[] = [];
 
-  constructor(blocs: BlocBase<any>[], options: ReactBlocOptions = {}) {
+  constructor(blocs: BlocBase<any>[]) {
     this.blocListGlobal = blocs;
-    this.debug = options.debug || false;
     this.observer = new BlocObserver();
 
     for (const b of blocs) {
