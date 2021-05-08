@@ -157,14 +157,13 @@ class BlocObserver {
 }
 
 class BlocConsumer {
-  constructor(blocs, options = {}) {
+  constructor(blocs) {
     this.mocksEnabled = false;
     this._blocMapLocal = {};
     this.blocChangeObservers = [];
     this.blocValueChangeObservers = [];
     this.mockBlocs = [];
     this.blocListGlobal = blocs;
-    this.debug = options.debug || false;
     this.observer = new BlocObserver();
     for (const b of blocs) {
       b.consumer = this;
@@ -245,8 +244,8 @@ class BlocRuntimeError {
 class NoValue {
 }
 class BlocReact extends BlocConsumer {
-  constructor(blocs, options = {}) {
-    super(blocs, options);
+  constructor(blocs) {
+    super(blocs);
     this._contextLocalProviderKey = React.createContext("");
     this.useBloc = (blocClass, options = {}) => {
       const mergedOptions = {
@@ -335,5 +334,5 @@ class BlocReact extends BlocConsumer {
   }
 }
 
-export { Bloc, BlocReact, Cubit };
+export { Bloc, BlocObserver, BlocReact, Cubit };
 //# sourceMappingURL=bloc-react.mjs.map

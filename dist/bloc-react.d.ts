@@ -35,21 +35,16 @@ declare class BlocObserver {
     private createChangeEvent;
 }
 
-interface ReactBlocOptions$1 {
-    /** Enables debugging which calls BlocReact.observer every time a Subject is updated. Defaults to false */
-    debug?: boolean;
-}
 declare type BlocObserverScope = "local" | "global" | "all";
 declare class BlocConsumer {
     observer: BlocObserver;
-    debug: boolean;
     mocksEnabled: boolean;
     protected _blocMapLocal: Record<string, BlocBase<any>>;
     private blocListGlobal;
     private blocChangeObservers;
     private blocValueChangeObservers;
     private mockBlocs;
-    constructor(blocs: BlocBase<any>[], options?: ReactBlocOptions$1);
+    constructor(blocs: BlocBase<any>[]);
     notifyChange(bloc: BlocBase<any>, state: any): void;
     notifyValueChange(bloc: BlocBase<any>): void;
     notifyTransition(bloc: BlocBase<any>, state: any, event: any): void;
@@ -106,10 +101,6 @@ declare class Cubit<T> extends BlocBase<T> {
     emit: (value: T) => void;
 }
 
-interface ReactBlocOptions {
-    /** Enables debugging which calls BlocReact.observer every time a Subject is updated. Defaults to false */
-    debug?: boolean;
-}
 interface BlocHookOptions<T extends BlocBase<any>> {
     subscribe?: boolean;
     shouldUpdate?: (previousState: ValueType<T>, state: ValueType<T>) => boolean;
@@ -117,7 +108,7 @@ interface BlocHookOptions<T extends BlocBase<any>> {
 declare class BlocReact extends BlocConsumer {
     private readonly _blocsGlobal;
     private _contextLocalProviderKey;
-    constructor(blocs: BlocBase<any>[], options?: ReactBlocOptions);
+    constructor(blocs: BlocBase<any>[]);
     useBloc: <T extends BlocBase<any>>(blocClass: BlocClass<T>, options?: BlocHookOptions<T>) => BlocHookData<T>;
     BlocBuilder<T extends BlocBase<any>>(props: {
         blocClass: BlocClass<T>;
@@ -130,4 +121,4 @@ declare class BlocReact extends BlocConsumer {
     }): ReactElement;
 }
 
-export { Bloc, BlocReact, Cubit };
+export { Bloc, BlocObserver, BlocReact, Cubit };
