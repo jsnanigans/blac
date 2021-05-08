@@ -38,20 +38,20 @@ export default class StreamAbstraction<T> {
     if (key) {
       localStorage.removeItem(`${LOCAL_STORAGE_PREFIX}${key}`);
     }
-  };
+  }
 
   jsonToState(state: string): T {
     return JSON.parse(state).state;
-  };
+  }
 
   stateToJson(state: T): string {
     return JSON.stringify({ state });
-  };
+  }
 
   protected next = (value: T): void => {
     this._subject.next(value);
     this.updateCache();
-  };
+  }
 
   protected getCachedValue = (): T | Error => {
     const cachedValue = localStorage.getItem(
@@ -69,7 +69,7 @@ export default class StreamAbstraction<T> {
       }
     }
     return new Error("Key not found");
-  };
+  }
 
   protected updateCache = (): void => {
     const { persistData, persistKey } = this._options;
@@ -81,5 +81,5 @@ export default class StreamAbstraction<T> {
     } else {
       this.clearCache();
     }
-  };
+  }
 }

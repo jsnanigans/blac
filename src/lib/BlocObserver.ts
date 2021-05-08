@@ -13,8 +13,8 @@ export default class BlocObserver {
   onTransition: (bloc: BlocBase<any>, event: TransitionEvent<any, any>) => void
 
   constructor(methods: BlocObserverOptions = {}) {
-    this.onChange = methods.onChange ? methods.onChange : () => {};
-    this.onTransition = methods.onTransition ? methods.onTransition : () => {};
+    this.onChange = methods.onChange ? methods.onChange : this.defaultAction;
+    this.onTransition = methods.onTransition ? methods.onTransition : this.defaultAction;
   }
 
   readonly addChange = (bloc: BlocBase<any>, state: any) => {
@@ -25,6 +25,7 @@ export default class BlocObserver {
     this.onTransition(bloc, this.createTransitionEvent(bloc, state, event));
   }
 
+  private readonly defaultAction = () => {}
 
   private createTransitionEvent(bloc: BlocBase<any>, state: any, event: any): TransitionEvent<any, any> {
     return {
