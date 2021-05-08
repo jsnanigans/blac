@@ -31,6 +31,7 @@ declare class BlocObserver {
     constructor(methods?: BlocObserverOptions);
     readonly addChange: (bloc: BlocBase<any>, state: any) => void;
     readonly addTransition: (bloc: BlocBase<any>, state: any, event: any) => void;
+    private readonly defaultAction;
     private createTransitionEvent;
     private createChangeEvent;
 }

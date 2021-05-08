@@ -136,10 +136,10 @@ class BlocObserver {
     this.addTransition = (bloc, state, event) => {
       this.onTransition(bloc, this.createTransitionEvent(bloc, state, event));
     };
-    this.onChange = methods.onChange ? methods.onChange : () => {
+    this.defaultAction = () => {
     };
-    this.onTransition = methods.onTransition ? methods.onTransition : () => {
-    };
+    this.onChange = methods.onChange ? methods.onChange : this.defaultAction;
+    this.onTransition = methods.onTransition ? methods.onTransition : this.defaultAction;
   }
   createTransitionEvent(bloc, state, event) {
     return {
@@ -220,6 +220,12 @@ class BlocConsumer {
     this.mockBlocs = [];
   }
   getGlobalBloc(blocClass) {
+    if (this.mocksEnabled) {
+      const mockedBloc = this.mockBlocs.find((c) => c instanceof blocClass);
+      if (mockedBloc) {
+        return mockedBloc;
+      }
+    }
     return this.blocListGlobal.find((c) => c instanceof blocClass);
   }
   getBlocInstance(global, blocClass) {
