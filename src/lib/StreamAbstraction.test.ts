@@ -16,7 +16,7 @@ describe("StreamAbstraction", () => {
   }
 
   const persistKey = "storeKey";
-  const initialValue = 42;
+  const initValue = 42;
   const cachedValue = 100;
 
   describe("constructor", () => {
@@ -42,27 +42,27 @@ describe("StreamAbstraction", () => {
       });
 
       it("should get value from localStorage if the key is defined", () => {
-        const stream = new StreamAbstraction(initialValue, { persistKey });
+        const stream = new StreamAbstraction(initValue, { persistKey });
         expect(stream.state).toBe(cachedValue);
       });
 
       it("should use default value if localStorage key is not defined", () => {
         localStorage.removeItem(LOCAL_STORAGE_PREFIX + persistKey);
-        const stream = new StreamAbstraction(initialValue, { persistKey });
-        expect(stream.state).toBe(initialValue);
+        const stream = new StreamAbstraction(initValue, { persistKey });
+        expect(stream.state).toBe(initValue);
       });
 
       it("should not get value from localStorage if `persistKey` is not defined", () => {
-        const stream = new StreamAbstraction(initialValue, {});
-        expect(stream.state).toBe(initialValue);
+        const stream = new StreamAbstraction(initValue, {});
+        expect(stream.state).toBe(initValue);
       });
 
       it("should not get value from localStorage if `persistData` is false", () => {
-        const stream = new StreamAbstraction(initialValue, {
+        const stream = new StreamAbstraction(initValue, {
           persistKey,
           persistData: false,
         });
-        expect(stream.state).toBe(initialValue);
+        expect(stream.state).toBe(initValue);
       });
 
       it("should handle invalid json in localstorage for the key", () => {
@@ -71,8 +71,8 @@ describe("StreamAbstraction", () => {
           LOCAL_STORAGE_PREFIX + persistKey,
           `invalid json here: state": ${cachedValue}`
         );
-        const stream = new StreamAbstraction(initialValue, { persistKey });
-        expect(stream.state).toBe(initialValue);
+        const stream = new StreamAbstraction(initValue, { persistKey });
+        expect(stream.state).toBe(initValue);
         expect(console.error).toHaveBeenCalledTimes(1);
       });
     });
@@ -112,7 +112,7 @@ describe("StreamAbstraction", () => {
     });
 
     it("should clear the data from localstorage when `clearCache` is called", () => {
-      const stream = new StreamAbstractionExposed(initialValue, { persistKey });
+      const stream = new StreamAbstractionExposed(initValue, { persistKey });
       stream.clearCache();
       expect(localStorage.removeItem).toHaveBeenCalledWith(
         LOCAL_STORAGE_PREFIX + persistKey
@@ -120,7 +120,7 @@ describe("StreamAbstraction", () => {
     });
 
     it("should not do anything if there is no `persistKey` when `clearCache` is called", () => {
-      const stream = new StreamAbstractionExposed(initialValue, {
+      const stream = new StreamAbstractionExposed(initValue, {
         persistKey: "",
       });
       stream.clearCache();
@@ -128,14 +128,14 @@ describe("StreamAbstraction", () => {
     });
 
     it("should update cache when the state is updated", () => {
-      const stream = new StreamAbstractionExposed(initialValue, { persistKey });
+      const stream = new StreamAbstractionExposed(initValue, { persistKey });
       expect(localStorage.setItem).toHaveBeenCalledTimes(0);
       stream.next_exposed(55);
       expect(localStorage.setItem).toHaveBeenCalledTimes(1);
     });
 
     it("should not update cache when the state is updated if `persistKey` key is undefined", () => {
-      const stream = new StreamAbstractionExposed(initialValue, {
+      const stream = new StreamAbstractionExposed(initValue, {
         persistKey: "",
       });
       expect(localStorage.setItem).toHaveBeenCalledTimes(0);

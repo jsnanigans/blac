@@ -4,6 +4,13 @@
 [![codecov](https://codecov.io/gh/jsnanigans/bloc-react/branch/main/graph/badge.svg?token=0FPH6ZMZD3)](https://codecov.io/gh/jsnanigans/bloc-react)
 [![liscence](https://img.shields.io/badge/license-MIT-purple.svg)](https://opensource.org/licenses/MIT)
 [![Known Vulnerabilities](https://snyk.io/test/github/jsnanigans/bloc-react/badge.svg)](https://snyk.io/test/github/jsnanigans/bloc-react)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=jsnanigans_bloc-react&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=jsnanigans_bloc-react)
+---
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=jsnanigans_bloc-react&metric=reliability_rating)](https://sonarcloud.io/dashboard?id=jsnanigans_bloc-react)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=jsnanigans_bloc-react&metric=security_rating)](https://sonarcloud.io/dashboard?id=jsnanigans_bloc-react)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=jsnanigans_bloc-react&metric=vulnerabilities)](https://sonarcloud.io/dashboard?id=jsnanigans_bloc-react)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=jsnanigans_bloc-react&metric=bugs)](https://sonarcloud.io/dashboard?id=jsnanigans_bloc-react)
+[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=jsnanigans_bloc-react&metric=code_smells)](https://sonarcloud.io/dashboard?id=jsnanigans_bloc-react)
 
 TypeScript BLoC pattern implementation for react using RxJS and heavily inspired by flutter_react - https://bloclibrary.dev
 
