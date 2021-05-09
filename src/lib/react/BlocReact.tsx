@@ -115,10 +115,7 @@ export class BlocReact extends BlocConsumer {
   BlocBuilder<T extends BlocBase<any>>(props: {
     blocClass: BlocClass<T>;
     builder: (data: BlocHookData<T>) => ReactElement;
-    shouldUpdate?: (
-      previousState: ValueType<T>,
-      state: ValueType<T>
-    ) => boolean;
+    shouldUpdate?: (event: ChangeEvent<ValueType<T>>) => boolean;
   }): ReactElement | null {
     const hook = this.useBloc(props.blocClass, {
       shouldUpdate: props.shouldUpdate
