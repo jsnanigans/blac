@@ -166,6 +166,15 @@ describe("BlocConsumer", function() {
       const out = consumer.getGlobalBloc(Test1);
       expect(out instanceof Test1).toBe(true);
     });
+
+    it("should return undefined if mocksEnabled is enabled and bloc is not found", function() {
+      const bloc = new Test1();
+      const consumer = new BlocConsumer([]);
+      consumer.mocksEnabled = true;
+      consumer.addBlocMock(bloc);
+      const out = consumer.getGlobalBloc(TestBloc);
+      expect(out).toBeUndefined();
+    });
   });
 
   describe("addBlocMock", function() {
