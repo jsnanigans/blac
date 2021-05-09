@@ -21,6 +21,15 @@ Everything revolves around [**subjects**](https://rxjs-dev.firebaseapp.com/guide
 
 
 # Quickstart
+### 0. Install dependencies
+```shell
+$ npm i bloc-react
+
+# or
+
+$ yarn add bloc-react
+```
+
 ### 1. Create a new **Bloc/Cubit**
 ```typescript  
 // CounterCubit.ts  
@@ -39,8 +48,6 @@ export const { useBloc } = state;
 ### 3. Use the hook to access the state and class methods
 ```typescript  
 // CounterButton.tsx  
-import { useBloc } from "../state";  
-  
 const Counter: FC = (): ReactElement => {
   const [value, { increment }] = useBloc(CounterCubit);
   return <button onClick={() => increment()}>count is: {value}</button>;
@@ -145,9 +152,9 @@ The return value of `useBloc` is an array of two items, the first is the state o
 #### shouldUpdate
 Decide whether the returned state value should be updated or not. Will have no effect if `subscribe` is false.
 ```ts
-const [state] = useBloc(CounterCubit, {
-	// `state` is only updated if the count is even
-	shouldUpdate: (event) => event.nextState % 2 === 0,
+const [state] = useBloc(CounterCubit, { 
+  // `state` is only updated if the count is even
+  shouldUpdate: (event) => event.nextState % 2 === 0,
 });
 ```
 
@@ -156,7 +163,7 @@ If `false`, the returned state will never be updated. Use this if you only need 
 ```ts
 // we only need the `bloc` to call `bloc.increment` for example.
 const [, bloc] = useBloc(CounterCubit, {
-	subscribe: false,
+  subscribe: false,
 });
 ```
 
