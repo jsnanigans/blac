@@ -1,6 +1,17 @@
 {
   "name": "bloc-react",
   "version": "0.0.16",
+  "license": "MIT",
+  "main": "dist/bloc-react.js",
+  "module": "dist/bloc-react.mjs",
+  "typings": "dist/bloc-react.d.ts",
+  "keywords": [
+    "bloc",
+    "state",
+    "react",
+    "rxjs",
+    "reactive"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -9,9 +20,6 @@
     "prettier": "prettier --write ./src",
     "test": "jest"
   },
-  "main": "dist/bloc-react.js",
-  "module": "dist/bloc-react.mjs",
-  "typings": "dist/bloc-react.d.ts",
   "dependencies": {
     "nanoid": "^3.1.22",
     "rxjs": "^7.0.0"
