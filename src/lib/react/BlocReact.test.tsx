@@ -104,7 +104,7 @@ describe("BlocReact", function() {
 
     it("should call `shouldUpdate` and only update state if it returns true", function() {
       const { result } = renderHook(() => testState.useBloc(Test1, {
-        shouldUpdate: (prev, state) => state % 2 === 0
+        shouldUpdate: (event) => event.nextState % 2 === 0
       }));
       const [, instance] = result.current;
       expect(result.current[0]).toBe(1);

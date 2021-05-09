@@ -1,15 +1,23 @@
 import React, { ReactElement, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { nanoid } from "nanoid";
 import BlocBase from "../BlocBase";
-import { BlocClass, BlocHookData, ValueType } from "../types";
+import { BlocClass, BlocHookData, ChangeEvent, ValueType } from "../types";
 import { BlocConsumer } from "../BlocConsumer";
 
 interface ReactBlocOptions {
 }
 
 interface BlocHookOptions<T extends BlocBase<any>> {
+  /*
+  Boolean value if the hook should update the returned state value when the BLoC state changes.
+  Set it to false if you only need access to the methods of a Cubit, or the `add` method on a Bloc
+   */
   subscribe?: boolean;
-  shouldUpdate?: (previousState: ValueType<T>, state: ValueType<T>) => boolean;
+  /*
+  Decide weather the returned state value should be updated or not. Will have no effect if `subscribe` is false.
+  Receives a ChangeEvent<T> as a parameter and expects a boolean return value.
+   */
+  shouldUpdate?: (event: ChangeEvent<ValueType<T>>) => boolean;
 }
 
 const defaultBlocHookOptions: BlocHookOptions<any> = {
@@ -84,9 +92,9 @@ export class BlocReact extends BlocConsumer {
 
     const [data, setData] = useState(blocInstance.state);
 
-    const updateData = useCallback((newState: ValueType<T>) => {
-      if (shouldUpdate === true || shouldUpdate(data, newState)) {
-        setData(newState);
+    const updateData = useCallback((nextState: ValueType<T>) => {
+      if (shouldUpdate === true || shouldUpdate({ nextState, currentState: data })) {
+        setData(nextState);
       }
     }, []);
 
@@ -104,7 +112,7 @@ export class BlocReact extends BlocConsumer {
   };
 
   // Components
-  BlocBuilder <T extends BlocBase<any>>(props: {
+  BlocBuilder<T extends BlocBase<any>>(props: {
     blocClass: BlocClass<T>;
     builder: (data: BlocHookData<T>) => ReactElement;
     shouldUpdate?: (
@@ -118,7 +126,7 @@ export class BlocReact extends BlocConsumer {
     return props.builder(hook);
   };
 
-  BlocProvider <T extends BlocBase<any>>(props: {
+  BlocProvider<T extends BlocBase<any>>(props: {
     children?: ReactElement | ReactElement[];
     create: (providerKey: string) => T;
   }): ReactElement {
