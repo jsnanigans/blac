@@ -11,9 +11,7 @@ describe("Cubit", () => {
       this.onChange = spy.onChange;
     }
 
-    increment = (): void => {
-      this.emit(this.state + 1);
-    };
+    increment = (): void => this.emit(this.state + 1);
   }
 
   beforeEach(() => {

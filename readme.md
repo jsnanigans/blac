@@ -25,7 +25,8 @@ Everything revolves around [**subjects**](https://rxjs-dev.firebaseapp.com/guide
 ```typescript  
 // CounterCubit.ts  
 export default class CounterCubit extends Cubit<number> {  
- increment = (): void => { this.emit(this.state + 1); };}  
+  increment = (): void => this.emit(this.state + 1)    
+}  
 ```  
 
 ### 2. Create a new **BlocReact** instance and export `useBloc` from it
