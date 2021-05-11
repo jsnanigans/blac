@@ -298,9 +298,9 @@ class BlocReact extends BlocConsumer {
         ];
       }
       const [data, setData] = React.useState(blocInstance.state);
-      const updateData = React.useCallback((newState) => {
-        if (shouldUpdate === true || shouldUpdate(data, newState)) {
-          setData(newState);
+      const updateData = React.useCallback((nextState) => {
+        if (shouldUpdate === true || shouldUpdate({nextState, currentState: data})) {
+          setData(nextState);
         }
       }, []);
       React.useEffect(() => {
@@ -327,7 +327,7 @@ class BlocReact extends BlocConsumer {
   BlocProvider(props) {
     const providerKey = React.useMemo(() => "p_" + nanoid.nanoid(), []);
     const bloc = React.useMemo(() => {
-      const newBloc = props.create(providerKey);
+      const newBloc = typeof props.bloc === "function" ? props.bloc(providerKey) : props.bloc;
       newBloc._localProviderRef = providerKey;
       this.addLocalBloc(providerKey, newBloc);
       return newBloc;

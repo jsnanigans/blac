@@ -104,7 +104,7 @@ declare class Cubit<T> extends BlocBase<T> {
 
 interface BlocHookOptions<T extends BlocBase<any>> {
     subscribe?: boolean;
-    shouldUpdate?: (previousState: ValueType<T>, state: ValueType<T>) => boolean;
+    shouldUpdate?: (event: ChangeEvent<ValueType<T>>) => boolean;
 }
 declare class BlocReact extends BlocConsumer {
     private readonly _blocsGlobal;
@@ -114,11 +114,11 @@ declare class BlocReact extends BlocConsumer {
     BlocBuilder<T extends BlocBase<any>>(props: {
         blocClass: BlocClass<T>;
         builder: (data: BlocHookData<T>) => ReactElement;
-        shouldUpdate?: (previousState: ValueType<T>, state: ValueType<T>) => boolean;
+        shouldUpdate?: (event: ChangeEvent<ValueType<T>>) => boolean;
     }): ReactElement | null;
     BlocProvider<T extends BlocBase<any>>(props: {
         children?: ReactElement | ReactElement[];
-        create: (providerKey: string) => T;
+        bloc: T | ((providerKey: string) => T);
     }): ReactElement;
 }
 
