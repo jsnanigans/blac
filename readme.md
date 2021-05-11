@@ -170,13 +170,14 @@ const [, bloc] = useBloc(CounterCubit, {
 
 ## BlocProvider
 Create a local state on demand with the `BlocProvider`. A context is created that then is available in the children of the BlocProvider.  When the global and the local state both have the same Bloc, the local one is used.
-In the `create` property, pass a function that returns a new instance of the Bloc you want to provide.
+In the `bloc` property, pass a function that returns a new instance of the BLoC you want to provide. Or pass the BLoC directly.
 
 ```ts
 const Counter: FC = (): ReactElement => {
   return <div>
     <BlocProvider<CounterCubit>
-      create={() => new CounterCubit()}
+      bloc={() => new CounterCubit()}
+      // bloc={new CounterCubit()} // can also be passed directly
     >
 	    <Counter />
     </BlocProvider>

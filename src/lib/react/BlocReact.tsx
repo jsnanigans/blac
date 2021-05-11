@@ -125,12 +125,12 @@ export class BlocReact extends BlocConsumer {
 
   BlocProvider<T extends BlocBase<any>>(props: {
     children?: ReactElement | ReactElement[];
-    create: (providerKey: string) => T;
+    bloc: T | ((providerKey: string) => T);
   }): ReactElement {
     const providerKey = useMemo(() => "p_" + nanoid(), []);
 
     const bloc = useMemo<T>(() => {
-      const newBloc = props.create(providerKey);
+      const newBloc = typeof props.bloc === 'function' ? props.bloc(providerKey) : props.bloc;
       newBloc._localProviderRef = providerKey;
       this.addLocalBloc(providerKey, newBloc);
 

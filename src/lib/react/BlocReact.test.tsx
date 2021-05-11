@@ -81,7 +81,7 @@ describe("BlocReact", function() {
 
       const Provider = () => {
         return <BlocProvider
-          create={() => new Test2(initialValue)}
+          bloc={() => new Test2(initialValue)}
         >
           <Consumer />
         </BlocProvider>;
@@ -129,13 +129,13 @@ describe("BlocReact", function() {
       const initialValue = 88;
       const Provider = () => {
         return <BlocProvider
-          create={() => new Test2(initialValue)}
+          bloc={() => new Test2(initialValue)}
         >
           <BlocBuilder
             blocClass={Test2}
             builder={([state]) => <div>{state}</div>}
           />
-        </BlocProvider>;
+        </BlocProvider>
       };
 
       const component = mount(<Provider />);
@@ -158,7 +158,7 @@ describe("BlocReact", function() {
 
       const Provider = () => {
         return <BlocProvider
-          create={() => new Test2(initialValue)}
+          bloc={() => new Test2(initialValue)}
         >
           <Consumer />
         </BlocProvider>;
@@ -169,6 +169,24 @@ describe("BlocReact", function() {
       component.unmount();
       expect(removeLocalBlocMock).toHaveBeenCalledTimes(1);
       done();
+    });
+
+    it("should pass bloc as value, not function", function() {
+      const initialValue = 88;
+      const bloc = new Test2(initialValue);
+      const Provider = () => {
+        return <BlocProvider
+          bloc={bloc}
+        >
+          <BlocBuilder
+            blocClass={Test2}
+            builder={([state]) => <div>{state}</div>}
+          />
+        </BlocProvider>
+      };
+
+      const component = mount(<Provider />);
+      expect(component.text()).toBe(`${initialValue}`);
     });
   });
 });
