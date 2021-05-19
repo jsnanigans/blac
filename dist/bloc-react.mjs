@@ -10,7 +10,7 @@ const cubitDefaultOptions = {
 
 class StreamAbstraction {
   constructor(initialValue, blocOptions = {}) {
-    this.subscribe = (next, error, complete) => this._subject.subscribe(next, error, complete);
+    this.subscribe = (next) => this._subject.subscribe(next);
     this.complete = () => this._subject.complete();
     this.clearCache = () => {
       const key = this._options.persistKey;
@@ -159,6 +159,7 @@ class BlocObserver {
 class BlocConsumer {
   constructor(blocs) {
     this.mocksEnabled = false;
+    this.providerList = [];
     this._blocMapLocal = {};
     this.blocChangeObservers = [];
     this.blocValueChangeObservers = [];
@@ -201,15 +202,15 @@ class BlocConsumer {
   addBlocValueChangeObserver(blocClass, callback, scope = "all") {
     this.blocValueChangeObservers.push([blocClass, callback, scope]);
   }
-  addLocalBloc(key, bloc) {
-    this._blocMapLocal[key] = bloc;
-    bloc.consumer = this;
-    bloc.onRegister?.(this);
+  addLocalBloc(item) {
+    this.providerList.push(item);
+    item.bloc.consumer = this;
+    item.bloc.onRegister?.(this);
   }
   removeLocalBloc(key) {
-    const bloc = this._blocMapLocal[key];
-    bloc.complete();
-    delete this._blocMapLocal[key];
+    const item = this.providerList.find((i) => i.id !== key);
+    item?.bloc.complete();
+    this.providerList = this.providerList.filter((e) => e !== item);
   }
   addBlocMock(bloc) {
     if (this.mocksEnabled) {
@@ -227,6 +228,24 @@ class BlocConsumer {
       }
     }
     return this.blocListGlobal.find((c) => c instanceof blocClass);
+  }
+  getLocalBlocForProvider(key, blocClass) {
+    for (const providerItem of this.providerList) {
+      if (providerItem.id === key) {
+        if (providerItem.bloc instanceof blocClass) {
+          return providerItem.bloc;
+        }
+        let parent = providerItem.parent;
+        while (parent) {
+          const parentItem = this.providerList.find((i) => i.id === parent);
+          if (parentItem?.bloc instanceof blocClass) {
+            return parentItem.bloc;
+          }
+          parent = parentItem?.parent;
+        }
+      }
+    }
+    return void 0;
   }
   getBlocInstance(global, blocClass) {
     if (this.mocksEnabled) {
@@ -259,7 +278,9 @@ class BlocReact extends BlocConsumer {
         ...options
       };
       const localProviderKey = useContext(this._contextLocalProviderKey);
-      const localBlocInstance = this._blocMapLocal[localProviderKey];
+      console.log({localProviderKey});
+      const localBlocInstance = this.getLocalBlocForProvider(localProviderKey, blocClass);
+      console.log({localBlocInstance});
       const {subscribe, shouldUpdate = true} = mergedOptions;
       const blocInstance = localBlocInstance || this.getBlocInstance(this._blocsGlobal, blocClass);
       if (!blocInstance) {
@@ -318,10 +339,19 @@ class BlocReact extends BlocConsumer {
   }
   BlocProvider(props) {
     const providerKey = useMemo(() => "p_" + nanoid(), []);
+    const localProviderKey = useContext(this._contextLocalProviderKey);
     const bloc = useMemo(() => {
       const newBloc = typeof props.bloc === "function" ? props.bloc(providerKey) : props.bloc;
-      newBloc._localProviderRef = providerKey;
-      this.addLocalBloc(providerKey, newBloc);
+      if (newBloc) {
+        newBloc._localProviderRef = providerKey;
+        this.addLocalBloc({
+          bloc: newBloc,
+          id: providerKey,
+          parent: localProviderKey
+        });
+      } else {
+        console.error(`BLoC is undefined`);
+      }
       return newBloc;
     }, []);
     const context = useMemo(() => {

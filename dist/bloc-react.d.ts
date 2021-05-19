@@ -37,9 +37,15 @@ declare class BlocObserver {
 }
 
 declare type BlocObserverScope = "local" | "global" | "all";
+interface ProviderItem {
+    id: string;
+    parent?: string;
+    bloc: BlocBase<any>;
+}
 declare class BlocConsumer {
     observer: BlocObserver;
     mocksEnabled: boolean;
+    providerList: ProviderItem[];
     protected _blocMapLocal: Record<string, BlocBase<any>>;
     private blocListGlobal;
     private blocChangeObservers;
@@ -51,11 +57,12 @@ declare class BlocConsumer {
     notifyTransition(bloc: BlocBase<any>, state: any, event: any): void;
     addBlocChangeObserver<T extends BlocBase<any>>(blocClass: BlocClass<T>, callback: (bloc: T, event: ChangeEvent<ValueType<T>>) => unknown, scope?: BlocObserverScope): void;
     addBlocValueChangeObserver<T extends BlocBase<any>>(blocClass: BlocClass<T>, callback: (bloc: T) => unknown, scope?: BlocObserverScope): void;
-    addLocalBloc(key: string, bloc: BlocBase<any>): void;
+    addLocalBloc(item: ProviderItem): void;
     removeLocalBloc(key: string): void;
     addBlocMock(bloc: BlocBase<any>): void;
     resetMocks(): void;
     getGlobalBloc(blocClass: BlocClass<any>): undefined | BlocBase<any>;
+    getLocalBlocForProvider<T>(key: string, blocClass: BlocClass<T>): BlocBase<T> | undefined;
     protected getBlocInstance<T>(global: BlocBase<any>[], blocClass: BlocClass<T>): BlocBase<T> | undefined;
 }
 
@@ -64,7 +71,7 @@ declare class StreamAbstraction<T> {
     private _subject;
     constructor(initialValue: T, blocOptions?: BlocOptions);
     get state(): T;
-    subscribe: (next?: ((value: T) => void) | undefined, error?: ((error: any) => void) | undefined, complete?: (() => void) | undefined) => Subscription;
+    subscribe: (next?: ((value: any) => void) | undefined) => Subscription;
     complete: () => void;
     clearCache: () => void;
     jsonToState(state: string): T;
