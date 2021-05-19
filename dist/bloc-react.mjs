@@ -36,7 +36,7 @@ class StreamAbstraction {
       return new Error("Key not found");
     };
     this.updateCache = () => {
-      const {persistData, persistKey} = this._options;
+      const { persistData, persistKey } = this._options;
       if (persistData && persistKey) {
         localStorage.setItem(`${LOCAL_STORAGE_PREFIX}${persistKey}`, this.stateToJson(this.state));
       } else {
@@ -44,7 +44,7 @@ class StreamAbstraction {
       }
     };
     let value = initialValue;
-    const options = {...cubitDefaultOptions, ...blocOptions};
+    const options = { ...cubitDefaultOptions, ...blocOptions };
     this._options = options;
     if (options.persistKey && options.persistData) {
       const cachedValue = this.getCachedValue();
@@ -61,7 +61,7 @@ class StreamAbstraction {
     return JSON.parse(state).state;
   }
   stateToJson(state) {
-    return JSON.stringify({state});
+    return JSON.stringify({ state });
   }
 }
 
@@ -278,10 +278,10 @@ class BlocReact extends BlocConsumer {
         ...options
       };
       const localProviderKey = useContext(this._contextLocalProviderKey);
-      console.log({localProviderKey});
+      console.log({ localProviderKey });
       const localBlocInstance = this.getLocalBlocForProvider(localProviderKey, blocClass);
-      console.log({localBlocInstance});
-      const {subscribe, shouldUpdate = true} = mergedOptions;
+      console.log({ localBlocInstance });
+      const { subscribe, shouldUpdate = true } = mergedOptions;
       const blocInstance = localBlocInstance || this.getBlocInstance(this._blocsGlobal, blocClass);
       if (!blocInstance) {
         const name = blocClass.prototype.constructor.name;
@@ -312,7 +312,7 @@ class BlocReact extends BlocConsumer {
       }
       const [data, setData] = useState(blocInstance.state);
       const updateData = useCallback((nextState) => {
-        if (shouldUpdate === true || shouldUpdate({nextState, currentState: data})) {
+        if (shouldUpdate === true || shouldUpdate({ nextState, currentState: data })) {
           setData(nextState);
         }
       }, []);
