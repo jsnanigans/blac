@@ -286,9 +286,7 @@ class BlocReact extends BlocConsumer {
         ...options
       };
       const localProviderKey = React.useContext(this._contextLocalProviderKey);
-      console.log({ localProviderKey });
       const localBlocInstance = this.getLocalBlocForProvider(localProviderKey, blocClass);
-      console.log({ localBlocInstance });
       const { subscribe, shouldUpdate = true } = mergedOptions;
       const blocInstance = localBlocInstance || this.getBlocInstance(this._blocsGlobal, blocClass);
       if (!blocInstance) {
