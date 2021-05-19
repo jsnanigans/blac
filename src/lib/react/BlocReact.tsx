@@ -54,15 +54,9 @@ export class BlocReact extends BlocConsumer {
       ...defaultBlocHookOptions,
       ...options
     };
-
     const localProviderKey = useContext(this._contextLocalProviderKey);
-
-    console.log({ localProviderKey });
     const localBlocInstance = this.getLocalBlocForProvider(localProviderKey, blocClass);
-    console.log({ localBlocInstance });
-
     const { subscribe, shouldUpdate = true } = mergedOptions;
-
     const blocInstance: undefined | BlocBase<T> = localBlocInstance || this.getBlocInstance(this._blocsGlobal, blocClass);
 
     if (!blocInstance) {
