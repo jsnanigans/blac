@@ -80,8 +80,6 @@ describe("StreamAbstraction", () => {
     describe("Stream Methods", () => {
       const spy = {
         next: jest.fn(),
-        error: jest.fn(),
-        complete: jest.fn(),
       };
 
       beforeEach(() => {
@@ -90,18 +88,10 @@ describe("StreamAbstraction", () => {
 
       it("should expose a method `subscribe` to listen for changes", () => {
         const stream = new StreamAbstractionExposed(0);
-        stream.subscribe(spy.next, spy.error, spy.complete);
+        stream.subscribe(spy.next);
         expect(spy.next).toHaveBeenCalledTimes(1);
         stream.next_exposed(2);
         expect(spy.next).toHaveBeenCalledTimes(2);
-      });
-
-      it("should expose complete method to close the stream", () => {
-        const stream = new StreamAbstractionExposed(0);
-        const sub = stream.subscribe(spy.next, spy.error, spy.complete);
-        stream.complete();
-        expect(spy.complete).toHaveBeenCalledTimes(1);
-        expect(sub.closed).toBe(true);
       });
     });
   });

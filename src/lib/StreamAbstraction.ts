@@ -26,10 +26,8 @@ export default class StreamAbstraction<T> {
   }
 
   public subscribe = (
-    next?: (value: T) => void,
-    error?: (error: any) => void,
-    complete?: () => void
-  ): Subscription => this._subject.subscribe(next, error, complete);
+    next?: (value: any) => void
+  ): Subscription => this._subject.subscribe(next);
 
   public complete = (): void => this._subject.complete();
 
@@ -38,7 +36,7 @@ export default class StreamAbstraction<T> {
     if (key) {
       localStorage.removeItem(`${LOCAL_STORAGE_PREFIX}${key}`);
     }
-  }
+  };
 
   jsonToState(state: string): T {
     return JSON.parse(state).state;
@@ -51,7 +49,7 @@ export default class StreamAbstraction<T> {
   protected next = (value: T): void => {
     this._subject.next(value);
     this.updateCache();
-  }
+  };
 
   protected getCachedValue = (): T | Error => {
     const cachedValue = localStorage.getItem(
@@ -69,7 +67,7 @@ export default class StreamAbstraction<T> {
       }
     }
     return new Error("Key not found");
-  }
+  };
 
   protected updateCache = (): void => {
     const { persistData, persistKey } = this._options;
@@ -81,5 +79,5 @@ export default class StreamAbstraction<T> {
     } else {
       this.clearCache();
     }
-  }
+  };
 }

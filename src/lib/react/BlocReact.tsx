@@ -56,11 +56,14 @@ export class BlocReact extends BlocConsumer {
     };
 
     const localProviderKey = useContext(this._contextLocalProviderKey);
-    const localBlocInstance = this._blocMapLocal[localProviderKey];
+
+    console.log({ localProviderKey });
+    const localBlocInstance = this.getLocalBlocForProvider(localProviderKey, blocClass);
+    console.log({ localBlocInstance });
 
     const { subscribe, shouldUpdate = true } = mergedOptions;
 
-    const blocInstance = localBlocInstance || this.getBlocInstance(this._blocsGlobal, blocClass);
+    const blocInstance: undefined | BlocBase<T> = localBlocInstance || this.getBlocInstance(this._blocsGlobal, blocClass);
 
     if (!blocInstance) {
       const name = blocClass.prototype.constructor.name;
@@ -90,7 +93,7 @@ export class BlocReact extends BlocConsumer {
       ] as unknown) as BlocHookData<T>;
     }
 
-    const [data, setData] = useState(blocInstance.state);
+    const [data, setData] = useState<ValueType<T>>(blocInstance.state as ValueType<T>);
 
     const updateData = useCallback((nextState: ValueType<T>) => {
       if (shouldUpdate === true || shouldUpdate({ nextState, currentState: data })) {
@@ -129,11 +132,20 @@ export class BlocReact extends BlocConsumer {
   }): ReactElement {
     const providerKey = useMemo(() => "p_" + nanoid(), []);
 
+    const localProviderKey = useContext(this._contextLocalProviderKey);
     const bloc = useMemo<T>(() => {
-      const newBloc = typeof props.bloc === 'function' ? props.bloc(providerKey) : props.bloc;
-      newBloc._localProviderRef = providerKey;
-      this.addLocalBloc(providerKey, newBloc);
-
+      const newBloc = typeof props.bloc === "function" ? props.bloc(providerKey) : props.bloc;
+      if (newBloc) {
+        newBloc._localProviderRef = providerKey;
+        this.addLocalBloc({
+          bloc: newBloc,
+          id: providerKey,
+          parent: localProviderKey
+        });
+        // providerKey, newBloc
+      } else {
+        console.error(`BLoC is undefined`);
+      }
       return newBloc;
     }, []);
 

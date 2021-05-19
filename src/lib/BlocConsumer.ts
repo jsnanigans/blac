@@ -20,9 +20,16 @@ type BlocValueChangeObserverList = [
   BlocObserverScope
 ];
 
+export interface ProviderItem {
+  id: string,
+  parent?: string,
+  bloc: BlocBase<any>,
+}
+
 export class BlocConsumer {
   observer: BlocObserver;
   public mocksEnabled = false;
+  providerList: ProviderItem[] = [];
   protected _blocMapLocal: Record<string, BlocBase<any>> = {};
   private blocListGlobal: BlocBase<any>[];
   private blocChangeObservers: BlocChangeObserverList[] = [];
@@ -90,16 +97,16 @@ export class BlocConsumer {
     this.blocValueChangeObservers.push([blocClass, callback, scope]);
   }
 
-  public addLocalBloc(key: string, bloc: BlocBase<any>) {
-    this._blocMapLocal[key] = bloc;
-    bloc.consumer = this;
-    bloc.onRegister?.(this);
+  public addLocalBloc(item: ProviderItem) {
+    this.providerList.push(item);
+    item.bloc.consumer = this;
+    item.bloc.onRegister?.(this);
   }
 
   public removeLocalBloc(key: string) {
-    const bloc = this._blocMapLocal[key];
-    bloc.complete();
-    delete this._blocMapLocal[key];
+    const item = this.providerList.find(i => i.id !== key);
+    item?.bloc.complete();
+    this.providerList = this.providerList.filter(e => e !== item);
   }
 
   public addBlocMock(bloc: BlocBase<any>): void {
@@ -114,23 +121,44 @@ export class BlocConsumer {
 
   public getGlobalBloc(blocClass: BlocClass<any>): undefined | BlocBase<any> {
     if (this.mocksEnabled) {
-      const mockedBloc = this.mockBlocs.find((c) => c instanceof blocClass)
+      const mockedBloc = this.mockBlocs.find((c) => c instanceof blocClass);
       if (mockedBloc) {
-        return mockedBloc
+        return mockedBloc;
       }
     }
 
-    return this.blocListGlobal.find(c => c instanceof blocClass)
+    return this.blocListGlobal.find(c => c instanceof blocClass);
+  }
+
+  public getLocalBlocForProvider<T>(key: string, blocClass: BlocClass<T>): BlocBase<T> | undefined {
+    for (const providerItem of this.providerList) {
+      if (providerItem.id === key) {
+        if (providerItem.bloc instanceof blocClass) {
+          return providerItem.bloc;
+        }
+
+        let parent = providerItem.parent;
+        while (parent) {
+          const parentItem = this.providerList.find(i => i.id === parent);
+          if (parentItem?.bloc instanceof blocClass) {
+            return parentItem.bloc;
+          }
+
+          parent = parentItem?.parent;
+        }
+      }
+    }
+
+    return undefined;
   }
 
   protected getBlocInstance<T>(global: BlocBase<any>[], blocClass: BlocClass<T>): BlocBase<T> | undefined {
     if (this.mocksEnabled) {
-      const mockedBloc = this.mockBlocs.find((c) => c instanceof blocClass)
+      const mockedBloc = this.mockBlocs.find((c) => c instanceof blocClass);
       if (mockedBloc) {
-        return mockedBloc
+        return mockedBloc;
       }
     }
-
 
     return global.find((c) => c instanceof blocClass);
   }

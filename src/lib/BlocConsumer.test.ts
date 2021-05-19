@@ -44,7 +44,7 @@ describe("BlocConsumer", function() {
       const local = new Test1();
       const listener = new ChangeListener(notify, Test1);
       const consumer = new BlocConsumer([global, listener]);
-      consumer.addLocalBloc("abc", local);
+      consumer.addLocalBloc({ bloc: local, id: "abc" });
       expect(notify).toHaveBeenCalledTimes(0);
       global.increment(); // should trigger listener "all"
       expect(notify).toHaveBeenCalledTimes(1);
@@ -59,7 +59,7 @@ describe("BlocConsumer", function() {
       const local = new Test1();
       const listener = new ChangeListener(notify, Test1, "local");
       const consumer = new BlocConsumer([global, listener]);
-      consumer.addLocalBloc("abc", local); // should trigger listener "local"
+      consumer.addLocalBloc({ bloc: local, id: "abc" }); // should trigger listener "local"
       global.increment(); // should not trigger listener "local"
       expect(notify).toHaveBeenCalledTimes(0);
       local.increment(); // should trigger listener "local"
@@ -73,7 +73,7 @@ describe("BlocConsumer", function() {
       const local = new Test1();
       const listener = new ChangeListener(notify, Test1, "global");
       const consumer = new BlocConsumer([global, listener]);
-      consumer.addLocalBloc("abc", local); // should not trigger listener "global"
+      consumer.addLocalBloc({ bloc: local, id: "abc" }); // should not trigger listener "global"
       expect(notify).toHaveBeenCalledTimes(0);
       global.increment(); // should trigger listener "global"
       expect(notify).toHaveBeenCalledTimes(1);
@@ -88,7 +88,7 @@ describe("BlocConsumer", function() {
       const local = new Test1();
       const listener = new ChangeListener(notify, Test1, "all");
       const consumer = new BlocConsumer([global, listener]);
-      consumer.addLocalBloc("abc", local); // should trigger listener "all"
+      consumer.addLocalBloc({ bloc: local, id: "abc" }); // should trigger listener "all"
       global.increment(); // should trigger listener "all"
       expect(notify).toHaveBeenCalledTimes(1);
       expect(notify).toHaveBeenCalledWith(global, { currentState: 1, nextState: 2 });
@@ -105,7 +105,7 @@ describe("BlocConsumer", function() {
       const local = new Test1();
       const listener = new ValueChangeListener(notify, Test1);
       const consumer = new BlocConsumer([global, listener]);
-      consumer.addLocalBloc("abc", local);
+      consumer.addLocalBloc({ bloc: local, id: "abc" });
       expect(notify).toHaveBeenCalledTimes(0);
       global.increment(); // should trigger listener "all"
       expect(notify).toHaveBeenCalledTimes(1);
@@ -120,7 +120,7 @@ describe("BlocConsumer", function() {
       const local = new Test1();
       const listener = new ValueChangeListener(notify, Test1, "local");
       const consumer = new BlocConsumer([global, listener]);
-      consumer.addLocalBloc("abc", local); // should trigger listener "local"
+      consumer.addLocalBloc({ bloc: local, id: "abc" }); // should trigger listener "local"
       global.increment(); // should not trigger listener "local"
       expect(notify).toHaveBeenCalledTimes(0);
       local.increment(); // should trigger listener "local"
@@ -134,7 +134,7 @@ describe("BlocConsumer", function() {
       const local = new Test1();
       const listener = new ValueChangeListener(notify, Test1, "global");
       const consumer = new BlocConsumer([global, listener]);
-      consumer.addLocalBloc("abc", local); // should not trigger listener "global"
+      consumer.addLocalBloc({ bloc: local, id: "abc" }); // should not trigger listener "global"
       expect(notify).toHaveBeenCalledTimes(0);
       global.increment(); // should trigger listener "global"
       expect(notify).toHaveBeenCalledTimes(1);
@@ -149,7 +149,7 @@ describe("BlocConsumer", function() {
       const local = new Test1();
       const listener = new ValueChangeListener(notify, Test1, "all");
       const consumer = new BlocConsumer([global, listener]);
-      consumer.addLocalBloc("abc", local); // should trigger listener "all"
+      consumer.addLocalBloc({ bloc: local, id: "abc" }); // should trigger listener "all"
       global.increment(); // should trigger listener "all"
       expect(notify).toHaveBeenCalledTimes(1);
       expect(notify).toHaveBeenCalledWith(global);

@@ -1,17 +1,24 @@
 import Typography from "@material-ui/core/Typography";
 import React from "react";
 import { makeStyles } from "@material-ui/core/styles";
-import { BlocBuilder, BlocProvider } from "../state";
+import { BlocBuilder, BlocProvider, useBloc } from "../state";
 import Buttons from "./Buttonts";
 import CounterCubit from "../bloc/CounterCubit";
 import Auth from "./Auth";
 import { Box, Button, Card, CardContent } from "@material-ui/core";
 import AuthBloc, { AuthEvent } from "../bloc/AuthBloc";
+import TestLocalCubit from "../bloc/TestLocalCubit";
 
 const useStyles = makeStyles((theme) => ({
   // necessary for content to be below app bar
-  toolbar: theme.mixins.toolbar,
+  toolbar: theme.mixins.toolbar
 }));
+
+const TestLocalBloc = () => {
+  const [s, q] = useBloc(TestLocalCubit);
+  console.log(q);
+  return <Button onClick={() => q.emit(`${Math.random()}`)}>{s}</Button>;
+};
 
 export default function Sandbox() {
   const classes = useStyles();
@@ -87,7 +94,7 @@ export default function Sandbox() {
       <Card>
         <CardContent>
           <BlocProvider<CounterCubit>
-            create={() => new CounterCubit("local_1")}
+            bloc={() => new CounterCubit("local_1")}
           >
             <Typography variant="h4">Local Provider #1</Typography>
             <BlocBuilder<CounterCubit>
@@ -102,7 +109,7 @@ export default function Sandbox() {
           </BlocProvider>
 
           <BlocProvider<CounterCubit>
-            create={() => new CounterCubit("local_2")}
+            bloc={() => new CounterCubit("local_2")}
           >
             <Typography variant="h4">Local Provider #2</Typography>
             <BlocBuilder<CounterCubit>
@@ -116,27 +123,15 @@ export default function Sandbox() {
             />
           </BlocProvider>
 
-          {/*<BlocProvider<LocalCounterCubit>*/}
-          {/*    create={() => new LocalCounterCubit()}*/}
-          {/*>*/}
-          {/*    <BlocBuilder<LocalCounterCubit>*/}
-          {/*        bloc={LocalCounterCubit}*/}
-          {/*        builder={([value, {increment}]) => <div>*/}
-          {/*            <Button onClick={() => increment()}>{value}</Button>*/}
-          {/*        </div>}*/}
-          {/*    />*/}
-          {/*</BlocProvider>*/}
-
-          {/*<BlocProvider<LocalCounterCubit>*/}
-          {/*    create={() => new LocalCounterCubit()}*/}
-          {/*>*/}
-          {/*    <BlocBuilder<LocalCounterCubit>*/}
-          {/*        bloc={LocalCounterCubit}*/}
-          {/*        builder={([value, {increment}]) => <div>*/}
-          {/*            <Button onClick={() => increment()}>{value}</Button>*/}
-          {/*        </div>}*/}
-          {/*    />*/}
-          {/*</BlocProvider>*/}
+          <BlocProvider<CounterCubit>
+            bloc={new CounterCubit()}
+          >
+            <BlocProvider<TestLocalCubit>
+            bloc={new TestLocalCubit()}
+          >
+              <TestLocalBloc />
+            </BlocProvider>
+          </BlocProvider>
         </CardContent>
       </Card>
     </>
