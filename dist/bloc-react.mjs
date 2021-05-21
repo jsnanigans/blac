@@ -1,5 +1,5 @@
 import { BehaviorSubject } from 'rxjs';
-import React, { useContext, useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useContext, useMemo, useState, useCallback, useEffect } from 'react';
 
 const LOCAL_STORAGE_PREFIX = "data.";
 const cubitDefaultOptions = {
@@ -207,10 +207,10 @@ class BlocConsumer {
     item.bloc.onRegister?.(this);
   }
   removeLocalBloc(id, bloc) {
-    const item = this.providerList.find((i) => i.id !== id);
+    const item = this.providerList.find((i) => i.id === id && i.bloc === bloc);
     if (item) {
       item.bloc.complete();
-      this.providerList = this.providerList.filter((e) => !(e.id !== item.id && e.bloc === bloc));
+      this.providerList = this.providerList.filter((i) => i !== item);
     }
   }
   addBlocMock(bloc) {
@@ -279,9 +279,9 @@ class BlocReact extends BlocConsumer {
         ...options
       };
       const localProviderKey = useContext(this._contextLocalProviderKey);
-      const localBlocInstance = this.getLocalBlocForProvider(localProviderKey, blocClass);
+      const localBlocInstance = useMemo(() => this.getLocalBlocForProvider(localProviderKey, blocClass), []);
       const { subscribe, shouldUpdate = true } = mergedOptions;
-      const blocInstance = localBlocInstance || this.getBlocInstance(this._blocsGlobal, blocClass);
+      const blocInstance = useMemo(() => localBlocInstance || this.getBlocInstance(this._blocsGlobal, blocClass), []);
       if (!blocInstance) {
         const name = blocClass.prototype.constructor.name;
         const error = new BlocRuntimeError(`"${name}" 
