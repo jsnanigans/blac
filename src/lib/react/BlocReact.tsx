@@ -54,9 +54,9 @@ export class BlocReact extends BlocConsumer {
       ...options
     };
     const localProviderKey = useContext(this._contextLocalProviderKey);
-    const localBlocInstance = this.getLocalBlocForProvider(localProviderKey, blocClass);
+    const localBlocInstance = useMemo(() => this.getLocalBlocForProvider(localProviderKey, blocClass), []);
     const { subscribe, shouldUpdate = true } = mergedOptions;
-    const blocInstance: undefined | BlocBase<T> = localBlocInstance || this.getBlocInstance(this._blocsGlobal, blocClass);
+    const blocInstance: undefined | BlocBase<T> = useMemo(() => localBlocInstance || this.getBlocInstance(this._blocsGlobal, blocClass), []);
 
     if (!blocInstance) {
       const name = blocClass.prototype.constructor.name;
