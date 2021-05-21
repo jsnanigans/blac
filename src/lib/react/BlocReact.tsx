@@ -1,5 +1,4 @@
 import React, { ReactElement, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { nanoid } from "nanoid";
 import BlocBase from "../BlocBase";
 import { BlocClass, BlocHookData, ChangeEvent, ValueType } from "../types";
 import { BlocConsumer } from "../BlocConsumer";
@@ -37,7 +36,7 @@ class NoValue {
 
 export class BlocReact extends BlocConsumer {
   private readonly _blocsGlobal: BlocBase<any>[];
-  private _contextLocalProviderKey = React.createContext("");
+  private _contextLocalProviderKey = React.createContext<number>(0);
 
   constructor(blocs: BlocBase<any>[]) {
     super(blocs);
@@ -122,21 +121,18 @@ export class BlocReact extends BlocConsumer {
 
   BlocProvider<T extends BlocBase<any>>(props: {
     children?: ReactElement | ReactElement[];
-    bloc: T | ((providerKey: string) => T);
+    bloc: T | ((id: number) => T);
   }): ReactElement {
-    const providerKey = useMemo(() => "p_" + nanoid(), []);
-
+    const id = Date.now()
     const localProviderKey = useContext(this._contextLocalProviderKey);
     const bloc = useMemo<T>(() => {
-      const newBloc = typeof props.bloc === "function" ? props.bloc(providerKey) : props.bloc;
+      const newBloc = typeof props.bloc === "function" ? props.bloc(id) : props.bloc;
       if (newBloc) {
-        newBloc._localProviderRef = providerKey;
         this.addLocalBloc({
           bloc: newBloc,
-          id: providerKey,
+          id,
           parent: localProviderKey
         });
-        // providerKey, newBloc
       } else {
         console.error(`BLoC is undefined`);
       }
@@ -149,12 +145,12 @@ export class BlocReact extends BlocConsumer {
 
     useEffect(() => {
       return () => {
-        this.removeLocalBloc(providerKey);
+        this.removeLocalBloc(id, bloc);
       };
     }, []);
 
     return (
-      <this._contextLocalProviderKey.Provider value={providerKey}>
+      <this._contextLocalProviderKey.Provider value={id}>
         <context.Provider value={bloc}>{props.children}</context.Provider>
       </this._contextLocalProviderKey.Provider>
     );

@@ -21,7 +21,6 @@
     "test": "jest"
   },
   "dependencies": {
-    "nanoid": "^3.1.23",
     "rxjs": "^7.0.1"
   },
   "devDependencies": {

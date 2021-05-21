@@ -1,5 +1,5 @@
 import Typography from "@material-ui/core/Typography";
-import React from "react";
+import React, { useState } from "react";
 import { makeStyles } from "@material-ui/core/styles";
 import { BlocBuilder, BlocProvider, useBloc } from "../state";
 import Buttons from "./Buttonts";
@@ -19,6 +19,33 @@ const TestLocalBloc = () => {
   console.log(q);
   return <Button onClick={() => q.emit(`${Math.random()}`)}>{s}</Button>;
 };
+
+const Killer = () => {
+  const [l, sl] = useState(false);
+  const [s, q] = useBloc(TestLocalCubit);
+  return <div>
+    <Buttons />
+    {l && <div>
+      {s}
+      <hr />
+      <BlocProvider<CounterCubit>
+        bloc={() => new CounterCubit("local_1")}
+      >
+        <Typography variant="h4">Local Provider #1</Typography>
+        <BlocBuilder<CounterCubit>
+          blocClass={CounterCubit}
+          builder={([value, { increment }]) => (
+            <div>
+              <Button onClick={() => increment()}>{value}</Button>
+              <Buttons />
+            </div>
+          )}
+        />
+      </BlocProvider>
+    </div>};
+    <Button onClick={() => sl(!l)}>Toggle</Button>
+  </div>
+}
 
 export default function Sandbox() {
   const classes = useStyles();
@@ -89,6 +116,16 @@ export default function Sandbox() {
       </Card>
 
       <Box m={2} />
+      <Typography variant="h3">Breaking</Typography>
+      <Card>
+        <CardContent>
+          <BlocProvider
+            bloc={() => new TestLocalCubit()}
+          >
+            <Killer />
+          </BlocProvider>
+        </CardContent>
+      </Card>
 
       <Typography variant="h3">Local Providers</Typography>
       <Card>
