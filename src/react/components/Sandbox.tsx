@@ -8,6 +8,7 @@ import Auth from "./Auth";
 import { Box, Button, Card, CardContent } from "@material-ui/core";
 import AuthBloc, { AuthEvent } from "../bloc/AuthBloc";
 import TestLocalCubit from "../bloc/TestLocalCubit";
+import Divider from "@material-ui/core/Divider";
 
 const useStyles = makeStyles((theme) => ({
   // necessary for content to be below app bar
@@ -43,6 +44,8 @@ const Killer = () => {
         />
       </BlocProvider>
     </div>};
+    <Divider />
+    <Button onClick={() => q.emit(`${Math.random()}`)}>RND</Button>
     <Button onClick={() => sl(!l)}>Toggle</Button>
   </div>
 }
@@ -121,6 +124,7 @@ export default function Sandbox() {
         <CardContent>
           <BlocProvider
             bloc={() => new TestLocalCubit()}
+            keepAlive={true}
           >
             <Killer />
           </BlocProvider>

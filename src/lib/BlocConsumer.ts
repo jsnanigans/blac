@@ -104,10 +104,10 @@ export class BlocConsumer {
   }
 
   public removeLocalBloc(id: number, bloc: BlocBase<any>) {
-    const item = this.providerList.find(i => i.id !== id);
+    const item = this.providerList.find(i => i.id !== id && i.bloc === bloc);
     if (item) {
       item.bloc.complete();
-      this.providerList = this.providerList.filter(e => !(e.id !== item.id && e.bloc === bloc));
+      this.providerList = this.providerList.filter(e => e === item);
     }
   }
 
