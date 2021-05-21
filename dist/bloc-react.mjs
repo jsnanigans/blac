@@ -1,6 +1,5 @@
 import { BehaviorSubject } from 'rxjs';
 import React, { useContext, useState, useCallback, useEffect, useMemo } from 'react';
-import { nanoid } from 'nanoid';
 
 const LOCAL_STORAGE_PREFIX = "data.";
 const cubitDefaultOptions = {
@@ -207,10 +206,12 @@ class BlocConsumer {
     item.bloc.consumer = this;
     item.bloc.onRegister?.(this);
   }
-  removeLocalBloc(key) {
-    const item = this.providerList.find((i) => i.id !== key);
-    item?.bloc.complete();
-    this.providerList = this.providerList.filter((e) => e !== item);
+  removeLocalBloc(id, bloc) {
+    const item = this.providerList.find((i) => i.id !== id);
+    if (item) {
+      item.bloc.complete();
+      this.providerList = this.providerList.filter((e) => !(e.id !== item.id && e.bloc === bloc));
+    }
   }
   addBlocMock(bloc) {
     if (this.mocksEnabled) {
@@ -229,9 +230,9 @@ class BlocConsumer {
     }
     return this.blocListGlobal.find((c) => c instanceof blocClass);
   }
-  getLocalBlocForProvider(key, blocClass) {
+  getLocalBlocForProvider(id, blocClass) {
     for (const providerItem of this.providerList) {
-      if (providerItem.id === key) {
+      if (providerItem.id === id) {
         if (providerItem.bloc instanceof blocClass) {
           return providerItem.bloc;
         }
@@ -271,7 +272,7 @@ class NoValue {
 class BlocReact extends BlocConsumer {
   constructor(blocs) {
     super(blocs);
-    this._contextLocalProviderKey = React.createContext("");
+    this._contextLocalProviderKey = React.createContext(0);
     this.useBloc = (blocClass, options = {}) => {
       const mergedOptions = {
         ...defaultBlocHookOptions,
@@ -336,15 +337,14 @@ class BlocReact extends BlocConsumer {
     return props.builder(hook);
   }
   BlocProvider(props) {
-    const providerKey = useMemo(() => "p_" + nanoid(), []);
+    const id = Date.now();
     const localProviderKey = useContext(this._contextLocalProviderKey);
     const bloc = useMemo(() => {
-      const newBloc = typeof props.bloc === "function" ? props.bloc(providerKey) : props.bloc;
+      const newBloc = typeof props.bloc === "function" ? props.bloc(id) : props.bloc;
       if (newBloc) {
-        newBloc._localProviderRef = providerKey;
         this.addLocalBloc({
           bloc: newBloc,
-          id: providerKey,
+          id,
           parent: localProviderKey
         });
       } else {
@@ -357,11 +357,11 @@ class BlocReact extends BlocConsumer {
     }, [bloc]);
     useEffect(() => {
       return () => {
-        this.removeLocalBloc(providerKey);
+        this.removeLocalBloc(id, bloc);
       };
     }, []);
     return /* @__PURE__ */ React.createElement(this._contextLocalProviderKey.Provider, {
-      value: providerKey
+      value: id
     }, /* @__PURE__ */ React.createElement(context.Provider, {
       value: bloc
     }, props.children));
