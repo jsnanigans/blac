@@ -3,7 +3,6 @@ import StreamAbstraction from "./StreamAbstraction";
 import { BlocOptions, ChangeEvent } from "./types";
 
 export default class BlocBase<T> extends StreamAbstraction<T> {
-  _localProviderRef = "";
   onRegister: null | ((consumer: BlocConsumer) => void) = null;
   onChange: null | ((change: ChangeEvent<T>) => void) = null;
   onValueChange: null | ((value: T) => void) = null;

@@ -3,6 +3,7 @@ import { BlocOptions } from "./types";
 import { cubitDefaultOptions, LOCAL_STORAGE_PREFIX } from "./constants";
 
 export default class StreamAbstraction<T> {
+  public isClosed = false;
   protected readonly _options: BlocOptions;
   private _subject: BehaviorSubject<T>;
 
@@ -29,7 +30,10 @@ export default class StreamAbstraction<T> {
     next?: (value: any) => void
   ): Subscription => this._subject.subscribe(next);
 
-  public complete = (): void => this._subject.complete();
+  public complete = (): void => {
+    this.isClosed = true;
+    this._subject.complete();
+  }
 
   public clearCache = (): void => {
     const key = this._options.persistKey;

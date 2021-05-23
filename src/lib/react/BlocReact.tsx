@@ -35,6 +35,7 @@ class NoValue {
 }
 
 export class BlocReact extends BlocConsumer {
+  private providerCount = 0;
   private readonly _blocsGlobal: BlocBase<any>[];
   private _contextLocalProviderKey = React.createContext<number>(0);
 
@@ -123,7 +124,7 @@ export class BlocReact extends BlocConsumer {
     children?: ReactElement | ReactElement[];
     bloc: T | ((id: number) => T);
   }): ReactElement {
-    const id = Date.now()
+    const id = this.providerCount++;
     const localProviderKey = useContext(this._contextLocalProviderKey);
     const bloc = useMemo<T>(() => {
       const newBloc = typeof props.bloc === "function" ? props.bloc(id) : props.bloc;

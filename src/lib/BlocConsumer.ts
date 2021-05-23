@@ -47,6 +47,10 @@ export class BlocConsumer {
   }
 
   notifyChange(bloc: BlocBase<any>, state: any): void {
+    if (bloc.isClosed) {
+      return
+    }
+
     this.observer.addChange(bloc, state);
 
     for (const [blocClass, callback, scope] of this.blocChangeObservers) {
@@ -65,6 +69,10 @@ export class BlocConsumer {
   }
 
   notifyValueChange(bloc: BlocBase<any>): void {
+    if (bloc.isClosed) {
+      return
+    }
+
     for (const [blocClass, callback, scope] of this.blocValueChangeObservers) {
       const isGlobal = this.blocListGlobal.indexOf(bloc) !== -1;
       const matchesScope =
@@ -78,6 +86,10 @@ export class BlocConsumer {
   }
 
   notifyTransition(bloc: BlocBase<any>, state: any, event: any): void {
+    if (bloc.isClosed) {
+      return
+    }
+
     this.observer.addTransition(bloc, state, event);
   }
 

@@ -1,4 +1,5 @@
 import * as rxjs from "rxjs";
+import { BehaviorSubject } from "rxjs";
 import mockConsole from "jest-mock-console";
 import { LOCAL_STORAGE_PREFIX } from "./constants";
 import StreamAbstraction from "./StreamAbstraction";
@@ -92,6 +93,16 @@ describe("StreamAbstraction", () => {
         expect(spy.next).toHaveBeenCalledTimes(1);
         stream.next_exposed(2);
         expect(spy.next).toHaveBeenCalledTimes(2);
+      });
+
+      it("should not update stream after `complete` is called", () => {
+        const stream = new StreamAbstractionExposed(0);
+        stream.subscribe(spy.next);
+        expect(spy.next).toHaveBeenCalledTimes(1);
+        stream.complete();
+        expect(stream.isClosed).toBe(true);
+        stream.next_exposed(2);
+        expect(spy.next).toHaveBeenCalledTimes(1);
       });
     });
   });
