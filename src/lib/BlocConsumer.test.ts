@@ -37,6 +37,20 @@ describe("BlocConsumer", function() {
     expect(register).toHaveBeenCalledTimes(1);
   });
 
+  it("should not emit transition event when closed", function() {
+    const notify = jest.fn();
+    const bloc = new TestBloc();
+    const consumer = new BlocConsumer([]);
+    consumer.addLocalBloc({ bloc, id: 909 });
+    consumer.observer.onTransition = notify;
+    bloc.add(AuthEvent.authenticated);
+    consumer.removeLocalBloc(909, bloc);
+    bloc.add(AuthEvent.unauthenticated);
+
+    expect(notify).toHaveBeenCalledTimes(1);
+
+  });
+
   describe("ChangeListener", function() {
     it("should allow one bloc to listen to another bloc", function() {
       const notify = jest.fn();

@@ -35,12 +35,7 @@ export class ChangeListener extends Cubit<number> {
       );
     };
   }
-
-  increment = () => {
-    this.emit(this.state + 1);
-  };
 }
-
 
 export class ValueChangeListener extends Cubit<number> {
   constructor(

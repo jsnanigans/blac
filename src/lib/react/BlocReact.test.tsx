@@ -91,6 +91,38 @@ describe("BlocReact", function() {
       expect(component.text()).toBe(`${initialValue}`);
     });
 
+    it("should get state from local provider, as value", function() {
+      const initialValue = 88;
+      const Consumer = () => {
+        const [localState] = testState.useBloc(Test2);
+        return <div>{localState}</div>;
+      };
+
+      const Provider = () => {
+        return <BlocProvider
+          bloc={new Test2(initialValue)}
+        >
+          <Consumer />
+        </BlocProvider>;
+      };
+
+      const component = mount(<Provider />);
+      expect(component.text()).toBe(`${initialValue}`);
+    });
+
+    it("should handle bloc not defined", function() {
+      mockConsole();
+      const Provider = () => {
+        return <BlocProvider
+          bloc={undefined as any}
+        ></BlocProvider>;
+      };
+
+      mount(<Provider />);
+      expect(console.error).toHaveBeenCalledTimes(1);
+      expect(console.error).toHaveBeenCalledWith('BLoC is undefined');
+    });
+
     it("should not react to state change if option `shouldUpdate` is false", function() {
       const { result } = renderHook(() => testState.useBloc(Test1, { subscribe: false }));
       const [, instance] = result.current;
@@ -135,7 +167,7 @@ describe("BlocReact", function() {
             blocClass={Test2}
             builder={([state]) => <div>{state}</div>}
           />
-        </BlocProvider>
+        </BlocProvider>;
       };
 
       const component = mount(<Provider />);
@@ -182,7 +214,7 @@ describe("BlocReact", function() {
             blocClass={Test2}
             builder={([state]) => <div>{state}</div>}
           />
-        </BlocProvider>
+        </BlocProvider>;
       };
 
       const component = mount(<Provider />);
