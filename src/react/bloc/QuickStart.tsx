@@ -2,11 +2,11 @@ import Typography from "@material-ui/core/Typography";
 import React from "react";
 import { makeStyles } from "@material-ui/core/styles";
 import { BlocBuilder, BlocProvider } from "../state";
-import Buttons from "./Buttonts";
 import CounterCubit from "../bloc/CounterCubit";
-import Auth from "./Auth";
 import { Box, Button, Card, CardContent } from "@material-ui/core";
 import AuthBloc, { AuthEvent } from "../bloc/AuthBloc";
+import Auth from "../components/Auth";
+import Buttons from "../components/Buttonts";
 
 const useStyles = makeStyles((theme) => ({
   // necessary for content to be below app bar
@@ -87,7 +87,7 @@ export default function Sandbox() {
       <Card>
         <CardContent>
           <BlocProvider<CounterCubit>
-            bloc={() => new CounterCubit("local_1")}
+            bloc={() => new CounterCubit()}
           >
             <Typography variant="h4">Local Provider #1</Typography>
             <BlocBuilder<CounterCubit>
@@ -102,7 +102,7 @@ export default function Sandbox() {
           </BlocProvider>
 
           <BlocProvider<CounterCubit>
-            bloc={() => new CounterCubit("local_2")}
+            bloc={() => new CounterCubit()}
           >
             <Typography variant="h4">Local Provider #2</Typography>
             <BlocBuilder<CounterCubit>

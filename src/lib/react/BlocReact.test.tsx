@@ -4,6 +4,7 @@ import Cubit from "../Cubit";
 import mockConsole from "jest-mock-console";
 import React from "react";
 import { mount } from "enzyme";
+import { render } from "@testing-library/react";
 
 class Test1 extends Cubit<number> {
   constructor(options: { register?: () => void } = {}) {
@@ -169,28 +170,31 @@ describe("BlocReact", function() {
       expect(testState).toHaveProperty("BlocProvider");
     });
 
-    // it("should should remove local bloc from list when unmounted", function(done) {
-    //   const initialValue = 88;
-    //
-    //   const Consumer = () => {
-    //     const [localState] = testState.useBloc(Test2);
-    //     return <div>{localState}</div>;
-    //   };
-    //
-    //   const Provider = () => {
-    //     return <BlocProvider
-    //       bloc={() => new Test2(initialValue)}
-    //     >
-    //       <Consumer />
-    //     </BlocProvider>;
-    //   };
-    //
-    //   const component = render(<Provider />);
-    //   expect(removeLocalBlocMock).toHaveBeenCalledTimes(0);
-    //   component.unmount();
-    //   expect(removeLocalBlocMock).toHaveBeenCalledTimes(1);
-    //   done();
-    // });
+    it("should should remove local bloc from list when unmounted", function(done) {
+      const initialValue = 88;
+      const remove = jest.fn();
+      const bloc = new Test2(initialValue)
+      bloc.addRemoveListener(remove);
+
+      const Inner = () => {
+        const [localState] = testState.useBloc(Test2);
+        return <div>{localState}</div>;
+      };
+
+      const Provider = () => {
+        return <BlocProvider
+          bloc={bloc}
+        >
+          <Inner />
+        </BlocProvider>;
+      };
+
+      const component = render(<Provider />);
+      expect(remove).toHaveBeenCalledTimes(0)
+      component.unmount();
+      expect(remove).toHaveBeenCalledTimes(1)
+      done();
+    });
 
     it("should pass bloc as value, not function", function() {
       const initialValue = 88;

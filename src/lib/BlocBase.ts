@@ -62,7 +62,7 @@ export default class BlocBase<T> extends StreamAbstraction<T> {
     return () => this.removeRegisterListener(index);
   }
 
-  protected notifyChange = (state: T): void => {
+  readonly notifyChange = (state: T): void => {
     this._consumer?.notifyChange(this, state);
 
     this.changeListeners.forEach(fn => fn({
@@ -71,7 +71,7 @@ export default class BlocBase<T> extends StreamAbstraction<T> {
     }, this))
   };
 
-  protected notifyValueChange = (): void => {
+  readonly notifyValueChange = (): void => {
     this._consumer?.notifyValueChange(this);
     this.valueChangeListeners.forEach(fn => fn(this.state, this))
   };

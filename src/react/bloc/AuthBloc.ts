@@ -10,7 +10,7 @@ export enum AuthEvent {
 export default class AuthBloc extends Bloc<AuthEvent, boolean> {
   constructor() {
     super(false, {
-      persistKey: "auth",
+      persistKey: "auth"
     });
 
     this.mapEventToState = (event) => {
@@ -24,12 +24,12 @@ export default class AuthBloc extends Bloc<AuthEvent, boolean> {
       }
     };
 
-    this.onRegister = (consumer) => {
+    this.addRegisterListener((consumer) => {
       consumer.addBlocChangeObserver<CounterCubit>(CounterCubit, (bloc, state) => {
         if (state.nextState === 10) {
           this.add(AuthEvent.unknown);
         }
       });
-    };
+    });
   }
 }

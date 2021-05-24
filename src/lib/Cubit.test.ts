@@ -34,7 +34,7 @@ describe("Cubit", () => {
       const cubit = new TestCubit();
       expect(spy.onChange).toHaveBeenCalledTimes(0);
       cubit.increment();
-      expect(spy.onChange).toHaveBeenCalledWith({
+      expect(spy.onChange.mock.calls[0][0]).toStrictEqual({
         currentState: 0,
         nextState: 1,
       });

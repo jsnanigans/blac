@@ -29,7 +29,7 @@ const Killer = () => {
       {s}
       <hr />
       <BlocProvider<CounterCubit>
-        bloc={() => new CounterCubit("local_1")}
+        bloc={() => new CounterCubit()}
       >
         <Typography variant="h4">Local Provider #1</Typography>
         <BlocBuilder<CounterCubit>

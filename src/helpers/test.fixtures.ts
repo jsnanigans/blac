@@ -8,7 +8,7 @@ export class Test1 extends Cubit<number> {
     super(1);
 
     if (options.register) {
-      this.onRegister = options.register;
+      this.addRegisterListener(options.register);
     }
   }
 
@@ -25,7 +25,7 @@ export class ChangeListener extends Cubit<number> {
   ) {
     super(1);
 
-    this.onRegister = (consumer) => {
+    this.addRegisterListener((consumer) => {
       consumer.addBlocChangeObserver(
         listenFor,
         (bloc, state) => {
@@ -33,7 +33,7 @@ export class ChangeListener extends Cubit<number> {
         },
         scope
       );
-    };
+    });
   }
 }
 
@@ -45,7 +45,7 @@ export class ValueChangeListener extends Cubit<number> {
   ) {
     super(1);
 
-    this.onRegister = (consumer) => {
+    this.addRegisterListener((consumer) => {
       consumer.addBlocValueChangeObserver(
         listenFor,
         (state) => {
@@ -53,14 +53,13 @@ export class ValueChangeListener extends Cubit<number> {
         },
         scope
       );
-    };
+    });
   }
 
   increment = () => {
     this.emit(this.state + 1);
   };
 }
-
 
 
 export enum AuthEvent {

@@ -78,6 +78,17 @@ describe("StreamAbstraction", () => {
       });
     });
 
+    describe("Remove Listener", function() {
+      it("should add and remove `Remove Listener`", function() {
+        const stream = new StreamAbstraction('');
+        const method = jest.fn();
+        const remove= stream.addRemoveListener(method);
+        expect(stream.removeListeners).toHaveLength(1);
+        remove();
+        expect(stream.removeListeners).toHaveLength(0);
+      });
+    });
+
     describe("Stream Methods", () => {
       const spy = {
         next: jest.fn(),

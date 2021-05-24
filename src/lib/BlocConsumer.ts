@@ -35,7 +35,7 @@ export interface ConsumerOptions {
 export class BlocConsumer {
   observer: BlocObserver;
   public mocksEnabled = false;
-  providerList: ProviderItem[] = [];
+  public providerList: ProviderItem[] = [];
   private blocListGlobal: BlocBase<any>[];
   private blocChangeObservers: BlocChangeObserverList[] = [];
   private blocValueChangeObservers: BlocValueChangeObserverList[] = [];
@@ -47,7 +47,7 @@ export class BlocConsumer {
 
     for (const b of blocs) {
       b.consumer = this;
-      b.onRegister?.(this);
+      b.registerListeners.forEach(fn => fn(this, b));
       b.meta.scope = 'global';
       this.observer.addBlocAdded(b);
     }
@@ -119,7 +119,7 @@ export class BlocConsumer {
   public addLocalBloc(item: ProviderItem) {
     this.providerList.push(item);
     item.bloc.consumer = this;
-    item.bloc.onRegister?.(this);
+    item.bloc.registerListeners.forEach(fn => fn(this, item.bloc));
     item.bloc.meta.scope = 'local';
     this.observer.addBlocAdded(item.bloc);
   }
@@ -128,6 +128,7 @@ export class BlocConsumer {
     const item = this.providerList.find(i => i.id === id && i.bloc === bloc);
     if (item) {
       item.bloc.complete();
+      item.bloc.removeListeners.forEach(fn => fn());
       this.observer.addBlocRemoved(item.bloc);
       this.providerList = this.providerList.filter(i => i !== item);
     }

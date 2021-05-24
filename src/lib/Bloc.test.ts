@@ -42,7 +42,7 @@ describe("Bloc", () => {
       expect(spy.onChange).toHaveBeenCalledTimes(0);
       bloc.add(AuthEvent.authenticated);
       expect(spy.onChange).toHaveBeenCalledTimes(1);
-      expect(spy.onChange).toHaveBeenCalledWith({
+      expect(spy.onChange.mock.calls[0][0]).toStrictEqual({
         currentState: false,
         nextState: true
       });

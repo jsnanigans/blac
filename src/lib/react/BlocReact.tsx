@@ -132,7 +132,7 @@ export class BlocReact extends BlocConsumer {
         this.addLocalBloc({
           bloc: newBloc,
           id,
-          parent: localProviderKey,
+          parent: localProviderKey
         });
       } else {
         console.error(`BLoC is undefined`);

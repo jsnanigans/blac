@@ -5,7 +5,7 @@ import { cubitDefaultOptions, LOCAL_STORAGE_PREFIX } from "./constants";
 type RemoveMethods = () => void;
 export default class StreamAbstraction<T> {
   public isClosed = false;
-  removeListeners: Array<RemoveMethods> = [];
+  public removeListeners: Array<RemoveMethods> = [];
   protected readonly _options: BlocOptions;
   private _subject: BehaviorSubject<T>;
 
