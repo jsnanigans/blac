@@ -8,7 +8,7 @@ describe("Cubit", () => {
   class TestCubit extends Cubit<number> {
     constructor() {
       super(0);
-      this.onChange = spy.onChange;
+      this.addChangeListener(spy.onChange);
     }
 
     increment = (): void => this.emit(this.state + 1);

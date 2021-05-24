@@ -1,7 +1,7 @@
 import React, { ReactElement, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import BlocBase from "../BlocBase";
 import { BlocClass, BlocHookData, ChangeEvent, ValueType } from "../types";
-import { BlocConsumer } from "../BlocConsumer";
+import { BlocConsumer, ConsumerOptions } from "../BlocConsumer";
 
 interface ReactBlocOptions {
 }
@@ -39,8 +39,8 @@ export class BlocReact extends BlocConsumer {
   private readonly _blocsGlobal: BlocBase<any>[];
   private _contextLocalProviderKey = React.createContext<number>(0);
 
-  constructor(blocs: BlocBase<any>[]) {
-    super(blocs);
+  constructor(blocs: BlocBase<any>[], options?: ConsumerOptions) {
+    super(blocs, options);
     this._blocsGlobal = blocs;
     this.BlocProvider = this.BlocProvider.bind(this);
     this.BlocBuilder = this.BlocBuilder.bind(this);

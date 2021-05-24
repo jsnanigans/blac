@@ -2,8 +2,10 @@ import { BehaviorSubject, Subscription } from "rxjs";
 import { BlocOptions } from "./types";
 import { cubitDefaultOptions, LOCAL_STORAGE_PREFIX } from "./constants";
 
+type RemoveMethods = () => void;
 export default class StreamAbstraction<T> {
   public isClosed = false;
+  removeListeners: Array<RemoveMethods> = [];
   protected readonly _options: BlocOptions;
   private _subject: BehaviorSubject<T>;
 
@@ -24,6 +26,16 @@ export default class StreamAbstraction<T> {
 
   public get state(): T {
     return this._subject.getValue();
+  }
+
+  readonly removeRemoveListener = (index: number) => {
+    this.removeListeners.splice(index, 1);
+  }
+
+  readonly addRemoveListener = (method: RemoveMethods) => {
+    const index = this.removeListeners.length;
+    this.removeListeners.push(method);
+    return () => this.removeRemoveListener(index);
   }
 
   public subscribe = (

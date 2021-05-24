@@ -38,7 +38,7 @@ describe("Bloc", () => {
 
     it("should call `onChange` before the state changes", () => {
       const bloc = new TestBloc();
-      bloc.onChange = spy.onChange;
+      bloc.addChangeListener(spy.onChange);
       expect(spy.onChange).toHaveBeenCalledTimes(0);
       bloc.add(AuthEvent.authenticated);
       expect(spy.onChange).toHaveBeenCalledTimes(1);
@@ -59,13 +59,6 @@ describe("Bloc", () => {
         event: AuthEvent.authenticated,
         nextState: true
       });
-    });
-
-    it("should accept payload", () => {
-      const bloc = new TestBloc();
-      expect(bloc.state).toBe(false);
-      bloc.add(AuthEvent.authenticated);
-      expect(bloc.state).toBe(true);
     });
   });
 });

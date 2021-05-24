@@ -1,11 +1,25 @@
 import { BlocConsumer } from "./BlocConsumer";
 import StreamAbstraction from "./StreamAbstraction";
 import { BlocOptions, ChangeEvent } from "./types";
+import { nanoid } from "nanoid";
+
+export interface BlocMeta {
+  scope: 'unknown' | 'local' | 'global'
+}
+
+type ChangeMethod = <T>(change: ChangeEvent<T>, bloc: BlocBase<T>) => void
+type RegisterMethod = <T>(consumer: BlocConsumer, bloc: BlocBase<T>) => void
+type ValueChangeMethod = <T>(value: T, bloc: BlocBase<T>) => void;
 
 export default class BlocBase<T> extends StreamAbstraction<T> {
-  onRegister: null | ((consumer: BlocConsumer) => void) = null;
-  onChange: null | ((change: ChangeEvent<T>) => void) = null;
-  onValueChange: null | ((value: T) => void) = null;
+  id = nanoid();
+  createdAt = Date.now();
+  meta: BlocMeta = {
+    scope: 'unknown'
+  }
+  changeListeners: ChangeMethod[] = [];
+  registerListeners: RegisterMethod[] = [];
+  valueChangeListeners: ValueChangeMethod[] = [];
 
   constructor(initialValue: T, blocOptions: BlocOptions = {}) {
     super(initialValue, blocOptions);
@@ -17,17 +31,48 @@ export default class BlocBase<T> extends StreamAbstraction<T> {
     this._consumer = consumer;
   }
 
+  // listeners
+  readonly removeChangeListener = (index: number) => {
+    this.changeListeners.splice(index, 1);
+  }
+
+  readonly addChangeListener = (method: ChangeMethod) => {
+    const index = this.changeListeners.length;
+    this.changeListeners.push(method);
+    return () => this.removeChangeListener(index);
+  }
+
+  readonly removeValueChangeListener = (index: number) => {
+    this.valueChangeListeners.splice(index, 1);
+  }
+
+  readonly addValueChangeListener = (method: ValueChangeMethod) => {
+    const index = this.valueChangeListeners.length;
+    this.valueChangeListeners.push(method);
+    return () => this.removeValueChangeListener(index);
+  }
+
+  readonly removeRegisterListener = (index: number) => {
+    this.registerListeners.splice(index, 1);
+  }
+
+  readonly addRegisterListener = (method: RegisterMethod) => {
+    const index = this.registerListeners.length;
+    this.registerListeners.push(method);
+    return () => this.removeRegisterListener(index);
+  }
+
   protected notifyChange = (state: T): void => {
     this._consumer?.notifyChange(this, state);
 
-    this.onChange?.({
+    this.changeListeners.forEach(fn => fn({
       currentState: this.state,
       nextState: state,
-    });
+    }, this))
   };
 
   protected notifyValueChange = (): void => {
     this._consumer?.notifyValueChange(this);
-    this.onValueChange?.(this.state);
+    this.valueChangeListeners.forEach(fn => fn(this.state, this))
   };
 }

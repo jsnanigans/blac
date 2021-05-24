@@ -26,23 +26,30 @@ export interface ProviderItem {
   bloc: BlocBase<any>,
 }
 
+
+export interface ConsumerOptions {
+  observer?: BlocObserver;
+  // middleware?: BlocMiddleware[]
+}
+
 export class BlocConsumer {
   observer: BlocObserver;
   public mocksEnabled = false;
   providerList: ProviderItem[] = [];
-  protected _blocMapLocal: Record<string, BlocBase<any>> = {};
   private blocListGlobal: BlocBase<any>[];
   private blocChangeObservers: BlocChangeObserverList[] = [];
   private blocValueChangeObservers: BlocValueChangeObserverList[] = [];
   private mockBlocs: BlocBase<any>[] = [];
 
-  constructor(blocs: BlocBase<any>[]) {
+  constructor(blocs: BlocBase<any>[], options: ConsumerOptions = {}) {
     this.blocListGlobal = blocs;
-    this.observer = new BlocObserver();
+    this.observer = options.observer || new BlocObserver();
 
     for (const b of blocs) {
       b.consumer = this;
       b.onRegister?.(this);
+      b.meta.scope = 'global';
+      this.observer.addBlocAdded(b);
     }
   }
 
@@ -113,12 +120,15 @@ export class BlocConsumer {
     this.providerList.push(item);
     item.bloc.consumer = this;
     item.bloc.onRegister?.(this);
+    item.bloc.meta.scope = 'local';
+    this.observer.addBlocAdded(item.bloc);
   }
 
   public removeLocalBloc(id: number, bloc: BlocBase<any>) {
     const item = this.providerList.find(i => i.id === id && i.bloc === bloc);
     if (item) {
       item.bloc.complete();
+      this.observer.addBlocRemoved(item.bloc);
       this.providerList = this.providerList.filter(i => i !== item);
     }
   }

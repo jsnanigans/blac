@@ -1,8 +1,8 @@
 import Cubit from "../../lib/Cubit";
 
 export default class CounterCubit extends Cubit<number> {
-  constructor(cacheKey = "") {
-    super(0, { persistKey: `count_${cacheKey}` });
+  constructor() {
+    super(0);
   }
 
   increment = (): void => {
@@ -10,5 +10,20 @@ export default class CounterCubit extends Cubit<number> {
   };
   decrement = (): void => {
     this.emit(this.state - 1);
+  };
+}
+
+export class CounterCubitTimer extends Cubit<number> {
+  constructor(t: number = 1000) {
+    super(0);
+    const i = setInterval(() => {
+      this.increment();
+    }, t);
+
+    this.addRemoveListener(() => clearInterval(i));
+  }
+
+  increment = (): void => {
+    this.emit(this.state + 1);
   };
 }
