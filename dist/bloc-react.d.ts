@@ -31,7 +31,11 @@ declare class BlocObserver {
     constructor(methods?: BlocObserverOptions);
     readonly addChange: (bloc: BlocBase<any>, state: any) => void;
     readonly addTransition: (bloc: BlocBase<any>, state: any, event: any) => void;
+    readonly addBlocAdded: (bloc: BlocBase<any>) => void;
+    readonly addBlocRemoved: (bloc: BlocBase<any>) => void;
     private readonly defaultAction;
+    onBlocAdded: (bloc: BlocBase<any>) => void;
+    onBlocRemoved: (bloc: BlocBase<any>) => void;
     private createTransitionEvent;
     private createChangeEvent;
 }
@@ -42,16 +46,18 @@ interface ProviderItem {
     parent?: number;
     bloc: BlocBase<any>;
 }
+interface ConsumerOptions {
+    observer?: BlocObserver;
+}
 declare class BlocConsumer {
     observer: BlocObserver;
     mocksEnabled: boolean;
     providerList: ProviderItem[];
-    protected _blocMapLocal: Record<string, BlocBase<any>>;
     private blocListGlobal;
     private blocChangeObservers;
     private blocValueChangeObservers;
     private mockBlocs;
-    constructor(blocs: BlocBase<any>[]);
+    constructor(blocs: BlocBase<any>[], options?: ConsumerOptions);
     notifyChange(bloc: BlocBase<any>, state: any): void;
     notifyValueChange(bloc: BlocBase<any>): void;
     notifyTransition(bloc: BlocBase<any>, state: any, event: any): void;
@@ -66,11 +72,16 @@ declare class BlocConsumer {
     protected getBlocInstance<T>(global: BlocBase<any>[], blocClass: BlocClass<T>): BlocBase<T> | undefined;
 }
 
+declare type RemoveMethods = () => void;
 declare class StreamAbstraction<T> {
+    isClosed: boolean;
+    removeListeners: Array<RemoveMethods>;
     protected readonly _options: BlocOptions;
     private _subject;
     constructor(initialValue: T, blocOptions?: BlocOptions);
     get state(): T;
+    readonly removeRemoveListener: (index: number) => void;
+    readonly addRemoveListener: (method: RemoveMethods) => () => void;
     subscribe: (next?: ((value: any) => void) | undefined) => Subscription;
     complete: () => void;
     clearCache: () => void;
@@ -81,16 +92,30 @@ declare class StreamAbstraction<T> {
     protected updateCache: () => void;
 }
 
+interface BlocMeta {
+    scope: 'unknown' | 'local' | 'global';
+}
+declare type ChangeMethod = <T>(change: ChangeEvent<T>, bloc: BlocBase<T>) => void;
+declare type RegisterMethod = <T>(consumer: BlocConsumer, bloc: BlocBase<T>) => void;
+declare type ValueChangeMethod = <T>(value: T, bloc: BlocBase<T>) => void;
 declare class BlocBase<T> extends StreamAbstraction<T> {
-    _localProviderRef: string;
-    onRegister: null | ((consumer: BlocConsumer) => void);
-    onChange: null | ((change: ChangeEvent<T>) => void);
-    onValueChange: null | ((value: T) => void);
+    id: string;
+    createdAt: number;
+    meta: BlocMeta;
+    changeListeners: ChangeMethod[];
+    registerListeners: RegisterMethod[];
+    valueChangeListeners: ValueChangeMethod[];
     constructor(initialValue: T, blocOptions?: BlocOptions);
     protected _consumer: BlocConsumer | null;
     set consumer(consumer: BlocConsumer);
-    protected notifyChange: (state: T) => void;
-    protected notifyValueChange: () => void;
+    readonly removeChangeListener: (index: number) => void;
+    readonly addChangeListener: (method: ChangeMethod) => () => void;
+    readonly removeValueChangeListener: (index: number) => void;
+    readonly addValueChangeListener: (method: ValueChangeMethod) => () => void;
+    readonly removeRegisterListener: (index: number) => void;
+    readonly addRegisterListener: (method: RegisterMethod) => () => void;
+    readonly notifyChange: (state: T) => void;
+    readonly notifyValueChange: () => void;
 }
 
 declare class Bloc<E, T> extends BlocBase<T> {
@@ -114,9 +139,10 @@ interface BlocHookOptions<T extends BlocBase<any>> {
     shouldUpdate?: (event: ChangeEvent<ValueType<T>>) => boolean;
 }
 declare class BlocReact extends BlocConsumer {
+    private providerCount;
     private readonly _blocsGlobal;
     private _contextLocalProviderKey;
-    constructor(blocs: BlocBase<any>[]);
+    constructor(blocs: BlocBase<any>[], options?: ConsumerOptions);
     useBloc: <T extends BlocBase<any>>(blocClass: BlocClass<T>, options?: BlocHookOptions<T>) => BlocHookData<T>;
     BlocBuilder<T extends BlocBase<any>>(props: {
         blocClass: BlocClass<T>;

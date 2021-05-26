@@ -1,4 +1,5 @@
 import { BehaviorSubject } from 'rxjs';
+import { nanoid } from 'nanoid';
 import React, { useContext, useMemo, useState, useCallback, useEffect } from 'react';
 
 const LOCAL_STORAGE_PREFIX = "data.";
@@ -9,8 +10,21 @@ const cubitDefaultOptions = {
 
 class StreamAbstraction {
   constructor(initialValue, blocOptions = {}) {
+    this.isClosed = false;
+    this.removeListeners = [];
+    this.removeRemoveListener = (index) => {
+      this.removeListeners.splice(index, 1);
+    };
+    this.addRemoveListener = (method) => {
+      const index = this.removeListeners.length;
+      this.removeListeners.push(method);
+      return () => this.removeRemoveListener(index);
+    };
     this.subscribe = (next) => this._subject.subscribe(next);
-    this.complete = () => this._subject.complete();
+    this.complete = () => {
+      this.isClosed = true;
+      this._subject.complete();
+    };
     this.clearCache = () => {
       const key = this._options.persistKey;
       if (key) {
@@ -67,21 +81,49 @@ class StreamAbstraction {
 class BlocBase extends StreamAbstraction {
   constructor(initialValue, blocOptions = {}) {
     super(initialValue, blocOptions);
-    this._localProviderRef = "";
-    this.onRegister = null;
-    this.onChange = null;
-    this.onValueChange = null;
+    this.id = nanoid();
+    this.createdAt = Date.now();
+    this.meta = {
+      scope: "unknown"
+    };
+    this.changeListeners = [];
+    this.registerListeners = [];
+    this.valueChangeListeners = [];
     this._consumer = null;
+    this.removeChangeListener = (index) => {
+      this.changeListeners.splice(index, 1);
+    };
+    this.addChangeListener = (method) => {
+      const index = this.changeListeners.length;
+      this.changeListeners.push(method);
+      return () => this.removeChangeListener(index);
+    };
+    this.removeValueChangeListener = (index) => {
+      this.valueChangeListeners.splice(index, 1);
+    };
+    this.addValueChangeListener = (method) => {
+      const index = this.valueChangeListeners.length;
+      this.valueChangeListeners.push(method);
+      return () => this.removeValueChangeListener(index);
+    };
+    this.removeRegisterListener = (index) => {
+      this.registerListeners.splice(index, 1);
+    };
+    this.addRegisterListener = (method) => {
+      const index = this.registerListeners.length;
+      this.registerListeners.push(method);
+      return () => this.removeRegisterListener(index);
+    };
     this.notifyChange = (state) => {
       this._consumer?.notifyChange(this, state);
-      this.onChange?.({
+      this.changeListeners.forEach((fn) => fn({
         currentState: this.state,
         nextState: state
-      });
+      }, this));
     };
     this.notifyValueChange = () => {
       this._consumer?.notifyValueChange(this);
-      this.onValueChange?.(this.state);
+      this.valueChangeListeners.forEach((fn) => fn(this.state, this));
     };
   }
   set consumer(consumer) {
@@ -135,8 +177,16 @@ class BlocObserver {
     this.addTransition = (bloc, state, event) => {
       this.onTransition(bloc, this.createTransitionEvent(bloc, state, event));
     };
+    this.addBlocAdded = (bloc) => {
+      this.onBlocAdded(bloc);
+    };
+    this.addBlocRemoved = (bloc) => {
+      this.onBlocRemoved(bloc);
+    };
     this.defaultAction = () => {
     };
+    this.onBlocAdded = this.defaultAction;
+    this.onBlocRemoved = this.defaultAction;
     this.onChange = methods.onChange ? methods.onChange : this.defaultAction;
     this.onTransition = methods.onTransition ? methods.onTransition : this.defaultAction;
   }
@@ -156,21 +206,25 @@ class BlocObserver {
 }
 
 class BlocConsumer {
-  constructor(blocs) {
+  constructor(blocs, options = {}) {
     this.mocksEnabled = false;
     this.providerList = [];
-    this._blocMapLocal = {};
     this.blocChangeObservers = [];
     this.blocValueChangeObservers = [];
     this.mockBlocs = [];
     this.blocListGlobal = blocs;
-    this.observer = new BlocObserver();
+    this.observer = options.observer || new BlocObserver();
     for (const b of blocs) {
       b.consumer = this;
-      b.onRegister?.(this);
+      b.registerListeners.forEach((fn) => fn(this, b));
+      b.meta.scope = "global";
+      this.observer.addBlocAdded(b);
     }
   }
   notifyChange(bloc, state) {
+    if (bloc.isClosed) {
+      return;
+    }
     this.observer.addChange(bloc, state);
     for (const [blocClass, callback, scope] of this.blocChangeObservers) {
       const isGlobal = this.blocListGlobal.indexOf(bloc) !== -1;
@@ -184,6 +238,9 @@ class BlocConsumer {
     }
   }
   notifyValueChange(bloc) {
+    if (bloc.isClosed) {
+      return;
+    }
     for (const [blocClass, callback, scope] of this.blocValueChangeObservers) {
       const isGlobal = this.blocListGlobal.indexOf(bloc) !== -1;
       const matchesScope = scope === "all" || isGlobal && scope === "global" || !isGlobal && scope === "local";
@@ -193,6 +250,9 @@ class BlocConsumer {
     }
   }
   notifyTransition(bloc, state, event) {
+    if (bloc.isClosed) {
+      return;
+    }
     this.observer.addTransition(bloc, state, event);
   }
   addBlocChangeObserver(blocClass, callback, scope = "all") {
@@ -204,12 +264,16 @@ class BlocConsumer {
   addLocalBloc(item) {
     this.providerList.push(item);
     item.bloc.consumer = this;
-    item.bloc.onRegister?.(this);
+    item.bloc.registerListeners.forEach((fn) => fn(this, item.bloc));
+    item.bloc.meta.scope = "local";
+    this.observer.addBlocAdded(item.bloc);
   }
   removeLocalBloc(id, bloc) {
     const item = this.providerList.find((i) => i.id === id && i.bloc === bloc);
     if (item) {
       item.bloc.complete();
+      item.bloc.removeListeners.forEach((fn) => fn());
+      this.observer.addBlocRemoved(item.bloc);
       this.providerList = this.providerList.filter((i) => i !== item);
     }
   }
@@ -270,8 +334,9 @@ class BlocRuntimeError {
 class NoValue {
 }
 class BlocReact extends BlocConsumer {
-  constructor(blocs) {
-    super(blocs);
+  constructor(blocs, options) {
+    super(blocs, options);
+    this.providerCount = 0;
     this._contextLocalProviderKey = React.createContext(0);
     this.useBloc = (blocClass, options = {}) => {
       const mergedOptions = {
@@ -337,7 +402,7 @@ class BlocReact extends BlocConsumer {
     return props.builder(hook);
   }
   BlocProvider(props) {
-    const id = Date.now();
+    const id = this.providerCount++;
     const localProviderKey = useContext(this._contextLocalProviderKey);
     const bloc = useMemo(() => {
       const newBloc = typeof props.bloc === "function" ? props.bloc(id) : props.bloc;
