@@ -1,0 +1,28 @@
+{
+  "manifest_version" : 2,
+
+  "name" : "Your DevTools Extension",
+  "version" : "1.0",
+
+  "description" : "Your DevTools Extension description",
+  "author" : "Your Name",
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content-script.js"],
+      "run_at": "document_start"
+    }
+  ],
+
+  "web_accessible_resources": [
+    "content-script.js"
+  ],
+
+  "permissions": [
+    "https://*/*",
+    "http://*/*",
+    "activeTab"
+  ],
+
+  "devtools_page" : "index.html"
+}

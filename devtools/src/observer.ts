@@ -1,4 +1,4 @@
-import { BlocObserver } from "../lib";
+import { BlocObserver } from "../../src/lib";
 import { blocState } from "./state/state";
 
 

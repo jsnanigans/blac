@@ -16,13 +16,13 @@ import {
 import { makeStyles } from "@material-ui/core/styles";
 import { useBlocTools } from "./state/state";
 import BlocsCubit from "./state/BlocsCubit";
-import BlocBase from "../lib/BlocBase";
+import BlocBase from "../../src/lib/BlocBase";
 import { Alert } from "@material-ui/lab";
-import { ChangeEvent } from "../lib/types";
+import { ChangeEvent } from "../../src/lib/types";
 
 const useStyles = makeStyles((theme) => ({
   root: {
-    height: `400px`,
+    height: `100vh`,
     position: "fixed",
     left: 0,
     bottom: 0,

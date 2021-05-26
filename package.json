@@ -14,7 +14,9 @@
   ],
   "scripts": {
     "dev": "vite",
+    "dev:tool": "cd devtools && vite",
     "build": "tsc && vite build",
+    "build:tool": "cd devtools && vite build",
     "build:lib": "rollup -c rollup.config.lib.js",
     "serve": "vite preview",
     "prettier": "prettier --write ./src",
@@ -33,6 +35,7 @@
     "@material-ui/lab": "^4.0.0-alpha.58",
     "@testing-library/react": "^11.2.7",
     "@testing-library/react-hooks": "^6.0.0",
+    "@types/chrome": "^0.0.141",
     "@types/enzyme": "^3.10.8",
     "@types/jest": "^26.0.23",
     "@types/material-ui": "^0.21.8",

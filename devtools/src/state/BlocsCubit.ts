@@ -1,5 +1,5 @@
-import { Cubit } from "../../lib";
-import BlocBase from "../../lib/BlocBase";
+import { Cubit } from "../../../src/lib";
+import BlocBase from "../../../src/lib/BlocBase";
 
 class BlocState {
   blocs: BlocBase<any>[];
