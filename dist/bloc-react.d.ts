@@ -1,4 +1,4 @@
-import { Subscription } from 'rxjs';
+import { Observer, Subscription } from 'rxjs';
 import { ReactElement } from 'react';
 
 declare type ValueType<T extends BlocBase<any>> = T extends BlocBase<infer U> ? U : never;
@@ -82,7 +82,7 @@ declare class StreamAbstraction<T> {
     get state(): T;
     readonly removeRemoveListener: (index: number) => void;
     readonly addRemoveListener: (method: RemoveMethods) => () => void;
-    subscribe: (next?: ((value: any) => void) | undefined) => Subscription;
+    subscribe: (observer: Partial<Observer<any>>) => Subscription;
     complete: () => void;
     clearCache: () => void;
     jsonToState(state: string): T;
@@ -100,14 +100,13 @@ declare type RegisterMethod = <T>(consumer: BlocConsumer, bloc: BlocBase<T>) => 
 declare type ValueChangeMethod = <T>(value: T, bloc: BlocBase<T>) => void;
 declare class BlocBase<T> extends StreamAbstraction<T> {
     id: string;
-    createdAt: number;
+    createdAt: Date;
     meta: BlocMeta;
     changeListeners: ChangeMethod[];
     registerListeners: RegisterMethod[];
     valueChangeListeners: ValueChangeMethod[];
+    consumer: BlocConsumer | null;
     constructor(initialValue: T, blocOptions?: BlocOptions);
-    protected _consumer: BlocConsumer | null;
-    set consumer(consumer: BlocConsumer);
     readonly removeChangeListener: (index: number) => void;
     readonly addChangeListener: (method: ChangeMethod) => () => void;
     readonly removeValueChangeListener: (index: number) => void;

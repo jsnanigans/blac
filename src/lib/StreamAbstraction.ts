@@ -38,7 +38,7 @@ export default class StreamAbstraction<T> {
     return () => this.removeRemoveListener(index);
   }
 
-  public subscribe = (observer: Partial<Observer<T>>): Subscription => this._subject.subscribe({
+  public subscribe = (observer: Partial<Observer<any>>): Subscription => this._subject.subscribe({
     next: observer.next,
     complete: observer.complete,
     error: observer.error

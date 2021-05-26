@@ -28,7 +28,11 @@ class StreamAbstraction {
       this.removeListeners.push(method);
       return () => this.removeRemoveListener(index);
     };
-    this.subscribe = (next) => this._subject.subscribe(next);
+    this.subscribe = (observer) => this._subject.subscribe({
+      next: observer.next,
+      complete: observer.complete,
+      error: observer.error
+    });
     this.complete = () => {
       this.isClosed = true;
       this._subject.complete();
@@ -90,14 +94,14 @@ class BlocBase extends StreamAbstraction {
   constructor(initialValue, blocOptions = {}) {
     super(initialValue, blocOptions);
     this.id = nanoid.nanoid();
-    this.createdAt = Date.now();
+    this.createdAt = new Date();
     this.meta = {
       scope: "unknown"
     };
     this.changeListeners = [];
     this.registerListeners = [];
     this.valueChangeListeners = [];
-    this._consumer = null;
+    this.consumer = null;
     this.removeChangeListener = (index) => {
       this.changeListeners.splice(index, 1);
     };
@@ -123,19 +127,16 @@ class BlocBase extends StreamAbstraction {
       return () => this.removeRegisterListener(index);
     };
     this.notifyChange = (state) => {
-      this._consumer?.notifyChange(this, state);
+      this.consumer?.notifyChange(this, state);
       this.changeListeners.forEach((fn) => fn({
         currentState: this.state,
         nextState: state
       }, this));
     };
     this.notifyValueChange = () => {
-      this._consumer?.notifyValueChange(this);
+      this.consumer?.notifyValueChange(this);
       this.valueChangeListeners.forEach((fn) => fn(this.state, this));
     };
-  }
-  set consumer(consumer) {
-    this._consumer = consumer;
   }
 }
 
@@ -156,7 +157,7 @@ class Bloc extends BlocBase {
       }
     };
     this.notifyTransition = (state, event) => {
-      this._consumer?.notifyTransition(this, state, event);
+      this.consumer?.notifyTransition(this, state, event);
       this.onTransition?.({
         currentState: this.state,
         event,
@@ -390,8 +391,12 @@ class BlocReact extends BlocConsumer {
       }, []);
       React.useEffect(() => {
         if (subscribe) {
-          const subscription = blocInstance.subscribe(updateData);
-          return () => subscription.unsubscribe();
+          const subscription = blocInstance.subscribe({
+            next: updateData
+          });
+          return () => {
+            subscription.unsubscribe();
+          };
         }
       }, []);
       return [
