@@ -1,4 +1,4 @@
-import { BehaviorSubject, Subscription } from "rxjs";
+import { BehaviorSubject, Observer, Subscription } from "rxjs";
 import { BlocOptions } from "./types";
 import { cubitDefaultOptions, LOCAL_STORAGE_PREFIX } from "./constants";
 
@@ -38,9 +38,11 @@ export default class StreamAbstraction<T> {
     return () => this.removeRemoveListener(index);
   }
 
-  public subscribe = (
-    next?: (value: any) => void
-  ): Subscription => this._subject.subscribe(next);
+  public subscribe = (observer: Partial<Observer<T>>): Subscription => this._subject.subscribe({
+    next: observer.next,
+    complete: observer.complete,
+    error: observer.error
+  });
 
   public complete = (): void => {
     this.isClosed = true;

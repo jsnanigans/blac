@@ -97,8 +97,12 @@ export class BlocReact extends BlocConsumer {
 
     useEffect(() => {
       if (subscribe) {
-        const subscription = blocInstance.subscribe(updateData);
-        return () => subscription.unsubscribe();
+        const subscription = blocInstance.subscribe({
+          next: updateData
+        });
+        return () => {
+          subscription.unsubscribe();
+        };
       }
     }, []);
 

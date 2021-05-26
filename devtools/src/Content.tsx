@@ -189,7 +189,7 @@ const BlocDetails: FC<{ bloc?: BlocBase<any>, lastEvent?: ChangeEvent<any> }> = 
             <TableBody>
               <TableRow>
                 <TableCell><strong>Created At</strong></TableCell>
-                <TableCell>{new Date(selected.createdAt).toISOString()}</TableCell>
+                <TableCell>{selected.createdAt.toISOString()}</TableCell>
               </TableRow>
               <TableRow>
                 <TableCell><strong>ID</strong></TableCell>

@@ -26,7 +26,7 @@ export default class Bloc<E, T> extends BlocBase<T> {
   };
 
   protected notifyTransition = (state: T, event: E): void => {
-    this._consumer?.notifyTransition(this, state, event);
+    this.consumer?.notifyTransition(this, state, event);
     this.onTransition?.({
       currentState: this.state,
       event,

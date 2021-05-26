@@ -12,23 +12,18 @@ type RegisterMethod = <T>(consumer: BlocConsumer, bloc: BlocBase<T>) => void
 type ValueChangeMethod = <T>(value: T, bloc: BlocBase<T>) => void;
 
 export default class BlocBase<T> extends StreamAbstraction<T> {
-  id = nanoid();
-  createdAt = Date.now();
-  meta: BlocMeta = {
+  public id = nanoid();
+  public createdAt = new Date();
+  public meta: BlocMeta = {
     scope: 'unknown'
   }
-  changeListeners: ChangeMethod[] = [];
-  registerListeners: RegisterMethod[] = [];
-  valueChangeListeners: ValueChangeMethod[] = [];
+  public changeListeners: ChangeMethod[] = [];
+  public registerListeners: RegisterMethod[] = [];
+  public valueChangeListeners: ValueChangeMethod[] = [];
+  public consumer: BlocConsumer | null = null;
 
   constructor(initialValue: T, blocOptions: BlocOptions = {}) {
     super(initialValue, blocOptions);
-  }
-
-  protected _consumer: BlocConsumer | null = null;
-
-  set consumer(consumer: BlocConsumer) {
-    this._consumer = consumer;
   }
 
   // listeners
@@ -63,7 +58,7 @@ export default class BlocBase<T> extends StreamAbstraction<T> {
   }
 
   readonly notifyChange = (state: T): void => {
-    this._consumer?.notifyChange(this, state);
+    this.consumer?.notifyChange(this, state);
 
     this.changeListeners.forEach(fn => fn({
       currentState: this.state,
@@ -72,7 +67,7 @@ export default class BlocBase<T> extends StreamAbstraction<T> {
   };
 
   readonly notifyValueChange = (): void => {
-    this._consumer?.notifyValueChange(this);
+    this.consumer?.notifyValueChange(this);
     this.valueChangeListeners.forEach(fn => fn(this.state, this))
   };
 }
