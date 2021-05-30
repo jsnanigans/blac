@@ -14,10 +14,9 @@ BLoC state management for react
 [![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=jsnanigans_bloc-react&metric=code_smells)](https://sonarcloud.io/dashboard?id=jsnanigans_bloc-react)
 
 
-Typescript implementation for react using RxJS and heavily inspired by flutter_react - https://bloclibrary.dev
+Typescript implementation for react heavily inspired by flutter_react - https://bloclibrary.dev
 The BLoC Pattern (**B**usiness **Lo**gic **C**omponent) is a battle-tested design pattern for state management coming from Flutter and Dart. It tries to separate business logic from UI as much as possible while still being simple and flexible.
 
-Everything revolves around [**subjects**](https://rxjs-dev.firebaseapp.com/guide/subject) which are native to Dart, for JS there is a solid implementation by RxJS.
 
 
 # Quickstart

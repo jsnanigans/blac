@@ -1,4 +1,3 @@
-import { BehaviorSubject } from 'rxjs';
 import { nanoid } from 'nanoid';
 import React, { useContext, useMemo, useState, useCallback, useEffect } from 'react';
 
@@ -8,6 +7,40 @@ const cubitDefaultOptions = {
   persistData: true
 };
 
+class BehaviorSubject {
+  constructor(initialValue) {
+    this.isClosed = false;
+    this.observers = [];
+    this.value = initialValue;
+  }
+  getValue() {
+    return this.value;
+  }
+  subscribe(observer) {
+    const id = nanoid();
+    this.observers.push({ observer, id });
+    this.triggerObservers();
+    return {
+      unsubscribe: () => this.removeObserver(id)
+    };
+  }
+  complete() {
+    this.observers = [];
+    this.isClosed = true;
+  }
+  next(value) {
+    this.value = value;
+    this.triggerObservers();
+  }
+  triggerObservers() {
+    this.observers.forEach(({ observer }) => {
+      observer.next(this.value);
+    });
+  }
+  removeObserver(removeId) {
+    this.observers = this.observers.filter(({ id }) => id !== removeId);
+  }
+}
 class StreamAbstraction {
   constructor(initialValue, blocOptions = {}) {
     this.isClosed = false;
@@ -21,9 +54,7 @@ class StreamAbstraction {
       return () => this.removeRemoveListener(index);
     };
     this.subscribe = (observer) => this._subject.subscribe({
-      next: observer.next,
-      complete: observer.complete,
-      error: observer.error
+      next: observer.next
     });
     this.complete = () => {
       this.isClosed = true;

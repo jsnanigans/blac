@@ -1,4 +1,3 @@
-import { Observer, Subscription } from 'rxjs';
 import { ReactElement } from 'react';
 
 declare type ValueType<T extends BlocBase<any>> = T extends BlocBase<infer U> ? U : never;
@@ -72,6 +71,12 @@ declare class BlocConsumer {
     protected getBlocInstance<T>(global: BlocBase<any>[], blocClass: BlocClass<T>): BlocBase<T> | undefined;
 }
 
+interface Observer<T> {
+    next: (v: any) => void;
+}
+interface Subscription {
+    unsubscribe: () => void;
+}
 declare type RemoveMethods = () => void;
 declare class StreamAbstraction<T> {
     isClosed: boolean;
@@ -82,7 +87,7 @@ declare class StreamAbstraction<T> {
     get state(): T;
     readonly removeRemoveListener: (index: number) => void;
     readonly addRemoveListener: (method: RemoveMethods) => () => void;
-    subscribe: (observer: Partial<Observer<any>>) => Subscription;
+    subscribe: (observer: Observer<T>) => Subscription;
     complete: () => void;
     clearCache: () => void;
     jsonToState(state: string): T;

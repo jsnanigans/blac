@@ -9,7 +9,6 @@
     "bloc",
     "state",
     "react",
-    "rxjs",
     "reactive"
   ],
   "scripts": {
