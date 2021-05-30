@@ -1,6 +1,6 @@
 {
   "name": "bloc-react",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "license": "MIT",
   "main": "dist/bloc-react.js",
   "module": "dist/bloc-react.esm.js",
@@ -66,6 +66,7 @@
     "rollup": "^2.50.1",
     "rollup-plugin-dts": "^3.0.2",
     "rollup-plugin-esbuild": "^4.2.3",
+    "rollup-plugin-peer-deps-external": "^2.2.4",
     "rollup-plugin-terser": "^7.0.2",
     "typescript": "^4.2.4",
     "vite": "^2.3.4"
