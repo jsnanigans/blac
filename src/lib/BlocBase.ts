@@ -1,7 +1,7 @@
 import { BlocConsumer } from "./BlocConsumer";
 import StreamAbstraction from "./StreamAbstraction";
 import { BlocOptions, ChangeEvent } from "./types";
-import { nanoid } from "nanoid";
+import createId from "./createId";
 
 export interface BlocMeta {
   scope: 'unknown' | 'local' | 'global'
@@ -12,7 +12,7 @@ type RegisterMethod = <T>(consumer: BlocConsumer, bloc: BlocBase<T>) => void
 type ValueChangeMethod = <T>(value: T, bloc: BlocBase<T>) => void;
 
 export default class BlocBase<T> extends StreamAbstraction<T> {
-  public id = nanoid();
+  public id = createId();
   public createdAt = new Date();
   public meta: BlocMeta = {
     scope: 'unknown'

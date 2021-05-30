@@ -1,6 +1,6 @@
 import { BlocOptions } from "./types";
 import { cubitDefaultOptions, LOCAL_STORAGE_PREFIX } from "./constants";
-import { nanoid } from "nanoid";
+import createId from "./createId";
 
 export interface Observer<T> {
   next: (v: any) => void;
@@ -30,7 +30,7 @@ export class BehaviorSubject<T> {
   }
 
   subscribe(observer: Observer<T>): Subscription {
-    const id = nanoid();
+    const id = createId();
     this.observers.push({observer, id});
     this.triggerObservers();
     return {
