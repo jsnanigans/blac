@@ -1,5 +1,3 @@
-import * as rxjs from "rxjs";
-import { BehaviorSubject } from "rxjs";
 import mockConsole from "jest-mock-console";
 import { LOCAL_STORAGE_PREFIX } from "./constants";
 import StreamAbstraction from "./StreamAbstraction";
@@ -24,14 +22,6 @@ describe("StreamAbstraction", () => {
     it("should set initial value", () => {
       const bloc = new StreamAbstraction(42);
       expect(bloc.state).toBe(42);
-    });
-
-    it("should create a new BehaviorSubject with the initial value", () => {
-      const mockSubject = jest.spyOn(rxjs, "BehaviorSubject");
-      new StreamAbstraction(2);
-      expect(mockSubject).toHaveBeenCalledTimes(1);
-      expect(mockSubject).toHaveBeenCalledWith(2);
-      mockSubject.mockRestore();
     });
 
     describe("Options", () => {

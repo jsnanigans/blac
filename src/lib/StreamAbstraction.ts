@@ -1,6 +1,45 @@
-import { BehaviorSubject, Observer, Subscription } from "rxjs";
 import { BlocOptions } from "./types";
 import { cubitDefaultOptions, LOCAL_STORAGE_PREFIX } from "./constants";
+
+export interface Observer<T> {
+  next: (v: T) => void;
+}
+
+export class BehaviorSubject<T> {
+  public isClosed = false;
+  private prevValue: T | undefined;
+  private value: T
+  private observers: Observer<T>[] = [];
+
+  constructor(initialValue: T) {
+    this.value = initialValue;
+  }
+
+  getValue() {
+    return this.value;
+  }
+
+  subscribe(observer: Observer<T>) {
+    this.observers.push(observer);
+    this.triggerObservers();
+  }
+
+  complete() {
+    this.observers = [];
+    this.isClosed = true;
+  }
+
+  next(value: T) {
+    this.value = value;
+    this.triggerObservers()
+  }
+
+  private triggerObservers() {
+    this.observers.forEach(observer => {
+      observer.next(this.value);
+    })
+  }
+}
 
 type RemoveMethods = () => void;
 export default class StreamAbstraction<T> {
@@ -38,10 +77,8 @@ export default class StreamAbstraction<T> {
     return () => this.removeRemoveListener(index);
   }
 
-  public subscribe = (observer: Partial<Observer<any>>): Subscription => this._subject.subscribe({
+  public subscribe = (observer: Observer<T>): void => this._subject.subscribe({
     next: observer.next,
-    complete: observer.complete,
-    error: observer.error
   });
 
   public complete = (): void => {
