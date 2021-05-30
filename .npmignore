@@ -11,3 +11,8 @@ coverage
 tsconfig.json
 vite.config.ts
 .DS_Store
+site
+devtools
+readme.md
+setupTests.ts
+tsconfig.json
