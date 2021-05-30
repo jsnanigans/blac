@@ -1,10 +1,13 @@
-import { nanoid } from 'nanoid';
 import React, { useContext, useMemo, useState, useCallback, useEffect } from 'react';
 
 const LOCAL_STORAGE_PREFIX = "data.";
 const cubitDefaultOptions = {
   persistKey: "",
   persistData: true
+};
+
+const createId = () => {
+  return "_" + Math.random().toString(36).substr(2, 9);
 };
 
 class BehaviorSubject {
@@ -17,7 +20,7 @@ class BehaviorSubject {
     return this.value;
   }
   subscribe(observer) {
-    const id = nanoid();
+    const id = createId();
     this.observers.push({ observer, id });
     this.triggerObservers();
     return {
@@ -116,7 +119,7 @@ class StreamAbstraction {
 class BlocBase extends StreamAbstraction {
   constructor(initialValue, blocOptions = {}) {
     super(initialValue, blocOptions);
-    this.id = nanoid();
+    this.id = createId();
     this.createdAt = new Date();
     this.meta = {
       scope: "unknown"

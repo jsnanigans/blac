@@ -2,7 +2,6 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
-var nanoid = require('nanoid');
 var React = require('react');
 
 function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
@@ -15,6 +14,10 @@ const cubitDefaultOptions = {
   persistData: true
 };
 
+const createId = () => {
+  return "_" + Math.random().toString(36).substr(2, 9);
+};
+
 class BehaviorSubject {
   constructor(initialValue) {
     this.isClosed = false;
@@ -25,7 +28,7 @@ class BehaviorSubject {
     return this.value;
   }
   subscribe(observer) {
-    const id = nanoid.nanoid();
+    const id = createId();
     this.observers.push({ observer, id });
     this.triggerObservers();
     return {
@@ -124,7 +127,7 @@ class StreamAbstraction {
 class BlocBase extends StreamAbstraction {
   constructor(initialValue, blocOptions = {}) {
     super(initialValue, blocOptions);
-    this.id = nanoid.nanoid();
+    this.id = createId();
     this.createdAt = new Date();
     this.meta = {
       scope: "unknown"
