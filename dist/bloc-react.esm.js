@@ -473,4 +473,4 @@ class BlocReact extends BlocConsumer {
 }
 
 export { Bloc, BlocObserver, BlocReact, Cubit };
-//# sourceMappingURL=bloc-react.mjs.map
+//# sourceMappingURL=bloc-react.esm.js.map
