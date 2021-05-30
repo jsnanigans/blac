@@ -6,10 +6,10 @@ export type ValueType<T extends BlocBase<any>> = T extends BlocBase<infer U>
 
 export type BlocClass<T> = new (...args: never[]) => T;
 
-export type BlocHookData<T extends BlocBase<any>> = {
+export type BlocHookData<T extends BlocBase<any>> = [
   value: ValueType<T>,
   instance: T,
-};
+];
 
 export interface BlocOptions {
   persistKey?: string;
