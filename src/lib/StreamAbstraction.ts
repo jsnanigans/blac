@@ -1,15 +1,25 @@
 import { BlocOptions } from "./types";
 import { cubitDefaultOptions, LOCAL_STORAGE_PREFIX } from "./constants";
+import { nanoid } from "nanoid";
 
 export interface Observer<T> {
-  next: (v: T) => void;
+  next: (v: any) => void;
+}
+
+interface ObserverListItem<T> {
+  observer: Observer<T>;
+  id: string;
+}
+
+export interface Subscription {
+  unsubscribe: () => void;
 }
 
 export class BehaviorSubject<T> {
   public isClosed = false;
   private prevValue: T | undefined;
   private value: T
-  private observers: Observer<T>[] = [];
+  private observers: ObserverListItem<T>[] = [];
 
   constructor(initialValue: T) {
     this.value = initialValue;
@@ -19,9 +29,13 @@ export class BehaviorSubject<T> {
     return this.value;
   }
 
-  subscribe(observer: Observer<T>) {
-    this.observers.push(observer);
+  subscribe(observer: Observer<T>): Subscription {
+    const id = nanoid();
+    this.observers.push({observer, id});
     this.triggerObservers();
+    return {
+      unsubscribe: () => this.removeObserver(id)
+    } as Subscription
   }
 
   complete() {
@@ -35,9 +49,13 @@ export class BehaviorSubject<T> {
   }
 
   private triggerObservers() {
-    this.observers.forEach(observer => {
+    this.observers.forEach(({observer}) => {
       observer.next(this.value);
     })
+  }
+
+  private removeObserver(removeId: string) {
+    this.observers = this.observers.filter(({id}) => id !== removeId);
   }
 }
 
@@ -77,7 +95,7 @@ export default class StreamAbstraction<T> {
     return () => this.removeRemoveListener(index);
   }
 
-  public subscribe = (observer: Observer<T>): void => this._subject.subscribe({
+  public subscribe = (observer: Observer<T>): Subscription => this._subject.subscribe({
     next: observer.next,
   });
 

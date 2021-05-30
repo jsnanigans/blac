@@ -11,7 +11,7 @@
       "vite/client"
     ],
     "allowJs": false,
-    "skipLibCheck": false,
+    "skipLibCheck": true,
     "esModuleInterop": false,
     "allowSyntheticDefaultImports": true,
     "strict": true,
@@ -28,7 +28,7 @@
   },
   "include": [
     "./src",
-    "node_modules/@types/jest/index.d.ts"
+    "node_modules/@types/jest/index.d.ts",
   ]
 }
 
