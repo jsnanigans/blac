@@ -2,6 +2,7 @@ import React, { ReactElement, useCallback, useContext, useEffect, useMemo, useSt
 import BlocBase from "../BlocBase";
 import { BlocClass, BlocHookData, ChangeEvent, ValueType } from "../types";
 import { BlocConsumer, ConsumerOptions } from "../BlocConsumer";
+import createId from "../createId";
 
 interface ReactBlocOptions {
 }
@@ -37,7 +38,7 @@ class NoValue {
 export class BlocReact extends BlocConsumer {
   private providerCount = 0;
   private readonly _blocsGlobal: BlocBase<any>[];
-  private _contextLocalProviderKey = React.createContext<number>(0);
+  private _contextLocalProviderKey = React.createContext<string>('none');
 
   constructor(blocs: BlocBase<any>[], options?: ConsumerOptions) {
     super(blocs, options);
@@ -57,7 +58,7 @@ export class BlocReact extends BlocConsumer {
     const localProviderKey = useContext(this._contextLocalProviderKey);
     const localBlocInstance = useMemo(() => this.getLocalBlocForProvider(localProviderKey, blocClass), []);
     const { subscribe, shouldUpdate = true } = mergedOptions;
-    const blocInstance: undefined | BlocBase<T> = useMemo(() => localBlocInstance || this.getBlocInstance(this._blocsGlobal, blocClass), []);
+    const blocInstance: undefined | BlocBase<T> = useMemo(() => localBlocInstance || this.getGlobalBlocInstance(this._blocsGlobal, blocClass), []);
 
     if (!blocInstance) {
       const name = blocClass.prototype.constructor.name;
@@ -126,9 +127,9 @@ export class BlocReact extends BlocConsumer {
 
   BlocProvider<T extends BlocBase<any>>(props: {
     children?: ReactElement | ReactElement[];
-    bloc: T | ((id: number) => T);
+    bloc: T | ((id: string) => T);
   }): ReactElement {
-    const id = this.providerCount++;
+    const id = useMemo(() => createId(), []);
     const localProviderKey = useContext(this._contextLocalProviderKey);
     const bloc = useMemo<T>(() => {
       const newBloc = typeof props.bloc === "function" ? props.bloc(id) : props.bloc;

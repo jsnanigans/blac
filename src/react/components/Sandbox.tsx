@@ -1,14 +1,14 @@
 import Typography from "@material-ui/core/Typography";
 import React, { useState } from "react";
 import { makeStyles } from "@material-ui/core/styles";
-import { BlocBuilder, BlocProvider, useBloc } from "../state";
+import state, { BlocBuilder, BlocProvider, useBloc } from "../state";
 import Buttons from "./Buttonts";
 import CounterCubit, { CounterCubitTimer } from "../bloc/CounterCubit";
-import Auth from "./Auth";
 import { Box, Button, Card, CardContent } from "@material-ui/core";
-import AuthBloc, { AuthEvent } from "../bloc/AuthBloc";
 import TestLocalCubit from "../bloc/TestLocalCubit";
 import Divider from "@material-ui/core/Divider";
+import AuthBloc, { AuthEvent } from "../bloc/AuthBloc";
+import Auth from "./Auth";
 
 const useStyles = makeStyles((theme) => ({
   // necessary for content to be below app bar
@@ -16,6 +16,7 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 const TestLocalBloc = () => {
+  console.log(state);
   const [s, q] = useBloc(TestLocalCubit);
   return <Button onClick={() => q.emit(`${Math.random()}`)}>{s}</Button>;
 };
@@ -50,9 +51,11 @@ const Killer = () => {
 }
 
 export default function Sandbox() {
+  const [show, setShow] = useState(false);
   const classes = useStyles();
   return (
     <>
+      <Box height={100} />
       <div className={classes.toolbar} />
 
       <Typography variant="h3">Bloc</Typography>
@@ -167,8 +170,9 @@ export default function Sandbox() {
             <BlocProvider<TestLocalCubit>
             bloc={new TestLocalCubit()}
           >
-              <TestLocalBloc />
+              {show && <TestLocalBloc />}
             </BlocProvider>
+            <Button onClick={() => setShow(!show)}>Toggle Show</Button>
           </BlocProvider>
         </CardContent>
       </Card>

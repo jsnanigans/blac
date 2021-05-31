@@ -21,8 +21,8 @@ type BlocValueChangeObserverList = [
 ];
 
 export interface ProviderItem {
-  id: number,
-  parent?: number,
+  id: string,
+  parent?: string,
   bloc: BlocBase<any>,
 }
 
@@ -124,8 +124,9 @@ export class BlocConsumer {
     this.observer.addBlocAdded(item.bloc);
   }
 
-  public removeLocalBloc(id: number, bloc: BlocBase<any>) {
+  public removeLocalBloc(id: string, bloc: BlocBase<any>) {
     const item = this.providerList.find(i => i.id === id && i.bloc === bloc);
+
     if (item) {
       item.bloc.complete();
       item.bloc.removeListeners.forEach(fn => fn());
@@ -155,7 +156,7 @@ export class BlocConsumer {
     return this.blocListGlobal.find(c => c instanceof blocClass);
   }
 
-  public getLocalBlocForProvider<T>(id: number, blocClass: BlocClass<T>): BlocBase<T> | undefined {
+  public getLocalBlocForProvider<T>(id: string, blocClass: BlocClass<T>): BlocBase<T> | undefined {
     for (const providerItem of this.providerList) {
       if (providerItem.id === id) {
         if (providerItem.bloc instanceof blocClass) {
@@ -177,7 +178,7 @@ export class BlocConsumer {
     return undefined;
   }
 
-  protected getBlocInstance<T>(global: BlocBase<any>[], blocClass: BlocClass<T>): BlocBase<T> | undefined {
+  protected getGlobalBlocInstance<T>(global: BlocBase<any>[], blocClass: BlocClass<T>): BlocBase<T> | undefined {
     if (this.mocksEnabled) {
       const mockedBloc = this.mockBlocs.find((c) => c instanceof blocClass);
       if (mockedBloc) {
