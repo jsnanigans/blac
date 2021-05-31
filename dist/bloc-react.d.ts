@@ -41,8 +41,8 @@ declare class BlocObserver {
 
 declare type BlocObserverScope = "local" | "global" | "all";
 interface ProviderItem {
-    id: number;
-    parent?: number;
+    id: string;
+    parent?: string;
     bloc: BlocBase<any>;
 }
 interface ConsumerOptions {
@@ -63,12 +63,12 @@ declare class BlocConsumer {
     addBlocChangeObserver<T extends BlocBase<any>>(blocClass: BlocClass<T>, callback: (bloc: T, event: ChangeEvent<ValueType<T>>) => unknown, scope?: BlocObserverScope): void;
     addBlocValueChangeObserver<T extends BlocBase<any>>(blocClass: BlocClass<T>, callback: (bloc: T) => unknown, scope?: BlocObserverScope): void;
     addLocalBloc(item: ProviderItem): void;
-    removeLocalBloc(id: number, bloc: BlocBase<any>): void;
+    removeLocalBloc(id: string, bloc: BlocBase<any>): void;
     addBlocMock(bloc: BlocBase<any>): void;
     resetMocks(): void;
     getGlobalBloc(blocClass: BlocClass<any>): undefined | BlocBase<any>;
-    getLocalBlocForProvider<T>(id: number, blocClass: BlocClass<T>): BlocBase<T> | undefined;
-    protected getBlocInstance<T>(global: BlocBase<any>[], blocClass: BlocClass<T>): BlocBase<T> | undefined;
+    getLocalBlocForProvider<T>(id: string, blocClass: BlocClass<T>): BlocBase<T> | undefined;
+    protected getGlobalBlocInstance<T>(global: BlocBase<any>[], blocClass: BlocClass<T>): BlocBase<T> | undefined;
 }
 
 interface Observer<T> {
@@ -155,7 +155,7 @@ declare class BlocReact extends BlocConsumer {
     }): ReactElement | null;
     BlocProvider<T extends BlocBase<any>>(props: {
         children?: ReactElement | ReactElement[];
-        bloc: T | ((id: number) => T);
+        bloc: T | ((id: string) => T);
     }): ReactElement;
 }
 

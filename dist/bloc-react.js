@@ -355,7 +355,7 @@ class BlocConsumer {
     }
     return void 0;
   }
-  getBlocInstance(global, blocClass) {
+  getGlobalBlocInstance(global, blocClass) {
     if (this.mocksEnabled) {
       const mockedBloc = this.mockBlocs.find((c) => c instanceof blocClass);
       if (mockedBloc) {
@@ -380,7 +380,7 @@ class BlocReact extends BlocConsumer {
   constructor(blocs, options) {
     super(blocs, options);
     this.providerCount = 0;
-    this._contextLocalProviderKey = React__default['default'].createContext(0);
+    this._contextLocalProviderKey = React__default['default'].createContext("none");
     this.useBloc = (blocClass, options = {}) => {
       const mergedOptions = {
         ...defaultBlocHookOptions,
@@ -389,7 +389,7 @@ class BlocReact extends BlocConsumer {
       const localProviderKey = React.useContext(this._contextLocalProviderKey);
       const localBlocInstance = React.useMemo(() => this.getLocalBlocForProvider(localProviderKey, blocClass), []);
       const { subscribe, shouldUpdate = true } = mergedOptions;
-      const blocInstance = React.useMemo(() => localBlocInstance || this.getBlocInstance(this._blocsGlobal, blocClass), []);
+      const blocInstance = React.useMemo(() => localBlocInstance || this.getGlobalBlocInstance(this._blocsGlobal, blocClass), []);
       if (!blocInstance) {
         const name = blocClass.prototype.constructor.name;
         const error = new BlocRuntimeError(`"${name}" 
@@ -449,7 +449,7 @@ class BlocReact extends BlocConsumer {
     return props.builder(hook);
   }
   BlocProvider(props) {
-    const id = this.providerCount++;
+    const id = React.useMemo(() => createId(), []);
     const localProviderKey = React.useContext(this._contextLocalProviderKey);
     const bloc = React.useMemo(() => {
       const newBloc = typeof props.bloc === "function" ? props.bloc(id) : props.bloc;
