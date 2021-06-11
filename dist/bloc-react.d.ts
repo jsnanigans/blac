@@ -141,6 +141,7 @@ declare class Cubit<T> extends BlocBase<T> {
 interface BlocHookOptions<T extends BlocBase<any>> {
     subscribe?: boolean;
     shouldUpdate?: (event: ChangeEvent<ValueType<T>>) => boolean;
+    create?: () => T;
 }
 declare class BlocReact extends BlocConsumer {
     private providerCount;

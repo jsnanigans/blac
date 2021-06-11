@@ -1,4 +1,4 @@
-import React, { useContext, useMemo, useState, useCallback, useEffect } from 'react';
+import React, { useMemo, useContext, useState, useCallback, useEffect } from 'react';
 
 const LOCAL_STORAGE_PREFIX = "data.";
 const cubitDefaultOptions = {
@@ -378,10 +378,13 @@ class BlocReact extends BlocConsumer {
         ...defaultBlocHookOptions,
         ...options
       };
-      const localProviderKey = useContext(this._contextLocalProviderKey);
-      const localBlocInstance = useMemo(() => this.getLocalBlocForProvider(localProviderKey, blocClass), []);
+      let blocInstance = useMemo(() => options.create ? options.create() : void 0, []);
+      if (!blocInstance) {
+        const localProviderKey = useContext(this._contextLocalProviderKey);
+        const localBlocInstance = useMemo(() => this.getLocalBlocForProvider(localProviderKey, blocClass), []);
+        blocInstance = useMemo(() => localBlocInstance || this.getGlobalBlocInstance(this._blocsGlobal, blocClass), []);
+      }
       const { subscribe, shouldUpdate = true } = mergedOptions;
-      const blocInstance = useMemo(() => localBlocInstance || this.getGlobalBlocInstance(this._blocsGlobal, blocClass), []);
       if (!blocInstance) {
         const name = blocClass.prototype.constructor.name;
         const error = new BlocRuntimeError(`"${name}" 
@@ -417,11 +420,11 @@ class BlocReact extends BlocConsumer {
       }, []);
       useEffect(() => {
         if (subscribe) {
-          const subscription = blocInstance.subscribe({
+          const subscription = blocInstance?.subscribe({
             next: updateData
           });
           return () => {
-            subscription.unsubscribe();
+            subscription?.unsubscribe();
           };
         }
       }, []);

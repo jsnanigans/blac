@@ -386,10 +386,13 @@ class BlocReact extends BlocConsumer {
         ...defaultBlocHookOptions,
         ...options
       };
-      const localProviderKey = React.useContext(this._contextLocalProviderKey);
-      const localBlocInstance = React.useMemo(() => this.getLocalBlocForProvider(localProviderKey, blocClass), []);
+      let blocInstance = React.useMemo(() => options.create ? options.create() : void 0, []);
+      if (!blocInstance) {
+        const localProviderKey = React.useContext(this._contextLocalProviderKey);
+        const localBlocInstance = React.useMemo(() => this.getLocalBlocForProvider(localProviderKey, blocClass), []);
+        blocInstance = React.useMemo(() => localBlocInstance || this.getGlobalBlocInstance(this._blocsGlobal, blocClass), []);
+      }
       const { subscribe, shouldUpdate = true } = mergedOptions;
-      const blocInstance = React.useMemo(() => localBlocInstance || this.getGlobalBlocInstance(this._blocsGlobal, blocClass), []);
       if (!blocInstance) {
         const name = blocClass.prototype.constructor.name;
         const error = new BlocRuntimeError(`"${name}" 
@@ -425,11 +428,11 @@ class BlocReact extends BlocConsumer {
       }, []);
       React.useEffect(() => {
         if (subscribe) {
-          const subscription = blocInstance.subscribe({
+          const subscription = blocInstance?.subscribe({
             next: updateData
           });
           return () => {
-            subscription.unsubscribe();
+            subscription?.unsubscribe();
           };
         }
       }, []);
