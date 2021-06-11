@@ -1,8 +1,8 @@
 import Cubit from "../../lib/Cubit";
 
 export default class CounterCubit extends Cubit<number> {
-  constructor() {
-    super(0);
+  constructor(init: number = 0) {
+    super(init);
   }
 
   increment = (): void => {
@@ -27,3 +27,10 @@ export class CounterCubitTimer extends Cubit<number> {
     this.emit(this.state + 1);
   };
 }
+
+export class CounterCubitTimerLocal extends CounterCubitTimer {
+  constructor() {
+    super(100);
+  }
+}
+

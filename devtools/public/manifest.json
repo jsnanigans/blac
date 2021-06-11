@@ -1,28 +1,35 @@
 {
-  "manifest_version" : 2,
-
-  "name" : "Your DevTools Extension",
-  "version" : "1.0",
-
-  "description" : "Your DevTools Extension description",
-  "author" : "Your Name",
+  "manifest_version": 2,
+  "name": "Your DevTools Extension",
+  "version": "1.0",
+  "description": "Your DevTools Extension description",
+  "author": "Your Name",
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content-script.js"],
-      "run_at": "document_start"
+      "exclude_globs": ["https://www.google*"],
+      "js": ["inject.js"],
+      "run_at": "document_start",
+      "all_frames": true
     }
   ],
-
   "web_accessible_resources": [
-    "content-script.js"
+    "body.js",
+    "inject.js",
+    "background.js",
+    "body.js"
   ],
-
   "permissions": [
-    "https://*/*",
+    "notifications",
+    "contextMenus",
+    "storage",
+    "file:///*",
     "http://*/*",
-    "activeTab"
+    "https://*/*"
   ],
-
-  "devtools_page" : "index.html"
+  "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'; style-src * 'unsafe-inline'; img-src 'self' data:;",
+  "externally_connectable": {
+    "ids": ["*"]
+  },
+  "devtools_page": "index.html"
 }

@@ -24,8 +24,11 @@ class Test1 extends Cubit<number> {
   };
 }
 
+
 class Test2 extends Cubit<number> {
 }
+
+class Test3 extends Test1 {}
 
 const t1 = new Test1();
 const testState = new BlocReact([t1]);
@@ -46,6 +49,19 @@ describe("BlocReact", function() {
 
     it("should get data and handle state change", function() {
       const { result } = renderHook(() => testState.useBloc(Test1));
+      const [, instance] = result.current;
+      expect(result.current[0]).toBe(1);
+      expect(result.current[1] instanceof Test1).toBe(true);
+      act(() => {
+        instance.increment();
+      });
+      expect(result.current[0]).toBe(2);
+    });
+
+    it("should create new instance of the state for its own scope", function() {
+      const { result } = renderHook(() => testState.useBloc(Test3, {
+        create: () => new Test3()
+      }));
       const [, instance] = result.current;
       expect(result.current[0]).toBe(1);
       expect(result.current[1] instanceof Test1).toBe(true);

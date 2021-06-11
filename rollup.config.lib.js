@@ -3,7 +3,6 @@ import esbuild from "rollup-plugin-esbuild";
 import pkg from "./package.json";
 import external from "rollup-plugin-peer-deps-external";
 
-
 const name = require("./package.json").main.replace(/\.js$/, "");
 
 const bundle = config => ({

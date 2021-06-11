@@ -42,7 +42,7 @@ describe("BlocConsumer", function() {
     const consumer = new BlocConsumer([]);
     const bloc = new TestBloc();
     bloc.addRegisterListener(notify)
-    consumer.addLocalBloc({ bloc, id: 20 });
+    consumer.addLocalBloc({ bloc, id: '20' });
     expect(notify).toHaveBeenCalledTimes(1);
   });
 
@@ -50,10 +50,10 @@ describe("BlocConsumer", function() {
     const notify = jest.fn();
     const bloc = new TestBloc();
     const consumer = new BlocConsumer([]);
-    consumer.addLocalBloc({ bloc, id: 909 });
+    consumer.addLocalBloc({ bloc, id: '909' });
     consumer.observer.onTransition = notify;
     bloc.add(AuthEvent.authenticated);
-    consumer.removeLocalBloc(909, bloc);
+    consumer.removeLocalBloc('909', bloc);
     bloc.add(AuthEvent.unauthenticated);
     expect(notify).toHaveBeenCalledTimes(1);
   });
@@ -62,10 +62,10 @@ describe("BlocConsumer", function() {
     const notify = jest.fn();
     const bloc = new TestBloc();
     const consumer = new BlocConsumer([]);
-    consumer.addLocalBloc({ bloc, id: 909 });
+    consumer.addLocalBloc({ bloc, id: '909' });
     consumer.observer.onTransition = notify;
     bloc.add(AuthEvent.authenticated);
-    consumer.removeLocalBloc(1000, bloc);
+    consumer.removeLocalBloc('1000', bloc);
     bloc.add(AuthEvent.unauthenticated);
     expect(notify).toHaveBeenCalledTimes(2);
   });
@@ -77,7 +77,7 @@ describe("BlocConsumer", function() {
       const local = new Test1();
       const listener = new ChangeListener(notify, Test1);
       const consumer = new BlocConsumer([global, listener]);
-      consumer.addLocalBloc({ bloc: local, id: 909 });
+      consumer.addLocalBloc({ bloc: local, id: '909' });
       expect(notify).toHaveBeenCalledTimes(0);
       global.increment(); // should trigger listener "all"
       expect(notify).toHaveBeenCalledTimes(1);
@@ -92,7 +92,7 @@ describe("BlocConsumer", function() {
       const local = new Test1();
       const listener = new ChangeListener(notify, Test1, "local");
       const consumer = new BlocConsumer([global, listener]);
-      consumer.addLocalBloc({ bloc: local, id: 909 }); // should trigger listener "local"
+      consumer.addLocalBloc({ bloc: local, id: '909' }); // should trigger listener "local"
       global.increment(); // should not trigger listener "local"
       expect(notify).toHaveBeenCalledTimes(0);
       local.increment(); // should trigger listener "local"
@@ -106,7 +106,7 @@ describe("BlocConsumer", function() {
       const local = new Test1();
       const listener = new ChangeListener(notify, Test1, "global");
       const consumer = new BlocConsumer([global, listener]);
-      consumer.addLocalBloc({ bloc: local, id: 909 }); // should not trigger listener "global"
+      consumer.addLocalBloc({ bloc: local, id: '909' }); // should not trigger listener "global"
       expect(notify).toHaveBeenCalledTimes(0);
       global.increment(); // should trigger listener "global"
       expect(notify).toHaveBeenCalledTimes(1);
@@ -121,11 +121,11 @@ describe("BlocConsumer", function() {
       const local = new Test1();
       const listener = new ChangeListener(notify, Test1, "all");
       const consumer = new BlocConsumer([global, listener]);
-      consumer.addLocalBloc({ bloc: local, id: 909 }); // should trigger listener "all"
+      consumer.addLocalBloc({ bloc: local, id: '909' }); // should trigger listener "all"
       global.increment(); // should trigger listener "all"
       expect(notify).toHaveBeenCalledTimes(1);
       expect(notify).toHaveBeenCalledWith(global, { currentState: 1, nextState: 2 });
-      consumer.removeLocalBloc(909, local);
+      consumer.removeLocalBloc('909', local);
       local.increment(); // should trigger listener "all"
       expect(notify).toHaveBeenCalledTimes(1);
     });
@@ -138,7 +138,7 @@ describe("BlocConsumer", function() {
       const local = new Test1();
       const listener = new ValueChangeListener(notify, Test1);
       const consumer = new BlocConsumer([global, listener]);
-      consumer.addLocalBloc({ bloc: local, id: 909 });
+      consumer.addLocalBloc({ bloc: local, id: '909' });
       expect(notify).toHaveBeenCalledTimes(0);
       global.increment(); // should trigger listener "all"
       expect(notify).toHaveBeenCalledTimes(1);
@@ -154,7 +154,7 @@ describe("BlocConsumer", function() {
       const local = new Test1();
       const listener = new ValueChangeListener(notify, Test1, "local");
       const consumer = new BlocConsumer([global, listener]);
-      consumer.addLocalBloc({ bloc: local, id: 909 }); // should trigger listener "local"
+      consumer.addLocalBloc({ bloc: local, id: '909' }); // should trigger listener "local"
       global.increment(); // should not trigger listener "local"
       expect(notify).toHaveBeenCalledTimes(0);
       local.increment(); // should trigger listener "local"
@@ -168,7 +168,7 @@ describe("BlocConsumer", function() {
       const local = new Test1();
       const listener = new ValueChangeListener(notify, Test1, "global");
       const consumer = new BlocConsumer([global, listener]);
-      consumer.addLocalBloc({ bloc: local, id: 909 }); // should not trigger listener "global"
+      consumer.addLocalBloc({ bloc: local, id: '909' }); // should not trigger listener "global"
       expect(notify).toHaveBeenCalledTimes(0);
       global.increment(); // should trigger listener "global"
       expect(notify).toHaveBeenCalledTimes(1);
@@ -183,11 +183,11 @@ describe("BlocConsumer", function() {
       const local = new Test1();
       const listener = new ValueChangeListener(notify, Test1, "all");
       const consumer = new BlocConsumer([global, listener]);
-      consumer.addLocalBloc({ bloc: local, id: 909 }); // should trigger listener "all"
+      consumer.addLocalBloc({ bloc: local, id: '909' }); // should trigger listener "all"
       global.increment(); // should trigger listener "all"
       expect(notify).toHaveBeenCalledTimes(1);
       expect(notify).toHaveBeenCalledWith(global);
-      consumer.removeLocalBloc(909, local);
+      consumer.removeLocalBloc('909', local);
       local.increment(); // should trigger listener "all"
       expect(notify).toHaveBeenCalledTimes(1);
     });
@@ -198,38 +198,38 @@ describe("BlocConsumer", function() {
     it("should return bloc that matches id and type", function() {
       const one = new Test1();
       const consumer = new BlocConsumer([]);
-      consumer.addLocalBloc({ bloc: one, id: 909 });
-      expect(consumer.getLocalBlocForProvider(909, Test1)).toBe(one);
+      consumer.addLocalBloc({ bloc: one, id: '909' });
+      expect(consumer.getLocalBlocForProvider('909', Test1)).toBe(one);
     });
 
     it("should not return bloc after it hase been removed", function() {
       const one = new Test1();
       const consumer = new BlocConsumer([]);
-      consumer.addLocalBloc({ bloc: one, id: 909 });
-      expect(consumer.getLocalBlocForProvider(909, Test1)).toBe(one);
-      consumer.removeLocalBloc(909, one);
-      expect(consumer.getLocalBlocForProvider(909, Test1)).toBeUndefined();
+      consumer.addLocalBloc({ bloc: one, id: '909' });
+      expect(consumer.getLocalBlocForProvider('909', Test1)).toBe(one);
+      consumer.removeLocalBloc('909', one);
+      expect(consumer.getLocalBlocForProvider('909', Test1)).toBeUndefined();
     });
 
     it("should find matching type in tree if id matches but not the type", function() {
       const one = new Test1();
       const two = new TestBloc();
       const consumer = new BlocConsumer([]);
-      consumer.addLocalBloc({ bloc: one, id: 909 });
-      consumer.addLocalBloc({ bloc: two, id: 192, parent: 909 });
-      consumer.addLocalBloc({ bloc: two, id: 5, parent: 192 });
-      expect(consumer.getLocalBlocForProvider(5, Test1)).toBe(one);
-      consumer.removeLocalBloc(909, one);
-      expect(consumer.getLocalBlocForProvider(5, Test1)).toBeUndefined();
+      consumer.addLocalBloc({ bloc: one, id: '909' });
+      consumer.addLocalBloc({ bloc: two, id: '192', parent: '909' });
+      consumer.addLocalBloc({ bloc: two, id: '5', parent: '192' });
+      expect(consumer.getLocalBlocForProvider('5', Test1)).toBe(one);
+      consumer.removeLocalBloc('909', one);
+      expect(consumer.getLocalBlocForProvider('5', Test1)).toBeUndefined();
     });
 
     it("should return undefined if item cannot be found in tree", function() {
       const two = new TestBloc();
       const consumer = new BlocConsumer([]);
-      consumer.addLocalBloc({ bloc: two, id: 909 });
-      consumer.addLocalBloc({ bloc: two, id: 192, parent: 909 });
-      consumer.addLocalBloc({ bloc: two, id: 5, parent: 192 });
-      expect(consumer.getLocalBlocForProvider(5, Test1)).toBeUndefined();
+      consumer.addLocalBloc({ bloc: two, id: '909' });
+      consumer.addLocalBloc({ bloc: two, id: '192', parent: '909' });
+      consumer.addLocalBloc({ bloc: two, id: '5', parent: '192' });
+      expect(consumer.getLocalBlocForProvider('5', Test1)).toBeUndefined();
     });
   });
 

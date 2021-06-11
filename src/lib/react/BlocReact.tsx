@@ -18,6 +18,10 @@ interface BlocHookOptions<T extends BlocBase<any>> {
   Receives a ChangeEvent<T> as a parameter and expects a boolean return value.
    */
   shouldUpdate?: (event: ChangeEvent<ValueType<T>>) => boolean;
+  /*
+  Create a new instance of the bloc, this bloc is not added to the global or any local state.
+   */
+  create?: () => T;
 }
 
 const defaultBlocHookOptions: BlocHookOptions<any> = {
@@ -55,10 +59,15 @@ export class BlocReact extends BlocConsumer {
       ...defaultBlocHookOptions,
       ...options
     };
-    const localProviderKey = useContext(this._contextLocalProviderKey);
-    const localBlocInstance = useMemo(() => this.getLocalBlocForProvider(localProviderKey, blocClass), []);
+    let blocInstance: BlocBase<T> | undefined = useMemo(() => options.create ? options.create() : undefined, []);
+
+    if (!blocInstance) {
+      const localProviderKey = useContext(this._contextLocalProviderKey);
+      const localBlocInstance = useMemo(() => this.getLocalBlocForProvider(localProviderKey, blocClass), []);
+      blocInstance = useMemo(() => localBlocInstance || this.getGlobalBlocInstance(this._blocsGlobal, blocClass), []);
+    }
+
     const { subscribe, shouldUpdate = true } = mergedOptions;
-    const blocInstance: undefined | BlocBase<T> = useMemo(() => localBlocInstance || this.getGlobalBlocInstance(this._blocsGlobal, blocClass), []);
 
     if (!blocInstance) {
       const name = blocClass.prototype.constructor.name;
@@ -98,11 +107,11 @@ export class BlocReact extends BlocConsumer {
 
     useEffect(() => {
       if (subscribe) {
-        const subscription = blocInstance.subscribe({
+        const subscription = blocInstance?.subscribe({
           next: updateData
         });
         return () => {
-          subscription.unsubscribe();
+          subscription?.unsubscribe();
         };
       }
     }, []);

@@ -1,9 +1,9 @@
 import Typography from "@material-ui/core/Typography";
 import React, { useState } from "react";
 import { makeStyles } from "@material-ui/core/styles";
-import state, { BlocBuilder, BlocProvider, useBloc } from "../state";
+import { BlocBuilder, BlocProvider, useBloc } from "../state";
 import Buttons from "./Buttonts";
-import CounterCubit, { CounterCubitTimer } from "../bloc/CounterCubit";
+import CounterCubit, { CounterCubitTimer, CounterCubitTimerLocal } from "../bloc/CounterCubit";
 import { Box, Button, Card, CardContent } from "@material-ui/core";
 import TestLocalCubit from "../bloc/TestLocalCubit";
 import Divider from "@material-ui/core/Divider";
@@ -16,10 +16,16 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 const TestLocalBloc = () => {
-  console.log(state);
   const [s, q] = useBloc(TestLocalCubit);
   return <Button onClick={() => q.emit(`${Math.random()}`)}>{s}</Button>;
 };
+
+const TestLocalHookCreate = () => {
+  const [count] = useBloc(CounterCubitTimerLocal, {
+    create: () => new CounterCubitTimerLocal()
+  })
+  return <div>Local: {count}</div>
+}
 
 const Killer = () => {
   const [l, sl] = useState(false);
@@ -101,6 +107,14 @@ export default function Sandbox() {
           >
             <Killer />
           </BlocProvider>
+        </CardContent>
+      </Card>
+
+      <Box m={2} />
+      <Typography variant="h3">Local Bloc Hook</Typography>
+      <Card>
+        <CardContent>
+          <TestLocalHookCreate />
         </CardContent>
       </Card>
 
