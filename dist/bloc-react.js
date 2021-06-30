@@ -442,7 +442,7 @@ class BlocReact extends BlocConsumer {
       ];
     };
     this.withBlocProvider = (bloc) => (Component) => {
-      const displayName = Component.displayName || Component.name || "Component";
+      const displayName = Component.displayName || Component.name;
       const Provider = (props) => {
         return /* @__PURE__ */ React__default['default'].createElement(this.BlocProvider, {
           bloc

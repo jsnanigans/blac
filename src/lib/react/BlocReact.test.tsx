@@ -5,7 +5,7 @@ import mockConsole from "jest-mock-console";
 import React from "react";
 import { mount, shallow } from "enzyme";
 import { render } from "@testing-library/react";
-import { withBlocProvider } from "../../react/state";
+import { useBloc, withBlocProvider } from "../../react/state";
 
 class Test1 extends Cubit<number> {
   constructor(options: { register?: () => void } = {}) {
@@ -236,6 +236,17 @@ describe("BlocReact", function() {
 
   describe("withBlocProvider", () => {
     const Child = () => <div>Child</div>;
+
+    it("should setup state and work as expected", () => {
+      const value = 382989239238;
+      const Consumer = () => {
+        const [count] = useBloc(Test2)
+        return <div>Value: {count}</div>
+      };
+      const Comp = withBlocProvider(new Test2(value))(Consumer);
+      const component = mount(<div><Comp /></div>);
+      expect(component.text()).toContain("Value: " + value)
+    });
 
     it("should render with child", () => {
       const Comp = withBlocProvider(new Test2(2))(Child);

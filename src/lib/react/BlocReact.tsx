@@ -173,7 +173,7 @@ export class BlocReact extends BlocConsumer {
 
   withBlocProvider = <P extends {}>(bloc: BlocBase<any> | ((id: string) => BlocBase<any>)) => (Component: ComponentType<P>): FC<P> => {
     const displayName =
-      Component.displayName || Component.name || "Component";
+      Component.displayName || Component.name;
 
     const Provider: FC<{
       bloc: BlocBase<any> | ((id: string) => BlocBase<any>);
