@@ -1,4 +1,4 @@
-import { ReactElement } from 'react';
+import React, { ReactElement } from 'react';
 
 declare type ValueType<T extends BlocBase<any>> = T extends BlocBase<infer U> ? U : never;
 declare type BlocClass<T> = new (...args: never[]) => T;
@@ -158,6 +158,7 @@ declare class BlocReact extends BlocConsumer {
         children?: ReactElement | ReactElement[];
         bloc: T | ((id: string) => T);
     }): ReactElement;
+    withBlocProvider: <P extends {}>(bloc: BlocBase<any> | ((id: string) => BlocBase<any>)) => (Component: React.ComponentType<P>) => React.FC<P>;
 }
 
 export { Bloc, BlocObserver, BlocReact, Cubit };
