@@ -29,8 +29,8 @@ export class CounterCubitTimer extends Cubit<number> {
 }
 
 export class CounterCubitTimerLocal extends CounterCubitTimer {
-  constructor() {
-    super(100);
+  constructor(timer: number) {
+    super(timer);
   }
 }
 

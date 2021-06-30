@@ -1,7 +1,7 @@
 import Typography from "@material-ui/core/Typography";
-import React, { useState } from "react";
+import React, { FC, useState } from "react";
 import { makeStyles } from "@material-ui/core/styles";
-import { BlocBuilder, BlocProvider, useBloc } from "../state";
+import { BlocBuilder, BlocProvider, useBloc, withBlocProvider } from "../state";
 import Buttons from "./Buttonts";
 import CounterCubit, { CounterCubitTimer, CounterCubitTimerLocal } from "../bloc/CounterCubit";
 import { Box, Button, Card, CardContent } from "@material-ui/core";
@@ -22,10 +22,18 @@ const TestLocalBloc = () => {
 
 const TestLocalHookCreate = () => {
   const [count] = useBloc(CounterCubitTimerLocal, {
-    create: () => new CounterCubitTimerLocal()
+    create: () => new CounterCubitTimerLocal(300)
   })
   return <div>Local: {count}</div>
 }
+
+interface CProps {text: string}
+const NotConnected:FC<CProps> = ({text}) => {
+  const [count] = useBloc(CounterCubitTimerLocal)
+  return <div>{text}: {count}</div>
+}
+
+const Connected = withBlocProvider<CProps>(new CounterCubitTimerLocal(2000))(NotConnected)
 
 const Killer = () => {
   const [l, sl] = useState(false);
@@ -115,6 +123,14 @@ export default function Sandbox() {
       <Card>
         <CardContent>
           <TestLocalHookCreate />
+        </CardContent>
+      </Card>
+
+      <Box m={2} />
+      <Typography variant="h3">Local Bloc HOC</Typography>
+      <Card>
+        <CardContent>
+          <Connected text="HOC with props" />
         </CardContent>
       </Card>
 

@@ -3,8 +3,9 @@ import { BlocReact } from "./BlocReact";
 import Cubit from "../Cubit";
 import mockConsole from "jest-mock-console";
 import React from "react";
-import { mount } from "enzyme";
+import { mount, shallow } from "enzyme";
 import { render } from "@testing-library/react";
+import { withBlocProvider } from "../../react/state";
 
 class Test1 extends Cubit<number> {
   constructor(options: { register?: () => void } = {}) {
@@ -28,7 +29,8 @@ class Test1 extends Cubit<number> {
 class Test2 extends Cubit<number> {
 }
 
-class Test3 extends Test1 {}
+class Test3 extends Test1 {
+}
 
 const t1 = new Test1();
 const testState = new BlocReact([t1]);
@@ -126,7 +128,7 @@ describe("BlocReact", function() {
 
       mount(<Provider />);
       expect(console.error).toHaveBeenCalledTimes(1);
-      expect(console.error).toHaveBeenCalledWith('BLoC is undefined');
+      expect(console.error).toHaveBeenCalledWith("BLoC is undefined");
     });
 
     it("should not react to state change if option `shouldUpdate` is false", function() {
@@ -189,7 +191,7 @@ describe("BlocReact", function() {
     it("should should remove local bloc from list when unmounted", function(done) {
       const initialValue = 88;
       const remove = jest.fn();
-      const bloc = new Test2(initialValue)
+      const bloc = new Test2(initialValue);
       bloc.addRemoveListener(remove);
 
       const Inner = () => {
@@ -206,9 +208,9 @@ describe("BlocReact", function() {
       };
 
       const component = render(<Provider />);
-      expect(remove).toHaveBeenCalledTimes(0)
+      expect(remove).toHaveBeenCalledTimes(0);
       component.unmount();
-      expect(remove).toHaveBeenCalledTimes(1)
+      expect(remove).toHaveBeenCalledTimes(1);
       done();
     });
 
@@ -228,6 +230,23 @@ describe("BlocReact", function() {
 
       const component = mount(<Provider />);
       expect(component.text()).toBe(`${initialValue}`);
+    });
+  });
+
+
+  describe("withBlocProvider", () => {
+    const Child = () => <div>Child</div>;
+
+    it("should render with child", () => {
+      const Comp = withBlocProvider(new Test2(2))(Child);
+      const component = shallow(<Comp />);
+      expect(component.find(Child).exists()).toBe(true);
+    });
+
+    it("should render with render with special name", () => {
+      const Comp = withBlocProvider(new Test2(2))(Child);
+      const component = shallow(<div><Comp /></div>);
+      expect(component.find('withBlocProvider(Child)').exists()).toBe(true);
     });
   });
 });
