@@ -1,4 +1,4 @@
-import React, { ComponentType, FC, ReactElement, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import React, { JSXElementConstructor, ReactElement, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import BlocBase from "../BlocBase";
 import { BlocClass, BlocHookData, ChangeEvent, ValueType } from "../types";
 import { BlocConsumer, ConsumerOptions } from "../BlocConsumer";
@@ -42,7 +42,7 @@ class NoValue {
 export class BlocReact extends BlocConsumer {
   private providerCount = 0;
   private readonly _blocsGlobal: BlocBase<any>[];
-  private _contextLocalProviderKey = React.createContext<string>("none");
+  private _contextLocalProviderKey = React.createContext<string>('none');
 
   constructor(blocs: BlocBase<any>[], options?: ConsumerOptions) {
     super(blocs, options);
@@ -135,7 +135,7 @@ export class BlocReact extends BlocConsumer {
   };
 
   BlocProvider<T extends BlocBase<any>>(props: {
-    children?: ReactElement | ReactElement[];
+    children?: ReactElement | ReactElement[] | false;
     bloc: T | ((id: string) => T);
   }): ReactElement {
     const id = useMemo(() => createId(), []);
@@ -171,28 +171,17 @@ export class BlocReact extends BlocConsumer {
     );
   };
 
-  withBlocProvider = <P extends {}>(bloc: BlocBase<any> | ((id: string) => BlocBase<any>)) => (Component: ComponentType<P>): FC<P> => {
-    const displayName =
-      Component.displayName || Component.name;
-
-    const Provider: FC<{
-      bloc: BlocBase<any> | ((id: string) => BlocBase<any>);
-      children?: ReactElement | ReactElement[];
-    }> = (props) => {
-      return <this.BlocProvider bloc={bloc}>{props.children}</this.BlocProvider>;
+  withBlocProvider = <P extends object>(bloc: BlocBase<any> | (() => BlocBase<any>)) => (Component: React.ComponentType<P>): React.ComponentType<P> => {
+    const {BlocProvider} = this;
+    return class WithBlocProvider extends React.Component<P> {
+      render(): React.ComponentType<P> {
+        return (
+          <BlocProvider bloc={bloc}>
+            <Component {...(this.props as P)} />
+          </BlocProvider>
+        ) as unknown as React.ComponentType<P>;
+      }
     };
-    Provider.displayName = `withBlocProvider`;
-
-    const Wrapper: FC<P> = (props) => {
-      return (
-        <Provider bloc={bloc}>
-          <Component {...props} />
-        </Provider>
-      );
-    };
-
-    Wrapper.displayName = `withBlocProvider(${displayName})`;
-    return Wrapper;
-  };
+  }  
 }
 
