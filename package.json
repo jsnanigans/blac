@@ -1,6 +1,6 @@
 {
   "name": "bloc-react",
-  "version": "0.1.18",
+  "version": "0.1.19",
   "license": "MIT",
   "main": "dist/bloc-react.js",
   "module": "dist/bloc-react.esm.js",
