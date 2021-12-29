@@ -1,5 +1,4 @@
 .idea
-src
 babel.config.js
 .gitignore
 index.html
@@ -12,7 +11,6 @@ tsconfig.json
 vite.config.ts
 .DS_Store
 site
-devtools
 readme.md
 setupTests.ts
 tsconfig.json
