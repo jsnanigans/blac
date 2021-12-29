@@ -1,10 +1,10 @@
 import React, { FC } from "react";
 import { ThemeProvider } from "@material-ui/styles";
-import { createMuiTheme } from "@material-ui/core/styles";
+import { createTheme } from "@material-ui/core/styles";
 import { orange, purple } from "@material-ui/core/colors";
 import Content from "./Content";
 
-const darkTheme = createMuiTheme({
+const darkTheme = createTheme({
   palette: {
     type: "dark",
     primary: {

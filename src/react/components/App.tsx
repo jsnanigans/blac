@@ -1,6 +1,6 @@
 import React from "react";
 import Layout from "./Layout";
-import { createMuiTheme } from "@material-ui/core/styles";
+import { createTheme } from "@material-ui/core/styles";
 import { ThemeProvider } from "@material-ui/styles";
 import CssBaseline from "@material-ui/core/CssBaseline";
 import { blue, green, orange, purple } from "@material-ui/core/colors";
@@ -8,7 +8,7 @@ import { BrowserRouter as Router } from "react-router-dom";
 import { useBloc } from "../state";
 import PreferencesCubit from "../bloc/PreferencesCubit";
 
-const darkTheme = createMuiTheme({
+const darkTheme = createTheme({
   palette: {
     type: "dark",
     primary: {
@@ -22,7 +22,7 @@ const darkTheme = createMuiTheme({
   },
 });
 
-const lightTheme = createMuiTheme({
+const lightTheme = createTheme({
   palette: {
     type: "light",
     primary: {

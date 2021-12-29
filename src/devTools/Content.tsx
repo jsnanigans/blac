@@ -1,6 +1,7 @@
 import React, { FC, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Grid,
+  IconButton,
   List,
   ListItem,
   ListItemText,
@@ -19,19 +20,31 @@ import BlocsCubit from "./state/BlocsCubit";
 import BlocBase from "../../src/lib/BlocBase";
 import { Alert } from "@material-ui/lab";
 import { ChangeEvent } from "../../src/lib/types";
+import clsx from "clsx";
+import Bug from "@material-ui/icons/BugReport";
 
 const useStyles = makeStyles((theme) => ({
   root: {
-    height: `100vh`,
-    position: "fixed",
-    left: 0,
-    bottom: 0,
-    right: 0,
+    position: "fixed", 
     background: "#333",
     zIndex: 9999,
     borderTop: "2px solid #000",
     display: "flex",
-    flexDirection: "column"
+    flexDirection: "column",
+    right: 0,
+    bottom: 0,
+    left: 0,
+    height: '500px',
+    transform: 'translateY(100%)',
+    transition: 'transform 0.3s ease-in-out',
+  },
+  showRoot: {
+    transform: 'translateY(0)',
+  } ,
+  showButton: {
+    position: "absolute",
+    bottom: '100%',
+    right: 0,
   },
   content: {
     flex: "1",
@@ -223,6 +236,7 @@ const Content: FC = () => {
   // const [tab, setTab] = useState(0);
   const [selected, setSelected] = useState<[BlocBase<any> | undefined, ChangeEvent<any> | undefined]>([undefined, undefined]);
   const [blocs] = useBlocTools(BlocsCubit);
+  const [show, setShow] = useState(false);
 
   // const handleChange = (event: React.ChangeEvent<{}>, newValue: number) => {
   //   setTab(newValue);
@@ -255,7 +269,9 @@ const Content: FC = () => {
   const globalBlocs = useMemo(() => blocs.blocs.filter(b => b.meta.scope === "global"), [blocs]);
   const localBlocs = useMemo(() => blocs.blocs.filter(b => b.meta.scope === "local"), [blocs]);
 
-  return <div className={classes.root}>
+  return <div className={clsx(classes.root, {
+    [classes.showRoot]: show
+  })}>
     {/*<Paper square>*/}
     {/*  <Tabs*/}
     {/*    value={tab}*/}
@@ -267,6 +283,7 @@ const Content: FC = () => {
     {/*    <Tab label="Blocs" />*/}
     {/*  </Tabs>*/}
     {/*</Paper>*/}
+    <IconButton onClick={() => setShow(!show)} className={classes.showButton}><Bug /></IconButton> 
     <div className={classes.content}>
       <div className={classes.blocItems}>
         <List>

@@ -9,6 +9,7 @@ import TestLocalCubit from "../bloc/TestLocalCubit";
 import Divider from "@material-ui/core/Divider";
 import AuthBloc, { AuthEvent } from "../bloc/AuthBloc";
 import Auth from "./Auth";
+import DevTools from "../../devTools/DevTools";
 
 const useStyles = makeStyles((theme) => ({
   // necessary for content to be below app bar
@@ -69,6 +70,7 @@ export default function Sandbox() {
   const classes = useStyles();
   return (
     <>
+      <DevTools />
       <Box height={100} />
       <div className={classes.toolbar} />
 
