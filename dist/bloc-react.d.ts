@@ -155,10 +155,10 @@ declare class BlocReact extends BlocConsumer {
         shouldUpdate?: (event: ChangeEvent<ValueType<T>>) => boolean;
     }): ReactElement | null;
     BlocProvider<T extends BlocBase<any>>(props: {
-        children?: ReactElement | ReactElement[];
+        children?: ReactElement | ReactElement[] | false;
         bloc: T | ((id: string) => T);
     }): ReactElement;
-    withBlocProvider: <P extends {}>(bloc: BlocBase<any> | ((id: string) => BlocBase<any>)) => (Component: React.ComponentType<P>) => React.FC<P>;
+    withBlocProvider: <P extends object>(bloc: BlocBase<any> | (() => BlocBase<any>)) => (Component: React.ComponentType<P>) => React.ComponentType<P>;
 }
 
 export { Bloc, BlocObserver, BlocReact, Cubit };

@@ -11,9 +11,11 @@ const createId = () => {
 };
 
 class BehaviorSubject {
+  isClosed = false;
+  prevValue;
+  value;
+  observers = [];
   constructor(initialValue) {
-    this.isClosed = false;
-    this.observers = [];
     this.value = initialValue;
   }
   getValue() {
@@ -45,55 +47,11 @@ class BehaviorSubject {
   }
 }
 class StreamAbstraction {
+  isClosed = false;
+  removeListeners = [];
+  _options;
+  _subject;
   constructor(initialValue, blocOptions = {}) {
-    this.isClosed = false;
-    this.removeListeners = [];
-    this.removeRemoveListener = (index) => {
-      this.removeListeners.splice(index, 1);
-    };
-    this.addRemoveListener = (method) => {
-      const index = this.removeListeners.length;
-      this.removeListeners.push(method);
-      return () => this.removeRemoveListener(index);
-    };
-    this.subscribe = (observer) => this._subject.subscribe({
-      next: observer.next
-    });
-    this.complete = () => {
-      this.isClosed = true;
-      this._subject.complete();
-    };
-    this.clearCache = () => {
-      const key = this._options.persistKey;
-      if (key) {
-        localStorage.removeItem(`${LOCAL_STORAGE_PREFIX}${key}`);
-      }
-    };
-    this.next = (value) => {
-      this._subject.next(value);
-      this.updateCache();
-    };
-    this.getCachedValue = () => {
-      const cachedValue = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}${this._options.persistKey}`);
-      if (cachedValue) {
-        try {
-          return this.jsonToState(cachedValue);
-        } catch (e) {
-          const error = new Error(`Failed to parse JSON in localstorage for the key: "${LOCAL_STORAGE_PREFIX}${this._options.persistKey}"`);
-          console.error(error);
-          return error;
-        }
-      }
-      return new Error("Key not found");
-    };
-    this.updateCache = () => {
-      const { persistData, persistKey } = this._options;
-      if (persistData && persistKey) {
-        localStorage.setItem(`${LOCAL_STORAGE_PREFIX}${persistKey}`, this.stateToJson(this.state));
-      } else {
-        this.clearCache();
-      }
-    };
     let value = initialValue;
     const options = { ...cubitDefaultOptions, ...blocOptions };
     this._options = options;
@@ -108,123 +66,168 @@ class StreamAbstraction {
   get state() {
     return this._subject.getValue();
   }
+  removeRemoveListener = (index) => {
+    this.removeListeners.splice(index, 1);
+  };
+  addRemoveListener = (method) => {
+    const index = this.removeListeners.length;
+    this.removeListeners.push(method);
+    return () => this.removeRemoveListener(index);
+  };
+  subscribe = (observer) => this._subject.subscribe({
+    next: observer.next
+  });
+  complete = () => {
+    this.isClosed = true;
+    this._subject.complete();
+  };
+  clearCache = () => {
+    const key = this._options.persistKey;
+    if (key) {
+      localStorage.removeItem(`${LOCAL_STORAGE_PREFIX}${key}`);
+    }
+  };
   jsonToState(state) {
     return JSON.parse(state).state;
   }
   stateToJson(state) {
     return JSON.stringify({ state });
   }
+  next = (value) => {
+    this._subject.next(value);
+    this.updateCache();
+  };
+  getCachedValue = () => {
+    const cachedValue = localStorage.getItem(`${LOCAL_STORAGE_PREFIX}${this._options.persistKey}`);
+    if (cachedValue) {
+      try {
+        return this.jsonToState(cachedValue);
+      } catch (e) {
+        const error = new Error(`Failed to parse JSON in localstorage for the key: "${LOCAL_STORAGE_PREFIX}${this._options.persistKey}"`);
+        console.error(error);
+        return error;
+      }
+    }
+    return new Error("Key not found");
+  };
+  updateCache = () => {
+    const { persistData, persistKey } = this._options;
+    if (persistData && persistKey) {
+      localStorage.setItem(`${LOCAL_STORAGE_PREFIX}${persistKey}`, this.stateToJson(this.state));
+    } else {
+      this.clearCache();
+    }
+  };
 }
 
 class BlocBase extends StreamAbstraction {
+  id = createId();
+  createdAt = new Date();
+  meta = {
+    scope: "unknown"
+  };
+  changeListeners = [];
+  registerListeners = [];
+  valueChangeListeners = [];
+  consumer = null;
   constructor(initialValue, blocOptions = {}) {
     super(initialValue, blocOptions);
-    this.id = createId();
-    this.createdAt = new Date();
-    this.meta = {
-      scope: "unknown"
-    };
-    this.changeListeners = [];
-    this.registerListeners = [];
-    this.valueChangeListeners = [];
-    this.consumer = null;
-    this.removeChangeListener = (index) => {
-      this.changeListeners.splice(index, 1);
-    };
-    this.addChangeListener = (method) => {
-      const index = this.changeListeners.length;
-      this.changeListeners.push(method);
-      return () => this.removeChangeListener(index);
-    };
-    this.removeValueChangeListener = (index) => {
-      this.valueChangeListeners.splice(index, 1);
-    };
-    this.addValueChangeListener = (method) => {
-      const index = this.valueChangeListeners.length;
-      this.valueChangeListeners.push(method);
-      return () => this.removeValueChangeListener(index);
-    };
-    this.removeRegisterListener = (index) => {
-      this.registerListeners.splice(index, 1);
-    };
-    this.addRegisterListener = (method) => {
-      const index = this.registerListeners.length;
-      this.registerListeners.push(method);
-      return () => this.removeRegisterListener(index);
-    };
-    this.notifyChange = (state) => {
-      this.consumer?.notifyChange(this, state);
-      this.changeListeners.forEach((fn) => fn({
-        currentState: this.state,
-        nextState: state
-      }, this));
-    };
-    this.notifyValueChange = () => {
-      this.consumer?.notifyValueChange(this);
-      this.valueChangeListeners.forEach((fn) => fn(this.state, this));
-    };
   }
+  removeChangeListener = (index) => {
+    this.changeListeners.splice(index, 1);
+  };
+  addChangeListener = (method) => {
+    const index = this.changeListeners.length;
+    this.changeListeners.push(method);
+    return () => this.removeChangeListener(index);
+  };
+  removeValueChangeListener = (index) => {
+    this.valueChangeListeners.splice(index, 1);
+  };
+  addValueChangeListener = (method) => {
+    const index = this.valueChangeListeners.length;
+    this.valueChangeListeners.push(method);
+    return () => this.removeValueChangeListener(index);
+  };
+  removeRegisterListener = (index) => {
+    this.registerListeners.splice(index, 1);
+  };
+  addRegisterListener = (method) => {
+    const index = this.registerListeners.length;
+    this.registerListeners.push(method);
+    return () => this.removeRegisterListener(index);
+  };
+  notifyChange = (state) => {
+    this.consumer?.notifyChange(this, state);
+    this.changeListeners.forEach((fn) => fn({
+      currentState: this.state,
+      nextState: state
+    }, this));
+  };
+  notifyValueChange = () => {
+    this.consumer?.notifyValueChange(this);
+    this.valueChangeListeners.forEach((fn) => fn(this.state, this));
+  };
 }
 
 class Bloc extends BlocBase {
+  onTransition = null;
+  mapEventToState = null;
   constructor(initialState, options) {
     super(initialState, options);
-    this.onTransition = null;
-    this.mapEventToState = null;
-    this.add = (event) => {
-      if (this.mapEventToState) {
-        const newState = this.mapEventToState(event);
-        this.notifyChange(newState);
-        this.notifyTransition(newState, event);
-        this.next(newState);
-        this.notifyValueChange();
-      } else {
-        console.error(`"mapEventToState" not implemented for "${this.constructor.name}"`);
-      }
-    };
-    this.notifyTransition = (state, event) => {
-      this.consumer?.notifyTransition(this, state, event);
-      this.onTransition?.({
-        currentState: this.state,
-        event,
-        nextState: state
-      });
-    };
   }
+  add = (event) => {
+    if (this.mapEventToState) {
+      const newState = this.mapEventToState(event);
+      this.notifyChange(newState);
+      this.notifyTransition(newState, event);
+      this.next(newState);
+      this.notifyValueChange();
+    } else {
+      console.error(`"mapEventToState" not implemented for "${this.constructor.name}"`);
+    }
+  };
+  notifyTransition = (state, event) => {
+    this.consumer?.notifyTransition(this, state, event);
+    this.onTransition?.({
+      currentState: this.state,
+      event,
+      nextState: state
+    });
+  };
 }
 
 class Cubit extends BlocBase {
-  constructor() {
-    super(...arguments);
-    this.emit = (value) => {
-      this.notifyChange(value);
-      this.next(value);
-      this.notifyValueChange();
-    };
-  }
+  emit = (value) => {
+    this.notifyChange(value);
+    this.next(value);
+    this.notifyValueChange();
+  };
 }
 
 class BlocObserver {
+  onChange;
+  onTransition;
   constructor(methods = {}) {
-    this.addChange = (bloc, state) => {
-      this.onChange(bloc, this.createChangeEvent(bloc, state));
-    };
-    this.addTransition = (bloc, state, event) => {
-      this.onTransition(bloc, this.createTransitionEvent(bloc, state, event));
-    };
-    this.addBlocAdded = (bloc) => {
-      this.onBlocAdded(bloc);
-    };
-    this.addBlocRemoved = (bloc) => {
-      this.onBlocRemoved(bloc);
-    };
-    this.defaultAction = () => {
-    };
-    this.onBlocAdded = this.defaultAction;
-    this.onBlocRemoved = this.defaultAction;
     this.onChange = methods.onChange ? methods.onChange : this.defaultAction;
     this.onTransition = methods.onTransition ? methods.onTransition : this.defaultAction;
   }
+  addChange = (bloc, state) => {
+    this.onChange(bloc, this.createChangeEvent(bloc, state));
+  };
+  addTransition = (bloc, state, event) => {
+    this.onTransition(bloc, this.createTransitionEvent(bloc, state, event));
+  };
+  addBlocAdded = (bloc) => {
+    this.onBlocAdded(bloc);
+  };
+  addBlocRemoved = (bloc) => {
+    this.onBlocRemoved(bloc);
+  };
+  defaultAction = () => {
+  };
+  onBlocAdded = this.defaultAction;
+  onBlocRemoved = this.defaultAction;
   createTransitionEvent(bloc, state, event) {
     return {
       currentState: bloc.state,
@@ -241,12 +244,14 @@ class BlocObserver {
 }
 
 class BlocConsumer {
+  observer;
+  mocksEnabled = false;
+  providerList = [];
+  blocListGlobal;
+  blocChangeObservers = [];
+  blocValueChangeObservers = [];
+  mockBlocs = [];
   constructor(blocs, options = {}) {
-    this.mocksEnabled = false;
-    this.providerList = [];
-    this.blocChangeObservers = [];
-    this.blocValueChangeObservers = [];
-    this.mockBlocs = [];
     this.blocListGlobal = blocs;
     this.observer = options.observer || new BlocObserver();
     for (const b of blocs) {
@@ -362,6 +367,7 @@ const defaultBlocHookOptions = {
   subscribe: true
 };
 class BlocRuntimeError {
+  error;
   constructor(message) {
     this.error = new Error(message);
   }
@@ -369,25 +375,30 @@ class BlocRuntimeError {
 class NoValue {
 }
 class BlocReact extends BlocConsumer {
+  providerCount = 0;
+  _blocsGlobal;
+  _contextLocalProviderKey = React.createContext("none");
   constructor(blocs, options) {
     super(blocs, options);
-    this.providerCount = 0;
-    this._contextLocalProviderKey = React.createContext("none");
-    this.useBloc = (blocClass, options = {}) => {
-      const mergedOptions = {
-        ...defaultBlocHookOptions,
-        ...options
-      };
-      let blocInstance = useMemo(() => options.create ? options.create() : void 0, []);
-      if (!blocInstance) {
-        const localProviderKey = useContext(this._contextLocalProviderKey);
-        const localBlocInstance = useMemo(() => this.getLocalBlocForProvider(localProviderKey, blocClass), []);
-        blocInstance = useMemo(() => localBlocInstance || this.getGlobalBlocInstance(this._blocsGlobal, blocClass), []);
-      }
-      const { subscribe, shouldUpdate = true } = mergedOptions;
-      if (!blocInstance) {
-        const name = blocClass.prototype.constructor.name;
-        const error = new BlocRuntimeError(`"${name}" 
+    this._blocsGlobal = blocs;
+    this.BlocProvider = this.BlocProvider.bind(this);
+    this.BlocBuilder = this.BlocBuilder.bind(this);
+  }
+  useBloc = (blocClass, options = {}) => {
+    const mergedOptions = {
+      ...defaultBlocHookOptions,
+      ...options
+    };
+    let blocInstance = useMemo(() => options.create ? options.create() : void 0, []);
+    if (!blocInstance) {
+      const localProviderKey = useContext(this._contextLocalProviderKey);
+      const localBlocInstance = useMemo(() => this.getLocalBlocForProvider(localProviderKey, blocClass), []);
+      blocInstance = useMemo(() => localBlocInstance || this.getGlobalBlocInstance(this._blocsGlobal, blocClass), []);
+    }
+    const { subscribe, shouldUpdate = true } = mergedOptions;
+    if (!blocInstance) {
+      const name = blocClass.prototype.constructor.name;
+      const error = new BlocRuntimeError(`"${name}" 
       no bloc with this name was found in the global context.
       
       # Solutions:
@@ -402,59 +413,37 @@ class BlocReact extends BlocConsumer {
           ]
         )
       `);
-        console.error(error.error);
-        return [
-          NoValue,
-          {},
-          {
-            error,
-            complete: true
-          }
-        ];
-      }
-      const [data, setData] = useState(blocInstance.state);
-      const updateData = useCallback((nextState) => {
-        if (shouldUpdate === true || shouldUpdate({ nextState, currentState: data })) {
-          setData(nextState);
-        }
-      }, []);
-      useEffect(() => {
-        if (subscribe) {
-          const subscription = blocInstance?.subscribe({
-            next: updateData
-          });
-          return () => {
-            subscription?.unsubscribe();
-          };
-        }
-      }, []);
+      console.error(error.error);
       return [
-        data,
-        blocInstance
+        NoValue,
+        {},
+        {
+          error,
+          complete: true
+        }
       ];
-    };
-    this.withBlocProvider = (bloc) => (Component) => {
-      const displayName = Component.displayName || Component.name;
-      const Provider = (props) => {
-        return /* @__PURE__ */ React.createElement(this.BlocProvider, {
-          bloc
-        }, props.children);
-      };
-      Provider.displayName = `withBlocProvider`;
-      const Wrapper = (props) => {
-        return /* @__PURE__ */ React.createElement(Provider, {
-          bloc
-        }, /* @__PURE__ */ React.createElement(Component, {
-          ...props
-        }));
-      };
-      Wrapper.displayName = `withBlocProvider(${displayName})`;
-      return Wrapper;
-    };
-    this._blocsGlobal = blocs;
-    this.BlocProvider = this.BlocProvider.bind(this);
-    this.BlocBuilder = this.BlocBuilder.bind(this);
-  }
+    }
+    const [data, setData] = useState(blocInstance.state);
+    const updateData = useCallback((nextState) => {
+      if (shouldUpdate === true || shouldUpdate({ nextState, currentState: data })) {
+        setData(nextState);
+      }
+    }, []);
+    useEffect(() => {
+      if (subscribe) {
+        const subscription = blocInstance?.subscribe({
+          next: updateData
+        });
+        return () => {
+          subscription?.unsubscribe();
+        };
+      }
+    }, []);
+    return [
+      data,
+      blocInstance
+    ];
+  };
   BlocBuilder(props) {
     const hook = this.useBloc(props.blocClass, {
       shouldUpdate: props.shouldUpdate
@@ -491,6 +480,18 @@ class BlocReact extends BlocConsumer {
       value: bloc
     }, props.children));
   }
+  withBlocProvider = (bloc) => (Component) => {
+    const { BlocProvider } = this;
+    return class WithBlocProvider extends React.Component {
+      render() {
+        return /* @__PURE__ */ React.createElement(BlocProvider, {
+          bloc
+        }, /* @__PURE__ */ React.createElement(Component, {
+          ...this.props
+        }));
+      }
+    };
+  };
 }
 
 export { Bloc, BlocObserver, BlocReact, Cubit };
