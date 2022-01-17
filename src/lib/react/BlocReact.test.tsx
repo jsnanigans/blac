@@ -6,7 +6,6 @@ import React from "react";
 import { mount, shallow } from "enzyme";
 import { render } from "@testing-library/react";
 import { useBloc, withBlocProvider } from "../../react/state";
-
 class Test1 extends Cubit<number> {
   constructor(options: { register?: () => void } = {}) {
     super(1);
@@ -39,7 +38,9 @@ const { BlocProvider, BlocBuilder } = testState;
 describe("BlocReact", function() {
   afterEach(() => {
     jest.resetAllMocks();
-    t1.reset();
+    act(() => {
+      t1.reset();
+    });
   });
 
   describe("useBloc", function() {
@@ -52,7 +53,9 @@ describe("BlocReact", function() {
       const [, instance] = result.current;
       expect(result.current[0]).toBe(1);
       expect(result.current[1] instanceof Test1).toBe(true);
-      instance.increment();
+      act(() => {
+        instance.increment();
+      });
       expect(result.current[0]).toBe(2);
     });
 
@@ -63,7 +66,9 @@ describe("BlocReact", function() {
       const [, instance] = result.current;
       expect(result.current[0]).toBe(1);
       expect(result.current[1] instanceof Test1).toBe(true);
+      act(() => {
         instance.increment();
+      });
       expect(result.current[0]).toBe(2);
     });
 
@@ -129,7 +134,9 @@ describe("BlocReact", function() {
       const { result } = renderHook(() => testState.useBloc(Test1, { subscribe: false }));
       const [, instance] = result.current;
       expect(result.current[0]).toBe(1);
+      act(() => {
         instance.increment();
+      });
       expect(result.current[0]).toBe(1);
       expect(instance.state).toBe(2);
     });
@@ -140,9 +147,13 @@ describe("BlocReact", function() {
       }));
       const [, instance] = result.current;
       expect(result.current[0]).toBe(1);
+      act(() => {
         instance.increment();
+      });
       expect(result.current[0]).toBe(2);
+      act(() => {
         instance.increment();
+      });
       expect(result.current[0]).toBe(2);
       expect(instance.state).toBe(3);
     });
