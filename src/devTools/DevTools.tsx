@@ -1,27 +1,49 @@
 import React, { FC } from "react";
-import { ThemeProvider } from "@material-ui/styles";
-import { createTheme } from "@material-ui/core/styles";
-import { orange, purple } from "@material-ui/core/colors";
+// import { ThemeProvider, Theme, StyledEngineProvider } from "@mui/styles";
+import { createTheme } from "@mui/material/styles";
+import { green, orange, purple } from "@mui/material/colors";
 import Content from "./Content";
+import { ThemeProvider } from "@mui/styles";
 
-const darkTheme = createTheme({
+
+declare module '@mui/styles/defaultTheme' {
+  // eslint-disable-next-line @typescript-eslint/no-empty-interface
+  interface DefaultTheme extends Theme {}
+}
+
+
+// const darkTheme = createTheme(adaptV4Theme({
+//   palette: {
+//     mode: "dark",
+//     primary: {
+//       // Purple and green play nicely together.
+//       main: orange.A200
+//     },
+//     secondary: {
+//       // This is green.A700 as hex.
+//       main: purple.A200
+//     }
+//   }
+// }));
+
+const theme = createTheme({
   palette: {
-    type: "dark",
     primary: {
-      // Purple and green play nicely together.
-      main: orange.A200
+      main: purple[500],
     },
     secondary: {
-      // This is green.A700 as hex.
-      main: purple.A200
-    }
-  }
+      main: green[500],
+    },
+  },
 });
 
+
 const DevTools: FC = () => {
-  return <ThemeProvider theme={darkTheme}>
-    <Content />
-  </ThemeProvider>;
+  return (
+    <ThemeProvider theme={theme}>
+      <Content />
+    </ThemeProvider>
+  );
 };
 
 export default DevTools;

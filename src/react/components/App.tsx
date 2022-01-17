@@ -1,16 +1,31 @@
 import React from "react";
 import Layout from "./Layout";
-import { createTheme } from "@material-ui/core/styles";
-import { ThemeProvider } from "@material-ui/styles";
-import CssBaseline from "@material-ui/core/CssBaseline";
-import { blue, green, orange, purple } from "@material-ui/core/colors";
+import { createTheme, adaptV4Theme } from "@mui/material/styles";
+import { ThemeProvider, Theme, StyledEngineProvider } from "@mui/styles";
+import CssBaseline from "@mui/material/CssBaseline";
+import { blue, green, orange, purple } from "@mui/material/colors";
 import { BrowserRouter as Router } from "react-router-dom";
 import { useBloc } from "../state";
 import PreferencesCubit from "../bloc/PreferencesCubit";
 
+
+
+declare module '@mui/styles/defaultTheme' {
+  // eslint-disable-next-line @typescript-eslint/no-empty-interface
+  interface DefaultTheme extends Theme {}
+}
+
+
+
+declare module '@mui/styles/defaultTheme' {
+  // eslint-disable-next-line @typescript-eslint/no-empty-interface
+  interface DefaultTheme extends Theme {}
+}
+
+
 const darkTheme = createTheme({
   palette: {
-    type: "dark",
+    mode: "dark",
     primary: {
       // Purple and green play nicely together.
       main: orange.A200,
@@ -24,7 +39,7 @@ const darkTheme = createTheme({
 
 const lightTheme = createTheme({
   palette: {
-    type: "light",
+    mode: "light",
     primary: {
       // Purple and green play nicely together.
       main: purple[500],
@@ -39,12 +54,12 @@ const lightTheme = createTheme({
 function App() {
   const [{ darkMode }] = useBloc<PreferencesCubit>(PreferencesCubit);
   return (
-    <ThemeProvider theme={darkMode ? darkTheme : lightTheme}>
-      <CssBaseline />
-      <Router>
-        <Layout />
-      </Router>
-    </ThemeProvider>
+      <ThemeProvider theme={darkMode ? darkTheme : lightTheme}>
+        <CssBaseline />
+        <Router>
+          <Layout />
+        </Router>
+      </ThemeProvider>
   );
 }
 

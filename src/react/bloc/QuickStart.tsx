@@ -1,9 +1,9 @@
-import Typography from "@material-ui/core/Typography";
+import Typography from "@mui/material/Typography";
 import React from "react";
-import { makeStyles } from "@material-ui/core/styles";
+import makeStyles from '@mui/styles/makeStyles';
 import { BlocBuilder, BlocProvider } from "../state";
 import CounterCubit from "../bloc/CounterCubit";
-import { Box, Button, Card, CardContent } from "@material-ui/core";
+import { Box, Button, Card, CardContent } from "@mui/material";
 import AuthBloc, { AuthEvent } from "../bloc/AuthBloc";
 import Auth from "../components/Auth";
 import Buttons from "../components/Buttonts";

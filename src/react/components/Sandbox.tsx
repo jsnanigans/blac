@@ -1,12 +1,12 @@
-import Typography from "@material-ui/core/Typography";
+import Typography from "@mui/material/Typography";
 import React, { FC, useState } from "react";
-import { makeStyles } from "@material-ui/core/styles";
+import makeStyles from '@mui/styles/makeStyles';
 import { BlocBuilder, BlocProvider, useBloc, withBlocProvider } from "../state";
 import Buttons from "./Buttonts";
 import CounterCubit, { CounterCubitTimer, CounterCubitTimerLocal } from "../bloc/CounterCubit";
-import { Box, Button, Card, CardContent } from "@material-ui/core";
+import { Box, Button, Card, CardContent } from "@mui/material";
 import TestLocalCubit from "../bloc/TestLocalCubit";
-import Divider from "@material-ui/core/Divider";
+import Divider from "@mui/material/Divider";
 import AuthBloc, { AuthEvent } from "../bloc/AuthBloc";
 import Auth from "./Auth";
 import DevTools from "../../devTools/DevTools";
@@ -70,7 +70,7 @@ export default function Sandbox() {
   const classes = useStyles();
   return (
     <>
-      <DevTools />
+      {/* <DevTools /> */}
       <Box height={100} />
       <div className={classes.toolbar} />
 

@@ -1,7 +1,7 @@
 import React from "react";
 import { useBloc } from "../state";
 import AuthBloc, { AuthEvent } from "../bloc/AuthBloc";
-import { Button, ButtonGroup, Card, CardContent, Typography } from "@material-ui/core";
+import { Button, ButtonGroup, Card, CardContent, Typography } from "@mui/material";
 
 export default function Auth() {
   const [data, auth] = useBloc<AuthBloc>(AuthBloc);

@@ -13,15 +13,15 @@ import {
   TableContainer,
   TableRow,
   Typography
-} from "@material-ui/core";
-import { makeStyles } from "@material-ui/core/styles";
+} from "@mui/material";
+import makeStyles from '@mui/styles/makeStyles';
 import { useBlocTools } from "./state/state";
 import BlocsCubit from "./state/BlocsCubit";
 import BlocBase from "../../src/lib/BlocBase";
-import { Alert } from "@material-ui/lab";
+import { Alert } from '@mui/material';
 import { ChangeEvent } from "../../src/lib/types";
 import clsx from "clsx";
-import Bug from "@material-ui/icons/BugReport";
+import Bug from "@mui/icons-material/BugReport";
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -269,37 +269,42 @@ const Content: FC = () => {
   const globalBlocs = useMemo(() => blocs.blocs.filter(b => b.meta.scope === "global"), [blocs]);
   const localBlocs = useMemo(() => blocs.blocs.filter(b => b.meta.scope === "local"), [blocs]);
 
-  return <div className={clsx(classes.root, {
-    [classes.showRoot]: show
-  })}>
-    {/*<Paper square>*/}
-    {/*  <Tabs*/}
-    {/*    value={tab}*/}
-    {/*    indicatorColor="primary"*/}
-    {/*    textColor="primary"*/}
-    {/*    onChange={handleChange}*/}
-    {/*    aria-label="disabled tabs example"*/}
-    {/*  >*/}
-    {/*    <Tab label="Blocs" />*/}
-    {/*  </Tabs>*/}
-    {/*</Paper>*/}
-    <IconButton onClick={() => setShow(!show)} className={classes.showButton}><Bug /></IconButton> 
-    <div className={classes.content}>
-      <div className={classes.blocItems}>
-        <List>
-          <ListSubheader className={classes.listHeader}>Global BLoCs ({globalBlocs.length})</ListSubheader>
-          {globalBlocs.map(bloc =>
-            <BlocItem key={bloc.id} bloc={bloc} onSelect={(b, e) => setSelected([b, e])}
-                      selected={bloc === selected[0]} />)}
-          <ListSubheader className={classes.listHeader}>Local BLoCs ({localBlocs.length})</ListSubheader>
-          {localBlocs.map(bloc =>
-            <BlocItem key={bloc.id} bloc={bloc} onSelect={(b, e) => setSelected([b, e])}
-                      selected={bloc === selected[0]} />)}
-        </List>
+  return (
+    <div className={clsx(classes.root, {
+      [classes.showRoot]: show
+    })}>
+      {/*<Paper square>*/}
+      {/*  <Tabs*/}
+      {/*    value={tab}*/}
+      {/*    indicatorColor="primary"*/}
+      {/*    textColor="primary"*/}
+      {/*    onChange={handleChange}*/}
+      {/*    aria-label="disabled tabs example"*/}
+      {/*  >*/}
+      {/*    <Tab label="Blocs" />*/}
+      {/*  </Tabs>*/}
+      {/*</Paper>*/}
+      <IconButton
+        onClick={() => setShow(!show)}
+        className={classes.showButton}
+        size="large"><Bug /></IconButton> 
+      <div className={classes.content}>
+        <div className={classes.blocItems}>
+          <List>
+            <ListSubheader className={classes.listHeader}>Global BLoCs ({globalBlocs.length})</ListSubheader>
+            {globalBlocs.map(bloc =>
+              <BlocItem key={bloc.id} bloc={bloc} onSelect={(b, e) => setSelected([b, e])}
+                        selected={bloc === selected[0]} />)}
+            <ListSubheader className={classes.listHeader}>Local BLoCs ({localBlocs.length})</ListSubheader>
+            {localBlocs.map(bloc =>
+              <BlocItem key={bloc.id} bloc={bloc} onSelect={(b, e) => setSelected([b, e])}
+                        selected={bloc === selected[0]} />)}
+          </List>
+        </div>
+        <BlocDetails key={selected[0]?.id} bloc={selected[0]} lastEvent={selected[1]} />
       </div>
-      <BlocDetails key={selected[0]?.id} bloc={selected[0]} lastEvent={selected[1]} />
     </div>
-  </div>;
+  );
 };
 
 export default Content;

@@ -1,7 +1,7 @@
 import { useBloc } from "../state";
 import CounterCubit from "../bloc/CounterCubit";
 import React from "react";
-import { Button, ButtonGroup } from "@material-ui/core";
+import { Button, ButtonGroup } from "@mui/material";
 
 export default function Buttons() {
   const [, { increment, decrement }] = useBloc<CounterCubit>(CounterCubit, {
