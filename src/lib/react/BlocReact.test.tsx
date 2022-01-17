@@ -257,7 +257,6 @@ describe("BlocReact", function() {
     it("should render with render with special name", () => {
       const Comp = withBlocProvider(new Test2(2))(Child);
       const component = shallow(<div><Comp /></div>);
-      console.log(component.debug())
       expect(component.find('WithBlocProvider').exists()).toBe(true);
     });
   });
