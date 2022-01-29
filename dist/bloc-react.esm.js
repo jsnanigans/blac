@@ -195,18 +195,34 @@ var Bloc = /** @class */ (function (_super) {
     function Bloc(initialState, options) {
         var _this = _super.call(this, initialState, options) || this;
         _this.onTransition = null;
+        /**
+         * @deprecated The method is deprecated. Use `on` to add your event handlers instead.
+         */
         _this.mapEventToState = null;
+        _this.eventHandlers = [];
         _this.add = function (event) {
-            if (_this.mapEventToState) {
-                var newState = _this.mapEventToState(event);
-                _this.notifyChange(newState);
-                _this.notifyTransition(newState, event);
-                _this.next(newState);
-                _this.notifyValueChange();
+            for (var _i = 0, _a = _this.eventHandlers; _i < _a.length; _i++) {
+                var _b = _a[_i], eventName = _b[0], handler = _b[1];
+                if (eventName === event) {
+                    handler(event, _this.emit(event));
+                    return;
+                }
             }
-            else {
-                console.error("\"mapEventToState\" not implemented for \"".concat(_this.constructor.name, "\""));
-            }
+            console.warn("Event is not handled in Bloc:", { event: event, bloc: _this });
+        };
+        _this.emit = function (event) { return function (newState) {
+            _this.notifyChange(newState);
+            _this.notifyTransition(newState, event);
+            _this.next(newState);
+            _this.notifyValueChange();
+        }; };
+        /**
+         * Add a listener to the Bloc for when a new event is added. There can only be one handler for each event.
+         * @param event The event that was added to the Bloc
+         * @param handler A method that receives the event and a `emit` function that can be used to update the state
+         */
+        _this.on = function (event, handler) {
+            _this.eventHandlers.push([event, handler]);
         };
         _this.notifyTransition = function (state, event) {
             var _a, _b;
