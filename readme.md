@@ -101,9 +101,11 @@ const Counter: FC = (): ReactElement => {
 
 ## Bloc
 Most of the time the `Cubit` class will be the easiest way to manage a piece of state but for the more critical parts of your application where there can be various reasons why the state changes to the same value, for example user authentication. It might be nice to know if the user got logged out because an error occurred, the token expired or if they just clicked on the logout button.
-This is especially helpful when debugging some unexpected behaviour.
+This is especially helpful when debugging some unexpected behavior.
 
 In the `BlocObserver` you can then use the `onTransition` to see why the state changes, it will pass the previous state, the event itself and the next state.
+
+> Use Enums or Classes as state to make it easier to debug.
 
 ```typescript
 export enum AuthEvent {
@@ -116,15 +118,39 @@ export default class AuthBloc extends Bloc<AuthEvent, boolean> {
   constructor() {
     super(false)
 
-    this.mapEventToState = (event) => {
-      switch (event) {
-        case AuthEvent.unknown:
-          return false;
-        case AuthEvent.unauthenticated:
-          return false;
-        case AuthEvent.authenticated:
-          return true;
-    }
+    this.on(AuthEvent.unknown, (_, emit) => {
+      emit(false);
+    })
+    this.on(AuthEvent.unauthenticated, (_, emit) => {
+      emit(false);
+    })
+    this.on(AuthEvent.authenticated, (_, emit) => {
+      emit(true);
+    })
+  };
+}
+```
+
+The following is the same example as above but with a class instead of an enum. One advantage to using classes is that you can pass properties in the class to use in the handler.
+```typescript
+class AuthEvent {}
+class AuthEventUnknown extends AuthEvent {}
+class AuthEventUnAuthenticates extends AuthEvent {}
+class AuthEventAuthenticated extends AuthEvent {}
+
+export default class AuthBloc extends Bloc<AuthEvent, boolean> {
+  constructor() {
+    super(false)
+
+    this.on(AuthEventUnknown, (_, emit) => {
+      emit(false);
+    })
+    this.on(AuthEventUnAuthenticates, (_, emit) => {
+      emit(false);
+    })
+    this.on(AuthEventAuthenticated, (_, emit) => {
+      emit(true);
+    })
   };
 }
 ```

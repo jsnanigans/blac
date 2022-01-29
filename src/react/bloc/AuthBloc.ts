@@ -12,17 +12,16 @@ export default class AuthBloc extends Bloc<AuthEvent, boolean> {
     super(false, {
       persistKey: "auth"
     });
-
-    this.mapEventToState = (event) => {
-      switch (event) {
-        case AuthEvent.unknown:
-          return false;
-        case AuthEvent.unauthenticated:
-          return false;
-        case AuthEvent.authenticated:
-          return true;
-      }
-    };
+   
+    this.on(AuthEvent.unknown, (_, emit) => {
+      emit(false);
+    })
+    this.on(AuthEvent.unauthenticated, (_, emit) => {
+      emit(false);
+    })
+    this.on(AuthEvent.authenticated, (_, emit) => {
+      emit(true);
+    })
 
     this.addRegisterListener((consumer) => {
       consumer.addBlocChangeObserver<CounterCubit>(CounterCubit, (bloc, state) => {
