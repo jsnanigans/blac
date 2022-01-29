@@ -19,11 +19,10 @@ const bundle = config => ({
 export default [
   bundle({
     plugins: [
-      // esbuild(),
       peerDepsExternal(),
-    resolve(),
-    commonjs(),
-    typescript({ useTsconfigDeclarationDir: true }),
+      resolve(),
+      commonjs(),
+      typescript({ useTsconfigDeclarationDir: true }),
     ],
     output: [
       { file: pkg.main, format: "cjs", sourcemap: true },
