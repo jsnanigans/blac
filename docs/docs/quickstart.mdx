@@ -1,0 +1,77 @@
+---
+sidebar_position: 1
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Quickstart
+
+Here we go, lets get *Blac* running in under five minutes!
+
+There are three parts to *Blac*:
+
+##### 1. Data Layer
+> Where the data comes from
+
+##### 2. The Component
+> *Blac* is based on the BLoC pattern, which stands for **Business Logic Component**. Think of this as a reusable component that handles state and logic.
+
+##### 3. The UI
+> Use the state to render a view.
+
+
+The BLoC Pattern tries to separate the business logic from the view as much as possible and act as a broker between the UI and the Data Layer.
+
+
+## Hands on
+
+Install *Blac* with your favorite package manager
+
+```bash
+npm i blac
+```
+
+### Create a Cubit
+A Cubit is a **Business Logic Component**. It is a **stateful** object that handles contains the current state and methods related to it.
+
+```ts {7} title="src/state/CounterCubit.ts"
+import { Cubit } from 'blac';
+
+export default class CounterCubit extends Cubit<number> {
+  // define a method we can use later in our UI
+  public readonly increment = (): void => {
+    // Update the state with the `emit` method
+    this.emit(this.state + 1);
+  }
+}  
+```
+
+### Create a new *Blac* instance
+also export the `useBlac` hook for later use in the react component
+
+```ts {5-7,9} title="src/state/state.ts"
+import Blac from 'blac';
+import CounterCubit from './CounterCubit';
+
+// this is your global state
+const state = new Blac([
+  new CounterCubit(0)
+]);  
+
+export const { useBlac } = state;  
+```
+
+### Use the Cubit in react
+The simplest way to acess your state is with the `useBlac` hook, just reference the Cubit we created before.
+
+```ts {6,7} title="src/components/Counter.tsx"
+import { useBloc } from 'src/state/state';
+import CounterCubit from 'src/state/CounterCubit';
+
+const Counter: FC = (): ReactElement => {
+  // useBloc returns the [state, cubit-class] as a "tuple"
+  const [state, { increment }] = useBloc(CounterCubit);
+  return <button onClick={() => increment()}>Count is: {state}</button>;
+}
+```  

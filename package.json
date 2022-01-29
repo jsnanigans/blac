@@ -1,10 +1,10 @@
 {
-  "name": "bloc-react",
+  "name": "blac",
   "version": "0.2.0",
   "license": "MIT",
-  "main": "dist/bloc-react.js",
-  "module": "dist/bloc-react.esm.js",
-  "typings": "dist/bloc-react.d.ts",
+  "main": "dist/blac.js",
+  "module": "dist/blac.esm.js",
+  "typings": "dist/blac.d.ts",
   "keywords": [
     "react",
     "typescript",
