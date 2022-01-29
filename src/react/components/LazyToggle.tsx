@@ -1,10 +1,9 @@
-import { Button, FormControlLabel, Switch } from '@material-ui/core';
-import { ToggleButton } from '@material-ui/lab';
+import { Button } from '@material-ui/core';
 import React from 'react';
 import { Bloc } from '../../lib';
-import { BlocBuilder, useBloc } from '../state';
+import { useBloc } from '../state';
 
-const to = (): Promise<number> => {
+const wait = (): Promise<number> => {
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve(-1);
@@ -21,7 +20,7 @@ class LazyBloc extends Bloc<CounterEvent, number> {
 
     this.on(CounterIncrementPressed, async (event, emit) => {
       emit(this.state + 1);
-      const add = await to(); 
+      const add = await wait(); 
       emit(this.state + add);
     });
   }
