@@ -71,13 +71,11 @@ export class TestBloc extends Bloc<AuthEvent, boolean> {
   constructor() {
     super(false);
 
-    this.mapEventToState = (event) => {
-      switch (event) {
-        case AuthEvent.unauthenticated:
-          return false;
-        case AuthEvent.authenticated:
-          return true;
-      }
-    };
+    this.on(AuthEvent.unauthenticated, (_, emit) => {
+      emit(false);
+    })
+    this.on(AuthEvent.authenticated, (_, emit) => {
+      emit(true);
+    })
   }
 }

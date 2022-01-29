@@ -26,7 +26,7 @@ describe("Bloc", () => {
       const bloc = new NotFullyImplemented(false);
       expect(bloc.state).toBe(false);
       bloc.add(AuthEvent.authenticated);
-      expect(console.error).toHaveBeenCalledTimes(1);
+      expect(console.warn).toHaveBeenCalledTimes(1);
     });
 
     it("should update the state", () => {
