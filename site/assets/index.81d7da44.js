@@ -5,8 +5,8 @@ var Ee=Object.defineProperty,ve=Object.defineProperties;var fe=Object.getOwnProp
       
       1. Wrap your code in a BlocProvider.
       
-      2. Add "${u}" to the "BlocReact" constructor:
-        const state = new BlocReact(
+      2. Add "${u}" to the "Blac" constructor:
+        const state = new Blac(
           [
             ...
             new ${u}(),

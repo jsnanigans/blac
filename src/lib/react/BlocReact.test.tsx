@@ -1,5 +1,5 @@
 import { act, renderHook } from "@testing-library/react-hooks";
-import { BlocReact } from "./BlocReact";
+import { Blac } from "./Blac";
 import Cubit from "../Cubit";
 import mockConsole from "jest-mock-console";
 import React from "react";
@@ -32,10 +32,10 @@ class Test3 extends Test1 {
 }
 
 const t1 = new Test1();
-const testState = new BlocReact([t1]);
+const testState = new Blac([t1]);
 const { BlocProvider, BlocBuilder } = testState;
 
-describe("BlocReact", function() {
+describe("Blac", function() {
   afterEach(() => {
     jest.resetAllMocks();
     act(() => {

@@ -1,5 +1,5 @@
 
-# BLoC React
+# Blac
 BLoC state management for react
 
 [![codecov](https://codecov.io/gh/jsnanigans/blac/branch/main/graph/badge.svg?token=0FPH6ZMZD3)](https://codecov.io/gh/jsnanigans/blac) 
@@ -37,10 +37,10 @@ export default class CounterCubit extends Cubit<number> {
 }  
 ```
 
-### 2. Create a new **BlocReact** instance and export `useBloc` from it
+### 2. Create a new **Blac** instance and export `useBloc` from it
 ```typescript  
 // state.ts  
-const state = new BlocReact([new CounterCubit(0)]);  
+const state = new Blac([new CounterCubit(0)]);  
 export const { useBloc } = state;  
 ```  
 
@@ -56,11 +56,11 @@ const Counter: FC = (): ReactElement => {
 
 # Documentation
 
-## BlocReact
-The `BlocReact` class handles the global state and manages all communication between individual BLoCs.
+## Blac
+The `Blac` class handles the global state and manages all communication between individual BLoCs.
 When initializing pass all the BLoCs for the global state in an array as first parameter.
 ```typescript  
-const state = new BlocReact([new MyBloc(), new MyCubit()]);
+const state = new Blac([new MyBloc(), new MyCubit()]);
 ```  
 
 You can add an observer to all state changes *global and local*

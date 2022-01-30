@@ -39,7 +39,7 @@ class BlocRuntimeError {
 class NoValue {
 }
 
-export class BlocReact extends BlocConsumer {
+export class Blac extends BlocConsumer {
   private providerCount = 0;
   private readonly _blocsGlobal: BlocBase<any>[];
   private _contextLocalProviderKey = React.createContext<string>('none');
@@ -78,8 +78,8 @@ export class BlocReact extends BlocConsumer {
       
       1. Wrap your code in a BlocProvider.
       
-      2. Add "${name}" to the "BlocReact" constructor:
-        const state = new BlocReact(
+      2. Add "${name}" to the "Blac" constructor:
+        const state = new Blac(
           [
             ...
             new ${name}(),

@@ -1,8 +1,8 @@
-import { BlocReact } from "../../../src/lib";
+import { Blac } from "../../../src/lib";
 import BlocsCubit from "./BlocsCubit";
 
 export const blocState = new BlocsCubit();
-const state = new BlocReact(
+const state = new Blac(
   [blocState]
 );
 

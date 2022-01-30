@@ -3,7 +3,7 @@ import { BlocClass, ChangeEvent, ValueType } from "./types";
 import BlocObserver from "./BlocObserver";
 
 export interface ReactBlocOptions {
-  /** Enables debugging which calls BlocReact.observer every time a Subject is updated. Defaults to false */
+  /** Enables debugging which calls Blac.observer every time a Subject is updated. Defaults to false */
   debug?: boolean;
 }
 
