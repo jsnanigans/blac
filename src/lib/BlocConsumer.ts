@@ -32,7 +32,7 @@ export interface ConsumerOptions {
   // middleware?: BlocMiddleware[]
 }
 
-export class BlocConsumer {
+export class BlacConsumer {
   observer: BlocObserver;
   public mocksEnabled = false;
   public providerList: ProviderItem[] = [];

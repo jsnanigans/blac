@@ -51,11 +51,11 @@ export default class CounterCubit extends Cubit<number> {
 also export the `useBlac` hook for later use in the react component
 
 ```ts {5-7,9} title="src/state/state.ts"
-import Blac from 'blac';
+import { BlacReact } from 'blac';
 import CounterCubit from './CounterCubit';
 
 // this is your global state
-const state = new Blac([
+const state = new BlacReact([
   new CounterCubit(0)
 ]);  
 

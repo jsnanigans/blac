@@ -448,9 +448,9 @@ var NoValue = /** @class */ (function () {
     }
     return NoValue;
 }());
-var BlocReact = /** @class */ (function (_super) {
-    __extends(BlocReact, _super);
-    function BlocReact(blocs, options) {
+var Blac = /** @class */ (function (_super) {
+    __extends(Blac, _super);
+    function Blac(blocs, options) {
         var _this = _super.call(this, blocs, options) || this;
         _this.providerCount = 0;
         _this._contextLocalProviderKey = React.createContext('none');
@@ -466,7 +466,7 @@ var BlocReact = /** @class */ (function (_super) {
             var subscribe = mergedOptions.subscribe, _a = mergedOptions.shouldUpdate, shouldUpdate = _a === void 0 ? true : _a;
             if (!blocInstance) {
                 var name_1 = blocClass.prototype.constructor.name;
-                var error = new BlocRuntimeError("\"".concat(name_1, "\" \n      no bloc with this name was found in the global context.\n      \n      # Solutions:\n      \n      1. Wrap your code in a BlocProvider.\n      \n      2. Add \"").concat(name_1, "\" to the \"BlocReact\" constructor:\n        const state = new BlocReact(\n          [\n            ...\n            new ").concat(name_1, "(),\n          ]\n        )\n      "));
+                var error = new BlocRuntimeError("\"".concat(name_1, "\" \n      no bloc with this name was found in the global context.\n      \n      # Solutions:\n      \n      1. Wrap your code in a BlocProvider.\n      \n      2. Add \"").concat(name_1, "\" to the \"Blac\" constructor:\n        const state = new Blac(\n          [\n            ...\n            new ").concat(name_1, "(),\n          ]\n        )\n      "));
                 console.error(error.error);
                 return [
                     NoValue,
@@ -518,13 +518,13 @@ var BlocReact = /** @class */ (function (_super) {
         return _this;
     }
     // Components
-    BlocReact.prototype.BlocBuilder = function (props) {
+    Blac.prototype.BlocBuilder = function (props) {
         var hook = this.useBloc(props.blocClass, {
             shouldUpdate: props.shouldUpdate
         });
         return props.builder(hook);
     };
-    BlocReact.prototype.BlocProvider = function (props) {
+    Blac.prototype.BlocProvider = function (props) {
         var _this = this;
         var id = useMemo(function () { return createId(); }, []);
         var localProviderKey = useContext(this._contextLocalProviderKey);
@@ -553,8 +553,8 @@ var BlocReact = /** @class */ (function (_super) {
         return (React.createElement(this._contextLocalProviderKey.Provider, { value: id },
             React.createElement(context.Provider, { value: bloc }, props.children)));
     };
-    return BlocReact;
+    return Blac;
 }(BlocConsumer));
 
-export { Bloc, BlocObserver, BlocReact, Cubit };
-//# sourceMappingURL=bloc-react.esm.js.map
+export { Blac, Bloc, BlocObserver, Cubit };
+//# sourceMappingURL=blac.esm.js.map

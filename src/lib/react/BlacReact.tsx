@@ -1,11 +1,8 @@
-import React, { JSXElementConstructor, ReactElement, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import React, { ReactElement, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import BlocBase from "../BlocBase";
 import { BlocClass, BlocHookData, ChangeEvent, ValueType } from "../types";
-import { BlocConsumer, ConsumerOptions } from "../BlocConsumer";
+import { BlacConsumer, ConsumerOptions } from "../BlocConsumer";
 import createId from "../createId";
-
-interface ReactBlocOptions {
-}
 
 interface BlocHookOptions<T extends BlocBase<any>> {
   /*
@@ -39,8 +36,7 @@ class BlocRuntimeError {
 class NoValue {
 }
 
-export class Blac extends BlocConsumer {
-  private providerCount = 0;
+export class BlacReact extends BlacConsumer {
   private readonly _blocsGlobal: BlocBase<any>[];
   private _contextLocalProviderKey = React.createContext<string>('none');
 
@@ -75,7 +71,7 @@ export class Blac extends BlocConsumer {
       no bloc with this name was found in the global context.
       
       # Solutions:
-      
+
       1. Wrap your code in a BlocProvider.
       
       2. Add "${name}" to the "Blac" constructor:

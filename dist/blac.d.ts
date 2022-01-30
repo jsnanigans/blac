@@ -155,7 +155,7 @@ interface BlocHookOptions<T extends BlocBase<any>> {
     shouldUpdate?: (event: ChangeEvent<ValueType<T>>) => boolean;
     create?: () => T;
 }
-declare class BlocReact extends BlocConsumer {
+declare class Blac extends BlocConsumer {
     private providerCount;
     private readonly _blocsGlobal;
     private _contextLocalProviderKey;
@@ -173,4 +173,4 @@ declare class BlocReact extends BlocConsumer {
     withBlocProvider: <P extends object>(bloc: BlocBase<any> | (() => BlocBase<any>)) => (Component: React.ComponentType<P>) => React.ComponentType<P>;
 }
 
-export { Bloc, BlocObserver, BlocReact, Cubit };
+export { Blac, Bloc, BlocObserver, Cubit };
