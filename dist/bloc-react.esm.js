@@ -1,4 +1,3 @@
-import { __assign, __extends, __spreadArray } from 'tslib';
 import React, { useMemo, useContext, useState, useCallback, useEffect } from 'react';
 
 var LOCAL_STORAGE_PREFIX = "data.";
@@ -11,6 +10,17 @@ var createId = function () {
     return '_' + Math.random().toString(36).substr(2, 9);
 };
 
+var __assign$1 = (undefined && undefined.__assign) || function () {
+    __assign$1 = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign$1.apply(this, arguments);
+};
 var BehaviorSubject = /** @class */ (function () {
     function BehaviorSubject(initialValue) {
         this.isClosed = false;
@@ -107,7 +117,7 @@ var StreamAbstraction = /** @class */ (function () {
             }
         };
         var value = initialValue;
-        var options = __assign(__assign({}, cubitDefaultOptions), blocOptions);
+        var options = __assign$1(__assign$1({}, cubitDefaultOptions), blocOptions);
         this._options = options;
         if (options.persistKey && options.persistData) {
             var cachedValue = this.getCachedValue();
@@ -133,8 +143,23 @@ var StreamAbstraction = /** @class */ (function () {
     return StreamAbstraction;
 }());
 
+var __extends$3 = (undefined && undefined.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 var BlocBase = /** @class */ (function (_super) {
-    __extends(BlocBase, _super);
+    __extends$3(BlocBase, _super);
     function BlocBase(initialValue, blocOptions) {
         if (blocOptions === void 0) { blocOptions = {}; }
         var _this = _super.call(this, initialValue, blocOptions) || this;
@@ -190,8 +215,23 @@ var BlocBase = /** @class */ (function (_super) {
     return BlocBase;
 }(StreamAbstraction));
 
+var __extends$2 = (undefined && undefined.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 var Bloc = /** @class */ (function (_super) {
-    __extends(Bloc, _super);
+    __extends$2(Bloc, _super);
     function Bloc(initialState, options) {
         var _this = _super.call(this, initialState, options) || this;
         _this.onTransition = null;
@@ -238,8 +278,23 @@ var Bloc = /** @class */ (function (_super) {
     return Bloc;
 }(BlocBase));
 
+var __extends$1 = (undefined && undefined.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 var Cubit = /** @class */ (function (_super) {
-    __extends(Cubit, _super);
+    __extends$1(Cubit, _super);
     function Cubit() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
         _this.emit = function (value) {
@@ -292,6 +347,15 @@ var BlocObserver = /** @class */ (function () {
     return BlocObserver;
 }());
 
+var __spreadArray = (undefined && undefined.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 var BlocConsumer = /** @class */ (function () {
     function BlocConsumer(blocs, options) {
         var _this = this;
@@ -434,6 +498,32 @@ var BlocConsumer = /** @class */ (function () {
     return BlocConsumer;
 }());
 
+var __extends = (undefined && undefined.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+var __assign = (undefined && undefined.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 var defaultBlocHookOptions = {
     subscribe: true
 };
