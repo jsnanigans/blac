@@ -1,6 +1,6 @@
 {
   "name": "blac",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "license": "MIT",
   "main": "dist/blac.js",
   "module": "dist/blac.esm.js",
