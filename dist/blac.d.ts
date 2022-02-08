@@ -48,7 +48,7 @@ interface ProviderItem {
 interface ConsumerOptions {
     observer?: BlocObserver;
 }
-declare class BlocConsumer {
+declare class BlacConsumer {
     observer: BlocObserver;
     mocksEnabled: boolean;
     providerList: ProviderItem[];
@@ -101,7 +101,7 @@ interface BlocMeta {
     scope: 'unknown' | 'local' | 'global';
 }
 declare type ChangeMethod = <T>(change: ChangeEvent<T>, bloc: BlocBase<T>) => void;
-declare type RegisterMethod = <T>(consumer: BlocConsumer, bloc: BlocBase<T>) => void;
+declare type RegisterMethod = <T>(consumer: BlacConsumer, bloc: BlocBase<T>) => void;
 declare type ValueChangeMethod = <T>(value: T, bloc: BlocBase<T>) => void;
 declare class BlocBase<T> extends StreamAbstraction<T> {
     id: string;
@@ -110,7 +110,7 @@ declare class BlocBase<T> extends StreamAbstraction<T> {
     changeListeners: ChangeMethod[];
     registerListeners: RegisterMethod[];
     valueChangeListeners: ValueChangeMethod[];
-    consumer: BlocConsumer | null;
+    consumer: BlacConsumer | null;
     constructor(initialValue: T, blocOptions?: BlocOptions);
     readonly removeChangeListener: (index: number) => void;
     readonly addChangeListener: (method: ChangeMethod) => () => void;
@@ -155,8 +155,7 @@ interface BlocHookOptions<T extends BlocBase<any>> {
     shouldUpdate?: (event: ChangeEvent<ValueType<T>>) => boolean;
     create?: () => T;
 }
-declare class Blac extends BlocConsumer {
-    private providerCount;
+declare class BlacReact extends BlacConsumer {
     private readonly _blocsGlobal;
     private _contextLocalProviderKey;
     constructor(blocs: BlocBase<any>[], options?: ConsumerOptions);
@@ -173,4 +172,4 @@ declare class Blac extends BlocConsumer {
     withBlocProvider: <P extends object>(bloc: BlocBase<any> | (() => BlocBase<any>)) => (Component: React.ComponentType<P>) => React.ComponentType<P>;
 }
 
-export { Blac, Bloc, BlocObserver, Cubit };
+export { BlacReact, Bloc, BlocObserver, Cubit };
