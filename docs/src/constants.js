@@ -1,1 +1,0 @@
-export const COLOR = '#39D5E8';
