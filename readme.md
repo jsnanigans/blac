@@ -2,16 +2,16 @@
 # Blac
 BLoC state management for react
 
-[![codecov](https://codecov.io/gh/jsnanigans/blac/branch/main/graph/badge.svg?token=0FPH6ZMZD3)](https://codecov.io/gh/jsnanigans/blac) 
+[![codecov](https://codecov.io/gh/jsnanigans/blac/branch/main/graph/badge.svg?token=6XY5KCQWC1)](https://codecov.io/gh/jsnanigans/blac)
 [![liscence](https://img.shields.io/badge/license-MIT-purple.svg)](https://opensource.org/licenses/MIT)
 [![Known Vulnerabilities](https://snyk.io/test/github/jsnanigans/blac/badge.svg)](https://snyk.io/test/github/jsnanigans/blac)
-[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=jsnanigans_blac&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=jsnanigans_blac)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=jsnanigans_bloc-react&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=jsnanigans_bloc-react)
 ---
-[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=jsnanigans_blac&metric=reliability_rating)](https://sonarcloud.io/dashboard?id=jsnanigans_blac) 
-[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=jsnanigans_blac&metric=security_rating)](https://sonarcloud.io/dashboard?id=jsnanigans_blac)
-[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=jsnanigans_blac&metric=vulnerabilities)](https://sonarcloud.io/dashboard?id=jsnanigans_blac)
-[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=jsnanigans_blac&metric=bugs)](https://sonarcloud.io/dashboard?id=jsnanigans_blac)
-[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=jsnanigans_blac&metric=code_smells)](https://sonarcloud.io/dashboard?id=jsnanigans_blac)
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=jsnanigans_bloc-react&metric=reliability_rating)](https://sonarcloud.io/dashboard?id=jsnanigans_bloc-react) 
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=jsnanigans_bloc-react&metric=security_rating)](https://sonarcloud.io/dashboard?id=jsnanigans_bloc-react)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=jsnanigans_bloc-react&metric=vulnerabilities)](https://sonarcloud.io/dashboard?id=jsnanigans_bloc-react)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=jsnanigans_bloc-react&metric=bugs)](https://sonarcloud.io/dashboard?id=jsnanigans_bloc-react)
+[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=jsnanigans_bloc-react&metric=code_smells)](https://sonarcloud.io/dashboard?id=jsnanigans_bloc-react)
 
 
 Typescript implementation for react heavily inspired by flutter_react - https://bloclibrary.dev
