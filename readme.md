@@ -19,6 +19,12 @@ The BLoC Pattern (**B**usiness **Lo**gic **C**omponent) is a battle-tested desig
 
 
 
+---
+### Full docs here (under construction): <https://blac-docs.vercel.app>
+
+----
+
+
 # Quickstart
 ### 0. Install dependencies
 ```shell
