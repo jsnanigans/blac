@@ -4,7 +4,7 @@ import { BlocClass, BlocHookData, ChangeEvent, ValueType } from "../types";
 import { BlacConsumer, ConsumerOptions } from "../BlocConsumer";
 import createId from "../createId";
 
-interface BlocHookOptions<T extends BlocBase<any>> {
+export interface BlocHookOptions<T extends BlocBase<any>> {
   /*
   Boolean value if the hook should update the returned state value when the BLoC state changes.
   Set it to false if you only need access to the methods of a Cubit, or the `add` method on a Bloc

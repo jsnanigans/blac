@@ -18,7 +18,7 @@
   "scripts": {
     "dev": "vite",
     "dev:tool": "cd devtools && vite",
-    "build": "tsc && vite build",
+    "build": "vite build",
     "build:tool": "yarn build:scripts && cd devtools && vite build",
     "build:lib": "rollup -c rollup.config.lib.js",
     "serve": "vite preview",
