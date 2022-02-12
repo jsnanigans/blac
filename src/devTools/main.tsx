@@ -7,7 +7,7 @@ import { chromeDevToolsHelper, logger } from "./chrome";
 ReactDOM.render(<DevTools />, document.getElementById("devtool"));
 
 // @ts-ignore
-window.blocreact = new Observer();
+window.Blac = new Observer();
 
 ///////////////////////////// chrome.devtools //////////////////////////
 chromeDevToolsHelper.init({

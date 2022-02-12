@@ -1,10 +1,10 @@
 
-# BLoC React
+# Blac
 BLoC state management for react
 
-[![codecov](https://codecov.io/gh/jsnanigans/bloc-react/branch/main/graph/badge.svg?token=0FPH6ZMZD3)](https://codecov.io/gh/jsnanigans/bloc-react) 
+[![codecov](https://codecov.io/gh/jsnanigans/blac/branch/main/graph/badge.svg?token=6XY5KCQWC1)](https://codecov.io/gh/jsnanigans/blac)
 [![liscence](https://img.shields.io/badge/license-MIT-purple.svg)](https://opensource.org/licenses/MIT)
-[![Known Vulnerabilities](https://snyk.io/test/github/jsnanigans/bloc-react/badge.svg)](https://snyk.io/test/github/jsnanigans/bloc-react)
+[![Known Vulnerabilities](https://snyk.io/test/github/jsnanigans/blac/badge.svg)](https://snyk.io/test/github/jsnanigans/blac)
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=jsnanigans_bloc-react&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=jsnanigans_bloc-react)
 ---
 [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=jsnanigans_bloc-react&metric=reliability_rating)](https://sonarcloud.io/dashboard?id=jsnanigans_bloc-react) 
@@ -22,11 +22,11 @@ The BLoC Pattern (**B**usiness **Lo**gic **C**omponent) is a battle-tested desig
 # Quickstart
 ### 0. Install dependencies
 ```shell
-$ npm i bloc-react
+$ npm i blac
 
 # or
 
-$ yarn add bloc-react
+$ yarn add blac
 ```
 
 ### 1. Create a new **Bloc/Cubit**
@@ -35,12 +35,12 @@ $ yarn add bloc-react
 export default class CounterCubit extends Cubit<number> {  
   increment = (): void => this.emit(this.state + 1)    
 }  
-```  
+```
 
-### 2. Create a new **BlocReact** instance and export `useBloc` from it
+### 2. Create a new **Blac** instance and export `useBloc` from it
 ```typescript  
 // state.ts  
-const state = new BlocReact([new CounterCubit(0)]);  
+const state = new Blac([new CounterCubit(0)]);  
 export const { useBloc } = state;  
 ```  
 
@@ -56,11 +56,11 @@ const Counter: FC = (): ReactElement => {
 
 # Documentation
 
-## BlocReact
-The `BlocReact` class handles the global state and manages all communication between individual BLoCs.
+## Blac
+The `Blac` class handles the global state and manages all communication between individual BLoCs.
 When initializing pass all the BLoCs for the global state in an array as first parameter.
 ```typescript  
-const state = new BlocReact([new MyBloc(), new MyCubit()]);
+const state = new Blac([new MyBloc(), new MyCubit()]);
 ```  
 
 You can add an observer to all state changes *global and local*

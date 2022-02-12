@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "declaration": true,
-    "target": "es5",
+    "target": "esNext",
     "lib": [
       "dom",
       "dom.iterable",

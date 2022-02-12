@@ -1,6 +1,6 @@
 import Bloc from "./Bloc";
 import Cubit from "./Cubit";
-import { BlocReact } from "./react/BlocReact";
+import { BlacReact } from "./react/BlacReact";
 import BlocObserver from "./BlocObserver";
 
-export { Bloc, Cubit, BlocReact, BlocObserver };
+export { Bloc, Cubit, BlacReact, BlocObserver };

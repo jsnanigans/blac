@@ -1,4 +1,4 @@
-import { BlocConsumer } from "./BlocConsumer";
+import { BlacConsumer } from "./BlocConsumer";
 import StreamAbstraction from "./StreamAbstraction";
 import { BlocOptions, ChangeEvent } from "./types";
 import createId from "./createId";
@@ -8,7 +8,7 @@ export interface BlocMeta {
 }
 
 type ChangeMethod = <T>(change: ChangeEvent<T>, bloc: BlocBase<T>) => void
-type RegisterMethod = <T>(consumer: BlocConsumer, bloc: BlocBase<T>) => void
+type RegisterMethod = <T>(consumer: BlacConsumer, bloc: BlocBase<T>) => void
 type ValueChangeMethod = <T>(value: T, bloc: BlocBase<T>) => void;
 
 export default class BlocBase<T> extends StreamAbstraction<T> {
@@ -20,7 +20,7 @@ export default class BlocBase<T> extends StreamAbstraction<T> {
   public changeListeners: ChangeMethod[] = [];
   public registerListeners: RegisterMethod[] = [];
   public valueChangeListeners: ValueChangeMethod[] = [];
-  public consumer: BlocConsumer | null = null;
+  public consumer: BlacConsumer | null = null;
 
   constructor(initialValue: T, blocOptions: BlocOptions = {}) {
     super(initialValue, blocOptions);

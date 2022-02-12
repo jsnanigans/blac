@@ -1,5 +1,5 @@
 import BlocBase from "./BlocBase";
-import { BlocConsumer } from "./BlocConsumer";
+import { BlacConsumer } from "./BlocConsumer";
 
 describe("BlocBase", () => {
   class TestBloc extends BlocBase<boolean> {
@@ -15,7 +15,7 @@ describe("BlocBase", () => {
   it("should allow setting the consumer", () => {
     const bloc = new TestBloc();
     try {
-      bloc.consumer = new BlocConsumer([]);
+      bloc.consumer = new BlacConsumer([]);
     } catch (e) {
       fail(e);
     }

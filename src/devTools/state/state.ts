@@ -1,9 +1,9 @@
-import { BlocReact } from "../../../src/lib";
+import { BlacReact } from "../../../src/lib";
 import BlocsCubit from "./BlocsCubit";
 
 export const blocState = new BlocsCubit();
-const state = new BlocReact(
+const state = new BlacReact(
   [blocState]
 );
 
-export const useBlocTools = state.useBloc;
+export const { useBloc } = state;

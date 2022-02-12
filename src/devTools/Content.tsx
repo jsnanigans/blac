@@ -15,7 +15,7 @@ import {
   Typography
 } from "@material-ui/core";
 import { makeStyles } from "@material-ui/core/styles";
-import { useBlocTools } from "./state/state";
+import { useBloc } from "./state/state";
 import BlocsCubit from "./state/BlocsCubit";
 import BlocBase from "../../src/lib/BlocBase";
 import { Alert } from "@material-ui/lab";
@@ -235,7 +235,7 @@ const Content: FC = () => {
   const classes = useStyles();
   // const [tab, setTab] = useState(0);
   const [selected, setSelected] = useState<[BlocBase<any> | undefined, ChangeEvent<any> | undefined]>([undefined, undefined]);
-  const [blocs] = useBlocTools(BlocsCubit);
+  const [blocs] = useBloc(BlocsCubit);
   const [show, setShow] = useState(false);
 
   // const handleChange = (event: React.ChangeEvent<{}>, newValue: number) => {
