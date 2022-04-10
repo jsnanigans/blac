@@ -167,17 +167,16 @@ export class BlacReact extends BlacConsumer {
     );
   };
 
-  withBlocProvider = <P extends object>(bloc: BlocBase<any> | (() => BlocBase<any>)) => (Component: React.ComponentType<P>): React.ComponentType<P> => {
+  withBlocProvider = <P extends object>(bloc: BlocBase<any> | (() => BlocBase<any>)) => (Component: React.FC<P>): React.FC<P> => {
     const {BlocProvider} = this;
-    return class WithBlocProvider extends React.Component<P> {
-      render(): React.ComponentType<P> {
-        return (
-          <BlocProvider bloc={bloc}>
-            <Component {...(this.props as P)} />
-          </BlocProvider>
-        ) as unknown as React.ComponentType<P>;
-      }
+    const WithBlocProvider: React.FC<P> = (props: P) => {
+      return (
+        <BlocProvider bloc={bloc}>
+          <Component {...(props as P)} />
+        </BlocProvider>
+      );
     };
+    return WithBlocProvider;
   }  
 }
 

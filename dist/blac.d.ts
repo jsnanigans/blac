@@ -169,7 +169,7 @@ declare class BlacReact extends BlacConsumer {
         children?: ReactElement | ReactElement[] | false;
         bloc: T | ((id: string) => T);
     }): ReactElement;
-    withBlocProvider: <P extends object>(bloc: BlocBase<any> | (() => BlocBase<any>)) => (Component: React.ComponentType<P>) => React.ComponentType<P>;
+    withBlocProvider: <P extends object>(bloc: BlocBase<any> | (() => BlocBase<any>)) => (Component: React.FC<P>) => React.FC<P>;
 }
 
 export { BlacReact, Bloc, BlocObserver, Cubit };

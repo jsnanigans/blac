@@ -506,12 +506,11 @@ class BlacReact extends BlacConsumer {
     ;
     withBlocProvider = (bloc) => (Component) => {
         const { BlocProvider } = this;
-        return class WithBlocProvider extends React.Component {
-            render() {
-                return (React.createElement(BlocProvider, { bloc: bloc },
-                    React.createElement(Component, { ...this.props })));
-            }
+        const WithBlocProvider = (props) => {
+            return (React.createElement(BlocProvider, { bloc: bloc },
+                React.createElement(Component, { ...props })));
         };
+        return WithBlocProvider;
     };
 }
 

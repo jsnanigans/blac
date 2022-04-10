@@ -514,12 +514,11 @@ class BlacReact extends BlacConsumer {
     ;
     withBlocProvider = (bloc) => (Component) => {
         const { BlocProvider } = this;
-        return class WithBlocProvider extends React__default["default"].Component {
-            render() {
-                return (React__default["default"].createElement(BlocProvider, { bloc: bloc },
-                    React__default["default"].createElement(Component, { ...this.props })));
-            }
+        const WithBlocProvider = (props) => {
+            return (React__default["default"].createElement(BlocProvider, { bloc: bloc },
+                React__default["default"].createElement(Component, { ...props })));
         };
+        return WithBlocProvider;
     };
 }
 

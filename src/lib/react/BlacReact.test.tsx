@@ -1,11 +1,40 @@
-import { act, renderHook } from "@testing-library/react-hooks";
 import { BlacReact } from "./BlacReact";
 import Cubit from "../Cubit";
 import mockConsole from "jest-mock-console";
-import React from "react";
+import React, { FC } from "react";
 import { mount, shallow } from "enzyme";
 import { render } from "@testing-library/react";
 import { useBloc, withBlocProvider } from "../../react/state";
+import { BlocHookData } from "../types";
+
+
+const HookComp: FC<{hook: () => BlocHookData<any>, set: {hook: any[]}}> = ({hook, set}) => {
+  const x = hook();
+  set.hook = x;
+  return <div></div>
+}
+const shallowHook = (hook: () => BlocHookData<any>) => {
+  const res: {update: () => void; result: any[]} = {
+    update: () => {},
+    result: []
+  }
+
+  const obj = {
+    hook: []
+  }
+
+  shallow(<HookComp hook={hook} set={obj} />);
+  res.result = obj.hook;
+
+  const updateResult = () => {
+    shallow(<HookComp hook={hook} set={obj} />);
+    res.result = obj.hook;
+  }
+
+  res.update = updateResult;
+  return res;
+}
+
 class Test1 extends Cubit<number> {
   constructor(options: { register?: () => void } = {}) {
     super(1);
@@ -38,9 +67,7 @@ const { BlocProvider, BlocBuilder } = testState;
 describe("Blac", function() {
   afterEach(() => {
     jest.resetAllMocks();
-    act(() => {
-      t1.reset();
-    });
+    t1.reset();
   });
 
   describe("useBloc", function() {
@@ -49,34 +76,35 @@ describe("Blac", function() {
     });
 
     it("should get data and handle state change", function() {
-      const { result } = renderHook(() => testState.useBloc(Test1));
-      const [, instance] = result.current;
-      expect(result.current[0]).toBe(1);
-      expect(result.current[1] instanceof Test1).toBe(true);
-      act(() => {
-        instance.increment();
-      });
-      expect(result.current[0]).toBe(2);
+      const hook = shallowHook(() => testState.useBloc(Test1));
+      expect(hook.result[0]).toBe(1);
+      expect(hook.result[1] instanceof Test1).toBe(true);
+      
+      hook.result[1].increment();
+      hook.update();
+      
+      expect(hook.result[0]).toBe(2);
     });
 
     it("should create new instance of the state for its own scope", function() {
-      const { result } = renderHook(() => testState.useBloc(Test3, {
-        create: () => new Test3()
+      const customInstance = new Test3()
+      const hook = shallowHook(() => testState.useBloc(Test3, {
+        create: () => customInstance
       }));
-      const [, instance] = result.current;
-      expect(result.current[0]).toBe(1);
-      expect(result.current[1] instanceof Test1).toBe(true);
-      act(() => {
-        instance.increment();
-      });
-      expect(result.current[0]).toBe(2);
+      expect(hook.result[0]).toBe(1);
+      expect(hook.result[1] instanceof Test3).toBe(true);
+      
+      hook.result[1].increment();
+      hook.update();
+
+      expect(hook.result[0]).toBe(2);
     });
 
     it("should log error if bloc is not in context", function() {
       mockConsole();
-      const { result } = renderHook(() => testState.useBloc(Test2));
+      const hook = shallowHook(() => testState.useBloc(Test2));
       expect(console.error).toHaveBeenCalledTimes(1);
-      expect(result.current[1]).toStrictEqual({});
+      expect(hook.result[1]).toStrictEqual({});
     });
 
     it("should get state from local provider", function() {
@@ -119,43 +147,30 @@ describe("Blac", function() {
 
     it("should handle bloc not defined", function() {
       mockConsole();
-      const Provider = () => {
-        return <BlocProvider
-          bloc={undefined as any}
-        ></BlocProvider>;
-      };
-
-      mount(<Provider />);
+      shallow(<BlocProvider bloc={undefined as any} ></BlocProvider>);
       expect(console.error).toHaveBeenCalledTimes(1);
       expect(console.error).toHaveBeenCalledWith("BLoC is undefined");
     });
 
     it("should not react to state change if option `shouldUpdate` is false", function() {
-      const { result } = renderHook(() => testState.useBloc(Test1, { subscribe: false }));
-      const [, instance] = result.current;
-      expect(result.current[0]).toBe(1);
-      act(() => {
-        instance.increment();
-      });
-      expect(result.current[0]).toBe(1);
-      expect(instance.state).toBe(2);
+      const hook = shallowHook(() => testState.useBloc(Test1, { subscribe: false }));
+      expect(hook.result[0]).toBe(1);
+      hook.result[1].increment();
+      expect(hook.result[0]).toBe(1);
+      expect(hook.result[1].state).toBe(2);
     });
 
     it("should call `shouldUpdate` and only update state if it returns true", function() {
-      const { result } = renderHook(() => testState.useBloc(Test1, {
+      const hook = shallowHook(() => testState.useBloc(Test1, {
         shouldUpdate: (event) => event.nextState % 2 === 0
       }));
-      const [, instance] = result.current;
-      expect(result.current[0]).toBe(1);
-      act(() => {
-        instance.increment();
-      });
-      expect(result.current[0]).toBe(2);
-      act(() => {
-        instance.increment();
-      });
-      expect(result.current[0]).toBe(2);
-      expect(instance.state).toBe(3);
+      expect(hook.result[0]).toBe(1);
+      hook.result[1].increment();
+      hook.update();
+      expect(hook.result[0]).toBe(2);
+      hook.result[1].increment();
+      expect(hook.result[0]).toBe(2);
+      expect(hook.result[1].state).toBe(3);
     });
   });
 
