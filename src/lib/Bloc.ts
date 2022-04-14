@@ -24,7 +24,7 @@ export default class Bloc<E, T> extends BlocBase<T> {
 
   public add = (event: E): void => {
     for (const [eventName, handler] of this.eventHandlers) {
-      if(this.isEventPassedCorrespondTo(event, eventName, handler)){
+      if(this.isEventPassedCorrespondTo(event, eventName)){
         handler(event, this.emit(event), this.state)
         return
       }
@@ -32,7 +32,7 @@ export default class Bloc<E, T> extends BlocBase<T> {
     console.warn(`Event is not handled in Bloc:`, { event, bloc: this });
   };
 
-  private isEventPassedCorrespondTo = (passedEvent: E, registeredEventName: E, registeredEventHandler: EventHandler<E, T>) =>{
+  private isEventPassedCorrespondTo = (passedEvent: E, registeredEventName: E) =>{
 
       return this.didAddNonInstantiatedEvent(passedEvent, registeredEventName) ||
       this.didAddInstantiatedEvent(passedEvent, registeredEventName);
