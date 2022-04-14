@@ -62,10 +62,16 @@ export default class Bloc<E, T> extends BlocBase<T> {
       we take the constructor name of the input event and since the constructor name will
       equal to real name of class, voila!
        */
-    let realEventName = (eventAsFunction as any).name;
-    var constructorName = Object.getPrototypeOf(eventAsObject).constructor.name;
-
-    return realEventName === constructorName;
+    try {
+      const realEventName = (eventAsFunction as any).name as undefined | string;
+      const constructorName = Object.getPrototypeOf(eventAsObject).constructor.name;
+      return realEventName === constructorName;
+    } catch (e: unknown) {
+      console.error(e);
+    }
+      
+    // if the try/catch fails nothing is returned, and we can assume that adding the event was not instanciated
+    return false;
   }
 
 
