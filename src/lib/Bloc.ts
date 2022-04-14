@@ -24,7 +24,7 @@ export default class Bloc<E, T> extends BlocBase<T> {
 
   public add = (event: E): void => {
     for (const [eventName, handler] of this.eventHandlers) {
-      if (eventName === event) {
+      if (eventName == event) {
         handler(event, this.emit(event), this.state);
         return;
       }
