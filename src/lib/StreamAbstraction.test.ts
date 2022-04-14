@@ -68,11 +68,11 @@ describe("StreamAbstraction", () => {
       });
     });
 
-    describe("Remove Listener", function() {
-      it("should add and remove `Remove Listener`", function() {
-        const stream = new StreamAbstraction('');
+    describe("Remove Listener", function () {
+      it("should add and remove `Remove Listener`", function () {
+        const stream = new StreamAbstraction("");
         const method = jest.fn();
-        const remove= stream.addRemoveListener(method);
+        const remove = stream.addRemoveListener(method);
         expect(stream.removeListeners).toHaveLength(1);
         remove();
         expect(stream.removeListeners).toHaveLength(0);
@@ -90,7 +90,7 @@ describe("StreamAbstraction", () => {
 
       it("should expose a method `subscribe` to listen for changes", () => {
         const stream = new StreamAbstractionExposed(0);
-        stream.subscribe({next: spy.next});
+        stream.subscribe({ next: spy.next });
         expect(spy.next).toHaveBeenCalledTimes(1);
         stream.next_exposed(2);
         expect(spy.next).toHaveBeenCalledTimes(2);
@@ -98,7 +98,7 @@ describe("StreamAbstraction", () => {
 
       it("should not update stream after `complete` is called", () => {
         const stream = new StreamAbstractionExposed(0);
-        stream.subscribe({next: spy.next});
+        stream.subscribe({ next: spy.next });
         expect(spy.next).toHaveBeenCalledTimes(1);
         stream.complete();
         expect(stream.isClosed).toBe(true);

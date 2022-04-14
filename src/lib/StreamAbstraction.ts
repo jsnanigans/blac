@@ -18,7 +18,7 @@ export interface Subscription {
 export class BehaviorSubject<T> {
   public isClosed = false;
   private prevValue: T | undefined;
-  private value: T
+  private value: T;
   private observers: ObserverListItem<T>[] = [];
 
   constructor(initialValue: T) {
@@ -31,11 +31,11 @@ export class BehaviorSubject<T> {
 
   subscribe(observer: Observer<T>): Subscription {
     const id = createId();
-    this.observers.push({observer, id});
+    this.observers.push({ observer, id });
     this.triggerObservers();
     return {
-      unsubscribe: () => this.removeObserver(id)
-    } as Subscription
+      unsubscribe: () => this.removeObserver(id),
+    } as Subscription;
   }
 
   complete() {
@@ -45,17 +45,17 @@ export class BehaviorSubject<T> {
 
   next(value: T) {
     this.value = value;
-    this.triggerObservers()
+    this.triggerObservers();
   }
 
   private triggerObservers() {
-    this.observers.forEach(({observer}) => {
+    this.observers.forEach(({ observer }) => {
       observer.next(this.value);
-    })
+    });
   }
 
   private removeObserver(removeId: string) {
-    this.observers = this.observers.filter(({id}) => id !== removeId);
+    this.observers = this.observers.filter(({ id }) => id !== removeId);
   }
 }
 
@@ -87,22 +87,23 @@ export default class StreamAbstraction<T> {
 
   readonly removeRemoveListener = (index: number) => {
     this.removeListeners.splice(index, 1);
-  }
+  };
 
   readonly addRemoveListener = (method: RemoveMethods) => {
     const index = this.removeListeners.length;
     this.removeListeners.push(method);
     return () => this.removeRemoveListener(index);
-  }
+  };
 
-  public subscribe = (observer: Observer<T>): Subscription => this._subject.subscribe({
-    next: observer.next,
-  });
+  public subscribe = (observer: Observer<T>): Subscription =>
+    this._subject.subscribe({
+      next: observer.next,
+    });
 
   public complete = (): void => {
     this.isClosed = true;
     this._subject.complete();
-  }
+  };
 
   public clearCache = (): void => {
     const key = this._options.persistKey;

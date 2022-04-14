@@ -21,11 +21,10 @@ type BlocValueChangeObserverList = [
 ];
 
 export interface ProviderItem {
-  id: string,
-  parent?: string,
-  bloc: BlocBase<any>,
+  id: string;
+  parent?: string;
+  bloc: BlocBase<any>;
 }
-
 
 export interface ConsumerOptions {
   observer?: BlocObserver;
@@ -47,15 +46,15 @@ export class BlacConsumer {
 
     for (const b of blocs) {
       b.consumer = this;
-      b.registerListeners.forEach(fn => fn(this, b));
-      b.meta.scope = 'global';
+      b.registerListeners.forEach((fn) => fn(this, b));
+      b.meta.scope = "global";
       this.observer.addBlocAdded(b);
     }
   }
 
   notifyChange(bloc: BlocBase<any>, state: any): void {
     if (bloc.isClosed) {
-      return
+      return;
     }
 
     this.observer.addChange(bloc, state);
@@ -69,7 +68,7 @@ export class BlacConsumer {
       if (matchesScope && bloc instanceof blocClass) {
         callback(bloc, {
           nextState: state,
-          currentState: bloc.state
+          currentState: bloc.state,
         });
       }
     }
@@ -77,7 +76,7 @@ export class BlacConsumer {
 
   notifyValueChange(bloc: BlocBase<any>): void {
     if (bloc.isClosed) {
-      return
+      return;
     }
 
     for (const [blocClass, callback, scope] of this.blocValueChangeObservers) {
@@ -94,7 +93,7 @@ export class BlacConsumer {
 
   notifyTransition(bloc: BlocBase<any>, state: any, event: any): void {
     if (bloc.isClosed) {
-      return
+      return;
     }
 
     this.observer.addTransition(bloc, state, event);
@@ -119,19 +118,19 @@ export class BlacConsumer {
   public addLocalBloc(item: ProviderItem) {
     this.providerList.push(item);
     item.bloc.consumer = this;
-    item.bloc.registerListeners.forEach(fn => fn(this, item.bloc));
-    item.bloc.meta.scope = 'local';
+    item.bloc.registerListeners.forEach((fn) => fn(this, item.bloc));
+    item.bloc.meta.scope = "local";
     this.observer.addBlocAdded(item.bloc);
   }
 
   public removeLocalBloc(id: string, bloc: BlocBase<any>) {
-    const item = this.providerList.find(i => i.id === id && i.bloc === bloc);
+    const item = this.providerList.find((i) => i.id === id && i.bloc === bloc);
 
     if (item) {
       item.bloc.complete();
-      item.bloc.removeListeners.forEach(fn => fn());
+      item.bloc.removeListeners.forEach((fn) => fn());
       this.observer.addBlocRemoved(item.bloc);
-      this.providerList = this.providerList.filter(i => i !== item);
+      this.providerList = this.providerList.filter((i) => i !== item);
     }
   }
 
@@ -153,10 +152,13 @@ export class BlacConsumer {
       }
     }
 
-    return this.blocListGlobal.find(c => c instanceof blocClass);
+    return this.blocListGlobal.find((c) => c instanceof blocClass);
   }
 
-  public getLocalBlocForProvider<T>(id: string, blocClass: BlocClass<T>): BlocBase<T> | undefined {
+  public getLocalBlocForProvider<T>(
+    id: string,
+    blocClass: BlocClass<T>
+  ): BlocBase<T> | undefined {
     for (const providerItem of this.providerList) {
       if (providerItem.id === id) {
         if (providerItem.bloc instanceof blocClass) {
@@ -165,7 +167,7 @@ export class BlacConsumer {
 
         let parent = providerItem.parent;
         while (parent) {
-          const parentItem = this.providerList.find(i => i.id === parent);
+          const parentItem = this.providerList.find((i) => i.id === parent);
           if (parentItem?.bloc instanceof blocClass) {
             return parentItem.bloc;
           }
@@ -178,7 +180,10 @@ export class BlacConsumer {
     return undefined;
   }
 
-  protected getGlobalBlocInstance<T>(global: BlocBase<any>[], blocClass: BlocClass<T>): BlocBase<T> | undefined {
+  protected getGlobalBlocInstance<T>(
+    global: BlocBase<any>[],
+    blocClass: BlocClass<T>
+  ): BlocBase<T> | undefined {
     if (this.mocksEnabled) {
       const mockedBloc = this.mockBlocs.find((c) => c instanceof blocClass);
       if (mockedBloc) {

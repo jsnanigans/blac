@@ -24,27 +24,29 @@ export default class Bloc<E, T> extends BlocBase<T> {
 
   public add = (event: E): void => {
     for (const [eventName, handler] of this.eventHandlers) {
-      if(this.isEventPassedCorrespondTo(event, eventName)){
-        handler(event, this.emit(event), this.state)
-        return
+      if (this.isEventPassedCorrespondTo(event, eventName)) {
+        handler(event, this.emit(event), this.state);
+        return;
       }
     }
     console.warn(`Event is not handled in Bloc:`, { event, bloc: this });
   };
 
-  private isEventPassedCorrespondTo = (passedEvent: E, registeredEventName: E) =>{
+  private isEventPassedCorrespondTo = (
+    passedEvent: E,
+    registeredEventName: E
+  ) => {
+    return (
+      this.didAddNonInstantiatedEvent(passedEvent, registeredEventName) ||
+      this.didAddInstantiatedEvent(passedEvent, registeredEventName)
+    );
+  };
 
-      return this.didAddNonInstantiatedEvent(passedEvent, registeredEventName) ||
-      this.didAddInstantiatedEvent(passedEvent, registeredEventName);
-
-  }
-
-  private didAddNonInstantiatedEvent(event: E, eventName: E){
+  private didAddNonInstantiatedEvent(event: E, eventName: E) {
     return eventName === event;
   }
 
-
-  private didAddInstantiatedEvent(eventAsObject: E, eventAsFunction: E){
+  private didAddInstantiatedEvent(eventAsObject: E, eventAsFunction: E) {
     /*
       A very hacky solution. JS is a nightmare with objects.
       Normally we check the events as the same type or not.
@@ -64,16 +66,16 @@ export default class Bloc<E, T> extends BlocBase<T> {
        */
     try {
       const realEventName = (eventAsFunction as any).name as undefined | string;
-      const constructorName = Object.getPrototypeOf(eventAsObject).constructor.name;
+      const constructorName =
+        Object.getPrototypeOf(eventAsObject).constructor.name;
       return realEventName === constructorName;
     } catch (e: unknown) {
       console.error(e);
     }
-      
+
     // if the try/catch fails nothing is returned, and we can assume that adding the event was not instanciated
     return false;
   }
-
 
   private emit = (event: E) => (newState: T) => {
     this.notifyChange(newState);

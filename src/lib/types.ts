@@ -8,7 +8,7 @@ export type BlocClass<T> = new (...args: never[]) => T;
 
 export type BlocHookData<T extends BlocBase<any>> = [
   value: ValueType<T>,
-  instance: T,
+  instance: T
 ];
 
 export interface BlocOptions {
@@ -16,14 +16,13 @@ export interface BlocOptions {
   persistData?: boolean;
 }
 
-
 export interface ChangeEvent<T> {
-  currentState: T,
-  nextState: T,
+  currentState: T;
+  nextState: T;
 }
 
 export interface TransitionEvent<T, E> {
-  currentState: T,
-  event: E,
-  nextState: T,
+  currentState: T;
+  event: E;
+  nextState: T;
 }

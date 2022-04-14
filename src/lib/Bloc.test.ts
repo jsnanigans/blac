@@ -5,7 +5,7 @@ import { AuthEvent, TestBloc } from "../helpers/test.fixtures";
 describe("Bloc", () => {
   const spy = {
     onChange: jest.fn(),
-    onTransition: jest.fn()
+    onTransition: jest.fn(),
   };
 
   beforeEach(() => {
@@ -20,8 +20,7 @@ describe("Bloc", () => {
     it("should log error if `mapEventToState` is not implemented", () => {
       mockConsole();
 
-      class NotFullyImplemented extends Bloc<AuthEvent, boolean> {
-      }
+      class NotFullyImplemented extends Bloc<AuthEvent, boolean> {}
 
       const bloc = new NotFullyImplemented(false);
       expect(bloc.state).toBe(false);
@@ -44,7 +43,7 @@ describe("Bloc", () => {
       expect(spy.onChange).toHaveBeenCalledTimes(1);
       expect(spy.onChange.mock.calls[0][0]).toStrictEqual({
         currentState: false,
-        nextState: true
+        nextState: true,
       });
     });
 
@@ -57,7 +56,7 @@ describe("Bloc", () => {
       expect(spy.onTransition).toHaveBeenCalledWith({
         currentState: false,
         event: AuthEvent.authenticated,
-        nextState: true
+        nextState: true,
       });
     });
   });

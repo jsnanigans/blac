@@ -21,10 +21,15 @@ export default class BlocsCubit extends Cubit<BlocState> {
   };
 
   remove = (bloc: BlocBase<any>) => {
-    this.emit(new BlocState(this.state.blocs.filter(b => b.id !== bloc.id)));
+    this.emit(new BlocState(this.state.blocs.filter((b) => b.id !== bloc.id)));
   };
 
   update = (bloc: BlocBase<any>) => {
-    this.emit(new BlocState(this.state.blocs.map(b => b.id === bloc.id ? bloc : b), bloc));
+    this.emit(
+      new BlocState(
+        this.state.blocs.map((b) => (b.id === bloc.id ? bloc : b)),
+        bloc
+      )
+    );
   };
 }

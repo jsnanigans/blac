@@ -9,19 +9,21 @@ const darkTheme = createTheme({
     type: "dark",
     primary: {
       // Purple and green play nicely together.
-      main: orange.A200
+      main: orange.A200,
     },
     secondary: {
       // This is green.A700 as hex.
-      main: purple.A200
-    }
-  }
+      main: purple.A200,
+    },
+  },
 });
 
 const DevTools: FC = () => {
-  return <ThemeProvider theme={darkTheme}>
-    <Content />
-  </ThemeProvider>;
+  return (
+    <ThemeProvider theme={darkTheme}>
+      <Content />
+    </ThemeProvider>
+  );
 };
 
 export default DevTools;

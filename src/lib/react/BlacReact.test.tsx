@@ -7,21 +7,23 @@ import { render } from "@testing-library/react";
 import { useBloc, withBlocProvider } from "../../react/state";
 import { BlocHookData } from "../types";
 
-
-const HookComp: FC<{hook: () => BlocHookData<any>, set: {hook: any[]}}> = ({hook, set}) => {
+const HookComp: FC<{ hook: () => BlocHookData<any>; set: { hook: any[] } }> = ({
+  hook,
+  set,
+}) => {
   const x = hook();
   set.hook = x;
-  return <div></div>
-}
+  return <div></div>;
+};
 const shallowHook = (hook: () => BlocHookData<any>) => {
-  const res: {update: () => void; result: any[]} = {
+  const res: { update: () => void; result: any[] } = {
     update: () => {},
-    result: []
-  }
+    result: [],
+  };
 
   const obj = {
-    hook: []
-  }
+    hook: [],
+  };
 
   shallow(<HookComp hook={hook} set={obj} />);
   res.result = obj.hook;
@@ -29,11 +31,11 @@ const shallowHook = (hook: () => BlocHookData<any>) => {
   const updateResult = () => {
     shallow(<HookComp hook={hook} set={obj} />);
     res.result = obj.hook;
-  }
+  };
 
   res.update = updateResult;
   return res;
-}
+};
 
 class Test1 extends Cubit<number> {
   constructor(options: { register?: () => void } = {}) {
@@ -53,61 +55,60 @@ class Test1 extends Cubit<number> {
   };
 }
 
+class Test2 extends Cubit<number> {}
 
-class Test2 extends Cubit<number> {
-}
-
-class Test3 extends Test1 {
-}
+class Test3 extends Test1 {}
 
 const t1 = new Test1();
 const testState = new BlacReact([t1]);
 const { BlocProvider, BlocBuilder } = testState;
 
-describe("Blac", function() {
+describe("Blac", function () {
   afterEach(() => {
     jest.resetAllMocks();
     t1.reset();
   });
 
-  describe("useBloc", function() {
-    it("should be defined", function() {
+  describe("useBloc", function () {
+    it("should be defined", function () {
       expect(testState).toHaveProperty("useBloc");
     });
 
-    it("should get data and handle state change", function() {
+    it("should get data and handle state change", function () {
       const hook = shallowHook(() => testState.useBloc(Test1));
       expect(hook.result[0]).toBe(1);
       expect(hook.result[1] instanceof Test1).toBe(true);
-      
+
       hook.result[1].increment();
       hook.update();
-      
+
       expect(hook.result[0]).toBe(2);
     });
 
-    it("should create new instance of the state for its own scope", function() {
-      const customInstance = new Test3()
-      const hook = shallowHook(() => testState.useBloc(Test3, {
-        create: () => customInstance
-      }));
+    it("should create new instance of the state for its own scope", function () {
+      const customInstance = new Test3();
+      const hook = shallowHook(() =>
+        testState.useBloc(Test3, {
+          create: () => customInstance,
+        })
+      );
       expect(hook.result[0]).toBe(1);
       expect(hook.result[1] instanceof Test3).toBe(true);
-      
+
       hook.result[1].increment();
       hook.update();
 
       expect(hook.result[0]).toBe(2);
     });
 
-    it("should log error if bloc is not in context", function() {
+    it("should log error if bloc is not in context", function () {
       mockConsole();
       const hook = shallowHook(() => testState.useBloc(Test2));
       expect(console.error).toHaveBeenCalledTimes(1);
       expect(hook.result[1]).toStrictEqual({});
     });
 
-    it("should get state from local provider", function() {
+    it("should get state from local provider", function () {
       const initialValue = 88;
       const Consumer = () => {
         const [localState] = testState.useBloc(Test2);
@@ -115,18 +116,18 @@ describe("Blac", function() {
       };
 
       const Provider = () => {
-        return <BlocProvider
-          bloc={() => new Test2(initialValue)}
-        >
-          <Consumer />
-        </BlocProvider>;
+        return (
+          <BlocProvider bloc={() => new Test2(initialValue)}>
+            <Consumer />
+          </BlocProvider>
+        );
       };
 
       const component = mount(<Provider />);
       expect(component.text()).toBe(`${initialValue}`);
     });
 
-    it("should get state from local provider, as value", function() {
+    it("should get state from local provider, as value", function () {
       const initialValue = 88;
       const Consumer = () => {
         const [localState] = testState.useBloc(Test2);
@@ -134,36 +135,40 @@ describe("Blac", function() {
       };
 
       const Provider = () => {
-        return <BlocProvider
-          bloc={new Test2(initialValue)}
-        >
-          <Consumer />
-        </BlocProvider>;
+        return (
+          <BlocProvider bloc={new Test2(initialValue)}>
+            <Consumer />
+          </BlocProvider>
+        );
       };
 
       const component = mount(<Provider />);
       expect(component.text()).toBe(`${initialValue}`);
     });
 
-    it("should handle bloc not defined", function() {
+    it("should handle bloc not defined", function () {
       mockConsole();
-      shallow(<BlocProvider bloc={undefined as any} ></BlocProvider>);
+      shallow(<BlocProvider bloc={undefined as any}></BlocProvider>);
       expect(console.error).toHaveBeenCalledTimes(1);
       expect(console.error).toHaveBeenCalledWith("BLoC is undefined");
     });
 
-    it("should not react to state change if option `shouldUpdate` is false", function() {
-      const hook = shallowHook(() => testState.useBloc(Test1, { subscribe: false }));
+    it("should not react to state change if option `shouldUpdate` is false", function () {
+      const hook = shallowHook(() =>
+        testState.useBloc(Test1, { subscribe: false })
+      );
       expect(hook.result[0]).toBe(1);
       hook.result[1].increment();
       expect(hook.result[0]).toBe(1);
       expect(hook.result[1].state).toBe(2);
     });
 
-    it("should call `shouldUpdate` and only update state if it returns true", function() {
-      const hook = shallowHook(() => testState.useBloc(Test1, {
-        shouldUpdate: (event) => event.nextState % 2 === 0
-      }));
+    it("should call `shouldUpdate` and only update state if it returns true", function () {
+      const hook = shallowHook(() =>
+        testState.useBloc(Test1, {
+          shouldUpdate: (event) => event.nextState % 2 === 0,
+        })
+      );
       expect(hook.result[0]).toBe(1);
       hook.result[1].increment();
       hook.update();
@@ -174,22 +179,22 @@ describe("Blac", function() {
     });
   });
 
-  describe("BlocBuilder", function() {
-    it("should be defined", function() {
+  describe("BlocBuilder", function () {
+    it("should be defined", function () {
       expect(testState).toHaveProperty("BlocBuilder");
     });
 
-    it("should get local state", function() {
+    it("should get local state", function () {
       const initialValue = 88;
       const Provider = () => {
-        return <BlocProvider
-          bloc={() => new Test2(initialValue)}
-        >
-          <BlocBuilder
-            blocClass={Test2}
-            builder={([state]) => <div>{state}</div>}
-          />
-        </BlocProvider>;
+        return (
+          <BlocProvider bloc={() => new Test2(initialValue)}>
+            <BlocBuilder
+              blocClass={Test2}
+              builder={([state]) => <div>{state}</div>}
+            />
+          </BlocProvider>
+        );
       };
 
       const component = mount(<Provider />);
@@ -197,12 +202,12 @@ describe("Blac", function() {
     });
   });
 
-  describe("BlocProvider", function() {
-    it("should be defined", function() {
+  describe("BlocProvider", function () {
+    it("should be defined", function () {
       expect(testState).toHaveProperty("BlocProvider");
     });
 
-    it("should should remove local bloc from list when unmounted", function(done) {
+    it("should should remove local bloc from list when unmounted", function (done) {
       const initialValue = 88;
       const remove = jest.fn();
       const bloc = new Test2(initialValue);
@@ -214,11 +219,11 @@ describe("Blac", function() {
       };
 
       const Provider = () => {
-        return <BlocProvider
-          bloc={bloc}
-        >
-          <Inner />
-        </BlocProvider>;
+        return (
+          <BlocProvider bloc={bloc}>
+            <Inner />
+          </BlocProvider>
+        );
       };
 
       const component = render(<Provider />);
@@ -228,18 +233,18 @@ describe("Blac", function() {
       done();
     });
 
-    it("should pass bloc as value, not function", function() {
+    it("should pass bloc as value, not function", function () {
       const initialValue = 88;
       const bloc = new Test2(initialValue);
       const Provider = () => {
-        return <BlocProvider
-          bloc={bloc}
-        >
-          <BlocBuilder
-            blocClass={Test2}
-            builder={([state]) => <div>{state}</div>}
-          />
-        </BlocProvider>;
+        return (
+          <BlocProvider bloc={bloc}>
+            <BlocBuilder
+              blocClass={Test2}
+              builder={([state]) => <div>{state}</div>}
+            />
+          </BlocProvider>
+        );
       };
 
       const component = mount(<Provider />);
@@ -247,19 +252,22 @@ describe("Blac", function() {
     });
   });
 
-
   describe("withBlocProvider", () => {
     const Child = () => <div>Child</div>;
 
     it("should setup state and work as expected", () => {
       const value = 382989239238;
       const Consumer = () => {
-        const [count] = useBloc(Test2)
-        return <div>Value: {count}</div>
+        const [count] = useBloc(Test2);
+        return <div>Value: {count}</div>;
       };
       const Comp = withBlocProvider(new Test2(value))(Consumer);
-      const component = mount(<div><Comp /></div>);
-      expect(component.text()).toContain("Value: " + value)
+      const component = mount(
+        <div>
+          <Comp />
+        </div>
+      );
+      expect(component.text()).toContain("Value: " + value);
     });
 
     it("should render with child", () => {
@@ -270,8 +278,12 @@ describe("Blac", function() {
 
     it("should render with render with special name", () => {
       const Comp = withBlocProvider(new Test2(2))(Child);
-      const component = shallow(<div><Comp /></div>);
-      expect(component.find('WithBlocProvider').exists()).toBe(true);
+      const component = shallow(
+        <div>
+          <Comp />
+        </div>
+      );
+      expect(component.find("WithBlocProvider").exists()).toBe(true);
     });
   });
 });

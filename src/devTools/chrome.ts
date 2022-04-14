@@ -1,7 +1,7 @@
 import Observer from "./observer";
 
 export interface IChromeDevToolsHelper {
-  onSelectionChanged(): Promise<any>
+  onSelectionChanged(): Promise<any>;
 }
 
 // @ts-ignore
@@ -21,14 +21,14 @@ export const logger: any = {
     } else {
       console.log("ChromeDevtoolsHelper:", msg);
     }
-  }
+  },
 };
 
 export interface IChromeDevToolsHelperOptions {
-  panelName: string
-  onShown: () => void
-  onHidden: () => void
-  onModelUpdated: (value: any) => void
+  panelName: string;
+  onShown: () => void;
+  onHidden: () => void;
+  onModelUpdated: (value: any) => void;
 }
 
 /**
@@ -45,15 +45,15 @@ export class ChromeDevToolsHelper implements IChromeDevToolsHelper {
     if (privateChrome && privateChrome.devtools) {
       const panels = privateChrome.devtools.panels;
 
-      panels.create("BLoC", "", "index.html", (panel: any) => logger.log(panel));
+      panels.create("BLoC", "", "index.html", (panel: any) =>
+        logger.log(panel)
+      );
 
       logger.log("DEFINE NOW");
       self.defineObserver().then(() => {
         logger.log("he");
         options.onModelUpdated(new Observer());
       });
-
-
 
       panels.elements.createSidebarPane(options.panelName, (sidebar: any) => {
         sidebar.setPage("index.html");
@@ -69,7 +69,6 @@ export class ChromeDevToolsHelper implements IChromeDevToolsHelper {
           //options.onHidden()
         });
 
-
         panels.elements.onSelectionChanged.addListener(() => {
           logger.log(`-- panels.elements.onSelectionChanged`);
           self.onSelectionChanged().then((value: any) => {
@@ -83,7 +82,7 @@ export class ChromeDevToolsHelper implements IChromeDevToolsHelper {
   defineObserver() {
     return new Promise<any>((resolve: any, reject: any) => {
       if (!privateChrome) {
-        logger.log('failed')
+        logger.log("failed");
         reject();
       } else {
         logger.log("DEF?");
@@ -95,7 +94,7 @@ export class ChromeDevToolsHelper implements IChromeDevToolsHelper {
         privateChrome.devtools.inspectedWindow.eval(
           invokedMethodExpression,
           {
-            useContentScriptContext: false // run the code in the content-script
+            useContentScriptContext: false, // run the code in the content-script
           },
           (result: string) => {
             logger.log("OK?");
@@ -120,7 +119,7 @@ export class ChromeDevToolsHelper implements IChromeDevToolsHelper {
         privateChrome.devtools.inspectedWindow.eval(
           invokedMethodExpression,
           {
-            useContentScriptContext: true // run the code in the content-script
+            useContentScriptContext: true, // run the code in the content-script
           },
           (result: string) => {
             resolve(result);

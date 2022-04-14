@@ -61,7 +61,6 @@ export class ValueChangeListener extends Cubit<number> {
   };
 }
 
-
 export enum AuthEvent {
   authenticated = "authenticated",
   unauthenticated = "unauthenticated",
@@ -73,9 +72,9 @@ export class TestBloc extends Bloc<AuthEvent, boolean> {
 
     this.on(AuthEvent.unauthenticated, (_, emit) => {
       emit(false);
-    })
+    });
     this.on(AuthEvent.authenticated, (_, emit) => {
       emit(true);
-    })
+    });
   }
 }

@@ -86,9 +86,7 @@ export default function Sandbox() {
       <Typography variant="h3">Local Providers</Typography>
       <Card>
         <CardContent>
-          <BlocProvider<CounterCubit>
-            bloc={() => new CounterCubit()}
-          >
+          <BlocProvider<CounterCubit> bloc={() => new CounterCubit()}>
             <Typography variant="h4">Local Provider #1</Typography>
             <BlocBuilder<CounterCubit>
               blocClass={CounterCubit}
@@ -101,9 +99,7 @@ export default function Sandbox() {
             />
           </BlocProvider>
 
-          <BlocProvider<CounterCubit>
-            bloc={() => new CounterCubit()}
-          >
+          <BlocProvider<CounterCubit> bloc={() => new CounterCubit()}>
             <Typography variant="h4">Local Provider #2</Typography>
             <BlocBuilder<CounterCubit>
               blocClass={CounterCubit}

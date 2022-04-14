@@ -1,4 +1,11 @@
-import React, { ReactElement, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import React, {
+  ReactElement,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import BlocBase from "../BlocBase";
 import { BlocClass, BlocHookData, ChangeEvent, ValueType } from "../types";
 import { BlacConsumer, ConsumerOptions } from "../BlocConsumer";
@@ -22,7 +29,7 @@ export interface BlocHookOptions<T extends BlocBase<any>> {
 }
 
 const defaultBlocHookOptions: BlocHookOptions<any> = {
-  subscribe: true
+  subscribe: true,
 };
 
 class BlocRuntimeError {
@@ -33,12 +40,11 @@ class BlocRuntimeError {
   }
 }
 
-class NoValue {
-}
+class NoValue {}
 
 export class BlacReact extends BlacConsumer {
   private readonly _blocsGlobal: BlocBase<any>[];
-  private _contextLocalProviderKey = React.createContext<string>('none');
+  private _contextLocalProviderKey = React.createContext<string>("none");
 
   constructor(blocs: BlocBase<any>[], options?: ConsumerOptions) {
     super(blocs, options);
@@ -53,14 +59,25 @@ export class BlacReact extends BlacConsumer {
   ): BlocHookData<T> => {
     const mergedOptions: BlocHookOptions<T> = {
       ...defaultBlocHookOptions,
-      ...options
+      ...options,
     };
-    let blocInstance: BlocBase<T> | undefined = useMemo(() => options.create ? options.create() : undefined, []);
+    let blocInstance: BlocBase<T> | undefined = useMemo(
+      () => (options.create ? options.create() : undefined),
+      []
+    );
 
     if (!blocInstance) {
       const localProviderKey = useContext(this._contextLocalProviderKey);
-      const localBlocInstance = useMemo(() => this.getLocalBlocForProvider(localProviderKey, blocClass), []);
-      blocInstance = useMemo(() => localBlocInstance || this.getGlobalBlocInstance(this._blocsGlobal, blocClass), []);
+      const localBlocInstance = useMemo(
+        () => this.getLocalBlocForProvider(localProviderKey, blocClass),
+        []
+      );
+      blocInstance = useMemo(
+        () =>
+          localBlocInstance ||
+          this.getGlobalBlocInstance(this._blocsGlobal, blocClass),
+        []
+      );
     }
 
     const { subscribe, shouldUpdate = true } = mergedOptions;
@@ -83,20 +100,25 @@ export class BlacReact extends BlacConsumer {
         )
       `);
       console.error(error.error);
-      return ([
+      return [
         NoValue,
         {},
         {
           error,
-          complete: true
-        }
-      ] as unknown) as BlocHookData<T>;
+          complete: true,
+        },
+      ] as unknown as BlocHookData<T>;
     }
 
-    const [data, setData] = useState<ValueType<T>>(blocInstance.state as ValueType<T>);
+    const [data, setData] = useState<ValueType<T>>(
+      blocInstance.state as ValueType<T>
+    );
 
     const updateData = useCallback((nextState: ValueType<T>) => {
-      if (shouldUpdate === true || shouldUpdate({ nextState, currentState: data })) {
+      if (
+        shouldUpdate === true ||
+        shouldUpdate({ nextState, currentState: data })
+      ) {
         setData(nextState);
       }
     }, []);
@@ -104,7 +126,7 @@ export class BlacReact extends BlacConsumer {
     useEffect(() => {
       if (subscribe) {
         const subscription = blocInstance?.subscribe({
-          next: updateData
+          next: updateData,
         });
         return () => {
           subscription?.unsubscribe();
@@ -112,10 +134,7 @@ export class BlacReact extends BlacConsumer {
       }
     }, []);
 
-    return [
-      data,
-      blocInstance as T
-    ];
+    return [data, blocInstance as T];
   };
 
   // Components
@@ -125,10 +144,10 @@ export class BlacReact extends BlacConsumer {
     shouldUpdate?: (event: ChangeEvent<ValueType<T>>) => boolean;
   }): ReactElement | null {
     const hook = this.useBloc(props.blocClass, {
-      shouldUpdate: props.shouldUpdate
+      shouldUpdate: props.shouldUpdate,
     });
     return props.builder(hook);
-  };
+  }
 
   BlocProvider<T extends BlocBase<any>>(props: {
     children?: ReactElement | ReactElement[] | false;
@@ -137,12 +156,13 @@ export class BlacReact extends BlacConsumer {
     const id = useMemo(() => createId(), []);
     const localProviderKey = useContext(this._contextLocalProviderKey);
     const bloc = useMemo<T>(() => {
-      const newBloc = typeof props.bloc === "function" ? props.bloc(id) : props.bloc;
+      const newBloc =
+        typeof props.bloc === "function" ? props.bloc(id) : props.bloc;
       if (newBloc) {
         this.addLocalBloc({
           bloc: newBloc,
           id,
-          parent: localProviderKey
+          parent: localProviderKey,
         });
       } else {
         console.error(`BLoC is undefined`);
@@ -165,18 +185,19 @@ export class BlacReact extends BlacConsumer {
         <context.Provider value={bloc}>{props.children}</context.Provider>
       </this._contextLocalProviderKey.Provider>
     );
-  };
+  }
 
-  withBlocProvider = <P extends object>(bloc: BlocBase<any> | (() => BlocBase<any>)) => (Component: React.FC<P>): React.FC<P> => {
-    const {BlocProvider} = this;
-    const WithBlocProvider: React.FC<P> = (props: P) => {
-      return (
-        <BlocProvider bloc={bloc}>
-          <Component {...(props as P)} />
-        </BlocProvider>
-      );
+  withBlocProvider =
+    <P extends object>(bloc: BlocBase<any> | (() => BlocBase<any>)) =>
+    (Component: React.FC<P>): React.FC<P> => {
+      const { BlocProvider } = this;
+      const WithBlocProvider: React.FC<P> = (props: P) => {
+        return (
+          <BlocProvider bloc={bloc}>
+            <Component {...(props as P)} />
+          </BlocProvider>
+        );
+      };
+      return WithBlocProvider;
     };
-    return WithBlocProvider;
-  }  
 }
-

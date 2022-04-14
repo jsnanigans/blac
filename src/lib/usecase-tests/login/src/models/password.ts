@@ -1,6 +1,3 @@
-export class Password{
-  constructor(
-    public value: string
-  ) {
-  }
+export class Password {
+  constructor(public value: string) {}
 }

@@ -33,4 +33,3 @@ export class CounterCubitTimerLocal extends CounterCubitTimer {
     super(timer);
   }
 }
-

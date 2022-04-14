@@ -11,18 +11,18 @@ window.Blac = new Observer();
 
 ///////////////////////////// chrome.devtools //////////////////////////
 chromeDevToolsHelper.init({
-  panelName: 'Your Panel Name',
+  panelName: "Your Panel Name",
   onShown: () => {
     // on panel shown, update the panel data through Vuex store
-    logger.log('onShown')
+    logger.log("onShown");
     //store.dispatch ...
   },
   onHidden: () => {
-    logger.log('onHidden')
+    logger.log("onHidden");
     // store.commit('resetItems')
   },
   onModelUpdated: (value: any) => {
-    logger.log(value)
+    logger.log(value);
     // if (value) {
     //   let parsed: IItem
     //   if (typeof value === 'string') {
@@ -34,6 +34,6 @@ chromeDevToolsHelper.init({
     // } else {
     //   logger.log('WARNING: onModelUpdated: value is not defined')
     // }
-  }
-})
+  },
+});
 ///////////////////////////// chrome.devtools //////////////////////////
