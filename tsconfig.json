@@ -25,6 +25,9 @@
   "include": [
     "./src",
     "node_modules/@types/jest/index.d.ts",
+    "node_modules/@types/jest/index.d.ts",
+    "node_modules/@types/jest/index.d.ts",
+    "node_modules/@types/jest/index.d.ts"
   ]
 }
 
