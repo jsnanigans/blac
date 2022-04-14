@@ -34,17 +34,17 @@ export default class Bloc<E, T> extends BlocBase<T> {
 
   private isEventPassedCorrespondTo = (passedEvent: E, registeredEventName: E, registeredEventHandler: EventHandler<E, T>) =>{
 
-      return this.didAddNonInstantiatedEvent(passedEvent, registeredEventName, registeredEventHandler) ||
-      this.didAddInstantiatedEvent(passedEvent, registeredEventName, registeredEventHandler);
+      return this.didAddNonInstantiatedEvent(passedEvent, registeredEventName) ||
+      this.didAddInstantiatedEvent(passedEvent, registeredEventName);
 
   }
 
-  private didAddNonInstantiatedEvent(event: E, eventName: E, handler: EventHandler<E, T>){
+  private didAddNonInstantiatedEvent(event: E, eventName: E){
     return eventName === event;
   }
 
 
-  private didAddInstantiatedEvent(eventAsObject: E, eventAsFunction: E, registeredHandler: EventHandler<E, T>){
+  private didAddInstantiatedEvent(eventAsObject: E, eventAsFunction: E){
     /*
       A very hacky solution. JS is a nightmare with objects.
       Normally we check the events as the same type or not.
