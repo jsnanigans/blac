@@ -3,7 +3,8 @@ import { BlocOptions } from "./types";
 
 type EventHandler<E, T> = (
   event: E,
-  emit: (state: T) => void
+  emit: (state: T) => void,
+  state: T
 ) => void | Promise<void>;
 
 export default class Bloc<E, T> extends BlocBase<T> {
@@ -24,7 +25,7 @@ export default class Bloc<E, T> extends BlocBase<T> {
   public add = (event: E): void => {
     for (const [eventName, handler] of this.eventHandlers) {
       if (eventName === event) {
-        handler(event, this.emit(event));
+        handler(event, this.emit(event), this.state);
         return;
       }
     }
