@@ -98,7 +98,7 @@ declare class StreamAbstraction<T> {
 }
 
 interface BlocMeta {
-    scope: 'unknown' | 'local' | 'global';
+    scope: "unknown" | "local" | "global";
 }
 declare type ChangeMethod = <T>(change: ChangeEvent<T>, bloc: BlocBase<T>) => void;
 declare type RegisterMethod = <T>(consumer: BlacConsumer, bloc: BlocBase<T>) => void;
@@ -122,7 +122,7 @@ declare class BlocBase<T> extends StreamAbstraction<T> {
     readonly notifyValueChange: () => void;
 }
 
-declare type EventHandler<E, T> = (event: E, emit: (state: T) => void) => void | Promise<void>;
+declare type EventHandler<E, T> = (event: E, emit: (state: T) => void, state: T) => void | Promise<void>;
 declare class Bloc<E, T> extends BlocBase<T> {
     onTransition: null | ((change: {
         currentState: T;
@@ -136,6 +136,9 @@ declare class Bloc<E, T> extends BlocBase<T> {
     eventHandlers: [E, EventHandler<E, T>][];
     constructor(initialState: T, options?: BlocOptions);
     add: (event: E) => void;
+    private isEventPassedCorrespondTo;
+    private didAddNonInstantiatedEvent;
+    private didAddInstantiatedEvent;
     private emit;
     /**
      * Add a listener to the Bloc for when a new event is added. There can only be one handler for each event.

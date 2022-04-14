@@ -7,7 +7,7 @@ const cubitDefaultOptions = {
 };
 
 const createId = () => {
-    return '_' + Math.random().toString(36).substr(2, 9);
+    return "_" + Math.random().toString(36).substr(2, 9);
 };
 
 class BehaviorSubject {
@@ -26,7 +26,7 @@ class BehaviorSubject {
         this.observers.push({ observer, id });
         this.triggerObservers();
         return {
-            unsubscribe: () => this.removeObserver(id)
+            unsubscribe: () => this.removeObserver(id),
         };
     }
     complete() {
@@ -126,7 +126,7 @@ class BlocBase extends StreamAbstraction {
     id = createId();
     createdAt = new Date();
     meta = {
-        scope: 'unknown'
+        scope: "unknown",
     };
     changeListeners = [];
     registerListeners = [];
@@ -162,14 +162,14 @@ class BlocBase extends StreamAbstraction {
     };
     notifyChange = (state) => {
         this.consumer?.notifyChange(this, state);
-        this.changeListeners.forEach(fn => fn({
+        this.changeListeners.forEach((fn) => fn({
             currentState: this.state,
             nextState: state,
         }, this));
     };
     notifyValueChange = () => {
         this.consumer?.notifyValueChange(this);
-        this.valueChangeListeners.forEach(fn => fn(this.state, this));
+        this.valueChangeListeners.forEach((fn) => fn(this.state, this));
     };
 }
 
@@ -185,13 +185,49 @@ class Bloc extends BlocBase {
     }
     add = (event) => {
         for (const [eventName, handler] of this.eventHandlers) {
-            if (eventName === event) {
-                handler(event, this.emit(event));
+            if (this.isEventPassedCorrespondTo(event, eventName)) {
+                handler(event, this.emit(event), this.state);
                 return;
             }
         }
         console.warn(`Event is not handled in Bloc:`, { event, bloc: this });
     };
+    isEventPassedCorrespondTo = (passedEvent, registeredEventName) => {
+        return (this.didAddNonInstantiatedEvent(passedEvent, registeredEventName) ||
+            this.didAddInstantiatedEvent(passedEvent, registeredEventName));
+    };
+    didAddNonInstantiatedEvent(event, eventName) {
+        return eventName === event;
+    }
+    didAddInstantiatedEvent(eventAsObject, eventAsFunction) {
+        /*
+          A very hacky solution. JS is a nightmare with objects.
+          Normally we check the events as the same type or not.
+          However sometimes client needs to pass in data with the event, in that circumstance,
+          they need to have the payload in the event, meaning they instantiate the event.
+          That makes the type and event different, even more so
+          since the type is abstract and event is a instantiated subclass
+          thanks to the grand js, we litterally cannot check if one is another or cast (generic types) or
+          type-check. (i couldn't find a better solution btw maybe we can)
+    
+          Moreover the code stores instantiated events as lambda functions
+    
+          Now, to check type and object equality, we need to get their real"Subclass"Names to compare them
+          As you can see from realEventName, we get the real class Name, then
+          we take the constructor name of the input event and since the constructor name will
+          equal to real name of class, voila!
+           */
+        try {
+            const realEventName = eventAsFunction.name;
+            const constructorName = Object.getPrototypeOf(eventAsObject).constructor.name;
+            return realEventName === constructorName;
+        }
+        catch (e) {
+            console.error(e);
+        }
+        // if the try/catch fails nothing is returned, and we can assume that adding the event was not instanciated
+        return false;
+    }
     emit = (event) => (newState) => {
         this.notifyChange(newState);
         this.notifyTransition(newState, event);
@@ -229,7 +265,9 @@ class BlocObserver {
     onTransition;
     constructor(methods = {}) {
         this.onChange = methods.onChange ? methods.onChange : this.defaultAction;
-        this.onTransition = methods.onTransition ? methods.onTransition : this.defaultAction;
+        this.onTransition = methods.onTransition
+            ? methods.onTransition
+            : this.defaultAction;
     }
     // trigger events
     addChange = (bloc, state) => {
@@ -276,8 +314,8 @@ class BlacConsumer {
         this.observer = options.observer || new BlocObserver();
         for (const b of blocs) {
             b.consumer = this;
-            b.registerListeners.forEach(fn => fn(this, b));
-            b.meta.scope = 'global';
+            b.registerListeners.forEach((fn) => fn(this, b));
+            b.meta.scope = "global";
             this.observer.addBlocAdded(b);
         }
     }
@@ -294,7 +332,7 @@ class BlacConsumer {
             if (matchesScope && bloc instanceof blocClass) {
                 callback(bloc, {
                     nextState: state,
-                    currentState: bloc.state
+                    currentState: bloc.state,
                 });
             }
         }
@@ -328,17 +366,17 @@ class BlacConsumer {
     addLocalBloc(item) {
         this.providerList.push(item);
         item.bloc.consumer = this;
-        item.bloc.registerListeners.forEach(fn => fn(this, item.bloc));
-        item.bloc.meta.scope = 'local';
+        item.bloc.registerListeners.forEach((fn) => fn(this, item.bloc));
+        item.bloc.meta.scope = "local";
         this.observer.addBlocAdded(item.bloc);
     }
     removeLocalBloc(id, bloc) {
-        const item = this.providerList.find(i => i.id === id && i.bloc === bloc);
+        const item = this.providerList.find((i) => i.id === id && i.bloc === bloc);
         if (item) {
             item.bloc.complete();
-            item.bloc.removeListeners.forEach(fn => fn());
+            item.bloc.removeListeners.forEach((fn) => fn());
             this.observer.addBlocRemoved(item.bloc);
-            this.providerList = this.providerList.filter(i => i !== item);
+            this.providerList = this.providerList.filter((i) => i !== item);
         }
     }
     addBlocMock(bloc) {
@@ -356,7 +394,7 @@ class BlacConsumer {
                 return mockedBloc;
             }
         }
-        return this.blocListGlobal.find(c => c instanceof blocClass);
+        return this.blocListGlobal.find((c) => c instanceof blocClass);
     }
     getLocalBlocForProvider(id, blocClass) {
         for (const providerItem of this.providerList) {
@@ -366,7 +404,7 @@ class BlacConsumer {
                 }
                 let parent = providerItem.parent;
                 while (parent) {
-                    const parentItem = this.providerList.find(i => i.id === parent);
+                    const parentItem = this.providerList.find((i) => i.id === parent);
                     if (parentItem?.bloc instanceof blocClass) {
                         return parentItem.bloc;
                     }
@@ -388,7 +426,7 @@ class BlacConsumer {
 }
 
 const defaultBlocHookOptions = {
-    subscribe: true
+    subscribe: true,
 };
 class BlocRuntimeError {
     error;
@@ -400,7 +438,7 @@ class NoValue {
 }
 class BlacReact extends BlacConsumer {
     _blocsGlobal;
-    _contextLocalProviderKey = React.createContext('none');
+    _contextLocalProviderKey = React.createContext("none");
     constructor(blocs, options) {
         super(blocs, options);
         this._blocsGlobal = blocs;
@@ -410,13 +448,14 @@ class BlacReact extends BlacConsumer {
     useBloc = (blocClass, options = {}) => {
         const mergedOptions = {
             ...defaultBlocHookOptions,
-            ...options
+            ...options,
         };
-        let blocInstance = useMemo(() => options.create ? options.create() : undefined, []);
+        let blocInstance = useMemo(() => (options.create ? options.create() : undefined), []);
         if (!blocInstance) {
             const localProviderKey = useContext(this._contextLocalProviderKey);
             const localBlocInstance = useMemo(() => this.getLocalBlocForProvider(localProviderKey, blocClass), []);
-            blocInstance = useMemo(() => localBlocInstance || this.getGlobalBlocInstance(this._blocsGlobal, blocClass), []);
+            blocInstance = useMemo(() => localBlocInstance ||
+                this.getGlobalBlocInstance(this._blocsGlobal, blocClass), []);
         }
         const { subscribe, shouldUpdate = true } = mergedOptions;
         if (!blocInstance) {
@@ -442,39 +481,36 @@ class BlacReact extends BlacConsumer {
                 {},
                 {
                     error,
-                    complete: true
-                }
+                    complete: true,
+                },
             ];
         }
         const [data, setData] = useState(blocInstance.state);
         const updateData = useCallback((nextState) => {
-            if (shouldUpdate === true || shouldUpdate({ nextState, currentState: data })) {
+            if (shouldUpdate === true ||
+                shouldUpdate({ nextState, currentState: data })) {
                 setData(nextState);
             }
         }, []);
         useEffect(() => {
             if (subscribe) {
                 const subscription = blocInstance?.subscribe({
-                    next: updateData
+                    next: updateData,
                 });
                 return () => {
                     subscription?.unsubscribe();
                 };
             }
         }, []);
-        return [
-            data,
-            blocInstance
-        ];
+        return [data, blocInstance];
     };
     // Components
     BlocBuilder(props) {
         const hook = this.useBloc(props.blocClass, {
-            shouldUpdate: props.shouldUpdate
+            shouldUpdate: props.shouldUpdate,
         });
         return props.builder(hook);
     }
-    ;
     BlocProvider(props) {
         const id = useMemo(() => createId(), []);
         const localProviderKey = useContext(this._contextLocalProviderKey);
@@ -484,7 +520,7 @@ class BlacReact extends BlacConsumer {
                 this.addLocalBloc({
                     bloc: newBloc,
                     id,
-                    parent: localProviderKey
+                    parent: localProviderKey,
                 });
             }
             else {
@@ -503,7 +539,6 @@ class BlacReact extends BlacConsumer {
         return (React.createElement(this._contextLocalProviderKey.Provider, { value: id },
             React.createElement(context.Provider, { value: bloc }, props.children)));
     }
-    ;
     withBlocProvider = (bloc) => (Component) => {
         const { BlocProvider } = this;
         const WithBlocProvider = (props) => {
