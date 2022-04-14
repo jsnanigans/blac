@@ -3,7 +3,8 @@ import { BlocOptions } from "./types";
 
 type EventHandler<E, T> = (
   event: E,
-  emit: (state: T) => void
+  emit: (state: T) => void,
+  state: T
 ) => void | Promise<void>;
 
 export default class Bloc<E, T> extends BlocBase<T> {
@@ -23,14 +24,56 @@ export default class Bloc<E, T> extends BlocBase<T> {
 
   public add = (event: E): void => {
     for (const [eventName, handler] of this.eventHandlers) {
-      if (eventName === event) {
-        handler(event, this.emit(event));
-        return;
+      if(this.isEventPassedCorrespondTo(event, eventName)){
+        handler(event, this.emit(event), this.state)
+        return
       }
     }
-
     console.warn(`Event is not handled in Bloc:`, { event, bloc: this });
   };
+
+  private isEventPassedCorrespondTo = (passedEvent: E, registeredEventName: E) =>{
+
+      return this.didAddNonInstantiatedEvent(passedEvent, registeredEventName) ||
+      this.didAddInstantiatedEvent(passedEvent, registeredEventName);
+
+  }
+
+  private didAddNonInstantiatedEvent(event: E, eventName: E){
+    return eventName === event;
+  }
+
+
+  private didAddInstantiatedEvent(eventAsObject: E, eventAsFunction: E){
+    /*
+      A very hacky solution. JS is a nightmare with objects.
+      Normally we check the events as the same type or not.
+      However sometimes client needs to pass in data with the event, in that circumstance,
+      they need to have the payload in the event, meaning they instantiate the event.
+      That makes the type and event different, even more so
+      since the type is abstract and event is a instantiated subclass
+      thanks to the grand js, we litterally cannot check if one is another or cast (generic types) or
+      type-check. (i couldn't find a better solution btw maybe we can)
+
+      Moreover the code stores instantiated events as lambda functions
+
+      Now, to check type and object equality, we need to get their real"Subclass"Names to compare them
+      As you can see from realEventName, we get the real class Name, then
+      we take the constructor name of the input event and since the constructor name will
+      equal to real name of class, voila!
+       */
+    try {
+      const realEventName = (eventAsFunction as any).name as undefined | string;
+      const constructorName = Object.getPrototypeOf(eventAsObject).constructor.name;
+      return realEventName === constructorName;
+    } catch (e: unknown) {
+      console.error(e);
+    }
+      
+    // if the try/catch fails nothing is returned, and we can assume that adding the event was not instanciated
+    return false;
+  }
+
 
   private emit = (event: E) => (newState: T) => {
     this.notifyChange(newState);
