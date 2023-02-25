@@ -1,7 +1,7 @@
-import Cubit from "../lib/Cubit";
-import { BlocClass } from "../lib/types";
-import { BlocObserverScope } from "../lib/BlocConsumer";
-import Bloc from "../lib/Bloc";
+import Cubit from "../v0_lib/Cubit";
+import { BlocClass } from "../v0_lib/types";
+import { BlocObserverScope } from "../v0_lib/BlocConsumer";
+import Bloc from "../v0_lib/Bloc";
 
 export class Test1 extends Cubit<number> {
   constructor(options: { register?: () => void } = {}) {

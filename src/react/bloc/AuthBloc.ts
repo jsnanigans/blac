@@ -1,4 +1,4 @@
-import Bloc from "../../lib/Bloc";
+import Bloc from "../../v0_lib/Bloc";
 import CounterCubit from "./CounterCubit";
 
 export enum AuthEvent {

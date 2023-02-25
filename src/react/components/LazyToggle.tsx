@@ -1,6 +1,6 @@
 import { Button } from "@material-ui/core";
 import React from "react";
-import { Bloc } from "../../lib";
+import { Bloc } from "../../v0_lib";
 import { useBloc } from "../state";
 
 const wait = (): Promise<number> => {

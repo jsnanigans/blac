@@ -24,9 +24,9 @@ import {
 import { makeStyles } from "@material-ui/core/styles";
 import { useBloc } from "./state/state";
 import BlocsCubit from "./state/BlocsCubit";
-import BlocBase from "../../src/lib/BlocBase";
+import BlocBase from "../v0_lib/BlocBase";
 import { Alert } from "@material-ui/lab";
-import { ChangeEvent } from "../../src/lib/types";
+import { ChangeEvent } from "../v0_lib/types";
 import clsx from "clsx";
 import Bug from "@material-ui/icons/BugReport";
 

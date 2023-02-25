@@ -1,7 +1,7 @@
 import CounterCubit from "./bloc/CounterCubit";
 import PreferencesCubit from "./bloc/PreferencesCubit";
 import AuthBloc from "./bloc/AuthBloc";
-import { BlacReact } from "../lib";
+import { BlacReact } from "../v0_lib";
 import Observer from "../devTools/observer";
 // import Observer from "../../devtools/src/observer";
 

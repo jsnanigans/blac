@@ -1,4 +1,4 @@
-import { BlacReact } from "../../../src/lib";
+import { BlacReact } from "../../v0_lib";
 import BlocsCubit from "./BlocsCubit";
 
 export const blocState = new BlocsCubit();
