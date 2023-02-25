@@ -1,6 +1,6 @@
 {
   "name": "blac",
-  "version": "0.4.1",
+  "version": "1.0.0",
   "license": "MIT",
   "main": "dist/blac.js",
   "module": "dist/blac.esm.js",
@@ -19,14 +19,11 @@
   "scripts": {
     "dev": "vite",
     "dev:tool": "cd devtools && vite",
-    "build": "vite build",
-    "build:tool": "yarn build:scripts && cd devtools && vite build",
-    "build:lib": "rollup -c rollup.config.lib.js",
+    "build": "rollup -c rollup.config.lib.js",
     "serve": "vite preview",
     "prettier": "prettier --write ./src",
     "test": "vitest",
-    "coverage": "vitest run --coverage",
-    "build:scripts": "cd devtools && rollup -c rollup.config.background.js && rollup -c rollup.config.body.js && rollup -c rollup.config.inject.js"
+    "coverage": "vitest run --coverage"
   },
   "dependencies": {},
   "devDependencies": {
