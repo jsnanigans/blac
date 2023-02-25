@@ -8,8 +8,7 @@ const name = pkg.name;
 
 const bundle = config => ({
   ...config,
-  input: "src/example.ts",
-  external: id => !/^[./]/.test(id)
+  input: "src/index.ts"
 });
 
 export default [
@@ -31,7 +30,7 @@ export default [
       dts()
     ],
     output: {
-      file: `${name}.d.ts`,
+      file: `dist/${name}.d.ts`,
       format: "es"
     }
   })

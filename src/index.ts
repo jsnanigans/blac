@@ -1,17 +1,15 @@
 /**
  * OBSERVABLE
  */
-type Observer<S> = (oldState: S, newState: S) => void;
-export class Observable<S> {
-  private _observers: Observer<S>[] = [];
+export type BlacObserver<S> = (oldState: S, newState: S) => void;
+export class BlacObservable<S> {
+  private _observers: BlacObserver<S>[] = [];
 
-  constructor() {}
-
-  subscribe(observer: Observer<S>) {
+  subscribe(observer: BlacObserver<S>) {
     this._observers.push(observer);
   }
 
-  unsubscribe(observer: Observer<S>) {
+  unsubscribe(observer: BlacObserver<S>) {
     this._observers = this._observers.filter((obs) => obs !== observer);
   }
 
@@ -23,26 +21,25 @@ export class Observable<S> {
 /**
  * BLAC
  */
-class Blac {
+export class Blac {
   globalState: any = {};
-
-  constructor() {
-  }
 }
-
-export const globalBlacInstance = new Blac();
 
 /**
  * BLOC BASE
  */
 
+export interface BlocOptions {
+  blac?: Blac;
+}
+export interface CubitOptions extends BlocOptions {}
 export abstract class BlocBase<S> {
   public _state: S;
-  public observable: Observable<S>;
+  public observable: BlacObservable<S>;
   public blac?: Blac;
 
   constructor(initialState: S, options?: BlocOptions) {
-    this.observable = new Observable();
+    this.observable = new BlacObservable();
     this._state = initialState;
 
     if (options?.blac) {
@@ -68,10 +65,6 @@ export abstract class BlocBase<S> {
 /**
  * BLOC
  */
-interface BlocOptions {
-  blac?: Blac;
-}
-
 export abstract class Bloc<S, A> extends BlocBase<S> {
   abstract reducer(action: A, state: S): S;
 
@@ -83,45 +76,8 @@ export abstract class Bloc<S, A> extends BlocBase<S> {
 }
 
 /**
- * COUNTER BLOC
- */
-type CounterState = number;
-
-export enum CounterActions {
-  increment = 'increment',
-  decrement = 'decrement',
-}
-type CounterAction = CounterActions;
-
-
-export class CounterBloc extends Bloc<CounterState, CounterAction> {
-  constructor(options: BlocOptions = {}) {
-    super(0, options);
-  }
-
-  reducer(action: CounterAction, state: CounterState) {
-    const actions = Object.values(CounterActions);
-    if (!actions.includes(action)) {
-      throw new Error(`unknown action: ${action}`);
-    }
-
-    switch (action) {
-      case CounterActions.increment:
-        return state + 1;
-      case CounterActions.decrement:
-        return state - 1;
-    }
-  }
-}
-
-
-/**
  * CUBIT
  */
-interface CubitOptions {
-  blac?: Blac;
-}
-
 export abstract class Cubit<S> extends BlocBase<S> {
   emit(state: S) {
     if (state === this.state) {
@@ -130,18 +86,5 @@ export abstract class Cubit<S> extends BlocBase<S> {
 
     this.observable.notify(state, this.state);
     this._state = state;
-  }
-}
-
-/**
- * COUNTER CUBIT
- */
-export class CounterCubit extends Cubit<CounterState> {
-  constructor(options: CubitOptions = {}) {
-    super(0, options);
-  }
-
-  increment() {
-    this.emit(this.state + 1);
   }
 }
