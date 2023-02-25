@@ -2,14 +2,8 @@
   "compilerOptions": {
     "declaration": true,
     "target": "esNext",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
-    "types": [
-      "vite/client"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "types": ["vite/client"],
     "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -22,9 +16,5 @@
     "isolatedModules": true,
     "jsx": "react"
   },
-  "include": [
-    "./src",
-    "node_modules/@types/jest/index.d.ts",
-  ]
+  "include": ["./src"]
 }
-
