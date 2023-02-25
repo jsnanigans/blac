@@ -1,5 +1,5 @@
 import { describe, expect, test, vitest } from 'vitest';
-import { CounterActions, CounterBloc, CounterCubit, globalBlacInstance } from './example';
+import { CounterActions, CounterBloc, CounterCubit, globalBlacInstance } from '.';
 
 describe('Global Blac', () => {
   test('should be registered in blac', () => {
