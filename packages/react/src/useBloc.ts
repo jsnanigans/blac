@@ -9,11 +9,18 @@ import externalBlocStore, { ExternalStore } from './externalBlocStore';
 export type BlocClass<T> = new (args: never[]) => T;
 export type BlocHookData<T extends BlocBase<S>, S> = [value: S, instance: T];
 
+export type BlocHookOptions<T extends BlocBase<S>, S> = {
+  create?: boolean;
+}
+
 // B extends BlocBase<S>,
 export const useBloc = <B extends BlocBase<S>, S>(
-  bloc: BlocClass<B> | (() => B)
+  bloc: BlocClass<B> | (() => B),
+  options?: BlocHookOptions<B, S> = {}
 ): BlocHookData<B, S> => {
   const resolvedBloc = useMemo<B | undefined>(() => {
+    
+
     const isFunction = bloc instanceof Function;
     const isBloc = isFunction && (bloc as undefined | any)?.isBlacClass;
 
@@ -22,6 +29,10 @@ export const useBloc = <B extends BlocBase<S>, S>(
     }
 
     if (isFunction && isBloc) {
+      if (!options.create) {
+        throw new Error('useBloc: set create to true to create a new bloc when a class constructor is passed');
+      }
+
       const blocClassC = bloc as BlocClass<B>;
       const constructed = new blocClassC(undefined as any);
       return constructed;

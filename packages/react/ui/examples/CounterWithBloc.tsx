@@ -32,7 +32,7 @@ class CounterBloc extends Bloc<CounterState, CounterAction> {
 }
 
 const CounterWithBloc: FC = () => {
-  const [count, { emit }] = useBloc(CounterBloc);
+  const [count, { emit }] = useBloc(CounterBloc, { create: true });
 
   return (
     <div>
