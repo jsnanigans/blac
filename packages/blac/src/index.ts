@@ -1,20 +1,20 @@
 /**
  * OBSERVABLE
  */
-export type BlacObserver<S> = (oldState: S, newState: S) => void;
+export type BlacObserver<S> = (oldState: S, newState: S) => void | Promise<void>;
 export class BlacObservable<S> {
-  private _observers: BlacObserver<S>[] = [];
+  private _observers = new Set<BlacObserver<S>>();
 
   subscribe(observer: BlacObserver<S>) {
-    this._observers.push(observer);
+    this._observers.add(observer);
   }
 
   unsubscribe(observer: BlacObserver<S>) {
-    this._observers = this._observers.filter((obs) => obs !== observer);
+    this._observers.delete(observer);
   }
 
   notify(newState: S, oldState: S) {
-    this._observers.forEach((observer) => observer(newState, oldState));
+    this._observers.forEach(observer => observer(newState, oldState));
   }
 }
 
@@ -34,12 +34,13 @@ export interface BlocOptions {
 }
 export interface CubitOptions extends BlocOptions {}
 export abstract class BlocBase<S> {
+  static isBlacClass = true;
   public _state: S;
-  public observable: BlacObservable<S>;
+  public observer: BlacObservable<S>;
   public blac?: Blac;
 
   constructor(initialState: S, options?: BlocOptions) {
-    this.observable = new BlacObservable();
+    this.observer = new BlacObservable();
     this._state = initialState;
 
     if (options?.blac) {
@@ -59,10 +60,12 @@ export abstract class BlocBase<S> {
   onStateChange = (
     callback: (newState: S, oldState: S) => void
   ): (() => void) => {
-    this.observable.subscribe(callback);
-    return () => this.observable.unsubscribe(callback);
+    this.observer.subscribe(callback);
+    return () => this.observer.unsubscribe(callback);
   };
 }
+
+export type InferBlocType<T> = new (...args: never[]) => T;
 
 /**
  * BLOC
@@ -71,9 +74,10 @@ export abstract class Bloc<S, A> extends BlocBase<S> {
   abstract reducer(action: A, state: S): S;
 
   emit = (action: A): void => {
+    const oldState = this.state;
     const newState = this.reducer(action, this.state);
-    this.observable.notify(newState, this.state);
     this._state = newState;
+    this.observer.notify(newState, oldState);
   };
 }
 
@@ -86,7 +90,9 @@ export abstract class Cubit<S> extends BlocBase<S> {
       return;
     }
 
-    this.observable.notify(state, this.state);
+    const oldState = this.state;
+    const newState = state;
     this._state = state;
+    this.observer.notify(newState, oldState);
   }
 }

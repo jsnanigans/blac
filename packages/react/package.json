@@ -1,0 +1,35 @@
+{
+  "name": "@blac/react",
+  "version": "0.0.1",
+  "license": "MIT",
+  "type": "module",
+  "keywords": [
+    "react",
+    "typescript",
+    "rxjs",
+    "state-management",
+    "reactjs",
+    "observer-pattern",
+    "bloc",
+    "bloc-pattern"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "rollup -c rollup.config.lib.js",
+    "prettier": "prettier --write ./src",
+    "test": "vitest run",
+    "test:watch": "vitest --watch",
+    "coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "blac": "*"
+  },
+  "devDependencies": {
+    "@types/react-dom": "^18.0.11",
+    "@types/react": "^18.0.28",
+    "vite": "^4.1.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "vitest": "^0.29.1"
+  }
+}
