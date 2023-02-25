@@ -47,7 +47,7 @@ export abstract class BlocBase<S> {
       this.blac.globalState[this.name] = this.state;
     }
   }
-  
+
   get state() {
     return this._state;
   }
@@ -55,11 +55,13 @@ export abstract class BlocBase<S> {
   get name() {
     return this.constructor.name;
   }
-  
-  onStateChange = (callback: (newState: S, oldState: S) => void): () => void => {
+
+  onStateChange = (
+    callback: (newState: S, oldState: S) => void
+  ): (() => void) => {
     this.observable.subscribe(callback);
     return () => this.observable.unsubscribe(callback);
-  }
+  };
 }
 
 /**
@@ -72,7 +74,7 @@ export abstract class Bloc<S, A> extends BlocBase<S> {
     const newState = this.reducer(action, this.state);
     this.observable.notify(newState, this.state);
     this._state = newState;
-  }
+  };
 }
 
 /**
@@ -82,7 +84,7 @@ export abstract class Cubit<S> extends BlocBase<S> {
   emit(state: S) {
     if (state === this.state) {
       return;
-    };
+    }
 
     this.observable.notify(state, this.state);
     this._state = state;

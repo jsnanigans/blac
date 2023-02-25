@@ -1,7 +1,6 @@
 import { describe, expect, test, vitest } from 'vitest';
 import { Blac, Bloc, BlocOptions, Cubit, CubitOptions } from '.';
 
-
 export const globalBlacInstance = new Blac();
 
 /**
@@ -14,7 +13,6 @@ enum CounterActions {
   decrement = 'decrement',
 }
 type CounterAction = CounterActions;
-
 
 class CounterBloc extends Bloc<CounterState, CounterAction> {
   constructor(options: BlocOptions = {}) {
@@ -36,7 +34,6 @@ class CounterBloc extends Bloc<CounterState, CounterAction> {
   }
 }
 
-
 /**
  * COUNTER CUBIT
  */
@@ -55,31 +52,30 @@ describe('Global Blac', () => {
     const counter = new CounterBloc({ blac: globalBlacInstance });
     expect(globalBlacInstance.globalState[counter.name]).toBe(counter.state);
   });
-
-})
+});
 
 describe('CounterBloc', () => {
   test('should have a state', () => {
     const counter = new CounterBloc();
-    expect(counter.state).toBe(0)
-  })
+    expect(counter.state).toBe(0);
+  });
 
   test('should increment', () => {
     const counter = new CounterBloc();
-    counter.emit(CounterActions.increment)
-    expect(counter.state).toBe(1)
+    counter.emit(CounterActions.increment);
+    expect(counter.state).toBe(1);
   });
 
   test('should decrement', () => {
     const counter = new CounterBloc();
-    counter.emit(CounterActions.decrement)
-    expect(counter.state).toBe(-1)
+    counter.emit(CounterActions.decrement);
+    expect(counter.state).toBe(-1);
   });
 
   test('should throw error if unknown action is passed', () => {
     const counter = new CounterBloc();
-    expect(() => counter.emit('unknown' as any)).toThrowError('unknown action')
-  })
+    expect(() => counter.emit('unknown' as any)).toThrowError('unknown action');
+  });
 
   describe('observable', () => {
     test('should notify subscribers', () => {
@@ -88,7 +84,7 @@ describe('CounterBloc', () => {
       counter.onStateChange(spy);
       counter.emit(CounterActions.increment);
       expect(spy).toHaveBeenCalledWith(1, 0);
-    })
+    });
 
     test('should notify all subscribers', () => {
       const counter = new CounterBloc();
@@ -99,7 +95,7 @@ describe('CounterBloc', () => {
       counter.emit(CounterActions.increment);
       expect(spy1).toHaveBeenCalledWith(1, 0);
       expect(spy2).toHaveBeenCalledWith(1, 0);
-    })
+    });
 
     test('should not notify after unsubscribing', () => {
       const counter = new CounterBloc();
@@ -108,26 +104,26 @@ describe('CounterBloc', () => {
       unsubscribe();
       counter.emit(CounterActions.increment);
       expect(spy).not.toHaveBeenCalled();
-    })
-  })
-})
+    });
+  });
+});
 
 describe('CounterCubit', () => {
   test('should have a state', () => {
     const counter = new CounterCubit();
-    expect(counter.state).toBe(0)
-  })
+    expect(counter.state).toBe(0);
+  });
 
   test('should update state', () => {
     const counter = new CounterCubit();
-    counter.emit(1)
-    expect(counter.state).toBe(1)
+    counter.emit(1);
+    expect(counter.state).toBe(1);
   });
 
   test('should increment with method', () => {
     const counter = new CounterCubit();
-    counter.increment()
-    expect(counter.state).toBe(1)
+    counter.increment();
+    expect(counter.state).toBe(1);
   });
 
   describe('observable', () => {
@@ -137,7 +133,7 @@ describe('CounterCubit', () => {
       counter.onStateChange(spy);
       counter.emit(1);
       expect(spy).toHaveBeenCalledWith(1, 0);
-    })
+    });
 
     test('should notify all subscribers', () => {
       const counter = new CounterCubit();
@@ -148,7 +144,7 @@ describe('CounterCubit', () => {
       counter.emit(1);
       expect(spy1).toHaveBeenCalledWith(1, 0);
       expect(spy2).toHaveBeenCalledWith(1, 0);
-    })
+    });
 
     test('should not notify subscribers if state is not changed', () => {
       const counter = new CounterCubit();
@@ -158,8 +154,8 @@ describe('CounterCubit', () => {
       expect(spy).not.toHaveBeenCalled();
       counter.emit(0);
       expect(spy).not.toHaveBeenCalled();
-    })
-  
+    });
+
     test('should not notify after unsubscribing', () => {
       const counter = new CounterCubit();
       const spy = vitest.fn();
@@ -167,8 +163,6 @@ describe('CounterCubit', () => {
       unsubscribe();
       counter.emit(1);
       expect(spy).not.toHaveBeenCalled();
-    })
-  })
-})
-
-
+    });
+  });
+});

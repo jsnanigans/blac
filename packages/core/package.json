@@ -17,10 +17,7 @@
     "bloc-pattern"
   ],
   "scripts": {
-    "dev": "vite",
-    "dev:tool": "cd devtools && vite",
     "build": "rollup -c rollup.config.lib.js",
-    "serve": "vite preview",
     "prettier": "prettier --write ./src",
     "test": "vitest",
     "coverage": "vitest run --coverage"
@@ -46,7 +43,6 @@
     "rollup-plugin-peer-deps-external": "^2.2.4",
     "rollup-plugin-typescript2": "^0.34.1",
     "typescript": "^4.9.5",
-    "vite": "^4.1.4",
     "vitest": "^0.29.1"
   }
 }

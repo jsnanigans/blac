@@ -1,9 +1,8 @@
 .idea
+.vscode
 babel.config.js
 .gitignore
-index.html
 rollup.config.lib.js
-setupTests.ts
 yarn.lock
 yarn-error.log
 coverage
@@ -14,4 +13,5 @@ site
 readme.md
 setupTests.ts
 tsconfig.json
+vitest.config.ts
 docs
