@@ -1,17 +1,28 @@
 import React, { FC } from 'react';
 import CounterWithBloc from './examples/CounterWithBloc';
 import CounterWithCubit from './examples/CounterWithCubit';
+import CounterWithCubitGlobal from './examples/CounterWithCubitGlobal';
 
 const Main: FC = () => {
   const examples = [
     {
       name: 'Counter with Bloc',
+      description:
+        'Simple Bloc example, the state is reset when the component is unmounted',
       component: <CounterWithBloc />,
     },
     {
       name: 'Counter with Cubit',
+      description:
+        'Simple Cubit example, the state is reset when the component is unmounted',
       component: <CounterWithCubit />,
-    }
+    },
+    {
+      name: 'Counter with Cubit (global)',
+      description:
+        'This cubit is created in the global scope, the state persists also after the component is unmounted',
+      component: <CounterWithCubitGlobal />,
+    },
   ];
 
   const [selectedIndex, setSelectedIndex] = React.useState(-1);
@@ -44,12 +55,16 @@ const Main: FC = () => {
           </button>
         ))}
       </div>
-      {currentExample && <>
-      <hr />
-      <h2>{currentExample.name}</h2>
-      {/* example */}
-      <div>{currentExample.component}</div>
-      </>}
+      {currentExample && (
+        <>
+          <hr />
+          {/* info */}
+          <h2>{currentExample.name}</h2>
+          <p>{currentExample.description}</p>
+          {/* example */}
+          <div>{currentExample.component}</div>
+        </>
+      )}
     </div>
   );
 };
