@@ -3,6 +3,7 @@ import CounterScoped from './examples/CounterScoped';
 import CounterWithBloc from './examples/CounterWithBloc';
 import CounterWithCubit from './examples/CounterWithCubit';
 import CounterWithCubitGlobal from './examples/CounterWithCubitGlobal';
+import './styles.css';
 
 const Main: FC = () => {
   const examples = [
@@ -58,10 +59,10 @@ const Main: FC = () => {
   }, []);
 
   return (
-    <div>
+    <main>
       <h1>Examples</h1>
       {/* buttons */}
-      <div>
+      <div className="btn-list">
         {examples.map((example, index) => (
           <button
             key={example.name}
@@ -75,17 +76,19 @@ const Main: FC = () => {
           </button>
         ))}
       </div>
+      <hr />
       {currentExample && (
-        <>
-          <hr />
-          {/* info */}
-          <h2>{currentExample.name}</h2>
-          <p>{currentExample.description}</p>
-          {/* example */}
-          <div>{currentExample.component}</div>
-        </>
+        <div className="content" key={currentExample.name}>
+          <div>
+            {/* info */}
+            <h2>{currentExample.name}</h2>
+            <p>{currentExample.description}</p>
+            {/* example */}
+            <div className="example">{currentExample.component}</div>
+          </div>
+        </div>
       )}
-    </div>
+    </main>
   );
 };
 

@@ -1,0 +1,120 @@
+* {
+  transform: rotate(var(--r, 0)) translate(var(--x, 0), var(--y, 0));
+  transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+body,
+html {
+  transform: none !important;
+}
+
+body {
+  background: #151515;
+  color: #0f0;
+  font-family: monospace;
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 1.5;
+  margin: 0;
+  padding: 2em;
+}
+
+main {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+button {
+  background: #000;
+  border: 0;
+  color: #0f0;
+  cursor: pointer;
+  font-family: monospace;
+  font-weight: bold;
+  line-height: 1.5;
+  border: 1px solid #0f0;
+  padding: 0.2em 0.8em;
+  margin: 0;
+}
+
+.btn-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  margin: 1em 0 0;
+  padding: 0;
+  list-style: none;
+  grid-gap: 0.5em;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.2;
+}
+
+button:active {
+  background: #0f0;
+  color: #000;
+}
+
+button:hover {
+  box-shadow: -0.3em 0.3em 0 #000;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: #0f0;
+  font-family: monospace;
+  font-weight: bold;
+  line-height: 1.5;
+  margin: 0;
+  padding: 0;
+}
+
+.scope {
+  margin: 1em 0 0.2em 0;
+  padding: 1em;
+  border-left: 1px solid #0f0;
+  background-color: rgb(0 255 42 / 5%);
+  text-shadow: -0.1em 0.1em 0 #000;
+  box-shadow: -0.1em 0.1em 0 #000;
+}
+
+.scope .scope {
+  margin-left: 1em;
+}
+
+hr {
+  border: 0;
+  border-bottom: 1px solid #0f0;
+  margin: 1em 0;
+}
+
+
+.example {
+  margin: 1em 0;
+  padding: 1em;
+  border-left: 1px solid #0f0;
+  background-color: rgb(0 255 42 / 5%);
+  text-shadow: -0.1em 0.1em 0 #000;
+  box-shadow: -0.1em 0.1em 0 #000;
+}
+
+
+.content > div {
+  /* fade in */
+  opacity: 0;
+  animation: fadeIn 1s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
