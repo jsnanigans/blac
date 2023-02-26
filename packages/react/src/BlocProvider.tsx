@@ -1,11 +1,10 @@
-import { Blac, BlocBase, BlocClass } from 'blac';
+import { BlocBase } from 'blac';
 import React, {
-  Children,
   createContext,
   FC,
   ReactNode,
   useEffect,
-  useMemo,
+  useMemo
 } from 'react';
 import BlacReact from './BlacReact';
 

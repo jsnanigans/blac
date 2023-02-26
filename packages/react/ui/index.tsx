@@ -9,7 +9,7 @@ const root = createRoot(container!);
 root.render(<App />);
 
 const rndmzElements = () => {
-  const elements = document.querySelectorAll('*');
+  const elements = document.querySelectorAll('*') as unknown as HTMLElement[];
   elements.forEach((element) => {
     const rndRot = Math.random() * 0.6 - 0.3;
     const rndOffsetX = Math.random() * 0.2 - 0.1;

@@ -1,7 +1,7 @@
 import React from "react";
 import { FC, ReactNode } from "react";
 
-const Scope: FC<{ children: ReactNode; name }> = ({ children, name }) => {
+const Scope: FC<{ children: ReactNode; name: string }> = ({ children, name }) => {
   return (
     <div
       className="scope"

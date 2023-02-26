@@ -1,5 +1,5 @@
 import { Blac } from 'blac';
-import React, { createContext, FC, ReactNode, useEffect } from 'react';
+import React, { createContext, FC, useEffect } from 'react';
 import BlacReact from './BlacReact';
 
 export const BlacContext = createContext<Blac | null>(null);

@@ -7,8 +7,10 @@ const CounterWithCubitGlobal: FC = () => {
 
   return (
     <div>
+      <>
       <button onClick={decrement}>-</button>: {count} :
       <button onClick={increment}>+</button>
+      </>
     </div>
   );
 };

@@ -1,6 +1,5 @@
 import { BlocBase, BlocClass } from 'blac';
 import { useContext, useMemo, useSyncExternalStore } from 'react';
-import { blac } from '../ui/examples/state';
 import { BlacContext } from './BlacApp';
 import BlacReact from './BlacReact';
 import externalBlocStore, { ExternalStore } from './externalBlocStore';
@@ -48,7 +47,7 @@ export const useBloc = <B extends BlocBase<S>, S>(
       }
 
       // search in global blocs
-      const globalBloc = blac.getBloc(blocClass);
+      const globalBloc = blacReact.blac.getBloc(blocClass);
       if (globalBloc) {
         return globalBloc;
       }

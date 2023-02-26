@@ -21,19 +21,19 @@ export default class BlacReact {
   constructor(blac: Blac, blacContext: React.Context<Blac>) {
     // treat this as singleton
     const blacReact = blac.getPluginKey(BlacReact.pluginKey);
-
-    if (blacReact) {
-      return blacReact as BlacReact;
-    }
-
+    
     // new setup
     this.blac = blac;
     this.blacContext = blacContext;
     this.setup();
+
+    if (blacReact) {
+      return blacReact as BlacReact;
+    }
   }
 
   static getInstance(): BlacReact {
-    const blac = globalThis.blac;
+    const blac = (globalThis as any).blac;
 
     if (!blac) {
       throw new Error('BlacReact: blac instance not found');
@@ -50,7 +50,7 @@ export default class BlacReact {
 
   setup() {
     // register blac instance on global object
-    globalThis.blac = this.blac;
+    (globalThis as any).blac = this.blac;
 
     // add the BlacReact instance to blac
     this.blac.addPluginKey(BlacReact.pluginKey, this);

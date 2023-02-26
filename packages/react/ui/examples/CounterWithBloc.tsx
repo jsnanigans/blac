@@ -31,8 +31,11 @@ const CounterWithBloc: FC = () => {
 
   return (
     <div>
-      <button onClick={() => emit(CounterActions.decrement)}>-</button>: {count}{' '}
-      :<button onClick={() => emit(CounterActions.increment)}>+</button>
+      <>
+        <button onClick={() => emit(CounterActions.decrement)}>-</button>:{' '}
+        {count} :
+        <button onClick={() => emit(CounterActions.increment)}>+</button>
+      </>
     </div>
   );
 };
