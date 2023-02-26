@@ -10,6 +10,7 @@ export abstract class BlocBase<S> {
   public _state: S;
   public observer: BlacObservable<S>;
   public blac?: Blac;
+  public uid = Math.random().toString(36).split(".")[1];
 
   constructor(initialState: S, options?: BlocOptions) {
     this.observer = new BlacObservable();

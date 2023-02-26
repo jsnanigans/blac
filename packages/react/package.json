@@ -22,14 +22,15 @@
     "coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@vitejs/plugin-react": "^3.1.0",
     "blac": "*"
   },
   "devDependencies": {
-    "@types/react-dom": "^18.0.11",
     "@types/react": "^18.0.28",
-    "vite": "^4.1.4",
+    "@types/react-dom": "^18.0.11",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "vite": "^4.1.4",
     "vitest": "^0.29.1"
   }
 }

@@ -1,9 +1,7 @@
 import { Cubit } from 'blac';
 import React, { FC } from 'react';
 import { useBloc } from '../../src';
-
-type CounterState = number;
-class CounterCubit extends Cubit<CounterState> {
+class CounterCubit extends Cubit<number> {
   increment = () => {
     this.emit(this.state + 1);
   };
@@ -13,7 +11,6 @@ class CounterCubit extends Cubit<CounterState> {
 }
 
 const CounterWithCubit: FC = () => {
-  console.log('CounterWithCubit')
   const [count, { increment, decrement }] = useBloc(() => new CounterCubit(0));
 
   return (

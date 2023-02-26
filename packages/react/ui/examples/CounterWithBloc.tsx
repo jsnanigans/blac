@@ -17,11 +17,6 @@ class CounterBloc extends Bloc<CounterState, CounterAction> {
   }
 
   reducer(action: CounterAction, state: CounterState) {
-    const actions = Object.values(CounterActions);
-    if (!actions.includes(action)) {
-      throw new Error(`unknown action: ${action}`);
-    }
-
     switch (action) {
       case CounterActions.increment:
         return state + 1;

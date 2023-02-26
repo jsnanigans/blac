@@ -1,7 +1,7 @@
 import { BlocBase, BlocClass } from 'blac';
 import { useContext, useMemo, useSyncExternalStore } from 'react';
 import { BlacContext } from './BlacApp';
-import { ContextKey } from './contextKey';
+import BlacReact from './BlacReact';
 import externalBlocStore, { ExternalStore } from './externalBlocStore';
 
 export type BlocHookData<T extends BlocBase<S>, S> = [value: S, instance: T];
@@ -15,6 +15,11 @@ export const useBloc = <B extends BlocBase<S>, S>(
   bloc: BlocClass<B> | (() => B),
   options: BlocHookOptions<B, S> = {}
 ): BlocHookData<B, S> => {
+  const blacReact = BlacReact.getInstance();
+
+  // const localCtxP = blacReact.useLocalBlocContext();
+  const localProviderKey = blacReact.useLocalProviderKey();
+
   const blacInstance = useContext(BlacContext);
   const resolvedBloc = useMemo<B | undefined>(() => {
     // check if its a create function or a class
@@ -32,13 +37,14 @@ export const useBloc = <B extends BlocBase<S>, S>(
 
       // check if the bloc is registered in the blac instance
       if (blacInstance) {
-        const found = blacInstance.blocMap.get(blocClass);
-
-        // if it is, return it
-        if (found) {
-          return found as B;
+        const e = blacReact.getLocalBlocForProvider(localProviderKey, blocClass)
+        if (e) {
+          return e;
         }
       }
+
+      // search in global blocs
+      
 
       // if it is not, check if we can create a new instance
       if (!options.create) {
