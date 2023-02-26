@@ -1,25 +1,19 @@
-import { Blac } from "./Blac";
-import { BlacObservable } from "./BlacObserver";
+import { Blac } from './Blac';
+import { BlacObservable } from './BlacObserver';
 
-export interface BlocOptions {
-  blac?: Blac;
-}
+export interface BlocOptions {}
 
 export abstract class BlocBase<S> {
   static isBlacClass = true;
+  public isBlacLive = true;
   public _state: S;
   public observer: BlacObservable<S>;
   public blac?: Blac;
-  public uid = Math.random().toString(36).split(".")[1];
+  public uid = Math.random().toString(36).split('.')[1];
 
   constructor(initialState: S, options?: BlocOptions) {
     this.observer = new BlacObservable();
     this._state = initialState;
-
-    if (options?.blac) {
-      this.blac = options?.blac;
-      this.blac.registerBloc(this);
-    }
   }
 
   get state() {
@@ -36,4 +30,9 @@ export abstract class BlocBase<S> {
     this.observer.subscribe(callback);
     return () => this.observer.unsubscribe(callback);
   };
+
+  dispose() {
+    this.isBlacLive = false;
+    this.observer.dispose();
+  }
 }

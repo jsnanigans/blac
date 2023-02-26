@@ -1,43 +1,73 @@
-import { Blac, BlocBase } from 'blac';
-import React, { Children, createContext, FC, ReactNode, useMemo } from 'react';
+import { Blac, BlocBase, BlocClass } from 'blac';
+import React, {
+  Children,
+  createContext,
+  FC,
+  ReactNode,
+  useEffect,
+  useMemo,
+} from 'react';
 import BlacReact from './BlacReact';
 
 const BlocProviderContext = createContext<BlocBase<any> | null>(null);
 
 const BlocProvider: FC<{
   children?: ReactNode;
-  bloc: (() => BlocBase<any>);
+  bloc: (() => BlocBase<any>) | BlocBase<any>;
 }> = ({ children, bloc }) => {
   const blacReact = BlacReact.getInstance();
-  const providerId = Math.random().toString(36).split('.')[1];
+  const providerId = useMemo(() => blacReact.createProviderId(), []);
   const localProviderKey = blacReact.useLocalProviderKey();
-  // console.log('BlocProvider Ctx', Ctx)
+  const [blocInstance, setBlocInstance] = React.useState<
+    BlocBase<any> | undefined
+  >(undefined);
 
-  const blocInstance = useMemo(() => {
-    const blac = globalThis.blac as Blac | undefined;
-    if (!blac) {
-      throw new Error('Blac not found in globalThis');
+  useEffect(() => {
+    if (!blacReact) {
+      throw new Error('BlacReact not found in globalThis');
     }
 
+    let instance: undefined | BlocBase<any> = undefined;
 
+    const isFunction = bloc instanceof Function;
+    const isLiveBloc =
+      !isFunction &&
+      typeof bloc === 'object' &&
+      (bloc as BlocBase<any>)?.isBlacLive;
 
-    const blocInstance = bloc();
-    console.log('BlocProvider blocInstance', blocInstance);
+    if (isFunction) {
+      instance = (bloc as () => BlocBase<any>)();
+    }
 
-    const blocIsGlobal = blac.isGlobalBloc(blocInstance);
+    if (isLiveBloc) {
+      instance = bloc as unknown as BlocBase<any>;
+    }
 
-    blacReact.addLocalBloc({
-      bloc: blocInstance,
-      id: providerId,
-      parent: blocIsGlobal ? localProviderKey : undefined,
-    });
-    return blocInstance;
+    if (instance) {
+      blacReact.addLocalBloc({
+        bloc: instance,
+        id: providerId,
+        parent: localProviderKey,
+      });
+      setBlocInstance(instance);
+    }
+
+    return () => {
+      if (instance) {
+        blacReact.removeLocalBloc(providerId);
+      }
+    };
   }, [bloc]);
+
+  // do not add providers if bloc is not set up
+  if (!blocInstance) {
+    return null;
+  }
 
   return (
     <blacReact.LocalProvider value={providerId}>
       <BlocProviderContext.Provider value={blocInstance}>
-        {Children.only(children)}
+        {children}
       </BlocProviderContext.Provider>
     </blacReact.LocalProvider>
   );

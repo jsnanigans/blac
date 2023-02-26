@@ -13,4 +13,8 @@ export class BlacObservable<S> {
   notify(newState: S, oldState: S) {
     this._observers.forEach(observer => observer(newState, oldState));
   }
+
+  dispose() {
+    this._observers.clear();
+  }
 }

@@ -11,7 +11,10 @@ const externalBlocStore = <B extends BlocBase<S>, S>(
   return {
     subscribe: (listener: () => void) => {
       const unSub = bloc.onStateChange(listener);
-      return unSub;
+      return () => {
+        unSub();
+        bloc.dispose();
+      };
     },
     getSnapshot: (): S => bloc.state,
   };

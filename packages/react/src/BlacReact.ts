@@ -56,15 +56,11 @@ export default class BlacReact {
     this.blac.addPluginKey(BlacReact.pluginKey, this);
   }
 
-  findGlobalBloc<B extends BlocBase<any>>(blocClass: BlocClass<B>): BlocBase<B> | undefined {
-    return this.blac.blocMap.get(blocClass) as BlocBase<B>;
-  }
-
   useLocalBlocContext() {
     return useContext(this.localContextProvider);
   }
 
-  private _contextLocalProviderKey = React.createContext<string>("none");
+  private _contextLocalProviderKey = React.createContext<string>('none');
   get LocalProvider() {
     return this._contextLocalProviderKey.Provider;
   }
@@ -72,16 +68,24 @@ export default class BlacReact {
     return useContext(this._contextLocalProviderKey);
   }
 
-
-  public addLocalBloc(item: ProviderItem) {
+  public addLocalBloc = (item: ProviderItem) => {
     this.providerList.push(item);
-    // item.bloc.consumer = this;
-    // item.bloc.registerListeners.forEach((fn) => fn(this, item.bloc));
-    // item.bloc.meta.scope = "local";
-    // this.observer.addBlocAdded(item.bloc);
+  };
 
-    console.log("addLocalBloc", item)
-  }
+  removeLocalBloc = (id: string) => {
+    const index = this.providerList.findIndex((i) => i.id === id);
+    if (!index) return;
+
+    const item = this.providerList[index];
+    item.bloc.dispose();
+    if (index !== -1) {
+      this.providerList.splice(index, 1);
+    }
+  };
+
+  createProviderId = () => {
+    return Math.random().toString(36).split('.')[1];
+  };
 
   public providerList = new Array<ProviderItem>();
   public getLocalBlocForProvider<B>(
