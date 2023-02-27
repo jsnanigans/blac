@@ -24,7 +24,7 @@ export default [
       typescript({ useTsconfigDeclarationDir: true }),
     ],
     output: [
-      { file: 'dist/blac-react.cjs.js', format: "cjs", sourcemap: true },
+      { file: 'dist/blac-react.js', format: "cjs", sourcemap: true },
       { file: 'dist/blac-react.esm.js', format: "esm", sourcemap: true }
     ]
   }),
