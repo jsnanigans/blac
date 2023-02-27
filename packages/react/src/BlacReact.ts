@@ -56,6 +56,9 @@ export default class BlacReact {
     this.blac.addPluginKey(BlacReact.pluginKey, this);
   }
 
+  /**
+   * React hook to get the bloc instance from the nearest BlocProvider
+   */
   useLocalBlocContext() {
     return useContext(this.localContextProvider);
   }
@@ -64,6 +67,10 @@ export default class BlacReact {
   get LocalProvider() {
     return this._contextLocalProviderKey.Provider;
   }
+
+  /**
+   * React hook to get the id from the nearest BlocProvider
+   */
   useLocalProviderKey() {
     return useContext(this._contextLocalProviderKey);
   }
