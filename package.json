@@ -2,7 +2,9 @@
   "name": "blac",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "build:all": "npx nx run-many --targets=build --all"
+  },
   "private": true,
   "dependencies": {},
   "devDependencies": {
