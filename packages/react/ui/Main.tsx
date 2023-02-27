@@ -1,12 +1,24 @@
+import { Cubit } from 'blac';
 import React, { FC } from 'react';
+import { useBloc } from '../src';
 import CounterScoped from './examples/CounterScoped';
 import CounterWithBloc from './examples/CounterWithBloc';
 import CounterWithCubit from './examples/CounterWithCubit';
 import CounterWithCubitGlobal from './examples/CounterWithCubitGlobal';
 import './styles.css';
 
-const Main: FC = () => {
-  const examples = [
+interface DemoData {
+  name: string;
+  description: string;
+  component: React.ReactNode;
+}
+
+interface MainBlocState {
+  current?: DemoData;
+}
+
+class MainBloc extends Cubit<MainBlocState> {
+  readonly examples: DemoData[] = [
     {
       name: 'Counter with Bloc',
       description:
@@ -32,7 +44,33 @@ const Main: FC = () => {
     },
   ];
 
-  const slugify = (text: string) =>
+  constructor() {
+    super({ current: undefined });
+    this.init();
+  }
+
+  init() {
+    const selectedName = window.location.hash.replace('#', '');
+    const example = this.examples.find(
+      (example) => this.slugify(example.name) === selectedName
+    );
+    if (example) {
+      this.setSelected(example);
+    } else {
+      this.setSelected(this.examples[0]);
+    }
+  }
+
+  setSelected = (el: DemoData) => {
+    this.emit({ current: el });
+    window.location.hash = this.slugify(el.name);
+  };
+
+  select = (index: number) => {
+    this.emit({ current: this.state.current });
+  };
+
+  slugify = (text: string) =>
     text
       .toString()
       .toLowerCase()
@@ -41,53 +79,41 @@ const Main: FC = () => {
       .replace(/\-\-+/g, '-') // Replace multiple - with single -
       .replace(/^-+/, '') // Trim - from start of text
       .replace(/-+$/, ''); // Trim - from end of text
+}
 
-  const [selectedIndex, setSelectedIndex] = React.useState(-1);
-  const currentExample = examples[selectedIndex];
-
-  React.useEffect(() => {
-    const selectedName = window.location.hash.replace('#', '');
-    const example = examples.findIndex(
-      (example) => slugify(example.name) === selectedName
-    );
-
-    if (example) {
-      setSelectedIndex(Number(example));
-    } else {
-      setSelectedIndex(0);
-    }
-  }, []);
+const Main: FC = () => {
+  const [{ current }, { examples, setSelected }] = useBloc(MainBloc, {
+    create: true,
+  });
 
   return (
     <main>
-      <h1>Examples</h1>
-      {/* buttons */}
-      <div className="btn-list">
-        {examples.map((example, index) => (
-          <button
-            key={example.name}
-            disabled={index === selectedIndex}
-            onClick={() => {
-              setSelectedIndex(index);
-              window.location.hash = slugify(example.name);
-            }}
-          >
-            {example.name}
-          </button>
-        ))}
-      </div>
-      <hr />
-      {currentExample && (
-        <div className="content" key={currentExample.name}>
-          <div>
-            {/* info */}
-            <h2>{currentExample.name}</h2>
-            <p>{currentExample.description}</p>
-            {/* example */}
-            <div className="example">{currentExample.component}</div>
-          </div>
+      <>
+        <h1>Examples</h1>
+        <div className="btn-list">
+          {examples.map((example) => (
+            <button
+              key={example.name}
+              disabled={example === current}
+              onClick={() => {
+                setSelected(example);
+              }}
+            >
+              {example.name}
+            </button>
+          ))}
         </div>
-      )}
+        <hr />
+        {current && (
+          <div className="content" key={current.name}>
+            <div>
+              <h2>{current.name}</h2>
+              <p>{current.description}</p>
+              <div className="example">{current.component}</div>
+            </div>
+          </div>
+        )}
+      </>
     </main>
   );
 };
