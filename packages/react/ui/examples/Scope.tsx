@@ -1,5 +1,4 @@
-import React from "react";
-import { FC, ReactNode } from "react";
+import React, { FC, ReactNode } from "react";
 
 const Scope: FC<{ children: ReactNode; name: string }> = ({ children, name }) => {
   return (

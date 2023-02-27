@@ -1,4 +1,7 @@
-export type BlacObserver<S> = (oldState: S, newState: S) => void | Promise<void>;
+export type BlacObserver<S> = (
+  newState: S,
+  oldState: S
+) => void | Promise<void>;
 export class BlacObservable<S> {
   private _observers = new Set<BlacObserver<S>>();
 
@@ -11,7 +14,7 @@ export class BlacObservable<S> {
   }
 
   notify(newState: S, oldState: S) {
-    this._observers.forEach(observer => observer(newState, oldState));
+    this._observers.forEach((observer) => observer(newState, oldState));
   }
 
   dispose() {

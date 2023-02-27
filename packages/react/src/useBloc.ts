@@ -23,14 +23,13 @@ export const useBloc = <B extends BlocBase<S>, S>(
 ): BlocHookData<B, S> => {
   const blacReact = BlacReact.getInstance();
 
-  // const localCtxP = blacReact.useLocalBlocContext();
   const localProviderKey = blacReact.useLocalProviderKey();
 
   const blacInstance = useContext(BlacContext);
   const resolvedBloc = useMemo<B | undefined>((): B | undefined => {
     // check if its a create function or a class
     const isFunction = bloc instanceof Function;
-    const isBloc = isFunction && (bloc as undefined | any)?.isBlacClass;
+    const isBloc = isFunction && (bloc as any)?.isBlacClass;
 
     // if its a create function, call it
     if (!isBloc && isFunction) {
