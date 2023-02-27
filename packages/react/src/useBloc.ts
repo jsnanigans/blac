@@ -1,15 +1,11 @@
-import { BlocBase, BlocClass } from 'blac';
+import { BlocBase, BlocClass, ValueType } from 'blac';
 import { useContext, useMemo, useSyncExternalStore } from 'react';
 import { BlacContext } from './BlacApp';
 import BlacReact from './BlacReact';
 import externalBlocStore, { ExternalStore } from './externalBlocStore';
 
-export type ValueType<B extends BlocBase<S>, S> = B extends BlocBase<infer U>
-  ? U
-  : never;
-
 export type BlocHookData<B extends BlocBase<S>, S> = [
-  value: ValueType<B, S>,
+  value: ValueType<B>,
   instance: B
 ];
 
@@ -80,12 +76,12 @@ export const useBloc = <B extends BlocBase<S>, S>(
     throw new Error('useBloc: bloc is undefined');
   }
 
-  const { subscribe, getSnapshot } = useMemo<ExternalStore<S>>(
+  const { subscribe, getSnapshot } = useMemo<ExternalStore<B>>(
     () => externalBlocStore(resolvedBloc),
     [resolvedBloc]
   );
 
-  const state = useSyncExternalStore<S>(subscribe, getSnapshot);
+  const state = useSyncExternalStore<ValueType<B>>(subscribe, getSnapshot);
 
   return [state, resolvedBloc];
 };
