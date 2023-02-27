@@ -4,16 +4,26 @@ import { BlacContext } from './BlacApp';
 import BlacReact from './BlacReact';
 import externalBlocStore, { ExternalStore } from './externalBlocStore';
 
-export type BlocHookData<T extends BlocBase<S>, S> = [value: S, instance: T];
+export type ValueType<B extends BlocBase<S>, S> = B extends BlocBase<infer U>
+  ? U
+  : never;
 
-export type BlocHookOptions<T extends BlocBase<S>, S> = {
+export type BlocHookData<B extends BlocBase<S>, S> = [
+  value: ValueType<B, S>,
+  instance: B
+];
+
+export interface BlocHookOptions {
+  /**
+   * Set to true if you want blac to automatically create a new instance of the bloc,
+   * for this to work, pass the unconstructed class to the hook. The constructor should not expect any arguments.
+   */
   create?: boolean;
-};
+}
 
-// B extends BlocBase<S>,
 export const useBloc = <B extends BlocBase<S>, S>(
   bloc: BlocClass<B> | (() => B),
-  options: BlocHookOptions<B, S> = {}
+  options: BlocHookOptions = {}
 ): BlocHookData<B, S> => {
   const blacReact = BlacReact.getInstance();
 
