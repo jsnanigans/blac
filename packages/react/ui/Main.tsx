@@ -5,6 +5,7 @@ import CounterScoped from './examples/CounterScoped';
 import CounterWithBloc from './examples/CounterWithBloc';
 import CounterWithCubit from './examples/CounterWithCubit';
 import CounterWithCubitGlobal from './examples/CounterWithCubitGlobal';
+import LocalConnectedToGlobalBloc from './examples/ScopedConnectedToGlobal';
 import './styles.css';
 
 interface DemoData {
@@ -42,6 +43,11 @@ class MainBloc extends Cubit<MainBlocState> {
       description: 'This cubit is created in the local scope',
       component: <CounterScoped />,
     },
+    {
+      name: "Local Connected To Global",
+      description: "This cubit is created in the local scope and connected to the global one",
+      component: <LocalConnectedToGlobalBloc />,
+    }
   ];
 
   constructor() {

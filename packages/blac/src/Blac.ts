@@ -1,17 +1,34 @@
 import { BlocBase } from './BlocBase';
 import { BlocClass } from './types';
 
+export type BlacGlobalState = {
+  [key: string]: BlocBase<any>;  
+}
 
-export class Blac {
+export interface BlacOptions <G extends BlacGlobalState>{
+  global?: G;
+}
+
+
+export class Blac <GS extends BlacGlobalState, O extends BlacOptions<GS>>{
   blocMap: Map<BlocClass<BlocBase<any>>, BlocBase<any>> = new Map();
   pluginMap: Map<string, any> = new Map();
+  global?: GS;
 
-  constructor() {
+  constructor(options: O = {} as O) {
     // register blac instance on global object
     (globalThis as any).blac = this;
+
+    if (options.global) {
+      this.global = options.global;
+      Object.keys(options.global).forEach((key) => {
+        const gloBloc = options?.global?.[key] as GS[string];
+        if (gloBloc) this.registerBloc(gloBloc);
+      });
+    }
   }
 
-  registerBloc(bloc: BlocBase<any>): void {
+  registerBloc(bloc: GS[string]): void {
     this.blocMap.set(bloc.constructor as BlocClass<BlocBase<any>>, bloc);
   }
 
@@ -40,9 +57,9 @@ export class Blac {
 // declare blac instance on global object
 declare global {
   interface Window {
-    blac?: Blac;
+    blac?: Blac<any, any>;
   }
   interface GlobalThis {
-    blac?: Blac;
+    blac?: Blac<any, any>;
   }
 }

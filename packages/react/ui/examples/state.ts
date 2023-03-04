@@ -1,8 +1,5 @@
 import { Blac, Cubit } from "blac";
 
-// Create a new instance of Blac
-export const blac = new Blac();
-
 // Create a new Cubit, this should ideally be in a separate file
 export class CounterGlobalCubit extends Cubit<number> {
   increment = () => {
@@ -14,5 +11,9 @@ export class CounterGlobalCubit extends Cubit<number> {
 }
 export const globalCounterGlobalState = new CounterGlobalCubit(0);
 
-// Register the Cubit with Blac
-blac.registerBloc(globalCounterGlobalState);
+// Create a new instance of Blac
+export const blac = new Blac({
+  global: {
+    counter: globalCounterGlobalState,
+  }
+});

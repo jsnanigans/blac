@@ -13,7 +13,6 @@ const externalBlocStore = <B extends BlocBase<any>>(
       const unSub = bloc.onStateChange(listener);
       return () => {
         unSub();
-        bloc.dispose();
       };
     },
     getSnapshot: (): ValueType<B> => bloc.state,

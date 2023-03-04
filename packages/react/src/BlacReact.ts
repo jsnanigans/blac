@@ -4,7 +4,7 @@
  */
 
 import { Blac, BlocBase, BlocClass } from 'blac';
-import React, { useContext } from 'react';
+import React, { useContext, useEffect, useMemo } from 'react';
 
 export interface ProviderItem {
   id: string;
@@ -21,7 +21,7 @@ export default class BlacReact {
   constructor(blac: Blac, blacContext: React.Context<Blac>) {
     // treat this as singleton
     const blacReact = blac.getPluginKey(BlacReact.pluginKey);
-    
+
     // new setup
     this.blac = blac;
     this.blacContext = blacContext;
@@ -119,4 +119,66 @@ export default class BlacReact {
 
     return undefined;
   }
+
+  providerMounted(
+    options: { providerId: string; localProviderKey?: string } & Parameters<
+      BlacReact['useLocalProvider']
+    >[0]
+  ): { instance: BlocBase<any> | undefined; destroyOnUnmount: boolean } {
+    const { bloc, providerId, localProviderKey } = options;
+    let instance: undefined | BlocBase<any> = undefined;
+    let destroyOnUnmount = true;
+
+    const isFunction = bloc instanceof Function;
+    const isLiveBloc =
+      !isFunction &&
+      typeof bloc === 'object' &&
+      (bloc as BlocBase<any>)?.isBlacLive;
+
+    if (isFunction) {
+      instance = (bloc as () => BlocBase<any>)();
+    }
+
+    if (isLiveBloc) {
+      instance = bloc as unknown as BlocBase<any>;
+    }
+
+    if (instance) {
+      this.addLocalBloc({
+        bloc: instance,
+        id: providerId,
+        parent: localProviderKey,
+      });
+    }
+
+    return { instance, destroyOnUnmount };
+  }
+  providerUnmounted(providerId: string | undefined) {
+    this.removeLocalBloc;
+  }
+
+  public readonly useLocalProvider = (options: {
+    bloc: BlocBase<any> | (() => BlocBase<any>);
+    debug?: boolean;
+  }): string | undefined => {
+    const [blocInstance, setBlocInstance] = React.useState<
+      BlocBase<any> | undefined
+    >(undefined);
+
+    const localProviderKey = this.useLocalProviderKey();
+    const providerId = useMemo(() => this.createProviderId(), []);
+
+    useEffect(() => {
+      const { instance, destroyOnUnmount } = this.providerMounted({
+        ...options,
+        localProviderKey,
+        providerId,
+      });
+      setBlocInstance(instance);
+
+      if (destroyOnUnmount) return this.providerUnmounted(providerId);
+    }, []);
+
+    if (blocInstance) return providerId;
+  };
 }
