@@ -6,6 +6,7 @@ import Main from './Main';
 const App: FC = () => {
   return (
     <BlacApp blac={blac}>
+      APP
       <Main />
     </BlacApp>
   );

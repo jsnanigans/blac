@@ -1,12 +1,14 @@
-import { BlocBase } from 'blac';
+import { BlocClass } from 'blac';
 import React, { FC, ReactNode } from 'react';
 import BlacReact from './BlacReact';
 
-const BlocProvider: FC<{
+interface BlocProviderProps <B>{
   children?: ReactNode;
-  bloc: (() => BlocBase<any>) | BlocBase<any>;
+  bloc: BlocClass<B> | (() => B) | B;
   debug?: boolean;
-}> = ({ children, bloc, debug }) => {
+}
+
+export const BlocProvider: FC<BlocProviderProps<any>> = ({ children, bloc, debug }) => {
   const blacReact = BlacReact.getInstance();
   const providerId = blacReact.useLocalProvider({ bloc, debug });
 
@@ -20,5 +22,3 @@ const BlocProvider: FC<{
     </blacReact.LocalProvider>
   );
 };
-
-export default BlocProvider;

@@ -11,15 +11,22 @@ export interface ProviderItem {
   parent?: string;
   bloc: BlocBase<any>;
 }
+  
+  interface ProviderOptions <B>{
+    bloc: BlocClass<B> | (() => B);
+    debug?: boolean;
+  }
+
 
 export default class BlacReact {
-  blac: Blac;
-  blacContext: React.Context<Blac>;
+  blac: Blac<any, any>;
+  blacContext: React.Context<Blac<any, any>>;
   localContextProvider = React.createContext<BlocBase<any> | null>(null);
   static pluginKey = 'blacReact';
 
-  constructor(blac: Blac, blacContext: React.Context<Blac>) {
+  constructor(blac: Blac<any, any>, blacContext: React.Context<Blac<any, any>>) {
     // treat this as singleton
+    console.log('create', blac)
     const blacReact = blac.getPluginKey(BlacReact.pluginKey);
 
     // new setup
@@ -32,7 +39,13 @@ export default class BlacReact {
     }
   }
 
-  static getInstance(): BlacReact {
+  static safeGetInstance(): BlacReact | undefined {
+    const blac = (globalThis as any).blac;
+    const blacReact = blac?.getPluginKey(BlacReact.pluginKey);
+    return blacReact as BlacReact | undefined;
+  }
+
+  static getInstance(throwError = true): BlacReact {
     const blac = (globalThis as any).blac;
 
     if (!blac) {
@@ -153,14 +166,12 @@ export default class BlacReact {
 
     return { instance, destroyOnUnmount };
   }
+
   providerUnmounted(providerId: string | undefined) {
-    this.removeLocalBloc;
+    this.removeLocalBloc(providerId as string);
   }
 
-  public readonly useLocalProvider = (options: {
-    bloc: BlocBase<any> | (() => BlocBase<any>);
-    debug?: boolean;
-  }): string | undefined => {
+  public readonly useLocalProvider = (options: ProviderOptions<any>): string | undefined => {
     const [blocInstance, setBlocInstance] = React.useState<
       BlocBase<any> | undefined
     >(undefined);

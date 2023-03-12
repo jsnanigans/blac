@@ -1,7 +1,6 @@
 import { Cubit } from 'blac';
 import React, { FC, ReactNode, useEffect, useMemo, useState } from 'react';
-import { useBloc } from '../../src';
-import BlocProvider from '../../src/BlocProvider';
+import { BlocProvider, useBloc } from '../../src';
 import Scope from './Scope';
 import { CounterGlobalCubit } from './state';
 
