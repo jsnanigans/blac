@@ -3,28 +3,26 @@ import { useContext, useMemo } from "react";
 import { BlacContext } from "./BlacApp";
 import BlacReact from "./BlacReact";
 
-export interface BlocResolveOptions {
-  /**
-   * Set to true if you want blac to automatically create a new instance of the bloc,
-   * for this to work, pass the unconstructed class to the hook. The constructor should not expect any arguments.
-   */
-  create?: boolean;
-}
+// export interface BlocResolveOptions {
+//   /**
+//    * Set to true if you want blac to automatically create a new instance of the bloc,
+//    * for this to work, pass the unconstructed class to the hook. The constructor should not expect any arguments.
+//    */
+//   create?: boolean | (() => BlocBase<any>);
+// }
 
 interface BlocOptions <B>{
   bloc: BlocClass<B> | (() => B) | B,
   blacInstance:null | Blac<any, any>,
   blacReact: BlacReact,
-  create: boolean
-  localProviderKey: string,
+  // create: boolean | (() => B),
 }
 
 const resolveBloc = <B extends BlocBase<S>, S>({
   bloc,
   blacInstance,
-  localProviderKey,
   blacReact,
-  create
+  // create
 }: BlocOptions<B>): B | undefined => {
   // check if its a create function or a class
   const isFunction = bloc instanceof Function;
@@ -38,20 +36,13 @@ const resolveBloc = <B extends BlocBase<S>, S>({
     return (bloc as () => B)();
   }
 
+  if ((bloc as BlocBase<any>)?.isBlacLive) {
+    return bloc as B;
+  }
+
   // if its a class
   if (isFunction && isBloc) {
     const blocClass = bloc as BlocClass<B>;
-
-    // check if the bloc is registered in the blac instance
-    if (blacInstance) {
-      const e = blacReact.getLocalBlocForProvider(
-        localProviderKey,
-        blocClass
-      );
-      if (e) {
-        return e as unknown as B;
-      }
-    }
 
     // search in global blocs
     const globalBloc = blacReact.blac.getBloc(blocClass);
@@ -63,52 +54,50 @@ const resolveBloc = <B extends BlocBase<S>, S>({
       return bloc as unknown as B;
     }
     
-
-    console.log(typeof bloc, {
-      isFunction,
-      isBloc,
-      isLiveBloc,
-      bloc,
-      create,
-    })
-
     // if it is not, check if we can create a new instance
-    if (!create) {
-      // creating it automatically should be opt-in
+    // if (!create) {
+    //   // creating it automatically should be opt-in
+    //   throw new Error(
+    //    `Bloc ${blocClass.name} is not registered in the blac instance.` +
+    //     `\nfix: a) Register the bloc globally.` +
+    //     `\nfix: b) Set 'create' to true when using this ${blocClass.name}, and make sure it has the static 'create' method if it has to initialise with parameters.`
+    //   );
+    // }
+
+    const createIsFunction = typeof create === 'function';
+    const hasCreate = blocClass.hasOwnProperty('create');
+    const constructed = createIsFunction ? create() : (hasCreate ? blocClass.create() : new blocClass());
+
+    if (!constructed) {
       throw new Error(
-        'useBloc: set create to true to create a new bloc when a class constructor is passed'
-      );
+          `Bloc ${blocClass.name} is not registered in the blac instance.` +
+          `\nfix: a) Register the bloc globally.` +
+          `\nfix: b) Create the bloc instance manually and pass it to the hook. \`const [state] = useBloc(() => new MyBloc());\` `);
     }
 
-    // create a new instance -- this can cause issues if the constructor expects arguments
-    const constructed = new blocClass();
     return constructed;
   }
 }
 
 export const useResolvedBloc = <B extends BlocBase<S>, S>(
-  bloc: BlocClass<B> | (() => B),
+  bloc: B | BlocClass<B> | (() => B),
   options: BlocResolveOptions = {}
 ): B | undefined => {
   const blacReact = BlacReact.getInstance();
-  const localProviderKey = blacReact.useLocalProviderKey();
   const blacInstance = useContext(BlacContext);
   const resolvedBloc = useMemo<B | undefined>(() => {
-    if(!blacReact || !localProviderKey) {
+    if(!blacReact) {
       return undefined;
-    }    
-
+    }
 
     return resolveBloc({
       bloc,
       blacInstance,
       blacReact,
-      localProviderKey,
       create: options.create ?? false
     })
-  }, [localProviderKey]);
+  }, []);
 
-    console.trace(resolvedBloc, options)
   return resolvedBloc;
 }
 

@@ -1,12 +1,14 @@
 import { Cubit } from 'blac';
 import React, { FC } from 'react';
 import { useBloc } from '../src';
-import CounterScoped from './examples/CounterScoped';
+import CounterLocalScoped from './examples/CounterLocalDemo';
 import CounterWithBloc from './examples/CounterWithBloc';
 import CounterWithCubit from './examples/CounterWithCubit';
 import CounterWithCubitGlobal from './examples/CounterWithCubitGlobal';
 import LocalConnectedToGlobalBloc from './examples/ScopedConnectedToGlobal';
 import './styles.css';
+import Setup from "./examples/Setup";
+import CounterMultipleConsumers from "./examples/CounterMultipleConsumers";
 
 interface DemoData {
   name: string;
@@ -20,6 +22,11 @@ interface MainBlocState {
 
 class MainBloc extends Cubit<MainBlocState> {
   readonly examples: DemoData[] = [
+      {
+      name: 'Setup',
+      description: 'Setup the bloc',
+      component: <Setup />,
+      },
     {
       name: 'Counter with Bloc',
       description:
@@ -40,14 +47,15 @@ class MainBloc extends Cubit<MainBlocState> {
     },
     {
       name: 'Counter Local',
-      description: 'This cubit is created in the local scope',
-      component: <CounterScoped />,
+      description: 'This cubit is created in the component scope',
+      component: <CounterLocalScoped />,
     },
     {
-      name: "Local Connected To Global",
-      description: "This cubit is created in the local scope and connected to the global one",
-      component: <LocalConnectedToGlobalBloc />,
+      name: 'Counter Local Shared',
+      description: 'Share one Bloc between multiple components',
+      component: <CounterMultipleConsumers />,
     }
+
   ];
 
   constructor() {

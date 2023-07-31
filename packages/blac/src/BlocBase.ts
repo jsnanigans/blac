@@ -40,4 +40,6 @@ export abstract class BlocBase<S> {
     this.isBlacLive = false;
     this.observer.dispose();
   }
+
+  pluginStore = new Map<string, unknown>();
 }
