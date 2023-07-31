@@ -1,23 +1,18 @@
 import type { FC } from "react";
 import React from "react";
+import Code from "../components/Code";
 
 const Setup: FC = () => {
-  return <>
-    <h1>Setup</h1>
-    <p>Create a new global instance of BLAC</p>
-    <p>src/blacState.ts</p>
-    <pre>
-        <code>
-            {`
+    return <>
+        <p className="read">Create a new global instance of BLAC</p>
+        <p>src/blacState.ts</p>
+        <Code code={`
 import { Blac, Cubit } from "blac";
 export const blacState = new Blac();
-            `}</code>
-    </pre>
+            `} />
 
-      <p>Add the global provider</p>
-      <pre>
-          <code>
-              {`
+        <p className={"read"}>Add the global provider</p>
+        <Code code={`
 import { BlacApp } from 'blac-react';
 import { blacState } from './blacState';
 
@@ -30,11 +25,8 @@ const App: FC = () => {
 };
 
 export default App;
-
-              `}
-          </code>
-      </pre>
-  </>;
+              `} />
+    </>;
 };
 
 export default Setup;

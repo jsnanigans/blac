@@ -1,37 +1,26 @@
-import React, { FC, useState } from "react";
-import { useBloc } from '../../src';
-import { CounterGlobalCubit } from './state';
+import React, { FC } from "react";
+import { useBloc } from "../../src";
+import { CounterGlobalCubit } from "./blacState";
 
-const CounterWithCubitGlobal: FC<{showChild?: boolean}> = ({showChild = true}) => {
-  const [count, { increment, decrement }] = useBloc(CounterGlobalCubit);
-  const [showDynamic, setShowDynamic] = useState(true);
-
-  return (
-    <div>
-      <>
-      <button onClick={decrement}>-</button>: {count} :
-      <button onClick={increment}>+</button>
-      </>
-
-      {showChild && (
+const Counter: FC = () => {
+    const [count, { increment, decrement }] = useBloc(CounterGlobalCubit);
+    return (
         <>
-          <hr />
-          <div>
-            <button onClick={() => setShowDynamic(!showDynamic)}>
-              {showDynamic ? 'Hide' : 'Show'} Second Counter
-            </button>
-            <br />
-            <br />
-            {showDynamic && (
-              <div>
-                <CounterWithCubitGlobal showChild={false} />
-              </div>
-            )}
-          </div>
+            <button onClick={decrement}>-</button>
+            {` ${count} `}
+            <button onClick={increment}>+</button>
         </>
-      )}
-    </div>
-  );
+    );
+};
+
+const CounterWithCubitGlobal: FC = () => {
+    return (
+        <>
+            <Counter />
+            <hr />
+            <Counter />
+        </>
+    );
 };
 
 export default CounterWithCubitGlobal;
