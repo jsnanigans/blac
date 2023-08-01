@@ -125,9 +125,14 @@ pre code {
 }
 
 main {
-    display: grid;
-    grid-template-columns: 220px 1fr;
+    display: flex;
+    flex-direction: column;
     grid-gap: 1em;
+    width: min(calc(100dvw - 4rem), 100%);
+}
+
+nav {
+    min-width: 220px;
 }
 
 nav h3 {
@@ -143,9 +148,6 @@ nav button {
     text-align: left;
 }
 
-section {
-    width: min(calc(100dvw - 220px - 4rem), 100%);
-}
 
 .chl {
     max-width: 100%;
@@ -162,4 +164,14 @@ section {
 
 a, a:visited {
     color: #0f0;
+}
+
+@media screen and (min-width: 740px) {
+    section {
+        max-width: calc(100% - 220px);
+    }
+
+    main {
+        flex-direction: row;
+    }
 }
