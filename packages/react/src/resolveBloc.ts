@@ -1,4 +1,4 @@
-import { Blac, BlocBase, BlocBaseAbstract, BlocConstructor } from "blac/src";
+import { Blac, BlocBase, BlocBaseAbstract, BlocConstructor } from "blac";
 import { useContext, useMemo } from "react";
 import { BlacContext } from "./BlacApp";
 import BlacReact from "./BlacReact";

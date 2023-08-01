@@ -1,4 +1,4 @@
-import { BlocBase, BlocConstructor, ValueType } from "blac/src";
+import { BlocBase, BlocConstructor, ValueType } from "blac";
 import { useMemo, useSyncExternalStore } from "react";
 import externalBlocStore, { ExternalStore } from "./externalBlocStore";
 import { useResolvedBloc } from "./resolveBloc";

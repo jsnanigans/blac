@@ -1,5 +1,5 @@
 import React, { FC } from "react";
-import { Bloc } from "blac/src";
+import { Bloc } from "blac";
 import { useBloc } from "../../src";
 
 type CounterState = number;
@@ -27,7 +27,7 @@ class CounterBloc extends Bloc<CounterState, CounterAction> {
 }
 
 const CounterWithBloc: FC = () => {
-  const [count, { emit }] = useBloc(() => new CounterBloc());
+  const [count, { emit }] = useBloc(CounterBloc);
 
   return (
     <>

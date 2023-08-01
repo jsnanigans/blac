@@ -1,5 +1,5 @@
 import React, { FC } from "react";
-import { Cubit } from "blac/src";
+import { Cubit } from "blac";
 import { useBloc } from "../../src";
 
 class CounterGlobalBloc extends Cubit<number> {

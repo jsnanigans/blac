@@ -1,4 +1,4 @@
-import { Cubit } from "blac/src";
+import { Cubit } from "blac";
 import React, { FC, ReactNode } from "react";
 import { useBloc } from "../../src";
 import Scope from "./Scope";

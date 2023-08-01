@@ -1,4 +1,4 @@
-import { Cubit } from "blac/src";
+import { Cubit } from "blac";
 import React, { FC } from "react";
 import { useBloc } from "../src";
 
@@ -133,9 +133,7 @@ class MainBloc extends Cubit<MainBlocState> {
 }
 
 const Main: FC = () => {
-  const [{ current }, { examples, docs, setSelected }] = useBloc(MainBloc, {
-    create: true
-  });
+  const [{ current }, { examples, docs, setSelected }] = useBloc(MainBloc);
 
   return (
     <main>
