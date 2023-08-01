@@ -19,8 +19,9 @@ body {
 }
 
 main {
-    max-width: 800px;
+    /*max-width: 800px;*/
     margin: 0 auto;
+    --nav-w: 180px;
 }
 
 button {
@@ -132,7 +133,8 @@ main {
 }
 
 nav {
-    min-width: 220px;
+    min-width: var(--nav-w);
+    width: var(--nav-w);
 }
 
 nav h3 {
@@ -168,10 +170,16 @@ a, a:visited {
 
 @media screen and (min-width: 740px) {
     section {
-        max-width: calc(100% - 220px);
+        max-width: calc(100% - var(--nav-w));
+        flex: 1;
     }
 
     main {
         flex-direction: row;
     }
+}
+
+button.lead {
+    margin-top: 1em;
+    margin-right: 1em;
 }

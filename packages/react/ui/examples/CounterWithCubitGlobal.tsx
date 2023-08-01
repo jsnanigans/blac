@@ -17,7 +17,19 @@ class CounterGlobalBloc extends Cubit<number> {
   };
 }
 
-const Counter: FC = () => {
+const ComponentA: FC = () => {
+  const [count, { increment, decrement }] = useBloc(CounterGlobalBloc);
+
+  return (
+    <>
+      <button onClick={decrement}>-</button>
+      {` ${count} `}
+      <button onClick={increment}>+</button>
+    </>
+  );
+};
+
+const ComponentB: FC = () => {
   const [count, { increment, decrement }] = useBloc(CounterGlobalBloc);
 
   return (
@@ -33,13 +45,12 @@ const CounterWithCubitGlobal: FC = () => {
   const [showDynamic, setShowDynamic] = React.useState(true);
   return (
     <>
-      <Counter />
+      <ComponentA />
       <hr />
-      <button onClick={() => setShowDynamic(!showDynamic)}>
+      <button className="lead" onClick={() => setShowDynamic(!showDynamic)}>
         {showDynamic ? "Hide" : "Show"}
       </button>
-      <br />
-      {showDynamic && <Counter />}
+      {showDynamic && <ComponentB />}
     </>
   );
 };

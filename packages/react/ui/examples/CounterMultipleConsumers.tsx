@@ -1,8 +1,6 @@
 import { Cubit } from "blac";
 import React, { FC } from "react";
 import { useBloc } from "../../src";
-import Scope from "./Scope";
-
 
 export class CounterMultipleConsumerBloc extends Cubit<number> {
   static create = () => new CounterMultipleConsumerBloc(0);
@@ -12,11 +10,11 @@ export class CounterMultipleConsumerBloc extends Cubit<number> {
   };
 }
 
-const LocalCounter: FC<{ name: string; }> = ({ name }) => {
+const ComponentA: FC = () => {
   const [count, { increment }] = useBloc(CounterMultipleConsumerBloc);
   return (
     <>
-      <strong>{`${name}: `}</strong>
+      <strong>A: </strong>
       <button onClick={increment}>
         {`${count} - Increment`}
       </button>
@@ -24,22 +22,29 @@ const LocalCounter: FC<{ name: string; }> = ({ name }) => {
   );
 };
 
+const ComponentB: FC = () => {
+  const [count, { increment }] = useBloc(CounterMultipleConsumerBloc);
+  return (
+    <>
+      <strong>B: </strong>
+      <button onClick={increment}>
+        {`${count} - Increment`}
+      </button>
+    </>
+  );
+};
 
 const CounterMultipleConsumers: FC = () => {
   const [showDynamic, setShowDynamic] = React.useState(true);
   return (
     <div>
-      <Scope name="Consumer A">
-        <LocalCounter name="A" />
-      </Scope>
+      <ComponentA />
 
-      <Scope name="Consumer B">
-        <button onClick={() => setShowDynamic(!showDynamic)}>
-          {showDynamic ? "Hide" : "Show"}
-        </button>
-        <br />
-        {showDynamic && <LocalCounter name="B" />}
-      </Scope>
+      <hr />
+      <button className="lead" onClick={() => setShowDynamic(!showDynamic)}>
+        {showDynamic ? "Hide" : "Show"}
+      </button>
+      {showDynamic && <ComponentA />}
     </div>
   );
 };

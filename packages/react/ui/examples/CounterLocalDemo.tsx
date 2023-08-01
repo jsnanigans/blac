@@ -1,8 +1,6 @@
 import { Cubit } from "blac";
 import React, { FC, useState } from "react";
 import { useBloc } from "../../src";
-import Scope from "./Scope";
-
 
 export class CounterMultiInstanceBloc extends Cubit<number> {
   static allowMultipleInstances = true;
@@ -13,13 +11,23 @@ export class CounterMultiInstanceBloc extends Cubit<number> {
   };
 }
 
-const LocalCounter: FC<{ name: string; }> = ({ name }) => {
+const ComponentA: FC = () => {
   const [count, { increment }] = useBloc(CounterMultiInstanceBloc);
   return (
-    <div>
-      <strong>{`${name}: `}</strong>
+    <>
+      <strong>A: </strong>
       <button onClick={increment}>{`${count} - Increment`}</button>
-    </div>
+    </>
+  );
+};
+
+const ComponentB: FC = () => {
+  const [count, { increment }] = useBloc(CounterMultiInstanceBloc);
+  return (
+    <>
+      <strong>B: </strong>
+      <button onClick={increment}>{`${count} - Increment`}</button>
+    </>
   );
 };
 
@@ -28,17 +36,12 @@ const CounterLocalDemo: FC = () => {
   const [showDynamic, setShowDynamic] = useState(true);
   return (
     <div>
-      <Scope name="Stanadlone">
-        <LocalCounter name="A" />
-      </Scope>
-
-      <Scope name="Dynamic">
-        <button onClick={() => setShowDynamic(!showDynamic)}>
-          {showDynamic ? "Hide" : "Show"}
-        </button>
-        <br />
-        {showDynamic && <LocalCounter name="B" />}
-      </Scope>
+      <ComponentA />
+      <hr />
+      <button className="lead" onClick={() => setShowDynamic(!showDynamic)}>
+        {showDynamic ? "Hide" : "Show"}
+      </button>
+      {showDynamic && <ComponentB />}
     </div>
   );
 };
