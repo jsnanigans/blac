@@ -1,5 +1,5 @@
 import { Cubit } from "blac";
-import React, { FC, ReactNode } from "react";
+import React, { FC } from "react";
 import { useBloc } from "../../src";
 import Scope from "./Scope";
 
@@ -12,24 +12,21 @@ export class CounterMultipleConsumerBloc extends Cubit<number> {
   };
 }
 
-const LocalCounter: FC<{
-  children?: ReactNode; name: string; cubit?: any
-}> = ({ children, name }) => {
+const LocalCounter: FC<{ name: string; }> = ({ name }) => {
   const [count, { increment }] = useBloc(CounterMultipleConsumerBloc);
-
   return (
-    <div>
+    <>
       <strong>{`${name}: `}</strong>
       <button onClick={increment}>
         {`${count} - Increment`}
       </button>
-      {children}
-    </div>
+    </>
   );
 };
 
 
 const CounterMultipleConsumers: FC = () => {
+  const [showDynamic, setShowDynamic] = React.useState(true);
   return (
     <div>
       <Scope name="Consumer A">
@@ -37,7 +34,11 @@ const CounterMultipleConsumers: FC = () => {
       </Scope>
 
       <Scope name="Consumer B">
-        <LocalCounter name="B" />
+        <button onClick={() => setShowDynamic(!showDynamic)}>
+          {showDynamic ? "Hide" : "Show"}
+        </button>
+        <br />
+        {showDynamic && <LocalCounter name="B" />}
       </Scope>
     </div>
   );

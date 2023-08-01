@@ -36,7 +36,7 @@ class MainBloc extends Cubit<MainBlocState> {
   readonly docs: DemoData[] = [
     {
       name: "Setup",
-      description: "Setup the bloc",
+      description: "",
       component: <Setup />
     }
   ];

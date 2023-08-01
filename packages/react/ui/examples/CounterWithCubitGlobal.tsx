@@ -30,11 +30,16 @@ const Counter: FC = () => {
 };
 
 const CounterWithCubitGlobal: FC = () => {
+  const [showDynamic, setShowDynamic] = React.useState(true);
   return (
     <>
       <Counter />
       <hr />
-      <Counter />
+      <button onClick={() => setShowDynamic(!showDynamic)}>
+        {showDynamic ? "Hide" : "Show"}
+      </button>
+      <br />
+      {showDynamic && <Counter />}
     </>
   );
 };

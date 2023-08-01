@@ -13,10 +13,8 @@ export class CounterMultiInstanceBloc extends Cubit<number> {
   };
 }
 
-const LocalCounter: FC<{ name: string; cubit?: any }> = ({ name }) => {
+const LocalCounter: FC<{ name: string; }> = ({ name }) => {
   const [count, { increment }] = useBloc(CounterMultiInstanceBloc);
-
-
   return (
     <div>
       <strong>{`${name}: `}</strong>
@@ -38,6 +36,7 @@ const CounterLocalDemo: FC = () => {
         <button onClick={() => setShowDynamic(!showDynamic)}>
           {showDynamic ? "Hide" : "Show"}
         </button>
+        <br />
         {showDynamic && <LocalCounter name="B" />}
       </Scope>
     </div>

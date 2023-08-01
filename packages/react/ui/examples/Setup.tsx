@@ -4,7 +4,7 @@ import Code from "../components/Code";
 
 const Setup: FC = () => {
   return <>
-    <p className={"read"}>Add the global provider</p>
+    <p className={"read"}>Add the provider to your app</p>
     <Code code={`
 import { BlacApp } from 'blac-react';
 
