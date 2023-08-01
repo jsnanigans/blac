@@ -1,6 +1,8 @@
-import { BlocBase } from './BlocBase';
+import { BlocBase } from "./BlocBase";
 
 export abstract class Bloc<S, A> extends BlocBase<S> {
+  static create: () => BlocBase<any>;
+
   abstract reducer(action: A, state: S): S;
 
   emit = (action: A): void => {

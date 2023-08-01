@@ -3,30 +3,30 @@
  * useBloc can find the correct bloc instance.
  */
 
-import { Blac, BlocBase, BlocClass } from 'blac';
-import React, { useContext, useEffect, useMemo } from 'react';
+import { Blac, BlocBase, BlocClass } from "blac/src";
+import React from "react";
 
 export interface ProviderItem {
   id: string;
   parent?: string;
   bloc: BlocBase<any>;
 }
-  
-  interface ProviderOptions <B>{
-    bloc: BlocClass<B> | (() => B);
-    debug?: boolean;
-  }
+
+interface ProviderOptions<B> {
+  bloc: BlocClass<B> | (() => B);
+  debug?: boolean;
+}
 
 
 export default class BlacReact {
+  static pluginKey = "blacReact";
   blac: Blac<any, any>;
   blacContext: React.Context<Blac<any, any>>;
   localContextProvider = React.createContext<BlocBase<any> | null>(null);
-  static pluginKey = 'blacReact';
 
   constructor(blac: Blac<any, any>, blacContext: React.Context<Blac<any, any>>) {
     // treat this as singleton
-    console.log('create', blac)
+    console.log("create", blac);
     const blacReact = blac.getPluginKey(BlacReact.pluginKey);
 
     // new setup
@@ -49,13 +49,13 @@ export default class BlacReact {
     const blac = (globalThis as any).blac;
 
     if (!blac) {
-      throw new Error('BlacReact: blac instance not found');
+      throw new Error("BlacReact: blac instance not found");
     }
 
     const blacReact = blac.getPluginKey(BlacReact.pluginKey);
 
     if (!blacReact) {
-      throw new Error('BlacReact: blacReact instance not found');
+      throw new Error("BlacReact: blacReact instance not found");
     }
 
     return blacReact as BlacReact;
@@ -64,6 +64,7 @@ export default class BlacReact {
   setup() {
     // register blac instance on global object
     (globalThis as any).blac = this.blac;
+    console.log(`registered blac instance on globalThis as blac`);
 
     // add the BlacReact instance to blac
     this.blac.addPluginKey(BlacReact.pluginKey, this);

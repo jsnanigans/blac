@@ -1,18 +1,19 @@
-import { Blac } from 'blac';
-import React, { createContext, FC, ReactNode, useMemo } from 'react';
-import BlacReact from './BlacReact';
+import { Blac, BlacOptions } from "blac/src";
+import React, { createContext, FC, ReactNode, useMemo } from "react";
+import BlacReact from "./BlacReact";
 
-export const BlacContext = createContext<Blac<any, any> | null>(null);
+export const BlacContext = createContext<Blac<any> | null>(null);
 
-const BlacApp: FC<{ children: ReactNode; blac: Blac<any, any> }> = (props) => {
+const BlacApp: FC<{ children: ReactNode; blac?: Blac<any>, options?: BlacOptions<any> }> = (props) => {
   const { children, blac } = props;
-  const blacApp = useMemo(() => new BlacReact(blac, BlacContext as any), [blac]);
+  const blacInstance = blac ?? new Blac(props.options);
+  const blacApp = useMemo(() => new BlacReact(blacInstance, BlacContext as any), [blacInstance]);
 
   if (!blacApp) {
-    throw new Error('BlacReact failed to initialize');
+    throw new Error("BlacReact failed to initialize");
   }
 
-  return <BlacContext.Provider value={blac}>{children}</BlacContext.Provider>;
+  return <BlacContext.Provider value={blacInstance}>{children}</BlacContext.Provider>;
 };
 
 export default BlacApp;

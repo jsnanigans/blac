@@ -1,10 +1,11 @@
-import { BlocBase, ValueType } from 'blac';
+import { BlocBase, ValueType } from "blac/src";
 
 export interface ExternalStore<B extends BlocBase<any>> {
   subscribe: (onStoreChange: () => void) => () => void;
   getSnapshot: () => ValueType<B>;
   getServerSnapshot?: () => ValueType<B>;
 }
+
 const externalBlocStore = <B extends BlocBase<any>>(
   bloc: B
 ): ExternalStore<B> => {
@@ -15,7 +16,7 @@ const externalBlocStore = <B extends BlocBase<any>>(
         unSub();
       };
     },
-    getSnapshot: (): ValueType<B> => bloc.state,
+    getSnapshot: (): ValueType<B> => bloc.state
   };
 };
 

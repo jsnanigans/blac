@@ -1,7 +1,10 @@
-import { BlocBase, BlocClass, ValueType } from 'blac';
-import React, { FC, ReactNode, useMemo, useSyncExternalStore } from 'react';
-import externalBlocStore, { ExternalStore } from './externalBlocStore';
-import { BlocResolveOptions, useResolvedBloc } from './resolveBloc';
+import { BlocBase, BlocConstructor, ValueType } from "blac/src";
+import { useMemo, useSyncExternalStore } from "react";
+import externalBlocStore, { ExternalStore } from "./externalBlocStore";
+import { useResolvedBloc } from "./resolveBloc";
+
+// instanciated version of a class constructor
+// export type BlocInstance<B extends BlocBase<B>> = B extends BlocConstructor<B> ? B : never;
 
 export type BlocHookData<B extends BlocBase<S>, S> = [
   value: ValueType<B>,
@@ -9,10 +12,9 @@ export type BlocHookData<B extends BlocBase<S>, S> = [
 ];
 
 export const useBloc = <B extends BlocBase<S>, S>(
-  bloc: B | BlocClass<B> | (() => B),
-  options: BlocResolveOptions = {}
+  bloc: BlocConstructor<B>
 ): BlocHookData<B, S> => {
-  const resolvedBloc = useResolvedBloc(bloc, options);
+  const resolvedBloc = useResolvedBloc(bloc as unknown as B);
 
   if (!resolvedBloc) {
     throw new Error(`useBloc: could not resolve: ${bloc.name || bloc}`);

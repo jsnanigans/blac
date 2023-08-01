@@ -1,48 +1,68 @@
-import { BlocBase } from './BlocBase';
-import { BlocClass } from './types';
+import type { BlocBase } from "./BlocBase";
+import { BlacEvent } from "./BlocBase";
+import { BlocBaseAbstract, BlocConstructor } from "./types";
 
-export type BlacGlobalState = {
-  [key: string]: BlocBase<any>;  
-}
 
-export interface BlacOptions <G extends BlacGlobalState>{
-  global?: G;
+export interface BlacOptions {
 }
 
 
-export class Blac <GS extends BlacGlobalState, O extends BlacOptions<GS>>{
-  blocMap: Map<BlocClass<BlocBase<any>>, BlocBase<any>> = new Map();
+export class Blac<O extends BlacOptions> {
+  blocMap: Map<BlocConstructor<BlocBase<any>>, BlocBase<any>> = new Map();
   pluginMap: Map<string, any> = new Map();
-  global?: GS;
 
   constructor(options: O = {} as O) {
-    // register blac instance on global object
     (globalThis as any).blac = this;
+  }
 
-    if (options.global) {
-      this.global = options.global;
-      Object.keys(options.global).forEach((key) => {
-        const gloBloc = options?.global?.[key] as GS[string];
-        if (gloBloc) this.registerBloc(gloBloc);
-      });
+  report = (event: BlacEvent, bloc: BlocBase<any>) => {
+    const base = bloc.constructor as unknown as BlocBaseAbstract<any>;
+    switch (event) {
+      case BlacEvent.BLOC_DISPOSED:
+        this.unregisterBloc(bloc);
+        break;
+      case BlacEvent.LISTENER_REMOVED:
+        if (bloc.observer._observers.size === 0 && !base.keepAlive) bloc.dispose();
+        break;
+    }
+  };
+
+  unregisterBloc(bloc: BlocBase<any>): void {
+    this.blocMap.delete(bloc.constructor as BlocConstructor<BlocBase<any>>);
+  }
+
+  registerBloc(bloc: BlocBase<any>): void {
+    this.blocMap.set(bloc.constructor as BlocConstructor<BlocBase<any>>, bloc);
+  }
+
+  createNewInstance<B extends BlocBase<any>>(blocClass: BlocConstructor<B>): B | undefined {
+    const base = blocClass as unknown as BlocBaseAbstract<any>;
+    const allowMultipleInstances = base.allowMultipleInstances;
+    try {
+      const hasCreateMethod = Object.prototype.hasOwnProperty.call(blocClass, "create");
+      const newBloc = hasCreateMethod ? base.create() : new blocClass();
+      if (!allowMultipleInstances) {
+        this.registerBloc(newBloc);
+      }
+      return newBloc as B;
+    } catch (e) {
+      console.error(e);
     }
   }
 
-  registerBloc(bloc: GS[string]): void {
-    this.blocMap.set(bloc.constructor as BlocClass<BlocBase<any>>, bloc);
-  }
 
-  getBloc<B extends BlocBase<any>>(blocClass: BlocClass<B>): B | undefined {
-    return this.blocMap.get(blocClass) as B | undefined;
-  }
+  getBloc<B extends BlocBase<any>>(blocClass: BlocConstructor<B>): B | undefined {
+    const base = blocClass as unknown as BlocBaseAbstract<any>;
+    const allowMultipleInstances = base.allowMultipleInstances;
 
-  isGlobalBloc(bloc: BlocBase<any>): boolean {
-    return this.blocMap.has(bloc.constructor as BlocClass<BlocBase<any>>);
+    if (allowMultipleInstances) {
+      return this.createNewInstance(blocClass);
+    }
+
+    const registered = this.blocMap.get(blocClass) as B | undefined;
+    if (registered) return registered;
+    return this.createNewInstance(blocClass);
   }
-  
-  // getGlobal(bloc: BlocClass<any>): BlocBase<any> | undefined {
-  //   return this.blocMap.get(bloc.constructor as BlocClass<BlocBase<any>>);
-  // }
 
   addPluginKey(ref: string, value: any): void {
     this.pluginMap.set(ref, value);
@@ -51,15 +71,15 @@ export class Blac <GS extends BlacGlobalState, O extends BlacOptions<GS>>{
   getPluginKey(ref: string): unknown {
     return this.pluginMap.get(ref);
   }
-
 }
 
 // declare blac instance on global object
 declare global {
   interface Window {
-    blac?: Blac<any, any>;
+    blac?: Blac<any>;
   }
+
   interface GlobalThis {
-    blac?: Blac<any, any>;
+    blac?: Blac<any>;
   }
 }

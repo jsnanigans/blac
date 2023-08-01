@@ -1,23 +1,34 @@
-import { Blac } from './Blac';
-import { BlacObservable } from './BlacObserver';
-import { BlocClass } from './types';
+import type { Blac } from "./Blac";
+import { BlacObservable } from "./BlacObserver";
 
-export interface BlocOptions {}
+export enum BlacEvent {
+  BLOC_DISPOSED = "BLOC_DISPOSED",
+  LISTENER_REMOVED = "LISTENER_REMOVED",
+  LISTENER_ADDED = "LISTENER_ADDED",
+}
+
+export interface BlocOptions {
+}
 
 export abstract class BlocBase<S> {
+  static allowMultipleInstances = false;
+  static keepAlive = false;
+  static create: <S>() => BlocBase<S>;
   static isBlacClass = true;
   public isBlacLive = true;
-  public _state: S;
-  public observer: BlacObservable<S>;
-  public blac?: Blac<any, any> = (globalThis as any).blac;
-  public uid = Math.random().toString(36).split('.')[1];
+  public observer: BlacObservable<S | any>;
+  public blac?: Blac<any> = (globalThis as any).blac;
+  public uid = Math.random().toString(36).split(".")[1];
+  pluginStore = new Map<string, unknown>();
 
   constructor(initialState: S, options?: BlocOptions) {
     this.observer = new BlacObservable();
     this._state = initialState;
   }
 
-  get state() {
+  public _state: S;
+
+  get state(): S {
     return this._state;
   }
 
@@ -29,17 +40,19 @@ export abstract class BlocBase<S> {
     callback: (newState: S, oldState: S) => void
   ): (() => void) => {
     this.observer.subscribe(callback);
-    return () => this.observer.unsubscribe(callback);
+    this.blac?.report(BlacEvent.LISTENER_ADDED, this);
+    return () => this.handleUnsubscribe(callback);
   };
-
-  getGlobalBloc<B extends BlocBase<any>>(blocClass: BlocClass<B>): B | undefined {
-    return this.blac?.getBloc(blocClass);
-  }
 
   dispose() {
     this.isBlacLive = false;
     this.observer.dispose();
+    this.blac?.report(BlacEvent.BLOC_DISPOSED, this);
   }
 
-  pluginStore = new Map<string, unknown>();
+  private handleUnsubscribe = (callback: (newState: S, oldState: S) => void): void => {
+    this.observer.unsubscribe(callback);
+    this.blac?.report(BlacEvent.LISTENER_REMOVED, this);
+  };
 }
+

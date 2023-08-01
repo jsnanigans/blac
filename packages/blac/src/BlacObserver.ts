@@ -2,8 +2,9 @@ export type BlacObserver<S> = (
   newState: S,
   oldState: S
 ) => void | Promise<void>;
+
 export class BlacObservable<S> {
-  private _observers = new Set<BlacObserver<S>>();
+  public _observers = new Set<BlacObserver<S>>();
 
   subscribe(observer: BlacObserver<S>) {
     this._observers.add(observer);
