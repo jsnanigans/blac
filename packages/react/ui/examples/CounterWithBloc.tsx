@@ -9,14 +9,10 @@ enum CounterActions {
   decrement = "decrement",
 }
 
-type CounterAction = CounterActions;
+class CounterBloc extends Bloc<CounterState, CounterActions> {
+  static create = () => new CounterBloc(0);
 
-class CounterBloc extends Bloc<CounterState, CounterAction> {
-  constructor() {
-    super(0);
-  }
-
-  reducer(action: CounterAction, state: CounterState) {
+  reducer(action: CounterActions, state: CounterState) {
     switch (action) {
       case CounterActions.increment:
         return state + 1;
@@ -29,13 +25,11 @@ class CounterBloc extends Bloc<CounterState, CounterAction> {
 const CounterWithBloc: FC = () => {
   const [count, { emit }] = useBloc(CounterBloc);
 
-  return (
-    <>
-      <button onClick={() => emit(CounterActions.decrement)}>-</button>
-      {` ${count} `}
-      <button onClick={() => emit(CounterActions.increment)}>+</button>
-    </>
-  );
+  return <>
+    <button onClick={() => emit(CounterActions.decrement)}>-</button>
+    {` ${count} `}
+    <button onClick={() => emit(CounterActions.increment)}>+</button>
+  </>;
 };
 
 export default CounterWithBloc;

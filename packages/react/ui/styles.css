@@ -5,12 +5,13 @@
 body,
 html {
     transform: none !important;
+    --color: #9fffed;
 }
 
 body {
-    background: #151515;
-    color: #0f0;
-    font-family: monospace;
+    background: #181d31;
+    color: var(--color);
+    font-family: sans-serif;
     font-size: 16px;
     font-weight: bold;
     line-height: 1.5;
@@ -26,14 +27,17 @@ main {
 
 button {
     background: #000;
-    color: #0f0;
+    color: var(--color);
     cursor: pointer;
-    font-family: monospace;
-    font-weight: bold;
-    line-height: 1.5;
-    border: 1px solid #0f0;
-    padding: 0.2em 0.8em;
+    font-family: inherit;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    border: 0px solid var(--color);
+    border-radius: 0.3em;
+    padding: 0.7em 1em;
     margin: 0;
+    transition: all 0.1s ease-in-out;
+    line-height: 1em;
 }
 
 .btn-list {
@@ -43,21 +47,25 @@ button {
     margin: 1em 0 0;
     padding: 0;
     list-style: none;
-    grid-gap: 0.5em;
+    grid-gap: 0.2em;
 }
 
 button:disabled {
     cursor: not-allowed;
-    opacity: 0.2;
+    background: var(--color);
+    color: #000;
+    /*opacity: 0.6;*/
 }
 
 button:active {
-    background: #0f0;
+    background: var(--color);
     color: #000;
+    transform: scale(0.95);
 }
 
 button:hover {
-    box-shadow: -0.3em 0.3em 0 #000;
+    background: var(--color);
+    color: #000;
 }
 
 h1,
@@ -66,7 +74,7 @@ h3,
 h4,
 h5,
 h6 {
-    color: #0f0;
+    color: var(--color);
     font-family: monospace;
     font-weight: bold;
     line-height: 1.5;
@@ -77,7 +85,7 @@ h6 {
 .scope {
     margin: 1em 0 0.2em 0;
     padding: 1em;
-    border-left: 1px solid #0f0;
+    border-left: 1px solid var(--color);
     background-color: rgb(0 255 42 / 5%);
     text-shadow: -0.1em 0.1em 0 #000;
     box-shadow: -0.1em 0.1em 0 #000;
@@ -89,18 +97,22 @@ h6 {
 
 hr {
     border: 0;
-    border-bottom: 1px solid #0f0;
+    border-bottom: 1px solid var(--color);
     margin: 1em 0;
 }
 
 
 .example {
     margin: 1em 0;
-    padding: 1em;
-    border-left: 1px solid #0f0;
-    background-color: rgb(0 255 42 / 5%);
-    text-shadow: -0.1em 0.1em 0 #000;
-    box-shadow: -0.1em 0.1em 0 #000;
+    padding: 3em 2em;
+    background: #000;
+    border-radius: 2em;
+    border: 1px solid var(--color);
+}
+
+.example button {
+    border: 2px solid var(--color);
+    margin: 0.2em;
 }
 
 
@@ -159,13 +171,13 @@ nav button {
 .read {
     /* easy readable text */
     color: white;
-    margin: 1em 0;
+    margin: 1em 0 0;
     font-family: sans-serif;
     font-weight: 400;
 }
 
 a, a:visited {
-    color: #0f0;
+    color: var(--color);
 }
 
 @media screen and (min-width: 740px) {

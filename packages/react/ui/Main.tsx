@@ -18,13 +18,14 @@ import CounterMultipleConsumers from "./examples/CounterMultipleConsumers";
 import CounterMultipleConsumersAsText from "./examples/CounterMultipleConsumers.tsx?raw";
 
 import "./styles.css";
-import Setup from "./examples/Setup";
+import Setup from "./docs/Setup";
 import Code from "./components/Code";
+import BlocDocs from "./docs/BlocDocs";
 
 interface DemoData {
   name: string;
-  description: React.ReactNode;
-  component: React.ReactNode;
+  description?: React.ReactNode;
+  component?: React.ReactNode;
   code?: string;
 }
 
@@ -36,16 +37,27 @@ class MainBloc extends Cubit<MainBlocState> {
   readonly docs: DemoData[] = [
     {
       name: "Setup",
-      description: "",
-      component: <Setup />
+      description: <Setup />
+    },
+    {
+      name: "BLoC Pattern",
+      description: <>
+        <p>The BLoC pattern is a way of structuring your app code to separate business logic from UI code.</p>
+      </>
+    },
+    {
+      name: "Bloc Class",
+      description: <BlocDocs />
+    },
+    {
+      name: "Cubit Class"
     }
   ];
 
   readonly examples: DemoData[] = [
     {
       name: "Counter with Bloc",
-      description:
-        "Simple counter following the Bloc pattern with events",
+      description: <p>Simple counter following the Bloc pattern with events</p>,
       component: <CounterWithBloc />,
       code: CounterWithBlocAsText
     },
@@ -173,8 +185,8 @@ const Main: FC = () => {
             <div className="content" key={current.name}>
               <div>
                 <h2>{current.name}</h2>
-                <p className="read">{current.description}</p>
-                <div className="example">{current.component}</div>
+                {current.description && <p className="read">{current.description}</p>}
+                {current.component && <div className="example">{current.component}</div>}
                 {current.code && (
                   <Code code={current.code} />
                 )}

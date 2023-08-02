@@ -1,13 +1,27 @@
 import type { FC } from "react";
 import React, { useMemo } from "react";
 import Highlight from "react-highlight";
-import "highlight.js/styles/atom-one-dark-reasonable.css";
+import "highlight.js/styles/github-dark.css";
 
 const Code: FC<{ code: string }> = ({ code }) => {
   const formatted = useMemo(() => {
     let f = code.trim();
-    f = f.replace(/from\s+["']\.\.\/\.\.\/src["']/g, "from \"@blac/react\"");
-    f = f.replace("from \"blac/src\"", "from \"blac\"");
+
+    // remove all imports
+    // f = f.replace(/import.*?;/g, "");
+
+    // replace `import x from "../../src"` with `import x from "@blac/react"`
+    f = f.replace(/ from "\.\.\/\.\.\/src";/g, " from \"@blac/react\";");
+
+
+    // remove default exports
+    f = f.replace(/export default.*?;/g, "");
+    // remove all export keywords
+    f = f.replace(/export /g, "");
+
+
+    // trim again
+    f = f.trim();
 
     return f;
   }, [code]);
