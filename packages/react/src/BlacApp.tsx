@@ -1,4 +1,4 @@
-import { Blac } from "blac/src";
+import { Blac } from "blac";
 import React, { createContext, FC, ReactNode, useMemo } from "react";
 import BlacReact from "./BlacReact";
 
