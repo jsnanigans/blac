@@ -2,16 +2,12 @@
   "name": "blac",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {
-    "build:all": "npx nx run-many --targets=build --all",
-    "dev": "npx nx run-many --targets=dev --all"
-  },
+  "scripts": {},
   "private": true,
   "dependencies": {},
   "devDependencies": {
-    "@nrwl/nx-cloud": "latest",
-    "nx": "16.5.5",
-    "prettier": "^3.0.0"
+    "prettier": "^3.0.0",
+    "turbo": "^1.10.12"
   },
   "workspaces": [
     "packages/*"
