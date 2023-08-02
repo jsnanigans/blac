@@ -41,3 +41,7 @@ Thumbs.db
 
 
 .turbo
+
+apps/react-demo/site
+packages/react/dist
+packages/blac/dist
