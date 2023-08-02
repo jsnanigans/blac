@@ -7,9 +7,6 @@ export enum BlacEvent {
   LISTENER_ADDED = "LISTENER_ADDED",
 }
 
-export interface BlocOptions {
-}
-
 export abstract class BlocBase<S> {
   static allowMultipleInstances = false;
   static keepAlive = false;
@@ -17,11 +14,11 @@ export abstract class BlocBase<S> {
   static isBlacClass = true;
   public isBlacLive = true;
   public observer: BlacObservable<S | any>;
-  public blac?: Blac<any> = undefined;
+  public blac?: Blac = undefined;
   public uid = Math.random().toString(36).split(".")[1];
   pluginStore = new Map<string, unknown>();
 
-  constructor(initialState: S, options?: BlocOptions) {
+  constructor(initialState: S) {
     this.observer = new BlacObservable();
     this._state = initialState;
   }

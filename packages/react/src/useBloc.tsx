@@ -11,7 +11,7 @@ export type BlocHookData<B extends BlocBase<S>, S> = [
   instance: B,
 ];
 
-export const useBloc = <B extends BlocBase<S>, S>(
+const useBloc = <B extends BlocBase<S>, S>(
   bloc: BlocConstructor<B>
 ): BlocHookData<B, S> => {
   const resolvedBloc = useResolvedBloc(bloc as unknown as B);
@@ -29,3 +29,5 @@ export const useBloc = <B extends BlocBase<S>, S>(
 
   return [state, resolvedBloc];
 };
+
+export default useBloc;

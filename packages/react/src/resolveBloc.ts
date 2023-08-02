@@ -5,7 +5,7 @@ import BlacReact from "./BlacReact";
 
 interface BlocOptions<B> {
   bloc: BlocConstructor<B> | (() => B) | B,
-  blacInstance: null | Blac<any>,
+  blacInstance: null | Blac,
   blacReact: BlacReact,
   // create: boolean | (() => B),
 }
@@ -13,14 +13,13 @@ interface BlocOptions<B> {
 const resolveBloc = <B extends BlocBase<S>, S>(
   {
     bloc,
-    blacInstance,
     blacReact
     // create
   }: BlocOptions<B>
 ): B | undefined => {
   // check if its a create function or a class
   const isFunction = bloc instanceof Function;
-  const isBloc = isFunction && (bloc as unknown as BlocBaseAbstract<B>)?.isBlacClass;
+  const isBloc = isFunction && (bloc as unknown as BlocBaseAbstract)?.isBlacClass;
   const isLiveBloc = !isFunction &&
     typeof bloc === "object" &&
     (bloc as BlocBase<any>)?.isBlacLive;
@@ -52,7 +51,7 @@ export const useResolvedBloc = <B extends BlocBase<S>, S>(
 ): B | undefined => {
   const blacReact = BlacReact.getInstance();
   const blacInstance = useContext(BlacContext);
-  const resolvedBloc = useMemo<B | undefined>(() => {
+  return useMemo<B | undefined>(() => {
     if (!blacReact) {
       return undefined;
     }
@@ -63,8 +62,6 @@ export const useResolvedBloc = <B extends BlocBase<S>, S>(
       blacReact
     });
   }, []);
-
-  return resolvedBloc;
 };
 
 export default resolveBloc;

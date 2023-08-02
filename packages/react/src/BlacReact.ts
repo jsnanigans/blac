@@ -4,10 +4,10 @@ import { BlacContext } from "./BlacApp";
 
 export default class BlacReact {
   static pluginKey = "blacReact";
-  blac: Blac<any>;
-  blacContext: React.Context<Blac<any>>;
+  blac: Blac;
+  blacContext: React.Context<Blac>;
 
-  constructor(blac: Blac<any>, blacContext: React.Context<Blac<any>>) {
+  constructor(blac: Blac, blacContext: React.Context<Blac>) {
     const blacReact = blac.getPluginKey(BlacReact.pluginKey);
 
     // new setup
@@ -20,9 +20,9 @@ export default class BlacReact {
     }
   }
 
-  static getInstance(throwError = true): BlacReact {
+  static getInstance(): BlacReact {
     // const blac = (globalThis as any).blac;
-    const blac = (BlacContext as any)._currentValue as Blac<any> | null;
+    const blac = (BlacContext as any)._currentValue as Blac | null;
 
     if (!blac) {
       throw new Error("BlacReact: blac instance not found, the <BlacApp> provider component might be missing");

@@ -1,9 +1,5 @@
 import { BlocBase } from "./BlocBase";
 
-export interface CubitOptions {
-
-}
-
 export abstract class Cubit<S> extends BlocBase<S> {
   static create: () => Cubit<any>;
 

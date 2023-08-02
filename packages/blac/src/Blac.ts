@@ -3,16 +3,12 @@ import { BlacEvent } from "./BlocBase";
 import { BlocBaseAbstract, BlocConstructor } from "./types";
 
 
-export interface BlacOptions {
-}
-
-
-export class Blac<O extends BlacOptions> {
+export class Blac {
   blocMap: Map<BlocConstructor<BlocBase<any>>, BlocBase<any>> = new Map();
   pluginMap: Map<string, any> = new Map();
 
   report = (event: BlacEvent, bloc: BlocBase<any>) => {
-    const base = bloc.constructor as unknown as BlocBaseAbstract<any>;
+    const base = bloc.constructor as unknown as BlocBaseAbstract;
     switch (event) {
       case BlacEvent.BLOC_DISPOSED:
         this.unregisterBloc(bloc);
@@ -32,7 +28,7 @@ export class Blac<O extends BlacOptions> {
   }
 
   createNewInstance<B extends BlocBase<any>>(blocClass: BlocConstructor<B>): B | undefined {
-    const base = blocClass as unknown as BlocBaseAbstract<any>;
+    const base = blocClass as unknown as BlocBaseAbstract;
     const allowMultipleInstances = base.allowMultipleInstances;
     try {
       const hasCreateMethod = Object.prototype.hasOwnProperty.call(blocClass, "create");
@@ -48,7 +44,7 @@ export class Blac<O extends BlacOptions> {
 
 
   getBloc<B extends BlocBase<any>>(blocClass: BlocConstructor<B>): B | undefined {
-    const base = blocClass as unknown as BlocBaseAbstract<any>;
+    const base = blocClass as unknown as BlocBaseAbstract;
     const allowMultipleInstances = base.allowMultipleInstances;
 
     if (allowMultipleInstances) {
