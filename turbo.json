@@ -6,11 +6,6 @@
         "dist/**"
       ]
     },
-    "build:demo": {
-      "outputs": [
-        "site/**"
-      ]
-    },
     "lint": {}
   }
 }
