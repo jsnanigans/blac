@@ -11,10 +11,6 @@ export class Blac<O extends BlacOptions> {
   blocMap: Map<BlocConstructor<BlocBase<any>>, BlocBase<any>> = new Map();
   pluginMap: Map<string, any> = new Map();
 
-  constructor(options: O = {} as O) {
-    (globalThis as any).blac = this;
-  }
-
   report = (event: BlacEvent, bloc: BlocBase<any>) => {
     const base = bloc.constructor as unknown as BlocBaseAbstract<any>;
     switch (event) {
@@ -70,16 +66,5 @@ export class Blac<O extends BlacOptions> {
 
   getPluginKey(ref: string): unknown {
     return this.pluginMap.get(ref);
-  }
-}
-
-// declare blac instance on global object
-declare global {
-  interface Window {
-    blac?: Blac<any>;
-  }
-
-  interface GlobalThis {
-    blac?: Blac<any>;
   }
 }

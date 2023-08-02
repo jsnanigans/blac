@@ -185,7 +185,7 @@ const Main: FC = () => {
             <div className="content" key={current.name}>
               <div>
                 <h2>{current.name}</h2>
-                {current.description && <p className="read">{current.description}</p>}
+                {current.description && <div className="read">{current.description}</div>}
                 {current.component && <div className="example">{current.component}</div>}
                 {current.code && (
                   <Code code={current.code} />

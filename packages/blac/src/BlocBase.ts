@@ -17,7 +17,7 @@ export abstract class BlocBase<S> {
   static isBlacClass = true;
   public isBlacLive = true;
   public observer: BlacObservable<S | any>;
-  public blac?: Blac<any> = (globalThis as any).blac;
+  public blac?: Blac<any> = undefined;
   public uid = Math.random().toString(36).split(".")[1];
   pluginStore = new Map<string, unknown>();
 

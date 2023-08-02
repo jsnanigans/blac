@@ -1,17 +1,6 @@
 import { Blac } from "blac";
 import React from "react";
-// import { BlocConstructor } from "blac";
-
-// export interface ProviderItem {
-//   id: string;
-//   parent?: string;
-//   bloc: BlocBase<any>;
-// }
-
-// interface ProviderOptions<B> {
-//   bloc: BlocConstructor<B>;
-//   debug?: boolean;
-// }
+import { BlacContext } from "./BlacApp";
 
 export default class BlacReact {
   static pluginKey = "blacReact";
@@ -32,10 +21,11 @@ export default class BlacReact {
   }
 
   static getInstance(throwError = true): BlacReact {
-    const blac = (globalThis as any).blac;
+    // const blac = (globalThis as any).blac;
+    const blac = (BlacContext as any)._currentValue as Blac<any> | null;
 
     if (!blac) {
-      throw new Error("BlacReact: blac instance not found");
+      throw new Error("BlacReact: blac instance not found, the <BlacApp> provider component might be missing");
     }
 
     const blacReact = blac.getPluginKey(BlacReact.pluginKey);
@@ -48,7 +38,7 @@ export default class BlacReact {
   }
 
   setup() {
-    (globalThis as any).blac = this.blac;
+    // (globalThis as any).blac = this.blac;
     this.blac.addPluginKey(BlacReact.pluginKey, this);
   }
 }
