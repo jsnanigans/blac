@@ -22,11 +22,11 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@rollup/plugin-typescript": "^11.1.2",
-    "blac": "*",
-    "rollup-plugin-terser": "^7.0.2"
+    "blac": "*"
   },
   "devDependencies": {
+    "@rollup/plugin-typescript": "^11.1.2",
+    "rollup-plugin-terser": "^7.0.2",
     "@types/react": "^18.2.18",
     "react": "^18.2.0",
     "vitest": "^0.34.1"
