@@ -1,5 +1,5 @@
 import React, { FC } from "react";
-import BlacApp from "../src/BlacApp";
+import BlacApp from "@blac/react/src/BlacApp";
 import Main from "./Main";
 
 const App: FC = () => {

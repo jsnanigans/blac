@@ -10,7 +10,7 @@ npm install blac-react
 
 ## Examples
 
-- [Counter with Bloc](ui/examples/CounterWithBloc.tsx)
-- [Counter with Cubit](ui/examples/CounterWithCubit.tsx)
-- [Counter with Global State](ui/examples/CounterWithCubitGlobal.tsx)
-- [Counters with Local State](ui/examples/CounterLocalDemo.tsx)
+- [Counter with Bloc](../../apps/react-demo/ui/examples/CounterWithBloc.tsx)
+- [Counter with Cubit](../../apps/react-demo/ui/examples/CounterWithCubit.tsx)
+- [Counter with Global State](../../apps/react-demo/ui/examples/CounterWithCubitGlobal.tsx)
+- [Counters with Local State](../../apps/react-demo/ui/examples/CounterLocalDemo.tsx)

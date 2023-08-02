@@ -1,6 +1,6 @@
 import { Cubit } from "blac";
 import React, { FC } from "react";
-import { useBloc } from "../../src";
+import { useBloc } from "@blac/react/src";
 
 export class CounterMultipleConsumerBloc extends Cubit<number> {
   static create = () => new CounterMultipleConsumerBloc(0);

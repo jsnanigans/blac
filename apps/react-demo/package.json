@@ -1,28 +1,18 @@
 {
-  "name": "@blac/react",
+  "name": "blac-react-demo",
   "version": "0.0.16",
   "license": "MIT",
-  "main": "dist/blac-react.js",
-  "module": "dist/blac-react.esm.js",
-  "typings": "dist/blac-react.d.ts",
-  "type": "module",
-  "keywords": [
-    "react",
-    "typescript",
-    "rxjs",
-    "state-management",
-    "reactjs",
-    "observer-pattern",
-    "bloc",
-    "bloc-pattern"
-  ],
   "scripts": {
-    "build": "rollup -c rollup.config.lib.js",
+    "dev": "vite",
+    "build": "vite build",
     "prettier": "prettier --write ./src",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:watch": "vitest --watch",
+    "coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "blac": "*"
+    "blac": "*",
+    "@blac/react": "*"
   },
   "devDependencies": {
     "@types/react": "^18.2.18",

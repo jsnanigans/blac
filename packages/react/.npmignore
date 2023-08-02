@@ -7,7 +7,7 @@ yarn.lock
 yarn-error.log
 coverage
 tsconfig.json
-vite.config.ts
+../../apps/react-demo/vite.config.ts
 .DS_Store
 site
 readme.md
@@ -16,5 +16,5 @@ tsconfig.json
 vitest.config.ts
 docs
 src
-ui
+../../apps/react-demo/ui
 index.html

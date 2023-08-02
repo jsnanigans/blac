@@ -1,6 +1,6 @@
 import { Cubit } from "blac";
 import React, { FC } from "react";
-import { useBloc } from "../../src";
+import { useBloc } from "@blac/react/src";
 
 class CounterCubit extends Cubit<number> {
   static create = () => new CounterCubit(0);

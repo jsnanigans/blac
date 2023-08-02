@@ -1,6 +1,6 @@
 import { Cubit } from "blac";
 import React, { FC } from "react";
-import { useBloc } from "../src";
+import { useBloc } from "@blac/react/src";
 
 import CounterLocalScoped from "./examples/CounterLocalDemo";
 import CounterLocalScopedAsText from "./examples/CounterLocalDemo.tsx?raw";
