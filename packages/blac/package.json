@@ -5,7 +5,6 @@
   "main": "dist/blac.js",
   "module": "dist/blac.esm.js",
   "typings": "dist/blac.d.ts",
-  "type": "module",
   "keywords": [
     "react",
     "typescript",
