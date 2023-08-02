@@ -10,6 +10,17 @@
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "paths": {
+      "src/*": [
+        "src/*"
+      ],
+      "blac": [
+        "../../packages/blac"
+      ],
+      "@blac/react": [
+        "../../packages/react"
+      ]
+    }
   }
 }
