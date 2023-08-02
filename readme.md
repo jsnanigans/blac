@@ -1,4 +1,20 @@
-# Blac
+# Blac v1 ALPHA
+
+do not use this, the apis will change!
+
+Blac core: https://www.npmjs.com/package/blac
+
+```sh
+npm i blac@alpha
+```
+
+Blac React: https://www.npmjs.com/package/@blac/react
+
+```sh
+npm i @blac/react
+```
+
+new docs: [https://blac-react-demo.vercel.app/](https://blac-react-demo.vercel.app/)
 
 <a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
 
