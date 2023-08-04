@@ -1,29 +1,32 @@
 import { Blac } from "blac";
-import React from "react";
-import { BlacContext } from "./BlacApp";
 
 export default class BlacReact {
   static pluginKey = "blacReact";
-  blac: Blac;
-  blacContext: React.Context<Blac>;
+  // blacContext: React.Context<Blac>;
+  static instance: BlacReact | undefined;
+  blac: Blac | undefined;
 
-  constructor(blac: Blac, blacContext: React.Context<Blac>) {
-    const blacReact = blac.getPluginKey(BlacReact.pluginKey);
-
-    // new setup
-    this.blac = blac;
-    this.blacContext = blacContext;
-    this.setup();
-
-    if (blacReact) {
-      return blacReact as BlacReact;
+  constructor() {
+    // singleton
+    if (BlacReact.instance) {
+      return BlacReact.instance;
     }
+
+    BlacReact.instance = this;
+
+    // create Blac
+    this.blac = new Blac();
+    this.registerPlugin();
   }
 
-  static getInstance(): BlacReact {
-    // const blac = (globalThis as any).blac;
-    const blac = (BlacContext as any)._currentValue as Blac | null;
+  static getInstance() {
+    if (!BlacReact.instance) {
+      return new BlacReact();
+    }
+    return BlacReact.instance;
+  }
 
+  static getPluginInstance(blac?: Blac): BlacReact {
     if (!blac) {
       throw new Error("BlacReact: blac instance not found, the <BlacApp> provider component might be missing");
     }
@@ -37,8 +40,7 @@ export default class BlacReact {
     return blacReact as BlacReact;
   }
 
-  setup() {
-    // (globalThis as any).blac = this.blac;
-    this.blac.addPluginKey(BlacReact.pluginKey, this);
+  registerPlugin() {
+    this.blac?.addPluginKey(BlacReact.pluginKey, this);
   }
 }

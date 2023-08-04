@@ -21,6 +21,8 @@ import "./styles.css";
 import Setup from "./docs/Setup";
 import Code from "./components/Code";
 import BlocDocs from "./docs/BlocDocs";
+import RerenderTest from "./examples/RerenderTest";
+import RerenderTestAsText from "./examples/RerenderTest.tsx?raw";
 
 interface DemoData {
   name: string;
@@ -93,6 +95,15 @@ class MainBloc extends Cubit<MainBlocState> {
       description: "By default all components that use the same Bloc will all use the same instance and so will share the same state. If a Bloc has the static property `allowMultipleInstances = true` set, then each component will get its own instance of the Bloc every time it is mounted.",
       component: <CounterLocalScoped />,
       code: CounterLocalScopedAsText
+    },
+    {
+      name: "Rerender test",
+      description: <>
+        <p>The state contains both email and name, add a dependency check to see if the state should trigger a rerender
+          or not.</p>
+      </>,
+      component: <RerenderTest />,
+      code: RerenderTestAsText
     }
   ];
 

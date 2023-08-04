@@ -195,3 +195,26 @@ button.lead {
     margin-top: 1em;
     margin-right: 1em;
 }
+
+@keyframes flash {
+    0% {
+        box-shadow: 0 0 20px 10px var(--color);
+    }
+    100% {
+        box-shadow: 0 0 20px 10px #ffffff22;
+    }
+}
+
+.flash {
+    position: relative;
+    padding: 15px;
+}
+
+.highlight {
+    animation: flash 1s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+    position: absolute;
+    border-radius: 4px;
+    border: 1px solid white;
+    inset: 0;
+    pointer-events: none;
+}

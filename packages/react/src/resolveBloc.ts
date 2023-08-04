@@ -1,6 +1,5 @@
 import { Blac, BlocBase, BlocBaseAbstract, BlocConstructor } from "blac";
-import { useContext, useMemo } from "react";
-import { BlacContext } from "./BlacApp";
+import { useMemo } from "react";
 import BlacReact from "./BlacReact";
 
 interface BlocOptions<B> {
@@ -40,7 +39,7 @@ const resolveBloc = <B extends BlocBase<S>, S>(
     return bloc as unknown as B;
   }
 
-  const registered = blacReact.blac.getBloc(blocClass);
+  const registered = BlacReact.getInstance().blac?.getBloc(blocClass);
   if (registered) {
     return registered;
   }
@@ -49,13 +48,12 @@ const resolveBloc = <B extends BlocBase<S>, S>(
 export const useResolvedBloc = <B extends BlocBase<S>, S>(
   bloc: B
 ): B | undefined => {
-  const blacReact = BlacReact.getInstance();
-  const blacInstance = useContext(BlacContext);
+  const blacInstance = BlacReact.getInstance().blac;
+  const blacReact = BlacReact.getPluginInstance(blacInstance);
   return useMemo<B | undefined>(() => {
-    if (!blacReact) {
+    if (!blacReact || !blacInstance) {
       return undefined;
     }
-
     return resolveBloc({
       bloc,
       blacInstance,
