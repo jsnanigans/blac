@@ -239,6 +239,7 @@ button.lead {
     width: 15px;
     height: 15px;
     background: #0d1117;
+    border-radius: 50%;
 }
 
 .jumper.focused {

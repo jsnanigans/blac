@@ -5,9 +5,10 @@ import { useBloc } from "@blac/react/src";
 
 class IsolatedBloc extends Cubit<{ x: number, y: number }, { start: [number, number] }> {
   static isolated = true;
-  velocity = { x: Math.random() * 4 - 2, y: Math.random() * 4 - 2 };
+  velocity = { x: Math.random() * 3 - 1.5, y: Math.random() * 3 - 1.5 };
   maxX = 300;
   maxY = 200;
+  size = 10;
   others: IsolatedBloc[] = [];
 
   constructor() {
@@ -49,12 +50,24 @@ class IsolatedBloc extends Cubit<{ x: number, y: number }, { start: [number, num
     }
 
     for (const other of this.others) {
-      // collide
-      if (Math.abs(other.state.x - next.x) < 10 && Math.abs(other.state.y - next.y) < 10) {
-        this.velocity.x = -this.velocity.x;
-        this.velocity.y = -this.velocity.y;
-        break;
+      //   bounce of others
+      if (other !== this) {
+        const dx = other.state.x - next.x;
+        const dy = other.state.y - next.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < this.size + other.size) {
+          const angle = Math.atan2(dy, dx);
+          const targetX = next.x + Math.cos(angle) * (this.size + other.size);
+          const targetY = next.y + Math.sin(angle) * (this.size + other.size);
+          const ax = (targetX - other.state.x) * 0.1;
+          const ay = (targetY - other.state.y) * 0.1;
+          next.x -= ax;
+          next.y -= ay;
+          other.emit({ x: other.state.x + ax, y: other.state.y + ay });
+        }
       }
+
     }
 
     this.emit(next);
@@ -65,7 +78,7 @@ class IsolatedBloc extends Cubit<{ x: number, y: number }, { start: [number, num
 const Jumper: FC<{ index: number }> = ({ index }) => {
   const [{ x, y }, { props }] = useBloc(IsolatedBloc, {
     props: {
-      start: [index * (300 / 9), 0]
+      start: [index * (300 % 9), index * (200 % 9)]
     }
   });
   return <div className="jumper" style={{ "--x": x + "px", "--y": y + "px" } as any} />;
@@ -73,7 +86,7 @@ const Jumper: FC<{ index: number }> = ({ index }) => {
 
 const QueryOtherBlocs: FC = () => {
   return <div className="jumper-box">
-    {Array.from({ length: 10 }).map((_, i) => <Jumper index={i} key={i} />)}
+    {Array.from({ length: 100 }).map((_, i) => <Jumper index={i} key={i} />)}
   </div>;
 };
 

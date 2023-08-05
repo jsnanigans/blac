@@ -26,6 +26,7 @@ import RerenderTestAsText from "./examples/RerenderTest.tsx?raw";
 import NoSharedState from "./examples/NoSharedState";
 import NoSharedStateText from "./examples/NoSharedState.tsx?raw";
 import QueryOtherBlocs from "./examples/QueryOtherBlocs";
+import QueryOtherBlocsText from "./examples/QueryOtherBlocs.tsx?raw";
 
 interface DemoData {
   name: string;
@@ -123,10 +124,12 @@ class MainBloc extends Cubit<MainBlocState> {
     {
       name: "Query other Blocs",
       description: <>
-        <p>Inside a bloc, you might want to reference other blocs, in this example all squares have their own Bloc
-          instance and know where the others are, they can find eachother with `this.blac.findAllBlocs(...)`</p>
+        <p>Inside a bloc, you might want to reference other blocs, in this example all circles have their own Bloc
+          instance and know where the others are, they can find each other and will avoid them,
+          `this.blac.findAllBlocs(Cubit) returns all active Cubits of that kind`</p>
       </>,
-      component: <QueryOtherBlocs />
+      component: <QueryOtherBlocs />,
+      code: QueryOtherBlocsText
     }
   ];
 
