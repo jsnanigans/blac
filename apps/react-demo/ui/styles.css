@@ -208,6 +208,7 @@ button.lead {
 .flash {
     position: relative;
     padding: 15px;
+    margin: 1em 0;
 }
 
 .highlight {

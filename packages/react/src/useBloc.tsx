@@ -11,9 +11,9 @@ export type BlocHookData<B extends BlocBase<S>, S> = [
   instance: B,
 ];
 
-const useBloc = <B extends BlocBase<S>, S>(
+const useBloc = <B extends BlocBase<S>, S, RT>(
   bloc: BlocConstructor<B>,
-  dependency: (state: ValueType<B>) => unknown = (state) => state
+  dependencySelector: (state: ValueType<B>) => unknown = (state) => state
 ): BlocHookData<B, S> => {
   const resolvedBloc = useResolvedBloc(bloc as unknown as B);
 
@@ -22,7 +22,7 @@ const useBloc = <B extends BlocBase<S>, S>(
   }
 
   const { subscribe, getSnapshot } = useMemo<ExternalStore<B>>(
-    () => externalBlocStore(resolvedBloc, dependency),
+    () => externalBlocStore(resolvedBloc, dependencySelector),
     [resolvedBloc]
   );
 

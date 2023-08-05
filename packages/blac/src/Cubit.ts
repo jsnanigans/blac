@@ -13,4 +13,8 @@ export abstract class Cubit<S> extends BlocBase<S> {
     this._state = state;
     this.observer.notify(newState, oldState);
   }
+
+  patch(state: Partial<S>) {
+    this.emit({ ...this.state, ...state });
+  }
 }

@@ -4,8 +4,17 @@ import { BlocBaseAbstract, BlocConstructor } from "./types";
 
 
 export class Blac {
+  static instance: Blac = new Blac();
   blocMap: Map<BlocConstructor<BlocBase<any>>, BlocBase<any>> = new Map();
   pluginMap: Map<string, any> = new Map();
+
+  constructor() {
+    if (Blac.instance) {
+      return Blac.instance;
+    }
+
+    Blac.instance = this;
+  }
 
   report = (event: BlacEvent, bloc: BlocBase<any>) => {
     const base = bloc.constructor as unknown as BlocBaseAbstract;
@@ -41,7 +50,6 @@ export class Blac {
       console.error(e);
     }
   }
-
 
   getBloc<B extends BlocBase<any>>(blocClass: BlocConstructor<B>): B | undefined {
     const base = blocClass as unknown as BlocBaseAbstract;

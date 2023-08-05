@@ -8,13 +8,13 @@ export interface ExternalStore<B extends BlocBase<any>> {
 
 const externalBlocStore = <B extends BlocBase<any>>(
   bloc: B,
-  dependency: (state: ValueType<B>) => unknown
+  dependencySelector: (state: ValueType<B>) => unknown
 ): ExternalStore<B> => {
-  let lastDependencyCheck = dependency(bloc.state);
+  let lastDependencyCheck = dependencySelector(bloc.state);
   return {
     subscribe: (listener: () => void) => {
       const unSub = bloc.onStateChange(data => {
-        const newDependencyCheck = dependency(data);
+        const newDependencyCheck = dependencySelector(data);
         if (newDependencyCheck !== lastDependencyCheck) {
           lastDependencyCheck = newDependencyCheck;
           listener();

@@ -1,22 +1,18 @@
-import type { FC, ReactNode } from "react";
+import type { ChangeEvent, FC, ReactNode } from "react";
 import React from "react";
 import { Cubit } from "blac";
 import { useBloc } from "@blac/react";
-
 
 class DemoCubit extends Cubit<{
   name: string;
   email: string;
 }> {
-  static create = () => new DemoCubit({
-    name: "John Doe",
-    email: ""
-  });
-
-  setName = (name: string) => this.emit({ ...this.state, name });
-  setEmail = (email: string) => this.emit({ ...this.state, email });
+  static create = () => new DemoCubit({ name: "Jann Doe", email: "j@d.co" });
+  setName = (e: ChangeEvent<HTMLInputElement>) => this.patch({ name: e.target.value });
+  setEmail = (e: ChangeEvent<HTMLInputElement>) => this.patch({ email: e.target.value });
 }
 
+// Component that renders a flashing highlight when it is re-rendered
 const Flash: FC<{ children?: ReactNode }> = ({ children }) => {
   const rnd = Math.random();
   return <div className="flash">
@@ -25,41 +21,37 @@ const Flash: FC<{ children?: ReactNode }> = ({ children }) => {
   </div>;
 };
 
+// Only show the name
 const ShowName: FC = () => {
   const [{ name }] = useBloc(DemoCubit, ({ name }) => name);
-  return <Flash>
-    <p>Name: {name}</p>
-  </Flash>;
+  return <Flash>Name: {name}</Flash>;
 };
+
+// Input to change the email
 const ChangeName: FC = () => {
   const [{ name }, { setName }] = useBloc(DemoCubit, ({ name }) => name);
-  return <Flash>
-    <label>
-      Name: <input type="text" value={name} onChange={(e) => setName(e.target.value)} />
-    </label>
-  </Flash>;
+  return <Flash>Name: <input type="text" value={name} onChange={setName} /></Flash>;
 };
 
+// Only show the email
 const ShowEmail: FC = () => {
   const [{ email }] = useBloc(DemoCubit, ({ email }) => email);
-  return <Flash>
-    <p>Email: {email}</p>
-  </Flash>;
-};
-const ChangeEmail: FC = () => {
-  const [{ email }, { setEmail }] = useBloc(DemoCubit, ({ email }) => email);
-  return <Flash>
-    <label>
-      Email: <input type="text" value={email} onChange={(e) => setEmail(e.target.value)} />
-    </label>
-  </Flash>;
+  return <Flash>Email: {email}</Flash>;
 };
 
+// Input to change the email
+const ChangeEmail: FC = () => {
+  const [{ email }, { setEmail }] = useBloc(DemoCubit, ({ email }) => email);
+  return <Flash>Email: <input type="text" value={email} onChange={setEmail} /></Flash>;
+};
+
+// Show both name and email
 const ShowAll: FC = () => {
   const [{ name, email }] = useBloc(DemoCubit);
   return <Flash>
-    <p>Name: {name}</p>
-    <p>Email: {email}</p>
+    Name: {name}
+    <br />
+    Email: {email}
   </Flash>;
 };
 
@@ -68,7 +60,6 @@ const RerenderTest: FC = () => {
     <ShowName />
     <ShowEmail />
     <ShowAll />
-    <hr />
     <ChangeName />
     <ChangeEmail />
   </div>;

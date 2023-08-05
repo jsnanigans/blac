@@ -12,10 +12,16 @@ interface BlocOptions<B> {
 const resolveBloc = <B extends BlocBase<S>, S>(
   {
     bloc,
-    blacReact
+    blacReact,
+    blacInstance
     // create
   }: BlocOptions<B>
 ): B | undefined => {
+  if (!blacInstance) {
+    console.warn("Blac instance not found");
+    return undefined;
+  }
+
   // check if its a create function or a class
   const isFunction = bloc instanceof Function;
   const isBloc = isFunction && (bloc as unknown as BlocBaseAbstract)?.isBlacClass;

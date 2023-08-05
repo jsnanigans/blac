@@ -1,4 +1,4 @@
-import type { Blac } from "./Blac";
+import { Blac } from "./Blac";
 import { BlacObservable } from "./BlacObserver";
 
 export enum BlacEvent {
@@ -13,10 +13,8 @@ export abstract class BlocBase<S> {
   static create: <S>() => BlocBase<S>;
   static isBlacClass = true;
   public isBlacLive = true;
-  public observer: BlacObservable<S | any>;
-  public blac?: Blac = undefined;
-  public uid = Math.random().toString(36).split(".")[1];
-  pluginStore = new Map<string, unknown>();
+  public observer: BlacObservable<S>;
+  public blac = new Blac();
 
   constructor(initialState: S) {
     this.observer = new BlacObservable();
@@ -37,19 +35,19 @@ export abstract class BlocBase<S> {
     callback: (newState: S, oldState: S) => void
   ): (() => void) => {
     this.observer.subscribe(callback);
-    this.blac?.report(BlacEvent.LISTENER_ADDED, this);
+    this.blac.report(BlacEvent.LISTENER_ADDED, this);
     return () => this.handleUnsubscribe(callback);
   };
 
   dispose() {
     this.isBlacLive = false;
     this.observer.dispose();
-    this.blac?.report(BlacEvent.BLOC_DISPOSED, this);
+    this.blac.report(BlacEvent.BLOC_DISPOSED, this);
   }
 
   private handleUnsubscribe = (callback: (newState: S, oldState: S) => void): void => {
     this.observer.unsubscribe(callback);
-    this.blac?.report(BlacEvent.LISTENER_REMOVED, this);
+    this.blac.report(BlacEvent.LISTENER_REMOVED, this);
   };
 }
 
