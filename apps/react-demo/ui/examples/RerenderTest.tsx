@@ -1,7 +1,7 @@
 import type { ChangeEvent, FC, ReactNode } from "react";
 import React from "react";
-import { Cubit } from "blac";
-import { useBloc } from "@blac/react";
+import { Cubit } from "blac/src";
+import { useBloc } from "@blac/react/src";
 
 class DemoCubit extends Cubit<{
   name: string;

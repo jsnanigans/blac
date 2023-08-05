@@ -1,11 +1,9 @@
-import type { BlocBase } from "./BlocBase";
-import { BlacEvent } from "./BlocBase";
+import { BlacEvent, BlocBase, BlocInstanceId } from "./BlocBase";
 import { BlocBaseAbstract, BlocConstructor } from "./types";
-
 
 export class Blac {
   static instance: Blac = new Blac();
-  blocMap: Map<BlocConstructor<BlocBase<any>>, BlocBase<any>> = new Map();
+  blocInstanceMap: Map<string, BlocBase<any>> = new Map();
   pluginMap: Map<string, any> = new Map();
 
   constructor() {
@@ -20,7 +18,7 @@ export class Blac {
     const base = bloc.constructor as unknown as BlocBaseAbstract;
     switch (event) {
       case BlacEvent.BLOC_DISPOSED:
-        this.unregisterBloc(bloc);
+        this.unregisterBlocInstance(bloc);
         break;
       case BlacEvent.LISTENER_REMOVED:
         if (bloc.observer._observers.size === 0 && !base.keepAlive) bloc.dispose();
@@ -28,40 +26,45 @@ export class Blac {
     }
   };
 
-  unregisterBloc(bloc: BlocBase<any>): void {
-    this.blocMap.delete(bloc.constructor as BlocConstructor<BlocBase<any>>);
+  createBlocInstanceMapKey(blocClassName: string, id?: BlocInstanceId): string {
+    return `${blocClassName}${id ? id : ""}`;
   }
 
-  registerBloc(bloc: BlocBase<any>): void {
-    this.blocMap.set(bloc.constructor as BlocConstructor<BlocBase<any>>, bloc);
+  unregisterBlocInstance(bloc: BlocBase<any>): void {
+    const key = this.createBlocInstanceMapKey(bloc.name, bloc.id);
+    this.blocInstanceMap.delete(key);
   }
 
-  createNewInstance<B extends BlocBase<any>>(blocClass: BlocConstructor<B>): B | undefined {
+  registerBlocInstance(bloc: BlocBase<any>): void {
+    const key = this.createBlocInstanceMapKey(bloc.name, bloc.id);
+    this.blocInstanceMap.set(key, bloc);
+  }
+
+  findRegisteredBlocInstance<B extends BlocBase<any>>(blocClass: BlocConstructor<B>, id: BlocInstanceId): B | undefined {
+    const key = this.createBlocInstanceMapKey(blocClass.name, id);
+    return this.blocInstanceMap.get(key) as B;
+  }
+
+  createNewBlocInstance<B extends BlocBase<any>>(blocClass: BlocConstructor<B>, id: BlocInstanceId): B {
     const base = blocClass as unknown as BlocBaseAbstract;
-    const allowMultipleInstances = base.allowMultipleInstances;
     try {
       const hasCreateMethod = Object.prototype.hasOwnProperty.call(blocClass, "create");
       const newBloc = hasCreateMethod ? base.create() : new blocClass();
-      if (!allowMultipleInstances) {
-        this.registerBloc(newBloc);
-      }
+      newBloc.id = id;
+      this.registerBlocInstance(newBloc);
       return newBloc as B;
     } catch (e) {
+      throw new Error(`Failed to create instance of ${blocClass.name}. ${e}`);
       console.error(e);
     }
   }
 
-  getBloc<B extends BlocBase<any>>(blocClass: BlocConstructor<B>): B | undefined {
-    const base = blocClass as unknown as BlocBaseAbstract;
-    const allowMultipleInstances = base.allowMultipleInstances;
-
-    if (allowMultipleInstances) {
-      return this.createNewInstance(blocClass);
-    }
-
-    const registered = this.blocMap.get(blocClass) as B | undefined;
+  getBloc<B extends BlocBase<any>>(blocClass: BlocConstructor<B>, options: {
+    id?: BlocInstanceId;
+  } = {}): B {
+    const registered = this.findRegisteredBlocInstance(blocClass, options.id);
     if (registered) return registered;
-    return this.createNewInstance(blocClass);
+    return this.createNewBlocInstance(blocClass, options.id);
   }
 
   addPluginKey(ref: string, value: any): void {

@@ -7,14 +7,16 @@ export enum BlacEvent {
   LISTENER_ADDED = "LISTENER_ADDED",
 }
 
+export type BlocInstanceId = string | number | undefined;
+
 export abstract class BlocBase<S> {
-  static allowMultipleInstances = false;
   static keepAlive = false;
   static create: <S>() => BlocBase<S>;
   static isBlacClass = true;
   public isBlacLive = true;
-  public observer: BlacObservable<S>;
+  public observer: BlacObservable<any>;
   public blac = new Blac();
+  public id: BlocInstanceId;
 
   constructor(initialState: S) {
     this.observer = new BlacObservable();

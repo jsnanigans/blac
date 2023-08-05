@@ -1,9 +1,9 @@
-import { Cubit } from "blac";
+import { Cubit } from "blac/src";
 import React, { FC } from "react";
 import { useBloc } from "@blac/react/src";
 
-import CounterLocalScoped from "./examples/CounterLocalDemo";
-import CounterLocalScopedAsText from "./examples/CounterLocalDemo.tsx?raw";
+import CounterMultiInstance from "./examples/CounterMultiInstance";
+import CounterMultiInstancesText from "./examples/CounterMultiInstance.tsx?raw";
 
 import CounterWithBloc from "./examples/CounterWithBloc";
 import CounterWithBlocAsText from "./examples/CounterWithBloc.tsx?raw";
@@ -92,9 +92,12 @@ class MainBloc extends Cubit<MainBlocState> {
     },
     {
       name: "Counter Multiple Instances",
-      description: "By default all components that use the same Bloc will all use the same instance and so will share the same state. If a Bloc has the static property `allowMultipleInstances = true` set, then each component will get its own instance of the Bloc every time it is mounted.",
-      component: <CounterLocalScoped />,
-      code: CounterLocalScopedAsText
+      description: <>
+        <p>By default there is always only one instance of each Bloc, if you need multiple instanced then specify the
+          "ID" in the `useBloc` hook. All consumers that have the same ID will share the same instance of the Bloc</p>
+      </>,
+      component: <CounterMultiInstance />,
+      code: CounterMultiInstancesText
     },
     {
       name: "Rerender test",

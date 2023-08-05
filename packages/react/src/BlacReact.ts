@@ -1,4 +1,4 @@
-import { Blac } from "blac";
+import { Blac } from "blac/src";
 
 export default class BlacReact {
   static pluginKey = "blacReact";

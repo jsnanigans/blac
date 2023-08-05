@@ -1,5 +1,5 @@
 import React, { FC } from "react";
-import { Bloc } from "blac";
+import { Bloc } from "blac/src";
 import { useBloc } from "@blac/react/src";
 
 type CounterState = number;

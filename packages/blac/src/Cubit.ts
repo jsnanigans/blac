@@ -14,7 +14,8 @@ export abstract class Cubit<S> extends BlocBase<S> {
     this.observer.notify(newState, oldState);
   }
 
-  patch(state: Partial<S>) {
+  // partial object if this.state is object, otherwise same as state
+  patch(state: S extends object ? Partial<S> : S) {
     this.emit({ ...this.state, ...state });
   }
 }

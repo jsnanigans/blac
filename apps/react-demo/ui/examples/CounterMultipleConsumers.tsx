@@ -1,4 +1,4 @@
-import { Cubit } from "blac";
+import { Cubit } from "blac/src";
 import React, { FC } from "react";
 import { useBloc } from "@blac/react/src";
 
