@@ -23,6 +23,9 @@ import Code from "./components/Code";
 import BlocDocs from "./docs/BlocDocs";
 import RerenderTest from "./examples/RerenderTest";
 import RerenderTestAsText from "./examples/RerenderTest.tsx?raw";
+import NoSharedState from "./examples/NoSharedState";
+import NoSharedStateText from "./examples/NoSharedState.tsx?raw";
+import QueryOtherBlocs from "./examples/QueryOtherBlocs";
 
 interface DemoData {
   name: string;
@@ -107,6 +110,22 @@ class MainBloc extends Cubit<MainBlocState> {
       </>,
       component: <RerenderTest />,
       code: RerenderTestAsText
+    },
+    {
+      name: "Isolated",
+      description: <>
+        <p>Isolated Blocs never share the state between other components that use them, there is always a new
+          instance. Set a static property `isolated = true`</p>
+      </>,
+      component: <NoSharedState />,
+      code: NoSharedStateText
+    },
+    {
+      name: "Query other Blocs",
+      description: <>
+        <p>Inside a bloc, you might want to reference other blocs</p>
+      </>,
+      component: <QueryOtherBlocs />
     }
   ];
 

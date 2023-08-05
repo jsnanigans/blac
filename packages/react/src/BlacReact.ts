@@ -38,6 +38,6 @@ export default class BlacReact {
   }
 
   registerPlugin() {
-    this.blac?.addPluginKey(BlacReact.pluginKey, this);
+    this.blac.addPluginKey(BlacReact.pluginKey, this);
   }
 }

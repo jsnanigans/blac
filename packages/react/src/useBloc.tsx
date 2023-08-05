@@ -1,5 +1,5 @@
-import { BlocBase, BlocConstructor, BlocInstanceId, ValueType } from "blac/src";
-import { useMemo, useSyncExternalStore } from "react";
+import { BlocBase, BlocConstructor, BlocInstanceId, BlocProps, CubitPropsType, ValueType } from "blac/src";
+import { useEffect, useMemo, useSyncExternalStore } from "react";
 import externalBlocStore, { ExternalStore } from "./externalBlocStore";
 import useResolvedBloc from "./useResolvedBloc";
 
@@ -8,9 +8,11 @@ export type BlocHookData<B extends BlocBase<S>, S> = [
   instance: B,
 ];
 
+
 export interface BlocHookOptions<B extends BlocBase<S>, S> {
   id?: string;
   dependencySelector?: (state: ValueType<B>) => unknown;
+  props?: CubitPropsType<B>;
 }
 
 export type BlocHookDependencySelector<B extends BlocBase<S>, S> = (state: ValueType<B>) => unknown;
@@ -38,6 +40,7 @@ class UseBlocClass {
     // default options
     let dependencySelector: BlocHookDependencySelector<B, S> = (state: ValueType<B>) => state;
     let blocId: BlocInstanceId | undefined;
+    let props: BlocProps = {};
 
     // parse options
     if (typeof options === "function") {
@@ -51,10 +54,11 @@ class UseBlocClass {
     if (typeof options === "object") {
       dependencySelector = options.dependencySelector ?? dependencySelector;
       blocId = options.id;
+      props = options.props ?? props;
     }
 
 
-    const resolvedBloc = useResolvedBloc<B, S>(bloc, { id: blocId });
+    const resolvedBloc = useResolvedBloc<B, S>(bloc, { id: blocId, props });
 
     if (!resolvedBloc) {
       throw new Error(`useBloc: could not resolve: ${bloc.name || bloc}`);
@@ -66,6 +70,10 @@ class UseBlocClass {
     );
 
     const state = useSyncExternalStore<ValueType<B>>(subscribe, getSnapshot);
+
+    useEffect(() => {
+      resolvedBloc.setProps(props);
+    }, [props]);
 
     return [state, resolvedBloc];
   }

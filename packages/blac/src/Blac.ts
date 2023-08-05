@@ -1,4 +1,4 @@
-import { BlacEvent, BlocBase, BlocInstanceId } from "./BlocBase";
+import { BlacEvent, BlocBase, BlocInstanceId, BlocProps } from "./BlocBase";
 import { BlocBaseAbstract, BlocConstructor } from "./types";
 
 export class Blac {
@@ -41,16 +41,25 @@ export class Blac {
   }
 
   findRegisteredBlocInstance<B extends BlocBase<any>>(blocClass: BlocConstructor<B>, id: BlocInstanceId): B | undefined {
+    const base = blocClass as unknown as BlocBaseAbstract;
+    if (base.isolated) return undefined;
+
     const key = this.createBlocInstanceMapKey(blocClass.name, id);
     return this.blocInstanceMap.get(key) as B;
   }
 
-  createNewBlocInstance<B extends BlocBase<any>>(blocClass: BlocConstructor<B>, id: BlocInstanceId): B {
+  createNewBlocInstance<B extends BlocBase<any>>(blocClass: BlocConstructor<B>, id: BlocInstanceId, props: BlocProps | undefined): B {
     const base = blocClass as unknown as BlocBaseAbstract;
     try {
       const hasCreateMethod = Object.prototype.hasOwnProperty.call(blocClass, "create");
+      base.propsProxy = props;
       const newBloc = hasCreateMethod ? base.create() : new blocClass();
       newBloc.id = id;
+
+      if (base.isolated) {
+        return newBloc as B;
+      }
+
       this.registerBlocInstance(newBloc);
       return newBloc as B;
     } catch (e) {
@@ -61,10 +70,11 @@ export class Blac {
 
   getBloc<B extends BlocBase<any>>(blocClass: BlocConstructor<B>, options: {
     id?: BlocInstanceId;
+    props?: BlocProps;
   } = {}): B {
     const registered = this.findRegisteredBlocInstance(blocClass, options.id);
     if (registered) return registered;
-    return this.createNewBlocInstance(blocClass, options.id);
+    return this.createNewBlocInstance(blocClass, options.id, options.props);
   }
 
   addPluginKey(ref: string, value: any): void {

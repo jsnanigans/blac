@@ -1,5 +1,6 @@
 import { Blac } from "./Blac";
 import { BlacObservable } from "./BlacObserver";
+import { BlocProps } from "./Cubit";
 
 export enum BlacEvent {
   BLOC_DISPOSED = "BLOC_DISPOSED",
@@ -10,13 +11,16 @@ export enum BlacEvent {
 export type BlocInstanceId = string | number | undefined;
 
 export abstract class BlocBase<S> {
+  static isolated = false;
   static keepAlive = false;
   static create: <S>() => BlocBase<S>;
   static isBlacClass = true;
+  static propsProxy: BlocProps = {} as BlocProps;
   public isBlacLive = true;
   public observer: BlacObservable<any>;
   public blac = new Blac();
   public id: BlocInstanceId;
+  public props: BlocProps = {} as BlocProps;
 
   constructor(initialState: S) {
     this.observer = new BlacObservable();
@@ -46,6 +50,10 @@ export abstract class BlocBase<S> {
     this.observer.dispose();
     this.blac.report(BlacEvent.BLOC_DISPOSED, this);
   }
+
+  setProps = (props: any) => {
+    this.props = props;
+  };
 
   private handleUnsubscribe = (callback: (newState: S, oldState: S) => void): void => {
     this.observer.unsubscribe(callback);

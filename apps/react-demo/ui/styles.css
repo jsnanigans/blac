@@ -219,3 +219,28 @@ button.lead {
     inset: 0;
     pointer-events: none;
 }
+
+.jumper-box {
+    position: relative;
+    margin: 1em 0;
+    background: #79c0ff;
+    width: 300px;
+    height: 200px;
+    border: 10px solid #79c0ff;
+}
+
+.jumper {
+    position: absolute;
+    transform: translate3d(
+            calc(var(--x, 0) - 50%),
+            calc(var(--y, 0) - 50%),
+            0
+    );
+    width: 15px;
+    height: 15px;
+    background: #0d1117;
+}
+
+.jumper.focused {
+    background: #7ee787;
+}

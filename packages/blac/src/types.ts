@@ -9,3 +9,4 @@ export type BlocConstructor<B> = new (...args: never[]) => B;
 export type ValueType<B extends BlocBase<any>> = B extends BlocBase<infer U>
   ? U
   : never;
+export type CubitPropsType<B extends BlocBase<any>> = B extends Cubit<any, infer P> ? P : never;
