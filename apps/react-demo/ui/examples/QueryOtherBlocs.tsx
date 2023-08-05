@@ -3,22 +3,24 @@ import React from "react";
 import { Cubit } from "blac/src";
 import { useBloc } from "@blac/react/src";
 
-class IsolatedBloc extends Cubit<{ x: number, y: number }, { speedX: number, speedY: number }> {
+class IsolatedBloc extends Cubit<{ x: number, y: number }, { start: [number, number] }> {
   static isolated = true;
-  velocity = { x: 0, y: 0 };
+  velocity = { x: Math.random() * 4 - 2, y: Math.random() * 4 - 2 };
   maxX = 300;
   maxY = 200;
+  others: IsolatedBloc[] = [];
 
   constructor() {
-    super({ x: 150, y: 100 });
+    super({ x: 0, y: 0 });
+    this._state = ({ x: this.props.start[0], y: this.props.start[1] });
     this.startJumping();
+
+    this.blac.findAllBlocs(IsolatedBloc).then(b => {
+      this.others = b.filter(b => b !== this);
+    });
   }
 
   startJumping = () => {
-    this.velocity = {
-      x: this.props.speedX,
-      y: this.props.speedY
-    };
     requestAnimationFrame(this.animationStep);
   };
 
@@ -46,16 +48,24 @@ class IsolatedBloc extends Cubit<{ x: number, y: number }, { speedX: number, spe
       this.velocity.y = -this.velocity.y;
     }
 
+    for (const other of this.others) {
+      // collide
+      if (Math.abs(other.state.x - next.x) < 10 && Math.abs(other.state.y - next.y) < 10) {
+        this.velocity.x = -this.velocity.x;
+        this.velocity.y = -this.velocity.y;
+        break;
+      }
+    }
+
     this.emit(next);
   };
 
 }
 
-const Jumper: FC = () => {
+const Jumper: FC<{ index: number }> = ({ index }) => {
   const [{ x, y }, { props }] = useBloc(IsolatedBloc, {
     props: {
-      speedX: Math.random() * 5 - 2.5,
-      speedY: Math.random() * 5 - 2.5
+      start: [index * (300 / 9), 0]
     }
   });
   return <div className="jumper" style={{ "--x": x + "px", "--y": y + "px" } as any} />;
@@ -63,7 +73,7 @@ const Jumper: FC = () => {
 
 const QueryOtherBlocs: FC = () => {
   return <div className="jumper-box">
-    {Array.from({ length: 100 }).map((_, i) => <Jumper key={i} />)}
+    {Array.from({ length: 10 }).map((_, i) => <Jumper index={i} key={i} />)}
   </div>;
 };
 

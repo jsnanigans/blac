@@ -4,6 +4,7 @@ import { BlocBaseAbstract, BlocConstructor } from "./types";
 export class Blac {
   static instance: Blac = new Blac();
   blocInstanceMap: Map<string, BlocBase<any>> = new Map();
+  isolatedBlocMap: Map<Function, BlocBase<any>[]> = new Map();
   pluginMap: Map<string, any> = new Map();
 
   constructor() {
@@ -18,7 +19,11 @@ export class Blac {
     const base = bloc.constructor as unknown as BlocBaseAbstract;
     switch (event) {
       case BlacEvent.BLOC_DISPOSED:
-        this.unregisterBlocInstance(bloc);
+        if (base.isolated) {
+          this.unregisterIsolatedBlocInstance(bloc);
+        } else {
+          this.unregisterBlocInstance(bloc);
+        }
         break;
       case BlacEvent.LISTENER_REMOVED:
         if (bloc.observer._observers.size === 0 && !base.keepAlive) bloc.dispose();
@@ -48,6 +53,25 @@ export class Blac {
     return this.blocInstanceMap.get(key) as B;
   }
 
+  registerIsolatedBlocInstance(bloc: BlocBase<any>): void {
+    const blocClass = bloc.constructor;
+    const blocs = this.isolatedBlocMap.get(blocClass);
+    if (blocs) {
+      blocs.push(bloc);
+    } else {
+      this.isolatedBlocMap.set(blocClass, [bloc]);
+    }
+  }
+
+  unregisterIsolatedBlocInstance(bloc: BlocBase<any>): void {
+    const blocClass = bloc.constructor;
+    const blocs = this.isolatedBlocMap.get(blocClass);
+    if (blocs) {
+      const index = blocs.findIndex((b) => b.id === bloc.id);
+      blocs.splice(index, 1);
+    }
+  }
+
   createNewBlocInstance<B extends BlocBase<any>>(blocClass: BlocConstructor<B>, id: BlocInstanceId, props: BlocProps | undefined): B {
     const base = blocClass as unknown as BlocBaseAbstract;
     try {
@@ -57,6 +81,7 @@ export class Blac {
       newBloc.id = id;
 
       if (base.isolated) {
+        this.registerIsolatedBlocInstance(newBloc);
         return newBloc as B;
       }
 
@@ -84,4 +109,16 @@ export class Blac {
   getPluginKey(ref: string): unknown {
     return this.pluginMap.get(ref);
   }
+
+  findAllBlocs = async <B extends BlocBase<any>>(blocClass: BlocConstructor<B>): Promise<B[]> => {
+    const base = blocClass as unknown as BlocBaseAbstract;
+    if (base.isolated) {
+      const blocs = this.isolatedBlocMap.get(blocClass);
+      if (blocs) return blocs as B[];
+    } else {
+      const blocs = Array.from(this.blocInstanceMap.values());
+      return blocs.filter((b) => b instanceof blocClass) as B[];
+    }
+    return [];
+  };
 }

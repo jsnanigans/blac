@@ -123,7 +123,8 @@ class MainBloc extends Cubit<MainBlocState> {
     {
       name: "Query other Blocs",
       description: <>
-        <p>Inside a bloc, you might want to reference other blocs</p>
+        <p>Inside a bloc, you might want to reference other blocs, in this example all squares have their own Bloc
+          instance and know where the others are, they can find eachother with `this.blac.findAllBlocs(...)`</p>
       </>,
       component: <QueryOtherBlocs />
     }
