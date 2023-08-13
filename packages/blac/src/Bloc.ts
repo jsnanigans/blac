@@ -1,4 +1,5 @@
 import { BlocBase } from "./BlocBase";
+import { BlacEvent } from "./Blac";
 
 export abstract class Bloc<S, A> extends BlocBase<S> {
   static create: () => BlocBase<any>;
@@ -10,5 +11,10 @@ export abstract class Bloc<S, A> extends BlocBase<S> {
     const newState = this.reducer(action, this.state);
     this._state = newState;
     this.observer.notify(newState, oldState);
+
+    this.blac.report(BlacEvent.STATE_CHANGED, this, {
+      newState,
+      oldState
+    });
   };
 }

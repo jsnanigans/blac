@@ -1,15 +1,15 @@
 import { BlocBase } from "./BlocBase";
-import { Blac } from "./Blac";
+import { Blac, BlacEvent } from "./Blac";
 
 export type BlocProps = Record<string | number, any>;
 
 export abstract class Cubit<S, Props extends BlocProps = {}> extends BlocBase<S> {
   static create: () => Cubit<any, any>;
-  props: Props = {} as Props;
+  props: Props | undefined;
 
   constructor(initialState: S) {
     super(initialState);
-    this.props = Blac.getInstance().getCustomProps(this.constructor as any);
+    this.props = Blac.getInstance().getCustomProps(this.constructor as any) as Props | undefined;
   }
 
   emit(state: S) {
@@ -21,11 +21,12 @@ export abstract class Cubit<S, Props extends BlocProps = {}> extends BlocBase<S>
     const newState = state;
     this._state = state;
     this.observer.notify(newState, oldState);
-  }
 
-  setProps = (props: Props) => {
-    this.props = props;
-  };
+    this.blac.report(BlacEvent.STATE_CHANGED, this, {
+      newState,
+      oldState
+    });
+  }
 
   // partial object if this.state is object, otherwise same as state
   patch(state: S extends object ? Partial<S> : S) {

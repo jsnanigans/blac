@@ -12,10 +12,14 @@
     "coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@types/chrome": "^0.0.243",
-    "esbuild": "^0.18.18"
+    "@emotion/react": "^11.11.1",
+    "@emotion/styled": "^11.11.0",
+    "@blac/react": "*",
+    "blac": "*"
   },
   "devDependencies": {
+    "@types/chrome": "^0.0.243",
+    "esbuild": "^0.18.18",
     "@types/react": "^18.2.18",
     "@types/react-dom": "^18.2.7",
     "@types/react-highlight": "^0.12.5",

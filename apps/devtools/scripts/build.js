@@ -166,7 +166,8 @@ const buildTools = async () => {
     await esbuild.build({
       entryPoints: ["src/tools/index.ts", "src/tools/panel.ts", "src/tools/content_script.ts"],
       bundle: true,
-      outdir: "dist/tools"
+      outdir: "dist/tools",
+      tsconfig: "tsconfig.json"
     });
     fs.copyFileSync("src/tools/Panel.html", "dist/tools/Panel.html");
     fs.copyFileSync("src/tools/index.html", "dist/tools/index.html");

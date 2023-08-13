@@ -13,7 +13,7 @@ const externalBlocStore = <B extends BlocBase<any>>(
   let lastDependencyCheck = dependencySelector(bloc.state);
   return {
     subscribe: (listener: () => void) => {
-      const unSub = bloc.onStateChange(data => {
+      const unSub = bloc.addEventListenerStateChange(data => {
         const newDependencyCheck = dependencySelector(data);
         if (newDependencyCheck !== lastDependencyCheck) {
           lastDependencyCheck = newDependencyCheck;

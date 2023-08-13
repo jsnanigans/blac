@@ -72,7 +72,7 @@ class UseBlocClass {
     const state = useSyncExternalStore<ValueType<B>>(subscribe, getSnapshot);
 
     useEffect(() => {
-      resolvedBloc.setProps(props);
+      resolvedBloc.props = props;
     }, [props]);
 
     return [state, resolvedBloc];

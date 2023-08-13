@@ -19,7 +19,7 @@
     "build": "rollup -c rollup.config.lib.js",
     "dev": "rollup -c rollup.config.lib.js --watch",
     "prettier": "prettier --write ./src",
-    "test": "vitest run"
+    "test": "vitest run --coverage"
   },
   "dependencies": {
     "blac": "*"

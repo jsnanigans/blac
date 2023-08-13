@@ -245,3 +245,10 @@ button.lead {
 .jumper.focused {
     background: #7ee787;
 }
+
+
+.dt {
+    position: fixed;
+    left: 0;
+    bottom: 0;
+}

@@ -39,7 +39,7 @@ interface MainBlocState {
   current?: DemoData;
 }
 
-class MainBloc extends Cubit<MainBlocState> {
+class DemoPageBloc extends Cubit<MainBlocState> {
   readonly docs: DemoData[] = [
     {
       name: "Setup",
@@ -90,7 +90,7 @@ class MainBloc extends Cubit<MainBlocState> {
     },
     {
       name: "Counter Shared State",
-      description: "Share one Bloc between multiple components",
+      description: "Share one Bloc between multiple ui",
       component: <CounterMultipleConsumers />,
       code: CounterMultipleConsumersAsText
     },
@@ -160,7 +160,7 @@ class MainBloc extends Cubit<MainBlocState> {
         (example) => this.slugify(example.name) === selectedName
       );
 
-      if (page) {
+      if (page && page !== this.state.current) {
         this.setSelected(page);
       }
     });
@@ -182,7 +182,7 @@ class MainBloc extends Cubit<MainBlocState> {
 }
 
 const Main: FC = () => {
-  const [{ current }, { examples, docs, setSelected }] = useBloc(MainBloc);
+  const [{ current }, { examples, docs, setSelected }] = useBloc(DemoPageBloc);
 
   return (
     <main>

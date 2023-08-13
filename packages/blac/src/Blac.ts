@@ -1,12 +1,34 @@
-import { BlacEvent, BlocBase, BlocInstanceId, BlocProps } from "./BlocBase";
+import { BlocBase, BlocInstanceId } from "./BlocBase";
 import { BlocBaseAbstract, BlocConstructor } from "./types";
+import { BlocProps } from "./Cubit";
+import { BlacPlugin } from "./BlacPlugin";
+
+export enum BlacEvent {
+  BLOC_DISPOSED = "BLOC_DISPOSED",
+  LISTENER_REMOVED = "LISTENER_REMOVED",
+  LISTENER_ADDED = "LISTENER_ADDED",
+  STATE_CHANGED = "STATE_CHANGED",
+  BLOC_CREATED = "BLOC_CREATED",
+}
+
+export interface EventParams {
+  [BlacEvent.BLOC_DISPOSED]: undefined;
+  [BlacEvent.LISTENER_REMOVED]: undefined;
+  [BlacEvent.LISTENER_ADDED]: undefined;
+  [BlacEvent.BLOC_CREATED]: undefined;
+  [BlacEvent.STATE_CHANGED]: {
+    newState: any;
+    oldState: any;
+  };
+}
 
 export class Blac {
   static instance: Blac = new Blac();
   static findAllBlocs = Blac.instance.findAllBlocs;
+  static addPlugin = Blac.instance.addPlugin;
   blocInstanceMap: Map<string, BlocBase<any>> = new Map();
   isolatedBlocMap: Map<Function, BlocBase<any>[]> = new Map();
-  pluginMap: Map<string, any> = new Map();
+  pluginList: BlacPlugin[] = [];
   customPropsMap: Map<Function, BlocProps> = new Map();
 
   constructor() {
@@ -21,8 +43,24 @@ export class Blac {
     return Blac.instance;
   }
 
-  report = (event: BlacEvent, bloc: BlocBase<any>) => {
+  addPlugin = (plugin: BlacPlugin): void => {
+    // check if already added
+    const index = this.pluginList.findIndex((p) => p.name === plugin.name);
+    if (index !== -1) return;
+    this.pluginList.push(plugin);
+  };
+
+  reportToPlugins = <B extends BlacEvent>(event: B, bloc: BlocBase<any>, params?: EventParams[B]) => {
+    this.pluginList.forEach((plugin) => {
+      plugin.onEvent(event, bloc, params);
+    });
+  };
+
+  report = <B extends BlacEvent>(event: B, bloc: BlocBase<any>, params?: EventParams[B]) => {
     const base = bloc.constructor as unknown as BlocBaseAbstract;
+
+    this.reportToPlugins(event, bloc, params);
+
     switch (event) {
       case BlacEvent.BLOC_DISPOSED:
         if (base.isolated) {
@@ -32,7 +70,7 @@ export class Blac {
         }
         break;
       case BlacEvent.LISTENER_REMOVED:
-        if (bloc.observer._observers.size === 0 && !base.keepAlive) bloc.dispose();
+        if (bloc.observer.size === 0 && !base.keepAlive) bloc.dispose();
         break;
     }
   };
@@ -105,7 +143,6 @@ export class Blac {
       return newBloc as B;
     } catch (e) {
       throw new Error(`Failed to create instance of ${blocClass.name}. ${e}`);
-      console.error(e);
     }
   }
 
@@ -116,14 +153,6 @@ export class Blac {
     const registered = this.findRegisteredBlocInstance(blocClass, options.id);
     if (registered) return registered;
     return this.createNewBlocInstance(blocClass, options.id, options.props);
-  }
-
-  addPluginKey(ref: string, value: any): void {
-    this.pluginMap.set(ref, value);
-  }
-
-  getPluginKey(ref: string): unknown {
-    return this.pluginMap.get(ref);
   }
 
   findAllBlocs = async <B extends BlocBase<any>>(blocClass: BlocConstructor<B>): Promise<B[]> => {
