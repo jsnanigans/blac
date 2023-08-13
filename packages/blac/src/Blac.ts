@@ -3,6 +3,7 @@ import { BlocBaseAbstract, BlocConstructor } from "./types";
 
 export class Blac {
   static instance: Blac = new Blac();
+  static findAllBlocs = Blac.instance.findAllBlocs;
   blocInstanceMap: Map<string, BlocBase<any>> = new Map();
   isolatedBlocMap: Map<Function, BlocBase<any>[]> = new Map();
   pluginMap: Map<string, any> = new Map();
@@ -13,6 +14,10 @@ export class Blac {
     }
 
     Blac.instance = this;
+  }
+
+  static getInstance(): Blac {
+    return Blac.instance;
   }
 
   report = (event: BlacEvent, bloc: BlocBase<any>) => {

@@ -4,7 +4,7 @@ export default class BlacReact {
   static pluginKey = "blacReact";
   // blacContext: React.Context<Blac>;
   static instance: BlacReact | undefined;
-  blac: Blac = new Blac();
+  blac: Blac = Blac.getInstance();
 
   constructor() {
     // singleton

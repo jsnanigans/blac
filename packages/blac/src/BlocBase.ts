@@ -18,7 +18,7 @@ export abstract class BlocBase<S> {
   static propsProxy: BlocProps = {} as BlocProps;
   public isBlacLive = true;
   public observer: BlacObservable<any>;
-  public blac = new Blac();
+  public blac = Blac.getInstance();
   public id: BlocInstanceId;
   public props: BlocProps = {} as BlocProps;
 

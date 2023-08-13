@@ -4,7 +4,7 @@ import { useMemo } from "react";
 const useResolvedBloc = <B extends BlocBase<S>, S>(
   bloc: BlocConstructor<B>,
   options: { id?: BlocInstanceId; props?: BlocProps } = {}
-): B => useMemo(() => new Blac().getBloc(bloc, {
+): B => useMemo(() => Blac.getInstance().getBloc(bloc, {
   id: options.id,
   props: options.props
 }), [options.id]);

@@ -1,6 +1,6 @@
 import type { FC } from "react";
-import React from "react";
-import { Cubit } from "blac/src";
+import React, { useCallback, useEffect, useRef } from "react";
+import { Blac, Cubit } from "blac/src";
 import { useBloc } from "@blac/react/src";
 
 class IsolatedBloc extends Cubit<{ x: number, y: number }, { speedX: number, speedY: number }> {
@@ -19,12 +19,10 @@ class IsolatedBloc extends Cubit<{ x: number, y: number }, { speedX: number, spe
       x: this.props.speedX,
       y: this.props.speedY
     };
-    requestAnimationFrame(this.animationStep);
   };
 
-  animationStep = () => {
+  frame = () => {
     this.move(this.state.x + this.velocity.x, this.state.y + this.velocity.y);
-    requestAnimationFrame(this.animationStep);
   };
 
   move = (x: number, y: number) => {
@@ -62,6 +60,26 @@ const Jumper: FC = () => {
 };
 
 const NoSharedState: FC = () => {
+  const active = useRef(true);
+  const animate = useCallback((blocks: IsolatedBloc[]) => {
+    for (const block of blocks) {
+      block.frame();
+    }
+
+    if (!active.current) return;
+    requestAnimationFrame(() => animate(blocks));
+  }, []);
+
+  useEffect(() => {
+    Blac.findAllBlocs(IsolatedBloc).then(blocks => {
+      animate(blocks);
+    });
+
+    return () => {
+      active.current = false;
+    };
+  }, []);
+
   return <div className="jumper-box">
     {Array.from({ length: 100 }).map((_, i) => <Jumper key={i} />)}
   </div>;
