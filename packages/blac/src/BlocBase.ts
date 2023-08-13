@@ -15,7 +15,6 @@ export abstract class BlocBase<S> {
   static keepAlive = false;
   static create: <S>() => BlocBase<S>;
   static isBlacClass = true;
-  static propsProxy: BlocProps = {} as BlocProps;
   public isBlacLive = true;
   public observer: BlacObservable<any>;
   public blac = Blac.getInstance();

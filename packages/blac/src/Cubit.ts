@@ -1,4 +1,5 @@
 import { BlocBase } from "./BlocBase";
+import { Blac } from "./Blac";
 
 export type BlocProps = Record<string | number, any>;
 
@@ -8,7 +9,7 @@ export abstract class Cubit<S, Props extends BlocProps = {}> extends BlocBase<S>
 
   constructor(initialState: S) {
     super(initialState);
-    this.props = (this.constructor as any)["propsProxy"] as Props;
+    this.props = Blac.getInstance().getCustomProps(this.constructor as any);
   }
 
   emit(state: S) {

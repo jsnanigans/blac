@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useRef } from "react";
 import { Blac, Cubit } from "blac/src";
 import { useBloc } from "@blac/react/src";
 
-class IsolatedBloc extends Cubit<{ x: number, y: number }, { start: [number, number] }> {
+class IsolatedBloc extends Cubit<{ x: number, y: number, color: string }, { start: [number, number], color: string }> {
   static isolated = true;
   velocity = { x: Math.random() * 3 - 1.5, y: Math.random() * 3 - 1.5 };
   maxX = 300;
@@ -12,8 +12,8 @@ class IsolatedBloc extends Cubit<{ x: number, y: number }, { start: [number, num
   others: IsolatedBloc[] = [];
 
   constructor() {
-    super({ x: 0, y: 0 });
-    this._state = ({ x: this.props.start[0], y: this.props.start[1] });
+    super({ x: 0, y: 0, color: "black" });
+    this._state = ({ x: this.props.start[0], y: this.props.start[1], color: this.props.color });
 
     this.blac.findAllBlocs(IsolatedBloc).then(b => {
       this.others = b.filter(b => b !== this);
@@ -58,24 +58,24 @@ class IsolatedBloc extends Cubit<{ x: number, y: number }, { start: [number, num
           const ay = (targetY - other.state.y) * 0.1;
           next.x -= ax;
           next.y -= ay;
-          other.emit({ x: other.state.x + ax, y: other.state.y + ay });
+          other.patch({ x: other.state.x + ax, y: other.state.y + ay });
         }
       }
-
     }
 
-    this.emit(next);
+    this.patch(next);
   };
 
 }
 
 const Jumper: FC<{ index: number }> = ({ index }) => {
-  const [{ x, y }, { props }] = useBloc(IsolatedBloc, {
+  const [{ x, y, color }, { props }] = useBloc(IsolatedBloc, {
     props: {
-      start: [index * (300 % 9), index * (200 % 9)]
+      start: [index * (300 % 9), index * (200 % 9)],
+      color: `hsl(${index * 10}, 100%, 45%)`
     }
   });
-  return <div className="jumper" style={{ "--x": x + "px", "--y": y + "px" } as any} />;
+  return <div className="jumper" style={{ "--x": x + "px", "--y": y + "px", "--bg": color } as any} />;
 };
 
 const QueryOtherBlocs: FC = () => {

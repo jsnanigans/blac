@@ -7,6 +7,7 @@ export class Blac {
   blocInstanceMap: Map<string, BlocBase<any>> = new Map();
   isolatedBlocMap: Map<Function, BlocBase<any>[]> = new Map();
   pluginMap: Map<string, any> = new Map();
+  customPropsMap: Map<Function, BlocProps> = new Map();
 
   constructor() {
     if (Blac.instance) {
@@ -77,11 +78,21 @@ export class Blac {
     }
   }
 
+  setCustomProps(blocClass: BlocBaseAbstract, props: BlocProps | undefined): void {
+    if (!props) return;
+    this.customPropsMap.set(blocClass, props);
+  }
+
+  getCustomProps(blocClass: BlocBaseAbstract): BlocProps | undefined {
+    return this.customPropsMap.get(blocClass);
+  }
+
   createNewBlocInstance<B extends BlocBase<any>>(blocClass: BlocConstructor<B>, id: BlocInstanceId, props: BlocProps | undefined): B {
     const base = blocClass as unknown as BlocBaseAbstract;
     try {
       const hasCreateMethod = Object.prototype.hasOwnProperty.call(blocClass, "create");
-      base.propsProxy = props;
+      this.setCustomProps(base, props);
+      // base.propsProxy = props;
       const newBloc = hasCreateMethod ? base.create() : new blocClass();
       newBloc.id = id;
 
