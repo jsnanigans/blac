@@ -1,10 +1,9 @@
 import type { FC, ReactNode } from "react";
 import React from "react";
 import { useBloc } from "@blac/react/src";
-import { AppStateComponentsBloc } from "../state/ObserverPlugin";
+import { AppStateComponentsBloc, BlocItem } from "../state/AppStateComponentsBloc";
 import styled from "@emotion/styled";
 import { keyframes } from "@emotion/react";
-import { Bloc, Cubit } from "blac/src";
 
 const Frame = styled.div`
   display: flex;
@@ -27,7 +26,7 @@ const Frame = styled.div`
   }
 
   > div:first-of-type {
-    height: 300px;
+    height: 100dvh;
     overflow-y: auto;
   }
 `;
@@ -88,11 +87,11 @@ const BlocItem: FC<{ className?: string; onClick: () => void, children: ReactNod
   </BlocItemWrap>;
 };
 
-const EditState: FC<{ bloc: Bloc<any, any> | Cubit<any> }> = ({ bloc }) => {
+const EditState: FC<{ bloc: BlocItem }> = ({ bloc }) => {
   const state = bloc.state;
   let fields = typeof state === "object" ? { ...state } : state;
   const fullStateType = typeof state;
-  const isCubit = bloc instanceof Cubit;
+  const isCubit = bloc.isCubit;
 
   // create fields object if state is string, number, boolean
   if (typeof fields !== "object") {
@@ -122,11 +121,11 @@ const EditState: FC<{ bloc: Bloc<any, any> | Cubit<any> }> = ({ bloc }) => {
 
 
     if (fullStateType === "number" || fullStateType === "boolean" || fullStateType === "string") {
-      bloc.emit(newFields[name]);
+      // bloc.emit(newFields[name]);
       return;
     }
 
-    bloc.emit(newFields);
+    // bloc.emit(newFields);
   };
 
   if (!isCubit) {
@@ -168,13 +167,13 @@ const List: FC = () => {
     disposeBloc
   }] = useBloc(AppStateComponentsBloc, "appState");
 
-  const nonIsolatedBlocs = blocs.filter(b => !b.isolated);
+  const nonIsolatedBlocs = blocs.filter(b => !b.isIsolated);
 
   return <Frame>
     <div>
       {nonIsolatedBlocs.map((bloc) => {
         return <BlocItem
-          className={[bloc === selectedBloc ? "selected" : ""].filter(Boolean).join(" ")}
+          className={[bloc.id === selectedBloc ? "selected" : ""].filter(Boolean).join(" ")}
           key={`${bloc.name}#${bloc.id}`}
           changedKey={getBlocKey(bloc)}
           onClick={() => {
@@ -187,7 +186,11 @@ const List: FC = () => {
       <p>Selected: {selectedBloc.name}</p>
       <button onClick={() => disposeBloc(selectedBloc)}>Dispose</button>
       {selectedBloc.id !== selectedBloc.name && <p>ID: {selectedBloc.id}</p>}
-      {selectedState ? <div><EditState bloc={selectedBloc as any} /></div> :
+      {selectedState ? <div>
+          {/*<EditState bloc={selectedBloc as any} />*/}
+          <h6>State:</h6>
+          <pre>{JSON.stringify(selectedState, null, 2)}</pre>
+        </div> :
         <p>State cannot be shown as string</p>}
     </BlocDetails>}
   </Frame>;

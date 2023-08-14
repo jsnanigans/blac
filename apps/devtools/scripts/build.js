@@ -164,7 +164,7 @@ const buildTools = async () => {
   if (!watch) {
     console.log("Building tools");
     await esbuild.build({
-      entryPoints: ["src/tools/index.ts", "src/tools/panel.ts", "src/tools/content_script.ts"],
+      entryPoints: ["src/tools/index.ts", "src/tools/panel.ts", "src/tools/inject_script.ts"],
       bundle: true,
       outdir: "dist/tools",
       tsconfig: "tsconfig.json"
@@ -178,7 +178,7 @@ const buildTools = async () => {
   //           text: 'You can mark the path "@types/chrome" as external to exclude it from the bundle, which will remove this error.'
   if (watch) {
     const context = await esbuild.context({
-      entryPoints: ["src/tools/index.ts", "src/tools/panel.ts", "src/tools/content_script.ts"],
+      entryPoints: ["src/tools/index.ts", "src/tools/panel.ts", "src/tools/inject_script.ts"],
       bundle: true,
       outdir: "dist/tools",
       external: ["@types/chrome"]

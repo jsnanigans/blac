@@ -47,11 +47,10 @@ export abstract class BlocBase<S> {
   };
 
   addEventListenerStateChange = (
-    callback: (newState: S, oldState: S) => void,
-    hidden = false
+    callback: (newState: S, oldState: S) => void
   ): (() => void) => {
-    this.observer.subscribe(callback, hidden);
-    if (!hidden) this.blac.report(BlacEvent.LISTENER_ADDED, this);
+    this.observer.subscribe(callback);
+    this.blac.report(BlacEvent.LISTENER_ADDED, this);
     return () => this.handleUnsubscribe(callback);
   };
 

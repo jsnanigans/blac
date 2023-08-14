@@ -3,6 +3,10 @@ import { BlocBaseAbstract, BlocConstructor } from "./types";
 import { BlocProps } from "./Cubit";
 import { BlacPlugin } from "./BlacPlugin";
 
+export interface BlacConfig {
+  exposeBlacInstance?: boolean;
+}
+
 export enum BlacEvent {
   BLOC_DISPOSED = "BLOC_DISPOSED",
   LISTENER_REMOVED = "LISTENER_REMOVED",
@@ -26,10 +30,12 @@ export class Blac {
   static instance: Blac = new Blac();
   static findAllBlocs = Blac.instance.findAllBlocs;
   static addPlugin = Blac.instance.addPlugin;
+  static configure = Blac.instance.configure;
   blocInstanceMap: Map<string, BlocBase<any>> = new Map();
   isolatedBlocMap: Map<Function, BlocBase<any>[]> = new Map();
   pluginList: BlacPlugin[] = [];
   customPropsMap: Map<Function, BlocProps> = new Map();
+  postChangesToDocument = false;
 
   constructor() {
     if (Blac.instance) {
@@ -167,4 +173,17 @@ export class Blac {
     }
     return [];
   };
+
+  configure = (config: BlacConfig) => {
+    if (config.exposeBlacInstance) {
+      window.__blac = this;
+    }
+  };
+}
+
+
+declare global {
+  interface Window {
+    __blac?: Blac;
+  }
 }

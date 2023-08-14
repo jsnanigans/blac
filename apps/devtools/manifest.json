@@ -11,8 +11,7 @@
     "declarativeContent",
     "activeTab",
     "scripting",
-    "tabs",
-    "notifications"
+    "tabs"
   ],
   "host_permissions": [
     "<all_urls>"
@@ -25,8 +24,18 @@
       ],
       "js": [
         "dist/content/index.js"
+      ]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "dist/tools/inject_script.js",
+        "dist/content/index.js"
       ],
-      "run_at": "document_start"
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ]
 }

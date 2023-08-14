@@ -1,6 +1,6 @@
 import type { FC } from "react";
 import React from "react";
-import "./state/ObserverPlugin";
+import "./state/AppStateComponentsBloc";
 import styled from "@emotion/styled";
 import List from "./ui/List";
 
