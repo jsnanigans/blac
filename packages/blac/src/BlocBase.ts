@@ -5,11 +5,17 @@ import { BlocProps } from "./Cubit";
 
 export type BlocInstanceId = string | number | undefined;
 
+const simpleUniqueId = (): string => {
+  const date = new Date();
+  return `${date.getTime()}-${Math.floor(Math.random() * 1000000)}`;
+};
+
 export abstract class BlocBase<S> {
   static isolated = false;
   static keepAlive = false;
   static create: <S>() => BlocBase<S>;
   static isBlacClass = true;
+  public isolated = false;
   public isBlacLive = true;
   public observer: BlacObservable<any>;
   public blac = Blac.getInstance();
@@ -20,6 +26,8 @@ export abstract class BlocBase<S> {
     this.observer = new BlacObservable();
     this._state = initialState;
     this.blac.report(BlacEvent.BLOC_CREATED, this);
+    this.id = this.constructor.name;
+    this.isolated = (this.constructor as any).isolated;
   }
 
   public _state: S;
@@ -31,6 +39,12 @@ export abstract class BlocBase<S> {
   get name() {
     return this.constructor.name;
   }
+
+  updateId = (id?: BlocInstanceId) => {
+    const originalId = this.id;
+    if (!id || id === originalId) return;
+    this.id = id;
+  };
 
   addEventListenerStateChange = (
     callback: (newState: S, oldState: S) => void,

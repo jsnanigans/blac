@@ -132,7 +132,7 @@ export class Blac {
       this.setCustomProps(base, props);
       // base.propsProxy = props;
       const newBloc = hasCreateMethod ? base.create() : new blocClass();
-      newBloc.id = id;
+      newBloc.updateId(id);
 
       if (base.isolated) {
         this.registerIsolatedBlocInstance(newBloc);
@@ -150,9 +150,10 @@ export class Blac {
     id?: BlocInstanceId;
     props?: BlocProps;
   } = {}): B {
-    const registered = this.findRegisteredBlocInstance(blocClass, options.id);
+    const id = options.id || blocClass.name;
+    const registered = this.findRegisteredBlocInstance(blocClass, id);
     if (registered) return registered;
-    return this.createNewBlocInstance(blocClass, options.id, options.props);
+    return this.createNewBlocInstance(blocClass, id, options.props);
   }
 
   findAllBlocs = async <B extends BlocBase<any>>(blocClass: BlocConstructor<B>): Promise<B[]> => {

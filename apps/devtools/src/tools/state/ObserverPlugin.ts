@@ -1,9 +1,16 @@
 import { Blac, BlacEvent, BlacPlugin, BlocBase, Cubit } from "blac/src";
 
+interface Change {
+  bloc: BlocBase<any>;
+  state: any;
+  oldState: any;
+  time: number;
+}
+
 interface AppStateComponentsBlocState {
   blocs: BlocBase<any>[];
   selectedBloc: BlocBase<any> | undefined;
-  lastChanged: number;
+  lastChanged: Map<BlocBase<any>, Change>;
   selectedState?: any;
 }
 
@@ -15,8 +22,9 @@ export class AppStateComponentsBloc extends Cubit<AppStateComponentsBlocState> {
     super({
       blocs: [],
       selectedBloc: undefined,
-      lastChanged: Date.now()
+      lastChanged: new Map()
     });
+    console.log("new list");
 
     this.registerPlugin();
   }
@@ -70,22 +78,47 @@ export class AppStateComponentsBloc extends Cubit<AppStateComponentsBlocState> {
     this.updateSelectedState(bloc.state);
   };
 
+  getBlocChanges = (bloc: BlocBase<any>) => {
+    return this.state.lastChanged.get(bloc);
+  };
+
+  getBlocKey = (bloc: BlocBase<any>): string => {
+    const lastUpdated = this.getBlocChanges(bloc);
+    return `${bloc.name}#${bloc.id}#${lastUpdated?.time ?? 0}`;
+  };
+
+  disposeBloc = (bloc: BlocBase<any>) => {
+    bloc.dispose();
+  };
+
   private handleBlocStateChanged(event: BlacEvent.STATE_CHANGED, bloc: BlocBase<any>, params: {
     newState: any;
     oldState: any;
   }) {
+    if (bloc === this) {
+      return;
+    }
 
+    if (bloc === this.state.selectedBloc) {
+      this.updateSelectedState(params.newState);
+    }
+
+    if (!bloc.isolated) {
+      this.patch({
+        lastChanged: new Map(this.state.lastChanged).set(bloc, {
+          bloc,
+          state: params.newState,
+          oldState: params.oldState,
+          time: Date.now()
+        })
+      });
+    }
   }
 
   private handleBlocCreated(event: BlacEvent.BLOC_CREATED, bloc: BlocBase<any>) {
-    const unsub = bloc.observer.subscribe((newState, oldState) => {
-      if (bloc === this.state.selectedBloc) {
-        this.updateSelectedState(newState);
-      }
-    }, true);
-
-    this.blocSubscriberMap.set(bloc, unsub);
-
+    if (bloc === this) {
+      return;
+    }
     this.patch({
       blocs: [...this.state.blocs, bloc]
     });
@@ -114,5 +147,7 @@ export class AppStateComponentsBloc extends Cubit<AppStateComponentsBlocState> {
   }
 }
 
-const appState = Blac.getInstance().getBloc(AppStateComponentsBloc);
+const appState = Blac.getInstance().getBloc(AppStateComponentsBloc, {
+  id: "appState"
+});
 

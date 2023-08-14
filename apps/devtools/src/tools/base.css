@@ -1,5 +1,3 @@
-@layer reset, base, tokens, recipes, utilities;
-
 body, html {
     margin: 0;
 }
