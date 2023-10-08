@@ -1,4 +1,4 @@
-import { Blac, BlocBase, BlocConstructor, BlocInstanceId, BlocProps } from "blac/src";
+import { Blac, BlocBase, BlocConstructor, BlocInstanceId, BlocProps } from "blac";
 import { useMemo } from "react";
 
 const useResolvedBloc = <B extends BlocBase<S>, S>(

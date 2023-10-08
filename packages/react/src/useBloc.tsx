@@ -1,4 +1,4 @@
-import { BlocBase, BlocConstructor, BlocInstanceId, BlocProps, CubitPropsType, ValueType } from "blac/src";
+import { BlocBase, BlocConstructor, BlocInstanceId, BlocProps, CubitPropsType, ValueType } from "blac";
 import { useEffect, useMemo, useSyncExternalStore } from "react";
 import externalBlocStore, { ExternalStore } from "./externalBlocStore";
 import useResolvedBloc from "./useResolvedBloc";
@@ -64,12 +64,12 @@ class UseBlocClass {
       throw new Error(`useBloc: could not resolve: ${bloc.name || bloc}`);
     }
 
-    const { subscribe, getSnapshot } = useMemo<ExternalStore<B>>(
+    const { subscribe, getSnapshot, getServerSnapshot } = useMemo<ExternalStore<B>>(
       () => externalBlocStore(resolvedBloc, dependencySelector),
       [resolvedBloc]
     );
 
-    const state = useSyncExternalStore<ValueType<B>>(subscribe, getSnapshot);
+    const state = useSyncExternalStore<ValueType<B>>(subscribe, getSnapshot, getServerSnapshot);
 
     useEffect(() => {
       resolvedBloc.props = props;

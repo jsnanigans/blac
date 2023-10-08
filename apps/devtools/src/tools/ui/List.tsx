@@ -184,7 +184,7 @@ const List: FC = () => {
     </div>
     {selectedBloc && <BlocDetails>
       <p>Selected: {selectedBloc.name}</p>
-      <button onClick={() => disposeBloc(selectedBloc)}>Dispose</button>
+      {/*<button onClick={() => disposeBloc(selectedBloc)}>Dispose</button>*/}
       {selectedBloc.id !== selectedBloc.name && <p>ID: {selectedBloc.id}</p>}
       {selectedState ? <div>
           {/*<EditState bloc={selectedBloc as any} />*/}
