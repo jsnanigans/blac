@@ -1,14 +1,8 @@
-import { Blac, BlacEvent } from "./Blac";
-import { BlacObservable } from "./BlacObserver";
-import { BlocProps } from "./Cubit";
-
+import { Blac, BlacEvent } from './Blac';
+import { BlacObservable } from './BlacObserver';
+import { BlocProps } from './Cubit';
 
 export type BlocInstanceId = string | number | undefined;
-
-const simpleUniqueId = (): string => {
-  const date = new Date();
-  return `${date.getTime()}-${Math.floor(Math.random() * 1000000)}`;
-};
 
 export abstract class BlocBase<S> {
   static isolated = false;
@@ -27,7 +21,7 @@ export abstract class BlocBase<S> {
     this._state = initialState;
     this.blac.report(BlacEvent.BLOC_CREATED, this);
     this.id = this.constructor.name;
-    this.isolated = (this.constructor as any).isolated;
+    this.isolated = (this.constructor as BlocBase<S>).isolated;
   }
 
   public _state: S;
@@ -60,9 +54,10 @@ export abstract class BlocBase<S> {
     this.blac.report(BlacEvent.BLOC_DISPOSED, this);
   }
 
-  private handleUnsubscribe = (callback: (newState: S, oldState: S) => void): void => {
+  private handleUnsubscribe = (
+    callback: (newState: S, oldState: S) => void
+  ): void => {
     this.observer.unsubscribe(callback);
     this.blac.report(BlacEvent.LISTENER_REMOVED, this);
   };
 }
-

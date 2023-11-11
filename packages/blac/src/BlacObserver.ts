@@ -6,11 +6,11 @@ export type BlacObserver<S> = (
 export class BlacObservable<S> {
   private _observers = new Set<BlacObserver<S>>();
 
-  get size() {
+  get size(): number {
     return this._observers.size;
   }
 
-  subscribe(observer: BlacObserver<S>) {
+  subscribe(observer: BlacObserver<S>): () => void {
     this._observers.add(observer);
     return () => this.unsubscribe(observer);
   }

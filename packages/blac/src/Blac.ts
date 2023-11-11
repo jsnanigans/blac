@@ -1,18 +1,18 @@
-import { BlocBase, BlocInstanceId } from "./BlocBase";
-import { BlocBaseAbstract, BlocConstructor } from "./types";
-import { BlocProps } from "./Cubit";
-import { BlacPlugin } from "./BlacPlugin";
+import { BlocBase, BlocInstanceId } from './BlocBase';
+import { BlocBaseAbstract, BlocConstructor } from './types';
+import { BlocProps } from './Cubit';
+import { BlacPlugin } from './BlacPlugin';
 
 export interface BlacConfig {
   exposeBlacInstance?: boolean;
 }
 
 export enum BlacEvent {
-  BLOC_DISPOSED = "BLOC_DISPOSED",
-  LISTENER_REMOVED = "LISTENER_REMOVED",
-  LISTENER_ADDED = "LISTENER_ADDED",
-  STATE_CHANGED = "STATE_CHANGED",
-  BLOC_CREATED = "BLOC_CREATED",
+  BLOC_DISPOSED = 'BLOC_DISPOSED',
+  LISTENER_REMOVED = 'LISTENER_REMOVED',
+  LISTENER_ADDED = 'LISTENER_ADDED',
+  STATE_CHANGED = 'STATE_CHANGED',
+  BLOC_CREATED = 'BLOC_CREATED',
 }
 
 export interface EventParams {
@@ -28,7 +28,7 @@ export interface EventParams {
 
 export class Blac {
   static instance: Blac = new Blac();
-  static findAllBlocs = Blac.instance.findAllBlocs;
+  static getAllBlocs = Blac.instance.getAllBlocs;
   static addPlugin = Blac.instance.addPlugin;
   static configure = Blac.instance.configure;
   blocInstanceMap: Map<string, BlocBase<any>> = new Map();
@@ -56,16 +56,22 @@ export class Blac {
     this.pluginList.push(plugin);
   };
 
-  reportToPlugins = <B extends BlacEvent>(event: B, bloc: BlocBase<any>, params?: EventParams[B]) => {
+  reportToPlugins = <B extends BlacEvent>(
+    event: B,
+    bloc: BlocBase<any>,
+    params?: EventParams[B]
+  ) => {
     this.pluginList.forEach((plugin) => {
       plugin.onEvent(event, bloc, params);
     });
   };
 
-  report = <B extends BlacEvent>(event: B, bloc: BlocBase<any>, params?: EventParams[B]) => {
+  report = <B extends BlacEvent>(
+    event: B,
+    bloc: BlocBase<any>,
+    params?: EventParams[B]
+  ) => {
     const base = bloc.constructor as unknown as BlocBaseAbstract;
-
-    this.reportToPlugins(event, bloc, params);
 
     switch (event) {
       case BlacEvent.BLOC_DISPOSED:
@@ -79,10 +85,12 @@ export class Blac {
         if (bloc.observer.size === 0 && !base.keepAlive) bloc.dispose();
         break;
     }
+
+    this.reportToPlugins(event, bloc, params);
   };
 
-  createBlocInstanceMapKey(blocClassName: string, id?: BlocInstanceId): string {
-    return `${blocClassName}${id ? id : ""}`;
+  createBlocInstanceMapKey(blocClassName: string, id: BlocInstanceId): string {
+    return `${blocClassName}:${id}`;
   }
 
   unregisterBlocInstance(bloc: BlocBase<any>): void {
@@ -95,7 +103,10 @@ export class Blac {
     this.blocInstanceMap.set(key, bloc);
   }
 
-  findRegisteredBlocInstance<B extends BlocBase<any>>(blocClass: BlocConstructor<B>, id: BlocInstanceId): B | undefined {
+  findRegisteredBlocInstance<B extends BlocBase<any>>(
+    blocClass: BlocConstructor<B>,
+    id: BlocInstanceId
+  ): B | undefined {
     const base = blocClass as unknown as BlocBaseAbstract;
     if (base.isolated) return undefined;
 
@@ -122,7 +133,10 @@ export class Blac {
     }
   }
 
-  setCustomProps(blocClass: BlocBaseAbstract, props: BlocProps | undefined): void {
+  setCustomProps(
+    blocClass: BlocBaseAbstract,
+    props: BlocProps | undefined
+  ): void {
     if (!props) return;
     this.customPropsMap.set(blocClass, props);
   }
@@ -131,12 +145,18 @@ export class Blac {
     return this.customPropsMap.get(blocClass);
   }
 
-  createNewBlocInstance<B extends BlocBase<any>>(blocClass: BlocConstructor<B>, id: BlocInstanceId, props: BlocProps | undefined): B {
+  createNewBlocInstance<B extends BlocBase<any>>(
+    blocClass: BlocConstructor<B>,
+    id: BlocInstanceId,
+    props: BlocProps | undefined
+  ): B {
     const base = blocClass as unknown as BlocBaseAbstract;
     try {
-      const hasCreateMethod = Object.prototype.hasOwnProperty.call(blocClass, "create");
+      const hasCreateMethod = Object.prototype.hasOwnProperty(
+        blocClass,
+        'create'
+      );
       this.setCustomProps(base, props);
-      // base.propsProxy = props;
       const newBloc = hasCreateMethod ? base.create() : new blocClass();
       newBloc.updateId(id);
 
@@ -152,19 +172,30 @@ export class Blac {
     }
   }
 
-  getBloc<B extends BlocBase<any>>(blocClass: BlocConstructor<B>, options: {
-    id?: BlocInstanceId;
-    props?: BlocProps;
-  } = {}): B {
+  getBloc<B extends BlocBase<any>>(
+    blocClass: BlocConstructor<B>,
+    options: {
+      id?: BlocInstanceId;
+      props?: BlocProps;
+    } = {}
+  ): B {
     const id = options.id || blocClass.name;
     const registered = this.findRegisteredBlocInstance(blocClass, id);
     if (registered) return registered;
     return this.createNewBlocInstance(blocClass, id, options.props);
   }
 
-  findAllBlocs = async <B extends BlocBase<any>>(blocClass: BlocConstructor<B>): Promise<B[]> => {
+  getAllBlocs = async <B extends BlocBase<any>>(
+    blocClass: BlocConstructor<B>,
+    options: {
+      searchIsolated?: boolean;
+    } = {}
+  ): Promise<B[]> => {
     const base = blocClass as unknown as BlocBaseAbstract;
-    if (base.isolated) {
+
+    const { searchIsolated = base.isolated } = options;
+
+    if (searchIsolated) {
       const blocs = this.isolatedBlocMap.get(blocClass);
       if (blocs) return blocs as B[];
     } else {
@@ -180,7 +211,6 @@ export class Blac {
     }
   };
 }
-
 
 declare global {
   interface Window {
