@@ -75,7 +75,7 @@ class IsolatedBloc extends Cubit<
 }
 
 const Jumper: FC<{ index: number }> = ({ index }) => {
-  const [{ x, y, color }, { props }] = useBloc(IsolatedBloc, {
+  const [{ x, y, color }] = useBloc(IsolatedBloc, {
     props: {
       start: [index * (300 % 9), index * (200 % 9)],
       color: `hsl(${index * 10}, 100%, 45%)`,
@@ -90,13 +90,15 @@ const Jumper: FC<{ index: number }> = ({ index }) => {
 };
 
 const QueryOtherBlocs: FC = () => {
-  const active = useRef(true);
   const animate = useCallback((blocks: IsolatedBloc[]) => {
     for (const block of blocks) {
       block.frame();
     }
 
-    if (!active.current) return;
+    if (blocks.length === 0) {
+      return;
+    }
+
     requestAnimationFrame(() => animate(blocks));
   }, []);
 
@@ -104,15 +106,11 @@ const QueryOtherBlocs: FC = () => {
     Blac.getAllBlocs(IsolatedBloc).then((blocks) => {
       animate(blocks);
     });
-
-    return () => {
-      active.current = false;
-    };
   }, []);
 
   return (
     <div className="jumper-box">
-      {Array.from({ length: 50 }).map((_, i) => (
+      {Array.from({ length: 42 }).map((_, i) => (
         <Jumper index={i} key={i} />
       ))}
     </div>

@@ -82,7 +82,9 @@ export class Blac {
         }
         break;
       case BlacEvent.LISTENER_REMOVED:
-        if (bloc.observer.size === 0 && !base.keepAlive) bloc.dispose();
+        setTimeout(() => {
+          if (bloc.observer.size === 0 && !base.keepAlive) bloc.dispose();
+        });
         break;
     }
 
@@ -142,7 +144,9 @@ export class Blac {
   }
 
   getCustomProps(blocClass: BlocBaseAbstract): BlocProps | undefined {
-    return this.customPropsMap.get(blocClass);
+    const props = this.customPropsMap.get(blocClass);
+    this.customPropsMap.delete(blocClass);
+    return props;
   }
 
   createNewBlocInstance<B extends BlocBase<any>>(

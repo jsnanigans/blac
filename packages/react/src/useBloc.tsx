@@ -9,7 +9,7 @@ import {
   CubitPropsType,
   ValueType,
 } from 'blac/src';
-import { useEffect, useMemo, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import externalBlocStore, { ExternalStore } from './externalBlocStore';
 
 export type BlocHookData<B extends BlocBase<S>, S> = [
@@ -95,7 +95,7 @@ export class UseBlocClass {
 
     const { subscribe, getSnapshot, getServerSnapshot } = useMemo(
       () => externalBlocStore(resolvedBloc, dependencySelector),
-      [resolvedBloc],
+      [resolvedBloc.id],
     );
 
     const state = useSyncExternalStore<ValueType<InstanceType<B>>>(

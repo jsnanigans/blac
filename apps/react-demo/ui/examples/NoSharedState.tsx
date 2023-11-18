@@ -73,7 +73,10 @@ const NoSharedState: FC = () => {
       block.frame();
     }
 
-    if (!active.current) return;
+    if (blocks.length === 0) {
+      return;
+    }
+
     requestAnimationFrame(() => animate(blocks));
   }, []);
 

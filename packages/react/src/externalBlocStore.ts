@@ -1,4 +1,4 @@
-import { BlocBase, ValueType } from 'blac';
+import { BlocBase } from 'blac/src';
 
 export interface ExternalStore<B extends BlocBase<S>, S> {
   subscribe: (onStoreChange: () => void) => () => void;
@@ -11,6 +11,7 @@ const externalBlocStore = <B extends BlocBase<S>, S>(
   dependencySelector: (state: S) => unknown,
 ): ExternalStore<B, S> => {
   let lastDependencyCheck = dependencySelector(bloc.state);
+
   return {
     subscribe: (listener: () => void) => {
       const unSub = bloc.addEventListenerStateChange((data) => {

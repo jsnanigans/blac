@@ -15,6 +15,10 @@ export abstract class BlocBase<S, P extends BlocProps = {}> {
   public blac = Blac.getInstance();
   public id: BlocInstanceId;
   public props: P = {} as P;
+  public readonly createdAt = Date.now();
+
+  abstract onConnect(): void;
+  abstract onDisconnect(): void;
 
   constructor(initialState: S) {
     this.observer = new BlacObservable();
@@ -22,6 +26,7 @@ export abstract class BlocBase<S, P extends BlocProps = {}> {
     this.blac.report(BlacEvent.BLOC_CREATED, this);
     this.id = this.constructor.name;
     this.isolated = (this.constructor as any).isolated;
+    this.onConnect?.();
   }
 
   public _state: S;
@@ -52,6 +57,7 @@ export abstract class BlocBase<S, P extends BlocProps = {}> {
     this.isBlacLive = false;
     this.observer.dispose();
     this.blac.report(BlacEvent.BLOC_DISPOSED, this);
+    this.onDisconnect?.();
   }
 
   private handleUnsubscribe = (
