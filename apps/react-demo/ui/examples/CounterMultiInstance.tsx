@@ -1,4 +1,5 @@
-import { Cubit, useBloc } from 'blac/src';
+import { useBloc } from '@blac/react/src';
+import { Cubit } from 'blac/src';
 import React, { FC, useState } from 'react';
 
 export class CounterMultiInstanceBloc extends Cubit<number> {

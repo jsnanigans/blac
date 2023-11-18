@@ -106,12 +106,12 @@ export class Blac {
   findRegisteredBlocInstance<B extends BlocBase<any>>(
     blocClass: BlocConstructor<B>,
     id: BlocInstanceId,
-  ): B | undefined {
+  ): InstanceType<BlocConstructor<B>> | undefined {
     const base = blocClass as unknown as BlocBaseAbstract;
     if (base.isolated) return undefined;
 
     const key = this.createBlocInstanceMapKey(blocClass.name, id);
-    return this.blocInstanceMap.get(key) as B;
+    return this.blocInstanceMap.get(key) as InstanceType<BlocConstructor<B>>;
   }
 
   registerIsolatedBlocInstance(bloc: BlocBase<any>): void {
@@ -149,9 +149,8 @@ export class Blac {
     blocClass: BlocConstructor<B>,
     id: BlocInstanceId,
     props: BlocProps | undefined,
-  ): B {
+  ): InstanceType<BlocConstructor<B>> {
     const base = blocClass as unknown as BlocBaseAbstract;
-    // try {
     const hasCreateMethod = Object.prototype.hasOwnProperty.call(
       blocClass,
       'create',
@@ -163,23 +162,20 @@ export class Blac {
 
     if (base.isolated) {
       this.registerIsolatedBlocInstance(newBloc);
-      return newBloc as B;
+      return newBloc as InstanceType<BlocConstructor<B>>;
     }
 
     this.registerBlocInstance(newBloc);
-    return newBloc as B;
-    // } catch (e) {
-    //   throw new Error(`Failed to create instance of ${blocClass.name}. ${e}`);
-    // }
+    return newBloc as InstanceType<BlocConstructor<B>>;
   }
 
-  getBloc<B extends BlocBase<any>>(
+  getBloc<B extends BlocBase<S>, S>(
     blocClass: BlocConstructor<B>,
     options: {
       id?: BlocInstanceId;
       props?: BlocProps;
     } = {},
-  ): B {
+  ): InstanceType<BlocConstructor<B>> {
     const id = options.id || blocClass.name;
     const registered = this.findRegisteredBlocInstance(blocClass, id);
     if (registered) return registered;
@@ -208,13 +204,13 @@ export class Blac {
 
   configure = (config: BlacConfig) => {
     if (config.exposeBlacInstance) {
-      window.__blac = this;
+      // window.__blac = this;
     }
   };
 }
 
 declare global {
   interface Window {
-    __blac?: Blac;
+    // __blac?: Blac;
   }
 }

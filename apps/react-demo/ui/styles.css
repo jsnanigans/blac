@@ -4,68 +4,68 @@
 /*}*/
 body,
 html {
-    transform: none !important;
-    --color: #9fffed;
+  transform: none !important;
+  --color: #9fffed;
 }
 
 body {
-    background: #181d31;
-    color: var(--color);
-    font-family: sans-serif;
-    font-size: 16px;
-    font-weight: bold;
-    line-height: 1.5;
-    margin: 0;
-    padding: 2em;
+  background: #181d31;
+  color: var(--color);
+  font-family: sans-serif;
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 1.5;
+  margin: 0;
+  padding: 2em;
 }
 
 main {
-    /*max-width: 800px;*/
-    margin: 0 auto;
-    --nav-w: 180px;
+  /*max-width: 800px;*/
+  margin: 0 auto;
+  --nav-w: 180px;
 }
 
 button {
-    background: #000;
-    color: var(--color);
-    cursor: pointer;
-    font-family: inherit;
-    font-weight: 500;
-    letter-spacing: 0.05em;
-    border: 0px solid var(--color);
-    border-radius: 0.3em;
-    padding: 0.7em 1em;
-    margin: 0;
-    transition: all 0.1s ease-in-out;
-    line-height: 1em;
+  background: #000;
+  color: var(--color);
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  border: 0px solid var(--color);
+  border-radius: 0.3em;
+  padding: 0.7em 1em;
+  margin: 0;
+  transition: all 0.1s ease-in-out;
+  line-height: 1em;
 }
 
 .btn-list {
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    margin: 1em 0 0;
-    padding: 0;
-    list-style: none;
-    grid-gap: 0.2em;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  margin: 1em 0 0;
+  padding: 0;
+  list-style: none;
+  grid-gap: 0.2em;
 }
 
 button:disabled {
-    cursor: not-allowed;
-    background: var(--color);
-    color: #000;
-    /*opacity: 0.6;*/
+  cursor: not-allowed;
+  background: var(--color);
+  color: #000;
+  /*opacity: 0.6;*/
 }
 
 button:active {
-    background: var(--color);
-    color: #000;
-    transform: scale(0.95);
+  background: var(--color);
+  color: #000;
+  transform: scale(0.95);
 }
 
 button:hover {
-    background: var(--color);
-    color: #000;
+  background: var(--color);
+  color: #000;
 }
 
 h1,
@@ -74,181 +74,177 @@ h3,
 h4,
 h5,
 h6 {
-    color: var(--color);
-    font-family: monospace;
-    font-weight: bold;
-    line-height: 1.5;
-    margin: 0;
-    padding: 0;
+  color: var(--color);
+  font-family: monospace;
+  font-weight: bold;
+  line-height: 1.5;
+  margin: 0;
+  padding: 0;
 }
 
 .scope {
-    margin: 1em 0 0.2em 0;
-    padding: 1em;
-    border-left: 1px solid var(--color);
-    background-color: rgb(0 255 42 / 5%);
-    text-shadow: -0.1em 0.1em 0 #000;
-    box-shadow: -0.1em 0.1em 0 #000;
+  margin: 1em 0 0.2em 0;
+  padding: 1em;
+  border-left: 1px solid var(--color);
+  background-color: rgb(0 255 42 / 5%);
+  text-shadow: -0.1em 0.1em 0 #000;
+  box-shadow: -0.1em 0.1em 0 #000;
 }
 
 .scope .scope {
-    margin-left: 1em;
+  margin-left: 1em;
 }
 
 hr {
-    border: 0;
-    border-bottom: 1px solid var(--color);
-    margin: 1em 0;
+  border: 0;
+  border-bottom: 1px solid var(--color);
+  margin: 1em 0;
 }
 
-
 .example {
-    margin: 1em 0;
-    padding: 3em 2em;
-    background: #000;
-    border-radius: 2em;
-    border: 1px solid var(--color);
+  margin: 1em 0;
+  padding: 3em 2em;
+  background: #000;
+  border-radius: 2em;
+  border: 1px solid var(--color);
 }
 
 .example button {
-    border: 2px solid var(--color);
-    margin: 0.2em;
+  border: 2px solid var(--color);
+  margin: 0.2em;
 }
 
-
 .content > div {
-    /* fade in */
-    /*opacity: 0;*/
-    /*animation: fadeIn 1s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;*/
+  /* fade in */
+  /*opacity: 0;*/
+  /*animation: fadeIn 1s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;*/
 }
 
 @keyframes fadeIn {
-    0% {
-        opacity: 0;
-    }
-    100% {
-        opacity: 1;
-    }
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 
-
 pre code {
-    text-shadow: none;
-    border: 8px solid #000;
+  text-shadow: none;
+  border: 8px solid #000;
 }
 
 main {
-    display: flex;
-    flex-direction: column;
-    grid-gap: 1em;
-    width: min(calc(100dvw - 4rem), 100%);
+  display: flex;
+  flex-direction: column;
+  grid-gap: 1em;
+  width: min(calc(100dvw - 4rem), 100%);
 }
 
 nav {
-    min-width: var(--nav-w);
-    width: var(--nav-w);
+  min-width: var(--nav-w);
+  width: var(--nav-w);
 }
 
 nav h3 {
-    margin: 1em 0;
-    padding: 0;
+  margin: 1em 0;
+  padding: 0;
 }
 
 nav h3:first-child {
-    margin-top: 0;
+  margin-top: 0;
 }
 
 nav button {
-    text-align: left;
+  text-align: left;
 }
 
-
 .chl {
-    max-width: 100%;
-    overflow: auto;
+  max-width: 100%;
+  overflow: auto;
 }
 
 .read {
-    /* easy readable text */
-    color: white;
-    margin: 1em 0 0;
-    font-family: sans-serif;
-    font-weight: 400;
+  /* easy readable text */
+  color: white;
+  margin: 1em 0 0;
+  font-family: sans-serif;
+  font-weight: 400;
 }
 
-a, a:visited {
-    color: var(--color);
+a,
+a:visited {
+  color: var(--color);
 }
 
 @media screen and (min-width: 740px) {
-    section {
-        max-width: calc(100% - var(--nav-w));
-        flex: 1;
-    }
+  section {
+    max-width: calc(100% - var(--nav-w));
+    flex: 1;
+  }
 
-    main {
-        flex-direction: row;
-    }
+  main {
+    flex-direction: row;
+  }
 }
 
 button.lead {
-    margin-top: 1em;
-    margin-right: 1em;
+  margin-top: 1em;
+  margin-right: 1em;
 }
 
 @keyframes flash {
-    0% {
-        box-shadow: 0 0 20px 10px var(--color);
-    }
-    100% {
-        box-shadow: 0 0 20px 10px #ffffff22;
-    }
+  0% {
+    box-shadow:
+      0 0 0 5px var(--color),
+      inset 0 0 0 5px var(--color);
+  }
+  100% {
+    box-shadow:
+      0 0 0 5px #ffffff22,
+      inset 0 0 0 5px #ffffff22;
+  }
 }
 
 .flash {
-    position: relative;
-    padding: 15px;
-    margin: 1em 0;
+  position: relative;
+  padding: 15px;
+  margin: 1em 0;
 }
 
 .highlight {
-    animation: flash 1s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
-    position: absolute;
-    border-radius: 4px;
-    border: 1px solid white;
-    inset: 0;
-    pointer-events: none;
+  animation: flash 1s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+  position: absolute;
+  border-radius: 4px;
+  border: 1px solid white;
+  inset: 0;
+  pointer-events: none;
 }
 
 .jumper-box {
-    position: relative;
-    margin: 1em 0;
-    background: #79c0ff;
-    width: 300px;
-    height: 200px;
-    border: 10px solid #79c0ff;
+  position: relative;
+  margin: 1em 0;
+  background: #79c0ff;
+  width: 300px;
+  height: 200px;
+  border: 10px solid #79c0ff;
 }
 
 .jumper {
-    position: absolute;
-    transform: translate3d(
-            calc(var(--x, 0) - 50%),
-            calc(var(--y, 0) - 50%),
-            0
-    );
-    width: 15px;
-    height: 15px;
-    background: var(--bg, #0d1117);
-    border-radius: 50%;
+  position: absolute;
+  transform: translate3d(calc(var(--x, 0) - 50%), calc(var(--y, 0) - 50%), 0);
+  width: 15px;
+  height: 15px;
+  background: var(--bg, #0d1117);
+  border-radius: 50%;
 }
 
 .jumper.focused {
-    background: #7ee787;
+  background: #7ee787;
 }
 
-
 .dt {
-    position: fixed;
-    left: 0;
-    bottom: 0;
+  position: fixed;
+  left: 0;
+  bottom: 0;
 }

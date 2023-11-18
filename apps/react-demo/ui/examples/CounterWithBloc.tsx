@@ -1,12 +1,12 @@
-import React, { FC } from "react";
-import { Bloc } from "blac/src";
-import { useBloc } from "@blac/react/src";
+import React, { FC } from 'react';
+import { Bloc } from 'blac/src';
+import { useBloc } from '@blac/react/src';
 
 type CounterState = number;
 
 enum CounterActions {
-  increment = "increment",
-  decrement = "decrement",
+  increment = 'increment',
+  decrement = 'decrement',
 }
 
 class CounterBloc extends Bloc<CounterState, CounterActions> {
@@ -25,11 +25,13 @@ class CounterBloc extends Bloc<CounterState, CounterActions> {
 const CounterWithBloc: FC = () => {
   const [count, { emit }] = useBloc(CounterBloc);
 
-  return <>
-    <button onClick={() => emit(CounterActions.decrement)}>-</button>
-    {` ${count} `}
-    <button onClick={() => emit(CounterActions.increment)}>+</button>
-  </>;
+  return (
+    <>
+      <button onClick={() => emit(CounterActions.decrement)}>-</button>
+      {` ${count} `}
+      <button onClick={() => emit(CounterActions.increment)}>+</button>
+    </>
+  );
 };
 
 export default CounterWithBloc;

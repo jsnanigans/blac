@@ -8,7 +8,7 @@ import {
   Cubit,
   CubitPropsType,
   ValueType,
-} from 'blac';
+} from 'blac/src';
 import { useEffect, useMemo, useSyncExternalStore } from 'react';
 import externalBlocStore, { ExternalStore } from './externalBlocStore';
 
@@ -32,39 +32,27 @@ export type BlocHookDependencySelector<B extends BlocBase<S>, S> = (
 
 export class UseBlocClass {
   // constructor, no options
-  // static useBloc<B extends BlocBase<S>, S>(
-  //   bloc: BlocConstructor<B>,
-  // ): BlocHookData<B, S>;
-  // constructor with options
-  // static useBloc<B extends BlocBase<S>, S>(
-  //   bloc: BlocConstructor<B>,
-  //   options: BlocHookOptions<B, S>,
-  // ): BlocHookData<B, S>;
-  // constructor with selector
-  // static useBloc<B extends BlocBase<S>, S>(
-  //   bloc: BlocConstructor<B>,
-  //   depsSelector: BlocHookDependencySelector<B, S>,
-  // ): BlocHookData<B, S>;
-  // constructor with Instance ID
-  // static useBloc<B extends BlocBase<S>, S>(
-  //   bloc: BlocConstructor<B>,
-  //   instanceId: BlocInstanceId,
-  // ): BlocHookData<B, S>;
-  // static useBloc<B extends BlocBase<S>, S>(
-  //   bloc: BlocConstructor<B>,
-  //
-  //   options?:
-  //     | BlocHookOptions<B, S>
-  //     | BlocHookDependencySelector<B, S>
-  //     | BlocInstanceId,
-  // ): BlocHookData<B, S> {
-  // static useBloc<B extends BlocBase<S>, S>(
-  //   bloc: B,
-  //   options: string,
-  // ): BlocHookData<B, S> {
   static useBloc<B extends BlocConstructor<BlocBase<S>>, S>(
     bloc: B,
-    options: string,
+  ): BlocHookData<InstanceType<B>, S>;
+  static useBloc<B extends BlocConstructor<BlocBase<S>>, S>(
+    bloc: B,
+    options: BlocHookOptions<InstanceType<B>, S>,
+  ): BlocHookData<InstanceType<B>, S>;
+  static useBloc<B extends BlocConstructor<BlocBase<S>>, S>(
+    bloc: B,
+    depsSelector: BlocHookDependencySelector<InstanceType<B>, S>,
+  ): BlocHookData<InstanceType<B>, S>;
+  static useBloc<B extends BlocConstructor<BlocBase<S>>, S>(
+    bloc: B,
+    instanceId: string,
+  ): BlocHookData<InstanceType<B>, S>;
+  static useBloc<B extends BlocConstructor<BlocBase<S>>, S>(
+    bloc: B,
+    options?:
+      | BlocHookOptions<InstanceType<B>, S>
+      | BlocHookDependencySelector<InstanceType<B>, S>
+      | BlocInstanceId,
   ): BlocHookData<InstanceType<B>, S> {
     // default options
     let dependencySelector: BlocHookDependencySelector<InstanceType<B>, S> = (
@@ -92,12 +80,12 @@ export class UseBlocClass {
     }
 
     // resolve the bloc, get the existing instance of the bloc or create a new one
-    const resolvedBloc = useMemo(
+    const resolvedBloc = useMemo<InstanceType<B>>(
       () =>
         Blac.getInstance().getBloc(bloc, {
           id: blocId,
           props,
-        }),
+        }) as InstanceType<B>,
       [blocId],
     );
 
@@ -105,9 +93,7 @@ export class UseBlocClass {
       throw new Error(`useBloc: could not resolve: ${bloc.name || bloc}`);
     }
 
-    const { subscribe, getSnapshot, getServerSnapshot } = useMemo<
-      ExternalStore<InstanceType<B>>
-    >(
+    const { subscribe, getSnapshot, getServerSnapshot } = useMemo(
       () => externalBlocStore(resolvedBloc, dependencySelector),
       [resolvedBloc],
     );

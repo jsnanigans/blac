@@ -1,19 +1,19 @@
-import { BlocBase, ValueType } from "blac";
+import { BlocBase, ValueType } from 'blac';
 
-export interface ExternalStore<B extends BlocBase<any>> {
+export interface ExternalStore<B extends BlocBase<S>, S> {
   subscribe: (onStoreChange: () => void) => () => void;
-  getSnapshot: () => ValueType<B>;
-  getServerSnapshot?: () => ValueType<B>;
+  getSnapshot: () => S;
+  getServerSnapshot?: () => S;
 }
 
-const externalBlocStore = <B extends BlocBase<any>>(
+const externalBlocStore = <B extends BlocBase<S>, S>(
   bloc: B,
-  dependencySelector: (state: ValueType<B>) => unknown
-): ExternalStore<B> => {
+  dependencySelector: (state: S) => unknown,
+): ExternalStore<B, S> => {
   let lastDependencyCheck = dependencySelector(bloc.state);
   return {
     subscribe: (listener: () => void) => {
-      const unSub = bloc.addEventListenerStateChange(data => {
+      const unSub = bloc.addEventListenerStateChange((data) => {
         const newDependencyCheck = dependencySelector(data);
         if (newDependencyCheck !== lastDependencyCheck) {
           lastDependencyCheck = newDependencyCheck;
@@ -24,8 +24,8 @@ const externalBlocStore = <B extends BlocBase<any>>(
         unSub();
       };
     },
-    getSnapshot: (): ValueType<B> => bloc.state,
-    getServerSnapshot: (): ValueType<B> => bloc.state
+    getSnapshot: (): S => bloc.state,
+    getServerSnapshot: (): S => bloc.state,
   };
 };
 
