@@ -2,7 +2,7 @@ import { BlocBase } from './BlocBase';
 import { BlacEvent } from './Blac';
 
 export abstract class Bloc<S, A> extends BlocBase<S> {
-  static create: <T>() => BlocBase<T>;
+  static create: () => BlocBase<any>;
 
   /**
    * The reducer is called whenever a new action is emited,

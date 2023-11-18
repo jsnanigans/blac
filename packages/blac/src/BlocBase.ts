@@ -4,24 +4,24 @@ import { BlocProps } from './Cubit';
 
 export type BlocInstanceId = string | number | undefined;
 
-export abstract class BlocBase<S> {
+export abstract class BlocBase<S, P extends BlocProps = {}> {
   static isolated = false;
   static keepAlive = false;
-  static create: <S>() => BlocBase<S>;
+  static create: <S extends any>() => BlocBase<S>;
   static isBlacClass = true;
   public isolated = false;
   public isBlacLive = true;
   public observer: BlacObservable<any>;
   public blac = Blac.getInstance();
   public id: BlocInstanceId;
-  public props: BlocProps | undefined;
+  public props: P = {} as P;
 
   constructor(initialState: S) {
     this.observer = new BlacObservable();
     this._state = initialState;
     this.blac.report(BlacEvent.BLOC_CREATED, this);
     this.id = this.constructor.name;
-    this.isolated = (this.constructor as BlocBase<S>).isolated;
+    this.isolated = (this.constructor as any).isolated;
   }
 
   public _state: S;
@@ -41,7 +41,7 @@ export abstract class BlocBase<S> {
   };
 
   addEventListenerStateChange = (
-    callback: (newState: S, oldState: S) => void
+    callback: (newState: S, oldState: S) => void,
   ): (() => void) => {
     this.observer.subscribe(callback);
     this.blac.report(BlacEvent.LISTENER_ADDED, this);
@@ -55,7 +55,7 @@ export abstract class BlocBase<S> {
   }
 
   private handleUnsubscribe = (
-    callback: (newState: S, oldState: S) => void
+    callback: (newState: S, oldState: S) => void,
   ): void => {
     this.observer.unsubscribe(callback);
     this.blac.report(BlacEvent.LISTENER_REMOVED, this);

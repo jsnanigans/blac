@@ -59,7 +59,7 @@ export class Blac {
   reportToPlugins = <B extends BlacEvent>(
     event: B,
     bloc: BlocBase<any>,
-    params?: EventParams[B]
+    params?: EventParams[B],
   ) => {
     this.pluginList.forEach((plugin) => {
       plugin.onEvent(event, bloc, params);
@@ -69,7 +69,7 @@ export class Blac {
   report = <B extends BlacEvent>(
     event: B,
     bloc: BlocBase<any>,
-    params?: EventParams[B]
+    params?: EventParams[B],
   ) => {
     const base = bloc.constructor as unknown as BlocBaseAbstract;
 
@@ -105,7 +105,7 @@ export class Blac {
 
   findRegisteredBlocInstance<B extends BlocBase<any>>(
     blocClass: BlocConstructor<B>,
-    id: BlocInstanceId
+    id: BlocInstanceId,
   ): B | undefined {
     const base = blocClass as unknown as BlocBaseAbstract;
     if (base.isolated) return undefined;
@@ -135,7 +135,7 @@ export class Blac {
 
   setCustomProps(
     blocClass: BlocBaseAbstract,
-    props: BlocProps | undefined
+    props: BlocProps | undefined,
   ): void {
     if (!props) return;
     this.customPropsMap.set(blocClass, props);
@@ -148,28 +148,29 @@ export class Blac {
   createNewBlocInstance<B extends BlocBase<any>>(
     blocClass: BlocConstructor<B>,
     id: BlocInstanceId,
-    props: BlocProps | undefined
+    props: BlocProps | undefined,
   ): B {
     const base = blocClass as unknown as BlocBaseAbstract;
-    try {
-      const hasCreateMethod = Object.prototype.hasOwnProperty(
-        blocClass,
-        'create'
-      );
-      this.setCustomProps(base, props);
-      const newBloc = hasCreateMethod ? base.create() : new blocClass();
-      newBloc.updateId(id);
+    // try {
+    const hasCreateMethod = Object.prototype.hasOwnProperty.call(
+      blocClass,
+      'create',
+    );
 
-      if (base.isolated) {
-        this.registerIsolatedBlocInstance(newBloc);
-        return newBloc as B;
-      }
+    this.setCustomProps(base, props);
+    const newBloc = hasCreateMethod ? base.create() : new blocClass();
+    newBloc.updateId(id);
 
-      this.registerBlocInstance(newBloc);
+    if (base.isolated) {
+      this.registerIsolatedBlocInstance(newBloc);
       return newBloc as B;
-    } catch (e) {
-      throw new Error(`Failed to create instance of ${blocClass.name}. ${e}`);
     }
+
+    this.registerBlocInstance(newBloc);
+    return newBloc as B;
+    // } catch (e) {
+    //   throw new Error(`Failed to create instance of ${blocClass.name}. ${e}`);
+    // }
   }
 
   getBloc<B extends BlocBase<any>>(
@@ -177,7 +178,7 @@ export class Blac {
     options: {
       id?: BlocInstanceId;
       props?: BlocProps;
-    } = {}
+    } = {},
   ): B {
     const id = options.id || blocClass.name;
     const registered = this.findRegisteredBlocInstance(blocClass, id);
@@ -189,7 +190,7 @@ export class Blac {
     blocClass: BlocConstructor<B>,
     options: {
       searchIsolated?: boolean;
-    } = {}
+    } = {},
   ): Promise<B[]> => {
     const base = blocClass as unknown as BlocBaseAbstract;
 

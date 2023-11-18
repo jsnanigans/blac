@@ -1,9 +1,12 @@
-import type { FC } from "react";
-import React, { useCallback, useEffect, useRef } from "react";
-import { Blac, Cubit } from "blac/src";
-import { useBloc } from "@blac/react/src";
+import type { FC } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
+import { Blac, Cubit } from 'blac/src';
+import { useBloc } from '@blac/react/src';
 
-class IsolatedBloc extends Cubit<{ x: number, y: number, color: string }, { start: [number, number], color: string }> {
+class IsolatedBloc extends Cubit<
+  { x: number; y: number; color: string },
+  { start: [number, number]; color: string }
+> {
   static isolated = true;
   velocity = { x: Math.random() * 3 - 1.5, y: Math.random() * 3 - 1.5 };
   maxX = 300;
@@ -12,11 +15,15 @@ class IsolatedBloc extends Cubit<{ x: number, y: number, color: string }, { star
   others: IsolatedBloc[] = [];
 
   constructor() {
-    super({ x: 0, y: 0, color: "black" });
-    this._state = ({ x: this.props.start[0], y: this.props.start[1], color: this.props.color });
+    super({ x: 0, y: 0, color: 'black' });
+    this._state = {
+      x: this.props.start[0],
+      y: this.props.start[1],
+      color: this.props.color,
+    };
 
-    this.blac.findAllBlocs(IsolatedBloc).then(b => {
-      this.others = b.filter(b => b !== this);
+    this.blac.getAllBlocs(IsolatedBloc).then((b) => {
+      this.others = b.filter((b) => b !== this);
     });
   }
 
@@ -65,17 +72,21 @@ class IsolatedBloc extends Cubit<{ x: number, y: number, color: string }, { star
 
     this.patch(next);
   };
-
 }
 
 const Jumper: FC<{ index: number }> = ({ index }) => {
   const [{ x, y, color }, { props }] = useBloc(IsolatedBloc, {
     props: {
       start: [index * (300 % 9), index * (200 % 9)],
-      color: `hsl(${index * 10}, 100%, 45%)`
-    }
+      color: `hsl(${index * 10}, 100%, 45%)`,
+    },
   });
-  return <div className="jumper" style={{ "--x": x + "px", "--y": y + "px", "--bg": color } as any} />;
+  return (
+    <div
+      className="jumper"
+      style={{ '--x': x + 'px', '--y': y + 'px', '--bg': color } as any}
+    />
+  );
 };
 
 const QueryOtherBlocs: FC = () => {
@@ -90,7 +101,7 @@ const QueryOtherBlocs: FC = () => {
   }, []);
 
   useEffect(() => {
-    Blac.findAllBlocs(IsolatedBloc).then(blocks => {
+    Blac.getAllBlocs(IsolatedBloc).then((blocks) => {
       animate(blocks);
     });
 
@@ -99,9 +110,13 @@ const QueryOtherBlocs: FC = () => {
     };
   }, []);
 
-  return <div className="jumper-box">
-    {Array.from({ length: 50 }).map((_, i) => <Jumper index={i} key={i} />)}
-  </div>;
+  return (
+    <div className="jumper-box">
+      {Array.from({ length: 50 }).map((_, i) => (
+        <Jumper index={i} key={i} />
+      ))}
+    </div>
+  );
 };
 
 export default QueryOtherBlocs;

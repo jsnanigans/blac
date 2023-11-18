@@ -1,9 +1,12 @@
-import type { FC } from "react";
-import React, { useCallback, useEffect, useRef } from "react";
-import { Blac, Cubit } from "blac/src";
-import { useBloc } from "@blac/react/src";
+import type { FC } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
+import { Blac, Cubit } from 'blac/src';
+import { useBloc } from '@blac/react/src';
 
-class IsolatedBloc extends Cubit<{ x: number, y: number }, { speedX: number, speedY: number }> {
+class IsolatedBloc extends Cubit<
+  { x: number; y: number },
+  { speedX: number; speedY: number }
+> {
   static isolated = true;
   velocity = { x: 0, y: 0 };
   maxX = 300;
@@ -17,7 +20,7 @@ class IsolatedBloc extends Cubit<{ x: number, y: number }, { speedX: number, spe
   startJumping = () => {
     this.velocity = {
       x: this.props.speedX,
-      y: this.props.speedY
+      y: this.props.speedY,
     };
   };
 
@@ -46,17 +49,21 @@ class IsolatedBloc extends Cubit<{ x: number, y: number }, { speedX: number, spe
 
     this.emit(next);
   };
-
 }
 
 const Jumper: FC = () => {
   const [{ x, y }, { props }] = useBloc(IsolatedBloc, {
     props: {
       speedX: Math.random() * 5 - 2.5,
-      speedY: Math.random() * 5 - 2.5
-    }
+      speedY: Math.random() * 5 - 2.5,
+    },
   });
-  return <div className="jumper" style={{ "--x": x + "px", "--y": y + "px" } as any} />;
+  return (
+    <div
+      className="jumper"
+      style={{ '--x': x + 'px', '--y': y + 'px' } as any}
+    />
+  );
 };
 
 const NoSharedState: FC = () => {
@@ -71,7 +78,7 @@ const NoSharedState: FC = () => {
   }, []);
 
   useEffect(() => {
-    Blac.findAllBlocs(IsolatedBloc).then(blocks => {
+    Blac.getAllBlocs(IsolatedBloc).then((blocks) => {
       animate(blocks);
     });
 
@@ -80,9 +87,13 @@ const NoSharedState: FC = () => {
     };
   }, []);
 
-  return <div className="jumper-box">
-    {Array.from({ length: 100 }).map((_, i) => <Jumper key={i} />)}
-  </div>;
+  return (
+    <div className="jumper-box">
+      {Array.from({ length: 100 }).map((_, i) => (
+        <Jumper key={i} />
+      ))}
+    </div>
+  );
 };
 
 export default NoSharedState;

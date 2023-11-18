@@ -1,20 +1,24 @@
 import {
+  Blac,
+  Bloc,
   BlocBase,
   BlocConstructor,
   BlocInstanceId,
   BlocProps,
+  Cubit,
   CubitPropsType,
   ValueType,
-  Blac,
 } from 'blac';
 import { useEffect, useMemo, useSyncExternalStore } from 'react';
 import externalBlocStore, { ExternalStore } from './externalBlocStore';
-import useResolvedBloc from './useResolvedBloc';
 
 export type BlocHookData<B extends BlocBase<S>, S> = [
   value: ValueType<B>,
-  instance: B
+  instance: B,
 ];
+
+// type BlocHookData<B extends BlocBase<S>, S> = [S, InstanceType<B>]; // B is the bloc class, S is the state of the bloc
+// type UseBlocClassResult<B, S> = BlocHookData<B, S>;
 
 export interface BlocHookOptions<B extends BlocBase<S>, S> {
   id?: string;
@@ -23,39 +27,48 @@ export interface BlocHookOptions<B extends BlocBase<S>, S> {
 }
 
 export type BlocHookDependencySelector<B extends BlocBase<S>, S> = (
-  state: ValueType<B>
+  state: ValueType<B>,
 ) => unknown;
 
-class UseBlocClass {
+export class UseBlocClass {
   // constructor, no options
-  static useBloc<B extends BlocBase<S>, S>(
-    bloc: BlocConstructor<B>
-  ): BlocHookData<B, S>;
+  // static useBloc<B extends BlocBase<S>, S>(
+  //   bloc: BlocConstructor<B>,
+  // ): BlocHookData<B, S>;
   // constructor with options
-  static useBloc<B extends BlocBase<S>, S>(
-    bloc: BlocConstructor<B>,
-    options: BlocHookOptions<B, S>
-  ): BlocHookData<B, S>;
+  // static useBloc<B extends BlocBase<S>, S>(
+  //   bloc: BlocConstructor<B>,
+  //   options: BlocHookOptions<B, S>,
+  // ): BlocHookData<B, S>;
   // constructor with selector
-  static useBloc<B extends BlocBase<S>, S>(
-    bloc: BlocConstructor<B>,
-    depsSelector: BlocHookDependencySelector<B, S>
-  ): BlocHookData<B, S>;
+  // static useBloc<B extends BlocBase<S>, S>(
+  //   bloc: BlocConstructor<B>,
+  //   depsSelector: BlocHookDependencySelector<B, S>,
+  // ): BlocHookData<B, S>;
   // constructor with Instance ID
-  static useBloc<B extends BlocBase<S>, S>(
-    bloc: BlocConstructor<B>,
-    instanceId: BlocInstanceId
-  ): BlocHookData<B, S>;
-  static useBloc<B extends BlocBase<S>, S>(
-    bloc: BlocConstructor<B>,
-    options?:
-      | BlocHookOptions<B, S>
-      | BlocHookDependencySelector<B, S>
-      | BlocInstanceId
-  ): BlocHookData<B, S> {
+  // static useBloc<B extends BlocBase<S>, S>(
+  //   bloc: BlocConstructor<B>,
+  //   instanceId: BlocInstanceId,
+  // ): BlocHookData<B, S>;
+  // static useBloc<B extends BlocBase<S>, S>(
+  //   bloc: BlocConstructor<B>,
+  //
+  //   options?:
+  //     | BlocHookOptions<B, S>
+  //     | BlocHookDependencySelector<B, S>
+  //     | BlocInstanceId,
+  // ): BlocHookData<B, S> {
+  // static useBloc<B extends BlocBase<S>, S>(
+  //   bloc: B,
+  //   options: string,
+  // ): BlocHookData<B, S> {
+  static useBloc<B extends BlocConstructor<BlocBase<S>>, S>(
+    bloc: B,
+    options: string,
+  ): BlocHookData<InstanceType<B>, S> {
     // default options
-    let dependencySelector: BlocHookDependencySelector<B, S> = (
-      state: ValueType<B>
+    let dependencySelector: BlocHookDependencySelector<InstanceType<B>, S> = (
+      state: ValueType<InstanceType<B>>,
     ) => state;
     let blocId: BlocInstanceId | undefined;
     let props: BlocProps = {};
@@ -85,7 +98,7 @@ class UseBlocClass {
           id: blocId,
           props,
         }),
-      [blocId]
+      [blocId],
     );
 
     if (!resolvedBloc) {
@@ -93,16 +106,16 @@ class UseBlocClass {
     }
 
     const { subscribe, getSnapshot, getServerSnapshot } = useMemo<
-      ExternalStore<B>
+      ExternalStore<InstanceType<B>>
     >(
       () => externalBlocStore(resolvedBloc, dependencySelector),
-      [resolvedBloc]
+      [resolvedBloc],
     );
 
-    const state = useSyncExternalStore<ValueType<B>>(
+    const state = useSyncExternalStore<ValueType<InstanceType<B>>>(
       subscribe,
       getSnapshot,
-      getServerSnapshot
+      getServerSnapshot,
     );
 
     useEffect(() => {

@@ -3,12 +3,9 @@ import { Blac, BlacEvent } from './Blac';
 
 export type BlocProps = Record<string | number, any>;
 
-export abstract class Cubit<
-  S,
-  Props extends BlocProps = {}
-  > extends BlocBase<S> {
-  static create: <S, P extends BlacProps>() => Cubit<S, P>;
-  props: Props = {} as Props;
+export abstract class Cubit<S, P extends BlocProps = {}> extends BlocBase<S> {
+  static create: () => Cubit<any, any>;
+  props: P = {} as P;
 
   constructor(initialState: S) {
     super(initialState);
@@ -20,7 +17,7 @@ export abstract class Cubit<
    * Update the state then will notify all observers
    * @param state: new state
    **/
-  emit(state: S): null {
+  emit(state: S): void {
     if (state === this.state) {
       return;
     }
@@ -43,16 +40,17 @@ export abstract class Cubit<
    **/
   patch(
     statePatch: S extends object ? Partial<S> : S,
-    ignoreChangeCheck = false
-  ): null {
+    ignoreChangeCheck = false,
+  ): void {
+    let changes = false;
     if (!ignoreChangeCheck) {
-      const patchKeys = Object.keys(statePatch);
-
-      const changes = patchKeys.find((key) => {
-        let current = this.state[key];
-        let patched = statePatch[key];
-        return current !== patched;
-      });
+      for (const key in statePatch) {
+        const current = (this.state as any)[key];
+        if (statePatch[key] !== current) {
+          changes = true;
+          break;
+        }
+      }
     }
 
     if (changes) {
