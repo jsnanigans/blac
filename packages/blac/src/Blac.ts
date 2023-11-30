@@ -43,6 +43,7 @@ export class Blac {
     }
 
     Blac.instance = this;
+    console.log('Blac Init');
   }
 
   static getInstance(): Blac {
@@ -75,20 +76,23 @@ export class Blac {
 
     switch (event) {
       case BlacEvent.BLOC_DISPOSED:
-        if (base.isolated) {
-          this.unregisterIsolatedBlocInstance(bloc);
-        } else {
-          this.unregisterBlocInstance(bloc);
-        }
+        this.disposeBloc(bloc);
         break;
       case BlacEvent.LISTENER_REMOVED:
-        setTimeout(() => {
-          if (bloc.observer.size === 0 && !base.keepAlive) bloc.dispose();
-        });
+        if (bloc.observer.size === 0 && !base.keepAlive) this.disposeBloc(bloc);
         break;
     }
 
     this.reportToPlugins(event, bloc, params);
+  };
+
+  disposeBloc = (bloc: BlocBase<any>): void => {
+    const base = bloc.constructor as unknown as BlocBaseAbstract;
+    if (!base.isolated) {
+      this.unregisterBlocInstance(bloc);
+    } else {
+      this.unregisterIsolatedBlocInstance(bloc);
+    }
   };
 
   createBlocInstanceMapKey(blocClassName: string, id: BlocInstanceId): string {
@@ -178,11 +182,19 @@ export class Blac {
     options: {
       id?: BlocInstanceId;
       props?: BlocProps;
+      reconnect?: boolean;
     } = {},
   ): InstanceType<BlocConstructor<B>> {
     const id = options.id || blocClass.name;
     const registered = this.findRegisteredBlocInstance(blocClass, id);
-    if (registered) return registered;
+    const { reconnect } = options;
+    if (registered) {
+      if (reconnect) {
+        registered.dispose();
+      } else {
+        return registered;
+      }
+    }
     return this.createNewBlocInstance(blocClass, id, options.props);
   }
 

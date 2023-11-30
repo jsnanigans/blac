@@ -9,7 +9,7 @@ import {
   CubitPropsType,
   ValueType,
 } from 'blac/src';
-import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
 import externalBlocStore, { ExternalStore } from './externalBlocStore';
 
 export type BlocHookData<B extends BlocBase<S>, S> = [
@@ -79,15 +79,20 @@ export class UseBlocClass {
       props = options.props ?? props;
     }
 
+    const now = Date.now();
+    const createdAt = useRef(now);
+    const dateChanged = now !== createdAt;
+
     // resolve the bloc, get the existing instance of the bloc or create a new one
-    const resolvedBloc = useMemo<InstanceType<B>>(
-      () =>
-        Blac.getInstance().getBloc(bloc, {
-          id: blocId,
-          props,
-        }) as InstanceType<B>,
-      [blocId],
-    );
+    // const resolvedBloc = useMemo(
+    //   () =>
+    const resolvedBloc = Blac.getInstance().getBloc(bloc, {
+      id: blocId,
+      props,
+      reconnect: false,
+    }) as InstanceType<B>;
+    //   [renderId.current],
+    // );
 
     if (!resolvedBloc) {
       throw new Error(`useBloc: could not resolve: ${bloc.name || bloc}`);
@@ -95,7 +100,7 @@ export class UseBlocClass {
 
     const { subscribe, getSnapshot, getServerSnapshot } = useMemo(
       () => externalBlocStore(resolvedBloc, dependencySelector),
-      [resolvedBloc.id],
+      [resolvedBloc.createdAt],
     );
 
     const state = useSyncExternalStore<ValueType<InstanceType<B>>>(
