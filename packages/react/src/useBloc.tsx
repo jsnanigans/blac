@@ -1,16 +1,14 @@
 import {
   Blac,
-  Bloc,
   BlocBase,
   BlocConstructor,
   BlocInstanceId,
   BlocProps,
-  Cubit,
   CubitPropsType,
   ValueType,
 } from 'blac/src';
 import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
-import externalBlocStore, { ExternalStore } from './externalBlocStore';
+import externalBlocStore from './externalBlocStore';
 
 export type BlocHookData<B extends BlocBase<S>, S> = [
   value: ValueType<B>,
@@ -79,9 +77,9 @@ export class UseBlocClass {
       props = options.props ?? props;
     }
 
-    const now = Date.now();
-    const createdAt = useRef(now);
-    const dateChanged = now !== createdAt;
+    // const now = Date.now();
+    // const createdAt = useRef(now);
+    // const dateChanged = now !== createdAt;
 
     // resolve the bloc, get the existing instance of the bloc or create a new one
     // const resolvedBloc = useMemo(

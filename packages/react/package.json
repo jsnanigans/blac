@@ -1,6 +1,6 @@
 {
   "name": "@blac/react",
-  "version": "0.0.18",
+  "version": "0.0.19",
   "license": "MIT",
   "main": "dist/blac-react.js",
   "module": "dist/blac-react.esm.js",
