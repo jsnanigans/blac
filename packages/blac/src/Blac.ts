@@ -130,6 +130,17 @@ export class Blac {
     }
   }
 
+  findIsolatedBlocInstance<B extends BlocBase<any>>(
+    blocClass: BlocConstructor<B>,
+    id: BlocInstanceId,
+  ): InstanceType<BlocConstructor<B>> | undefined {
+    const blocs = this.isolatedBlocMap.get(blocClass);
+    if (blocs) {
+      return blocs.find((b) => b.id === id) as InstanceType<BlocConstructor<B>>;
+    }
+    return undefined;
+  }
+
   unregisterIsolatedBlocInstance(bloc: BlocBase<any>): void {
     const blocClass = bloc.constructor;
     const blocs = this.isolatedBlocMap.get(blocClass);
@@ -185,8 +196,12 @@ export class Blac {
       reconnect?: boolean;
     } = {},
   ): InstanceType<BlocConstructor<B>> {
+    const base = blocClass as unknown as BlocBaseAbstract;
+    const isIsolated = base.isolated;
     const id = options.id || blocClass.name;
-    const registered = this.findRegisteredBlocInstance(blocClass, id);
+    const registered = isIsolated
+      ? this.findIsolatedBlocInstance(blocClass, id)
+      : this.findRegisteredBlocInstance(blocClass, id);
     const { reconnect } = options;
     if (registered) {
       if (reconnect) {

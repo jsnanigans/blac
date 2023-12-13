@@ -5,16 +5,17 @@ import { useBloc } from '@blac/react/src';
 
 class IsolatedBloc extends Cubit<
   { x: number; y: number },
-  { speedX: number; speedY: number }
+  { speedX: number; speedY: number; startX: number }
 > {
   static isolated = true;
   velocity = { x: 0, y: 0 };
-  maxX = 300;
-  maxY = 200;
+  maxX = 600;
+  maxY = 400;
 
   constructor() {
     super({ x: 150, y: 100 });
     this.startJumping();
+    this.patch({ x: this.props.startX });
   }
 
   startJumping = () => {
@@ -52,10 +53,11 @@ class IsolatedBloc extends Cubit<
 }
 
 const Jumper: FC = () => {
-  const [{ x, y }, { props }] = useBloc(IsolatedBloc, {
+  const [{ x, y }] = useBloc(IsolatedBloc, {
     props: {
       speedX: Math.random() * 5 - 2.5,
       speedY: Math.random() * 5 - 2.5,
+      startX: Math.random() * 200,
     },
   });
   return (

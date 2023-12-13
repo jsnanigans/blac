@@ -7,7 +7,7 @@ import {
   CubitPropsType,
   ValueType,
 } from 'blac/src';
-import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
+import { useEffect, useId, useMemo, useRef, useSyncExternalStore } from 'react';
 import externalBlocStore from './externalBlocStore';
 
 export type BlocHookData<B extends BlocBase<S>, S> = [
@@ -52,6 +52,7 @@ export class UseBlocClass {
       | BlocHookDependencySelector<InstanceType<B>, S>
       | BlocInstanceId,
   ): BlocHookData<InstanceType<B>, S> {
+    const rid = useId();
     // default options
     let dependencySelector: BlocHookDependencySelector<InstanceType<B>, S> = (
       state: ValueType<InstanceType<B>>,
@@ -77,6 +78,12 @@ export class UseBlocClass {
       props = options.props ?? props;
     }
 
+    const base = bloc as unknown as BlocBase<S>;
+    const isIsolated = base.isolated;
+    if (isIsolated) {
+      blocId = rid;
+    }
+
     // const now = Date.now();
     // const createdAt = useRef(now);
     // const dateChanged = now !== createdAt;
@@ -84,6 +91,7 @@ export class UseBlocClass {
     // resolve the bloc, get the existing instance of the bloc or create a new one
     // const resolvedBloc = useMemo(
     //   () =>
+
     const resolvedBloc = Blac.getInstance().getBloc(bloc, {
       id: blocId,
       props,

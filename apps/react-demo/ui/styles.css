@@ -225,9 +225,9 @@ button.lead {
   position: relative;
   margin: 1em 0;
   background: #79c0ff;
-  width: 300px;
-  height: 200px;
-  border: 10px solid #79c0ff;
+  width: 600px;
+  height: 400px;
+  overflow: hidden;
 }
 
 .jumper {
@@ -237,6 +237,11 @@ button.lead {
   height: 15px;
   background: var(--bg, #0d1117);
   border-radius: 50%;
+}
+
+.jumper.sm {
+  width: 3px;
+  height: 3px;
 }
 
 .jumper.focused {
