@@ -1,6 +1,6 @@
 {
   "name": "@blac/react",
-  "version": "0.0.20",
+  "version": "0.0.21",
   "license": "MIT",
   "main": "dist/blac-react.js",
   "module": "dist/blac-react.esm.js",
@@ -19,7 +19,8 @@
     "build": "rollup -c rollup.config.lib.js",
     "dev": "rollup -c rollup.config.lib.js --watch",
     "prettier": "prettier --write ./src",
-    "test": "vitest run --coverage"
+    "test": "vitest run --coverage",
+    "pub": "npm run build && npm publish"
   },
   "dependencies": {
     "blac": "*"

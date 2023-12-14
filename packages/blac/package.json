@@ -1,6 +1,6 @@
 {
   "name": "blac",
-  "version": "1.0.1-alpha.8",
+  "version": "1.0.1-alpha.9",
   "license": "MIT",
   "main": "dist/blac.js",
   "module": "dist/blac.esm.js",
@@ -21,7 +21,8 @@
     "prettier": "prettier --write ./src",
     "test": "vitest run",
     "test:watch": "vitest --watch",
-    "coverage": "vitest run --coverage"
+    "coverage": "vitest run --coverage",
+    "pub:alpha": "npm run build && npm publish --tag alpha"
   },
   "dependencies": {},
   "devDependencies": {
