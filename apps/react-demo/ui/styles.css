@@ -242,6 +242,7 @@ button.lead {
 .jumper.sm {
   width: 3px;
   height: 3px;
+  border-radius: 0;
 }
 
 .jumper.focused {

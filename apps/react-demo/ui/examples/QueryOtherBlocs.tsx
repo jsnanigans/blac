@@ -45,7 +45,7 @@ class IsolatedBloc extends Cubit<
     return this.othersInProtectedRangCache;
   }
 
-  protectedRange = 8;
+  protectedRange = 6;
   viusalRange = 20;
   updateRange = () => {
     this.othersInVisualRangCache = [];
@@ -78,12 +78,12 @@ class IsolatedBloc extends Cubit<
       biasval: this.biasval,
     };
     // boids simulation
-    const maxSpeed = 3;
-    const minSpeed = 1.6;
-    const avoidFactor = 0.004;
-    const turnFactor = 0.4;
-    const matchingFactor = 0.05;
-    const centeringFactor = 0.0001;
+    const maxSpeed = 2.5;
+    const minSpeed = 1;
+    const avoidFactor = 0.02;
+    const turnFactor = 0.1;
+    const matchingFactor = 0.08;
+    const centeringFactor = 0.0005;
     const othersInVisualRang = this.othersInVisualRang;
     const othersInProtectedRang = this.othersInProtectedRang;
 
@@ -143,11 +143,6 @@ class IsolatedBloc extends Cubit<
     if (boid.y > bmargin) boid.vy = boid.vy - turnFactor;
     if (boid.y < tmargin) boid.vy = boid.vy + turnFactor;
 
-    boid.x = boid.x + boid.vx;
-    boid.y = boid.y + boid.vy;
-
-    // bias
-
     // limit speed, min-max
     const speed = Math.sqrt(boid.vx * boid.vx + boid.vy * boid.vy);
     if (speed > maxSpeed) {
@@ -157,6 +152,9 @@ class IsolatedBloc extends Cubit<
       boid.vx = (boid.vx / speed) * minSpeed;
       boid.vy = (boid.vy / speed) * minSpeed;
     }
+
+    boid.x = boid.x + boid.vx;
+    boid.y = boid.y + boid.vy;
 
     // update
     this.velocity = {
@@ -169,7 +167,7 @@ class IsolatedBloc extends Cubit<
 }
 
 const Jumper: FC<{ index: number }> = ({ index }) => {
-  const perRow = 5;
+  const perRow = 10;
   const margin = 2;
   const size = 15;
   const [{ x, y, color }] = useBloc(IsolatedBloc, {
@@ -178,7 +176,7 @@ const Jumper: FC<{ index: number }> = ({ index }) => {
         (index % perRow) * (size + margin),
         Math.floor(index / perRow) * (size + margin),
       ],
-      color: `hsl(${index * 10}, 100%, 10%)`,
+      color: `hsl(${(index * 10) % 200}, 100%, 50%)`,
       weight: Math.random(),
     },
   });

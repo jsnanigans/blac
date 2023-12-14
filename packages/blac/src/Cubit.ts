@@ -3,14 +3,14 @@ import { Blac, BlacEvent } from './Blac';
 
 export type BlocProps = Record<string | number, any>;
 
-export abstract class Cubit<S, P extends BlocProps = {}> extends BlocBase<S> {
+export abstract class Cubit<S, P extends BlocProps = {}> extends BlocBase<
+  S,
+  P
+> {
   static create: () => Cubit<any, any>;
-  props: P = {} as P;
 
   constructor(initialState: S) {
     super(initialState);
-    const newProps = Blac.getInstance().getCustomProps(this.constructor as any);
-    this.props = { ...this.props, ...newProps };
   }
 
   /**

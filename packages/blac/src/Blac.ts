@@ -34,7 +34,6 @@ export class Blac {
   blocInstanceMap: Map<string, BlocBase<any>> = new Map();
   isolatedBlocMap: Map<Function, BlocBase<any>[]> = new Map();
   pluginList: BlacPlugin[] = [];
-  customPropsMap: Map<Function, BlocProps> = new Map();
   postChangesToDocument = false;
 
   constructor() {
@@ -150,20 +149,6 @@ export class Blac {
     }
   }
 
-  setCustomProps(
-    blocClass: BlocBaseAbstract,
-    props: BlocProps | undefined,
-  ): void {
-    if (!props) return;
-    this.customPropsMap.set(blocClass, props);
-  }
-
-  getCustomProps(blocClass: BlocBaseAbstract): BlocProps | undefined {
-    const props = this.customPropsMap.get(blocClass);
-    this.customPropsMap.delete(blocClass);
-    return props;
-  }
-
   createNewBlocInstance<B extends BlocBase<any>>(
     blocClass: BlocConstructor<B>,
     id: BlocInstanceId,
@@ -175,7 +160,7 @@ export class Blac {
       'create',
     );
 
-    this.setCustomProps(base, props);
+    base._propsOnInit = props;
     const newBloc = hasCreateMethod ? base.create() : new blocClass();
     newBloc.updateId(id);
 
@@ -202,7 +187,9 @@ export class Blac {
     const registered = isIsolated
       ? this.findIsolatedBlocInstance(blocClass, id)
       : this.findRegisteredBlocInstance(blocClass, id);
+
     const { reconnect } = options;
+
     if (registered) {
       if (reconnect) {
         registered.dispose();

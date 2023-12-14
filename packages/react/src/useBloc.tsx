@@ -115,9 +115,9 @@ export class UseBlocClass {
       getServerSnapshot,
     );
 
-    useEffect(() => {
-      resolvedBloc.props = props;
-    }, [props]);
+    // useEffect(() => {
+    //   resolvedBloc.props = props;
+    // }, [props]);
 
     return [state, resolvedBloc];
   }

@@ -9,12 +9,13 @@ export abstract class BlocBase<S, P extends BlocProps = {}> {
   static keepAlive = false;
   static create: <S extends any>() => BlocBase<S>;
   static isBlacClass = true;
+  static _propsOnInit: BlocProps | undefined;
   public isolated = false;
   public isBlacLive = true;
   public observer: BlacObservable<any>;
   public blac = Blac.getInstance();
   public id: BlocInstanceId;
-  public props: P = {} as P;
+  // public props: P = {} as P;
   public readonly createdAt = Date.now();
 
   // onConnect(): void;
@@ -26,7 +27,12 @@ export abstract class BlocBase<S, P extends BlocProps = {}> {
     this.blac.report(BlacEvent.BLOC_CREATED, this);
     this.id = this.constructor.name;
     this.isolated = (this.constructor as any).isolated;
-    // this.onConnect?.();
+  }
+
+  get props(): P {
+    const p = (this.constructor as any)._propsOnInit as P;
+    if (!p) return {} as P;
+    return p;
   }
 
   public _state: S;
