@@ -16,5 +16,8 @@ tsconfig.json
 vitest.config.ts
 docs
 src
+!dist/src
 ../../apps/react-demo/ui
 index.html
+vitest.config.d.ts
+vite.config.d.ts

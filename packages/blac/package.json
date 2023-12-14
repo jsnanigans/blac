@@ -1,10 +1,10 @@
 {
   "name": "blac",
-  "version": "1.0.1-alpha.10",
+  "version": "1.0.1-alpha.11",
   "license": "MIT",
-  "main": "dist/blac.js",
-  "module": "dist/blac.esm.js",
-  "typings": "dist/blac.d.ts",
+  "main": "dist/index.cjs.js",
+  "module": "dist/index.es.js",
+  "typings": "dist/src/index.d.ts",
   "keywords": [
     "react",
     "typescript",
@@ -16,34 +16,25 @@
     "bloc-pattern"
   ],
   "scripts": {
-    "build": "rollup -c rollup.config.lib.js",
-    "dev": "rollup -c rollup.config.lib.js --watch",
+    "build": "vite build",
+    "dev": "echo 'No dev script defined' && exit 1",
     "prettier": "prettier --write ./src",
     "test": "vitest run",
     "test:watch": "vitest --watch",
     "coverage": "vitest run --coverage",
     "pub:alpha": "npm run build && npm publish --tag alpha"
   },
-  "dependencies": {},
+  "dependencies": {
+    "vite-plugin-dts": "^3.6.4"
+  },
   "devDependencies": {
-    "@babel/core": "^7.22.10",
-    "@babel/preset-env": "^7.22.10",
-    "@babel/preset-react": "^7.22.5",
-    "@babel/preset-typescript": "^7.22.5",
-    "@rollup/plugin-commonjs": "^25.0.4",
-    "@rollup/plugin-node-resolve": "^15.1.0",
     "@typescript-eslint/eslint-plugin": "^6.3.0",
     "@typescript-eslint/parser": "^6.3.0",
     "@vitejs/plugin-react-refresh": "^1.3.6",
     "@vitest/browser": "^0.34.1",
     "@vitest/coverage-c8": "^0.33.0",
-    "esbuild": "^0.19.1",
     "eslint": "^8.47.0",
     "prettier": "^3.0.1",
-    "rollup": "^3.28.0",
-    "rollup-plugin-dts": "^5.3.1",
-    "rollup-plugin-peer-deps-external": "^2.2.4",
-    "rollup-plugin-typescript2": "^0.35.0",
     "typescript": "^5.1.6",
     "vitest": "^0.34.1"
   }

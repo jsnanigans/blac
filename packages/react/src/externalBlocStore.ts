@@ -1,4 +1,4 @@
-import { BlocBase } from 'blac/src';
+import { BlocBase } from 'blac';
 
 export interface ExternalStore<B extends BlocBase<S>, S> {
   subscribe: (onStoreChange: () => void) => () => void;

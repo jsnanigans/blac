@@ -6,7 +6,7 @@ import {
   BlocProps,
   CubitPropsType,
   ValueType,
-} from 'blac/src';
+} from 'blac';
 import { useEffect, useId, useMemo, useRef, useSyncExternalStore } from 'react';
 import externalBlocStore from './externalBlocStore';
 
