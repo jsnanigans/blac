@@ -1,10 +1,10 @@
 {
   "name": "@blac/react",
-  "version": "0.0.21",
+  "version": "0.0.22",
   "license": "MIT",
-  "main": "dist/blac-react.js",
-  "module": "dist/blac-react.esm.js",
-  "typings": "dist/blac-react.d.ts",
+  "main": "dist/index.cjs.js",
+  "module": "dist/index.es.js",
+  "typings": "dist/src/index.d.ts",
   "keywords": [
     "react",
     "typescript",
@@ -16,20 +16,19 @@
     "bloc-pattern"
   ],
   "scripts": {
-    "build": "rollup -c rollup.config.lib.js",
+    "build": "rm -rf dist && vite build",
     "dev": "rollup -c rollup.config.lib.js --watch",
     "prettier": "prettier --write ./src",
     "test": "vitest run --coverage",
     "pub": "npm run build && npm publish"
   },
   "dependencies": {
-    "blac": "*"
+    "blac": "*",
+    "vite-plugin-dts": "^3.6.4"
   },
   "devDependencies": {
-    "@rollup/plugin-typescript": "^11.1.2",
     "@types/react": "^18.2.20",
     "react": "^18.2.0",
-    "rollup-plugin-terser": "^7.0.2",
     "vitest": "^0.34.1"
   }
 }

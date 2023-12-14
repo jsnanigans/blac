@@ -209,7 +209,7 @@ const QueryOtherBlocs: FC = () => {
 
   return (
     <div className="jumper-box">
-      {Array.from({ length: 200 }).map((_, i) => (
+      {Array.from({ length: 150 }).map((_, i) => (
         <Jumper index={i} key={i} />
       ))}
     </div>

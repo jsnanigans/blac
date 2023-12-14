@@ -29,10 +29,23 @@ export abstract class BlocBase<S, P extends BlocProps = {}> {
     this.isolated = (this.constructor as any).isolated;
   }
 
+  private localProps?: P;
   get props(): P {
-    const p = (this.constructor as any)._propsOnInit as P;
-    if (!p) return {} as P;
-    return p;
+    if (this.localProps) {
+      return this.localProps;
+    }
+
+    const constructorProps = (this.constructor as any)._propsOnInit as P;
+    if (constructorProps) {
+      this.localProps = constructorProps;
+      return constructorProps;
+    }
+
+    return {} as P;
+  }
+
+  set props(props: P) {
+    this.localProps = props;
   }
 
   public _state: S;
