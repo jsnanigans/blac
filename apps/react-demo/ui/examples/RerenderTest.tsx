@@ -16,24 +16,29 @@ class DemoCubit extends Cubit<{
 
 // Component that renders a flashing highlight when it is re-rendered
 const Flash: FC<{ children?: ReactNode }> = ({ children }) => {
+  const rndCount = React.useRef(0);
   const rnd = Math.random();
+
+  rndCount.current += 1;
+
   return (
     <div className="flash">
       {children}
       <div className="highlight" key={rnd} />
+      <div className="rnd">Render Count: {rndCount.current}</div>
     </div>
   );
 };
 
 // Only show the name
 const ShowName: FC = () => {
-  const [{ name }] = useBloc(DemoCubit, ({ name }) => name);
+  const [{ name }] = useBloc(DemoCubit, ({ name }) => [name]);
   return <Flash>Name: {name}</Flash>;
 };
 
 // Input to change the email
 const ChangeName: FC = () => {
-  const [{ name }, { setName }] = useBloc(DemoCubit, ({ name }) => name);
+  const [{ name }, { setName }] = useBloc(DemoCubit, ({ name }) => [name]);
   return (
     <Flash>
       Name: <input type="text" value={name} onChange={setName} />
@@ -43,13 +48,22 @@ const ChangeName: FC = () => {
 
 // Only show the email
 const ShowEmail: FC = () => {
-  const [{ email }] = useBloc(DemoCubit, ({ email }) => email);
+  const [{ email }] = useBloc(DemoCubit, ({ email }) => [email]);
   return <Flash>Email: {email}</Flash>;
+};
+
+const isEmail = (email: string) => {
+  const reg = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return reg.test(email);
+}
+const ShowIsEmail: FC = () => {
+  const [{ email }] = useBloc(DemoCubit, ({ email }) => [isEmail(email)]);
+  return <Flash>Is Email: {isEmail(email) ? 'YES' : 'NO'}</Flash>;
 };
 
 // Input to change the email
 const ChangeEmail: FC = () => {
-  const [{ email }, { setEmail }] = useBloc(DemoCubit, ({ email }) => email);
+  const [{ email }, { setEmail }] = useBloc(DemoCubit, ({ email }) => [email]);
   return (
     <Flash>
       Email: <input type="text" value={email} onChange={setEmail} />
@@ -74,6 +88,7 @@ const RerenderTest: FC = () => {
     <div>
       <ShowName />
       <ShowEmail />
+      <ShowIsEmail />
       <ShowAll />
       <ChangeName />
       <ChangeEmail />

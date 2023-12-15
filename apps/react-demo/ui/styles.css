@@ -210,6 +210,16 @@ button.lead {
   position: relative;
   padding: 15px;
   margin: 1em 0;
+  font-weight: 400;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.flash .rnd {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 5px 10px;
 }
 
 .highlight {

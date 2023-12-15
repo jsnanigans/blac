@@ -8,15 +8,24 @@ export interface ExternalStore<B extends BlocBase<S>, S> {
 
 const externalBlocStore = <B extends BlocBase<S>, S>(
   bloc: B,
-  dependencySelector: (state: S) => unknown,
+  dependencyArray: (state: S) => unknown[],
 ): ExternalStore<B, S> => {
-  let lastDependencyCheck = dependencySelector(bloc.state);
+  let lastDependencyCheck = dependencyArray(bloc.state);
 
   return {
     subscribe: (listener: () => void) => {
       const unSub = bloc.addEventListenerStateChange((data) => {
-        const newDependencyCheck = dependencySelector(data);
-        if (newDependencyCheck !== lastDependencyCheck) {
+        const newDependencyCheck = dependencyArray(data);
+
+        let allEqual = true;
+        for (let i = 0; i < newDependencyCheck.length; i++) {
+          if (newDependencyCheck[i] !== lastDependencyCheck[i]) {
+            allEqual = false;
+            break;
+          }
+        }
+
+        if (!allEqual) {
           lastDependencyCheck = newDependencyCheck;
           listener();
         }

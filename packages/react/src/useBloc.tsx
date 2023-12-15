@@ -7,7 +7,7 @@ import {
   CubitPropsType,
   ValueType,
 } from 'blac';
-import { useEffect, useId, useMemo, useRef, useSyncExternalStore } from 'react';
+import { useEffect, useId, useMemo, useSyncExternalStore } from 'react';
 import externalBlocStore from './externalBlocStore';
 
 export type BlocHookData<B extends BlocBase<S>, S> = [
@@ -18,15 +18,16 @@ export type BlocHookData<B extends BlocBase<S>, S> = [
 // type BlocHookData<B extends BlocBase<S>, S> = [S, InstanceType<B>]; // B is the bloc class, S is the state of the bloc
 // type UseBlocClassResult<B, S> = BlocHookData<B, S>;
 
+
+export type BlocHookDependencyArrayFn<B extends BlocBase<S>, S> = (
+  state: ValueType<B>,
+) => unknown[];
+
 export interface BlocHookOptions<B extends BlocBase<S>, S> {
   id?: string;
-  dependencySelector?: (state: ValueType<B>) => unknown;
+  dependencySelector?: BlocHookDependencyArrayFn<B, S>;
   props?: CubitPropsType<B>;
 }
-
-export type BlocHookDependencySelector<B extends BlocBase<S>, S> = (
-  state: ValueType<B>,
-) => unknown;
 
 export class UseBlocClass {
   // constructor, no options
@@ -39,7 +40,7 @@ export class UseBlocClass {
   ): BlocHookData<InstanceType<B>, S>;
   static useBloc<B extends BlocConstructor<BlocBase<S>>, S>(
     bloc: B,
-    depsSelector: BlocHookDependencySelector<InstanceType<B>, S>,
+    depsSelector: BlocHookDependencyArrayFn<InstanceType<B>, S>,
   ): BlocHookData<InstanceType<B>, S>;
   static useBloc<B extends BlocConstructor<BlocBase<S>>, S>(
     bloc: B,
@@ -49,14 +50,14 @@ export class UseBlocClass {
     bloc: B,
     options?:
       | BlocHookOptions<InstanceType<B>, S>
-      | BlocHookDependencySelector<InstanceType<B>, S>
+      | BlocHookDependencyArrayFn<InstanceType<B>, S>
       | BlocInstanceId,
   ): BlocHookData<InstanceType<B>, S> {
     const rid = useId();
     // default options
-    let dependencySelector: BlocHookDependencySelector<InstanceType<B>, S> = (
+    let dependencyArray: BlocHookDependencyArrayFn<InstanceType<B>, S> = (
       state: ValueType<InstanceType<B>>,
-    ) => state;
+    ) => [state];
     let blocId: BlocInstanceId | undefined;
     let props: BlocProps = {};
 
@@ -64,7 +65,7 @@ export class UseBlocClass {
 
     // if options is a function, its a dependencySelector
     if (typeof options === 'function') {
-      dependencySelector = options;
+      dependencyArray = options;
     }
 
     // if options is a string its an ID
@@ -73,7 +74,7 @@ export class UseBlocClass {
     }
 
     if (typeof options === 'object') {
-      dependencySelector = options.dependencySelector ?? dependencySelector;
+      dependencyArray = options.dependencySelector ?? dependencyArray;
       blocId = options.id;
       props = options.props ?? props;
     }
@@ -105,7 +106,7 @@ export class UseBlocClass {
     }
 
     const { subscribe, getSnapshot, getServerSnapshot } = useMemo(
-      () => externalBlocStore(resolvedBloc, dependencySelector),
+      () => externalBlocStore(resolvedBloc, dependencyArray),
       [resolvedBloc.createdAt],
     );
 

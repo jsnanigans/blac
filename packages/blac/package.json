@@ -17,7 +17,7 @@
   ],
   "scripts": {
     "build": "vite build",
-    "dev": "echo 'No dev script defined' && exit 1",
+    "dev": "bun dev.ts",
     "prettier": "prettier --write ./src",
     "test": "vitest run",
     "test:watch": "vitest --watch",

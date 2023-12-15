@@ -104,7 +104,7 @@ class DemoPageBloc extends Cubit<MainBlocState> {
       code: CounterMultiInstancesText
     },
     {
-      name: "Rerender test",
+      name: "Dependency Array (Render Test)",
       description: <>
         <p>The state contains both email and name, add a dependency check to see if the state should trigger a rerender
           or not.</p>

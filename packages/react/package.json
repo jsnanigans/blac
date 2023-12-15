@@ -17,7 +17,7 @@
   ],
   "scripts": {
     "build": "rm -rf dist && vite build",
-    "dev": "rollup -c rollup.config.lib.js --watch",
+    "dev": "bun dev.ts",
     "prettier": "prettier --write ./src",
     "test": "vitest run --coverage",
     "pub": "npm run build && npm publish"
