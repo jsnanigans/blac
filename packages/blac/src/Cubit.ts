@@ -1,5 +1,6 @@
+import { BlacEvent } from './Blac';
 import { BlocBase } from './BlocBase';
-import { Blac, BlacEvent } from './Blac';
+import BlacAddon from './addons/BlacAddon';
 
 export type BlocProps = Record<string | number, any>;
 
@@ -7,10 +8,14 @@ export abstract class Cubit<S, P extends BlocProps = {}> extends BlocBase<
   S,
   P
 > {
+  static addons?: BlacAddon[];
   static create: () => Cubit<any, any>;
+  public addons?: BlacAddon[];
 
   constructor(initialState: S) {
     super(initialState);
+    this.addons = (this.constructor as any).addons;
+    this.connectAddons();
   }
 
   /**
@@ -57,4 +62,25 @@ export abstract class Cubit<S, P extends BlocProps = {}> extends BlocBase<
       this.emit({ ...this.state, ...statePatch });
     }
   }
+
+  connectAddons = () => {
+    const { addons } = this;
+
+    if (!addons) return;
+
+    for (const addon of addons) {
+      if (addon.onEmit) {
+        this.observer.subscribe((newState, oldState) => {
+          addon.onEmit?.({
+            newState,
+            oldState,
+            cubit: this,
+          });
+        });
+      }
+      if (addon.onInit) {
+        addon.onInit(this);
+      }
+    }
+  };
 }

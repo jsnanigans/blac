@@ -1,6 +1,6 @@
 import React, { FC } from 'react';
-import { Cubit } from 'blac/src';
-import { useBloc } from '@blac/react/src';
+import { Cubit } from 'blac';
+import { useBloc } from '@blac/react';
 
 class CounterGlobalBloc extends Cubit<number> {
   static keepAlive = true;

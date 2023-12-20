@@ -1,6 +1,6 @@
-import { useBloc } from '@blac/react/src';
-import { Blac, Bloc } from 'blac/src';
-import React, { FC, useState } from 'react';
+import { useBloc } from '@blac/react';
+import { Bloc } from 'blac';
+import React, { FC } from 'react';
 
 type CounterState = number;
 
@@ -10,11 +10,7 @@ enum CounterActions {
 }
 
 class CounterBloc extends Bloc<CounterState, CounterActions> {
-  static create = () => {
-    console.log('NEWQ');
-    console.log(Blac.getInstance());
-    return new CounterBloc(0);
-  };
+  static create = () => new CounterBloc(0);
 
   reducer(action: CounterActions, state: CounterState) {
     switch (action) {
@@ -28,28 +24,12 @@ class CounterBloc extends Bloc<CounterState, CounterActions> {
 
 const CounterWithBloc: FC = () => {
   const [count, { emit }] = useBloc(CounterBloc);
-  const [c2, setc2] = useState(0);
 
   return (
     <>
-      <button
-        onClick={() => {
-          emit(CounterActions.decrement);
-          setc2(c2 - 1);
-        }}
-      >
-        -
-      </button>
-      {` blac: ${count} `}
-      {` state: ${c2} `}
-      <button
-        onClick={() => {
-          emit(CounterActions.increment);
-          setc2(c2 + 1);
-        }}
-      >
-        +
-      </button>
+      <button onClick={() => emit(CounterActions.decrement)}>-</button>
+      &nbsp;{count}&nbsp;
+      <button onClick={() => emit(CounterActions.increment)}>+</button>
     </>
   );
 };

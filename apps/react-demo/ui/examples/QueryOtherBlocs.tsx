@@ -1,28 +1,25 @@
 import type { FC } from 'react';
 import React, { useCallback, useEffect, useRef } from 'react';
-import { Blac, Cubit } from 'blac/src';
-import { useBloc } from '@blac/react/src';
+import { Blac, Cubit } from 'blac';
+import { useBloc } from '@blac/react';
 
 class IsolatedBloc extends Cubit<
-  { x: number; y: number; color: string },
-  { start: [number, number]; color: string; weight: number }
+  { x: number; y: number },
+  { start: [number, number] }
 > {
   static isolated = true;
   velocity = { x: Math.random() * 3 - 1.5, y: Math.random() * 3 - 1.5 };
-  weight = 1;
   maxX = 600;
   maxY = 400;
   size = 10;
   others: IsolatedBloc[] = [];
 
   constructor() {
-    super({ x: 0, y: 0, color: 'black' });
+    super({ x: 0, y: 0 });
     this._state = {
       x: this.props.start[0],
       y: this.props.start[1],
-      color: this.props.color,
     };
-    this.weight += this.props.weight;
 
     this.blac.getAllBlocs(IsolatedBloc).then((b) => {
       this.others = b.filter((b) => b !== this);
@@ -46,7 +43,7 @@ class IsolatedBloc extends Cubit<
   }
 
   protectedRange = 6;
-  viusalRange = 20;
+  viusalRange = 30;
   updateRange = () => {
     this.othersInVisualRangCache = [];
     this.othersInProtectedRangCache = [];
@@ -170,20 +167,18 @@ const Jumper: FC<{ index: number }> = ({ index }) => {
   const perRow = 10;
   const margin = 2;
   const size = 15;
-  const [{ x, y, color }] = useBloc(IsolatedBloc, {
+  const [{ x, y }] = useBloc(IsolatedBloc, {
     props: {
       start: [
         (index % perRow) * (size + margin),
         Math.floor(index / perRow) * (size + margin),
       ],
-      color: `hsl(${(index * 10) % 200}, 100%, 50%)`,
-      weight: Math.random(),
     },
   });
   return (
     <div
       className="jumper sm"
-      style={{ '--x': x + 'px', '--y': y + 'px', '--bg': color } as any}
+      style={{ '--x': x + 'px', '--y': y + 'px', '--bg': '#000' } as any}
     />
   );
 };

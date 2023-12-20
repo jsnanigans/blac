@@ -1,7 +1,7 @@
 import type { FC } from 'react';
 import React, { useCallback, useEffect, useRef } from 'react';
-import { Blac, Cubit } from 'blac/src';
-import { useBloc } from '@blac/react/src';
+import { Blac, Cubit } from 'blac';
+import { useBloc } from '@blac/react';
 
 class IsolatedBloc extends Cubit<
   { x: number; y: number },

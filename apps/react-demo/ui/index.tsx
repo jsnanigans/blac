@@ -1,15 +1,15 @@
 // render app in #root
 
-import React from "react";
-import { createRoot } from "react-dom/client";
-import App from "./App";
-import { Blac } from "blac/src";
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import App from './App';
+import { Blac } from 'blac';
 
 Blac.configure({
-  exposeBlacInstance: true
+  exposeBlacInstance: true,
 });
 
-const container = document.getElementById("root");
+const container = document.getElementById('root');
 const root = createRoot(container!);
 root.render(<App />);
 
