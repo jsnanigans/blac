@@ -36,17 +36,23 @@ export class Blac {
   pluginList: BlacPlugin[] = [];
   postChangesToDocument = false;
 
-  constructor() {
-    if (Blac.instance) {
+  constructor(options: { __unsafe_ignore_singleton?: boolean } = {}) {
+    const { __unsafe_ignore_singleton = false } = options;
+    if (Blac.instance && !__unsafe_ignore_singleton) {
       return Blac.instance;
     }
 
     Blac.instance = this;
-    console.log('Blac Init');
   }
 
   static getInstance(): Blac {
     return Blac.instance;
+  }
+
+  resetInstance(): void {
+    Blac.instance = new Blac({
+      __unsafe_ignore_singleton: true,
+    });
   }
 
   addPlugin = (plugin: BlacPlugin): void => {
@@ -87,10 +93,10 @@ export class Blac {
 
   disposeBloc = (bloc: BlocBase<any>): void => {
     const base = bloc.constructor as unknown as BlocBaseAbstract;
-    if (!base.isolated) {
-      this.unregisterBlocInstance(bloc);
-    } else {
+    if (base.isolated) {
       this.unregisterIsolatedBlocInstance(bloc);
+    } else {
+      this.unregisterBlocInstance(bloc);
     }
   };
 
@@ -129,6 +135,19 @@ export class Blac {
     }
   }
 
+  unregisterIsolatedBlocInstance(bloc: BlocBase<any>): void {
+    const blocClass = bloc.constructor;
+    const blocs = this.isolatedBlocMap.get(blocClass);
+    if (blocs) {
+      const index = blocs.findIndex((b) => b.id === bloc.id);
+      blocs.splice(index, 1);
+
+      if (blocs.length === 0) {
+        this.isolatedBlocMap.delete(blocClass);
+      }
+    }
+  }
+
   findIsolatedBlocInstance<B extends BlocBase<any>>(
     blocClass: BlocConstructor<B>,
     id: BlocInstanceId,
@@ -138,15 +157,6 @@ export class Blac {
       return blocs.find((b) => b.id === id) as InstanceType<BlocConstructor<B>>;
     }
     return undefined;
-  }
-
-  unregisterIsolatedBlocInstance(bloc: BlocBase<any>): void {
-    const blocClass = bloc.constructor;
-    const blocs = this.isolatedBlocMap.get(blocClass);
-    if (blocs) {
-      const index = blocs.findIndex((b) => b.id === bloc.id);
-      blocs.splice(index, 1);
-    }
   }
 
   createNewBlocInstance<B extends BlocBase<any>>(
@@ -200,12 +210,12 @@ export class Blac {
     return this.createNewBlocInstance(blocClass, id, options.props);
   }
 
-  getAllBlocs = async <B extends BlocBase<any>>(
+  getAllBlocs = <B extends BlocBase<any>>(
     blocClass: BlocConstructor<B>,
     options: {
       searchIsolated?: boolean;
     } = {},
-  ): Promise<B[]> => {
+  ): B[] => {
     const base = blocClass as unknown as BlocBaseAbstract;
 
     const { searchIsolated = base.isolated } = options;

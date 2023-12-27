@@ -1,6 +1,6 @@
 export type BlacObserver<S> = (
   newState: S,
-  oldState: S
+  oldState: S,
 ) => void | Promise<void>;
 
 export class BlacObservable<S> {
@@ -8,6 +8,10 @@ export class BlacObservable<S> {
 
   get size(): number {
     return this._observers.size;
+  }
+
+  get observers() {
+    return this._observers;
   }
 
   subscribe(observer: BlacObserver<S>): () => void {
