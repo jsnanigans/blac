@@ -1,6 +1,6 @@
 {
   "name": "@blac/react",
-  "version": "0.0.25",
+  "version": "0.0.26",
   "license": "MIT",
   "main": "src/index.ts",
   "module": "src/index.ts",
@@ -25,12 +25,12 @@
     "pub": "npm run build && npm publish"
   },
   "dependencies": {
-    "blac": "*",
-    "vite-plugin-dts": "^3.6.4"
+    "blac": "*"
   },
   "devDependencies": {
-    "@types/react": "^18.2.20",
+    "vite-plugin-dts": "^3.7.1",
+    "@types/react": "^18.2.48",
     "react": "^18.2.0",
-    "vitest": "^0.34.1"
+    "vitest": "^1.2.1"
   }
 }
