@@ -55,7 +55,7 @@ const ShowEmail: FC = () => {
 const isEmail = (email: string) => {
   const reg = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return reg.test(email);
-}
+};
 const ShowIsEmail: FC = () => {
   const [{ email }] = useBloc(DemoCubit, ({ email }) => [isEmail(email)]);
   return <Flash>Is Email: {isEmail(email) ? 'YES' : 'NO'}</Flash>;

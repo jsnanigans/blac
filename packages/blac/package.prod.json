@@ -2,10 +2,10 @@
   "name": "blac",
   "version": "1.0.3-0",
   "license": "MIT",
-  "main": "src/index.ts",
-  "module": "src/index.ts",
-  "typings": "src/index.ts",
-  "types": "src/index.ts",
+  "main": "dist/index.cjs.js",
+  "module": "dist/index.es.js",
+  "typings": "dist/src/index.d.ts",
+  "types": "dist/src/index.d.ts",
   "keywords": [
     "react",
     "typescript",
@@ -17,7 +17,7 @@
     "bloc-pattern"
   ],
   "scripts": {
-    "build": "vite build && bun publish.ts",
+    "build": "vite build",
     "dev": "bun dev.ts",
     "prettier": "prettier --write ./src",
     "test": "vitest run",

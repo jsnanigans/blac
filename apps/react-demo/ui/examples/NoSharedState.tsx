@@ -83,9 +83,8 @@ const NoSharedState: FC = () => {
   }, []);
 
   useEffect(() => {
-    Blac.getAllBlocs(IsolatedBloc).then((blocks) => {
-      animate(blocks);
-    });
+    const blocks = Blac.getAllBlocs(IsolatedBloc);
+    animate(blocks);
 
     return () => {
       active.current = false;

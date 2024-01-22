@@ -20,6 +20,9 @@ import CounterWithCubitGlobalAsText from './examples/CounterWithCubitGlobal.tsx?
 import CounterMultipleConsumers from './examples/CounterMultipleConsumers';
 import CounterMultipleConsumersAsText from './examples/CounterMultipleConsumers.tsx?raw';
 
+import Props from './examples/Props';
+import PropsAsText from './examples/Props.tsx?raw';
+
 import './styles.css';
 import Setup from './docs/Setup';
 import Code from './components/Code';
@@ -150,6 +153,16 @@ class DemoPageBloc extends Cubit<MainBlocState> {
       ),
       component: <RerenderTest />,
       code: RerenderTestAsText,
+    },
+    {
+      name: 'Props',
+      description: (
+        <>
+          <p></p>
+        </>
+      ),
+      component: <Props />,
+      code: PropsAsText,
     },
     {
       name: 'Isolated',

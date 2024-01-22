@@ -21,9 +21,8 @@ class IsolatedBloc extends Cubit<
       y: this.props.start[1],
     };
 
-    this.blac.getAllBlocs(IsolatedBloc).then((b) => {
-      this.others = b.filter((b) => b !== this);
-    });
+    const b = this.blac.getAllBlocs(IsolatedBloc);
+    this.others = b.filter((b) => b !== this);
 
     this.updateRange();
   }
@@ -197,9 +196,8 @@ const QueryOtherBlocs: FC = () => {
   }, []);
 
   useEffect(() => {
-    Blac.getAllBlocs(IsolatedBloc).then((blocks) => {
-      animate(blocks);
-    });
+    const blocks = Blac.getAllBlocs(IsolatedBloc);
+    animate(blocks);
   }, []);
 
   return (

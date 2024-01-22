@@ -18,7 +18,6 @@ export type BlocHookData<B extends BlocBase<S>, S> = [
 // type BlocHookData<B extends BlocBase<S>, S> = [S, InstanceType<B>]; // B is the bloc class, S is the state of the bloc
 // type UseBlocClassResult<B, S> = BlocHookData<B, S>;
 
-
 export type BlocHookDependencyArrayFn<B extends BlocBase<S>, S> = (
   state: ValueType<B>,
 ) => unknown[];
@@ -59,7 +58,7 @@ export class UseBlocClass {
       state: ValueType<InstanceType<B>>,
     ) => [state];
     let blocId: BlocInstanceId | undefined;
-    let props: BlocProps = {};
+    let props: BlocProps | undefined;
 
     // parse options
 
@@ -85,21 +84,11 @@ export class UseBlocClass {
       blocId = rid;
     }
 
-    // const now = Date.now();
-    // const createdAt = useRef(now);
-    // const dateChanged = now !== createdAt;
-
-    // resolve the bloc, get the existing instance of the bloc or create a new one
-    // const resolvedBloc = useMemo(
-    //   () =>
-
     const resolvedBloc = Blac.getInstance().getBloc(bloc, {
       id: blocId,
       props,
       reconnect: false,
     }) as InstanceType<B>;
-    //   [renderId.current],
-    // );
 
     if (!resolvedBloc) {
       throw new Error(`useBloc: could not resolve: ${bloc.name || bloc}`);
@@ -117,7 +106,9 @@ export class UseBlocClass {
     );
 
     useEffect(() => {
-      resolvedBloc.props = props;
+      if (props && !resolvedBloc.props) {
+        resolvedBloc.props = props;
+      }
     }, [props]);
 
     return [state, resolvedBloc];
