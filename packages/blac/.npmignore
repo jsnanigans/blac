@@ -10,7 +10,6 @@ tsconfig.json
 vite.config.ts
 .DS_Store
 site
-readme.md
 setupTests.ts
 tsconfig.json
 vitest.config.ts
@@ -19,3 +18,4 @@ src
 !dist/src
 vitest.config.d.ts
 vite.config.d.ts
+dev.d.ts

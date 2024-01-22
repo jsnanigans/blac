@@ -1,6 +1,6 @@
 {
   "name": "blac",
-  "version": "1.0.3-0",
+  "version": "1.0.8",
   "license": "MIT",
   "main": "src/index.ts",
   "module": "src/index.ts",
@@ -17,7 +17,8 @@
     "bloc-pattern"
   ],
   "scripts": {
-    "build": "vite build && bun publish.ts",
+    "build": "vite build",
+    "pub:patch": "npm run build && bun publish.ts && cd dist && npm publish",
     "dev": "bun dev.ts",
     "prettier": "prettier --write ./src",
     "test": "vitest run",
