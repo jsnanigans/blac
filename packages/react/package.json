@@ -1,6 +1,6 @@
 {
   "name": "@blac/react",
-  "version": "0.0.24",
+  "version": "0.0.25",
   "license": "MIT",
   "main": "src/index.ts",
   "module": "src/index.ts",
@@ -17,7 +17,8 @@
     "bloc-pattern"
   ],
   "scripts": {
-    "build": "rm -rf dist && vite build",
+    "build": "vite build",
+    "pub:patch": "npm run build && bun publish.ts && cd dist && npm publish",
     "dev": "bun dev.ts",
     "prettier": "prettier --write ./src",
     "test": "vitest run --coverage",

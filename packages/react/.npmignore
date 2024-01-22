@@ -21,3 +21,4 @@ src
 index.html
 vitest.config.d.ts
 vite.config.d.ts
+dev.d.ts
