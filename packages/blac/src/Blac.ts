@@ -28,6 +28,7 @@ export interface EventParams {
 
 export class Blac {
   static instance: Blac = new Blac();
+  createdAt = Date.now();
   static getAllBlocs = Blac.instance.getAllBlocs;
   static addPlugin = Blac.instance.addPlugin;
   static configure = Blac.instance.configure;
@@ -42,14 +43,20 @@ export class Blac {
       return Blac.instance;
     }
 
+    this.log('Create new Blac instance');
     Blac.instance = this;
   }
+
+  log = (...args: any[]) => {
+    console.log(`☢️ [Blac ${this.createdAt}]`, ...args);
+  };
 
   static getInstance(): Blac {
     return Blac.instance;
   }
 
   resetInstance(): void {
+    this.log('Reset Blac instance');
     Blac.instance = new Blac({
       __unsafe_ignore_singleton: true,
     });
@@ -59,6 +66,7 @@ export class Blac {
     // check if already added
     const index = this.pluginList.findIndex((p) => p.name === plugin.name);
     if (index !== -1) return;
+    this.log('Add plugin', plugin.name);
     this.pluginList.push(plugin);
   };
 
@@ -93,6 +101,12 @@ export class Blac {
 
   disposeBloc = (bloc: BlocBase<any>): void => {
     const base = bloc.constructor as unknown as BlocBaseAbstract;
+    this.log('Dispose bloc', {
+      bloc,
+      blocName: bloc.name,
+      blocId: bloc.id,
+      isolated: base.isolated,
+    });
     if (base.isolated) {
       this.unregisterIsolatedBlocInstance(bloc);
     } else {
@@ -106,11 +120,13 @@ export class Blac {
 
   unregisterBlocInstance(bloc: BlocBase<any>): void {
     const key = this.createBlocInstanceMapKey(bloc.name, bloc.id);
+    this.log('Unregister bloc', key);
     this.blocInstanceMap.delete(key);
   }
 
   registerBlocInstance(bloc: BlocBase<any>): void {
     const key = this.createBlocInstanceMapKey(bloc.name, bloc.id);
+    this.log('Register bloc', key);
     this.blocInstanceMap.set(key, bloc);
   }
 
@@ -128,6 +144,7 @@ export class Blac {
   registerIsolatedBlocInstance(bloc: BlocBase<any>): void {
     const blocClass = bloc.constructor;
     const blocs = this.isolatedBlocMap.get(blocClass);
+    this.log('Register isolated bloc', blocClass.name, bloc.id);
     if (blocs) {
       blocs.push(bloc);
     } else {
@@ -138,6 +155,7 @@ export class Blac {
   unregisterIsolatedBlocInstance(bloc: BlocBase<any>): void {
     const blocClass = bloc.constructor;
     const blocs = this.isolatedBlocMap.get(blocClass);
+    this.log('Unregister isolated bloc', blocClass.name, bloc.id);
     if (blocs) {
       const index = blocs.findIndex((b) => b.id === bloc.id);
       blocs.splice(index, 1);
@@ -173,6 +191,13 @@ export class Blac {
     base._propsOnInit = props;
     const newBloc = hasCreateMethod ? base.create() : new blocClass();
     newBloc.updateId(id);
+
+    this.log('Create new bloc instance', {
+      blocClass,
+      id,
+      props,
+      newBloc,
+    });
 
     if (base.isolated) {
       this.registerIsolatedBlocInstance(newBloc);

@@ -15,19 +15,28 @@ const externalBlocStore = <B extends BlocBase<S>, S>(
   return {
     subscribe: (listener: () => void) => {
       const unSub = bloc.addEventListenerStateChange((data) => {
-        const newDependencyCheck = dependencyArray(data);
+        try {
+          const newDependencyCheck = dependencyArray(data) ?? [];
 
-        let allEqual = true;
-        for (let i = 0; i < newDependencyCheck.length; i++) {
-          if (newDependencyCheck[i] !== lastDependencyCheck[i]) {
-            allEqual = false;
-            break;
+          let allEqual = true;
+          for (let i = 0; i < newDependencyCheck.length; i++) {
+            if (newDependencyCheck[i] !== lastDependencyCheck[i]) {
+              allEqual = false;
+              break;
+            }
           }
-        }
 
-        if (!allEqual) {
-          lastDependencyCheck = newDependencyCheck;
-          listener();
+          if (!allEqual) {
+            lastDependencyCheck = newDependencyCheck;
+            listener();
+          }
+        } catch (e) {
+          console.error({
+            e,
+            bloc,
+            dependencyArray,
+            lastDependencyCheck,
+          });
         }
       });
       return () => {

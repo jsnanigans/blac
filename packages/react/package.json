@@ -1,6 +1,6 @@
 {
   "name": "@blac/react",
-  "version": "0.0.26",
+  "version": "0.0.28",
   "license": "MIT",
   "main": "src/index.ts",
   "module": "src/index.ts",
