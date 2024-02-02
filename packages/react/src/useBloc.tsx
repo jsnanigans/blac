@@ -106,7 +106,7 @@ export class UseBlocClass {
     );
 
     useEffect(() => {
-      if (props && !resolvedBloc.props) {
+      if ((resolvedBloc.isolated && props) || (props && !resolvedBloc.props)) {
         resolvedBloc.props = props;
       }
     }, [props]);

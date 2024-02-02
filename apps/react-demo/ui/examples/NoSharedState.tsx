@@ -4,8 +4,8 @@ import { Blac, Cubit } from 'blac';
 import { useBloc } from '@blac/react';
 
 class IsolatedBloc extends Cubit<
-  { x: number; y: number },
-  { speedX: number; speedY: number; startX: number }
+  { x: number; y: number; c: string },
+  { speedX: number; speedY: number; startX: number; color: string }
 > {
   static isolated = true;
   velocity = { x: 0, y: 0 };
@@ -13,7 +13,7 @@ class IsolatedBloc extends Cubit<
   maxY = 400;
 
   constructor() {
-    super({ x: 150, y: 100 });
+    super({ x: 150, y: 100, c: 'orange' });
     this.startJumping();
     this.patch({ x: this.props.startX });
   }
@@ -30,7 +30,7 @@ class IsolatedBloc extends Cubit<
   };
 
   move = (x: number, y: number) => {
-    const next = { x, y };
+    const next = { x, y, c: this.props.color };
 
     if (x < 0) {
       next.x = 0;
@@ -48,28 +48,30 @@ class IsolatedBloc extends Cubit<
       this.velocity.y = -this.velocity.y;
     }
 
-    this.emit(next);
+    this.patch(next);
   };
 }
 
-const Jumper: FC = () => {
-  const [{ x, y }] = useBloc(IsolatedBloc, {
+const Jumper: FC<{ color: string }> = (props) => {
+  const [{ x, y, c }] = useBloc(IsolatedBloc, {
     props: {
       speedX: Math.random() * 5 - 2.5,
       speedY: Math.random() * 5 - 2.5,
       startX: Math.random() * 200,
+      color: props.color,
     },
   });
   return (
     <div
       className="jumper"
-      style={{ '--x': x + 'px', '--y': y + 'px' } as any}
+      style={{ '--x': x + 'px', '--y': y + 'px', '--bg': c } as any}
     />
   );
 };
 
 const NoSharedState: FC = () => {
   const active = useRef(true);
+  const [color, setColor] = React.useState('red');
   const animate = useCallback((blocks: IsolatedBloc[]) => {
     for (const block of blocks) {
       block.frame();
@@ -86,15 +88,22 @@ const NoSharedState: FC = () => {
     const blocks = Blac.getAllBlocs(IsolatedBloc);
     animate(blocks);
 
+    const changeColor = setInterval(() => {
+      if (active.current) {
+        setColor((c) => (c === 'red' ? 'blue' : 'red'));
+      }
+    }, 1000);
+
     return () => {
       active.current = false;
+      clearInterval(changeColor);
     };
   }, []);
 
   return (
     <div className="jumper-box">
       {Array.from({ length: 100 }).map((_, i) => (
-        <Jumper key={i} />
+        <Jumper key={i} color={color} />
       ))}
     </div>
   );
