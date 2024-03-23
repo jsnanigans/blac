@@ -1,0 +1,42 @@
+{
+  "name": "blac",
+  "version": "1.0.11",
+  "license": "MIT",
+  "main": "src/index.ts",
+  "module": "src/index.ts",
+  "typings": "src/index.ts",
+  "types": "src/index.ts",
+  "keywords": [
+    "react",
+    "typescript",
+    "rxjs",
+    "state-management",
+    "reactjs",
+    "observer-pattern",
+    "bloc",
+    "bloc-pattern"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "pub:patch": "npm run build && bun publish.ts && cd dist && npm publish",
+    "dev": "bun dev.ts",
+    "prettier": "prettier --write ./src",
+    "test": "vitest run",
+    "test:watch": "vitest --watch",
+    "coverage": "vitest run --coverage",
+    "pub:alpha": "npm run build && npm publish --tag alpha"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "vite-plugin-dts": "^3.7.3",
+    "@typescript-eslint/eslint-plugin": "^7.3.1",
+    "@typescript-eslint/parser": "^7.3.1",
+    "@vitejs/plugin-react-refresh": "^1.3.6",
+    "@vitest/browser": "^1.4.0",
+    "@vitest/coverage-v8": "^1.4.0",
+    "eslint": "^8.57.0",
+    "prettier": "^3.2.5",
+    "typescript": "^5.4.3",
+    "vitest": "^1.4.0"
+  }
+}

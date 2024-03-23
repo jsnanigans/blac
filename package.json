@@ -1,107 +1,25 @@
 {
   "name": "blac",
-  "version": "0.4.1",
+  "version": "0.0.0",
   "license": "MIT",
-  "main": "dist/blac.js",
-  "module": "dist/blac.esm.js",
-  "typings": "dist/blac.d.ts",
-  "keywords": [
-    "react",
-    "typescript",
-    "rxjs",
-    "state-management",
-    "reactjs",
-    "observer-pattern",
-    "bloc",
-    "bloc-pattern"
-  ],
   "scripts": {
-    "dev": "vite",
-    "dev:tool": "cd devtools && vite",
-    "build": "vite build",
-    "build:tool": "yarn build:scripts && cd devtools && vite build",
-    "build:lib": "rollup -c rollup.config.lib.js",
-    "serve": "vite preview",
-    "prettier": "prettier --write ./src",
-    "test": "jest",
-    "build:scripts": "cd devtools && rollup -c rollup.config.background.js && rollup -c rollup.config.body.js && rollup -c rollup.config.inject.js"
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "pub:patch": "turbo pub:patch"
   },
-  "dependencies": {},
+  "private": true,
+  "dependencies": {
+    "@react-three/fiber": "^8.15.19",
+    "@types/three": "^0.162.0",
+    "three": "^0.162.0"
+  },
   "devDependencies": {
-    "@babel/core": "^7.17.9",
-    "@babel/preset-env": "^7.16.11",
-    "@babel/preset-react": "^7.16.7",
-    "@babel/preset-typescript": "^7.16.7",
-    "@material-ui/core": "^4.12.4",
-    "@material-ui/icons": "^4.11.3",
-    "@material-ui/lab": "^4.0.0-alpha.61",
-    "@rollup/plugin-babel": "^5.3.1",
-    "@rollup/plugin-commonjs": "^21.0.3",
-    "@rollup/plugin-node-resolve": "^13.2.0",
-    "@testing-library/react": "^13.0.1",
-    "@types/chrome": "^0.0.181",
-    "@types/enzyme": "^3.10.12",
-    "@types/jest": "^27.4.1",
-    "@types/material-ui": "^0.21.12",
-    "@types/react": "^18.0.5",
-    "@types/react-dom": "^18.0.0",
-    "@types/react-router-dom": "^5.3.3",
-    "@typescript-eslint/eslint-plugin": "^5.19.0",
-    "@typescript-eslint/parser": "^5.19.0",
-    "@vitejs/plugin-react-refresh": "^1.3.6",
-    "@wojtekmaj/enzyme-adapter-react-17": "^0.6.7",
-    "codecov": "^3.8.3",
-    "enzyme": "^3.11.0",
-    "esbuild": "^0.14.36",
-    "eslint": "^8.13.0",
-    "eslint-config-prettier": "^8.5.0",
-    "eslint-config-standard": "^16.0.3",
-    "eslint-plugin-import": "^2.26.0",
-    "eslint-plugin-node": "^11.1.0",
-    "eslint-plugin-promise": "^6.0.0",
-    "eslint-plugin-react": "^7.29.4",
-    "ext-messenger": "^3.0.2",
-    "install": "^0.13.0",
-    "jest": "27.5.1",
-    "jest-localstorage-mock": "^2.4.21",
-    "jest-mock-console": "^1.2.3",
-    "prettier": "^2.6.2",
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0",
-    "react-router-dom": "^6.3.0",
-    "rollup": "^2.70.1",
-    "rollup-plugin-babel": "^4.4.0",
-    "rollup-plugin-commonjs": "^10.1.0",
-    "rollup-plugin-dts": "^4.2.1",
-    "rollup-plugin-node-resolve": "^5.2.0",
-    "rollup-plugin-peer-deps-external": "^2.2.4",
-    "rollup-plugin-terser": "^7.0.2",
-    "rollup-plugin-typescript2": "^0.31.2",
-    "ts-jest": "^27.1.4",
-    "typescript": "^4.6.3",
-    "vite": "^2.9.5"
+    "@types/bun": "^1.0.10",
+    "prettier": "^3.2.5",
+    "turbo": "^1.13.0"
   },
-  "jest": {
-    "preset": "ts-jest",
-    "testEnvironment": "jsdom",
-    "resetMocks": false,
-    "setupFiles": [
-      "jest-localstorage-mock"
-    ],
-    "setupFilesAfterEnv": [
-      "jest-mock-console/dist/setupTestFramework.js",
-      "./setupTests.ts"
-    ],
-    "collectCoverageFrom": [
-      "src/lib/**/*.{ts,tsx}"
-    ],
-    "coverageThreshold": {
-      "global": {
-        "branches": 100,
-        "functions": 100,
-        "lines": 100,
-        "statements": 100
-      }
-    }
-  }
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ]
 }

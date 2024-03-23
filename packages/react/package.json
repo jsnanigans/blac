@@ -1,0 +1,36 @@
+{
+  "name": "@blac/react",
+  "version": "0.0.28",
+  "license": "MIT",
+  "main": "src/index.ts",
+  "module": "src/index.ts",
+  "typings": "src/index.ts",
+  "types": "src/index.ts",
+  "keywords": [
+    "react",
+    "typescript",
+    "rxjs",
+    "state-management",
+    "reactjs",
+    "observer-pattern",
+    "bloc",
+    "bloc-pattern"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "pub:patch": "npm run build && bun publish.ts && cd dist && npm publish",
+    "dev": "bun dev.ts",
+    "prettier": "prettier --write ./src",
+    "test": "vitest run --coverage",
+    "pub": "npm run build && npm publish"
+  },
+  "dependencies": {
+    "blac": "*"
+  },
+  "devDependencies": {
+    "vite-plugin-dts": "^3.7.3",
+    "@types/react": "^18.2.69",
+    "react": "^18.2.0",
+    "vitest": "^1.4.0"
+  }
+}

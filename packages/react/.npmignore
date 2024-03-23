@@ -1,0 +1,5 @@
+.gitignore
+.DS_Store
+vitest.config.d.ts
+vite.config.d.ts
+dev.d.ts
