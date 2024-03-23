@@ -48,6 +48,28 @@ describe('BlocBase', () => {
     });
   });
 
+  describe('props', () => {
+    it('should return private props if set', () => {
+      const instance = new BlocBaseSimple(0);
+      const props = { a: 1 };
+      instance.props = props;
+      expect(instance.props).toBe(props);
+    });
+
+    it('should return constructor props if no local props are set', () => {
+      const constructorProps = { a: 1 };
+      BlocBaseSimple._propsOnInit = constructorProps;
+      const instance = new BlocBaseSimple(0);
+      expect(instance.props).toBe(constructorProps);
+    });
+
+    it('should return undefined if no props are set', () => {
+      const instance = new BlocBaseSimple(0);
+      BlocBaseSimple._propsOnInit = undefined;
+      expect(instance.props).toBeUndefined();
+    });
+  });
+
   describe('updateId', () => {
     it('should update the id', () => {
       const instance = new BlocBaseSimple(0);
@@ -118,21 +140,21 @@ describe('BlocBase', () => {
   });
 
   describe('getters', () => {
-    test('name', () => {
+    describe('name', () => {
       it('should return the name of the constructor', () => {
         const instance = new BlocBaseSimple(0);
         expect(instance.name).toBe('BlocBaseSimple');
       });
     });
 
-    test('state', () => {
+    describe('state', () => {
       it('should return the current state', () => {
         const instance = new BlocBaseSimple(0);
         expect(instance.state).toBe(0);
       });
     });
 
-    test('blac', () => {
+    describe('blac', () => {
       it('should be the same instance as the global Blac instance', () => {
         const instance = new BlocBaseSimple(0);
         const blac = instance.blac;

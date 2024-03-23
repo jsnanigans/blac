@@ -114,7 +114,7 @@ hr {
   margin: 0.2em;
 }
 
-.content > div {
+.content>div {
   /* fade in */
   /*opacity: 0;*/
   /*animation: fadeIn 1s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;*/
@@ -124,6 +124,7 @@ hr {
   0% {
     opacity: 0;
   }
+
   100% {
     opacity: 1;
   }
@@ -199,6 +200,7 @@ button.lead {
       0 0 0 5px var(--color),
       inset 0 0 0 5px var(--color);
   }
+
   100% {
     box-shadow:
       0 0 0 5px #ffffff22,
@@ -235,9 +237,14 @@ button.lead {
   position: relative;
   margin: 1em 0;
   background: #79c0ff;
+  width: 600px !important;
+  height: 400px !important;
+  overflow: hidden;
+}
+
+.jumper-box canvas {
   width: 600px;
   height: 400px;
-  overflow: hidden;
 }
 
 .jumper {

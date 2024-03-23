@@ -1,7 +1,14 @@
 import type { FC } from 'react';
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Blac, Cubit } from 'blac';
 import { useBloc } from '@blac/react';
+import { Canvas, useFrame } from '@react-three/fiber';
 
 class IsolatedBloc extends Cubit<
   { x: number; y: number },
@@ -9,8 +16,10 @@ class IsolatedBloc extends Cubit<
 > {
   static isolated = true;
   velocity = { x: Math.random() * 3 - 1.5, y: Math.random() * 3 - 1.5 };
-  maxX = 600;
-  maxY = 400;
+  minX = -300;
+  minY = -200;
+  maxX = 300;
+  maxY = 200;
   size = 10;
   others: IsolatedBloc[] = [];
 
@@ -46,17 +55,24 @@ class IsolatedBloc extends Cubit<
   updateRange = () => {
     this.othersInVisualRangCache = [];
     this.othersInProtectedRangCache = [];
+    const maxInSignt = 20;
 
     for (const other of this.others) {
       const dx = other.state.x - this.state.x;
       const dy = other.state.y - this.state.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
 
-      if (distance < this.viusalRange) {
+      if (
+        distance < this.viusalRange &&
+        this.othersInVisualRangCache.length < maxInSignt
+      ) {
         this.othersInVisualRangCache.push(other);
       }
 
-      if (distance < this.protectedRange) {
+      if (
+        distance < this.protectedRange &&
+        this.othersInProtectedRangCache.length < maxInSignt
+      ) {
         this.othersInProtectedRang.push(other);
       }
     }
@@ -76,9 +92,9 @@ class IsolatedBloc extends Cubit<
     // boids simulation
     const maxSpeed = 2.5;
     const minSpeed = 1;
-    const avoidFactor = 0.02;
-    const turnFactor = 0.1;
-    const matchingFactor = 0.08;
+    const avoidFactor = 0.01;
+    const turnFactor = 0.05;
+    const matchingFactor = 0.04;
     const centeringFactor = 0.0005;
     const othersInVisualRang = this.othersInVisualRang;
     const othersInProtectedRang = this.othersInProtectedRang;
@@ -129,9 +145,9 @@ class IsolatedBloc extends Cubit<
 
     // screen edges, turn-around at an organic looking radius
     const edge = 60;
-    const lmargin = 0 + edge;
+    const lmargin = this.minX + edge;
     const rmargin = this.maxX - edge;
-    const tmargin = 0 + edge;
+    const tmargin = this.minY + edge;
     const bmargin = this.maxY - edge;
 
     if (boid.x < lmargin) boid.vx = boid.vx + turnFactor;
@@ -163,49 +179,67 @@ class IsolatedBloc extends Cubit<
 }
 
 const Jumper: FC<{ index: number }> = ({ index }) => {
-  const perRow = 10;
-  const margin = 2;
-  const size = 15;
   const [{ x, y }] = useBloc(IsolatedBloc, {
     props: {
-      start: [
-        (index % perRow) * (size + margin),
-        Math.floor(index / perRow) * (size + margin),
-      ],
+      start: [0, 0],
     },
   });
+
   return (
-    <div
-      className="jumper sm"
-      style={{ '--x': x + 'px', '--y': y + 'px', '--bg': '#000' } as any}
-    />
+    <mesh position={[x, y, -280]}>
+      <planeGeometry args={[3, 3]} />
+      <meshStandardMaterial color={'black'} />
+    </mesh>
   );
 };
 
-const QueryOtherBlocs: FC = () => {
-  const animate = useCallback((blocks: IsolatedBloc[]) => {
-    for (const block of blocks) {
-      block.frame();
-    }
-
-    if (blocks.length === 0) {
-      return;
-    }
-
-    requestAnimationFrame(() => animate(blocks));
-  }, []);
+const Ani: FC = () => {
+  const [all, setAll] = useState<IsolatedBloc[]>([]);
 
   useEffect(() => {
-    const blocks = Blac.getAllBlocs(IsolatedBloc);
-    animate(blocks);
+    let mounted = true;
+    const find = () => {
+      if (!mounted) {
+        return;
+      }
+
+      const found = Blac.getAllBlocs(IsolatedBloc);
+      setAll(found);
+
+      setTimeout(find, found.length > 0 ? 1000 : 100);
+    };
+
+    find();
+
+    return () => {
+      mounted = false;
+
+      for (const b of all) {
+        b.dispose();
+      }
+    };
   }, []);
 
+  useFrame(() => {
+    for (const b of all) {
+      b.frame();
+    }
+  });
+
+  return null;
+};
+
+const QueryOtherBlocs: FC = () => {
   return (
-    <div className="jumper-box">
-      {Array.from({ length: 150 }).map((_, i) => (
-        <Jumper index={i} key={i} />
-      ))}
-    </div>
+    <>
+      <Canvas className="jumper-box">
+        <Ani />
+        <ambientLight intensity={Math.PI} />
+        {Array.from({ length: 800 }).map((_, i) => (
+          <Jumper index={i} key={i} />
+        ))}
+      </Canvas>
+    </>
   );
 };
 

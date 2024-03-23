@@ -8,11 +8,15 @@
     "pub:patch": "turbo pub:patch"
   },
   "private": true,
-  "dependencies": {},
+  "dependencies": {
+    "@react-three/fiber": "^8.15.19",
+    "@types/three": "^0.162.0",
+    "three": "^0.162.0"
+  },
   "devDependencies": {
-    "@types/bun": "^1.0.3",
-    "prettier": "^3.2.4",
-    "turbo": "^1.11.3"
+    "@types/bun": "^1.0.10",
+    "prettier": "^3.2.5",
+    "turbo": "^1.13.0"
   },
   "workspaces": [
     "packages/*",
