@@ -19,8 +19,7 @@
   "author": "",
   "license": "ISC",
   "description": "",
-  "dependencies": {
-    "@blac/core": "workspace:*",
+  "devDependencies": {
     "vite": "^6.0.5"
   }
 }
