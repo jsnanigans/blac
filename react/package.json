@@ -1,0 +1,26 @@
+{
+  "name": "@blac/react",
+  "version": "0.1.0",
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/blac-react.umd.js",
+  "module": "./dist/blac-react.mjs",
+  "exports": {
+    ".": {
+      "import": "./dist/blac-react.mjs",
+      "require": "./dist/blac-react.umd.js"
+    }
+  },
+  "scripts": {
+    "build": "vite build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@blac/core": "workspace:*",
+    "vite": "^6.0.5"
+  }
+}
