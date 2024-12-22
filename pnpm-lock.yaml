@@ -30,7 +30,14 @@ importers:
         specifier: ^2.1.8
         version: 2.1.8(jsdom@25.0.1)
 
-  core: {}
+  core:
+    dependencies:
+      '@blac/core':
+        specifier: workspace:*
+        version: 'link:'
+      vite:
+        specifier: ^6.0.5
+        version: 6.0.5
 
   react:
     dependencies:

@@ -1,12 +1,26 @@
 {
   "name": "@blac/core",
-  "version": "1.0.0",
-  "main": "src/index.ts",
+  "version": "0.1.0",
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/blac.umd.js",
+  "module": "./dist/blac.mjs",
+  "exports": {
+    ".": {
+      "import": "./dist/blac.mjs",
+      "require": "./dist/blac.umd.js"
+    }
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "vite build"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": ""
+  "description": "",
+  "dependencies": {
+    "@blac/core": "workspace:*",
+    "vite": "^6.0.5"
+  }
 }
