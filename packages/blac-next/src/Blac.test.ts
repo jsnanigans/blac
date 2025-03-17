@@ -239,7 +239,7 @@ describe('Blac', () => {
       const blac = new Blac();
       const bloc = new ExampleBloc(undefined);
       const spy = vi.spyOn(blac, 'disposeBloc');
-      blac.report(BlacLifecycleEvent.BLOC_DISPOSED, bloc);
+      blac.dispatchEvent(BlacLifecycleEvent.BLOC_DISPOSED, bloc);
       expect(spy).toHaveBeenCalled();
       expect(spy).toHaveBeenCalledWith(bloc);
     });
@@ -248,7 +248,7 @@ describe('Blac', () => {
       const blac = new Blac();
       const bloc = new ExampleBloc(undefined);
       const spy = vi.spyOn(blac, 'disposeBloc');
-      blac.report(BlacLifecycleEvent.BLOC_CONSUMER_REMOVED, bloc);
+      blac.dispatchEvent(BlacLifecycleEvent.BLOC_CONSUMER_REMOVED, bloc);
       expect(spy).toHaveBeenCalled();
     });
 
@@ -256,7 +256,7 @@ describe('Blac', () => {
       const blac = new Blac();
       const bloc = new ExampleBlocKeepAlive(undefined);
       const spy = vi.spyOn(blac, 'disposeBloc');
-      blac.report(BlacLifecycleEvent.LISTENER_REMOVED, bloc);
+      blac.dispatchEvent(BlacLifecycleEvent.LISTENER_REMOVED, bloc);
       expect(spy).not.toHaveBeenCalled();
     });
 
@@ -265,7 +265,7 @@ describe('Blac', () => {
       const bloc = new ExampleBloc(undefined);
       bloc._observer.subscribe({ fn: () => {}, id: 'foo' });
       const spy = vi.spyOn(blac, 'disposeBloc');
-      blac.report(BlacLifecycleEvent.LISTENER_REMOVED, bloc);
+      blac.dispatchEvent(BlacLifecycleEvent.LISTENER_REMOVED, bloc);
       expect(spy).not.toHaveBeenCalled();
     });
   });
@@ -308,7 +308,7 @@ describe('Blac', () => {
       blac.addPlugin(plugin1);
       blac.addPlugin(plugin2);
       const bloc = new ExampleBloc(undefined);
-      blac.reportToPlugins(BlacLifecycleEvent.BLOC_DISPOSED, bloc);
+      blac.dispatchEventToPlugins(BlacLifecycleEvent.BLOC_DISPOSED, bloc);
 
       expect(plugin1.onEvent).toHaveBeenCalled();
       expect(plugin2.onEvent).toHaveBeenCalled();

@@ -39,16 +39,16 @@ export class Blac {
     Blac.instance = this;
   }
 
-  dispatchEvent = <T>(event: BlacEvent<T>) => {
-    this.log("Broadcast signal", event);
-
-    const allBlocs = Array.from(this.blocInstanceMap.values());
-    allBlocs.forEach((bloc) => {
-      bloc._onEvent?.(event);
-    });
-  };
-
-  static dispatchEvent = Blac.instance.dispatchEvent;
+  //dispatchEvent = <T>(event: BlacEvent<T>) => {
+  //  this.log("Broadcast signal", event);
+  //
+  //  const allBlocs = Array.from(this.blocInstanceMap.values());
+  //  allBlocs.forEach((bloc) => {
+  //    bloc._onEvent?.(event);
+  //  });
+  //};
+  //
+  //static dispatchEvent = Blac.instance.dispatchEvent;
 
   static enableLog = false;
   log = (...args: any[]) => {
@@ -82,7 +82,7 @@ export class Blac {
     this.pluginList.push(plugin);
   };
 
-  reportToPlugins = <B extends BlacLifecycleEvent>(
+  dispatchEventToPlugins = <B extends BlacLifecycleEvent>(
     event: B,
     bloc: BlocBase<any, any>,
     params?: any,
@@ -92,7 +92,7 @@ export class Blac {
     });
   };
 
-  report = <B extends BlacLifecycleEvent>(
+  dispatchEvent = <B extends BlacLifecycleEvent>(
     event: B,
     bloc: BlocBase<any, any>,
     params?: any,
@@ -113,12 +113,12 @@ export class Blac {
         break;
     }
 
-    this.reportToPlugins(event, bloc, params);
+    this.dispatchEventToPlugins(event, bloc, params);
   };
 
   disposeBloc = (bloc: BlocBase<any, any>): void => {
     const base = bloc.constructor as unknown as BlocBaseAbstract;
-    bloc._isBlacLive = false;
+    //bloc._isBlacLive = false;
     if (base.isolated) {
       this.unregisterIsolatedBlocInstance(bloc);
     } else {
