@@ -81,7 +81,7 @@ function RouteComponent() {
           {showIsEmailValid ? (
             <>Email is valid: {bloc.emailIsValid ? 'true' : 'false'}</>
           ) : (
-            <>Email is valid: (disabled)</>
+            <>Email is valid: (not listening)</>
           )}
         </button>
         <MyInput name="name" type="text" />
