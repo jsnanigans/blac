@@ -51,8 +51,6 @@ export class BlacObservable<S> {
         let lastDependencyCheck = observer.lastState || [];
         const newDependencyCheck = observer.dependencyArray(newState, oldState);
 
-        console.log('de', newDependencyCheck, lastDependencyCheck);
-
         for (let o = 0; o < newDependencyCheck.length; o++) {
           const partNew = newDependencyCheck[o];
           const partOld = lastDependencyCheck[o] || [];

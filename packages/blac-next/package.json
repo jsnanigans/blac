@@ -22,13 +22,13 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "@testing-library/jest-dom": "^6.4.6",
-    "@testing-library/user-event": "^14.5.2",
-    "@vitest/browser": "^1.6.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/user-event": "^14.6.1",
+    "@vitest/browser": "^1.6.1",
     "jsdom": "catalog:",
-    "prettier": "^3.3.2",
-    "typescript": "^5.5.3",
-    "vite-plugin-dts": "^3.9.1",
+    "prettier": "^3.5.3",
+    "typescript": "^5.8.2",
+    "vite-plugin-dts": "^4.5.3",
     "vitest": "catalog:"
   }
 }

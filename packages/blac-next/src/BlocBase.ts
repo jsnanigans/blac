@@ -107,5 +107,7 @@ export abstract class BlocBase<S = any, P = any> {
     });
   };
 
-  _onEvent(event: BlacEvent<any>): void {}
+  _onEvent(event: BlacEvent<any>): void {
+    this._blac.log('Bloc Event', event);
+  }
 }

@@ -27,6 +27,7 @@ export interface BlocHookOptions<B extends BlocGeneric<any, any>> {
   id?: string;
   dependencySelector?: BlocHookDependencyArrayFn<B>;
   props?: InferPropsFromGeneric<B>;
+  onMount?: (bloc: B) => void;
 }
 
 const defaultDependencySelector: BlocHookDependencyArrayFn<any> = (s) => [[s]];
@@ -175,13 +176,15 @@ export class UseBlocClass {
       resolvedBloc._addConsumer(rid);
 
       if (resolvedBloc._consumers.size !== 0) {
-        setResolvedBloc(
-          Blac.getInstance().getBloc(bloc, {
-            id: blocId,
-            props: props as any,
-            instanceRef: rid,
-          }) as InstanceType<B>,
-        );
+        const resolved = Blac.getInstance().getBloc(bloc, {
+          id: blocId,
+          props: props as any,
+          instanceRef: rid,
+        }) as InstanceType<B>;
+
+        setResolvedBloc(resolved);
+
+        options?.onMount?.(resolved);
       }
 
       return () => resolvedBloc._removeConsumer(rid);
