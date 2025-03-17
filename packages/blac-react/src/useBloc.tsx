@@ -54,14 +54,12 @@ export default function useBloc<
     blocId = rid;
   }
 
-  const resolvedBloc = useMemo(
-    () =>
-      Blac.getInstance().getBloc(bloc, {
-        id: blocId,
-        props: props as any,
-        instanceRef: rid,
-      }) as InstanceType<B>,
-    [blocId, rid],
+  const [resolvedBloc, setResolvedBloc] = useState(
+    Blac.getInstance().getBloc(bloc, {
+      id: blocId,
+      props: props as any,
+      instanceRef: rid,
+    }) as InstanceType<B>,
   );
 
   if (!resolvedBloc) {
@@ -175,10 +173,19 @@ export default function useBloc<
 
   useEffect(() => {
     resolvedBloc._addConsumer(rid);
+    let resolved = resolvedBloc;
 
     if (resolvedBloc._consumers.size !== 0) {
-      options?.onMount?.(resolvedBloc);
+      resolved = Blac.getInstance().getBloc(bloc, {
+        id: blocId,
+        props: props as any,
+        instanceRef: rid,
+      }) as InstanceType<B>;
+
+      setResolvedBloc(resolved);
     }
+
+    options?.onMount?.(resolved);
 
     return () => resolvedBloc._removeConsumer(rid);
   }, []);
