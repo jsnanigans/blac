@@ -96,7 +96,7 @@ export default function useBloc<
 
   // Get or create the bloc instance with the provided configuration
   const [resolvedBloc, setResolvedBloc] = useState(
-    Blac.getInstance().getBloc(bloc, {
+    Blac.getBloc(bloc, {
       id: blocId,
       props: props as any,
       instanceRef: rid,
@@ -153,8 +153,10 @@ export default function useBloc<
       }
     }
 
+    setTimeout(() => {
     instanceKeys.current = new Set();
     instanceClassPropKeys.current = new Set();
+    })
     return [usedStateValues, usedClassValues];
   };
 
@@ -195,12 +197,11 @@ export default function useBloc<
         // Track which class properties are accessed (excluding methods)
         if (typeof value !== 'function') {
           instanceClassPropKeys.current.add(prop as string);
-          // shouldClearClassProp.current = true;
         }
         return value;
       },
     });
-  }, [resolvedBloc, usedClassPropKeys, instanceClassPropKeys]);
+  }, [resolvedBloc]);
 
 
   // Clean up tracked keys after each render
@@ -218,7 +219,7 @@ export default function useBloc<
 
     // If there are other consumers, ensure we're using the correct instance
     if (resolvedBloc._consumers.size !== 0) {
-      resolved = Blac.getInstance().getBloc(bloc, {
+      resolved = Blac.getBloc(bloc, {
         id: blocId,
         props: props as any,
         instanceRef: rid,

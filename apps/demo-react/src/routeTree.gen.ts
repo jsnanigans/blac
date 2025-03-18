@@ -13,6 +13,7 @@
 import { Route as rootRoute } from './routes/__root'
 import { Route as DemoImport } from './routes/demo'
 import { Route as IndexImport } from './routes/index'
+import { Route as DemoTaskboardImport } from './routes/demo/taskboard'
 import { Route as DemoFormImport } from './routes/demo/form'
 import { Route as DemoCounterImport } from './routes/demo/counter'
 
@@ -28,6 +29,12 @@ const IndexRoute = IndexImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRoute,
+} as any)
+
+const DemoTaskboardRoute = DemoTaskboardImport.update({
+  id: '/taskboard',
+  path: '/taskboard',
+  getParentRoute: () => DemoRoute,
 } as any)
 
 const DemoFormRoute = DemoFormImport.update({
@@ -74,6 +81,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoFormImport
       parentRoute: typeof DemoImport
     }
+    '/demo/taskboard': {
+      id: '/demo/taskboard'
+      path: '/taskboard'
+      fullPath: '/demo/taskboard'
+      preLoaderRoute: typeof DemoTaskboardImport
+      parentRoute: typeof DemoImport
+    }
   }
 }
 
@@ -82,11 +96,13 @@ declare module '@tanstack/react-router' {
 interface DemoRouteChildren {
   DemoCounterRoute: typeof DemoCounterRoute
   DemoFormRoute: typeof DemoFormRoute
+  DemoTaskboardRoute: typeof DemoTaskboardRoute
 }
 
 const DemoRouteChildren: DemoRouteChildren = {
   DemoCounterRoute: DemoCounterRoute,
   DemoFormRoute: DemoFormRoute,
+  DemoTaskboardRoute: DemoTaskboardRoute,
 }
 
 const DemoRouteWithChildren = DemoRoute._addFileChildren(DemoRouteChildren)
@@ -96,6 +112,7 @@ export interface FileRoutesByFullPath {
   '/demo': typeof DemoRouteWithChildren
   '/demo/counter': typeof DemoCounterRoute
   '/demo/form': typeof DemoFormRoute
+  '/demo/taskboard': typeof DemoTaskboardRoute
 }
 
 export interface FileRoutesByTo {
@@ -103,6 +120,7 @@ export interface FileRoutesByTo {
   '/demo': typeof DemoRouteWithChildren
   '/demo/counter': typeof DemoCounterRoute
   '/demo/form': typeof DemoFormRoute
+  '/demo/taskboard': typeof DemoTaskboardRoute
 }
 
 export interface FileRoutesById {
@@ -111,14 +129,21 @@ export interface FileRoutesById {
   '/demo': typeof DemoRouteWithChildren
   '/demo/counter': typeof DemoCounterRoute
   '/demo/form': typeof DemoFormRoute
+  '/demo/taskboard': typeof DemoTaskboardRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/demo' | '/demo/counter' | '/demo/form'
+  fullPaths: '/' | '/demo' | '/demo/counter' | '/demo/form' | '/demo/taskboard'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/demo' | '/demo/counter' | '/demo/form'
-  id: '__root__' | '/' | '/demo' | '/demo/counter' | '/demo/form'
+  to: '/' | '/demo' | '/demo/counter' | '/demo/form' | '/demo/taskboard'
+  id:
+    | '__root__'
+    | '/'
+    | '/demo'
+    | '/demo/counter'
+    | '/demo/form'
+    | '/demo/taskboard'
   fileRoutesById: FileRoutesById
 }
 
@@ -153,7 +178,8 @@ export const routeTree = rootRoute
       "filePath": "demo.tsx",
       "children": [
         "/demo/counter",
-        "/demo/form"
+        "/demo/form",
+        "/demo/taskboard"
       ]
     },
     "/demo/counter": {
@@ -162,6 +188,10 @@ export const routeTree = rootRoute
     },
     "/demo/form": {
       "filePath": "demo/form.tsx",
+      "parent": "/demo"
+    },
+    "/demo/taskboard": {
+      "filePath": "demo/taskboard.tsx",
       "parent": "/demo"
     }
   }

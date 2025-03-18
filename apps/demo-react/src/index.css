@@ -1,3 +1,45 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-background text-foreground transition-colors duration-200;
+  }
+  
+  /* Dark mode overrides */
+  @media (prefers-color-scheme: dark) {
+    body {
+      @apply bg-gray-900 text-gray-100;
+    }
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-md font-medium transition-all;
+  }
+  .btn-primary {
+    @apply bg-primary text-white hover:bg-primary-hover;
+  }
+  .btn-secondary {
+    @apply bg-secondary text-white hover:bg-secondary-hover;
+  }
+  .btn-accent {
+    @apply bg-accent text-white hover:bg-accent-hover;
+  }
+  .btn-outline {
+    @apply border border-border bg-transparent hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800;
+  }
+  .container {
+    @apply mx-auto px-4 max-w-7xl;
+  }
+  .card {
+    @apply bg-card border border-border rounded-md p-6 shadow-sm text-card-foreground transition-colors duration-200;
+    @apply dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100;
+  }
+  
+  input, textarea, select {
+    @apply dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 transition-colors duration-200;
+  }
+}

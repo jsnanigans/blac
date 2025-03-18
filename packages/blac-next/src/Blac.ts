@@ -68,7 +68,7 @@ export class Blac {
   }
 
   /** Flag to enable/disable logging */
-  static enableLog = false;
+  static enableLog = true;
 
   /**
    * Logs messages to console when logging is enabled
