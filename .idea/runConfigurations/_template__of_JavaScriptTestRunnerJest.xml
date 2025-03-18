@@ -1,8 +1,0 @@
-<component name="ProjectRunConfigurationManager">
-  <configuration default="true" type="JavaScriptTestRunnerJest">
-    <node-interpreter value="project" />
-    <envs />
-    <scope-kind value="ALL" />
-    <method v="2" />
-  </configuration>
-</component>
