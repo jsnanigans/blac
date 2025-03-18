@@ -12,7 +12,7 @@ import { DataFlowDiagram } from './DataFlowDiagram';
  * a real-world example of async data workflows
  */
 export const PetfinderDemo: FC = () => {
-  const [state, petfinderBloc] = useBloc(PetfinderBloc);
+  const [state] = useBloc(PetfinderBloc);
 
   return (
     <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800 min-h-screen p-6">

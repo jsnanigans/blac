@@ -1,6 +1,4 @@
 import { createFileRoute } from '@tanstack/react-router';
-import Counter from '../../components/Counter';
-import CounterIsolated from '../../components/CounterIsolated';
 import { useState } from 'react';
 import { Cubit } from 'blac-next';
 import { useBloc } from '@blac/react';
@@ -173,7 +171,6 @@ function CustomIdCounter({ id }: { id: string }) {
 
 function RouteComponent() {
   const [showKeepAlive, setShowKeepAlive] = useState(true);
-  const [, keepAliveBloc] = useBloc(KeepAliveCounterCubit);
 
   return (
     <div className="space-y-10">

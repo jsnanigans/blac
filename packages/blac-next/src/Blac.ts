@@ -5,7 +5,6 @@ import {
   InferPropsFromGeneric,
 } from "./types";
 import { BlacPlugin } from "./BlacPlugin";
-import BlacEvent from "./BlacEvent";
 
 /**
  * Configuration options for the Blac instance
