@@ -2,16 +2,11 @@ import { useBloc } from '@blac/react';
 import { TaskBoardBloc, TaskStatus, Task } from './TaskBoardBloc';
 import { TaskColumn } from './TaskColumn';
 import './TaskBoard.css';
-import React from 'react';
 
 export function TaskBoard() {
   const [state, taskBoardBloc] = useBloc(TaskBoardBloc);
   const { filter, showAddTask, newTask } = state;
   const { status: statusFilter, priority: priorityFilter, searchQuery } = filter;
-
-  const handleDrop = (taskId: string, status: TaskStatus) => {
-    taskBoardBloc.updateTaskStatus(taskId, status);
-  };
 
   return (
     <div className="space-y-6 bg-[#0f131a] p-6 rounded-lg">

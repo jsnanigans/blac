@@ -11,6 +11,7 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as PetfinderImport } from './routes/petfinder'
 import { Route as DemoImport } from './routes/demo'
 import { Route as IndexImport } from './routes/index'
 import { Route as DemoTaskboardImport } from './routes/demo/taskboard'
@@ -18,6 +19,12 @@ import { Route as DemoFormImport } from './routes/demo/form'
 import { Route as DemoCounterImport } from './routes/demo/counter'
 
 // Create/Update Routes
+
+const PetfinderRoute = PetfinderImport.update({
+  id: '/petfinder',
+  path: '/petfinder',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const DemoRoute = DemoImport.update({
   id: '/demo',
@@ -67,6 +74,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoImport
       parentRoute: typeof rootRoute
     }
+    '/petfinder': {
+      id: '/petfinder'
+      path: '/petfinder'
+      fullPath: '/petfinder'
+      preLoaderRoute: typeof PetfinderImport
+      parentRoute: typeof rootRoute
+    }
     '/demo/counter': {
       id: '/demo/counter'
       path: '/counter'
@@ -110,6 +124,7 @@ const DemoRouteWithChildren = DemoRoute._addFileChildren(DemoRouteChildren)
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/demo': typeof DemoRouteWithChildren
+  '/petfinder': typeof PetfinderRoute
   '/demo/counter': typeof DemoCounterRoute
   '/demo/form': typeof DemoFormRoute
   '/demo/taskboard': typeof DemoTaskboardRoute
@@ -118,6 +133,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/demo': typeof DemoRouteWithChildren
+  '/petfinder': typeof PetfinderRoute
   '/demo/counter': typeof DemoCounterRoute
   '/demo/form': typeof DemoFormRoute
   '/demo/taskboard': typeof DemoTaskboardRoute
@@ -127,6 +143,7 @@ export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
   '/demo': typeof DemoRouteWithChildren
+  '/petfinder': typeof PetfinderRoute
   '/demo/counter': typeof DemoCounterRoute
   '/demo/form': typeof DemoFormRoute
   '/demo/taskboard': typeof DemoTaskboardRoute
@@ -134,13 +151,26 @@ export interface FileRoutesById {
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/demo' | '/demo/counter' | '/demo/form' | '/demo/taskboard'
+  fullPaths:
+    | '/'
+    | '/demo'
+    | '/petfinder'
+    | '/demo/counter'
+    | '/demo/form'
+    | '/demo/taskboard'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/demo' | '/demo/counter' | '/demo/form' | '/demo/taskboard'
+  to:
+    | '/'
+    | '/demo'
+    | '/petfinder'
+    | '/demo/counter'
+    | '/demo/form'
+    | '/demo/taskboard'
   id:
     | '__root__'
     | '/'
     | '/demo'
+    | '/petfinder'
     | '/demo/counter'
     | '/demo/form'
     | '/demo/taskboard'
@@ -150,11 +180,13 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DemoRoute: typeof DemoRouteWithChildren
+  PetfinderRoute: typeof PetfinderRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DemoRoute: DemoRouteWithChildren,
+  PetfinderRoute: PetfinderRoute,
 }
 
 export const routeTree = rootRoute
@@ -168,7 +200,8 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
-        "/demo"
+        "/demo",
+        "/petfinder"
       ]
     },
     "/": {
@@ -181,6 +214,9 @@ export const routeTree = rootRoute
         "/demo/form",
         "/demo/taskboard"
       ]
+    },
+    "/petfinder": {
+      "filePath": "petfinder.tsx"
     },
     "/demo/counter": {
       "filePath": "demo/counter.tsx",
