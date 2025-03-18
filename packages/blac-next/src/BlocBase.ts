@@ -6,64 +6,79 @@ export type BlocInstanceId = string | number | undefined;
 type DependencySelector<S> = (newState: S, oldState?: S) => any[];
 
 /**
- * @abstract
- * Base class for both Blocs and Cubits. Provides core state management functionalities.
- * @template S The type of the state.
- * @template P Optional type for props passed during instance creation.
+ * Base class for both Blocs and Cubits that provides core state management functionality.
+ * Handles state transitions, observer notifications, lifecycle management, and addon integration.
+ * 
+ * @abstract This class should be extended, not instantiated directly
+ * @template S The type of state managed by this Bloc
+ * @template P The type of props that can be passed during instance creation (optional)
  */
 export abstract class BlocBase<S = any, P = any> {
   /**
-   * Indicates if instances of this Bloc should be isolated: every consumer will get its own instance.
-   * Defaults to `false`
+   * When true, every consumer will receive its own unique instance of this Bloc.
+   * Use this when state should not be shared between components.
+   * @default false
    */
   static isolated = false;
+  
   /**
-   * If true, the Blac instance will not be disposed automatically when there are no active consumers.
-   * Defaults to `false`
+   * When true, the Bloc instance persists even when there are no active consumers.
+   * Useful for maintaining state between component unmount/remount cycles.
+   * @default false
    */
   static keepAlive = false;
+  
   /**
-   * Optional function to define how dependencies are selected from the state for observers. [1]
+   * Defines how dependencies are selected from the state for efficient updates.
+   * When provided, observers will only be notified when selected dependencies change.
    */
   defaultDependencySelector: DependencySelector<S> | undefined;
 
   /**
    * @internal
-   * Optional array of addons to be applied to all instances of this Bloc. 
+   * Optional array of addons to extend the functionality of this Bloc.
    */
   public _addons?: BlacAddon[];
+  
   /**
    * @internal
-   * Indicates if this specific Bloc instance is isolated.
+   * Indicates if this specific Bloc instance is isolated from others of the same type.
    */
   public _isolated = false;
+  
   /**
    * @internal
-   * Observable responsible for managing listeners (consumers) of this Bloc's state.
+   * Observable responsible for managing state listeners and notifying consumers.
    */
   public _observer: BlacObservable<any>;
+  
   /**
    * @internal
-   * Instance of the global Blac manager.
+   * Reference to the global Blac manager instance.
    */
   public _blac = Blac.getInstance();
+  
   /**
-   * The unique identifier for this Bloc instance. Defaults to the class name.
+   * The unique identifier for this Bloc instance.
+   * Defaults to the class name, but can be customized.
    */
   public _id: BlocInstanceId;
+  
   /**
    * @internal
-   * Optional reference string for this Bloc instance. Used internally for tracking.
+   * Reference string used internally for tracking and debugging.
    */
   public _instanceRef?: string;
+  
   /**
    * @internal
-   * Indicates if this specific Bloc instance should be kept alive.
+   * Indicates if this specific Bloc instance should be kept alive when no consumers are present.
    */
   public _keepAlive = false;
+  
   /**
    * @readonly
-   * Timestamp of when this Bloc instance was created.
+   * Timestamp when this Bloc instance was created, useful for debugging and performance tracking.
    */
   public readonly _createdAt = Date.now();
 
@@ -72,22 +87,24 @@ export abstract class BlocBase<S = any, P = any> {
    * The current state of the Bloc.
    */
   public _state: S;
+  
   /**
    * @internal
-   * The previous state of the Bloc.
+   * The previous state of the Bloc, maintained for comparison and history.
    */
   public _oldState: S | undefined;
+  
   /**
-   * Optional props passed during Bloc instance creation. [2]
+   * Props passed during Bloc instance creation.
+   * Can be used to configure or parameterize the Bloc's behavior.
    */
   public props: P | null = null;
 
   /**
-   * Initializes a new BlocBase instance with the given initial state.
-   * Dispatches the creation event to the Blac instance.
-   * Sets the initial `_id` to the constructor name and determines isolation and keep-alive status.
-   * Connects any defined addons.
-   * @param initialState The initial state of the Bloc.
+   * Creates a new BlocBase instance with the given initial state.
+   * Sets up the observer, registers with the Blac manager, and initializes addons.
+   * 
+   * @param initialState The initial state value for this Bloc
    */
   constructor(initialState: S) {
     this._state = initialState;
@@ -103,6 +120,7 @@ export abstract class BlocBase<S = any, P = any> {
 
   /**
    * Returns the current state of the Bloc.
+   * Use this getter to access the state in a read-only manner.
    */
   get state(): S {
     return this._state;
@@ -110,7 +128,7 @@ export abstract class BlocBase<S = any, P = any> {
 
   /**
    * @internal
-   * Returns the name of the Bloc class.
+   * Returns the name of the Bloc class for identification and debugging.
    */
   get _name() {
     return this.constructor.name;
@@ -118,9 +136,10 @@ export abstract class BlocBase<S = any, P = any> {
 
   /**
    * @internal
-   * Updates the Bloc instance's ID.
-   * Does nothing if the provided ID is null/undefined or the same as the current ID.
-   * @param id The new ID for the Bloc instance.
+   * Updates the Bloc instance's ID to a new value.
+   * Only updates if the new ID is defined and different from the current one.
+   * 
+   * @param id The new ID to assign to this Bloc instance
    */
   _updateId = (id?: BlocInstanceId) => {
     const originalId = this._id;
@@ -130,9 +149,8 @@ export abstract class BlocBase<S = any, P = any> {
 
   /**
    * @internal
-   * Disposes of the Bloc instance.
-   * Dispatches the disposal event to the Blac instance.
-   * Clears all observers.
+   * Cleans up resources and removes this Bloc from the system.
+   * Notifies the Blac manager and clears all observers.
    */
   _dispose() {
     this._blac.dispatchEvent(BlacLifecycleEvent.BLOC_DISPOSED, this);
@@ -141,15 +159,16 @@ export abstract class BlocBase<S = any, P = any> {
 
   /**
    * @internal
-   * Set of consumer IDs currently listening to this Bloc.
+   * Set of consumer IDs currently listening to this Bloc's state changes.
    */
   _consumers = new Set<string>();
 
   /**
    * @internal
-   * Adds a consumer ID to the set of active consumers.
-   * Dispatches the addition of a consumer event to the Blac instance.
-   * @param consumerId The ID of the consumer being added.
+   * Registers a new consumer to this Bloc instance.
+   * Notifies the Blac manager that a consumer has been added.
+   * 
+   * @param consumerId The unique ID of the consumer being added
    */
   _addConsumer = (consumerId: string) => {
     this._consumers.add(consumerId);
@@ -158,9 +177,10 @@ export abstract class BlocBase<S = any, P = any> {
 
   /**
    * @internal
-   * Removes a consumer ID from the set of active consumers.
-   * Dispatches the removal of a consumer event to the Blac instance.
-   * @param consumerId The ID of the consumer being removed.
+   * Unregisters a consumer from this Bloc instance.
+   * Notifies the Blac manager that a consumer has been removed.
+   * 
+   * @param consumerId The unique ID of the consumer being removed
    */
   _removeConsumer = (consumerId: string) => {
     this._consumers.delete(consumerId);
@@ -169,7 +189,8 @@ export abstract class BlocBase<S = any, P = any> {
 
   /**
    * @internal
-   * Connects and initializes the addons for this Bloc instance.
+   * Initializes all registered addons for this Bloc instance.
+   * Calls the onInit lifecycle method on each addon if defined.
    */
   _connectAddons = () => {
     const { _addons: addons } = this;
@@ -182,10 +203,11 @@ export abstract class BlocBase<S = any, P = any> {
 
   /**
    * @internal
-   * Updates the state of the Bloc and notifies all observers.
-   * @param newState The new state of the Bloc.
-   * @param oldState The previous state of the Bloc.
-   * @param action Optional action that triggered the state change.
+   * Updates the state and notifies all observers of the change.
+   * 
+   * @param newState The new state to be set
+   * @param oldState The previous state for comparison
+   * @param action Optional metadata about what caused the state change
    */
   _pushState = (newState: S, oldState: S, action?: any): void => {
     this._state = newState;

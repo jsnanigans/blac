@@ -7,10 +7,18 @@ import {
 import { BlacPlugin } from "./BlacPlugin";
 import BlacEvent from "./BlacEvent";
 
+/**
+ * Configuration options for the Blac instance
+ */
 export interface BlacConfig {
+  /** Whether to expose the Blac instance globally */
   exposeBlacInstance?: boolean;
 }
 
+/**
+ * Enum representing different lifecycle events that can occur in the Blac system.
+ * These events are used to track the lifecycle of blocs and their consumers.
+ */
 export enum BlacLifecycleEvent {
   BLOC_DISPOSED = "BLOC_DISPOSED",
   BLOC_CREATED = "BLOC_CREATED",
@@ -21,16 +29,36 @@ export enum BlacLifecycleEvent {
   BLOC_CONSUMER_ADDED = "BLOC_CONSUMER_ADDED",
 }
 
+/**
+ * Main Blac class that manages the state management system.
+ * Implements a singleton pattern to ensure only one instance exists.
+ * Handles bloc lifecycle, plugin management, and instance tracking.
+ * 
+ * Key responsibilities:
+ * - Managing bloc instances (creation, disposal, lookup)
+ * - Handling isolated and non-isolated blocs
+ * - Managing plugins and lifecycle events
+ * - Providing logging and debugging capabilities
+ */
 export class Blac {
+  /** The singleton instance of Blac */
   static instance: Blac = new Blac();
+  /** Timestamp when the instance was created */
   createdAt = Date.now();
   static getAllBlocs = Blac.instance.getAllBlocs;
   static addPlugin = Blac.instance.addPlugin;
+  /** Map storing all registered bloc instances by their class name and ID */
   blocInstanceMap: Map<string, BlocBase<any, any>> = new Map();
+  /** Map storing isolated bloc instances grouped by their constructor */
   isolatedBlocMap: Map<Function, BlocBase<any, any>[]> = new Map();
   pluginList: BlacPlugin[] = [];
+  /** Flag to control whether changes should be posted to document */
   postChangesToDocument = false;
 
+  /**
+   * Creates a new Blac instance.
+   * @param options - Configuration options including singleton control
+   */
   constructor(options: { __unsafe_ignore_singleton?: boolean } = {}) {
     const { __unsafe_ignore_singleton = false } = options;
     if (Blac.instance && !__unsafe_ignore_singleton) {
@@ -39,34 +67,46 @@ export class Blac {
     Blac.instance = this;
   }
 
-  //dispatchEvent = <T>(event: BlacEvent<T>) => {
-  //  this.log("Broadcast signal", event);
-  //
-  //  const allBlocs = Array.from(this.blocInstanceMap.values());
-  //  allBlocs.forEach((bloc) => {
-  //    bloc._onEvent?.(event);
-  //  });
-  //};
-  //
-  //static dispatchEvent = Blac.instance.dispatchEvent;
-
+  /** Flag to enable/disable logging */
   static enableLog = false;
+
+  /**
+   * Logs messages to console when logging is enabled
+   * @param args - Arguments to log
+   */
   log = (...args: any[]) => {
     if (Blac.enableLog) console.warn(`☢️ [Blac ${this.createdAt}]`, ...args);
   };
 
+  /**
+   * Gets the singleton instance of Blac
+   * @returns The Blac instance
+   */
   static getInstance(): Blac {
     return Blac.instance;
   }
 
+  /**
+   * Logs a warning message
+   * @param message - Warning message
+   * @param args - Additional arguments
+   */
   static warn = (message: string, ...args: unknown[]) => {
     console.warn(`🚨 [Blac ${Blac.instance.createdAt}]`, message, ...args);
   };
 
+  /**
+   * Logs an error message
+   * @param message - Error message
+   * @param args - Additional arguments
+   */
   static error = (message: string, ...args: unknown[]) => {
     console.error(`🚨 [Blac ${Blac.instance.createdAt}]`, message, ...args);
   };
 
+  /**
+   * Resets the Blac instance to a new one
+   */
   resetInstance(): void {
     this.log("Reset Blac instance");
     Blac.instance = new Blac({
@@ -74,6 +114,10 @@ export class Blac {
     });
   }
 
+  /**
+   * Adds a plugin to the Blac instance
+   * @param plugin - The plugin to add
+   */
   addPlugin = (plugin: BlacPlugin): void => {
     // check if already added
     const index = this.pluginList.findIndex((p) => p.name === plugin.name);
@@ -82,6 +126,12 @@ export class Blac {
     this.pluginList.push(plugin);
   };
 
+  /**
+   * Dispatches a lifecycle event to all registered plugins
+   * @param event - The lifecycle event to dispatch
+   * @param bloc - The bloc instance involved in the event
+   * @param params - Additional parameters for the event
+   */
   dispatchEventToPlugins = <B extends BlacLifecycleEvent>(
     event: B,
     bloc: BlocBase<any, any>,
@@ -92,6 +142,18 @@ export class Blac {
     });
   };
 
+  /**
+   * Dispatches a lifecycle event and handles related cleanup actions.
+   * This method is responsible for:
+   * - Logging the event
+   * - Handling bloc disposal when needed
+   * - Managing bloc consumer cleanup
+   * - Forwarding the event to plugins
+   * 
+   * @param event - The lifecycle event to dispatch
+   * @param bloc - The bloc instance involved in the event
+   * @param params - Additional parameters for the event
+   */
   dispatchEvent = <B extends BlacLifecycleEvent>(
     event: B,
     bloc: BlocBase<any, any>,
@@ -116,9 +178,12 @@ export class Blac {
     this.dispatchEventToPlugins(event, bloc, params);
   };
 
+  /**
+   * Disposes of a bloc instance by removing it from the appropriate registry
+   * @param bloc - The bloc instance to dispose
+   */
   disposeBloc = (bloc: BlocBase<any, any>): void => {
     const base = bloc.constructor as unknown as BlocBaseAbstract;
-    //bloc._isBlacLive = false;
     if (base.isolated) {
       this.unregisterIsolatedBlocInstance(bloc);
     } else {
@@ -126,20 +191,40 @@ export class Blac {
     }
   };
 
+  /**
+   * Creates a unique key for a bloc instance in the map based on the bloc class name and instance ID
+   * @param blocClassName - The name of the bloc class
+   * @param id - The instance ID
+   * @returns A unique key string in the format "className:id"
+   */
   createBlocInstanceMapKey(blocClassName: string, id: BlocInstanceId): string {
     return `${blocClassName}:${id}`;
   }
 
+  /**
+   * Unregisters a bloc instance from the main registry
+   * @param bloc - The bloc instance to unregister
+   */
   unregisterBlocInstance(bloc: BlocBase<any, any>): void {
     const key = this.createBlocInstanceMapKey(bloc._name, bloc._id);
     this.blocInstanceMap.delete(key);
   }
 
+  /**
+   * Registers a bloc instance in the main registry
+   * @param bloc - The bloc instance to register
+   */
   registerBlocInstance(bloc: BlocBase<any, any>): void {
     const key = this.createBlocInstanceMapKey(bloc._name, bloc._id);
     this.blocInstanceMap.set(key, bloc);
   }
 
+  /**
+   * Finds a registered bloc instance by its class and ID
+   * @param blocClass - The bloc class to search for
+   * @param id - The instance ID
+   * @returns The found bloc instance or undefined if not found
+   */
   findRegisteredBlocInstance<B extends BlocBase<any, any>>(
     blocClass: BlocConstructor<B>,
     id: BlocInstanceId,
@@ -154,6 +239,10 @@ export class Blac {
     return found;
   }
 
+  /**
+   * Registers an isolated bloc instance in the isolated registry
+   * @param bloc - The isolated bloc instance to register
+   */
   registerIsolatedBlocInstance(bloc: BlocBase<any, any>): void {
     const blocClass = bloc.constructor;
     const blocs = this.isolatedBlocMap.get(blocClass);
@@ -164,6 +253,10 @@ export class Blac {
     }
   }
 
+  /**
+   * Unregisters an isolated bloc instance from the isolated registry
+   * @param bloc - The isolated bloc instance to unregister
+   */
   unregisterIsolatedBlocInstance(bloc: BlocBase<any, any>): void {
     const blocClass = bloc.constructor;
     const blocs = this.isolatedBlocMap.get(blocClass);
@@ -177,6 +270,12 @@ export class Blac {
     }
   }
 
+  /**
+   * Finds an isolated bloc instance by its class and ID
+   * @param blocClass - The bloc class to search for
+   * @param id - The instance ID
+   * @returns The found isolated bloc instance or undefined if not found
+   */
   findIsolatedBlocInstance<B extends BlocBase<any, any>>(
     blocClass: BlocConstructor<B>,
     id: BlocInstanceId,
@@ -190,6 +289,14 @@ export class Blac {
     return undefined;
   }
 
+  /**
+   * Creates a new bloc instance and registers it in the appropriate registry
+   * @param blocClass - The bloc class to instantiate
+   * @param id - The instance ID
+   * @param props - Properties to pass to the bloc constructor
+   * @param instanceRef - Optional reference string for the instance
+   * @returns The newly created bloc instance
+   */
   createNewBlocInstance<B extends BlocBase>(
     blocClass: BlocConstructor<B>,
     id: BlocInstanceId,
@@ -212,7 +319,17 @@ export class Blac {
     return newBloc as InstanceType<BlocConstructor<any>>;
   }
 
-  static getBloc = Blac.instance.getBloc;
+  /**
+   * Gets or creates a bloc instance based on the provided class and options.
+   * If a bloc with the given ID exists, it will be returned. Otherwise, a new instance will be created.
+   * 
+   * @param blocClass - The bloc class to get or create
+   * @param options - Options including:
+   *   - id: The instance ID (defaults to class name if not provided)
+   *   - props: Properties to pass to the bloc constructor
+   *   - instanceRef: Optional reference string for the instance
+   * @returns The bloc instance
+   */
   getBloc = <B extends BlocConstructor<any>>(
     blocClass: B,
     options: {
@@ -238,7 +355,15 @@ export class Blac {
       options.instanceRef,
     );
   };
+  static getBloc = Blac.instance.getBloc;
 
+  /**
+   * Gets all instances of a specific bloc class
+   * @param blocClass - The bloc class to search for
+   * @param options - Options including:
+   *   - searchIsolated: Whether to search in isolated blocs (defaults to bloc's isolated property)
+   * @returns Array of matching bloc instances
+   */
   getAllBlocs = <B extends BlocBase<any, any>>(
     blocClass: BlocConstructor<B>,
     options: {

@@ -1,14 +1,48 @@
 import { BlocGeneric, BlocHookDependencyArrayFn, BlocState } from 'blac-next';
 
+/**
+ * Interface defining an external store that can be used to subscribe to and access bloc state.
+ * This interface follows the React external store pattern for state management.
+ * 
+ * @template B - The type of the Bloc instance
+ * @template S - The type of the Bloc state
+ */
 export interface ExternalStore<
   B extends BlocGeneric<any, any>,
   S extends BlocState<B>,
 > {
+  /**
+   * Subscribes to changes in the store and returns an unsubscribe function.
+   * @param onStoreChange - Callback function that will be called whenever the store changes
+   * @returns A function that can be called to unsubscribe from store changes
+   */
   subscribe: (onStoreChange: () => void) => () => void;
+
+  /**
+   * Gets the current snapshot of the store state.
+   * @returns The current state of the store
+   */
   getSnapshot: () => S;
+
+  /**
+   * Gets the server snapshot of the store state.
+   * This is optional and defaults to the same value as getSnapshot.
+   * @returns The server state of the store
+   */
   getServerSnapshot?: () => S;
 }
 
+/**
+ * Creates an external store that wraps a Bloc instance, providing a React-compatible interface
+ * for subscribing to and accessing bloc state.
+ * 
+ * @template B - The type of the Bloc instance
+ * @template S - The type of the Bloc state
+ * @param bloc - The Bloc instance to wrap
+ * @param dependencyArray - Function that returns an array of dependencies for the subscription
+ * @param rid - Unique identifier for the subscription
+ * @returns An ExternalStore instance that provides methods to subscribe to and access bloc state
+ */
 const externalBlocStore = <
   B extends BlocGeneric<any, any>,
   S extends BlocState<B>,
@@ -19,11 +53,17 @@ const externalBlocStore = <
 ): ExternalStore<B, S> => {
   return {
     subscribe: (listener: (state: S) => void) => {
+      // Subscribe to the bloc's observer with the provided listener function
+      // This will trigger the callback whenever the bloc's state changes
       const unSub = bloc._observer.subscribe({
         fn: () => {
           try {
+            // Use Object.freeze to create an immutable snapshot of the current state
+            // This prevents accidental mutations of the state by consumers
             listener(Object.freeze(bloc.state));
           } catch (e) {
+            // Log any errors that occur during the listener callback
+            // This ensures errors in listeners don't break the entire application
             console.error({
               e,
               bloc,
@@ -31,15 +71,22 @@ const externalBlocStore = <
             });
           }
         },
+        // Pass the dependency array to control when the subscription is updated
         dependencyArray,
+        // Use the provided id to identify this subscription
         id: rid,
       });
 
+      // Return an unsubscribe function that can be called to clean up the subscription
       return () => {
         unSub();
       };
     },
+    // Return an immutable snapshot of the current bloc state
+    // Object.freeze prevents consumers from mutating the state directly
     getSnapshot: (): S => Object.freeze(bloc.state),
+    // Server snapshot mirrors the client snapshot in this implementation
+    // Both methods return the same immutable state
     getServerSnapshot: (): S => Object.freeze(bloc.state),
   };
 };
