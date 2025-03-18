@@ -22,7 +22,7 @@ export interface TaskBoardState {
   tasks: Task[];
   filter: {
     status: TaskStatus | 'all';
-    priority: 'all' | 'low' | 'medium' | 'high';
+    priority: 'all' | Task['priority'];
     searchQuery: string;
   };
   isLoading: boolean;
