@@ -63,7 +63,7 @@ function RouteComponent() {
               The Cubit Pattern
             </h3>
             <p className="text-gray-600 dark:text-gray-300">
-              Blac's <code className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-sm font-mono">Cubit</code> class is a specialized state container that emits new states to its observers.
+              Blac's <code className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-sm font-mono">Cubit</code> class is a specialized state container that manages state updates efficiently. The <code className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-sm font-mono">patch()</code> method provides optimized updates by merging only the changed parts of state, avoiding unnecessary re-renders.
               This unidirectional data flow ensures predictable state transitions and makes debugging easier.
             </p>
             
@@ -90,9 +90,11 @@ function RouteComponent() {
                       <br/><span className="text-blue-400">class</span> <span className="text-green-300">TaskBoardBloc</span> <span className="text-blue-400">extends</span> <span className="text-blue-300">Cubit</span>&lt;TaskBoardState&gt; {"{"}
                       <br/>  <span className="text-gray-500">// State transitions are explicit and traceable</span>
                       <br/>  <span className="text-yellow-300">updateTaskStatus</span> = (<span className="text-blue-300">taskId</span>: <span className="text-blue-300">string</span>, <span className="text-blue-300">status</span>: <span className="text-blue-300">TaskStatus</span>) {"=>"} {"{"}
-                      <br/>    <span className="text-blue-400">this</span>.<span className="text-yellow-300">emit</span>({"{"} ...<span className="text-blue-400">this</span>.state, tasks: <span className="text-blue-400">this</span>.state.tasks.<span className="text-yellow-300">map</span>(
-                      <br/>      task {"=>"} task.id === taskId ? {"{"} ...task, status {"}"} : task
-                      <br/>    ){"}"}){";"}
+                      <br/>    <span className="text-blue-400">this</span>.<span className="text-yellow-300">patch</span>({"{"} 
+                      <br/>      tasks: <span className="text-blue-400">this</span>.state.tasks.<span className="text-yellow-300">map</span>(
+                      <br/>        task {"=>"} task.id === taskId ? {"{"} ...task, status {"}"} : task
+                      <br/>      )
+                      <br/>    {"}"}){";"}
                       <br/>  {"}"}
                       <br/>{"}"}
                     </pre>
@@ -193,11 +195,28 @@ function RouteComponent() {
                       <br/>  <span className="text-blue-400">return</span> <span className="text-blue-400">this</span>.filteredTasks.<span className="text-yellow-300">filter</span>(task {"=>"} task.status === <span className="text-green-300">'todo'</span>){";"}
                       <br/>{"}"}
                       <br/>
+                      <br/><span className="text-gray-400">// Example of using patch with filters</span>
+                      <br/><span className="text-yellow-300">setSearchQuery</span> = (<span className="text-blue-300">query</span>: <span className="text-blue-300">string</span>) {"=>"} {"{"}
+                      <br/>  <span className="text-blue-400">this</span>.<span className="text-yellow-300">patch</span>({"{"} 
+                      <br/>    filter: {"{"} 
+                      <br/>      ...<span className="text-blue-400">this</span>.state.filter,
+                      <br/>      searchQuery: query 
+                      <br/>    {"}"}
+                      <br/>  {"}"}){";"}
+                      <br/>{"}"}
+                      <br/>
                       <br/><span className="text-gray-400">// Component code:</span>
                       <br/><span className="text-blue-400">function</span> <span className="text-yellow-300">TaskColumn</span>({"{"} status {"}"}) {"{"}
                       <br/>  <span className="text-blue-400">const</span> [, bloc] = <span className="text-yellow-300">useBloc</span>(<span className="text-blue-300">TaskBoardBloc</span>){";"}
                       <br/>  <span className="text-gray-400">// Only re-renders when this specific property changes</span>
-                      <br/>  <span className="text-blue-400">const</span> tasks = status === <span className="text-green-300">'todo'</span> ? bloc.todoTasks : <span className="text-gray-500">/* ... */</span>{";"}
+                      <br/>  <span className="text-blue-400">let</span> tasks = []{";"}
+                      <br/>  <span className="text-blue-400">if</span> (status === <span className="text-green-300">'todo'</span>) {"{"}
+                      <br/>    tasks = bloc.todoTasks{";"}
+                      <br/>  {"}"} <span className="text-blue-400">else if</span> (status === <span className="text-green-300">'in-progress'</span>) {"{"}
+                      <br/>    tasks = bloc.inProgressTasks{";"}
+                      <br/>  {"}"} <span className="text-blue-400">else</span> {"{"}
+                      <br/>    tasks = bloc.doneTasks{";"}
+                      <br/>  {"}"}
                       <br/>{"}"}
                     </pre>
                   </div>

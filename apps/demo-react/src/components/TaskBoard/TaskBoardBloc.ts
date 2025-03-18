@@ -52,15 +52,13 @@ export class TaskBoardBloc extends Cubit<TaskBoardState> {
 
   // Form operations
   toggleAddTask = () => {
-    this.emit({
-      ...this.state,
+    this.patch({
       showAddTask: !this.state.showAddTask,
     });
   };
 
   updateNewTask = (updates: Partial<TaskFormData>) => {
-    this.emit({
-      ...this.state,
+    this.patch({
       newTask: {
         ...this.state.newTask,
         ...updates,
@@ -69,8 +67,7 @@ export class TaskBoardBloc extends Cubit<TaskBoardState> {
   };
 
   resetNewTask = () => {
-    this.emit({
-      ...this.state,
+    this.patch({
       newTask: {
         title: '',
         description: '',
@@ -90,8 +87,7 @@ export class TaskBoardBloc extends Cubit<TaskBoardState> {
       createdAt: new Date(),
     };
 
-    this.emit({
-      ...this.state,
+    this.patch({
       tasks: [...this.state.tasks, newTask],
       showAddTask: false,
     });
@@ -99,8 +95,7 @@ export class TaskBoardBloc extends Cubit<TaskBoardState> {
   };
 
   updateTaskStatus = (taskId: string, newStatus: TaskStatus) => {
-    this.emit({
-      ...this.state,
+    this.patch({
       tasks: this.state.tasks.map((task) =>
         task.id === taskId ? { ...task, status: newStatus } : task
       ),
@@ -108,8 +103,7 @@ export class TaskBoardBloc extends Cubit<TaskBoardState> {
   };
 
   updateTaskPriority = (taskId: string, priority: Task['priority']) => {
-    this.emit({
-      ...this.state,
+    this.patch({
       tasks: this.state.tasks.map((task) =>
         task.id === taskId ? { ...task, priority } : task
       ),
@@ -117,16 +111,14 @@ export class TaskBoardBloc extends Cubit<TaskBoardState> {
   };
 
   deleteTask = (taskId: string) => {
-    this.emit({
-      ...this.state,
+    this.patch({
       tasks: this.state.tasks.filter((task) => task.id !== taskId),
     });
   };
 
   // Filter operations
   setStatusFilter = (status: TaskBoardState['filter']['status']) => {
-    this.emit({
-      ...this.state,
+    this.patch({
       filter: {
         ...this.state.filter,
         status,
@@ -135,8 +127,7 @@ export class TaskBoardBloc extends Cubit<TaskBoardState> {
   };
 
   setPriorityFilter = (priority: TaskBoardState['filter']['priority']) => {
-    this.emit({
-      ...this.state,
+    this.patch({
       filter: {
         ...this.state.filter,
         priority,
@@ -145,8 +136,7 @@ export class TaskBoardBloc extends Cubit<TaskBoardState> {
   };
 
   setSearchQuery = (searchQuery: string) => {
-    this.emit({
-      ...this.state,
+    this.patch({
       filter: {
         ...this.state.filter,
         searchQuery,
