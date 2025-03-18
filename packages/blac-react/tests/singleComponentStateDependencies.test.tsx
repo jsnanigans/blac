@@ -110,13 +110,13 @@ test("should rerender for any state chnange", async () => {
 
   expect(renderCountTotal).toBe(1);
 
-  await userEvent.click(container.querySelector('[data-testid="increment"]'));
+  await userEvent.click(container.querySelector('[data-testid="increment"]')!);
 
   expect(renderCountTotal).toBe(3);
   const newCount = container.querySelector('[data-testid="count"]');
   expect(newCount).toHaveTextContent("3443");
 
-  await userEvent.click(container.querySelector('[data-testid="updateName"]'));
+  await userEvent.click(container.querySelector('[data-testid="updateName"]')!);
 
   expect(renderCountTotal).toBe(4);
   const newName = container.querySelector('[data-testid="name"]');
@@ -137,54 +137,54 @@ test("should only rerender if state is used, even after state has been removed f
   expect(count).toHaveTextContent("1");
 
   // update name, should rerender
-  await userEvent.click(container.querySelector('[data-testid="updateName"]'));
+  await userEvent.click(container.querySelector('[data-testid="updateName"]')!);
   expect(name).toHaveTextContent("Name 2");
   expect(renderCountTotal).toBe(3);
 
   // increment, will rerender
-  await userEvent.click(container.querySelector('[data-testid="increment"]'));
+  await userEvent.click(container.querySelector('[data-testid="increment"]')!);
   expect(count).toHaveTextContent("2");
   expect(renderCountTotal).toBe(4);
 
   // stop rendering count
   await userEvent.click(
-    container.querySelector('[data-testid="disableRenderCount"]'),
+    container.querySelector('[data-testid="disableRenderCount"]')!,
   );
   expect(count).toHaveTextContent("");
   expect(renderCountTotal).toBe(5);
 
   // increment again, should not rerender because state.count is not used
-  await userEvent.click(container.querySelector('[data-testid="increment"]'));
+  await userEvent.click(container.querySelector('[data-testid="increment"]')!);
   expect(renderCountTotal).toBe(5);
   expect(count).toHaveTextContent("");
 
   // update name again, should rerender because its still used
-  await userEvent.click(container.querySelector('[data-testid="updateName"]'));
+  await userEvent.click(container.querySelector('[data-testid="updateName"]')!);
   expect(name).toHaveTextContent("Name 3");
   expect(renderCountTotal).toBe(6);
   expect(count).toHaveTextContent("");
 
   // stop rendering name
   await userEvent.click(
-    container.querySelector('[data-testid="disableRenderName"]'),
+    container.querySelector('[data-testid="disableRenderName"]')!,
   );
   expect(name).toHaveTextContent("");
   expect(renderCountTotal).toBe(7);
   expect(count).toHaveTextContent("");
 
   // increment again, should not rerender because state.name is not used, will set state.cunt to '4'
-  await userEvent.click(container.querySelector('[data-testid="increment"]'));
+  await userEvent.click(container.querySelector('[data-testid="increment"]')!);
   expect(renderCountTotal).toBe(7);
   expect(count).toHaveTextContent("");
 
   // update name again, should not rerender because state.name is not used, will set state.name to 'Name 4'
-  await userEvent.click(container.querySelector('[data-testid="updateName"]'));
+  await userEvent.click(container.querySelector('[data-testid="updateName"]')!);
   expect(renderCountTotal).toBe(7);
   expect(count).toHaveTextContent("");
 
   // render name again, should render with new name
   await userEvent.click(
-    container.querySelector('[data-testid="enableRenderName"]'),
+    container.querySelector('[data-testid="enableRenderName"]')!,
   );
   expect(name).toHaveTextContent("Name 4");
   expect(renderCountTotal).toBe(8);
@@ -192,7 +192,7 @@ test("should only rerender if state is used, even after state has been removed f
 
   // show count again, should rerender with new count
   await userEvent.click(
-    container.querySelector('[data-testid="enableRenderCount"]'),
+    container.querySelector('[data-testid="enableRenderCount"]')!,
   );
   expect(count).toHaveTextContent("4");
   expect(renderCountTotal).toBe(9);
@@ -212,32 +212,32 @@ test("should only rerender if state is used, even if state is used after initial
   expect(count).toHaveTextContent("");
 
   // update name, should not rerender, will set state.name to 'Name 2'
-  await userEvent.click(container.querySelector('[data-testid="updateName"]'));
+  await userEvent.click(container.querySelector('[data-testid="updateName"]')!);
   expect(renderCountTotal).toBe(1);
 
   // increment, will not rerender because state.count is not used, will set state.count to '2'
-  await userEvent.click(container.querySelector('[data-testid="increment"]'));
+  await userEvent.click(container.querySelector('[data-testid="increment"]')!);
   expect(renderCountTotal).toBe(1);
 
   // start rendering name
   await userEvent.click(
-    container.querySelector('[data-testid="enableRenderName"]'),
+    container.querySelector('[data-testid="enableRenderName"]')!,
   );
   expect(name).toHaveTextContent("Name 2");
   expect(renderCountTotal).toBe(3);
   // update name, should rerender, will set state.name to 'Name 3'
-  await userEvent.click(container.querySelector('[data-testid="updateName"]'));
+  await userEvent.click(container.querySelector('[data-testid="updateName"]')!);
   expect(name).toHaveTextContent("Name 3");
   expect(renderCountTotal).toBe(4);
 
   // start rendering count
   await userEvent.click(
-    container.querySelector('[data-testid="enableRenderCount"]'),
+    container.querySelector('[data-testid="enableRenderCount"]')!,
   );
   expect(count).toHaveTextContent("2");
   expect(renderCountTotal).toBe(5);
   // increment again, should not rerender because state.count is not used, will set state.count to '4'
-  await userEvent.click(container.querySelector('[data-testid="increment"]'));
+  await userEvent.click(container.querySelector('[data-testid="increment"]')!);
   expect(count).toHaveTextContent("3");
   expect(renderCountTotal).toBe(6);
 });

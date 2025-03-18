@@ -76,18 +76,16 @@ export default function useBloc<
 >(bloc: B, options?: O): HookTypes<B> {
   let { dependencySelector, id: blocId, props } = options ?? {};
   const rid = useId();
-  
+
   // Track which state keys are actually used in the component for optimized re-renders
   const usedKeys = useRef<Set<string>>(new Set());
   const instanceKeys = useRef<Set<string>>(new Set());
-  const shouldClear = useRef(false);
 
   // Track used class properties (non-function members) for dependency tracking
   const usedClassPropKeys = useRef<Set<string>>(new Set());
   const instanceClassPropKeys = useRef<Set<string>>(new Set());
-  const shouldClearClassProp = useRef(false);
 
-  const renderInstance = new Set();
+  const renderInstance = {};
 
   // Check if this bloc should be isolated (unique instance per component)
   const base = bloc as unknown as BlocBaseAbstract;
@@ -136,33 +134,32 @@ export default function useBloc<
     }
 
     // For object states, track which properties were actually used
-    const usedState: string[] = [];
+    const usedStateValues: string[] = [];
     for (const key of usedKeys.current) {
       if (key in newState) {
-        usedState.push(newState[key as keyof typeof newState]);
+        usedStateValues.push(newState[key as keyof typeof newState]);
       }
     }
 
     // Track used class properties for dependency tracking, this enables rerenders when class getters change
-    const usedClass: string[] = [];
+    const usedClassValues: string[] = [];
     for (const key of usedClassPropKeys.current) {
       if (key in resolvedBloc) {
         const value = resolvedBloc[key as keyof InstanceType<B>];
         if (typeof value === 'function') {
           continue;
         }
-        usedClass.push(value as any);
+        usedClassValues.push(value as any);
       }
     }
 
-    return [usedState, usedClass];
+    instanceKeys.current = new Set();
+    instanceClassPropKeys.current = new Set();
+    return [usedStateValues, usedClassValues];
   };
 
   // Set up external store subscription for state updates
-  const { subscribe, getSnapshot, getServerSnapshot } = useMemo(
-    () => externalBlocStore(resolvedBloc, dependencyArray, rid),
-    [resolvedBloc._createdAt],
-  );
+  const { subscribe, getSnapshot, getServerSnapshot } = externalBlocStore(resolvedBloc, dependencyArray, rid)
 
   // Subscribe to state changes using React's external store API
   const state = useSyncExternalStore<BlocState<InstanceType<B>>>(
@@ -177,11 +174,9 @@ export default function useBloc<
       if (typeof state === 'object') {
         return new Proxy(state as any, {
           get(_, prop) {
-            const value = state[prop as keyof typeof state];
-            // Track which state properties are accessed
-            usedKeys.current.add(prop as string);
             instanceKeys.current.add(prop as string);
-            shouldClear.current = true;
+            usedKeys.current.add(prop as string);
+            const value = state[prop as keyof typeof state];
             return value;
           },
         });
@@ -190,7 +185,7 @@ export default function useBloc<
       Blac.instance.log('useBloc Error', error);
     }
     return state;
-  }, [state, usedKeys, instanceKeys]);
+  }, [state]);
 
   // Create a proxy for the bloc instance to track property access
   const returnClass = useMemo(() => {
@@ -199,32 +194,20 @@ export default function useBloc<
         const value = resolvedBloc[prop as keyof InstanceType<B>];
         // Track which class properties are accessed (excluding methods)
         if (typeof value !== 'function') {
-          usedClassPropKeys.current.add(prop as string);
           instanceClassPropKeys.current.add(prop as string);
-          shouldClearClassProp.current = true;
+          // shouldClearClassProp.current = true;
         }
         return value;
       },
     });
   }, [resolvedBloc, usedClassPropKeys, instanceClassPropKeys]);
 
+
   // Clean up tracked keys after each render
   useLayoutEffect(() => {
+    // inherit the keys from the previous render
     usedKeys.current = new Set(instanceKeys.current);
     usedClassPropKeys.current = new Set(instanceClassPropKeys.current);
-
-    return () => {
-      setTimeout(() => {
-        if (shouldClearClassProp.current) {
-          instanceClassPropKeys.current.clear();
-          shouldClearClassProp.current = false;
-        }
-        if (shouldClear.current) {
-          instanceKeys.current.clear();
-          shouldClear.current = false;
-        }
-      });
-    };
   }, [renderInstance]);
 
   // Set up bloc lifecycle management

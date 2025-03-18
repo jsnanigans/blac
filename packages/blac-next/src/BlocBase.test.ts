@@ -60,10 +60,10 @@ describe('BlocBase', () => {
   });
 
   describe('addSubscriber', () => {
-    it('should report `listener_added` when a listener is added', () => {
+    it('should dispatchEvent `listener_added` when a listener is added', () => {
       const instance = new BlocBaseSimple(0);
       const blac = instance._blac;
-      const blacSpy = vi.spyOn(blac, 'report');
+      const blacSpy = vi.spyOn(blac, 'dispatchEvent');
 
       instance._observer.subscribe({ fn: () => {}, id: 'foo' });
       expect(blacSpy).toHaveBeenNthCalledWith(
@@ -102,7 +102,7 @@ describe('BlocBase', () => {
     it('should report `listener_removed` when a listener is removed', () => {
       const instance = new BlocBaseSimple(0);
       const blac = instance._blac;
-      const blacSpy = vi.spyOn(blac, 'report');
+      const blacSpy = vi.spyOn(blac, 'dispatchEvent');
       const callback = { fn: () => {}, id: 'foo' };
       instance._observer.subscribe(callback);
       expect(blacSpy).toHaveBeenCalledWith(
@@ -116,7 +116,7 @@ describe('BlocBase', () => {
     it('should report `bloc_disposed` when disposed', () => {
       const instance = new BlocBaseSimple(0);
       const blac = instance._blac;
-      const blacSpy = vi.spyOn(blac, 'report');
+      const blacSpy = vi.spyOn(blac, 'dispatchEvent');
       instance._dispose();
       expect(blacSpy).toHaveBeenCalledWith(
         BlacLifecycleEvent.BLOC_DISPOSED,

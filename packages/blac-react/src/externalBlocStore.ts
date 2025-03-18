@@ -58,9 +58,7 @@ const externalBlocStore = <
       const unSub = bloc._observer.subscribe({
         fn: () => {
           try {
-            // Use Object.freeze to create an immutable snapshot of the current state
-            // This prevents accidental mutations of the state by consumers
-            listener(Object.freeze(bloc.state));
+            listener(bloc.state);
           } catch (e) {
             // Log any errors that occur during the listener callback
             // This ensures errors in listeners don't break the entire application
@@ -83,11 +81,9 @@ const externalBlocStore = <
       };
     },
     // Return an immutable snapshot of the current bloc state
-    // Object.freeze prevents consumers from mutating the state directly
-    getSnapshot: (): S => Object.freeze(bloc.state),
+    getSnapshot: (): S => bloc.state,
     // Server snapshot mirrors the client snapshot in this implementation
-    // Both methods return the same immutable state
-    getServerSnapshot: (): S => Object.freeze(bloc.state),
+    getServerSnapshot: (): S => bloc.state,
   };
 };
 
