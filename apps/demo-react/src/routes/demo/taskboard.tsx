@@ -145,7 +145,7 @@ function CodeSnippet({ code, title }: { code: string, title?: string }) {
       code={code}
       language="typescript"
       showLineNumbers={true}
-      className="mt-0"
+      className="mt-0 w-full"
       title={title}
     />
   );

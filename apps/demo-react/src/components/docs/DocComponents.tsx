@@ -435,8 +435,8 @@ function Counter() {
   return (
     <div>
       <p>Count: {count}</p>
-      <button onClick={() => counterCubit.decrement()}>-</button>
-      <button onClick={() => counterCubit.increment()}>+</button>
+      <button onClick={counterCubit.decrement}>-</button>
+      <button onClick={counterCubit.increment}>+</button>
     </div>
   );
 }`}

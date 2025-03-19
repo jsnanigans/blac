@@ -1,5 +1,8 @@
 import { Cubit } from 'blac-next';
-import { petfinderAPI, PetfinderSearchParams } from '../services/petfinder.service';
+import {
+  petfinderAPI,
+  PetfinderSearchParams,
+} from '../services/petfinder.service';
 
 /**
  * Animal interface represents a pet that can be adopted
@@ -101,7 +104,7 @@ export interface PetfinderState {
 
 /**
  * PetfinderBloc handles pet search functionality and state management
- * 
+ *
  * This demonstrates how to use Blac for async data workflows:
  * 1. Manages loading states
  * 2. Handles error scenarios
@@ -115,21 +118,21 @@ export class PetfinderBloc extends Cubit<PetfinderState> {
       loadingState: {
         isInitialLoading: false,
         isPaginationLoading: false,
-        isDetailsLoading: false
+        isDetailsLoading: false,
       },
       error: null,
       searchParams: {
         limit: 20,
         page: 1,
-        status: 'adoptable'
+        status: 'adoptable',
       },
       pagination: {
         currentPage: 1,
         totalPages: 1,
-        totalCount: 0
+        totalCount: 0,
       },
       selectedAnimal: null,
-      searchPerformed: false
+      searchPerformed: false,
     });
   }
 
@@ -137,26 +140,30 @@ export class PetfinderBloc extends Cubit<PetfinderState> {
    * Helper getter to maintain compatibility with existing code
    */
   get isLoading(): boolean {
-    const { isInitialLoading, isPaginationLoading, isDetailsLoading } = this.state.loadingState;
+    const { isInitialLoading, isPaginationLoading, isDetailsLoading } =
+      this.state.loadingState;
     return isInitialLoading || isPaginationLoading || isDetailsLoading;
   }
 
   /**
    * Update search parameters and optionally trigger a search
    */
-  updateSearchParams = (params: Partial<PetfinderSearchParams>, search = false) => {
+  updateSearchParams = (
+    params: Partial<PetfinderSearchParams>,
+    search = false,
+  ) => {
     this.patch({
       searchParams: {
         ...this.state.searchParams,
         ...params,
-        page: 1 // Reset to first page when changing search params
-      }
+        page: 1, // Reset to first page when changing search params
+      },
     });
 
     if (search) {
       this.searchAnimals();
     }
-  }
+  };
 
   /**
    * Reset search parameters and clear results
@@ -167,7 +174,7 @@ export class PetfinderBloc extends Cubit<PetfinderState> {
       searchParams: {
         limit: 20,
         page: 1,
-        status: 'adoptable'
+        status: 'adoptable',
       },
       animals: [],
       error: null,
@@ -176,66 +183,73 @@ export class PetfinderBloc extends Cubit<PetfinderState> {
       loadingState: {
         isInitialLoading: false,
         isPaginationLoading: false,
-        isDetailsLoading: false
-      }
+        isDetailsLoading: false,
+      },
     });
-  }
+  };
 
   /**
    * Search for animals based on current search parameters
    */
   searchAnimals = async () => {
     // Determine if this is initial loading or pagination
-    const isFirstSearch = !this.state.searchPerformed || this.state.animals.length === 0;
-    
+    const isFirstSearch =
+      !this.state.searchPerformed || this.state.animals.length === 0;
+
     try {
       // Update the appropriate loading state
-      this.patch({ 
+      this.patch({
         loadingState: {
           ...this.state.loadingState,
           isInitialLoading: isFirstSearch,
-          isPaginationLoading: !isFirstSearch
-        }, 
-        error: null 
+          isPaginationLoading: !isFirstSearch,
+        },
+        error: null,
       });
-      
+
       const response = await petfinderAPI.getAnimals(this.state.searchParams);
-      
+
       this.patch({
         animals: response.animals,
         loadingState: {
           ...this.state.loadingState,
           isInitialLoading: false,
-          isPaginationLoading: false
+          isPaginationLoading: false,
         },
         pagination: {
           currentPage: response.pagination.current_page,
           totalPages: response.pagination.total_pages,
-          totalCount: response.pagination.total_count
+          totalCount: response.pagination.total_count,
         },
-        searchPerformed: true
+        searchPerformed: true,
       });
-    } catch (error: any) {
-      this.patch({ 
+    } catch (error: unknown) {
+      this.patch({
         loadingState: {
           ...this.state.loadingState,
           isInitialLoading: false,
-          isPaginationLoading: false
-        }, 
-        error: error.message || 'An error occurred while fetching pets',
-        searchPerformed: true
+          isPaginationLoading: false,
+        },
+        error:
+          error instanceof Error
+            ? error.message
+            : 'An error occurred while fetching pets',
+        searchPerformed: true,
       });
     }
-  }
+  };
 
   /**
    * Go to the next page of results
    */
   nextPage = () => {
     if (this.state.pagination.currentPage < this.state.pagination.totalPages) {
-      this.updateSearchParams({ page: this.state.searchParams.page! + 1 }, true);
+      this.updateSearchParams(
+        { page: this.state.searchParams.page! + 1 },
+        true,
+      );
     }
-  }
+  };
 
   /**
    * Go to the previous page of results
@@ -244,47 +258,50 @@ export class PetfinderBloc extends Cubit<PetfinderState> {
     if (this.state.searchParams.page && this.state.searchParams.page > 1) {
       this.updateSearchParams({ page: this.state.searchParams.page - 1 }, true);
     }
-  }
+  };
 
   /**
    * Get details for a specific animal
    */
   getAnimalDetails = async (id: number) => {
     try {
-      this.patch({ 
+      this.patch({
         loadingState: {
           ...this.state.loadingState,
-          isDetailsLoading: true
-        }, 
-        error: null 
+          isDetailsLoading: true,
+        },
+        error: null,
       });
-      
+
       const response = await petfinderAPI.getAnimal(id);
-      
+
       this.patch({
         selectedAnimal: response.animal,
         loadingState: {
           ...this.state.loadingState,
-          isDetailsLoading: false
-        }
+          isDetailsLoading: false,
+        },
       });
-    } catch (error: any) {
-      this.patch({ 
+    } catch (error: unknown) {
+      this.patch({
         loadingState: {
           ...this.state.loadingState,
-          isDetailsLoading: false
-        }, 
-        error: error.message || 'An error occurred while fetching pet details'
+          isDetailsLoading: false,
+        },
+        error:
+          error instanceof Error
+            ? error.message
+            : 'An error occurred while fetching pet details',
       });
     }
-  }
+  };
 
   /**
    * Clear the selected animal
    */
   clearSelectedAnimal = () => {
     this.patch({ selectedAnimal: null });
-  }
+  };
 
   // Methods for fetching pets
   searchPets = async (
@@ -292,41 +309,38 @@ export class PetfinderBloc extends Cubit<PetfinderState> {
     animalType: string,
     size?: string | null,
     age?: string | null,
-    goodWithChildren?: boolean | null
   ) => {
-    await this.updateSearchParams({
-      location: zipCode,
-      type: animalType,
-      size: size || undefined,
-      age: age || undefined,
-      good_with_children: goodWithChildren
-    }, true);
-  }
+    await this.updateSearchParams(
+      {
+        location: zipCode,
+        type: animalType,
+        size: size || undefined,
+        age: age || undefined,
+      },
+      true,
+    );
+  };
 
   // Form handling
   resetForm = () => {
     this.resetSearch();
-  }
+  };
 
   updateZipCode = (zipCode: string) => {
     this.updateSearchParams({ location: zipCode });
-  }
+  };
 
   updateAnimalType = (animalType: string) => {
     this.updateSearchParams({ type: animalType });
-  }
+  };
 
-  updateSize = (size: string | null) => {
+  updateSize = (size?: string) => {
     this.updateSearchParams({ size });
-  }
+  };
 
-  updateAge = (age: string | null) => {
+  updateAge = (age?: string) => {
     this.updateSearchParams({ age });
-  }
-
-  updateGoodWithChildren = (goodWithChildren: boolean | null) => {
-    this.updateSearchParams({ good_with_children: goodWithChildren });
-  }
+  };
 
   selectPet = (petId: string | null) => {
     if (petId) {
@@ -334,5 +348,6 @@ export class PetfinderBloc extends Cubit<PetfinderState> {
     } else {
       this.clearSelectedAnimal();
     }
-  }
-} 
+  };
+}
+

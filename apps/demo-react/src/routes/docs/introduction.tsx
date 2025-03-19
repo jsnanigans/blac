@@ -142,11 +142,11 @@ class CounterCubit extends Cubit<number> {
     super(0); // Initial state
   }
 
-  increment() {
+  increment = () => {
     this.emit(this.state + 1);
   }
 
-  decrement() {
+  decrement = () => {
     this.emit(this.state - 1);
   }
 }
@@ -158,8 +158,8 @@ function Counter() {
   return (
     <div>
       <p>Count: {count}</p>
-      <button onClick={() => counterCubit.increment()}>+</button>
-      <button onClick={() => counterCubit.decrement()}>-</button>
+      <button onClick={counterCubit.increment}>+</button>
+      <button onClick={counterCubit.decrement}>-</button>
     </div>
   );
 }`}

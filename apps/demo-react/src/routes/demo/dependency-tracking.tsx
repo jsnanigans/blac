@@ -131,67 +131,67 @@ class UserPreferencesCubit extends Cubit<UserPreferencesState> {
 
   setTheme = (theme: 'light' | 'dark') => {
     this.patch({ theme });
-  }
+  };
 
   setFontSize = (fontSize: number) => {
     this.patch({ fontSize });
-  }
+  };
 
   toggleEmailNotifications = () => {
     this.patch({ notificationsEmail: !this.state.notificationsEmail });
-  }
+  };
 
   togglePushNotifications = () => {
     this.patch({ notificationsPush: !this.state.notificationsPush });
-  }
+  };
 
   toggleSmsNotifications = () => {
     this.patch({ notificationsSms: !this.state.notificationsSms });
-  }
+  };
 
   setLanguage = (language: string) => {
     this.patch({ language });
-  }
+  };
 
   setRefreshRate = (refreshRate: number) => {
     this.patch({ refreshRate });
-  }
+  };
 
   setPassword = (password: string) => {
     this.patch({ password });
-  }
+  };
 
   toggleShowPassword = () => {
     this.patch({ showPassword: !this.state.showPassword });
-  }
+  };
 
   updateUsername = (username: string) => {
     this.patch({ username });
-  }
+  };
 
   updateEmail = (email: string) => {
     this.patch({ email });
-  }
+  };
 
   changeAvatar = (avatar: number) => {
     this.patch({ avatar });
-  }
+  };
 
   setCategory = (category: string) => {
     this.patch({ filterCategory: category });
-  }
+  };
 
   setMinPrice = (minPrice: number) => {
     this.patch({ filterMinPrice: minPrice });
-  }
+  };
 
   setMaxPrice = (maxPrice: number) => {
     this.patch({ filterMaxPrice: maxPrice });
-  }
+  };
 
   toggleInStock = () => {
     this.patch({ filterInStock: !this.state.filterInStock });
-  }
+  };
 
   // Computed properties
   get filteredItems() {
@@ -214,28 +214,43 @@ class UserPreferencesCubit extends Cubit<UserPreferencesState> {
     const filteredIds = this.state.products
       .filter((product) => {
         // Apply category filter
-        if (this.state.filterCategory !== 'all' && 
-            product.category !== this.state.filterCategory) {
+        if (
+          this.state.filterCategory !== 'all' &&
+          product.category !== this.state.filterCategory
+        ) {
           return false;
         }
-        
+
         // Apply price range filter
-        if (product.price < this.state.filterMinPrice || 
-            product.price > this.state.filterMaxPrice) {
+        if (
+          product.price < this.state.filterMinPrice ||
+          product.price > this.state.filterMaxPrice
+        ) {
           return false;
         }
-        
+
         // Apply in-stock filter
         if (this.state.filterInStock && !product.inStock) {
           return false;
         }
-        
+
         return true;
       })
-      .map(product => product.id);
-      
-    // Equality check implementation...
-    
+      .map((product) => product.id);
+
+    // Perform manual equality check for arrays
+    if (
+      this.previouslyFilteredProducts !== null &&
+      this.previouslyFilteredProducts.length === filteredIds.length &&
+      this.previouslyFilteredProducts.every((val, i) =>
+        Object.is(val, filteredIds[i]),
+      )
+    ) {
+      return this.previouslyFilteredProducts;
+    }
+
+    // Store the new result for future comparisons
+    this.previouslyFilteredProducts = filteredIds;
     return filteredIds;
   }
 
@@ -267,13 +282,6 @@ class UserPreferencesCubit extends Cubit<UserPreferencesState> {
         inStock: !product.inStock,
       });
     }
-  }
-
-  // Helper method for array comparison
-  private arraysEqual(a: number[] | null, b: number[]): boolean {
-    if (a === null) return false;
-    if (a.length !== b.length) return false;
-    return a.every((val, idx) => Object.is(val, b[idx]));
   }
 }
 
@@ -455,6 +463,7 @@ const [state, prefsCubit] = useBloc(UserPreferencesCubit);
         language="jsx"
         showLineNumbers={true}
         title="Conditional State Access"
+        className="w-full"
       />
     </div>
   );
@@ -711,6 +720,7 @@ interface UserState {
           language="typescript"
           showLineNumbers={false}
           title="State Structure Best Practices"
+          className="w-full"
         />
       </div>
 
@@ -789,69 +799,7 @@ get filteredProducts() {
           language="typescript"
           showLineNumbers={true}
           title="Manual Memoization for Arrays"
-        />
-      </div>
-
-      <div className="mt-8">
-        <CodeHighlighter
-          code={`
-// The BLoC contains the filtering logic in a getter
-class UserPreferencesCubit extends Cubit<UserPreferencesState> {
-  // Flattened state for optimal reactivity
-  interface UserPreferencesState {
-    filterCategory: string;
-    filterMinPrice: number;
-    filterMaxPrice: number;
-    filterInStock: boolean;
-    products: Product[];
-    // ...other root-level properties
-  }
-
-  // Cache for memoization
-  previouslyFilteredProducts: null | number[] = null;
-
-  // Computed property that filters products
-  get filteredProducts() {
-    // Return primitive values (IDs) instead of objects
-    const filteredIds = this.state.products
-      .filter((product) => {
-        // Apply category filter
-        if (this.state.filterCategory !== 'all' && 
-            product.category !== this.state.filterCategory) {
-          return false;
-        }
-        
-        // Apply price range filter
-        if (product.price < this.state.filterMinPrice || 
-            product.price > this.state.filterMaxPrice) {
-          return false;
-        }
-        
-        // Apply in-stock filter
-        if (this.state.filterInStock && !product.inStock) {
-          return false;
-        }
-        
-        return true;
-      })
-      .map(product => product.id);
-      
-    // Equality check implementation...
-    
-    return filteredIds;
-  }
-
-  // Helper method for array comparison
-  private arraysEqual(a: number[] | null, b: number[]): boolean {
-    if (a === null) return false;
-    if (a.length !== b.length) return false;
-    return a.every((val, idx) => Object.is(val, b[idx]));
-  }
-}
-`}
-          language="typescript"
-          showLineNumbers={true}
-          title="Product Filtering Implementation"
+          className="w-full"
         />
       </div>
     </div>
@@ -873,6 +821,8 @@ function StateInspector() {
           language="json"
           title="Current State"
           showLineNumbers={false}
+          className="w-full"
+          customStyle={{ maxHeight: '300px' }}
         />
         <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-white dark:from-gray-800 to-transparent pointer-events-none"></div>
       </div>

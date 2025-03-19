@@ -227,6 +227,7 @@ function RouteComponent() {
             language="typescript"
             showLineNumbers={true}
             title="Simple Counter Cubit"
+            className="w-full"
           />
         </div>
         
@@ -274,6 +275,7 @@ function RouteComponent() {
             language="typescript"
             showLineNumbers={true}
             title="Isolated Counter Cubit"
+            className="w-full"
           />
         </div>
         
@@ -321,6 +323,7 @@ function RouteComponent() {
             language="typescript"
             showLineNumbers={true}
             title="Keep-Alive Counter Cubit"
+            className="w-full"
           />
         </div>
         
@@ -366,6 +369,7 @@ const [counterB] = useBloc(CounterCubit, { id: 'counter-1' });
             language="typescript"
             showLineNumbers={true}
             title="Custom ID Pattern"
+            className="w-full"
           />
         </div>
         
@@ -420,6 +424,7 @@ const [state, conversationCubit] = useBloc(ConversationCubit, {
                 language="typescript"
                 showLineNumbers={true}
                 title="Dynamic ID Example"
+                className="w-full"
               />
             </li>
             <li>

@@ -142,7 +142,7 @@ const CodeHighlighter: React.FC<CodeHighlighterProps> = ({
   };
 
   return (
-    <div className={`relative my-8 group ${className}`}>
+    <div className={`relative my-8 group w-full ${className}`}>
       {/* Title bar */}
       <div className="absolute z-10 top-0 left-0 right-0 flex items-center justify-between px-4 py-2 bg-[#1a1a2e] border-b border-[#ff36f950] rounded-t-lg overflow-hidden">
         {/* Tech-inspired decorative elements */}
@@ -177,8 +177,8 @@ const CodeHighlighter: React.FC<CodeHighlighterProps> = ({
       </div>
       
       {/* Code block with syntax highlighting */}
-      <div className="overflow-hidden rounded-lg">
-        <div className="pt-10 overflow-auto cyberpunk-scrollbar">
+      <div className="overflow-hidden rounded-lg w-full">
+        <div className="pt-10 max-h-[500px] overflow-auto cyberpunk-scrollbar">
           <SyntaxHighlighter
             language={language}
             style={customTheme}
@@ -189,6 +189,9 @@ const CodeHighlighter: React.FC<CodeHighlighterProps> = ({
               borderRadius: '0 0 0.75rem 0.75rem',
               margin: 0,
               padding: '1.5rem',
+              width: '100%',
+              minWidth: '100%',
+              overflowX: 'auto',
               ...customStyle
             }}
           >
