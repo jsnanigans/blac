@@ -1,15 +1,33 @@
-import { Link } from '@tanstack/react-router';
-import { FC } from 'react';
+import { Link, LinkProps } from '@tanstack/react-router';
+import { FC, ReactNode } from 'react';
 
-type LinkProps = React.ComponentProps<typeof Link>;
+interface PrettyLinkProps extends LinkProps {
+  variant?: 'cyan' | 'fuchsia' | 'blue' | 'pink';
+  children: ReactNode;
+  className?: string;
+}
 
-const PrettyLink: FC<LinkProps> = (props) => {
+const PrettyLink: FC<PrettyLinkProps> = ({
+  variant = 'cyan',
+  children,
+  className = '',
+  ...props
+}) => {
+  const baseClasses = 'px-3 py-1.5 rounded-md inline-flex items-center transition-all duration-300 hover-scale border shadow-sm';
+  
+  const variantClasses = {
+    cyan: 'btn-neon-cyan border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/20 shadow-cyan-500/20',
+    fuchsia: 'btn-neon-fuchsia border-fuchsia-500/30 bg-fuchsia-500/10 hover:bg-fuchsia-500/20 shadow-fuchsia-500/20',
+    blue: 'btn-neon-blue border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 shadow-blue-500/20',
+    pink: 'btn-neon-pink border-pink-500/30 bg-pink-500/10 hover:bg-pink-500/20 shadow-pink-500/20',
+  };
+
   return (
     <Link
       {...props}
-      className="px-3 py-2 relative transition-all text-foreground dark:text-gray-100 font-medium hover:text-accent after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-accent after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:origin-left [&.active]:text-accent [&.active]:after:scale-x-100"
+      className={`${baseClasses} ${variantClasses[variant]} ${className}`}
     >
-      {props.children}
+      {children}
     </Link>
   );
 };

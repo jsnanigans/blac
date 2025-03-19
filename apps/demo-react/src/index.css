@@ -2,16 +2,85 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Animation keyframes for neon effects */
+@keyframes neon-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes text-shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes border-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(139, 92, 246, 0.5); }
+  50% { box-shadow: 0 0 15px rgba(139, 92, 246, 0.8); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
 @layer base {
-  body {
-    @apply bg-background text-foreground transition-colors duration-200;
+  /* CSS Variable definitions for theme colors */
+  :root {
+    /* Light theme colors - refreshed */
+    --background-color: 250 252 255;
+    --foreground-color: 15 23 42;
+    --primary-color: 37 99 235;
+    --primary-hover-color: 29 78 216;
+    --secondary-color: 219 39 119;
+    --secondary-hover-color: 190 24 93;
+    --accent-color: 124 58 237;
+    --accent-hover-color: 109 40 217;
+    --muted-color: 100 116 139;
+    --border-color: 226 232 240;
+    --card-color: 255 255 255;
+    --card-foreground-color: 15 23 42;
+  }
+
+  /* Dark mode theme variables - enhanced */
+  .dark {
+    color-scheme: dark;
+    --background-color: 10 15 30;
+    --foreground-color: 248 250 252;
+    --primary-color: 96 165 250;
+    --primary-hover-color: 59 130 246;
+    --secondary-color: 244 114 182;
+    --secondary-hover-color: 236 72 153;
+    --accent-color: 167 139 250;
+    --accent-hover-color: 139 92 246;
+    --muted-color: 148 163 184;
+    --border-color: 51 65 85;
+    --card-color: 15 23 42;
+    --card-foreground-color: 248 250 252;
   }
   
-  /* Dark mode overrides */
-  @media (prefers-color-scheme: dark) {
-    body {
-      @apply bg-gray-900 text-gray-100;
-    }
+  /* Base styles */
+  body {
+    @apply bg-background text-foreground transition-colors duration-300;
+  }
+  
+  /* Dark mode styles applied when .dark class is present on html */
+  .dark {
+    color-scheme: dark;
+  }
+  
+  .dark body {
+    @apply bg-gray-900 text-gray-100;
+  }
+  
+  html:not(.dark) {
+    color-scheme: light;
+  }
+  
+  html:not(.dark) .bg-mesh-gradient {
+    background: radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.08), transparent 45%),
+                radial-gradient(circle at 80% 20%, rgba(6, 182, 212, 0.06), transparent 45%),
+                radial-gradient(circle at 20% 80%, rgba(236, 72, 153, 0.06), transparent 50%);
+    background-color: #f8fafc;
   }
 }
 
@@ -41,5 +110,198 @@
   
   input, textarea, select {
     @apply dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 transition-colors duration-200;
+  }
+
+  /* Neon-inspired components */
+  /* Dark mode versions */
+  .dark .btn-neon-cyan {
+    @apply px-4 py-2 rounded-md font-medium text-white bg-gray-900 border border-transparent relative overflow-hidden transition-all duration-300;
+    @apply border-cyan-500/30 shadow-[0_0_10px_rgba(6,182,212,0.3)];
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+    background: linear-gradient(90deg, rgba(8, 47, 73, 0.8) 0%, rgba(6, 37, 53, 1) 100%);
+  }
+  
+  .dark .btn-neon-cyan:hover {
+    @apply shadow-[0_0_15px_rgba(6,182,212,0.5)];
+  }
+  
+  .dark .btn-neon-fuchsia {
+    @apply px-4 py-2 rounded-md font-medium text-white bg-gray-900 border border-transparent relative overflow-hidden transition-all duration-300;
+    @apply border-fuchsia-500/30 shadow-[0_0_10px_rgba(192,38,211,0.3)];
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+    background: linear-gradient(90deg, rgba(56, 24, 48, 0.8) 0%, rgba(46, 16, 38, 1) 100%);
+  }
+  
+  .dark .btn-neon-fuchsia:hover {
+    @apply shadow-[0_0_15px_rgba(192,38,211,0.5)];
+  }
+  
+  .dark .card-neon-cyan {
+    @apply bg-gradient-to-b from-gray-900/80 to-gray-900/60 backdrop-blur-xl rounded-3xl;
+    @apply overflow-hidden border border-opacity-20 shadow-lg transition-all duration-300;
+    @apply border-cyan-500/20 shadow-[0_0_20px_rgba(6,182,212,0.3)];
+  }
+  
+  .dark .card-neon-fuchsia {
+    @apply bg-gradient-to-b from-gray-900/80 to-gray-900/60 backdrop-blur-xl rounded-3xl;
+    @apply overflow-hidden border border-opacity-20 shadow-lg transition-all duration-300;
+    @apply border-fuchsia-500/20 shadow-[0_0_20px_rgba(192,38,211,0.3)];
+  }
+  
+  .dark .card-neon-blue {
+    @apply bg-gradient-to-b from-gray-900/80 to-gray-900/60 backdrop-blur-xl rounded-3xl;
+    @apply overflow-hidden border border-opacity-20 shadow-lg transition-all duration-300;
+    @apply border-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.3)];
+  }
+  
+  .dark .card-neon-pink {
+    @apply bg-gradient-to-b from-gray-900/80 to-gray-900/60 backdrop-blur-xl rounded-3xl;
+    @apply overflow-hidden border border-opacity-20 shadow-lg transition-all duration-300;
+    @apply border-pink-500/20 shadow-[0_0_20px_rgba(236,72,153,0.3)];
+  }
+  
+  /* Light mode versions - enhanced */
+  html:not(.dark) .btn-neon-cyan {
+    @apply px-4 py-2 rounded-md font-medium text-gray-800 relative overflow-hidden transition-all duration-300;
+    @apply border border-cyan-400/50 shadow-[0_0_10px_rgba(6,182,212,0.2)];
+    background: linear-gradient(90deg, rgba(207, 250, 254, 0.9) 0%, rgba(165, 243, 252, 1) 100%);
+  }
+  
+  html:not(.dark) .btn-neon-cyan:hover {
+    @apply shadow-[0_0_15px_rgba(6,182,212,0.4)] border-cyan-500/60;
+    transform: translateY(-1px);
+  }
+  
+  html:not(.dark) .btn-neon-fuchsia {
+    @apply px-4 py-2 rounded-md font-medium text-gray-800 relative overflow-hidden transition-all duration-300;
+    @apply border border-fuchsia-400/50 shadow-[0_0_10px_rgba(192,38,211,0.2)];
+    background: linear-gradient(90deg, rgba(250, 232, 255, 0.9) 0%, rgba(245, 208, 254, 1) 100%);
+  }
+  
+  html:not(.dark) .btn-neon-fuchsia:hover {
+    @apply shadow-[0_0_15px_rgba(192,38,211,0.4)] border-fuchsia-500/60;
+    transform: translateY(-1px);
+  }
+  
+  html:not(.dark) .card-neon-cyan {
+    @apply bg-white/95 backdrop-blur-md rounded-3xl;
+    @apply overflow-hidden border transition-all duration-300;
+    @apply border-cyan-400/40 shadow-[0_4px_20px_rgba(6,182,212,0.2)];
+  }
+  
+  html:not(.dark) .card-neon-fuchsia {
+    @apply bg-white/95 backdrop-blur-md rounded-3xl;
+    @apply overflow-hidden border transition-all duration-300;
+    @apply border-fuchsia-400/40 shadow-[0_4px_20px_rgba(192,38,211,0.2)];
+  }
+  
+  html:not(.dark) .card-neon-blue {
+    @apply bg-white/95 backdrop-blur-md rounded-3xl;
+    @apply overflow-hidden border transition-all duration-300;
+    @apply border-blue-400/40 shadow-[0_4px_20px_rgba(59,130,246,0.2)];
+  }
+  
+  html:not(.dark) .card-neon-pink {
+    @apply bg-white/95 backdrop-blur-md rounded-3xl;
+    @apply overflow-hidden border transition-all duration-300;
+    @apply border-pink-400/40 shadow-[0_4px_20px_rgba(236,72,153,0.2)];
+  }
+}
+
+@layer utilities {
+  /* Dark mode mesh gradient */
+  .dark .bg-mesh-gradient {
+    background: radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.15), transparent 35%),
+               radial-gradient(circle at 80% 20%, rgba(6, 182, 212, 0.1), transparent 35%),
+               radial-gradient(circle at 20% 80%, rgba(236, 72, 153, 0.1), transparent 40%);
+    background-color: #0f1118;
+  }
+  
+  /* Light mode mesh gradient */
+  html:not(.dark) .bg-mesh-gradient {
+    background: radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.08), transparent 45%),
+                radial-gradient(circle at 80% 20%, rgba(6, 182, 212, 0.06), transparent 45%),
+                radial-gradient(circle at 20% 80%, rgba(236, 72, 153, 0.06), transparent 50%);
+    background-color: #f8fafc;
+  }
+  
+  .text-glow {
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+  }
+  
+  html:not(.dark) .text-glow {
+    text-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+  }
+  
+  /* Dark theme text gradients */
+  .dark .text-gradient-cyan {
+    @apply text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-cyan-200;
+  }
+  
+  .dark .text-gradient-fuchsia {
+    @apply text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 to-fuchsia-200;
+  }
+  
+  .dark .text-gradient-blue {
+    @apply text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-200;
+  }
+  
+  .dark .text-gradient-pink {
+    @apply text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-pink-200;
+  }
+  
+  .dark .text-gradient-multi {
+    @apply text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-fuchsia-500 to-cyan-400;
+    background-size: 200% auto;
+    animation: text-shimmer 6s linear infinite;
+  }
+  
+  /* Light theme text gradients - enhanced */
+  html:not(.dark) .text-gradient-cyan {
+    @apply text-transparent bg-clip-text bg-gradient-to-r from-cyan-600 to-blue-500;
+  }
+  
+  html:not(.dark) .text-gradient-fuchsia {
+    @apply text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-600 to-purple-600;
+  }
+  
+  html:not(.dark) .text-gradient-blue {
+    @apply text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600;
+  }
+  
+  html:not(.dark) .text-gradient-pink {
+    @apply text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-rose-500;
+  }
+  
+  html:not(.dark) .text-gradient-multi {
+    @apply text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-fuchsia-600 to-cyan-600;
+    background-size: 200% auto;
+    animation: text-shimmer 6s linear infinite;
+  }
+  
+  .animate-pulse-slow {
+    animation: neon-pulse 3s ease-in-out infinite;
+  }
+  
+  .animate-text-shimmer {
+    animation: text-shimmer 6s linear infinite;
+  }
+  
+  .animate-border-glow {
+    animation: border-glow 3s ease-in-out infinite;
+  }
+  
+  .animate-float {
+    animation: float 5s ease-in-out infinite;
+  }
+  
+  .hover-scale {
+    @apply transition-transform duration-300;
+  }
+  
+  /* Light mode hover effects */
+  html:not(.dark) .hover-scale:hover {
+    transform: translateY(-2px) scale(1.01);
+    @apply shadow-lg;
   }
 }

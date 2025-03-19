@@ -1,3 +1,6 @@
+// Import theme initialization first
+import './index';
+
 import { StrictMode } from 'react';
 import ReactDOM from 'react-dom/client';
 import { RouterProvider, createRouter } from '@tanstack/react-router';

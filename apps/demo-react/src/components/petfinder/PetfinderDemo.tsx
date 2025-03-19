@@ -44,7 +44,7 @@ export const PetfinderDemo: FC = () => {
           <div className="w-40 h-1 bg-gradient-to-r from-cyan-500 to-fuchsia-500 mx-auto my-8 rounded-full shadow-[0_0_10px_rgba(139,92,246,0.8)]"></div>
         </header>
 
-        <div className="mb-10 transform hover:scale-[1.01] transition-transform duration-300">
+        <div className="mb-10 transform transition-transform duration-300">
           <div className="bg-gray-900/60 backdrop-blur-xl p-6 rounded-3xl border border-fuchsia-500/20 shadow-[0_0_20px_rgba(139,92,246,0.3)]">
             <SearchForm />
           </div>
@@ -53,7 +53,7 @@ export const PetfinderDemo: FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-8 space-y-10">
             {state.animals.length > 0 && (
-              <div className="bg-gradient-to-b from-gray-900/80 to-gray-900/60 backdrop-blur-xl rounded-3xl overflow-hidden border border-cyan-500/20 shadow-[0_0_20px_rgba(6,182,212,0.3)] transform hover:scale-[1.01] transition-transform duration-300">
+              <div className="bg-gradient-to-b from-gray-900/80 to-gray-900/60 backdrop-blur-xl rounded-3xl overflow-hidden border border-cyan-500/20 shadow-[0_0_20px_rgba(6,182,212,0.3)] transform transition-transform duration-300">
                 <div className="p-5 border-b border-cyan-500/20">
                   <h2 className="text-xl font-bold text-white flex items-center">
                     <svg className="w-5 h-5 mr-2 text-cyan-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -71,7 +71,7 @@ export const PetfinderDemo: FC = () => {
               </div>
             )}
             
-            <div className="bg-gradient-to-b from-gray-900/80 to-gray-900/60 backdrop-blur-xl rounded-3xl overflow-hidden border border-fuchsia-500/20 shadow-[0_0_20px_rgba(192,38,211,0.3)] transform hover:scale-[1.01] transition-transform duration-300">
+            <div className="bg-gradient-to-b from-gray-900/80 to-gray-900/60 backdrop-blur-xl rounded-3xl overflow-hidden border border-fuchsia-500/20 shadow-[0_0_20px_rgba(192,38,211,0.3)] transform  transition-transform duration-300">
               <div className="p-5 border-b border-fuchsia-500/20">
                 <h2 className="text-xl font-bold text-white flex items-center">
                   <svg className="w-5 h-5 mr-2 text-fuchsia-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -87,7 +87,7 @@ export const PetfinderDemo: FC = () => {
           </div>
           
           <div className="lg:col-span-4">
-            <div className="bg-gradient-to-b from-gray-900/80 to-gray-900/60 backdrop-blur-xl rounded-3xl overflow-hidden border border-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.3)] transform hover:scale-[1.01] transition-transform duration-300 sticky top-8">
+            <div className="bg-gradient-to-b from-gray-900/80 to-gray-900/60 backdrop-blur-xl rounded-3xl overflow-hidden border border-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.3)] transform  transition-transform duration-300 sticky top-8">
               <div className="p-5 border-b border-blue-500/20">
                 <h2 className="text-xl font-bold text-white flex items-center">
                   <svg className="w-5 h-5 mr-2 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
