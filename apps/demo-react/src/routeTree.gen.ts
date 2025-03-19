@@ -23,7 +23,6 @@ import { Route as DemoPetfinderImport } from './routes/demo/petfinder'
 import { Route as DemoInstanceManagementImport } from './routes/demo/instance-management'
 import { Route as DemoDependencyTrackingImport } from './routes/demo/dependency-tracking'
 import { Route as DemoCounterImport } from './routes/demo/counter'
-import { Route as DemoBlacFeaturesImport } from './routes/demo/blac-features'
 import { Route as DocsBlacReactUseBlocImport } from './routes/docs/blac-react/use-bloc'
 import { Route as DocsBlacNextCubitImport } from './routes/docs/blac-next/cubit'
 
@@ -101,12 +100,6 @@ const DemoCounterRoute = DemoCounterImport.update({
   getParentRoute: () => DemoRoute,
 } as any)
 
-const DemoBlacFeaturesRoute = DemoBlacFeaturesImport.update({
-  id: '/blac-features',
-  path: '/blac-features',
-  getParentRoute: () => DemoRoute,
-} as any)
-
 const DocsBlacReactUseBlocRoute = DocsBlacReactUseBlocImport.update({
   id: '/blac-react/use-bloc',
   path: '/blac-react/use-bloc',
@@ -143,13 +136,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/docs'
       preLoaderRoute: typeof DocsImport
       parentRoute: typeof rootRoute
-    }
-    '/demo/blac-features': {
-      id: '/demo/blac-features'
-      path: '/blac-features'
-      fullPath: '/demo/blac-features'
-      preLoaderRoute: typeof DemoBlacFeaturesImport
-      parentRoute: typeof DemoImport
     }
     '/demo/counter': {
       id: '/demo/counter'
@@ -234,7 +220,6 @@ declare module '@tanstack/react-router' {
 // Create and export the route tree
 
 interface DemoRouteChildren {
-  DemoBlacFeaturesRoute: typeof DemoBlacFeaturesRoute
   DemoCounterRoute: typeof DemoCounterRoute
   DemoDependencyTrackingRoute: typeof DemoDependencyTrackingRoute
   DemoInstanceManagementRoute: typeof DemoInstanceManagementRoute
@@ -243,7 +228,6 @@ interface DemoRouteChildren {
 }
 
 const DemoRouteChildren: DemoRouteChildren = {
-  DemoBlacFeaturesRoute: DemoBlacFeaturesRoute,
   DemoCounterRoute: DemoCounterRoute,
   DemoDependencyTrackingRoute: DemoDependencyTrackingRoute,
   DemoInstanceManagementRoute: DemoInstanceManagementRoute,
@@ -277,7 +261,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/demo': typeof DemoRouteWithChildren
   '/docs': typeof DocsRouteWithChildren
-  '/demo/blac-features': typeof DemoBlacFeaturesRoute
   '/demo/counter': typeof DemoCounterRoute
   '/demo/dependency-tracking': typeof DemoDependencyTrackingRoute
   '/demo/instance-management': typeof DemoInstanceManagementRoute
@@ -294,7 +277,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/demo': typeof DemoRouteWithChildren
-  '/demo/blac-features': typeof DemoBlacFeaturesRoute
   '/demo/counter': typeof DemoCounterRoute
   '/demo/dependency-tracking': typeof DemoDependencyTrackingRoute
   '/demo/instance-management': typeof DemoInstanceManagementRoute
@@ -313,7 +295,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/demo': typeof DemoRouteWithChildren
   '/docs': typeof DocsRouteWithChildren
-  '/demo/blac-features': typeof DemoBlacFeaturesRoute
   '/demo/counter': typeof DemoCounterRoute
   '/demo/dependency-tracking': typeof DemoDependencyTrackingRoute
   '/demo/instance-management': typeof DemoInstanceManagementRoute
@@ -333,7 +314,6 @@ export interface FileRouteTypes {
     | '/'
     | '/demo'
     | '/docs'
-    | '/demo/blac-features'
     | '/demo/counter'
     | '/demo/dependency-tracking'
     | '/demo/instance-management'
@@ -349,7 +329,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/demo'
-    | '/demo/blac-features'
     | '/demo/counter'
     | '/demo/dependency-tracking'
     | '/demo/instance-management'
@@ -366,7 +345,6 @@ export interface FileRouteTypes {
     | '/'
     | '/demo'
     | '/docs'
-    | '/demo/blac-features'
     | '/demo/counter'
     | '/demo/dependency-tracking'
     | '/demo/instance-management'
@@ -414,7 +392,6 @@ export const routeTree = rootRoute
     "/demo": {
       "filePath": "demo.tsx",
       "children": [
-        "/demo/blac-features",
         "/demo/counter",
         "/demo/dependency-tracking",
         "/demo/instance-management",
@@ -432,10 +409,6 @@ export const routeTree = rootRoute
         "/docs/blac-next/cubit",
         "/docs/blac-react/use-bloc"
       ]
-    },
-    "/demo/blac-features": {
-      "filePath": "demo/blac-features.tsx",
-      "parent": "/demo"
     },
     "/demo/counter": {
       "filePath": "demo/counter.tsx",
