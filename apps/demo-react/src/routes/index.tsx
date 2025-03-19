@@ -53,12 +53,12 @@ function Index() {
               <path d="M10 6h8v4h-8V6Z"></path>
             </svg>
           </div>
-          <h2 className="text-2xl font-semibold mb-4 text-gradient-blue">Form Demo</h2>
-          <p className="dark:text-blue-100/80 text-slate-600 mb-6">
-            Experience efficient form handling with blac's state management. See how component re-rendering is optimized.
+          <h2 className="text-2xl font-semibold mb-4 text-gradient-blue">Dependency Tracking Demo</h2>
+          <p className="dark:text-cyan-100/80 text-slate-600 mb-6">
+            Experience intelligent dependency tracking with blac's granular reactivity. See how components re-render only when needed.
           </p>
-          <Link to="/demo/form" className="text-gradient-blue inline-flex items-center gap-2 hover:text-glow font-medium">
-            Try the Form
+          <Link to="/demo/dependency-tracking" className="text-gradient-blue inline-flex items-center gap-2 hover:text-glow font-medium">
+            Try Dependency Tracking
             <svg className="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
             </svg>

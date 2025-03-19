@@ -21,6 +21,7 @@ export const Route = createRootRoute({
               <div className="text-xl font-bold text-gradient-multi mr-4 animate-text-shimmer">blac Demo</div>
               <PrettyLink to="/" variant="cyan">Home</PrettyLink>
               <PrettyLink to="/demo" variant="fuchsia">Demo</PrettyLink>
+              <PrettyLink to="/docs" variant="blue">Docs</PrettyLink>
             </div>
             <div className="flex items-center gap-4">
               <ThemeToggle />

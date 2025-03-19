@@ -11,14 +11,29 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as DocsImport } from './routes/docs'
 import { Route as DemoImport } from './routes/demo'
 import { Route as IndexImport } from './routes/index'
+import { Route as DocsIndexImport } from './routes/docs/index'
+import { Route as DocsIntroductionImport } from './routes/docs/introduction'
+import { Route as DocsInstallationImport } from './routes/docs/installation'
+import { Route as DocsCoreConceptsImport } from './routes/docs/core-concepts'
 import { Route as DemoTaskboardImport } from './routes/demo/taskboard'
 import { Route as DemoPetfinderImport } from './routes/demo/petfinder'
-import { Route as DemoFormImport } from './routes/demo/form'
+import { Route as DemoInstanceManagementImport } from './routes/demo/instance-management'
+import { Route as DemoDependencyTrackingImport } from './routes/demo/dependency-tracking'
 import { Route as DemoCounterImport } from './routes/demo/counter'
+import { Route as DemoBlacFeaturesImport } from './routes/demo/blac-features'
+import { Route as DocsBlacReactUseBlocImport } from './routes/docs/blac-react/use-bloc'
+import { Route as DocsBlacNextCubitImport } from './routes/docs/blac-next/cubit'
 
 // Create/Update Routes
+
+const DocsRoute = DocsImport.update({
+  id: '/docs',
+  path: '/docs',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const DemoRoute = DemoImport.update({
   id: '/demo',
@@ -30,6 +45,30 @@ const IndexRoute = IndexImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRoute,
+} as any)
+
+const DocsIndexRoute = DocsIndexImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DocsRoute,
+} as any)
+
+const DocsIntroductionRoute = DocsIntroductionImport.update({
+  id: '/introduction',
+  path: '/introduction',
+  getParentRoute: () => DocsRoute,
+} as any)
+
+const DocsInstallationRoute = DocsInstallationImport.update({
+  id: '/installation',
+  path: '/installation',
+  getParentRoute: () => DocsRoute,
+} as any)
+
+const DocsCoreConceptsRoute = DocsCoreConceptsImport.update({
+  id: '/core-concepts',
+  path: '/core-concepts',
+  getParentRoute: () => DocsRoute,
 } as any)
 
 const DemoTaskboardRoute = DemoTaskboardImport.update({
@@ -44,9 +83,15 @@ const DemoPetfinderRoute = DemoPetfinderImport.update({
   getParentRoute: () => DemoRoute,
 } as any)
 
-const DemoFormRoute = DemoFormImport.update({
-  id: '/form',
-  path: '/form',
+const DemoInstanceManagementRoute = DemoInstanceManagementImport.update({
+  id: '/instance-management',
+  path: '/instance-management',
+  getParentRoute: () => DemoRoute,
+} as any)
+
+const DemoDependencyTrackingRoute = DemoDependencyTrackingImport.update({
+  id: '/dependency-tracking',
+  path: '/dependency-tracking',
   getParentRoute: () => DemoRoute,
 } as any)
 
@@ -54,6 +99,24 @@ const DemoCounterRoute = DemoCounterImport.update({
   id: '/counter',
   path: '/counter',
   getParentRoute: () => DemoRoute,
+} as any)
+
+const DemoBlacFeaturesRoute = DemoBlacFeaturesImport.update({
+  id: '/blac-features',
+  path: '/blac-features',
+  getParentRoute: () => DemoRoute,
+} as any)
+
+const DocsBlacReactUseBlocRoute = DocsBlacReactUseBlocImport.update({
+  id: '/blac-react/use-bloc',
+  path: '/blac-react/use-bloc',
+  getParentRoute: () => DocsRoute,
+} as any)
+
+const DocsBlacNextCubitRoute = DocsBlacNextCubitImport.update({
+  id: '/blac-next/cubit',
+  path: '/blac-next/cubit',
+  getParentRoute: () => DocsRoute,
 } as any)
 
 // Populate the FileRoutesByPath interface
@@ -74,6 +137,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoImport
       parentRoute: typeof rootRoute
     }
+    '/docs': {
+      id: '/docs'
+      path: '/docs'
+      fullPath: '/docs'
+      preLoaderRoute: typeof DocsImport
+      parentRoute: typeof rootRoute
+    }
+    '/demo/blac-features': {
+      id: '/demo/blac-features'
+      path: '/blac-features'
+      fullPath: '/demo/blac-features'
+      preLoaderRoute: typeof DemoBlacFeaturesImport
+      parentRoute: typeof DemoImport
+    }
     '/demo/counter': {
       id: '/demo/counter'
       path: '/counter'
@@ -81,11 +158,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoCounterImport
       parentRoute: typeof DemoImport
     }
-    '/demo/form': {
-      id: '/demo/form'
-      path: '/form'
-      fullPath: '/demo/form'
-      preLoaderRoute: typeof DemoFormImport
+    '/demo/dependency-tracking': {
+      id: '/demo/dependency-tracking'
+      path: '/dependency-tracking'
+      fullPath: '/demo/dependency-tracking'
+      preLoaderRoute: typeof DemoDependencyTrackingImport
+      parentRoute: typeof DemoImport
+    }
+    '/demo/instance-management': {
+      id: '/demo/instance-management'
+      path: '/instance-management'
+      fullPath: '/demo/instance-management'
+      preLoaderRoute: typeof DemoInstanceManagementImport
       parentRoute: typeof DemoImport
     }
     '/demo/petfinder': {
@@ -102,53 +186,145 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoTaskboardImport
       parentRoute: typeof DemoImport
     }
+    '/docs/core-concepts': {
+      id: '/docs/core-concepts'
+      path: '/core-concepts'
+      fullPath: '/docs/core-concepts'
+      preLoaderRoute: typeof DocsCoreConceptsImport
+      parentRoute: typeof DocsImport
+    }
+    '/docs/installation': {
+      id: '/docs/installation'
+      path: '/installation'
+      fullPath: '/docs/installation'
+      preLoaderRoute: typeof DocsInstallationImport
+      parentRoute: typeof DocsImport
+    }
+    '/docs/introduction': {
+      id: '/docs/introduction'
+      path: '/introduction'
+      fullPath: '/docs/introduction'
+      preLoaderRoute: typeof DocsIntroductionImport
+      parentRoute: typeof DocsImport
+    }
+    '/docs/': {
+      id: '/docs/'
+      path: '/'
+      fullPath: '/docs/'
+      preLoaderRoute: typeof DocsIndexImport
+      parentRoute: typeof DocsImport
+    }
+    '/docs/blac-next/cubit': {
+      id: '/docs/blac-next/cubit'
+      path: '/blac-next/cubit'
+      fullPath: '/docs/blac-next/cubit'
+      preLoaderRoute: typeof DocsBlacNextCubitImport
+      parentRoute: typeof DocsImport
+    }
+    '/docs/blac-react/use-bloc': {
+      id: '/docs/blac-react/use-bloc'
+      path: '/blac-react/use-bloc'
+      fullPath: '/docs/blac-react/use-bloc'
+      preLoaderRoute: typeof DocsBlacReactUseBlocImport
+      parentRoute: typeof DocsImport
+    }
   }
 }
 
 // Create and export the route tree
 
 interface DemoRouteChildren {
+  DemoBlacFeaturesRoute: typeof DemoBlacFeaturesRoute
   DemoCounterRoute: typeof DemoCounterRoute
-  DemoFormRoute: typeof DemoFormRoute
+  DemoDependencyTrackingRoute: typeof DemoDependencyTrackingRoute
+  DemoInstanceManagementRoute: typeof DemoInstanceManagementRoute
   DemoPetfinderRoute: typeof DemoPetfinderRoute
   DemoTaskboardRoute: typeof DemoTaskboardRoute
 }
 
 const DemoRouteChildren: DemoRouteChildren = {
+  DemoBlacFeaturesRoute: DemoBlacFeaturesRoute,
   DemoCounterRoute: DemoCounterRoute,
-  DemoFormRoute: DemoFormRoute,
+  DemoDependencyTrackingRoute: DemoDependencyTrackingRoute,
+  DemoInstanceManagementRoute: DemoInstanceManagementRoute,
   DemoPetfinderRoute: DemoPetfinderRoute,
   DemoTaskboardRoute: DemoTaskboardRoute,
 }
 
 const DemoRouteWithChildren = DemoRoute._addFileChildren(DemoRouteChildren)
 
+interface DocsRouteChildren {
+  DocsCoreConceptsRoute: typeof DocsCoreConceptsRoute
+  DocsInstallationRoute: typeof DocsInstallationRoute
+  DocsIntroductionRoute: typeof DocsIntroductionRoute
+  DocsIndexRoute: typeof DocsIndexRoute
+  DocsBlacNextCubitRoute: typeof DocsBlacNextCubitRoute
+  DocsBlacReactUseBlocRoute: typeof DocsBlacReactUseBlocRoute
+}
+
+const DocsRouteChildren: DocsRouteChildren = {
+  DocsCoreConceptsRoute: DocsCoreConceptsRoute,
+  DocsInstallationRoute: DocsInstallationRoute,
+  DocsIntroductionRoute: DocsIntroductionRoute,
+  DocsIndexRoute: DocsIndexRoute,
+  DocsBlacNextCubitRoute: DocsBlacNextCubitRoute,
+  DocsBlacReactUseBlocRoute: DocsBlacReactUseBlocRoute,
+}
+
+const DocsRouteWithChildren = DocsRoute._addFileChildren(DocsRouteChildren)
+
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/demo': typeof DemoRouteWithChildren
+  '/docs': typeof DocsRouteWithChildren
+  '/demo/blac-features': typeof DemoBlacFeaturesRoute
   '/demo/counter': typeof DemoCounterRoute
-  '/demo/form': typeof DemoFormRoute
+  '/demo/dependency-tracking': typeof DemoDependencyTrackingRoute
+  '/demo/instance-management': typeof DemoInstanceManagementRoute
   '/demo/petfinder': typeof DemoPetfinderRoute
   '/demo/taskboard': typeof DemoTaskboardRoute
+  '/docs/core-concepts': typeof DocsCoreConceptsRoute
+  '/docs/installation': typeof DocsInstallationRoute
+  '/docs/introduction': typeof DocsIntroductionRoute
+  '/docs/': typeof DocsIndexRoute
+  '/docs/blac-next/cubit': typeof DocsBlacNextCubitRoute
+  '/docs/blac-react/use-bloc': typeof DocsBlacReactUseBlocRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/demo': typeof DemoRouteWithChildren
+  '/demo/blac-features': typeof DemoBlacFeaturesRoute
   '/demo/counter': typeof DemoCounterRoute
-  '/demo/form': typeof DemoFormRoute
+  '/demo/dependency-tracking': typeof DemoDependencyTrackingRoute
+  '/demo/instance-management': typeof DemoInstanceManagementRoute
   '/demo/petfinder': typeof DemoPetfinderRoute
   '/demo/taskboard': typeof DemoTaskboardRoute
+  '/docs/core-concepts': typeof DocsCoreConceptsRoute
+  '/docs/installation': typeof DocsInstallationRoute
+  '/docs/introduction': typeof DocsIntroductionRoute
+  '/docs': typeof DocsIndexRoute
+  '/docs/blac-next/cubit': typeof DocsBlacNextCubitRoute
+  '/docs/blac-react/use-bloc': typeof DocsBlacReactUseBlocRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
   '/demo': typeof DemoRouteWithChildren
+  '/docs': typeof DocsRouteWithChildren
+  '/demo/blac-features': typeof DemoBlacFeaturesRoute
   '/demo/counter': typeof DemoCounterRoute
-  '/demo/form': typeof DemoFormRoute
+  '/demo/dependency-tracking': typeof DemoDependencyTrackingRoute
+  '/demo/instance-management': typeof DemoInstanceManagementRoute
   '/demo/petfinder': typeof DemoPetfinderRoute
   '/demo/taskboard': typeof DemoTaskboardRoute
+  '/docs/core-concepts': typeof DocsCoreConceptsRoute
+  '/docs/installation': typeof DocsInstallationRoute
+  '/docs/introduction': typeof DocsIntroductionRoute
+  '/docs/': typeof DocsIndexRoute
+  '/docs/blac-next/cubit': typeof DocsBlacNextCubitRoute
+  '/docs/blac-react/use-bloc': typeof DocsBlacReactUseBlocRoute
 }
 
 export interface FileRouteTypes {
@@ -156,37 +332,65 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/demo'
+    | '/docs'
+    | '/demo/blac-features'
     | '/demo/counter'
-    | '/demo/form'
+    | '/demo/dependency-tracking'
+    | '/demo/instance-management'
     | '/demo/petfinder'
     | '/demo/taskboard'
+    | '/docs/core-concepts'
+    | '/docs/installation'
+    | '/docs/introduction'
+    | '/docs/'
+    | '/docs/blac-next/cubit'
+    | '/docs/blac-react/use-bloc'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/demo'
+    | '/demo/blac-features'
     | '/demo/counter'
-    | '/demo/form'
+    | '/demo/dependency-tracking'
+    | '/demo/instance-management'
     | '/demo/petfinder'
     | '/demo/taskboard'
+    | '/docs/core-concepts'
+    | '/docs/installation'
+    | '/docs/introduction'
+    | '/docs'
+    | '/docs/blac-next/cubit'
+    | '/docs/blac-react/use-bloc'
   id:
     | '__root__'
     | '/'
     | '/demo'
+    | '/docs'
+    | '/demo/blac-features'
     | '/demo/counter'
-    | '/demo/form'
+    | '/demo/dependency-tracking'
+    | '/demo/instance-management'
     | '/demo/petfinder'
     | '/demo/taskboard'
+    | '/docs/core-concepts'
+    | '/docs/installation'
+    | '/docs/introduction'
+    | '/docs/'
+    | '/docs/blac-next/cubit'
+    | '/docs/blac-react/use-bloc'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DemoRoute: typeof DemoRouteWithChildren
+  DocsRoute: typeof DocsRouteWithChildren
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DemoRoute: DemoRouteWithChildren,
+  DocsRoute: DocsRouteWithChildren,
 }
 
 export const routeTree = rootRoute
@@ -200,7 +404,8 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
-        "/demo"
+        "/demo",
+        "/docs"
       ]
     },
     "/": {
@@ -209,18 +414,39 @@ export const routeTree = rootRoute
     "/demo": {
       "filePath": "demo.tsx",
       "children": [
+        "/demo/blac-features",
         "/demo/counter",
-        "/demo/form",
+        "/demo/dependency-tracking",
+        "/demo/instance-management",
         "/demo/petfinder",
         "/demo/taskboard"
       ]
+    },
+    "/docs": {
+      "filePath": "docs.tsx",
+      "children": [
+        "/docs/core-concepts",
+        "/docs/installation",
+        "/docs/introduction",
+        "/docs/",
+        "/docs/blac-next/cubit",
+        "/docs/blac-react/use-bloc"
+      ]
+    },
+    "/demo/blac-features": {
+      "filePath": "demo/blac-features.tsx",
+      "parent": "/demo"
     },
     "/demo/counter": {
       "filePath": "demo/counter.tsx",
       "parent": "/demo"
     },
-    "/demo/form": {
-      "filePath": "demo/form.tsx",
+    "/demo/dependency-tracking": {
+      "filePath": "demo/dependency-tracking.tsx",
+      "parent": "/demo"
+    },
+    "/demo/instance-management": {
+      "filePath": "demo/instance-management.tsx",
       "parent": "/demo"
     },
     "/demo/petfinder": {
@@ -230,6 +456,30 @@ export const routeTree = rootRoute
     "/demo/taskboard": {
       "filePath": "demo/taskboard.tsx",
       "parent": "/demo"
+    },
+    "/docs/core-concepts": {
+      "filePath": "docs/core-concepts.tsx",
+      "parent": "/docs"
+    },
+    "/docs/installation": {
+      "filePath": "docs/installation.tsx",
+      "parent": "/docs"
+    },
+    "/docs/introduction": {
+      "filePath": "docs/introduction.tsx",
+      "parent": "/docs"
+    },
+    "/docs/": {
+      "filePath": "docs/index.tsx",
+      "parent": "/docs"
+    },
+    "/docs/blac-next/cubit": {
+      "filePath": "docs/blac-next/cubit.tsx",
+      "parent": "/docs"
+    },
+    "/docs/blac-react/use-bloc": {
+      "filePath": "docs/blac-react/use-bloc.tsx",
+      "parent": "/docs"
     }
   }
 }
