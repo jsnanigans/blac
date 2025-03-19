@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { Cubit } from 'blac-next';
 import { useBloc } from '@blac/react';
+import CodeHighlighter from '../../components/CodeHighlighter';
 
 export const Route = createFileRoute('/demo/counter')({
   component: RouteComponent,
@@ -204,14 +205,15 @@ function RouteComponent() {
             By default, all components using the same Cubit/Bloc class will share the same instance and state.
             This is perfect for global application state that needs to be synchronized across components.
           </p>
-          <pre className="mt-4 p-4 bg-gray-900 text-gray-100 rounded-lg overflow-x-auto text-sm shadow-inner shadow-cyan-900/10">
-{`class CounterCubit extends Cubit<number> {
+          <CodeHighlighter 
+            code={`class CounterCubit extends Cubit<number> {
   // No static flags needed for shared state - it's the default!
   constructor() {
     super(0);
   }
 }`}
-          </pre>
+            theme="cyan"
+          />
         </div>
         
         <p className="text-gray-600 dark:text-gray-300 mb-6 text-center">
@@ -234,15 +236,16 @@ function RouteComponent() {
             When you need component-specific state, use the <code className="bg-gray-800 px-2 py-1 rounded text-sm font-mono text-green-400">isolated</code> flag.
             Each component will receive its own instance, perfect for independent UI controls.
           </p>
-          <pre className="mt-4 p-4 bg-gray-900 text-gray-100 rounded-lg overflow-x-auto text-sm shadow-inner shadow-green-900/10">
-{`class IsolatedCounterCubit extends Cubit<number> {
+          <CodeHighlighter 
+            code={`class IsolatedCounterCubit extends Cubit<number> {
   static isolated = true; // Each consumer gets its own instance
   
   constructor() {
     super(0);
   }
 }`}
-          </pre>
+            theme="green"
+          />
         </div>
         
         <p className="text-gray-600 dark:text-gray-300 mb-6 text-center">
@@ -258,93 +261,130 @@ function RouteComponent() {
       </section>
 
       <section className="card-neon-fuchsia p-8 rounded-xl shadow-lg shadow-fuchsia-500/20">
-        <div className="flex flex-col sm:flex-row items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gradient-fuchsia text-center mb-4 sm:mb-0">3. Keep-Alive State</h2>
-          <button
-            className="btn-neon-fuchsia px-6 py-2 text-lg font-medium rounded-lg border border-fuchsia-500/30 bg-fuchsia-500/10 hover:bg-fuchsia-500/20 transition-all shadow-sm shadow-fuchsia-500/20"
-            onClick={() => setShowKeepAlive((prev) => !prev)}
-          >
-            {showKeepAlive ? 'Hide Counters' : 'Show Counters'}
-          </button>
-        </div>
+        <h2 className="text-2xl font-bold mb-6 text-gradient-fuchsia text-center">3. Keep-Alive State</h2>
         
         <div className="bg-fuchsia-500/5 dark:bg-fuchsia-500/10 p-6 rounded-xl border border-fuchsia-300/20 dark:border-fuchsia-700/30 mb-6 shadow-inner shadow-fuchsia-500/10">
           <p className="text-gray-700 dark:text-gray-300">
-            Use <code className="bg-gray-800 px-2 py-1 rounded text-sm font-mono text-fuchsia-400">keepAlive</code> when you need state to persist even when components unmount.
-            This is ideal for preserving state during navigation or conditional rendering.
+            When you need state to persist even when there are no consumers, use the <code className="bg-gray-800 px-2 py-1 rounded text-sm font-mono text-fuchsia-400">keepAlive</code> flag.
+            This is useful for caching or preserving user input between component mounts.
           </p>
-          <pre className="mt-4 p-4 bg-gray-900 text-gray-100 rounded-lg overflow-x-auto text-sm shadow-inner shadow-fuchsia-900/10">
-{`class KeepAliveCounterCubit extends Cubit<number> {
-  static keepAlive = true; // State persists even without active consumers
+          <CodeHighlighter 
+            code={`class KeepAliveCounterCubit extends Cubit<number> {
+  static keepAlive = true; // State persists even when there are no consumers
   
   constructor() {
     super(0);
   }
 }`}
-          </pre>
+            theme="fuchsia"
+          />
         </div>
         
         <p className="text-gray-600 dark:text-gray-300 mb-6 text-center">
-          Try toggling the visibility of these counters. Their state will be preserved even when they're hidden.
+          Toggle these counters to see how their state persists even when unmounted.
         </p>
         
-        {showKeepAlive && (
-          <div className="flex flex-wrap gap-6 justify-center py-4">
-            <KeepAliveCounter />
-            <KeepAliveCounter />
-          </div>
-        )}
-        
-        <div className="mt-6 bg-yellow-500/5 dark:bg-yellow-500/10 p-6 rounded-xl border border-yellow-300/20 dark:border-yellow-700/30 shadow-inner shadow-yellow-500/10">
-          <p className="text-gray-700 dark:text-gray-300">
-            <strong className="text-gradient-yellow">Pro tip:</strong> The counter value persists even when the components are hidden because the <code className="bg-gray-800 px-2 py-1 rounded text-sm font-mono text-yellow-400">keepAlive</code> flag prevents the bloc from being disposed when there are no active consumers.
-          </p>
+        <div className="flex flex-col items-center gap-6 py-4">
+          <button 
+            onClick={() => setShowKeepAlive(prev => !prev)}
+            className="btn-neon-fuchsia px-6 py-2 text-lg font-medium rounded-lg border border-fuchsia-500/30 bg-fuchsia-500/10 hover:bg-fuchsia-500/20 transition-all shadow-sm shadow-fuchsia-500/20"
+          >
+            {showKeepAlive ? 'Hide' : 'Show'} Counters
+          </button>
+          
+          {showKeepAlive && (
+            <div className="flex flex-wrap gap-6 justify-center">
+              <KeepAliveCounter />
+              <KeepAliveCounter />
+              <KeepAliveCounter />
+              <KeepAliveCounter />
+            </div>
+          )}
         </div>
       </section>
 
       <section className="card-neon-blue p-8 rounded-xl shadow-lg shadow-blue-500/20">
-        <h2 className="text-2xl font-bold mb-6 text-gradient-blue text-center">4. Custom ID Sharing</h2>
+        <h2 className="text-2xl font-bold mb-6 text-gradient-blue text-center">4. Custom ID Instances</h2>
         
         <div className="bg-blue-500/5 dark:bg-blue-500/10 p-6 rounded-xl border border-blue-300/20 dark:border-blue-700/30 mb-6 shadow-inner shadow-blue-500/10">
           <p className="text-gray-700 dark:text-gray-300">
-            Using custom IDs lets you create multiple independent shared instances of the same bloc class.
-            Components with the same ID will share state, while different IDs maintain separate state.
+            For more control, you can provide a custom instance ID. Components using the same ID will share state, regardless of class.
+            This is useful for coordinating state between different parts of your UI.
           </p>
-          <pre className="mt-4 p-4 bg-gray-900 text-gray-100 rounded-lg overflow-x-auto text-sm shadow-inner shadow-blue-900/10">
-{`// In your component:
-const [state, bloc] = useBloc(CounterCubit, { 
-  id: 'group-a' // Components with the same ID share state
-});`}
-          </pre>
+          <CodeHighlighter 
+            code={`// In component A
+const [count, counterCubit] = useBloc(CounterCubit, { id: 'shared-counter' });
+
+// In component B (even in a different part of the app)
+const [count, counterCubit] = useBloc(CounterCubit, { id: 'shared-counter' });
+// Both components will share the same state instance`}
+            theme="blue"
+          />
         </div>
         
         <p className="text-gray-600 dark:text-gray-300 mb-6 text-center">
-          These counters demonstrate custom ID sharing. Counters with the same ID share state, while different IDs maintain separate state.
+          These counters show how custom IDs create multiple shared state instances.
+          Counters with the same ID share state, while different IDs maintain separate state.
         </p>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="card-neon-blue p-6 rounded-xl shadow-md shadow-blue-500/20">
             <h3 className="text-xl font-bold mb-4 text-gradient-blue text-center">Group A</h3>
             <div className="flex flex-wrap gap-6 justify-center">
-              <CustomIdCounter id="group-a" />
-              <CustomIdCounter id="group-a" />
+              <CustomIdCounter id="counter-A" />
+              <CustomIdCounter id="counter-A" /> {/* Shares state with the first counter */}
             </div>
+            <p className="text-sm text-center mt-4 text-blue-700 dark:text-blue-300">
+              Both counters share state via ID: "counter-A"
+            </p>
           </div>
           
           <div className="card-neon-blue p-6 rounded-xl shadow-md shadow-blue-500/20">
             <h3 className="text-xl font-bold mb-4 text-gradient-blue text-center">Group B</h3>
             <div className="flex flex-wrap gap-6 justify-center">
-              <CustomIdCounter id="group-b" />
-              <CustomIdCounter id="group-b" />
+              <CustomIdCounter id="counter-B" />
+              <CustomIdCounter id="counter-B" /> {/* Shares state with the third counter */}
             </div>
+            <p className="text-sm text-center mt-4 text-blue-700 dark:text-blue-300">
+              Both counters share state via ID: "counter-B"
+            </p>
           </div>
         </div>
-        
-        <div className="mt-8 bg-yellow-500/5 dark:bg-yellow-500/10 p-6 rounded-xl border border-yellow-300/20 dark:border-yellow-700/30 shadow-inner shadow-yellow-500/10">
-          <p className="text-gray-700 dark:text-gray-300">
-            <strong className="text-gradient-yellow">Real-world example:</strong> Custom IDs are perfect for scenarios like a chat application with multiple chat rooms.
-            Each room can have its own state instance while using the same bloc class.
-          </p>
+
+        <div className="mt-8 bg-yellow-50 dark:bg-yellow-900/20 p-6 rounded-xl border border-yellow-300/20 dark:border-yellow-700/30 shadow-inner shadow-yellow-500/10">
+          <h3 className="text-lg font-bold mb-3 text-gradient-yellow">Real-World Applications</h3>
+          <ul className="space-y-4 list-disc pl-5">
+            <li>
+              <strong>Chat Application:</strong> Create a separate bloc instance for each conversation thread 
+              using the conversation ID, allowing different parts of the UI (message list, input area, typing 
+              indicators) to share the same state for that conversation.
+              <CodeHighlighter 
+                code={`// In the conversation header
+const [conversation, conversationBloc] = useBloc(ConversationBloc, { id: \`conversation-\${conversationId}\` });
+
+// In the message list component
+const [conversation, conversationBloc] = useBloc(ConversationBloc, { id: \`conversation-\${conversationId}\` });
+
+// In the message input component
+const [conversation, conversationBloc] = useBloc(ConversationBloc, { id: \`conversation-\${conversationId}\` });`}
+                theme="blue"
+                showLineNumbers={false}
+                className="mt-2"
+              />
+            </li>
+            <li>
+              <strong>E-commerce Product Pages:</strong> Share product state (inventory, pricing, options) 
+              between different components (gallery, options selector, add-to-cart section) using the product ID.
+            </li>
+            <li>
+              <strong>Form Wizards:</strong> Maintain state for a multi-step form across different pages or tabs 
+              using a form session ID, making it easy to persist values between steps.
+            </li>
+            <li>
+              <strong>Dashboard Widgets:</strong> Create multiple instances of the same widget type (e.g., charts) 
+              where each has its own independent state, based on a widget instance ID.
+            </li>
+          </ul>
         </div>
       </section>
     </div>

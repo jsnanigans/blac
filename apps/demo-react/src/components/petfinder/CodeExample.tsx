@@ -1,4 +1,5 @@
 import { FC } from 'react';
+import CodeHighlighter from '../CodeHighlighter';
 
 /**
  * A component for displaying code examples with a title and description
@@ -8,9 +9,17 @@ interface CodeExampleProps {
   title: string;
   description: string;
   code: string;
+  language?: string;
+  showLineNumbers?: boolean;
 }
 
-export const CodeExample: FC<CodeExampleProps> = ({ title, description, code }) => {
+export const CodeExample: FC<CodeExampleProps> = ({ 
+  title, 
+  description, 
+  code, 
+  language = 'typescript',
+  showLineNumbers = true 
+}) => {
   return (
     <section className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
       <div className="mb-4">
@@ -18,11 +27,12 @@ export const CodeExample: FC<CodeExampleProps> = ({ title, description, code }) 
         <p className="text-gray-600 dark:text-gray-300 mt-1">{description}</p>
       </div>
       
-      <div className="relative">
-        <pre className="p-4 bg-gray-900 text-gray-50 rounded-lg overflow-auto max-h-[300px]">
-          <code className="text-sm font-mono">{code}</code>
-        </pre>
-      </div>
+      <CodeHighlighter
+        code={code}
+        language={language}
+        showLineNumbers={showLineNumbers}
+        className="mt-0"
+      />
     </section>
   );
 };

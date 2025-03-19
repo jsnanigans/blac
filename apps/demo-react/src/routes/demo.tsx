@@ -15,7 +15,6 @@ function RouteComponent() {
           <PrettyLink to="/demo/counter" variant="cyan">Counter</PrettyLink>
           <PrettyLink to="/demo/dependency-tracking" variant="blue">Dependency Tracking</PrettyLink>
           <PrettyLink to="/demo/taskboard" variant="pink">Task Board</PrettyLink>
-          <PrettyLink to="/demo/blac-features" variant="pink">Features</PrettyLink>
           <PrettyLink 
             to="/demo/petfinder" 
             variant="fuchsia" 

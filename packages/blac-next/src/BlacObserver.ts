@@ -94,7 +94,7 @@ export class BlacObservable<S> {
           const partNew = newDependencyCheck[o];
           const partOld = lastDependencyCheck[o] || [];
           for (let i = 0; i < partNew.length; i++) {
-            if (partNew[i] !== partOld[i]) {
+            if (!Object.is(partNew[i], partOld[i])) {
               shouldUpdate = true;
               break;
             }

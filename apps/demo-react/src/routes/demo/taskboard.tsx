@@ -4,6 +4,7 @@ import { TaskBoard } from '../../components/TaskBoard';
 import { TaskBoardBloc } from '../../components/TaskBoard/TaskBoardBloc';
 import { Cubit } from 'blac-next';
 import { useState } from 'react';
+import CodeHighlighter from '../../components/CodeHighlighter';
 
 export const Route = createFileRoute('/demo/taskboard')({
   component: RouteComponent,
@@ -140,9 +141,12 @@ function ComputedPropertiesDemo() {
 // Code snippet component for highlighting code examples
 function CodeSnippet({ code }: { code: string }) {
   return (
-    <div className="bg-gray-800 text-white p-4 rounded-md font-mono text-sm overflow-auto">
-      <pre>{code}</pre>
-    </div>
+    <CodeHighlighter
+      code={code}
+      language="typescript"
+      showLineNumbers={true}
+      className="mt-0"
+    />
   );
 }
 

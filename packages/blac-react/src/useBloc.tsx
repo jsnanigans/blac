@@ -52,7 +52,7 @@ const defaultDependencySelector: BlocHookDependencyArrayFn<any> = (s) => [[s]];
 
 /**
  * React hook for integrating with Blac state management
- * 
+ *
  * This hook connects a React component to a Bloc state container, providing
  * automatic re-rendering when relevant state changes, dependency tracking,
  * and proper lifecycle management.
@@ -62,7 +62,7 @@ const defaultDependencySelector: BlocHookDependencyArrayFn<any> = (s) => [[s]];
  * @param {B} bloc - Bloc constructor class
  * @param {O} [options] - Configuration options for the hook
  * @returns {HookTypes<B>} Tuple containing [state, bloc instance]
- * 
+ *
  * @example
  * const [state, counterBloc] = useBloc(CounterBloc);
  * // Access state
@@ -142,26 +142,37 @@ export default function useBloc<
     }
 
     // Track used class properties for dependency tracking, this enables rerenders when class getters change
-    const usedClassValues: string[] = [];
+    const usedClassValues: unknown[] = [];
     for (const key of usedClassPropKeys.current) {
       if (key in resolvedBloc) {
-        const value = resolvedBloc[key as keyof InstanceType<B>];
-        if (typeof value === 'function') {
-          continue;
+        try {
+          const value = resolvedBloc[key as keyof InstanceType<B>];
+          switch (typeof value) {
+            case 'function':
+              continue;
+            default:
+              usedClassValues.push(value);
+              continue;
+          }
+        } catch (error) {
+          Blac.instance.log('useBloc Error', error);
         }
-        usedClassValues.push(value as any);
       }
     }
 
     setTimeout(() => {
-    instanceKeys.current = new Set();
-    instanceClassPropKeys.current = new Set();
-    })
+      instanceKeys.current = new Set();
+      instanceClassPropKeys.current = new Set();
+    });
     return [usedStateValues, usedClassValues];
   };
 
   // Set up external store subscription for state updates
-  const { subscribe, getSnapshot, getServerSnapshot } = externalBlocStore(resolvedBloc, dependencyArray, rid)
+  const { subscribe, getSnapshot, getServerSnapshot } = externalBlocStore(
+    resolvedBloc,
+    dependencyArray,
+    rid,
+  );
 
   // Subscribe to state changes using React's external store API
   const state = useSyncExternalStore<BlocState<InstanceType<B>>>(
@@ -202,7 +213,6 @@ export default function useBloc<
       },
     });
   }, [resolvedBloc]);
-
 
   // Clean up tracked keys after each render
   useLayoutEffect(() => {
