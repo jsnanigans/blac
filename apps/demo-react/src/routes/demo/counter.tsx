@@ -14,15 +14,15 @@ class CounterCubit extends Cubit<number> {
     super(0); // Initial state is 0
   }
 
-  increment() {
+  increment = () => {
     this.emit(this.state + 1);
   }
 
-  decrement() {
+  decrement = () => {
     this.emit(this.state - 1);
   }
 
-  reset() {
+  reset = () => {
     this.emit(0);
   }
 }
@@ -35,15 +35,15 @@ class IsolatedCounterCubit extends Cubit<number> {
     super(0);
   }
 
-  increment() {
+  increment = () => {
     this.emit(this.state + 1);
   }
 
-  decrement() {
+  decrement = () => {
     this.emit(this.state - 1);
   }
 
-  reset() {
+  reset = () => {
     this.emit(0);
   }
 }
@@ -56,15 +56,15 @@ class KeepAliveCounterCubit extends Cubit<number> {
     super(0);
   }
 
-  increment() {
+  increment = () => {
     this.emit(this.state + 1);
   }
 
-  decrement() {
+  decrement = () => {
     this.emit(this.state - 1);
   }
 
-  reset() {
+  reset = () => {
     this.emit(0);
   }
 }
@@ -205,14 +205,28 @@ function RouteComponent() {
             By default, all components using the same Cubit/Bloc class will share the same instance and state.
             This is perfect for global application state that needs to be synchronized across components.
           </p>
-          <CodeHighlighter 
+          <CodeHighlighter
             code={`class CounterCubit extends Cubit<number> {
-  // No static flags needed for shared state - it's the default!
   constructor() {
-    super(0);
+    super(0); // Initial state
+  }
+
+  // Use arrow functions for all methods
+  increment = () => {
+    this.emit(this.state + 1);
+  }
+  
+  decrement = () => {
+    this.emit(this.state - 1);
+  }
+  
+  reset = () => {
+    this.emit(0);
   }
 }`}
-            theme="cyan"
+            language="typescript"
+            showLineNumbers={true}
+            title="Simple Counter Cubit"
           />
         </div>
         
@@ -236,15 +250,30 @@ function RouteComponent() {
             When you need component-specific state, use the <code className="bg-gray-800 px-2 py-1 rounded text-sm font-mono text-green-400">isolated</code> flag.
             Each component will receive its own instance, perfect for independent UI controls.
           </p>
-          <CodeHighlighter 
+          <CodeHighlighter
             code={`class IsolatedCounterCubit extends Cubit<number> {
-  static isolated = true; // Each consumer gets its own instance
+  // This flag makes each component get its own instance
+  static isolated = true;
   
   constructor() {
     super(0);
   }
+  
+  increment = () => {
+    this.emit(this.state + 1); 
+  }
+  
+  decrement = () => {
+    this.emit(this.state - 1);
+  }
+  
+  reset = () => {
+    this.emit(0);
+  }
 }`}
-            theme="green"
+            language="typescript"
+            showLineNumbers={true}
+            title="Isolated Counter Cubit"
           />
         </div>
         
@@ -268,15 +297,30 @@ function RouteComponent() {
             When you need state to persist even when there are no consumers, use the <code className="bg-gray-800 px-2 py-1 rounded text-sm font-mono text-fuchsia-400">keepAlive</code> flag.
             This is useful for caching or preserving user input between component mounts.
           </p>
-          <CodeHighlighter 
+          <CodeHighlighter
             code={`class KeepAliveCounterCubit extends Cubit<number> {
-  static keepAlive = true; // State persists even when there are no consumers
+  // This flag keeps the instance alive even when not in use
+  static keepAlive = true;
   
   constructor() {
     super(0);
   }
+  
+  increment = () => {
+    this.emit(this.state + 1);
+  }
+  
+  decrement = () => {
+    this.emit(this.state - 1);
+  }
+  
+  reset = () => {
+    this.emit(0);
+  }
 }`}
-            theme="fuchsia"
+            language="typescript"
+            showLineNumbers={true}
+            title="Keep-Alive Counter Cubit"
           />
         </div>
         
@@ -311,14 +355,17 @@ function RouteComponent() {
             For more control, you can provide a custom instance ID. Components using the same ID will share state, regardless of class.
             This is useful for coordinating state between different parts of your UI.
           </p>
-          <CodeHighlighter 
+          <CodeHighlighter
             code={`// In component A
-const [count, counterCubit] = useBloc(CounterCubit, { id: 'shared-counter' });
+const [counterA] = useBloc(CounterCubit, { id: 'counter-1' });
 
 // In component B (even in a different part of the app)
-const [count, counterCubit] = useBloc(CounterCubit, { id: 'shared-counter' });
-// Both components will share the same state instance`}
-            theme="blue"
+const [counterB] = useBloc(CounterCubit, { id: 'counter-1' });
+
+// Both components share the same instance because of the same ID`}
+            language="typescript"
+            showLineNumbers={true}
+            title="Custom ID Pattern"
           />
         </div>
         
@@ -358,18 +405,21 @@ const [count, counterCubit] = useBloc(CounterCubit, { id: 'shared-counter' });
               <strong>Chat Application:</strong> Create a separate bloc instance for each conversation thread 
               using the conversation ID, allowing different parts of the UI (message list, input area, typing 
               indicators) to share the same state for that conversation.
-              <CodeHighlighter 
+              <CodeHighlighter
                 code={`// In the conversation header
-const [conversation, conversationBloc] = useBloc(ConversationBloc, { id: \`conversation-\${conversationId}\` });
+const [state, conversationCubit] = useBloc(ConversationCubit, {
+  id: \`conversation-\${conversationId}\` // Dynamic ID based on conversation
+});
 
-// In the message list component
-const [conversation, conversationBloc] = useBloc(ConversationBloc, { id: \`conversation-\${conversationId}\` });
+// In the message list for the same conversation
+const [state, conversationCubit] = useBloc(ConversationCubit, {
+  id: \`conversation-\${conversationId}\` // Same dynamic ID
+});
 
-// In the message input component
-const [conversation, conversationBloc] = useBloc(ConversationBloc, { id: \`conversation-\${conversationId}\` });`}
-                theme="blue"
-                showLineNumbers={false}
-                className="mt-2"
+// Both components share the same cubit instance for this specific conversation`}
+                language="typescript"
+                showLineNumbers={true}
+                title="Dynamic ID Example"
               />
             </li>
             <li>

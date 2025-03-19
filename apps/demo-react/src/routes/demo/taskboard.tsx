@@ -139,13 +139,14 @@ function ComputedPropertiesDemo() {
 }
 
 // Code snippet component for highlighting code examples
-function CodeSnippet({ code }: { code: string }) {
+function CodeSnippet({ code, title }: { code: string, title?: string }) {
   return (
     <CodeHighlighter
       code={code}
       language="typescript"
       showLineNumbers={true}
       className="mt-0"
+      title={title}
     />
   );
 }
@@ -261,45 +262,46 @@ function RouteComponent() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
             <div>
               <h3 className="text-lg font-semibold mb-3">With Traditional State Management</h3>
-              <CodeSnippet code={`// Provider wrapping in index.js or App.js
-import { Provider } from 'react-redux';
-import { store } from './store';
+              <CodeSnippet 
+                code={`// Provider wrapping in index.js or App.js
+import { BlocProvider } from '@blac/react';
+import { TaskBoardBloc } from './TaskBoardBloc';
 
-function App() {
-  return (
-    <Provider store={store}>
-      <YourApp />
-    </Provider>
-  );
-}
-
-// Deep setup of stores, actions, reducers
-// store.js, actions.js, reducers.js, etc.
-// Many files and boilerplate...`} />
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <BlocProvider blocs={[TaskBoardBloc]}>
+    <App />
+  </BlocProvider>
+);`}
+                title="Provider Pattern (Legacy)"
+              />
             </div>
             
             <div>
               <h3 className="text-lg font-semibold mb-3">With Blac</h3>
-              <CodeSnippet code={`// Define your state container
+              <CodeSnippet 
+                code={`// Define your state container
 class TaskBoardBloc extends Cubit<TaskBoardState> {
   constructor() {
-    super({ /* initial state */ });
-  }
-  
-  addTask = (task) => {
-    this.patch({ 
-      tasks: [...this.state.tasks, task] 
+    super({
+      tasks: [],
+      filter: {
+        status: 'all',
+        searchTerm: '',
+      },
+      selectedTask: null,
     });
-  };
-  
-  // More methods...
-}
+  }
 
-// Use it anywhere without providers
-function AnyComponent() {
-  const [state, bloc] = useBloc(TaskBoardBloc);
-  // Now you have access to state and methods
-}`} />
+  // Methods to add, update, delete tasks
+  addTask = (task: Task) => {
+    this.emit([...this.state.tasks, task]);
+  }
+
+  // ... other methods
+}`} 
+                title="Task Board Bloc"
+              />
             </div>
           </div>
           
@@ -460,50 +462,38 @@ function TaskCard({ task }) {
           
           <div className="mt-4">
             <h3 className="text-lg font-semibold mb-3">How Computed Properties Work</h3>
-            <CodeSnippet code={`class TaskBoardBloc extends Cubit<TaskBoardState> {
-  // ... other methods
-  
-  // Computed property for filtered tasks
-  get filteredTasks(): Task[] {
-    // Automatically caches result
-    // Only recalculates when filters or tasks change
-    const { status, priority, searchQuery } = this.state.filter;
+            <CodeSnippet 
+              code={`class TaskBoardBloc extends Cubit<TaskBoardState> {
+  // ... constructor and methods
+
+  // Computed properties
+  get todoTasks() {
+    return this.state.tasks.filter(task => task.status === 'todo');
+  }
+
+  get inProgressTasks() {
+    return this.state.tasks.filter(task => task.status === 'in-progress');
+  }
+
+  get doneTasks() {
+    return this.state.tasks.filter(task => task.status === 'done');
+  }
+
+  // State calculations
+  get taskCount() {
+    return this.state.tasks.length;
+  }
+
+  get completionRate() {
+    const totalTasks = this.state.tasks.length;
+    if (totalTasks === 0) return 0;
     
-    return this.state.tasks.filter((task) => {
-      if (status !== 'all' && task.status !== status) return false;
-      if (priority !== 'all' && task.priority !== priority) return false;
-      // more filtering logic...
-      return true;
-    });
+    const completedTasks = this.doneTasks.length;
+    return Math.round((completedTasks / totalTasks) * 100);
   }
-  
-  // Computed properties for each column
-  get todoTasks(): Task[] {
-    // Only recalculates when filteredTasks changes
-    return this.filteredTasks.filter(task => task.status === 'todo');
-  }
-  
-  get inProgressTasks(): Task[] {
-    return this.filteredTasks.filter(task => task.status === 'in-progress');
-  }
-  
-  get doneTasks(): Task[] {
-    return this.filteredTasks.filter(task => task.status === 'done');
-  }
-  
-  // Stats derived from other computed properties
-  get taskStats() {
-    // Only recalculates when task counts change
-    const total = this.state.tasks.length;
-    const completed = this.doneTasks.length;
-    
-    return {
-      total,
-      completed,
-      completionRate: total > 0 ? (completed / total) * 100 : 0
-    };
-  }
-}`} />
+}`} 
+              title="Computed Properties Example"
+            />
           </div>
           
           <div className="mt-6 p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">

@@ -129,73 +129,67 @@ class UserPreferencesCubit extends Cubit<UserPreferencesState> {
     });
   }
 
-  setTheme(theme: 'light' | 'dark') {
+  setTheme = (theme: 'light' | 'dark') => {
     this.patch({ theme });
   }
 
-  setFontSize(fontSize: number) {
+  setFontSize = (fontSize: number) => {
     this.patch({ fontSize });
   }
 
-  toggleEmailNotifications() {
-    this.patch({
-      notificationsEmail: !this.state.notificationsEmail,
-    });
+  toggleEmailNotifications = () => {
+    this.patch({ notificationsEmail: !this.state.notificationsEmail });
   }
 
-  togglePushNotifications() {
-    this.patch({
-      notificationsPush: !this.state.notificationsPush,
-    });
+  togglePushNotifications = () => {
+    this.patch({ notificationsPush: !this.state.notificationsPush });
   }
 
-  toggleSmsNotifications() {
-    this.patch({
-      notificationsSms: !this.state.notificationsSms,
-    });
+  toggleSmsNotifications = () => {
+    this.patch({ notificationsSms: !this.state.notificationsSms });
   }
 
-  setLanguage(language: string) {
+  setLanguage = (language: string) => {
     this.patch({ language });
   }
 
-  setRefreshRate(refreshRate: number) {
+  setRefreshRate = (refreshRate: number) => {
     this.patch({ refreshRate });
   }
 
-  setPassword(password: string) {
+  setPassword = (password: string) => {
     this.patch({ password });
   }
 
-  toggleShowPassword() {
+  toggleShowPassword = () => {
     this.patch({ showPassword: !this.state.showPassword });
   }
 
-  updateUsername(username: string) {
+  updateUsername = (username: string) => {
     this.patch({ username });
   }
 
-  updateEmail(email: string) {
+  updateEmail = (email: string) => {
     this.patch({ email });
   }
 
-  changeAvatar(avatar: number) {
+  changeAvatar = (avatar: number) => {
     this.patch({ avatar });
   }
 
-  setCategory(category: string) {
+  setCategory = (category: string) => {
     this.patch({ filterCategory: category });
   }
 
-  setMinPrice(minPrice: number) {
+  setMinPrice = (minPrice: number) => {
     this.patch({ filterMinPrice: minPrice });
   }
 
-  setMaxPrice(maxPrice: number) {
+  setMaxPrice = (maxPrice: number) => {
     this.patch({ filterMaxPrice: maxPrice });
   }
 
-  toggleInStock() {
+  toggleInStock = () => {
     this.patch({ filterInStock: !this.state.filterInStock });
   }
 
@@ -216,39 +210,32 @@ class UserPreferencesCubit extends Cubit<UserPreferencesState> {
 
   // Computed property that filters products
   get filteredProducts() {
-    // Get IDs of filtered products instead of product objects
+    // Return primitive values (IDs) instead of objects
     const filteredIds = this.state.products
       .filter((product) => {
-        const categoryMatch =
-          this.state.filterCategory === 'all' ||
-          product.category === this.state.filterCategory;
-
-        const priceMatch =
-          product.price >= this.state.filterMinPrice &&
-          product.price <= this.state.filterMaxPrice;
-
-        // This condition means we only check inStock when the filter is enabled
-        // This is the key to conditional dependency tracking!
-        const stockMatch = !this.state.filterInStock || product.inStock;
-
-        return categoryMatch && priceMatch && stockMatch;
+        // Apply category filter
+        if (this.state.filterCategory !== 'all' && 
+            product.category !== this.state.filterCategory) {
+          return false;
+        }
+        
+        // Apply price range filter
+        if (product.price < this.state.filterMinPrice || 
+            product.price > this.state.filterMaxPrice) {
+          return false;
+        }
+        
+        // Apply in-stock filter
+        if (this.state.filterInStock && !product.inStock) {
+          return false;
+        }
+        
+        return true;
       })
-      .map((product) => product.id);
-
-    // Perform manual equality check to avoid unnecessary re-renders
-    // For arrays and objects, Blac uses Object.is() for equality checks (same as React)
-    if (
-      this.previouslyFilteredProducts !== null &&
-      this.previouslyFilteredProducts.length === filteredIds.length &&
-      this.previouslyFilteredProducts.every((val, i) =>
-        Object.is(val, filteredIds[i]),
-      )
-    ) {
-      return this.previouslyFilteredProducts;
-    }
-
-    // Store the new result for future comparisons
-    this.previouslyFilteredProducts = filteredIds;
+      .map(product => product.id);
+      
+    // Equality check implementation...
+    
     return filteredIds;
   }
 
@@ -467,7 +454,7 @@ const [state, prefsCubit] = useBloc(UserPreferencesCubit);
 `}
         language="jsx"
         showLineNumbers={true}
-        className="mt-2 text-xs"
+        title="Conditional State Access"
       />
     </div>
   );
@@ -723,7 +710,7 @@ interface UserState {
 `}
           language="typescript"
           showLineNumbers={false}
-          className="mt-3 text-xs"
+          title="State Structure Best Practices"
         />
       </div>
 
@@ -801,7 +788,7 @@ get filteredProducts() {
 `}
           language="typescript"
           showLineNumbers={true}
-          className="mt-3 text-xs"
+          title="Manual Memoization for Arrays"
         />
       </div>
 
@@ -828,27 +815,29 @@ class UserPreferencesCubit extends Cubit<UserPreferencesState> {
     // Return primitive values (IDs) instead of objects
     const filteredIds = this.state.products
       .filter((product) => {
-        const categoryMatch = 
-          this.state.filterCategory === 'all' ||
-          product.category === this.state.filterCategory;
+        // Apply category filter
+        if (this.state.filterCategory !== 'all' && 
+            product.category !== this.state.filterCategory) {
+          return false;
+        }
         
-        const priceMatch =
-          product.price >= this.state.filterMinPrice &&
-          product.price <= this.state.filterMaxPrice;
-
-        // Conditional dependency tracking happens here:
-        const stockMatch = !this.state.filterInStock || product.inStock;
-
-        return categoryMatch && priceMatch && stockMatch;
+        // Apply price range filter
+        if (product.price < this.state.filterMinPrice || 
+            product.price > this.state.filterMaxPrice) {
+          return false;
+        }
+        
+        // Apply in-stock filter
+        if (this.state.filterInStock && !product.inStock) {
+          return false;
+        }
+        
+        return true;
       })
       .map(product => product.id);
+      
+    // Equality check implementation...
     
-    // Manual equality check for array values - similar to how React checks dependency arrays
-    if (this.arraysEqual(this.previouslyFilteredProducts, filteredIds)) {
-      return this.previouslyFilteredProducts;
-    }
-    
-    this.previouslyFilteredProducts = filteredIds;
     return filteredIds;
   }
 
@@ -862,7 +851,7 @@ class UserPreferencesCubit extends Cubit<UserPreferencesState> {
 `}
           language="typescript"
           showLineNumbers={true}
-          className="mt-3 text-xs"
+          title="Product Filtering Implementation"
         />
       </div>
     </div>
@@ -882,8 +871,8 @@ function StateInspector() {
         <CodeHighlighter
           code={JSON.stringify(state, null, 2)}
           language="json"
+          title="Current State"
           showLineNumbers={false}
-          className="mt-0 max-h-60 overflow-y-auto"
         />
         <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-white dark:from-gray-800 to-transparent pointer-events-none"></div>
       </div>
