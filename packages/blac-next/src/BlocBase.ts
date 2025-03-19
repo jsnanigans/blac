@@ -201,6 +201,8 @@ export abstract class BlocBase<S = any, P = any> {
     }
   };
 
+  lastUpdate = Date.now();
+
   /**
    * @internal
    * Updates the state and notifies all observers of the change.
@@ -212,5 +214,6 @@ export abstract class BlocBase<S = any, P = any> {
   _pushState = (newState: S, oldState: S, action?: any): void => {
     this._state = newState;
     this._observer.notify(newState, oldState, action);
+    this.lastUpdate = Date.now();
   };
 }

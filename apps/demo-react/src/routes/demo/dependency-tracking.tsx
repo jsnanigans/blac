@@ -4,6 +4,7 @@ import { useRenderCount } from '@uidotdev/usehooks';
 import { Cubit } from 'blac-next';
 import { useEffect, useMemo, useRef } from 'react';
 import CodeHighlighter from '../../components/CodeHighlighter';
+import { memo } from 'react';
 
 export const Route = createFileRoute('/demo/dependency-tracking')({
   component: DependencyTrackingDemo,
@@ -232,18 +233,20 @@ class UserPreferencesCubit extends Cubit<UserPreferencesState> {
 
         return categoryMatch && priceMatch && stockMatch;
       })
-      .map(product => product.id);
-    
+      .map((product) => product.id);
+
     // Perform manual equality check to avoid unnecessary re-renders
     // For arrays and objects, Blac uses Object.is() for equality checks (same as React)
     if (
       this.previouslyFilteredProducts !== null &&
       this.previouslyFilteredProducts.length === filteredIds.length &&
-      this.previouslyFilteredProducts.every((val, i) => Object.is(val, filteredIds[i]))
+      this.previouslyFilteredProducts.every((val, i) =>
+        Object.is(val, filteredIds[i]),
+      )
     ) {
       return this.previouslyFilteredProducts;
     }
-    
+
     // Store the new result for future comparisons
     this.previouslyFilteredProducts = filteredIds;
     return filteredIds;
@@ -600,7 +603,7 @@ const StockToggle = ({ productId }: { productId: number }) => {
 };
 
 // Product card with render counter
-const ProductCard = ({ productId }: { productId: number }) => {
+const ProductCard = memo(({ productId }: { productId: number }) => {
   const renderCount = useRenderCount();
   const [, prefsCubit] = useBloc(UserPreferencesCubit, {});
 
@@ -629,7 +632,7 @@ const ProductCard = ({ productId }: { productId: number }) => {
       </div>
     </div>
   );
-};
+});
 
 // FilteredProductsList component with render counter
 const FilteredProductsList = () => {

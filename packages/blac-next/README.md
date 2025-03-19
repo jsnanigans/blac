@@ -36,11 +36,11 @@ class CounterCubit extends Cubit<number> {
     super(0); // Initial state
   }
 
-  increment() {
+  increment = () => {
     this.emit(this.state + 1);
   }
 
-  decrement() {
+  decrement = () => {
     this.emit(this.state - 1);
   }
 }
@@ -59,7 +59,7 @@ class CounterBloc extends Bloc<number, CounterAction> {
     super(0); // Initial state
   }
 
-  reducer(action: CounterAction, state: number): number {
+  reducer = (action: CounterAction, state: number): number => {
     switch (action.type) {
       case 'increment':
         return state + action.amount;
@@ -68,15 +68,19 @@ class CounterBloc extends Bloc<number, CounterAction> {
     }
   }
 
-  increment(amount = 1) {
+  increment = (amount = 1) => {
     this.add({ type: 'increment', amount });
   }
 
-  decrement(amount = 1) {
+  decrement = (amount = 1) => {
     this.add({ type: 'decrement', amount });
   }
 }
 ```
+
+### Important: Arrow Functions Required
+
+All methods in Bloc or Cubit classes must use arrow function syntax (`method = () => {}`) instead of the traditional method syntax (`method() {}`). This is because arrow functions automatically bind `this` to the class instance. Without this binding, methods called from React components would lose their context and could not access instance properties like `this.state` or `this.emit()`.
 
 ### State Management Patterns
 
@@ -90,7 +94,7 @@ class GlobalCounterCubit extends Cubit<number> {
     super(0);
   }
   
-  increment() {
+  increment = () => {
     this.emit(this.state + 1);
   }
 }
@@ -108,7 +112,7 @@ class LocalCounterCubit extends Cubit<number> {
     super(0);
   }
   
-  increment() {
+  increment = () => {
     this.emit(this.state + 1);
   }
 }
@@ -126,7 +130,7 @@ class PersistentCounterCubit extends Cubit<number> {
     super(0);
   }
   
-  increment() {
+  increment = () => {
     this.emit(this.state + 1);
   }
 }
@@ -204,7 +208,7 @@ class ThemeCubit extends Cubit<string, ThemeProps> {
     super(props.defaultTheme);
   }
   
-  toggle() {
+  toggle = () => {
     this.emit(this.state === 'light' ? 'dark' : 'light');
   }
 }

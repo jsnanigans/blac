@@ -55,15 +55,19 @@ class CounterCubit extends Cubit<number> {
     super(0);
   }
   
-  increment() {
+  increment = () => {
     this.emit(this.state + 1);
   }
   
-  decrement() {
+  decrement = () => {
     this.emit(this.state - 1);
   }
 }
 ```
+
+### Important: Arrow Functions Required
+
+All methods in Bloc or Cubit classes must use arrow function syntax (`method = () => {}`) instead of the traditional method syntax (`method() {}`). This is because arrow functions automatically bind `this` to the class instance. Without this binding, methods called from React components would lose their context and could not access instance properties like `this.state` or `this.emit()`.
 
 ### Intent-Driven Modifications
 
@@ -114,7 +118,7 @@ class UserCubit extends Cubit<UserState> {
     super({ isLoading: false, user: null, error: null });
   }
   
-  async fetchUser(id: string) {
+  fetchUser = async (id: string) => {
     this.emit({ ...this.state, isLoading: true });
     
     try {
@@ -140,7 +144,7 @@ class CounterBloc extends Bloc<number, CounterEvent> {
     super(0);
   }
   
-  reducer(event: CounterEvent, state: number): number {
+  reducer = (event: CounterEvent, state: number): number => {
     switch (event.type) {
       case 'increment': return state + 1;
       case 'decrement': return state - 1;

@@ -12,6 +12,30 @@ A powerful React integration for the Blac state management library, providing se
 - 🔄 Support for isolated and shared bloc instances
 - 🎯 Custom dependency selectors for precise control
 
+## Important: Arrow Functions Required
+
+All methods in Bloc or Cubit classes must use arrow function syntax (`method = () => {}`) instead of the traditional method syntax (`method() {}`). This is because arrow functions automatically bind `this` to the class instance. Without this binding, methods called from React components would lose their context and could not access instance properties like `this.state` or `this.emit()`.
+
+```tsx
+// Correct way to define methods in your Bloc/Cubit classes
+class CounterBloc extends Cubit<CounterState> {
+  increment = () => {
+    this.emit({ ...this.state, count: this.state.count + 1 });
+  }
+
+  decrement = () => {
+    this.emit({ ...this.state, count: this.state.count - 1 });
+  }
+}
+
+// Incorrect way (will cause issues when called from React):
+class CounterBloc extends Cubit<CounterState> {
+  increment() { // ❌ Will lose 'this' context when called from components
+    this.emit({ ...this.state, count: this.state.count + 1 });
+  }
+}
+```
+
 ## Installation
 
 ```bash

@@ -171,6 +171,37 @@ export function DocCode({ children, language = 'typescript', title, showLineNumb
       ...atomDark['punctuation'],
       color: '#a6accd', // Light slate for punctuation
     },
+    'number': {
+      ...atomDark['number'],
+      color: '#f99157', // Orange for numbers
+      textShadow: '0 0 8px rgba(249, 145, 87, 0.5)',
+    },
+    'boolean': {
+      ...atomDark['boolean'],
+      color: '#ff7b72', // Red-orange for booleans
+      fontWeight: 'bold',
+      textShadow: '0 0 8px rgba(255, 123, 114, 0.5)',
+    },
+    'builtin': {
+      ...atomDark['builtin'],
+      color: '#79e3ff', // Light blue for builtins
+      textShadow: '0 0 8px rgba(121, 227, 255, 0.5)',
+    },
+    'tag': {
+      ...atomDark['tag'],
+      color: '#ff7edb', // Pink for tags
+      textShadow: '0 0 8px rgba(255, 126, 219, 0.5)',
+    },
+    'attr-name': {
+      ...atomDark['attr-name'],
+      color: '#c5a5fe', // Lavender for attribute names
+      textShadow: '0 0 8px rgba(197, 165, 254, 0.5)',
+    },
+    'attr-value': {
+      ...atomDark['attr-value'],
+      color: '#0ff5e9', // Cyan for attribute values
+      textShadow: '0 0 8px rgba(15, 245, 233, 0.5)',
+    },
   };
 
   // Function to copy code to clipboard
@@ -294,9 +325,9 @@ interface DocFeatureGridProps {
 export function DocFeatureGrid({ children, columns = 2 }: DocFeatureGridProps) {
   const gridCols = {
     1: 'grid-cols-1',
-    2: 'grid-cols-1 md:grid-cols-2',
-    3: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
-    4: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4',
+    2: 'grid-cols-1',
+    3: 'grid-cols-1',
+    4: 'grid-cols-1',
   };
 
   return (
@@ -360,3 +391,455 @@ export function DocTable({ children }: { children: React.ReactNode }) {
 
 // Export the styles component
 export { CyberpunkStyles };
+
+export function CubitBasicsDoc() {
+  return (
+    <DocSection title="Cubit Basics" tag="h2">
+      <p className="text-lg mb-4">
+        Cubits are the fundamental building blocks of state management in Blac. A Cubit is a class 
+        that extends the base Cubit class and emits new states.
+      </p>
+      
+      <DocCode language="typescript" title="Basic Counter Cubit">
+{`import { Cubit } from 'blac-next';
+
+class CounterCubit extends Cubit<number> {
+  constructor() {
+    super(0); // Initial state is 0
+  }
+
+  increment = () => {
+    this.emit(this.state + 1);
+  }
+
+  decrement = () => {
+    this.emit(this.state - 1);
+  }
+
+  reset = () => {
+    this.emit(0);
+  }
+}`}
+      </DocCode>
+      
+      <p className="mt-4 mb-2">
+        To use a Cubit in a React component, use the <code>useBloc</code> hook:
+      </p>
+      
+      <DocCode language="typescript" title="Using a Cubit in a Component">
+{`import { useBloc } from '@blac/react';
+
+function Counter() {
+  const [count, counterCubit] = useBloc(CounterCubit);
+  
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={() => counterCubit.decrement()}>-</button>
+      <button onClick={() => counterCubit.increment()}>+</button>
+    </div>
+  );
+}`}
+      </DocCode>
+      
+      <DocNote title="Tip" type="info">
+        The <code>useBloc</code> hook returns a tuple containing the current state and an instance of the Cubit.
+      </DocNote>
+    </DocSection>
+  );
+}
+
+export function ComplexStateDoc() {
+  return (
+    <DocSection title="Complex State Management" tag="h2">
+      <p className="text-lg mb-4">
+        Blac handles complex state with ease. Instead of using primitive values, you can use interfaces or types.
+      </p>
+      
+      <DocCode language="typescript" title="Complex State with Interface">
+{`interface CounterState {
+  count: number;
+  lastUpdated: Date;
+  history: number[];
+}
+
+class CounterBloc extends Cubit<CounterState> {
+  constructor() {
+    super({
+      count: 0,
+      lastUpdated: new Date(),
+      history: [],
+    });
+  }
+
+  increment = () => {
+    const newCount = this.state.count + 1;
+    this.emit({
+      count: newCount,
+      lastUpdated: new Date(),
+      history: [...this.state.history, newCount],
+    });
+  }
+
+  // Other methods...
+}`}
+      </DocCode>
+      
+      <DocNote title="Partial Updates" type="success">
+        <p>Blac provides a <code>patch</code> method for partial state updates:</p>
+        <DocCode>
+{`// Instead of emitting the entire state
+this.patch({ count: this.state.count + 1 });
+
+// Equivalent to:
+this.emit({
+  ...this.state,
+  count: this.state.count + 1
+});`}
+        </DocCode>
+      </DocNote>
+    </DocSection>
+  );
+}
+
+export function InstanceManagementDoc() {
+  return (
+    <DocSection title="Instance Management" tag="h2">
+      <p className="text-lg mb-4">
+        Blac provides different instance management strategies through static properties on your Cubit classes.
+      </p>
+      
+      <DocFeatureGrid>
+        <DocFeature 
+          title="Default (Shared)" 
+          color="blue"
+        >
+          <p>By default, Blac creates a single shared instance of your Cubit that's used across all components.</p>
+          <DocCode language="typescript" showLineNumbers={false}>
+{`// All components using this Cubit will share state
+class CounterCubit extends Cubit<number> {
+  constructor() {
+    super(0);
+  }
+  // Methods...
+}`}
+          </DocCode>
+        </DocFeature>
+        
+        <DocFeature 
+          title="Isolated Instances" 
+          color="green"
+        >
+          <p>Each component gets its own separate instance with independent state.</p>
+          <DocCode language="typescript" showLineNumbers={false}>
+{`class IsolatedCounterCubit extends Cubit<number> {
+  static isolated = true; // Each consumer gets its own instance
+  
+  constructor() {
+    super(0);
+  }
+  // Methods...
+}`}
+          </DocCode>
+        </DocFeature>
+        
+        <DocFeature 
+          title="Keep Alive" 
+          color="purple"
+        >
+          <p>State persists even when no components are currently using the Cubit.</p>
+          <DocCode language="typescript" showLineNumbers={false}>
+{`class KeepAliveCounterCubit extends Cubit<number> {
+  static keepAlive = true; // State persists even when unmounted
+  
+  constructor() {
+    super(0);
+  }
+  // Methods...
+}`}
+          </DocCode>
+        </DocFeature>
+        
+        <DocFeature 
+          title="Custom ID" 
+          color="amber"
+        >
+          <p>Create multiple shared instances by providing a custom ID parameter.</p>
+          <DocCode language="typescript" showLineNumbers={false}>
+{`// In your component:
+const [count, counterCubit] = useBloc(CounterCubit, { id: 'counter-1' });
+
+// Another component with a different instance:
+const [count, counterCubit] = useBloc(CounterCubit, { id: 'counter-2' });`}
+          </DocCode>
+        </DocFeature>
+      </DocFeatureGrid>
+    </DocSection>
+  );
+}
+
+export function DependencyTrackingDoc() {
+  return (
+    <DocSection title="Dependency Tracking" tag="h2">
+      <p className="text-lg mb-4">
+        Blac includes a powerful dependency tracking system that allows components to 
+        subscribe only to the specific parts of state they use, minimizing re-renders.
+      </p>
+      
+      <DocCode language="typescript" title="Automatic Dependency Tracking">
+{`// A complex state with many properties
+interface UserPreferencesState {
+  theme: 'light' | 'dark';
+  fontSize: number;
+  notifications: {
+    email: boolean;
+    push: boolean;
+  };
+  profile: {
+    username: string;
+    avatar: number;
+  };
+  // ... many more properties
+}
+
+// Component only re-renders when theme changes
+function ThemeComponent() {
+  // Only subscribes to the 'theme' property
+  const [{ theme }, cubit] = useBloc(UserPreferencesCubit);
+  
+  return (
+    <div>
+      <p>Current theme: {theme}</p>
+      <button onClick={() => cubit.setTheme(theme === 'light' ? 'dark' : 'light')}>
+        Toggle Theme
+      </button>
+    </div>
+  );
+}
+
+// This component only re-renders when username changes
+function UserProfileComponent() {
+  // Only subscribes to profile.username
+  const [{ profile: { username } }, cubit] = useBloc(UserPreferencesCubit);
+  
+  return <p>Hello, {username}!</p>;
+}`}
+      </DocCode>
+      
+      <DocNote title="Performance Benefit" type="success">
+        <p>
+          This automatic dependency tracking means components only re-render when the specific 
+          pieces of state they use change, even within complex nested state objects.
+        </p>
+      </DocNote>
+    </DocSection>
+  );
+}
+
+export function ComputedPropertiesDoc() {
+  return (
+    <DocSection title="Computed Properties" tag="h2">
+      <p className="text-lg mb-4">
+        Cubits can have computed properties using getters, which are recalculated only when 
+        their dependencies change.
+      </p>
+      
+      <DocCode language="typescript" title="Computed Properties Example">
+{`class TaskBoardCubit extends Cubit<Task[]> {
+  constructor() {
+    super([]); // Initial state is an empty array of tasks
+  }
+
+  // Add, remove, update task methods...
+
+  // Computed properties (getters)
+  get todoTasks() {
+    return this.state.filter(task => task.status === 'todo');
+  }
+
+  get inProgressTasks() {
+    return this.state.filter(task => task.status === 'in-progress');
+  }
+
+  get doneTasks() {
+    return this.state.filter(task => task.status === 'done');
+  }
+
+  // Private cached values for memoization
+  private _cachedTaskStats: { total: number, completed: number, completionRate: number } | null = null;
+  private _lastStateForStats: Task[] | null = null;
+
+  get taskStats() {
+    // Return cached result if state hasn't changed
+    if (this._lastStateForStats === this.state && this._cachedTaskStats !== null) {
+      return this._cachedTaskStats;
+    }
+
+    const total = this.state.length;
+    const completed = this.doneTasks.length;
+    const completionRate = total > 0 ? (completed / total) * 100 : 0;
+    
+    // Cache the result and state reference
+    this._cachedTaskStats = { total, completed, completionRate };
+    this._lastStateForStats = this.state;
+    
+    return this._cachedTaskStats;
+  }
+}`}
+      </DocCode>
+      
+      <DocNote title="Usage in Components" type="info">
+        <p>
+          Access computed properties directly from the cubit instance:
+        </p>
+        <DocCode language="typescript" showLineNumbers={false}>
+{`function TaskStatistics() {
+  const [, taskBoardCubit] = useBloc(TaskBoardCubit);
+  
+  return (
+    <div>
+      <p>Total Tasks: {taskBoardCubit.taskStats.total}</p>
+      <p>Completed: {taskBoardCubit.taskStats.completed}</p>
+      <p>Completion Rate: {taskBoardCubit.taskStats.completionRate.toFixed(1)}%</p>
+    </div>
+  );
+}`}
+        </DocCode>
+      </DocNote>
+    </DocSection>
+  );
+}
+
+export function AsyncOperationsDoc() {
+  return (
+    <DocSection title="Async Operations" tag="h2">
+      <p className="text-lg mb-4">
+        Blac makes it easy to handle asynchronous operations and API calls.
+      </p>
+      
+      <DocCode language="typescript" title="Async Operations Example">
+{`interface PetState {
+  pets: Pet[];
+  isLoading: boolean;
+  error: string | null;
+}
+
+class PetfinderCubit extends Cubit<PetState> {
+  constructor() {
+    super({
+      pets: [],
+      isLoading: false,
+      error: null
+    });
+  }
+
+  searchPets = async (zipCode: string, animalType: string) => {
+    try {
+      // Set loading state
+      this.patch({ isLoading: true, error: null });
+      
+      // Perform API call
+      const response = await fetch(\`/api/pets?zipCode=\${zipCode}&type=\${animalType}\`);
+      if (!response.ok) throw new Error('Failed to fetch pets');
+      
+      const pets = await response.json();
+      
+      // Update state with results
+      this.patch({ 
+        pets,
+        isLoading: false 
+      });
+    } catch (error) {
+      // Handle errors
+      this.patch({ 
+        isLoading: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  }
+}`}
+      </DocCode>
+      
+      <DocNote title="Loading and Error States" type="info">
+        <p>
+          A common pattern is to include <code>isLoading</code> and <code>error</code> properties in your state 
+          to handle the lifecycle of async operations.
+        </p>
+      </DocNote>
+    </DocSection>
+  );
+}
+
+export function BlocArchitectureDoc() {
+  return (
+    <DocSection title="Blac Architecture Patterns" tag="h2">
+      <p className="text-lg mb-4">
+        The Blac library encourages a clean architecture approach to state management.
+      </p>
+      
+      <DocFeatureGrid>
+        <DocFeature 
+          title="Separation of Concerns" 
+          color="blue"
+        >
+          <p>Keep business logic in Cubits, UI logic in components.</p>
+          <DocCode language="typescript" showLineNumbers={false}>
+{`// Business logic in Cubit
+class AuthCubit extends Cubit<AuthState> {
+  login = (username: string, password: string) => {
+    // Authentication logic here
+  }
+}
+
+// UI in component
+function LoginForm() {
+  const [state, authCubit] = useBloc(AuthCubit);
+  // Form handling and rendering
+}`}
+          </DocCode>
+        </DocFeature>
+        
+        <DocFeature 
+          title="State Composition" 
+          color="green"
+        >
+          <p>Break down complex state into smaller, focused Cubits.</p>
+          <DocCode language="typescript" showLineNumbers={false}>
+{`// Instead of one massive state object:
+class UserCubit extends Cubit<UserState> { /* ... */ }
+class CartCubit extends Cubit<CartState> { /* ... */ }
+class ProductCubit extends Cubit<ProductState> { /* ... */ }`}
+          </DocCode>
+        </DocFeature>
+        
+        <DocFeature 
+          title="Testability" 
+          color="purple"
+        >
+          <p>Cubits are easy to test in isolation.</p>
+          <DocCode language="typescript" showLineNumbers={false}>
+{`test('counter increments', () => {
+  const counter = new CounterCubit();
+  counter.increment();
+  expect(counter.state).toBe(1);
+});`}
+          </DocCode>
+        </DocFeature>
+        
+        <DocFeature 
+          title="Direct Access" 
+          color="amber"
+        >
+          <p>Access state from any component without prop drilling.</p>
+          <DocCode language="typescript" showLineNumbers={false}>
+{`// Deep in component tree:
+function DeepComponent() {
+  const [user] = useBloc(UserCubit);
+  return <p>Hello, {user.name}</p>;
+}`}
+          </DocCode>
+        </DocFeature>
+      </DocFeatureGrid>
+    </DocSection>
+  );
+}

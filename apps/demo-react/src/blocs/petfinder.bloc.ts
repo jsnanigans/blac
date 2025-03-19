@@ -285,4 +285,54 @@ export class PetfinderBloc extends Cubit<PetfinderState> {
   clearSelectedAnimal = () => {
     this.patch({ selectedAnimal: null });
   }
+
+  // Methods for fetching pets
+  searchPets = async (
+    zipCode: string,
+    animalType: string,
+    size?: string | null,
+    age?: string | null,
+    goodWithChildren?: boolean | null
+  ) => {
+    await this.updateSearchParams({
+      location: zipCode,
+      type: animalType,
+      size: size || undefined,
+      age: age || undefined,
+      good_with_children: goodWithChildren
+    }, true);
+  }
+
+  // Form handling
+  resetForm = () => {
+    this.resetSearch();
+  }
+
+  updateZipCode = (zipCode: string) => {
+    this.updateSearchParams({ location: zipCode });
+  }
+
+  updateAnimalType = (animalType: string) => {
+    this.updateSearchParams({ type: animalType });
+  }
+
+  updateSize = (size: string | null) => {
+    this.updateSearchParams({ size });
+  }
+
+  updateAge = (age: string | null) => {
+    this.updateSearchParams({ age });
+  }
+
+  updateGoodWithChildren = (goodWithChildren: boolean | null) => {
+    this.updateSearchParams({ good_with_children: goodWithChildren });
+  }
+
+  selectPet = (petId: string | null) => {
+    if (petId) {
+      this.getAnimalDetails(parseInt(petId, 10));
+    } else {
+      this.clearSelectedAnimal();
+    }
+  }
 } 
