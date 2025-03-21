@@ -300,47 +300,63 @@ function IntroductionPage() {
         </DocFeatureGrid>
       </DocSection>
 
-      <DocSection title="Scaling with Blac">
+      <DocSection title="Architectural Choices with Blac">
         <p>
-          Blac is designed to grow with your application, offering different patterns for different complexities:
+          Blac offers different architectural approaches to state management, letting you choose the right tool for each situation:
         </p>
         
         <div className="mt-4 space-y-4">
           <div className="relative pl-10 pb-8 border-l-2 border-blue-300 dark:border-blue-700">
             <div className="absolute -left-2 top-0 w-5 h-5 rounded-full bg-blue-400 dark:bg-blue-600 border-4 border-white dark:border-gray-900"></div>
-            <h3 className="mt-0 text-blue-700 dark:text-blue-400 text-lg font-bold">Simple State: Cubits</h3>
+            <h3 className="mt-0 text-blue-700 dark:text-blue-400 text-lg font-bold">Cubits: Direct State Mutation</h3>
             <p className="text-gray-700 dark:text-gray-300">
-              Start with Cubits for basic state management - perfect for counters, toggles, forms, and similar cases.
-              Cubits are simple and straightforward with minimal boilerplate.
+              Cubits provide a straightforward API with methods that directly emit new states. They offer excellent developer experience 
+              with minimal boilerplate, making them often the preferred choice for most state management needs. Cubits are flexible and 
+              can handle both simple and complex state management scenarios efficiently.
             </p>
           </div>
           
           <div className="relative pl-10 pb-8 border-l-2 border-purple-300 dark:border-purple-700">
             <div className="absolute -left-2 top-0 w-5 h-5 rounded-full bg-purple-400 dark:bg-purple-600 border-4 border-white dark:border-gray-900"></div>
-            <h3 className="mt-0 text-purple-700 dark:text-purple-400 text-lg font-bold">Complex State: Blocs</h3>
+            <h3 className="mt-0 text-purple-700 dark:text-purple-400 text-lg font-bold">Blocs: Event-Driven Architecture</h3>
             <p className="text-gray-700 dark:text-gray-300">
-              As your app grows, use Blocs for complex workflows like authentication, multi-step forms, and data-intensive features.
-              Blocs add event-driven architecture for better traceability and control.
+              Blocs implement an event-driven approach where state changes in response to events. This provides stronger
+              traceability and control over state transitions, which can be valuable for workflows where you need to track 
+              every action. Similar to Redux's approach but with less boilerplate, Blocs are great when your requirements 
+              specifically benefit from event-driven architecture.
             </p>
           </div>
           
           <div className="relative pl-10 pb-8 border-l-2 border-green-300 dark:border-green-700">
             <div className="absolute -left-2 top-0 w-5 h-5 rounded-full bg-green-400 dark:bg-green-600 border-4 border-white dark:border-gray-900"></div>
-            <h3 className="mt-0 text-green-700 dark:text-green-400 text-lg font-bold">App-wide State: BlocProvider</h3>
+            <h3 className="mt-0 text-green-700 dark:text-green-400 text-lg font-bold">Mix and Match: Best of Both Worlds</h3>
             <p className="text-gray-700 dark:text-gray-300">
-              For global state that needs to persist across the app, use BlocProvider to share instances efficiently.
-              Perfect for user settings, authentication state, and app-wide preferences.
+              Unlike other state management libraries that force you into a single pattern, Blac lets you use both Cubits and Blocs 
+              in the same application. Use Cubits for most features where direct state updates are clearer, and Blocs for features 
+              that benefit from event tracing and structured state transitions. This flexibility is similar to how Zustand offered 
+              a less opinionated alternative to Redux.
             </p>
           </div>
           
           <div className="relative pl-10">
             <div className="absolute -left-2 top-0 w-5 h-5 rounded-full bg-amber-400 dark:bg-amber-600 border-4 border-white dark:border-gray-900"></div>
-            <h3 className="mt-0 text-amber-700 dark:text-amber-400 text-lg font-bold">Enterprise Scale: Bloc Architecture</h3>
+            <h3 className="mt-0 text-amber-700 dark:text-amber-400 text-lg font-bold">Application-Wide Architecture</h3>
             <p className="text-gray-700 dark:text-gray-300">
-              For large applications, implement a full Bloc architecture with repositories, services, and domain-driven design.
-              This pattern scales to enterprise applications while maintaining clean code organization.
+              For larger applications, Blac's flexibility allows you to implement a comprehensive architecture with repositories, 
+              services, and domain-driven design. You can share state globally with BlocProvider, create isolated state for specific 
+              features, and scale your application without being forced into architectural decisions that don't fit your needs.
             </p>
           </div>
+        </div>
+        
+        <div className="mt-6">
+          <DocNote type="info">
+            <p>
+              <strong>Choose what works for your case:</strong> Both Cubits and Blocs have their strengths—Cubits offer better developer 
+              experience with less code, while Blocs provide more structure and traceability. The complexity of your state is not the deciding 
+              factor; rather, consider whether you need the event-driven approach that Blocs provide.
+            </p>
+          </DocNote>
         </div>
       </DocSection>
 

@@ -121,11 +121,11 @@ function DocsLayout() {
       </main>
       
       {/* Right Sidebar - On this page (only visible on larger screens) */}
-      <aside className="hidden lg:block w-56 xl:w-64 flex-shrink-0 order-3 lg:self-start">
+      {/* <aside className="hidden lg:block w-56 xl:w-64 flex-shrink-0 order-3 lg:self-start">
         <div className="lg:sticky lg:top-[5.5rem] overflow-y-auto lg:max-h-[calc(100vh-8rem)]">
           <TableOfContents />
         </div>
-      </aside>
+      </aside> */}
     </div>
   );
 }
