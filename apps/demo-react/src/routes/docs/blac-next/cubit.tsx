@@ -69,34 +69,44 @@ function CubitPage() {
         </p>
 
         <DocCode title="Basic Cubit Example">
-{`import { Cubit } from '@blac/next';
+{`import { Cubit } from 'blac-next';
 
 // A simple counter cubit that manages a number state
-class CounterCubit extends Cubit<number> {
+class CounterBloc extends Cubit<{ count: number }> {
   constructor() {
-    super(0); // Initialize with state 0
+    super({ count: 0 }); // Initialize with state object
   }
 
-  // Define methods that update the state
-  increment() {
-    this.emit(this.state + 1);
+  // Define methods using arrow functions
+  increment = () => {
+    this.emit({ count: this.state.count + 1 });
   }
 
-  decrement() {
-    this.emit(this.state - 1);
+  decrement = () => {
+    this.emit({ count: Math.max(0, this.state.count - 1) });
   }
 
-  reset() {
-    this.emit(0);
+  reset = () => {
+    this.emit({ count: 0 });
   }
 }`}
         </DocCode>
 
-        <DocNote>
+        <DocNote type="warning">
           <p>
-            The generic type parameter <code>&lt;T&gt;</code> specifies the type of state managed by the Cubit. This can be any type - 
-            from primitive values like numbers to complex objects.
+            <strong>Important:</strong> All methods in Bloc or Cubit classes must use arrow function syntax to maintain the proper <code>this</code> context:
           </p>
+          <DocCode language="typescript" showLineNumbers={false}>
+{`// Correct way (will maintain context)
+increment = () => {
+  this.emit({ count: this.state.count + 1 });
+};
+
+// Incorrect way (will lose 'this' context)
+increment() { 
+  this.emit({ count: this.state.count + 1 });
+}`}
+          </DocCode>
         </DocNote>
       </DocSection>
 
@@ -145,8 +155,13 @@ this.emit(this.state); // No effect`}
 {`// Only update specific properties
 this.patch({ completed: true, updatedAt: Date.now() });
 
-// Skip change detection with optional parameter
-this.patch(statePatch, true); // Force update`}
+// For nested properties, create new objects for those nested structures
+this.patch({ 
+  loadingState: { 
+    ...this.state.loadingState,
+    isInitialLoading: false 
+  } 
+});`}
             </DocCode>
           </DocFeature>
         </DocFeatureGrid>
@@ -159,7 +174,7 @@ this.patch(statePatch, true); // Force update`}
         </DocNote>
 
         <DocCode title="Using patch() in a Todo Cubit" highlightLines={[18, 19, 23, 27, 31, 40, 41, 42, 43, 44, 48, 49, 50, 51]}>
-{`import { Cubit } from '@blac/next';
+{`import { Cubit } from 'blac-next';
 
 interface TodoState {
   todos: Todo[];
@@ -181,7 +196,7 @@ class TodoCubit extends Cubit<TodoState> {
   }
 
   // Using emit() to replace the entire state
-  setTodos(todos: Todo[]) {
+  setTodos = (todos: Todo[]) => {
     this.emit({
       ...this.state,
       todos,
@@ -190,24 +205,24 @@ class TodoCubit extends Cubit<TodoState> {
   }
 
   // Using patch() for partial updates (RECOMMENDED)
-  setLoading(isLoading: boolean) {
+  setLoading = (isLoading: boolean) => {
     this.patch({ isLoading });
   }
 
-  setFilter(filter: 'all' | 'active' | 'completed') {
+  setFilter = (filter: 'all' | 'active' | 'completed') => {
     this.patch({ filter });
   }
 
-  setSearchQuery(searchQuery: string) {
+  setSearchQuery = (searchQuery: string) => {
     this.patch({ searchQuery });
   }
 
-  setError(error: string | null) {
+  setError = (error: string | null) => {
     this.patch({ error });
   }
 
   // Combining patch() with more complex logic
-  async fetchTodos() {
+  loadTodos = async () => {
     try {
       this.patch({ isLoading: true, error: null });
       
@@ -222,7 +237,7 @@ class TodoCubit extends Cubit<TodoState> {
     } catch (error) {
       this.patch({ 
         isLoading: false,
-        error: 'Failed to fetch todos'
+        error: error instanceof Error ? error.message : 'Failed to fetch todos'
       });
     }
   }
@@ -249,6 +264,51 @@ class TodoCubit extends Cubit<TodoState> {
         </DocNote>
       </DocSection>
 
+      <DocSection title="Instance Management Patterns">
+        <p>
+          Blac provides three key state management patterns that you can use by setting static properties on your Cubit class:
+        </p>
+
+        <DocCode title="Instance Management Patterns">
+{`// 1. Shared State (Default)
+class CounterBloc extends Cubit<{ count: number }> {
+  // No static properties needed - this is the default
+  constructor() {
+    super({ count: 0 });
+  }
+}
+
+// 2. Isolated State (each component gets its own instance)
+class IsolatedCounterBloc extends Cubit<{ count: number }> {
+  static isolated = true;
+  
+  constructor() {
+    super({ count: 0 });
+  }
+}
+
+// 3. Persistent State (state persists even when no components are using it)
+class PersistentCounterBloc extends Cubit<{ count: number }> {
+  static keepAlive = true;
+  
+  constructor() {
+    super({ count: 0 });
+  }
+}`}
+        </DocCode>
+
+        <DocNote>
+          <p>
+            Choose the right instance pattern based on your needs:
+          </p>
+          <ul className="space-y-1 list-disc pl-5">
+            <li><strong>Shared state:</strong> For global app state accessed by multiple components</li>
+            <li><strong>Isolated state:</strong> For component-specific state or reusable components</li>
+            <li><strong>Persistent state:</strong> For state that needs to survive even when not actively used</li>
+          </ul>
+        </DocNote>
+      </DocSection>
+
       <DocSection title="Managing Complex State">
         <p>
           Cubits can manage any type of state, from primitive values to complex objects. When working with complex state, it's important 
@@ -257,7 +317,7 @@ class TodoCubit extends Cubit<TodoState> {
         </p>
 
         <DocCode title="Todo List Cubit Example">
-{`import { Cubit } from '@blac/next';
+{`import { Cubit } from 'blac-next';
 
 // Define the state type
 interface Todo {
@@ -282,7 +342,7 @@ class TodoCubit extends Cubit<TodoState> {
   }
 
   // Add a new todo
-  addTodo(text: string) {
+  addTodo = (text: string) => {
     const newTodo: Todo = {
       id: Date.now(),
       text,
@@ -296,369 +356,170 @@ class TodoCubit extends Cubit<TodoState> {
   }
 
   // Toggle a todo's completed status
-  toggleTodo(id: number) {
+  toggleTodo = (id: number) => {
     const updatedTodos = this.state.todos.map(todo => 
       todo.id === id 
-        ? { ...todo, completed: !todo.completed } 
+        ? { ...todo, completed: !todo.completed }
         : todo
     );
 
-    // Using patch() to update just the todos
     this.patch({ todos: updatedTodos });
   }
 
-  // Remove a todo
-  removeTodo(id: number) {
-    this.patch({
-      todos: this.state.todos.filter(todo => todo.id !== id)
-    });
-  }
-
-  // Change the filter
-  setFilter(filter: 'all' | 'active' | 'completed') {
+  // Set the filter
+  setFilter = (filter: 'all' | 'active' | 'completed') => {
     this.patch({ filter });
   }
 
-  // Load todos from an API
-  async loadTodos() {
-    try {
-      // Set loading state
-      this.patch({ isLoading: true });
-
-      // Simulate API call
-      const response = await fetch('/api/todos');
-      const todos = await response.json();
-
-      // Update state with loaded todos
-      this.patch({
-        todos,
-        isLoading: false
-      });
-    } catch (error) {
-      // Handle error
-      this.patch({ isLoading: false });
+  // Get filtered todos (computed property)
+  get filteredTodos() {
+    switch (this.state.filter) {
+      case 'active':
+        return this.state.todos.filter(todo => !todo.completed);
+      case 'completed':
+        return this.state.todos.filter(todo => todo.completed);
+      default:
+        return this.state.todos;
     }
   }
 }`}
         </DocCode>
-
-        <DocNote type="warning">
-          <p>
-            <strong>Always maintain immutability</strong> when updating the state. Whether using <code>emit()</code> or <code>patch()</code>, 
-            never directly modify arrays or objects within your state. Always create new instances.
-          </p>
-        </DocNote>
       </DocSection>
 
-      <DocSection title="Asynchronous Operations">
+      <DocSection title="Handling Async Operations">
         <p>
-          Cubits can handle asynchronous operations such as API calls or other side effects. Methods in a Cubit can be async, 
-          allowing you to emit multiple state updates during an async operation.
+          Cubits make it easy to handle asynchronous operations such as API calls. Here's a pattern for managing loading states, data fetching, and error handling:
         </p>
 
-        <DocCode title="Async Cubit Example with patch()" highlightLines={[16, 17, 18, 19, 24, 25, 26, 27, 31, 32, 33, 34]}>
-{`import { Cubit } from '@blac/next';
+        <DocCode title="Pet Finder Bloc Example" highlightLines={[20, 21, 22, 23, 24, 33, 34, 35, 36, 37, 38, 39, 40, 42, 43, 44, 45, 46]}>
+{`import { Cubit } from 'blac-next';
+import { petfinderAPI } from '../services/petfinder';
 
-interface UserState {
-  user: User | null;
-  isLoading: boolean;
+interface PetfinderState {
+  animals: Animal[];
+  searchParams: SearchParams;
+  loadingState: {
+    isInitialLoading: boolean;
+    isPaginationLoading: boolean;
+  };
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalCount: number;
+  };
   error: string | null;
 }
 
-class UserCubit extends Cubit<UserState> {
-  constructor(private userService: UserService) {
-    super({
-      user: null,
-      isLoading: false,
-      error: null
-    });
-  }
-
-  async loadUser(userId: string) {
+class PetfinderBloc extends Cubit<PetfinderState> {
+  searchAnimals = async () => {
     try {
-      // Update state to loading
-      this.patch({
-        isLoading: true,
-        error: null
+      // Show loading state
+      this.patch({ 
+        loadingState: { 
+          ...this.state.loadingState,
+          isInitialLoading: true 
+        } 
       });
-
-      // Perform async operation
-      const user = await this.userService.getUser(userId);
-
-      // Update state with successful result
+      
+      // Fetch data
+      const response = await petfinderAPI.getAnimals(this.state.searchParams);
+      
+      // Update state with results
       this.patch({
-        user,
-        isLoading: false
+        animals: response.animals,
+        loadingState: { 
+          ...this.state.loadingState,
+          isInitialLoading: false 
+        },
+        pagination: {
+          currentPage: response.pagination.current_page,
+          totalPages: response.pagination.total_pages,
+          totalCount: response.pagination.total_count,
+        },
       });
     } catch (error) {
-      // Update state with error
+      // Handle errors
       this.patch({
-        isLoading: false,
-        error: error.message || 'Failed to load user'
+        loadingState: { 
+          ...this.state.loadingState,
+          isInitialLoading: false 
+        },
+        error: error instanceof Error ? error.message : 'An error occurred',
       });
     }
-  }
+  };
 }`}
         </DocCode>
 
-        <DocNote type="info">
+        <DocNote>
           <p>
-            Using <code>patch()</code> in async operations makes the code more maintainable as your state grows in complexity. 
-            It allows you to update only the relevant parts of state at each stage of the operation.
+            When handling async operations, make sure to:
           </p>
+          <ul className="space-y-1 list-disc pl-5">
+            <li>Set loading state at the beginning</li>
+            <li>Use try/catch to handle errors</li>
+            <li>Reset loading state in both success and error cases</li>
+            <li>Provide meaningful error messages</li>
+            <li>Type-check errors for better error messages</li>
+          </ul>
         </DocNote>
       </DocSection>
 
-      <DocSection title="Cubit Lifecycle">
+      <DocSection title="Props & Dependency Injection">
         <p>
-          Like all Blac state containers, Cubits have a lifecycle that you can hook into:
+          You can pass configuration to blocs during initialization using props. This is useful for customizing behavior or providing dependencies.
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 not-prose">
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-blue-100 dark:border-blue-800 shadow-sm">
-            <div className="flex items-center">
-              <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full mr-2">
-                <span className="text-blue-600 dark:text-blue-300 font-bold">1</span>
-              </div>
-              <h3 className="text-base font-bold">Construction</h3>
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-              The Cubit is instantiated with an initial state.
-            </p>
-          </div>
+        <DocCode title="Cubit with Props">
+{`import { Cubit } from 'blac-next';
 
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-green-100 dark:border-green-800 shadow-sm">
-            <div className="flex items-center">
-              <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded-full mr-2">
-                <span className="text-green-600 dark:text-green-300 font-bold">2</span>
-              </div>
-              <h3 className="text-base font-bold">State Changes</h3>
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-              Methods are called that patch or emit new states.
-            </p>
-          </div>
+// Define props interface
+interface ThemeProps {
+  defaultTheme: 'light' | 'dark';
+  saveToLocalStorage?: boolean;
+}
 
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-amber-100 dark:border-amber-800 shadow-sm">
-            <div className="flex items-center">
-              <div className="bg-amber-100 dark:bg-amber-900/30 p-2 rounded-full mr-2">
-                <span className="text-amber-600 dark:text-amber-300 font-bold">3</span>
-              </div>
-              <h3 className="text-base font-bold">Subscription</h3>
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-              Components subscribe to state changes through hooks.
-            </p>
-          </div>
+interface ThemeState {
+  theme: 'light' | 'dark';
+}
 
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-red-100 dark:border-red-800 shadow-sm">
-            <div className="flex items-center">
-              <div className="bg-red-100 dark:bg-red-900/30 p-2 rounded-full mr-2">
-                <span className="text-red-600 dark:text-red-300 font-bold">4</span>
-              </div>
-              <h3 className="text-base font-bold">Disposal</h3>
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-              The Cubit is disposed when no longer needed, cleaning up resources.
-            </p>
-          </div>
-        </div>
-
-        <p className="mt-6">
-          You can add custom disposal logic by overriding the <code>dispose</code> method:
-        </p>
-
-        <DocCode title="Custom Disposal Logic">
-{`class StreamCubit extends Cubit<Data> {
-  private subscription: Subscription;
-
-  constructor(stream: Observable<Data>) {
-    super(initialData);
+class ThemeCubit extends Cubit<ThemeState, ThemeProps> {
+  constructor(props: ThemeProps) {
+    // Initialize from localStorage or use provided default
+    const savedTheme = props.saveToLocalStorage 
+      ? localStorage.getItem('theme') 
+      : null;
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const initialTheme = savedTheme || (prefersDark ? 'dark' : 'light');
     
-    // Subscribe to an external data source
-    this.subscription = stream.subscribe(data => {
-      this.emit(data);
-    });
+    super({ theme: initialTheme as 'light' | 'dark' });
+    
+    // Store props for later use
+    this.saveToLocalStorage = props.saveToLocalStorage;
   }
 
-  // Override dispose to clean up resources
-  dispose() {
-    // Cancel the subscription when the cubit is disposed
-    this.subscription.unsubscribe();
+  private saveToLocalStorage?: boolean;
+
+  toggleTheme = () => {
+    const newTheme = this.state.theme === 'light' ? 'dark' : 'light';
     
-    // Always call the parent dispose method
-    super.dispose();
+    if (this.saveToLocalStorage) {
+      localStorage.setItem('theme', newTheme);
+    }
+    
+    this.emit({ theme: newTheme });
+  };
+}
+
+// In component:
+const [state, bloc] = useBloc(ThemeCubit, {
+  props: { 
+    defaultTheme: 'dark',
+    saveToLocalStorage: true 
   }
-}`}
-        </DocCode>
-      </DocSection>
-
-      <DocSection title="Best Practices">
-        <DocFeatureGrid>
-          <DocFeature 
-            title="Keep Cubits Focused"
-            icon={
-              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-              </svg>
-            }
-            color="blue"
-          >
-            <p>
-              Each Cubit should manage a specific domain of your application state. Avoid creating "god" Cubits that try to 
-              manage too many different aspects of your application.
-            </p>
-          </DocFeature>
-          
-          <DocFeature 
-            title="Immutable State Updates"
-            icon={
-              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
-            }
-            color="green"
-          >
-            <p>
-              Always create new state objects when updating complex state rather than modifying the existing state object. 
-              Use the spread operator or libraries like Immer to help maintain immutability.
-            </p>
-          </DocFeature>
-          
-          <DocFeature 
-            title="Use patch() for Partial Updates"
-            icon={
-              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
-              </svg>
-            }
-            color="purple"
-          >
-            <p>
-              When working with complex object states, prefer the <code>patch()</code> method for partial updates. It's more 
-              efficient as it only checks if the specific properties being updated have changed, and makes your code more 
-              concise by reducing the need to spread the entire state object manually.
-            </p>
-          </DocFeature>
-          
-          <DocFeature 
-            title="Handle Errors Gracefully"
-            icon={
-              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-            }
-            color="amber"
-          >
-            <p>
-              Always handle errors in async methods and update the state accordingly. This allows your UI to display 
-              appropriate error messages or retry options.
-            </p>
-          </DocFeature>
-          
-          <DocFeature 
-            title="Clear Method Names"
-            icon={
-              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-              </svg>
-            }
-            color="blue"
-          >
-            <p>
-              Use descriptive method names that clearly indicate what the method does. This makes your Cubits more 
-              intuitive to use and easier to understand for other developers.
-            </p>
-          </DocFeature>
-        </DocFeatureGrid>
-      </DocSection>
-
-      <DocSection title="Testing Cubits">
-        <p>
-          One of the advantages of using Cubits for state management is that they are easy to test. Here's an example of how to test a Cubit using Jest:
-        </p>
-
-        <DocCode title="Testing a Counter Cubit">
-{`import { CounterCubit } from './counter_cubit';
-
-describe('CounterCubit', () => {
-  let counterCubit: CounterCubit;
-
-  beforeEach(() => {
-    // Create a fresh cubit for each test
-    counterCubit = new CounterCubit();
-  });
-
-  afterEach(() => {
-    // Clean up after each test
-    counterCubit.dispose();
-  });
-
-  test('initial state is 0', () => {
-    expect(counterCubit.state).toBe(0);
-  });
-
-  test('increment increases state by 1', () => {
-    counterCubit.increment();
-    expect(counterCubit.state).toBe(1);
-  });
-
-  test('decrement decreases state by 1', () => {
-    counterCubit.decrement();
-    expect(counterCubit.state).toBe(-1);
-  });
-
-  test('reset sets state back to 0', () => {
-    counterCubit.increment();
-    counterCubit.increment();
-    counterCubit.reset();
-    expect(counterCubit.state).toBe(0);
-  });
 });`}
         </DocCode>
-
-        <DocNote type="info">
-          <p>
-            You can also test asynchronous Cubit methods using Jest's async/await support or utilities like <code>fakeTimers</code> for testing time-based operations.
-          </p>
-        </DocNote>
-      </DocSection>
-
-      <DocSection title="Next Steps">
-        <p>
-          Now that you understand Cubits, you might want to explore:
-        </p>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 not-prose mt-4">
-          <a href="/docs/blac-react/use-bloc" className="block p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all">
-            <h3 className="text-lg font-bold text-amber-600 dark:text-amber-400">useBloc Hook</h3>
-            <p className="text-gray-600 dark:text-gray-400 mt-2">
-              Learn how to use Cubits in React components with the useBloc hook.
-            </p>
-          </a>
-          
-          <a href="/docs/blac-next/bloc" className="block p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all">
-            <h3 className="text-lg font-bold text-purple-600 dark:text-purple-400">Bloc</h3>
-            <p className="text-gray-600 dark:text-gray-400 mt-2">
-              Explore Blocs for more complex state management with event-driven architecture.
-            </p>
-          </a>
-          
-          <a href="/docs/advanced/dependency-tracking" className="block p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all">
-            <h3 className="text-lg font-bold text-blue-600 dark:text-blue-400">Advanced: Dependency Tracking</h3>
-            <p className="text-gray-600 dark:text-gray-400 mt-2">
-              Learn how Blac's fine-grained reactivity works to optimize your application.
-            </p>
-          </a>
-          
-          <a href="/docs/advanced/external-store" className="block p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all">
-            <h3 className="text-lg font-bold text-green-600 dark:text-green-400">External Bloc Store</h3>
-            <p className="text-gray-600 dark:text-gray-400 mt-2">
-              Discover how to manage global Cubits with an external store.
-            </p>
-          </a>
-        </div>
       </DocSection>
     </div>
-  )
+  );
 }

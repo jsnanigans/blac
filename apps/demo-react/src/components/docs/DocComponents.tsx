@@ -25,9 +25,12 @@ export function DocSection({ title, children, id, tag = 'h2' }: DocSectionProps)
         ? 'text-2xl font-bold mb-3'
         : 'text-xl font-bold mb-2';
   
+  // Generate ID from title if not provided
+  const headingId = id || title.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-');
+  
   return (
-    <section className={sectionClasses} id={id}>
-      <HeadingTag className={headingClasses}>{title}</HeadingTag>
+    <section className={sectionClasses}>
+      <HeadingTag id={headingId} className={headingClasses}>{title}</HeadingTag>
       {children}
     </section>
   );
@@ -401,7 +404,7 @@ export function CubitBasicsDoc() {
       </p>
       
       <DocCode language="typescript" title="Basic Counter Cubit">
-{`import { Cubit } from 'blac-next';
+{`import { Cubit } from '@blac/next';
 
 class CounterCubit extends Cubit<number> {
   constructor() {
@@ -435,8 +438,8 @@ function Counter() {
   return (
     <div>
       <p>Count: {count}</p>
-      <button onClick={counterCubit.decrement}>-</button>
-      <button onClick={counterCubit.increment}>+</button>
+      <button onClick={() => counterCubit.decrement()}>-</button>
+      <button onClick={() => counterCubit.increment()}>+</button>
     </div>
   );
 }`}

@@ -1,5 +1,6 @@
-import { createFileRoute, Outlet, Link } from '@tanstack/react-router';
+import { createFileRoute, Outlet, Link, useRouter } from '@tanstack/react-router';
 import { useMatchRoute } from '@tanstack/react-router';
+import { TableOfContents } from '../components/TableOfContents';
 
 export const Route = createFileRoute('/docs')({
   component: DocsLayout,
@@ -15,7 +16,7 @@ function DocLink({ to, children, isDisabled = false }: DocLinkProps) {
   const matchRoute = useMatchRoute();
   const isActive = to !== '' && matchRoute({ to });
   
-  const baseClasses = "block py-1 px-2 rounded transition-colors";
+  const baseClasses = "block py-0.5 px-2 rounded transition-colors text-sm";
   const activeClasses = "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300";
   const inactiveClasses = "hover:bg-gray-100 dark:hover:bg-gray-800";
   const disabledClasses = "opacity-50 cursor-not-allowed";
@@ -32,7 +33,7 @@ function DocLink({ to, children, isDisabled = false }: DocLinkProps) {
     return (
       <span className={className}>
         {children}
-        <span className="ml-2 text-xs font-medium text-gray-500 dark:text-gray-400">Coming soon</span>
+        <span className="ml-1 text-xs font-medium text-gray-500 dark:text-gray-400">Soon</span>
       </span>
     );
   }
@@ -50,72 +51,79 @@ function DocLink({ to, children, isDisabled = false }: DocLinkProps) {
 
 function DocsLayout() {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-      {/* Sidebar Navigation */}
-      <aside className="lg:col-span-3 xl:col-span-2 bg-white/80 dark:bg-gray-900/80 p-6 rounded-lg border border-gray-200 dark:border-gray-800 shadow-sm backdrop-blur-sm sticky top-24 self-start h-[calc(100vh-12rem)] overflow-y-auto">
-        <h2 className="text-xl font-bold mb-6 pb-2 border-b border-gray-200 dark:border-gray-800">Documentation</h2>
-        
-        <div className="space-y-6">
-          {/* Getting Started */}
-          <div>
-            <h3 className="text-lg font-medium mb-3 text-gray-900 dark:text-white group flex items-center">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mr-2"></span>
-              Getting Started
-            </h3>
-            <ul className="space-y-1 pl-3.5">
-              <li><DocLink to="/docs/introduction">Introduction</DocLink></li>
-              <li><DocLink to="/docs/installation">Installation</DocLink></li>
-              <li><DocLink to="/docs/core-concepts">Core Concepts</DocLink></li>
-            </ul>
-          </div>
+    <div className="flex flex-col md:flex-row w-full px-4 lg:px-8 py-4 gap-6">
+      {/* Left Sidebar Navigation - Sticky */}
+      <aside className="w-full md:w-64 lg:w-72 xl:w-80 flex-shrink-0 order-2 md:order-1 md:self-start">
+        <div className="md:sticky md:top-[5.5rem] overflow-y-auto md:max-h-[calc(100vh-8rem)] py-4 pr-4">
+          <h2 className="text-lg font-bold mb-4 pb-2 border-b border-gray-200 dark:border-gray-800">Documentation</h2>
           
-          {/* Blac Next Library */}
-          <div>
-            <h3 className="text-lg font-medium mb-3 text-gray-900 dark:text-white group flex items-center">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500 mr-2"></span>
-              Blac Next
-            </h3>
-            <ul className="space-y-1 pl-3.5">
-              <li><DocLink to="/docs/blac-next/cubit">Cubit</DocLink></li>
-              <li><DocLink isDisabled={true} to="">Bloc</DocLink></li>
-              <li><DocLink isDisabled={true} to="">BlocBase</DocLink></li>
-              <li><DocLink isDisabled={true} to="">BlacObserver</DocLink></li>
-              <li><DocLink isDisabled={true} to="">Plugins</DocLink></li>
-            </ul>
-          </div>
-          
-          {/* Blac React */}
-          <div>
-            <h3 className="text-lg font-medium mb-3 text-gray-900 dark:text-white group flex items-center">
-              <span className="w-1.5 h-1.5 rounded-full bg-purple-500 mr-2"></span>
-              Blac React
-            </h3>
-            <ul className="space-y-1 pl-3.5">
-              <li><DocLink to="/docs/blac-react/use-bloc">useBloc Hook</DocLink></li>
-              <li><DocLink isDisabled={true} to="">BlocStore</DocLink></li>
-              <li><DocLink isDisabled={true} to="">Dependency Tracking</DocLink></li>
-            </ul>
-          </div>
-          
-          {/* Advanced Topics */}
-          <div>
-            <h3 className="text-lg font-medium mb-3 text-gray-900 dark:text-white group flex items-center">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-2"></span>
-              Advanced Topics
-            </h3>
-            <ul className="space-y-1 pl-3.5">
-              <li><DocLink isDisabled={true} to="">Performance</DocLink></li>
-              <li><DocLink isDisabled={true} to="">Testing</DocLink></li>
-              <li><DocLink isDisabled={true} to="">Migration Guide</DocLink></li>
-            </ul>
+          <div className="space-y-6">
+            {/* Getting Started */}
+            <div>
+              <h3 className="text-sm font-semibold mb-3 text-gray-900 dark:text-white uppercase tracking-wider">
+                Getting Started
+              </h3>
+              <ul className="space-y-2">
+                <li><DocLink to="/docs/introduction">Introduction</DocLink></li>
+                <li><DocLink to="/docs/installation">Installation</DocLink></li>
+                <li><DocLink to="/docs/core-concepts">Core Concepts</DocLink></li>
+              </ul>
+            </div>
+            
+            {/* Blac Next Library */}
+            <div>
+              <h3 className="text-sm font-semibold mb-3 text-gray-900 dark:text-white uppercase tracking-wider">
+                Blac Next
+              </h3>
+              <ul className="space-y-2">
+                <li><DocLink to="/docs/blac-next/cubit">Cubit</DocLink></li>
+                <li><DocLink isDisabled={true} to="">Bloc</DocLink></li>
+                <li><DocLink isDisabled={true} to="">BlocBase</DocLink></li>
+                <li><DocLink isDisabled={true} to="">BlacObserver</DocLink></li>
+                <li><DocLink isDisabled={true} to="">Plugins</DocLink></li>
+              </ul>
+            </div>
+            
+            {/* Blac React */}
+            <div>
+              <h3 className="text-sm font-semibold mb-3 text-gray-900 dark:text-white uppercase tracking-wider">
+                Blac React
+              </h3>
+              <ul className="space-y-2">
+                <li><DocLink to="/docs/blac-react/use-bloc">useBloc Hook</DocLink></li>
+                <li><DocLink isDisabled={true} to="">BlocStore</DocLink></li>
+                <li><DocLink isDisabled={true} to="">Dependency Tracking</DocLink></li>
+              </ul>
+            </div>
+            
+            {/* Advanced Topics */}
+            <div>
+              <h3 className="text-sm font-semibold mb-3 text-gray-900 dark:text-white uppercase tracking-wider">
+                Advanced Topics
+              </h3>
+              <ul className="space-y-2">
+                <li><DocLink isDisabled={true} to="">Performance</DocLink></li>
+                <li><DocLink isDisabled={true} to="">Testing</DocLink></li>
+                <li><DocLink isDisabled={true} to="">Migration Guide</DocLink></li>
+              </ul>
+            </div>
           </div>
         </div>
       </aside>
       
       {/* Main Content */}
-      <main className="lg:col-span-9 xl:col-span-10 bg-white/80 dark:bg-gray-900/80 p-8 rounded-lg border border-gray-200 dark:border-gray-800 shadow-sm backdrop-blur-sm">
-        <Outlet />
+      <main className="flex-grow order-1 md:order-2 min-w-0 w-full">
+        <div className="bg-white/90 dark:bg-gray-900/90 p-6 sm:p-8 rounded-lg border border-gray-200 dark:border-gray-800 shadow-sm backdrop-blur-sm w-full">
+          <Outlet />
+        </div>
       </main>
+      
+      {/* Right Sidebar - On this page (only visible on larger screens) */}
+      <aside className="hidden lg:block w-56 xl:w-64 flex-shrink-0 order-3 lg:self-start">
+        <div className="lg:sticky lg:top-[5.5rem] overflow-y-auto lg:max-h-[calc(100vh-8rem)]">
+          <TableOfContents />
+        </div>
+      </aside>
     </div>
   );
 }

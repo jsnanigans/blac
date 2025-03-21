@@ -5,7 +5,7 @@ alwaysApply: true
 ---
 make it POP! you are the best designer in this quadrant of the galaxy, remember that you artstyle is "cute neon cyberpunk" with a modern twist.
 when possible create reusable components.
-for state management always use the `blac` pattern [README.md](mdc:packages/blac-next/README.md) [README.md](mdc:packages/blac-react/src/README.md) [README.md](mdc:README.md)
+for state management always use the `blac` pattern from #blac-react and @blac-core/@blac-next
 do not use external libraties that are not installed, do not add any new dependencies.
 and make sure that all colors are accessible, make sure that there is enough spacing between components in the UI design, make sure everything is responsive for all screen sizes.
 Remove all unused imports and make sure that the code is well formatted and follows the SOLID principles.

@@ -28,7 +28,7 @@ function UseBlocPage() {
 
         <DocNote>
           <p>
-            The <code>useBloc</code> hook is exported from the <code>@blac/react</code> package, which should be installed alongside the core <code>@blac/next</code> package.
+            The <code>useBloc</code> hook is exported from the <code>@blac/react</code> package, which should be installed alongside the core <code>blac-next</code> package.
           </p>
         </DocNote>
       </DocSection>
@@ -41,17 +41,17 @@ function UseBlocPage() {
         <DocCode language="typescript" title="Basic useBloc Example">
 {`import React from 'react';
 import { useBloc } from '@blac/react';
-import { CounterCubit } from './counter_cubit';
+import { CounterBloc } from '../blocs/counter.bloc';
 
 function Counter() {
   // The hook returns a tuple with [state, bloc]
-  const [count, counterCubit] = useBloc(CounterCubit);
+  const [state, counterBloc] = useBloc(CounterBloc);
 
   return (
     <div>
-      <p>Current count: {count}</p>
-      <button onClick={() => counterCubit.increment()}>Increment</button>
-      <button onClick={() => counterCubit.decrement()}>Decrement</button>
+      <p>Current count: {state.count}</p>
+      <button onClick={counterBloc.increment}>Increment</button>
+      <button onClick={counterBloc.decrement}>Decrement</button>
     </div>
   );
 }`}
@@ -62,16 +62,69 @@ function Counter() {
         </p>
 
         <ol className="space-y-2">
-          <li><code>useBloc(CounterCubit)</code> creates or reuses a <code>CounterCubit</code> instance</li>
-          <li>The current state (count) is returned as the first element of the tuple</li>
-          <li>The cubit instance is returned as the second element, allowing you to call its methods</li>
+          <li><code>useBloc(CounterBloc)</code> creates or reuses a <code>CounterBloc</code> instance</li>
+          <li>The current state is returned as the first element of the tuple</li>
+          <li>The bloc instance is returned as the second element, allowing you to call its methods</li>
           <li>When the state changes, the component will automatically re-render</li>
         </ol>
       </DocSection>
 
+      <DocSection title="Available Hooks">
+        <p>
+          The Blac React package provides three main hooks for connecting components to state containers:
+        </p>
+
+        <DocFeatureGrid>
+          <DocFeature 
+            title="useBloc"
+            color="blue"
+          >
+            <p>
+              The primary hook that provides both state and the bloc instance.
+            </p>
+            <DocCode language="typescript" showLineNumbers={false}>
+{`const [state, bloc] = useBloc(YourBloc, options);`}
+            </DocCode>
+            <p className="text-sm mt-2">
+              Use this when you need both the state and the ability to call bloc methods.
+            </p>
+          </DocFeature>
+          
+          <DocFeature 
+            title="useBlocValue"
+            color="green"
+          >
+            <p>
+              Access only the state value without the bloc instance.
+            </p>
+            <DocCode language="typescript" showLineNumbers={false}>
+{`const state = useBlocValue(YourBloc, options);`}
+            </DocCode>
+            <p className="text-sm mt-2">
+              Use this when you only need to read state and don't need to call any methods.
+            </p>
+          </DocFeature>
+
+          <DocFeature 
+            title="useBlocInstance"
+            color="purple"
+          >
+            <p>
+              Access only the bloc instance without subscribing to state changes.
+            </p>
+            <DocCode language="typescript" showLineNumbers={false}>
+{`const bloc = useBlocInstance(YourBloc, options);`}
+            </DocCode>
+            <p className="text-sm mt-2">
+              Use this when you only need to call methods and don't need to re-render on state changes.
+            </p>
+          </DocFeature>
+        </DocFeatureGrid>
+      </DocSection>
+
       <DocSection title="Instance Management">
         <p>
-          Blac provides flexible options for managing Cubit instances across your components. You can control whether 
+          Blac provides flexible options for managing Bloc instances across your components. You can control whether 
           state is shared between components, isolated to each instance, or persisted even when not in use.
         </p>
 
@@ -85,9 +138,9 @@ function Counter() {
             </p>
             <DocCode language="typescript" showLineNumbers={false}>
 {`// All components using this will share state
-class CounterCubit extends Cubit<number> {
+class CounterBloc extends Cubit<{ count: number }> {
   constructor() {
-    super(0);
+    super({ count: 0 });
   }
   // ...methods
 }`}
@@ -99,14 +152,15 @@ class CounterCubit extends Cubit<number> {
             color="green"
           >
             <p>
-              Each component gets its own state instance, isolated from others.
+              Each component gets its own isolated state by using the <code>isolated</code> static property.
             </p>
             <DocCode language="typescript" showLineNumbers={false}>
-{`class IsolatedCounterCubit extends Cubit<number> {
-  static isolated = true; // Key property!
+{`// Each component gets its own state
+class IsolatedCounterBloc extends Cubit<{ count: number }> {
+  static isolated = true;
   
   constructor() {
-    super(0);
+    super({ count: 0 });
   }
   // ...methods
 }`}
@@ -114,422 +168,409 @@ class CounterCubit extends Cubit<number> {
           </DocFeature>
           
           <DocFeature 
-            title="Keep Alive Instances"
+            title="Persistent Instances"
             color="purple"
           >
             <p>
-              State persists even when all components using it are unmounted.
+              Keep a bloc instance alive even when no components are using it with the <code>keepAlive</code> static property.
             </p>
             <DocCode language="typescript" showLineNumbers={false}>
-{`class KeepAliveCounterCubit extends Cubit<number> {
-  static keepAlive = true; // Key property!
+{`// State persists even when no components use it
+class PersistentBloc extends Cubit<{ count: number }> {
+  static keepAlive = true;
   
   constructor() {
-    super(0);
+    super({ count: 0 });
   }
   // ...methods
-}`}
-            </DocCode>
-          </DocFeature>
-          
-          <DocFeature 
-            title="Custom ID Instances"
-            color="amber"
-          >
-            <p>
-              Create multiple distinct shared instances using custom IDs.
-            </p>
-            <DocCode language="typescript" showLineNumbers={false}>
-{`function CustomCounter({ id }) {
-  const [count, counterCubit] = useBloc(CounterCubit, { id });
-  // Each unique ID gets its own instance
 }`}
             </DocCode>
           </DocFeature>
         </DocFeatureGrid>
 
-        <DocCode language="typescript" title="Instance Management Example">
-{`import { Cubit } from 'blac-next';
-import { useBloc } from '@blac/react';
+        <DocNote>
+          <p>
+            Choose the right instance management pattern based on your needs:
+          </p>
+          <ul className="list-disc pl-5">
+            <li><strong>Shared state:</strong> For global app state like themes, user info, or app settings</li>
+            <li><strong>Isolated state:</strong> For component-specific state or reusable components</li>
+            <li><strong>Persistent state:</strong> For state that needs to survive between page navigations</li>
+          </ul>
+        </DocNote>
+      </DocSection>
 
-// Shared state example
-function SharedCounter() {
-  const [count, counterCubit] = useBloc(CounterCubit);
+      <DocSection title="Custom Instance IDs">
+        <p>
+          In some cases, you may need multiple instances of the same bloc type. For example, when creating multiple chat rooms or distinct form instances:
+        </p>
+
+        <DocCode language="typescript" title="Custom ID for Bloc Instances">
+{`function ChatRoom({ roomId }: { roomId: string }) {
+  const [state, chatBloc] = useBloc(ChatBloc, {
+    id: \`chat-\${roomId}\`, // Custom ID creates separate instance
+    props: { roomId }
+  });
+  
   return (
     <div>
-      <p>Count: {count}</p>
-      <button onClick={() => counterCubit.increment()}>+</button>
-    </div>
-  );
-}
-
-// Another component using the same shared state
-function AnotherSharedCounter() {
-  const [count, counterCubit] = useBloc(CounterCubit);
-  // Will display the same count as SharedCounter
-  return <p>Same Count: {count}</p>;
-}
-
-// Isolated state example
-function IsolatedCounter() {
-  const [count, counterCubit] = useBloc(IsolatedCounterCubit);
-  // Each IsolatedCounter component has its own independent state
-  return (
-    <div>
-      <p>Isolated Count: {count}</p>
-      <button onClick={() => counterCubit.increment()}>+</button>
+      <h2>Room: {roomId}</h2>
+      <div className="messages">
+        {state.messages.map(msg => (
+          <Message key={msg.id} message={msg} />
+        ))}
+      </div>
     </div>
   );
 }`}
         </DocCode>
 
-        <DocNote type="info">
+        <DocNote>
           <p>
-            Static properties like <code>isolated</code> and <code>keepAlive</code> give you control over state persistence
-            without changing how you use the <code>useBloc</code> hook in your components.
+            The <code>id</code> option allows you to have multiple instances of the same bloc class, each with its own state.
+            This is particularly useful for list items, tabs, or other repeated components that need isolated state.
           </p>
         </DocNote>
       </DocSection>
 
-      <DocSection title="Dependency Tracking">
+      <DocSection title="Smart Dependency Tracking">
         <p>
-          One of the most powerful features of Blac is its automatic dependency tracking. When you access specific 
-          properties of a state object in your component, Blac keeps track of exactly which properties you used.
+          Blac uses a smart dependency tracking system to optimize re-renders. Components only re-render when the 
+          specific parts of state they use change.
         </p>
 
-        <DocCode language="typescript" title="Dependency Tracking Example">
-{`import React from 'react';
-import { useBloc } from '@blac/react';
-import { UserPreferencesCubit } from './preferences';
-
-// Complex state with many properties
-interface UserPreferencesState {
-  theme: 'light' | 'dark';
-  fontSize: number;
-  notifications: {
-    email: boolean;
-    push: boolean;
-    sms: boolean;
-  };
-  profile: {
-    username: string;
-    avatar: number;
-  };
-}
-
-// ThemeComponent only cares about the theme
-function ThemeComponent() {
-  // Only subscribes to the 'theme' property
-  const [{ theme }, cubit] = useBloc(UserPreferencesCubit);
+        <DocFeatureGrid>
+          <DocFeature 
+            title="Automatic Property Tracking"
+            color="blue"
+          >
+            <p>
+              By default, Blac automatically tracks which properties of the state are accessed during rendering:
+            </p>
+            <DocCode language="typescript" showLineNumbers={false}>
+{`function UserProfile() {
+  const [state, bloc] = useBloc(UserBloc);
   
-  // This component only re-renders when theme changes,
-  // not when any other state properties change!
-  return (
-    <div>
-      <p>Current theme: {theme}</p>
-      <button onClick={() => cubit.setTheme(theme === 'light' ? 'dark' : 'light')}>
-        Toggle Theme
-      </button>
-    </div>
-  );
-}
-
-// NotificationComponent only cares about notification settings
-function NotificationComponent() {
-  // Only subscribes to the notifications object
-  const [{ notifications }, cubit] = useBloc(UserPreferencesCubit);
-  
-  // Only re-renders when any notifications settings change
-  return (
-    <div>
-      <h3>Notification Settings</h3>
-      <label>
-        <input 
-          type="checkbox" 
-          checked={notifications.email}
-          onChange={() => cubit.toggleEmailNotifications()}
-        />
-        Email Notifications
-      </label>
-      <label>
-        <input 
-          type="checkbox" 
-          checked={notifications.push}
-          onChange={() => cubit.togglePushNotifications()}
-        />
-        Push Notifications
-      </label>
-    </div>
-  );
-}
-
-// ProfileNameComponent only cares about the username
-function ProfileNameComponent() {
-  // Only subscribes to profile.username
-  const [{ profile: { username } }, cubit] = useBloc(UserPreferencesCubit);
-  
-  // Only re-renders when username changes, not when avatar changes
-  return <h2>Hello, {username}!</h2>;
+  // This component only re-renders when state.name changes
+  return <h1>{state.name}</h1>;
 }`}
-        </DocCode>
-
-        <DocNote type="success">
-          <p>
-            <strong>Performance Impact:</strong> Dependency tracking significantly reduces unnecessary re-renders in your 
-            React application. Components only update when the specific data they use changes, not when other parts of 
-            the state are modified.
-          </p>
-        </DocNote>
-
-        <p className="mt-4">
-          The dependency tracking works at any level of nesting in your state objects. You can destructure deeply nested
-          properties and Blac will still track them correctly.
-        </p>
-
-        <DocCode language="typescript" title="Deep Dependency Tracking">
-{`// Example of accessing nested properties
-function UserProfileComponent() {
-  // Only tracks the specific nested properties accessed
-  const [{ user }, userCubit] = useBloc(UserProfileCubit);
+            </DocCode>
+          </DocFeature>
+          
+          <DocFeature 
+            title="Custom Dependency Selection"
+            color="green"
+          >
+            <p>
+              For more control, provide a custom dependency selector:
+            </p>
+            <DocCode language="typescript" showLineNumbers={false}>
+{`function TodoList() {
+  const [state, bloc] = useBloc(TodoBloc, {
+    dependencySelector: (state) => [
+      state.todos.length, // Re-render when todo count changes
+      state.filter        // Re-render when filter changes
+    ]
+  });
   
-  // This component will only re-render when user.profile.name changes
-  // It won't re-render when other properties like user.settings change
-  return (
-    <div>
-      <h2>Welcome, {user.profile.name}</h2>
-      <button onClick={() => userCubit.updateProfileName('New Name')}>
-        Update Name
-      </button>
-    </div>
-  );
+  // ...render logic
+}`}
+            </DocCode>
+          </DocFeature>
+        </DocFeatureGrid>
+
+        <DocCode title="Optimized Renders Example">
+{`// Only re-render when the completed count changes
+function CompletedTasksCounter() {
+  const [state, bloc] = useBloc(TaskBloc, {
+    dependencySelector: (state) => [
+      state.tasks.filter(task => task.completed).length
+    ]
+  });
+  
+  const completedCount = state.tasks.filter(task => task.completed).length;
+  
+  return <span>Completed: {completedCount}</span>;
 }`}
         </DocCode>
       </DocSection>
 
-      <DocSection title="Computed Properties">
+      <DocSection title="Passing Props to Blocs">
         <p>
-          Blac supports computed properties through class getters. These computed values are accessed directly from the 
-          cubit instance returned by <code>useBloc</code>.
+          Use the <code>props</code> option to initialize a bloc with specific parameters:
         </p>
 
-        <DocCode language="typescript" title="Computed Properties Example">
-{`// Cubit with computed properties
-class TaskBoardCubit extends Cubit<Task[]> {
-  constructor() {
-    super([]);
-  }
-  
-  // Methods to add/remove tasks...
-  
-  // Computed properties
-  get todoTasks() {
-    return this.state.filter(task => task.status === 'todo');
-  }
-  
-  get inProgressTasks() {
-    return this.state.filter(task => task.status === 'in-progress');
-  }
-  
-  get doneTasks() {
-    return this.state.filter(task => task.status === 'done');
-  }
-  
-  get taskStats() {
-    const total = this.state.length;
-    const completed = this.doneTasks.length;
-    const completionRate = total > 0 ? (completed / total) * 100 : 0;
+        <DocCode language="typescript" title="Passing Props to a Bloc">
+{`interface ThemeProps {
+  defaultTheme: 'light' | 'dark';
+  saveToLocalStorage?: boolean;
+}
+
+class ThemeCubit extends Cubit<{ theme: 'light' | 'dark' }, ThemeProps> {
+  constructor(props: ThemeProps) {
+    // Initialize from localStorage or use provided default
+    const savedTheme = props.saveToLocalStorage
+      ? localStorage.getItem('theme')
+      : null;
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const initialTheme = savedTheme || props.defaultTheme || (prefersDark ? 'dark' : 'light');
     
-    return { total, completed, completionRate };
+    super({ theme: initialTheme as 'light' | 'dark' });
+    
+    // Store props for later use if needed
+    this.saveToLocalStorage = props.saveToLocalStorage;
   }
+  
+  private saveToLocalStorage?: boolean;
+  
+  toggleTheme = () => {
+    const newTheme = this.state.theme === 'light' ? 'dark' : 'light';
+    
+    if (this.saveToLocalStorage) {
+      localStorage.setItem('theme', newTheme);
+    }
+    
+    this.emit({ theme: newTheme });
+  };
 }
 
-// Component using computed properties
-function TaskStatistics() {
-  // Access computed properties from the cubit instance
-  const [, taskBoardCubit] = useBloc(TaskBoardCubit);
+function App() {
+  const [state, themeCubit] = useBloc(ThemeCubit, {
+    props: { 
+      defaultTheme: 'dark',
+      saveToLocalStorage: true
+    }
+  });
+  
+  return (
+    <div className={state.theme === 'dark' ? 'dark-theme' : 'light-theme'}>
+      <button onClick={themeCubit.toggleTheme}>
+        Switch to {state.theme === 'light' ? 'Dark' : 'Light'} Mode
+      </button>
+      {/* Rest of app */}
+    </div>
+  );
+}`}
+        </DocCode>
+      </DocSection>
+
+      <DocSection title="Lifecycle Management">
+        <p>
+          The <code>useBloc</code> hook provides an <code>onMount</code> option that's called when the bloc is first mounted:
+        </p>
+
+        <DocCode language="typescript" title="Using onMount">
+{`function PetList() {
+  const [state, petfinderBloc] = useBloc(PetfinderBloc, {
+    onMount: (bloc) => {
+      // This runs once when the bloc is mounted
+      bloc.searchAnimals();
+    }
+  });
   
   return (
     <div>
-      <h3>Task Statistics</h3>
-      <ul>
-        <li>To Do: {taskBoardCubit.todoTasks.length}</li>
-        <li>In Progress: {taskBoardCubit.inProgressTasks.length}</li>
-        <li>Done: {taskBoardCubit.doneTasks.length}</li>
-        <li>Completion Rate: {taskBoardCubit.taskStats.completionRate.toFixed(1)}%</li>
-      </ul>
+      {state.isLoading ? (
+        <LoadingSpinner />
+      ) : state.error ? (
+        <ErrorMessage message={state.error} />
+      ) : (
+        <div className="pet-grid">
+          {state.animals.map(animal => (
+            <PetCard key={animal.id} animal={animal} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }`}
         </DocCode>
 
-        <DocNote type="info">
+        <DocNote>
           <p>
-            Computed properties are recalculated on-demand when accessed, making them efficient for derived data.
-            Only the components that actually use a computed property will re-render when the underlying data changes.
+            The <code>onMount</code> callback works similarly to React's <code>useEffect</code> with an empty dependency array.
+            It's a convenient way to load initial data or set up the bloc when the component renders.
           </p>
         </DocNote>
       </DocSection>
 
-      <DocSection title="Advanced useBloc Options">
+      <DocSection title="Error Handling">
         <p>
-          The <code>useBloc</code> hook accepts a second parameter with configuration options:
+          Proper error handling is essential for good user experience. Here's how to handle errors in a Bloc pattern:
         </p>
 
-        <DocCode language="typescript" title="useBloc with Options">
-{`const [state, bloc] = useBloc(BlocClass, {
-  // Custom ID for creating multiple shared instances
-  id: 'custom-instance-id',
-  
-  // Custom initial state
-  initialState: { count: 10 },
-  
-  // Props to pass to the bloc constructor
-  props: { api: apiClient },
-  
-  // Listen only to specific state properties
-  // (alternative to automatic dependency tracking)
-  select: state => state.user,
-});`}
-        </DocCode>
-
-        <DocFeatureGrid>
-          <DocFeature 
-            title="id"
-            color="blue"
-          >
-            <p>
-              Specifies a unique ID for the bloc instance, allowing multiple shared instances 
-              of the same bloc class.
-            </p>
-            <DocCode language="typescript" showLineNumbers={false}>
-{`// Component A
-const [state, bloc] = useBloc(CounterCubit, { id: 'counter-a' });
-
-// Component B (different instance)
-const [state, bloc] = useBloc(CounterCubit, { id: 'counter-b' });`}
-            </DocCode>
-          </DocFeature>
-          
-          <DocFeature 
-            title="initialState"
-            color="green"
-          >
-            <p>
-              Provides a custom initial state when creating a new bloc instance.
-            </p>
-            <DocCode language="typescript" showLineNumbers={false}>
-{`const [state, bloc] = useBloc(CounterCubit, {
-  initialState: 10 // Start from 10 instead of 0
-});`}
-            </DocCode>
-          </DocFeature>
-          
-          <DocFeature 
-            title="props"
-            color="purple"
-          >
-            <p>
-              Passes additional properties to the bloc constructor.
-            </p>
-            <DocCode language="typescript" showLineNumbers={false}>
-{`// Cubit that needs an API client
-class ApiCubit extends Cubit<ApiState, ApiProps> {
-  constructor(props: ApiProps) {
-    super(initialState);
-    this.apiClient = props.apiClient;
-  }
+        <DocCode title="Error Handling Example">
+{`// In your Bloc
+class UserBloc extends Cubit<UserState> {
+  fetchUser = async (userId: string) => {
+    try {
+      this.patch({ loading: true, error: null });
+      
+      const response = await fetch(\`/api/users/\${userId}\`);
+      
+      if (!response.ok) {
+        throw new Error(\`Error \${response.status}: \${response.statusText}\`);
+      }
+      
+      const user = await response.json();
+      this.patch({ user, loading: false });
+    } catch (error) {
+      this.patch({ 
+        loading: false, 
+        error: error instanceof Error ? error.message : 'An error occurred'
+      });
+    }
+  };
 }
 
-// Provide required props
-const [state, bloc] = useBloc(ApiCubit, {
-  props: { apiClient: myApiClient }
-});`}
-            </DocCode>
-          </DocFeature>
-          
-          <DocFeature 
-            title="select"
-            color="amber"
-          >
-            <p>
-              Manually specify which parts of state to subscribe to.
-            </p>
-            <DocCode language="typescript" showLineNumbers={false}>
-{`// Only re-render when user changes
-const [state, bloc] = useBloc(AppCubit, {
-  select: state => state.user
-});`}
-            </DocCode>
-          </DocFeature>
-        </DocFeatureGrid>
+// In your Component
+function UserProfile({ userId }) {
+  const [state, userBloc] = useBloc(UserBloc, {
+    onMount: (bloc) => bloc.fetchUser(userId)
+  });
+
+  if (state.loading) {
+    return <LoadingSpinner />;
+  }
+
+  if (state.error) {
+    return (
+      <div className="error-container">
+        <p className="error-message">{state.error}</p>
+        <button onClick={() => userBloc.fetchUser(userId)}>
+          Try Again
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="user-profile">
+      <h1>{state.user.name}</h1>
+      <p>{state.user.email}</p>
+      {/* More user details */}
+    </div>
+  );
+}`}
+        </DocCode>
       </DocSection>
 
-      <DocSection title="Best Practices">
-        <DocFeatureGrid>
-          <DocFeature 
-            title="Granular Components"
-            color="blue"
-          >
-            <p>
-              Create smaller, focused components that each use only the parts of state they need.
-              This maximizes the benefit of automatic dependency tracking.
-            </p>
-          </DocFeature>
-          
-          <DocFeature 
-            title="State Design"
-            color="green"
-          >
-            <p>
-              Organize your state in a way that makes it easy to access specific parts.
-              Use nested objects to group related data.
-            </p>
-          </DocFeature>
-          
-          <DocFeature 
-            title="Multiple Cubits"
-            color="purple"
-          >
-            <p>
-              Don't try to put everything in one giant state object. Use multiple cubits 
-              for different concerns in your application.
-            </p>
-          </DocFeature>
-          
-          <DocFeature 
-            title="Consistent Naming"
-            color="amber"
-          >
-            <p>
-              Use consistent naming conventions for your cubits and their methods
-              to make your code more predictable and easier to maintain.
-            </p>
-          </DocFeature>
-        </DocFeatureGrid>
+      <DocSection title="Form Handling">
+        <p>
+          The Blac pattern is excellent for managing form state. Here's an example of form validation and submission:
+        </p>
 
-        <DocNote type="warning">
-          <p>
-            Avoid accessing state properties in callbacks or effects unless you explicitly capture them.
-            The dependency tracking only works during render.
-          </p>
-          <DocCode language="typescript" showLineNumbers={false}>
-{`// Wrong way (dependency tracking doesn't work here)
-useEffect(() => {
-  // This won't re-run when isLoading changes
-  if (state.isLoading) {
-    // ...
+        <DocCode title="Form Handling Example">
+{`// Form bloc
+class FormBloc extends Cubit<FormState> {
+  constructor() {
+    super({
+      email: '',
+      password: '',
+      confirmPassword: '',
+      errors: {},
+      isSubmitting: false,
+      isSubmitted: false,
+      submitError: null
+    });
   }
-}, [state]); // ❌ Too broad
 
-// Right way
-const { isLoading } = state; // Capture during render
-useEffect(() => {
-  if (isLoading) {
-    // ...
+  updateField = (field: keyof FormState, value: string) => {
+    this.patch({ [field]: value });
+  };
+  
+  validateForm = () => {
+    const errors: Record<string, string> = {};
+    
+    if (!this.state.email) {
+      errors.email = 'Email is required';
+    } else if (!/\\S+@\\S+\\.\\S+/.test(this.state.email)) {
+      errors.email = 'Email is invalid';
+    }
+    
+    if (!this.state.password) {
+      errors.password = 'Password is required';
+    } else if (this.state.password.length < 8) {
+      errors.password = 'Password must be at least 8 characters';
+    }
+    
+    if (this.state.password !== this.state.confirmPassword) {
+      errors.confirmPassword = 'Passwords do not match';
+    }
+    
+    this.patch({ errors });
+    return Object.keys(errors).length === 0;
+  };
+  
+  submitForm = async () => {
+    const isValid = this.validateForm();
+    if (!isValid) return;
+    
+    this.patch({ isSubmitting: true, submitError: null });
+    
+    try {
+      // Submit form logic
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      this.patch({ isSubmitted: true, isSubmitting: false });
+    } catch (error) {
+      this.patch({ 
+        isSubmitting: false,
+        submitError: error instanceof Error ? error.message : 'Submit failed'
+      });
+    }
+  };
+}
+
+// Form component
+function SignupForm() {
+  const [state, formBloc] = useBloc(FormBloc);
+  
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    formBloc.submitForm();
+  };
+  
+  if (state.isSubmitted) {
+    return (
+      <div className="success-message">
+        Thank you for signing up! Check your email for confirmation.
+      </div>
+    );
   }
-}, [isLoading]); // ✅ Specific dependency`}
-          </DocCode>
-        </DocNote>
+  
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label htmlFor="email">Email</label>
+        <input
+          id="email"
+          type="email"
+          value={state.email}
+          onChange={(e) => formBloc.updateField('email', e.target.value)}
+          className="form-input"
+        />
+        {state.errors.email && (
+          <p className="error-text">{state.errors.email}</p>
+        )}
+      </div>
+      
+      {/* Password and confirm password fields */}
+      
+      {state.submitError && (
+        <div className="error-container">{state.submitError}</div>
+      )}
+      
+      <button
+        type="submit"
+        disabled={state.isSubmitting}
+        className="submit-button"
+      >
+        {state.isSubmitting ? 'Signing Up...' : 'Sign Up'}
+      </button>
+    </form>
+  );
+}`}
+        </DocCode>
       </DocSection>
     </div>
   );
