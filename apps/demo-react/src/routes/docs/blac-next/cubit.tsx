@@ -171,6 +171,12 @@ this.patch({
             The <code>patch</code> method is only applicable when the state is an object type. It performs a shallow merge using the spread 
             operator (<code>{'{'} ...this.state, ...statePatch {'}'}</code>).
           </p>
+          <p className="mt-2">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 mr-2">
+              Coming Soon
+            </span>
+            Enhanced <code>patch()</code> with deep path-based updates (e.g., <code>patch('nested.deep.property', value)</code>).
+          </p>
         </DocNote>
 
         <DocCode title="Using patch() in a Todo Cubit">

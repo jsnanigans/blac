@@ -275,6 +275,53 @@ function Counter() {
           </DocFeature>
         </DocFeatureGrid>
       </DocSection>
+
+      <DocSection title="Future Development" tag="h2">
+        <p className="text-lg mb-6">
+          The Blac framework is actively evolving with several exciting features planned for future releases:
+        </p>
+        
+        <ul className="space-y-4">
+          <li className="flex items-start">
+            <span className="inline-flex items-center justify-center flex-shrink-0 w-6 h-6 mr-3 mt-0.5 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full text-white font-medium text-xs">1</span>
+            <div>
+              <span className="font-medium text-gray-900 dark:text-white">Enhanced Debugging Tools</span>
+              <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300">
+                Coming Soon
+              </span>
+              <p className="mt-1 text-gray-600 dark:text-gray-400">
+                Improved developer tools for inspecting bloc state transitions and event flows, making it easier to debug complex state management issues.
+              </p>
+            </div>
+          </li>
+          
+          <li className="flex items-start">
+            <span className="inline-flex items-center justify-center flex-shrink-0 w-6 h-6 mr-3 mt-0.5 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full text-white font-medium text-xs">2</span>
+            <div>
+              <span className="font-medium text-gray-900 dark:text-white">Persistence Adapters</span>
+              <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300">
+                Coming Soon
+              </span>
+              <p className="mt-1 text-gray-600 dark:text-gray-400">
+                Built-in support for persisting bloc state to localStorage, sessionStorage, or IndexedDB, simplifying offline-first app development.
+              </p>
+            </div>
+          </li>
+          
+          <li className="flex items-start">
+            <span className="inline-flex items-center justify-center flex-shrink-0 w-6 h-6 mr-3 mt-0.5 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full text-white font-medium text-xs">3</span>
+            <div>
+              <span className="font-medium text-gray-900 dark:text-white">Server-side Bloc Support</span>
+              <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300">
+                Coming Soon
+              </span>
+              <p className="mt-1 text-gray-600 dark:text-gray-400">
+                Support for SSR with Blac to improve SEO and initial load performance for Next.js and other SSR frameworks.
+              </p>
+            </div>
+          </li>
+        </ul>
+      </DocSection>
     </div>
   );
 }

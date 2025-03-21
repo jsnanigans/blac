@@ -161,6 +161,15 @@ class CounterBloc extends Bloc<CounterEvent, CounterState> {
 }`}
         </DocCode>
 
+        <DocNote type="info">
+          <p>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 mr-2">
+              Coming Soon
+            </span>
+            Enhanced type-safety for event handlers to ensure compile-time checking of event-handler relationships.
+          </p>
+        </DocNote>
+
         <p className="mt-4">In this example:</p>
         <ol className="space-y-2">
           <li>We define an abstract <code>CounterEvent</code> class and concrete event classes that extend it</li>
@@ -240,6 +249,9 @@ bloc.add(new ThirdEvent());  // Processed after SecondEvent`}
             </div>
             <p className="mb-4">
               Enable concurrent event processing for events that don't depend on each other:
+              <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300">
+                Coming Soon
+              </span>
             </p>
             <DocCode language="typescript" showLineNumbers={false}>
 {`class DataBloc extends Bloc<DataEvent, DataState> {
@@ -267,6 +279,9 @@ bloc.add(new ThirdEvent());  // Processed after SecondEvent`}
             </div>
             <p className="mb-4">
               Transform events before they're handled:
+              <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-300">
+                Coming Soon
+              </span>
             </p>
             <DocCode language="typescript" showLineNumbers={false}>
 {`class SearchBloc extends Bloc<SearchEvent, SearchState> {
@@ -520,92 +535,6 @@ function LoginForm() {
   );
 }`}
         </DocCode>
-      </DocSection>
-
-      <DocSection title="Event Handling Strategies">
-        <p>
-          Blocs offer different strategies for handling events, depending on your needs:
-        </p>
-
-        <div className="space-y-8 my-6">
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/10 dark:to-blue-800/20 p-6 rounded-lg border border-blue-200 dark:border-blue-800/30">
-            <div className="flex items-center mb-4">
-              <div className="bg-blue-100 dark:bg-blue-800/30 p-2 rounded-md mr-3">
-                <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-blue-800 dark:text-blue-300">Sequential Processing</h3>
-            </div>
-            <p className="mb-4">
-              Events are processed one at a time in the order they are received. This is the default behavior.
-            </p>
-            <DocCode language="typescript" showLineNumbers={false}>
-{`// Events will be processed in order
-bloc.add(new FirstEvent());
-bloc.add(new SecondEvent()); // Processed after FirstEvent
-bloc.add(new ThirdEvent());  // Processed after SecondEvent`}
-            </DocCode>
-          </div>
-          
-          <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/10 dark:to-green-800/20 p-6 rounded-lg border border-green-200 dark:border-green-800/30">
-            <div className="flex items-center mb-4">
-              <div className="bg-green-100 dark:bg-green-800/30 p-2 rounded-md mr-3">
-                <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-green-800 dark:text-green-300">Concurrent Processing</h3>
-            </div>
-            <p className="mb-4">
-              Enable concurrent event processing for events that don't depend on each other:
-            </p>
-            <DocCode language="typescript" showLineNumbers={false}>
-{`class DataBloc extends Bloc<DataEvent, DataState> {
-  constructor() {
-    super(initialState);
-    
-    // Enable concurrent event processing
-    this.concurrentEventProcessing = true;
-    
-    this.on(LoadUserEvent, this.loadUser);
-    this.on(LoadPostsEvent, this.loadPosts);
-  }
-}`}
-            </DocCode>
-          </div>
-          
-          <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/10 dark:to-purple-800/20 p-6 rounded-lg border border-purple-200 dark:border-purple-800/30">
-            <div className="flex items-center mb-4">
-              <div className="bg-purple-100 dark:bg-purple-800/30 p-2 rounded-md mr-3">
-                <svg className="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-purple-800 dark:text-purple-300">Event Transformation</h3>
-            </div>
-            <p className="mb-4">
-              Transform events before they're handled:
-            </p>
-            <DocCode language="typescript" showLineNumbers={false}>
-{`class SearchBloc extends Bloc<SearchEvent, SearchState> {
-  constructor() {
-    super(initialState);
-    
-    // Transform SearchQueryChanged events
-    this.transform(SearchQueryChanged, events => 
-      events.pipe(
-        debounceTime(300),
-        distinctUntilChanged((prev, curr) => prev.query === curr.query)
-      )
-    );
-    
-    this.on(SearchQueryChanged, this.handleSearchQueryChanged);
-  }
-}`}
-            </DocCode>
-          </div>
-        </div>
       </DocSection>
 
       <DocSection title="Best Practices">

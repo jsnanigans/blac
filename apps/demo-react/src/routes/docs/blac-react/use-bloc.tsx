@@ -126,6 +126,9 @@ function Counter() {
         <p>
           Blac provides flexible options for managing Bloc instances across your components. You can control whether 
           state is shared between components, isolated to each instance, or persisted even when not in use.
+          <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300">
+            Enhancements Coming Soon
+          </span>
         </p>
 
         <DocFeatureGrid>
