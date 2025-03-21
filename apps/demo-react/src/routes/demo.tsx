@@ -12,7 +12,7 @@ function RouteComponent() {
         <h1 className="text-3xl font-bold mb-4 text-gradient-multi animate-text-shimmer">Demo Components</h1>
         <p className="text-cyan-100/90 mb-6">Explore the different demo components to see blac in action.</p>
         <div className="flex flex-wrap gap-3">
-          <PrettyLink to="/demo/counter" variant="cyan">Counter</PrettyLink>
+          <PrettyLink to="/demo/instance-management" variant="cyan">Instance Management</PrettyLink>
           <PrettyLink to="/demo/dependency-tracking" variant="blue">Dependency Tracking</PrettyLink>
           <PrettyLink 
             to="/demo/petfinder" 

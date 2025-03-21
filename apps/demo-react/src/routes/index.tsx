@@ -32,11 +32,11 @@ function Index() {
               <line x1="12" y1="16" x2="12.01" y2="16"></line>
             </svg>
           </div>
-          <h2 className="text-2xl font-semibold mb-4 text-gradient-cyan">Counter Demo</h2>
+          <h2 className="text-2xl font-semibold mb-4 text-gradient-cyan">Instance Management Demo</h2>
           <p className="dark:text-cyan-100/80 text-slate-600 mb-6">
             See how blac manages state with a simple counter example. Explore shared vs isolated state management.
           </p>
-          <Link to="/demo/counter" className="text-gradient-cyan inline-flex items-center gap-2 hover:text-glow font-medium">
+          <Link to="/demo/instance-management" className="text-gradient-cyan inline-flex items-center gap-2 hover:text-glow font-medium">
             Try the Counter 
             <svg className="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />

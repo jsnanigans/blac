@@ -41,7 +41,7 @@ export const Route = createRootRoute({
         </div>
       </header>
       
-      <main className="container mx-auto py-8 relative z-10">
+      <main className="relative z-10 py-8">
         <Outlet />
       </main>
       
