@@ -1,8 +1,9 @@
 import { createFileRoute, Outlet, Link } from '@tanstack/react-router';
 import { useMatchRoute } from '@tanstack/react-router';
+import { TableOfContents } from '../components/TableOfContents';
 
 export const Route = createFileRoute('/docs')({
-  component: DocsLayout,
+  component: DocsLayout
 });
 
 interface DocLinkProps {
@@ -50,7 +51,7 @@ function DocLink({ to, children, isDisabled = false }: DocLinkProps) {
 
 function DocsLayout() {
   return (
-    <div className="flex flex-col md:flex-row w-full px-4 lg:px-8 py-4 gap-6">
+    <div className="flex flex-col md:flex-row w-full px-4 lg:px-8 py-4 gap-6 mx-auto max-w-[1800px]">
       {/* Left Sidebar Navigation - Sticky */}
       <aside className="w-full md:w-64 lg:w-72 xl:w-80 flex-shrink-0 order-2 md:order-1 md:self-start">
         <div className="md:sticky md:top-[5.5rem] overflow-y-auto md:max-h-[calc(100vh-8rem)] py-4 pr-4">
@@ -120,11 +121,11 @@ function DocsLayout() {
       </main>
       
       {/* Right Sidebar - On this page (only visible on larger screens) */}
-      {/* <aside className="hidden lg:block w-56 xl:w-64 flex-shrink-0 order-3 lg:self-start">
+      <aside className="hidden lg:block w-56 xl:w-64 flex-shrink-0 order-3 lg:self-start">
         <div className="lg:sticky lg:top-[5.5rem] overflow-y-auto lg:max-h-[calc(100vh-8rem)]">
           <TableOfContents />
         </div>
-      </aside> */}
+      </aside>
     </div>
   );
 }
