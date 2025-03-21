@@ -245,7 +245,7 @@ class PersistentBloc extends Cubit<{ count: number }> {
             color="blue"
           >
             <p>
-              By default, Blac automatically tracks which properties of the state are accessed during rendering:
+              Blac automatically tracks which properties of state are accessed during rendering and only re-renders when those specific properties change:
             </p>
             <DocCode language="typescript" showLineNumbers={false}>
 {`function UserProfile() {
@@ -262,7 +262,7 @@ class PersistentBloc extends Cubit<{ count: number }> {
             color="green"
           >
             <p>
-              For more control, provide a custom dependency selector:
+              For more control, you can provide a custom dependency selector function:
             </p>
             <DocCode language="typescript" showLineNumbers={false}>
 {`function TodoList() {

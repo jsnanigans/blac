@@ -69,10 +69,10 @@ function CubitPage() {
         </p>
 
         <DocCode title="Basic Cubit Example">
-{`import { Cubit } from 'blac-next';
+{`import { Cubit } from '@blac/next';
 
 // A simple counter cubit that manages a number state
-class CounterBloc extends Cubit<{ count: number }> {
+class CounterCubit extends Cubit<{ count: number }> {
   constructor() {
     super({ count: 0 }); // Initialize with state object
   }
@@ -116,17 +116,17 @@ increment() {
           serve the purpose of updating state, <code>patch()</code> is often the preferred approach for complex state objects.
         </p>
 
-        <DocFeatureGrid>
-          <DocFeature 
-            title="emit()"
-            icon={
-              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            }
-            color="blue"
-          >
-            <p>
+        <div className="space-y-8 my-6">
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/10 dark:to-blue-800/20 p-6 rounded-lg border border-blue-200 dark:border-blue-800/30">
+            <div className="flex items-center mb-4">
+              <div className="bg-blue-100 dark:bg-blue-800/30 p-2 rounded-md mr-3">
+                <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-blue-800 dark:text-blue-300">emit()</h3>
+            </div>
+            <p className="mb-4">
               The <code>emit</code> method completely replaces the current state with a new state:
             </p>
             <DocCode>
@@ -137,21 +137,21 @@ this.emit(newState);
 // no update will occur
 this.emit(this.state); // No effect`}
             </DocCode>
-          </DocFeature>
+          </div>
           
-          <DocFeature 
-            title="patch()"
-            icon={
-              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
-              </svg>
-            }
-            color="green"
-          >
-            <p>
+          <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/10 dark:to-green-800/20 p-6 rounded-lg border border-green-200 dark:border-green-800/30">
+            <div className="flex items-center mb-4">
+              <div className="bg-green-100 dark:bg-green-800/30 p-2 rounded-md mr-3">
+                <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-green-800 dark:text-green-300">patch()</h3>
+            </div>
+            <p className="mb-4">
               The <code>patch</code> method allows you to partially update an object state by merging only the changed properties:
             </p>
-            <DocCode highlightLines={[2, 5]}>
+            <DocCode>
 {`// Only update specific properties
 this.patch({ completed: true, updatedAt: Date.now() });
 
@@ -163,8 +163,8 @@ this.patch({
   } 
 });`}
             </DocCode>
-          </DocFeature>
-        </DocFeatureGrid>
+          </div>
+        </div>
 
         <DocNote type="info">
           <p>
@@ -173,8 +173,8 @@ this.patch({
           </p>
         </DocNote>
 
-        <DocCode title="Using patch() in a Todo Cubit" highlightLines={[18, 19, 23, 27, 31, 40, 41, 42, 43, 44, 48, 49, 50, 51]}>
-{`import { Cubit } from 'blac-next';
+        <DocCode title="Using patch() in a Todo Cubit">
+{`import { Cubit } from '@blac/next';
 
 interface TodoState {
   todos: Todo[];
@@ -271,7 +271,7 @@ class TodoCubit extends Cubit<TodoState> {
 
         <DocCode title="Instance Management Patterns">
 {`// 1. Shared State (Default)
-class CounterBloc extends Cubit<{ count: number }> {
+class CounterCubit extends Cubit<{ count: number }> {
   // No static properties needed - this is the default
   constructor() {
     super({ count: 0 });
@@ -279,7 +279,7 @@ class CounterBloc extends Cubit<{ count: number }> {
 }
 
 // 2. Isolated State (each component gets its own instance)
-class IsolatedCounterBloc extends Cubit<{ count: number }> {
+class IsolatedCounterCubit extends Cubit<{ count: number }> {
   static isolated = true;
   
   constructor() {
@@ -288,7 +288,7 @@ class IsolatedCounterBloc extends Cubit<{ count: number }> {
 }
 
 // 3. Persistent State (state persists even when no components are using it)
-class PersistentCounterBloc extends Cubit<{ count: number }> {
+class PersistentCounterCubit extends Cubit<{ count: number }> {
   static keepAlive = true;
   
   constructor() {
@@ -317,7 +317,7 @@ class PersistentCounterBloc extends Cubit<{ count: number }> {
         </p>
 
         <DocCode title="Todo List Cubit Example">
-{`import { Cubit } from 'blac-next';
+{`import { Cubit } from '@blac/next';
 
 // Define the state type
 interface Todo {
@@ -391,8 +391,8 @@ class TodoCubit extends Cubit<TodoState> {
           Cubits make it easy to handle asynchronous operations such as API calls. Here's a pattern for managing loading states, data fetching, and error handling:
         </p>
 
-        <DocCode title="Pet Finder Bloc Example" highlightLines={[20, 21, 22, 23, 24, 33, 34, 35, 36, 37, 38, 39, 40, 42, 43, 44, 45, 46]}>
-{`import { Cubit } from 'blac-next';
+        <DocCode title="Pet Finder Bloc Example">
+{`import { Cubit } from '@blac/next';
 import { petfinderAPI } from '../services/petfinder';
 
 interface PetfinderState {
@@ -471,7 +471,7 @@ class PetfinderBloc extends Cubit<PetfinderState> {
         </p>
 
         <DocCode title="Cubit with Props">
-{`import { Cubit } from 'blac-next';
+{`import { Cubit } from '@blac/next';
 
 // Define props interface
 interface ThemeProps {

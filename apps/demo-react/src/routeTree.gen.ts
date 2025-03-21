@@ -24,6 +24,7 @@ import { Route as DemoDependencyTrackingImport } from './routes/demo/dependency-
 import { Route as DemoCounterImport } from './routes/demo/counter'
 import { Route as DocsBlacReactUseBlocImport } from './routes/docs/blac-react/use-bloc'
 import { Route as DocsBlacNextCubitImport } from './routes/docs/blac-next/cubit'
+import { Route as DocsBlacNextBlocImport } from './routes/docs/blac-next/bloc'
 
 // Create/Update Routes
 
@@ -102,6 +103,12 @@ const DocsBlacReactUseBlocRoute = DocsBlacReactUseBlocImport.update({
 const DocsBlacNextCubitRoute = DocsBlacNextCubitImport.update({
   id: '/blac-next/cubit',
   path: '/blac-next/cubit',
+  getParentRoute: () => DocsRoute,
+} as any)
+
+const DocsBlacNextBlocRoute = DocsBlacNextBlocImport.update({
+  id: '/blac-next/bloc',
+  path: '/blac-next/bloc',
   getParentRoute: () => DocsRoute,
 } as any)
 
@@ -186,6 +193,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocsIndexImport
       parentRoute: typeof DocsImport
     }
+    '/docs/blac-next/bloc': {
+      id: '/docs/blac-next/bloc'
+      path: '/blac-next/bloc'
+      fullPath: '/docs/blac-next/bloc'
+      preLoaderRoute: typeof DocsBlacNextBlocImport
+      parentRoute: typeof DocsImport
+    }
     '/docs/blac-next/cubit': {
       id: '/docs/blac-next/cubit'
       path: '/blac-next/cubit'
@@ -226,6 +240,7 @@ interface DocsRouteChildren {
   DocsInstallationRoute: typeof DocsInstallationRoute
   DocsIntroductionRoute: typeof DocsIntroductionRoute
   DocsIndexRoute: typeof DocsIndexRoute
+  DocsBlacNextBlocRoute: typeof DocsBlacNextBlocRoute
   DocsBlacNextCubitRoute: typeof DocsBlacNextCubitRoute
   DocsBlacReactUseBlocRoute: typeof DocsBlacReactUseBlocRoute
 }
@@ -235,6 +250,7 @@ const DocsRouteChildren: DocsRouteChildren = {
   DocsInstallationRoute: DocsInstallationRoute,
   DocsIntroductionRoute: DocsIntroductionRoute,
   DocsIndexRoute: DocsIndexRoute,
+  DocsBlacNextBlocRoute: DocsBlacNextBlocRoute,
   DocsBlacNextCubitRoute: DocsBlacNextCubitRoute,
   DocsBlacReactUseBlocRoute: DocsBlacReactUseBlocRoute,
 }
@@ -253,6 +269,7 @@ export interface FileRoutesByFullPath {
   '/docs/installation': typeof DocsInstallationRoute
   '/docs/introduction': typeof DocsIntroductionRoute
   '/docs/': typeof DocsIndexRoute
+  '/docs/blac-next/bloc': typeof DocsBlacNextBlocRoute
   '/docs/blac-next/cubit': typeof DocsBlacNextCubitRoute
   '/docs/blac-react/use-bloc': typeof DocsBlacReactUseBlocRoute
 }
@@ -268,6 +285,7 @@ export interface FileRoutesByTo {
   '/docs/installation': typeof DocsInstallationRoute
   '/docs/introduction': typeof DocsIntroductionRoute
   '/docs': typeof DocsIndexRoute
+  '/docs/blac-next/bloc': typeof DocsBlacNextBlocRoute
   '/docs/blac-next/cubit': typeof DocsBlacNextCubitRoute
   '/docs/blac-react/use-bloc': typeof DocsBlacReactUseBlocRoute
 }
@@ -285,6 +303,7 @@ export interface FileRoutesById {
   '/docs/installation': typeof DocsInstallationRoute
   '/docs/introduction': typeof DocsIntroductionRoute
   '/docs/': typeof DocsIndexRoute
+  '/docs/blac-next/bloc': typeof DocsBlacNextBlocRoute
   '/docs/blac-next/cubit': typeof DocsBlacNextCubitRoute
   '/docs/blac-react/use-bloc': typeof DocsBlacReactUseBlocRoute
 }
@@ -303,6 +322,7 @@ export interface FileRouteTypes {
     | '/docs/installation'
     | '/docs/introduction'
     | '/docs/'
+    | '/docs/blac-next/bloc'
     | '/docs/blac-next/cubit'
     | '/docs/blac-react/use-bloc'
   fileRoutesByTo: FileRoutesByTo
@@ -317,6 +337,7 @@ export interface FileRouteTypes {
     | '/docs/installation'
     | '/docs/introduction'
     | '/docs'
+    | '/docs/blac-next/bloc'
     | '/docs/blac-next/cubit'
     | '/docs/blac-react/use-bloc'
   id:
@@ -332,6 +353,7 @@ export interface FileRouteTypes {
     | '/docs/installation'
     | '/docs/introduction'
     | '/docs/'
+    | '/docs/blac-next/bloc'
     | '/docs/blac-next/cubit'
     | '/docs/blac-react/use-bloc'
   fileRoutesById: FileRoutesById
@@ -383,6 +405,7 @@ export const routeTree = rootRoute
         "/docs/installation",
         "/docs/introduction",
         "/docs/",
+        "/docs/blac-next/bloc",
         "/docs/blac-next/cubit",
         "/docs/blac-react/use-bloc"
       ]
@@ -417,6 +440,10 @@ export const routeTree = rootRoute
     },
     "/docs/": {
       "filePath": "docs/index.tsx",
+      "parent": "/docs"
+    },
+    "/docs/blac-next/bloc": {
+      "filePath": "docs/blac-next/bloc.tsx",
       "parent": "/docs"
     },
     "/docs/blac-next/cubit": {

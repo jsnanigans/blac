@@ -136,7 +136,10 @@ function IntroductionPage() {
         </DocFeatureGrid>
 
         <DocCode title="Example: Counter with Blac">
-{`// Define a simple counter state container
+{`import { Cubit } from '@blac/next';
+import { useBloc } from '@blac/react';
+
+// Define a simple counter state container
 class CounterCubit extends Cubit<number> {
   constructor() {
     super(0); // Initial state
@@ -148,6 +151,10 @@ class CounterCubit extends Cubit<number> {
 
   decrement = () => {
     this.emit(this.state - 1);
+  }
+  
+  reset = () => {
+    this.emit(0);
   }
 }
 

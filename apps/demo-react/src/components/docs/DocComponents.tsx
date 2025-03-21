@@ -90,14 +90,14 @@ export function DocNote({ title, children, type = 'info' }: DocNoteProps) {
   };
 
   return (
-    <div className={`${colors[type].bg} p-6 rounded-lg border ${colors[type].border} my-6`}>
+    <div className={`${colors[type].bg} p-5 sm:p-6 rounded-lg border ${colors[type].border} my-6 shadow-sm`}>
       {title && (
-        <div className="flex items-center mb-2">
-          <span className={`${colors[type].title} mr-2`}>{icons[type]}</span>
+        <div className="flex items-center mb-3">
+          <span className={`${colors[type].title} mr-2 flex-shrink-0`}>{icons[type]}</span>
           <h3 className={`${colors[type].title} font-bold text-lg mt-0`}>{title}</h3>
         </div>
       )}
-      <div className="text-gray-800 dark:text-gray-200">
+      <div className="text-gray-800 dark:text-gray-200 prose prose-sm dark:prose-invert max-w-none">
         {children}
       </div>
     </div>
@@ -131,6 +131,9 @@ export function DocCode({ children, language = 'typescript', title, showLineNumb
       ...atomDark['code[class*="language-"]'],
       textShadow: '0 0 2px #ff00ff50',
       fontFamily: 'JetBrains Mono, Fira Code, monospace',
+      fontSize: '0.9rem',
+      lineHeight: '1.5',
+      letterSpacing: '0.3px',
     },
     'keyword': {
       ...atomDark['keyword'],
@@ -221,9 +224,11 @@ export function DocCode({ children, language = 'typescript', title, showLineNumb
       return { 
         style: { 
           display: 'block',
-          backgroundColor: 'rgba(255, 54, 249, 0.1)',
-          borderLeft: '3px solid #ff36f9',
-          paddingLeft: '0.75rem', 
+          backgroundColor: 'rgba(255, 54, 249, 0.15)',
+          borderLeft: '4px solid #ff36f9',
+          margin: '0 -1.5rem',
+          padding: '0.25rem 1.5rem',
+          width: 'calc(100% + 3rem)'
         }
       };
     }
@@ -265,7 +270,7 @@ export function DocCode({ children, language = 'typescript', title, showLineNumb
       
       {/* Code block with syntax highlighting */}
       <div className={`overflow-hidden rounded-lg ${title ? 'mt-0' : 'mt-0'}`}>
-        <div className="pt-10 overflow-auto cyberpunk-scrollbar">
+        <div className="pt-10 overflow-x-auto max-w-full cyberpunk-scrollbar">
           <SyntaxHighlighter
             language={language}
             style={customStyle}
@@ -276,6 +281,8 @@ export function DocCode({ children, language = 'typescript', title, showLineNumb
               borderRadius: '0 0 0.75rem 0.75rem',
               margin: 0,
               padding: '1.5rem',
+              minWidth: '100%',
+              width: 'fit-content'
             }}
           >
             {typeof children === 'string' ? children : ''}
@@ -328,9 +335,9 @@ interface DocFeatureGridProps {
 export function DocFeatureGrid({ children, columns = 2 }: DocFeatureGridProps) {
   const gridCols = {
     1: 'grid-cols-1',
-    2: 'grid-cols-1',
-    3: 'grid-cols-1',
-    4: 'grid-cols-1',
+    2: 'grid-cols-1 md:grid-cols-2',
+    3: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
+    4: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4',
   };
 
   return (
@@ -384,9 +391,11 @@ export function DocFeature({ title, children, icon, color = 'blue' }: DocFeature
 
 export function DocTable({ children }: { children: React.ReactNode }) {
   return (
-    <div className="overflow-x-auto my-6">
+    <div className="overflow-x-auto my-6 rounded-lg">
       <table className="min-w-full border-collapse border border-gray-200 dark:border-gray-700 rounded-lg">
-        {children}
+        <tbody className="bg-white dark:bg-gray-800">
+          {children}
+        </tbody>
       </table>
     </div>
   );

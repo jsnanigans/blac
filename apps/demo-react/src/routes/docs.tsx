@@ -77,7 +77,7 @@ function DocsLayout() {
               </h3>
               <ul className="space-y-2">
                 <li><DocLink to="/docs/blac-next/cubit">Cubit</DocLink></li>
-                <li><DocLink isDisabled={true} to="">Bloc</DocLink></li>
+                <li><DocLink to="/docs/blac-next/bloc">Bloc</DocLink></li>
                 <li><DocLink isDisabled={true} to="">BlocBase</DocLink></li>
                 <li><DocLink isDisabled={true} to="">BlacObserver</DocLink></li>
                 <li><DocLink isDisabled={true} to="">Plugins</DocLink></li>
@@ -113,8 +113,10 @@ function DocsLayout() {
       
       {/* Main Content */}
       <main className="flex-grow order-1 md:order-2 min-w-0 w-full">
-        <div className="bg-white/90 dark:bg-gray-900/90 p-6 sm:p-8 rounded-lg border border-gray-200 dark:border-gray-800 shadow-sm backdrop-blur-sm w-full">
-          <Outlet />
+        <div className="bg-white/90 dark:bg-gray-900/90 p-6 sm:p-8 lg:p-10 rounded-lg border border-gray-200 dark:border-gray-800 shadow-sm backdrop-blur-sm w-full">
+          <div className="max-w-[90ch] mx-auto">
+            <Outlet />
+          </div>
         </div>
       </main>
       
