@@ -18,7 +18,6 @@ import { Route as DocsIndexImport } from './routes/docs/index'
 import { Route as DocsIntroductionImport } from './routes/docs/introduction'
 import { Route as DocsInstallationImport } from './routes/docs/installation'
 import { Route as DocsCoreConceptsImport } from './routes/docs/core-concepts'
-import { Route as DemoTaskboardImport } from './routes/demo/taskboard'
 import { Route as DemoPetfinderImport } from './routes/demo/petfinder'
 import { Route as DemoInstanceManagementImport } from './routes/demo/instance-management'
 import { Route as DemoDependencyTrackingImport } from './routes/demo/dependency-tracking'
@@ -68,12 +67,6 @@ const DocsCoreConceptsRoute = DocsCoreConceptsImport.update({
   id: '/core-concepts',
   path: '/core-concepts',
   getParentRoute: () => DocsRoute,
-} as any)
-
-const DemoTaskboardRoute = DemoTaskboardImport.update({
-  id: '/taskboard',
-  path: '/taskboard',
-  getParentRoute: () => DemoRoute,
 } as any)
 
 const DemoPetfinderRoute = DemoPetfinderImport.update({
@@ -165,13 +158,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoPetfinderImport
       parentRoute: typeof DemoImport
     }
-    '/demo/taskboard': {
-      id: '/demo/taskboard'
-      path: '/taskboard'
-      fullPath: '/demo/taskboard'
-      preLoaderRoute: typeof DemoTaskboardImport
-      parentRoute: typeof DemoImport
-    }
     '/docs/core-concepts': {
       id: '/docs/core-concepts'
       path: '/core-concepts'
@@ -224,7 +210,6 @@ interface DemoRouteChildren {
   DemoDependencyTrackingRoute: typeof DemoDependencyTrackingRoute
   DemoInstanceManagementRoute: typeof DemoInstanceManagementRoute
   DemoPetfinderRoute: typeof DemoPetfinderRoute
-  DemoTaskboardRoute: typeof DemoTaskboardRoute
 }
 
 const DemoRouteChildren: DemoRouteChildren = {
@@ -232,7 +217,6 @@ const DemoRouteChildren: DemoRouteChildren = {
   DemoDependencyTrackingRoute: DemoDependencyTrackingRoute,
   DemoInstanceManagementRoute: DemoInstanceManagementRoute,
   DemoPetfinderRoute: DemoPetfinderRoute,
-  DemoTaskboardRoute: DemoTaskboardRoute,
 }
 
 const DemoRouteWithChildren = DemoRoute._addFileChildren(DemoRouteChildren)
@@ -265,7 +249,6 @@ export interface FileRoutesByFullPath {
   '/demo/dependency-tracking': typeof DemoDependencyTrackingRoute
   '/demo/instance-management': typeof DemoInstanceManagementRoute
   '/demo/petfinder': typeof DemoPetfinderRoute
-  '/demo/taskboard': typeof DemoTaskboardRoute
   '/docs/core-concepts': typeof DocsCoreConceptsRoute
   '/docs/installation': typeof DocsInstallationRoute
   '/docs/introduction': typeof DocsIntroductionRoute
@@ -281,7 +264,6 @@ export interface FileRoutesByTo {
   '/demo/dependency-tracking': typeof DemoDependencyTrackingRoute
   '/demo/instance-management': typeof DemoInstanceManagementRoute
   '/demo/petfinder': typeof DemoPetfinderRoute
-  '/demo/taskboard': typeof DemoTaskboardRoute
   '/docs/core-concepts': typeof DocsCoreConceptsRoute
   '/docs/installation': typeof DocsInstallationRoute
   '/docs/introduction': typeof DocsIntroductionRoute
@@ -299,7 +281,6 @@ export interface FileRoutesById {
   '/demo/dependency-tracking': typeof DemoDependencyTrackingRoute
   '/demo/instance-management': typeof DemoInstanceManagementRoute
   '/demo/petfinder': typeof DemoPetfinderRoute
-  '/demo/taskboard': typeof DemoTaskboardRoute
   '/docs/core-concepts': typeof DocsCoreConceptsRoute
   '/docs/installation': typeof DocsInstallationRoute
   '/docs/introduction': typeof DocsIntroductionRoute
@@ -318,7 +299,6 @@ export interface FileRouteTypes {
     | '/demo/dependency-tracking'
     | '/demo/instance-management'
     | '/demo/petfinder'
-    | '/demo/taskboard'
     | '/docs/core-concepts'
     | '/docs/installation'
     | '/docs/introduction'
@@ -333,7 +313,6 @@ export interface FileRouteTypes {
     | '/demo/dependency-tracking'
     | '/demo/instance-management'
     | '/demo/petfinder'
-    | '/demo/taskboard'
     | '/docs/core-concepts'
     | '/docs/installation'
     | '/docs/introduction'
@@ -349,7 +328,6 @@ export interface FileRouteTypes {
     | '/demo/dependency-tracking'
     | '/demo/instance-management'
     | '/demo/petfinder'
-    | '/demo/taskboard'
     | '/docs/core-concepts'
     | '/docs/installation'
     | '/docs/introduction'
@@ -395,8 +373,7 @@ export const routeTree = rootRoute
         "/demo/counter",
         "/demo/dependency-tracking",
         "/demo/instance-management",
-        "/demo/petfinder",
-        "/demo/taskboard"
+        "/demo/petfinder"
       ]
     },
     "/docs": {
@@ -424,10 +401,6 @@ export const routeTree = rootRoute
     },
     "/demo/petfinder": {
       "filePath": "demo/petfinder.tsx",
-      "parent": "/demo"
-    },
-    "/demo/taskboard": {
-      "filePath": "demo/taskboard.tsx",
       "parent": "/demo"
     },
     "/docs/core-concepts": {

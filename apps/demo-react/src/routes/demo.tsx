@@ -14,7 +14,6 @@ function RouteComponent() {
         <div className="flex flex-wrap gap-3">
           <PrettyLink to="/demo/counter" variant="cyan">Counter</PrettyLink>
           <PrettyLink to="/demo/dependency-tracking" variant="blue">Dependency Tracking</PrettyLink>
-          <PrettyLink to="/demo/taskboard" variant="pink">Task Board</PrettyLink>
           <PrettyLink 
             to="/demo/petfinder" 
             variant="fuchsia" 

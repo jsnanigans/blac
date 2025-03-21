@@ -77,12 +77,6 @@ function Index() {
           <p className="dark:text-pink-100/80 text-slate-600 mb-6">
             Try a Kanban-style task board that demonstrates complex state management and interactive UI components.
           </p>
-          <Link to="/demo/taskboard" className="text-gradient-pink inline-flex items-center gap-2 hover:text-glow font-medium">
-            Try the Task Board
-            <svg className="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
-            </svg>
-          </Link>
         </div>
         
         <div className="dark:card-neon-fuchsia card-neon-fuchsia p-8 hover-scale">
