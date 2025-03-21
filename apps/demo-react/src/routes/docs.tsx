@@ -1,6 +1,5 @@
-import { createFileRoute, Outlet, Link, useRouter } from '@tanstack/react-router';
+import { createFileRoute, Outlet, Link } from '@tanstack/react-router';
 import { useMatchRoute } from '@tanstack/react-router';
-import { TableOfContents } from '../components/TableOfContents';
 
 export const Route = createFileRoute('/docs')({
   component: DocsLayout,
