@@ -1,4 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
+import DocCode from '../../components/CodeHighlighter';
+import DocSection from '../../components/DocSection';
 
 export const Route = createFileRoute('/docs/performance')({
   component: RouteComponent,
