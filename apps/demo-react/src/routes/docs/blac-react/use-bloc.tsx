@@ -89,36 +89,6 @@ function Counter() {
               Use this when you need both the state and the ability to call bloc methods.
             </p>
           </DocFeature>
-          
-          <DocFeature 
-            title="useBlocValue"
-            color="green"
-          >
-            <p>
-              Access only the state value without the bloc instance.
-            </p>
-            <DocCode language="typescript" showLineNumbers={false}>
-{`const state = useBlocValue(YourBloc, options);`}
-            </DocCode>
-            <p className="text-sm mt-2">
-              Use this when you only need to read state and don't need to call any methods.
-            </p>
-          </DocFeature>
-
-          <DocFeature 
-            title="useBlocInstance"
-            color="purple"
-          >
-            <p>
-              Access only the bloc instance without subscribing to state changes.
-            </p>
-            <DocCode language="typescript" showLineNumbers={false}>
-{`const bloc = useBlocInstance(YourBloc, options);`}
-            </DocCode>
-            <p className="text-sm mt-2">
-              Use this when you only need to call methods and don't need to re-render on state changes.
-            </p>
-          </DocFeature>
         </DocFeatureGrid>
       </DocSection>
 

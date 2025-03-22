@@ -27,9 +27,6 @@ The core library provides the fundamental state management patterns and abstract
 The React integration library connects React components to Blac state containers:
 
 - **useBloc**: The primary hook for connecting components to Blac state
-- **useBlocValue**: A hook for accessing only the state value (without subscribing to the instance)
-- **useBlocInstance**: A hook for accessing only the instance (without subscribing to state updates)
-- **createProvider**: A utility for creating context providers for dependency injection
 
 ## State Management Flow
 
@@ -267,22 +264,6 @@ const [state, bloc] = useBloc(YourBloc, options);
 - `props?: InferPropsFromGeneric<B>` - Props to pass to the bloc constructor
 - `onMount?: (bloc: B) => void` - Callback when bloc is mounted (similar to useEffect with empty deps)
 - `dependencySelector?: (state: BlocState<B>) => any[]` - Custom selector for fine-grained re-renders
-
-### useBlocValue
-
-A hook to access only the state value without the bloc instance:
-
-```tsx
-const state = useBlocValue(YourBloc, options);
-```
-
-### useBlocInstance
-
-A hook to access only the bloc instance without subscribing to state changes:
-
-```tsx
-const bloc = useBlocInstance(YourBloc, options);
-```
 
 ## Testing Blocs
 

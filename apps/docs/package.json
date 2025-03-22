@@ -1,17 +1,20 @@
 {
-  "name": "docs",
+  "name": "blac-docs",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "Documentation for Blac state management library",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "docs:dev": "vitepress dev",
-    "docs:build": "vitepress build",
-    "docs:preview": "vitepress preview"
+    "dev": "vitepress dev",
+    "build": "vitepress build",
+    "preview": "vitepress preview"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "keywords": [
+    "blac",
+    "state-management",
+    "react",
+    "documentation"
+  ],
+  "author": "Blac Contributors",
+  "license": "MIT",
   "devDependencies": {
     "vitepress": "^1.6.3"
   }

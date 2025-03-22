@@ -122,8 +122,6 @@ increment() {
 | Name | Type | Description |
 |------|------|-------------|
 | `useBloc<B>()` | Hook | Connect React components to a Bloc |
-| `useBlocValue<B>()` | Hook | Access only the state value (without the instance) |
-| `useBlocInstance<B>()` | Hook | Access only the instance (without subscribing to updates) |
 
 ### Key Methods
 
