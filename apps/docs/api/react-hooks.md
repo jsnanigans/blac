@@ -24,17 +24,17 @@ function useBloc<B extends BlocClass<any, any>>(
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
-| `blocClass` | `ClassConstructor` | Yes | The Bloc/Cubit class to use |
-| `options.props` | `any` | No | Props to pass to the Bloc/Cubit constructor |
-| `options.id` | `string` | No | Optional identifier for the Bloc/Cubit instance |
-| `options.dependencySelector` | `Selector<State>` | No | Function to select which state properties should trigger rerenders |
+| `blocClass` | `ClassConstructor` | Yes | The Bloc/Cubit class to use. |
+| `options.props` | `any` | No | Props to pass to the Bloc/Cubit constructor. |
+| `options.id` | `string` | No | Optional identifier for the Bloc/Cubit instance. |
+| `options.dependencySelector` | `Selector<State>` | No | Function to select which state properties should trigger re-renders. |
 
 ### Returns
 
 An array containing:
 `[state, bloc]` where:
-1. `state` is the current state of the Bloc/Cubit
-2. `bloc` is the Bloc/Cubit instance with methods
+1. `state` is the current state of the Bloc/Cubit.
+2. `bloc` is the Bloc/Cubit instance with methods.
 
 ### Examples
 
@@ -54,8 +54,8 @@ function Counter() {
 ```
 ---
 
-#### Defining a custom ID
-If you want to share the same state between multiple components, but need different instances of the Bloc/Cubit, you can define a custom ID.
+#### Defining a Custom ID
+If you want to share the same state between multiple components but need different instances of the Bloc/Cubit, you can define a custom ID.
 
 :::info
 By default, each Bloc/Cubit uses its class name as an identifier.
@@ -79,11 +79,11 @@ function ChatThread({ conversationId }: { conversationId: string }) {
   );
 }
 ```
-With this approach, you can have multiple independent instances of state, that have the same business logic.
+With this approach, you can have multiple independent instances of state that share the same business logic.
 
 ---
 #### Custom Dependency Selector
-Bloc/Cubit state is automatically tracked for changes, in most cases you don't need to provide a custom dependency selector.
+Bloc/Cubit state is automatically tracked for changes; in most cases, you don't need to provide a custom dependency selector.
 
 :::warning
 This is an advanced feature and should be used sparingly.
@@ -99,7 +99,7 @@ function OptimizedTodoList() {
     ]
   });
   
-  // Component will only rerender when the length of todos or the filter changes
+  // Component will only re-render when the length of todos or the filter changes
   return (
     <div>
       <h1>Todos ({state.todos.length})</h1>
@@ -113,7 +113,7 @@ function OptimizedTodoList() {
 
 ### Props & Dependency Injection
 
-Pass configuration to blocs during initialization:
+Pass configuration to blocs during initialization.
 
 ```tsx
 // Bloc with props
@@ -121,22 +121,70 @@ class ThemeCubit extends Cubit<ThemeState, ThemeProps> {
   constructor(props: ThemeProps) {
     super({ theme: props.defaultTheme });
   }
-  
-  toggleTheme = () => {
-    this.emit({ theme: this.state.theme === 'light' ? 'dark' : 'light' });
-  };
 }
 
 // In component
 function ThemeToggle() {
-  const [state, bloc] = useBloc(ThemeCubit, {
-    props: { defaultTheme: 'dark' }
+  const [state, bloc] = useBloc(ThemeCubit, { 
+    props: { defaultTheme: 'dark' } 
   });
   
   return (
     <button onClick={bloc.toggleTheme}>
-      {state.theme === 'light' ? '🌙' : '☀️'}
+      {state.theme === 'dark' ? '🌙' : '☀️'}
     </button>
   );
 }
 ``` 
+If a prop changes, it will be updated in the Bloc/Cubit instance. This is useful for seamless integration with react components that use props to configure the Bloc/Cubit.
+```tsx
+function ThemeToggle(props: ThemeProps) {
+  const [state, bloc] = useBloc(ThemeCubit, { props });
+  // ...
+}
+
+<ThemeToggle defaultTheme="dark" />
+```
+
+
+:::warning
+Make sure to only use the `props` option in the `useBloc` hook in a single place for each Bloc/Cubit. If there are multiple places that try to set the props, they might conflict with each other and cause unexpected behavior.
+:::
+
+```tsx
+function ThemeToggle() {
+  const [state, bloc] = useBloc(ThemeCubit, { 
+    props: { defaultTheme: 'dark' }
+  });
+  // ...
+}
+
+function UseThemeToggle() {
+  const [state, bloc] = useBloc(ThemeCubit, { 
+    props: { name: 'John' }// [!code error]
+  });
+  // ...
+}
+```
+
+:::tip
+If you need to pass props to a Bloc/Cubit that is not known at the time of initialization, you can use the `onMount` option.
+:::
+
+```tsx{10-12}
+function ThemeToggle() {
+  const [state, bloc] = useBloc(ThemeCubit, { 
+    props: { defaultTheme: 'dark' }
+  });
+  // ...
+}
+
+function UseThemeToggle() {
+  const [state, bloc] = useBloc(ThemeCubit, { 
+    onMount: (bloc) => {
+      bloc.setName('John');
+    }
+  });
+  // ...
+}
+```
