@@ -75,15 +75,15 @@ Always use arrow functions for methods in Bloc/Cubit classes to preserve the `th
 
 ```tsx
 class CounterCubit extends Cubit<{ count: number }> {
-  // ✅ Do this - arrow function preserves 'this' context
-  increment = () => {
-    this.emit({ count: this.state.count + 1 });
-  };
-  
   // ❌ Don't do this - will lose 'this' context when called from components
   decrement() {
     this.emit({ count: this.state.count - 1 });
   }
+
+  // ✅ Do this - arrow function preserves 'this' context
+  increment = () => {
+    this.emit({ count: this.state.count + 1 });
+  };
 }
 ```
 
@@ -113,44 +113,62 @@ class GoodUserCubit extends Cubit<{
 }
 ```
 
-## Component Design
+### 4. Flatten State
 
-### 1. Smart Dependency Selection
-
-Use dependency selection to optimize rendering:
+Flatten state to reduce the number of re-renders, and to make it easier to patch the state with partial updates:
 
 ```tsx
-function TodoList() {
-  // ✅ Do this - only rerender when specific properties change
-  const [state, bloc] = useBloc(TodoBloc, {
-    dependencySelector: (state) => [
-      state.todos.length,
-      state.filter
-    ]
-  });
-  
-  // Component will only rerender when the length of todos or the filter changes
+// ❌ Don't do this - nested state
+class BadUserCubit extends Cubit<{
+  user: {
+    name: string,
+    email: string,
+  },
+  isLoading: boolean
+}> { 
   // ...
+  updateName = (name: string) => {
+    this.patch({ 
+      user: {
+        ...this.state.user,
+        name 
+      } 
+    });
+  }
+}  
+
+// ✅ Do this - flattened state
+class GoodUserCubit extends Cubit<{
+  name: string,
+  email: string,
+  isLoading: boolean
+}> { 
+  // ...
+  updateName = (name: string) => {
+    this.patch({ name });
+  }
 }
 ```
 
-### 2. Keep Components Simple
+## Component Design
+
+### 1. Keep Components Simple
 
 Components should focus on rendering state and dispatching events:
 
 ```tsx
 // ✅ Do this - simple component that renders state and dispatches events
 function UserProfile() {
-  const [{ name, email, isLoading }, bloc] = useBloc(UserBloc);
+  const [state, bloc] = useBloc(UserBloc);
   
   return (
     <div>
-      {isLoading ? (
+      {state.isLoading ? (
         <Spinner />
       ) : (
         <>
-          <h1>{name}</h1>
-          <p>{email}</p>
+          <h1>{state.name}</h1>
+          <p>{state.email}</p>
           <button onClick={bloc.refreshProfile}>Refresh</button>
           <button onClick={bloc.logout}>Logout</button>
         </>
