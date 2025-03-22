@@ -42,14 +42,14 @@ The `patch` method updates specific properties of the state while preserving oth
 #### Signature
 
 ```tsx
-patch(partialState: Partial<P extends Record<string, any> ? P : S>): void
+patch(partialState: Partial<S>): void
 ```
 
 #### Parameters
 
 | Name | Type | Description |
 |------|------|-------------|
-| `partialState` | `Partial<P extends Record<string, any> ? P : S>` | An object containing the properties to update |
+| `partialState` | `Partial<S>` | An object containing the properties to update |
 
 #### Example
 
@@ -120,30 +120,40 @@ class TodoBloc extends Bloc<TodoState, TodoAction> {
   reducer = (state: TodoState, action: TodoAction) => {
     switch (action.type) {
       case 'add':
-        return {
-          todos: [
-            ...state.todos,
-            { id: Date.now(), text: action.payload.text, completed: false }
-          ]
-        };
+        return this.handleAdd(action)
       case 'toggle':
-        return {
-          todos: state.todos.map((todo) =>
-            todo.id === action.payload.id
-              ? { ...todo, completed: !todo.completed }
-              : todo
-          )
-        };
+        return this.handleToggle(action)
       case 'delete':
-        return {
-          todos: state.todos.filter((todo) => todo.id !== action.payload.id)
-        };
+        return this.handleDelete(action)
       default:
         return state;
     }
   };
 
-  // Helper methods to dispatch actions
+  // Reducer methods
+  handleAdd = (state: TodoState, action: TodoAction) => {
+    return {
+      todos: [...state.todos, { id: Date.now(), text: action.payload.text, completed: false }]
+    };
+  };
+
+  handleToggle = (state: TodoState, action: TodoAction) => {
+    return {
+      todos: state.todos.map((todo) =>
+        todo.id === action.payload.id
+          ? { ...todo, completed: !todo.completed }
+          : todo
+      )
+    };
+  };
+
+  handleDelete = (state: TodoState, action: TodoAction) => {
+    return {
+      todos: state.todos.filter((todo) => todo.id !== action.payload.id)  
+    };
+  };
+
+  // Helper methods to dispatch actions from the UI layer
   addTodo = (text: string) => {
     this.add({ type: 'add', payload: { text } });
   };
@@ -167,23 +177,24 @@ The `on` method subscribes to state changes and returns an unsubscribe function.
 #### Signature
 
 ```tsx
-on(listener: StateListener<S>): () => void
+on(event: BlacEvent, listener: StateListener<S>, signal?: AbortSignal): () => void
 ```
 
 #### Parameters
 
 | Name | Type | Description |
 |------|------|-------------|
+| `event` | `BlacEvent` | The event to listen to |
 | `listener` | `StateListener<S>` | A function that will be called when the state changes |
+| `signal` | `AbortSignal` | An optional signal to abort the subscription |
 
 #### Returns
 
 A function that, when called, unsubscribes the listener.
 
-#### Example
+#### Example 1
 
 ```tsx
-// Manual subscription (typically done automatically by hooks)
 const counterBloc = new CounterBloc();
 
 // Subscribe to state changes
@@ -195,12 +206,27 @@ const unsubscribe = counterBloc.on((state) => {
 unsubscribe();
 ```
 
+#### Example 2
+
+```tsx
+const counterBloc = new CounterBloc();
+const abortController = new AbortController();
+
+// Subscribe to state changes
+counterBloc.on(BlacEvent.StateChange, (state) => {
+  console.log('State changed:', state);
+}, abortController.signal);
+
+// Abort the subscription
+abortController.abort();
+```
+
 ## Choosing Between emit() and patch()
 
 - Use `emit()` when you want to replace the entire state object, typically for simple states
 - Use `patch()` when you want to update specific properties without touching others, ideal for complex states
 
-## Choosing Between Direct Methods and add()
+## Choosing Between Bloc and Cubit  
 
-- Use direct methods on Cubits for simpler state management
-- Use `add()` with actions in Blocs for more complex state transitions and when you want to leverage the reducer pattern 
+- Use `Bloc` for event-driven state management
+- Use `Cubit` for simple state management
