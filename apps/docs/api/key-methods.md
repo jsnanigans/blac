@@ -42,14 +42,15 @@ The `patch` method updates specific properties of the state while preserving oth
 #### Signature
 
 ```tsx
-patch(partialState: Partial<S>): void
+patch(statePatch: S extends object ? Partial<S> : S, ignoreChangeCheck?: boolean): void
 ```
 
 #### Parameters
 
 | Name | Type | Description |
 |------|------|-------------|
-| `partialState` | `Partial<S>` | An object containing the properties to update |
+| `statePatch` | `Partial<S>` | An object containing the properties to update |
+| `ignoreChangeCheck` | `boolean` | Optional flag to skip checking if values have changed (defaults to false) |
 
 #### Example
 
@@ -111,46 +112,37 @@ type TodoAction =
   | { type: 'toggle', payload: { id: number } }
   | { type: 'delete', payload: { id: number } };
 
+interface TodoState {
+  todos: Array<{ id: number, text: string, completed: boolean }>;
+}
+
 class TodoBloc extends Bloc<TodoState, TodoAction> {
   constructor() {
     super({ todos: [] });
   }
 
   // Implement the reducer
-  reducer = (state: TodoState, action: TodoAction) => {
+  reducer = (action: TodoAction, state: TodoState) => {
     switch (action.type) {
       case 'add':
-        return this.handleAdd(action)
+        return {
+          todos: [...state.todos, { id: Date.now(), text: action.payload.text, completed: false }]
+        };
       case 'toggle':
-        return this.handleToggle(action)
+        return {
+          todos: state.todos.map((todo) =>
+            todo.id === action.payload.id
+              ? { ...todo, completed: !todo.completed }
+              : todo
+          )
+        };
       case 'delete':
-        return this.handleDelete(action)
+        return {
+          todos: state.todos.filter((todo) => todo.id !== action.payload.id)  
+        };
       default:
         return state;
     }
-  };
-
-  // Reducer methods
-  handleAdd = (state: TodoState, action: TodoAction) => {
-    return {
-      todos: [...state.todos, { id: Date.now(), text: action.payload.text, completed: false }]
-    };
-  };
-
-  handleToggle = (state: TodoState, action: TodoAction) => {
-    return {
-      todos: state.todos.map((todo) =>
-        todo.id === action.payload.id
-          ? { ...todo, completed: !todo.completed }
-          : todo
-      )
-    };
-  };
-
-  handleDelete = (state: TodoState, action: TodoAction) => {
-    return {
-      todos: state.todos.filter((todo) => todo.id !== action.payload.id)  
-    };
   };
 
   // Helper methods to dispatch actions from the UI layer
@@ -170,9 +162,9 @@ class TodoBloc extends Bloc<TodoState, TodoAction> {
 
 ## Subscription Management
 
-### on(listener)
+### on(event, listener, signal?)
 
-The `on` method subscribes to state changes and returns an unsubscribe function.
+The `on` method subscribes to events and returns an unsubscribe function.
 
 #### Signature
 
@@ -184,21 +176,21 @@ on(event: BlacEvent, listener: StateListener<S>, signal?: AbortSignal): () => vo
 
 | Name | Type | Description |
 |------|------|-------------|
-| `event` | `BlacEvent` | The event to listen to |
-| `listener` | `StateListener<S>` | A function that will be called when the state changes |
+| `event` | `BlacEvent` | The event to listen to (e.g., BlacEvent.StateChange) |
+| `listener` | `StateListener<S>` | A function that will be called when the event occurs |
 | `signal` | `AbortSignal` | An optional signal to abort the subscription |
 
 #### Returns
 
 A function that, when called, unsubscribes the listener.
 
-#### Example 1
+#### Example 1: Basic State Change Subscription
 
 ```tsx
 const counterBloc = new CounterBloc();
 
 // Subscribe to state changes
-const unsubscribe = counterBloc.on((state) => {
+const unsubscribe = counterBloc.on(BlacEvent.StateChange, (state) => {
   console.log('State changed:', state);
 });
 
@@ -206,7 +198,7 @@ const unsubscribe = counterBloc.on((state) => {
 unsubscribe();
 ```
 
-#### Example 2
+#### Example 2: Using AbortController
 
 ```tsx
 const counterBloc = new CounterBloc();
@@ -221,6 +213,19 @@ counterBloc.on(BlacEvent.StateChange, (state) => {
 abortController.abort();
 ```
 
+#### Example 3: Listening to Actions
+
+```tsx
+const todoBloc = new TodoBloc();
+
+// Subscribe to actions
+todoBloc.on(BlacEvent.Action, (state, oldState, action) => {
+  console.log('Action dispatched:', action);
+  console.log('Old state:', oldState);
+  console.log('New state:', state);
+});
+```
+
 ## Choosing Between emit() and patch()
 
 - Use `emit()` when you want to replace the entire state object, typically for simple states
@@ -228,5 +233,5 @@ abortController.abort();
 
 ## Choosing Between Bloc and Cubit  
 
-- Use `Bloc` for event-driven state management
-- Use `Cubit` for simple state management
+- Use `Bloc` for event-driven state management with more complex state transitions
+- Use `Cubit` for simple state management with direct method calls

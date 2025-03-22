@@ -16,14 +16,21 @@ Blac provides three primary classes for state management:
 | Name | Type | Description |
 |------|------|-------------|
 | `state` | `S` | The current state of the container |
+| `props` | `P \| null` | Props passed during Bloc instance creation (can be null) |
+| `lastUpdate` | `number` | Timestamp when the state was last updated |
+
+### Static Properties
+
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `isolated` | `boolean` | `false` | When true, every consumer will receive its own unique instance |
+| `keepAlive` | `boolean` | `false` | When true, the instance persists even when no components are using it |
 
 ### Methods
 
 | Name | Parameters | Return Type | Description |
 |------|------------|-------------|-------------|
-| `emit` | `state: S` | `void` | Replaces the entire state |
-| `patch` | `partialState: Partial<P extends Record<string, any> ? P : S>` | `void` | Updates specific properties of the state |
-| `on` | `listener: StateListener<S>` | `() => void` | Subscribes to state changes and returns an unsubscribe function |
+| `on` | `event: BlacEvent, listener: StateListener<S>, signal?: AbortSignal` | `() => void` | Subscribes to state changes and returns an unsubscribe function |
 
 ## Cubit<S, P>
 
@@ -32,7 +39,7 @@ Blac provides three primary classes for state management:
 ### Type Parameters
 
 - `S` - The state type
-- `P` - The props type (optional)
+- `P` - The props type (optional, defaults to null)
 
 ### Constructor
 
@@ -40,11 +47,12 @@ Blac provides three primary classes for state management:
 constructor(initialState: S)
 ```
 
-### Static Properties
+### Methods
 
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `keepAlive` | `boolean` | `false` | When true, the instance persists even when no components are using it |
+| Name | Parameters | Return Type | Description |
+|------|------------|-------------|-------------|
+| `emit` | `state: S` | `void` | Replaces the entire state |
+| `patch` | `statePatch: S extends object ? Partial<S> : S, ignoreChangeCheck?: boolean` | `void` | Updates specific properties of the state |
 
 ### Example
 
@@ -85,18 +93,12 @@ class CounterCubit extends Cubit<{ count: number }> {
 constructor(initialState: S)
 ```
 
-### Static Properties
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `keepAlive` | `boolean` | `false` | When true, the instance persists even when no components are using it |
-
 ### Methods
 
 | Name | Parameters | Return Type | Description |
 |------|------------|-------------|-------------|
 | `add` | `action: A` | `void` | Dispatches an action to the reducer |
-| `reducer` | `state: S, action: A` | `S` | Determines how state changes in response to actions (must be implemented) |
+| `reducer` | `action: A, state: S` | `S` | Determines how state changes in response to actions (must be implemented) |
 
 ### Example
 
@@ -113,7 +115,7 @@ class CounterBloc extends Bloc<{ count: number }, CounterAction> {
   }
 
   // Implement the reducer method
-  reducer = (state: { count: number }, action: CounterAction) => {
+  reducer = (action: CounterAction, state: { count: number }) => {
     switch (action.type) {
       case 'increment':
         return { count: state.count + 1 };
@@ -132,6 +134,16 @@ class CounterBloc extends Bloc<{ count: number }, CounterAction> {
   reset = () => this.add({ type: 'reset' });
 }
 ```
+
+## BlacEvent
+
+`BlacEvent` is an enum that defines the different events that can be dispatched by Blac.
+
+| Event | Description |
+|-------|-------------|
+| `StateChange` | Triggered when a state changes |
+| `Error` | Triggered when an error occurs |
+| `Action` | Triggered when an action is dispatched |
 
 ## Choosing Between Cubit and Bloc
 

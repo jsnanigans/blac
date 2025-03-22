@@ -19,6 +19,15 @@ interface CounterState {
 }
 ```
 
+#### Best Practices for State Design:
+
+- Keep your state serializable (avoid functions, class instances, etc.)
+- Flatten state structures when possible
+- Include UI states like loading and error flags
+- Consider using TypeScript interfaces for better type safety
+
+For more information on state design, check the [Best Practices](/guide/best-practices#state-container-design) section.
+
 ### 2. State Containers (Blocs/Cubits)
 
 State containers hold the current state and define how the state can change. They encapsulate all business logic and are independent of the UI layer.
@@ -58,6 +67,13 @@ class CounterCubit extends Cubit<CounterState> {
 }
 ```
 
+Blac provides two main types of state containers:
+
+- **Cubit**: A simpler container with direct method calls that update state
+- **Bloc**: A more sophisticated container that uses actions and reducers
+
+For detailed information on these containers, see the [Core Classes API](/api/core-classes).
+
 ### 3. UI Components
 
 UI components are pure renderers that display state and dispatch user intentions to state containers. They should not contain business logic.
@@ -68,16 +84,18 @@ function Counter() {
   const [state, bloc] = useBloc(CounterCubit);
   
   return (
-    <div>
+    <div className="counter">
       {state.isLoading ? (
         <p>Loading...</p>
       ) : (
         <>
           <h1>Count: {state.count}</h1>
-          <button onClick={bloc.increment}>Increment</button>
-          <button onClick={bloc.decrement}>Decrement</button>
-          <button onClick={bloc.reset}>Reset</button>
-          <button onClick={bloc.fetchCount}>Fetch Count</button>
+          <div className="button-group">
+            <button onClick={bloc.increment}>Increment</button>
+            <button onClick={bloc.decrement}>Decrement</button>
+            <button onClick={bloc.reset}>Reset</button>
+            <button onClick={bloc.fetchCount}>Fetch Count</button>
+          </div>
           {state.error && <p className="error">{state.error}</p>}
         </>
       )}
@@ -86,14 +104,33 @@ function Counter() {
 }
 ```
 
+For more on connecting UI components to Blac state containers, see the [React Hooks API](/api/react-hooks).
+
 ## Data Flow
 
 The Blac pattern follows a strict unidirectional data flow:
 
-1. UI components display the current state
-2. User interactions trigger methods on the state container
-3. State container methods update the state
-4. UI components re-render with the new state
+```
+┌─────────────────-┐
+│                  │
+│  State Container │◄────┐
+│  (Bloc or Cubit) │     │
+│                  │     │
+└───────┬─────────-┘     │
+        │                │
+        │ State          │ Method Calls
+        ▼                │
+┌──-───────────────┐     │
+│                  │     │
+│   UI Component   │─────┘
+│                  │
+└───-──────────────┘
+```
+
+1. **UI components** display the current state
+2. **User interactions** trigger methods on the state container
+3. **State container methods** update the state
+4. **UI components** re-render with the new state
 
 This cycle ensures that state changes are predictable and traceable, making debugging and testing easier.
 
@@ -109,7 +146,22 @@ This cycle ensures that state changes are predictable and traceable, making debu
 
 The Blac pattern is ideal for:
 
-- Components with complex business logic
-- Features that require asynchronous operations
-- Shared state between multiple components
-- Applications that need predictable state management 
+- **Components with complex business logic**: When your component needs to handle complex state transitions or side effects
+- **Features that require asynchronous operations**: When you need to handle loading states, errors, and async data fetching
+- **Shared state between multiple components**: When multiple components need access to the same state
+- **Applications that need predictable state management**: When you want a clear, traceable flow of state changes
+
+## How to Choose Between Bloc and Cubit
+
+- Use **Cubit** when:
+  - You have simple state logic
+  - You prefer direct method calls
+  - You don't need formal action objects
+
+- Use **Bloc** when:
+  - You have complex state transitions
+  - You want to leverage the reducer pattern
+  - You need a formal action-based approach
+  - You want better traceability of state changes
+
+For more information on implementation details, see the [Core Classes API](/api/core-classes) and [Key Methods](/api/key-methods) sections. 
