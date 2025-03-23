@@ -44,7 +44,7 @@ A Beautiful State Management Library.
 </div>
 
 <div class="actions">
-  <a href="/guide/introduction" class="action">Get Started</a>
+  <a href="/learn/introduction" class="action">Get Started</a>
   <a href="https://github.com/jsnanigans/blac" class="action alt">View on GitHub</a>
 </div>
 
@@ -66,7 +66,7 @@ A Beautiful State Management Library.
 </div>
 
 ::: tip Just getting started?
-Check out the [Introduction](/guide/introduction) for a comprehensive guide to using Blac in your projects.
+Check out the [Introduction](/learn/introduction) for a comprehensive guide to using Blac in your projects.
 :::
 
 ## Quick Example

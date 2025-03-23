@@ -147,12 +147,12 @@ Blac offers three key state management patterns to suit different needs:
 2. **Isolated State**: Each component gets its own state instance, set with `static isolated = true`
 3. **Persistent State**: State persists even when no components are using it, set with `static keepAlive = true`
 
-These patterns give you flexibility in how state is shared and managed throughout your application. You'll learn more about these patterns in the [State Management Patterns](/guide/state-management-patterns) section.
+These patterns give you flexibility in how state is shared and managed throughout your application. You'll learn more about these patterns in the [State Management Patterns](/learn/state-management-patterns) section.
 
 ## Next Steps
 
 Now that you understand the core concepts, you can:
 
-- Explore the [Blac Pattern](/guide/blac-pattern) to understand the recommended architecture
-- Check out the [Best Practices](/guide/best-practices) for writing effective Blac code
+- Explore the [Blac Pattern](/learn/blac-pattern) to understand the recommended architecture
+- Check out the [Best Practices](/learn/best-practices) for writing effective Blac code
 - Dive into the [API Reference](/api/core-classes) for detailed documentation 

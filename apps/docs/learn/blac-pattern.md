@@ -26,7 +26,7 @@ interface CounterState {
 - Include UI states like loading and error flags
 - Consider using TypeScript interfaces for better type safety
 
-For more information on state design, check the [Best Practices](/guide/best-practices#state-container-design) section.
+For more information on state design, check the [Best Practices](/learn/best-practices#state-container-design) section.
 
 ### 2. State Containers (Blocs/Cubits)
 

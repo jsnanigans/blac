@@ -138,7 +138,7 @@ Even when the ThemeToggle component unmounts, the ThemeCubit instance will stay 
 - Application-wide settings that are not always used by components
 - Caching data across component mount/unmount cycles
 
-For advanced persistent state patterns, see the [Best Practices](/guide/best-practices) guide.
+For advanced persistent state patterns, see the [Best Practices](/learn/best-practices) guide.
 
 ## Combining Patterns
 
@@ -172,4 +172,4 @@ When deciding which state management pattern to use, consider these questions:
    - If yes → Use **Isolated State**
    - If no → Use **Shared State**
 
-By understanding these patterns, you can choose the right one based on how your components need to interact with state. For more advanced state management techniques, see the [Best Practices](/guide/best-practices) guide.
+By understanding these patterns, you can choose the right one based on how your components need to interact with state. For more advanced state management techniques, see the [Best Practices](/learn/best-practices) guide.
