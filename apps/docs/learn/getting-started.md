@@ -15,23 +15,20 @@ npm install @blac/core @blac/react
 
 Here's a simple counter example to get you started:
 
-```tsx
-import { useBloc } from '@blac/react';
+```tsx [CounterBloc.ts]
 import { Cubit } from '@blac/core';
+import { useBloc } from '@blac/react';
 
 // 1. Create a state container with business logic
 class CounterBloc extends Cubit {
-  constructor() {
+  constructor() { 
+    // Initialize the state with a count of 0 
     super({ count: 0 });
   }
 
-  increment = () => {
-    this.emit({ count: this.state.count + 1 });
-  };
-
-  decrement = () => {
-    this.emit({ count: this.state.count - 1 });
-  };
+  // Define methods to update the state
+  increment = () => this.emit({ count: this.state.count + 1 });
+  decrement = () => this.emit({ count: this.state.count - 1 });
 }
 
 // 2. Create a React component that uses the bloc
@@ -40,14 +37,16 @@ function Counter() {
   const [{ count }, bloc] = useBloc(CounterBloc);
   
   return (
-    <div>
+    <>
       <h1>Count: {count}</h1>
       <button onClick={bloc.increment}>Increment</button>
       <button onClick={bloc.decrement}>Decrement</button>
-    </div>
+    </>
   );
 }
 ```
+
+That's it! You've just created a simple counter using Blac.
 
 ## How It Works
 
@@ -86,7 +85,8 @@ increment() {
 
 Let's extend our counter example to include an async operation:
 
-```tsx
+::: code-group
+```tsx [CounterBloc.ts]
 class CounterBloc extends Cubit<{ 
   count: number;
   isLoading: boolean;
@@ -124,7 +124,9 @@ class CounterBloc extends Cubit<{
     }
   };
 }
+```
 
+```tsx [Counter.tsx]
 function Counter() {
   const [state, bloc] = useBloc(CounterBloc);
   
@@ -139,18 +141,10 @@ function Counter() {
   );
 }
 ```
+:::
 
 Notice how we:
 - Expanded the state to include loading and error states
 - Used `patch()` to update only specific parts of the state
 - Added error handling in the async method
 - Updated the UI to show loading and error states
-
-## Next Steps
-
-Now that you've created your first Blac component, explore these concepts:
-
-1. [Core Concepts](/guide/core-concepts) - Understand the foundational ideas behind Blac
-2. [The Blac Pattern](/guide/blac-pattern) - Learn about the unidirectional data flow pattern
-3. [State Management Patterns](/guide/state-management-patterns) - Explore different state sharing approaches
-4. [API Reference](/api/core-classes) - Dive deeper into the available classes and methods 
