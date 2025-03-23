@@ -1,9 +1,9 @@
 # Getting Started
 
-Blac is a collection of packages that work together to provide a complete state management solution.
+Blac is a collection of packages that work together to provide a complete state management solution:
 
-- `@blac/core` - The core of Blac
-- `@blac/react` - Use Blac with React
+- `@blac/core` - The core state management engine
+- `@blac/react` - React integration for Blac
 
 ## Installation
 

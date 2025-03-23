@@ -2,18 +2,16 @@
 
 ## Key Features
 
-- **Minimal Boilerplate**: get started with Blac in seconds with a simple API.
-- **Tiny and Fast**: small footprint, incredibly fast and minimal overhead.
-- **Scalable**: as your application grows, Blac will grow with you.
+- **Minimal Boilerplate**: Get started with Blac in seconds using a simple API.
+- **Tiny and Fast**: Small footprint with incredibly fast performance and minimal overhead.
+- **Scalable**: As your application grows, Blac grows with you.
 
 ## What is Blac?
-On the surface, Blac is a lightweight, flexible, framework agnostic state management library.
+On the surface, Blac is a lightweight, flexible, framework-agnostic state management library.
 
-But the goal of Blac is to remove the mental overhead of state management in your application. 
+The goal of Blac is to remove the mental overhead of state management in your application.
 
-It does this by separating the business logic from the UI components, the state is a side effect of the business logic, and then the UI is the result of the state.
-
-
+It achieves this by cleanly separating business logic from UI components. In this architecture, state becomes a side effect of business logic, and the UI is the result of that state.
 
 ## Documentation Structure
 
