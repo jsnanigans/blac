@@ -1,15 +1,14 @@
 # Getting Started
 
+Blac is a collection of packages that work together to provide a complete state management solution.
+
+- `@blac/core` - The core of Blac
+- `@blac/react` - Use Blac with React
+
 ## Installation
 
-You can install Blac using npm or yarn:
-
 ```bash
-# Using npm
-npm install blac-next @blac/react
-
-# Using yarn
-yarn add blac-next @blac/react
+npm install @blac/core @blac/react
 ```
 
 ## Quick Start
@@ -18,10 +17,10 @@ Here's a simple counter example to get you started:
 
 ```tsx
 import { useBloc } from '@blac/react';
-import { Cubit } from 'blac-next';
+import { Cubit } from '@blac/core';
 
 // 1. Create a state container with business logic
-class CounterBloc extends Cubit<{ count: number }> {
+class CounterBloc extends Cubit {
   constructor() {
     super({ count: 0 });
   }
