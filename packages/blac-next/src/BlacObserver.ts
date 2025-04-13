@@ -58,7 +58,7 @@ export class BlacObservable<S> {
    */
   subscribe(observer: BlacObserver<S>): () => void {
     this._observers.add(observer);
-    Blac.instance.dispatchEvent(BlacLifecycleEvent.LISTENER_ADDED, this.bloc);
+    Blac.instance.dispatchEvent(BlacLifecycleEvent.LISTENER_ADDED, this.bloc, { listenerId: observer.id });
     if (!observer.lastState) {
       observer.lastState = observer.dependencyArray
         ? observer.dependencyArray(this.bloc.state, this.bloc.state)
@@ -73,7 +73,7 @@ export class BlacObservable<S> {
    */
   unsubscribe(observer: BlacObserver<S>) {
     this._observers.delete(observer);
-    Blac.instance.dispatchEvent(BlacLifecycleEvent.LISTENER_REMOVED, this.bloc);
+    Blac.instance.dispatchEvent(BlacLifecycleEvent.LISTENER_REMOVED, this.bloc, { listenerId: observer.id });
   }
 
   /**

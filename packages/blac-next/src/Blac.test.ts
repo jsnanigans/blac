@@ -116,17 +116,17 @@ describe('Blac', () => {
   describe('findIsolatedBlocInstance', () => {
     it('should return the bloc if it is registered', () => {
       const blac = new Blac();
-      const bloc = new ExampleBloc(undefined);
+      const bloc = new ExampleBlocIsolated(undefined);
       blac.registerIsolatedBlocInstance(bloc);
-      const result = blac.findIsolatedBlocInstance(ExampleBloc, bloc._id);
+      const result = blac.findIsolatedBlocInstance(ExampleBlocIsolated, bloc._id);
       expect(result).toBe(bloc);
     });
 
     it('should return undefined if the bloc is not registered', () => {
       const blac = new Blac();
-      const bloc = new ExampleBloc(undefined);
+      const bloc = new ExampleBlocIsolated(undefined);
       blac.registerIsolatedBlocInstance(bloc);
-      const result = blac.findIsolatedBlocInstance(ExampleBloc, 'foo');
+      const result = blac.findIsolatedBlocInstance(ExampleBlocIsolated, 'foo');
       expect(result).toBe(undefined);
     });
   });
