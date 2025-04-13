@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/restrict-template-expressions */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   Blac,
   BlocBaseAbstract,
@@ -13,7 +15,7 @@ import {
   useLayoutEffect,
   useMemo,
   useRef,
-  useSyncExternalStore
+  useSyncExternalStore,
 } from 'react';
 import externalBlocStore from './externalBlocStore';
 
@@ -34,7 +36,7 @@ type HookTypes<B extends BlocConstructor<BlocGeneric>> = [
  * @property {InferPropsFromGeneric<B>} [props] - Props to pass to the Bloc
  * @property {(bloc: B) => void} [onMount] - Callback function invoked when the Bloc is mounted
  */
-export interface BlocHookOptions<B extends BlocGeneric<any, any>> {
+export interface BlocHookOptions<B extends BlocGeneric<unknown>> {
   id?: string;
   dependencySelector?: BlocHookDependencyArrayFn<B>;
   props?: InferPropsFromGeneric<B>;
@@ -69,10 +71,10 @@ const defaultDependencySelector: BlocHookDependencyArrayFn<any> = (s) => [[s]];
  * // Call bloc methods
  * counterBloc.increment();
  */
-export default function useBloc<
-  B extends BlocConstructor<BlocGeneric>,
-  O extends BlocHookOptions<InstanceType<B>>,
->(bloc: B, options?: O): HookTypes<B> {
+export default function useBloc<B extends BlocConstructor<BlocGeneric>>(
+  bloc: B,
+  options?: BlocHookOptions<InstanceType<B>>,
+): HookTypes<B> {
   const { dependencySelector, id: blocId, props } = options ?? {};
   const rid = useId();
 
@@ -99,10 +101,10 @@ export default function useBloc<
   useMemo(() => {
     blocRef.current = Blac.getBloc(bloc, {
       id: effectiveBlocId,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       props: props as any,
       instanceRef: rid, // Pass component ID for consumer tracking
-    }) as InstanceType<B>;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    });
   }, [bloc, effectiveBlocId, rid]); // Dependencies ensure this runs only when bloc type or ID changes
 
   const resolvedBloc = blocRef.current;
@@ -116,11 +118,16 @@ export default function useBloc<
   // We rely on Blac.getBloc to handle initial props correctly during creation.
   // Subsequent calls should not overwrite props.
   // Check if this instanceRef matches the one stored on the bloc when it was created/first retrieved.
-  if (rid === resolvedBloc._instanceRef && options?.props && Blac.instance.findRegisteredBlocInstance(bloc, effectiveBlocId) === resolvedBloc) {
-      // Avoid double-setting props if Blac.getBloc already set them during creation
-      if(resolvedBloc.props !== options.props) {
-          resolvedBloc.props = options.props;
-      }
+  if (
+    rid === resolvedBloc._instanceRef &&
+    options?.props &&
+    Blac.instance.findRegisteredBlocInstance(bloc, effectiveBlocId) ===
+      resolvedBloc
+  ) {
+    // Avoid double-setting props if Blac.getBloc already set them during creation
+    if (resolvedBloc.props !== options.props) {
+      resolvedBloc.props = options.props;
+    }
   }
 
   // Configure dependency tracking for re-renders
@@ -135,6 +142,7 @@ export default function useBloc<
 
     // Fall back to bloc's default dependency selector if available
     if (resolvedBloc.defaultDependencySelector) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return resolvedBloc.defaultDependencySelector(newState, oldState);
     }
 
@@ -178,11 +186,10 @@ export default function useBloc<
   };
 
   // Set up external store subscription for state updates
-  const store = useMemo(() => externalBlocStore(
-    resolvedBloc,
-    dependencyArray,
-    rid,
-  ), [resolvedBloc, rid]); // dependencyArray removed as it changes frequently
+  const store = useMemo(
+    () => externalBlocStore(resolvedBloc, dependencyArray, rid),
+    [resolvedBloc, rid],
+  ); // dependencyArray removed as it changes frequently
 
   // Subscribe to state changes using React's external store API
   const state = useSyncExternalStore<BlocState<InstanceType<B>>>(
@@ -192,14 +199,17 @@ export default function useBloc<
   );
 
   // Create a proxy for state to track property access
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const returnState: BlocState<InstanceType<B>> = useMemo(() => {
     try {
       if (typeof state === 'object') {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return new Proxy(state as any, {
           get(_, prop) {
             instanceKeys.current.add(prop as string);
             usedKeys.current.add(prop as string);
             const value = state[prop as keyof typeof state];
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-return
             return value;
           },
         });
@@ -249,11 +259,8 @@ export default function useBloc<
 
     // Cleanup: remove this component as a consumer using the captured instance
     return () => {
-        if (currentBlocInstance) {
-            currentBlocInstance._removeConsumer(rid);
-        }
+      currentBlocInstance._removeConsumer(rid);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [options?.onMount, rid]); // Removed resolvedBloc, props from deps
 
   return [returnState, returnClass];

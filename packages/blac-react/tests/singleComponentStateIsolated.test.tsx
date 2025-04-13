@@ -8,15 +8,15 @@ import { useBloc } from "../src";
 type CounterCubitProps = {
   initialState?: number;
 };
-class CounterCubit extends Cubit<number, CounterCubitProps> {
+class CounterCubit extends Cubit<{ count: number }, CounterCubitProps> {
   static isolated = true;
 
   constructor(props: CounterCubitProps = {}) {
-    super(props.initialState ?? 0);
+    super({ count: props.initialState ?? 0 });
   }
 
   increment = () => {
-    this.emit(this.state + 1);
+    this.emit({ count: this.state.count + 1 });
   };
 }
 
@@ -32,7 +32,7 @@ const Counter: FC<{ num: number }> = ({ num }) => {
   return (
     <div>
       <button onClick={increment}>+1</button>
-      <label>{state}</label>
+      <label>{state.count}</label>
     </div>
   );
 };
@@ -46,7 +46,7 @@ test("should get state and instance", () => {
     useBloc(CounterCubit, { props: { initialState: 3442 } }),
   );
   const [state, instance] = result.current;
-  expect(state).toBe(3442);
+  expect(state.count).toBe(3442);
   expect(instance).toBeInstanceOf(CounterCubit);
 });
 

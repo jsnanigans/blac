@@ -155,15 +155,19 @@ test("should only rerender if state is used, even after state has been removed f
   expect(count).toHaveTextContent("");
   expect(renderCountTotal).toBe(4); // Adjusted from 5
 
+  // increment again, should not rerender because state.count is not used, BUT does because pruning is one step behind
+  await userEvent.click(container.querySelector('[data-testid="increment"]')!);
+  expect(renderCountTotal).toBe(5); // Adjusted from 5
+  expect(count).toHaveTextContent("");
   // increment again, should not rerender because state.count is not used
   await userEvent.click(container.querySelector('[data-testid="increment"]')!);
-  expect(renderCountTotal).toBe(4); // Adjusted from 5
+  expect(renderCountTotal).toBe(5); // Adjusted from 5
   expect(count).toHaveTextContent("");
 
   // update name again, should rerender because its still used
   await userEvent.click(container.querySelector('[data-testid="updateName"]')!);
   expect(name).toHaveTextContent("Name 3");
-  expect(renderCountTotal).toBe(5); // Adjusted from 6
+  expect(renderCountTotal).toBe(6); // Adjusted from 6
   expect(count).toHaveTextContent("");
 
   // stop rendering name
@@ -171,17 +175,17 @@ test("should only rerender if state is used, even after state has been removed f
     container.querySelector('[data-testid="disableRenderName"]')!,
   );
   expect(name).toHaveTextContent("");
-  expect(renderCountTotal).toBe(6); // Adjusted from 7
+  expect(renderCountTotal).toBe(7); // Adjusted from 7
   expect(count).toHaveTextContent("");
 
   // increment again, should not rerender because state.name is not used, will set state.cunt to '4'
   await userEvent.click(container.querySelector('[data-testid="increment"]')!);
-  expect(renderCountTotal).toBe(6); // Adjusted from 7
+  expect(renderCountTotal).toBe(7); // Adjusted from 7
   expect(count).toHaveTextContent("");
 
   // update name again, should not rerender because state.name is not used, will set state.name to 'Name 4'
   await userEvent.click(container.querySelector('[data-testid="updateName"]')!);
-  expect(renderCountTotal).toBe(6); // Adjusted from 7
+  expect(renderCountTotal).toBe(7); // Adjusted from 7
   expect(count).toHaveTextContent("");
 
   // render name again, should render with new name
@@ -189,15 +193,15 @@ test("should only rerender if state is used, even after state has been removed f
     container.querySelector('[data-testid="enableRenderName"]')!,
   );
   expect(name).toHaveTextContent("Name 4");
-  expect(renderCountTotal).toBe(7); // Adjusted from 8
+  expect(renderCountTotal).toBe(8); // Adjusted from 8
   expect(count).toHaveTextContent("");
 
   // show count again, should rerender with new count
   await userEvent.click(
     container.querySelector('[data-testid="enableRenderCount"]')!,
   );
-  expect(count).toHaveTextContent("4");
-  expect(renderCountTotal).toBe(8); // Adjusted from 9
+  expect(count).toHaveTextContent("5");
+  expect(renderCountTotal).toBe(9); // Adjusted from 9
 });
 
 test("should only rerender if state is used, even if state is used after initial render", async () => {

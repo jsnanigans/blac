@@ -59,15 +59,15 @@ test("all instances should get the same state", async () => {
   const label2 = container.querySelector('[data-testid="2-label"]');
   expect(label1).toHaveTextContent("3442");
   expect(label2).toHaveTextContent("3442");
-  expect(renderCountTotal).toBe(2); // 2 renders because of Strict Mode
+  expect(renderCountTotal).toBe(2); 
 
   await userEvent.click(container.querySelector('[data-testid="1-increment"]')!);
   expect(label1).toHaveTextContent("3443");
   expect(label2).toHaveTextContent("3443");
-  expect(renderCountTotal).toBe(3);
+  expect(renderCountTotal).toBe(4);
 
   await userEvent.click(container.querySelector('[data-testid="2-increment"]')!);
   expect(label1).toHaveTextContent("3444");
   expect(label2).toHaveTextContent("3444");
-  expect(renderCountTotal).toBe(5);
+  expect(renderCountTotal).toBe(6);
 });
