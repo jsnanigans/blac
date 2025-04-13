@@ -1,10 +1,10 @@
+import { BlacPlugin } from "./BlacPlugin";
 import { BlocBase, BlocInstanceId } from "./BlocBase";
 import {
   BlocBaseAbstract,
   BlocConstructor,
   InferPropsFromGeneric,
 } from "./types";
-import { BlacPlugin } from "./BlacPlugin";
 
 /**
  * Configuration options for the Blac instance
@@ -106,12 +106,13 @@ export class Blac {
   /**
    * Resets the Blac instance to a new one
    */
-  resetInstance(): void {
+  resetInstance = (): void => {
     this.log("Reset Blac instance");
     Blac.instance = new Blac({
       __unsafe_ignore_singleton: true,
     });
   }
+  static resetInstance = Blac.instance.resetInstance;
 
   /**
    * Adds a plugin to the Blac instance
@@ -355,6 +356,36 @@ export class Blac {
     );
   };
   static getBloc = Blac.instance.getBloc;
+
+  /**
+   * Gets a bloc instance or throws an error if it doesn't exist
+   * @param blocClass - The bloc class to get
+   * @param options - Options including:
+   *   - id: The instance ID (defaults to class name if not provided)
+   *   - props: Properties to pass to the bloc constructor
+   *   - instanceRef: Optional reference string for the instance
+   */
+  getBlocOrThrow = <B extends BlocConstructor<any>>(
+    blocClass: B,
+    options: {
+      id?: BlocInstanceId;
+      props?: InferPropsFromGeneric<B>;
+      instanceRef?: string;
+    } = {},
+  ): InstanceType<B> => {
+    const isIsolated = (blocClass as InstanceType<B>).isolated;
+    const id = options.id || blocClass.name;
+
+    const registered = isIsolated
+      ? this.findIsolatedBlocInstance(blocClass, id)
+      : this.findRegisteredBlocInstance(blocClass, id);
+
+    if (registered) {
+      return registered;
+    }
+    throw new Error(`Bloc ${blocClass.name} not found`);
+  };
+  static getBlocOrThrow = Blac.instance.getBlocOrThrow;
 
   /**
    * Gets all instances of a specific bloc class

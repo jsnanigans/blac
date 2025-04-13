@@ -4,9 +4,9 @@ import {
     Bloc,
     BlocGeneric,
     BlocHookDependencyArrayFn,
-    InferPropsFromGeneric,
+    InferPropsFromGeneric
 } from 'blac-next';
-import { describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import useBloc from '../src/useBloc';
 
 // --- Local Definition if not exported from blac-next ---
@@ -105,23 +105,12 @@ class IsolatedBloc extends Bloc<{ value: number }, IsolatedAction> {
 // Manually set isolated if not read from static prop automatically
 (IsolatedBloc as any).isolated = true;
 
-// Helper uses Blac.getBloc, similar to useBloc hook
-const getBlocInstance = <B extends new (...args: any[]) => Bloc<any, any, any>>(
-  blocClass: B,
-  options?: { id?: string; props?: any },
-): InstanceType<B> | undefined => {
-  try {
-    // We don't *need* instanceRef here, just retrieving based on class/id
-    return Blac.getBloc(blocClass, {
-      id: options?.id,
-      props: options?.props,
-    }) as InstanceType<B> | undefined;
-  } catch (e) {
-    // Blac.getBloc might throw if not found, handle gracefully
-    // console.error("Error calling Blac.getBloc:", e);
-    return undefined;
-  }
-};
+beforeEach(() => {
+  Blac.resetInstance();
+});
+afterEach(() => {
+  Blac.resetInstance();
+});
 
 describe('useBloc Hook Lifecycle & Options with Vitest', () => {
   // Removed Blac.clear() from beforeEach/afterEach
@@ -266,17 +255,17 @@ describe('useBloc Hook Lifecycle & Options with Vitest', () => {
       props: initialProps,
     };
 
-    expect(getBlocInstance(CounterBloc, { id: blocId })).toBeUndefined();
+    expect(Blac.getBloc(CounterBloc, { id: blocId })).toBeUndefined();
 
     const { unmount: unmountFirst } = renderHook(() =>
       useBloc(CounterBloc, blocOptions as any),
     );
     await waitFor(() =>
-      expect(getBlocInstance(CounterBloc, { id: blocId })).toBeInstanceOf(
+      expect(Blac.getBloc(CounterBloc, { id: blocId })).toBeInstanceOf(
         CounterBloc,
       ),
     );
-    const instance = getBlocInstance(CounterBloc, { id: blocId });
+    const instance = Blac.getBloc(CounterBloc, { id: blocId });
     expect(instance).toBeDefined();
     await waitFor(() => expect(instance?._consumers?.size ?? 0).toBe(1));
 
@@ -284,7 +273,7 @@ describe('useBloc Hook Lifecycle & Options with Vitest', () => {
       useBloc(CounterBloc, blocOptions as any),
     );
     await waitFor(() => expect(instance?._consumers?.size ?? 0).toBe(2));
-    expect(getBlocInstance(CounterBloc, { id: blocId })).toBe(instance);
+    expect(Blac.getBloc(CounterBloc, { id: blocId })).toBe(instance);
 
     const { unmount: unmountThird } = renderHook(() =>
       useBloc(CounterBloc, blocOptions as any),
@@ -295,19 +284,19 @@ describe('useBloc Hook Lifecycle & Options with Vitest', () => {
       unmountSecond();
     });
     await waitFor(() => expect(instance?._consumers?.size ?? 0).toBe(2));
-    expect(getBlocInstance(CounterBloc, { id: blocId })).toBe(instance);
+    expect(Blac.getBloc(CounterBloc, { id: blocId })).toBe(instance);
 
     act(() => {
       unmountFirst();
     });
     await waitFor(() => expect(instance?._consumers?.size ?? 0).toBe(1));
-    expect(getBlocInstance(CounterBloc, { id: blocId })).toBe(instance);
+    expect(Blac.getBloc(CounterBloc, { id: blocId })).toBe(instance);
 
     act(() => {
       unmountThird();
     });
     await waitFor(() => {
-      expect(getBlocInstance(CounterBloc, { id: blocId })).toBeUndefined();
+      expect(Blac.getBloc(CounterBloc, { id: blocId })).toBeUndefined();
     });
   });
 
@@ -353,6 +342,174 @@ describe('useBloc Hook Lifecycle & Options with Vitest', () => {
     });
     act(() => {
       unmount2();
+    });
+  });
+
+  // --- Strict Mode / Dev Mode Simulation Tests ---
+
+  describe('useBloc Hook in Strict Mode / Dev Environment', () => {
+    // Note: React Testing Library with React 18+ runs effects twice in tests
+    // by default, simulating Strict Mode behavior. We verify the outcome.
+
+    test('should call onMount only once and manage consumers correctly despite Strict Mode double effects', async () => {
+      const blocId = 'strict-mode-test';
+      const onMountMock = vi.fn();
+      const initialProps: CounterProps = { initialCount: 0, source: 'strict' };
+      const blocOptions: LocalBlocHookOptions<CounterBloc> = {
+        id: blocId,
+        props: initialProps,
+        onMount: onMountMock,
+      };
+
+      expect(Blac.getBloc(CounterBloc, { id: blocId })).toBeUndefined();
+
+      const { unmount } = renderHook(() =>
+        useBloc(CounterBloc, blocOptions as any),
+      );
+
+      // Check if bloc instance is created
+      await waitFor(() =>
+        expect(Blac.getBloc(CounterBloc, { id: blocId })).toBeInstanceOf(
+          CounterBloc,
+        ),
+      );
+      const instance = Blac.getBloc(CounterBloc, { id: blocId });
+      expect(instance).toBeDefined();
+
+      // Verify onMount was called exactly once, even if the effect ran twice
+      expect(onMountMock).toHaveBeenCalledTimes(1);
+      expect(onMountMock).toHaveBeenCalledWith(instance);
+
+      // Verify consumer count is 1
+      await waitFor(() => expect(instance?._consumers?.size ?? 0).toBe(1));
+
+      // Clean up
+      act(() => {
+        unmount();
+      });
+
+      // Verify bloc is cleaned up after unmount
+      await waitFor(() => {
+        expect(() =>
+          Blac.getBlocOrThrow(CounterBloc, { id: blocId }),
+        ).toThrow();
+      });
+    });
+
+    test('should handle simulated hot reload (unmount and remount)', async () => {
+      const blocId = 'reload-test';
+      const initialProps: CounterProps = { initialCount: 5, source: 'reload' };
+      const blocOptions: LocalBlocHookOptions<CounterBloc> = {
+        props: initialProps,
+      };
+
+      // Initial mount
+      const { result, unmount } = renderHook(
+        (opts) => useBloc(CounterBloc, opts as any),
+        { initialProps: blocOptions },
+      );
+
+      let instance = result.current[1];
+      await waitFor(() => expect(instance).toBeInstanceOf(CounterBloc));
+      expect(instance?.state.count).toBe(5);
+      await waitFor(() => expect(instance?._consumers?.size ?? 0).toBe(1));
+      const initialInstanceId = instance?._id;
+
+      // Simulate unmount (like before reload)
+      act(() => {
+        unmount();
+      });
+
+      await waitFor(() => {
+        expect(Blac.getBloc(CounterBloc, { id: blocId })).toBeUndefined();
+      });
+
+      // Simulate remount (like after reload)
+      act(() => {
+        // Rerender doesn't remount from scratch, we need a new hook render
+        // to simulate a full component remount after being unmounted.
+        // However, we'll use the same renderHook result variable `remounted`
+        // to avoid shadowing or confusion.
+        // This conceptually represents the *new* component instance after reload.
+        renderHook((opts) => useBloc(CounterBloc, opts as any), {
+          initialProps: blocOptions,
+        });
+      });
+
+      // Check instance is recreated or re-retrieved
+      await waitFor(() =>
+        expect(Blac.getBloc(CounterBloc, { id: blocId })).toBeInstanceOf(
+          CounterBloc,
+        ),
+      );
+      instance = Blac.getBloc(CounterBloc, { id: blocId });
+      expect(instance).toBeDefined();
+      expect(instance?._id).toBe(initialInstanceId); // Should be a new instance
+      expect(instance?.state.count).toBe(5); // State re-initialized from props
+      await waitFor(() => expect(instance?._consumers?.size ?? 0).toBe(1)); // New consumer set
+
+      // Clean up the second render
+      // We need to get the unmount function from the *second* renderHook call.
+      // This structure is a bit awkward. A better approach might be two separate
+      // renderHook calls in the test body directly. Let's refactor slightly.
+
+      // Refactored approach:
+      const { unmount: unmountFirstRender } = renderHook(
+        (opts) => useBloc(CounterBloc, opts as any),
+        { initialProps: blocOptions },
+      );
+      const firstInstance = Blac.getBloc(CounterBloc, { id: blocId });
+      await waitFor(() => expect(firstInstance).toBeInstanceOf(CounterBloc));
+      const firstInstanceId = firstInstance?._id;
+      act(() => unmountFirstRender());
+      await waitFor(() => {
+        expect(Blac.getBloc(CounterBloc, { id: blocId })).toBeUndefined();
+      });
+
+      const { unmount: unmountSecondRender } = renderHook(
+        (opts) => useBloc(CounterBloc, opts as any),
+        { initialProps: blocOptions },
+      );
+      const secondInstance = Blac.getBloc(CounterBloc, { id: blocId });
+      await waitFor(() => expect(secondInstance).toBeInstanceOf(CounterBloc));
+      expect(secondInstance?._id).not.toBe(firstInstanceId);
+      expect(secondInstance?.state.count).toBe(5);
+      await waitFor(() =>
+        expect(secondInstance?._consumers?.size ?? 0).toBe(1),
+      );
+
+      act(() => unmountSecondRender());
+      await waitFor(() => {
+        expect(Blac.getBloc(CounterBloc, { id: blocId })).toBeUndefined();
+      });
+    });
+
+    test('isolated bloc should get a new instance after simulated hot reload', async () => {
+      // Initial mount
+      const { result: result1, unmount: unmount1 } = renderHook(() =>
+        useBloc(IsolatedBloc),
+      );
+      const instance1 = result1.current[1];
+      await waitFor(() => expect(instance1).toBeInstanceOf(IsolatedBloc));
+      act(() => instance1.increment());
+      await waitFor(() => expect(instance1.state.value).toBe(1));
+
+      // Simulate unmount
+      act(() => unmount1());
+
+      // Simulate remount
+      const { result: result2, unmount: unmount2 } = renderHook(() =>
+        useBloc(IsolatedBloc),
+      );
+      const instance2 = result2.current[1];
+      await waitFor(() => expect(instance2).toBeInstanceOf(IsolatedBloc));
+
+      // Verify it's a new instance with initial state
+      expect(instance1).not.toBe(instance2);
+      expect(result2.current[0].value).toBe(0); // Should be reset
+
+      // Clean up
+      act(() => unmount2());
     });
   });
 });
