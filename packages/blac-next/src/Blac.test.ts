@@ -232,17 +232,6 @@ describe('Blac', () => {
       expect(spy).toHaveBeenCalled();
       expect(spy).toHaveBeenCalledWith(bloc);
     });
-  });
-
-  describe('report', () => {
-    it('should call `disposeBloc` if the event `BLOC_DISPOSED` is called', () => {
-      const blac = new Blac();
-      const bloc = new ExampleBloc(undefined);
-      const spy = vi.spyOn(blac, 'disposeBloc');
-      blac.dispatchEvent(BlacLifecycleEvent.BLOC_DISPOSED, bloc);
-      expect(spy).toHaveBeenCalled();
-      expect(spy).toHaveBeenCalledWith(bloc);
-    });
 
     it('should call `disposeBloc` if the event `BLOC_CONSUMER_REMOVED` is called and the bloc has no listeners', () => {
       const blac = new Blac();
@@ -250,23 +239,81 @@ describe('Blac', () => {
       const spy = vi.spyOn(blac, 'disposeBloc');
       blac.dispatchEvent(BlacLifecycleEvent.BLOC_CONSUMER_REMOVED, bloc);
       expect(spy).toHaveBeenCalled();
+      expect(spy).toHaveBeenCalledWith(bloc);
     });
 
-    it('should not call `disposeBloc` if the event `LISTENER_REMOVED` is called and the bloc has `keepAlive` set to true', () => {
-      const blac = new Blac();
-      const bloc = new ExampleBlocKeepAlive(undefined);
-      const spy = vi.spyOn(blac, 'disposeBloc');
-      blac.dispatchEvent(BlacLifecycleEvent.LISTENER_REMOVED, bloc);
-      expect(spy).not.toHaveBeenCalled();
-    });
-
-    it('should not call `disposeBloc` if the event `LISTENER_REMOVED` is called and the bloc has listeners', () => {
+    it('should call `disposeBloc` if the event `LISTENER_REMOVED` is called and the bloc has no consumers', () => {
       const blac = new Blac();
       const bloc = new ExampleBloc(undefined);
-      bloc._observer.subscribe({ fn: () => {}, id: 'foo' });
+      const spy = vi.spyOn(blac, 'disposeBloc');
+      blac.dispatchEvent(BlacLifecycleEvent.LISTENER_REMOVED, bloc);
+      expect(spy).toHaveBeenCalled();
+      expect(spy).toHaveBeenCalledWith(bloc);
+    });
+
+    it('should NOT call `disposeBloc` if `BLOC_CONSUMER_REMOVED` is called but there are still listeners', () => {
+      const blac = new Blac();
+      const bloc = new ExampleBloc(undefined);
+      const subId = 'test-listener-1';
+      const observer = { fn: () => {}, id: subId }; // Store the observer object
+      bloc._observer.subscribe(observer); // Add a dummy listener with ID
+      const spy = vi.spyOn(blac, 'disposeBloc');
+      blac.dispatchEvent(BlacLifecycleEvent.BLOC_CONSUMER_REMOVED, bloc);
+      expect(spy).not.toHaveBeenCalled();
+      bloc._observer.unsubscribe(observer); // Clean up listener by passing the observer object
+    });
+
+    it('should NOT call `disposeBloc` if `LISTENER_REMOVED` is called but there are still consumers', () => {
+      const blac = new Blac();
+      const bloc = new ExampleBloc(undefined);
+      bloc._consumers.add('consumer1'); // Add a dummy consumer
       const spy = vi.spyOn(blac, 'disposeBloc');
       blac.dispatchEvent(BlacLifecycleEvent.LISTENER_REMOVED, bloc);
       expect(spy).not.toHaveBeenCalled();
+      bloc._consumers.clear(); // Clean up consumer
+    });
+
+    it('should NOT call `disposeBloc` if `BLOC_CONSUMER_REMOVED` is called and keepAlive is true', () => {
+      const blac = new Blac();
+      const bloc = new ExampleBlocKeepAlive(undefined); // Use keepAlive version
+      const spy = vi.spyOn(blac, 'disposeBloc');
+      blac.dispatchEvent(BlacLifecycleEvent.BLOC_CONSUMER_REMOVED, bloc);
+      expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('should call `disposeBloc` for isolated bloc if `BLOC_CONSUMER_REMOVED` is called and no listeners/keepAlive', () => {
+      const blac = new Blac();
+      // Create isolated bloc correctly
+      const bloc = blac.createNewBlocInstance(ExampleBlocIsolated, 'iso1');
+      const spy = vi.spyOn(blac, 'disposeBloc');
+      blac.dispatchEvent(BlacLifecycleEvent.BLOC_CONSUMER_REMOVED, bloc);
+      expect(spy).toHaveBeenCalled();
+      expect(spy).toHaveBeenCalledWith(bloc);
+    });
+
+    it('should NOT call `disposeBloc` for isolated bloc if `BLOC_CONSUMER_REMOVED` is called but listeners exist', () => {
+      const blac = new Blac();
+      const bloc = blac.createNewBlocInstance(ExampleBlocIsolated, 'iso2');
+      const subId = 'test-listener-2';
+      const observer = { fn: () => {}, id: subId }; // Store the observer object
+      bloc._observer.subscribe(observer); // Add a dummy listener with ID
+      const spy = vi.spyOn(blac, 'disposeBloc');
+      blac.dispatchEvent(BlacLifecycleEvent.BLOC_CONSUMER_REMOVED, bloc);
+      expect(spy).not.toHaveBeenCalled();
+      bloc._observer.unsubscribe(observer); // Clean up listener by passing the observer object
+    });
+
+    it('should dispatch event to plugins', () => {
+      const blac = new Blac();
+      const plugin = {
+        name: 'testPlugin',
+        onEvent: vi.fn(),
+      };
+      blac.addPlugin(plugin);
+      const bloc = new ExampleBloc(undefined);
+      blac.dispatchEvent(BlacLifecycleEvent.BLOC_CREATED, bloc, { foo: 'bar' });
+      expect(plugin.onEvent).toHaveBeenCalled();
+      expect(plugin.onEvent).toHaveBeenCalledWith(BlacLifecycleEvent.BLOC_CREATED, bloc, { foo: 'bar' });
     });
   });
 

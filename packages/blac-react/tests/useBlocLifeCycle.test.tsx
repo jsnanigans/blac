@@ -365,10 +365,9 @@ describe('useBloc Hook Lifecycle & Options with Vitest', () => {
       unmountThird();
     });
     // Verify instance is cleaned up
-    // REMOVED failing assertion: 
-    // await waitFor(() => {
-    //   expect(Blac.getBloc(CounterBloc, { id: blocId })).toBeUndefined();
-    // });
+    await waitFor(() => {
+      expect(() => Blac.getBlocOrThrow(CounterBloc, { id: blocId })).toThrow();
+    });
   });
 
   test('should create separate instances for isolated blocs', async () => {
@@ -405,6 +404,10 @@ describe('useBloc Hook Lifecycle & Options with Vitest', () => {
     act(() => {
       unmount2();
     });
+    // Verify bloc is cleaned up after unmount
+    await waitFor(() => {
+      expect(() => Blac.getBlocOrThrow(IsolatedBloc)).toThrow();
+    });
   });
 
   // --- Strict Mode / Dev Mode Simulation Tests ---
@@ -423,7 +426,9 @@ describe('useBloc Hook Lifecycle & Options with Vitest', () => {
         onMount: onMountMock,
       };
 
-      // REMOVED failing assertion: expect(Blac.getBloc(CounterBloc, { id: blocId })).toBeUndefined();
+      await waitFor(() => {
+        expect(() => Blac.getBlocOrThrow(CounterBloc, { id: blocId })).toThrow();
+      });
 
       const { unmount } = renderHook(() =>
         useBloc(CounterBloc, blocOptions),
@@ -455,12 +460,9 @@ describe('useBloc Hook Lifecycle & Options with Vitest', () => {
       });
 
       // Verify bloc is cleaned up after unmount
-      // REMOVED failing assertion:
-      // await waitFor(() => {
-      //   expect(() =>
-      //     Blac.getBlocOrThrow(CounterBloc, { id: blocId }),
-      //   ).toThrow();
-      // });
+      await waitFor(() => {
+        expect(() => Blac.getBlocOrThrow(CounterBloc, { id: blocId })).toThrow();
+      });
     });
 
     test('should handle simulated hot reload (unmount and remount)', async () => {
@@ -486,11 +488,10 @@ describe('useBloc Hook Lifecycle & Options with Vitest', () => {
 
       act(() => { unmountFirstRender(); });
       // Added waitFor for cleanup assertion
-      // REMOVED failing assertion:
-      // await waitFor(() => {
-      //   // Instance should be removed if it was the only consumer
-      //   expect(Blac.getBloc(CounterBloc, { id: blocId })).toBeUndefined();
-      // });
+      await waitFor(() => {
+        expect(() => Blac.getBlocOrThrow(CounterBloc, { id: blocId })).toThrow();
+      });
+
 
       // Simulate remount with the same options
       const { result: secondResult, unmount: unmountSecondRender } = renderHook(
@@ -512,10 +513,9 @@ describe('useBloc Hook Lifecycle & Options with Vitest', () => {
       });
 
       act(() => { unmountSecondRender(); });
-      // REMOVED failing assertion:
-      // await waitFor(() => {
-      //   expect(Blac.getBloc(CounterBloc, { id: blocId })).toBeUndefined();
-      // });
+      await waitFor(() => {
+        expect(() => Blac.getBlocOrThrow(CounterBloc, { id: blocId })).toThrow();
+      });
     });
 
     test('isolated bloc should get a new instance after simulated hot reload', async () => {

@@ -720,19 +720,19 @@ describe('useBloc dependency detection', () => {
     // Update count
     await userEvent.click(screen.getByTestId('increment'));
     expect(parentRenders).toBe(2); // Parent uses count
-    expect(childARenders).toBe(2); // Child A uses count
+    expect(childARenders).toBe(2); // Parent re-render causes ChildA re-render
     expect(childBRenders).toBe(2); // Child B uses count
     
     // Update name
     await userEvent.click(screen.getByTestId('update-name'));
     expect(parentRenders).toBe(3); // Parent passes name prop
     expect(childARenders).toBe(3); // Child A uses name prop
-    expect(childBRenders).toBe(3); // Child B doesn't use name
+    expect(childBRenders).toBe(3); // Parent re-render causes ChildB re-render (even though it doesn't use name directly)
 
     // Update name again
     await userEvent.click(screen.getByTestId('update-name'));
-    expect(parentRenders).toBe(3); // Parent passes name prop
-    expect(childARenders).toBe(3); // Child A uses name prop
-    expect(childBRenders).toBe(3); // Child B doesn't use name
+    expect(parentRenders).toBe(3); // Parent state value didn't change, should not re-render
+    expect(childARenders).toBe(3); // Parent didn't re-render, prop value didn't change
+    expect(childBRenders).toBe(3); // Parent didn't re-render, own state dep (count) didn't change
   });
 });
