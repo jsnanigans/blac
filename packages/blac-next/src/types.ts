@@ -54,7 +54,7 @@ export type BlocState<T> =
  * @template T - The Bloc or Cubit type to extract the props from
  */
 export type InferPropsFromGeneric<T> =
-  T extends Bloc<any, infer P, any>
+  T extends Bloc<any, any, infer P>
     ? P
     : T extends Cubit<any, infer P>
       ? P
