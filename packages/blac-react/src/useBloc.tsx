@@ -13,8 +13,7 @@ import {
   useLayoutEffect,
   useMemo,
   useRef,
-  useState,
-  useSyncExternalStore,
+  useSyncExternalStore
 } from 'react';
 import externalBlocStore from './externalBlocStore';
 
@@ -74,43 +73,54 @@ export default function useBloc<
   B extends BlocConstructor<BlocGeneric>,
   O extends BlocHookOptions<InstanceType<B>>,
 >(bloc: B, options?: O): HookTypes<B> {
-  let { dependencySelector, id: blocId, props } = options ?? {};
+  const { dependencySelector, id: blocId, props } = options ?? {};
   const rid = useId();
 
-  // Track which state keys are actually used in the component for optimized re-renders
+  // Track used state keys
   const usedKeys = useRef<Set<string>>(new Set());
   const instanceKeys = useRef<Set<string>>(new Set());
 
-  // Track used class properties (non-function members) for dependency tracking
+  // Track used class properties
   const usedClassPropKeys = useRef<Set<string>>(new Set());
   const instanceClassPropKeys = useRef<Set<string>>(new Set());
 
   const renderInstance = {};
 
-  // Check if this bloc should be isolated (unique instance per component)
+  // Determine ID for isolated or shared blocs
   const base = bloc as unknown as BlocBaseAbstract;
   const isIsolated = base.isolated;
-  if (isIsolated) {
-    blocId = rid;
-  }
+  const effectiveBlocId = isIsolated ? rid : blocId;
 
-  // Get or create the bloc instance with the provided configuration
-  const [resolvedBloc, setResolvedBloc] = useState(
-    Blac.getBloc(bloc, {
-      id: blocId,
+  // Use useRef to hold the bloc instance reference consistently across renders
+  const blocRef = useRef<InstanceType<B> | null>(null);
+
+  // Initialize or get the bloc instance ONCE using useMemo based on the effective ID
+  // This avoids re-running Blac.getBloc on every render.
+  useMemo(() => {
+    blocRef.current = Blac.getBloc(bloc, {
+      id: effectiveBlocId,
       props: props as any,
-      instanceRef: rid,
-    }) as InstanceType<B>,
-  );
+      instanceRef: rid, // Pass component ID for consumer tracking
+    }) as InstanceType<B>;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bloc, effectiveBlocId, rid]); // Dependencies ensure this runs only when bloc type or ID changes
+
+  const resolvedBloc = blocRef.current;
 
   if (!resolvedBloc) {
-    throw new Error(`useBloc: could not resolve: ${bloc.name || bloc}`);
+    // This should ideally not happen if Blac.getBloc works correctly
+    throw new Error(`useBloc: could not resolve bloc: ${bloc.name || bloc}`);
   }
 
-  // Update props if this is the main instance and props were provided
-  const isMainInstance = rid === resolvedBloc._instanceRef;
-  if (isMainInstance && options?.props) {
-    resolvedBloc.props = options.props;
+  // Update props ONLY if this hook instance created the bloc (or is the designated main instance)
+  // We rely on Blac.getBloc to handle initial props correctly during creation.
+  // Subsequent calls should not overwrite props.
+  // Check if this instanceRef matches the one stored on the bloc when it was created/first retrieved.
+  if (rid === resolvedBloc._instanceRef && options?.props && Blac.instance.findRegisteredBlocInstance(bloc, effectiveBlocId) === resolvedBloc) {
+      // Avoid double-setting props if Blac.getBloc already set them during creation
+      if(resolvedBloc.props !== options.props) {
+          resolvedBloc.props = options.props;
+      }
   }
 
   // Configure dependency tracking for re-renders
@@ -168,17 +178,17 @@ export default function useBloc<
   };
 
   // Set up external store subscription for state updates
-  const { subscribe, getSnapshot, getServerSnapshot } = externalBlocStore(
+  const store = useMemo(() => externalBlocStore(
     resolvedBloc,
     dependencyArray,
     rid,
-  );
+  ), [resolvedBloc, rid]); // dependencyArray removed as it changes frequently
 
   // Subscribe to state changes using React's external store API
   const state = useSyncExternalStore<BlocState<InstanceType<B>>>(
-    subscribe,
-    getSnapshot,
-    getServerSnapshot,
+    store.subscribe,
+    store.getSnapshot,
+    store.getServerSnapshot,
   );
 
   // Create a proxy for state to track property access
@@ -223,27 +233,28 @@ export default function useBloc<
 
   // Set up bloc lifecycle management
   useEffect(() => {
-    // Register this component as a consumer of the bloc
-    resolvedBloc._addConsumer(rid);
-    let resolved = resolvedBloc;
+    const currentBlocInstance = blocRef.current; // Capture instance for cleanup
+    if (!currentBlocInstance) return; // Should not happen
 
-    // If there are other consumers, ensure we're using the correct instance
-    if (resolvedBloc._consumers.size !== 0) {
-      resolved = Blac.getBloc(bloc, {
-        id: blocId,
-        props: props as any,
-        instanceRef: rid,
-      }) as InstanceType<B>;
-
-      setResolvedBloc(resolved);
-    }
+    // Add consumer ONCE on mount
+    // Blac.getBloc now handles adding the consumer if the instance already exists
+    // If we created it, add consumer here? Let's check Blac.getBloc again.
+    // Re-check: Blac.getBloc adds the consumer via instanceRef now.
+    // So, we might not need _addConsumer here anymore if instanceRef is always passed.
+    // Let's keep it for now for safety, but Blac.getBloc should prevent duplicates.
+    currentBlocInstance._addConsumer(rid);
 
     // Call onMount callback if provided
-    options?.onMount?.(resolved);
+    options?.onMount?.(currentBlocInstance);
 
-    // Cleanup: remove this component as a consumer
-    return () => resolvedBloc._removeConsumer(rid);
-  }, []);
+    // Cleanup: remove this component as a consumer using the captured instance
+    return () => {
+        if (currentBlocInstance) {
+            currentBlocInstance._removeConsumer(rid);
+        }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [options?.onMount, rid]); // Removed resolvedBloc, props from deps
 
   return [returnState, returnClass];
 }

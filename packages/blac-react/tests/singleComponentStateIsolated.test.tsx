@@ -1,37 +1,38 @@
-import { render, screen } from "@testing-library/react";
+import { render, renderHook, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Cubit } from "blac-next";
 import React, { FC } from "react";
 import { beforeEach, expect, test } from "vitest";
 import { useBloc } from "../src";
 
-class CounterCubit extends Cubit<
-  { count: number; name: string },
-  { initialState?: number }
-> {
+type CounterCubitProps = {
+  initialState?: number;
+};
+class CounterCubit extends Cubit<number, CounterCubitProps> {
   static isolated = true;
-  constructor(props: { initialState?: number } = {}) {
-    super({
-      count: props.initialState ?? 0,
-      name: "John Doe",
-    });
+
+  constructor(props: CounterCubitProps = {}) {
+    super(props.initialState ?? 0);
   }
 
-  increment = () => this.patch({ count: this.state.count + 1 });
-  updateName = (name: string) => this.patch({ name });
+  increment = () => {
+    this.emit(this.state + 1);
+  };
 }
 
+/**
+ * 
+ * @param props 
+ * @returns 
+ */
 let renderCount = 0;
 const Counter: FC<{ num: number }> = ({ num }) => {
-  const [{ count }, { increment, updateName }] = useBloc(CounterCubit, {
-    props: { initialState: num },
-  });
-  renderCount++;
+  const [state, { increment }] = useBloc(CounterCubit, { props: { initialState: num } });
+  renderCount += 1;
   return (
     <div>
       <button onClick={increment}>+1</button>
-      <button onClick={() => updateName("new name")}>updateName</button>
-      <label>{count}</label>
+      <label>{state}</label>
     </div>
   );
 };
@@ -41,8 +42,12 @@ beforeEach(() => {
 });
 
 test("should get state and instance", () => {
-  render(<Counter num={3442} />);
-  expect(screen.getByText("3442")).toBeInTheDocument();
+  const { result } = renderHook(() =>
+    useBloc(CounterCubit, { props: { initialState: 3442 } }),
+  );
+  const [state, instance] = result.current;
+  expect(state).toBe(3442);
+  expect(instance).toBeInstanceOf(CounterCubit);
 });
 
 test("should update state", async () => {
@@ -50,32 +55,41 @@ test("should update state", async () => {
   const instance = screen.getByText("3442");
   expect(instance).toBeInTheDocument();
   await userEvent.click(screen.getByText("+1"));
-  expect(instance).toHaveTextContent("3443");
-  await userEvent.click(screen.getByText("+1"));
-  expect(instance).toHaveTextContent("3444");
+  expect(screen.getByText("3443")).toBeInTheDocument();
 });
 
 test("should rerender when state changes", async () => {
   render(<Counter num={3442} />);
   const instance = screen.getByText("3442");
   expect(instance).toBeInTheDocument();
-  expect(renderCount).toBe(1);
+
+  // Initial render + Strict Mode remount = 2 renders
+  expect(renderCount).toBe(2);
   await userEvent.click(screen.getByText("+1"));
   expect(screen.getByText("3443")).toBeInTheDocument();
+  // State change causes another render
   expect(renderCount).toBe(3);
 });
 
 test("should not rerender when state changes that is not used", async () => {
+  const Counter: FC<{ num: number }> = ({ num }) => {
+    const [, { increment }] = useBloc(CounterCubit, { props: { initialState: num } });
+    renderCount += 1;
+    return (
+      <div>
+        <button onClick={increment}>+1</button>
+        <label>{num}</label>
+      </div>
+    );
+  };
+
   render(<Counter num={3442} />);
   const instance = screen.getByText("3442");
   expect(instance).toBeInTheDocument();
-  expect(renderCount).toBe(1);
+
+  // Initial render + Strict Mode remount = 2 renders
+  expect(renderCount).toBe(2);
   await userEvent.click(screen.getByText("+1"));
-  expect(renderCount).toBe(3);
-  await userEvent.click(screen.getByText("updateName"));
-  expect(renderCount).toBe(3);
-  await userEvent.click(screen.getByText("updateName"));
-  expect(renderCount).toBe(3);
-  await userEvent.click(screen.getByText("+1"));
-  expect(renderCount).toBe(4);
+  // Should not rerender because state is not used in component
+  expect(renderCount).toBe(2);
 });

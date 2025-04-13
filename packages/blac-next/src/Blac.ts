@@ -166,9 +166,9 @@ export class Blac {
         this.disposeBloc(bloc);
         break;
       case BlacLifecycleEvent.BLOC_CONSUMER_REMOVED:
+        this.log(`[${bloc._name}:${bloc._id}] Consumer removed. Count: ${bloc._consumers.size}, KeepAlive: ${bloc._keepAlive}`);
         if (
           bloc._consumers.size === 0 &&
-          bloc._observer.size === 0 &&
           !bloc._keepAlive
         )
           bloc._dispose();
@@ -236,6 +236,9 @@ export class Blac {
     const found = this.blocInstanceMap.get(key) as InstanceType<
       BlocConstructor<B>
     >;
+    if (found) {
+      this.log(`[${blocClass.name}:${id}] Found registered instance. Returning.`);
+    }
     return found;
   }
 
@@ -338,22 +341,34 @@ export class Blac {
       instanceRef?: string;
     } = {},
   ): InstanceType<B> => {
-    const isIsolated = (blocClass as InstanceType<B>).isolated;
-    const id = options.id || blocClass.name;
+    // Use provided ID or default to class name
+    const blocId = options?.id || blocClass.name;
+    this.log(`getBloc called for ${blocClass.name} with id: ${blocId}, instanceRef: ${options?.instanceRef}`);
 
-    const registered = isIsolated
-      ? this.findIsolatedBlocInstance(blocClass, id)
-      : this.findRegisteredBlocInstance(blocClass, id);
+    // Check if a non-isolated instance already exists
+    const existingInstance = this.findRegisteredBlocInstance(blocClass, blocId);
 
-    if (registered) {
-      return registered;
+    if (existingInstance) {
+      this.log(`[${blocClass.name}:${blocId}] Existing instance found.`);
+      // If instance exists, update its consumer reference if provided and return it
+      // Do not pass props again, as it uses the initial props
+      if (options?.instanceRef && !existingInstance._consumers.has(options.instanceRef)) {
+        this.log(`[${blocClass.name}:${blocId}] Adding consumer ${options.instanceRef} to existing instance.`);
+        existingInstance._addConsumer(options.instanceRef);
+      }
+      return existingInstance as InstanceType<B>;
     }
-    return this.createNewBlocInstance(
+
+    // If no existing instance, create a new one
+    this.log(`[${blocClass.name}:${blocId}] No existing instance found. Creating new one.`);
+    const newInstance = this.createNewBlocInstance(
       blocClass,
-      id,
-      options.props,
-      options.instanceRef,
+      blocId,
+      options?.props,
+      options?.instanceRef,
     );
+
+    return newInstance as InstanceType<B>;
   };
   static getBloc = Blac.instance.getBloc;
 

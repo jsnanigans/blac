@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "esnext",
     "module": "esnext",
-    "lib": "esnext",
+    "lib": ["esnext", "dom"],
     "jsx": "react",
     "sourceMap": true,
     "outDir": "dist",
@@ -13,8 +13,9 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "experimentalDecorators": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "types": ["vitest/globals", "@testing-library/jest-dom"]
   },
-  "include": ["@testing-library/react", "src"],
+  "include": ["@testing-library/react", "src", "tests"],
   "exclude": ["publish.ts", "dev.ts"]
 }

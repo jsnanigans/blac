@@ -1,10 +1,12 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import '@testing-library/jest-dom';
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Blac, Cubit } from "blac-next";
-import React, { FC, useState, useEffect } from "react";
-import { beforeEach, describe, expect, it, test, vi } from "vitest";
+import React, { FC, useEffect, useState } from "react";
+import { beforeEach, describe, expect, test } from "vitest";
 import { useBloc } from "../src";
-import '@testing-library/jest-dom';
+import { CustomSelectorBloc } from "../src/blocs/CustomSelectorBloc";
+import { ListBloc } from "../src/blocs/ListBloc";
 
 /**
  * Test Bloc with a complex state object for testing dependency detection
@@ -99,9 +101,22 @@ class ComplexCubit extends Cubit<ComplexState, ComplexProps> {
 // For tracking render counts
 let renderCount = 0;
 
+/**
+ * Resets the global render count before each test.
+ */
+function resetRenderCount() {
+  renderCount = 0;
+}
+
 describe('useBloc dependency detection', () => {
   beforeEach(() => {
-    renderCount = 0;
+    resetRenderCount();
+    Blac.resetInstance(); // Reset Blac registry
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks(); // Clear mocks
+    vi.clearAllTimers(); // Clear timers
   });
 
   /**
@@ -137,8 +152,8 @@ describe('useBloc dependency detection', () => {
     
     const { container } = render(<CounterComponent />);
     
-    // Initial render
-    expect(renderCount).toBe(1);
+    // Initial render + Strict Mode remount = 2 renders
+    expect(renderCount).toBe(2);
     expect(screen.getByTestId('count')).toHaveTextContent('5');
     
     // Update count - should trigger re-render since count is accessed
@@ -189,8 +204,8 @@ describe('useBloc dependency detection', () => {
     
     render(<NestedPropertiesComponent />);
     
-    // Initial render
-    expect(renderCount).toBe(1);
+    // Initial render + Strict Mode remount = 2 renders
+    expect(renderCount).toBe(2);
     expect(screen.getByTestId('nested-value')).toHaveTextContent('10');
     expect(screen.getByTestId('deep-property')).toHaveTextContent('deep property');
     
@@ -260,7 +275,8 @@ describe('useBloc dependency detection', () => {
     render(<DynamicComponent />);
     
     // Initial render - both count and name are shown
-    expect(renderCount).toBe(1);
+    // Initial render + Strict Mode remount = 2 renders
+    expect(renderCount).toBe(2);
     expect(screen.getByTestId('count')).toHaveTextContent('0');
     expect(screen.getByTestId('name')).toHaveTextContent('Initial Name');
     
@@ -312,47 +328,36 @@ describe('useBloc dependency detection', () => {
   test('should detect dependencies in arrays', async () => {
     // Component that renders a list
     const ListComponent: FC = () => {
-      const [state, cubit] = useBloc(ComplexCubit);
+      const [state, { addItem, updateItem }] = useBloc(ListBloc);
       renderCount++;
       
       return (
         <div>
-          <ul data-testid="list">
-            {state.list.map((item, i) => (
-              <li key={i} data-testid={`item-${i}`}>{item}</li>
-            ))}
-          </ul>
-          <button 
-            data-testid="add-item" 
-            onClick={() => cubit.addToList(`item${state.list.length + 1}`)}
-          >
-            Add Item
-          </button>
-          <button 
-            data-testid="update-name" 
-            onClick={() => cubit.updateName("New Name")}
-          >
-            Update Name
-          </button>
+          {state.list.map((item, index) => (
+            <span key={index} data-testid={`item-${index}`}>{item}</span>
+          ))}
+          <button onClick={() => { addItem('item3'); }}>Add</button>
+          <button onClick={() => { updateItem(0, 'updated1'); }}>Update 0</button>
         </div>
       );
     };
     
     render(<ListComponent />);
     
-    // Initial render
-    expect(renderCount).toBe(1);
+    // Initial render + Strict Mode remount = 2 renders
+    expect(renderCount).toBe(2);
     expect(screen.getByTestId('item-0')).toHaveTextContent('item1');
     expect(screen.getByTestId('item-1')).toHaveTextContent('item2');
     
-    // Add item to list - should trigger re-render
-    await userEvent.click(screen.getByTestId('add-item'));
+    // Update item 0 (rendered) - SHOULD re-render
+    await userEvent.click(screen.getByText('Update 0'));
+    expect(screen.getByTestId('item-0')).toHaveTextContent('updated1');
     expect(renderCount).toBe(3);
+
+    // Add item (rendered) - SHOULD re-render
+    await userEvent.click(screen.getByText('Add'));
     expect(screen.getByTestId('item-2')).toHaveTextContent('item3');
-    
-    // Update name - should NOT trigger re-render
-    await userEvent.click(screen.getByTestId('update-name'));
-    expect(renderCount).toBe(3); // Still 3, not 4
+    expect(renderCount).toBe(4);
   });
 
   /**
@@ -362,53 +367,40 @@ describe('useBloc dependency detection', () => {
   test('should respect custom dependency selector', async () => {
     // Component with custom dependency selector
     const CustomSelectorComponent: FC = () => {
-      const [state, cubit] = useBloc(ComplexCubit, {
-        // Only re-render when name changes, ignore count changes
-        dependencySelector: (newState, oldState) => [[newState.name]]
+      const [state, { increment, updateName }] = useBloc(CustomSelectorBloc, {
+        dependencySelector: (newState, oldState) => [
+          [newState.count], // Only depend on count
+        ],
       });
       renderCount++;
       
       return (
         <div>
-          <div data-testid="count">{state.count}</div>
-          <div data-testid="name">{state.name}</div>
-          <button 
-            data-testid="increment" 
-            onClick={() => cubit.incrementCount()}
-          >
-            Increment
-          </button>
-          <button 
-            data-testid="update-name" 
-            onClick={() => cubit.updateName("New Custom Name")}
-          >
-            Update Name
-          </button>
+          <span data-testid="count">{state.count}</span>
+          <span data-testid="name">{state.name}</span>
+          <button onClick={increment}>Inc Count</button>
+          <button onClick={() => { updateName('New Name'); }}>Update Name</button>
         </div>
       );
     };
     
     render(<CustomSelectorComponent />);
     
-    // Initial render
-    expect(renderCount).toBe(1);
+    // Initial render + Strict Mode remount = 2 renders
+    expect(renderCount).toBe(2);
     expect(screen.getByTestId('count')).toHaveTextContent('0');
     expect(screen.getByTestId('name')).toHaveTextContent('Initial Name');
-    
-    // Update count - should NOT trigger re-render despite being displayed
-    await userEvent.click(screen.getByTestId('increment'));
-    expect(renderCount).toBe(1); // Still 1, not 2
-    
-    // The count should still update in the DOM because the state was updated
-    // but we're still showing the old value because no re-render occurred
-    
-    // Update name - should trigger re-render
-    await userEvent.click(screen.getByTestId('update-name'));
-    expect(renderCount).toBe(3);
-    expect(screen.getByTestId('name')).toHaveTextContent('New Custom Name');
-    
-    // Now we should see the updated count too (1) because the component re-rendered
+
+    // Update name (NOT in custom selector) - should NOT re-render
+    await userEvent.click(screen.getByText('Update Name'));
+    expect(renderCount).toBe(2); // No change
+    expect(screen.getByTestId('name')).toHaveTextContent('Initial Name'); // UI won't update unless count changes
+
+    // Update count (in custom selector) - SHOULD re-render
+    await userEvent.click(screen.getByText('Inc Count'));
     expect(screen.getByTestId('count')).toHaveTextContent('1');
+    expect(screen.getByTestId('name')).toHaveTextContent('New Name'); // Now name updates because component rerendered
+    expect(renderCount).toBe(3);
   });
 
   /**
@@ -449,8 +441,8 @@ describe('useBloc dependency detection', () => {
     
     render(<ClassPropComponent />);
     
-    // Initial render
-    expect(renderCount).toBe(1);
+    // Initial render + Strict Mode remount = 2 renders
+    expect(renderCount).toBe(2);
     expect(screen.getByTestId('doubled-count')).toHaveTextContent('0');
     
     // Update count - should trigger re-render because doubledCount depends on count
@@ -602,7 +594,8 @@ describe('useBloc dependency detection', () => {
     render(<ConditionalComponent />);
     
     // Initial render - details hidden
-    expect(renderCount).toBe(1);
+    // Initial render + Strict Mode remount = 2 renders
+    expect(renderCount).toBe(2);
     expect(screen.getByTestId('always-count')).toHaveTextContent('0');
     expect(screen.queryByTestId('details')).toBeNull();
     

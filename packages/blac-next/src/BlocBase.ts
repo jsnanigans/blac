@@ -183,6 +183,7 @@ export abstract class BlocBase<S = any, P = any> {
    * @param consumerId The unique ID of the consumer being removed
    */
   _removeConsumer = (consumerId: string) => {
+    this._blac.log(`[${this._name}:${this._id}] Removing consumer: ${consumerId}`);
     this._consumers.delete(consumerId);
     this._blac.dispatchEvent(BlacLifecycleEvent.BLOC_CONSUMER_REMOVED, this, { consumerId });
   };

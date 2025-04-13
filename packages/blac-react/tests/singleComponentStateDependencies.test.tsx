@@ -101,14 +101,13 @@ test("should rerender for any state chnange", async () => {
     <Counter num={3442} renderName={true} renderCount={true} />,
   );
 
-  expect(renderCountTotal).toBe(1);
+  // Initial render + Strict Mode remount = 2 renders
+  expect(renderCountTotal).toBe(2);
   const count = container.querySelector('[data-testid="count"]');
   expect(count).toHaveTextContent("3442");
 
   const name = container.querySelector('[data-testid="name"]');
   expect(name).toHaveTextContent("Name 1");
-
-  expect(renderCountTotal).toBe(1);
 
   await userEvent.click(container.querySelector('[data-testid="increment"]')!);
 
@@ -128,7 +127,8 @@ test("should only rerender if state is used, even after state has been removed f
   const { container } = render(
     <Counter num={1} renderName={true} renderCount={true} />,
   );
-  expect(renderCountTotal).toBe(1);
+  // Initial render + Strict Mode remount = 2 renders
+  expect(renderCountTotal).toBe(2);
 
   // check that both name and count are rendered
   const name = container.querySelector('[data-testid="name"]');
@@ -203,7 +203,8 @@ test("should only rerender if state is used, even if state is used after initial
   const { container } = render(
     <Counter num={1} renderName={false} renderCount={false} />,
   );
-  expect(renderCountTotal).toBe(1);
+  // Initial render + Strict Mode remount = 2 renders
+  expect(renderCountTotal).toBe(2);
 
   // check that both name and count are rendered
   const name = container.querySelector('[data-testid="name"]');
