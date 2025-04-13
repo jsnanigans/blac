@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { render } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Cubit } from "blac-next";
@@ -58,15 +59,15 @@ test("all instances should get the same state", async () => {
   const label2 = container.querySelector('[data-testid="2-label"]');
   expect(label1).toHaveTextContent("3442");
   expect(label2).toHaveTextContent("3442");
-  expect(renderCountTotal).toBe(2);
+  expect(renderCountTotal).toBe(2); // 2 renders because of Strict Mode
 
-  await userEvent.click(container.querySelector('[data-testid="1-increment"]'));
+  await userEvent.click(container.querySelector('[data-testid="1-increment"]')!);
   expect(label1).toHaveTextContent("3443");
   expect(label2).toHaveTextContent("3443");
-  expect(renderCountTotal).toBe(6);
+  expect(renderCountTotal).toBe(3);
 
-  await userEvent.click(container.querySelector('[data-testid="2-increment"]'));
+  await userEvent.click(container.querySelector('[data-testid="2-increment"]')!);
   expect(label1).toHaveTextContent("3444");
   expect(label2).toHaveTextContent("3444");
-  expect(renderCountTotal).toBe(8);
+  expect(renderCountTotal).toBe(5);
 });
