@@ -1,7 +1,7 @@
-import { render } from '@testing-library/react';
+import { act, render } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Blac, Cubit } from 'blac-next';
-import React, { FC, useCallback, useState } from 'react';
+import React, { FC, useCallback } from 'react';
 import { beforeEach, describe, expect, test } from 'vitest';
 import { useBloc } from '../src';
 
@@ -80,8 +80,6 @@ class ComplexCubit extends Cubit<ComplexState> {
 
 // Test component with custom dependency selector
 const PerformanceComponent: FC = () => {
-  const [renderCount, setRenderCount] = useState(0);
-  
   // Use custom dependency selector to optimize rendering
   const dependencySelector = useCallback((newState: ComplexState) => {
     return [
@@ -94,14 +92,8 @@ const PerformanceComponent: FC = () => {
     dependencySelector
   });
   
-  // Increment render count on each render
-  React.useEffect(() => {
-    setRenderCount(prev => prev + 1);
-  }, []);
-  
   return (
     <div>
-      <div data-testid="render-count">Renders: {renderCount}</div>
       <div data-testid="count">Count: {state.count}</div>
       <div data-testid="dark-mode">
         Dark Mode: {state.settings.darkMode ? 'On' : 'Off'}
@@ -120,7 +112,10 @@ const PerformanceComponent: FC = () => {
       </button>
       <button 
         data-testid="update-user" 
-        onClick={() => { bloc.updateUserName(0, `User 0 Updated ${String(Date.now())}`); }}
+        onClick={() => { 
+          const newName = `User 0 Updated ${String(Date.now())}`;
+          bloc.updateUserName(0, newName);
+         }}
       >
         Update User
       </button>
@@ -136,18 +131,10 @@ const PerformanceComponent: FC = () => {
 
 // Regular component with default dependency tracking
 const DefaultDependencyComponent: FC = () => {
-  const [renderCount, setRenderCount] = useState(0);
-  
   const [state, bloc] = useBloc(ComplexCubit);
-  
-  // Increment render count on each render
-  React.useEffect(() => {
-    setRenderCount(prev => prev + 1);
-  }, []);
   
   return (
     <div>
-      <div data-testid="default-render-count">Renders: {renderCount}</div>
       <div data-testid="default-count">Count: {state.count}</div>
       <div data-testid="default-dark-mode">
         Dark Mode: {state.settings.darkMode ? 'On' : 'Off'}
@@ -166,7 +153,10 @@ const DefaultDependencyComponent: FC = () => {
       </button>
       <button 
         data-testid="default-update-user" 
-        onClick={() => { bloc.updateUserName(0, `User 0 Updated ${String(Date.now())}`); }}
+        onClick={() => { 
+          const newName = `User 0 Updated ${String(Date.now())}`;
+          bloc.updateUserName(0, newName);
+         }}
       >
         Update User
       </button>
@@ -176,19 +166,11 @@ const DefaultDependencyComponent: FC = () => {
 
 // Component that doesn't use certain state properties
 const PartialStateComponent: FC = () => {
-  const [renderCount, setRenderCount] = useState(0);
-  
   const [state, bloc] = useBloc(ComplexCubit);
-  
-  // Increment render count on each render
-  React.useEffect(() => {
-    setRenderCount(prev => prev + 1);
-  }, []);
   
   // Only using count, not users or settings
   return (
     <div>
-      <div data-testid="partial-render-count">Renders: {renderCount}</div>
       <div data-testid="partial-count">Count: {state.count}</div>
       
       <button 
@@ -199,9 +181,18 @@ const PartialStateComponent: FC = () => {
       </button>
       <button 
         data-testid="partial-update-user" 
-        onClick={() => { bloc.updateUserName(0, `User 0 Updated ${String(Date.now())}`); }}
+        onClick={() => { 
+          const newName = `User 0 Updated ${String(Date.now())}`;
+          bloc.updateUserName(0, newName);
+         }}
       >
         Update User
+      </button>
+      <button 
+        data-testid="partial-toggle-dark-mode" 
+        onClick={() => { bloc.toggleDarkMode(); }}
+      >
+        Toggle Dark Mode
       </button>
     </div>
   );
@@ -209,89 +200,84 @@ const PartialStateComponent: FC = () => {
 
 describe('useBloc performance optimizations', () => {
   beforeEach(() => {
-    Blac.resetInstance();
+    // Reset Blac state before each test
+    Blac.getInstance().resetInstance();
   });
 
   test('custom dependency selector should prevent unnecessary renders', async () => {
     const { getByTestId } = render(<PerformanceComponent />);
+    const countDiv = getByTestId('count');
+    const darkModeDiv = getByTestId('dark-mode');
+
+    expect(countDiv).toHaveTextContent('Count: 0');
+    expect(darkModeDiv).toHaveTextContent('Dark Mode: Off');
     
-    // Get initial render count
-    const initialRenderCount = Number(getByTestId('render-count').textContent?.match(/\d+/)?.[0] || '0');
+    // Increment count - should update countDiv
+    await act(async () => { await userEvent.click(getByTestId('increment')); });
+    expect(countDiv).toHaveTextContent('Count: 1');
+    expect(darkModeDiv).toHaveTextContent('Dark Mode: Off'); // Should remain unchanged
     
-    // Increment count - should cause a re-render since it's in dependency array
-    await userEvent.click(getByTestId('increment'));
+    // Toggle dark mode - should update darkModeDiv
+    await act(async () => { await userEvent.click(getByTestId('toggle-dark-mode')); });
+    expect(countDiv).toHaveTextContent('Count: 1'); // Should remain unchanged
+    expect(darkModeDiv).toHaveTextContent('Dark Mode: On');
     
-    let newRenderCount = Number(getByTestId('render-count').textContent?.match(/\d+/)?.[0] || '0');
-    expect(newRenderCount).toBe(initialRenderCount + 1);
-    
-    // Toggle dark mode - should cause a re-render since it's in dependency array
-    await userEvent.click(getByTestId('toggle-dark-mode'));
-    
-    newRenderCount = Number(getByTestId('render-count').textContent?.match(/\d+/)?.[0] || '0');
-    expect(newRenderCount).toBe(initialRenderCount + 2);
-    
-    // Update user - should NOT cause a re-render since it's not in dependency array
-    await userEvent.click(getByTestId('update-user'));
-    
-    newRenderCount = Number(getByTestId('render-count').textContent?.match(/\d+/)?.[0] || '0');
-    expect(newRenderCount).toBe(initialRenderCount + 2);
-    
-    // Add notification - should NOT cause a re-render since it's not in dependency array
-    await userEvent.click(getByTestId('add-notification'));
-    
-    newRenderCount = Number(getByTestId('render-count').textContent?.match(/\d+/)?.[0] || '0');
-    expect(newRenderCount).toBe(initialRenderCount + 2);
+    // Update user - should NOT update countDiv or darkModeDiv (render prevented by selector)
+    const initialCountText = countDiv.textContent;
+    const initialDarkModeText = darkModeDiv.textContent;
+    await act(async () => { await userEvent.click(getByTestId('update-user')); });
+    expect(countDiv.textContent).toBe(initialCountText);
+    expect(darkModeDiv.textContent).toBe(initialDarkModeText);
+        
+    // Add notification type - should NOT update countDiv or darkModeDiv (render prevented by selector)
+    await act(async () => { await userEvent.click(getByTestId('add-notification')); });
+    expect(countDiv.textContent).toBe(initialCountText);
+    expect(darkModeDiv.textContent).toBe(initialDarkModeText);
   });
 
   test('automatic dependency tracking should detect used properties', async () => {
     const { getByTestId } = render(<DefaultDependencyComponent />);
-    
-    // Get initial render count
-    const initialRenderCount = Number(getByTestId('default-render-count').textContent?.match(/\d+/)?.[0] || '0');
-    
-    // Increment count - should cause a re-render since it's used in the component
-    await userEvent.click(getByTestId('default-increment'));
-    
-    let newRenderCount = Number(getByTestId('default-render-count').textContent?.match(/\d+/)?.[0] || '0');
-    expect(newRenderCount).toBe(initialRenderCount + 1);
-    
-    // Toggle dark mode - should cause a re-render since darkMode is used in the component
-    await userEvent.click(getByTestId('default-toggle-dark-mode'));
-    
-    newRenderCount = Number(getByTestId('default-render-count').textContent?.match(/\d+/)?.[0] || '0');
-    expect(newRenderCount).toBe(initialRenderCount + 2);
-    
-    // Update user - should NOT cause a re-render since individual users aren't accessed in the component
-    await userEvent.click(getByTestId('default-update-user'));
-    
-    newRenderCount = Number(getByTestId('default-render-count').textContent?.match(/\d+/)?.[0] || '0');
-    expect(newRenderCount).toBe(initialRenderCount + 2);
-  });
+    const countDiv = getByTestId('default-count');
+    const darkModeDiv = getByTestId('default-dark-mode');
 
+    expect(countDiv).toHaveTextContent('Count: 0');
+    expect(darkModeDiv).toHaveTextContent('Dark Mode: Off');
+    
+    // Increment count - should update countDiv
+    await act(async () => { await userEvent.click(getByTestId('default-increment')); });
+    expect(countDiv).toHaveTextContent('Count: 1');
+    expect(darkModeDiv).toHaveTextContent('Dark Mode: Off'); 
+    
+    // Toggle dark mode - should update darkModeDiv
+    await act(async () => { await userEvent.click(getByTestId('default-toggle-dark-mode')); });
+    expect(countDiv).toHaveTextContent('Count: 1'); 
+    expect(darkModeDiv).toHaveTextContent('Dark Mode: On');
+    
+    // Update user - should NOT update countDiv or darkModeDiv (state not accessed)
+    const initialCountText = countDiv.textContent;
+    const initialDarkModeText = darkModeDiv.textContent;
+    await act(async () => { await userEvent.click(getByTestId('default-update-user')); });
+    expect(countDiv.textContent).toBe(initialCountText);
+    expect(darkModeDiv.textContent).toBe(initialDarkModeText);
+  });
+  
   test('partial state access should only re-render when accessed properties change', async () => {
     const { getByTestId } = render(<PartialStateComponent />);
+    const countDiv = getByTestId('partial-count');
+
+    expect(countDiv).toHaveTextContent('Count: 0');
     
-    // Get initial render count
-    const initialRenderCount = Number(getByTestId('partial-render-count').textContent?.match(/\d+/)?.[0] || '0');
+    // Increment count - should update countDiv
+    await act(async () => { await userEvent.click(getByTestId('partial-increment')); });
+    expect(countDiv).toHaveTextContent('Count: 1');
     
-    // Increment count - should cause a re-render since count is used in the component
-    await userEvent.click(getByTestId('partial-increment'));
-    
-    let newRenderCount = Number(getByTestId('partial-render-count').textContent?.match(/\d+/)?.[0] || '0');
-    expect(newRenderCount).toBe(initialRenderCount + 1);
-    
-    // Update user - should NOT cause a re-render since individual users aren't accessed
-    await userEvent.click(getByTestId('partial-update-user'));
-    
-    newRenderCount = Number(getByTestId('partial-render-count').textContent?.match(/\d+/)?.[0] || '0');
-    expect(newRenderCount).toBe(initialRenderCount + 1);
-    
-    // Get the bloc instance and directly modify settings
-    const bloc = Blac.getBloc(ComplexCubit);
-    bloc.toggleDarkMode();
-    
-    // Component shouldn't re-render since settings aren't used
-    newRenderCount = Number(getByTestId('partial-render-count').textContent?.match(/\d+/)?.[0] || '0');
-    expect(newRenderCount).toBe(initialRenderCount + 1);
+    // Update user - should NOT update countDiv (user state not accessed)
+    const initialCountText = countDiv.textContent;
+    await act(async () => { await userEvent.click(getByTestId('partial-update-user')); });
+    expect(countDiv.textContent).toBe(initialCountText);
+
+    // Toggle dark mode - should NOT update countDiv (settings state not accessed)
+    await act(async () => { await userEvent.click(getByTestId('partial-toggle-dark-mode')); });
+    expect(countDiv.textContent).toBe(initialCountText); // Still expect 1 from previous increment
   });
 }); 

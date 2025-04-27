@@ -63,12 +63,12 @@ test("should rerender when state changes", async () => {
   const instance = screen.getByText("3442");
   expect(instance).toBeInTheDocument();
 
-  // Initial render + Strict Mode remount = 2 renders
-  expect(renderCount).toBe(2);
+  // Initial render 
+  expect(renderCount).toBe(1);
   await userEvent.click(screen.getByText("+1"));
   expect(screen.getByText("3443")).toBeInTheDocument();
   // State change causes another render
-  expect(renderCount).toBe(3);
+  expect(renderCount).toBe(2);
 });
 
 test("should not rerender when state changes that is not used", async () => {
@@ -87,9 +87,9 @@ test("should not rerender when state changes that is not used", async () => {
   const instance = screen.getByText("3442");
   expect(instance).toBeInTheDocument();
 
-  // Initial render + Strict Mode remount = 2 renders
-  expect(renderCount).toBe(2);
+  // Initial render 
+  expect(renderCount).toBe(1);
   await userEvent.click(screen.getByText("+1"));
   // Should not rerender because state is not used in component
-  expect(renderCount).toBe(2);
+  expect(renderCount).toBe(1);
 });

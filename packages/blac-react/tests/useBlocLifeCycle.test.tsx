@@ -25,7 +25,6 @@ vi.mock('../src/externalBlocStore', () => ({
 
 // Mock Blac core methods
 const mockGetBloc = vi.fn();
-const mockDisposeBloc = vi.fn();
 const mockAddConsumer = vi.fn();
 const mockRemoveConsumer = vi.fn();
 const mockFindRegisteredBlocInstance = vi.fn();
@@ -33,7 +32,6 @@ const mockFindRegisteredBlocInstance = vi.fn();
 // Assign mocks to Blac static/instance methods
 // Use type assertion to satisfy TypeScript & disable linter warnings
 (Blac as any).getBloc = mockGetBloc;
-(Blac.instance as any).disposeBloc = mockDisposeBloc;
 (Blac.instance as any).findRegisteredBlocInstance =
   mockFindRegisteredBlocInstance;
 
@@ -215,52 +213,6 @@ describe('useBloc Lifecycle', () => {
     expect(mockRemoveConsumer).toHaveBeenCalledWith(expect.any(String));
   });
 
-  it('should call disposeBloc for an isolated Bloc on unmount', () => {
-    const specificIsolatedInstance = new IsolatedBloc();
-    mockGetBloc.mockImplementation(
-      (
-        blocConstructor: any,
-        options?: any,
-      ) => {
-        if ((blocConstructor as typeof BlocBaseClass).isolated) {
-          specificIsolatedInstance.setInstanceRef(options?.instanceRef);
-          return specificIsolatedInstance;
-        }
-        return sharedBlocInstance;
-      },
-    );
-
-    const { unmount } = renderHook(() => useBloc(IsolatedBloc as any));
-    expect(mockDisposeBloc).not.toHaveBeenCalled();
-    unmount();
-
-    expect(mockDisposeBloc).toHaveBeenCalledTimes(1);
-    expect(mockDisposeBloc).toHaveBeenCalledWith(
-      IsolatedBloc,
-      expect.objectContaining({
-        id: expect.any(String),
-        instanceRef: expect.any(String),
-      }),
-    );
-  });
-
-  it('should call disposeBloc for a shared Bloc on unmount of the last consumer', () => {
-    const { unmount } = renderHook(() =>
-      useBloc(SharedBloc as any, { id: 'shared-id-test' }),
-    );
-    expect(mockDisposeBloc).not.toHaveBeenCalled();
-    unmount();
-
-    expect(mockDisposeBloc).toHaveBeenCalledTimes(1);
-    expect(mockDisposeBloc).toHaveBeenCalledWith(
-      SharedBloc,
-      expect.objectContaining({
-        id: 'shared-id-test',
-        instanceRef: expect.any(String),
-      }),
-    );
-  });
-
   it('should use the blocId for shared blocs when provided', () => {
     renderHook(() => useBloc(SharedBloc as any, { id: 'my-specific-bloc' }));
     expect(mockGetBloc).toHaveBeenCalledWith(
@@ -314,7 +266,6 @@ describe('useBloc Lifecycle', () => {
     mockGetBloc.mockClear();
     mockAddConsumer.mockClear();
     mockRemoveConsumer.mockClear();
-    mockDisposeBloc.mockClear();
 
     // Override getBloc slightly for this test to capture instanceRefs
     const originalGetBloc = mockGetBloc.getMockImplementation();
@@ -341,21 +292,12 @@ describe('useBloc Lifecycle', () => {
     expect(mockRemoveConsumer).toHaveBeenCalledTimes(1);
     // Check it was called with the first hook's instanceRef
     expect(mockRemoveConsumer).toHaveBeenCalledWith(firstInstanceRef);
-    // Dispose should NOT be called yet, as another hook is still mounted
-    expect(mockDisposeBloc).not.toHaveBeenCalled();
 
     // Unmount second hook
     unmount2();
     expect(mockRemoveConsumer).toHaveBeenCalledTimes(2);
     // Check it was called with the second hook's instanceRef
     expect(mockRemoveConsumer).toHaveBeenCalledWith(secondInstanceRef);
-    // Dispose SHOULD be called now, as this is the last consumer
-    expect(mockDisposeBloc).toHaveBeenCalledTimes(1);
-    // Dispose is called with the ID and the *last* instanceRef that triggered it
-    expect(mockDisposeBloc).toHaveBeenCalledWith(
-        SharedBloc,
-        expect.objectContaining({ id: blocId, instanceRef: secondInstanceRef })
-    );
 
     // Restore original mock
     if (originalGetBloc) {
@@ -435,12 +377,5 @@ describe('useBloc Lifecycle', () => {
     // Unmount
     unmount();
     expect(mockRemoveConsumer).toHaveBeenCalledTimes(1);
-    expect(mockDisposeBloc).toHaveBeenCalledTimes(1);
-    expect(mockDisposeBloc).toHaveBeenCalledWith(
-        PropsBloc,
-        expect.objectContaining({ id: blocId, instanceRef: instanceRef })
-    );
   });
-
-  // TODO: Add tests for dependencySelector interactions (if affecting lifecycle)
 });

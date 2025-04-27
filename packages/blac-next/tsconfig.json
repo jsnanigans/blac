@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "esnext",
     "module": "esnext",
-    "lib": "esnext",
+    "lib": ["esnext"],
     "sourceMap": true,
     "outDir": "dist",
     "strict": true,
@@ -14,6 +14,6 @@
     "experimentalDecorators": true,
     "resolveJsonModule": true
   },
-  "include": ["src"],
+  "include": ["src", "tests"],
   "exclude": ["publish.ts", "dev.ts"]
 }

@@ -49,7 +49,7 @@ export class Blac {
   /** Map storing all registered bloc instances by their class name and ID */
   blocInstanceMap: Map<string, BlocBase<any, any>> = new Map();
   /** Map storing isolated bloc instances grouped by their constructor */
-  isolatedBlocMap: Map<Function, BlocBase<any, any>[]> = new Map();
+  isolatedBlocMap: Map<BlocConstructor<any>, BlocBase<any, any>[]> = new Map();
   pluginList: BlacPlugin[] = [];
   /** Flag to control whether changes should be posted to document */
   postChangesToDocument = false;
@@ -60,7 +60,7 @@ export class Blac {
    */
   constructor(options: { __unsafe_ignore_singleton?: boolean } = {}) {
     const { __unsafe_ignore_singleton = false } = options;
-    if (Blac.instance && !__unsafe_ignore_singleton) {
+    if (!__unsafe_ignore_singleton) {
       return Blac.instance;
     }
     Blac.instance = this;
@@ -74,7 +74,7 @@ export class Blac {
    * @param args - Arguments to log
    */
   log = (...args: any[]) => {
-    if (Blac.enableLog) console.warn(`☢️ [Blac ${this.createdAt}]`, ...args);
+    if (Blac.enableLog) console.warn(`☢️ [Blac ${this.createdAt.toString()}]`, ...args);
   };
 
   /**
@@ -104,10 +104,33 @@ export class Blac {
   };
 
   /**
-   * Resets the Blac instance to a new one
+   * Resets the Blac instance to a new one, disposing non-keepAlive blocs
+   * from the old instance.
    */
   resetInstance = (): void => {
     this.log("Reset Blac instance");
+
+    // Dispose non-keepAlive blocs from the current instance
+    const oldBlocInstanceMap = new Map(this.blocInstanceMap);
+    const oldIsolatedBlocMap = new Map(this.isolatedBlocMap);
+
+    oldBlocInstanceMap.forEach((bloc) => {
+      if (!bloc._keepAlive) {
+        // Use disposeBloc to ensure the BLOC_DISPOSED event is dispatched
+        this.disposeBloc(bloc); 
+      }
+    });
+
+    oldIsolatedBlocMap.forEach((blocArray) => {
+      blocArray.forEach((bloc) => {
+        if (!bloc._keepAlive) {
+           // Use disposeBloc for isolated blocs as well
+          this.disposeBloc(bloc);
+        }
+      });
+    });
+
+    // Create and assign the new instance
     Blac.instance = new Blac({
       __unsafe_ignore_singleton: true,
     });
@@ -256,7 +279,7 @@ export class Blac {
    * @param bloc - The isolated bloc instance to register
    */
   registerIsolatedBlocInstance(bloc: BlocBase<any, any>): void {
-    const blocClass = bloc.constructor;
+    const blocClass = bloc.constructor as BlocConstructor<any>;
     const blocs = this.isolatedBlocMap.get(blocClass);
     if (blocs) {
       blocs.push(bloc);
@@ -271,13 +294,15 @@ export class Blac {
    */
   unregisterIsolatedBlocInstance(bloc: BlocBase<any, any>): void {
     const blocClass = bloc.constructor;
-    const blocs = this.isolatedBlocMap.get(blocClass);
+    const blocs = this.isolatedBlocMap.get(blocClass as BlocConstructor<any>);
     if (blocs) {
       const index = blocs.findIndex((b) => b._id === bloc._id);
-      blocs.splice(index, 1);
+      if (index !== -1) {
+        blocs.splice(index, 1);
+      }
 
       if (blocs.length === 0) {
-        this.isolatedBlocMap.delete(blocClass);
+        this.isolatedBlocMap.delete(blocClass as BlocConstructor<any>);
       }
     }
   }

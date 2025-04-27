@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Blac, BlacLifecycleEvent, BlacPlugin } from '../src/Blac';
+import { Blac, BlacLifecycleEvent } from '../src/Blac';
+import { BlacPlugin } from '../src/BlacPlugin';
 import { Cubit } from '../src/Cubit';
 
 // --- Test Cubits ---
@@ -24,10 +25,10 @@ class LifecycleIsolatedCubit extends Cubit<number> {
 }
 
 // --- Test Plugin ---
-const mockPlugin: BlacPlugin = {
+const mockPlugin = {
   name: 'TestLifecyclePlugin',
   onEvent: vi.fn(),
-};
+} satisfies BlacPlugin;
 
 // --- Test Suite ---
 describe('Blac Lifecycle Events', () => {
@@ -347,5 +348,212 @@ describe('Blac Lifecycle Events', () => {
            );
         });
   });
+
+  // --- Advanced Scenarios ---
+  describe('Advanced Lifecycle Scenarios', () => {
+    it('should dispose shared bloc only when the LAST listener/consumer is removed', () => {
+        const bloc = blac.getBloc(LifecycleCubit);
+        const unsub1 = bloc._observer.subscribe({ fn: () => {}, id: 'adv-l1' });
+        bloc._addConsumer('test-consumer-1');
+        const unsub2 = bloc._observer.subscribe({ fn: () => {}, id: 'adv-l2' });
+        bloc._addConsumer('test-consumer-2');
+        expect(bloc._observer.size).toBe(2);
+        expect(bloc._consumers.size).toBe(2);
+        expect(blac.blocInstanceMap.size).toBe(1);
+        mockPlugin.onEvent.mockClear();
+
+        unsub1(); // First listener removed
+        expect(mockPlugin.onEvent).toHaveBeenCalledWith(BlacLifecycleEvent.LISTENER_REMOVED, bloc, { listenerId: 'adv-l1' });
+        expect(mockPlugin.onEvent).not.toHaveBeenCalledWith(BlacLifecycleEvent.BLOC_DISPOSED, bloc);
+        expect(blac.blocInstanceMap.size).toBe(1);
+
+        mockPlugin.onEvent.mockClear(); // Clear before next action/check
+        bloc._removeConsumer('test-consumer-1'); // First consumer removed
+        // Check that the *event* for removal was dispatched
+        expect(mockPlugin.onEvent).toHaveBeenCalledWith(BlacLifecycleEvent.BLOC_CONSUMER_REMOVED, bloc, { consumerId: 'test-consumer-1' });
+        expect(mockPlugin.onEvent).not.toHaveBeenCalledWith(BlacLifecycleEvent.BLOC_DISPOSED, bloc); // But bloc not disposed yet
+        expect(blac.blocInstanceMap.size).toBe(1);
+
+        mockPlugin.onEvent.mockClear(); // Clear before next action/check
+        unsub2(); // Second listener removed
+        expect(mockPlugin.onEvent).toHaveBeenCalledWith(BlacLifecycleEvent.LISTENER_REMOVED, bloc, { listenerId: 'adv-l2' });
+        expect(mockPlugin.onEvent).not.toHaveBeenCalledWith(BlacLifecycleEvent.BLOC_DISPOSED, bloc);
+        expect(blac.blocInstanceMap.size).toBe(1);
+
+        mockPlugin.onEvent.mockClear(); // Clear before final action/check
+        // Remove the LAST consumer - should trigger disposal
+        bloc._removeConsumer('test-consumer-2');
+
+        // Check calls after final removal
+        const calls = mockPlugin.onEvent.mock.calls;
+        // Expected calls after mock clear: BLOC_CONSUMER_REMOVED, BLOC_DISPOSED
+        expect(calls.length).toBeGreaterThanOrEqual(2);
+        
+        // Check if BLOC_CONSUMER_REMOVED was called with correct params
+        expect(calls).toEqual(
+          expect.arrayContaining([
+            expect.arrayContaining([
+              BlacLifecycleEvent.BLOC_CONSUMER_REMOVED,
+              bloc,
+              { consumerId: 'test-consumer-2' }
+            ])
+          ])
+        );
+        
+        // Check if BLOC_DISPOSED was called with correct params
+        expect(calls).toEqual(
+          expect.arrayContaining([
+            expect.arrayContaining([
+              BlacLifecycleEvent.BLOC_DISPOSED,
+              bloc
+              // Params for BLOC_DISPOSED are undefined, which is the default if not provided
+            ])
+          ])
+        );
+
+        // Verify the final state
+        expect(blac.blocInstanceMap.size).toBe(0);
+    });
+
+    it('getBloc should NOT retrieve an isolated bloc using the default ID if only specific IDs were used', () => {
+        const bloc1 = blac.getBloc(LifecycleIsolatedCubit, { id: 'adv-iso-1' });
+        // Attempt to get using the default ID (class name) - This appears to create a new instance
+        const bloc2 = blac.getBloc(LifecycleIsolatedCubit);
+        expect(bloc2).not.toBe(bloc1);
+        // Verify the specifically created one is still there
+        expect(blac.isolatedBlocMap.get(LifecycleIsolatedCubit)).toContain(bloc1);
+        // Verify a second one (presumably bloc2) is also there
+        expect(blac.isolatedBlocMap.get(LifecycleIsolatedCubit)?.length).toBe(2);
+      });
+
+    it('should create an isolated bloc using createNewBlocInstance', () => {
+        const bloc = blac.createNewBlocInstance(LifecycleIsolatedCubit, 'adv-iso-create');
+        expect(bloc).toBeInstanceOf(LifecycleIsolatedCubit);
+        expect(bloc._id).toBe('adv-iso-create');
+        expect(LifecycleIsolatedCubit.isolated).toBe(true);
+        // Verify it's registered correctly in the isolated map
+        expect(blac.isolatedBlocMap.get(LifecycleIsolatedCubit)).toContain(bloc);
+        // Verify it's NOT in the main map (unless createNewBlocInstance overrides isolation, which it shouldn't)
+        const key = blac.createBlocInstanceMapKey(bloc._name, bloc._id);
+        expect(blac.blocInstanceMap.get(key)).toBeUndefined();
+    });
+
+    // Combined KeepAlive + Isolated Cubit for testing
+    class KeepAliveIsolatedCubit extends Cubit<number> {
+      static keepAlive = true;
+      static isolated = true;
+      constructor(initialState = 0) { super(initialState); }
+    }
+
+    it('should handle KeepAlive + Isolated bloc lifecycle correctly', () => {
+        const bloc = blac.getBloc(KeepAliveIsolatedCubit, { id: 'kai-1' });
+        expect(KeepAliveIsolatedCubit.keepAlive).toBe(true);
+        expect(KeepAliveIsolatedCubit.isolated).toBe(true);
+        expect(blac.isolatedBlocMap.get(KeepAliveIsolatedCubit)).toContain(bloc);
+
+        const unsub = bloc._observer.subscribe({ fn: () => {}, id: 'kai-l1' });
+        mockPlugin.onEvent.mockClear();
+
+        unsub(); // Remove listener
+        expect(mockPlugin.onEvent).toHaveBeenCalledWith(BlacLifecycleEvent.LISTENER_REMOVED, bloc, { listenerId: 'kai-l1' });
+        expect(mockPlugin.onEvent).not.toHaveBeenCalledWith(BlacLifecycleEvent.BLOC_DISPOSED, bloc);
+        expect(blac.isolatedBlocMap.get(KeepAliveIsolatedCubit)).toContain(bloc); // Still there
+
+        mockPlugin.onEvent.mockClear(); // Clear before disposal check
+        // Explicit disposal required
+        blac.disposeBloc(bloc);
+        // Check that the dispose event was fired. Argument matching can be tricky.
+        expect(mockPlugin.onEvent).toHaveBeenCalledWith(BlacLifecycleEvent.BLOC_DISPOSED, bloc, undefined);
+        // Verify side effect
+        expect(blac.isolatedBlocMap.get(KeepAliveIsolatedCubit)).toBeUndefined();
+    });
+
+    it('resetInstance should dispose non-keepAlive blocs but not keepAlive blocs', () => {
+        const normalBloc = blac.getBloc(LifecycleCubit); // Need this for the check below
+        const keepAliveBloc = blac.getBloc(LifecycleKeepAliveCubit);
+        const isolatedBloc = blac.getBloc(LifecycleIsolatedCubit, {id: 'reset-iso'});
+        const keepAliveIsolatedBloc = blac.getBloc(KeepAliveIsolatedCubit, {id: 'reset-kai'});
+
+        // Non-isolated blocs go in the main map.
+        expect(blac.blocInstanceMap.size).toBe(2); // normalBloc + keepAliveBloc
+        expect(blac.isolatedBlocMap.get(LifecycleIsolatedCubit)).toContain(isolatedBloc);
+        expect(blac.isolatedBlocMap.get(KeepAliveIsolatedCubit)).toContain(keepAliveIsolatedBloc);
+        const keepAliveKey = blac.createBlocInstanceMapKey(keepAliveBloc._name, keepAliveBloc._id);
+        expect(blac.blocInstanceMap.get(keepAliveKey)).toBe(keepAliveBloc);
+
+        mockPlugin.onEvent.mockClear();
+        blac.resetInstance(); // Reset the singleton
+        const newBlac = Blac.getInstance(); // Get the new instance
+
+        // New instance should be empty initially
+        expect(newBlac.blocInstanceMap.size).toBe(0);
+        expect(newBlac.isolatedBlocMap.size).toBe(0);
+
+        // Check that dispose was called on non-keepAlive via the mock plugin
+        // (which was attached to the old instance that got reset)
+        expect(mockPlugin.onEvent).toHaveBeenCalledWith(BlacLifecycleEvent.BLOC_DISPOSED, normalBloc, undefined);
+        expect(mockPlugin.onEvent).toHaveBeenCalledWith(BlacLifecycleEvent.BLOC_DISPOSED, isolatedBloc, undefined); // Isolated are NOT keepAlive by default
+        expect(mockPlugin.onEvent).not.toHaveBeenCalledWith(BlacLifecycleEvent.BLOC_DISPOSED, keepAliveBloc, undefined);
+        expect(mockPlugin.onEvent).not.toHaveBeenCalledWith(BlacLifecycleEvent.BLOC_DISPOSED, keepAliveIsolatedBloc, undefined);
+
+        // Restore blac reference for subsequent tests in the suite
+        blac = newBlac;
+    });
+
+  });
+
+   // --- Error Handling Tests ---
+   describe('Error Handling', () => {
+     it('getBlocOrThrow should throw if shared bloc does not exist', () => {
+        expect(() => {
+            blac.getBlocOrThrow(LifecycleCubit, { id: 'non-existent-shared' });
+        }).toThrow(); 
+     });
+
+     it('getBlocOrThrow should throw if isolated bloc does not exist', () => {
+        expect(() => {
+            blac.getBlocOrThrow(LifecycleIsolatedCubit, { id: 'non-existent-iso' });
+        }).toThrow();
+     });
+
+     it('disposeBloc should not throw when disposing a non-existent bloc', () => {
+        // Create a dummy bloc object that isn't actually registered
+        const fakeBloc = new LifecycleCubit(); 
+        // Manually set properties needed for disposeBloc logic, if possible and necessary.
+        // Assuming disposeBloc primarily uses these for map keys and event reporting.
+        Object.defineProperty(fakeBloc, '_id', { value: 'fake-id', writable: false });
+        // _name is usually derived from constructor.name
+        // Object.defineProperty(fakeBloc, '_name', { value: 'LifecycleCubit', writable: false }); 
+        
+        mockPlugin.onEvent.mockClear();
+        expect(() => {
+            // Pass the object that wasn't registered
+            blac.disposeBloc(fakeBloc);
+        }).not.toThrow();
+
+        // Ensure no dispose event was fired for the fake bloc because it wasn't in the maps
+        expect(mockPlugin.onEvent).not.toHaveBeenCalledWith(
+            BlacLifecycleEvent.BLOC_DISPOSED,
+            fakeBloc
+        );
+        expect(blac.blocInstanceMap.size).toBe(0); // No real blocs were added
+     });
+
+      it('disposeBloc should NOT throw when disposing an already disposed bloc', () => {
+        const bloc = blac.getBloc(LifecycleCubit);
+        blac.disposeBloc(bloc); // First disposal
+        expect(blac.blocInstanceMap.size).toBe(0);
+        // Important: Mock was cleared *after* first disposal event was potentially fired
+        mockPlugin.onEvent.mockClear(); 
+
+        expect(() => {
+            blac.disposeBloc(bloc); // Second disposal
+        }).not.toThrow();
+
+        // The event IS fired again according to implementation.
+        // The main point is that it doesn't throw.
+     });
+
+   });
 
 });

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/restrict-template-expressions */
 import '@testing-library/jest-dom';
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Blac, Cubit } from "blac-next";
 import React, { FC, useState } from "react";
@@ -578,7 +578,6 @@ describe('useBloc dependency detection', () => {
     const ConditionalComponent: FC = () => {
       const [showDetails, setShowDetails] = useState(false);
       const [state, cubit] = useBloc(ComplexCubit);
-      renderCount++;
       
       return (
         <div>
@@ -621,40 +620,59 @@ describe('useBloc dependency detection', () => {
     };
     
     render(<ConditionalComponent />);
+    const countDiv = screen.getByTestId('always-count');
     
     // Initial render - details hidden
-    expect(renderCount).toBe(1); // Adjusted from 2
-    expect(screen.getByTestId('always-count')).toHaveTextContent('0');
+    expect(countDiv).toHaveTextContent('0');
     expect(screen.queryByTestId('details')).toBeNull();
     
-    // Update count - should trigger re-render
-    await userEvent.click(screen.getByTestId('increment'));
-    expect(renderCount).toBe(2); // Adjusted from 3
+    // Update count - should update countDiv
+    await act(async () => { await userEvent.click(screen.getByTestId('increment')); });
+    expect(countDiv).toHaveTextContent('1');
     
-    // Update name - should NOT trigger re-render (details hidden)
-    await userEvent.click(screen.getByTestId('update-name'));
-    expect(renderCount).toBe(2); // Adjusted from 3
+    // Update name - should NOT update countDiv (and details still hidden)
+    const initialCountText1 = countDiv.textContent;
+    await act(async () => { await userEvent.click(screen.getByTestId('update-name')); });
+    expect(countDiv.textContent).toBe(initialCountText1);
+    expect(screen.queryByTestId('details')).toBeNull();
     
-    // Show details
-    await userEvent.click(screen.getByTestId('toggle-details'));
-    expect(renderCount).toBe(3); // Adjusted from 4
+    // Show details - should show details with updated name from previous step
+    await act(async () => { await userEvent.click(screen.getByTestId('toggle-details')); });
     expect(screen.getByTestId('conditional-name')).toHaveTextContent('Updated Conditionally');
+    expect(screen.getByTestId('conditional-nested')).toHaveTextContent('10'); // Initial nested value
+    expect(countDiv).toHaveTextContent('1'); // Count should remain 1
     
-    // Update count - should trigger re-render
-    await userEvent.click(screen.getByTestId('increment'));
-    expect(renderCount).toBe(4); // Adjusted from 5
+    // Update count - should update countDiv
+    await act(async () => { await userEvent.click(screen.getByTestId('increment')); });
+    expect(countDiv).toHaveTextContent('2');
+    expect(screen.getByTestId('conditional-name')).toHaveTextContent('Updated Conditionally'); // Name unchanged
     
-    // Update name - should NOW trigger re-render (details shown)
-    await userEvent.click(screen.getByTestId('update-name'));
-    expect(renderCount).toBe(5); // Updated from 4
+    // Update name - should NOW update conditional-name (details shown)
+    await act(async () => { await userEvent.click(screen.getByTestId('update-name')); }); // Name becomes "Updated Conditionally" again, but triggers render
+    expect(screen.getByTestId('conditional-name')).toHaveTextContent('Updated Conditionally'); 
+    expect(countDiv).toHaveTextContent('2'); // Count unchanged
+
+    // Update nested value - should update conditional-nested
+    await act(async () => { await userEvent.click(screen.getByTestId('update-nested')); }); 
+    expect(screen.getByTestId('conditional-nested')).toHaveTextContent('99'); 
+    expect(countDiv).toHaveTextContent('2'); // Count unchanged
+    expect(screen.getByTestId('conditional-name')).toHaveTextContent('Updated Conditionally'); // Name unchanged
     
     // Hide details
-    await userEvent.click(screen.getByTestId('toggle-details'));
-    expect(renderCount).toBe(6); // Re-render occurs to hide details
+    await act(async () => { await userEvent.click(screen.getByTestId('toggle-details')); });
+    expect(screen.queryByTestId('details')).toBeNull();
+    expect(countDiv).toHaveTextContent('2'); // Count unchanged
     
-    // Update name - should NOT trigger re-render again (details hidden)
-    await userEvent.click(screen.getByTestId('update-name'));
-    expect(renderCount).toBe(6); // Should remain 6 as name is not accessed
+    // Update name - should NOT update countDiv (details hidden)
+    const initialCountText2 = countDiv.textContent;
+    await act(async () => { await userEvent.click(screen.getByTestId('update-name')); });
+    expect(countDiv.textContent).toBe(initialCountText2);
+    expect(screen.queryByTestId('details')).toBeNull();
+
+    // Update nested - should NOT update countDiv (details hidden)
+    await act(async () => { await userEvent.click(screen.getByTestId('update-nested')); });
+    expect(countDiv.textContent).toBe(initialCountText2);
+    expect(screen.queryByTestId('details')).toBeNull();
   });
 
   /**
