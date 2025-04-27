@@ -67,7 +67,7 @@ export class Blac {
   }
 
   /** Flag to enable/disable logging */
-  static enableLog = false;
+  static enableLog = true;
 
   /**
    * Logs messages to console when logging is enabled
@@ -199,22 +199,6 @@ export class Blac {
     }
     this.dispatchEventToPlugins(BlacLifecycleEvent.BLOC_DISPOSED, bloc);
   };
-
-  /**
-   * Unregisters a bloc instance from the main registry
-   */
-  // cleanupAfterRemoveConsumer = (
-  //   blocClass: BlocBase<any, any>,
-  //   instanceRef: string,
-  // ): void => {
-  //   const base = blocClass as unknown as BlocBaseAbstract;
-  //   if (base.isolated) {
-  //     this.unregisterIsolatedBlocInstance(blocClass);
-  //     this.blocInstanceMap.delete(instanceRef);
-  //   } else {
-  //     this.unregisterBlocInstance(blocClass);
-  //   }
-  // }
 
   /**
    * Creates a unique key for a bloc instance in the map based on the bloc class name and instance ID

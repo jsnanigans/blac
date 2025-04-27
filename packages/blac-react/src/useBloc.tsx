@@ -244,16 +244,8 @@ export default function useBloc<B extends BlocConstructor<BlocGeneric>>(
   // Set up bloc lifecycle management
   useEffect(() => {
     const currentBlocInstance = blocRef.current; // Capture instance for cleanup
-    if (!currentBlocInstance) return () => {
-      // Blac.instance.cleanupAfterRemoveConsumer(
-      //   base as unknown as BlocBase<unknown>,
-      //   rid,
-      // ); // Removed: Redundant, handled by _removeConsumer event dispatch
-    }; // Should not happen
+    if (!currentBlocInstance) return;
 
-    // Blac.createNewBlocInstance now handles adding the initial consumer,
-    // but the useEffect call seems necessary for tests to correctly see
-    // the consumer count immediately after mount.
     currentBlocInstance._addConsumer(rid);
 
     // Call onMount callback if provided
@@ -262,10 +254,6 @@ export default function useBloc<B extends BlocConstructor<BlocGeneric>>(
     // Cleanup: remove this component as a consumer using the captured instance
     return () => {
       currentBlocInstance._removeConsumer(rid);
-      // Blac.instance.cleanupAfterRemoveConsumer(
-      //   base as unknown as BlocBase<unknown>,
-      //   rid,
-      // ); // Removed: Redundant, handled by _removeConsumer event dispatch
     };
   }, [options?.onMount, bloc, rid]); // Removed resolvedBloc, props from deps
 

@@ -3,4 +3,4 @@ description:
 globs: 
 alwaysApply: true
 ---
-- Unit test are written with vitest
+- Unit test are written with vitest, run tests with `pnpm run test <...>` in the package or apps directory

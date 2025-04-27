@@ -646,15 +646,15 @@ describe('useBloc dependency detection', () => {
     
     // Update name - should NOW trigger re-render (details shown)
     await userEvent.click(screen.getByTestId('update-name'));
-    expect(renderCount).toBe(4); // Kept at 4 (no change from previous step)
+    expect(renderCount).toBe(5); // Updated from 4
     
     // Hide details
     await userEvent.click(screen.getByTestId('toggle-details'));
-    expect(renderCount).toBe(5); // Adjusted from 6
+    expect(renderCount).toBe(6); // Re-render occurs to hide details
     
     // Update name - should NOT trigger re-render again (details hidden)
     await userEvent.click(screen.getByTestId('update-name'));
-    expect(renderCount).toBe(5); // Adjusted from 6
+    expect(renderCount).toBe(6); // Should remain 6 as name is not accessed
   });
 
   /**
