@@ -1,4 +1,4 @@
-import { BlocGeneric, BlocHookDependencyArrayFn, BlocState } from 'blac-next';
+import { BlocGeneric, BlocHookDependencyArrayFn, BlocState } from '@blac/core';
 
 /**
  * Interface defining an external store that can be used to subscribe to and access bloc state.

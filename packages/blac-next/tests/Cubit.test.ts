@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Cubit } from './Cubit';
+import { Cubit } from '../src';
 
 class ExampleCubit extends Cubit<number> {}
 

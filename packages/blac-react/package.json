@@ -22,7 +22,7 @@
     "test:watch": "vitest --watch --config vitest.config.ts"
   },
   "dependencies": {
-    "blac-next": "workspace:*",
+    "@blac/core": "workspace:*",
     "react": "^18.0.0"
   },
   "devDependencies": {

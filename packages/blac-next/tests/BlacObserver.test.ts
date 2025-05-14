@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { BlacObservable } from './BlacObserver';
-import { Bloc } from './Bloc';
+import { BlacObservable, Bloc } from '../src';
 
 class DummyBloc extends Bloc<any, any> {
   constructor() {

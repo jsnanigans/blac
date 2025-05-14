@@ -59,7 +59,7 @@ Blac implements a unidirectional data flow pattern that separates business logic
 ```tsx
 // Example of the Blac pattern in Counter component
 import { useBloc } from '@blac/react';
-import { Cubit } from 'blac-next';
+import { Cubit } from '@blac/core';
 
 // Business logic container
 class CounterBloc extends Cubit<{ count: number }> {

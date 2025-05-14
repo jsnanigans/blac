@@ -23,10 +23,6 @@
     "node": ">=22",
     "pnpm": ">=9"
   },
-  "jli": {
-    "featurePrefix": "FEWEB",
-    "baseBranch": "release"
-  },
   "devDependencies": {
     "@types/bun": "catalog:",
     "prettier": "^3.5.3",

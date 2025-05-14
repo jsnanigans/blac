@@ -1,7 +1,7 @@
-import { Cubit } from 'blac-next';
+import { Cubit } from '@blac/core';
 import {
-  petfinderAPI,
-  PetfinderSearchParams,
+    petfinderAPI,
+    PetfinderSearchParams,
 } from '../services/petfinder.service';
 
 /**

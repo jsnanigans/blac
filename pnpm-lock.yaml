@@ -38,6 +38,9 @@ importers:
 
   apps/demo-react:
     dependencies:
+      '@blac/core':
+        specifier: workspace:*
+        version: link:../../packages/blac-next
       '@blac/react':
         specifier: workspace:*
         version: link:../../packages/blac-react
@@ -47,9 +50,6 @@ importers:
       '@uidotdev/usehooks':
         specifier: ^2.4.1
         version: 2.4.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      blac-next:
-        specifier: workspace:*
-        version: link:../../packages/blac-next
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -166,7 +166,7 @@ importers:
 
   packages/blac-react:
     dependencies:
-      blac-next:
+      '@blac/core':
         specifier: workspace:*
         version: link:../blac-next
       react:

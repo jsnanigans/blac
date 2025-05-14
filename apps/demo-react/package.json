@@ -4,16 +4,16 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --port 3033",
-    "build": "tsc -b && vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
+    "dev:demo": "vite --port 3033",
+    "build:demo": "tsc -b && vite build",
+    "lint:demo": "eslint .",
+    "preview:demo": "vite preview"
   },
   "dependencies": {
     "@blac/react": "workspace:*",
     "@tanstack/react-router": "^1.87.0",
     "@uidotdev/usehooks": "^2.4.1",
-    "blac-next": "workspace:*",
+    "@blac/core": "workspace:*",
     "clsx": "^2.1.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

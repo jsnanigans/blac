@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/restrict-template-expressions */
+import { Blac, Cubit } from "@blac/core";
 import '@testing-library/jest-dom';
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { Blac, Cubit } from "blac-next";
 import React, { FC, useState } from "react";
 import { beforeEach, describe, expect, test } from "vitest";
 import { useBloc } from "../src";

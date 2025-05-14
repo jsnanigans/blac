@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, test, vi } from 'vitest';
-import { Blac, BlacLifecycleEvent } from './Blac';
-import { Cubit } from './Cubit';
+import { Blac, BlacLifecycleEvent, Cubit } from '../src';
 
 class ExampleBloc extends Cubit<undefined> {}
 class ExampleBlocKeepAlive extends Cubit<undefined> {

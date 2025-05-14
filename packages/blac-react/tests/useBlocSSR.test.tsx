@@ -1,4 +1,4 @@
-import { Blac, Cubit } from 'blac-next';
+import { Blac, Cubit } from '@blac/core';
 import React, { FC } from 'react';
 import { renderToString } from 'react-dom/server';
 import { beforeEach, describe, expect, test, vi } from 'vitest';

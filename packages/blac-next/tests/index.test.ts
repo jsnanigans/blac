@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Blac, Bloc, BlocBase, Cubit } from '.';
+import { Blac, Bloc, BlocBase, Cubit } from '../src';
 
 describe('first', () => {
   it('should export Blac', () => { expect(Blac).toBeDefined(); });

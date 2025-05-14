@@ -1,5 +1,5 @@
+import { Blac, Cubit } from '@blac/core';
 import { renderHook, waitFor } from '@testing-library/react';
-import { Blac, Cubit } from 'blac-next';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { useBloc } from '../src';
 

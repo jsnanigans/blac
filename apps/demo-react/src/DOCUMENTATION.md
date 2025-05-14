@@ -466,7 +466,7 @@ class AuthBloc extends Bloc<AuthState, AuthAction> {
 Blac includes a plugin system for extending functionality:
 
 ```tsx
-import { BlacPlugin, BlacLifecycleEvent, BlocBase } from 'blac-next';
+import { BlacPlugin, BlacLifecycleEvent, BlocBase } from '@blac/core';
 
 class LoggerPlugin implements BlacPlugin {
   name = 'LoggerPlugin';
@@ -479,7 +479,7 @@ class LoggerPlugin implements BlacPlugin {
 }
 
 // Add the plugin
-import { Blac } from 'blac-next';
+import { Blac } from '@blac/core';
 Blac.addPlugin(new LoggerPlugin());
 ```
 

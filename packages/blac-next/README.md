@@ -1,6 +1,4 @@
-# !!UNDER CONSTRUCTION!!
-
-# blac-next
+# @blac/core
 
 A lightweight, flexible state management library for JavaScript/TypeScript applications focusing on predictable state transitions.
 
@@ -16,12 +14,30 @@ A lightweight, flexible state management library for JavaScript/TypeScript appli
 
 ## Installation
 
+Install `@blac/core` using your favorite package manager:
+
 ```bash
+# pnpm
+pnpm add @blac/core
+
+# yarn
+yarn add @blac/core
+
+# npm
+npm install @blac/core
 ```
 
-For React applications:
+For React applications, you'll also want to install `@blac/react`:
 
 ```bash
+# pnpm
+pnpm add @blac/react
+
+# yarn
+yarn add @blac/react
+
+# npm
+npm install @blac/react
 ```
 
 ## Core Concepts
@@ -136,41 +152,6 @@ class PersistentCounterCubit extends Cubit<number> {
 }
 ```
 
-## Using with React
-
-```tsx
-import { useBloc } from 'blac-react';
-import { CounterCubit } from './counter-cubit';
-
-function Counter() {
-  const [count, counterCubit] = useBloc(CounterCubit);
-  
-  return (
-    <div>
-      <p>Count: {count}</p>
-      <button onClick={() => counterCubit.increment()}>Increment</button>
-      <button onClick={() => counterCubit.decrement()}>Decrement</button>
-    </div>
-  );
-}
-```
-
-### Optimizing Renders with Dependency Selection
-
-```tsx
-import { useBloc } from 'blac-react';
-import { TodoListCubit } from './todo-list-cubit';
-
-function CompletedCount() {
-  const [todoState, todoListCubit] = useBloc(TodoListCubit, {
-    // Only re-render when completedCount changes
-    dependencySelector: (state) => [[state.completedCount]]
-  });
-  
-  return <div>Completed: {todoState.completedCount}</div>;
-}
-```
-
 ## Advanced Usage
 
 ### Custom Plugins
@@ -178,7 +159,7 @@ function CompletedCount() {
 Create plugins to add functionality like logging, persistence, or analytics:
 
 ```typescript
-import { BlacPlugin, BlacLifecycleEvent, BlocBase } from 'blac-next';
+import { BlacPlugin, BlacLifecycleEvent, BlocBase } from '@blac/core';
 
 class LoggerPlugin implements BlacPlugin {
   name = 'LoggerPlugin';
@@ -191,32 +172,71 @@ class LoggerPlugin implements BlacPlugin {
 }
 
 // Add the plugin to Blac
-import { Blac } from 'blac-next';
+import { Blac } from '@blac/core';
 Blac.addPlugin(new LoggerPlugin());
 ```
 
 ### Using Props with Blocs
 
-```typescript
-// Define props type
-type ThemeProps = {
-  defaultTheme: 'light' | 'dark'
-};
+Blocs can be designed to accept properties through their constructor, allowing for configurable instances. Here's an example of a `UserProfileBloc` that takes a `userId` prop:
 
-class ThemeCubit extends Cubit<string, ThemeProps> {
-  constructor(props: ThemeProps) {
-    super(props.defaultTheme);
-  }
-  
-  toggle = () => {
-    this.emit(this.state === 'light' ? 'dark' : 'light');
-  }
+```typescript
+import { Bloc } from '@blac/core'; // Or your specific import path
+
+// Define props interface (optional, but good practice)
+interface UserProfileProps {
+  userId: string;
 }
 
-// Using with props in React
-const [theme, themeCubit] = useBloc(ThemeCubit, {
-  props: { defaultTheme: 'light' }
-});
+// Define state interface
+interface UserProfileState {
+  loading: boolean;
+  userData: { id: string; name: string; bio?: string } | null;
+  error: string | null;
+}
+
+// Define actions (if any, for this example we'll focus on constructor and an async method)
+type UserProfileAction = { type: 'dataLoaded', data: any } | { type: 'error', error: string };
+
+class UserProfileBloc extends Bloc<UserProfileState, UserProfileAction> {
+  private userId: string;
+
+  // The Blac library or its React bindings (like @blac/react)
+  // might provide a way to pass these props during instantiation.
+  // For example, `useBloc(UserProfileBloc, { props: { userId: '123' } })`
+  constructor(props: UserProfileProps) {
+    super({ loading: true, userData: null, error: null }); // Initial state
+    this.userId = props.userId;
+    // Optional: Set a dynamic name for easier debugging with multiple instances
+    this._name = `UserProfileBloc_${this.userId}`; 
+    this.fetchUserProfile();
+  }
+
+  // Example reducer
+  reducer = (action: UserProfileAction, state: UserProfileState): UserProfileState => {
+    switch (action.type) {
+      case 'dataLoaded':
+        return { ...state, loading: false, userData: action.data, error: null };
+      case 'error':
+        return { ...state, loading: false, error: action.error };
+      default:
+        return state;
+    }
+  }
+
+  fetchUserProfile = async ()_ => {
+    this.emit({ ...this.state, loading: true }); // Set loading true before fetch
+    try {
+      // Simulate an API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      const mockUserData = { id: this.userId, name: `User ${this.userId}`, bio: 'Loves Blac states!' };
+      // Dispatch an action or directly emit a new state
+      this.add({ type: 'dataLoaded', data: mockUserData });
+    } catch (e:any) {
+      this.add({ type: 'error', error: e.message || 'Failed to fetch user profile' });
+    }
+  }
+}
 ```
 
 ## API Reference
@@ -244,4 +264,4 @@ const [theme, themeCubit] = useBloc(ThemeCubit, {
 
 ## License
 
-MIT
+This project is licensed under the MIT License - see the [LICENSE](../../LICENSE) file for details.

@@ -11,9 +11,9 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "experimentalDecorators": true,
+    "experimentalDecorators": false,
     "resolveJsonModule": true
   },
   "include": ["src", "tests"],
-  "exclude": ["publish.ts", "dev.ts"]
+  "exclude": []
 }

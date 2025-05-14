@@ -18,7 +18,7 @@ Start by designing the state container (Bloc or Cubit) that will manage the comp
 
 ```tsx
 // src/blocs/counter.bloc.ts
-import { Cubit } from 'blac-next';
+import { Cubit } from '@blac/core';
 
 // Define the state interface
 interface CounterState {

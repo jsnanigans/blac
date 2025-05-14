@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { Bloc } from './Bloc';
+import { Bloc } from '../src';
 
 enum Action {
   INCREMENT,

@@ -1,6 +1,6 @@
+import { Blac, Cubit } from '@blac/core';
 import { act, render } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Blac, Cubit } from 'blac-next';
 import React, { FC, useCallback } from 'react';
 import { beforeEach, describe, expect, test } from 'vitest';
 import { useBloc } from '../src';

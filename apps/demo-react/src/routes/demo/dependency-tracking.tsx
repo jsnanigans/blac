@@ -1,10 +1,9 @@
+import { Cubit } from '@blac/core';
 import { useBloc } from '@blac/react';
 import { createFileRoute } from '@tanstack/react-router';
 import { useRenderCount } from '@uidotdev/usehooks';
-import { Cubit } from 'blac-next';
-import { useEffect, useMemo, useRef } from 'react';
+import { memo, useEffect, useMemo, useRef } from 'react';
 import CodeHighlighter from '../../components/CodeHighlighter';
-import { memo } from 'react';
 
 export const Route = createFileRoute('/demo/dependency-tracking')({
   component: DependencyTrackingDemo,

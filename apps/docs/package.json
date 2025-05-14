@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "description": "Documentation for Blac state management library",
   "scripts": {
-    "dev": "vitepress dev",
-    "build": "vitepress build",
-    "preview": "vitepress preview"
+    "dev:docs": "vitepress dev",
+    "build:docs": "vitepress build",
+    "preview:docs": "vitepress preview"
   },
   "keywords": [
     "blac",

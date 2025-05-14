@@ -25,7 +25,7 @@
       "atom/*": ["../../packages/shared/src/atom/*"],
       "constants/*": ["../../packages/shared/src/constants/*"],
       "lib/*": ["../../packages/shared/src/lib/*"],
-      "blac-next": ["../packages/blac-next/src"],
+      "@blac/core": ["../packages/blac-next/src"],
       "@blac/react": ["../packages/blac-react/src"]
     }
   }

@@ -1,5 +1,5 @@
+import { Cubit } from '@blac/core';
 import { useBloc } from '@blac/react';
-import { Cubit } from 'blac-next';
 
 class CounterBloc extends Cubit<{ count: number }> {
   constructor() {

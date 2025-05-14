@@ -1,21 +1,21 @@
 /* eslint-disable @typescript-eslint/restrict-template-expressions */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
-  Blac,
-  BlocBaseAbstract,
-  BlocConstructor,
-  BlocGeneric,
-  BlocHookDependencyArrayFn,
-  BlocState,
-  InferPropsFromGeneric
-} from 'blac-next';
+    Blac,
+    BlocBaseAbstract,
+    BlocConstructor,
+    BlocGeneric,
+    BlocHookDependencyArrayFn,
+    BlocState,
+    InferPropsFromGeneric
+} from '@blac/core';
 import {
-  useEffect,
-  useId,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useSyncExternalStore,
+    useEffect,
+    useId,
+    useLayoutEffect,
+    useMemo,
+    useRef,
+    useSyncExternalStore,
 } from 'react';
 import externalBlocStore from './externalBlocStore';
 

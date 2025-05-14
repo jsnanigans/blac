@@ -1,7 +1,7 @@
+import { Cubit } from '@blac/core';
+import { useBloc } from '@blac/react';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Cubit } from 'blac-next';
-import { useBloc } from '@blac/react';
 import CodeHighlighter from '../../components/CodeHighlighter';
 
 export const Route = createFileRoute('/demo/counter')({

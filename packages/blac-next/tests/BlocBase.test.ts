@@ -1,8 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { Blac, BlacLifecycleEvent } from './Blac';
-import { BlacObserver } from './BlacObserver';
-import { BlacPlugin } from './BlacPlugin';
-import { BlocBase } from './BlocBase';
+import { Blac, BlacLifecycleEvent, BlacObserver, BlacPlugin, BlocBase } from '../src';
 
 class BlocBaseSimple extends BlocBase<unknown> {}
 class BlocBaseSimpleIsolated extends BlocBase<unknown> {

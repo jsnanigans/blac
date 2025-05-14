@@ -5,8 +5,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import { Blac, BlocGeneric, BlocHookDependencyArrayFn } from '@blac/core';
 import { renderHook } from '@testing-library/react';
-import { Blac, BlocGeneric, BlocHookDependencyArrayFn } from 'blac-next';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import externalBlocStore from '../src/externalBlocStore';
 import useBloc, { BlocHookOptions } from '../src/useBloc';

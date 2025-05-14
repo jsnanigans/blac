@@ -1,6 +1,6 @@
+import { Cubit } from "@blac/core";
 import { render, renderHook, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { Cubit } from "blac-next";
 import React, { FC } from "react";
 import { beforeEach, expect, test } from "vitest";
 import { useBloc } from "../src";
