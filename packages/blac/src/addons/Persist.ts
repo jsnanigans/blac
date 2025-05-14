@@ -40,6 +40,11 @@ export function Persist(
      * @see StorageType
      */
     storageType?: StorageType;
+
+    /**
+     * @default false
+     */
+    onError?: (e: unknown) => void;
   } = {},
 ): BlacAddon {
   const {
@@ -49,15 +54,16 @@ export function Persist(
     storageType = 'localStorage',
   } = options;
 
-  const fullKey = (id: string | BlocInstanceId) => `${keyPrefix}:${id}`;
+  const fullKey = (id: string | BlocInstanceId) => `${keyPrefix}:${String(id)}`;
 
   const getFromLocalStorage = (id: string | BlocInstanceId): unknown => {
-    const value = getStorage(storageType).getItem(fullKey(id));
-    if (typeof value !== 'string') {
-      return defaultValue;
-    }
-
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      const value = getStorage(storageType).getItem(fullKey(id));
+      if (typeof value !== 'string') {
+        return defaultValue;
+      }
+
       const p = JSON.parse(value) as { v: unknown };
       if (typeof p.v !== 'undefined') {
         return p.v;
@@ -65,17 +71,17 @@ export function Persist(
         return defaultValue;
       }
     } catch (e) {
+      options.onError?.(e);
       return defaultValue;
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const onInit: BlacAddonInit = (e: BlocBase<any>) => {
     const id = keyName ?? e._id;
 
     const value = getFromLocalStorage(id);
-    if (typeof value !== undefined) {
-      e._pushState(value, null);
-    }
+    e._pushState(value, null);
   };
 
   let currentCachedValue = '';
@@ -85,6 +91,7 @@ export function Persist(
     const newValue = JSON.stringify({ v: newState });
 
     if (newValue !== currentCachedValue) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       getStorage(storageType).setItem(fullKey(id), newValue);
       currentCachedValue = newValue;
     }

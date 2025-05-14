@@ -1,4 +1,4 @@
-import { BlocGeneric, BlocHookDependencyArrayFn, BlocState } from '../../blac/src';
+import { BlocBase, BlocHookDependencyArrayFn, BlocState } from '../../blac/src';
 
 /**
  * Interface defining an external store that can be used to subscribe to and access bloc state.
@@ -8,7 +8,7 @@ import { BlocGeneric, BlocHookDependencyArrayFn, BlocState } from '../../blac/sr
  * @template S - The type of the Bloc state
  */
 export interface ExternalStore<
-  B extends BlocGeneric<any, any>,
+  B extends BlocBase,
   S extends BlocState<B>,
 > {
   /**
@@ -16,7 +16,7 @@ export interface ExternalStore<
    * @param onStoreChange - Callback function that will be called whenever the store changes
    * @returns A function that can be called to unsubscribe from store changes
    */
-  subscribe: (onStoreChange: () => void) => () => void;
+  subscribe: (onStoreChange: (state: S) => void) => () => void;
 
   /**
    * Gets the current snapshot of the store state.
@@ -44,11 +44,11 @@ export interface ExternalStore<
  * @returns An ExternalStore instance that provides methods to subscribe to and access bloc state
  */
 const externalBlocStore = <
-  B extends BlocGeneric<any, any>,
+  B extends BlocBase,
   S extends BlocState<B>,
 >(
   bloc: B,
-  dependencyArray: BlocHookDependencyArrayFn<InstanceType<any>>,
+  dependencyArray: BlocHookDependencyArrayFn<B>,
   rid: string,
 ): ExternalStore<B, S> => {
   return {

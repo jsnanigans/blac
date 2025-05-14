@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/restrict-template-expressions */
 import { afterEach, describe, expect, it, test, vi } from 'vitest';
 import { Blac, BlacLifecycleEvent, Cubit } from '../src';
 
@@ -162,8 +163,9 @@ describe('Blac', () => {
     it('should call `createNewBlocInstance` if the bloc is not registered', () => {
       const blac = new Blac();
       const spy = vi.spyOn(blac, 'createNewBlocInstance');
-      blac.getBloc(ExampleBloc);
+      const e = blac.getBloc(ExampleBloc);
       expect(spy).toHaveBeenCalled();
+      expect(e).toBeInstanceOf(ExampleBloc);
     });
 
     it('should return the registered bloc if it is registered, and should not create a new one', () => {
@@ -181,11 +183,11 @@ describe('Blac', () => {
       const blac = new Blac();
       const bloc = new ExampleBloc(undefined);
       const createSpy = vi.spyOn(blac, 'createNewBlocInstance');
-      const registeredBloc = blac.registerBlocInstance(bloc);
+      blac.registerBlocInstance(bloc);
       const result = blac.getBloc(ExampleBloc, { id: 'foo' });
 
       expect(createSpy).toHaveBeenCalled();
-      expect(result).not.toBe(registeredBloc);
+      expect(result).not.toBe(bloc);
     });
   });
 

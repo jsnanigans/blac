@@ -1,9 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { BlacPlugin } from "./BlacPlugin";
 import { BlocBase, BlocInstanceId } from "./BlocBase";
 import {
   BlocBaseAbstract,
   BlocConstructor,
-  InferPropsFromGeneric,
+  InferPropsFromGeneric
 } from "./types";
 
 /**
@@ -47,9 +48,9 @@ export class Blac {
   static getAllBlocs = Blac.instance.getAllBlocs;
   static addPlugin = Blac.instance.addPlugin;
   /** Map storing all registered bloc instances by their class name and ID */
-  blocInstanceMap: Map<string, BlocBase<any, any>> = new Map();
+  blocInstanceMap: Map<string, BlocBase<any>> = new Map();
   /** Map storing isolated bloc instances grouped by their constructor */
-  isolatedBlocMap: Map<BlocConstructor<any>, BlocBase<any, any>[]> = new Map();
+  isolatedBlocMap: Map<BlocConstructor<any>, BlocBase<any>[]> = new Map();
   pluginList: BlacPlugin[] = [];
   /** Flag to control whether changes should be posted to document */
   postChangesToDocument = false;
@@ -74,7 +75,7 @@ export class Blac {
    * @param args - Arguments to log
    */
   log = (...args: any[]) => {
-    if (Blac.enableLog) console.warn(`☢️ [Blac ${this.createdAt.toString()}]`, ...args);
+    if (Blac.enableLog) console.warn(`☢️ [Blac ${this.createdAt.toString()}]`, args);
   };
 
   /**
@@ -91,7 +92,7 @@ export class Blac {
    * @param args - Additional arguments
    */
   static warn = (message: string, ...args: unknown[]) => {
-    console.warn(`🚨 [Blac ${Blac.instance.createdAt}]`, message, ...args);
+    console.warn(`🚨 [Blac ${String(Blac.instance.createdAt)}]`, message, ...args);
   };
 
   /**
@@ -100,7 +101,7 @@ export class Blac {
    * @param args - Additional arguments
    */
   static error = (message: string, ...args: unknown[]) => {
-    console.error(`🚨 [Blac ${Blac.instance.createdAt}]`, message, ...args);
+    console.error(`🚨 [Blac ${String(Blac.instance.createdAt)}]`, message, ...args);
   };
 
   /**
@@ -117,14 +118,14 @@ export class Blac {
     oldBlocInstanceMap.forEach((bloc) => {
       if (!bloc._keepAlive) {
         // Use disposeBloc to ensure the BLOC_DISPOSED event is dispatched
-        this.disposeBloc(bloc); 
+        this.disposeBloc(bloc);
       }
     });
 
     oldIsolatedBlocMap.forEach((blocArray) => {
       blocArray.forEach((bloc) => {
         if (!bloc._keepAlive) {
-           // Use disposeBloc for isolated blocs as well
+          // Use disposeBloc for isolated blocs as well
           this.disposeBloc(bloc);
         }
       });
@@ -155,10 +156,10 @@ export class Blac {
    * @param bloc - The bloc instance involved in the event
    * @param params - Additional parameters for the event
    */
-  dispatchEventToPlugins = <B extends BlacLifecycleEvent>(
-    event: B,
-    bloc: BlocBase<any, any>,
-    params?: any,
+  dispatchEventToPlugins = (
+    event: BlacLifecycleEvent,
+    bloc: BlocBase<any>,
+    params?: unknown,
   ) => {
     this.pluginList.forEach((plugin) => {
       plugin.onEvent(event, bloc, params);
@@ -177,10 +178,10 @@ export class Blac {
    * @param bloc - The bloc instance involved in the event
    * @param params - Additional parameters for the event
    */
-  dispatchEvent = <B extends BlacLifecycleEvent>(
-    event: B,
-    bloc: BlocBase<any, any>,
-    params?: any,
+  dispatchEvent = (
+    event: BlacLifecycleEvent,
+    bloc: BlocBase<any>,
+    params?: unknown,
   ) => {
     this.log(event, bloc, params);
 
@@ -190,13 +191,13 @@ export class Blac {
         break;
       case BlacLifecycleEvent.BLOC_CONSUMER_REMOVED:
       case BlacLifecycleEvent.LISTENER_REMOVED:
-        this.log(`[${bloc._name}:${bloc._id}] Listener/Consumer removed. Listeners: ${bloc._observer.size}, Consumers: ${bloc._consumers.size}, KeepAlive: ${bloc._keepAlive}`);
+        this.log(`[${bloc._name}:${String(bloc._id)}] Listener/Consumer removed. Listeners: ${String(bloc._observer.size)}, Consumers: ${String(bloc._consumers.size)}, KeepAlive: ${String(bloc._keepAlive)}`);
         if (
           bloc._observer.size === 0 &&
           bloc._consumers.size === 0 &&
           !bloc._keepAlive
         ) {
-          this.log(`[${bloc._name}:${bloc._id}] No listeners or consumers left and not keepAlive. Disposing.`);
+          this.log(`[${bloc._name}:${String(bloc._id)}] No listeners or consumers left and not keepAlive. Disposing.`);
           bloc._dispose();
         }
         break;
@@ -209,10 +210,10 @@ export class Blac {
    * Disposes of a bloc instance by removing it from the appropriate registry
    * @param bloc - The bloc instance to dispose
    */
-  disposeBloc = (bloc: BlocBase<any, any>): void => {
+  disposeBloc = (bloc: BlocBase<any>): void => {
     const base = bloc.constructor as unknown as BlocBaseAbstract;
     const key = this.createBlocInstanceMapKey(bloc._name, bloc._id);
-    this.log(`[${bloc._name}:${bloc._id}] disposeBloc called. Isolated: ${base.isolated}`);
+    this.log(`[${bloc._name}:${String(bloc._id)}] disposeBloc called. Isolated: ${String(base.isolated)}`);
 
     if (base.isolated) {
       this.unregisterIsolatedBlocInstance(bloc);
@@ -230,14 +231,14 @@ export class Blac {
    * @returns A unique key string in the format "className:id"
    */
   createBlocInstanceMapKey(blocClassName: string, id: BlocInstanceId): string {
-    return `${blocClassName}:${id}`;
+    return `${blocClassName}:${String(id)}`;
   }
 
   /**
-   * Unregisters a bloc instance from the main registry
+   * Unregister a bloc instance from the main registry
    * @param bloc - The bloc instance to unregister
    */
-  unregisterBlocInstance(bloc: BlocBase<any, any>): void {
+  unregisterBlocInstance(bloc: BlocBase<any>): void {
     const key = this.createBlocInstanceMapKey(bloc._name, bloc._id);
     this.blocInstanceMap.delete(key);
   }
@@ -246,7 +247,7 @@ export class Blac {
    * Registers a bloc instance in the main registry
    * @param bloc - The bloc instance to register
    */
-  registerBlocInstance(bloc: BlocBase<any, any>): void {
+  registerBlocInstance(bloc: BlocBase<any>): void {
     const key = this.createBlocInstanceMapKey(bloc._name, bloc._id);
     this.blocInstanceMap.set(key, bloc);
   }
@@ -257,29 +258,27 @@ export class Blac {
    * @param id - The instance ID
    * @returns The found bloc instance or undefined if not found
    */
-  findRegisteredBlocInstance<B extends BlocBase<any, any>>(
-    blocClass: BlocConstructor<B>,
+  findRegisteredBlocInstance<B extends BlocConstructor<unknown>>(
+    blocClass: B,
     id: BlocInstanceId,
-  ): InstanceType<BlocConstructor<B>> | undefined {
+  ): InstanceType<B> | undefined {
     const base = blocClass as unknown as BlocBaseAbstract;
     if (base.isolated) return undefined;
 
     const key = this.createBlocInstanceMapKey(blocClass.name, id);
-    const found = this.blocInstanceMap.get(key) as InstanceType<
-      BlocConstructor<B>
-    >;
+    const found = this.blocInstanceMap.get(key) as InstanceType<B> | undefined;
     if (found) {
-      this.log(`[${blocClass.name}:${id}] Found registered instance. Returning.`);
+      this.log(`[${blocClass.name}:${String(id)}] Found registered instance. Returning.`);
     }
-    return found;
+    return found 
   }
 
   /**
    * Registers an isolated bloc instance in the isolated registry
    * @param bloc - The isolated bloc instance to register
    */
-  registerIsolatedBlocInstance(bloc: BlocBase<any, any>): void {
-    const blocClass = bloc.constructor as BlocConstructor<any>;
+  registerIsolatedBlocInstance(bloc: BlocBase<any>): void {
+    const blocClass = bloc.constructor as BlocConstructor<unknown>;
     const blocs = this.isolatedBlocMap.get(blocClass);
     if (blocs) {
       blocs.push(bloc);
@@ -289,12 +288,12 @@ export class Blac {
   }
 
   /**
-   * Unregisters an isolated bloc instance from the isolated registry
+   * Unregister an isolated bloc instance from the isolated registry
    * @param bloc - The isolated bloc instance to unregister
    */
-  unregisterIsolatedBlocInstance(bloc: BlocBase<any, any>): void {
+  unregisterIsolatedBlocInstance(bloc: BlocBase<any>): void {
     const blocClass = bloc.constructor;
-    const blocs = this.isolatedBlocMap.get(blocClass as BlocConstructor<any>);
+    const blocs = this.isolatedBlocMap.get(blocClass as BlocConstructor<unknown>);
     if (blocs) {
       const index = blocs.findIndex((b) => b._id === bloc._id);
       if (index !== -1) {
@@ -302,23 +301,18 @@ export class Blac {
       }
 
       if (blocs.length === 0) {
-        this.isolatedBlocMap.delete(blocClass as BlocConstructor<any>);
+        this.isolatedBlocMap.delete(blocClass as BlocConstructor<unknown>);
       }
     }
   }
 
   /**
    * Finds an isolated bloc instance by its class and ID
-   * @param blocClass - The bloc class to search for
-   * @param id - The instance ID
-   * @returns The found isolated bloc instance or undefined if not found
    */
-  findIsolatedBlocInstance<B extends BlocBase<any, any>>(
-    blocClass: BlocConstructor<B>,
+  findIsolatedBlocInstance<B extends BlocConstructor<unknown>>(
+    blocClass: B,
     id: BlocInstanceId,
-  ):
-    | InstanceType<BlocConstructor<B>>
-    | undefined {
+  ): InstanceType<B> | undefined {
     const base = blocClass as unknown as BlocBaseAbstract;
     if (!base.isolated) return undefined;
 
@@ -326,13 +320,12 @@ export class Blac {
     if (!blocs) return undefined;
 
     // Fix: Find the specific bloc by ID within the isolated array
-    const found = blocs.find((b) => b._id === id) as InstanceType<
-      BlocConstructor<B>
-    >;
+    const found = blocs.find((b) => b._id === id) as InstanceType<B> | undefined;
 
     if (found) {
-      this.log(`[${blocClass.name}:${id}] Found isolated instance. Returning.`);
+      this.log(`[${blocClass.name}:${String(id)}] Found isolated instance. Returning.`);
     }
+
     return found;
   }
 
@@ -344,26 +337,24 @@ export class Blac {
    * @param instanceRef - Optional reference string for the instance
    * @returns The newly created bloc instance
    */
-  createNewBlocInstance<B extends BlocBase>(
-    blocClass: BlocConstructor<B>,
+  createNewBlocInstance<B extends BlocConstructor<unknown>>(
+    blocClass: B,
     id: BlocInstanceId,
     props?: InferPropsFromGeneric<B>,
     instanceRef?: string,
-  ): InstanceType<BlocConstructor<B>> {
-    const base = blocClass as unknown as BlocBaseAbstract;
-
-    const newBloc = new blocClass(props as never);
+  ): InstanceType<B> {
+    const newBloc = new blocClass(props as never) as InstanceType<BlocConstructor<BlocBase<unknown>>>;
     newBloc._instanceRef = instanceRef;
     newBloc.props = props || null;
     newBloc._updateId(id);
 
-    if (base.isolated) {
+    if (newBloc.isIsolated) {
       this.registerIsolatedBlocInstance(newBloc);
-      return newBloc as InstanceType<BlocConstructor<any>>;
+      return newBloc as InstanceType<B>;
     }
 
     this.registerBlocInstance(newBloc);
-    return newBloc as InstanceType<BlocConstructor<any>>;
+    return newBloc as InstanceType<B>;
   }
 
   /**
@@ -377,7 +368,7 @@ export class Blac {
    *   - instanceRef: Optional reference string for the instance
    * @returns The bloc instance
    */
-  getBloc = <B extends BlocConstructor<any>>(
+  getBloc = <B extends BlocConstructor<unknown>>(
     blocClass: B,
     options: {
       id?: BlocInstanceId;
@@ -389,31 +380,29 @@ export class Blac {
     const base = blocClass as unknown as BlocBaseAbstract;
     const blocId = id ?? blocClass.name;
 
-    this.log(`[${blocClass.name}:${blocId}] getBloc called. Options:`, options);
-
-    let blocInstance: InstanceType<B> | undefined;
+    this.log(`[${blocClass.name}:${String(blocId)}] getBloc called. Options:`, options);
 
     if (base.isolated) {
-      blocInstance = this.findIsolatedBlocInstance(blocClass, blocId);
-      if (blocInstance) {
-        this.log(`[${blocClass.name}:${blocId}] Found existing isolated instance.`);
-        return blocInstance;
+      const isolatedBloc = this.findIsolatedBlocInstance<B>(blocClass, blocId)
+      if (isolatedBloc) {
+        this.log(`[${blocClass.name}:${String(blocId)}] Found existing isolated instance.`);
+        return isolatedBloc;
       }
     }
 
-    if (!blocInstance && !base.isolated) {
-      blocInstance = this.findRegisteredBlocInstance(blocClass, blocId);
-      if (blocInstance) {
-        this.log(`[${blocClass.name}:${blocId}] Found existing registered instance.`);
-        return blocInstance;
+    if (!base.isolated) {
+      const registeredBloc = this.findRegisteredBlocInstance(blocClass, blocId)
+      if (registeredBloc) {
+        this.log(`[${blocClass.name}:${String(blocId)}] Found existing registered instance.`);
+        return registeredBloc
       }
     }
 
-    this.log(`[${blocClass.name}:${blocId}] No existing instance found. Creating new one.`);
+    this.log(`[${blocClass.name}:${String(blocId)}] No existing instance found. Creating new one.`);
     return this.createNewBlocInstance(
       blocClass,
       blocId,
-      props as any,
+      props,
       instanceRef,
     );
   };
@@ -427,7 +416,7 @@ export class Blac {
    *   - props: Properties to pass to the bloc constructor
    *   - instanceRef: Optional reference string for the instance
    */
-  getBlocOrThrow = <B extends BlocConstructor<any>>(
+  getBlocOrThrow = <B extends BlocConstructor<BlocBase<any>>>(
     blocClass: B,
     options: {
       id?: BlocInstanceId;
@@ -435,7 +424,7 @@ export class Blac {
       instanceRef?: string;
     } = {},
   ): InstanceType<B> => {
-    const isIsolated = (blocClass as InstanceType<B>).isolated;
+    const isIsolated = (blocClass as unknown as BlocBaseAbstract).isolated;
     const id = options.id || blocClass.name;
 
     const registered = isIsolated
@@ -456,7 +445,7 @@ export class Blac {
    *   - searchIsolated: Whether to search in isolated blocs (defaults to bloc's isolated property)
    * @returns Array of matching bloc instances
    */
-  getAllBlocs = <B extends BlocBase<any, any>>(
+  getAllBlocs = <B extends BlocBase<any>>(
     blocClass: BlocConstructor<B>,
     options: {
       searchIsolated?: boolean;

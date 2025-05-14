@@ -8,8 +8,8 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**", "generated/**"]
     },
-    "check-types": {
-      "dependsOn": ["^check-types"]
+    "typecheck": {
+      "dependsOn": ["^typecheck"]
     },
     "lint": {},
     "test": {},

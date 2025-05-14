@@ -1,12 +1,13 @@
-import { BlocBase } from './BlocBase';
 import { BlacLifecycleEvent } from './Blac';
+import { BlocBase } from './BlocBase';
 
 export interface BlacPlugin {
   name: string;
 
-  onEvent<B extends BlacLifecycleEvent>(
-    event: B,
+  onEvent(
+    event: BlacLifecycleEvent,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     bloc: BlocBase<any>,
-    params?: any,
+    params?: unknown,
   ): void;
 }

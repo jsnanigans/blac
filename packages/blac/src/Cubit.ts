@@ -35,19 +35,36 @@ export abstract class Cubit<S, P = null> extends BlocBase<S, P> {
     statePatch: S extends object ? Partial<S> : S,
     ignoreChangeCheck = false,
   ): void {
+    if (typeof this.state !== 'object' || this.state === null) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(
+          'Cubit.patch: was called on a cubit where the state is not an object. This is a no-op.',
+        );
+      }
+      return;
+    }
+
     let changes = false;
     if (!ignoreChangeCheck) {
       for (const key in statePatch) {
-        const current = (this.state as any)[key];
-        if (!Object.is(statePatch[key], current)) {
-          changes = true;
-          break;
+        if (Object.prototype.hasOwnProperty.call(statePatch, key)) {
+          const s = this.state;
+          const current = s[key as keyof S];
+          if (!Object.is(statePatch[key as keyof S], current)) {
+            changes = true;
+            break;
+          }
         }
       }
+    } else {
+      changes = true;
     }
 
     if (changes) {
-      this.emit({ ...this.state, ...statePatch });
+      this.emit({
+        ...this.state,
+        ...(statePatch as Partial<S>),
+      } as S);
     }
   }
 }

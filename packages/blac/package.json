@@ -18,7 +18,8 @@
     "prettier": "prettier --write ./src",
     "test": "vitest run",
     "test:watch": "vitest --watch",
-    "coverage": "vitest run --coverage"
+    "coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {},
   "devDependencies": {

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Bloc } from './Bloc';
 import { BlocBase } from './BlocBase';
 import { Cubit } from './Cubit';
@@ -25,8 +26,8 @@ export type BlocConstructor<B> = new (...args: any) => B;
  * Extracts the state type from a BlocBase instance
  * @template B - The BlocBase type to extract the state from
  */
-export type ValueType<B extends BlocBase<any, any>> =
-  B extends BlocBase<infer U, any> ? U : never;
+export type ValueType<B extends BlocBase<any>> =
+  B extends BlocBase<infer U> ? U : never;
 
 /**
  * Represents either a Bloc or Cubit with their respective generic parameters
@@ -43,7 +44,7 @@ export type BlocGeneric<S = any, A = any, P = any> =
  * @template T - The Bloc or Cubit type to extract the state from
  */
 export type BlocState<T> =
-  T extends Bloc<infer S, any, any>
+  T extends Bloc<infer S, any>
     ? S
     : T extends Cubit<infer S, any>
       ? S
@@ -64,14 +65,14 @@ export type InferPropsFromGeneric<T> =
  * Extracts the constructor parameters type from a BlocBase
  * @template B - The BlocBase type to extract the constructor parameters from
  */
-export type BlocConstructorParameters<B extends BlocBase<any, any>> =
-  BlocConstructor<B> extends new (...args: infer P) => any ? P : never;
+export type BlocConstructorParameters<B extends BlocBase<any>> =
+  BlocConstructor<B> extends new (...args: infer P) => B ? P : never;
 
 /**
  * Represents a function type for determining hook dependencies based on state changes
  * @template B - The BlocGeneric type
  */
-export type BlocHookDependencyArrayFn<B extends BlocGeneric<any, any>> = (
-  newState: BlocState<B>,
-  oldState: BlocState<B>,
+export type BlocHookDependencyArrayFn<S> = (
+  newState: S,
+  oldState: S,
 ) => unknown[][];

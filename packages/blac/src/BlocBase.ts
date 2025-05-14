@@ -1,9 +1,17 @@
 import { Blac, BlacLifecycleEvent } from './Blac';
 import { BlacObservable } from './BlacObserver';
 import BlacAddon from './addons/BlacAddon';
+import { BlocConstructor } from './types';
 
 export type BlocInstanceId = string | number | undefined;
-type DependencySelector<S> = (newState: S, oldState?: S) => any[];
+type DependencySelector<S> = (newState: S, oldState?: S) => unknown[];
+
+// Define an interface for the static properties expected on a Bloc/Cubit constructor
+interface BlocStaticProperties {
+  isolated: boolean;
+  keepAlive: boolean;
+  addons?: BlacAddon[];
+}
 
 /**
  * Base class for both Blocs and Cubits that provides core state management functionality.
@@ -13,13 +21,19 @@ type DependencySelector<S> = (newState: S, oldState?: S) => any[];
  * @template S The type of state managed by this Bloc
  * @template P The type of props that can be passed during instance creation (optional)
  */
-export abstract class BlocBase<S = any, P = any> {
+export abstract class BlocBase<
+  S,
+  P = unknown
+> {
   /**
    * When true, every consumer will receive its own unique instance of this Bloc.
    * Use this when state should not be shared between components.
    * @default false
    */
   static isolated = false;
+  get isIsolated() {
+    return this._isolated;
+  }
   
   /**
    * When true, the Bloc instance persists even when there are no active consumers.
@@ -27,12 +41,15 @@ export abstract class BlocBase<S = any, P = any> {
    * @default false
    */
   static keepAlive = false;
+  get isKeepAlive() {
+    return this._keepAlive;
+  }
   
   /**
    * Defines how dependencies are selected from the state for efficient updates.
    * When provided, observers will only be notified when selected dependencies change.
    */
-  defaultDependencySelector: DependencySelector<S> | undefined;
+  defaultDependencySelector: DependencySelector<S> = () => [];
 
   /**
    * @internal
@@ -50,7 +67,7 @@ export abstract class BlocBase<S = any, P = any> {
    * @internal
    * Observable responsible for managing state listeners and notifying consumers.
    */
-  public _observer: BlacObservable<any>;
+  public _observer: BlacObservable<S>;
   
   /**
    * @internal
@@ -111,10 +128,14 @@ export abstract class BlocBase<S = any, P = any> {
     this._observer = new BlacObservable(this);
     this._blac.dispatchEvent(BlacLifecycleEvent.BLOC_CREATED, this);
     this._id = this.constructor.name;
-    this._keepAlive = (this.constructor as any).keepAlive;
-    this._isolated = (this.constructor as any).isolated;
 
-    this._addons = (this.constructor as any).addons;
+    // Use a type assertion for the constructor to access static properties safely
+    const constructorWithStaticProps = this.constructor as BlocConstructor<this> & BlocStaticProperties;
+
+    this._keepAlive = constructorWithStaticProps.keepAlive;
+    this._isolated = constructorWithStaticProps.isolated;
+    this._addons = constructorWithStaticProps.addons;
+
     this._connectAddons();
   }
 
@@ -183,7 +204,7 @@ export abstract class BlocBase<S = any, P = any> {
    * @param consumerId The unique ID of the consumer being removed
    */
   _removeConsumer = (consumerId: string) => {
-    this._blac.log(`[${this._name}:${this._id}] Removing consumer: ${consumerId}`);
+    this._blac.log(`[${this._name}:${String(this._id ?? 'default_id')}] Removing consumer: ${consumerId}`);
     this._consumers.delete(consumerId);
     this._blac.dispatchEvent(BlacLifecycleEvent.BLOC_CONSUMER_REMOVED, this, { consumerId });
   };
@@ -212,7 +233,7 @@ export abstract class BlocBase<S = any, P = any> {
    * @param oldState The previous state for comparison
    * @param action Optional metadata about what caused the state change
    */
-  _pushState = (newState: S, oldState: S, action?: any): void => {
+  _pushState = (newState: S, oldState: S, action?: unknown): void => {
     this._state = newState;
     this._observer.notify(newState, oldState, action);
     this.lastUpdate = Date.now();

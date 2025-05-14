@@ -8,9 +8,9 @@ import { BlocHookDependencyArrayFn } from './types';
  */
 export type BlacObserver<S> = {
   /** Function to be called when state changes */
-  fn: (newState: S, oldState: S, action?: any) => void | Promise<void>;
+  fn: (newState: S, oldState: S, action?: unknown) => void | Promise<void>;
   /** Optional function to determine if the observer should be notified of state changes */
-  dependencyArray?: BlocHookDependencyArrayFn<any>;
+  dependencyArray?: BlocHookDependencyArrayFn<S>;
   /** Cached state values used for dependency comparison */
   lastState?: unknown[][];
   /** Unique identifier for the observer */
@@ -21,15 +21,15 @@ export type BlacObserver<S> = {
  * A class that manages observers for a Bloc's state changes
  * @template S - The type of state being observed
  */
-export class BlacObservable<S> {
+export class BlacObservable<S = unknown> {
   /** The Bloc instance this observable is associated with */
-  bloc: BlocBase<any, any>;
+  bloc: BlocBase<S>;
 
   /**
    * Creates a new BlacObservable instance
    * @param bloc - The Bloc instance to observe
    */
-  constructor(bloc: BlocBase<any, any>) {
+  constructor(bloc: BlocBase<S>) {
     this.bloc = bloc;
   }
 
@@ -64,7 +64,9 @@ export class BlacObservable<S> {
         ? observer.dependencyArray(this.bloc.state, this.bloc.state)
         : [];
     }
-    return () => this.unsubscribe(observer);
+    return () => {
+      this.unsubscribe(observer);
+    }
   }
 
   /**
@@ -82,12 +84,12 @@ export class BlacObservable<S> {
    * @param oldState - The previous state value
    * @param action - Optional action that triggered the state change
    */
-  notify(newState: S, oldState: S, action?: any) {
+  notify(newState: S, oldState: S, action?: unknown) {
     this._observers.forEach((observer) => {
       let shouldUpdate = false;
 
       if (observer.dependencyArray) {
-        let lastDependencyCheck = observer.lastState || [];
+        const lastDependencyCheck = observer.lastState || [];
         const newDependencyCheck = observer.dependencyArray(newState, oldState);
 
         for (let o = 0; o < newDependencyCheck.length; o++) {
@@ -107,7 +109,7 @@ export class BlacObservable<S> {
       }
 
       if (shouldUpdate) {
-        return observer.fn(newState, oldState, action);
+        void observer.fn(newState, oldState, action);
       }
     });
   }
