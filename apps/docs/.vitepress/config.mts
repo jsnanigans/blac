@@ -116,7 +116,7 @@ export default withMermaid({
 
       // --- Fonts - aligning with common VitePress/modern web defaults ---
       fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif',
-      fontSize: '16px',               // Standard readable size
+      fontSize: '22px',               // Standard readable size
     }
   },
 
