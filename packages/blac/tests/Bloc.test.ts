@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Blac } from '../src/Blac';
 import { Bloc } from '../src/Bloc'; // Adjust path as needed
 
@@ -122,14 +122,9 @@ describe('Bloc', () => {
     testBloc = new TestBloc(initialState);
     // Reset spies for Blac static methods before each test
     vi.restoreAllMocks(); // Or more targeted: vi.mocked(Blac.log).mockClear(), etc. if using vi.mock
-    Blac.enableLog = true; // <--- ENABLE LOGGING
     pushStateSpy = vi.spyOn(testBloc, '_pushState');
     errorSpy = vi.spyOn(Blac, 'error').mockImplementation(() => {}); // Mock implementation
     warnSpy = vi.spyOn(Blac, 'warn').mockImplementation(() => {});   // Mock implementation
-  });
-
-  afterEach(() => {
-    Blac.enableLog = false; // <--- DISABLE LOGGING AFTER EACH TEST
   });
 
   describe('constructor and on() registration', () => {
