@@ -3,7 +3,7 @@
     "target": "esnext",
     "module": "esnext",
     "lib": ["esnext", "dom"],
-    "jsx": "react",
+    "jsx": "react-jsx",
     "sourceMap": true,
     "outDir": "dist",
     "strict": true,
@@ -16,6 +16,6 @@
     "resolveJsonModule": true,
     "types": ["vitest/globals", "@testing-library/jest-dom"]
   },
-  "include": ["@testing-library/react", "src", "tests"],
+  "include": ["src", "tests"],
   "exclude": ["publish.ts", "dev.ts"]
 }

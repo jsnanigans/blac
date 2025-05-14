@@ -49,7 +49,6 @@ export interface BlocHookOptions<B extends BlocBase<any>> {
  * @param {T} s - Current state
  * @returns {Array<Array<T>>} Dependency array containing the entire state
  */
-const defaultDependencySelector: BlocHookDependencyArrayFn<any> = (s) => [[s]];
 
 /**
  * React hook for integrating with Blac state management
@@ -148,7 +147,8 @@ export default function useBloc<B extends BlocConstructor<BlocBase<any>>>(
 
     // For primitive states, use default selector
     if (typeof newState !== 'object') {
-      return defaultDependencySelector(newState, oldState);
+      // Default behavior for primitive states: re-render if the state itself changes.
+      return [[newState]];
     }
 
     // For object states, track which properties were actually used

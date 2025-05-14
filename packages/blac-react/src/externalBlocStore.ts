@@ -50,6 +50,9 @@ const externalBlocStore = <
   dependencyArray: BlocHookDependencyArrayFn<BlocState<B>>,
   rid: string,
 ): ExternalStore<B> => {
+  // TODO: Revisit this type assertion. Ideally, 'resolvedBloc' should conform to a type
+  // that guarantees '_observer' and 'state' properties without needing 'as unknown as ...'.
+  // This might require adjustments in the core @blac/core types.
   const asBlocBase = resolvedBloc as unknown as BlocBase<BlocState<B>>;
   return {
     subscribe: (listener: (state: BlocState<B>) => void) => {
