@@ -11,20 +11,20 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
-import { Route as DocsImport } from './routes/docs'
 import { Route as DemoImport } from './routes/demo'
-import { Route as IndexImport } from './routes/index'
-import { Route as DocsIndexImport } from './routes/docs/index'
-import { Route as DocsIntroductionImport } from './routes/docs/introduction'
-import { Route as DocsInstallationImport } from './routes/docs/installation'
-import { Route as DocsCoreConceptsImport } from './routes/docs/core-concepts'
-import { Route as DemoPetfinderImport } from './routes/demo/petfinder'
-import { Route as DemoInstanceManagementImport } from './routes/demo/instance-management'
-import { Route as DemoDependencyTrackingImport } from './routes/demo/dependency-tracking'
 import { Route as DemoCounterImport } from './routes/demo/counter'
+import { Route as DemoDependencyTrackingImport } from './routes/demo/dependency-tracking'
+import { Route as DemoInstanceManagementImport } from './routes/demo/instance-management'
+import { Route as DemoPetfinderImport } from './routes/demo/petfinder'
+import { Route as DocsImport } from './routes/docs'
 import { Route as DocsBlacReactUseBlocImport } from './routes/docs/blac-react/use-bloc'
-import { Route as DocsBlacNextCubitImport } from './routes/docs/blac-next/cubit'
-import { Route as DocsBlacNextBlocImport } from './routes/docs/blac-next/bloc'
+import { Route as DocsBlacNextBlocImport } from './routes/docs/blac/bloc'
+import { Route as DocsBlacNextCubitImport } from './routes/docs/blac/cubit'
+import { Route as DocsCoreConceptsImport } from './routes/docs/core-concepts'
+import { Route as DocsIndexImport } from './routes/docs/index'
+import { Route as DocsInstallationImport } from './routes/docs/installation'
+import { Route as DocsIntroductionImport } from './routes/docs/introduction'
+import { Route as IndexImport } from './routes/index'
 
 // Create/Update Routes
 
@@ -101,14 +101,14 @@ const DocsBlacReactUseBlocRoute = DocsBlacReactUseBlocImport.update({
 } as any)
 
 const DocsBlacNextCubitRoute = DocsBlacNextCubitImport.update({
-  id: '/blac-next/cubit',
-  path: '/blac-next/cubit',
+  id: '/blac/cubit',
+  path: '/blac/cubit',
   getParentRoute: () => DocsRoute,
 } as any)
 
 const DocsBlacNextBlocRoute = DocsBlacNextBlocImport.update({
-  id: '/blac-next/bloc',
-  path: '/blac-next/bloc',
+  id: '/blac/bloc',
+  path: '/blac/bloc',
   getParentRoute: () => DocsRoute,
 } as any)
 
@@ -193,17 +193,17 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocsIndexImport
       parentRoute: typeof DocsImport
     }
-    '/docs/blac-next/bloc': {
-      id: '/docs/blac-next/bloc'
-      path: '/blac-next/bloc'
-      fullPath: '/docs/blac-next/bloc'
+    '/docs/blac/bloc': {
+      id: '/docs/blac/bloc'
+      path: '/blac/bloc'
+      fullPath: '/docs/blac/bloc'
       preLoaderRoute: typeof DocsBlacNextBlocImport
       parentRoute: typeof DocsImport
     }
-    '/docs/blac-next/cubit': {
-      id: '/docs/blac-next/cubit'
-      path: '/blac-next/cubit'
-      fullPath: '/docs/blac-next/cubit'
+    '/docs/blac/cubit': {
+      id: '/docs/blac/cubit'
+      path: '/blac/cubit'
+      fullPath: '/docs/blac/cubit'
       preLoaderRoute: typeof DocsBlacNextCubitImport
       parentRoute: typeof DocsImport
     }
@@ -269,8 +269,8 @@ export interface FileRoutesByFullPath {
   '/docs/installation': typeof DocsInstallationRoute
   '/docs/introduction': typeof DocsIntroductionRoute
   '/docs/': typeof DocsIndexRoute
-  '/docs/blac-next/bloc': typeof DocsBlacNextBlocRoute
-  '/docs/blac-next/cubit': typeof DocsBlacNextCubitRoute
+  '/docs/blac/bloc': typeof DocsBlacNextBlocRoute
+  '/docs/blac/cubit': typeof DocsBlacNextCubitRoute
   '/docs/blac-react/use-bloc': typeof DocsBlacReactUseBlocRoute
 }
 
@@ -285,8 +285,8 @@ export interface FileRoutesByTo {
   '/docs/installation': typeof DocsInstallationRoute
   '/docs/introduction': typeof DocsIntroductionRoute
   '/docs': typeof DocsIndexRoute
-  '/docs/blac-next/bloc': typeof DocsBlacNextBlocRoute
-  '/docs/blac-next/cubit': typeof DocsBlacNextCubitRoute
+  '/docs/blac/bloc': typeof DocsBlacNextBlocRoute
+  '/docs/blac/cubit': typeof DocsBlacNextCubitRoute
   '/docs/blac-react/use-bloc': typeof DocsBlacReactUseBlocRoute
 }
 
@@ -303,8 +303,8 @@ export interface FileRoutesById {
   '/docs/installation': typeof DocsInstallationRoute
   '/docs/introduction': typeof DocsIntroductionRoute
   '/docs/': typeof DocsIndexRoute
-  '/docs/blac-next/bloc': typeof DocsBlacNextBlocRoute
-  '/docs/blac-next/cubit': typeof DocsBlacNextCubitRoute
+  '/docs/blac/bloc': typeof DocsBlacNextBlocRoute
+  '/docs/blac/cubit': typeof DocsBlacNextCubitRoute
   '/docs/blac-react/use-bloc': typeof DocsBlacReactUseBlocRoute
 }
 
@@ -322,8 +322,8 @@ export interface FileRouteTypes {
     | '/docs/installation'
     | '/docs/introduction'
     | '/docs/'
-    | '/docs/blac-next/bloc'
-    | '/docs/blac-next/cubit'
+    | '/docs/blac/bloc'
+    | '/docs/blac/cubit'
     | '/docs/blac-react/use-bloc'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -337,8 +337,8 @@ export interface FileRouteTypes {
     | '/docs/installation'
     | '/docs/introduction'
     | '/docs'
-    | '/docs/blac-next/bloc'
-    | '/docs/blac-next/cubit'
+    | '/docs/blac/bloc'
+    | '/docs/blac/cubit'
     | '/docs/blac-react/use-bloc'
   id:
     | '__root__'
@@ -353,8 +353,8 @@ export interface FileRouteTypes {
     | '/docs/installation'
     | '/docs/introduction'
     | '/docs/'
-    | '/docs/blac-next/bloc'
-    | '/docs/blac-next/cubit'
+    | '/docs/blac/bloc'
+    | '/docs/blac/cubit'
     | '/docs/blac-react/use-bloc'
   fileRoutesById: FileRoutesById
 }
@@ -405,8 +405,8 @@ export const routeTree = rootRoute
         "/docs/installation",
         "/docs/introduction",
         "/docs/",
-        "/docs/blac-next/bloc",
-        "/docs/blac-next/cubit",
+        "/docs/blac/bloc",
+        "/docs/blac/cubit",
         "/docs/blac-react/use-bloc"
       ]
     },
@@ -442,12 +442,12 @@ export const routeTree = rootRoute
       "filePath": "docs/index.tsx",
       "parent": "/docs"
     },
-    "/docs/blac-next/bloc": {
-      "filePath": "docs/blac-next/bloc.tsx",
+    "/docs/blac/bloc": {
+      "filePath": "docs/blac/bloc.tsx",
       "parent": "/docs"
     },
-    "/docs/blac-next/cubit": {
-      "filePath": "docs/blac-next/cubit.tsx",
+    "/docs/blac/cubit": {
+      "filePath": "docs/blac/cubit.tsx",
       "parent": "/docs"
     },
     "/docs/blac-react/use-bloc": {

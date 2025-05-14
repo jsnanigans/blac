@@ -1,5 +1,4 @@
-import { createFileRoute, Outlet, Link } from '@tanstack/react-router';
-import { useMatchRoute } from '@tanstack/react-router';
+import { createFileRoute, Link, Outlet, useMatchRoute } from '@tanstack/react-router';
 import { TableOfContents } from '../components/TableOfContents';
 
 export const Route = createFileRoute('/docs')({
@@ -76,8 +75,8 @@ function DocsLayout() {
                 Blac Next
               </h3>
               <ul className="space-y-2">
-                <li><DocLink to="/docs/blac-next/cubit">Cubit</DocLink></li>
-                <li><DocLink to="/docs/blac-next/bloc">Bloc</DocLink></li>
+                <li><DocLink to="/docs/blac/cubit">Cubit</DocLink></li>
+                <li><DocLink to="/docs/blac/bloc">Bloc</DocLink></li>
                 <li><DocLink isDisabled={true} to="">BlocBase</DocLink></li>
                 <li><DocLink isDisabled={true} to="">BlacObserver</DocLink></li>
                 <li><DocLink isDisabled={true} to="">Plugins</DocLink></li>

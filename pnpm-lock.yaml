@@ -40,7 +40,7 @@ importers:
     dependencies:
       '@blac/core':
         specifier: workspace:*
-        version: link:../../packages/blac-next
+        version: link:../../packages/blac
       '@blac/react':
         specifier: workspace:*
         version: link:../../packages/blac-react
@@ -137,7 +137,7 @@ importers:
         specifier: ^1.6.3
         version: 1.6.3(@algolia/client-search@5.21.0)(@types/node@20.12.14)(@types/react@18.3.18)(nprogress@0.2.0)(postcss@8.4.49)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(search-insights@2.17.3)(terser@5.39.0)(typescript@5.8.3)
 
-  packages/blac-next:
+  packages/blac:
     devDependencies:
       '@testing-library/jest-dom':
         specifier: ^6.6.3
@@ -168,7 +168,7 @@ importers:
     dependencies:
       '@blac/core':
         specifier: workspace:*
-        version: link:../blac-next
+        version: link:../blac
       react:
         specifier: ^18.0.0
         version: 18.3.1

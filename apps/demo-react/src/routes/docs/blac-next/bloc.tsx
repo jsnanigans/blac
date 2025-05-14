@@ -1,7 +1,7 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { DocSection, DocNote, DocCode, DocFeatureGrid, DocFeature, CyberpunkStyles } from '../../../components/docs/DocComponents'
+import { createFileRoute } from '@tanstack/react-router';
+import { CyberpunkStyles, DocCode, DocFeature, DocFeatureGrid, DocNote, DocSection } from '../../../components/docs/DocComponents';
 
-export const Route = createFileRoute('/docs/blac-next/bloc')({
+export const Route = createFileRoute('/docs/blac/bloc')({
   component: BlocPage,
 })
 

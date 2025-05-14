@@ -1,7 +1,7 @@
-import { Blac, Cubit } from '@blac/core';
 import React, { FC } from 'react';
 import { renderToString } from 'react-dom/server';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { Blac, Cubit } from '../../blac/src';
 import { useBloc } from '../src';
 
 // Create a wrapper around renderToString for testing

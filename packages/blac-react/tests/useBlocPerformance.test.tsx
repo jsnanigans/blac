@@ -1,8 +1,8 @@
-import { Blac, Cubit } from '@blac/core';
 import { act, render } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React, { FC, useCallback } from 'react';
 import { beforeEach, describe, expect, test } from 'vitest';
+import { Blac, Cubit } from '../../blac/src';
 import { useBloc } from '../src';
 
 // Define a complex state structure for testing

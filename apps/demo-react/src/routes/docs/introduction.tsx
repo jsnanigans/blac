@@ -1,6 +1,5 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { Link } from '@tanstack/react-router';
-import { DocSection, DocNote, DocCode, DocFeatureGrid, DocFeature, CyberpunkStyles } from '../../components/docs/DocComponents';
+import { createFileRoute, Link } from '@tanstack/react-router';
+import { CyberpunkStyles, DocCode, DocFeature, DocFeatureGrid, DocNote, DocSection } from '../../components/docs/DocComponents';
 
 export const Route = createFileRoute('/docs/introduction')({
   component: IntroductionPage,
@@ -461,7 +460,7 @@ function Counter() {
             <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Learn the fundamental building blocks of Blac</p>
           </Link>
           
-          <Link to="/docs/blac-next/cubit" className="group block p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm hover:shadow-md transition-all hover:border-purple-300 dark:hover:border-purple-700">
+          <Link to="/docs/blac/cubit" className="group block p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm hover:shadow-md transition-all hover:border-purple-300 dark:hover:border-purple-700">
             <div className="flex items-center">
               <div className="bg-purple-100 dark:bg-purple-900/40 p-2 rounded-md mr-3">
                 <svg className="w-5 h-5 text-purple-500 dark:text-purple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { DocSection, DocNote, DocCode, DocFeatureGrid, DocFeature } from '../../../components/docs/DocComponents';
+import { DocCode, DocFeature, DocFeatureGrid, DocNote, DocSection } from '../../../components/docs/DocComponents';
 
 export const Route = createFileRoute('/docs/blac-react/use-bloc')({
   component: UseBlocPage,
@@ -28,7 +28,7 @@ function UseBlocPage() {
 
         <DocNote>
           <p>
-            The <code>useBloc</code> hook is exported from the <code>@blac/react</code> package, which should be installed alongside the core <code>blac-next</code> package.
+            The <code>useBloc</code> hook is exported from the <code>@blac/react</code> package, which should be installed alongside the core <code>blac</code> package.
           </p>
         </DocNote>
       </DocSection>

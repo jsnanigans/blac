@@ -1,9 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router';
 import {
-  DocCode,
-  DocFeatureGrid,
-  DocNote,
-  DocSection,
+    DocCode,
+    DocFeatureGrid,
+    DocNote,
+    DocSection,
 } from '../../components/docs/DocComponents';
 
 export const Route = createFileRoute('/docs/installation')({
@@ -330,7 +330,7 @@ export function CounterComponent() {
               application.
             </p>
             <a
-              href="/docs/blac-next/cubit"
+              href="/docs/blac/cubit"
               className="inline-block mt-4 text-purple-600 dark:text-purple-400 hover:underline text-sm font-medium"
             >
               Explore Cubits →

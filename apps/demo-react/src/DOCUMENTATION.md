@@ -4,16 +4,16 @@
 
 Blac is a lightweight, flexible state management library for JavaScript/TypeScript applications that focuses on predictable state transitions through a unidirectional data flow. It provides a clean separation between UI components and business logic, making applications easier to maintain, test, and reason about.
 
-This documentation explains how the core packages `blac-next` and `@blac/react` work together to provide an elegant state management solution for React applications, as demonstrated in this demo app.
+This documentation explains how the core packages `blac` and `@blac/react` work together to provide an elegant state management solution for React applications, as demonstrated in this demo app.
 
 ## Core Architecture
 
 Blac consists of two primary packages:
 
-1. **blac-next**: The framework-agnostic core library that implements the state management patterns
+1. **blac**: The framework-agnostic core library that implements the state management patterns
 2. **@blac/react**: React bindings that connect React components to the Blac state management system
 
-### blac-next
+### blac
 
 The core library provides the fundamental state management patterns and abstractions:
 
@@ -541,7 +541,7 @@ optimisticUpdate = async () => {
 ```
 
 **Q: Can I use Blac with other frameworks?**
-A: Yes, the core `blac-next` package is framework-agnostic. Currently there are React bindings available, but you can create bindings for other frameworks.
+A: Yes, the core `blac` package is framework-agnostic. Currently there are React bindings available, but you can create bindings for other frameworks.
 
 **Q: How do I handle complex state shapes?**
 A: For complex state, use the `patch()` method to update only specific parts of the state, and consider splitting large state into multiple focused Blocs. 

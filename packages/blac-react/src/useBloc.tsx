@@ -1,15 +1,6 @@
 /* eslint-disable @typescript-eslint/restrict-template-expressions */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
-    Blac,
-    BlocBaseAbstract,
-    BlocConstructor,
-    BlocGeneric,
-    BlocHookDependencyArrayFn,
-    BlocState,
-    InferPropsFromGeneric
-} from '@blac/core';
-import {
     useEffect,
     useId,
     useLayoutEffect,
@@ -17,6 +8,15 @@ import {
     useRef,
     useSyncExternalStore,
 } from 'react';
+import {
+    Blac,
+    BlocBaseAbstract,
+    BlocConstructor,
+    BlocGeneric,
+    BlocHookDependencyArrayFn,
+    BlocState,
+    InferPropsFromGeneric
+} from '../../blac/src';
 import externalBlocStore from './externalBlocStore';
 
 /**
