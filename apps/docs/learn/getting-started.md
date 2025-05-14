@@ -1,150 +1,189 @@
 # Getting Started
 
-Blac is a collection of packages that work together to provide a complete state management solution:
+Welcome to Blac! This guide will walk you through setting up Blac and creating your first reactive state container.
 
-- `@blac/core` - The core state management engine
-- `@blac/react` - React integration for Blac
+Blac is a collection of packages designed for robust state management:
+
+-   `@blac/core`: The core engine providing `Cubit`, `Bloc`, `BlocBase`, and the underlying instance management logic.
+-   `@blac/react`: The React integration, offering hooks like `useBloc` to connect your components to Blac state containers.
 
 ## Installation
 
+To add Blac to your React project, install the `@blac/react` package. This will automatically include `@blac/core`.
+
 ```bash
-npm install @blac/core @blac/react
+# Using pnpm (recommended for this monorepo)
+pnpm add @blac/react
+
+# Or using npm
+npm install @blac/react
+
+# Or using yarn
+yarn add @blac/react
 ```
 
-## Quick Start
+## Your First Cubit
 
-Here's a simple counter example to get you started:
+Let's start with a `Cubit`, which is the simpler form of a state container in Blac. It exposes methods that directly `emit` new states.
 
-```tsx [CounterBloc.ts]
+Here's a simple counter example:
+
+```tsx
+// 1. Define your Cubit (e.g., in src/cubits/CounterCubit.ts)
 import { Cubit } from '@blac/core';
-import { useBloc } from '@blac/react';
 
-// 1. Create a state container with business logic
-class CounterBloc extends Cubit {
-  constructor() { 
-    // Initialize the state with a count of 0 
+interface CounterState {
+  count: number;
+}
+
+export class CounterCubit extends Cubit<CounterState> {
+  constructor() {
+    // Initialize the state with a count of 0
     super({ count: 0 });
   }
 
-  // Define methods to update the state
+  // Define methods to update the state using `emit`
+  // Remember: methods must be arrow functions!
   increment = () => this.emit({ count: this.state.count + 1 });
   decrement = () => this.emit({ count: this.state.count - 1 });
+  reset = () => this.emit({ count: 0 });
 }
 
-// 2. Create a React component that uses the bloc
-function Counter() {
-  // Connect component to the bloc
-  const [{ count }, bloc] = useBloc(CounterBloc);
-  
+// 2. Use the Cubit in your React component (e.g., in src/components/CounterDisplay.tsx)
+import { useBloc } from '@blac/react';
+import { CounterCubit } from '../cubits/CounterCubit'; // Adjust path as needed
+
+function CounterDisplay() {
+  // Connect component to the Cubit.
+  // useBloc returns a tuple: [currentState, cubitInstance]
+  const [state, counterCubit] = useBloc(CounterCubit);
+
   return (
     <>
-      <h1>Count: {count}</h1>
-      <button onClick={bloc.increment}>Increment</button>
-      <button onClick={bloc.decrement}>Decrement</button>
+      <h1>Count: {state.count}</h1>
+      <button onClick={counterCubit.increment}>Increment</button>
+      <button onClick={counterCubit.decrement}>Decrement</button>
+      <button onClick={counterCubit.reset}>Reset</button>
     </>
   );
 }
+
+export default CounterDisplay;
 ```
 
-That's it! You've just created a simple counter using Blac.
+That's it! You've created a simple counter using a Blac `Cubit`.
 
-## How It Works
+### How It Works
 
-Let's break down what's happening in the code above:
+1.  **`CounterCubit`**: Extends `Cubit` from `@blac/core`.
+    *   Defines its state structure (`CounterState`).
+    *   Sets an initial state in its constructor.
+    *   Provides methods (`increment`, `decrement`, `reset`) that call `this.emit()` with a new state object. `emit` replaces the entire state.
+2.  **`CounterDisplay` Component**: Uses the `useBloc` hook from `@blac/react`.
+    *   `useBloc(CounterCubit)` gets (or creates) an instance of `CounterCubit`.
+    *   It returns an array `[state, counterCubit]`. The `state` object is a reactive proxy that tracks property access.
+    *   The component re-renders automatically and efficiently when `state.count` changes due to a `counterCubit` method call.
 
-1. We create a `CounterBloc` class that extends `Cubit`. This class:
-   - Defines the state structure (`{ count: number }`)
-   - Sets an initial state (`{ count: 0 }`)
-   - Provides methods to update the state (`increment`, `decrement`)
+### Important: Arrow Functions for Methods
 
-2. In our React component, we use the `useBloc` hook to:
-   - Connect to an instance of `CounterBloc`
-   - Get the current state and the bloc instance
-   - Destructure the state to access `count` directly
-   - Connect UI events to bloc methods
-
-3. When a user clicks a button, the corresponding bloc method is called, which updates the state, and React automatically re-renders the component with the new state.
-
-## Important Note on Arrow Functions
-
-⚠️ **Important**: All methods in Bloc or Cubit classes must use arrow function syntax to preserve the `this` context:
+⚠️ **Crucial**: All methods in your `Cubit` (or `Bloc`) classes that interact with `this.state` or `this.emit` (or `this.setState`) **must** use arrow function syntax. This ensures `this` is correctly bound to the instance.
 
 ```tsx
-// ✅ Correct way (will maintain context)
+// ✅ Correct (arrow function)
 increment = () => {
   this.emit({ count: this.state.count + 1 });
 };
 
-// ❌ Incorrect way (will lose 'this' context)
-increment() { 
-  this.emit({ count: this.state.count + 1 });
-}
+// ❌ Incorrect (traditional method syntax - will lose 'this' context)
+// increment() {
+//   this.emit({ count: this.state.count + 1 });
+// }
 ```
 
-## Adding Async Operations
+## Async Operations with Cubits
 
-Let's extend our counter example to include an async operation:
+Cubits can easily handle asynchronous operations. Let's extend our counter to fetch a random count, showcasing loading and error states.
+
+`Cubit` provides a `patch()` method for updating only specific parts of an object state.
 
 ::: code-group
-```tsx [CounterBloc.ts]
-class CounterBloc extends Cubit<{ 
+```tsx [CounterCubit.ts]
+import { Cubit } from '@blac/core';
+
+interface AsyncCounterState {
   count: number;
   isLoading: boolean;
   error: string | null;
-}> {
+}
+
+export class AsyncCounterCubit extends Cubit<AsyncCounterState> {
   constructor() {
-    super({ 
+    super({
       count: 0,
       isLoading: false,
-      error: null
+      error: null,
     });
   }
 
   increment = () => {
+    // `patch` merges the provided object with the current state
     this.patch({ count: this.state.count + 1 });
   };
 
   fetchRandomCount = async () => {
+    this.patch({ isLoading: true, error: null });
     try {
-      this.patch({ isLoading: true, error: null });
-      
-      // Simulate API call
-      const response = await fetch('https://api.example.com/random-number');
-      const data = await response.json();
-      
-      this.patch({ 
-        count: data.number,
-        isLoading: false
+      // Simulate API call (replace with your actual fetch logic)
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate delay
+      const randomNumber = Math.floor(Math.random() * 100);
+      // const response = await fetch('https://api.example.com/random-number');
+      // if (!response.ok) throw new Error('Network response was not ok');
+      // const data = await response.json(); // Assuming API returns { number: ... }
+
+      this.patch({
+        count: randomNumber, // data.number
+        isLoading: false,
       });
     } catch (error) {
-      this.patch({ 
+      this.patch({
         isLoading: false,
-        error: error instanceof Error ? error.message : 'Failed to fetch'
+        error: error instanceof Error ? error.message : 'Failed to fetch random count',
       });
     }
   };
 }
 ```
 
-```tsx [Counter.tsx]
-function Counter() {
-  const [state, bloc] = useBloc(CounterBloc);
-  
+```tsx [CounterDisplay.tsx]
+import { useBloc } from '@blac/react';
+import { AsyncCounterCubit } from '../cubits/AsyncCounterCubit'; // Adjust path
+
+function AsyncCounterDisplay() {
+  const [state, cubit] = useBloc(AsyncCounterCubit);
+
   return (
     <div>
-      <h1>Count: {state.count}</h1>
+      <h2>Count: {state.count}</h2>
       {state.isLoading && <p>Loading...</p>}
-      {state.error && <p className="error">{state.error}</p>}
-      <button onClick={bloc.increment}>Increment</button>
-      <button onClick={bloc.fetchRandomCount}>Fetch Random</button>
+      {state.error && <p style={{ color: 'red' }}>Error: {state.error}</p>}
+      <button onClick={cubit.increment} disabled={state.isLoading}>
+        Increment
+      </button>
+      <button onClick={cubit.fetchRandomCount} disabled={state.isLoading}>
+        {state.isLoading ? 'Fetching...' : 'Fetch Random'}
+      </button>
     </div>
   );
 }
+
+export default AsyncCounterDisplay;
 ```
 :::
 
-Notice how we:
-- Expanded the state to include loading and error states
-- Used `patch()` to update only specific parts of the state
-- Added error handling in the async method
-- Updated the UI to show loading and error states
+Notice in the async example:
+-   The state (`AsyncCounterState`) now includes `isLoading` and `error` fields.
+-   `this.patch()` is used to update parts of the state without needing to spread the rest (`{ ...this.state, isLoading: true }`).
+-   Error handling is included within the `fetchRandomCount` method.
+-   The UI (`AsyncCounterDisplay`) conditionally renders loading/error messages and disables buttons during loading.
+
+This covers the basics of getting started with Blac using `Cubit`. Explore further sections to learn about the more advanced `Bloc` class (with events and reducers), advanced patterns, and API details.

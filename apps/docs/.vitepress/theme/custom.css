@@ -1,0 +1,81 @@
+:root {
+  --vp-c-brand: #61dafb;
+  --vp-c-brand-light: #7de3ff;
+  --vp-c-brand-lighter: #9eeaff;
+  --vp-c-brand-dark: #4db8d5;
+  --vp-c-brand-darker: #3990a8;
+  
+  --vp-c-brand-accent: #ff00ff;
+  
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: linear-gradient(
+    120deg,
+    #61dafb 30%,
+    #ff00ff
+  );
+  
+  --vp-c-bg-alt: #f9f9f9;
+  --vp-c-bg-soft: #f3f3f3;
+}
+
+.dark {
+  --vp-c-bg-alt: #1a1a1a;
+  --vp-c-bg-soft: #242424;
+}
+
+/* Code block styling */
+html.dark .vp-doc div[class*='language-'] {
+  background-color: #1a1a1a;
+}
+
+/* Logo animation */
+.VPNavBarTitle .logo {
+  transition: transform 0.3s ease;
+}
+
+.VPNavBarTitle:hover .logo {
+  transform: rotate(10deg);
+}
+
+/* Button styling */
+.VPButton.brand {
+  border-color: var(--vp-c-brand);
+  color: white;
+  background-color: var(--vp-c-brand);
+}
+
+.VPButton.brand:hover {
+  border-color: var(--vp-c-brand-light);
+  background-color: var(--vp-c-brand-light);
+}
+
+/* Custom block styling */
+.custom-block.tip {
+  border-color: var(--vp-c-brand);
+}
+
+.custom-block.warning {
+  border-color: var(--vp-c-brand-accent);
+}
+
+/* Feature section */
+.VPFeature {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.VPFeature:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+} 
+
+/* .mermaid .labelBkg {
+  background: transparent !important;
+}
+
+.mermaid .edgeLabel {
+  background: transparent !important;
+}
+
+.mermaid .edgeLabel p {
+  background: transparent !important;
+} */

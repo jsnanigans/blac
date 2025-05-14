@@ -1,158 +1,168 @@
 # Core Concepts
 
+Blac (Bloc + React) is designed to help you manage state in your applications effectively by promoting a clear separation of concerns and a unidirectional data flow.
+
 ## The Blac Architecture
 
-Blac implements a unidirectional data flow pattern that encourages clean separation of business logic from UI components. The core architecture consists of three main parts:
+Blac's architecture encourages separating your application into three main parts:
 
-1. **UI Components**: Pure renderers that display state and dispatch user intentions
-2. **Blocs/Cubits**: State containers that handle business logic and state transitions
-3. **State**: Immutable data that flows from Blocs to UI components
+1.  **UI Components**: Responsible for rendering the state and capturing user input/intentions.
+2.  **State Containers (`Cubit` or `Bloc`)**: Hold the application state and contain the business logic to manage state transitions.
+3.  **State**: Immutable data objects that represent the condition of your application at any given time. State flows from your containers to your UI.
 
-This separation makes your code more testable, maintainable, and easier to reason about.
+This separation enhances testability, maintainability, and overall code clarity.
 
-## State Containers
+## State Containers: `Cubit` and `Bloc`
 
-Blac provides three main state container classes, each with increasing levels of sophistication:
+Blac offers two primary types of state containers, both built upon a common `BlocBase`:
 
-### BlocBase
+### `BlocBase`
 
-`BlocBase` is the abstract foundation for all state containers in Blac. It provides core functionality like:
+`BlocBase` is the abstract foundation for all state containers. It provides core functionalities like:
 
-- State management and updates
-- Observer notification system
-- Lifecycle event handling
-- Instance management
+-   Internal state management and update mechanisms (`_state`, `_pushState`).
+-   An observer notification system (`_observer`).
+-   Lifecycle event dispatching through the main `Blac` instance.
+-   Instance management (ID, isolation, keep-alive status).
 
-While you won't typically extend BlocBase directly, understanding it helps when working with Blac at an advanced level. See the [Core Classes API](/api/core-classes) for more details.
+You typically won't extend `BlocBase` directly. Instead, you'll use `Cubit` or `Bloc` (or `createBloc`). Refer to the [Core Classes API](/api/core-classes) for deeper details.
 
-### Cubit
+### `Cubit<State, Props>`
 
-A `Cubit` is the simplest form of state container in Blac. It manages state changes through methods that call `emit()` or `patch()`:
+A `Cubit` is the simpler of the two. It exposes methods that directly cause state changes by calling `this.emit()` or `this.patch()`.
+
+-   `emit(newState: State)`: Replaces the entire current state with `newState`.
+-   `patch(partialState: Partial<State>)`: Merges `partialState` with the current state (if the state is an object).
 
 ```tsx
-class CounterCubit extends Cubit<{ count: number }> {
+import { Cubit } from '@blac/core';
+
+interface CounterState {
+  count: number;
+  lastAction?: string;
+}
+
+class CounterCubit extends Cubit<CounterState> {
   constructor() {
-    super({ count: 0, factor: 1 });
+    super({ count: 0 }); // Initial state
   }
 
   increment = () => {
-    this.emit({ 
-      ...this.state,
-      count: this.state.count + 1 
-    });
+    // 'emit' replaces the whole state
+    this.emit({ count: this.state.count + 1, lastAction: 'incremented' });
   };
-  
-  // Or using patch for partial updates
-  incrementBy = (amount: number) => {
-    this.patch({ count: this.state.count + amount });
+
+  decrement = () => {
+    // 'patch' merges with the existing state (if state is an object)
+    this.patch({ count: this.state.count - 1, lastAction: 'decremented' });
   };
+
+  reset = () => {
+    this.emit({ count: 0, lastAction: 'reset' });
+  }
 }
 ```
+Cubits are excellent for straightforward state management. See [Cubit API details](/api/core-classes#cubit-s-p).
 
-Cubits are perfect for simpler features where you don't need the formality of actions and reducers. For more on Cubit, see the [Core Classes API](/api/core-classes#cubits-p).
+### `Bloc<State, Action, Props>`
 
-### Bloc
+A `Bloc` is more structured, processing `Action`s through a `reducer` function to produce new `State`.
 
-A `Bloc` is a more sophisticated state container that follows the reducer pattern, handling state changes in response to actions:
+-   `add(action: Action)`: Dispatches an action to the `reducer`.
+-   `reducer(action: Action, currentState: State): State`: A pure function that defines how the state changes in response to actions.
 
 ```tsx
-// Define actions
-type CounterAction = 
-  | { type: 'increment' }
-  | { type: 'decrement' }
-  | { type: 'reset' };
+import { Bloc } from '@blac/core';
 
-class CounterBloc extends Bloc<{ count: number }, CounterAction> {
+// 1. Define State and Actions
+interface CounterState {
+  count: number;
+}
+
+type CounterAction =
+  | { type: 'INCREMENT' }
+  | { type: 'DECREMENT' }
+  | { type: 'RESET' };
+
+// 2. Create the Bloc
+class CounterBloc extends Bloc<CounterState, CounterAction> {
   constructor() {
-    super({ count: 0 });
+    super({ count: 0 }); // Initial state
   }
 
-  // Reducer function
-  reducer = (action: CounterAction, state: { count: number }) => {
+  // 3. Implement the reducer
+  reducer = (action: CounterAction, state: CounterState): CounterState => {
     switch (action.type) {
-      case 'increment':
-        return { count: state.count + 1 };
-      case 'decrement':
-        return { count: state.count - 1 };
-      case 'reset':
-        return { count: 0 };
+      case 'INCREMENT':
+        return { ...state, count: state.count + 1 };
+      case 'DECREMENT':
+        return { ...state, count: state.count - 1 };
+      case 'RESET':
+        return { ...state, count: 0 };
       default:
         return state;
     }
   };
 
-  // Methods to dispatch actions
-  increment = () => this.add({ type: 'increment' });
-  decrement = () => this.add({ type: 'decrement' });
-  reset = () => this.add({ type: 'reset' });
+  // 4. (Optional) Helper methods to dispatch actions
+  increment = () => this.add({ type: 'INCREMENT' });
+  decrement = () => this.add({ type: 'DECREMENT' });
+  reset = () => this.add({ type: 'RESET' });
 }
 ```
+Blocs are ideal for complex state logic where transitions need to be more explicit. See [Bloc API details](/api/core-classes#bloc-s-a-p).
 
-Blocs are ideal for complex features with multiple state transitions or when you want a more formal approach to state management. For more on Bloc, see the [Core Classes API](/api/core-classes#blocs-a-p).
+## State Updates & Reactivity
 
-## Key Methods
+When a `Cubit` calls `emit`/`patch`, or a `Bloc`'s reducer produces a new state after an `add` call, the state container updates its internal state and notifies its observers.
 
-All state containers provide key methods for state management:
+In React applications, the `useBloc` hook subscribes your components to these updates, triggering re-renders efficiently when relevant parts of the state change.
 
-### Cubit State Update Methods
+## React Integration: `useBloc`
 
-- `emit()`: Completely replaces the current state with a new state object
-- `patch()`: Updates specific properties of the state while preserving others
-
-### Bloc State Update Methods
-
-- `add()`: Dispatches an action to the reducer
-
-### Event Subscription
-
-- `on()`: Subscribes to state changes and other events
-
-For detailed information on these methods, see the [Key Methods API](/api/key-methods).
-
-## React Integration
-
-Blac provides React hooks to connect components to state containers:
-
-### useBloc
-
-The primary hook for connecting a component to a Bloc or Cubit:
+The primary hook for connecting React components to `Cubit` or `Bloc` instances is `useBloc` from `@blac/react`.
 
 ```tsx
-function Counter() {
-  const [state, bloc] = useBloc(CounterBloc);
-  
+import { useBloc } from '@blac/react';
+// Assuming CounterCubit or CounterBloc is defined elsewhere
+
+function CounterComponent() {
+  // Returns [currentState, instance]
+  const [state, counterContainer] = useBloc(CounterCubit); // Or useBloc(CounterBloc)
+
   return (
     <div>
       <h1>Count: {state.count}</h1>
-      <button onClick={bloc.increment}>Increment</button>
+      {/* Call methods directly on the instance */} 
+      <button onClick={counterContainer.increment}>Increment</button>
     </div>
   );
 }
 ```
 
-The `useBloc` hook offers several powerful features:
+Key features of `useBloc`:
 
-- Automatic property tracking for optimized rendering
-- Support for shared, isolated, and persistent state
-- Dependency injection through props
-- Custom instance management with IDs
+-   **Automatic Property Tracking**: Efficiently re-renders components only when the state properties they *actually access* change.
+-   **Instance Management**: Handles creation and retrieval of shared or isolated state container instances.
+-   **Props for Blocs**: Allows passing props to your `Bloc` or `Cubit` constructors.
 
-For more on React integration, see the [React Hooks API](/api/react-hooks).
+For more details, see the [React Hooks API](/api/react-hooks).
 
-## State Management Patterns
+## Instance Management Patterns
 
-Blac offers three key state management patterns to suit different needs:
+Blac offers flexibility in how state container instances are managed:
 
-1. **Shared State**: The default pattern where all components share a single Bloc instance
-2. **Isolated State**: Each component gets its own state instance, set with `static isolated = true`
-3. **Persistent State**: State persists even when no components are using it, set with `static keepAlive = true`
+1.  **Shared State (Default)**: Components requesting the same `Bloc`/`Cubit` class (by default, using its name as ID) share a single instance and its state.
+2.  **Isolated State**: Each component gets its own unique instance. Achieved by setting `static isolated = true;` on your `Bloc`/`Cubit` class, or by providing a unique `id` via `useBloc` options.
+3.  **In-Memory Persistence (`keepAlive`)**: Prevents a shared `Bloc`/`Cubit` from being disposed when no components are listening if `static keepAlive = true;` is set on the class.
+4.  **Storage Persistence (Addons)**: For persisting state to `localStorage`, `sessionStorage`, etc., use addons like the built-in `Persist` addon.
 
-These patterns give you flexibility in how state is shared and managed throughout your application. You'll learn more about these patterns in the [State Management Patterns](/learn/state-management-patterns) section.
+Learn more in the [State Management Patterns](/learn/state-management-patterns) section.
 
 ## Next Steps
 
-Now that you understand the core concepts, you can:
+With these core concepts in mind, you are ready to:
 
-- Explore the [Blac Pattern](/learn/blac-pattern) to understand the recommended architecture
-- Check out the [Best Practices](/learn/best-practices) for writing effective Blac code
-- Dive into the [API Reference](/api/core-classes) for detailed documentation 
+-   Delve into the [Blac Pattern](/learn/blac-pattern) for a deeper architectural understanding.
+-   Review [Best Practices](/learn/best-practices) for writing effective and maintainable Blac code.
+-   Consult the full [API Reference](/api/core-classes) for detailed documentation on all classes and methods. 

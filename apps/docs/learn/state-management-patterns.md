@@ -1,175 +1,232 @@
 # State Management Patterns
 
-Blac provides three powerful state management patterns to fit different scenarios in your application. Each pattern offers different tradeoffs in terms of state sharing, isolation, and persistence.
+Blac offers several powerful patterns for managing state container instances and their lifecycles. Understanding these patterns will help you choose the best approach for different scenarios in your application, balancing state sharing, isolation, and persistence needs.
 
 ## 1. Shared State (Default)
 
-By default, Blac creates a single instance of a Bloc/Cubit class that is shared across all components that use it. This is perfect for global state or state that needs to be synchronized across multiple components.
+By default, when you request a `Bloc` or `Cubit` using `useBloc(MyBlocClass)`, Blac provides a single, shared instance of that class (identified by its class name). All components requesting `MyBlocClass` will interact with this same instance and its state.
+
+This is the most common pattern and is ideal for global state or any state that needs to be synchronized across multiple parts of your application.
 
 ### Implementation
 
-```tsx
-// No special configuration needed - this is the default behavior
-class UserBloc extends Bloc<UserState, UserAction> {
+No special configuration is needed on your `Bloc` or `Cubit` class for shared state; it's the default.
+
+```typescript
+// src/blocs/UserBloc.ts
+import { Bloc } from '@blac/core';
+// Define UserState, UserAction, initialUserState appropriately
+
+export class UserBloc extends Bloc<UserState, UserAction> {
   constructor() {
     super(initialUserState);
   }
-  // ...
+  // ... business logic ...
 }
 ```
 
 ### Usage
 
 ```tsx
-// Component A
-function ComponentA() {
-  const [state, bloc] = useBloc(UserBloc);
-  // Uses the shared UserBloc instance
-  // ...
+// src/components/ProfileHeader.tsx
+import { useBloc } from '@blac/react';
+import { UserBloc } from '../blocs/UserBloc';
+
+function ProfileHeader() {
+  const [userState] = useBloc(UserBloc);
+  return <h1>Welcome, {userState.name}</h1>;
 }
 
-// Component B
-function ComponentB() {
-  const [state, bloc] = useBloc(UserBloc);
-  // Uses the same UserBloc instance as ComponentA
+// src/components/SettingsPage.tsx
+import { useBloc } from '@blac/react';
+import { UserBloc } from '../blocs/UserBloc';
+
+function SettingsPage() {
+  const [userState, userBloc] = useBloc(UserBloc);
+  // Both ProfileHeader and SettingsPage use the SAME UserBloc instance.
   // ...
 }
 ```
 
 ### Best For
 
-- Global application state (user info, theme, etc.)
-- State that needs to be synchronized between components
-- Features where multiple components need to interact with the same data
-
-For more details on implementing shared state, see the [Core Classes API](/api/core-classes).
+-   Global application state (e.g., user authentication, theme, global settings).
+-   State that needs to be consistently synchronized between distinct components.
+-   Features where multiple components interact with or display the same slice of data.
 
 ## 2. Isolated State
 
-When you need each component to have its own independent state, you can set the `isolated` static property on the Bloc/Cubit class. This creates a new instance of the Bloc/Cubit for each component that uses it.
+There are times when you need each component (or a specific part of your UI) to have its own independent instance of a `Bloc` or `Cubit`. This is achieved through isolated state.
 
-### Implementation
+### Implementation Methods
 
-```tsx
-class CounterBloc extends Cubit<{ count: number }> {
-  // This makes each component get its own instance
-  static isolated = true;
+1.  **Static Property**: Set `static isolated = true;` on your `Bloc` or `Cubit` class. Every `useBloc(MyIsolatedBloc)` call will then result in a new instance tied to the calling component's lifecycle.
 
-  constructor() {
-    super({ count: 0 });
-  }
+    ```typescript
+    // src/blocs/WidgetSettingsCubit.ts
+    import { Cubit } from '@blac/core';
 
-  increment = () => {
-    this.emit({ count: this.state.count + 1 });
-  };
-}
-```
+    interface SettingsState { color: string; fontSize: number; }
 
-### Usage
+    export class WidgetSettingsCubit extends Cubit<SettingsState> {
+      static isolated = true; // Each component gets its own instance
 
-```tsx
-// Component A
-function ComponentA() {
-  const [state, bloc] = useBloc(CounterBloc);
-  // Has its own isolated CounterBloc instance
-  // ...
-}
+      constructor(initialColor = 'blue') {
+        super({ color: initialColor, fontSize: 12 });
+      }
 
-// Component B
-function ComponentB() {
-  const [state, bloc] = useBloc(CounterBloc);
-  // Has a different isolated CounterBloc instance than ComponentA
-  // ...
-}
-```
+      setColor = (color: string) => this.patch({ color });
+      setFontSize = (size: number) => this.patch({ fontSize: size });
+    }
+    ```
 
-### Best For
+2.  **Dynamic ID with `useBloc`**: Provide a unique `id` string in the `options` argument of `useBloc`.
 
-- Components that need their own independent state
-- Multiple instances of the same component on a page
-- When you want to avoid state conflicts between components
+    ```tsx
+    // src/components/ConfigurableWidget.tsx
+    import { useBloc } from '@blac/react';
+    import { WidgetSettingsCubit } from '../blocs/WidgetSettingsCubit';
 
-To understand how isolation interacts with component lifecycle, check the [React Hooks API](/api/react-hooks).
-
-## 3. Persistent State
-
-Sometimes you need state to persist even when no components are using it. This is useful for background tasks, caching, or maintaining state during navigation. You can achieve this by setting the `keepAlive` static property on your Bloc/Cubit class.
-
-### Implementation
-
-```tsx
-class ThemeCubit extends Cubit<{ theme: 'light' | 'dark' }> {
-  // This makes the instance persist even when no components use it
-  static keepAlive = true;
-  
-  constructor() {
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    super({ theme: savedTheme as 'light' | 'dark' });
-  }
-
-  toggleTheme = () => {
-    const newTheme = this.state.theme === 'light' ? 'dark' : 'light';
-    localStorage.setItem('theme', newTheme);
-    this.emit({ theme: newTheme });
-  };
-}
-```
+    function ConfigurableWidget({ widgetId, initialColor }: { widgetId: string; initialColor?: string }) {
+      // WidgetSettingsCubit does NOT need `static isolated = true` for this to work.
+      // The unique `id` ensures a distinct instance for this widgetId.
+      const [settings, settingsCubit] = useBloc(WidgetSettingsCubit, {
+        id: `widget-settings-${widgetId}`,
+        props: initialColor // Assuming constructor takes props for initialColor
+      });
+      // ... render widget based on settings ...
+    }
+    ```
 
 ### Usage
 
+If `WidgetSettingsCubit` has `static isolated = true;`:
+
 ```tsx
-function ThemeToggle() {
-  const [state, bloc] = useBloc(ThemeCubit);
-  
+// Two instances of MyWidget will have separate WidgetSettingsCubit states
+function App() {
   return (
-    <button onClick={bloc.toggleTheme}>
-      Switch to {state.theme === 'light' ? 'dark' : 'light'} mode
-    </button>
+    <>
+      <MyWidget /> 
+      <MyWidget />
+    </>
   );
 }
 ```
 
-Even when the ThemeToggle component unmounts, the ThemeCubit instance will stay alive, preserving its state.
-
 ### Best For
 
-- State that needs to persist during navigation
-- Background tasks and data fetching
-- Application-wide settings that are not always used by components
-- Caching data across component mount/unmount cycles
+-   Components that require their own, non-shared state (e.g., a reusable form Bloc, settings for multiple instances of a widget on one page).
+-   Avoiding state conflicts when multiple instances of the same component are rendered.
 
-For advanced persistent state patterns, see the [Best Practices](/learn/best-practices) guide.
+## 3. In-Memory Persistence (`keepAlive`)
 
-## Combining Patterns
+Normally, a shared `Bloc` or `Cubit` is disposed of when it no longer has any active listeners (i.e., components using it via `useBloc` have unmounted). If you need a shared instance to persist in memory *even when no components are currently using it*, you can set `static keepAlive = true;`.
 
-You can combine these patterns for more complex scenarios:
+This is useful for caching data, managing background tasks, or maintaining state across navigations where components might unmount and remount later, expecting the state to be preserved.
 
-```tsx
-class FeatureBloc extends Bloc<FeatureState, FeatureAction> {
-  // Both isolated and persistent
-  static isolated = true;
-  static keepAlive = true;
-  
-  // ...
+### Implementation
+
+```typescript
+// src/blocs/DataCacheBloc.ts
+import { Cubit } from '@blac/core';
+
+interface CacheState { data: Record<string, any> | null; isLoading: boolean; }
+
+export class DataCacheBloc extends Cubit<CacheState> {
+  static keepAlive = true; // Instance persists in memory
+
+  constructor() {
+    super({ data: null, isLoading: false });
+    this.loadInitialData(); // Example: load data on init
+  }
+
+  loadInitialData = async () => { /* ... */ }
+  fetchData = async (key: string) => { /* ... update state ... */ };
+  getCachedData = (key: string) => this.state.data?.[key];
 }
 ```
 
-This creates isolated instances for each component, and each instance persists even when its component unmounts.
+### Usage
+
+When a component using `DataCacheBloc` unmounts, the `DataCacheBloc` instance (and its current state) will remain in memory. If another component (or the same one remounting) calls `useBloc(DataCacheBloc)`, it will receive this existing, persisted instance.
+
+### Best For
+
+-   Caching data that is expensive to fetch, across component lifecycles or navigation.
+-   Managing application-wide services or settings that should always be available.
+-   Background tasks that need to maintain state independently of the UI.
+
+**Note**: `keepAlive` prevents disposal from lack of listeners. It does not inherently save state to disk or browser storage.
+
+## 4. Storage Persistence (Using Addons)
+
+To persist state across browser sessions (e.g., to `localStorage` or `sessionStorage`), Blac relies on its **addon** system. The `@blac/core` package includes a `Persist` addon for this purpose.
+
+### Conceptual Implementation (with `Persist` Addon)
+
+```typescript
+// src/blocs/ThemeCubit.ts
+import { Cubit, Persist } from '@blac/core';
+
+interface ThemeState { mode: 'light' | 'dark'; }
+
+export class ThemeCubit extends Cubit<ThemeState> {
+  // Connect the Persist addon
+  static addons = [Persist({ keyName: 'appTheme' })]; // `keyName` is the localStorage key
+  // Optionally, combine with keepAlive if needed
+  // static keepAlive = true;
+
+  constructor() {
+    // Initial state can be a default, Persist addon will load from storage if available.
+    super({ mode: 'light' });
+  }
+
+  toggleTheme = () => {
+    const newMode = this.state.mode === 'light' ? 'dark' : 'light';
+    this.emit({ mode: newMode }); // Persist addon will automatically save the new state
+  };
+}
+```
+
+### Key Points for Storage Persistence:
+
+-   Use an addon like `Persist` (or create your own).
+-   Configure the addon (e.g., with a storage key, storage type).
+-   The addon typically handles loading state from storage on initialization and saving state to storage on changes.
+-   You might combine this with `static keepAlive = true;` if you want the instance managing the persisted state to also stay in memory regardless of listeners.
+
+Refer to documentation on specific addons (like `Persist`) for detailed setup and options.
+
+## Combining Patterns
+
+You can combine these patterns. For example, an isolated Bloc that also stays alive:
+
+```typescript
+// src/blocs/UserTaskBloc.ts
+import { Bloc } from '@blac/core';
+
+export class UserTaskBloc extends Bloc<TaskState, TaskAction> {
+  static isolated = true;
+  static keepAlive = true;
+  // ...
+}
+```
+This would create a unique `UserTaskBloc` for each component instance that requests it, and each of those unique instances would persist in memory even if its originating component unmounts.
 
 ## Choosing the Right Pattern
 
-When deciding which state management pattern to use, consider these questions:
+Consider these questions:
 
-1. **Do multiple components need to share the same state?**
-   - If yes → Use **Shared State** (default)
-   - If no → Consider **Isolated State**
+1.  **Shared vs. Unique Instance?**
+    *   Multiple components need the *exact same* state instance: Use **Shared State** (default).
+    *   Each component (or context) needs its *own independent* state: Use **Isolated State** (via `static isolated` or dynamic `id` in `useBloc`).
 
-2. **Does the state need to persist when no components are using it?**
-   - If yes → Use **Persistent State**
-   - If no → Use the default lifecycle
+2.  **Lifecycle when No Components Listen?**
+    *   State/Instance can be discarded if nothing is listening: Default behavior (no `keepAlive`).
+    *   State/Instance *must remain in memory* even if nothing is listening: Use **In-Memory Persistence (`keepAlive`)**.
 
-3. **Do you need unique instances for multiple copies of the same component?**
-   - If yes → Use **Isolated State**
-   - If no → Use **Shared State**
+3.  **Persistence Across Browser Sessions?**
+    *   State should be saved to `localStorage`/`sessionStorage` and reloaded: Use **Storage Persistence (Addons)** like `Persist`.
 
-By understanding these patterns, you can choose the right one based on how your components need to interact with state. For more advanced state management techniques, see the [Best Practices](/learn/best-practices) guide.
+By understanding these distinctions, you can architect your state management effectively with Blac.

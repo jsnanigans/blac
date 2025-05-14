@@ -1,21 +1,21 @@
 ---
 # https://vitepress.dev/reference/default-theme-home-page
 layout: home
-title: Blac - A Beautiful State Management Library
-description: Lightweight, flexible state management for React applications with predictable data flow
+title: Blac - Beautiful State Management for React
+description: Lightweight, flexible, and predictable state management for modern React applications.
 head:
   - - meta
     - name: description
-      content: Blac is a lightweight, flexible state management library for React applications with predictable data flow.
+      content: Blac is a lightweight, flexible, and predictable state management library for React applications.
   - - meta
     - name: keywords
-      content: blac, react, state management, redux alternative, typescript
+      content: blac, react, state management, bloc, cubit, typescript, reactive, predictable state
   - - meta
     - property: og:title
-      content: Blac - A Beautiful State Management Library
+      content: Blac - Beautiful State Management for React
   - - meta
     - property: og:description
-      content: Lightweight, flexible state management for React applications with predictable data flow
+      content: Lightweight, flexible, and predictable state management for modern React applications.
   - - meta
     - property: og:type
       content: website
@@ -27,41 +27,53 @@ head:
       content: summary
   - - meta
     - name: twitter:title
-      content: Blac - A Beautiful State Management Library
+      content: Blac - Beautiful State Management for React
   - - meta
     - name: twitter:description
-      content: Lightweight, flexible state management for React applications with predictable data flow
+      content: Lightweight, flexible, and predictable state management for modern React applications.
 ---
 
 # Blac
 
-A Beautiful State Management Library.
+A Beautiful State Management Library for React.
 
-<div class="tagline">Lightweight, flexible state management for React applications with predictable data flow.</div>
+<div class="tagline"><strong>Lightweight, flexible, and predictable state management for modern React applications.</strong></div>
 
 <div class="image-container">
-  <img src="/logo.svg" alt="Blac Logo" />
+  <img src="/logo.svg" alt="Blac Logo" style="width: 150px;" />
 </div>
 
 <div class="actions">
   <a href="/learn/introduction" class="action">Get Started</a>
-  <a href="https://github.com/jsnanigans/blac" class="action alt">View on GitHub</a>
+  <a href="https://github.com/blac-org/blac" class="action alt">View on GitHub</a>
 </div>
 
 ## Features
 
 <div class="features">
   <div class="feature">
-    <h3>Simple Yet Powerful</h3>
-    <p>Blac combines the best of Redux and React Context with a more intuitive API, reducing boilerplate while maintaining powerful state management capabilities.</p>
+    <h3>💡 Simple & Intuitive API</h3>
+    <p>Get started quickly with familiar concepts and less boilerplate. Focus on your business logic, not on complex state management rituals.</p>
   </div>
   <div class="feature">
-    <h3>Smart Instance Management</h3>
-    <p>Automatic lifecycle handling ensures your state containers are created and disposed of exactly when needed, preventing memory leaks and undefined behavior.</p>
+    <h3>🧠 Smart Instance Management</h3>
+    <p>Automatic creation, sharing (default), and disposal of Bloc/Cubit instances. Supports `keepAlive` for in-memory persistence and isolated instances for component-specific state.</p>
   </div>
   <div class="feature">
-    <h3>TypeScript First</h3>
-    <p>Built from the ground up with TypeScript, Blac provides excellent type safety and autocompletion for a superior developer experience.</p>
+    <h3>🔒 TypeScript First</h3>
+    <p>Built from the ground up with TypeScript, offering full type safety for robust applications and an excellent developer experience with autocompletion and refactoring support.</p>
+  </div>
+  <div class="feature">
+    <h3>🧩 Extensible via Plugins & Addons</h3>
+    <p>Enhance Blac's core or individual Bloc capabilities. Use the plugin system for global extensions (like logging) or addons for Bloc-specific features (like state persistence).</p>
+  </div>
+  <div class="feature">
+    <h3>🚀 Performance Focused</h3>
+    <p>Minimal dependencies for a small bundle size. Efficient state updates and optimized re-renders in React components.</p>
+  </div>
+  <div class="feature">
+    <h3>🧩 Flexible Architecture</h3>
+    <p>Adapts to various React project structures and complexities. Suitable for small features or large-scale applications.</p>
   </div>
 </div>
 
@@ -72,41 +84,39 @@ Check out the [Introduction](/learn/introduction) for a comprehensive guide to u
 ## Quick Example
 
 ```tsx
-// Define your state container
-import { createBloc } from '@blac/react';
+// 1. Define your Cubit (e.g., in src/cubits/CounterCubit.ts)
+import { Cubit } from '@blac/core';
 
 interface CounterState {
   count: number;
 }
 
-class CounterBloc extends createBloc<CounterState>() {
+export class CounterCubit extends Cubit<CounterState> {
   constructor() {
-    super({ count: 0 });
+    super({ count: 0 }); // Initial state
   }
 
-  increment() {
-    this.setState({ count: this.state.count + 1 });
-  }
-
-  decrement() {
-    this.setState({ count: Math.max(0, this.state.count - 1) });
-  }
+  // Methods must be arrow functions!
+  increment = () => this.emit({ count: this.state.count + 1 });
+  decrement = () => this.emit({ count: this.state.count - 1 });
 }
 
-// Use in your component
+// 2. Use the Cubit in your React component
 import { useBloc } from '@blac/react';
+import { CounterCubit } from '../cubits/CounterCubit'; // Adjust path
 
-function Counter() {
-  const counterBloc = useBloc(CounterBloc);
-  const count = counterBloc.useValue(state => state.count);
+function MyCounter() {
+  const [state, counterCubit] = useBloc(CounterCubit);
 
   return (
     <div>
-      <p>Count: {count}</p>
-      <button onClick={() => counterBloc.decrement()}>-</button>
-      <button onClick={() => counterBloc.increment()}>+</button>
+      <p>Count: {state.count}</p>
+      <button onClick={counterCubit.decrement}>-</button>
+      <button onClick={counterCubit.increment}>+</button>
     </div>
   );
 }
+
+export default MyCounter;
 ```
 

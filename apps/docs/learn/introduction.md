@@ -1,33 +1,50 @@
 # Introduction to Blac
 
-## Key Features
-
-- **Minimal Boilerplate**: Get started with Blac in seconds using a simple API.
-- **Tiny and Fast**: Small footprint with incredibly fast performance and minimal overhead.
-- **Scalable**: As your application grows, Blac grows with you.
+Welcome to Blac, a modern state management library designed to bring simplicity, power, and predictability to your React projects! Blac aims to reduce the mental overhead of state management by cleanly separating business logic from your UI components.
 
 ## What is Blac?
-On the surface, Blac is a lightweight, flexible, framework-agnostic state management library.
 
-The goal of Blac is to remove the mental overhead of state management in your application.
+Blac is a state management solution built with **TypeScript first**, offering a lightweight yet flexible approach. It draws inspiration from established patterns while providing an intuitive API to minimize boilerplate.
 
-It achieves this by cleanly separating business logic from UI components. In this architecture, state becomes a side effect of business logic, and the UI is the result of that state.
+It consists of two main packages:
+-   `@blac/core`: The foundational library providing the core Blac/Bloc logic, instance management, and a plugin system.
+-   `@blac/react`: The React integration layer, offering custom hooks and utilities to seamlessly connect Blac with your React components.
+
+In Blac's architecture, state becomes a well-defined side effect of your business logic, and the UI becomes a reactive reflection of that state.
+
+## Key Features of Blac
+
+-   💡 **Simple & Intuitive API**: Get started quickly with familiar concepts and less boilerplate.
+-   🧠 **Smart Instance Management**:
+    -   Automatic creation and disposal of `Bloc` instances.
+    -   `Bloc`s are kept alive as long as they have active listeners or consumers, or if explicitly marked with `keepAlive: true`.
+    -   Support for both shared (singleton-like) and isolated `Bloc` instances per component.
+-   🔒 **TypeScript First**: Full type safety out-of-the-box, enabling robust applications and great autocompletion.
+-   🧩 **Extensible via Plugins & Addons**:
+    -   **Plugins**: Extend Blac's core functionality by hooking into lifecycle events (e.g., for custom logging).
+    -   **Addons**: Enhance individual `Bloc` capabilities (e.g., state persistence with the built-in `Persist` addon).
+-   🚀 **Performance Focused**:
+    -   Minimal dependencies for a small bundle size.
+    -   Efficient state updates and re-renders in React.
+-   🧱 **Flexible Architecture**: Adapts to various React project structures and complexities.
 
 ## Documentation Structure
 
-The Blac documentation is organized into two main sections:
+This documentation is organized to help you learn Blac 효과적으로 (effectively):
 
-### Core
-The Core section covers the fundamental state management principles and classes:
-- [Core Concepts](/learn/core-concepts) - Foundational ideas and architecture
-- [BlocBase, Bloc, and Cubit classes](/api/core-classes) - Detailed class references
-- [Key Methods](/api/key-methods) - Essential methods for state management
-- [The Blac Pattern](/learn/blac-pattern) - Understanding the unidirectional data flow
+-   **Learn**: Foundational concepts, patterns, and guides.
+    -   [Getting Started](/learn/getting-started): Your first steps with Blac.
+    -   [Core Concepts](/learn/core-concepts): Understand the fundamental ideas and architecture.
+    -   [The Blac Pattern](/learn/blac-pattern): Dive into the unidirectional data flow and principles.
+    -   [State Management Patterns](/learn/state-management-patterns): Explore different approaches to sharing state.
+    -   [Architecture](/learn/architecture): A deeper look at Blac's internal structure.
+    -   [Best Practices](/learn/best-practices): Recommended techniques for building robust applications.
 
-### React
-The React section focuses on integrating Blac with React applications:
-- [React Hooks](/api/react-hooks) - Using Blac with React components
-- [State Management Patterns](/learn/state-management-patterns) - Different approaches to state sharing
-- [Best Practices](/learn/best-practices) - Recommended patterns and techniques
+-   **API Reference**: Detailed information about Blac's classes, hooks, and methods.
+    -   Core (`@blac/core`):
+        -   [Core Classes (BlocBase, Bloc, Cubit)](/api/core-classes): Detailed references for the main state containers.
+        -   [Key Methods](/api/key-methods): Essential methods for creating and managing state.
+    -   React (`@blac/react`):
+        -   [React Hooks (useBloc, useValue, etc.)](/api/react-hooks): Learn how to use Blac with your React components.
 
-Get started with Blac by following our [Getting Started](/learn/getting-started) guide. 
+Ready to begin? Jump into the [Getting Started](/learn/getting-started) guide! 
