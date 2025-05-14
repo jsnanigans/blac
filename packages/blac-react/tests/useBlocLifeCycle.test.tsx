@@ -5,9 +5,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import { Blac } from '@blac/core';
 import { renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Blac, BlocGeneric, BlocHookDependencyArrayFn } from '../../blac/src';
 import externalBlocStore from '../src/externalBlocStore';
 import useBloc, { BlocHookOptions } from '../src/useBloc';
 
@@ -117,7 +117,11 @@ describe('useBloc Lifecycle', () => {
       ) => {
         const isConstructorIsolated = (blocConstructor as typeof BlocBaseClass)
           .isolated;
-        const instanceRef = options?.instanceRef || (isConstructorIsolated ? `isolated-${String(Math.random())}` : `shared-${options?.id || 'default'}-${String(Math.random())}`);
+        const instanceRef =
+          options?.instanceRef ||
+          (isConstructorIsolated
+            ? `isolated-${String(Math.random())}`
+            : `shared-${options?.id || 'default'}-${String(Math.random())}`);
 
         if (!isConstructorIsolated) {
           if (options?.id) {
@@ -145,19 +149,16 @@ describe('useBloc Lifecycle', () => {
     });
 
     // Configure externalBlocStore mock
-    vi.mocked(externalBlocStore).mockImplementation(
-      (
-        bloc: BlocGeneric<any, any>,
-        dependencyArray: BlocHookDependencyArrayFn<any>,
-        rid: string,
-      ) => ({
+    const mock = (resolvedBloc: any) => {
+      return {
         subscribe: vi.fn((listener: () => void) => {
           return () => {};
         }),
-        getSnapshot: vi.fn(() => bloc.state),
-        getServerSnapshot: vi.fn(() => bloc.state),
-      }),
-    );
+        getSnapshot: vi.fn(() => resolvedBloc.state),
+        getServerSnapshot: vi.fn(() => resolvedBloc.state),
+      };
+    };
+    vi.mocked(externalBlocStore).mockImplementation(mock as any);
   });
 
   afterEach(() => {
@@ -245,8 +246,12 @@ describe('useBloc Lifecycle', () => {
   // Tests for multiple hooks interacting with the same shared bloc
   it('should share the same instance for multiple hooks with the same shared bloc id', () => {
     const blocId = 'shared-multi-hook-test';
-    const { result: hook1 } = renderHook(() => useBloc(SharedBloc as any, { id: blocId }));
-    const { result: hook2 } = renderHook(() => useBloc(SharedBloc as any, { id: blocId }));
+    const { result: hook1 } = renderHook(() =>
+      useBloc(SharedBloc as any, { id: blocId }),
+    );
+    const { result: hook2 } = renderHook(() =>
+      useBloc(SharedBloc as any, { id: blocId }),
+    );
 
     // Should fetch the same bloc instance
     expect(mockGetBloc).toHaveBeenCalledTimes(2);
@@ -270,16 +275,20 @@ describe('useBloc Lifecycle', () => {
     // Override getBloc slightly for this test to capture instanceRefs
     const originalGetBloc = mockGetBloc.getMockImplementation();
     mockGetBloc.mockImplementation((blocConstructor, options) => {
-        const instance = originalGetBloc?.(blocConstructor, options);
-        if (instance && blocConstructor === SharedBloc) {
-            if (!firstInstanceRef) firstInstanceRef = options?.instanceRef;
-            else if (!secondInstanceRef) secondInstanceRef = options?.instanceRef;
-        }
-        return instance;
+      const instance = originalGetBloc?.(blocConstructor, options);
+      if (instance && blocConstructor === SharedBloc) {
+        if (!firstInstanceRef) firstInstanceRef = options?.instanceRef;
+        else if (!secondInstanceRef) secondInstanceRef = options?.instanceRef;
+      }
+      return instance;
     });
 
-    const { unmount: unmount1 } = renderHook(() => useBloc(SharedBloc as any, { id: blocId }));
-    const { unmount: unmount2 } = renderHook(() => useBloc(SharedBloc as any, { id: blocId }));
+    const { unmount: unmount1 } = renderHook(() =>
+      useBloc(SharedBloc as any, { id: blocId }),
+    );
+    const { unmount: unmount2 } = renderHook(() =>
+      useBloc(SharedBloc as any, { id: blocId }),
+    );
 
     // Should add two consumers
     expect(mockAddConsumer).toHaveBeenCalledTimes(2);
@@ -301,13 +310,17 @@ describe('useBloc Lifecycle', () => {
 
     // Restore original mock
     if (originalGetBloc) {
-        mockGetBloc.mockImplementation(originalGetBloc);
+      mockGetBloc.mockImplementation(originalGetBloc);
     }
   });
 
   // Define a Bloc that accepts props for the next test
-  interface PropsBlocState { value: string }
-  interface PropsBlocProps { initialValue: string }
+  interface PropsBlocState {
+    value: string;
+  }
+  interface PropsBlocProps {
+    initialValue: string;
+  }
 
   class PropsBloc extends BlocBaseClass<PropsBlocState> {
     constructor(props: PropsBlocProps) {
@@ -328,27 +341,45 @@ describe('useBloc Lifecycle', () => {
     let blocInstance: PropsBloc | undefined;
 
     // Mock getBloc specifically for PropsBloc
-    mockGetBloc.mockImplementation((blocConstructor: typeof PropsBloc | typeof SharedBloc | typeof IsolatedBloc, options) => {
-      if (blocConstructor === PropsBloc) {
-        // Explicitly type the options expected by PropsBloc constructor
-        const props = options?.props as PropsBlocProps | undefined;
-        if (!props) throw new Error('PropsBloc requires props'); // Or handle appropriately
-        blocInstance = new PropsBloc(options?.props as PropsBlocProps);
-        blocInstance.setInstanceRef(options?.instanceRef || 'defaultPropsRef');
-        return blocInstance;
-      }
-      // Fallback for other Blocs in setup
-      if (blocConstructor === SharedBloc) return sharedBlocInstance;
-      if (blocConstructor === IsolatedBloc) return new IsolatedBloc();
-      return undefined;
-    });
-
-    const { unmount, rerender } = renderHook(
-      ({ props }) => useBloc(PropsBloc as any, { id: blocId, props: props, onMount: handleMount }),
-      { initialProps: { props: initialProps } }
+    mockGetBloc.mockImplementation(
+      (
+        blocConstructor:
+          | typeof PropsBloc
+          | typeof SharedBloc
+          | typeof IsolatedBloc,
+        options,
+      ) => {
+        if (blocConstructor === PropsBloc) {
+          // Explicitly type the options expected by PropsBloc constructor
+          const props = options?.props as PropsBlocProps | undefined;
+          if (!props) throw new Error('PropsBloc requires props'); // Or handle appropriately
+          blocInstance = new PropsBloc(options?.props as PropsBlocProps);
+          blocInstance.setInstanceRef(
+            options?.instanceRef || 'defaultPropsRef',
+          );
+          return blocInstance;
+        }
+        // Fallback for other Blocs in setup
+        if (blocConstructor === SharedBloc) return sharedBlocInstance;
+        if (blocConstructor === IsolatedBloc) return new IsolatedBloc();
+        return undefined;
+      },
     );
 
-    expect(mockGetBloc).toHaveBeenCalledWith(PropsBloc, expect.objectContaining({ props: initialProps, id: blocId }));
+    const { unmount, rerender } = renderHook(
+      ({ props }) =>
+        useBloc(PropsBloc as any, {
+          id: blocId,
+          props: props,
+          onMount: handleMount,
+        }),
+      { initialProps: { props: initialProps } },
+    );
+
+    expect(mockGetBloc).toHaveBeenCalledWith(
+      PropsBloc,
+      expect.objectContaining({ props: initialProps, id: blocId }),
+    );
     expect(handleMount).toHaveBeenCalledTimes(1);
     expect(mockAddConsumer).toHaveBeenCalledTimes(1);
     expect(blocInstance).toBeDefined();
@@ -360,8 +391,10 @@ describe('useBloc Lifecycle', () => {
 
     // Verify getBloc wasn't called again for the *same* shared instance
     // Count how many times getBloc was called for PropsBloc
-    const propsBlocCalls = mockGetBloc.mock.calls.filter(call => call[0] === PropsBloc);
-    expect(propsBlocCalls.length).toBe(1); 
+    const propsBlocCalls = mockGetBloc.mock.calls.filter(
+      (call) => call[0] === PropsBloc,
+    );
+    expect(propsBlocCalls.length).toBe(1);
     // Verify onMount wasn't called again
     expect(handleMount).toHaveBeenCalledTimes(1);
     // Verify consumer count is still 1

@@ -1,6 +1,6 @@
+import { Blac, Cubit } from '@blac/core';
 import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { Blac, Cubit } from '../../blac/src';
 import { useBloc } from '../src';
 
 // Define a simple counter cubit for testing

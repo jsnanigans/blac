@@ -1,11 +1,11 @@
-import React, { FC } from 'react';
+import React, { FC, ReactNode } from 'react';
 import { renderToString } from 'react-dom/server';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { Blac, Cubit } from '../../blac/src';
 import { useBloc } from '../src';
 
 // Create a wrapper around renderToString for testing
-const renderToStringWithMocks = (element: React.ReactElement) => {
+const renderToStringWithMocks = (element: ReactNode) => {
   // Save original window
   const originalWindow = global.window;
   // Mock window as undefined to simulate server environment
@@ -13,6 +13,7 @@ const renderToStringWithMocks = (element: React.ReactElement) => {
   global.window = undefined;
 
   try {
+    // @ts-expect-error - Deliberately setting window to undefined to simulate SSR
     return renderToString(element);
   } finally {
     // Restore original window

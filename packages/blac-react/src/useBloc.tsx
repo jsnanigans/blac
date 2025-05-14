@@ -1,21 +1,21 @@
 /* eslint-disable @typescript-eslint/restrict-template-expressions */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
-    useEffect,
-    useId,
-    useLayoutEffect,
-    useMemo,
-    useRef,
-    useSyncExternalStore,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useSyncExternalStore,
 } from 'react';
 import {
-    Blac,
-    BlocBaseAbstract,
-    BlocConstructor,
-    BlocGeneric,
-    BlocHookDependencyArrayFn,
-    BlocState,
-    InferPropsFromGeneric
+  Blac,
+  BlocBase,
+  BlocBaseAbstract,
+  BlocConstructor,
+  BlocHookDependencyArrayFn,
+  BlocState,
+  InferPropsFromGeneric
 } from '../../blac/src';
 import externalBlocStore from './externalBlocStore';
 
@@ -23,7 +23,7 @@ import externalBlocStore from './externalBlocStore';
  * Type definition for the return type of the useBloc hook
  * @template B - Bloc constructor type
  */
-type HookTypes<B extends BlocConstructor<BlocGeneric>> = [
+type HookTypes<B extends BlocConstructor<BlocBase<any>>> = [
   BlocState<InstanceType<B>>,
   InstanceType<B>,
 ];
@@ -36,9 +36,9 @@ type HookTypes<B extends BlocConstructor<BlocGeneric>> = [
  * @property {InferPropsFromGeneric<B>} [props] - Props to pass to the Bloc
  * @property {(bloc: B) => void} [onMount] - Callback function invoked when the Bloc is mounted
  */
-export interface BlocHookOptions<B extends BlocGeneric<unknown>> {
+export interface BlocHookOptions<B extends BlocBase<any>> {
   id?: string;
-  dependencySelector?: BlocHookDependencyArrayFn<B>;
+  dependencySelector?: BlocHookDependencyArrayFn<BlocState<B>>;
   props?: InferPropsFromGeneric<B>;
   onMount?: (bloc: B) => void;
 }
@@ -71,7 +71,7 @@ const defaultDependencySelector: BlocHookDependencyArrayFn<any> = (s) => [[s]];
  * // Call bloc methods
  * counterBloc.increment();
  */
-export default function useBloc<B extends BlocConstructor<BlocGeneric>>(
+export default function useBloc<B extends BlocConstructor<BlocBase<any>>>(
   bloc: B,
   options?: BlocHookOptions<InstanceType<B>>,
 ): HookTypes<B> {
@@ -131,10 +131,10 @@ export default function useBloc<B extends BlocConstructor<BlocGeneric>>(
   }
 
   // Configure dependency tracking for re-renders
-  const dependencyArray: BlocHookDependencyArrayFn<InstanceType<B>> = (
+  const dependencyArray: BlocHookDependencyArrayFn<BlocState<InstanceType<B>>> = (
     newState,
     oldState,
-  ) => {
+  ): ReturnType<BlocHookDependencyArrayFn<BlocState<InstanceType<B>>>> => {
     // Use custom dependency selector if provided
     if (dependencySelector) {
       return dependencySelector(newState, oldState);

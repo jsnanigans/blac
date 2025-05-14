@@ -1,8 +1,8 @@
+import { Blac, Cubit } from '@blac/core';
 import { act, render, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React, { FC, Suspense, useState, useTransition } from 'react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { Blac, Cubit } from '../../blac/src';
 import { useBloc } from '../src';
 
 // Define a simple counter cubit for testing

@@ -1,3 +1,4 @@
+import { Blac } from './Blac';
 import { BlocBase } from './BlocBase';
 
 /**
@@ -36,11 +37,9 @@ export abstract class Cubit<S, P = null> extends BlocBase<S, P> {
     ignoreChangeCheck = false,
   ): void {
     if (typeof this.state !== 'object' || this.state === null) {
-      if (process.env.NODE_ENV !== 'production') {
-        console.warn(
-          'Cubit.patch: was called on a cubit where the state is not an object. This is a no-op.',
-        );
-      }
+      Blac.warn(
+        'Cubit.patch: was called on a cubit where the state is not an object. This is a no-op.',
+      );
       return;
     }
 

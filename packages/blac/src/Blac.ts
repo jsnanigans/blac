@@ -68,14 +68,14 @@ export class Blac {
   }
 
   /** Flag to enable/disable logging */
-  static enableLog = true;
+  static enableLog = false;
 
   /**
    * Logs messages to console when logging is enabled
    * @param args - Arguments to log
    */
-  log = (...args: any[]) => {
-    if (Blac.enableLog) console.warn(`☢️ [Blac ${this.createdAt.toString()}]`, args);
+  log = (...args: unknown[]) => {
+    if (Blac.enableLog) console.warn(`☢️ [Blac ${this.createdAt.toString()}]`, ...args);
   };
 
   /**
@@ -86,13 +86,16 @@ export class Blac {
     return Blac.instance;
   }
 
+
   /**
    * Logs a warning message
    * @param message - Warning message
    * @param args - Additional arguments
    */
   static warn = (message: string, ...args: unknown[]) => {
-    console.warn(`🚨 [Blac ${String(Blac.instance.createdAt)}]`, message, ...args);
+    if (Blac.enableLog) {
+      console.warn(`🚨 [Blac ${String(Blac.instance.createdAt)}]`, message, ...args);
+    }
   };
 
   /**
@@ -101,7 +104,9 @@ export class Blac {
    * @param args - Additional arguments
    */
   static error = (message: string, ...args: unknown[]) => {
-    console.error(`🚨 [Blac ${String(Blac.instance.createdAt)}]`, message, ...args);
+    if (Blac.enableLog) {
+      console.error(`🚨 [Blac ${String(Blac.instance.createdAt)}]`, message, ...args);
+    }
   };
 
   /**
@@ -416,7 +421,7 @@ export class Blac {
    *   - props: Properties to pass to the bloc constructor
    *   - instanceRef: Optional reference string for the instance
    */
-  getBlocOrThrow = <B extends BlocConstructor<BlocBase<any>>>(
+  getBlocOrThrow = <B extends BlocConstructor<unknown>>(
     blocClass: B,
     options: {
       id?: BlocInstanceId;
@@ -445,22 +450,23 @@ export class Blac {
    *   - searchIsolated: Whether to search in isolated blocs (defaults to bloc's isolated property)
    * @returns Array of matching bloc instances
    */
-  getAllBlocs = <B extends BlocBase<any>>(
-    blocClass: BlocConstructor<B>,
+  getAllBlocs = <B extends BlocConstructor<unknown>>(
+    blocClass: B,
     options: {
       searchIsolated?: boolean;
     } = {},
-  ): B[] => {
-    const base = blocClass as unknown as BlocBaseAbstract;
+  ): InstanceType<B>[] => {
+    const asBlocBase = blocClass as unknown as BlocBase<unknown>;
+    const base = asBlocBase as unknown as BlocBaseAbstract;
 
     const { searchIsolated = base.isolated } = options;
 
     if (searchIsolated) {
       const blocs = this.isolatedBlocMap.get(blocClass);
-      if (blocs) return blocs as B[];
+      if (blocs) return blocs as InstanceType<B>[];
     } else {
       const blocs = Array.from(this.blocInstanceMap.values());
-      return blocs.filter((b) => b instanceof blocClass) as B[];
+      return blocs.filter((b) => b instanceof blocClass) as InstanceType<B>[];
     }
     return [];
   };

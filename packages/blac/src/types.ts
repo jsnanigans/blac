@@ -30,25 +30,10 @@ export type ValueType<B extends BlocBase<any>> =
   B extends BlocBase<infer U> ? U : never;
 
 /**
- * Represents either a Bloc or Cubit with their respective generic parameters
- * @template S - The state type
- * @template A - The action type (for Bloc)
- * @template P - The props type
- */
-export type BlocGeneric<S = any, A = any, P = any> =
-  | Bloc<S, A, P>
-  | Cubit<S, P>;
-
-/**
  * Extracts the state type from either a Bloc or Cubit
  * @template T - The Bloc or Cubit type to extract the state from
  */
-export type BlocState<T> =
-  T extends Bloc<infer S, any>
-    ? S
-    : T extends Cubit<infer S, any>
-      ? S
-      : never;
+export type BlocState<T> = T extends BlocBase<infer S> ? S : never;
 
 /**
  * Extracts the props type from either a Bloc or Cubit

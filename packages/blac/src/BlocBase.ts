@@ -4,7 +4,7 @@ import BlacAddon from './addons/BlacAddon';
 import { BlocConstructor } from './types';
 
 export type BlocInstanceId = string | number | undefined;
-type DependencySelector<S> = (newState: S, oldState?: S) => unknown[];
+type DependencySelector<S> = (newState: S, oldState?: S) => unknown[][];
 
 // Define an interface for the static properties expected on a Bloc/Cubit constructor
 interface BlocStaticProperties {
@@ -49,7 +49,7 @@ export abstract class BlocBase<
    * Defines how dependencies are selected from the state for efficient updates.
    * When provided, observers will only be notified when selected dependencies change.
    */
-  defaultDependencySelector: DependencySelector<S> = () => [];
+  defaultDependencySelector: DependencySelector<S> | undefined;
 
   /**
    * @internal
