@@ -6,11 +6,9 @@ A lightweight, flexible state management library for JavaScript/TypeScript appli
 
 - 🔄 Predictable unidirectional data flow
 - 🧩 Modular architecture with Blocs and Cubits
-- 🔍 Fine-grained dependency tracking for optimal rendering
-- 🔌 Plugin system for extensibility
-- 🚀 Framework agnostic core with React bindings
+- 🧪 Unit test friendly
 - 🔒 Isolated state instances when needed
-- 🧠 Smart re-rendering with automatic dependency detection
+- 🔌 Plugin system for extensibility
 
 ## Installation
 
@@ -25,19 +23,6 @@ yarn add @blac/core
 
 # npm
 npm install @blac/core
-```
-
-For React applications, you'll also want to install `@blac/react`:
-
-```bash
-# pnpm
-pnpm add @blac/react
-
-# yarn
-yarn add @blac/react
-
-# npm
-npm install @blac/react
 ```
 
 ## Core Concepts
