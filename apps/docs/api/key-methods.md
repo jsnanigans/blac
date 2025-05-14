@@ -233,5 +233,5 @@ todoBloc.on(BlacEvent.Action, (state, oldState, action) => {
 
 ## Choosing Between Bloc and Cubit  
 
-- Use `Bloc` for event-driven state management with more complex state transitions
-- Use `Cubit` for simple state management with direct method calls
+- Use `Bloc` for more complex state logic where an event-driven approach is beneficial. `Bloc`s process `Action`s (events) through a `reducer` function to produce new `State`. This pattern is similar to Redux reducers and is excellent for managing intricate state transitions and side effects in a structured way.
+- Use `Cubit` for simpler state management scenarios where state changes can be triggered by direct method calls on the `Cubit` instance. These methods then use `emit()` or `patch()` to update the state. This direct approach is often more concise for straightforward cases and shares similarities with libraries like Zustand.

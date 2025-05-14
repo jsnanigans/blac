@@ -55,7 +55,7 @@ head:
   </div>
   <div class="feature">
     <h3>🧠 Smart Instance Management</h3>
-    <p>Automatic creation, sharing (default), and disposal of Bloc/Cubit instances. Supports `keepAlive` for in-memory persistence and isolated instances for component-specific state.</p>
+    <p>Automatic creation, sharing (default for non-isolated Blocs using class name or provided ID), and disposal of Bloc/Cubit instances by the central `Blac` class. Supports `keepAlive` for in-memory persistence and isolated instances (via `static isolated = true` or unique IDs) for component-specific or distinct states.</p>
   </div>
   <div class="feature">
     <h3>🔒 TypeScript First</h3>

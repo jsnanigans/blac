@@ -14,7 +14,7 @@ This separation enhances testability, maintainability, and overall code clarity.
 
 ## State Containers: `Cubit` and `Bloc`
 
-Blac offers two primary types of state containers, both built upon a common `BlocBase`:
+Blac offers two primary types of state containers, both built upon a common `BlocBase`, allowing you to choose the pattern that best fits the complexity of your state logic:
 
 ### `BlocBase`
 
@@ -29,7 +29,7 @@ You typically won't extend `BlocBase` directly. Instead, you'll use `Cubit` or `
 
 ### `Cubit<State, Props>`
 
-A `Cubit` is the simpler of the two. It exposes methods that directly cause state changes by calling `this.emit()` or `this.patch()`.
+A `Cubit` is the simpler of the two. It exposes methods that directly cause state changes by calling `this.emit()` or `this.patch()`. This approach is often preferred for straightforward state management where the logic for state changes can be encapsulated within direct method calls, similar to how state is managed in libraries like Zustand.
 
 -   `emit(newState: State)`: Replaces the entire current state with `newState`.
 -   `patch(partialState: Partial<State>)`: Merges `partialState` with the current state (if the state is an object).
@@ -66,7 +66,7 @@ Cubits are excellent for straightforward state management. See [Cubit API detail
 
 ### `Bloc<State, Action, Props>`
 
-A `Bloc` is more structured, processing `Action`s through a `reducer` function to produce new `State`.
+A `Bloc` is more structured and suited for complex state logic. It processes `Action`s (events) which are dispatched to it via its `add(action)` method. These actions are then handled by a `reducer` function. The `reducer` is a pure function that takes the current state and the dispatched action, and returns a new state. This event-driven update cycle, where state transitions are explicit and decoupled, is similar to the reducer pattern found in Redux.
 
 -   `add(action: Action)`: Dispatches an action to the `reducer`.
 -   `reducer(action: Action, currentState: State): State`: A pure function that defines how the state changes in response to actions.
@@ -110,7 +110,7 @@ class CounterBloc extends Bloc<CounterState, CounterAction> {
   reset = () => this.add({ type: 'RESET' });
 }
 ```
-Blocs are ideal for complex state logic where transitions need to be more explicit. See [Bloc API details](/api/core-classes#bloc-s-a-p).
+Blocs are ideal for complex state logic where transitions need to be more explicit and benefit from an event-driven architecture. See [Bloc API details](/api/core-classes#bloc-s-a-p).
 
 ## State Updates & Reactivity
 
@@ -150,12 +150,28 @@ For more details, see the [React Hooks API](/api/react-hooks).
 
 ## Instance Management Patterns
 
-Blac offers flexibility in how state container instances are managed:
+Blac, through its central `Blac` instance, offers flexible ways to manage your `Bloc` or `Cubit` instances:
 
-1.  **Shared State (Default)**: Components requesting the same `Bloc`/`Cubit` class (by default, using its name as ID) share a single instance and its state.
-2.  **Isolated State**: Each component gets its own unique instance. Achieved by setting `static isolated = true;` on your `Bloc`/`Cubit` class, or by providing a unique `id` via `useBloc` options.
-3.  **In-Memory Persistence (`keepAlive`)**: Prevents a shared `Bloc`/`Cubit` from being disposed when no components are listening if `static keepAlive = true;` is set on the class.
-4.  **Storage Persistence (Addons)**: For persisting state to `localStorage`, `sessionStorage`, etc., use addons like the built-in `Persist` addon.
+1.  **Shared State (Default for non-isolated Blocs)**:
+    When a `Bloc` or `Cubit` is *not* marked as `static isolated = true;`, instances are typically shared.
+    Components requesting such a `Bloc`/`Cubit` (e.g., via `useBloc(MyBloc)`) will receive the same instance if one already exists with a matching ID.
+    By default, Blac uses the class name as the ID (e.g., `"MyBloc"`). You can also provide a specific `id` in the `useBloc` options (e.g., `useBloc(MyBloc, { id: 'customSharedId' })`) to share an instance under that custom ID. If no instance exists for the determined ID, a new one is created and registered for future sharing.
+
+2.  **Isolated State**:
+    To ensure a component gets its own unique instance of a `Bloc` or `Cubit`, you can either:
+    *   Set `static isolated = true;` on your `Bloc`/`Cubit` class. When using `useBloc(MyIsolatedBloc)`, Blac will attempt to find an existing isolated instance using the class name as the default ID. If you need multiple, distinct isolated instances of the *same class* for different components or use cases, you *must* provide a unique `id` via `useBloc` options (e.g., `useBloc(MyIsolatedBloc, { id: 'uniqueInstance1' })`). Blac's `findIsolatedBlocInstance` method will use this ID to retrieve the specific instance. If no isolated instance with that ID is found, a new one is created and registered under that ID in a separate registry for isolated blocs.
+    *   Even if a Bloc is not `static isolated`, you can achieve a similar effect by always providing a guaranteed unique `id` string through `useBloc` options. The `Blac` instance will then manage it as a distinct, non-isolated instance under that unique ID.
+
+3.  **In-Memory Persistence (`keepAlive`)**:
+    You can prevent a `Bloc`/`Cubit` (whether shared or isolated, though more common for shared) from being automatically disposed when no components are actively listening to it. Set `static keepAlive = true;` on the `Bloc`/`Cubit` class. The instance will remain in memory until manually disposed or the `Blac` instance is reset.
+
+4.  **Automatic Disposal**:
+    Unless `keepAlive` is true, `Bloc`s/`Cubit`s are automatically disposed of (and removed from Blac's internal registries) when they no longer have any active listeners (e.g., components using `useBloc`) or consumers. This helps prevent memory leaks.
+
+5.  **Storage Persistence (Addons)**:
+    For persisting state to external storage like `localStorage` or `sessionStorage`, Blac supports an addon system. You can use or create addons like the `Persist` addon for this purpose.
+
+The central `Blac` instance (accessible via `Blac.getInstance()`) is responsible for all these behaviors, using methods like `getBloc`, `disposeBloc`, and managing internal maps of registered and isolated bloc instances.
 
 Learn more in the [State Management Patterns](/learn/state-management-patterns) section.
 

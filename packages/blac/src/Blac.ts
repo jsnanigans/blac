@@ -77,6 +77,7 @@ export class Blac {
   log = (...args: unknown[]) => {
     if (Blac.enableLog) console.warn(`☢️ [Blac ${this.createdAt.toString()}]`, ...args);
   };
+  static log = Blac.instance.log;
 
   /**
    * Gets the singleton instance of Blac
@@ -92,22 +93,23 @@ export class Blac {
    * @param message - Warning message
    * @param args - Additional arguments
    */
-  static warn = (message: string, ...args: unknown[]) => {
+  warn = (message: string, ...args: unknown[]) => {
     if (Blac.enableLog) {
       console.warn(`🚨 [Blac ${String(Blac.instance.createdAt)}]`, message, ...args);
     }
   };
-
+  static warn = Blac.instance.warn;
   /**
    * Logs an error message
    * @param message - Error message
    * @param args - Additional arguments
    */
-  static error = (message: string, ...args: unknown[]) => {
+  error = (message: string, ...args: unknown[]) => {
     if (Blac.enableLog) {
       console.error(`🚨 [Blac ${String(Blac.instance.createdAt)}]`, message, ...args);
     }
   };
+  static error = Blac.instance.error;
 
   /**
    * Resets the Blac instance to a new one, disposing non-keepAlive blocs

@@ -16,10 +16,10 @@ In Blac's architecture, state becomes a well-defined side effect of your busines
 
 -   💡 **Simple & Intuitive API**: Get started quickly with familiar concepts and less boilerplate.
 -   🧠 **Smart Instance Management**:
-    -   Automatic creation and disposal of `Bloc` instances.
-    -   `Bloc`s are kept alive as long as they have active listeners or consumers, or if explicitly marked with `keepAlive: true`.
-    -   Support for both shared (singleton-like) and isolated `Bloc` instances per component.
--   🔒 **TypeScript First**: Full type safety out-of-the-box, enabling robust applications and great autocompletion.
+    -   Automatic creation, sharing (default for non-isolated Blocs, keyed by class name or custom ID), and disposal of `Bloc`/`Cubit` instances, orchestrated by the central `Blac` class.
+    -   Support for `static isolated = true` on Blocs/Cubits or providing unique IDs for component-specific/distinct instances.
+    -   `Bloc`s/`Cubit`s are kept alive as long as they have active listeners/consumers, or if explicitly marked with `static keepAlive = true`.
+-   �� **TypeScript First**: Full type safety out-of-the-box, enabling robust applications and great autocompletion.
 -   🧩 **Extensible via Plugins & Addons**:
     -   **Plugins**: Extend Blac's core functionality by hooking into lifecycle events (e.g., for custom logging).
     -   **Addons**: Enhance individual `Bloc` capabilities (e.g., state persistence with the built-in `Persist` addon).

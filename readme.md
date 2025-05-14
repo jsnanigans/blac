@@ -26,7 +26,7 @@ It consists of two main packages:
 An **overview** of the Blac pattern, its core concepts, and how it simplifies state management in React.
 
 -   **Simple API**: Intuitive and easy to learn, minimizing boilerplate.
--   **Smart Instance Management**: Automatic creation, sharing, and disposal of `Bloc` instances. Supports `keepAlive` for persistent state and isolated instances.
+-   **Smart Instance Management**: Automatic creation, sharing (default for non-isolated Blocs using class name or provided ID), and disposal of `Bloc` instances. Supports `keepAlive` for persistent state and isolated instances (via `static isolated = true` or unique IDs).
 -   **TypeScript First**: Strong typing for robust applications and excellent developer experience.
 -   **Extensible**: Add custom functionality through a built-in plugin system or create addons for `Bloc`s (like the `Persist` addon for storage).
 -   **Performance**: Lightweight core and efficient updates.
@@ -98,18 +98,19 @@ export default CounterDisplay;
 ## Core Concepts
 
 -   **`BlocBase`**: The foundational abstract class for state containers.
--   **`Cubit<State>`**: A simpler state container that exposes methods to directly `emit` or `patch` new states. The Quick Start example above uses a `Cubit`.
--   **`Bloc<State, Action>`**: A more advanced state container that processes `Action`s through a `reducer` function to produce new `State`. This is useful for more complex state logic where transitions are event-driven.
+-   **`Cubit<State>`**: A simpler state container that exposes methods (similar to Zustand) to directly `emit` or `patch` new states. The Quick Start example above uses a `Cubit`.
+-   **`Bloc<State, Action>`**: A more advanced state container that processes `Action`s (events) through a `reducer` function (similar to Redux reducers) to produce new `State`. This is useful for more complex state logic where transitions are event-driven and require more structure.
 -   **`useBloc` Hook**: The primary React hook from `@blac/react` to connect components to `Bloc` or `Cubit` instances, providing the current state and the instance itself. It efficiently re-renders components when relevant state properties change.
--   **Instance Management**: Blac intelligently manages instances of your `Bloc`s/`Cubit`s. By default, they are shared, but can be isolated or kept alive in memory.
+-   **Instance Management**: Blac's central `Blac` instance intelligently manages your `Bloc`s/`Cubit`s. By default, non-isolated Blocs are shared (keyed by class name or a custom ID). Blocs can be marked as `static isolated = true` or given unique IDs for component-specific state, and can be configured with `static keepAlive = true` to persist in memory.
 
 ## Features In-Depth
 
 -   💡 **Simple & Intuitive API**: Get started quickly with familiar concepts and less boilerplate.
--   🧠 **Smart Instance Management**:
-    -   Automatic creation and disposal of `Bloc` instances.
-    -   `Bloc`s are kept alive as long as they have active listeners or consumers, or if explicitly marked with `keepAlive: true`.
-    -   Support for both shared (singleton-like) and isolated `Bloc` instances per component.
+-   🧠 **Smart Instance Management** by the central `Blac` class:
+    -   Automatic creation and disposal of `Bloc` instances based on usage.
+    -   Non-isolated `Bloc`s are shared by default (keyed by class name or custom ID).
+    -   Isolated `Bloc`s (marked `static isolated = true` or given a unique ID via `useBloc` options) for component-specific or distinct states.
+    -   `Bloc`s are kept alive as long as they have active listeners/consumers, or if explicitly marked with `static keepAlive = true`.
 -   🔒 **TypeScript First**: Full type safety out-of-the-box, enabling robust applications and great autocompletion.
 -   🧩 **Extensible via Plugins & Addons**:
     -   **Plugins**: Extend Blac's core functionality by hooking into lifecycle events (e.g., for logging).
