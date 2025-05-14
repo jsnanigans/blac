@@ -46,5 +46,5 @@ apps/react-demo/site
 packages/react/dist
 packages/blac/dist
 
-.vitepress/cache
-.vitepress/dist
+apps/docs/.vitepress/cache
+apps/docs/.vitepress/dist

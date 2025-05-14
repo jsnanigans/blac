@@ -60,6 +60,34 @@ When the last consumer of a shared `Bloc`/`Cubit` instance unregisters (e.g., it
 -   **`static keepAlive = true;`**: If set on the `Bloc`/`Cubit` class, the shared instance will persist in memory even if no components are currently listening to it. See [State Management Patterns](/learn/state-management-patterns#3-in-memory-persistence-keepalive) for more.
 -   **`static isolated = true;`**: If set, each `useBloc(MyIsolatedBloc)` call creates a new, independent instance of the `Bloc`/`Cubit`. This instance is then tied to the lifecycle of the component that created it and will be disposed of when that component unmounts (unless `keepAlive` is also true for that isolated class, which is a more advanced scenario).
 
+```mermaid
+graph TD
+    subgraph "Shared Bloc/Cubit Lifecycle"
+        A["Class Defined (Dormant)"] --> B{"First useBloc() call<br>for this class?"};
+        B -- Yes --> C["Instance Initialized<br>(Constructor Runs)"];
+        B -- No --> A;
+        C --> D{"Component using instance<br>mounts/subscribes"};
+        D -- Yes --> E["Instance Active"];
+        D -- No --> C;
+        E --> F{"Component<br>unmounts/unsubscribes"};
+        F -- Yes --> G{"Other listeners OR<br>static keepAlive = true?"};
+        G -- No --> H["Instance Disposed<br>(Resources Freed)"];
+        G -- Yes --> C;
+        H --> A;
+    end
+
+    subgraph "Isolated Bloc/Cubit Lifecycle (static isolated = true)"
+        IA["Class Defined (Dormant)"] --> IB{"useBloc() call<br>for this class?"};
+        IB -- Yes --> IC["New Instance Initialized<br>(Constructor Runs)"];
+        IC --> ID["Instance Active<br>(Tied to component)"];
+        ID --> IF{"Creating component<br>unmounts?"};
+        IF -- Yes --> IG{"static keepAlive = true<br>for this isolated class?"};
+        IG -- No --> IH["Instance Disposed"];
+        IG -- Yes --> IC;
+        IH --> IA;
+    end
+```
+
 ::: tip Default: Shared State
 By default, all components that use the same `Bloc`/`Cubit` class (e.g., `useBloc(MyCounterCubit)`) will share a single instance of that `Bloc`/`Cubit`.
 :::
@@ -101,6 +129,27 @@ function AnotherComponent() {
 
 This is powerful for scenarios like managing state for multiple instances of a feature (e.g., different chat conversation windows, multiple editable data records on a page).
 
+```mermaid
+graph TD
+    subgraph "Scenario 1: Default Sharing (No isolation, No custom ID)"
+        CompA1["Component A <br> useBloc(MyBloc)"] --> SharedInstance1["Shared MyBloc Instance"];
+        CompB1["Component B <br> useBloc(MyBloc)"] --> SharedInstance1;
+        CompC1["Component C <br> useBloc(AnotherBloc)"] --> AnotherSharedInstance1["Shared AnotherBloc Instance"];
+    end
+
+    subgraph "Scenario 2: Isolated Instances (static isolated = true on MyIsolatedBloc)"
+        CompA2["Component A <br> useBloc(MyIsolatedBloc)"] --> IsolatedInstanceA["MyIsolatedBloc Instance for A"];
+        CompB2["Component B <br> useBloc(MyIsolatedBloc)"] --> IsolatedInstanceB["MyIsolatedBloc Instance for B"];
+    end
+
+    subgraph "Scenario 3: Custom ID Sharing (ChatBloc is not isolated by default)"
+        CompX["Component X <br> useBloc(ChatBloc, {id: 'chat1'})"] --> ChatInstance1["ChatBloc Instance for 'chat1'"];
+        CompY["Component Y <br> useBloc(ChatBloc, {id: 'chat1'})"] --> ChatInstance1;
+        CompZ["Component Z <br> useBloc(ChatBloc, {id: 'chat2'})"] --> ChatInstance2["ChatBloc Instance for 'chat2'"];
+        CompDefault["Component Default <br> useBloc(ChatBloc)"] --> DefaultChatInstance["Default Shared ChatBloc<br>Instance (if any)"];
+    end
+```
+
 ## Separation of Concerns (Inspired by BLoC Pattern)
 
 Blac is heavily inspired by the BLoC (Business Logic Component) pattern, which advocates for moving all business logic out of your UI components and into dedicated `Bloc` or `Cubit` classes. These state containers then become the single source of truth for their respective slice of application state.
@@ -117,10 +166,10 @@ This typically leads to a layered architecture:
 
 ```mermaid
 flowchart LR
-    UI[Presentation Layer (React Components)] -->|User Events / Method Calls| BLC[Business Logic Layer (Blocs/Cubits)]
-    BLC -->|State Updates| UI
-    BLC -->|Data Requests| DL[Data Layer (Services, API Clients)]
-    DL -->|Data Responses| BLC
+    UI["Presentation Layer (React Components)"] -->|"User Events / Method Calls"| BLC["Business Logic Layer (Blocs/Cubits)"]
+    BLC -->|"State Updates"| UI
+    BLC -->|"Data Requests"| DL["Data Layer (Services, API Clients)"]
+    DL -->|"Data Responses"| BLC
 ```
 
 ### Presentation Layer (UI)

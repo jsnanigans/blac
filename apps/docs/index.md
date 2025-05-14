@@ -35,8 +35,6 @@ head:
 
 # Blac
 
-A Beautiful State Management Library for React.
-
 <div class="tagline"><strong>Lightweight, flexible, and predictable state management for modern React applications.</strong></div>
 
 <div class="image-container">
@@ -45,7 +43,7 @@ A Beautiful State Management Library for React.
 
 <div class="actions">
   <a href="/learn/introduction" class="action">Get Started</a>
-  <a href="https://github.com/blac-org/blac" class="action alt">View on GitHub</a>
+  <a href="https://github.com/jsnanigans/blac" class="action alt">View on GitHub</a>
 </div>
 
 ## Features
