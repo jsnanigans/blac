@@ -134,16 +134,14 @@ export class Blac {
 
     oldBlocInstanceMap.forEach((bloc) => {
       if (!bloc._keepAlive) {
-        // Use disposeBloc to ensure the BLOC_DISPOSED event is dispatched
-        this.disposeBloc(bloc);
+        bloc._dispose();
       }
     });
 
     oldIsolatedBlocMap.forEach((blocArray) => {
       blocArray.forEach((bloc) => {
         if (!bloc._keepAlive) {
-          // Use disposeBloc for isolated blocs as well
-          this.disposeBloc(bloc);
+          bloc._dispose();
         }
       });
     });
@@ -463,18 +461,24 @@ export class Blac {
       searchIsolated?: boolean;
     } = {},
   ): InstanceType<B>[] => {
-    const asBlocBase = blocClass as unknown as BlocBase<unknown>;
-    const base = asBlocBase as unknown as BlocBaseAbstract;
+    const results: InstanceType<B>[] = [];
+    // const blocClassName = (blocClass as any).name; // Temporarily removed for debugging
 
-    const { searchIsolated = base.isolated } = options;
+    // Search non-isolated blocs
+    this.blocInstanceMap.forEach((blocInstance) => {
+      if (blocInstance.constructor === blocClass) { // Strict constructor check
+        results.push(blocInstance as InstanceType<B>);
+      }
+    });
 
-    if (searchIsolated) {
-      const blocs = this.isolatedBlocMap.get(blocClass);
-      if (blocs) return blocs as InstanceType<B>[];
-    } else {
-      const blocs = Array.from(this.blocInstanceMap.values());
-      return blocs.filter((b) => b instanceof blocClass) as InstanceType<B>[];
+    // Optionally search isolated blocs
+    if (options.searchIsolated !== false) {
+      const isolatedBlocs = this.isolatedBlocMap.get(blocClass);
+      if (isolatedBlocs) {
+        results.push(...isolatedBlocs.map(bloc => bloc as InstanceType<B>));
+      }
     }
-    return [];
+
+    return results;
   };
 }

@@ -11,8 +11,6 @@ export type BlacObserver<S> = {
   fn: (newState: S, oldState: S, action?: unknown) => void | Promise<void>;
   /** Optional function to determine if the observer should be notified of state changes */
   dependencyArray?: BlocHookDependencyArrayFn<S>;
-  /** Dispose function for the observer */
-  dispose?: () => void;
   /** Cached state values used for dependency comparison */
   lastState?: unknown[][];
   /** Unique identifier for the observer */
@@ -61,6 +59,11 @@ export class BlacObservable<S = unknown> {
   subscribe(observer: BlacObserver<S>): () => void {
     this._observers.add(observer);
     Blac.instance.dispatchEvent(BlacLifecycleEvent.LISTENER_ADDED, this.bloc, { listenerId: observer.id });
+    
+    // Immediately notify the new observer with the current state
+    // Pass current state as both newState and oldState for initial notification context
+    void observer.fn(this.bloc.state, this.bloc.state, { initialSubscription: true });
+
     if (!observer.lastState) {
       observer.lastState = observer.dependencyArray
         ? observer.dependencyArray(this.bloc.state, this.bloc.state)
@@ -79,51 +82,7 @@ export class BlacObservable<S = unknown> {
     this._observers.delete(observer);
     Blac.instance.dispatchEvent(BlacLifecycleEvent.LISTENER_REMOVED, this.bloc, { listenerId: observer.id });
   }
-
-  /**
-   * Notifies all observers of a state change
-   * @param newState - The new state value
-   * @param oldState - The previous state value
-   * @param action - Optional action that triggered the state change
-   */
-  notify(newState: S, oldState: S, action?: unknown) {
-    this._observers.forEach((observer) => {
-      let shouldUpdate = false;
-
-      if (observer.dependencyArray) {
-        const lastDependencyCheck = observer.lastState || [];
-        const newDependencyCheck = observer.dependencyArray(newState, oldState);
-
-        for (let o = 0; o < newDependencyCheck.length; o++) {
-          const partNew = newDependencyCheck[o];
-          const partOld = lastDependencyCheck[o] || [];
-          for (let i = 0; i < partNew.length; i++) {
-            if (!Object.is(partNew[i], partOld[i])) {
-              shouldUpdate = true;
-              break;
-            }
-          }
-        }
-
-        observer.lastState = newDependencyCheck;
-      } else {
-        shouldUpdate = true;
-      }
-
-      if (shouldUpdate) {
-        void observer.fn(newState, oldState, action);
-      }
-    });
-  }
-
-  /**
-   * Disposes of all observers and clears the observer set
-   */
-  dispose() {
-    this._observers.forEach((observer) => {
-      this.unsubscribe(observer);
-      observer.dispose?.();
-    });
-    this._observers.clear();
-  }
 }
+
+  /**
+ 

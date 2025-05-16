@@ -174,9 +174,16 @@ export abstract class BlocBase<
    * Notifies the Blac manager and clears all observers.
    */
   _dispose() {
-    this._blac.dispatchEvent(BlacLifecycleEvent.BLOC_DISPOSED, this);
     this._observer.dispose();
+    this._blac.dispatchEvent(BlacLifecycleEvent.BLOC_DISPOSED, this);
+    this.onDispose?.();
   }
+
+  /**
+   * @internal
+   * Optional function to be called when the Bloc is disposed.
+   */
+  onDispose?: () => void;
 
   /**
    * @internal
