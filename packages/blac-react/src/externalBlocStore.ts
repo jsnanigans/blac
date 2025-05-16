@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { BlocBase, BlocConstructor, BlocHookDependencyArrayFn, BlocState } from '../../blac/src';
+import { BlocBase, BlocConstructor, BlocHookDependencyArrayFn, BlocState } from '@blac/core';
 
 /**
  * Interface defining an external store that can be used to subscribe to and access bloc state.

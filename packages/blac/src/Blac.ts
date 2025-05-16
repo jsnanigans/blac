@@ -4,6 +4,8 @@ import { BlocBase, BlocInstanceId } from "./BlocBase";
 import {
   BlocBaseAbstract,
   BlocConstructor,
+  BlocHookDependencyArrayFn,
+  BlocState,
   InferPropsFromGeneric
 } from "./types";
 
@@ -13,6 +15,14 @@ import {
 export interface BlacConfig {
   /** Whether to expose the Blac instance globally */
   exposeBlacInstance?: boolean;
+}
+
+export interface GetBlocOptions<B extends BlocBase<any>> {
+  id?: string;
+  dependencySelector?: BlocHookDependencyArrayFn<BlocState<B>>;
+  props?: InferPropsFromGeneric<B>;
+  onMount?: (bloc: B) => void;
+  instanceRef?: string;
 }
 
 /**
@@ -344,12 +354,12 @@ export class Blac {
    * @param instanceRef - Optional reference string for the instance
    * @returns The newly created bloc instance
    */
-  createNewBlocInstance<B extends BlocConstructor<unknown>>(
+  createNewBlocInstance<B extends BlocConstructor<BlocBase<any>>>(
     blocClass: B,
     id: BlocInstanceId,
-    props?: InferPropsFromGeneric<B>,
-    instanceRef?: string,
+    options: GetBlocOptions<InstanceType<B>> = {},
   ): InstanceType<B> {
+    const { props, instanceRef } = options;
     const newBloc = new blocClass(props as never) as InstanceType<BlocConstructor<BlocBase<unknown>>>;
     newBloc._instanceRef = instanceRef;
     newBloc.props = props || null;
@@ -375,15 +385,11 @@ export class Blac {
    *   - instanceRef: Optional reference string for the instance
    * @returns The bloc instance
    */
-  getBloc = <B extends BlocConstructor<unknown>>(
+  getBloc = <B extends BlocConstructor<BlocBase<any>>>(
     blocClass: B,
-    options: {
-      id?: BlocInstanceId;
-      props?: InferPropsFromGeneric<B>;
-      instanceRef?: string;
-    } = {},
+    options: GetBlocOptions<InstanceType<B>> = {},
   ): InstanceType<B> => {
-    const { id, props, instanceRef } = options;
+    const { id } = options;
     const base = blocClass as unknown as BlocBaseAbstract;
     const blocId = id ?? blocClass.name;
 
@@ -409,8 +415,7 @@ export class Blac {
     return this.createNewBlocInstance(
       blocClass,
       blocId,
-      props,
-      instanceRef,
+      options,
     );
   };
   static getBloc = Blac.instance.getBloc;
