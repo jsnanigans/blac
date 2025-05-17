@@ -1,6 +1,6 @@
 {
   "name": "@blac/react",
-  "version": "0.0.59",
+  "version": "2.0.0",
   "license": "MIT",
   "author": "Brendan Mullins <jsnanigans@gmail.com>",
   "main": "src/index.ts",
@@ -38,8 +38,7 @@
     "build": "vite build",
     "deploy": "pnpm run build && pnpm publish --access public"
   },
-  "dependencies": {
-  },
+  "dependencies": {},
   "peerDependencies": {
     "@blac/core": "workspace:*",
     "react": "^18.0.0"
