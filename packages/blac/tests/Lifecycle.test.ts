@@ -489,12 +489,11 @@ describe('Blac Lifecycle Events', () => {
         expect(newBlac.blocInstanceMap.size).toBe(0);
         expect(newBlac.isolatedBlocMap.size).toBe(0);
 
-        // Check that dispose was called on non-keepAlive via the mock plugin
-        // (which was attached to the old instance that got reset)
+        // Check that dispose was called on all blocs via the mock plugin
         expect(mockPlugin.onEvent).toHaveBeenCalledWith(BlacLifecycleEvent.BLOC_DISPOSED, normalBloc, undefined);
-        expect(mockPlugin.onEvent).toHaveBeenCalledWith(BlacLifecycleEvent.BLOC_DISPOSED, isolatedBloc, undefined); // Isolated are NOT keepAlive by default
-        expect(mockPlugin.onEvent).not.toHaveBeenCalledWith(BlacLifecycleEvent.BLOC_DISPOSED, keepAliveBloc, undefined);
-        expect(mockPlugin.onEvent).not.toHaveBeenCalledWith(BlacLifecycleEvent.BLOC_DISPOSED, keepAliveIsolatedBloc, undefined);
+        expect(mockPlugin.onEvent).toHaveBeenCalledWith(BlacLifecycleEvent.BLOC_DISPOSED, isolatedBloc, undefined); 
+        expect(mockPlugin.onEvent).toHaveBeenCalledWith(BlacLifecycleEvent.BLOC_DISPOSED, keepAliveBloc, undefined);
+        expect(mockPlugin.onEvent).toHaveBeenCalledWith(BlacLifecycleEvent.BLOC_DISPOSED, keepAliveIsolatedBloc, undefined);
 
         // Restore blac reference for subsequent tests in the suite
         blac = newBlac;

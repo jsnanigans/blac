@@ -179,8 +179,8 @@ describe('@blac/core - Memory and Lifecycle Tests', () => {
 
             expect(regularDisposeSpy).toHaveBeenCalled();
             expect(isolatedDisposeSpy).toHaveBeenCalled();
-            expect(keepAliveDisposeSpy).not.toHaveBeenCalled();
-            expect(isolatedKeepAliveDisposeSpy).not.toHaveBeenCalled();
+            expect(keepAliveDisposeSpy).toHaveBeenCalled();
+            expect(isolatedKeepAliveDisposeSpy).toHaveBeenCalled();
 
             const newBlacInstance = Blac.instance;
             expect(newBlacInstance.findRegisteredBlocInstance(CounterBloc, regularBlocId)).toBeUndefined();
