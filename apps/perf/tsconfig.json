@@ -14,18 +14,13 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": true,
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
       "@blac/core": ["../../packages/blac/src/index.ts"],
       "@blac/react": ["../../packages/blac-react/src/index.ts"]
     },
-    "types": ["vite/client", "node"]
+    "types": ["vite/client"]
   },
-  "include": ["main.ts", "vite.config.ts"],
-  "references": [
-    { "path": "../../packages/blac" },
-    { "path": "../../packages/blac-react" }
-  ]
+  "include": ["main.ts", "vite.config.ts"]
 } 

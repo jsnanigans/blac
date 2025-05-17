@@ -35,14 +35,15 @@ export class BlacObservable<S = unknown> {
     this.bloc = bloc;
   }
 
-  private _observers = new Set<BlacObserver<S>>();
+  // private _observers = new Set<BlacObserver<S>>();
+  private _observers: BlacObserver<S>[] = [];
 
   /**
    * Gets the number of active observers
    * @returns The number of observers currently subscribed
    */
   get size(): number {
-    return this._observers.size;
+    return this._observers.length;
   }
 
   /**
@@ -59,7 +60,7 @@ export class BlacObservable<S = unknown> {
    * @returns A function that can be called to unsubscribe the observer
    */
   subscribe(observer: BlacObserver<S>): () => void {
-    this._observers.add(observer);
+    this._observers.push(observer);
     Blac.instance.dispatchEvent(BlacLifecycleEvent.LISTENER_ADDED, this.bloc, { listenerId: observer.id });
     if (!observer.lastState) {
       observer.lastState = observer.dependencyArray
@@ -76,7 +77,7 @@ export class BlacObservable<S = unknown> {
    * @param observer - The observer to unsubscribe
    */
   unsubscribe(observer: BlacObserver<S>) {
-    this._observers.delete(observer);
+    this._observers = this._observers.filter((o) => o.id !== observer.id);
     Blac.instance.dispatchEvent(BlacLifecycleEvent.LISTENER_REMOVED, this.bloc, { listenerId: observer.id });
   }
 
@@ -124,6 +125,6 @@ export class BlacObservable<S = unknown> {
       this.unsubscribe(observer);
       observer.dispose?.();
     });
-    this._observers.clear();
+    this._observers = [];
   }
 }

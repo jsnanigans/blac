@@ -18,17 +18,17 @@ describe('BlacObserver', () => {
       const observable = new BlacObservable(dummyBloc);
       const observer = { fn: vi.fn(), id: 'foo' };
       observable.subscribe(observer);
-      expect(observable.observers.size).toBe(1);
-      expect(observable.observers.has(observer)).toBe(true);
+      expect(observable.size).toBe(1);
+      expect(observable.observers.includes(observer)).toBe(true);
     });
 
     it('should return a function to unsubscribe the observer', () => {
       const observable = new BlacObservable(dummyBloc);
       const observer = { fn: vi.fn(), id: 'foo' };
       const unsubscribe = observable.subscribe(observer);
-      expect(observable.observers.size).toBe(1);
+      expect(observable.size).toBe(1);
       unsubscribe();
-      expect(observable.observers.size).toBe(0);
+      expect(observable.size).toBe(0);
     });
   });
 
@@ -37,9 +37,9 @@ describe('BlacObserver', () => {
       const observable = new BlacObservable(dummyBloc);
       const observer = { fn: vi.fn(), id: 'foo' };
       observable.subscribe(observer);
-      expect(observable.observers.size).toBe(1);
+      expect(observable.size).toBe(1);
       observable.unsubscribe(observer);
-      expect(observable.observers.size).toBe(0);
+      expect(observable.size).toBe(0);
     });
   });
 
@@ -68,10 +68,10 @@ describe('BlacObserver', () => {
 
       observable.subscribe(observer1);
       observable.subscribe(observer2);
-      expect(observable.observers.size).toBe(2);
+      expect(observable.size).toBe(2);
 
       observable.dispose();
-      expect(observable.observers.size).toBe(0);
+      expect(observable.size).toBe(0);
     });
   });
 });

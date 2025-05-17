@@ -72,10 +72,14 @@ class DemoBloc extends Cubit<DataItem[]> {
   lastSelected: number = -1; 
   select = (index: number): void => {
     const newData = [...this.state];
-    if (this.lastSelected !== -1) {
+
+    if (this.lastSelected !== -1 && this.lastSelected !== index) {
       newData[this.lastSelected] = { ...newData[this.lastSelected], selected: false };
     }
-    newData[index] = { ...newData[index], selected: !newData[index].selected };
+
+    const item = newData[index];
+    newData[index] = { ...item, selected: !item.selected };
+
     this.lastSelected = index;
     this.emit(newData);
   };
@@ -106,7 +110,7 @@ interface RowProps {
   index: number;
 }
 
-const Row: React.FC<RowProps> = React.memo(({ index }) => {
+const Row: React.FC<RowProps> = ({ index }) => {
   const [allData, { remove, select }] = useBloc(DemoBloc);
   const item = allData[index];
   if (item.removed) return null;
@@ -123,11 +127,11 @@ const Row: React.FC<RowProps> = React.memo(({ index }) => {
       <td className="col-md-6"></td>
     </tr>
   );
-});
+};
 
 const RowList: React.FC = () => {
   const [allData] = useBloc(DemoBloc, {
-    dependencySelector: (s: DataItem[]) => [s.length]
+    dependencySelector: (s: DataItem[]) => [[s.length]]
   });
   
   return allData.map((item, index) => (
@@ -144,13 +148,13 @@ interface ButtonProps {
   cb: () => void;
 }
 
-const Button: React.FC<ButtonProps> = React.memo(({ id, title, cb }) => (
+const Button: React.FC<ButtonProps> = ({ id, title, cb }) => (
   <div className="col-sm-6 smallpad">
     <button type="button" className="btn btn-primary btn-block" id={id} onClick={cb}>
       {title}
     </button>
   </div>
-));
+);
 
 const Main: React.FC = () => {
   const [, { run, runLots, add, update, clear, swapRows }] = useBloc(DemoBloc);
@@ -184,6 +188,7 @@ const Main: React.FC = () => {
 };
 
 const container = document.getElementById("main");
+
 if (container) {
   const root: Root = createRoot(container);
   root.render(<Main />);

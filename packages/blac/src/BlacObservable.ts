@@ -83,6 +83,3 @@ export class BlacObservable<S = unknown> {
     Blac.instance.dispatchEvent(BlacLifecycleEvent.LISTENER_REMOVED, this.bloc, { listenerId: observer.id });
   }
 }
-
-  /**
- 

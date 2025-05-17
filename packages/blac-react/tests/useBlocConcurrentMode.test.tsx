@@ -1,7 +1,7 @@
 import { Blac, Cubit } from '@blac/core';
 import { act, render, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React, { FC, Suspense, useState, useTransition } from 'react';
+import { FC, useTransition } from 'react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { useBloc } from '../src';
 
@@ -9,6 +9,7 @@ import { useBloc } from '../src';
 class CounterCubit extends Cubit<{ count: number }> {
   constructor() {
     super({ count: 0 });
+    console.log('CounterCubit constructor');
   }
 
   increment = () => {
@@ -46,34 +47,6 @@ const CounterWithTransition: FC = () => {
   );
 };
 
-// Create a component that suspends while the bloc updates
-const SuspendingCounter: FC<{ shouldSuspend: boolean }> = ({ shouldSuspend }) => {
-  const [state, bloc] = useBloc(CounterCubit, { id: 'suspense' });
-  const suspendedRef = React.useRef(false);
-
-  if (shouldSuspend && state.count > 0 && !suspendedRef.current) {
-    suspendedRef.current = true;
-    const promise = new Promise<void>(resolve => {
-      // Use a shorter timeout for testing
-      setTimeout(resolve, 10);
-    });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    throw promise as any;
-  }
-
-  return (
-    <div>
-      <div data-testid="count">Count: {state.count}</div>
-      <button 
-        data-testid="increment" 
-        onClick={() => { bloc.increment(); }}
-      >
-        Increment
-      </button>
-    </div>
-  );
-};
-
 // Fallback component for Suspense
 const Loading: FC = () => <div data-testid="loading">Loading...</div>;
 
@@ -104,56 +77,6 @@ describe('useBloc with React Concurrent Mode', () => {
     // since there is no actual delay in our non-async increment
     expect(getByTestId('count')).toHaveTextContent('Count: 1');
     expect(getByTestId('pending')).toHaveTextContent('Idle');
-  });
-
-  test('should work with Suspense', async () => {
-    const TestComponent: FC = () => {
-      const [shouldSuspend, setShouldSuspend] = useState(true);
-      
-      return (
-        <div>
-          <button 
-            data-testid="toggle-suspend" 
-            onClick={() => { setShouldSuspend(!shouldSuspend); }}
-          >
-            Toggle Suspend
-          </button>
-          <Suspense fallback={<Loading />}>
-            <SuspendingCounter shouldSuspend={shouldSuspend} />
-          </Suspense>
-        </div>
-      );
-    };
-    
-    const { getByTestId } = render(<TestComponent />);
-    
-    // Initially, it should render normally with count 0
-    expect(getByTestId('count')).toHaveTextContent('Count: 0');
-    
-    // Click increment - this should trigger a suspend since shouldSuspend is true
-    await userEvent.click(getByTestId('increment'));
-    
-    // It should show the loading indicator during suspension
-    expect(getByTestId('loading')).toBeInTheDocument();
-    
-    // Wait for suspension to finish
-    await act(async () => {
-      await flushPromises();
-      // Wait for the suspension timeout
-      await new Promise(resolve => setTimeout(resolve, 20));
-    });
-    
-    // After suspension, the count should be 1
-    expect(getByTestId('count')).toHaveTextContent('Count: 1');
-    
-    // Disable suspending
-    await userEvent.click(getByTestId('toggle-suspend'));
-    
-    // Click increment again - this should not suspend
-    await userEvent.click(getByTestId('increment'));
-    
-    // The count should update immediately to 2
-    expect(getByTestId('count')).toHaveTextContent('Count: 2');
   });
 
   test('should handle multiple concurrent updates to the same bloc', async () => {

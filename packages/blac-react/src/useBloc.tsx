@@ -130,60 +130,61 @@ export default function useBloc<B extends BlocConstructor<BlocBase<any>>>(
   }
 
   // Configure dependency tracking for re-renders
-  const dependencyArray: BlocHookDependencyArrayFn<BlocState<InstanceType<B>>> = (
-    newState,
-    oldState,
-  ): ReturnType<BlocHookDependencyArrayFn<BlocState<InstanceType<B>>>> => {
-    // Use custom dependency selector if provided
-    if (dependencySelector) {
-      return dependencySelector(newState, oldState);
-    }
-
-    // Fall back to bloc's default dependency selector if available
-    if (resolvedBloc.defaultDependencySelector) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-      return resolvedBloc.defaultDependencySelector(newState, oldState);
-    }
-
-    // For primitive states, use default selector
-    if (typeof newState !== 'object') {
-      // Default behavior for primitive states: re-render if the state itself changes.
-      return [[newState]];
-    }
-
-    // For object states, track which properties were actually used
-    const usedStateValues: string[] = [];
-    for (const key of usedKeys.current) {
-      if (key in newState) {
-        usedStateValues.push(newState[key as keyof typeof newState]);
-      }
-    }
-
-    // Track used class properties for dependency tracking, this enables rerenders when class getters change
-    const usedClassValues: unknown[] = [];
-    for (const key of usedClassPropKeys.current) {
-      if (key in resolvedBloc) {
-        try {
-          const value = resolvedBloc[key as keyof InstanceType<B>];
-          switch (typeof value) {
-            case 'function':
-              continue;
-            default:
-              usedClassValues.push(value);
-              continue;
+  const dependencyArray: BlocHookDependencyArrayFn<BlocState<InstanceType<B>>> =
+    useMemo(
+      () =>
+        (
+          newState,
+        ): ReturnType<
+          BlocHookDependencyArrayFn<BlocState<InstanceType<B>>>
+        > => {
+          // Use custom dependency selector if provided
+          if (dependencySelector) {
+            return dependencySelector(newState);
           }
-        } catch (error) {
-          Blac.instance.log('useBloc Error', error);
-        }
-      }
-    }
 
-    setTimeout(() => {
-      instanceKeys.current = new Set();
-      instanceClassPropKeys.current = new Set();
-    });
-    return [usedStateValues, usedClassValues];
-  };
+          // Fall back to bloc's default dependency selector if available
+          if (resolvedBloc.defaultDependencySelector) {
+            return resolvedBloc.defaultDependencySelector(newState);
+          }
+
+          // For primitive states, use default selector
+          if (typeof newState !== 'object') {
+            // Default behavior for primitive states: re-render if the state itself changes.
+            return [[newState]];
+          }
+
+          // For object states, track which properties were actually used
+          const usedStateValues: string[] = [];
+          for (const key of usedKeys.current) {
+            if (key in newState) {
+              usedStateValues.push(newState[key as keyof typeof newState]);
+            }
+          }
+
+          // Track used class properties for dependency tracking, this enables rerenders when class getters change
+          const usedClassValues: unknown[] = [];
+          for (const key of usedClassPropKeys.current) {
+            if (key in resolvedBloc) {
+              try {
+                const value = resolvedBloc[key as keyof InstanceType<B>];
+                switch (typeof value) {
+                  case 'function':
+                    continue;
+                  default:
+                    usedClassValues.push(value);
+                    continue;
+                }
+              } catch (error) {
+                Blac.instance.log('useBloc Error', error);
+              }
+            }
+          }
+
+          return [usedStateValues, usedClassValues];
+        },
+      [],
+    );
 
   // Set up external store subscription for state updates
   const store = useMemo(
@@ -239,6 +240,9 @@ export default function useBloc<B extends BlocConstructor<BlocBase<any>>>(
     // inherit the keys from the previous render
     usedKeys.current = new Set(instanceKeys.current);
     usedClassPropKeys.current = new Set(instanceClassPropKeys.current);
+
+    instanceKeys.current = new Set();
+    instanceClassPropKeys.current = new Set();
   }, [renderInstance]);
 
   // Set up bloc lifecycle management
