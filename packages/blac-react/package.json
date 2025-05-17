@@ -2,14 +2,24 @@
   "name": "@blac/react",
   "version": "0.0.59",
   "license": "MIT",
+  "author": "Brendan Mullins <jsnanigans@gmail.com>",
   "main": "src/index.ts",
   "module": "src/index.ts",
   "typings": "src/index.ts",
   "types": "src/index.ts",
+  "publishConfig": {
+    "main": "dist/index.cjs.js",
+    "module": "dist/index.es.js",
+    "types": "dist/index.d.ts",
+    "typings": "dist/index.d.ts"
+  },
   "files": [
     "dist",
-    "src"
+    "src",
+    "README.md",
+    "LICENSE"
   ],
+  "sideEffects": false,
   "keywords": [
     "react",
     "typescript",
@@ -24,7 +34,9 @@
     "prettier": "prettier --write ./src",
     "test": "vitest run --config vitest.config.ts",
     "test:watch": "vitest --watch --config vitest.config.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build": "vite build",
+    "deploy": "pnpm run build && pnpm publish --access public"
   },
   "dependencies": {
   },

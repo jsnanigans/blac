@@ -2,10 +2,24 @@
   "name": "@blac/core",
   "version": "1.0.30",
   "license": "MIT",
+  "author": "Brendan Mullins <jsnanigans@gmail.com>",
   "main": "src/index.ts",
   "module": "src/index.ts",
   "typings": "src/index.ts",
   "types": "src/index.ts",
+  "publishConfig": {
+    "main": "dist/index.cjs.js",
+    "module": "dist/index.es.js",
+    "types": "dist/index.d.ts",
+    "typings": "dist/index.d.ts"
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
   "keywords": [
     "typescript",
     "rxjs",
@@ -19,7 +33,9 @@
     "test": "vitest run",
     "test:watch": "vitest --watch",
     "coverage": "vitest run --coverage",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build": "vite build",
+    "deploy": "pnpm run build && pnpm publish --access public"
   },
   "dependencies": {},
   "devDependencies": {
