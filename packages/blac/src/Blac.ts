@@ -133,18 +133,17 @@ export class Blac {
     const oldIsolatedBlocMap = new Map(this.isolatedBlocMap);
 
     oldBlocInstanceMap.forEach((bloc) => {
-      if (!bloc._keepAlive) {
-        bloc._dispose();
-      }
+      bloc._dispose();
     });
 
     oldIsolatedBlocMap.forEach((blocArray) => {
       blocArray.forEach((bloc) => {
-        if (!bloc._keepAlive) {
-          bloc._dispose();
-        }
+        bloc._dispose();
       });
     });
+
+    this.blocInstanceMap.clear();
+    this.isolatedBlocMap.clear();
 
     // Create and assign the new instance
     Blac.instance = new Blac({

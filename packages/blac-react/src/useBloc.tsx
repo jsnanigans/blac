@@ -1,22 +1,21 @@
 /* eslint-disable @typescript-eslint/restrict-template-expressions */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
-  useEffect,
-  useId,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useSyncExternalStore,
-} from 'react';
-import {
   Blac,
   BlocBase,
   BlocBaseAbstract,
   BlocConstructor,
   BlocHookDependencyArrayFn,
   BlocState,
-  InferPropsFromGeneric
-} from '../../blac/src';
+  InferPropsFromGeneric,
+} from '@blac/core';
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useSyncExternalStore,
+} from 'react';
 import externalBlocStore from './externalBlocStore';
 
 /**
@@ -75,7 +74,9 @@ export default function useBloc<B extends BlocConstructor<BlocBase<any>>>(
   options?: BlocHookOptions<InstanceType<B>>,
 ): HookTypes<B> {
   const { dependencySelector, id: blocId, props } = options ?? {};
-  const rid = useId();
+  const rid = useMemo(() => {
+    return Math.random().toString(36);
+  }, []);
 
   // Track used state keys
   const usedKeys = useRef<Set<string>>(new Set());
@@ -100,8 +101,7 @@ export default function useBloc<B extends BlocConstructor<BlocBase<any>>>(
   useMemo(() => {
     blocRef.current = Blac.getBloc(bloc, {
       id: effectiveBlocId,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      props: props as any,
+      props,
       instanceRef: rid, // Pass component ID for consumer tracking
     });
   }, [bloc, effectiveBlocId, rid]); // Dependencies ensure this runs only when bloc type or ID changes
@@ -255,7 +255,7 @@ export default function useBloc<B extends BlocConstructor<BlocBase<any>>>(
     return () => {
       currentBlocInstance._removeConsumer(rid);
     };
-  }, [options?.onMount, bloc, rid]); // Removed resolvedBloc, props from deps
+  }, [bloc, rid]); // Do not add options.onMount to deps, it will cause a loop
 
   return [returnState, returnClass];
 }

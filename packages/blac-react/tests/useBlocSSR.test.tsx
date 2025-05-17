@@ -1,4 +1,4 @@
-import React, { FC, ReactNode } from 'react';
+import { FC, ReactNode } from 'react';
 import { renderToString } from 'react-dom/server';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { Blac, Cubit } from '../../blac/src';
@@ -79,12 +79,50 @@ describe('useBloc SSR compatibility', () => {
     expect(html).toContain('<div data-testid="counter">Count: <!-- -->5</div>');
   });
 
-  test('should handle changes to props during SSR', () => {
+  test('should share blocs on SSR', () => {
+    // Define a cubit that takes props
+    class PropsCubit extends Cubit<{ value: string }> {
+      constructor() {
+        super({ value: 'initial' });
+      }
+
+      updateValue = (value: string) => {
+        this.patch({ value });
+      };
+    }
+
+    // Define a component that uses the cubit with props
+    const PropsComponent: FC = () => {
+      const [state] = useBloc(PropsCubit);
+
+      return <>Value: {state.value}</>;
+    };
+
+    const html1 = renderToStringWithMocks(
+      <PropsComponent />,
+    );
+    expect(html1).toContain('Value: <!-- -->initial');
+
+    const bloc = Blac.getBloc(PropsCubit);
+    bloc.updateValue('different');
+
+    const html2 = renderToStringWithMocks(
+      <PropsComponent />,
+    );
+    expect(html2).toContain('Value: <!-- -->different');
+
+    const html3 = renderToStringWithMocks(
+      <PropsComponent />,
+    );
+    expect(html3).toContain('Value: <!-- -->different');
+  });
+
+  test('should not share isolated blocs on SSR', () => {
     // Define a cubit that takes props
     class PropsCubit extends Cubit<{ value: string }, { initialValue: string }> {
       static isolated = true;
-
       constructor({ initialValue }: { initialValue: string }) {
+        console.log('PropsCubit constructor', initialValue);
         super({ value: initialValue });
       }
 
@@ -99,7 +137,7 @@ describe('useBloc SSR compatibility', () => {
         props: { initialValue },
       });
 
-      return <div>Value: {state.value}</div>;
+      return <>Value: {state.value}</>;
     };
 
     // Render with one set of props
@@ -108,15 +146,9 @@ describe('useBloc SSR compatibility', () => {
     );
     expect(html1).toContain('Value: <!-- -->initial');
 
-    // Reset Blac explicitly *between* renders within the same test
-    // This shouldn't be necessary if beforeEach works correctly, but let's try
-    Blac.resetInstance();
-
-    // Render with different props
     const html2 = renderToStringWithMocks(
       <PropsComponent initialValue="different" />,
     );
-    // Adjust expectation for React SSR comment
     expect(html2).toContain('Value: <!-- -->different');
   });
 
