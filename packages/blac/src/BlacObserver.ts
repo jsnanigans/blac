@@ -64,7 +64,7 @@ export class BlacObservable<S = unknown> {
     Blac.instance.dispatchEvent(BlacLifecycleEvent.LISTENER_ADDED, this.bloc, { listenerId: observer.id });
     if (!observer.lastState) {
       observer.lastState = observer.dependencyArray
-        ? observer.dependencyArray(this.bloc.state, this.bloc.state)
+        ? observer.dependencyArray(this.bloc.state)
         : [];
     }
     return () => {
@@ -93,7 +93,7 @@ export class BlacObservable<S = unknown> {
 
       if (observer.dependencyArray) {
         const lastDependencyCheck = observer.lastState || [];
-        const newDependencyCheck = observer.dependencyArray(newState, oldState);
+        const newDependencyCheck = observer.dependencyArray(newState);
 
         for (let o = 0; o < newDependencyCheck.length; o++) {
           const partNew = newDependencyCheck[o];

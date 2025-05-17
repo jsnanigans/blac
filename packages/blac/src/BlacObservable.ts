@@ -66,7 +66,7 @@ export class BlacObservable<S = unknown> {
 
     if (!observer.lastState) {
       observer.lastState = observer.dependencyArray
-        ? observer.dependencyArray(this.bloc.state, this.bloc.state)
+        ? observer.dependencyArray(this.bloc.state)
         : [];
     }
     return () => {

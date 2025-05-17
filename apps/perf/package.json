@@ -5,9 +5,8 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "dev:perf": "vite",
+    "build:perf": "vite build"
   },
   "keywords": [],
   "author": "",
