@@ -10,11 +10,10 @@
     "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
-    "skipLibCheck": true,
+    "skipLibCheck": false,
     "forceConsistentCasingInFileNames": true,
     "experimentalDecorators": true,
-    "resolveJsonModule": true,
-    "types": ["vitest/globals", "@testing-library/jest-dom"]
+    "resolveJsonModule": true
   },
   "include": ["src", "tests", "vite.config.ts"],
   "exclude": ["publish.ts", "dev.ts"]

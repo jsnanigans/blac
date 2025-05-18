@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Blac, BlacObserver, BlocBase, BlocBaseAbstract, BlocConstructor, BlocHookDependencyArrayFn, BlocState } from '@blac/core';
 import { useCallback, useMemo, useRef } from 'react';
 import { BlocHookOptions } from './useBloc';

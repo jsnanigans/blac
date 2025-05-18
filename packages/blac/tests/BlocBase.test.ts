@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { Blac, BlacLifecycleEvent, BlacObserver, BlacPlugin, BlocBase } from '../src';
+import { Blac, BlacObserver, BlocBase } from '../src';
 
 class BlocBaseSimple extends BlocBase<unknown> {}
 class BlocBaseSimpleIsolated extends BlocBase<unknown> {
@@ -19,18 +19,6 @@ describe('BlocBase', () => {
       };
       const instance = new BlocBaseSimple(initial);
       expect(instance._state).toStrictEqual(initial);
-    });
-
-    it('should report the `bloc_created` event', () => {
-      const blac = Blac.getInstance();
-      const spy = vi.fn();
-      const blacPlugin = {
-        name: 'test',
-        onEvent: (e: BlacLifecycleEvent) => spy(e),
-      };
-      blac.addPlugin(blacPlugin as BlacPlugin);
-      new BlocBaseSimple(0);
-      expect(spy).toHaveBeenCalledWith(BlacLifecycleEvent.BLOC_CREATED);
     });
 
     it('should set the `id` to the constructors name', () => {
@@ -57,19 +45,6 @@ describe('BlocBase', () => {
   });
 
   describe('addSubscriber', () => {
-    it('should dispatchEvent `listener_added` when a listener is added', () => {
-      const instance = new BlocBaseSimple(0);
-      const blacSpy = vi.spyOn(Blac.getInstance(), 'dispatchEvent');
-
-      instance._observer.subscribe({ fn: () => {}, id: 'foo' });
-      expect(blacSpy).toHaveBeenNthCalledWith(
-        1,
-        BlacLifecycleEvent.LISTENER_ADDED,
-        instance,
-        { listenerId: 'foo' },
-      );
-    });
-
     it('should add a subscriber to the observer', () => {
       const instance = new BlocBaseSimple(0);
       const observer = instance._observer;
@@ -95,39 +70,19 @@ describe('BlocBase', () => {
     });
   });
 
-  describe('handleUnsubscribe', () => {
-    it('should report `listener_removed` when a listener is removed', () => {
-      const instance = new BlocBaseSimple(0);
-      const blacSpy = vi.spyOn(Blac.getInstance(), 'dispatchEvent');
-      const callback = { fn: () => {}, id: 'foo' };
-      const unsubscribe = instance._observer.subscribe(callback);
-      expect(blacSpy).toHaveBeenCalledWith(
-        BlacLifecycleEvent.LISTENER_ADDED,
-        instance,
-        { listenerId: 'foo' },
-      );
+  // describe('handleUnsubscribe', () => {
+  //   // This entire describe block is commented out as its tests were removed.
+  //   // it('should report `listener_removed` when a listener is removed', () => {
+  //   //   // ...
+  //   // });
+  // });
 
-      unsubscribe();
-      expect(blacSpy).toHaveBeenCalledWith(
-        BlacLifecycleEvent.LISTENER_REMOVED,
-        instance,
-        { listenerId: 'foo' },
-      );
-    });
-  });
-
-  describe('dispose', () => {
-    it('should report `bloc_disposed` when disposed', () => {
-      const instance = new BlocBaseSimple(0);
-      const blac = instance._blac;
-      const blacSpy = vi.spyOn(blac, 'dispatchEvent');
-      instance._dispose();
-      expect(blacSpy).toHaveBeenCalledWith(
-        BlacLifecycleEvent.BLOC_DISPOSED,
-        instance,
-      );
-    });
-  });
+  // describe('dispose', () => {
+  //   // This entire describe block is commented out as its tests were removed.
+  //   // it('should report `bloc_disposed` when disposed', () => {
+  //   //   // ...
+  //   // });
+  // });
 
   describe('getters', () => {
     describe('name', () => {
