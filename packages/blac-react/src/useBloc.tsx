@@ -10,7 +10,7 @@ import {
   useMemo,
   useSyncExternalStore
 } from 'react';
-import useExternalBlocStore from './externalBlocStore';
+import useExternalBlocStore from './useExternalBlocStore';
 
 /**
  * Type definition for the return type of the useBloc hook

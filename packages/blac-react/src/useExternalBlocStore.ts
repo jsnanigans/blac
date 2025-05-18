@@ -39,13 +39,6 @@ export interface ExternalBlacStore<
 /**
  * Creates an external store that wraps a Bloc instance, providing a React-compatible interface
  * for subscribing to and accessing bloc state.
- * 
- * @template B - The type of the Bloc instance
- * @template S - The type of the Bloc state
- * @param bloc - The Bloc instance to wrap
- * @param dependencyArray - Function that returns an array of dependencies for the subscription
- * @param rid - Unique identifier for the subscription
- * @returns An ExternalStore instance that provides methods to subscribe to and access bloc state
  */
 const useExternalBlocStore = <
   B extends BlocConstructor<BlocBase<any>>
