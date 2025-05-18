@@ -186,4 +186,4 @@ Notice in the async example:
 -   Error handling is included within the `fetchRandomCount` method.
 -   The UI (`AsyncCounterDisplay`) conditionally renders loading/error messages and disables buttons during loading.
 
-This covers the basics of getting started with Blac using `Cubit`. Explore further sections to learn about the more advanced `Bloc` class (with events and reducers), advanced patterns, and API details.
+This covers the basics of getting started with Blac using `Cubit`. Explore further sections to learn about the more advanced `Bloc` class (which uses an event-handler pattern: `this.on(EventType, handler)` and `this.add(new EventType())`), advanced patterns, and API details.

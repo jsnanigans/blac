@@ -64,57 +64,58 @@ class CounterCubit extends Cubit<CounterState> {
 ```
 Cubits are excellent for straightforward state management. See [Cubit API details](/api/core-classes#cubit-s-p).
 
-### `Bloc<State, Action, Props>`
+### `Bloc<State, Event, Props>`
 
-A `Bloc` is more structured and suited for complex state logic. It processes `Action`s (events) which are dispatched to it via its `add(action)` method. These actions are then handled by a `reducer` function. The `reducer` is a pure function that takes the current state and the dispatched action, and returns a new state. This event-driven update cycle, where state transitions are explicit and decoupled, is similar to the reducer pattern found in Redux.
+A `Bloc` is more structured and suited for complex state logic. It processes instances of event *classes* which are dispatched to it via its `add(eventInstance)` method. These events are then handled by specific handler functions registered for each event class using `this.on(EventClass, handler)`. This event-driven update cycle, where state transitions are explicit and type-safe, allows for clear and decoupled business logic.
 
--   `add(action: Action)`: Dispatches an action to the `reducer`.
--   `reducer(action: Action, currentState: State): State`: A pure function that defines how the state changes in response to actions.
+-   `on(EventClass, handler)`: Registers a handler function for a specific event class. The handler receives the event instance and an `emit` function to produce new state.
+-   `add(eventInstance: Event)`: Dispatches an instance of an event class. The `Bloc` looks up the registered handler based on the event instance's constructor.
 
 ```tsx
 import { Bloc } from '@blac/core';
 
-// 1. Define State and Actions
+// 1. Define State and Event Classes
 interface CounterState {
   count: number;
 }
 
-type CounterAction =
-  | { type: 'INCREMENT' }
-  | { type: 'DECREMENT' }
-  | { type: 'RESET' };
+class IncrementEvent { constructor(public readonly value: number = 1) {} }
+class DecrementEvent {}
+class ResetEvent {}
+
+// Optional: Union type for all events the Bloc handles
+type CounterBlocEvents = IncrementEvent | DecrementEvent | ResetEvent;
 
 // 2. Create the Bloc
-class CounterBloc extends Bloc<CounterState, CounterAction> {
+class CounterBloc extends Bloc<CounterState, CounterBlocEvents> {
   constructor() {
     super({ count: 0 }); // Initial state
+
+    // 3. Register event handlers
+    this.on(IncrementEvent, (event, emit) => {
+      emit({ ...this.state, count: this.state.count + event.value });
+    });
+
+    this.on(DecrementEvent, (_event, emit) => {
+      emit({ ...this.state, count: this.state.count - 1 });
+    });
+
+    this.on(ResetEvent, (_event, emit) => {
+      emit({ ...this.state, count: 0 });
+    });
   }
 
-  // 3. Implement the reducer
-  reducer = (action: CounterAction, state: CounterState): CounterState => {
-    switch (action.type) {
-      case 'INCREMENT':
-        return { ...state, count: state.count + 1 };
-      case 'DECREMENT':
-        return { ...state, count: state.count - 1 };
-      case 'RESET':
-        return { ...state, count: 0 };
-      default:
-        return state;
-    }
-  };
-
-  // 4. (Optional) Helper methods to dispatch actions
-  increment = () => this.add({ type: 'INCREMENT' });
-  decrement = () => this.add({ type: 'DECREMENT' });
-  reset = () => this.add({ type: 'RESET' });
+  // 4. (Optional) Helper methods to dispatch event instances
+  increment = (value?: number) => this.add(new IncrementEvent(value));
+  decrement = () => this.add(new DecrementEvent());
+  reset = () => this.add(new ResetEvent());
 }
 ```
-Blocs are ideal for complex state logic where transitions need to be more explicit and benefit from an event-driven architecture. See [Bloc API details](/api/core-classes#bloc-s-a-p).
+Blocs are ideal for complex state logic where transitions need to be more explicit, type-safe, and benefit from an event-driven architecture. See [Bloc API details](/api/core-classes#bloc-s-e-p).
 
 ## State Updates & Reactivity
 
-When a `Cubit` calls `emit`/`patch`, or a `Bloc`'s reducer produces a new state after an `add` call, the state container updates its internal state and notifies its observers.
+When a `Cubit` calls `emit`/`patch`, or a `Bloc`'s registered event handler emits a new state after an `add` call, the state container updates its internal state and notifies its observers.
 
 In React applications, the `useBloc` hook subscribes your components to these updates, triggering re-renders efficiently when relevant parts of the state change.
 
@@ -181,4 +182,4 @@ With these core concepts in mind, you are ready to:
 
 -   Delve into the [Blac Pattern](/learn/blac-pattern) for a deeper architectural understanding.
 -   Review [Best Practices](/learn/best-practices) for writing effective and maintainable Blac code.
--   Consult the full [API Reference](/api/core-classes) for detailed documentation on all classes and methods. 
+-   Consult the full [API Reference](/api/core-classes) for detailed documentation on all classes and methods.

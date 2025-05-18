@@ -131,7 +131,7 @@ const Row: React.FC<RowProps> = ({ index }) => {
 
 const RowList: React.FC = () => {
   const [allData] = useBloc(DemoBloc, {
-    dependencySelector: (s: DataItem[]) => [[s.length]]
+    selector: (s: DataItem[]) => [[s.length]]
   });
   
   return allData.map((item, index) => (

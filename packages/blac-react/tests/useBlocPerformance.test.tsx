@@ -1,6 +1,6 @@
 import { act, render } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React, { FC, useCallback } from 'react';
+import { FC, useCallback } from 'react';
 import { beforeEach, describe, expect, test } from 'vitest';
 import { Blac, Cubit } from '../../blac/src';
 import { useBloc } from '../src';
@@ -89,7 +89,7 @@ const PerformanceComponent: FC = () => {
   }, []);
   
   const [state, bloc] = useBloc(ComplexCubit, {
-    dependencySelector
+    selector: dependencySelector
   });
   
   return (

@@ -47,34 +47,37 @@ class CounterCubit extends Cubit<number> {
 }
 ```
 
-**Bloc**: More powerful state container with a reducer pattern for action-based state transitions.
+**Bloc**: More powerful state container that uses an event-handler pattern for type-safe, event-driven state transitions. Events (instances of classes) are dispatched via `this.add()`, and handlers are registered using `this.on(EventClass, handler)`.
 
 ```typescript
-// Define actions
-type CounterAction = 
-  | { type: 'increment', amount: number }
-  | { type: 'decrement', amount: number };
+// Define event classes
+class IncrementEvent { constructor(public readonly amount: number = 1) {} }
+class DecrementEvent { constructor(public readonly amount: number = 1) {} }
 
-class CounterBloc extends Bloc<number, CounterAction> {
+// Optional: Union type for all events
+type CounterEvent = IncrementEvent | DecrementEvent;
+
+class CounterBloc extends Bloc<number, CounterEvent> {
   constructor() {
     super(0); // Initial state
+
+    // Register event handlers
+    this.on(IncrementEvent, (event, emit) => {
+      emit(this.state + event.amount);
+    });
+
+    this.on(DecrementEvent, (event, emit) => {
+      emit(this.state - event.amount);
+    });
   }
 
-  reducer = (action: CounterAction, state: number): number => {
-    switch (action.type) {
-      case 'increment':
-        return state + action.amount;
-      case 'decrement':
-        return state - action.amount;
-    }
-  }
-
+  // Helper methods to dispatch event instances (optional)
   increment = (amount = 1) => {
-    this.add({ type: 'increment', amount });
+    this.add(new IncrementEvent(amount));
   }
 
   decrement = (amount = 1) => {
-    this.add({ type: 'decrement', amount });
+    this.add(new DecrementEvent(amount));
   }
 }
 ```
@@ -180,46 +183,51 @@ interface UserProfileState {
   error: string | null;
 }
 
-// Define actions (if any, for this example we'll focus on constructor and an async method)
-type UserProfileAction = { type: 'dataLoaded', data: any } | { type: 'error', error: string };
+// Define Event Classes for UserProfileBloc
+class UserProfileFetchEvent {}
+class UserProfileDataLoadedEvent { constructor(public readonly data: any) {} }
+class UserProfileErrorEvent { constructor(public readonly error: string) {} }
 
-class UserProfileBloc extends Bloc<UserProfileState, UserProfileAction> {
+type UserProfileEvents = UserProfileFetchEvent | UserProfileDataLoadedEvent | UserProfileErrorEvent;
+
+class UserProfileBloc extends Bloc<UserProfileState, UserProfileEvents, UserProfileProps> {
   private userId: string;
 
-  // The Blac library or its React bindings (like @blac/react)
-  // might provide a way to pass these props during instantiation.
-  // For example, `useBloc(UserProfileBloc, { props: { userId: '123' } })`
   constructor(props: UserProfileProps) {
     super({ loading: true, userData: null, error: null }); // Initial state
     this.userId = props.userId;
-    // Optional: Set a dynamic name for easier debugging with multiple instances
-    this._name = `UserProfileBloc_${this.userId}`; 
-    this.fetchUserProfile();
+    this._name = `UserProfileBloc_${this.userId}`;
+
+    // Register event handlers
+    this.on(UserProfileFetchEvent, this.handleFetchUserProfile);
+    this.on(UserProfileDataLoadedEvent, (event, emit) => {
+      emit({ ...this.state, loading: false, userData: event.data, error: null });
+    });
+    this.on(UserProfileErrorEvent, (event, emit) => {
+      emit({ ...this.state, loading: false, error: event.error });
+    });
+
+    // Initial fetch
+    this.add(new UserProfileFetchEvent());
   }
 
-  // Example reducer
-  reducer = (action: UserProfileAction, state: UserProfileState): UserProfileState => {
-    switch (action.type) {
-      case 'dataLoaded':
-        return { ...state, loading: false, userData: action.data, error: null };
-      case 'error':
-        return { ...state, loading: false, error: action.error };
-      default:
-        return state;
-    }
-  }
-
-  fetchUserProfile = async ()_ => {
-    this.emit({ ...this.state, loading: true }); // Set loading true before fetch
+  private handleFetchUserProfile = async (_event: UserProfileFetchEvent, emit: (state: UserProfileState) => void) => {
+    // Emit loading state directly if not already covered by initial state or another event
+    // For this example, constructor sets loading: true, so an immediate emit here might be redundant
+    // unless an event handler could set loading to false before this runs.
+    // emit({ ...this.state, loading: true }); // Ensure loading is true
     try {
-      // Simulate an API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
       const mockUserData = { id: this.userId, name: `User ${this.userId}`, bio: 'Loves Blac states!' };
-      // Dispatch an action or directly emit a new state
-      this.add({ type: 'dataLoaded', data: mockUserData });
+      this.add(new UserProfileDataLoadedEvent(mockUserData));
     } catch (e:any) {
-      this.add({ type: 'error', error: e.message || 'Failed to fetch user profile' });
+      this.add(new UserProfileErrorEvent(e.message || 'Failed to fetch user profile'));
     }
+  }
+  
+  // Public method to re-trigger fetch if needed
+  refetchUserProfile = () => {
+    this.add(new UserProfileFetchEvent());
   }
 }
 ```
@@ -230,7 +238,7 @@ class UserProfileBloc extends Bloc<UserProfileState, UserProfileAction> {
 
 - `BlocBase<S, P>`: Base class for state containers
 - `Cubit<S, P>`: Simple state container with `emit()` and `patch()`
-- `Bloc<S, A, P>`: Action-based state container with a reducer pattern
+- `Bloc<S, E, P>`: Event-driven state container with `on(EventClass, handler)` and `add(eventInstance)` methods.
 - `Blac`: Singleton manager for all Bloc instances
 
 ### React Hooks

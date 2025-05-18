@@ -100,6 +100,7 @@ export default CounterDisplay;
 -   **`BlocBase`**: The foundational abstract class for state containers.
 -   **`Cubit<State>`**: A simpler state container that exposes methods (similar to Zustand) to directly `emit` or `patch` new states. The Quick Start example above uses a `Cubit`.
 -   **`Bloc<State, Action>`**: A more advanced state container that processes `Action`s (events) through a `reducer` function (similar to Redux reducers) to produce new `State`. This is useful for more complex state logic where transitions are event-driven and require more structure.
+-   **`Bloc<State, Event>`**: A more advanced state container that uses an event-handler pattern. It processes event *instances* (typically classes) dispatched via `this.add(new EventType())`. Handlers for specific event classes are registered using `this.on(EventType, handler)`. This approach is useful for complex, type-safe state logic where transitions are event-driven.
 -   **`useBloc` Hook**: The primary React hook from `@blac/react` to connect components to `Bloc` or `Cubit` instances, providing the current state and the instance itself. It efficiently re-renders components when relevant state properties change.
 -   **Instance Management**: Blac's central `Blac` instance intelligently manages your `Bloc`s/`Cubit`s. By default, non-isolated Blocs are shared (keyed by class name or a custom ID). Blocs can be marked as `static isolated = true` or given unique IDs for component-specific state, and can be configured with `static keepAlive = true` to persist in memory.
 

@@ -1,4 +1,4 @@
-import externalBlocStore from './externalBlocStore';
+import useExternalBlocStore from './externalBlocStore';
 import useBloc from './useBloc';
 
-export { externalBlocStore, useBloc };
+export { useExternalBlocStore as externalBlocStore, useBloc };

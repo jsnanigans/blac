@@ -70,6 +70,115 @@ In the example above, the component only accesses `state.name`, so changes to ot
 
 ---
 
+#### Conditional Rendering and Getters with Automatic Tracking
+
+Blac's `useBloc` hook is smart enough to update its dependencies if the properties accessed in your component change due to conditional rendering or the use of getters.
+
+Let's consider a `UserProfileCubit` with a getter for a derived piece of information:
+
+```tsx
+// cubits/UserProfileCubit.ts
+import { Cubit } from '@blac/core';
+
+interface UserProfileState {
+  firstName: string;
+  lastName: string;
+  age: number;
+  showFullName: boolean;
+  accessCount: number; // To demonstrate updates not affecting UI initially
+}
+
+export class UserProfileCubit extends Cubit<UserProfileState> {
+  constructor() {
+    super({
+      firstName: 'Jane',
+      lastName: 'Doe',
+      age: 30,
+      showFullName: true,
+      accessCount: 0,
+    });
+  }
+
+  // Getter for full name
+  get fullName(): string {
+    this.patch({ accessCount: this.state.accessCount + 1 }); // Side-effect for demo
+    return `${this.state.firstName} ${this.state.lastName}`;
+  }
+
+  toggleShowFullName = () => this.patch({ showFullName: !this.state.showFullName });
+  setFirstName = (firstName: string) => this.patch({ firstName });
+  setLastName = (lastName: string) => this.patch({ lastName });
+  incrementAge = () => this.patch({ age: this.state.age + 1 });
+  // Method to update a non-rendered property
+  incrementAccessCount = () => this.patch({ accessCount: this.state.accessCount + 1 });
+}
+```
+
+Now, a component that uses this `UserProfileCubit` and conditionally renders information:
+
+```tsx
+// components/UserProfileDemo.tsx
+import React from 'react';
+import { useBloc } from '@blac/react';
+import { UserProfileCubit } from '../cubits/UserProfileCubit'; // Adjust path
+
+function UserProfileDemo() {
+  const [state, cubit] = useBloc(UserProfileCubit);
+
+  console.log('UserProfileDemo re-rendered. Access count:', state.accessCount);
+
+  return (
+    <div>
+      <h2>User Profile</h2>
+      {state.showFullName ? (
+        <p>Name: {cubit.fullName}</p> // Accesses getter, which depends on firstName and lastName
+      ) : (
+        <p>First Name: {state.firstName}</p> // Only accesses firstName
+      )}
+      <p>Age: {state.age}</p>
+
+      <button onClick={cubit.toggleShowFullName}>
+        Toggle Full Name Display
+      </button>
+      <button onClick={() => cubit.setFirstName('John')}>Set First Name to John</button>
+      <button onClick={() => cubit.setLastName('Smith')}>Set Last Name to Smith</button>
+      <button onClick={cubit.incrementAge}>Increment Age</button>
+      <button onClick={cubit.incrementAccessCount}>Increment Access Count (No Re-render Expected Initially)</button>
+    </div>
+  );
+}
+
+export default UserProfileDemo;
+```
+
+**Behavior Explanation:**
+
+1.  **Initial Render (`showFullName` is `true`):**
+    *   The component accesses `state.showFullName`, `cubit.fullName` (which in turn accesses `state.firstName` and `state.lastName` via the getter), and `state.age`.
+    *   `useBloc` tracks these dependencies: `showFullName`, `firstName`, `lastName`, `age`.
+    *   Changing `state.accessCount` via `cubit.incrementAccessCount()` will *not* cause a re-render because `accessCount` is not directly used in the JSX.
+
+2.  **Click "Toggle Full Name Display" (`showFullName` becomes `false`):**
+    *   The component re-renders because `state.showFullName` changed.
+    *   Now, the JSX accesses `state.showFullName`, `state.firstName`, and `state.age`. The `cubit.fullName` getter is no longer called.
+    *   `useBloc` updates its dependency tracking. The new dependencies are: `showFullName`, `firstName`, `age`.
+    *   **Crucially, `state.lastName` is no longer a dependency.**
+
+3.  **After Toggling ( `showFullName` is `false`):**
+    *   If you click "Set Last Name to Smith" (changing `state.lastName`), the component **will not re-render** because `state.lastName` is not currently an active dependency in the rendered output.
+    *   If you click "Set First Name to John" (changing `state.firstName`), the component **will re-render** because `state.firstName` is an active dependency.
+    *   If you click "Increment Age" (changing `state.age`), the component **will re-render**.
+
+4.  **Toggle Back (`showFullName` becomes `true` again):**
+    *   The component re-renders due to `state.showFullName` changing.
+    *   The JSX now accesses `cubit.fullName` again.
+    *   `useBloc` re-establishes `firstName` and `lastName` (via the getter) as dependencies, along with `showFullName` and `age`.
+    *   Now, changing `state.lastName` will cause a re-render.
+
+This dynamic dependency tracking ensures optimal performance by only re-rendering your component when the state it *currently* relies on for rendering actually changes. The use of getters is also seamlessly handled, with dependencies being tracked through the getter's own state access.
+
+---
+
 #### Custom ID for Instance Management
 If you want to share the same state between multiple components but need different instances of the Bloc/Cubit, you can define a custom ID.
 

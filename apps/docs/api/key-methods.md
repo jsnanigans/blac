@@ -85,86 +85,122 @@ class UserCubit extends Cubit<{
 }
 ```
 
-## Action Handling
+## Event Handling (Bloc)
 
-### add(action)
+### `on(eventConstructor, handler)`
 
-The `add` method dispatches an action to the reducer function in a Bloc.
+This method is specific to `Bloc` instances and is used to register a handler function for a specific type of event class.
 
 #### Signature
 
 ```tsx
-add(action: A): void
+on<EClass extends new (...args: any[]) => any>(
+  eventConstructor: EClass,
+  handler: (event: InstanceType<EClass>, emit: (newState: S) => void) => void
+): void
 ```
 
 #### Parameters
 
-| Name | Type | Description |
-|------|------|-------------|
-| `action` | `A` | The action to dispatch to the reducer |
+| Name                 | Type                                                                 | Description                                                                 |
+|----------------------|----------------------------------------------------------------------|-----------------------------------------------------------------------------|
+| `eventConstructor`   | `new (...args: any[]) => E`                                          | The constructor of the event class to listen for.                           |
+| `handler`            | `(event: InstanceType<EClass>, emit: (newState: S) => void) => void` | A function that processes the event and can emit new states.              |
 
 #### Example
 
 ```tsx
-// Define actions
-type TodoAction = 
-  | { type: 'add', payload: { text: string } }
-  | { type: 'toggle', payload: { id: number } }
-  | { type: 'delete', payload: { id: number } };
+class MyEvent { constructor(public data: string) {} }
+class AnotherEvent {}
 
-interface TodoState {
-  todos: Array<{ id: number, text: string, completed: boolean }>;
-}
-
-class TodoBloc extends Bloc<TodoState, TodoAction> {
+class MyBloc extends Bloc<{ value: string }, MyEvent | AnotherEvent> {
   constructor() {
-    super({ todos: [] });
+    super({ value: 'initial' });
+
+    this.on(MyEvent, (event, emit) => {
+      emit({ value: `Handled MyEvent with: ${event.data}` });
+    });
+
+    this.on(AnotherEvent, (_event, emit) => {
+      emit({ value: 'Handled AnotherEvent' });
+    });
   }
-
-  // Implement the reducer
-  reducer = (action: TodoAction, state: TodoState) => {
-    switch (action.type) {
-      case 'add':
-        return {
-          todos: [...state.todos, { id: Date.now(), text: action.payload.text, completed: false }]
-        };
-      case 'toggle':
-        return {
-          todos: state.todos.map((todo) =>
-            todo.id === action.payload.id
-              ? { ...todo, completed: !todo.completed }
-              : todo
-          )
-        };
-      case 'delete':
-        return {
-          todos: state.todos.filter((todo) => todo.id !== action.payload.id)  
-        };
-      default:
-        return state;
-    }
-  };
-
-  // Helper methods to dispatch actions from the UI layer
-  addTodo = (text: string) => {
-    this.add({ type: 'add', payload: { text } });
-  };
-
-  toggleTodo = (id: number) => {
-    this.add({ type: 'toggle', payload: { id } });
-  };
-
-  deleteTodo = (id: number) => {
-    this.add({ type: 'delete', payload: { id } });
-  };
 }
 ```
 
-## Subscription Management
+### `add(event)`
 
-### on(event, listener, signal?)
+The `add` method dispatches an event instance. The `Bloc` will then look up and execute the handler registered for that event's specific class (constructor).
 
-The `on` method subscribes to events and returns an unsubscribe function.
+#### Signature
+
+```tsx
+add(event: E): void // Where E is the union of event types the Bloc handles
+```
+
+#### Parameters
+
+| Name    | Type | Description                                                                 |
+|---------|------|-----------------------------------------------------------------------------|
+| `event` | `E`  | The event instance to dispatch.                                               |
+
+#### Example
+
+```tsx
+// Define event classes
+class AddTodoEvent { constructor(public readonly text: string) {} }
+class ToggleTodoEvent { constructor(public readonly id: number) {} }
+
+// Define state
+interface TodoState {
+  todos: Array<{ id: number, text: string, completed: boolean }>;
+  nextId: number;
+}
+
+class TodoBloc extends Bloc<TodoState, AddTodoEvent | ToggleTodoEvent> {
+  constructor() {
+    super({ todos: [], nextId: 1 });
+
+    this.on(AddTodoEvent, (event, emit) => {
+      const newTodo = { id: this.state.nextId, text: event.text, completed: false };
+      emit({
+        ...this.state,
+        todos: [...this.state.todos, newTodo],
+        nextId: this.state.nextId + 1,
+      });
+    });
+
+    this.on(ToggleTodoEvent, (event, emit) => {
+      emit({
+        ...this.state,
+        todos: this.state.todos.map((todo) =>
+          todo.id === event.id ? { ...todo, completed: !todo.completed } : todo
+        ),
+      });
+    });
+  }
+
+  // Helper methods to dispatch events from the UI layer (optional)
+  addTodo = (text: string) => {
+    this.add(new AddTodoEvent(text));
+  };
+
+  toggleTodo = (id: number) => {
+    this.add(new ToggleTodoEvent(id));
+  };
+}
+
+// Usage
+const todoBloc = new TodoBloc();
+todoBloc.addTodo('Learn Blac Events');
+todoBloc.toggleTodo(1);
+```
+
+## Subscription Management (BlocBase)
+
+### `on(blacEvent, listener, signal?)`
+
+The `on` method (from `BlocBase`) subscribes to generic `BlacEvent` types (like state changes or errors) and returns an unsubscribe function.
 
 #### Signature
 
@@ -219,8 +255,8 @@ abortController.abort();
 const todoBloc = new TodoBloc();
 
 // Subscribe to actions
-todoBloc.on(BlacEvent.Action, (state, oldState, action) => {
-  console.log('Action dispatched:', action);
+todoBloc.on(BlacEvent.Action, (state, oldState, event) => {
+  console.log('Event dispatched:', event);
   console.log('Old state:', oldState);
   console.log('New state:', state);
 });
@@ -233,5 +269,5 @@ todoBloc.on(BlacEvent.Action, (state, oldState, action) => {
 
 ## Choosing Between Bloc and Cubit  
 
-- Use `Bloc` for more complex state logic where an event-driven approach is beneficial. `Bloc`s process `Action`s (events) through a `reducer` function to produce new `State`. This pattern is similar to Redux reducers and is excellent for managing intricate state transitions and side effects in a structured way.
-- Use `Cubit` for simpler state management scenarios where state changes can be triggered by direct method calls on the `Cubit` instance. These methods then use `emit()` or `patch()` to update the state. This direct approach is often more concise for straightforward cases and shares similarities with libraries like Zustand.
+- Use `Bloc` for more complex state logic where an event-driven approach is beneficial. `Bloc`s process specific event *classes* through registered *handlers* (using `this.on(EventType, handler)` and `this.add(new EventType())`) to produce new `State`. This pattern is excellent for managing intricate state transitions and side effects in a structured and type-safe way.
+- Use `Cubit` for simpler state management scenarios where state changes can be triggered by direct method calls on the `Cubit` instance. These methods then use `emit()` or `patch()` to update the state. This direct approach is often more concise for straightforward cases.

@@ -58,5 +58,5 @@ export type BlocConstructorParameters<B extends BlocBase<any>> =
  * @template B - The BlocGeneric type
  */
 export type BlocHookDependencyArrayFn<S> = (
-  newState: S,
+  newState: S
 ) => unknown[][];

@@ -77,14 +77,14 @@ class CounterCubit extends Cubit<{ count: number }> {
 }
 ```
 
-## Bloc&lt;S, A, P&gt;
+## Bloc&lt;S, E, P&gt;
 
-`Bloc` is a more sophisticated state container that follows the reducer pattern. It extends `BlocBase` and adds action handling.
+`Bloc` is a more sophisticated state container that uses an event-handler pattern. It extends `BlocBase` and manages state transitions by registering handlers for specific event classes.
 
 ### Type Parameters
 
 - `S` - The state type
-- `A` - The action type
+- `E` - The base type or union of event classes that this Bloc can process.
 - `P` - The props type (optional)
 
 ### Constructor
@@ -97,41 +97,44 @@ constructor(initialState: S)
 
 | Name | Parameters | Return Type | Description |
 |------|------------|-------------|-------------|
-| `add` | `action: A` | `void` | Dispatches an action to the reducer |
-| `reducer` | `action: A, state: S` | `S` | Determines how state changes in response to actions (must be implemented) |
+| `on` | `eventConstructor: new (...args: any[]) => E, handler: (event: InstanceType<typeof eventConstructor>, emit: (newState: S) => void) => void` | `void` | Registers an event handler for a specific event class. |
+| `add` | `event: E` | `void` | Dispatches an event instance to its registered handler. The handler is looked up based on the event's constructor. |
 
 ### Example
 
 ```tsx
-// Define actions
-type CounterAction = 
-  | { type: 'increment' }
-  | { type: 'decrement' }
-  | { type: 'reset' };
+// Define event classes
+class IncrementEvent {
+  constructor(public readonly value: number = 1) {}
+}
+class DecrementEvent {}
+class ResetEvent {}
 
-class CounterBloc extends Bloc<{ count: number }, CounterAction> {
+// Union type for all possible event classes (optional but can be useful)
+type CounterEvent = IncrementEvent | DecrementEvent | ResetEvent;
+
+class CounterBloc extends Bloc<{ count: number }, CounterEvent> {
   constructor() {
     super({ count: 0 });
+
+    // Register event handlers
+    this.on(IncrementEvent, (event, emit) => {
+      emit({ count: this.state.count + event.value });
+    });
+
+    this.on(DecrementEvent, (_event, emit) => {
+      emit({ count: this.state.count - 1 });
+    });
+
+    this.on(ResetEvent, (_event, emit) => {
+      emit({ count: 0 });
+    });
   }
 
-  // Implement the reducer method
-  reducer = (action: CounterAction, state: { count: number }) => {
-    switch (action.type) {
-      case 'increment':
-        return { count: state.count + 1 };
-      case 'decrement':
-        return { count: state.count - 1 };
-      case 'reset':
-        return { count: 0 };
-      default:
-        return state;
-    }
-  };
-
-  // Helper methods to dispatch actions
-  increment = () => this.add({ type: 'increment' });
-  decrement = () => this.add({ type: 'decrement' });
-  reset = () => this.add({ type: 'reset' });
+  // Helper methods to dispatch events (optional but common)
+  increment = (value?: number) => this.add(new IncrementEvent(value));
+  decrement = () => this.add(new DecrementEvent());
+  reset = () => this.add(new ResetEvent());
 }
 ```
 
@@ -143,9 +146,9 @@ class CounterBloc extends Bloc<{ count: number }, CounterAction> {
 |-------|-------------|
 | `StateChange` | Triggered when a state changes |
 | `Error` | Triggered when an error occurs |
-| `Action` | Triggered when an action is dispatched |
+| `Action` | Triggered when an event is dispatched via `bloc.add()` |
 
 ## Choosing Between Cubit and Bloc
 
-- Use **Cubit** when you have simple state logic and don't need the reducer pattern
-- Use **Bloc** when you have complex state transitions, want to leverage the reducer pattern, or need a more formal action-based approach 
+- Use **Cubit** for simpler state logic where direct state emission (`emit`, `patch`) is sufficient.
+- Use **Bloc** for more complex state logic, when you want to process distinct event types with dedicated handlers, or when you need a more formal event-driven approach to manage state transitions. 

@@ -1,16 +1,14 @@
-import { Blac, BlacLifecycleEvent } from './Blac';
+import { Blac } from './Blac';
 import { BlacObservable } from './BlacObserver';
-import BlacAddon from './addons/BlacAddon';
 import { BlocConstructor } from './types';
 
 export type BlocInstanceId = string | number | undefined;
-type DependencySelector<S> = (newState: S, oldState?: S) => unknown[][];
+type DependencySelector<S> = (newState: S) => unknown[][];
 
 // Define an interface for the static properties expected on a Bloc/Cubit constructor
 interface BlocStaticProperties {
   isolated: boolean;
   keepAlive: boolean;
-  addons?: BlacAddon[];
 }
 
 /**
@@ -25,6 +23,7 @@ export abstract class BlocBase<
   S,
   P = unknown
 > {
+  public uid = crypto.randomUUID();
   /**
    * When true, every consumer will receive its own unique instance of this Bloc.
    * Use this when state should not be shared between components.
@@ -50,12 +49,6 @@ export abstract class BlocBase<
    * When provided, observers will only be notified when selected dependencies change.
    */
   defaultDependencySelector: DependencySelector<S> | undefined;
-
-  /**
-   * @internal
-   * Optional array of addons to extend the functionality of this Bloc.
-   */
-  public _addons?: BlacAddon[];
   
   /**
    * @internal
@@ -126,7 +119,7 @@ export abstract class BlocBase<
   constructor(initialState: S) {
     this._state = initialState;
     this._observer = new BlacObservable(this);
-    this._blac.dispatchEvent(BlacLifecycleEvent.BLOC_CREATED, this);
+    Blac.log('Bloc Created', this)
     this._id = this.constructor.name;
 
     // Use a type assertion for the constructor to access static properties safely
@@ -134,9 +127,6 @@ export abstract class BlocBase<
 
     this._keepAlive = constructorWithStaticProps.keepAlive;
     this._isolated = constructorWithStaticProps.isolated;
-    this._addons = constructorWithStaticProps.addons;
-
-    this._connectAddons();
   }
 
   /**
@@ -174,9 +164,11 @@ export abstract class BlocBase<
    * Notifies the Blac manager and clears all observers.
    */
   _dispose() {
-    this._observer.dispose();
-    this._blac.dispatchEvent(BlacLifecycleEvent.BLOC_DISPOSED, this);
+    this._observer.clear();
     this.onDispose?.();
+    // this._blac.dispatchEvent(BlacLifecycleEvent.BLOC_DISPOSED, this);
+    Blac.log('BlocBase._dispose', this);
+    Blac.instance.disposeBloc(this);
   }
 
   /**
@@ -199,8 +191,10 @@ export abstract class BlocBase<
    * @param consumerId The unique ID of the consumer being added
    */
   _addConsumer = (consumerId: string) => {
+    if (this._consumers.has(consumerId)) return;
     this._consumers.add(consumerId);
-    this._blac.dispatchEvent(BlacLifecycleEvent.BLOC_CONSUMER_ADDED, this, { consumerId });
+    // this._blac.dispatchEvent(BlacLifecycleEvent.BLOC_CONSUMER_ADDED, this, { consumerId });
+    Blac.log('BlocBase._addConsumer', this, consumerId);
   };
 
   /**
@@ -211,23 +205,10 @@ export abstract class BlocBase<
    * @param consumerId The unique ID of the consumer being removed
    */
   _removeConsumer = (consumerId: string) => {
-    this._blac.log(`[${this._name}:${String(this._id ?? 'default_id')}] Removing consumer: ${consumerId}`);
+    if (!this._consumers.has(consumerId)) return;
     this._consumers.delete(consumerId);
-    this._blac.dispatchEvent(BlacLifecycleEvent.BLOC_CONSUMER_REMOVED, this, { consumerId });
-  };
-
-  /**
-   * @internal
-   * Initializes all registered addons for this Bloc instance.
-   * Calls the onInit lifecycle method on each addon if defined.
-   */
-  _connectAddons = () => {
-    const { _addons: addons } = this;
-    if (addons) {
-      addons.forEach(addon => {
-        addon.onInit?.(this);
-      });
-    }
+    // this._blac.dispatchEvent(BlacLifecycleEvent.BLOC_CONSUMER_REMOVED, this, { consumerId });
+    Blac.log('BlocBase._removeConsumer', this, consumerId);
   };
 
   lastUpdate = Date.now();

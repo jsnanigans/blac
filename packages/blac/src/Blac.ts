@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { BlacPlugin } from "./BlacPlugin";
 import { BlocBase, BlocInstanceId } from "./BlocBase";
 import {
   BlocBaseAbstract,
@@ -19,35 +18,21 @@ export interface BlacConfig {
 
 export interface GetBlocOptions<B extends BlocBase<any>> {
   id?: string;
-  dependencySelector?: BlocHookDependencyArrayFn<BlocState<B>>;
+  selector?: BlocHookDependencyArrayFn<BlocState<B>>;
   props?: InferPropsFromGeneric<B>;
   onMount?: (bloc: B) => void;
   instanceRef?: string;
-}
-
-/**
- * Enum representing different lifecycle events that can occur in the Blac system.
- * These events are used to track the lifecycle of blocs and their consumers.
- */
-export enum BlacLifecycleEvent {
-  BLOC_DISPOSED = "BLOC_DISPOSED",
-  BLOC_CREATED = "BLOC_CREATED",
-  LISTENER_REMOVED = "LISTENER_REMOVED",
-  LISTENER_ADDED = "LISTENER_ADDED",
-  STATE_CHANGED = "STATE_CHANGED",
-  BLOC_CONSUMER_REMOVED = "BLOC_CONSUMER_REMOVED",
-  BLOC_CONSUMER_ADDED = "BLOC_CONSUMER_ADDED",
+  throwIfNotFound?: boolean;
 }
 
 /**
  * Main Blac class that manages the state management system.
  * Implements a singleton pattern to ensure only one instance exists.
- * Handles bloc lifecycle, plugin management, and instance tracking.
+ * Handles bloc lifecycle, and instance tracking.
  * 
  * Key responsibilities:
  * - Managing bloc instances (creation, disposal, lookup)
  * - Handling isolated and non-isolated blocs
- * - Managing plugins and lifecycle events
  * - Providing logging and debugging capabilities
  */
 export class Blac {
@@ -56,12 +41,10 @@ export class Blac {
   /** Timestamp when the instance was created */
   createdAt = Date.now();
   static getAllBlocs = Blac.instance.getAllBlocs;
-  static addPlugin = Blac.instance.addPlugin;
   /** Map storing all registered bloc instances by their class name and ID */
   blocInstanceMap: Map<string, BlocBase<any>> = new Map();
   /** Map storing isolated bloc instances grouped by their constructor */
   isolatedBlocMap: Map<BlocConstructor<any>, BlocBase<any>[]> = new Map();
-  pluginList: BlacPlugin[] = [];
   /** Flag to control whether changes should be posted to document */
   postChangesToDocument = false;
 
@@ -153,74 +136,6 @@ export class Blac {
   static resetInstance = Blac.instance.resetInstance;
 
   /**
-   * Adds a plugin to the Blac instance
-   * @param plugin - The plugin to add
-   */
-  addPlugin = (plugin: BlacPlugin): void => {
-    // check if already added
-    const index = this.pluginList.findIndex((p) => p.name === plugin.name);
-    if (index !== -1) return;
-    this.log("Add plugin", plugin.name);
-    this.pluginList.push(plugin);
-  };
-
-  /**
-   * Dispatches a lifecycle event to all registered plugins
-   * @param event - The lifecycle event to dispatch
-   * @param bloc - The bloc instance involved in the event
-   * @param params - Additional parameters for the event
-   */
-  dispatchEventToPlugins = (
-    event: BlacLifecycleEvent,
-    bloc: BlocBase<any>,
-    params?: unknown,
-  ) => {
-    this.pluginList.forEach((plugin) => {
-      plugin.onEvent(event, bloc, params);
-    });
-  };
-
-  /**
-   * Dispatches a lifecycle event and handles related cleanup actions.
-   * This method is responsible for:
-   * - Logging the event
-   * - Handling bloc disposal when needed
-   * - Managing bloc consumer cleanup
-   * - Forwarding the event to plugins
-   * 
-   * @param event - The lifecycle event to dispatch
-   * @param bloc - The bloc instance involved in the event
-   * @param params - Additional parameters for the event
-   */
-  dispatchEvent = (
-    event: BlacLifecycleEvent,
-    bloc: BlocBase<any>,
-    params?: unknown,
-  ) => {
-    this.log(event, bloc, params);
-
-    switch (event) {
-      case BlacLifecycleEvent.BLOC_DISPOSED:
-        this.disposeBloc(bloc);
-        break;
-      case BlacLifecycleEvent.BLOC_CONSUMER_REMOVED:
-      case BlacLifecycleEvent.LISTENER_REMOVED:
-        this.log(`[${bloc._name}:${String(bloc._id)}] Listener/Consumer removed. Listeners: ${String(bloc._observer.size)}, Consumers: ${String(bloc._consumers.size)}, KeepAlive: ${String(bloc._keepAlive)}`);
-        if (
-          bloc._observer.size === 0 &&
-          bloc._consumers.size === 0 &&
-          !bloc._keepAlive
-        ) {
-          this.log(`[${bloc._name}:${String(bloc._id)}] No listeners or consumers left and not keepAlive. Disposing.`);
-          bloc._dispose();
-        }
-        break;
-    }
-
-    this.dispatchEventToPlugins(event, bloc, params);
-  };
-
-  /**
    * Disposes of a bloc instance by removing it from the appropriate registry
    * @param bloc - The bloc instance to dispose
    */
@@ -235,7 +150,7 @@ export class Blac {
     } else {
       this.unregisterBlocInstance(bloc);
     }
-    this.dispatchEventToPlugins(BlacLifecycleEvent.BLOC_DISPOSED, bloc);
+    this.log('dispatched bloc', bloc)
   };
 
   /**
@@ -281,10 +196,7 @@ export class Blac {
 
     const key = this.createBlocInstanceMapKey(blocClass.name, id);
     const found = this.blocInstanceMap.get(key) as InstanceType<B> | undefined;
-    if (found) {
-      this.log(`[${blocClass.name}:${String(id)}] Found registered instance. Returning.`);
-    }
-    return found 
+    return found
   }
 
   /**
@@ -331,15 +243,11 @@ export class Blac {
     if (!base.isolated) return undefined;
 
     const blocs = this.isolatedBlocMap.get(blocClass);
-    if (!blocs) return undefined;
-
+    if (!blocs) {
+      return undefined;
+    }
     // Fix: Find the specific bloc by ID within the isolated array
     const found = blocs.find((b) => b._id === id) as InstanceType<B> | undefined;
-
-    if (found) {
-      this.log(`[${blocClass.name}:${String(id)}] Found isolated instance. Returning.`);
-    }
-
     return found;
   }
 
@@ -371,6 +279,25 @@ export class Blac {
     return newBloc as InstanceType<B>;
   }
 
+
+  activateBloc = (bloc: BlocBase<any>): void => {
+    const base = bloc.constructor as unknown as BlocConstructor<BlocBase<any>>;
+    const isIsolated = bloc.isIsolated;
+
+    let found = isIsolated ? this.findIsolatedBlocInstance(base, bloc._id) : this.findRegisteredBlocInstance(base, bloc._id);
+    if (found) {
+      return;
+    }
+
+    this.log(`[${bloc._name}:${String(bloc._id)}] activateBloc called. Isolated: ${String(bloc.isIsolated)}`);
+    if (bloc.isIsolated) {
+      this.registerIsolatedBlocInstance(bloc);
+    } else {
+      this.registerBlocInstance(bloc);
+    }
+  };
+  static activateBloc = Blac.instance.activateBloc;
+
   /**
    * Gets or creates a bloc instance based on the provided class and options.
    * If a bloc with the given ID exists, it will be returned. Otherwise, a new instance will be created.
@@ -390,30 +317,36 @@ export class Blac {
     const base = blocClass as unknown as BlocBaseAbstract;
     const blocId = id ?? blocClass.name;
 
-    this.log(`[${blocClass.name}:${String(blocId)}] getBloc called. Options:`, options);
 
     if (base.isolated) {
       const isolatedBloc = this.findIsolatedBlocInstance<B>(blocClass, blocId)
       if (isolatedBloc) {
-        this.log(`[${blocClass.name}:${String(blocId)}] Found existing isolated instance.`);
+        this.log(`[${blocClass.name}:${String(blocId)}] (getBloc) Found existing isolated instance.`, options);
         return isolatedBloc;
+      } else {
+        if (options.throwIfNotFound) {
+          throw new Error(`Isolated bloc ${blocClass.name} not found`);
+        }
       }
-    }
-
-    if (!base.isolated) {
+    } else {
       const registeredBloc = this.findRegisteredBlocInstance(blocClass, blocId)
       if (registeredBloc) {
-        this.log(`[${blocClass.name}:${String(blocId)}] Found existing registered instance.`);
+        this.log(`[${blocClass.name}:${String(blocId)}] (getBloc) Found existing registered instance.`, options);
         return registeredBloc
+      } else {
+        if (options.throwIfNotFound) {
+          throw new Error(`Registered bloc ${blocClass.name} not found`);
+        }
       }
     }
 
-    this.log(`[${blocClass.name}:${String(blocId)}] No existing instance found. Creating new one.`);
-    return this.createNewBlocInstance(
+    const bloc = this.createNewBlocInstance(
       blocClass,
       blocId,
       options,
     );
+    this.log(`[${blocClass.name}:${String(blocId)}] (getBloc) No existing instance found. Creating new one.`, options, bloc);
+    return bloc;
   };
   static getBloc = Blac.instance.getBloc;
 

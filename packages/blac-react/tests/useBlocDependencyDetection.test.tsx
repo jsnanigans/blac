@@ -3,7 +3,7 @@ import { Blac, Cubit } from "@blac/core";
 import '@testing-library/jest-dom';
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import React, { FC, useState } from "react";
+import { FC, useState } from "react";
 import { beforeEach, describe, expect, test } from "vitest";
 import { useBloc } from "../src";
 
@@ -398,7 +398,7 @@ describe('useBloc dependency detection', () => {
       // Use the CustomSelectorBloc defined outside this test
       const [state, { increment, updateName }] = useBloc(CustomSelectorBloc, {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        dependencySelector: (newState, _oldState) => [ // Mark oldState as unused
+        selector: (newState, _oldState) => [ // Mark oldState as unused
           [newState.count], // Only depend on count
         ],
       });

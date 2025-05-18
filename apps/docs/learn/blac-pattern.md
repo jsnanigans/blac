@@ -78,7 +78,7 @@ Blac offers two main types of state containers:
     }
     ```
 
--   **`Bloc<State, Action>`**: A more structured container that processes `Action` objects through a `reducer` function to produce new `State`. This is ideal for more complex state transitions.
+-   **`Bloc<State, Event>`**: A more structured container that processes instances of event *classes* through registered *handler functions* to produce new `State`. Event instances are dispatched via `this.add(new EventType())`, and handlers are registered with `this.on(EventType, handler)`. This is ideal for more complex, type-safe state transitions.
 
 Details on these are in the [Core Classes API](/api/core-classes) and [Core Concepts](/learn/core-concepts).
 
@@ -125,8 +125,9 @@ The Blac pattern enforces a strict unidirectional data flow, making state change
                  │ (Cubit / Bloc)    │
                  └────────┬──────────┘
                           │
-(State updates via        │ State (Immutable)
- internal logic or reducer)│
+State updates via internal │ State (Immutable)
+logic (Cubit) or event   │
+handlers (Bloc)          │
                           ▼
                  ┌────────┴──────────┐
                  │   UI Component    │
@@ -141,7 +142,7 @@ The Blac pattern enforces a strict unidirectional data flow, making state change
 
 1.  **UI Components** render based on the current `State` from a `Cubit` or `Bloc`.
 2.  **User interactions** (or other events) in the UI trigger method calls on the `Cubit`/`Bloc` instance.
-3.  The **`Cubit`/`Bloc`** contains business logic. It processes the method call (or `Action` in a `Bloc`), produces a new `State`.
+3.  The **`Cubit`/`Bloc`** contains business logic. A `Cubit` processes the method call directly. A `Bloc` processes dispatched event instances through its registered event handlers. It produces a new `State`.
 4.  The **State Container** notifies its listeners (including the `useBloc` hook) that its state has changed.
 5.  The **UI Component** re-renders with the new `State`.
 
@@ -169,10 +170,10 @@ The Blac pattern is beneficial for:
 -   Use **`Cubit`** when:
     -   State logic is relatively simple.
     -   You prefer updating state via direct method calls (`emit`, `patch`).
-    -   Formal `Action` objects and `reducer`s feel like overkill.
--   Use **`Bloc`** when:
-    -   State transitions are complex and benefit from explicit `Action`s.
-    -   You want to leverage the traditional reducer pattern for better traceability of events leading to state changes.
+    -   Formal event classes and handlers feel like overkill.
+-   Use **`Bloc`** (with its `this.on(EventType, handler)` and `this.add(new EventType())` pattern) when:
+    -   State transitions are complex and benefit from distinct, type-safe event classes and dedicated handlers.
+    -   You want a clear, event-driven architecture for managing state changes and side effects, enhancing traceability and maintainability.
 -   Use **`createBloc().setState()` style** when:
     -   You want `Cubit`-like simplicity (direct state changes via methods).
     -   You prefer a `this.setState()` API similar to React class components for its conciseness (often handles partial state updates on objects conveniently).

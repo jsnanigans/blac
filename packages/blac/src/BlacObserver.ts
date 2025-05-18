@@ -1,4 +1,4 @@
-import { Blac, BlacLifecycleEvent } from './Blac';
+import { Blac } from './Blac';
 import { BlocBase } from './BlocBase';
 import { BlocHookDependencyArrayFn } from './types';
 
@@ -35,15 +35,14 @@ export class BlacObservable<S = unknown> {
     this.bloc = bloc;
   }
 
-  // private _observers = new Set<BlacObserver<S>>();
-  private _observers: BlacObserver<S>[] = [];
+  private _observers = new Set<BlacObserver<S>>();
 
   /**
    * Gets the number of active observers
    * @returns The number of observers currently subscribed
    */
   get size(): number {
-    return this._observers.length;
+    return this._observers.size;
   }
 
   /**
@@ -60,14 +59,16 @@ export class BlacObservable<S = unknown> {
    * @returns A function that can be called to unsubscribe the observer
    */
   subscribe(observer: BlacObserver<S>): () => void {
-    this._observers.push(observer);
-    Blac.instance.dispatchEvent(BlacLifecycleEvent.LISTENER_ADDED, this.bloc, { listenerId: observer.id });
+    Blac.log('BlacObservable.subscribe: Subscribing observer.', this.bloc, observer);
+    this._observers.add(observer);
+    // Blac.instance.dispatchEvent(BlacLifecycleEvent.LISTENER_ADDED, this.bloc, { listenerId: observer.id });
     if (!observer.lastState) {
       observer.lastState = observer.dependencyArray
         ? observer.dependencyArray(this.bloc.state)
         : [];
     }
     return () => {
+      Blac.log('BlacObservable.subscribe: Unsubscribing observer.', this.bloc, observer);
       this.unsubscribe(observer);
     }
   }
@@ -77,8 +78,13 @@ export class BlacObservable<S = unknown> {
    * @param observer - The observer to unsubscribe
    */
   unsubscribe(observer: BlacObserver<S>) {
-    this._observers = this._observers.filter((o) => o.id !== observer.id);
-    Blac.instance.dispatchEvent(BlacLifecycleEvent.LISTENER_REMOVED, this.bloc, { listenerId: observer.id });
+    this._observers.delete(observer);
+    // Blac.instance.dispatchEvent(BlacLifecycleEvent.LISTENER_REMOVED, this.bloc, { listenerId: observer.id });
+
+    if (this.size === 0) {
+      Blac.log('BlacObservable.unsubscribe: No observers left. Disposing bloc.', this.bloc);
+      this.bloc._dispose();
+    }
   }
 
   /**
@@ -118,13 +124,12 @@ export class BlacObservable<S = unknown> {
   }
 
   /**
-   * Disposes of all observers and clears the observer set
+   * Clears the observer set
    */
-  dispose() {
+  clear() {
     this._observers.forEach((observer) => {
       this.unsubscribe(observer);
-      observer.dispose?.();
     });
-    this._observers = [];
+    this._observers.clear();
   }
 }

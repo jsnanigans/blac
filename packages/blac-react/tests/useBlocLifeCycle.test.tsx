@@ -8,7 +8,7 @@
 import { Blac } from '@blac/core';
 import { renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import externalBlocStore from '../src/externalBlocStore';
+import useExternalBlocStore from '../src/externalBlocStore';
 import useBloc, { BlocHookOptions } from '../src/useBloc';
 
 // Mock externalBlocStore
@@ -158,7 +158,7 @@ describe('useBloc Lifecycle', () => {
         getServerSnapshot: vi.fn(() => resolvedBloc.state),
       };
     };
-    vi.mocked(externalBlocStore).mockImplementation(mock as any);
+    vi.mocked(useExternalBlocStore).mockImplementation(mock as any);
   });
 
   afterEach(() => {
