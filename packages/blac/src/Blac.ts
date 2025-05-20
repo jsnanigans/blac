@@ -43,8 +43,8 @@ export class Blac {
   static getAllBlocs = Blac.instance.getAllBlocs;
   /** Map storing all registered bloc instances by their class name and ID */
   blocInstanceMap: Map<string, BlocBase<any>> = new Map();
-  /** Map storing isolated bloc instances grouped by their constructor */
-  isolatedBlocMap: Map<BlocConstructor<any>, BlocBase<any>[]> = new Map();
+  /** Map storing isolated bloc instances grouped by their constructor and then by their ID */
+  isolatedBlocMap: Map<BlocConstructor<any>, Map<BlocInstanceId, BlocBase<any>>> = new Map();
   /** Flag to control whether changes should be posted to document */
   postChangesToDocument = false;
 
@@ -205,12 +205,12 @@ export class Blac {
    */
   registerIsolatedBlocInstance(bloc: BlocBase<any>): void {
     const blocClass = bloc.constructor as BlocConstructor<unknown>;
-    const blocs = this.isolatedBlocMap.get(blocClass);
-    if (blocs) {
-      blocs.push(bloc);
-    } else {
-      this.isolatedBlocMap.set(blocClass, [bloc]);
+    let innerMap = this.isolatedBlocMap.get(blocClass);
+    if (!innerMap) {
+      innerMap = new Map<BlocInstanceId, BlocBase<any>>();
+      this.isolatedBlocMap.set(blocClass, innerMap);
     }
+    innerMap.set(bloc._id, bloc);
   }
 
   /**
@@ -218,16 +218,12 @@ export class Blac {
    * @param bloc - The isolated bloc instance to unregister
    */
   unregisterIsolatedBlocInstance(bloc: BlocBase<any>): void {
-    const blocClass = bloc.constructor;
-    const blocs = this.isolatedBlocMap.get(blocClass as BlocConstructor<unknown>);
-    if (blocs) {
-      const index = blocs.findIndex((b) => b._id === bloc._id);
-      if (index !== -1) {
-        blocs.splice(index, 1);
-      }
-
-      if (blocs.length === 0) {
-        this.isolatedBlocMap.delete(blocClass as BlocConstructor<unknown>);
+    const blocClass = bloc.constructor as BlocConstructor<unknown>;
+    const innerMap = this.isolatedBlocMap.get(blocClass);
+    if (innerMap) {
+      innerMap.delete(bloc._id);
+      if (innerMap.size === 0) {
+        this.isolatedBlocMap.delete(blocClass);
       }
     }
   }
@@ -242,13 +238,11 @@ export class Blac {
     const base = blocClass as unknown as BlocBaseAbstract;
     if (!base.isolated) return undefined;
 
-    const blocs = this.isolatedBlocMap.get(blocClass);
-    if (!blocs) {
+    const innerMap = this.isolatedBlocMap.get(blocClass);
+    if (!innerMap) {
       return undefined;
     }
-    // Fix: Find the specific bloc by ID within the isolated array
-    const found = blocs.find((b) => b._id === id) as InstanceType<B> | undefined;
-    return found;
+    return innerMap.get(id) as InstanceType<B> | undefined;
   }
 
   /**
@@ -405,9 +399,9 @@ export class Blac {
 
     // Optionally search isolated blocs
     if (options.searchIsolated !== false) {
-      const isolatedBlocs = this.isolatedBlocMap.get(blocClass);
-      if (isolatedBlocs) {
-        results.push(...isolatedBlocs.map(bloc => bloc as InstanceType<B>));
+      const isolatedBlocsInnerMap = this.isolatedBlocMap.get(blocClass);
+      if (isolatedBlocsInnerMap) {
+        isolatedBlocsInnerMap.forEach(bloc => results.push(bloc as InstanceType<B>));
       }
     }
 
