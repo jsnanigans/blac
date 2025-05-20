@@ -85,6 +85,12 @@ export abstract class BlocBase<
    * Indicates if this specific Bloc instance should be kept alive when no consumers are present.
    */
   public _keepAlive = false;
+
+  /**
+   * @internal
+   * Tracks whether this bloc has been disposed to prevent double cleanup.
+   */
+  private _disposed = false;
   
   /**
    * @readonly
@@ -164,6 +170,8 @@ export abstract class BlocBase<
    * Notifies the Blac manager and clears all observers.
    */
   _dispose() {
+    if (this._disposed) return;
+    this._disposed = true;
     this._observer.clear();
     this.onDispose?.();
     // this._blac.dispatchEvent(BlacLifecycleEvent.BLOC_DISPOSED, this);

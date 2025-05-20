@@ -81,7 +81,7 @@ export class BlacObservable<S = unknown> {
     this._observers.delete(observer);
     // Blac.instance.dispatchEvent(BlacLifecycleEvent.LISTENER_REMOVED, this.bloc, { listenerId: observer.id });
 
-    if (this.size === 0) {
+    if (this.size === 0 && !(this.bloc as any)._disposed) {
       Blac.log('BlacObservable.unsubscribe: No observers left. Disposing bloc.', this.bloc);
       this.bloc._dispose();
     }
