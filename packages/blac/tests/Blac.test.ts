@@ -95,8 +95,8 @@ describe('Blac', () => {
       const blac = new Blac();
       const bloc = new ExampleBloc(undefined);
       blac.registerIsolatedBlocInstance(bloc);
-      const blocs = blac.isolatedBlocMap.get(ExampleBloc);
-      expect(blocs).toEqual([bloc]);
+      const blocMap = blac.isolatedBlocMap.get(ExampleBloc);
+      expect(blocMap?.get(bloc._id)).toBe(bloc);
     });
   });
 
@@ -105,8 +105,8 @@ describe('Blac', () => {
       const blac = new Blac();
       const bloc = new ExampleBloc(undefined);
       blac.registerIsolatedBlocInstance(bloc);
-      const blocs = blac.isolatedBlocMap.get(ExampleBloc);
-      expect(blocs).toEqual([bloc]);
+      const map = blac.isolatedBlocMap.get(ExampleBloc);
+      expect(map?.get(bloc._id)).toBe(bloc);
 
       blac.unregisterIsolatedBlocInstance(bloc);
       expect(blac.isolatedBlocMap.get(ExampleBloc)).toBe(undefined);
@@ -154,8 +154,8 @@ describe('Blac', () => {
     it('should register the bloc as isolated if the bloc is isolated', () => {
       const blac = new Blac();
       const bloc = blac.createNewBlocInstance(ExampleBlocIsolated, 'foo');
-      const blocs = blac.isolatedBlocMap.get(ExampleBlocIsolated);
-      expect(blocs).toEqual([bloc]);
+      const map = blac.isolatedBlocMap.get(ExampleBlocIsolated);
+      expect(map?.get(bloc._id)).toBe(bloc);
     });
   });
 
