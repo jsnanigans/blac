@@ -135,8 +135,10 @@ const useExternalBlocStore = <
         const observer: BlacObserver<BlocState<InstanceType<B>>> = {
           fn: () => {
             try {
-              usedKeys.current = new Set();
-              usedClassPropKeys.current = new Set();
+              if (!selector) {
+                usedKeys.current = new Set();
+                usedClassPropKeys.current = new Set();
+              }
 
               listener(blocInstance.current.state);
             } catch (e) {

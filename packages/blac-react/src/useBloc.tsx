@@ -87,6 +87,10 @@ export default function useBloc<B extends BlocConstructor<BlocBase<any>>>(
   );
 
   const returnState = useMemo(() => {
+    if (options?.selector) {
+      return state;
+    }
+
     return typeof state === 'object'
       ? new Proxy(state, {
           get(_, prop) {
@@ -99,6 +103,10 @@ export default function useBloc<B extends BlocConstructor<BlocBase<any>>>(
   }, [state]);
 
   const returnClass = useMemo(() => {
+    if (options?.selector) {
+      return instance.current;
+    }
+
     return new Proxy(instance.current, {
       get(_, prop) {
         if (!instance.current) {
