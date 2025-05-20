@@ -1,5 +1,6 @@
 import { useBloc } from '@blac/react';
 import React, { useState } from 'react';
+import { Blac } from '@blac/core';
 import { AuthCubit } from '../blocs/AuthCubit';
 import { DashboardStatsCubit } from '../blocs/DashboardStatsCubit';
 import { Button } from './ui/Button';
@@ -11,7 +12,7 @@ const BlocToBlocCommsDemo: React.FC = () => {
   const [authState, authCubit] = useBloc(AuthCubit);
   // DashboardStatsCubit is isolated (static isolated = true)
   const [dashboardState, dashboardStatsCubit] = useBloc(DashboardStatsCubit);
-  console.log('dashboardState', dashboardStatsCubit);
+  Blac.log('dashboardState', dashboardStatsCubit);
 
   const [userNameInput, setUserNameInput] = useState('DemoUser');
 

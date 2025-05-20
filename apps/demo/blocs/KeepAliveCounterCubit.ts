@@ -1,4 +1,4 @@
-import { Cubit } from '@blac/core';
+import { Cubit, Blac } from '@blac/core';
 
 interface CounterState {
   count: number;
@@ -13,18 +13,20 @@ export class KeepAliveCounterCubit extends Cubit<CounterState> {
   constructor() {
     instanceCounter++;
     super({ count: 0, instanceId: instanceCounter });
-    console.log(`KeepAliveCounterCubit instance ${this.state.instanceId} CONSTRUCTED.`);
+    Blac.log(`KeepAliveCounterCubit instance ${this.state.instanceId} CONSTRUCTED.`);
   }
 
   increment = () => {
     this.patch({ count: this.state.count + 1 });
-    console.log(`KeepAliveCounterCubit instance ${this.state.instanceId} incremented to ${this.state.count +1}`);
+    Blac.log(
+      `KeepAliveCounterCubit instance ${this.state.instanceId} incremented to ${this.state.count + 1}`,
+    );
   };
 
   reset = () => {
     // Reset count but keep instanceId
     this.patch({ count: 0 });
-    console.log(`KeepAliveCounterCubit instance ${this.state.instanceId} RESET.`);
+    Blac.log(`KeepAliveCounterCubit instance ${this.state.instanceId} RESET.`);
   };
 
   // Linter has issues with onDispose override, so we'll skip it.

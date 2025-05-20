@@ -1,4 +1,4 @@
-import { Cubit } from '@blac/core';
+import { Cubit, Blac } from '@blac/core';
 
 interface LifecycleState {
   status: string;
@@ -20,7 +20,7 @@ export class LifecycleCubit extends Cubit<LifecycleState> {
   }
 
   setMounted = () => {
-    console.log('LifecycleCubit: Mounted');
+    Blac.log('LifecycleCubit: Mounted');
     this.patch({
       status: 'Mounted',
       mountTime: new Date(),
@@ -32,7 +32,7 @@ export class LifecycleCubit extends Cubit<LifecycleState> {
   };
 
   setUnmounted = () => {
-    console.log('LifecycleCubit: Unmounted');
+    Blac.log('LifecycleCubit: Unmounted');
     this.patch({
       status: 'Unmounted',
       unmountTime: new Date(),

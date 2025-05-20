@@ -1,4 +1,4 @@
-import { Cubit, Persist } from '@blac/core';
+import { Cubit, Persist, Blac } from '@blac/core';
 
 interface SettingsState {
   theme: 'light' | 'dark';
@@ -34,12 +34,15 @@ export class PersistentSettingsCubit extends Cubit<SettingsState> {
     // The Persist addon will attempt to load from localStorage first.
     // If not found, or if loading fails, it will use this initial state.
     super(initialSettings);
-    console.log('PersistentSettingsCubit CONSTRUCTED. Initial state (after potential load):', this.state);
+    Blac.log(
+      'PersistentSettingsCubit CONSTRUCTED. Initial state (after potential load):',
+      this.state,
+    );
   }
 
   toggleTheme = () => {
     this.patch({ theme: this.state.theme === 'light' ? 'dark' : 'light' });
-    console.log('Theme toggled to:', this.state.theme === 'light' ? 'dark' : 'light');
+    Blac.log('Theme toggled to:', this.state.theme === 'light' ? 'dark' : 'light');
   };
 
   setNotifications = (enabled: boolean) => {
@@ -52,7 +55,7 @@ export class PersistentSettingsCubit extends Cubit<SettingsState> {
 
   resetToDefaults = () => {
     this.emit(initialSettings); // This will also be persisted
-    console.log('Settings reset to defaults and persisted.');
+    Blac.log('Settings reset to defaults and persisted.');
   }
 
   // No onDispose needed here for linter sanity

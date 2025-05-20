@@ -14,9 +14,13 @@ const CounterDisplayComponent: React.FC<CounterDisplayProps> = ({ id }) => {
   const [state, cubit] = useBloc(KeepAliveCounterCubit);
 
   useEffect(() => {
-    console.log(`CounterDisplayComponent (${id}) MOUNTED. Cubit instanceId: ${state.instanceId}, Count: ${state.count}`);
+    Blac.log(
+      `CounterDisplayComponent (${id}) MOUNTED. Cubit instanceId: ${state.instanceId}, Count: ${state.count}`,
+    );
     return () => {
-      console.log(`CounterDisplayComponent (${id}) UNMOUNTED. Cubit instanceId: ${state.instanceId}, Count: ${state.count}`);
+      Blac.log(
+        `CounterDisplayComponent (${id}) UNMOUNTED. Cubit instanceId: ${state.instanceId}, Count: ${state.count}`,
+      );
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]); // Effect logs on mount/unmount of this specific display component
@@ -45,18 +49,20 @@ const KeepAliveDemo: React.FC = () => {
       const cubit = Blac.getBloc(KeepAliveCounterCubit);
       if (cubit) {
         cubit.reset();
-        console.log('KeepAliveCounterCubit RESET triggered from parent via Blac.getBloc().');
+        Blac.log('KeepAliveCounterCubit RESET triggered from parent via Blac.getBloc().');
       } else {
-        console.warn('KeepAliveCounterCubit not found via Blac.getBloc() for reset. May not be initialized yet.');
+        Blac.warn(
+          'KeepAliveCounterCubit not found via Blac.getBloc() for reset. May not be initialized yet.',
+        );
       }
     } catch (e) {
-        console.error('Error getting KeepAliveCounterCubit via Blac.getBloc()', e);
+        Blac.error('Error getting KeepAliveCounterCubit via Blac.getBloc()', e);
     }
   };
   
   const handleIncrementGlobalKeepAliveCounter = () => {
     cubitDirectAccess.increment(); // Using instance from parent's useBloc
-    console.log('KeepAliveCounterCubit INCREMENT triggered from parent via useBloc instance.');
+    Blac.log('KeepAliveCounterCubit INCREMENT triggered from parent via useBloc instance.');
   };
 
 

@@ -39,10 +39,6 @@ export interface BlocHookOptions<B extends BlocBase<any>> {
  * @returns {Array<Array<T>>} Dependency array containing the entire state
  */
 
-const log = (...args: unknown[]) => {
-  console.log('useBloc', ...args);
-};
-
 /**
  * React hook for integrating with Blac state management
  *

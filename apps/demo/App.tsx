@@ -261,4 +261,4 @@ export default App;
 
 Blac.enableLog = true;
 window.blac = Blac;
-console.log(Blac.instance);
+Blac.log(Blac.instance);

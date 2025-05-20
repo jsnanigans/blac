@@ -142,11 +142,12 @@ const useExternalBlocStore = <
             } catch (e) {
               // Log any errors that occur during the listener callback
               // This ensures errors in listeners don't break the entire application
-              console.error({
+              Blac.error(
+                'useExternalBlocStore listener error',
                 e,
                 blocInstance,
                 dependencyArray,
-              });
+              );
             }
           },
           // Pass the dependency array to control when the subscription is updated
