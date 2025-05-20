@@ -59,7 +59,11 @@ export class BlacObservable<S = unknown> {
    * @returns A function that can be called to unsubscribe the observer
    */
   subscribe(observer: BlacObserver<S>): () => void {
-    Blac.log('BlacObservable.subscribe: Subscribing observer.', this.bloc, observer);
+    Blac.log(
+      'BlacObservable.subscribe: Subscribing observer.',
+      this.bloc,
+      observer,
+    );
     this._observers.add(observer);
     // Blac.instance.dispatchEvent(BlacLifecycleEvent.LISTENER_ADDED, this.bloc, { listenerId: observer.id });
     if (!observer.lastState) {
@@ -68,9 +72,13 @@ export class BlacObservable<S = unknown> {
         : [];
     }
     return () => {
-      Blac.log('BlacObservable.subscribe: Unsubscribing observer.', this.bloc, observer);
+      Blac.log(
+        'BlacObservable.subscribe: Unsubscribing observer.',
+        this.bloc,
+        observer,
+      );
       this.unsubscribe(observer);
-    }
+    };
   }
 
   /**
@@ -82,7 +90,10 @@ export class BlacObservable<S = unknown> {
     // Blac.instance.dispatchEvent(BlacLifecycleEvent.LISTENER_REMOVED, this.bloc, { listenerId: observer.id });
 
     if (this.size === 0) {
-      Blac.log('BlacObservable.unsubscribe: No observers left. Disposing bloc.', this.bloc);
+      Blac.log(
+        'BlacObservable.unsubscribe: No observers left. Disposing bloc.',
+        this.bloc,
+      );
       this.bloc._dispose();
     }
   }
@@ -94,7 +105,7 @@ export class BlacObservable<S = unknown> {
    * @param action - Optional action that triggered the state change
    */
   notify(newState: S, oldState: S, action?: unknown) {
-    this._observers.forEach((observer) => {
+    for (const observer of this._observers) {
       let shouldUpdate = false;
 
       if (observer.dependencyArray) {
@@ -110,6 +121,9 @@ export class BlacObservable<S = unknown> {
               break;
             }
           }
+          if (shouldUpdate) {
+            break;
+          }
         }
 
         observer.lastState = newDependencyCheck;
@@ -120,16 +134,16 @@ export class BlacObservable<S = unknown> {
       if (shouldUpdate) {
         void observer.fn(newState, oldState, action);
       }
-    });
+    }
   }
 
   /**
    * Clears the observer set
    */
   clear() {
-    this._observers.forEach((observer) => {
+    for (const observer of this._observers) {
       this.unsubscribe(observer);
-    });
+    }
     this._observers.clear();
   }
 }
