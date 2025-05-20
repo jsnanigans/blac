@@ -95,6 +95,10 @@ function CounterDisplay() {
 export default CounterDisplay;
 ```
 
+### Customizing Re-renders
+
+`useBloc` accepts an optional `selector` function in its options object. This function allows you to specify which values should trigger a re-render when the bloc state changes. The legacy name `dependencySelector` can also be used as an alias.
+
 ## Core Concepts
 
 -   **`BlocBase`**: The foundational abstract class for state containers.

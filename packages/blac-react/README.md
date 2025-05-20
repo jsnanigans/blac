@@ -83,7 +83,7 @@ const [state, bloc] = useBloc(YourBloc, {
   id: 'custom-id', // Optional: Custom identifier for the bloc
   props: { /* ... */ }, // Optional: Props to pass to the bloc
   onMount: (bloc) => { /* ... */ }, // Optional: Callback when bloc is mounted (similar to useEffect(<>, []))
-  dependencySelector: (newState, oldState) => [/* ... */], // Optional: Custom dependency tracking
+  selector: (newState, oldState) => [/* ... */], // Optional: Custom dependency tracking
 });
 ```
 
@@ -111,13 +111,13 @@ function UserProfile() {
 }
 ```
 
-### Custom Dependency Selector
+### Custom Selector
 
-For more control over when your component re-renders, you can provide a custom dependency selector:
+For more control over when your component re-renders, you can provide a custom selector:
 
 ```tsx
 const [state, bloc] = useBloc(YourBloc, {
-  dependencySelector: (newState, oldState) => [
+  selector: (newState, oldState) => [
     newState.specificField,
     newState.anotherField
   ]
@@ -140,7 +140,7 @@ function useBloc<B extends BlocConstructor<BlocGeneric>>(
 - `id?: string` - Custom identifier for the bloc instance
 - `props?: InferPropsFromGeneric<B>` - Props to pass to the bloc
 - `onMount?: (bloc: B) => void` - Callback function invoked when the react component (the consumer) is connected to the bloc instance
-- `dependencySelector?: BlocHookDependencyArrayFn<B>` - Function to select dependencies for re-renders
+- `selector?: BlocHookDependencyArrayFn<B>` - Function to select dependencies for re-renders (alias `dependencySelector`)
 
 ## Best Practices
 

@@ -25,7 +25,7 @@ function useBloc<
 | `blocClass` | `BlocConstructor<BlocGeneric>` | Yes | The Bloc/Cubit class to use |
 | `options.id` | `string` | No | Optional identifier for the Bloc/Cubit instance |
 | `options.props` | `InferPropsFromGeneric<B>` | No | Props to pass to the Bloc/Cubit constructor |
-| `options.dependencySelector` | `BlocHookDependencyArrayFn<InstanceType<B>>` | No | Function to select which state properties should trigger re-renders |
+| `options.selector` | `BlocHookDependencyArrayFn<InstanceType<B>>` | No | Function to select which state properties should trigger re-renders (alias `dependencySelector`) |
 | `options.onMount` | `(bloc: InstanceType<B>) => void` | No | Callback function invoked when the Bloc is mounted |
 
 ### Returns
@@ -207,14 +207,14 @@ function ChatThread({ conversationId }: { conversationId: string }) {
 With this approach, you can have multiple independent instances of state that share the same business logic.
 
 ---
-#### Custom Dependency Selector
+#### Custom Selector
 While property access is automatically tracked, in some cases you might want more control over when a component re-renders:
 
 ```tsx
 function OptimizedTodoList() {
-  // Using dependency selector for optimization
+  // Using a custom selector for optimization
   const [state, bloc] = useBloc(TodoBloc, {
-    dependencySelector: (newState, oldState) => [
+    selector: (newState, oldState) => [
       newState.todos.length,
       newState.filter
     ]
