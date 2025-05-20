@@ -95,8 +95,8 @@ describe('Blac', () => {
       const blac = new Blac();
       const bloc = new ExampleBloc(undefined);
       blac.registerIsolatedBlocInstance(bloc);
-      const blocs = blac.isolatedBlocMap.get(ExampleBloc);
-      expect(blocs).toEqual([bloc]);
+      const blocMap = blac.isolatedBlocMap.get(ExampleBloc);
+      expect(blocMap?.get(bloc._id)).toBe(bloc);
     });
   });
 
@@ -105,8 +105,8 @@ describe('Blac', () => {
       const blac = new Blac();
       const bloc = new ExampleBloc(undefined);
       blac.registerIsolatedBlocInstance(bloc);
-      const blocs = blac.isolatedBlocMap.get(ExampleBloc);
-      expect(blocs).toEqual([bloc]);
+      const map = blac.isolatedBlocMap.get(ExampleBloc);
+      expect(map?.get(bloc._id)).toBe(bloc);
 
       blac.unregisterIsolatedBlocInstance(bloc);
       expect(blac.isolatedBlocMap.get(ExampleBloc)).toBe(undefined);
@@ -154,8 +154,8 @@ describe('Blac', () => {
     it('should register the bloc as isolated if the bloc is isolated', () => {
       const blac = new Blac();
       const bloc = blac.createNewBlocInstance(ExampleBlocIsolated, 'foo');
-      const blocs = blac.isolatedBlocMap.get(ExampleBlocIsolated);
-      expect(blocs).toEqual([bloc]);
+      const map = blac.isolatedBlocMap.get(ExampleBlocIsolated);
+      expect(map?.get(bloc._id)).toBe(bloc);
     });
   });
 
@@ -213,6 +213,20 @@ describe('Blac', () => {
       const idMap = result.map((b) => b._id);
       expect(idMap).toEqual(['foo1', 'foo2', 'foo3']);
     });
+
+    it('should skip non-isolated registry when the bloc class is isolated', () => {
+      const blac = new Blac();
+      for (let i = 0; i < 5; i++) {
+        blac.createNewBlocInstance(ExampleBloc, `bar${i}`);
+      }
+      blac.createNewBlocInstance(ExampleBlocIsolated, 'foo1');
+      blac.createNewBlocInstance(ExampleBlocIsolated, 'foo2');
+
+      const forEachSpy = vi.spyOn(blac.blocInstanceMap, 'forEach');
+      const result = blac.getAllBlocs(ExampleBlocIsolated);
+      expect(result.map((b) => b._id)).toEqual(['foo1', 'foo2']);
+      expect(forEachSpy).not.toHaveBeenCalled();
+    });
   });
 
   describe('disposeBloc', () => {
@@ -232,6 +246,41 @@ describe('Blac', () => {
       blac.disposeBloc(bloc);
       expect(spy).toHaveBeenCalled();
       expect(spy).toHaveBeenCalledWith(bloc);
+    });
+
+    it('should remove the bloc from its registry on dispose', () => {
+      const blac = new Blac();
+      const bloc = blac.createNewBlocInstance(ExampleBloc, 'foo');
+      const iso = blac.createNewBlocInstance(ExampleBlocIsolated, 'bar');
+
+      const key = blac.createBlocInstanceMapKey(bloc._name, bloc._id);
+      expect(blac.blocInstanceMap.get(key)).toBe(bloc);
+      expect(blac.isolatedBlocMap.get(ExampleBlocIsolated)?.get(iso._id)).toBe(iso);
+
+      blac.disposeBloc(bloc);
+      blac.disposeBloc(iso);
+
+      expect(blac.blocInstanceMap.get(key)).toBeUndefined();
+      expect(blac.isolatedBlocMap.get(ExampleBlocIsolated)).toBeUndefined();
+    });
+  });
+
+  describe('resetInstance', () => {
+    it('should dispose all blocs and clear registries', () => {
+      const blac = new Blac();
+      const bloc = blac.createNewBlocInstance(ExampleBloc, 'foo');
+      const isoBloc = blac.createNewBlocInstance(ExampleBlocIsolated, 'bar');
+
+      const disposeSpy1 = vi.spyOn(bloc, '_dispose');
+      const disposeSpy2 = vi.spyOn(isoBloc, '_dispose');
+
+      blac.resetInstance();
+      const newBlac = Blac.getInstance();
+
+      expect(disposeSpy1).toHaveBeenCalled();
+      expect(disposeSpy2).toHaveBeenCalled();
+      expect(newBlac.blocInstanceMap.size).toBe(0);
+      expect(newBlac.isolatedBlocMap.size).toBe(0);
     });
   });
 });

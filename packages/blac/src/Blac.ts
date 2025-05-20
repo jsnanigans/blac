@@ -44,7 +44,7 @@ export class Blac {
   /** Map storing all registered bloc instances by their class name and ID */
   blocInstanceMap: Map<string, BlocBase<any>> = new Map();
   /** Map storing isolated bloc instances grouped by their constructor */
-  isolatedBlocMap: Map<BlocConstructor<any>, BlocBase<any>[]> = new Map();
+  isolatedBlocMap: Map<BlocConstructor<any>, Map<BlocInstanceId, BlocBase<any>>> = new Map();
   /** Flag to control whether changes should be posted to document */
   postChangesToDocument = false;
 
@@ -119,8 +119,8 @@ export class Blac {
       bloc._dispose();
     });
 
-    oldIsolatedBlocMap.forEach((blocArray) => {
-      blocArray.forEach((bloc) => {
+    oldIsolatedBlocMap.forEach((blocMap) => {
+      blocMap.forEach((bloc) => {
         bloc._dispose();
       });
     });
@@ -205,12 +205,12 @@ export class Blac {
    */
   registerIsolatedBlocInstance(bloc: BlocBase<any>): void {
     const blocClass = bloc.constructor as BlocConstructor<unknown>;
-    const blocs = this.isolatedBlocMap.get(blocClass);
-    if (blocs) {
-      blocs.push(bloc);
-    } else {
-      this.isolatedBlocMap.set(blocClass, [bloc]);
+    let blocMap = this.isolatedBlocMap.get(blocClass);
+    if (!blocMap) {
+      blocMap = new Map();
+      this.isolatedBlocMap.set(blocClass, blocMap);
     }
+    blocMap.set(bloc._id, bloc);
   }
 
   /**
@@ -218,17 +218,12 @@ export class Blac {
    * @param bloc - The isolated bloc instance to unregister
    */
   unregisterIsolatedBlocInstance(bloc: BlocBase<any>): void {
-    const blocClass = bloc.constructor;
-    const blocs = this.isolatedBlocMap.get(blocClass as BlocConstructor<unknown>);
-    if (blocs) {
-      const index = blocs.findIndex((b) => b._id === bloc._id);
-      if (index !== -1) {
-        blocs.splice(index, 1);
-      }
-
-      if (blocs.length === 0) {
-        this.isolatedBlocMap.delete(blocClass as BlocConstructor<unknown>);
-      }
+    const blocClass = bloc.constructor as BlocConstructor<unknown>;
+    const map = this.isolatedBlocMap.get(blocClass);
+    if (!map) return;
+    map.delete(bloc._id);
+    if (map.size === 0) {
+      this.isolatedBlocMap.delete(blocClass);
     }
   }
 
@@ -242,13 +237,11 @@ export class Blac {
     const base = blocClass as unknown as BlocBaseAbstract;
     if (!base.isolated) return undefined;
 
-    const blocs = this.isolatedBlocMap.get(blocClass);
-    if (!blocs) {
+    const blocMap = this.isolatedBlocMap.get(blocClass);
+    if (!blocMap) {
       return undefined;
     }
-    // Fix: Find the specific bloc by ID within the isolated array
-    const found = blocs.find((b) => b._id === id) as InstanceType<B> | undefined;
-    return found;
+    return blocMap.get(id) as InstanceType<B> | undefined;
   }
 
   /**
@@ -393,12 +386,24 @@ export class Blac {
       searchIsolated?: boolean;
     } = {},
   ): InstanceType<B>[] => {
+    const base = blocClass as unknown as BlocBaseAbstract;
+
+    // Fast path for isolated blocs - they can't exist in the main map
+    if (base.isolated && options.searchIsolated !== false) {
+      const isolatedBlocs = this.isolatedBlocMap.get(blocClass);
+      if (!isolatedBlocs) return [];
+      const results: InstanceType<B>[] = [];
+      isolatedBlocs.forEach((bloc) => {
+        results.push(bloc as InstanceType<B>);
+      });
+      return results;
+    }
+
     const results: InstanceType<B>[] = [];
-    // const blocClassName = (blocClass as any).name; // Temporarily removed for debugging
 
     // Search non-isolated blocs
     this.blocInstanceMap.forEach((blocInstance) => {
-      if (blocInstance.constructor === blocClass) { // Strict constructor check
+      if (blocInstance.constructor === blocClass) {
         results.push(blocInstance as InstanceType<B>);
       }
     });
@@ -407,7 +412,9 @@ export class Blac {
     if (options.searchIsolated !== false) {
       const isolatedBlocs = this.isolatedBlocMap.get(blocClass);
       if (isolatedBlocs) {
-        results.push(...isolatedBlocs.map(bloc => bloc as InstanceType<B>));
+        isolatedBlocs.forEach((bloc) => {
+          results.push(bloc as InstanceType<B>);
+        });
       }
     }
 
