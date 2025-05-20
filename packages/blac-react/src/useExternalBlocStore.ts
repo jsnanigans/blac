@@ -97,8 +97,12 @@ const useExternalBlocStore = <
             return [[newState]];
           }
 
+          if (usedKeys.current.size === 0 && usedClassPropKeys.current.size === 0) {
+            return [[]];
+          }
+
           // For object states, track which properties were actually used
-          const usedStateValues: string[] = [];
+          const usedStateValues: unknown[] = [];
           for (const key of usedKeys.current) {
             if (key in newState) {
               usedStateValues.push(newState[key as keyof typeof newState]);
