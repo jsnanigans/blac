@@ -1,10 +1,14 @@
 # Introduction to Blac
 
-Welcome to Blac, a modern state management library designed to bring simplicity, power, and predictability to your React projects! Blac aims to reduce the mental overhead of state management by cleanly separating business logic from your UI components.
+Blac is a state management library for React. It keeps your business logic separate from UI components.
+
+> "Any sufficiently advanced bug is indistinguishable from a feature." — Rich Kulawiec
 
 ## What is Blac?
 
-Blac is a state management solution built with **TypeScript first**, offering a lightweight yet flexible approach. It draws inspiration from established patterns while providing an intuitive API to minimize boilerplate.
+Blac is written in TypeScript and draws on common patterns. The API is small and avoids boilerplate.
+
+> "The quieter you become, the more you are able to hear." — Ram Dass
 
 It consists of two main packages:
 -   `@blac/core`: The foundational library providing the core Blac/Bloc logic, instance management, and a plugin system.
@@ -12,25 +16,21 @@ It consists of two main packages:
 
 In Blac's architecture, state becomes a well-defined side effect of your business logic, and the UI becomes a reactive reflection of that state.
 
-## Key Features of Blac
+## Key Features
 
--   💡 **Simple & Intuitive API**: Get started quickly with familiar concepts and less boilerplate.
--   🧠 **Smart Instance Management**:
-    -   Automatic creation, sharing (default for non-isolated Blocs, keyed by class name or custom ID), and disposal of `Bloc`/`Cubit` instances, orchestrated by the central `Blac` class.
-    -   Support for `static isolated = true` on Blocs/Cubits or providing unique IDs for component-specific/distinct instances.
-    -   `Bloc`s/`Cubit`s are kept alive as long as they have active listeners/consumers, or if explicitly marked with `static keepAlive = true`.
--   �� **TypeScript First**: Full type safety out-of-the-box, enabling robust applications and great autocompletion.
--   🧩 **Extensible via Plugins & Addons**:
-    -   **Plugins**: Extend Blac's core functionality by hooking into lifecycle events (e.g., for custom logging).
-    -   **Addons**: Enhance individual `Bloc` capabilities (e.g., state persistence with the built-in `Persist` addon).
--   🚀 **Performance Focused**:
-    -   Minimal dependencies for a small bundle size.
-    -   Efficient state updates and re-renders in React.
--   🧱 **Flexible Architecture**: Adapts to various React project structures and complexities.
+> "Always keep your towel handy." — Douglas Adams
+
+- Minimal API
+- Instance management for shared or isolated blocs
+- Written in TypeScript
+- Extensible via plugins and addons
+- Efficient state updates
 
 ## Documentation Structure
 
-This documentation is organized to help you learn Blac 효과적으로 (effectively):
+> "Knowledge is power." — Francis Bacon
+
+This documentation is organized into two sections:
 
 -   **Learn**: Foundational concepts, patterns, and guides.
     -   [Getting Started](/learn/getting-started): Your first steps with Blac.
@@ -47,4 +47,4 @@ This documentation is organized to help you learn Blac 효과적으로 (effectiv
     -   React (`@blac/react`):
         -   [React Hooks (useBloc, useValue, etc.)](/api/react-hooks): Learn how to use Blac with your React components.
 
-Ready to begin? Jump into the [Getting Started](/learn/getting-started) guide! 
+Ready to begin? See the [Getting Started](/learn/getting-started) guide.

@@ -1,6 +1,8 @@
 # Best Practices
 
-Follow these best practices to get the most out of Blac in your applications.
+Follow these guidelines when using Blac.
+
+> "Premature optimization is the root of all evil." — Donald Knuth
 
 ## State Container Design
 
@@ -267,4 +269,4 @@ test('CounterCubit fetches count from API', async () => {
 });
 ```
 
-By following these best practices, you'll create more maintainable, testable, and efficient applications with Blac. 
+By following these practices you can keep your code maintainable.

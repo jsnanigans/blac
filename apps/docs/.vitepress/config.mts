@@ -5,7 +5,7 @@ import { withMermaid } from "vitepress-plugin-mermaid";
 // https://vitepress.dev/reference/site-config
 const siteConfig = defineConfig({
   title: "Blac Documentation",
-  description: "Lightweight, flexible state management for React applications with predictable data flow",
+  description: "State management for React applications",
   head: [
     ['link', { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' }]
   ],

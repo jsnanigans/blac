@@ -1,6 +1,8 @@
 # The Blac Pattern
 
-The Blac (Bloc + React) pattern provides a structured approach to state management by enforcing a unidirectional data flow and a clear separation of concerns between your UI and business logic. This makes your applications more scalable, testable, and easier to understand.
+The Blac (Bloc + React) pattern enforces a unidirectional data flow and keeps business logic separate from your UI. It encourages a predictable structure.
+
+> "Not all those who wander are lost." — J.R.R. Tolkien
 
 ## Core Components of the Blac Pattern
 

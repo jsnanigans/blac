@@ -1,6 +1,8 @@
 # State Management Patterns
 
-Blac offers several powerful patterns for managing state container instances and their lifecycles. Understanding these patterns will help you choose the best approach for different scenarios in your application, balancing state sharing, isolation, and persistence needs.
+Blac offers several patterns for managing state container instances and their lifecycles. Understanding these patterns helps you choose how to balance sharing, isolation, and persistence.
+
+> "The best way to predict the future is to invent it." — Alan Kay
 
 ## 1. Shared State (Default)
 

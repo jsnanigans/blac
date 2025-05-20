@@ -1,21 +1,21 @@
 ---
 # https://vitepress.dev/reference/default-theme-home-page
 layout: home
-title: Blac - Beautiful State Management for React
-description: Lightweight, flexible, and predictable state management for modern React applications.
+title: Blac State Management for React
+description: State management for React applications.
 head:
   - - meta
     - name: description
-      content: Blac is a lightweight, flexible, and predictable state management library for React applications.
+      content: State management for React applications.
   - - meta
     - name: keywords
       content: blac, react, state management, bloc, cubit, typescript, reactive, predictable state
   - - meta
     - property: og:title
-      content: Blac - Beautiful State Management for React
+      content: Blac State Management for React
   - - meta
     - property: og:description
-      content: Lightweight, flexible, and predictable state management for modern React applications.
+      content: State management for React applications.
   - - meta
     - property: og:type
       content: website
@@ -27,15 +27,17 @@ head:
       content: summary
   - - meta
     - name: twitter:title
-      content: Blac - Beautiful State Management for React
+      content: Blac State Management for React
   - - meta
     - name: twitter:description
-      content: Lightweight, flexible, and predictable state management for modern React applications.
+      content: State management for React applications.
 ---
 
 # Blac
 
-<div class="tagline"><strong>Lightweight, flexible, and predictable state management for modern React applications.</strong></div>
+<div class="tagline"><strong>State management for React applications.</strong></div>
+
+> "Talk is cheap. Show me the code." — Linus Torvalds
 
 <div class="image-container">
   <img src="/logo.svg" alt="Blac Logo" style="width: 150px;" />
@@ -48,38 +50,21 @@ head:
 
 ## Features
 
-<div class="features">
-  <div class="feature">
-    <h3>💡 Simple & Intuitive API</h3>
-    <p>Get started quickly with familiar concepts and less boilerplate. Focus on your business logic, not on complex state management rituals.</p>
-  </div>
-  <div class="feature">
-    <h3>🧠 Smart Instance Management</h3>
-    <p>Automatic creation, sharing (default for non-isolated Blocs using class name or provided ID), and disposal of Bloc/Cubit instances by the central `Blac` class. Supports `keepAlive` for in-memory persistence and isolated instances (via `static isolated = true` or unique IDs) for component-specific or distinct states.</p>
-  </div>
-  <div class="feature">
-    <h3>🔒 TypeScript First</h3>
-    <p>Built from the ground up with TypeScript, offering full type safety for robust applications and an excellent developer experience with autocompletion and refactoring support.</p>
-  </div>
-  <div class="feature">
-    <h3>🧩 Extensible via Plugins & Addons</h3>
-    <p>Enhance Blac's core or individual Bloc capabilities. Use the plugin system for global extensions (like logging) or addons for Bloc-specific features (like state persistence).</p>
-  </div>
-  <div class="feature">
-    <h3>🚀 Performance Focused</h3>
-    <p>Minimal dependencies for a small bundle size. Efficient state updates and optimized re-renders in React components.</p>
-  </div>
-  <div class="feature">
-    <h3>🧩 Flexible Architecture</h3>
-    <p>Adapts to various React project structures and complexities. Suitable for small features or large-scale applications.</p>
-  </div>
-</div>
+> "Don't panic." — *The Hitchhiker's Guide to the Galaxy*
+
+- Simple API with minimal boilerplate
+- Automatic instance management with optional isolation
+- Written in TypeScript
+- Extensible via plugins and addons
+- Small bundle size
 
 ::: tip Just getting started?
-Check out the [Introduction](/learn/introduction) for a comprehensive guide to using Blac in your projects.
+Check out the [Introduction](/learn/introduction) to get started.
 :::
 
 ## Quick Example
+
+> "Logic is the beginning of wisdom, not the end." — Spock
 
 ```tsx
 // 1. Define your Cubit (e.g., in src/cubits/CounterCubit.ts)

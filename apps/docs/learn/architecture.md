@@ -2,6 +2,8 @@
 
 Understanding the architecture of Blac helps in leveraging its full potential for state management in your React applications.
 
+> "The architecture of a system reflects the thinking of the people who build it." — Grady Booch
+
 ## Why Classes are Used in Blac
 
 Blac deliberately uses ES6 classes for defining `Bloc` and `Cubit` state containers. This approach offers several advantages in the context of state management and aligns well with TypeScript:
@@ -129,7 +131,7 @@ function AnotherComponent() {
 }
 ```
 
-This is powerful for scenarios like managing state for multiple instances of a feature (e.g., different chat conversation windows, multiple editable data records on a page).
+This is useful for scenarios like managing state for multiple instances of a feature (e.g., different chat windows or editable records).
 
 #### Scenario 1: Default Sharing (No isolation, No custom ID)
 ```mermaid
@@ -160,7 +162,8 @@ graph TD
 Blac is heavily inspired by the BLoC (Business Logic Component) pattern, which advocates for moving all business logic out of your UI components and into dedicated `Bloc` or `Cubit` classes. These state containers then become the single source of truth for their respective slice of application state.
 
 ::: tip Flexibility of Blac
-While inspired by the BLoC pattern, Blac does not strictly enforce all its original tenets. It adapts these principles for a pragmatic and flexible experience within the JavaScript/React ecosystem, allowing you to structure your application to best suit your project's needs.
+While inspired by the BLoC pattern, Blac does not strictly enforce all its original tenets. It adapts these ideas so you can structure your application to fit your needs.
+> "It is not the strongest of the species that survives, but the one most responsive to change." — Charles Darwin
 :::
 
 This typically leads to a layered architecture:

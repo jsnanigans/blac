@@ -151,7 +151,9 @@ For more details, see the [React Hooks API](/api/react-hooks).
 
 ## Instance Management Patterns
 
-Blac, through its central `Blac` instance, offers flexible ways to manage your `Bloc` or `Cubit` instances:
+> "With great power comes great responsibility." — Uncle Ben
+
+Blac, through its central `Blac` instance, provides ways to manage your `Bloc` or `Cubit` instances:
 
 1.  **Shared State (Default for non-isolated Blocs)**:
     When a `Bloc` or `Cubit` is *not* marked as `static isolated = true;`, instances are typically shared.
