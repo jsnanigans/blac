@@ -57,9 +57,11 @@ class SingletonBlacManager implements BlacInstanceManager {
     SingletonBlacManager._instance = new Blac({ __unsafe_ignore_singleton: true });
     
     // Transfer any keep-alive blocs to the new instance
-    for (const bloc of oldInstance.keepAliveBlocs) {
-      SingletonBlacManager._instance.keepAliveBlocs.add(bloc);
-      SingletonBlacManager._instance.uidRegistry.set(bloc.uid, bloc);
+    if (oldInstance) {
+      for (const bloc of oldInstance.keepAliveBlocs) {
+        SingletonBlacManager._instance.keepAliveBlocs.add(bloc);
+        SingletonBlacManager._instance.uidRegistry.set(bloc.uid, bloc);
+      }
     }
   }
 }
@@ -99,7 +101,7 @@ export class Blac {
   /** Map storing all registered bloc instances by their class name and ID */
   blocInstanceMap: Map<string, BlocBase<unknown>> = new Map();
   /** Map storing isolated bloc instances grouped by their constructor */
-  isolatedBlocMap: Map<BlocConstructor<unknown>, BlocBase<unknown>[]> = new Map();
+  isolatedBlocMap: Map<BlocConstructor<any>, BlocBase<unknown>[]> = new Map();
   /** Map for O(1) lookup of isolated blocs by UID */
   private isolatedBlocIndex: Map<string, BlocBase<unknown>> = new Map();
   /** Map tracking UIDs to prevent memory leaks */
@@ -267,7 +269,7 @@ export class Blac {
    * @param id - The instance ID
    * @returns The found bloc instance or undefined if not found
    */
-  findRegisteredBlocInstance<B extends BlocConstructor<unknown>>(
+  findRegisteredBlocInstance<B extends BlocConstructor<any>>(
     blocClass: B,
     id: BlocInstanceId,
   ): InstanceType<B> | undefined {
@@ -284,7 +286,7 @@ export class Blac {
    * @param bloc - The isolated bloc instance to register
    */
   registerIsolatedBlocInstance(bloc: BlocBase<unknown>): void {
-    const blocClass = bloc.constructor as BlocConstructor<unknown>;
+    const blocClass = bloc.constructor as BlocConstructor<any>;
     const blocs = this.isolatedBlocMap.get(blocClass);
     if (blocs) {
       blocs.push(bloc);
@@ -310,7 +312,7 @@ export class Blac {
    */
   unregisterIsolatedBlocInstance(bloc: BlocBase<unknown>): void {
     const blocClass = bloc.constructor;
-    const blocs = this.isolatedBlocMap.get(blocClass as BlocConstructor<unknown>);
+    const blocs = this.isolatedBlocMap.get(blocClass as BlocConstructor<any>);
     if (blocs) {
       const index = blocs.findIndex((b) => b.uid === bloc.uid);
       if (index !== -1) {
@@ -318,7 +320,7 @@ export class Blac {
       }
 
       if (blocs.length === 0) {
-        this.isolatedBlocMap.delete(blocClass as BlocConstructor<unknown>);
+        this.isolatedBlocMap.delete(blocClass as BlocConstructor<any>);
       }
     }
     
@@ -335,7 +337,7 @@ export class Blac {
   /**
    * Finds an isolated bloc instance by its class and ID (O(n) lookup)
    */
-  findIsolatedBlocInstance<B extends BlocConstructor<unknown>>(
+  findIsolatedBlocInstance<B extends BlocConstructor<any>>(
     blocClass: B,
     id: BlocInstanceId,
   ): InstanceType<B> | undefined {
@@ -368,13 +370,13 @@ export class Blac {
    * @param instanceRef - Optional reference string for the instance
    * @returns The newly created bloc instance
    */
-  createNewBlocInstance<B extends BlocConstructor<BlocBase<unknown>>>(
+  createNewBlocInstance<B extends BlocConstructor<BlocBase<any>>>(
     blocClass: B,
     id: BlocInstanceId,
     options: GetBlocOptions<InstanceType<B>> = {},
   ): InstanceType<B> {
     const { props, instanceRef } = options;
-    const newBloc = new blocClass(props as never) as InstanceType<BlocConstructor<BlocBase<unknown>>>;
+    const newBloc = new blocClass(props as never) as InstanceType<B>;
     newBloc._instanceRef = instanceRef;
     newBloc.props = props || null;
     newBloc._updateId(id);
@@ -384,16 +386,16 @@ export class Blac {
 
     if (newBloc.isIsolated) {
       this.registerIsolatedBlocInstance(newBloc);
-      return newBloc as InstanceType<B>;
+      return newBloc;
     }
 
     this.registerBlocInstance(newBloc);
-    return newBloc as InstanceType<B>;
+    return newBloc;
   }
 
 
   activateBloc = (bloc: BlocBase<unknown>): void => {
-    const base = bloc.constructor as unknown as BlocConstructor<BlocBase<unknown>>;
+    const base = bloc.constructor as unknown as BlocConstructor<BlocBase<any>>;
     const isIsolated = bloc.isIsolated;
 
     let found = isIsolated ? this.findIsolatedBlocInstance(base, bloc._id) : this.findRegisteredBlocInstance(base, bloc._id);
@@ -421,7 +423,7 @@ export class Blac {
    *   - instanceRef: Optional reference string for the instance
    * @returns The bloc instance
    */
-  getBloc = <B extends BlocConstructor<BlocBase<unknown>>>(
+  getBloc = <B extends BlocConstructor<BlocBase<any>>>(
     blocClass: B,
     options: GetBlocOptions<InstanceType<B>> = {},
   ): InstanceType<B> => {
@@ -470,7 +472,7 @@ export class Blac {
    *   - props: Properties to pass to the bloc constructor
    *   - instanceRef: Optional reference string for the instance
    */
-  getBlocOrThrow = <B extends BlocConstructor<unknown>>(
+  getBlocOrThrow = <B extends BlocConstructor<any>>(
     blocClass: B,
     options: {
       id?: BlocInstanceId;
@@ -499,7 +501,7 @@ export class Blac {
    *   - searchIsolated: Whether to search in isolated blocs (defaults to bloc's isolated property)
    * @returns Array of matching bloc instances
    */
-  getAllBlocs = <B extends BlocConstructor<unknown>>(
+  getAllBlocs = <B extends BlocConstructor<any>>(
     blocClass: B,
     options: {
       searchIsolated?: boolean;
@@ -530,7 +532,7 @@ export class Blac {
    * Disposes all keep-alive blocs of a specific type
    * @param blocClass - The bloc class to dispose
    */
-  disposeKeepAliveBlocs = <B extends BlocConstructor<unknown>>(
+  disposeKeepAliveBlocs = <B extends BlocConstructor<any>>(
     blocClass?: B
   ): void => {
     const toDispose: BlocBase<unknown>[] = [];
