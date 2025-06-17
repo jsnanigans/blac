@@ -13,7 +13,10 @@ interface UserProfileBlocProps {
   defaultEmail?: string;
 }
 
-export class UserProfileBloc extends Cubit<UserProfileState, UserProfileBlocProps> {
+export class UserProfileBloc extends Cubit<
+  UserProfileState,
+  UserProfileBlocProps
+> {
   static isolated = true; // Ensures each component instance gets its own UserProfileBloc
 
   constructor(props?: UserProfileBlocProps) {
@@ -51,4 +54,5 @@ export class UserProfileBloc extends Cubit<UserProfileState, UserProfileBlocProp
     const lastInitial = this.state.lastName ? this.state.lastName[0] : '';
     return `${firstInitial}${lastInitial}`.toUpperCase();
   }
-} 
+}
+

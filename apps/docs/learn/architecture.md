@@ -33,6 +33,10 @@ While functional approaches to state management are popular, the class-based des
 
 Blac uses classes for its state containers (`Bloc` and `Cubit`) primarily to define state structure and business logic without immediate initialization. This design also inherently supports multiple instances of the same state container if needed.
 
+### Initialization Strategy
+
+Blac employs lazy initialization to avoid circular dependency issues. The core `Blac` instance and its static methods are only created when first accessed, not during module loading. This prevents "Cannot access 'Blac' before initialization" errors that could occur with eager initialization patterns.
+
 ```typescript
 // A Cubit definition (Blocs are similar)
 class MyCounterCubit extends Cubit<number> {

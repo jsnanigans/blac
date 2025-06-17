@@ -73,6 +73,42 @@ export default CounterDisplay;
 
 That's it! You've created a simple counter using a Blac `Cubit`.
 
+## Common Issues
+
+### "Cannot access 'Blac' before initialization" Error
+
+If you encounter this error, it's likely due to circular dependencies in your imports. This has been resolved in v2.0.0-rc-3+ with lazy initialization. Make sure you're using the latest version:
+
+```bash
+pnpm update @blac/core @blac/react
+```
+
+If the issue persists, avoid immediately accessing static Blac properties at module level. Instead, access them inside functions or component lifecycle:
+
+```tsx
+// ❌ Avoid this at module level
+Blac.enableLog = true;
+
+// ✅ Do this instead
+useEffect(() => {
+  Blac.enableLog = true;
+}, []);
+```
+
+### TypeScript Type Inference Issues
+
+If you're experiencing TypeScript errors with `useBloc` not properly inferring your Cubit/Bloc types, ensure you're using v2.0.0-rc-3+ which includes improved type constraints:
+
+```tsx
+// This should now work correctly with proper type inference
+const [state, cubit] = useBloc(CounterCubit, {
+  id: 'unique-id',
+  props: { initialCount: 0 }
+});
+// state.count is properly typed as number
+// cubit.increment is properly typed as () => void
+```
+
 ### How It Works
 
 1.  **`CounterCubit`**: Extends `Cubit` from `@blac/core`.

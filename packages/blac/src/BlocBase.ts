@@ -1,4 +1,3 @@
-import { Blac } from './Blac';
 import { BlacObservable } from './BlacObserver';
 import { BlocConstructor } from './types';
 
@@ -63,12 +62,6 @@ export abstract class BlocBase<
   public _observer: BlacObservable<S>;
   
   /**
-   * @internal
-   * Reference to the global Blac manager instance.
-   */
-  public _blac = Blac.getInstance();
-  
-  /**
    * The unique identifier for this Bloc instance.
    * Defaults to the class name, but can be customized.
    */
@@ -119,14 +112,14 @@ export abstract class BlocBase<
   constructor(initialState: S) {
     this._state = initialState;
     this._observer = new BlacObservable(this);
-    Blac.log('Bloc Created', this)
     this._id = this.constructor.name;
 
-    // Use a type assertion for the constructor to access static properties safely
-    const constructorWithStaticProps = this.constructor as BlocConstructor<this> & BlocStaticProperties;
-
-    this._keepAlive = constructorWithStaticProps.keepAlive;
-    this._isolated = constructorWithStaticProps.isolated;
+    // Access static properties safely with proper type checking
+    const Constructor = this.constructor as typeof BlocBase & BlocStaticProperties;
+    
+    // Validate that the static properties exist and are boolean
+    this._keepAlive = typeof Constructor.keepAlive === 'boolean' ? Constructor.keepAlive : false;
+    this._isolated = typeof Constructor.isolated === 'boolean' ? Constructor.isolated : false;
   }
 
   /**
@@ -164,11 +157,17 @@ export abstract class BlocBase<
    * Notifies the Blac manager and clears all observers.
    */
   _dispose() {
+    // Clear all consumers
+    this._consumers.clear();
+    
+    // Clear observer subscriptions
     this._observer.clear();
+    
+    // Call user-defined disposal hook
     this.onDispose?.();
-    // this._blac.dispatchEvent(BlacLifecycleEvent.BLOC_DISPOSED, this);
-    Blac.log('BlocBase._dispose', this);
-    Blac.instance.disposeBloc(this);
+    
+    // The Blac manager will handle removal from registry
+    // This method is called by Blac.disposeBloc, so we don't need to call it again
   }
 
   /**
@@ -185,16 +184,27 @@ export abstract class BlocBase<
 
   /**
    * @internal
+   * WeakSet to track consumer references for cleanup validation
+   */
+  private _consumerRefs = new WeakSet<object>();
+
+  /**
+   * @internal
    * Registers a new consumer to this Bloc instance.
    * Notifies the Blac manager that a consumer has been added.
    * 
    * @param consumerId The unique ID of the consumer being added
+   * @param consumerRef Optional reference to the consumer object for cleanup validation
    */
-  _addConsumer = (consumerId: string) => {
+  _addConsumer = (consumerId: string, consumerRef?: object) => {
     if (this._consumers.has(consumerId)) return;
     this._consumers.add(consumerId);
+    
+    if (consumerRef) {
+      this._consumerRefs.add(consumerRef);
+    }
+    
     // this._blac.dispatchEvent(BlacLifecycleEvent.BLOC_CONSUMER_ADDED, this, { consumerId });
-    Blac.log('BlocBase._addConsumer', this, consumerId);
   };
 
   /**
@@ -208,10 +218,57 @@ export abstract class BlocBase<
     if (!this._consumers.has(consumerId)) return;
     this._consumers.delete(consumerId);
     // this._blac.dispatchEvent(BlacLifecycleEvent.BLOC_CONSUMER_REMOVED, this, { consumerId });
-    Blac.log('BlocBase._removeConsumer', this, consumerId);
+    
+    // If no consumers remain and not keep-alive, schedule disposal
+    if (this._consumers.size === 0 && !this._keepAlive) {
+      this._scheduleDisposal();
+    }
   };
 
+  /**
+   * @internal
+   * Handler function for disposal (can be set by Blac manager)
+   */
+  private _disposalHandler?: (bloc: BlocBase<unknown>) => void;
+
+  /**
+   * @internal
+   * Sets the disposal handler for this bloc
+   */
+  _setDisposalHandler(handler: (bloc: BlocBase<unknown>) => void) {
+    this._disposalHandler = handler;
+  }
+
+  /**
+   * @internal
+   * Schedules disposal of this bloc instance if it has no consumers
+   */
+  private _scheduleDisposal() {
+    // Use setTimeout to avoid disposal during render cycles
+    setTimeout(() => {
+      if (this._consumers.size === 0 && !this._keepAlive) {
+        if (this._disposalHandler) {
+          this._disposalHandler(this as any);
+        } else {
+          this._dispose();
+        }
+      }
+    }, 0);
+  }
+
   lastUpdate = Date.now();
+
+  /**
+   * @internal
+   * Flag to indicate if batching is enabled for this bloc
+   */
+  private _batchingEnabled = false;
+
+  /**
+   * @internal
+   * Pending state updates when batching is enabled
+   */
+  private _pendingUpdates: Array<{newState: S, oldState: S, action?: unknown}> = [];
 
   /**
    * @internal
@@ -222,8 +279,59 @@ export abstract class BlocBase<
    * @param action Optional metadata about what caused the state change
    */
   _pushState = (newState: S, oldState: S, action?: unknown): void => {
+    // Runtime validation for state changes
+    if (newState === undefined) {
+      console.warn('BlocBase._pushState: newState is undefined', this);
+      return;
+    }
+    
+    // Validate action type if provided
+    if (action !== undefined && action !== null) {
+      const actionType = typeof action;
+      if (!(['string', 'object', 'number'].includes(actionType))) {
+        console.warn('BlocBase._pushState: Invalid action type', this, action);
+      }
+    }
+
+    // If batching is enabled, queue the update
+    if (this._batchingEnabled) {
+      this._pendingUpdates.push({ newState, oldState, action });
+      return;
+    }
+    
+    this._oldState = oldState;
     this._state = newState;
     this._observer.notify(newState, oldState, action);
     this.lastUpdate = Date.now();
+  };
+
+  /**
+   * Enables batching for multiple state updates
+   * @param batchFn Function to execute with batching enabled
+   */
+  batch = <T>(batchFn: () => T): T => {
+    const wasBatching = this._batchingEnabled;
+    this._batchingEnabled = true;
+    
+    try {
+      const result = batchFn();
+      
+      // Process all pending updates
+      if (this._pendingUpdates.length > 0) {
+        const lastUpdate = this._pendingUpdates[this._pendingUpdates.length - 1];
+        this._oldState = this._pendingUpdates[0].oldState;
+        this._state = lastUpdate.newState;
+        
+        // Notify with the final state
+        this._observer.notify(lastUpdate.newState, this._oldState, lastUpdate.action);
+        this.lastUpdate = Date.now();
+        
+        this._pendingUpdates = [];
+      }
+      
+      return result;
+    } finally {
+      this._batchingEnabled = wasBatching;
+    }
   };
 }

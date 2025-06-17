@@ -8,6 +8,7 @@ import {
 import {
   useEffect,
   useMemo,
+  useRef,
   useSyncExternalStore
 } from 'react';
 import useExternalBlocStore from './useExternalBlocStore';
@@ -86,49 +87,84 @@ export default function useBloc<B extends BlocConstructor<BlocBase<any>>>(
     externalStore.getServerSnapshot,
   );
 
+  // Cache proxies to avoid recreation on every render
+  const stateProxyCache = useRef<WeakMap<object, object>>(new WeakMap());
+  const classProxyCache = useRef<WeakMap<object, object>>(new WeakMap());
+
   const returnState = useMemo(() => {
-    return typeof state === 'object'
-      ? new Proxy(state, {
-          get(_, prop) {
-            usedKeys.current.add(prop as string);
-            const value = state[prop as keyof typeof state];
-            return value;
-          },
-        })
-      : state;
+    if (typeof state !== 'object' || state === null) {
+      return state;
+    }
+
+    // Check cache first
+    let proxy = stateProxyCache.current.get(state);
+    if (!proxy) {
+      proxy = new Proxy(state, {
+        get(target, prop) {
+          usedKeys.current.add(prop as string);
+          const value = target[prop as keyof typeof target];
+          return value;
+        },
+        // Handle symbols and non-enumerable properties
+        has(target, prop) {
+          return prop in target;
+        },
+        ownKeys(target) {
+          return Reflect.ownKeys(target);
+        },
+        getOwnPropertyDescriptor(target, prop) {
+          return Reflect.getOwnPropertyDescriptor(target, prop);
+        }
+      });
+      stateProxyCache.current.set(state as object, proxy as object);
+    }
+    return proxy;
   }, [state]);
 
   const returnClass = useMemo(() => {
-    return new Proxy(instance.current, {
-      get(_, prop) {
-        if (!instance.current) {
-          return null;
-        }
-        const value = instance.current[prop as keyof InstanceType<B>];
-        if (typeof value !== 'function') {
-          usedClassPropKeys.current.add(prop as string);
-        }
-        return value;
-      },
-    });
+    if (!instance.current) {
+      return null;
+    }
+
+    // Check cache first
+    let proxy = classProxyCache.current.get(instance.current);
+    if (!proxy) {
+      proxy = new Proxy(instance.current, {
+        get(target, prop) {
+          if (!target) {
+            return null;
+          }
+          const value = target[prop as keyof InstanceType<B>];
+          if (typeof value !== 'function') {
+            usedClassPropKeys.current.add(prop as string);
+          }
+          return value;
+        },
+      });
+      classProxyCache.current.set(instance.current, proxy);
+    }
+    return proxy;
   }, [instance.current?.uid]);
 
   // Set up bloc lifecycle management
   useEffect(() => {
-    instance.current._addConsumer(rid);
+    const currentInstance = instance.current;
+    if (!currentInstance) return;
+    
+    currentInstance._addConsumer(rid);
 
     // Call onMount callback if provided
-    options?.onMount?.(instance.current);
+    options?.onMount?.(currentInstance);
 
     // Cleanup: remove this component as a consumer using the captured instance
     return () => {
-      if (!instance.current) {
+      if (!currentInstance) {
         return;
       }
-      options?.onUnmount?.(instance.current);
-      instance.current._removeConsumer(rid);
+      options?.onUnmount?.(currentInstance);
+      currentInstance._removeConsumer(rid);
     };
-  }, [instance.current, rid]); // Do not add options.onMount to deps, it will cause a loop
+  }, [instance.current?.uid, rid]); // Use UID to ensure we re-run when instance changes
 
-  return [returnState, returnClass];
+  return [returnState as BlocState<InstanceType<B>>, returnClass as InstanceType<B>];
 }

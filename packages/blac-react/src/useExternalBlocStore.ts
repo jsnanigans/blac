@@ -132,19 +132,31 @@ const useExternalBlocStore = <
   const state: ExternalStore<B> = useMemo(() => {
     return {
       subscribe: (listener: (state: BlocState<InstanceType<B>>) => void) => {
+        const currentInstance = blocInstance.current;
+        if (!currentInstance) {
+          return () => {}; // Return no-op if no instance
+        }
+
+        // Use a flag to prevent multiple resets during the same listener execution
+        let isResetting = false;
+
         const observer: BlacObserver<BlocState<InstanceType<B>>> = {
           fn: () => {
             try {
-              usedKeys.current = new Set();
-              usedClassPropKeys.current = new Set();
+              if (!isResetting) {
+                isResetting = true;
+                usedKeys.current = new Set();
+                usedClassPropKeys.current = new Set();
+                isResetting = false;
+              }
 
-              listener(blocInstance.current.state);
+              listener(currentInstance.state);
             } catch (e) {
               // Log any errors that occur during the listener callback
               // This ensures errors in listeners don't break the entire application
               console.error({
                 e,
-                blocInstance,
+                blocInstance: currentInstance,
                 dependencyArray,
               });
             }
@@ -155,11 +167,11 @@ const useExternalBlocStore = <
           id: rid,
         }
 
-        Blac.activateBloc(blocInstance.current);
+        Blac.activateBloc(currentInstance);
 
         // Subscribe to the bloc's observer with the provided listener function
         // This will trigger the callback whenever the bloc's state changes
-        const unSub = blocInstance.current._observer.subscribe(observer);
+        const unSub = currentInstance._observer.subscribe(observer);
 
         // Return an unsubscribe function that can be called to clean up the subscription
         return () => {
@@ -167,11 +179,11 @@ const useExternalBlocStore = <
         };
       },
       // Return an immutable snapshot of the current bloc state
-      getSnapshot: (): BlocState<InstanceType<B>> => blocInstance.current.state,
+      getSnapshot: (): BlocState<InstanceType<B>> => blocInstance.current?.state || ({} as BlocState<InstanceType<B>>),
       // Server snapshot mirrors the client snapshot in this implementation
-      getServerSnapshot: (): BlocState<InstanceType<B>> => blocInstance.current.state,
+      getServerSnapshot: (): BlocState<InstanceType<B>> => blocInstance.current?.state || ({} as BlocState<InstanceType<B>>),
     }
-  }, []);
+  }, [blocInstance.current?.uid]); // Re-create store when instance changes
 
   return {
     usedKeys,

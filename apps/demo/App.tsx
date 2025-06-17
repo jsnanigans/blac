@@ -257,8 +257,11 @@ function App() {
   );
 }
 
-export default App;
+// Initialize Blac after module is fully loaded
+setTimeout(() => {
+  Blac.enableLog = true;
+  window.blac = Blac;
+  console.log(Blac.instance);
+}, 0);
 
-Blac.enableLog = true;
-window.blac = Blac;
-console.log(Blac.instance);
+export default App;
