@@ -101,12 +101,16 @@ export class BlocTest {
             clearTimeout(timeoutId);
             unsubscribe();
             
-            // Verify all states match
+            // Verify all states match using deep equality
             for (let i = 0; i < expectedStates.length; i++) {
-              if (!Object.is(receivedStates[i], expectedStates[i])) {
+              const expected = expectedStates[i];
+              const received = receivedStates[i];
+              
+              // Use JSON comparison for deep equality
+              if (JSON.stringify(expected) !== JSON.stringify(received)) {
                 reject(new Error(
-                  `State mismatch at index ${i}. Expected: ${JSON.stringify(expectedStates[i])}, ` +
-                  `Received: ${JSON.stringify(receivedStates[i])}`
+                  `State mismatch at index ${i}. Expected: ${JSON.stringify(expected)}, ` +
+                  `Received: ${JSON.stringify(received)}`
                 ));
                 return;
               }

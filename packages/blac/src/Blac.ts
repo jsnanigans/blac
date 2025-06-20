@@ -218,6 +218,10 @@ export class Blac {
     } else {
       this.unregisterBlocInstance(bloc);
     }
+    
+    // Actually dispose the bloc after unregistering it
+    bloc._dispose();
+    
     this.log('dispatched bloc', bloc)
   };
 

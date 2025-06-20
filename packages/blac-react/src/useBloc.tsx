@@ -113,7 +113,10 @@ export default function useBloc<B extends BlocConstructor<BlocBase<any>>>(
     if (!proxy) {
       proxy = new Proxy(state, {
         get(target, prop) {
-          usedKeys.current.add(prop as string);
+          // Use setTimeout to defer dependency tracking until after render
+          setTimeout(() => {
+            usedKeys.current.add(prop as string);
+          }, 0);
           const value = target[prop as keyof typeof target];
           return value;
         },

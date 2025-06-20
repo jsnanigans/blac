@@ -61,12 +61,7 @@ export class BlacObservable<S = unknown> {
   subscribe(observer: BlacObserver<S>): () => void {
     Blac.log('BlacObservable.subscribe: Subscribing observer.', this.bloc, observer);
     this._observers.add(observer);
-    // Blac.instance.dispatchEvent(BlacLifecycleEvent.LISTENER_ADDED, this.bloc, { listenerId: observer.id });
-    if (!observer.lastState) {
-      observer.lastState = observer.dependencyArray
-        ? observer.dependencyArray(this.bloc.state)
-        : [];
-    }
+    // Don't initialize lastState here - let it remain undefined for first-time detection
     return () => {
       Blac.log('BlacObservable.subscribe: Unsubscribing observer.', this.bloc, observer);
       this.unsubscribe(observer);
@@ -98,16 +93,37 @@ export class BlacObservable<S = unknown> {
       let shouldUpdate = false;
 
       if (observer.dependencyArray) {
-        const lastDependencyCheck = observer.lastState || [];
+        const lastDependencyCheck = observer.lastState;
         const newDependencyCheck = observer.dependencyArray(newState);
 
-        for (let o = 0; o < newDependencyCheck.length; o++) {
-          const partNew = newDependencyCheck[o];
-          const partOld = lastDependencyCheck[o] || [];
-          for (let i = 0; i < partNew.length; i++) {
-            if (!Object.is(partNew[i], partOld[i])) {
-              shouldUpdate = true;
-              break;
+        // If this is the first time (no lastState), always update
+        if (!lastDependencyCheck) {
+          shouldUpdate = true;
+        } else {
+          // Compare dependency arrays for changes
+          if (lastDependencyCheck.length !== newDependencyCheck.length) {
+            shouldUpdate = true;
+          } else {
+            // Compare each part of the dependency arrays
+            for (let o = 0; o < newDependencyCheck.length; o++) {
+              const partNew = newDependencyCheck[o];
+              const partOld = lastDependencyCheck[o] || [];
+              
+              // If the part lengths are different, definitely update
+              if (partNew.length !== partOld.length) {
+                shouldUpdate = true;
+                break;
+              }
+              
+              // Compare each value in the parts
+              for (let i = 0; i < partNew.length; i++) {
+                if (!Object.is(partNew[i], partOld[i])) {
+                  shouldUpdate = true;
+                  break;
+                }
+              }
+              
+              if (shouldUpdate) break;
             }
           }
         }

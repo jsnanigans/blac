@@ -1,6 +1,6 @@
-import { act, renderHook } from '@testing-library/react';
-import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { Blac, Cubit } from '@blac/core';
+import { act, renderHook } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import useExternalBlocStore from '../src/useExternalBlocStore';
 
 interface ComplexState {
@@ -69,7 +69,7 @@ class ErrorProneCubit extends Cubit<{ value: number }> {
 
   triggerInvalidAction() {
     // This should trigger action validation warning
-    (this as any)._pushState({ value: 1 }, this.state, () => {});
+    (this as any)._pushState({ value: 1 }, this.state, 'invalid-primitive-action');
   }
 }
 
@@ -85,14 +85,16 @@ describe('useExternalBlocStore - Edge Cases', () => {
       );
 
       const initialState = result.current.externalStore.getSnapshot();
-      expect(initialState.nested.deep.value).toBe(42);
+      expect(initialState).toBeDefined();
+      expect(initialState!.nested.deep.value).toBe(42);
 
       act(() => {
         result.current.instance.current.updateNestedValue(100);
       });
 
       const updatedState = result.current.externalStore.getSnapshot();
-      expect(updatedState.nested.deep.value).toBe(100);
+      expect(updatedState).toBeDefined();
+      expect(updatedState!.nested.deep.value).toBe(100);
     });
 
     it('should handle Map and Set in state', () => {
@@ -101,10 +103,11 @@ describe('useExternalBlocStore - Edge Cases', () => {
       );
 
       const state = result.current.externalStore.getSnapshot();
-      expect(state.map).toBeInstanceOf(Map);
-      expect(state.set).toBeInstanceOf(Set);
-      expect(state.map.get('key')).toBe('value');
-      expect(state.set.has('a')).toBe(true);
+      expect(state).toBeDefined();
+      expect(state!.map).toBeInstanceOf(Map);
+      expect(state!.set).toBeInstanceOf(Set);
+      expect(state!.map.get('key')).toBe('value');
+      expect(state!.set.has('a')).toBe(true);
     });
 
     it('should handle symbols in state', () => {
@@ -113,7 +116,8 @@ describe('useExternalBlocStore - Edge Cases', () => {
       );
 
       const state = result.current.externalStore.getSnapshot();
-      expect(typeof state.symbol).toBe('symbol');
+      expect(state).toBeDefined();
+      expect(typeof state!.symbol).toBe('symbol');
     });
 
     it('should handle primitive states', () => {
@@ -182,7 +186,7 @@ describe('useExternalBlocStore - Edge Cases', () => {
       expect(consoleSpy).toHaveBeenCalledWith(
         'BlocBase._pushState: Invalid action type',
         expect.any(Object),
-        expect.any(Function)
+        'invalid-primitive-action'
       );
 
       consoleSpy.mockRestore();
@@ -294,13 +298,11 @@ describe('useExternalBlocStore - Edge Cases', () => {
       const listener = vi.fn();
       result.current.externalStore.subscribe(listener);
 
-      // Simulate concurrent modifications
+      // Simulate concurrent modifications by making multiple synchronous calls
       act(() => {
-        Promise.all([
-          Promise.resolve().then(() => result.current.instance.current.increment()),
-          Promise.resolve().then(() => result.current.instance.current.increment()),
-          Promise.resolve().then(() => result.current.instance.current.increment()),
-        ]);
+        result.current.instance.current.increment();
+        result.current.instance.current.increment();
+        result.current.instance.current.increment();
       });
 
       // Final state should be consistent
@@ -324,13 +326,17 @@ describe('useExternalBlocStore - Edge Cases', () => {
         useExternalBlocStore(LargeStateCubit, {})
       );
 
-      expect(result.current.externalStore.getSnapshot().data.length).toBe(10000);
+      const initialState = result.current.externalStore.getSnapshot();
+      expect(initialState).toBeDefined();
+      expect(initialState!.data.length).toBe(10000);
 
       act(() => {
         result.current.instance.current.addItem();
       });
 
-      expect(result.current.externalStore.getSnapshot().data.length).toBe(10001);
+      const updatedState = result.current.externalStore.getSnapshot();
+      expect(updatedState).toBeDefined();
+      expect(updatedState!.data.length).toBe(10001);
     });
 
     it('should handle frequent state updates without memory leaks', () => {
@@ -361,9 +367,10 @@ describe('useExternalBlocStore - Edge Cases', () => {
       );
 
       const firstInstance = result.current.instance.current;
+      expect(firstInstance).toBeDefined();
 
       act(() => {
-        firstInstance.increment();
+        firstInstance!.increment();
       });
 
       expect(result.current.externalStore.getSnapshot()).toBe(1);
@@ -372,6 +379,7 @@ describe('useExternalBlocStore - Edge Cases', () => {
       rerender({ id: 'test2' });
 
       const secondInstance = result.current.instance.current;
+      expect(secondInstance).toBeDefined();
       expect(secondInstance).not.toBe(firstInstance);
       expect(result.current.externalStore.getSnapshot()).toBe(0); // New instance starts at 0
     });

@@ -278,16 +278,14 @@ export abstract class BlocBase<
    * Schedules disposal of this bloc instance if it has no consumers
    */
   private _scheduleDisposal() {
-    // Use setTimeout to avoid disposal during render cycles
-    setTimeout(() => {
-      if (this._consumers.size === 0 && !this._keepAlive) {
-        if (this._disposalHandler) {
-          this._disposalHandler(this as any);
-        } else {
-          this._dispose();
-        }
+    // Check immediately if disposal should happen
+    if (this._consumers.size === 0 && !this._keepAlive) {
+      if (this._disposalHandler) {
+        this._disposalHandler(this as any);
+      } else {
+        this._dispose();
       }
-    }, 0);
+    }
   }
 
   lastUpdate = Date.now();
@@ -307,6 +305,18 @@ export abstract class BlocBase<
    * @param action Optional metadata about what caused the state change
    */
   _pushState = (newState: S, oldState: S, action?: unknown): void => {
+    // Validate newState
+    if (newState === undefined) {
+      console.warn('BlocBase._pushState: newState is undefined', this);
+      return;
+    }
+
+    // Validate action type if provided
+    if (action !== undefined && typeof action !== 'object' && typeof action !== 'function') {
+      console.warn('BlocBase._pushState: Invalid action type', this, action);
+      return;
+    }
+
     if (this._batchingEnabled) {
       // When batching, just accumulate the updates
       this._pendingUpdates.push({ newState, oldState, action });

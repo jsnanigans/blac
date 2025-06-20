@@ -66,10 +66,14 @@ const useExternalBlocStore = <
       props,
       instanceRef: rid
     });
-  }, [bloc, props]);
+  }, [bloc, effectiveBlocId, props, rid]);
 
   const blocInstance = useRef<InstanceType<B>>(getBloc());
 
+  // Update the instance when dependencies change
+  useMemo(() => {
+    blocInstance.current = getBloc();
+  }, [getBloc]);
 
   const dependencyArray: BlocHookDependencyArrayFn<BlocState<InstanceType<B>>> =
     useMemo(
@@ -98,7 +102,7 @@ const useExternalBlocStore = <
           }
 
           // For object states, track which properties were actually used
-          const usedStateValues: string[] = [];
+          const usedStateValues: unknown[] = [];
           for (const key of usedKeys.current) {
             if (key in newState) {
               usedStateValues.push(newState[key as keyof typeof newState]);
@@ -124,6 +128,12 @@ const useExternalBlocStore = <
             }
           }
 
+          // If no state properties have been accessed, return empty dependencies to prevent re-renders
+          // Class properties can change independently of state
+          if (usedKeys.current.size === 0) {
+            return usedClassPropKeys.current.size > 0 ? [usedClassValues] : [[]];
+          }
+
           return [usedStateValues, usedClassValues];
         },
       [],
@@ -137,19 +147,15 @@ const useExternalBlocStore = <
           return () => {}; // Return no-op if no instance
         }
 
-        // Use a flag to prevent multiple resets during the same listener execution
-        let isResetting = false;
-
         const observer: BlacObserver<BlocState<InstanceType<B>>> = {
           fn: () => {
             try {
-              if (!isResetting) {
-                isResetting = true;
-                usedKeys.current = new Set();
-                usedClassPropKeys.current = new Set();
-                isResetting = false;
-              }
+              // Reset dependency tracking before listener is called 
+              // This ensures we only track properties accessed during the current render
+              usedKeys.current = new Set();
+              usedClassPropKeys.current = new Set();
 
+              // Only trigger listener if there are actual subscriptions
               listener(currentInstance.state);
             } catch (e) {
               // Log any errors that occur during the listener callback
@@ -182,7 +188,7 @@ const useExternalBlocStore = <
       getSnapshot: (): BlocState<InstanceType<B>> | undefined => {
         const instance = blocInstance.current;
         if (!instance) {
-          return undefined;
+          return {} as BlocState<InstanceType<B>>;
         }
         return instance.state;
       },
@@ -190,7 +196,7 @@ const useExternalBlocStore = <
       getServerSnapshot: (): BlocState<InstanceType<B>> | undefined => {
         const instance = blocInstance.current;
         if (!instance) {
-          return undefined;
+          return {} as BlocState<InstanceType<B>>;
         }
         return instance.state;
       },

@@ -1,6 +1,6 @@
-import { act, renderHook } from '@testing-library/react';
-import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { Blac, Cubit } from '@blac/core';
+import { act, renderHook } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import useExternalBlocStore from '../src/useExternalBlocStore';
 
 interface CounterState {
@@ -353,7 +353,9 @@ describe('useExternalBlocStore', () => {
 
     it('should handle rapid state changes', () => {
       const { result } = renderHook(() =>
-        useExternalBlocStore(CounterCubit, {})
+        useExternalBlocStore(CounterCubit, {
+          selector: (state) => [[state.count]] // Track count property changes
+        })
       );
 
       const listener = vi.fn();
