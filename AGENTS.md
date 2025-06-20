@@ -1,8 +1,3 @@
----
-description: 
-globs: 
-alwaysApply: true
----
 # AGENTS.md
 
 Essential guidance for coding agents working on the Blac state management library.

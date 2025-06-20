@@ -54,8 +54,31 @@ export type BlocConstructorParameters<B extends BlocBase<any>> =
   BlocConstructor<B> extends new (...args: infer P) => B ? P : never;
 
 /**
- * Represents a function type for determining hook dependencies based on state changes
- * @template B - The BlocGeneric type
+ * Base interface for all Bloc events
+ * Events must be objects with a constructor to enable proper type matching
+ */
+export interface BlocEvent {
+  readonly type?: string;
+  readonly timestamp?: number;
+}
+
+/**
+ * Enhanced constraint for Bloc events - must be objects with proper constructor
+ */
+export type BlocEventConstraint = BlocEvent & object;
+
+/**
+ * Error boundary interface for Bloc error handling
+ */
+export interface BlocErrorBoundary<S, A extends BlocEventConstraint> {
+  onError: (error: Error, event: A, currentState: S, bloc: { name: string; id: string }) => void | Promise<void>;
+  shouldRethrow?: (error: Error, event: A) => boolean;
+}
+
+/**
+ * Function type for determining dependencies that trigger re-renders
+ * @template S The state type
+ * @returns Array of dependency arrays - if any dependency in any array changes, a re-render is triggered
  */
 export type BlocHookDependencyArrayFn<S> = (
   newState: S

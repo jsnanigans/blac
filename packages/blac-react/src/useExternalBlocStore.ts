@@ -16,14 +16,14 @@ export interface ExternalStore<
    * Gets the current snapshot of the store state.
    * @returns The current state of the store
    */
-  getSnapshot: () => BlocState<InstanceType<B>>;
+  getSnapshot: () => BlocState<InstanceType<B>> | undefined;
 
   /**
    * Gets the server snapshot of the store state.
    * This is optional and defaults to the same value as getSnapshot.
    * @returns The server state of the store
    */
-  getServerSnapshot?: () => BlocState<InstanceType<B>>;
+  getServerSnapshot?: () => BlocState<InstanceType<B>> | undefined;
 }
 
 export interface ExternalBlacStore<
@@ -179,9 +179,21 @@ const useExternalBlocStore = <
         };
       },
       // Return an immutable snapshot of the current bloc state
-      getSnapshot: (): BlocState<InstanceType<B>> => blocInstance.current?.state || ({} as BlocState<InstanceType<B>>),
+      getSnapshot: (): BlocState<InstanceType<B>> | undefined => {
+        const instance = blocInstance.current;
+        if (!instance) {
+          return undefined;
+        }
+        return instance.state;
+      },
       // Server snapshot mirrors the client snapshot in this implementation
-      getServerSnapshot: (): BlocState<InstanceType<B>> => blocInstance.current?.state || ({} as BlocState<InstanceType<B>>),
+      getServerSnapshot: (): BlocState<InstanceType<B>> | undefined => {
+        const instance = blocInstance.current;
+        if (!instance) {
+          return undefined;
+        }
+        return instance.state;
+      },
     }
   }, [blocInstance.current?.uid]); // Re-create store when instance changes
 

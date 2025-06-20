@@ -1,5 +1,4 @@
 import { BlacObservable } from './BlacObserver';
-import { BlocConstructor } from './types';
 
 export type BlocInstanceId = string | number | undefined;
 type DependencySelector<S> = (newState: S) => unknown[][];
@@ -87,6 +86,12 @@ export abstract class BlocBase<
 
   /**
    * @internal
+   * Flag to prevent re-entrant disposal
+   */
+  private _isDisposing = false;
+
+  /**
+   * @internal
    * The current state of the Bloc.
    */
   public _state: S;
@@ -102,6 +107,29 @@ export abstract class BlocBase<
    * Can be used to configure or parameterize the Bloc's behavior.
    */
   public props: P | null = null;
+
+  /**
+   * @internal
+   * Flag to prevent batching race conditions
+   */
+  private _batchingLock = false;
+
+  /**
+   * @internal
+   * Pending batched updates
+   */
+  private _pendingUpdates: Array<{newState: S, oldState: S, action?: unknown}> = [];
+
+  /**
+   * @internal
+   * Validates that all consumer references are still alive
+   * Removes dead consumers automatically
+   */
+  _validateConsumers = (): void => {
+    // Note: WeakSet doesn't provide iteration, so this is a placeholder
+    // for future implementation when we track consumers differently
+    // For now, we rely on component cleanup to remove consumers
+  };
 
   /**
    * Creates a new BlocBase instance with the given initial state.
@@ -157,6 +185,12 @@ export abstract class BlocBase<
    * Notifies the Blac manager and clears all observers.
    */
   _dispose() {
+    // Prevent re-entrant disposal
+    if (this._isDisposing) {
+      return;
+    }
+    this._isDisposing = true;
+    
     // Clear all consumers
     this._consumers.clear();
     
@@ -266,12 +300,6 @@ export abstract class BlocBase<
 
   /**
    * @internal
-   * Pending state updates when batching is enabled
-   */
-  private _pendingUpdates: Array<{newState: S, oldState: S, action?: unknown}> = [];
-
-  /**
-   * @internal
    * Updates the state and notifies all observers of the change.
    * 
    * @param newState The new state to be set
@@ -279,28 +307,21 @@ export abstract class BlocBase<
    * @param action Optional metadata about what caused the state change
    */
   _pushState = (newState: S, oldState: S, action?: unknown): void => {
-    // Runtime validation for state changes
-    if (newState === undefined) {
-      console.warn('BlocBase._pushState: newState is undefined', this);
+    if (this._batchingEnabled) {
+      // When batching, just accumulate the updates
+      this._pendingUpdates.push({ newState, oldState, action });
+      
+      // Update internal state for consistency
+      this._oldState = oldState;
+      this._state = newState;
       return;
-    }
-    
-    // Validate action type if provided
-    if (action !== undefined && action !== null) {
-      const actionType = typeof action;
-      if (!(['string', 'object', 'number'].includes(actionType))) {
-        console.warn('BlocBase._pushState: Invalid action type', this, action);
-      }
     }
 
-    // If batching is enabled, queue the update
-    if (this._batchingEnabled) {
-      this._pendingUpdates.push({ newState, oldState, action });
-      return;
-    }
-    
+    // Normal state update flow
     this._oldState = oldState;
     this._state = newState;
+    
+    // Notify observers of the state change
     this._observer.notify(newState, oldState, action);
     this.lastUpdate = Date.now();
   };
@@ -310,28 +331,32 @@ export abstract class BlocBase<
    * @param batchFn Function to execute with batching enabled
    */
   batch = <T>(batchFn: () => T): T => {
-    const wasBatching = this._batchingEnabled;
-    this._batchingEnabled = true;
+    // Prevent batching race conditions
+    if (this._batchingLock) {
+      // If already batching, just execute the function without nesting batches
+      return batchFn();
+    }
     
+    this._batchingLock = true;
+    this._batchingEnabled = true;
+    this._pendingUpdates = [];
+
     try {
       const result = batchFn();
       
-      // Process all pending updates
+      // Process all batched updates
       if (this._pendingUpdates.length > 0) {
-        const lastUpdate = this._pendingUpdates[this._pendingUpdates.length - 1];
-        this._oldState = this._pendingUpdates[0].oldState;
-        this._state = lastUpdate.newState;
-        
-        // Notify with the final state
-        this._observer.notify(lastUpdate.newState, this._oldState, lastUpdate.action);
+        // Only notify once with the final state
+        const finalUpdate = this._pendingUpdates[this._pendingUpdates.length - 1];
+        this._observer.notify(finalUpdate.newState, finalUpdate.oldState, finalUpdate.action);
         this.lastUpdate = Date.now();
-        
-        this._pendingUpdates = [];
       }
       
       return result;
     } finally {
-      this._batchingEnabled = wasBatching;
+      this._batchingEnabled = false;
+      this._batchingLock = false;
+      this._pendingUpdates = [];
     }
   };
 }

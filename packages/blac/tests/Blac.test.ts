@@ -2,11 +2,11 @@
 import { afterEach, describe, expect, it, test, vi } from 'vitest';
 import { Blac, Cubit } from '../src';
 
-class ExampleBloc extends Cubit<undefined> {}
-class ExampleBlocKeepAlive extends Cubit<undefined> {
+class ExampleBloc extends Cubit<unknown> {}
+class ExampleBlocKeepAlive extends Cubit<unknown> {
   static keepAlive = true;
 }
-class ExampleBlocIsolated extends Cubit<undefined> {
+class ExampleBlocIsolated extends Cubit<unknown> {
   static isolated = true;
 }
 
@@ -41,7 +41,7 @@ describe('Blac', () => {
   describe('createBlocInstanceMapKey', () => {
     it('should return a string with the bloc name and id', () => {
       const blac = new Blac();
-      const bloc = new ExampleBloc(undefined);
+      const bloc = new ExampleBloc(null);
       const key = blac.createBlocInstanceMapKey(bloc._name, bloc._id);
       expect(key).toBe(`${bloc._name}:${bloc._id}`);
     });
@@ -50,7 +50,7 @@ describe('Blac', () => {
   describe('registerBlocInstance', () => {
     it('should add the bloc to the blocInstanceMap', () => {
       const blac = new Blac();
-      const bloc = new ExampleBloc(undefined);
+      const bloc = new ExampleBloc(null);
       const key = blac.createBlocInstanceMapKey(bloc._name, bloc._id);
 
       blac.registerBlocInstance(bloc);
@@ -61,7 +61,7 @@ describe('Blac', () => {
   describe('unregisterBlocInstance', () => {
     it('should remove the bloc from the blocInstanceMap', () => {
       const blac = new Blac();
-      const bloc = new ExampleBloc(undefined);
+      const bloc = new ExampleBloc(null);
       const key = blac.createBlocInstanceMapKey(bloc._name, bloc._id);
       blac.registerBlocInstance(bloc);
       expect(blac.blocInstanceMap.get(key)).toBe(bloc);
@@ -75,7 +75,7 @@ describe('Blac', () => {
   describe('findRegisteredBlocInstance', () => {
     it('should return the bloc if it is registered', () => {
       const blac = new Blac();
-      const bloc = new ExampleBloc(undefined);
+      const bloc = new ExampleBloc(null);
       blac.registerBlocInstance(bloc);
       const result = blac.findRegisteredBlocInstance(ExampleBloc, bloc._id);
       expect(result).toBe(bloc);
@@ -83,7 +83,7 @@ describe('Blac', () => {
 
     it('should return undefined if the bloc is not registered', () => {
       const blac = new Blac();
-      const bloc = new ExampleBloc(undefined);
+      const bloc = new ExampleBloc(null);
       blac.registerBlocInstance(bloc);
       const result = blac.findRegisteredBlocInstance(ExampleBloc, 'foo');
       expect(result).toBe(undefined);
@@ -93,7 +93,7 @@ describe('Blac', () => {
   describe('registerIsolatedBlocInstance', () => {
     it('should add the bloc to the isolatedBlocMap', () => {
       const blac = new Blac();
-      const bloc = new ExampleBloc(undefined);
+      const bloc = new ExampleBloc(null);
       blac.registerIsolatedBlocInstance(bloc);
       const blocs = blac.isolatedBlocMap.get(ExampleBloc);
       expect(blocs).toEqual([bloc]);
@@ -103,7 +103,7 @@ describe('Blac', () => {
   describe('unregisterIsolatedBlocInstance', () => {
     it('should remove the bloc from the isolatedBlocMap', () => {
       const blac = new Blac();
-      const bloc = new ExampleBloc(undefined);
+      const bloc = new ExampleBloc(null);
       blac.registerIsolatedBlocInstance(bloc);
       const blocs = blac.isolatedBlocMap.get(ExampleBloc);
       expect(blocs).toEqual([bloc]);
@@ -116,7 +116,7 @@ describe('Blac', () => {
   describe('findIsolatedBlocInstance', () => {
     it('should return the bloc if it is registered', () => {
       const blac = new Blac();
-      const bloc = new ExampleBlocIsolated(undefined);
+      const bloc = new ExampleBlocIsolated(null);
       blac.registerIsolatedBlocInstance(bloc);
       const result = blac.findIsolatedBlocInstance(ExampleBlocIsolated, bloc._id);
       expect(result).toBe(bloc);
@@ -124,7 +124,7 @@ describe('Blac', () => {
 
     it('should return undefined if the bloc is not registered', () => {
       const blac = new Blac();
-      const bloc = new ExampleBlocIsolated(undefined);
+      const bloc = new ExampleBlocIsolated(null);
       blac.registerIsolatedBlocInstance(bloc);
       const result = blac.findIsolatedBlocInstance(ExampleBlocIsolated, 'foo');
       expect(result).toBe(undefined);
@@ -170,7 +170,7 @@ describe('Blac', () => {
 
     it('should return the registered bloc if it is registered, and should not create a new one', () => {
       const blac = new Blac();
-      const bloc = new ExampleBloc(undefined);
+      const bloc = new ExampleBloc(null);
       const spy = vi.spyOn(blac, 'createNewBlocInstance');
       blac.registerBlocInstance(bloc);
       const result = blac.getBloc(ExampleBloc);
@@ -181,7 +181,7 @@ describe('Blac', () => {
 
     it('should return a new instance if the `id` option does not match the already registered bloc `id`', () => {
       const blac = new Blac();
-      const bloc = new ExampleBloc(undefined);
+      const bloc = new ExampleBloc(null);
       const createSpy = vi.spyOn(blac, 'createNewBlocInstance');
       blac.registerBlocInstance(bloc);
       const result = blac.getBloc(ExampleBloc, { id: 'foo' });
@@ -218,7 +218,7 @@ describe('Blac', () => {
   describe('disposeBloc', () => {
     it('should call `unregisterBlocInstance`', () => {
       const blac = new Blac();
-      const bloc = new ExampleBloc(undefined);
+      const bloc = new ExampleBloc(null);
       const spy = vi.spyOn(blac, 'unregisterBlocInstance');
       blac.disposeBloc(bloc);
       expect(spy).toHaveBeenCalled();
@@ -227,7 +227,7 @@ describe('Blac', () => {
 
     it('should call `unregisterIsolatedBlocInstance` if the bloc is isolated', () => {
       const blac = new Blac();
-      const bloc = new ExampleBlocIsolated(undefined);
+      const bloc = new ExampleBlocIsolated(null);
       const spy = vi.spyOn(blac, 'unregisterIsolatedBlocInstance');
       blac.disposeBloc(bloc);
       expect(spy).toHaveBeenCalled();

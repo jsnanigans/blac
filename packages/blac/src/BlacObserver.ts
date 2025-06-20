@@ -82,8 +82,8 @@ export class BlacObservable<S = unknown> {
     // Blac.instance.dispatchEvent(BlacLifecycleEvent.LISTENER_REMOVED, this.bloc, { listenerId: observer.id });
 
     if (this.size === 0) {
-      Blac.log('BlacObservable.unsubscribe: No observers left. Disposing bloc.', this.bloc);
-      this.bloc._dispose();
+      Blac.log('BlacObservable.unsubscribe: No observers left.', this.bloc);
+      // The bloc will handle its own disposal through consumer management
     }
   }
 
@@ -127,9 +127,7 @@ export class BlacObservable<S = unknown> {
    * Clears the observer set
    */
   clear() {
-    this._observers.forEach((observer) => {
-      this.unsubscribe(observer);
-    });
+    // Just clear the observers without calling unsubscribe to avoid circular disposal
     this._observers.clear();
   }
 }

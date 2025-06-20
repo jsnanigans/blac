@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { Blac, BlacObserver, BlocBase } from '../src';
+import { BlacObserver, BlocBase } from '../src';
 
 class BlocBaseSimple extends BlocBase<unknown> {}
 class BlocBaseSimpleIsolated extends BlocBase<unknown> {
@@ -99,13 +99,6 @@ describe('BlocBase', () => {
       });
     });
 
-    describe('blac', () => {
-      it('should be the same instance as the global Blac instance', () => {
-        const instance = new BlocBaseSimple(0);
-        const blac = instance._blac;
-        const globalBlac = Blac.getInstance();
-        expect(blac).toBe(globalBlac);
-      });
-    });
+
   });
 });

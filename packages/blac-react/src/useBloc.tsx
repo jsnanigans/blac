@@ -18,8 +18,8 @@ import useExternalBlocStore from './useExternalBlocStore';
  * @template B - Bloc constructor type
  */
 type HookTypes<B extends BlocConstructor<BlocBase<any>>> = [
-  BlocState<InstanceType<B>>,
-  InstanceType<B>,
+  BlocState<InstanceType<B>> | undefined,
+  InstanceType<B> | null,
 ];
 
 /**
@@ -83,8 +83,20 @@ export default function useBloc<B extends BlocConstructor<BlocBase<any>>>(
   // Subscribe to state changes using React's external store API
   const state = useSyncExternalStore<BlocState<InstanceType<B>>>(
     externalStore.subscribe,
-    externalStore.getSnapshot,
-    externalStore.getServerSnapshot,
+    () => {
+      const snapshot = externalStore.getSnapshot();
+      if (snapshot === undefined) {
+        throw new Error(`[useBloc] State snapshot is undefined for bloc ${bloc.name}. Bloc may not be properly initialized.`);
+      }
+      return snapshot;
+    },
+    externalStore.getServerSnapshot ? () => {
+      const serverSnapshot = externalStore.getServerSnapshot!();
+      if (serverSnapshot === undefined) {
+        throw new Error(`[useBloc] Server state snapshot is undefined for bloc ${bloc.name}. Bloc may not be properly initialized.`);
+      }
+      return serverSnapshot;
+    } : undefined,
   );
 
   // Cache proxies to avoid recreation on every render
@@ -166,5 +178,6 @@ export default function useBloc<B extends BlocConstructor<BlocBase<any>>>(
     };
   }, [instance.current?.uid, rid]); // Use UID to ensure we re-run when instance changes
 
-  return [returnState as BlocState<InstanceType<B>>, returnClass as InstanceType<B>];
+  // Safe return with proper typing
+  return [returnState, returnClass] as [BlocState<InstanceType<B>>, InstanceType<B>];
 }

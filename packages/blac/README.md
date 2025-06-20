@@ -25,6 +25,48 @@ yarn add @blac/core
 npm install @blac/core
 ```
 
+## Testing
+
+Blac provides comprehensive testing utilities to make testing your state management logic simple and powerful:
+
+```typescript
+import { BlocTest, MockCubit, MemoryLeakDetector } from '@blac/core';
+
+describe('Counter Tests', () => {
+  beforeEach(() => BlocTest.setUp());
+  afterEach(() => BlocTest.tearDown());
+
+  it('should increment counter', async () => {
+    const counter = BlocTest.createBloc(CounterCubit);
+    
+    counter.increment();
+    
+    expect(counter.state.count).toBe(1);
+  });
+
+  it('should track state history', () => {
+    const mockCubit = new MockCubit({ count: 0 });
+    
+    mockCubit.emit({ count: 1 });
+    mockCubit.emit({ count: 2 });
+    
+    const history = mockCubit.getStateHistory();
+    expect(history).toHaveLength(3); // Initial + 2 emissions
+  });
+
+  it('should detect memory leaks', () => {
+    const detector = new MemoryLeakDetector();
+    
+    // Create and use blocs...
+    
+    const result = detector.checkForLeaks();
+    expect(result.hasLeaks).toBe(false);
+  });
+});
+```
+
+**[📚 View Complete Testing Documentation](./docs/testing.md)**
+
 ## Core Concepts
 
 ### Blocs and Cubits

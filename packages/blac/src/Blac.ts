@@ -2,11 +2,11 @@
 // TODO: Remove this eslint disable once any types are properly replaced
 import { BlocBase, BlocInstanceId } from "./BlocBase";
 import {
-  BlocBaseAbstract,
-  BlocConstructor,
-  BlocHookDependencyArrayFn,
-  BlocState,
-  InferPropsFromGeneric
+    BlocBaseAbstract,
+    BlocConstructor,
+    BlocHookDependencyArrayFn,
+    BlocState,
+    InferPropsFromGeneric
 } from "./types";
 
 /**
@@ -313,10 +313,15 @@ export class Blac {
   unregisterIsolatedBlocInstance(bloc: BlocBase<unknown>): void {
     const blocClass = bloc.constructor;
     const blocs = this.isolatedBlocMap.get(blocClass as BlocConstructor<any>);
+    
+    // Ensure both data structures are synchronized
+    let wasRemoved = false;
+    
     if (blocs) {
       const index = blocs.findIndex((b) => b.uid === bloc.uid);
       if (index !== -1) {
         blocs.splice(index, 1);
+        wasRemoved = true;
       }
 
       if (blocs.length === 0) {
@@ -324,14 +329,22 @@ export class Blac {
       }
     }
     
-    // Remove from isolated index
-    this.isolatedBlocIndex.delete(bloc.uid);
+    // Always try to remove from isolated index, even if not found in map
+    const wasInIndex = this.isolatedBlocIndex.delete(bloc.uid);
     
     // Clean up UID tracking
     this.uidRegistry.delete(bloc.uid);
     
     // Remove from keep-alive set
     this.keepAliveBlocs.delete(bloc);
+    
+    // Log inconsistency for debugging
+    if (wasRemoved !== wasInIndex) {
+      this.warn(
+        `[Blac] Inconsistent state detected during isolated bloc cleanup for ${bloc._name}:${bloc.uid}. ` +
+        `Map removal: ${wasRemoved}, Index removal: ${wasInIndex}`
+      );
+    }
   }
 
   /**

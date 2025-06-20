@@ -193,26 +193,36 @@ describe('Bloc', () => {
 
       expect(pushStateSpy).not.toHaveBeenCalled();
       expect(warnSpy).toHaveBeenCalledTimes(1);
-      // Check for the correct warning message and the passed action object
+      // Check for the enhanced warning message format with additional context
       expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining("No handler registered for action type: 'UnregisteredEvent'. Action was:"),
+        expect.stringContaining("No handler registered for action type: 'UnregisteredEvent'."),
+        expect.stringContaining("Registered handlers:"),
+        expect.any(Array),
+        expect.stringContaining("Action was:"),
         unregisteredAction
       );
     });
 
     it('should catch errors thrown by event handlers, log them, and not crash', async () => {
-      const errorAction = new ErrorThrowingEvent();
+      const errorThrowingAction = new ErrorThrowingEvent();
       
-      await expect(testBloc.add(errorAction)).resolves.toBeUndefined(); // add itself should not throw
+      await expect(testBloc.add(errorThrowingAction)).resolves.toBeUndefined(); // add itself should not throw
 
       expect(pushStateSpy).not.toHaveBeenCalled(); // No state should be emitted if handler errors before emit
       expect(errorSpy).toHaveBeenCalledTimes(1);
-      // Check for the correct error message format and the passed error and action objects
+      // Check for the enhanced error message format with detailed context
       expect(errorSpy).toHaveBeenCalledWith(
         expect.stringContaining("Error in event handler for 'ErrorThrowingEvent':"),
         expect.any(Error),
-        "Action:",
-        errorAction
+        expect.stringContaining("Context:"),
+        expect.objectContaining({
+          blocName: 'TestBloc',
+          blocId: 'TestBloc',
+          eventType: 'ErrorThrowingEvent',
+          currentState: expect.any(Object),
+          action: errorThrowingAction,
+          timestamp: expect.any(String)
+        })
       );
     });
 

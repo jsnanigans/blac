@@ -1,12 +1,13 @@
 import { Blac } from './Blac';
 import { BlocBase } from './BlocBase';
+import { BlocEventConstraint } from './types';
 
-// A should be the base type for all events this Bloc handles and must be an object type
-// to access action.constructor. Events are typically class instances.
+// A should be the base type for all events this Bloc handles and must extend BlocEventConstraint
+// to access action.constructor and ensure proper event structure.
 // P is for props, changed from any to unknown.
 export abstract class Bloc<
     S, // State type
-    A extends object, // Base Action/Event type, constrained to object
+    A extends BlocEventConstraint = BlocEventConstraint, // Base Action/Event type with proper constraints
     P = unknown // Props type
 > extends BlocBase<S, P> {
     // Stores handlers: Map<EventConstructor (subtype of A), HandlerFunction>
@@ -21,6 +22,18 @@ export abstract class Bloc<
         // The 'on' method ensures the specific handler (event: E) is correctly typed.
         (event: A, emit: (newState: S) => void) => void | Promise<void>
     > = new Map();
+
+    /**
+     * @internal
+     * Event queue to ensure sequential processing of async events
+     */
+    private _eventQueue: A[] = [];
+    
+    /**
+     * @internal
+     * Flag indicating if an event is currently being processed
+     */
+    private _isProcessingEvent = false;
 
     /**
      * Registers an event handler for a specific event type.
@@ -53,11 +66,46 @@ export abstract class Bloc<
 
     /**
      * Dispatches an action/event to the Bloc.
-     * If a handler is registered for this specific event type (via 'on'), it will be invoked.
-     * Asynchronous handlers are awaited.
+     * Events are queued and processed sequentially to prevent race conditions.
      * @param action The action/event instance to be processed.
      */
     public add = async (action: A): Promise<void> => {
+        // Add event to queue
+        this._eventQueue.push(action);
+        
+        // If not already processing, start processing the queue
+        if (!this._isProcessingEvent) {
+            await this._processEventQueue();
+        }
+    };
+
+    /**
+     * @internal
+     * Processes events from the queue sequentially
+     */
+    private async _processEventQueue(): Promise<void> {
+        // Prevent concurrent processing
+        if (this._isProcessingEvent) {
+            return;
+        }
+        
+        this._isProcessingEvent = true;
+        
+        try {
+            while (this._eventQueue.length > 0) {
+                const action = this._eventQueue.shift()!;
+                await this._processEvent(action);
+            }
+        } finally {
+            this._isProcessingEvent = false;
+        }
+    }
+
+    /**
+     * @internal
+     * Processes a single event
+     */
+    private async _processEvent(action: A): Promise<void> {
         // Using 'any[]' for constructor arguments for broader compatibility.
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const eventConstructor = action.constructor as new (...args: any[]) => A;
@@ -81,29 +129,42 @@ export abstract class Bloc<
                 // typed to its specific class (e.g., LoadMyFeatureData).
                 await handler(action, emit);
             } catch (error) {
-                // It's good practice to handle errors occurring within event handlers.
+                // Enhanced error handling with better context
+                const constructorName = (action.constructor as { name?: string }).name || 'UnnamedConstructor';
+                const errorContext = {
+                    blocName: this._name,
+                    blocId: String(this._id),
+                    eventType: constructorName,
+                    currentState: this.state,
+                    action: action,
+                    timestamp: new Date().toISOString()
+                };
+                
                 Blac.error(
-                    `[Bloc ${this._name}:${String(this._id)}] Error in event handler for '${eventConstructor.name}':`,
+                    `[Bloc ${this._name}:${String(this._id)}] Error in event handler for '${constructorName}':`,
                     error,
-                    "Action:", action
+                    "Context:", errorContext
                 );
-                // Depending on the desired error handling strategy, you might:
-                // 1. Emit a specific error state: this.emit(new MyErrorState(error));
-                // 2. Re-throw the error: throw error;
-                // 3. Log and ignore (as done here by default).
-                // This should be decided based on application requirements.
+                
+                // TODO: Consider implementing error boundary pattern
+                // For now, we log and continue, but applications may want to:
+                // 1. Emit an error state
+                // 2. Re-throw the error  
+                // 3. Call an error handler callback
+                
+                // Optional: Re-throw for critical errors (can be configured)
+                if (error instanceof Error && error.name === 'CriticalError') {
+                    throw error;
+                }
             }
         } else {
-            // action.constructor.name should be safe due to 'A extends object' and common JS practice for constructors.
-            // If linting still complains, it might be overly strict for this common pattern.
+            // Enhanced warning with more context
             const constructorName = (action.constructor as { name?: string }).name || 'UnnamedConstructor';
             Blac.warn(
-                `[Bloc ${this._name}:${String(this._id)}] No handler registered for action type: '${constructorName}'. Action was:`,
-                action
+                `[Bloc ${this._name}:${String(this._id)}] No handler registered for action type: '${constructorName}'.`,
+                "Registered handlers:", Array.from(this.eventHandlers.keys()).map(k => k.name),
+                "Action was:", action
             );
-            // If no handler is found, the action is effectively ignored.
-            // Consider if this is the desired behavior or if an error should be thrown
-            // or a default handler should be invoked.
         }
-    };
+    }
 }
