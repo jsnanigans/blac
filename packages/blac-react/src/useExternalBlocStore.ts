@@ -34,6 +34,7 @@ export interface ExternalBlacStore<
   externalStore: ExternalStore<B>;
   instance: React.RefObject<InstanceType<B>>;
   rid: string;
+  hasProxyTracking: React.RefObject<boolean>;
 }
 
 /**
@@ -59,6 +60,10 @@ const useExternalBlocStore = <
 
   const usedKeys = useRef<Set<string>>(new Set());
   const usedClassPropKeys = useRef<Set<string>>(new Set());
+  
+  // Track whether proxy-based dependency tracking has been initialized
+  // This helps distinguish between direct external store usage and useBloc proxy usage
+  const hasProxyTracking = useRef<boolean>(false);
 
   const getBloc = useCallback(() => {
     return Blac.getBloc(bloc, {
@@ -128,10 +133,22 @@ const useExternalBlocStore = <
             }
           }
 
-          // If no state properties have been accessed, return empty dependencies to prevent re-renders
-          // Class properties can change independently of state
+          // If no state properties have been accessed through proxy
           if (usedKeys.current.size === 0) {
-            return usedClassPropKeys.current.size > 0 ? [usedClassValues] : [[]];
+            // If only class properties are used, track those
+            if (usedClassPropKeys.current.size > 0) {
+              return [usedClassValues];
+            }
+            
+            // If proxy tracking has never been initialized, this is direct external store usage
+            // In this case, always track the entire state to ensure notifications
+            if (!hasProxyTracking.current) {
+              return [[newState]];
+            }
+            
+            // If proxy tracking was initialized but no properties accessed, 
+            // return empty dependencies to prevent unnecessary re-renders
+            return [[]];
           }
 
           return [usedStateValues, usedClassValues];
@@ -209,6 +226,7 @@ const useExternalBlocStore = <
     externalStore: state,
     instance: blocInstance,
     rid,
+    hasProxyTracking,
   };
 };
 

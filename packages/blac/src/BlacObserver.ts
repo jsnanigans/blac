@@ -96,9 +96,14 @@ export class BlacObservable<S = unknown> {
         const lastDependencyCheck = observer.lastState;
         const newDependencyCheck = observer.dependencyArray(newState);
 
-        // If this is the first time (no lastState), always update
+        // If this is the first time (no lastState), check if dependencies are meaningful
         if (!lastDependencyCheck) {
-          shouldUpdate = true;
+          // If dependencies contain actual values, update to establish initial state
+          // If dependencies are empty ([[]] or [[]]), don't update
+          const hasMeaningfulDependencies = newDependencyCheck.some(part => 
+            Array.isArray(part) && part.length > 0
+          );
+          shouldUpdate = hasMeaningfulDependencies;
         } else {
           // Compare dependency arrays for changes
           if (lastDependencyCheck.length !== newDependencyCheck.length) {
