@@ -288,7 +288,7 @@ describe('useExternalBlocStore', () => {
       }
 
       const { result } = renderHook(() =>
-        useExternalBlocStore(PropsCubit, { props: { initialValue: 'test' } })
+        useExternalBlocStore(PropsCubit, { props: { initialValue: 'test' } } as any)
       );
 
       expect(result.current.instance.current.state).toEqual({ value: 'test' });
@@ -309,8 +309,8 @@ describe('useExternalBlocStore', () => {
         result1.current.instance.current.increment();
       });
 
-      expect(result1.current.externalStore.getSnapshot().count).toBe(1);
-      expect(result2.current.externalStore.getSnapshot().count).toBe(0);
+      expect(result1.current.externalStore.getSnapshot()?.count).toBe(1);
+      expect(result2.current.externalStore.getSnapshot()?.count).toBe(0);
     });
   });
 
@@ -373,7 +373,7 @@ describe('useExternalBlocStore', () => {
         }
       });
 
-      expect(result.current.externalStore.getSnapshot().count).toBe(10);
+      expect(result.current.externalStore.getSnapshot()?.count).toBe(10);
       expect(listener).toHaveBeenCalledTimes(10);
     });
 

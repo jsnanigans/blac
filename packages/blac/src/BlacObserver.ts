@@ -14,7 +14,7 @@ export type BlacObserver<S> = {
   /** Dispose function for the observer */
   dispose?: () => void;
   /** Cached state values used for dependency comparison */
-  lastState?: unknown[][];
+  lastState?: unknown[];
   /** Unique identifier for the observer */
   id: string;
 };
@@ -98,35 +98,22 @@ export class BlacObservable<S = unknown> {
 
       if (observer.dependencyArray) {
         const lastDependencyCheck = observer.lastState;
-        const newDependencyCheck = observer.dependencyArray(newState, oldState);
+        const newDependencyCheck = observer.dependencyArray(newState, oldState, this.bloc);
 
         // If this is the first time (no lastState), trigger initial render
         if (!lastDependencyCheck) {
           shouldUpdate = true;
         } else {
-          // Compare two-array dependency structure: [stateArray, classArray]
+          // Compare dependency arrays
           if (lastDependencyCheck.length !== newDependencyCheck.length) {
             shouldUpdate = true;
           } else {
-            // Compare each array (state and class dependencies)
-            for (let arrayIndex = 0; arrayIndex < newDependencyCheck.length; arrayIndex++) {
-              const lastArray = lastDependencyCheck[arrayIndex] || [];
-              const newArray = newDependencyCheck[arrayIndex] || [];
-              
-              if (lastArray.length !== newArray.length) {
+            // Compare each dependency value using Object.is (same as React)
+            for (let i = 0; i < newDependencyCheck.length; i++) {
+              if (!Object.is(lastDependencyCheck[i], newDependencyCheck[i])) {
                 shouldUpdate = true;
                 break;
               }
-              
-              // Compare each dependency value using Object.is (same as React)
-              for (let i = 0; i < newArray.length; i++) {
-                if (!Object.is(lastArray[i], newArray[i])) {
-                  shouldUpdate = true;
-                  break;
-                }
-              }
-              
-              if (shouldUpdate) break;
             }
           }
         }

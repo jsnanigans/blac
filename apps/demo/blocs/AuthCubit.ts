@@ -21,18 +21,18 @@ export class AuthCubit extends Cubit<AuthState> {
 
   login = async (userName: string) => {
     this.patch({ isLoading: true });
-    await new Promise(resolve => setTimeout(resolve, 300)); // Simulate API call
+    await new Promise((resolve) => setTimeout(resolve, 300)); // Simulate API call
     this.patch({ isAuthenticated: true, userName, isLoading: false });
     // console.log(`AuthCubit: User ${userName} logged in.`);
   };
 
   logout = async () => {
     this.patch({ isLoading: true });
-    await new Promise(resolve => setTimeout(resolve, 200)); // Simulate API call
-    this.patch({ 
+    await new Promise((resolve) => setTimeout(resolve, 200)); // Simulate API call
+    this.patch({
       ...initialAuthState, // Reset to initial state values for isAuthenticated, userName
       isAuthenticated: false, // Explicitly ensure it's false
-      isLoading: false 
+      isLoading: false,
     });
     // console.log('AuthCubit: User logged out.');
   };
@@ -47,4 +47,5 @@ export class AuthCubit extends Cubit<AuthState> {
   //   super.onDispose();
   //   console.log('AuthCubit Disposed');
   // }
-} 
+}
+

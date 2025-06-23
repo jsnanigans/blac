@@ -25,7 +25,7 @@ function useBloc<
 | `blocClass` | `BlocConstructor<BlocGeneric>` | Yes | The Bloc/Cubit class to use |
 | `options.id` | `string` | No | Optional identifier for the Bloc/Cubit instance |
 | `options.props` | `InferPropsFromGeneric<B>` | No | Props to pass to the Bloc/Cubit constructor |
-| `options.dependencySelector` | `BlocHookDependencyArrayFn<InstanceType<B>>` | No | Function to select which state properties should trigger re-renders |
+| `options.selector` | `(currentState: BlocState<InstanceType<B>>, previousState: BlocState<InstanceType<B>> \| undefined, instance: InstanceType<B>) => unknown[]` | No | Function to select dependencies that should trigger re-renders |
 | `options.onMount` | `(bloc: InstanceType<B>) => void` | No | Callback function invoked when the Bloc is mounted |
 
 ### Returns
@@ -208,26 +208,69 @@ With this approach, you can have multiple independent instances of state that sh
 
 ---
 #### Custom Dependency Selector
-While property access is automatically tracked, in some cases you might want more control over when a component re-renders:
+While property access is automatically tracked, in some cases you might want more control over when a component re-renders. The custom selector receives the current state, previous state, and bloc instance:
 
 ```tsx
 function OptimizedTodoList() {
-  // Using dependency selector for optimization
+  // Using custom selector for optimization
   const [state, bloc] = useBloc(TodoBloc, {
-    dependencySelector: (newState, oldState) => [
-      newState.todos.length,
-      newState.filter
+    selector: (currentState, previousState, instance) => [
+      currentState.todos.length,  // Only track todo count
+      currentState.filter,        // Track filter changes  
+      instance.hasUnsavedChanges  // Track computed property from bloc
     ]
   });
   
-  // Component will only re-render when the length of todos or the filter changes
+  // Component will only re-render when tracked dependencies change
   return (
     <div>
       <h1>Todos ({state.todos.length})</h1>
+      <p>Filter: {state.filter}</p>
       {/* ... */}
     </div>
   );
 }
+```
+
+#### Advanced Custom Selector Examples
+
+**Track only specific computed values:**
+```tsx
+const [state, shoppingCart] = useBloc(ShoppingCartBloc, {
+  selector: (currentState, previousState, instance) => [
+    instance.totalPrice,     // Computed getter
+    instance.itemCount,      // Another computed getter
+    currentState.couponCode  // Specific state property
+  ]
+});
+```
+
+**Conditional dependency tracking:**
+```tsx
+const [state, userBloc] = useBloc(UserBloc, {
+  selector: (currentState, previousState, instance) => {
+    const deps = [currentState.isLoggedIn];
+    
+    // Only track user details when logged in
+    if (currentState.isLoggedIn) {
+      deps.push(currentState.username, currentState.email);
+    }
+    
+    return deps;
+  }
+});
+```
+
+**Compare with previous state:**
+```tsx
+const [state, chatBloc] = useBloc(ChatBloc, {
+  selector: (currentState, previousState) => [
+    // Only re-render when new messages are added, not when existing ones change
+    currentState.messages.length > (previousState?.messages.length || 0) 
+      ? currentState.messages.length 
+      : 'no-new-messages'
+  ]
+});
 ```
 
 ## Advanced Usage

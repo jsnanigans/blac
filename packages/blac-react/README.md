@@ -10,7 +10,8 @@ A powerful React integration for the Blac state management library, providing se
 - 🎨 TypeScript support with full type inference
 - ⚡️ Efficient state management with minimal boilerplate
 - 🔄 Support for isolated and shared bloc instances
-- 🎯 Custom dependency selectors for precise control
+- 🎯 Custom dependency selectors with access to state, previous state, and instance
+- 🚀 Optimized re-rendering with intelligent snapshot comparison
 
 ## Important: Arrow Functions Required
 
@@ -83,13 +84,13 @@ const [state, bloc] = useBloc(YourBloc, {
   id: 'custom-id', // Optional: Custom identifier for the bloc
   props: { /* ... */ }, // Optional: Props to pass to the bloc
   onMount: (bloc) => { /* ... */ }, // Optional: Callback when bloc is mounted (similar to useEffect(<>, []))
-  dependencySelector: (newState, oldState) => [/* ... */], // Optional: Custom dependency tracking
+  selector: (currentState, previousState, instance) => [/* ... */], // Optional: Custom dependency tracking
 });
 ```
 
-### Dependency Tracking
+### Automatic Dependency Tracking
 
-The hook automatically tracks which state properties are accessed in your component and only triggers re-renders when those specific properties change:
+The hook automatically tracks which state properties and bloc instance properties are accessed in your component and only triggers re-renders when those specific values change:
 
 ```tsx
 function UserProfile() {
@@ -100,27 +101,72 @@ function UserProfile() {
 }
 ```
 
-This also works for getters on the Bloc or Cubit class:
+This also works for getters and computed properties on the Bloc or Cubit class:
 
 ```tsx
 function UserProfile() {
-  const [, userBloc] = useBloc(UserBloc);
+  const [state, userBloc] = useBloc(UserBloc);
 
-  // Only re-renders when the return value from the getter formattedName changes
-  return <h1>{userBloc.formattedName}</h1>;
+  // Only re-renders when:
+  // - state.firstName changes, OR
+  // - state.lastName changes (because the getter accesses these properties)
+  return <h1>{userBloc.fullName}</h1>; // Assuming fullName is a getter
 }
 ```
 
+#### How It Works
+
+The dependency tracking system uses JavaScript Proxies to monitor property access during component renders:
+
+1. **State Properties**: When you access `state.propertyName`, it's automatically tracked
+2. **Instance Properties**: When you access `bloc.computedValue`, it's automatically tracked  
+3. **Intelligent Comparison**: The system separately tracks state dependencies and instance dependencies to handle edge cases where properties are dynamically added/removed
+4. **Optimized Updates**: Components only re-render when tracked dependencies actually change their values
+
 ### Custom Dependency Selector
 
-For more control over when your component re-renders, you can provide a custom dependency selector:
+For more control over when your component re-renders, you can provide a custom dependency selector. The selector function receives the current state, previous state, and bloc instance, and should return an array of values to track:
 
 ```tsx
 const [state, bloc] = useBloc(YourBloc, {
-  dependencySelector: (newState, oldState) => [
-    newState.specificField,
-    newState.anotherField
+  selector: (currentState, previousState, instance) => [
+    currentState.specificField,
+    currentState.anotherField,
+    instance.computedValue // You can also track computed properties from the bloc instance
   ]
+});
+```
+
+The component will only re-render when any of the values in the returned array change (using `Object.is` comparison, similar to React's `useEffect` dependency array).
+
+#### Examples of Custom Selectors
+
+**Track only specific state properties:**
+```tsx
+const [state, userBloc] = useBloc(UserBloc, {
+  selector: (currentState) => [
+    currentState.name,
+    currentState.email
+  ] // Only re-render when name or email changes, ignore other properties
+});
+```
+
+**Track computed values:**
+```tsx
+const [state, shoppingCartBloc] = useBloc(ShoppingCartBloc, {
+  selector: (currentState, previousState, instance) => [
+    instance.totalPrice, // Computed getter
+    currentState.items.length // Number of items
+  ] // Only re-render when total price or item count changes
+});
+```
+
+**Compare with previous state:**
+```tsx
+const [state, chatBloc] = useBloc(ChatBloc, {
+  selector: (currentState, previousState) => [
+    currentState.messages.length > (previousState?.messages.length || 0) ? 'new-message' : 'no-change'
+  ] // Only re-render when new messages are added, not when existing messages change
 });
 ```
 
@@ -140,7 +186,7 @@ function useBloc<B extends BlocConstructor<BlocGeneric>>(
 - `id?: string` - Custom identifier for the bloc instance
 - `props?: InferPropsFromGeneric<B>` - Props to pass to the bloc
 - `onMount?: (bloc: B) => void` - Callback function invoked when the react component (the consumer) is connected to the bloc instance
-- `dependencySelector?: BlocHookDependencyArrayFn<B>` - Function to select dependencies for re-renders
+- `selector?: (currentState: BlocState<InstanceType<B>>, previousState: BlocState<InstanceType<B>> | undefined, instance: InstanceType<B>) => unknown[]` - Function to select dependencies for re-renders
 
 ## Best Practices
 
@@ -182,7 +228,10 @@ function useBloc<B extends BlocConstructor<BlocGeneric>>(
    }
    ```
 
-3. **Optimize Re-renders**: Let the hook track dependencies automatically unless you have a specific need for custom dependency tracking.
+3. **Choose the Right Dependency Strategy**: 
+   - **Use automatic tracking** (default) for most cases - it's efficient and requires no setup
+   - **Use custom selectors** when you need complex logic, computed comparisons, or want to ignore certain property changes
+   - **Avoid custom selectors** for simple property access - automatic tracking is more efficient
 
 4. **Type Safety**: Take advantage of TypeScript's type inference for better development experience and catch errors early.
 

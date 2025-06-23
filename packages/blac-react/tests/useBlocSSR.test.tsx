@@ -13,7 +13,6 @@ const renderToStringWithMocks = (element: ReactNode) => {
   global.window = undefined;
 
   try {
-    // @ts-expect-error - Deliberately setting window to undefined to simulate SSR
     return renderToString(element);
   } finally {
     // Restore original window
