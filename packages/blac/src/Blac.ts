@@ -488,6 +488,11 @@ export class Blac {
       options,
     );
     this.log(`[${blocClass.name}:${String(blocId)}] (getBloc) No existing instance found. Creating new one.`, options, bloc);
+    
+    if (!bloc) {
+      throw new Error(`[getBloc] Failed to create bloc instance for ${blocClass.name}. This should never happen.`);
+    }
+    
     return bloc;
   };
   static get getBloc() { return Blac.instance.getBloc; }

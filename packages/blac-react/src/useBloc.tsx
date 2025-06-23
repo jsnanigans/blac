@@ -18,8 +18,8 @@ import useExternalBlocStore from './useExternalBlocStore';
  * @template B - Bloc constructor type
  */
 type HookTypes<B extends BlocConstructor<BlocBase<any>>> = [
-  BlocState<InstanceType<B>> | undefined,
-  InstanceType<B> | null,
+  BlocState<InstanceType<B>>,
+  InstanceType<B>,
 ];
 
 /**
@@ -133,7 +133,7 @@ export default function useBloc<B extends BlocConstructor<BlocBase<any>>>(
 
   const returnClass = useMemo(() => {
     if (!instance.current) {
-      return null;
+      throw new Error(`[useBloc] Bloc instance is null for ${bloc.name}. This should never happen - bloc instance must be defined.`);
     }
 
     // Check cache first
@@ -142,7 +142,7 @@ export default function useBloc<B extends BlocConstructor<BlocBase<any>>>(
       proxy = new Proxy(instance.current, {
         get(target, prop) {
           if (!target) {
-            return null;
+            throw new Error(`[useBloc] Bloc target is null for ${bloc.name}. This should never happen - bloc target must be defined.`);
           }
           const value = target[prop as keyof InstanceType<B>];
           if (typeof value !== 'function') {
@@ -179,6 +179,14 @@ export default function useBloc<B extends BlocConstructor<BlocBase<any>>>(
       currentInstance._removeConsumer(rid);
     };
   }, [instance.current?.uid, rid]); // Use UID to ensure we re-run when instance changes
+
+  // Ensure state and instance are never undefined/null
+  if (returnState === undefined) {
+    throw new Error(`[useBloc] State is undefined for ${bloc.name}. This should never happen - state must be defined.`);
+  }
+  if (!returnClass) {
+    throw new Error(`[useBloc] Instance is null for ${bloc.name}. This should never happen - instance must be defined.`);
+  }
 
   // Safe return with proper typing
   return [returnState, returnClass] as [BlocState<InstanceType<B>>, InstanceType<B>];
