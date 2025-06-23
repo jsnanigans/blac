@@ -77,9 +77,16 @@ export interface BlocErrorBoundary<S, A extends BlocEventConstraint> {
 
 /**
  * Function type for determining dependencies that trigger re-renders
+ * Similar to React's useEffect dependency array - if any dependency changes, a re-render is triggered
  * @template S The state type
- * @returns Array of dependency arrays - if any dependency in any array changes, a re-render is triggered
+ * @template I The bloc instance type
+ * @param currentState The current state
+ * @param previousState The previous state (undefined on first call)
+ * @param instance The bloc instance
+ * @returns Array of dependencies - if any dependency changes, a re-render is triggered
  */
-export type BlocHookDependencyArrayFn<S> = (
-  newState: S
-) => unknown[][];
+export type BlocHookDependencyArrayFn<S, I = any> = (
+  currentState: S,
+  previousState: S | undefined,
+  instance: I
+) => unknown[];

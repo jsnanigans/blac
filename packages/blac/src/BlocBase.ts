@@ -2,7 +2,7 @@ import { BlacObservable } from './BlacObserver';
 import { generateUUID } from './utils/uuid';
 
 export type BlocInstanceId = string | number | undefined;
-type DependencySelector<S> = (newState: S) => unknown[][];
+type DependencySelector<S> = (currentState: S, previousState: S | undefined, instance: any) => unknown[];
 
 // Define an interface for the static properties expected on a Bloc/Cubit constructor
 interface BlocStaticProperties {

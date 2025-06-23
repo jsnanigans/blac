@@ -105,6 +105,11 @@ export default function useBloc<B extends BlocConstructor<BlocBase<any>>>(
   const classProxyCache = useRef<WeakMap<object, object>>(new WeakMap());
 
   const returnState = useMemo(() => {
+    // If a custom selector is provided, don't use proxy tracking
+    if (options?.selector) {
+      return state;
+    }
+
     hasProxyTracking.current = true;
 
     if (typeof state !== 'object' || state === null) {

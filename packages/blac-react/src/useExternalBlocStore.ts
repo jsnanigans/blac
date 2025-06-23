@@ -80,52 +80,67 @@ const useExternalBlocStore = <
     blocInstance.current = getBloc();
   }, [getBloc]);
 
-  const dependencyArray: BlocHookDependencyArrayFn<BlocState<InstanceType<B>>> =
-    useMemo(
-      () =>
-        (newState): ReturnType<BlocHookDependencyArrayFn<BlocState<InstanceType<B>>>> => {
-          const instance = blocInstance.current;
+  // Track previous state and dependencies for selector
+  const previousStateRef = useRef<BlocState<InstanceType<B>> | undefined>(undefined);
+  const lastDependenciesRef = useRef<unknown[][] | undefined>(undefined);
+  const lastStableSnapshot = useRef<BlocState<InstanceType<B>> | undefined>(undefined);
+  
+  // Track bloc instance uid to prevent unnecessary store recreation
+  const blocUidRef = useRef<string | undefined>(undefined);
+  if (blocUidRef.current !== blocInstance.current?.uid) {
+    blocUidRef.current = blocInstance.current?.uid;
+  }
 
-          if (!instance) {
-            return [];
-          }
+  const dependencyArray = useMemo(
+    () =>
+      (newState: BlocState<InstanceType<B>>, oldState?: BlocState<InstanceType<B>>): unknown[][] => {
+        const instance = blocInstance.current;
 
-          // Use custom dependency selector if provided
-          if (selector) {
-            return selector(newState);
-          }
+        if (!instance) {
+          return [[], []]; // [stateArray, classArray]
+        }
 
-          // Fall back to bloc's default dependency selector if available
-          if (instance.defaultDependencySelector) {
-            return instance.defaultDependencySelector(newState);
-          }
+        // Use the provided oldState or fall back to our tracked previous state
+        const previousState = oldState ?? previousStateRef.current;
+        
+        let currentDependencies: unknown[][];
 
-          // For primitive states, use default selector
-          if (typeof newState !== 'object') {
-            // Default behavior for primitive states: re-render if the state itself changes.
-            return [[newState]];
-          }
-
+        // Use custom dependency selector if provided
+        if (selector) {
+          const flatDeps = selector(newState, previousState, instance);
+          // Wrap flat custom selector result in the two-array structure for consistency
+          currentDependencies = [flatDeps, []]; // [customSelectorDeps, classArray]
+        }
+        // Fall back to bloc's default dependency selector if available
+        else if (instance.defaultDependencySelector) {
+          const flatDeps = instance.defaultDependencySelector(newState, previousState, instance);
+          // Wrap flat default selector result in the two-array structure for consistency
+          currentDependencies = [flatDeps, []]; // [defaultSelectorDeps, classArray]
+        }
+        // For primitive states, use default selector
+        else if (typeof newState !== 'object') {
+          // Default behavior for primitive states: re-render if the state itself changes.
+          currentDependencies = [[newState], []]; // [primitiveStateArray, classArray]
+        }
+        else {
           // For object states, track which properties were actually used
-          const usedStateValues: unknown[] = [];
+          const stateDependencies: unknown[] = [];
+          const classDependencies: unknown[] = [];
+          
+          // Add state property values that were accessed
           for (const key of usedKeys.current) {
             if (key in newState) {
-              usedStateValues.push(newState[key as keyof typeof newState]);
+              stateDependencies.push(newState[key as keyof typeof newState]);
             }
           }
 
-          // Track used class properties for dependency tracking, this enables rerenders when class getters change
-          const usedClassValues: unknown[] = [];
+          // Add class property values that were accessed
           for (const key of usedClassPropKeys.current) {
             if (key in instance) {
               try {
                 const value = instance[key as keyof InstanceType<B>];
-                switch (typeof value) {
-                  case 'function':
-                    continue;
-                  default:
-                    usedClassValues.push(value);
-                    continue;
+                if (typeof value !== 'function') {
+                  classDependencies.push(value);
                 }
               } catch (error) {
                 Blac.instance.log('useBloc Error', error);
@@ -133,44 +148,57 @@ const useExternalBlocStore = <
             }
           }
 
-          // If no state properties have been accessed through proxy
-          if (usedKeys.current.size === 0) {
-            // If only class properties are used, track those
-            if (usedClassPropKeys.current.size > 0) {
-              return [usedClassValues];
-            }
-            
+          // If no properties have been accessed through proxy
+          if (usedKeys.current.size === 0 && usedClassPropKeys.current.size === 0) {
             // If proxy tracking has never been initialized, this is direct external store usage
             // In this case, always track the entire state to ensure notifications
             if (!hasProxyTracking.current) {
-              return [[newState]];
+              stateDependencies.push(newState);
             }
-            
             // If proxy tracking was initialized but no properties accessed, 
             // return empty dependencies to prevent unnecessary re-renders
-            return [[]];
           }
 
-          return [usedStateValues, usedClassValues];
+          currentDependencies = [stateDependencies, classDependencies];
+        }
+
+        // Update tracked state
+        previousStateRef.current = newState;
+
+
+        // Return the dependencies for BlacObserver to compare
+        return currentDependencies;
         },
       [],
     );
 
+  // Store active subscriptions to reuse observers
+  const activeObservers = useRef<Map<Function, { observer: BlacObserver<BlocState<InstanceType<B>>>, unsubscribe: () => void }>>(new Map());
+
   const state: ExternalStore<B> = useMemo(() => {
     return {
       subscribe: (listener: (state: BlocState<InstanceType<B>>) => void) => {
+        
         const currentInstance = blocInstance.current;
         if (!currentInstance) {
           return () => {}; // Return no-op if no instance
         }
 
+        // Check if we already have an observer for this listener
+        const existing = activeObservers.current.get(listener);
+        if (existing) {
+          return existing.unsubscribe;
+        }
         const observer: BlacObserver<BlocState<InstanceType<B>>> = {
           fn: () => {
             try {
-              // Reset dependency tracking before listener is called 
-              // This ensures we only track properties accessed during the current render
-              usedKeys.current = new Set();
-              usedClassPropKeys.current = new Set();
+              
+              // Only reset dependency tracking if we're not using a custom selector
+              // Custom selectors override proxy-based tracking entirely
+              if (!selector && !currentInstance.defaultDependencySelector) {
+                usedKeys.current = new Set();
+                usedClassPropKeys.current = new Set();
+              }
 
               // Only trigger listener if there are actual subscriptions
               listener(currentInstance.state);
@@ -196,10 +224,16 @@ const useExternalBlocStore = <
         // This will trigger the callback whenever the bloc's state changes
         const unSub = currentInstance._observer.subscribe(observer);
 
-        // Return an unsubscribe function that can be called to clean up the subscription
-        return () => {
+        const unsubscribe = () => {
+          activeObservers.current.delete(listener);
           unSub();
         };
+
+        // Store the observer and unsubscribe function
+        activeObservers.current.set(listener, { observer, unsubscribe });
+
+        // Return an unsubscribe function that can be called to clean up the subscription
+        return unsubscribe;
       },
       // Return an immutable snapshot of the current bloc state
       getSnapshot: (): BlocState<InstanceType<B>> | undefined => {
@@ -207,7 +241,55 @@ const useExternalBlocStore = <
         if (!instance) {
           return {} as BlocState<InstanceType<B>>;
         }
-        return instance.state;
+
+        const currentState = instance.state;
+        const currentDependencies = dependencyArray(currentState, previousStateRef.current);
+        
+        // Check if dependencies have changed using the two-array comparison logic
+        const lastDeps = lastDependenciesRef.current;
+        let dependenciesChanged = false;
+        
+        if (!lastDeps) {
+          // First time - dependencies changed
+          dependenciesChanged = true;
+        } else if (lastDeps.length !== currentDependencies.length) {
+          // Array structure changed
+          dependenciesChanged = true;
+        } else {
+          // Compare each array (state and class dependencies)
+          for (let arrayIndex = 0; arrayIndex < currentDependencies.length; arrayIndex++) {
+            const lastArray = lastDeps[arrayIndex] || [];
+            const newArray = currentDependencies[arrayIndex] || [];
+            
+            if (lastArray.length !== newArray.length) {
+              dependenciesChanged = true;
+              break;
+            }
+            
+            // Compare each dependency value using Object.is
+            for (let i = 0; i < newArray.length; i++) {
+              if (!Object.is(lastArray[i], newArray[i])) {
+                dependenciesChanged = true;
+                break;
+              }
+            }
+            
+            if (dependenciesChanged) break;
+          }
+        }
+        
+        // Update dependency tracking
+        lastDependenciesRef.current = currentDependencies;
+        
+        // If dependencies haven't changed, return the same snapshot reference
+        // This prevents React from re-rendering when dependencies are stable
+        if (!dependenciesChanged && lastStableSnapshot.current) {
+          return lastStableSnapshot.current;
+        }
+        
+        // Dependencies changed - update and return new snapshot
+        lastStableSnapshot.current = currentState;
+        return currentState;
       },
       // Server snapshot mirrors the client snapshot in this implementation
       getServerSnapshot: (): BlocState<InstanceType<B>> | undefined => {
@@ -218,7 +300,7 @@ const useExternalBlocStore = <
         return instance.state;
       },
     }
-  }, [blocInstance.current?.uid]); // Re-create store when instance changes
+  }, []); // Store is stable - individual methods handle instance changes
 
   return {
     usedKeys,

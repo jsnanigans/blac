@@ -257,7 +257,7 @@ describe('useExternalBlocStore', () => {
     });
 
     it('should handle custom dependency selector', () => {
-      const customSelector = vi.fn().mockReturnValue([['count']]);
+      const customSelector = vi.fn().mockReturnValue(['count']);
 
       const { result } = renderHook(() =>
         useExternalBlocStore(CounterCubit, { selector: customSelector })
@@ -270,7 +270,12 @@ describe('useExternalBlocStore', () => {
         result.current.instance.current.increment();
       });
 
-      expect(customSelector).toHaveBeenCalledWith({ count: 1, name: 'counter' });
+      // New API passes (currentState, previousState, instance)
+      expect(customSelector).toHaveBeenCalledWith(
+        { count: 1, name: 'counter' }, // currentState
+        { count: 0, name: 'counter' }, // previousState
+        expect.any(Object) // instance
+      );
     });
   });
 

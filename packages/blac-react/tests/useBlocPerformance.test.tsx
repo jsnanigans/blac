@@ -81,10 +81,10 @@ class ComplexCubit extends Cubit<ComplexState> {
 // Test component with custom dependency selector
 const PerformanceComponent: FC = () => {
   // Use custom dependency selector to optimize rendering
-  const dependencySelector = useCallback((newState: ComplexState) => {
+  const dependencySelector = useCallback((currentState: ComplexState, previousState: ComplexState | undefined, instance: ComplexCubit) => {
     return [
-      [newState.count],
-      [newState.settings.darkMode]
+      currentState.count,
+      currentState.settings.darkMode
     ];
   }, []);
   

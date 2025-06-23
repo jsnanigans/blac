@@ -98,35 +98,29 @@ export class BlacObservable<S = unknown> {
 
       if (observer.dependencyArray) {
         const lastDependencyCheck = observer.lastState;
-        const newDependencyCheck = observer.dependencyArray(newState);
+        const newDependencyCheck = observer.dependencyArray(newState, oldState);
 
-        // If this is the first time (no lastState), check if dependencies are meaningful
+        // If this is the first time (no lastState), trigger initial render
         if (!lastDependencyCheck) {
-          // If dependencies contain actual values, update to establish initial state
-          // If dependencies are empty ([[]] or [[]]), don't update
-          const hasMeaningfulDependencies = newDependencyCheck.some(part => 
-            Array.isArray(part) && part.length > 0
-          );
-          shouldUpdate = hasMeaningfulDependencies;
+          shouldUpdate = true;
         } else {
-          // Compare dependency arrays for changes
+          // Compare two-array dependency structure: [stateArray, classArray]
           if (lastDependencyCheck.length !== newDependencyCheck.length) {
             shouldUpdate = true;
           } else {
-            // Compare each part of the dependency arrays
-            for (let o = 0; o < newDependencyCheck.length; o++) {
-              const partNew = newDependencyCheck[o];
-              const partOld = lastDependencyCheck[o] || [];
+            // Compare each array (state and class dependencies)
+            for (let arrayIndex = 0; arrayIndex < newDependencyCheck.length; arrayIndex++) {
+              const lastArray = lastDependencyCheck[arrayIndex] || [];
+              const newArray = newDependencyCheck[arrayIndex] || [];
               
-              // If the part lengths are different, definitely update
-              if (partNew.length !== partOld.length) {
+              if (lastArray.length !== newArray.length) {
                 shouldUpdate = true;
                 break;
               }
               
-              // Compare each value in the parts
-              for (let i = 0; i < partNew.length; i++) {
-                if (!Object.is(partNew[i], partOld[i])) {
+              // Compare each dependency value using Object.is (same as React)
+              for (let i = 0; i < newArray.length; i++) {
+                if (!Object.is(lastArray[i], newArray[i])) {
                   shouldUpdate = true;
                   break;
                 }
