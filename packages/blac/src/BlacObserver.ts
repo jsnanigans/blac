@@ -78,7 +78,11 @@ export class BlacObservable<S = unknown> {
 
     if (this.size === 0) {
       Blac.log('BlacObservable.unsubscribe: No observers left.', this.bloc);
-      // The bloc will handle its own disposal through consumer management
+      // Check if bloc should be disposed when both observers and consumers are gone
+      if (this.bloc._consumers.size === 0 && !this.bloc._keepAlive && (this.bloc as any)._disposalState === 'active') {
+        Blac.log(`[${this.bloc._name}:${this.bloc._id}] No observers or consumers left. Scheduling disposal.`);
+        (this.bloc as any)._scheduleDisposal();
+      }
     }
   }
 

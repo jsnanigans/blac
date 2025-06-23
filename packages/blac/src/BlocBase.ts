@@ -264,6 +264,9 @@ export abstract class BlocBase<
       this._consumerRefs.set(consumerId, new WeakRef(consumerRef));
     }
     
+    // @ts-ignore - Blac is available globally
+    (globalThis as any).Blac?.log(`[${this._name}:${this._id}] Consumer added. Total consumers: ${this._consumers.size}`);
+    
     // this._blac.dispatchEvent(BlacLifecycleEvent.BLOC_CONSUMER_ADDED, this, { consumerId });
   };
 
@@ -281,8 +284,13 @@ export abstract class BlocBase<
     this._consumerRefs.delete(consumerId);
     // this._blac.dispatchEvent(BlacLifecycleEvent.BLOC_CONSUMER_REMOVED, this, { consumerId });
     
+    // @ts-ignore - Blac is available globally
+    (globalThis as any).Blac?.log(`[${this._name}:${this._id}] Consumer removed. Remaining consumers: ${this._consumers.size}, keepAlive: ${this._keepAlive}`);
+    
     // If no consumers remain and not keep-alive, schedule disposal
     if (this._consumers.size === 0 && !this._keepAlive && this._disposalState === 'active') {
+      // @ts-ignore - Blac is available globally
+      (globalThis as any).Blac?.log(`[${this._name}:${this._id}] No consumers left and not keep-alive. Scheduling disposal.`);
       this._scheduleDisposal();
     }
   };

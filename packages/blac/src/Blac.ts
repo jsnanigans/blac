@@ -5,14 +5,14 @@
 // 2. Type assertions for _disposalState - private property access across inheritance hierarchy
 // 3. Constructor argument types - enables flexible bloc instantiation patterns
 // These 'any' usages are carefully controlled and don't compromise runtime type safety.
-import { BlocBase, BlocInstanceId } from "./BlocBase";
+import { BlocBase, BlocInstanceId } from './BlocBase';
 import {
-    BlocBaseAbstract,
-    BlocConstructor,
-    BlocHookDependencyArrayFn,
-    BlocState,
-    InferPropsFromGeneric
-} from "./types";
+  BlocBaseAbstract,
+  BlocConstructor,
+  BlocHookDependencyArrayFn,
+  BlocState,
+  InferPropsFromGeneric,
+} from './types';
 
 /**
  * Configuration options for the Blac instance
@@ -48,7 +48,9 @@ class SingletonBlacManager implements BlacInstanceManager {
 
   getInstance(): Blac {
     if (!SingletonBlacManager._instance) {
-      SingletonBlacManager._instance = new Blac({ __unsafe_ignore_singleton: true });
+      SingletonBlacManager._instance = new Blac({
+        __unsafe_ignore_singleton: true,
+      });
     }
     return SingletonBlacManager._instance;
   }
@@ -59,8 +61,10 @@ class SingletonBlacManager implements BlacInstanceManager {
 
   resetInstance(): void {
     const oldInstance = SingletonBlacManager._instance;
-    SingletonBlacManager._instance = new Blac({ __unsafe_ignore_singleton: true });
-    
+    SingletonBlacManager._instance = new Blac({
+      __unsafe_ignore_singleton: true,
+    });
+
     // Transfer any keep-alive blocs to the new instance
     if (oldInstance) {
       for (const bloc of oldInstance.keepAliveBlocs) {
@@ -87,7 +91,7 @@ export function setBlacInstanceManager(manager: BlacInstanceManager): void {
  * Main Blac class that manages the state management system.
  * Can work with singleton pattern or dependency injection.
  * Handles bloc lifecycle, and instance tracking.
- * 
+ *
  * Key responsibilities:
  * - Managing bloc instances (creation, disposal, lookup)
  * - Handling isolated and non-isolated blocs
@@ -134,15 +138,21 @@ export class Blac {
 
   /** Flag to enable/disable logging */
   static enableLog = false;
+  static logLevel: 'warn' | 'log' = 'warn';
 
   /**
    * Logs messages to console when logging is enabled
    * @param args - Arguments to log
    */
   log = (...args: unknown[]) => {
-    if (Blac.enableLog) console.warn(`☢️ [Blac ${this.createdAt.toString()}]`, ...args);
+    if (Blac.enableLog && Blac.logLevel === 'warn')
+      console.warn(`☢️ [Blac ${this.createdAt.toString()}]`, ...args);
+    if (Blac.enableLog && Blac.logLevel === 'log')
+      console.log(`☢️ [Blac ${this.createdAt.toString()}]`, ...args);
   };
-  static get log() { return Blac.instance.log; }
+  static get log() {
+    return Blac.instance.log;
+  }
 
   /**
    * Gets the current Blac instance
@@ -152,7 +162,6 @@ export class Blac {
     return instanceManager.getInstance();
   }
 
-
   /**
    * Logs a warning message
    * @param message - Warning message
@@ -160,10 +169,16 @@ export class Blac {
    */
   warn = (message: string, ...args: unknown[]) => {
     if (Blac.enableLog) {
-      console.warn(`🚨 [Blac ${String(Blac.instance.createdAt)}]`, message, ...args);
+      console.warn(
+        `🚨 [Blac ${String(Blac.instance.createdAt)}]`,
+        message,
+        ...args,
+      );
     }
   };
-  static get warn() { return Blac.instance.warn; }
+  static get warn() {
+    return Blac.instance.warn;
+  }
   /**
    * Logs an error message
    * @param message - Error message
@@ -171,17 +186,23 @@ export class Blac {
    */
   error = (message: string, ...args: unknown[]) => {
     if (Blac.enableLog) {
-      console.error(`🚨 [Blac ${String(Blac.instance.createdAt)}]`, message, ...args);
+      console.error(
+        `🚨 [Blac ${String(Blac.instance.createdAt)}]`,
+        message,
+        ...args,
+      );
     }
   };
-  static get error() { return Blac.instance.error; }
+  static get error() {
+    return Blac.instance.error;
+  }
 
   /**
    * Resets the Blac instance to a new one, disposing non-keepAlive blocs
    * from the old instance.
    */
   resetInstance = (): void => {
-    this.log("Reset Blac instance");
+    this.log('Reset Blac instance');
 
     // Create snapshots to avoid concurrent modification issues
     const oldBlocInstanceMap = new Map(this.blocInstanceMap);
@@ -212,7 +233,7 @@ export class Blac {
 
     // Use instance manager to reset
     instanceManager.resetInstance();
-  }
+  };
   static resetInstance = (): void => {
     instanceManager.resetInstance();
   };
@@ -228,17 +249,21 @@ export class Blac {
     // private property access across class boundaries. Alternative would be to make
     // _disposalState protected, but that would expose internal implementation details.
     if ((bloc as any)._disposalState !== 'active') {
-      this.log(`[${bloc._name}:${String(bloc._id)}] disposeBloc called on already disposed bloc`);
+      this.log(
+        `[${bloc._name}:${String(bloc._id)}] disposeBloc called on already disposed bloc`,
+      );
       return;
     }
 
     const base = bloc.constructor as unknown as BlocBaseAbstract;
     const key = this.createBlocInstanceMapKey(bloc._name, bloc._id);
-    this.log(`[${bloc._name}:${String(bloc._id)}] disposeBloc called. Isolated: ${String(base.isolated)}`);
+    this.log(
+      `[${bloc._name}:${String(bloc._id)}] disposeBloc called. Isolated: ${String(base.isolated)}`,
+    );
 
     // First dispose the bloc to prevent further operations
     bloc._dispose();
-    
+
     // Then clean up from registries
     if (base.isolated) {
       this.unregisterIsolatedBlocInstance(bloc);
@@ -246,10 +271,12 @@ export class Blac {
     } else {
       this.unregisterBlocInstance(bloc);
     }
-    
-    this.log('dispatched bloc', bloc)
+
+    this.log('dispatched bloc', bloc);
   };
-  static get disposeBloc() { return Blac.instance.disposeBloc; }
+  static get disposeBloc() {
+    return Blac.instance.disposeBloc;
+  }
 
   /**
    * Creates a unique key for a bloc instance in the map based on the bloc class name and instance ID
@@ -268,10 +295,10 @@ export class Blac {
   unregisterBlocInstance(bloc: BlocBase<unknown>): void {
     const key = this.createBlocInstanceMapKey(bloc._name, bloc._id);
     this.blocInstanceMap.delete(key);
-    
+
     // Clean up UID tracking
     this.uidRegistry.delete(bloc.uid);
-    
+
     // Remove from keep-alive set
     this.keepAliveBlocs.delete(bloc);
   }
@@ -283,10 +310,10 @@ export class Blac {
   registerBlocInstance(bloc: BlocBase<unknown>): void {
     const key = this.createBlocInstanceMapKey(bloc._name, bloc._id);
     this.blocInstanceMap.set(key, bloc);
-    
+
     // Track UID for cleanup
     this.uidRegistry.set(bloc.uid, bloc);
-    
+
     // Track keep-alive blocs
     if (bloc._keepAlive) {
       this.keepAliveBlocs.add(bloc);
@@ -308,7 +335,7 @@ export class Blac {
 
     const key = this.createBlocInstanceMapKey(blocClass.name, id);
     const found = this.blocInstanceMap.get(key) as InstanceType<B> | undefined;
-    return found
+    return found;
   }
 
   /**
@@ -323,13 +350,13 @@ export class Blac {
     } else {
       this.isolatedBlocMap.set(blocClass, [bloc]);
     }
-    
+
     // Add to isolated index for O(1) lookups
     this.isolatedBlocIndex.set(bloc.uid, bloc);
-    
+
     // Track UID for cleanup
     this.uidRegistry.set(bloc.uid, bloc);
-    
+
     // Track keep-alive blocs
     if (bloc._keepAlive) {
       this.keepAliveBlocs.add(bloc);
@@ -343,10 +370,10 @@ export class Blac {
   unregisterIsolatedBlocInstance(bloc: BlocBase<unknown>): void {
     const blocClass = bloc.constructor;
     const blocs = this.isolatedBlocMap.get(blocClass as BlocConstructor<any>);
-    
+
     // Ensure both data structures are synchronized
     let wasRemoved = false;
-    
+
     if (blocs) {
       const index = blocs.findIndex((b) => b.uid === bloc.uid);
       if (index !== -1) {
@@ -358,21 +385,21 @@ export class Blac {
         this.isolatedBlocMap.delete(blocClass as BlocConstructor<any>);
       }
     }
-    
+
     // Always try to remove from isolated index, even if not found in map
     const wasInIndex = this.isolatedBlocIndex.delete(bloc.uid);
-    
+
     // Clean up UID tracking
     this.uidRegistry.delete(bloc.uid);
-    
+
     // Remove from keep-alive set
     this.keepAliveBlocs.delete(bloc);
-    
+
     // Log inconsistency for debugging
     if (wasRemoved !== wasInIndex) {
       this.warn(
         `[Blac] Inconsistent state detected during isolated bloc cleanup for ${bloc._name}:${bloc.uid}. ` +
-        `Map removal: ${wasRemoved}, Index removal: ${wasInIndex}`
+          `Map removal: ${wasRemoved}, Index removal: ${wasInIndex}`,
       );
     }
   }
@@ -392,7 +419,9 @@ export class Blac {
       return undefined;
     }
     // Find the specific bloc by ID within the isolated array
-    const found = blocs.find((b) => b._id === id) as InstanceType<B> | undefined;
+    const found = blocs.find((b) => b._id === id) as
+      | InstanceType<B>
+      | undefined;
     return found;
   }
 
@@ -400,7 +429,7 @@ export class Blac {
    * Finds an isolated bloc instance by UID (O(1) lookup)
    */
   findIsolatedBlocInstanceByUid<B extends BlocBase<unknown>>(
-    uid: string
+    uid: string,
   ): B | undefined {
     return this.isolatedBlocIndex.get(uid) as B | undefined;
   }
@@ -436,29 +465,42 @@ export class Blac {
     return newBloc;
   }
 
-
   activateBloc = (bloc: BlocBase<unknown>): void => {
+    // Don't activate disposed blocs
+    if ((bloc as any)._disposalState !== 'active') {
+      this.log(
+        `[${bloc._name}:${String(bloc._id)}] activateBloc called on disposed bloc. Ignoring.`,
+      );
+      return;
+    }
+
     const base = bloc.constructor as unknown as BlocConstructor<BlocBase<any>>;
     const isIsolated = bloc.isIsolated;
 
-    let found = isIsolated ? this.findIsolatedBlocInstance(base, bloc._id) : this.findRegisteredBlocInstance(base, bloc._id);
+    let found = isIsolated
+      ? this.findIsolatedBlocInstance(base, bloc._id)
+      : this.findRegisteredBlocInstance(base, bloc._id);
     if (found) {
       return;
     }
 
-    this.log(`[${bloc._name}:${String(bloc._id)}] activateBloc called. Isolated: ${String(bloc.isIsolated)}`);
+    this.log(
+      `[${bloc._name}:${String(bloc._id)}] activateBloc called. Isolated: ${String(bloc.isIsolated)}`,
+    );
     if (bloc.isIsolated) {
       this.registerIsolatedBlocInstance(bloc);
     } else {
       this.registerBlocInstance(bloc);
     }
   };
-  static get activateBloc() { return Blac.instance.activateBloc; }
+  static get activateBloc() {
+    return Blac.instance.activateBloc;
+  }
 
   /**
    * Gets or creates a bloc instance based on the provided class and options.
    * If a bloc with the given ID exists, it will be returned. Otherwise, a new instance will be created.
-   * 
+   *
    * @param blocClass - The bloc class to get or create
    * @param options - Options including:
    *   - id: The instance ID (defaults to class name if not provided)
@@ -474,11 +516,13 @@ export class Blac {
     const base = blocClass as unknown as BlocBaseAbstract;
     const blocId = id ?? blocClass.name;
 
-
     if (base.isolated) {
-      const isolatedBloc = this.findIsolatedBlocInstance<B>(blocClass, blocId)
+      const isolatedBloc = this.findIsolatedBlocInstance<B>(blocClass, blocId);
       if (isolatedBloc) {
-        this.log(`[${blocClass.name}:${String(blocId)}] (getBloc) Found existing isolated instance.`, options);
+        this.log(
+          `[${blocClass.name}:${String(blocId)}] (getBloc) Found existing isolated instance.`,
+          options,
+        );
         return isolatedBloc;
       } else {
         if (options.throwIfNotFound) {
@@ -486,10 +530,13 @@ export class Blac {
         }
       }
     } else {
-      const registeredBloc = this.findRegisteredBlocInstance(blocClass, blocId)
+      const registeredBloc = this.findRegisteredBlocInstance(blocClass, blocId);
       if (registeredBloc) {
-        this.log(`[${blocClass.name}:${String(blocId)}] (getBloc) Found existing registered instance.`, options);
-        return registeredBloc
+        this.log(
+          `[${blocClass.name}:${String(blocId)}] (getBloc) Found existing registered instance.`,
+          options,
+        );
+        return registeredBloc;
       } else {
         if (options.throwIfNotFound) {
           throw new Error(`Registered bloc ${blocClass.name} not found`);
@@ -497,20 +544,24 @@ export class Blac {
       }
     }
 
-    const bloc = this.createNewBlocInstance(
-      blocClass,
-      blocId,
+    const bloc = this.createNewBlocInstance(blocClass, blocId, options);
+    this.log(
+      `[${blocClass.name}:${String(blocId)}] (getBloc) No existing instance found. Creating new one.`,
       options,
+      bloc,
     );
-    this.log(`[${blocClass.name}:${String(blocId)}] (getBloc) No existing instance found. Creating new one.`, options, bloc);
-    
+
     if (!bloc) {
-      throw new Error(`[getBloc] Failed to create bloc instance for ${blocClass.name}. This should never happen.`);
+      throw new Error(
+        `[getBloc] Failed to create bloc instance for ${blocClass.name}. This should never happen.`,
+      );
     }
-    
+
     return bloc;
   };
-  static get getBloc() { return Blac.instance.getBloc; }
+  static get getBloc() {
+    return Blac.instance.getBloc;
+  }
 
   /**
    * Gets a bloc instance or throws an error if it doesn't exist
@@ -540,7 +591,9 @@ export class Blac {
     }
     throw new Error(`Bloc ${blocClass.name} not found`);
   };
-  static get getBlocOrThrow() { return Blac.instance.getBlocOrThrow; }
+  static get getBlocOrThrow() {
+    return Blac.instance.getBlocOrThrow;
+  }
 
   /**
    * Gets all instances of a specific bloc class
@@ -560,7 +613,8 @@ export class Blac {
 
     // Search non-isolated blocs
     this.blocInstanceMap.forEach((blocInstance) => {
-      if (blocInstance.constructor === blocClass) { // Strict constructor check
+      if (blocInstance.constructor === blocClass) {
+        // Strict constructor check
         results.push(blocInstance as InstanceType<B>);
       }
     });
@@ -569,7 +623,7 @@ export class Blac {
     if (options.searchIsolated !== false) {
       const isolatedBlocs = this.isolatedBlocMap.get(blocClass);
       if (isolatedBlocs) {
-        results.push(...isolatedBlocs.map(bloc => bloc as InstanceType<B>));
+        results.push(...isolatedBlocs.map((bloc) => bloc as InstanceType<B>));
       }
     }
 
@@ -581,19 +635,21 @@ export class Blac {
    * @param blocClass - The bloc class to dispose
    */
   disposeKeepAliveBlocs = <B extends BlocConstructor<any>>(
-    blocClass?: B
+    blocClass?: B,
   ): void => {
     const toDispose: BlocBase<unknown>[] = [];
-    
+
     for (const bloc of this.keepAliveBlocs) {
       if (!blocClass || bloc.constructor === blocClass) {
         toDispose.push(bloc);
       }
     }
-    
-    toDispose.forEach(bloc => bloc._dispose());
+
+    toDispose.forEach((bloc) => bloc._dispose());
   };
-  static get disposeKeepAliveBlocs() { return Blac.instance.disposeKeepAliveBlocs; }
+  static get disposeKeepAliveBlocs() {
+    return Blac.instance.disposeKeepAliveBlocs;
+  }
 
   /**
    * Disposes all blocs matching a pattern
@@ -601,14 +657,14 @@ export class Blac {
    */
   disposeBlocs = (predicate: (bloc: BlocBase<unknown>) => boolean): void => {
     const toDispose: BlocBase<unknown>[] = [];
-    
+
     // Check registered blocs
     for (const bloc of this.blocInstanceMap.values()) {
       if (predicate(bloc)) {
         toDispose.push(bloc);
       }
     }
-    
+
     // Check isolated blocs
     for (const blocs of this.isolatedBlocMap.values()) {
       for (const bloc of blocs) {
@@ -617,10 +673,12 @@ export class Blac {
         }
       }
     }
-    
-    toDispose.forEach(bloc => bloc._dispose());
+
+    toDispose.forEach((bloc) => bloc._dispose());
   };
-  static get disposeBlocs() { return Blac.instance.disposeBlocs; }
+  static get disposeBlocs() {
+    return Blac.instance.disposeBlocs;
+  }
 
   /**
    * Gets memory usage statistics for debugging
@@ -629,12 +687,17 @@ export class Blac {
     return {
       totalBlocs: this.uidRegistry.size,
       registeredBlocs: this.blocInstanceMap.size,
-      isolatedBlocs: Array.from(this.isolatedBlocMap.values()).reduce((sum, arr) => sum + arr.length, 0),
+      isolatedBlocs: Array.from(this.isolatedBlocMap.values()).reduce(
+        (sum, arr) => sum + arr.length,
+        0,
+      ),
       keepAliveBlocs: this.keepAliveBlocs.size,
       isolatedBlocTypes: this.isolatedBlocMap.size,
     };
   };
-  static get getMemoryStats() { return Blac.instance.getMemoryStats; }
+  static get getMemoryStats() {
+    return Blac.instance.getMemoryStats;
+  }
 
   /**
    * Validates consumer references and cleans up orphaned consumers
@@ -643,20 +706,30 @@ export class Blac {
     for (const bloc of this.uidRegistry.values()) {
       // Validate consumers using the bloc's own validation method
       bloc._validateConsumers();
-      
+
       // Check if bloc should be disposed after validation
       // TODO: Type assertion for private property access (see explanation above)
-      if (bloc._consumers.size === 0 && !bloc._keepAlive && (bloc as any)._disposalState === 'active') {
+      if (
+        bloc._consumers.size === 0 &&
+        !bloc._keepAlive &&
+        (bloc as any)._disposalState === 'active'
+      ) {
         // Schedule disposal for blocs with no consumers
         setTimeout(() => {
           // Double-check conditions before disposal
           // TODO: Type assertion for private property access (see explanation above)
-          if (bloc._consumers.size === 0 && !bloc._keepAlive && (bloc as any)._disposalState === 'active') {
+          if (
+            bloc._consumers.size === 0 &&
+            !bloc._keepAlive &&
+            (bloc as any)._disposalState === 'active'
+          ) {
             this.disposeBloc(bloc);
           }
         }, 1000); // Give a grace period
       }
     }
   };
-  static get validateConsumers() { return Blac.instance.validateConsumers; }
+  static get validateConsumers() {
+    return Blac.instance.validateConsumers;
+  }
 }

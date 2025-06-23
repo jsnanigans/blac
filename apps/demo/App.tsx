@@ -7,6 +7,7 @@ import GetterDemo from './components/GetterDemo';
 import IsolatedCounterDemo from './components/IsolatedCounterDemo';
 import LifecycleDemo from './components/LifecycleDemo';
 import MultiInstanceDemo from './components/MultiInstanceDemo';
+import SharedCounterTestDemo from './components/SharedCounterTestDemo';
 // import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/Card'; // Removing Card components for simpler styling
 import { Blac } from '@blac/core';
 import BlocToBlocCommsDemo from './components/BlocToBlocCommsDemo';
@@ -97,6 +98,7 @@ function App() {
     todoBloc: showDefault,
     blocToBlocComms: showDefault,
     keepAlive: showDefault,
+    sharedCounterTest: showDefault,
   });
 
   return (
@@ -122,6 +124,15 @@ function App() {
           setShow={() => setShow({ ...show, basic: !show.basic })}
         >
           <BasicCounterDemo />
+        </DemoCard>
+
+        <DemoCard
+          title="Shared Counter Test"
+          description="Multiple components using the same CounterCubit instance without IDs."
+          show={show.sharedCounterTest}
+          setShow={() => setShow({ ...show, sharedCounterTest: !show.sharedCounterTest })}
+        >
+          <SharedCounterTestDemo />
         </DemoCard>
 
         <DemoCard

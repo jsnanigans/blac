@@ -23,7 +23,7 @@ export class DependencyTracker {
   private classKeys = new Set<string>();
   private batchedCallbacks = new Set<DependencyChangeCallback>();
   private flushScheduled = false;
-  private flushTimeoutId: number | undefined;
+  private flushTimeoutId: ReturnType<typeof setTimeout> | undefined;
   
   private metrics: DependencyMetrics = {
     stateAccessCount: 0,
@@ -133,9 +133,6 @@ export class DependencyTracker {
     return proxy;
   }
 
-  /**
-   * Create a high-performance proxy for class instances with smart caching
-   */
   public createClassProxy<T extends object>(target: T, onAccess?: (prop: string) => void): T {
     const cachedProxy = this.classProxyCache.get(target);
     if (cachedProxy) {
@@ -148,7 +145,6 @@ export class DependencyTracker {
       get: (obj: T, prop: string | symbol) => {
         const value = obj[prop as keyof T];
         
-        // Only track non-function properties for dependency resolution
         if (typeof prop === 'string' && typeof value !== 'function') {
           this.trackClassAccess(prop);
           onAccess?.(prop);
@@ -170,32 +166,20 @@ export class DependencyTracker {
     return proxy;
   }
 
-  /**
-   * Get all currently tracked state dependencies
-   */
   public getStateKeys(): Set<string> {
     return new Set(this.stateKeys);
   }
 
-  /**
-   * Get all currently tracked class dependencies
-   */
   public getClassKeys(): Set<string> {
     return new Set(this.classKeys);
   }
 
-  /**
-   * Reset all tracked dependencies efficiently
-   */
   public reset(): void {
     this.stateKeys.clear();
     this.classKeys.clear();
     this.cancelScheduledFlush();
   }
 
-  /**
-   * Subscribe to dependency change notifications with batching
-   */
   public subscribe(callback: DependencyChangeCallback): () => void {
     this.batchedCallbacks.add(callback);
     
@@ -204,21 +188,16 @@ export class DependencyTracker {
     };
   }
 
-  /**
-   * Compute dependency array for React's useSyncExternalStore with optimization
-   */
   public computeDependencyArray<TState, TClass>(
     state: TState,
     classInstance: TClass,
   ): unknown[] {
     const startTime = this.config.enableMetrics ? performance.now() : 0;
     
-    // Fast path for primitive states
     if (typeof state !== 'object' || state === null) {
       return [[state]];
     }
 
-    // Compute state dependencies
     const stateValues: unknown[] = [];
     for (const key of this.stateKeys) {
       if (key in (state as object)) {
@@ -226,7 +205,6 @@ export class DependencyTracker {
       }
     }
 
-    // Compute class dependencies
     const classValues: unknown[] = [];
     for (const key of this.classKeys) {
       if (key in (classInstance as object)) {
@@ -236,7 +214,6 @@ export class DependencyTracker {
             classValues.push(value);
           }
         } catch (error) {
-          // Silently ignore property access errors
         }
       }
     }
@@ -247,25 +224,21 @@ export class DependencyTracker {
       this.updateAverageResolutionTime();
     }
 
-    // Return optimized dependency array
     if (stateValues.length === 0 && classValues.length === 0) {
-      return [[]]; // No dependencies tracked
+      return [[]];
     }
     
     if (classValues.length === 0) {
-      return [stateValues]; // Only state dependencies
+      return [stateValues];
     }
     
     if (stateValues.length === 0) {
-      return [classValues]; // Only class dependencies
+      return [classValues];
     }
     
-    return [stateValues, classValues]; // Both types of dependencies
+    return [stateValues, classValues];
   }
 
-  /**
-   * Get performance metrics for monitoring and optimization
-   */
   public getMetrics(): DependencyMetrics {
     if (!this.config.enableMetrics) {
       return {
@@ -278,9 +251,8 @@ export class DependencyTracker {
       };
     }
 
-    // Estimate memory usage
     const estimatedMemory = 
-      (this.stateKeys.size * 50) + // Rough estimate for Set storage
+      (this.stateKeys.size * 50) +
       (this.classKeys.size * 50) +
       (this.stateProxyCache instanceof WeakMap ? 100 : 0) +
       (this.classProxyCache instanceof WeakMap ? 100 : 0);
@@ -291,9 +263,6 @@ export class DependencyTracker {
     };
   }
 
-  /**
-   * Clear all caches and reset metrics for memory management
-   */
   public clearCaches(): void {
     this.stateProxyCache = new WeakMap();
     this.classProxyCache = new WeakMap();
@@ -311,9 +280,6 @@ export class DependencyTracker {
     }
   }
 
-  /**
-   * Schedule a batched flush of dependency changes
-   */
   private scheduleFlush(): void {
     if (this.flushScheduled) {
       return;
@@ -322,27 +288,14 @@ export class DependencyTracker {
     this.flushScheduled = true;
 
     if (this.config.batchTimeout > 0) {
-      this.flushTimeoutId = window.setTimeout(() => {
+      this.flushTimeoutId = setTimeout(() => {
         this.flushBatchedChanges();
       }, this.config.batchTimeout);
     } else {
-      // Use React's scheduler for optimal batching
-      if (typeof window !== 'undefined' && 'scheduler' in window) {
-        // Use React's scheduler if available
-        (window as any).scheduler?.unstable_scheduleCallback(
-          (window as any).scheduler?.unstable_NormalPriority || 0,
-          () => this.flushBatchedChanges(),
-        );
-      } else {
-        // Fallback to immediate execution
-        Promise.resolve().then(() => this.flushBatchedChanges());
-      }
+      Promise.resolve().then(() => this.flushBatchedChanges());
     }
   }
 
-  /**
-   * Cancel any scheduled flush operation
-   */
   private cancelScheduledFlush(): void {
     if (this.flushTimeoutId) {
       clearTimeout(this.flushTimeoutId);
@@ -351,9 +304,6 @@ export class DependencyTracker {
     this.flushScheduled = false;
   }
 
-  /**
-   * Execute batched dependency change notifications
-   */
   private flushBatchedChanges(): void {
     if (!this.flushScheduled) {
       return;
@@ -366,7 +316,6 @@ export class DependencyTracker {
       this.metrics.batchFlushCount++;
     }
 
-    // Notify all subscribers of dependency changes
     const allChangedKeys = new Set([...this.stateKeys, ...this.classKeys]);
     
     for (const callback of this.batchedCallbacks) {
@@ -378,15 +327,11 @@ export class DependencyTracker {
     }
   }
 
-  /**
-   * Update average resolution time for performance monitoring
-   */
   private updateAverageResolutionTime(): void {
     if (this.resolutionTimes.length === 0) {
       return;
     }
 
-    // Keep only the last 100 measurements for rolling average
     if (this.resolutionTimes.length > 100) {
       this.resolutionTimes = this.resolutionTimes.slice(-100);
     }
@@ -396,16 +341,10 @@ export class DependencyTracker {
   }
 }
 
-/**
- * Factory function for creating optimized dependency trackers
- */
 export function createDependencyTracker(
   config?: Partial<DependencyTrackerConfig>,
 ): DependencyTracker {
   return new DependencyTracker(config);
 }
 
-/**
- * Default dependency tracker instance for shared usage
- */
 export const defaultDependencyTracker = createDependencyTracker();
