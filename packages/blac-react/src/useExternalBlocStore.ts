@@ -1,4 +1,4 @@
-import { Blac, BlacObserver, BlocBase, BlocBaseAbstract, BlocConstructor, BlocHookDependencyArrayFn, BlocState } from '@blac/core';
+import { Blac, BlacObserver, BlocBase, BlocBaseAbstract, BlocConstructor, BlocHookDependencyArrayFn, BlocState, generateUUID } from '@blac/core';
 import { useCallback, useMemo, useRef } from 'react';
 import { BlocHookOptions } from './useBloc';
 
@@ -49,7 +49,7 @@ const useExternalBlocStore = <
   const { id: blocId, props, selector } = options ?? {};
 
   const rid = useMemo(() => {
-    return crypto.randomUUID();
+    return generateUUID();
   }, []);
 
   const base = bloc as unknown as BlocBaseAbstract;

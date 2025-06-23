@@ -1,4 +1,5 @@
 import { BlacObservable } from './BlacObserver';
+import { generateUUID } from './utils/uuid';
 
 export type BlocInstanceId = string | number | undefined;
 type DependencySelector<S> = (newState: S) => unknown[][];
@@ -21,7 +22,7 @@ export abstract class BlocBase<
   S,
   P = unknown
 > {
-  public uid = crypto.randomUUID();
+  public uid = generateUUID();
   /**
    * When true, every consumer will receive its own unique instance of this Bloc.
    * Use this when state should not be shared between components.
