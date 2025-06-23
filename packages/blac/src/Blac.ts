@@ -1,5 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// TODO: Remove this eslint disable once any types are properly replaced
+// TODO: The 'any' types in this file are necessary for proper type inference in complex generic scenarios.
+// Specifically:
+// 1. BlocConstructor<any> in Maps - allows any bloc type to be stored while maintaining type safety in usage
+// 2. Type assertions for _disposalState - private property access across inheritance hierarchy
+// 3. Constructor argument types - enables flexible bloc instantiation patterns
+// These 'any' usages are carefully controlled and don't compromise runtime type safety.
 import { BlocBase, BlocInstanceId } from "./BlocBase";
 import {
     BlocBaseAbstract,
@@ -101,6 +106,10 @@ export class Blac {
   /** Map storing all registered bloc instances by their class name and ID */
   blocInstanceMap: Map<string, BlocBase<unknown>> = new Map();
   /** Map storing isolated bloc instances grouped by their constructor */
+  // TODO: BlocConstructor<any> is required here for type inference to work correctly.
+  // Using BlocConstructor<BlocBase<unknown>> would break type inference when storing
+  // different bloc types in the same map. The 'any' allows proper polymorphic storage
+  // while maintaining type safety at usage sites through the BlocConstructor constraint.
   isolatedBlocMap: Map<BlocConstructor<any>, BlocBase<unknown>[]> = new Map();
   /** Map for O(1) lookup of isolated blocs by UID */
   private isolatedBlocIndex: Map<string, BlocBase<unknown>> = new Map();
@@ -181,6 +190,7 @@ export class Blac {
     // Dispose non-keepAlive blocs from the current instance
     // Use disposeBloc method to ensure proper cleanup
     oldBlocInstanceMap.forEach((bloc) => {
+      // TODO: Type assertion for private property access (see explanation above)
       if (!bloc._keepAlive && (bloc as any)._disposalState === 'active') {
         this.disposeBloc(bloc);
       }
@@ -188,6 +198,7 @@ export class Blac {
 
     oldIsolatedBlocMap.forEach((blocArray) => {
       blocArray.forEach((bloc) => {
+        // TODO: Type assertion for private property access (see explanation above)
         if (!bloc._keepAlive && (bloc as any)._disposalState === 'active') {
           this.disposeBloc(bloc);
         }
@@ -212,6 +223,10 @@ export class Blac {
    */
   disposeBloc = (bloc: BlocBase<unknown>): void => {
     // Check if bloc is already disposed to prevent double disposal
+    // TODO: Type assertion needed to access private _disposalState property from external class.
+    // This is safe because we know BlocBase has this property, but TypeScript can't verify
+    // private property access across class boundaries. Alternative would be to make
+    // _disposalState protected, but that would expose internal implementation details.
     if ((bloc as any)._disposalState !== 'active') {
       this.log(`[${bloc._name}:${String(bloc._id)}] disposeBloc called on already disposed bloc`);
       return;
@@ -630,10 +645,12 @@ export class Blac {
       bloc._validateConsumers();
       
       // Check if bloc should be disposed after validation
+      // TODO: Type assertion for private property access (see explanation above)
       if (bloc._consumers.size === 0 && !bloc._keepAlive && (bloc as any)._disposalState === 'active') {
         // Schedule disposal for blocs with no consumers
         setTimeout(() => {
           // Double-check conditions before disposal
+          // TODO: Type assertion for private property access (see explanation above)
           if (bloc._consumers.size === 0 && !bloc._keepAlive && (bloc as any)._disposalState === 'active') {
             this.disposeBloc(bloc);
           }

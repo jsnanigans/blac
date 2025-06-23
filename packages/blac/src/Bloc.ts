@@ -15,7 +15,10 @@ export abstract class Bloc<
     // by the 'on' method's signature.
     readonly eventHandlers: Map<
         // Key: Constructor of a specific event E (where E extends A)
-        // Using 'any[]' for constructor arguments for broader compatibility.
+        // TODO: 'any[]' is required for constructor arguments to allow flexible event instantiation.
+        // Using specific parameter types would break type inference for events with different
+        // constructor signatures. The 'any[]' enables polymorphic event handling while
+        // maintaining type safety through the generic constraint 'E extends A'.
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         new (...args: any[]) => A,
         // Value: Handler function. 'event: A' is used here for the stored function type.
@@ -43,7 +46,8 @@ export abstract class Bloc<
      *                The 'event' parameter in the handler will be typed to the specific eventConstructor.
      */
     protected on<E extends A>(
-        // Using 'any[]' for constructor arguments for broader compatibility.
+        // TODO: 'any[]' is required for constructor arguments (see explanation above).
+        // This allows events with different constructor signatures to be handled uniformly.
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         eventConstructor: new (...args: any[]) => E, 
         handler: (event: E, emit: (newState: S) => void) => void | Promise<void>
@@ -107,6 +111,10 @@ export abstract class Bloc<
      */
     private async _processEvent(action: A): Promise<void> {
         // Using 'any[]' for constructor arguments for broader compatibility.
+        // TODO: Type assertion required to cast action.constructor to proper event constructor type.
+        // JavaScript's constructor property returns 'Function', but we need the specific event
+        // constructor type to look up handlers. This is safe because we validate the action
+        // extends the BlocEventConstraint interface.
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const eventConstructor = action.constructor as new (...args: any[]) => A;
         const handler = this.eventHandlers.get(eventConstructor);
