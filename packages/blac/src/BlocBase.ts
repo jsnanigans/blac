@@ -86,9 +86,9 @@ export abstract class BlocBase<
 
   /**
    * @internal
-   * Flag to prevent re-entrant disposal
+   * Disposal state to prevent race conditions
    */
-  private _isDisposing = false;
+  private _disposalState: 'active' | 'disposing' | 'disposed' = 'active';
 
   /**
    * @internal
@@ -122,13 +122,34 @@ export abstract class BlocBase<
 
   /**
    * @internal
+   * Map of consumer IDs to their WeakRef objects for proper cleanup
+   */
+  private _consumerRefs = new Map<string, WeakRef<object>>();
+
+  /**
+   * @internal
    * Validates that all consumer references are still alive
    * Removes dead consumers automatically
    */
   _validateConsumers = (): void => {
-    // Note: WeakSet doesn't provide iteration, so this is a placeholder
-    // for future implementation when we track consumers differently
-    // For now, we rely on component cleanup to remove consumers
+    const deadConsumers: string[] = [];
+    
+    for (const [consumerId, weakRef] of this._consumerRefs) {
+      if (weakRef.deref() === undefined) {
+        deadConsumers.push(consumerId);
+      }
+    }
+    
+    // Clean up dead consumers
+    for (const consumerId of deadConsumers) {
+      this._consumers.delete(consumerId);
+      this._consumerRefs.delete(consumerId);
+    }
+    
+    // Schedule disposal if no live consumers remain
+    if (this._consumers.size === 0 && !this._keepAlive && this._disposalState === 'active') {
+      this._scheduleDisposal();
+    }
   };
 
   /**
@@ -185,20 +206,24 @@ export abstract class BlocBase<
    * Notifies the Blac manager and clears all observers.
    */
   _dispose() {
-    // Prevent re-entrant disposal
-    if (this._isDisposing) {
+    // Prevent re-entrant disposal using atomic state change
+    if (this._disposalState !== 'active') {
       return;
     }
-    this._isDisposing = true;
+    this._disposalState = 'disposing';
     
-    // Clear all consumers
+    // Clear all consumers and their references
     this._consumers.clear();
+    this._consumerRefs.clear();
     
     // Clear observer subscriptions
     this._observer.clear();
     
     // Call user-defined disposal hook
     this.onDispose?.();
+    
+    // Mark as fully disposed
+    this._disposalState = 'disposed';
     
     // The Blac manager will handle removal from registry
     // This method is called by Blac.disposeBloc, so we don't need to call it again
@@ -218,12 +243,6 @@ export abstract class BlocBase<
 
   /**
    * @internal
-   * WeakSet to track consumer references for cleanup validation
-   */
-  private _consumerRefs = new WeakSet<object>();
-
-  /**
-   * @internal
    * Registers a new consumer to this Bloc instance.
    * Notifies the Blac manager that a consumer has been added.
    * 
@@ -231,11 +250,17 @@ export abstract class BlocBase<
    * @param consumerRef Optional reference to the consumer object for cleanup validation
    */
   _addConsumer = (consumerId: string, consumerRef?: object) => {
+    // Prevent adding consumers to disposed blocs
+    if (this._disposalState !== 'active') {
+      return;
+    }
+    
     if (this._consumers.has(consumerId)) return;
     this._consumers.add(consumerId);
     
+    // Store WeakRef for proper memory management
     if (consumerRef) {
-      this._consumerRefs.add(consumerRef);
+      this._consumerRefs.set(consumerId, new WeakRef(consumerRef));
     }
     
     // this._blac.dispatchEvent(BlacLifecycleEvent.BLOC_CONSUMER_ADDED, this, { consumerId });
@@ -250,11 +275,13 @@ export abstract class BlocBase<
    */
   _removeConsumer = (consumerId: string) => {
     if (!this._consumers.has(consumerId)) return;
+    
     this._consumers.delete(consumerId);
+    this._consumerRefs.delete(consumerId);
     // this._blac.dispatchEvent(BlacLifecycleEvent.BLOC_CONSUMER_REMOVED, this, { consumerId });
     
     // If no consumers remain and not keep-alive, schedule disposal
-    if (this._consumers.size === 0 && !this._keepAlive) {
+    if (this._consumers.size === 0 && !this._keepAlive && this._disposalState === 'active') {
       this._scheduleDisposal();
     }
   };
@@ -278,7 +305,12 @@ export abstract class BlocBase<
    * Schedules disposal of this bloc instance if it has no consumers
    */
   private _scheduleDisposal() {
-    // Check immediately if disposal should happen
+    // Prevent multiple disposal attempts
+    if (this._disposalState !== 'active') {
+      return;
+    }
+    
+    // Double-check conditions before disposal
     if (this._consumers.size === 0 && !this._keepAlive) {
       if (this._disposalHandler) {
         this._disposalHandler(this as any);

@@ -36,13 +36,8 @@ export interface BlocHookOptions<B extends BlocBase<any>> {
 /**
  * Default dependency selector that wraps the entire state in an array
  * @template T - State type
- * @param {T} s - Current state
  * @returns {Array<Array<T>>} Dependency array containing the entire state
  */
-
-const log = (...args: unknown[]) => {
-  console.log('useBloc', ...args);
-};
 
 /**
  * React hook for integrating with Blac state management
@@ -161,12 +156,16 @@ export default function useBloc<B extends BlocConstructor<BlocBase<any>>>(
     return proxy;
   }, [instance.current?.uid]);
 
+  // Create a stable reference object for this component
+  const componentRef = useRef({});
+
   // Set up bloc lifecycle management
   useEffect(() => {
     const currentInstance = instance.current;
     if (!currentInstance) return;
     
-    currentInstance._addConsumer(rid);
+    // Pass component reference for proper memory management
+    currentInstance._addConsumer(rid, componentRef.current);
 
     // Call onMount callback if provided
     options?.onMount?.(currentInstance);

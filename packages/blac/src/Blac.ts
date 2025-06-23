@@ -174,24 +174,27 @@ export class Blac {
   resetInstance = (): void => {
     this.log("Reset Blac instance");
 
-    // Dispose non-keepAlive blocs from the current instance
+    // Create snapshots to avoid concurrent modification issues
     const oldBlocInstanceMap = new Map(this.blocInstanceMap);
     const oldIsolatedBlocMap = new Map(this.isolatedBlocMap);
 
+    // Dispose non-keepAlive blocs from the current instance
+    // Use disposeBloc method to ensure proper cleanup
     oldBlocInstanceMap.forEach((bloc) => {
-      if (!bloc._keepAlive) {
-        bloc._dispose();
+      if (!bloc._keepAlive && (bloc as any)._disposalState === 'active') {
+        this.disposeBloc(bloc);
       }
     });
 
     oldIsolatedBlocMap.forEach((blocArray) => {
       blocArray.forEach((bloc) => {
-        if (!bloc._keepAlive) {
-          bloc._dispose();
+        if (!bloc._keepAlive && (bloc as any)._disposalState === 'active') {
+          this.disposeBloc(bloc);
         }
       });
     });
 
+    // Clear registries (keep-alive blocs will be re-added by instance manager)
     this.blocInstanceMap.clear();
     this.isolatedBlocMap.clear();
     this.isolatedBlocIndex.clear();
@@ -208,10 +211,20 @@ export class Blac {
    * @param bloc - The bloc instance to dispose
    */
   disposeBloc = (bloc: BlocBase<unknown>): void => {
+    // Check if bloc is already disposed to prevent double disposal
+    if ((bloc as any)._disposalState !== 'active') {
+      this.log(`[${bloc._name}:${String(bloc._id)}] disposeBloc called on already disposed bloc`);
+      return;
+    }
+
     const base = bloc.constructor as unknown as BlocBaseAbstract;
     const key = this.createBlocInstanceMapKey(bloc._name, bloc._id);
     this.log(`[${bloc._name}:${String(bloc._id)}] disposeBloc called. Isolated: ${String(base.isolated)}`);
 
+    // First dispose the bloc to prevent further operations
+    bloc._dispose();
+    
+    // Then clean up from registries
     if (base.isolated) {
       this.unregisterIsolatedBlocInstance(bloc);
       this.blocInstanceMap.delete(key);
@@ -219,11 +232,9 @@ export class Blac {
       this.unregisterBlocInstance(bloc);
     }
     
-    // Actually dispose the bloc after unregistering it
-    bloc._dispose();
-    
     this.log('dispatched bloc', bloc)
   };
+  static get disposeBloc() { return Blac.instance.disposeBloc; }
 
   /**
    * Creates a unique key for a bloc instance in the map based on the bloc class name and instance ID
@@ -610,13 +621,16 @@ export class Blac {
    */
   validateConsumers = (): void => {
     for (const bloc of this.uidRegistry.values()) {
-      // This would need to be called periodically to clean up orphaned consumers
-      // Implementation depends on how we want to handle consumer validation
-      if (bloc._consumers.size === 0 && !bloc._keepAlive) {
+      // Validate consumers using the bloc's own validation method
+      bloc._validateConsumers();
+      
+      // Check if bloc should be disposed after validation
+      if (bloc._consumers.size === 0 && !bloc._keepAlive && (bloc as any)._disposalState === 'active') {
         // Schedule disposal for blocs with no consumers
         setTimeout(() => {
-          if (bloc._consumers.size === 0 && !bloc._keepAlive) {
-            bloc._dispose();
+          // Double-check conditions before disposal
+          if (bloc._consumers.size === 0 && !bloc._keepAlive && (bloc as any)._disposalState === 'active') {
+            this.disposeBloc(bloc);
           }
         }, 1000); // Give a grace period
       }
