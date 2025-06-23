@@ -519,10 +519,6 @@ export class Blac {
     if (base.isolated) {
       const isolatedBloc = this.findIsolatedBlocInstance<B>(blocClass, blocId);
       if (isolatedBloc) {
-        this.log(
-          `[${blocClass.name}:${String(blocId)}] (getBloc) Found existing isolated instance.`,
-          options,
-        );
         return isolatedBloc;
       } else {
         if (options.throwIfNotFound) {
@@ -532,10 +528,6 @@ export class Blac {
     } else {
       const registeredBloc = this.findRegisteredBlocInstance(blocClass, blocId);
       if (registeredBloc) {
-        this.log(
-          `[${blocClass.name}:${String(blocId)}] (getBloc) Found existing registered instance.`,
-          options,
-        );
         return registeredBloc;
       } else {
         if (options.throwIfNotFound) {
