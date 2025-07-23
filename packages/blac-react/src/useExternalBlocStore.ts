@@ -1,4 +1,4 @@
-import { Blac, BlacObserver, BlocBase, BlocBaseAbstract, BlocConstructor, BlocHookDependencyArrayFn, BlocState, generateUUID } from '@blac/core';
+import { Blac, BlacObserver, BlocBase, BlocBaseAbstract, BlocConstructor, BlocHookDependencyArrayFn, BlocState, BlocLifecycleState, generateUUID } from '@blac/core';
 import { useCallback, useMemo, useRef } from 'react';
 import { BlocHookOptions } from './useBloc';
 
@@ -64,6 +64,9 @@ const useExternalBlocStore = <
   // Track whether proxy-based dependency tracking has been initialized
   // This helps distinguish between direct external store usage and useBloc proxy usage
   const hasProxyTracking = useRef<boolean>(false);
+  
+  // Track the first successful state change to switch to property-based tracking
+  const hasSeenFirstStateChange = useRef<boolean>(false);
 
   const getBloc = useCallback(() => {
     return Blac.getBloc(bloc, {
@@ -85,11 +88,8 @@ const useExternalBlocStore = <
   const lastDependenciesRef = useRef<unknown[][] | undefined>(undefined);
   const lastStableSnapshot = useRef<BlocState<InstanceType<B>> | undefined>(undefined);
   
-  // Track bloc instance uid to prevent unnecessary store recreation
-  const blocUidRef = useRef<string | undefined>(undefined);
-  if (blocUidRef.current !== blocInstance.current?.uid) {
-    blocUidRef.current = blocInstance.current?.uid;
-  }
+  // Create stable external store object that survives React Strict Mode
+  const stableExternalStore = useRef<ExternalStore<B> | null>(null);
 
   const dependencyArray = useMemo(
     () =>
@@ -148,15 +148,22 @@ const useExternalBlocStore = <
             }
           }
 
-          // If no properties have been accessed through proxy
+          // If no properties have been accessed through proxy in this update cycle
           if (usedKeys.current.size === 0 && usedClassPropKeys.current.size === 0) {
-            // If proxy tracking has never been initialized, this is direct external store usage
-            // In this case, always track the entire state to ensure notifications
             if (!hasProxyTracking.current) {
+              // Direct external store usage - always track entire state
+              stateDependencies.push(newState);
+            } else if (!hasSeenFirstStateChange.current) {
+              // First state change with proxy - track entire state to ensure initial update works
+              stateDependencies.push(newState);
+              hasSeenFirstStateChange.current = true;
+            } else {
+              // Proxy tracking is enabled but no properties accessed in this cycle
+              // In React Strict Mode, this can happen when the subscription is set up
+              // but no proxy access has occurred yet - we should still track the entire state
+              // to ensure updates work properly
               stateDependencies.push(newState);
             }
-            // If proxy tracking was initialized but no properties accessed, 
-            // return empty dependencies to prevent unnecessary re-renders
           }
 
           currentDependencies = [stateDependencies, classDependencies];
@@ -175,13 +182,28 @@ const useExternalBlocStore = <
   // Store active subscriptions to reuse observers
   const activeObservers = useRef<Map<Function, { observer: BlacObserver<BlocState<InstanceType<B>>>, unsubscribe: () => void }>>(new Map());
 
-  const state: ExternalStore<B> = useMemo(() => {
-    return {
+  // Create stable external store once and reuse it
+  if (!stableExternalStore.current) {
+    stableExternalStore.current = {
       subscribe: (listener: (state: BlocState<InstanceType<B>>) => void) => {
-        
-        const currentInstance = blocInstance.current;
+        // Always get the latest instance at subscription time, not creation time
+        let currentInstance = blocInstance.current;
         if (!currentInstance) {
           return () => {}; // Return no-op if no instance
+        }
+
+        // Handle disposed blocs - check if we should get a fresh instance
+        if (currentInstance.isDisposed) {
+          // Try to get a fresh instance since the current one is disposed
+          const freshInstance = getBloc();
+          if (freshInstance && !freshInstance.isDisposed) {
+            // Update our reference to the fresh instance
+            blocInstance.current = freshInstance;
+            currentInstance = freshInstance;
+          } else {
+            // No fresh instance available, return no-op
+            return () => {};
+          }
         }
 
         // Check if we already have an observer for this listener
@@ -189,25 +211,31 @@ const useExternalBlocStore = <
         if (existing) {
           return existing.unsubscribe;
         }
+        
         const observer: BlacObserver<BlocState<InstanceType<B>>> = {
           fn: () => {
             try {
+              // Always get fresh instance at notification time to handle React Strict Mode
+              const notificationInstance = blocInstance.current;
+              if (!notificationInstance || notificationInstance.isDisposed) {
+                return;
+              }
               
               // Only reset dependency tracking if we're not using a custom selector
               // Custom selectors override proxy-based tracking entirely
-              if (!selector && !currentInstance.defaultDependencySelector) {
+              if (!selector && !notificationInstance.defaultDependencySelector) {
                 usedKeys.current = new Set();
                 usedClassPropKeys.current = new Set();
               }
 
               // Only trigger listener if there are actual subscriptions
-              listener(currentInstance.state);
+              listener(notificationInstance.state);
             } catch (e) {
               // Log any errors that occur during the listener callback
               // This ensures errors in listeners don't break the entire application
               console.error({
                 e,
-                blocInstance: currentInstance,
+                blocInstance: blocInstance.current,
                 dependencyArray,
               });
             }
@@ -218,12 +246,16 @@ const useExternalBlocStore = <
           id: rid,
         }
 
-        Blac.activateBloc(currentInstance);
+        // Only activate if the bloc is not disposed
+        if (!currentInstance.isDisposed) {
+          Blac.activateBloc(currentInstance);
+        }
 
         // Subscribe to the bloc's observer with the provided listener function
         // This will trigger the callback whenever the bloc's state changes
         const unSub = currentInstance._observer.subscribe(observer);
 
+        // Create a stable unsubscribe function
         const unsubscribe = () => {
           activeObservers.current.delete(listener);
           unSub();
@@ -235,11 +267,23 @@ const useExternalBlocStore = <
         // Return an unsubscribe function that can be called to clean up the subscription
         return unsubscribe;
       },
-      // Return an immutable snapshot of the current bloc state
+      
       getSnapshot: (): BlocState<InstanceType<B>> | undefined => {
         const instance = blocInstance.current;
         if (!instance) {
-          return {} as BlocState<InstanceType<B>>;
+          return undefined;
+        }
+
+        // For disposed blocs, return the last stable snapshot to prevent React errors
+        if (instance.isDisposed) {
+          return lastStableSnapshot.current || instance.state;
+        }
+
+        // For blocs in transitional states, allow state access but be cautious
+        const disposalState = (instance as any)._disposalState;
+        if (disposalState === BlocLifecycleState.DISPOSING) {
+          // Only return cached snapshot for actively disposing blocs
+          return lastStableSnapshot.current || instance.state;
         }
 
         const currentState = instance.state;
@@ -291,21 +335,21 @@ const useExternalBlocStore = <
         lastStableSnapshot.current = currentState;
         return currentState;
       },
-      // Server snapshot mirrors the client snapshot in this implementation
+      
       getServerSnapshot: (): BlocState<InstanceType<B>> | undefined => {
         const instance = blocInstance.current;
         if (!instance) {
-          return {} as BlocState<InstanceType<B>>;
+          return undefined;
         }
         return instance.state;
       },
-    }
-  }, []); // Store is stable - individual methods handle instance changes
+    };
+  }
 
   return {
     usedKeys,
     usedClassPropKeys,
-    externalStore: state,
+    externalStore: stableExternalStore.current!,
     instance: blocInstance,
     rid,
     hasProxyTracking,

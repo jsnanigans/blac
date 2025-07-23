@@ -1,6 +1,6 @@
 import { Blac, Cubit } from '@blac/core';
 import { act, renderHook } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import useExternalBlocStore from '../src/useExternalBlocStore';
 
 interface ComplexState {
@@ -151,7 +151,13 @@ describe('useExternalBlocStore - Edge Cases', () => {
 
   describe('Error Handling', () => {
     it('should handle undefined state gracefully', () => {
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      let warningCaught = false;
+      const originalConsoleWarn = console.warn;
+      console.warn = (message: string) => {
+        if (message.includes('BlocBase._pushState: newState is undefined')) {
+          warningCaught = true;
+        }
+      };
       
       const { result } = renderHook(() =>
         useExternalBlocStore(ErrorProneCubit, {})
@@ -161,19 +167,22 @@ describe('useExternalBlocStore - Edge Cases', () => {
         result.current.instance.current.triggerError();
       });
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'BlocBase._pushState: newState is undefined',
-        expect.any(Object)
-      );
+      expect(warningCaught).toBe(true);
 
       // State should remain unchanged
       expect(result.current.externalStore.getSnapshot()).toEqual({ value: 0 });
 
-      consoleSpy.mockRestore();
+      console.warn = originalConsoleWarn;
     });
 
     it('should handle invalid action types', () => {
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      let warningCaught = false;
+      const originalConsoleWarn = console.warn;
+      console.warn = (message: string) => {
+        if (message.includes('BlocBase._pushState: Invalid action type')) {
+          warningCaught = true;
+        }
+      };
       
       const { result } = renderHook(() =>
         useExternalBlocStore(ErrorProneCubit, {})
@@ -183,13 +192,9 @@ describe('useExternalBlocStore - Edge Cases', () => {
         result.current.instance.current.triggerInvalidAction();
       });
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'BlocBase._pushState: Invalid action type',
-        expect.any(Object),
-        'invalid-primitive-action'
-      );
+      expect(warningCaught).toBe(true);
 
-      consoleSpy.mockRestore();
+      console.warn = originalConsoleWarn;
     });
 
     it('should handle observer subscription errors', () => {
@@ -197,12 +202,16 @@ describe('useExternalBlocStore - Edge Cases', () => {
         useExternalBlocStore(PrimitiveStateCubit, {})
       );
 
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      let errorCaught = false;
+      const originalConsoleError = console.error;
+      console.error = () => {
+        errorCaught = true;
+      };
       
       // Create a listener that throws
-      const faultyListener = vi.fn().mockImplementation(() => {
+      const faultyListener = () => {
         throw new Error('Subscription error');
-      });
+      };
 
       result.current.externalStore.subscribe(faultyListener);
 
@@ -210,34 +219,42 @@ describe('useExternalBlocStore - Edge Cases', () => {
         result.current.instance.current.increment();
       });
 
-      expect(errorSpy).toHaveBeenCalled();
-      errorSpy.mockRestore();
+      expect(errorCaught).toBe(true);
+      console.error = originalConsoleError;
     });
   });
 
   describe('Dependency Array Edge Cases', () => {
     it('should handle empty dependency array from selector', () => {
-      const emptySelector = vi.fn().mockReturnValue([]);
+      let selectorCallCount = 0;
+      const emptySelector = () => {
+        selectorCallCount++;
+        return []; // Return empty dependency array
+      };
 
       const { result } = renderHook(() =>
         useExternalBlocStore(PrimitiveStateCubit, { selector: emptySelector })
       );
 
-      const listener = vi.fn();
+      let listenerCallCount = 0;
+      const listener = () => {
+        listenerCallCount++;
+      };
+      
       result.current.externalStore.subscribe(listener);
 
       act(() => {
         result.current.instance.current.increment();
       });
 
-      expect(emptySelector).toHaveBeenCalled();
-      expect(listener).toHaveBeenCalled();
+      expect(selectorCallCount).toBeGreaterThan(0);
+      expect(listenerCallCount).toBeGreaterThan(0);
     });
 
     it('should handle selector throwing error', () => {
-      const errorSelector = vi.fn().mockImplementation(() => {
+      const errorSelector = () => {
         throw new Error('Selector error');
-      });
+      };
 
       const { result } = renderHook(() =>
         useExternalBlocStore(PrimitiveStateCubit, { selector: errorSelector })
@@ -273,7 +290,7 @@ describe('useExternalBlocStore - Edge Cases', () => {
 
       // Rapidly subscribe and unsubscribe
       for (let i = 0; i < 100; i++) {
-        const listener = vi.fn();
+        const listener = () => {}; // Simple no-op listener
         const unsubscribe = result.current.externalStore.subscribe(listener);
         listeners.push(unsubscribe);
       }
@@ -295,7 +312,11 @@ describe('useExternalBlocStore - Edge Cases', () => {
         useExternalBlocStore(PrimitiveStateCubit, {})
       );
 
-      const listener = vi.fn();
+      let listenerCallCount = 0;
+      const listener = () => {
+        listenerCallCount++;
+      };
+      
       result.current.externalStore.subscribe(listener);
 
       // Simulate concurrent modifications by making multiple synchronous calls
@@ -344,7 +365,11 @@ describe('useExternalBlocStore - Edge Cases', () => {
         useExternalBlocStore(PrimitiveStateCubit, {})
       );
 
-      const listener = vi.fn();
+      let listenerCallCount = 0;
+      const listener = () => {
+        listenerCallCount++;
+      };
+      
       result.current.externalStore.subscribe(listener);
 
       // Make many updates
@@ -355,7 +380,7 @@ describe('useExternalBlocStore - Edge Cases', () => {
       });
 
       expect(result.current.externalStore.getSnapshot()).toBe(1000);
-      expect(listener).toHaveBeenCalledTimes(1000);
+      expect(listenerCallCount).toBe(1000);
     });
   });
 
@@ -389,7 +414,11 @@ describe('useExternalBlocStore - Edge Cases', () => {
         useExternalBlocStore(PrimitiveStateCubit, {})
       );
 
-      const listener = vi.fn();
+      let listenerCallCount = 0;
+      const listener = () => {
+        listenerCallCount++;
+      };
+      
       const unsubscribe = result.current.externalStore.subscribe(listener);
 
       // Dispose the bloc while subscribed

@@ -5,7 +5,7 @@
 // 2. Type assertions for _disposalState - private property access across inheritance hierarchy
 // 3. Constructor argument types - enables flexible bloc instantiation patterns
 // These 'any' usages are carefully controlled and don't compromise runtime type safety.
-import { BlocBase, BlocInstanceId } from './BlocBase';
+import { BlocBase, BlocInstanceId, BlocLifecycleState } from './BlocBase';
 import {
   BlocBaseAbstract,
   BlocConstructor,
@@ -212,7 +212,7 @@ export class Blac {
     // Use disposeBloc method to ensure proper cleanup
     oldBlocInstanceMap.forEach((bloc) => {
       // TODO: Type assertion for private property access (see explanation above)
-      if (!bloc._keepAlive && (bloc as any)._disposalState === 'active') {
+      if (!bloc._keepAlive && (bloc as any)._disposalState === BlocLifecycleState.ACTIVE) {
         this.disposeBloc(bloc);
       }
     });
@@ -220,7 +220,7 @@ export class Blac {
     oldIsolatedBlocMap.forEach((blocArray) => {
       blocArray.forEach((bloc) => {
         // TODO: Type assertion for private property access (see explanation above)
-        if (!bloc._keepAlive && (bloc as any)._disposalState === 'active') {
+        if (!bloc._keepAlive && (bloc as any)._disposalState === BlocLifecycleState.ACTIVE) {
           this.disposeBloc(bloc);
         }
       });
@@ -248,9 +248,12 @@ export class Blac {
     // This is safe because we know BlocBase has this property, but TypeScript can't verify
     // private property access across class boundaries. Alternative would be to make
     // _disposalState protected, but that would expose internal implementation details.
-    if ((bloc as any)._disposalState !== 'active') {
+    const currentState = (bloc as any)._disposalState;
+    const validStatesForDisposal = [BlocLifecycleState.ACTIVE, BlocLifecycleState.DISPOSAL_REQUESTED];
+    
+    if (!validStatesForDisposal.includes(currentState)) {
       this.log(
-        `[${bloc._name}:${String(bloc._id)}] disposeBloc called on already disposed bloc`,
+        `[${bloc._name}:${String(bloc._id)}] disposeBloc called on bloc in invalid state: ${currentState}`,
       );
       return;
     }
@@ -467,7 +470,7 @@ export class Blac {
 
   activateBloc = (bloc: BlocBase<unknown>): void => {
     // Don't activate disposed blocs
-    if ((bloc as any)._disposalState !== 'active') {
+    if ((bloc as any)._disposalState !== BlocLifecycleState.ACTIVE) {
       this.log(
         `[${bloc._name}:${String(bloc._id)}] activateBloc called on disposed bloc. Ignoring.`,
       );
@@ -704,7 +707,7 @@ export class Blac {
       if (
         bloc._consumers.size === 0 &&
         !bloc._keepAlive &&
-        (bloc as any)._disposalState === 'active'
+        (bloc as any)._disposalState === BlocLifecycleState.ACTIVE
       ) {
         // Schedule disposal for blocs with no consumers
         setTimeout(() => {
@@ -713,7 +716,7 @@ export class Blac {
           if (
             bloc._consumers.size === 0 &&
             !bloc._keepAlive &&
-            (bloc as any)._disposalState === 'active'
+            (bloc as any)._disposalState === BlocLifecycleState.ACTIVE
           ) {
             this.disposeBloc(bloc);
           }

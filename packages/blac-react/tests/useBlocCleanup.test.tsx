@@ -1,6 +1,6 @@
 import { Blac, Cubit } from '@blac/core';
 import { renderHook, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { beforeEach, describe, expect, test } from 'vitest';
 import { useBloc } from '../src';
 
 // Define a simple counter cubit for testing
@@ -54,7 +54,6 @@ class TestCubit extends Cubit<{ count: number }> {
 describe('useBloc cleanup and resource management', () => {
   beforeEach(() => {
     Blac.resetInstance();
-    vi.clearAllMocks();
   });
 
   test('should properly register and cleanup consumers when components mount and unmount', async () => {
@@ -144,13 +143,22 @@ describe('useBloc cleanup and resource management', () => {
   });
 
   test('should call onMount when the component mounts', () => {
-    const onMountMock = vi.fn();
+    let onMountCalled = false;
+    let mountedCubit: TestCubit | null = null;
     
-    renderHook(() => useBloc(TestCubit, { onMount: onMountMock }));
+    const onMount = (cubit: TestCubit) => {
+      onMountCalled = true;
+      mountedCubit = cubit;
+      cubit.increment(); // Modify state to verify callback execution
+    };
     
-    // Verify onMount was called
-    expect(onMountMock).toHaveBeenCalledTimes(1);
-    expect(onMountMock).toHaveBeenCalledWith(expect.any(TestCubit));
+    const { result } = renderHook(() => useBloc(TestCubit, { onMount }));
+    
+    // Verify onMount was called and state was modified
+    expect(onMountCalled).toBe(true);
+    expect(mountedCubit).toBeInstanceOf(TestCubit);
+    expect(mountedCubit?.uid).toBe(result.current[1].uid); // Same instance by uid
+    expect(result.current[0].count).toBe(1); // State should be incremented
   });
 
   test('should properly clean up when components conditionally render', async () => {

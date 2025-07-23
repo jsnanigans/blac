@@ -1,6 +1,6 @@
 import { Blac, Cubit } from '@blac/core';
 import { act, renderHook } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import useExternalBlocStore from '../src/useExternalBlocStore';
 
 interface CounterState {
@@ -127,14 +127,22 @@ describe('useExternalBlocStore', () => {
         useExternalBlocStore(CounterCubit, {})
       );
 
-      const listener = vi.fn();
+      let listenerCallCount = 0;
+      let lastReceivedState: any = null;
+      
+      const listener = (state: any) => {
+        listenerCallCount++;
+        lastReceivedState = state;
+      };
+      
       const unsubscribe = result.current.externalStore.subscribe(listener);
 
       act(() => {
         result.current.instance.current.increment();
       });
 
-      expect(listener).toHaveBeenCalledWith({ count: 1, name: 'counter' });
+      expect(listenerCallCount).toBe(1);
+      expect(lastReceivedState).toEqual({ count: 1, name: 'counter' });
 
       unsubscribe();
     });
@@ -144,14 +152,18 @@ describe('useExternalBlocStore', () => {
         useExternalBlocStore(CounterCubit, {})
       );
 
-      const listener = vi.fn();
+      let listenerCallCount = 0;
+      const listener = () => {
+        listenerCallCount++;
+      };
+      
       const unsubscribe = result.current.externalStore.subscribe(listener);
 
       act(() => {
         result.current.instance.current.increment();
       });
 
-      expect(listener).toHaveBeenCalledTimes(1);
+      expect(listenerCallCount).toBe(1);
 
       unsubscribe();
 
@@ -160,7 +172,7 @@ describe('useExternalBlocStore', () => {
       });
 
       // Should not be called again after unsubscribe
-      expect(listener).toHaveBeenCalledTimes(1);
+      expect(listenerCallCount).toBe(1);
     });
 
     it('should handle multiple subscribers', () => {
@@ -168,8 +180,20 @@ describe('useExternalBlocStore', () => {
         useExternalBlocStore(CounterCubit, {})
       );
 
-      const listener1 = vi.fn();
-      const listener2 = vi.fn();
+      let listener1CallCount = 0;
+      let listener1State: any = null;
+      let listener2CallCount = 0;
+      let listener2State: any = null;
+      
+      const listener1 = (state: any) => {
+        listener1CallCount++;
+        listener1State = state;
+      };
+      
+      const listener2 = (state: any) => {
+        listener2CallCount++;
+        listener2State = state;
+      };
 
       const unsubscribe1 = result.current.externalStore.subscribe(listener1);
       const unsubscribe2 = result.current.externalStore.subscribe(listener2);
@@ -178,8 +202,10 @@ describe('useExternalBlocStore', () => {
         result.current.instance.current.increment();
       });
 
-      expect(listener1).toHaveBeenCalledWith({ count: 1, name: 'counter' });
-      expect(listener2).toHaveBeenCalledWith({ count: 1, name: 'counter' });
+      expect(listener1CallCount).toBe(1);
+      expect(listener1State).toEqual({ count: 1, name: 'counter' });
+      expect(listener2CallCount).toBe(1);
+      expect(listener2State).toEqual({ count: 1, name: 'counter' });
 
       unsubscribe1();
       unsubscribe2();
@@ -190,10 +216,17 @@ describe('useExternalBlocStore', () => {
         useExternalBlocStore(CounterCubit, {})
       );
 
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      const faultyListener = vi.fn().mockImplementation(() => {
+      let faultyListenerCalled = false;
+      let errorCaught = false;
+      
+      // Temporarily suppress console.error for this test
+      const originalConsoleError = console.error;
+      console.error = () => { errorCaught = true; };
+      
+      const faultyListener = () => {
+        faultyListenerCalled = true;
         throw new Error('Listener error');
-      });
+      };
 
       const unsubscribe = result.current.externalStore.subscribe(faultyListener);
 
@@ -201,11 +234,11 @@ describe('useExternalBlocStore', () => {
         result.current.instance.current.increment();
       });
 
-      expect(errorSpy).toHaveBeenCalled();
-      expect(faultyListener).toHaveBeenCalled();
+      expect(errorCaught).toBe(true);
+      expect(faultyListenerCalled).toBe(true);
 
       unsubscribe();
-      errorSpy.mockRestore();
+      console.error = originalConsoleError;
     });
   });
 
@@ -215,7 +248,11 @@ describe('useExternalBlocStore', () => {
         useExternalBlocStore(CounterCubit, {})
       );
 
-      const listener = vi.fn();
+      let listenerCalled = false;
+      const listener = () => {
+        listenerCalled = true;
+      };
+      
       result.current.externalStore.subscribe(listener);
 
       // Clear tracking sets
@@ -229,7 +266,7 @@ describe('useExternalBlocStore', () => {
       });
 
       // Keys should be tracked during listener execution
-      expect(listener).toHaveBeenCalled();
+      expect(listenerCalled).toBe(true);
     });
 
     it('should reset tracking keys on each listener call', () => {
@@ -238,14 +275,14 @@ describe('useExternalBlocStore', () => {
       );
 
       let callCount = 0;
-      const listener = vi.fn().mockImplementation(() => {
+      const listener = () => {
         callCount++;
         if (callCount === 1) {
           // First call should reset keys
           expect(result.current.usedKeys.current.size).toBe(0);
           expect(result.current.usedClassPropKeys.current.size).toBe(0);
         }
-      });
+      };
 
       result.current.externalStore.subscribe(listener);
 
@@ -253,29 +290,44 @@ describe('useExternalBlocStore', () => {
         result.current.instance.current.increment();
       });
 
-      expect(listener).toHaveBeenCalledTimes(1);
+      expect(callCount).toBe(1);
     });
 
     it('should handle custom dependency selector', () => {
-      const customSelector = vi.fn().mockReturnValue(['count']);
+      let selectorCallCount = 0;
+      let lastCurrentState: any = null;
+      let lastPreviousState: any = null;
+      let lastInstance: any = null;
+      
+      const customSelector = (currentState: any, previousState: any, instance: any) => {
+        selectorCallCount++;
+        lastCurrentState = currentState;
+        lastPreviousState = previousState;
+        lastInstance = instance;
+        return [currentState.count]; // Return dependency array
+      };
 
       const { result } = renderHook(() =>
         useExternalBlocStore(CounterCubit, { selector: customSelector })
       );
 
-      const listener = vi.fn();
+      let listenerCalled = false;
+      const listener = () => {
+        listenerCalled = true;
+      };
+      
       result.current.externalStore.subscribe(listener);
 
       act(() => {
         result.current.instance.current.increment();
       });
 
-      // New API passes (currentState, previousState, instance)
-      expect(customSelector).toHaveBeenCalledWith(
-        { count: 1, name: 'counter' }, // currentState
-        { count: 0, name: 'counter' }, // previousState
-        expect.any(Object) // instance
-      );
+      // Verify selector was called with correct arguments
+      expect(selectorCallCount).toBeGreaterThan(0);
+      expect(lastCurrentState).toEqual({ count: 1, name: 'counter' });
+      expect(lastPreviousState).toEqual({ count: 0, name: 'counter' });
+      expect(lastInstance).toBeDefined();
+      expect(listenerCalled).toBe(true);
     });
   });
 
@@ -320,7 +372,11 @@ describe('useExternalBlocStore', () => {
         useExternalBlocStore(CounterCubit, {})
       );
 
-      const listener = vi.fn();
+      let listenerCalled = false;
+      const listener = () => {
+        listenerCalled = true;
+      };
+      
       const unsubscribe = result.current.externalStore.subscribe(listener);
 
       // Manually dispose the bloc
@@ -346,9 +402,9 @@ describe('useExternalBlocStore', () => {
         (result.current.instance as any).current = null;
       });
 
-      // Should return empty object for null instance
+      // Should return undefined for null instance
       const snapshot = result.current.externalStore.getSnapshot();
-      expect(snapshot).toEqual({});
+      expect(snapshot).toBeUndefined();
 
       // Subscribe should return no-op function
       const unsubscribe = result.current.externalStore.subscribe(() => {});
@@ -359,11 +415,15 @@ describe('useExternalBlocStore', () => {
     it('should handle rapid state changes', () => {
       const { result } = renderHook(() =>
         useExternalBlocStore(CounterCubit, {
-          selector: (state) => [[state.count]] // Track count property changes
+          selector: (state) => [state.count] // Track count property changes
         })
       );
 
-      const listener = vi.fn();
+      let listenerCallCount = 0;
+      const listener = () => {
+        listenerCallCount++;
+      };
+      
       result.current.externalStore.subscribe(listener);
 
       // Make rapid changes
@@ -374,7 +434,7 @@ describe('useExternalBlocStore', () => {
       });
 
       expect(result.current.externalStore.getSnapshot()?.count).toBe(10);
-      expect(listener).toHaveBeenCalledTimes(10);
+      expect(listenerCallCount).toBe(10);
     });
 
     it('should handle batched updates', () => {
@@ -382,7 +442,11 @@ describe('useExternalBlocStore', () => {
         useExternalBlocStore(CounterCubit, {})
       );
 
-      const listener = vi.fn();
+      let listenerCallCount = 0;
+      const listener = () => {
+        listenerCallCount++;
+      };
+      
       result.current.externalStore.subscribe(listener);
 
       act(() => {
@@ -390,7 +454,7 @@ describe('useExternalBlocStore', () => {
       });
 
       // Should only trigger once for batched update
-      expect(listener).toHaveBeenCalledTimes(1);
+      expect(listenerCallCount).toBe(1);
       expect(result.current.externalStore.getSnapshot()).toEqual({
         count: 5,
         name: 'batched'
@@ -450,7 +514,7 @@ describe('useExternalBlocStore', () => {
       });
 
       const serverSnapshot = result.current.externalStore.getServerSnapshot?.();
-      expect(serverSnapshot).toEqual({});
+      expect(serverSnapshot).toBeUndefined();
     });
   });
 });

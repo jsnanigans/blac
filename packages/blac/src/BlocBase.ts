@@ -4,6 +4,26 @@ import { generateUUID } from './utils/uuid';
 export type BlocInstanceId = string | number | undefined;
 type DependencySelector<S> = (currentState: S, previousState: S | undefined, instance: any) => unknown[];
 
+/**
+ * Enum representing the lifecycle states of a Bloc instance
+ * Used for atomic state transitions to prevent race conditions
+ */
+export enum BlocLifecycleState {
+  ACTIVE = 'active',
+  DISPOSAL_REQUESTED = 'disposal_requested',
+  DISPOSING = 'disposing',
+  DISPOSED = 'disposed'
+}
+
+/**
+ * Result of an atomic state transition operation
+ */
+export interface StateTransitionResult {
+  success: boolean;
+  currentState: BlocLifecycleState;
+  previousState: BlocLifecycleState;
+}
+
 // Define an interface for the static properties expected on a Bloc/Cubit constructor
 interface BlocStaticProperties {
   isolated: boolean;
@@ -87,9 +107,15 @@ export abstract class BlocBase<
 
   /**
    * @internal
-   * Disposal state to prevent race conditions
+   * Atomic disposal state to prevent race conditions
    */
-  private _disposalState: 'active' | 'disposing' | 'disposed' = 'active';
+  private _disposalState: BlocLifecycleState = BlocLifecycleState.ACTIVE;
+
+  /**
+   * @internal
+   * Timestamp when disposal was requested (for React Strict Mode grace period)
+   */
+  private _disposalRequestTime: number = 0;
 
   /**
    * @internal
@@ -148,7 +174,7 @@ export abstract class BlocBase<
     }
     
     // Schedule disposal if no live consumers remain
-    if (this._consumers.size === 0 && !this._keepAlive && this._disposalState === 'active') {
+    if (this._consumers.size === 0 && !this._keepAlive && this._disposalState === BlocLifecycleState.ACTIVE) {
       this._scheduleDisposal();
     }
   };
@@ -175,9 +201,23 @@ export abstract class BlocBase<
   /**
    * Returns the current state of the Bloc.
    * Use this getter to access the state in a read-only manner.
+   * Returns the state even during transitional lifecycle states for React compatibility.
    */
   get state(): S {
+    // Allow state access during all states except DISPOSED for React compatibility
+    if (this._disposalState === BlocLifecycleState.DISPOSED) {
+      // Return the last known state for disposed blocs to prevent crashes
+      return this._state;
+    }
     return this._state;
+  }
+
+  /**
+   * Returns whether this Bloc instance has been disposed.
+   * @returns true if the bloc is in DISPOSED state
+   */
+  get isDisposed(): boolean {
+    return this._disposalState === BlocLifecycleState.DISPOSED;
   }
 
   /**
@@ -203,31 +243,95 @@ export abstract class BlocBase<
 
   /**
    * @internal
+   * Performs atomic state transition using compare-and-swap semantics
+   * @param expectedState The expected current state
+   * @param newState The desired new state
+   * @returns Result indicating success/failure and state information
+   */
+  _atomicStateTransition(
+    expectedState: BlocLifecycleState,
+    newState: BlocLifecycleState
+  ): StateTransitionResult {
+    if (this._disposalState === expectedState) {
+      const previousState = this._disposalState;
+      this._disposalState = newState;
+      
+      // Log state transition for debugging
+      if ((globalThis as any).Blac?.enableLog) {
+        (globalThis as any).Blac?.log(
+          `[${this._name}:${this._id}] State transition: ${previousState} -> ${newState} (SUCCESS)`
+        );
+      }
+      
+      return {
+        success: true,
+        currentState: newState,
+        previousState
+      };
+    }
+    
+    // Log failed transition attempt
+    if ((globalThis as any).Blac?.enableLog) {
+      (globalThis as any).Blac?.log(
+        `[${this._name}:${this._id}] State transition failed: expected ${expectedState}, current ${this._disposalState}`
+      );
+    }
+    
+    return {
+      success: false,
+      currentState: this._disposalState,
+      previousState: expectedState
+    };
+  }
+
+  /**
+   * @internal
    * Cleans up resources and removes this Bloc from the system.
    * Notifies the Blac manager and clears all observers.
    */
-  _dispose() {
-    // Prevent re-entrant disposal using atomic state change
-    if (this._disposalState !== 'active') {
-      return;
+  _dispose(): boolean {
+    
+    // Step 1: Attempt atomic transition to DISPOSING state from either ACTIVE or DISPOSAL_REQUESTED
+    let transitionResult = this._atomicStateTransition(
+      BlocLifecycleState.ACTIVE,
+      BlocLifecycleState.DISPOSING
+    );
+    
+    // If that failed, try from DISPOSAL_REQUESTED state
+    if (!transitionResult.success) {
+      transitionResult = this._atomicStateTransition(
+        BlocLifecycleState.DISPOSAL_REQUESTED,
+        BlocLifecycleState.DISPOSING
+      );
     }
-    this._disposalState = 'disposing';
     
-    // Clear all consumers and their references
-    this._consumers.clear();
-    this._consumerRefs.clear();
+    if (!transitionResult.success) {
+      // Already disposing or disposed - idempotent operation
+      return false;
+    }
     
-    // Clear observer subscriptions
-    this._observer.clear();
-    
-    // Call user-defined disposal hook
-    this.onDispose?.();
-    
-    // Mark as fully disposed
-    this._disposalState = 'disposed';
-    
-    // The Blac manager will handle removal from registry
-    // This method is called by Blac.disposeBloc, so we don't need to call it again
+    try {
+      // Step 2: Perform cleanup operations
+      this._consumers.clear();
+      this._consumerRefs.clear();
+      this._observer.clear();
+      
+      // Call user-defined disposal hook
+      this.onDispose?.();
+      
+      // Step 3: Final state transition to DISPOSED
+      const finalResult = this._atomicStateTransition(
+        BlocLifecycleState.DISPOSING,
+        BlocLifecycleState.DISPOSED
+      );
+      
+      return finalResult.success;
+      
+    } catch (error) {
+      // Recovery: Reset state on cleanup failure
+      this._disposalState = BlocLifecycleState.ACTIVE;
+      throw error;
+    }
   }
 
   /**
@@ -250,13 +354,16 @@ export abstract class BlocBase<
    * @param consumerId The unique ID of the consumer being added
    * @param consumerRef Optional reference to the consumer object for cleanup validation
    */
-  _addConsumer = (consumerId: string, consumerRef?: object) => {
-    // Prevent adding consumers to disposed blocs
-    if (this._disposalState !== 'active') {
-      return;
+  _addConsumer = (consumerId: string, consumerRef?: object): boolean => {
+    // Atomic state validation - only allow consumer addition in ACTIVE state
+    if (this._disposalState !== BlocLifecycleState.ACTIVE) {
+      return false; // Clear failure indication
     }
     
-    if (this._consumers.has(consumerId)) return;
+    // Prevent duplicate consumers
+    if (this._consumers.has(consumerId)) return true;
+    
+    // Safe consumer addition
     this._consumers.add(consumerId);
     
     // Store WeakRef for proper memory management
@@ -268,6 +375,7 @@ export abstract class BlocBase<
     (globalThis as any).Blac?.log(`[${this._name}:${this._id}] Consumer added. Total consumers: ${this._consumers.size}`);
     
     // this._blac.dispatchEvent(BlacLifecycleEvent.BLOC_CONSUMER_ADDED, this, { consumerId });
+    return true;
   };
 
   /**
@@ -288,7 +396,7 @@ export abstract class BlocBase<
     (globalThis as any).Blac?.log(`[${this._name}:${this._id}] Consumer removed. Remaining consumers: ${this._consumers.size}, keepAlive: ${this._keepAlive}`);
     
     // If no consumers remain and not keep-alive, schedule disposal
-    if (this._consumers.size === 0 && !this._keepAlive && this._disposalState === 'active') {
+    if (this._consumers.size === 0 && !this._keepAlive && this._disposalState === BlocLifecycleState.ACTIVE) {
       // @ts-ignore - Blac is available globally
       (globalThis as any).Blac?.log(`[${this._name}:${this._id}] No consumers left and not keep-alive. Scheduling disposal.`);
       this._scheduleDisposal();
@@ -312,21 +420,65 @@ export abstract class BlocBase<
   /**
    * @internal
    * Schedules disposal of this bloc instance if it has no consumers
+   * Uses atomic state transitions to prevent race conditions
    */
-  private _scheduleDisposal() {
-    // Prevent multiple disposal attempts
-    if (this._disposalState !== 'active') {
+  private _scheduleDisposal(): void {
+    // Step 1: Atomic transition to DISPOSAL_REQUESTED
+    const requestResult = this._atomicStateTransition(
+      BlocLifecycleState.ACTIVE,
+      BlocLifecycleState.DISPOSAL_REQUESTED
+    );
+    
+    if (!requestResult.success) {
+      // Already requested, disposing, or disposed
       return;
     }
     
-    // Double-check conditions before disposal
-    if (this._consumers.size === 0 && !this._keepAlive) {
-      if (this._disposalHandler) {
-        this._disposalHandler(this as any);
-      } else {
-        this._dispose();
-      }
+    // Step 2: Verify disposal conditions under atomic protection
+    const shouldDispose = (
+      this._consumers.size === 0 && 
+      !this._keepAlive
+    );
+    
+    
+    if (!shouldDispose) {
+      // Conditions no longer met, revert to active
+      this._atomicStateTransition(
+        BlocLifecycleState.DISPOSAL_REQUESTED,
+        BlocLifecycleState.ACTIVE
+      );
+      return;
     }
+    
+    // Record disposal request time for tracking
+    this._disposalRequestTime = Date.now();
+    
+    // Step 3: Defer disposal until after current execution completes
+    // This allows React Strict Mode's immediate remount to cancel disposal
+    queueMicrotask(() => {
+      // Re-verify disposal conditions - React Strict Mode remount may have cancelled this
+      const stillShouldDispose = (
+        this._consumers.size === 0 && 
+        !this._keepAlive &&
+        this._observer.size === 0 &&
+        (this as any)._disposalState === BlocLifecycleState.DISPOSAL_REQUESTED
+      );
+      
+      if (stillShouldDispose) {
+        // No cancellation occurred, proceed with disposal
+        if (this._disposalHandler) {
+          this._disposalHandler(this as any);
+        } else {
+          this._dispose();
+        }
+      } else {
+        // Disposal was cancelled (React Strict Mode remount), revert to active
+        this._atomicStateTransition(
+          BlocLifecycleState.DISPOSAL_REQUESTED,
+          BlocLifecycleState.ACTIVE
+        );
+      }
+    });
   }
 
   lastUpdate = Date.now();

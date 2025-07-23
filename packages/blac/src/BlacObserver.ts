@@ -1,4 +1,5 @@
 import { Blac } from './Blac';
+import { BlocLifecycleState } from './BlocBase';
 import { BlocBase } from './BlocBase';
 import { BlocHookDependencyArrayFn } from './types';
 
@@ -59,8 +60,27 @@ export class BlacObservable<S = unknown> {
    * @returns A function that can be called to unsubscribe the observer
    */
   subscribe(observer: BlacObserver<S>): () => void {
+    // Check if bloc is disposed or in disposal process
+    const disposalState = (this.bloc as any)._disposalState;
+    if (disposalState === BlocLifecycleState.DISPOSED || 
+        disposalState === BlocLifecycleState.DISPOSING) {
+      Blac.log('BlacObservable.subscribe: Cannot subscribe to disposed/disposing bloc.', this.bloc, observer);
+      return () => {}; // Return no-op unsubscribe
+    }
+    
     Blac.log('BlacObservable.subscribe: Subscribing observer.', this.bloc, observer);
     this._observers.add(observer);
+    
+    // If we're in DISPOSAL_REQUESTED state, cancel the disposal since we have a new observer
+    if (disposalState === BlocLifecycleState.DISPOSAL_REQUESTED) {
+      Blac.log('BlacObservable.subscribe: Cancelling disposal due to new subscription.', this.bloc);
+      // Transition back to active state
+      (this.bloc as any)._atomicStateTransition(
+        BlocLifecycleState.DISPOSAL_REQUESTED,
+        BlocLifecycleState.ACTIVE
+      );
+    }
+    
     // Don't initialize lastState here - let it remain undefined for first-time detection
     return () => {
       Blac.log('BlacObservable.subscribe: Unsubscribing observer.', this.bloc, observer);
@@ -79,7 +99,7 @@ export class BlacObservable<S = unknown> {
     if (this.size === 0) {
       Blac.log('BlacObservable.unsubscribe: No observers left.', this.bloc);
       // Check if bloc should be disposed when both observers and consumers are gone
-      if (this.bloc._consumers.size === 0 && !this.bloc._keepAlive && (this.bloc as any)._disposalState === 'active') {
+      if (this.bloc._consumers.size === 0 && !this.bloc._keepAlive && (this.bloc as any)._disposalState === BlocLifecycleState.ACTIVE) {
         Blac.log(`[${this.bloc._name}:${this.bloc._id}] No observers or consumers left. Scheduling disposal.`);
         (this.bloc as any)._scheduleDisposal();
       }
