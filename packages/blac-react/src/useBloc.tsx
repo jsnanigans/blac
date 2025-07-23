@@ -8,6 +8,7 @@ import {
 import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
 import useExternalBlocStore from './useExternalBlocStore';
 import { DependencyTracker } from './DependencyTracker';
+import { globalComponentTracker } from './ComponentDependencyTracker';
 
 /**
  * Type definition for the return type of the useBloc hook
@@ -66,6 +67,7 @@ export default function useBloc<B extends BlocConstructor<BlocBase<any>>>(
     instance,
     rid,
     hasProxyTracking,
+    componentRef,
   } = useExternalBlocStore(bloc, options);
 
   const state = useSyncExternalStore<BlocState<InstanceType<B>>>(
@@ -116,29 +118,30 @@ export default function useBloc<B extends BlocConstructor<BlocBase<any>>>(
       return state;
     }
 
-    let proxy = stateProxyCache.current.get(state);
-    if (!proxy) {
-      proxy = new Proxy(state, {
-        get(target, prop) {
-          if (typeof prop === 'string') {
-            usedKeys.current.add(prop);
-            dependencyTracker.current?.trackStateAccess(prop);
-          }
-          const value = target[prop as keyof typeof target];
-          return value;
-        },
-        has(target, prop) {
-          return prop in target;
-        },
-        ownKeys(target) {
-          return Reflect.ownKeys(target);
-        },
-        getOwnPropertyDescriptor(target, prop) {
-          return Reflect.getOwnPropertyDescriptor(target, prop);
-        },
-      });
-      stateProxyCache.current.set(state as object, proxy as object);
-    }
+    // Always create a new proxy for each component to ensure proper tracking
+    // The small performance cost is worth the correctness of dependency tracking
+    const proxy = new Proxy(state, {
+      get(target, prop) {
+        if (typeof prop === 'string') {
+          // Track access in both legacy and component-aware systems
+          usedKeys.current.add(prop);
+          dependencyTracker.current?.trackStateAccess(prop);
+          globalComponentTracker.trackStateAccess(componentRef.current, prop);
+        }
+        const value = target[prop as keyof typeof target];
+        return value;
+      },
+      has(target, prop) {
+        return prop in target;
+      },
+      ownKeys(target) {
+        return Reflect.ownKeys(target);
+      },
+      getOwnPropertyDescriptor(target, prop) {
+        return Reflect.getOwnPropertyDescriptor(target, prop);
+      },
+    });
+    
     return proxy;
   }, [state]);
 
@@ -149,29 +152,27 @@ export default function useBloc<B extends BlocConstructor<BlocBase<any>>>(
       );
     }
 
-    let proxy = classProxyCache.current.get(instance.current);
-    if (!proxy) {
-      proxy = new Proxy(instance.current, {
-        get(target, prop) {
-          if (!target) {
-            throw new Error(
-              `[useBloc] Bloc target is null for ${bloc.name}. This should never happen - bloc target must be defined.`,
-            );
-          }
-          const value = target[prop as keyof InstanceType<B>];
-          if (typeof value !== 'function' && typeof prop === 'string') {
-            usedClassPropKeys.current.add(prop);
-            dependencyTracker.current?.trackClassAccess(prop);
-          }
-          return value;
-        },
-      });
-      classProxyCache.current.set(instance.current, proxy);
-    }
+    // Always create a new proxy for each component to ensure proper tracking
+    const proxy = new Proxy(instance.current, {
+      get(target, prop) {
+        if (!target) {
+          throw new Error(
+            `[useBloc] Bloc target is null for ${bloc.name}. This should never happen - bloc target must be defined.`,
+          );
+        }
+        const value = target[prop as keyof InstanceType<B>];
+        if (typeof value !== 'function' && typeof prop === 'string') {
+          // Track access in both legacy and component-aware systems
+          usedClassPropKeys.current.add(prop);
+          dependencyTracker.current?.trackClassAccess(prop);
+          globalComponentTracker.trackClassAccess(componentRef.current, prop);
+        }
+        return value;
+      },
+    });
+    
     return proxy;
   }, [instance.current?.uid]);
-
-  const componentRef = useRef({});
 
   useEffect(() => {
     const currentInstance = instance.current;

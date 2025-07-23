@@ -22,14 +22,14 @@ const GetterDemo: React.FC = () => {
   return (
     <div className="space-y-4">
       <p className="text-base text-muted-foreground">Component render count: {renderCountRef.current}</p>
-      
+
       <div>
         <Label htmlFor="textInputGetter">Edit Text:</Label>
-        <Input 
+        <Input
           id="textInputGetter"
-          type="text" 
-          value={state.text} 
-          onChange={(e) => cubit.updateText(e.target.value)} 
+          type="text"
+          value={state.text}
+          onChange={(e) => cubit.updateText(e.target.value)}
           className="w-full md:w-3/4 mt-2"
         />
       </div>
@@ -47,12 +47,12 @@ const GetterDemo: React.FC = () => {
         </Button>
       </div>
       <p className="text-sm text-muted-foreground mt-4">
-        This component primarily displays values derived from getters (`textLength`, `uppercasedText`). 
-        It should re-render when `state.text` changes (as the getters depend on it). 
+        This component primarily displays values derived from getters (`textLength`, `uppercasedText`).
+        It should re-render when `state.text` changes (as the getters depend on it).
         Changing other parts of `ComplexStateCubit` state (like `counter`) should not cause a re-render here if those parts are not directly used or via a getter that changes.
       </p>
     </div>
   );
 };
 
-export default GetterDemo; 
+export default GetterDemo;

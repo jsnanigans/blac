@@ -1,6 +1,7 @@
 import { Blac, BlacObserver, BlocBase, BlocBaseAbstract, BlocConstructor, BlocHookDependencyArrayFn, BlocState, BlocLifecycleState, generateUUID } from '@blac/core';
 import { useCallback, useMemo, useRef } from 'react';
 import { BlocHookOptions } from './useBloc';
+import { globalComponentTracker } from './ComponentDependencyTracker';
 
 export interface ExternalStore<
   B extends BlocConstructor<BlocBase<any>>
@@ -35,6 +36,7 @@ export interface ExternalBlacStore<
   instance: React.RefObject<InstanceType<B>>;
   rid: string;
   hasProxyTracking: React.RefObject<boolean>;
+  componentRef: React.RefObject<object>;
 }
 
 /**
@@ -57,6 +59,14 @@ const useExternalBlocStore = <
 
   const isIsolated = base.isolated;
   const effectiveBlocId = isIsolated ? rid : blocId;
+
+  // Component reference for global dependency tracker
+  const componentRef = useRef<object>({});
+  
+  // Register component with global tracker
+  useMemo(() => {
+    globalComponentTracker.registerComponent(rid, componentRef.current);
+  }, [rid]);
 
   const usedKeys = useRef<Set<string>>(new Set());
   const usedClassPropKeys = useRef<Set<string>>(new Set());
@@ -123,50 +133,36 @@ const useExternalBlocStore = <
           currentDependencies = [[newState], []]; // [primitiveStateArray, classArray]
         }
         else {
-          // For object states, track which properties were actually used
-          const stateDependencies: unknown[] = [];
-          const classDependencies: unknown[] = [];
+          // Use global component tracker for fine-grained dependency tracking
+          currentDependencies = globalComponentTracker.getComponentDependencies(
+            componentRef.current,
+            newState,
+            instance
+          );
           
-          // Add state property values that were accessed
-          for (const key of usedKeys.current) {
-            if (key in newState) {
-              stateDependencies.push(newState[key as keyof typeof newState]);
-            }
-          }
-
-          // Add class property values that were accessed
-          for (const key of usedClassPropKeys.current) {
-            if (key in instance) {
-              try {
-                const value = instance[key as keyof InstanceType<B>];
-                if (typeof value !== 'function') {
-                  classDependencies.push(value);
-                }
-              } catch (error) {
-                Blac.instance.log('useBloc Error', error);
-              }
-            }
-          }
-
-          // If no properties have been accessed through proxy in this update cycle
-          if (usedKeys.current.size === 0 && usedClassPropKeys.current.size === 0) {
+          // If no dependencies were tracked yet, this means it's initial render
+          // or no proxy access has occurred - track the entire state for safety
+          if (currentDependencies[0].length === 0 && currentDependencies[1].length === 0) {
             if (!hasProxyTracking.current) {
               // Direct external store usage - always track entire state
-              stateDependencies.push(newState);
+              currentDependencies = [[newState], []];
             } else if (!hasSeenFirstStateChange.current) {
               // First state change with proxy - track entire state to ensure initial update works
-              stateDependencies.push(newState);
+              currentDependencies = [[newState], []];
               hasSeenFirstStateChange.current = true;
             } else {
-              // Proxy tracking is enabled but no properties accessed in this cycle
-              // In React Strict Mode, this can happen when the subscription is set up
-              // but no proxy access has occurred yet - we should still track the entire state
-              // to ensure updates work properly
-              stateDependencies.push(newState);
+              // Subsequent updates with no tracked dependencies means nothing changed
+              // that this component cares about - use empty dependencies to prevent re-render
+              currentDependencies = [[], []];
             }
           }
-
-          currentDependencies = [stateDependencies, classDependencies];
+          
+          // Also update legacy refs for backward compatibility
+          const stateAccess = globalComponentTracker.getStateAccess(componentRef.current);
+          const classAccess = globalComponentTracker.getClassAccess(componentRef.current);
+          
+          usedKeys.current = stateAccess;
+          usedClassPropKeys.current = classAccess;
         }
 
         // Update tracked state
@@ -223,10 +219,15 @@ const useExternalBlocStore = <
               
               // Only reset dependency tracking if we're not using a custom selector
               // Custom selectors override proxy-based tracking entirely
-              if (!selector && !notificationInstance.defaultDependencySelector) {
-                usedKeys.current = new Set();
-                usedClassPropKeys.current = new Set();
-              }
+              // NOTE: Commenting out reset logic that was causing premature dependency clearing
+              // if (!selector && !notificationInstance.defaultDependencySelector) {
+              //   // Reset component-specific tracking instead of global refs
+              //   globalComponentTracker.resetComponent(componentRef.current);
+              //   
+              //   // Also reset legacy refs for backward compatibility
+              //   usedKeys.current = new Set();
+              //   usedClassPropKeys.current = new Set();
+              // }
 
               // Only trigger listener if there are actual subscriptions
               listener(notificationInstance.state);
@@ -353,6 +354,7 @@ const useExternalBlocStore = <
     instance: blocInstance,
     rid,
     hasProxyTracking,
+    componentRef,
   };
 };
 

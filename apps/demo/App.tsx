@@ -29,6 +29,7 @@ import {
   SECTION_STYLE,
 } from './lib/styles'; // Import the styles
 
+window.Blac = Blac; // Make Blac globally available for debugging
 // Simple Card replacement for demo purposes, adapted for modern look
 const DemoCard: React.FC<{
   title: string;

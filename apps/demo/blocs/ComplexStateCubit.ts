@@ -65,4 +65,4 @@ export class ComplexStateCubit extends Cubit<ComplexDemoState> {
   get uppercasedText(): string {
     return this.state.text.toUpperCase();
   }
-} 
+}
