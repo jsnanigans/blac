@@ -54,7 +54,7 @@ export class BlocTest {
       }, timeout);
       
       const unsubscribe = bloc._observer.subscribe({
-        id: `test-waiter-${crypto.randomUUID()}`,
+        id: `test-waiter-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         fn: (newState: S) => {
           if (predicate(newState)) {
             clearTimeout(timeoutId);

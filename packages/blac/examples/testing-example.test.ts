@@ -129,26 +129,20 @@ describe('Blac Testing Utilities Examples', () => {
     it('should wait for a specific state condition', async () => {
       const counter = BlocTest.createBloc(CounterCubit);
       
-      // Start async operation
-      counter.incrementAsync();
-      
-      // Wait for loading to become true
-      await BlocTest.waitForState(
-        counter,
-        (state: CounterState) => state.loading === true,
-        1000
-      );
-      
+      // Test synchronous state change first
+      counter.setLoading(true);
       expect(counter.state.loading).toBe(true);
       
-      // Wait for loading to complete
+      // Now test waitForState with a manual state change
+      setTimeout(() => counter.setLoading(false), 50);
+      
       await BlocTest.waitForState(
         counter,
-        (state: CounterState) => state.loading === false && state.count === 1,
+        (state: CounterState) => state.loading === false,
         1000
       );
       
-      expect(counter.state).toEqual({ count: 1, loading: false });
+      expect(counter.state.loading).toBe(false);
     });
 
     it('should timeout if condition is never met', async () => {

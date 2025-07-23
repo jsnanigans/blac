@@ -75,8 +75,8 @@ const useExternalBlocStore = <
   // This helps distinguish between direct external store usage and useBloc proxy usage
   const hasProxyTracking = useRef<boolean>(false);
   
-  // Track the first successful state change to switch to property-based tracking
-  const hasSeenFirstStateChange = useRef<boolean>(false);
+  // Track whether we've completed the initial render
+  const hasCompletedInitialRender = useRef<boolean>(false);
 
   const getBloc = useCallback(() => {
     return Blac.getBloc(bloc, {
@@ -141,18 +141,14 @@ const useExternalBlocStore = <
           );
           
           // If no dependencies were tracked yet, this means it's initial render
-          // or no proxy access has occurred - track the entire state for safety
+          // or no proxy access has occurred
           if (currentDependencies[0].length === 0 && currentDependencies[1].length === 0) {
             if (!hasProxyTracking.current) {
               // Direct external store usage - always track entire state
               currentDependencies = [[newState], []];
-            } else if (!hasSeenFirstStateChange.current) {
-              // First state change with proxy - track entire state to ensure initial update works
-              currentDependencies = [[newState], []];
-              hasSeenFirstStateChange.current = true;
             } else {
-              // Subsequent updates with no tracked dependencies means nothing changed
-              // that this component cares about - use empty dependencies to prevent re-render
+              // With proxy tracking enabled and no dependencies accessed,
+              // return empty dependencies to prevent re-renders
               currentDependencies = [[], []];
             }
           }
@@ -295,8 +291,9 @@ const useExternalBlocStore = <
         let dependenciesChanged = false;
         
         if (!lastDeps) {
-          // First time - dependencies changed
-          dependenciesChanged = true;
+          // First time - check if we have any dependencies
+          const hasAnyDeps = currentDependencies.some(arr => arr.length > 0);
+          dependenciesChanged = hasAnyDeps;
         } else if (lastDeps.length !== currentDependencies.length) {
           // Array structure changed
           dependenciesChanged = true;

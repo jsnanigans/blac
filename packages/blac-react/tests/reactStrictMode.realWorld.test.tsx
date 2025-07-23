@@ -79,39 +79,55 @@ describe('Real World React Strict Mode Behavior', () => {
   });
 
   test('should handle multiple rapid mount/unmount cycles like React Strict Mode', async () => {
-    const { result: firstMount } = renderHook(() => useBloc(RealWorldCounterCubit), {
+    // Create a specific cubit class for this test to avoid interference
+    class TestCounterCubit extends Cubit<CounterState> {
+      constructor() {
+        super({ count: 0 });
+      }
+
+      increment = () => {
+        this.patch({ count: this.state.count + 1 });
+      };
+    }
+
+    const { result: firstMount } = renderHook(() => useBloc(TestCounterCubit), {
       wrapper: ({ children }) => <StrictMode>{children}</StrictMode>
     });
 
-    const cubit = firstMount.current[1];
-    console.log('First mount observers:', cubit._observer._observers.size);
+    const firstCubit = firstMount.current[1];
+    const firstObserverCount = firstCubit._observer._observers.size;
+    console.log('First mount observers:', firstObserverCount);
 
     // Simulate React Strict Mode behavior: mount, unmount immediately, then remount
-    const { result: secondMount, unmount } = renderHook(() => useBloc(RealWorldCounterCubit), {
+    const { result: secondMount, unmount } = renderHook(() => useBloc(TestCounterCubit), {
       wrapper: ({ children }) => <StrictMode>{children}</StrictMode>
     });
 
-    console.log('Second mount observers:', cubit._observer._observers.size);
+    const secondCubit = secondMount.current[1];
+    console.log('Second mount observers:', secondCubit._observer._observers.size);
+    console.log('Same instance?', secondCubit === firstCubit);
 
     // Immediately unmount (simulating React Strict Mode)
     unmount();
-    console.log('After unmount observers:', cubit._observer._observers.size);
+    console.log('After unmount observers:', firstCubit._observer._observers.size);
 
     // Quick remount (React Strict Mode pattern)
-    const { result: thirdMount } = renderHook(() => useBloc(RealWorldCounterCubit), {
+    const { result: thirdMount } = renderHook(() => useBloc(TestCounterCubit), {
       wrapper: ({ children }) => <StrictMode>{children}</StrictMode>
     });
 
-    console.log('After remount observers:', cubit._observer._observers.size);
+    const thirdCubit = thirdMount.current[1];
+    console.log('After remount observers:', thirdCubit._observer._observers.size);
 
     // Should have observers for the final mount
-    expect(cubit._observer._observers.size).toBeGreaterThan(0);
+    expect(thirdCubit._observer._observers.size).toBeGreaterThan(0);
 
-    // State update should work
+    // State update should work - use the current cubit instance
     act(() => {
-      thirdMount.current[1].increment();
+      thirdCubit.increment();
     });
 
+    // Check the state from the current mount's perspective
     expect(thirdMount.current[0].count).toBe(1);
   });
 });

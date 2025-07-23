@@ -72,9 +72,10 @@ test("should rerender when state changes", async () => {
 });
 
 test("should not rerender when state changes that is not used", async () => {
-  const Counter: FC<{ num: number }> = ({ num }) => {
+  let localRenderCount = 0;
+  const CounterNoState: FC<{ num: number }> = ({ num }) => {
     const [, { increment }] = useBloc(CounterCubit, { props: { initialState: num } });
-    renderCount += 1;
+    localRenderCount += 1;
     return (
       <div>
         <button onClick={increment}>+1</button>
@@ -83,13 +84,13 @@ test("should not rerender when state changes that is not used", async () => {
     );
   };
 
-  render(<Counter num={3442} />);
+  render(<CounterNoState num={3442} />);
   const instance = screen.getByText("3442");
   expect(instance).toBeInTheDocument();
 
   // Initial render 
-  expect(renderCount).toBe(1);
+  expect(localRenderCount).toBe(1);
   await userEvent.click(screen.getByText("+1"));
   // Should not rerender because state is not used in component
-  expect(renderCount).toBe(1);
+  expect(localRenderCount).toBe(1);
 });
