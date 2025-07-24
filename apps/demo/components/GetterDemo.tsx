@@ -10,9 +10,15 @@ const ShowCount: React.FC = () => {
   return <span className="font-bold text-primary">{state.counter}</span>;
 };
 
+const ShowUppercased: React.FC = () => {
+  const [, bloc] = useBloc(ComplexStateCubit);
+  // cubit.uppercasedText
+  return <>{bloc.uppercasedText}</>;
+};
+
 const GetterDemo: React.FC = () => {
   const [state, cubit] = useBloc(ComplexStateCubit);
-  // This component specifically uses cubit.textLength and cubit.uppercasedText
+  // This component specifically uses cubit.textLength
 
   const renderCountRef = React.useRef(0);
   React.useEffect(() => {
@@ -36,7 +42,7 @@ const GetterDemo: React.FC = () => {
 
       <p className="text-base text-foreground">Current Text: <span className="font-bold text-lcars-beige-panel font-body normal-case">{state.text}</span></p>
       <p className="text-base text-foreground">Text Length (from getter): <span className="text-primary font-bold font-body normal-case">{cubit.textLength}</span></p>
-      <p className="text-base text-foreground">Uppercased Text (from getter): <span className="text-secondary font-bold font-body normal-case">{cubit.uppercasedText}</span></p>
+      <p className="text-base text-foreground">Uppercased Text (from getter): <span className="text-secondary font-bold font-body normal-case"><ShowUppercased /></span></p>
 
       <div className="flex flex-wrap gap-3 mt-4">
         <Button onClick={cubit.incrementCounter} variant="outline" size="sm">

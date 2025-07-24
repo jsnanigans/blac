@@ -161,13 +161,10 @@ const useExternalBlocStore = <B extends BlocConstructor<BlocBase<any>>>(
             currentDependencies[0].length === 0 &&
             currentDependencies[1].length === 0
           ) {
-            // Always track the entire state object when no specific properties are accessed
-            // This ensures:
-            // 1. Initial render gets state
-            // 2. RenderHook tests that don't access properties during render still update
-            // 3. Components that pass state to children without accessing it still update
-            // Trade-off: Components that only use cubit methods might re-render unnecessarily
-            currentDependencies = [[newState], []];
+            // If no properties were accessed, don't track anything
+            // This prevents unnecessary re-renders for components that only use methods
+            // Components must explicitly access state properties to subscribe to changes
+            currentDependencies = [[], []];
           }
 
           // Also update legacy refs for backward compatibility
