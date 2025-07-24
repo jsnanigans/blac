@@ -244,7 +244,12 @@ describe('useBloc Integration Tests', () => {
     });
 
     test('should handle multiple rapid state changes', async () => {
-      const { result } = renderHook(() => useBloc(CounterCubit));
+      const { result } = renderHook(() => {
+        const [state, cubit] = useBloc(CounterCubit);
+        // Access state during render to ensure dependency tracking
+        const _count = state.count;
+        return [state, cubit] as const;
+      });
 
       await act(async () => {
         result.current[1].increment();
@@ -257,7 +262,13 @@ describe('useBloc Integration Tests', () => {
     });
 
     test('should handle complex nested state updates', async () => {
-      const { result } = renderHook(() => useBloc(ComplexCubit));
+      const { result } = renderHook(() => {
+        const [state, cubit] = useBloc(ComplexCubit);
+        // Access nested state during render to ensure dependency tracking
+        const _name = state.user.name;
+        const _theme = state.user.preferences.theme;
+        return [state, cubit] as const;
+      });
 
       await act(async () => {
         result.current[1].updateUserName('Jane Doe');
@@ -556,9 +567,12 @@ describe('useBloc Integration Tests', () => {
         cubit.setCount(100); // Set initial value
       };
 
-      const { result } = renderHook(() => 
-        useBloc(CounterCubit, { onMount })
-      );
+      const { result } = renderHook(() => {
+        const [state, cubit] = useBloc(CounterCubit, { onMount });
+        // Access state during render to ensure dependency tracking
+        const _count = state.count;
+        return [state, cubit] as const;
+      });
 
       expect(mountCallCount).toBe(1);
       expect(mountedCubit?.uid).toBe(result.current[1].uid);
@@ -641,7 +655,12 @@ describe('useBloc Integration Tests', () => {
         };
       }
 
-      const { result } = renderHook(() => useBloc(ErrorCubit));
+      const { result } = renderHook(() => {
+        const [state, cubit] = useBloc(ErrorCubit);
+        // Access state during render to ensure dependency tracking
+        const _count = state.count;
+        return [state, cubit] as const;
+      });
       const [, cubit] = result.current;
 
       // Normal operation should work
@@ -696,7 +715,12 @@ describe('useBloc Integration Tests', () => {
     });
 
     test('should handle high-frequency updates efficiently', async () => {
-      const { result } = renderHook(() => useBloc(CounterCubit));
+      const { result } = renderHook(() => {
+        const [state, cubit] = useBloc(CounterCubit);
+        // Access state during render to ensure dependency tracking
+        const _count = state.count;
+        return [state, cubit] as const;
+      });
 
       const iterations = 1000;
       const start = performance.now();

@@ -204,8 +204,8 @@ describe('MultiCubitComponent render behavior', () => {
     await act(async () => {
       await userEvent.click(screen.getByTestId('increment-age-unused'));
     });
-    // Will re-render due to trade-off: components with useBloc always track state changes
-    expect(componentRenderCount).toBe(3);
+    // Should NOT re-render - ageState is not accessed in the component
+    expect(componentRenderCount).toBe(2);
   });
 
   test("component using cubit's class instance properties", async () => {
@@ -294,8 +294,8 @@ describe('MultiCubitComponent render behavior', () => {
     await act(async () => {
       await userEvent.click(screen.getByTestId('set-name-irrelevant'));
     });
-    // Will re-render due to trade-off: components with useBloc always track state changes
-    expect(componentRenderCount).toBe(4);
+    // Should NOT re-render - nameState is not accessed in the component
+    expect(componentRenderCount).toBe(3);
   });
 
   test('cross-cubit update in onMount', async () => {

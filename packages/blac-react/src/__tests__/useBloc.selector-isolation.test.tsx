@@ -323,4 +323,3 @@ describe('useBloc selector isolation', () => {
     expect(renderCounts.childWithOnlyMethodAccess).toHaveBeenCalledTimes(1);
   });
 });
-

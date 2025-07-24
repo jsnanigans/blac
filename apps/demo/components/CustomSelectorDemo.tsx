@@ -18,7 +18,6 @@ const CustomSelectorDisplay: React.FC = () => {
       return [db3, firstChar];
     },
   });
-  console.log('CustomSelectorDisplay re-rendered', state, cubit);
 
   const db3 = state.counter % 3 === 0;
   const firstChar = state.text.length > 0 ? state.text[0] : '';
@@ -40,7 +39,7 @@ const CustomSelectorDisplay: React.FC = () => {
         </span>
       </p>
       <p className="text-base text-foreground">
-        Is counter divisible by 3?{' '}
+        Is Counter Even?{' '}
         <span className="font-bold text-lcars-blue-light font-body normal-case">
           {db3 ? 'Yes' : 'No'}
         </span>
@@ -64,8 +63,9 @@ const CustomSelectorDisplay: React.FC = () => {
         </span>
       </p>
       <p className="text-sm italic mt-2 text-muted-foreground">
-        This component re-renders only when the count is divisible by 3, or the
-        first character of the text changes.
+        This component re-renders only when the even/odd status of the counter
+        changes, or when the first character of the text changes, or when
+        `cubit.uppercasedText` changes.
       </p>
     </div>
   );
@@ -76,14 +76,23 @@ const ShowAnotherCount: React.FC = () => {
   return <span className="font-bold text-primary">{state.anotherCounter}</span>;
 };
 
-const ShowInfoAndButtons: React.FC = () => {
-  const [state, cubit] = useBloc(ComplexStateCubit);
+const CustomSelectorDemo: React.FC = () => {
+  const [state, cubit] = useBloc(ComplexStateCubit); // For controlling the cubit
+
   return (
     <div className="space-y-4">
+      <CustomSelectorDisplay />
       <div className="space-y-3 mt-4">
         <div className="flex flex-wrap gap-3">
           <Button onClick={cubit.incrementCounter} variant="default" size="sm">
-            Increment Counter [{state.counter}]
+            Increment Counter
+          </Button>
+          <Button
+            onClick={cubit.incrementAnotherCounter}
+            variant="outline"
+            size="sm"
+          >
+            INC OTHER COUNT (NO RE-RENDER) [<ShowAnotherCount />]
           </Button>
         </div>
         <div className="flex items-center gap-2 mt-3">
@@ -111,24 +120,6 @@ const ShowInfoAndButtons: React.FC = () => {
         to `counter` or `text`.
       </p>
     </div>
-  );
-};
-
-const CustomSelectorDemo: React.FC = () => {
-  const [, cubit] = useBloc(ComplexStateCubit);
-  console.log('CustomSelectorDemo re-rendered');
-  return (
-    <>
-      <CustomSelectorDisplay />
-      <ShowInfoAndButtons />
-      <Button
-        onClick={cubit.incrementAnotherCounter}
-        variant="outline"
-        size="sm"
-      >
-        INC OTHER COUNT (NO RE-RENDER) [<ShowAnotherCount />]
-      </Button>
-    </>
   );
 };
 

@@ -152,7 +152,12 @@ describe('useBloc cleanup and resource management', () => {
       cubit.increment(); // Modify state to verify callback execution
     };
     
-    const { result } = renderHook(() => useBloc(TestCubit, { onMount }));
+    const { result } = renderHook(() => {
+      const [state, cubit] = useBloc(TestCubit, { onMount });
+      // Access state during render to ensure dependency tracking
+      const _count = state.count;
+      return [state, cubit] as const;
+    });
     
     // Verify onMount was called and state was modified
     expect(onMountCalled).toBe(true);

@@ -168,7 +168,7 @@ describe('Multi-Component Shared Cubit Dependency Tracking', () => {
     expect(textOnlyRenders).toBe(1);    // Should NOT re-render
     expect(flagOnlyRenders).toBe(1);    // Should NOT re-render  
     expect(getterOnlyRenders).toBe(1);  // Should NOT re-render (getter doesn't depend on counter)
-    expect(noStateRenders).toBe(2);     // Will re-render (trade-off: components with useBloc always track state)
+    expect(noStateRenders).toBe(1);     // Should NOT re-render (doesn't access state)
     expect(multiplePropsRenders).toBe(2); // Should re-render (accesses counter)
 
     // Test 2: Update text
@@ -185,7 +185,7 @@ describe('Multi-Component Shared Cubit Dependency Tracking', () => {
     expect(textOnlyRenders).toBe(2);    // Should re-render
     expect(flagOnlyRenders).toBe(1);    // Should NOT re-render
     expect(getterOnlyRenders).toBe(1);  // Should NOT re-render (proxy can't track getter internals)
-    expect(noStateRenders).toBe(3);     // Will re-render (trade-off: components with useBloc always track state)
+    expect(noStateRenders).toBe(1);     // Should NOT re-render (doesn't access state)
     expect(multiplePropsRenders).toBe(3); // Should re-render (accesses text)
 
     // Test 3: Toggle flag
@@ -200,7 +200,7 @@ describe('Multi-Component Shared Cubit Dependency Tracking', () => {
     expect(textOnlyRenders).toBe(2);    // Should NOT re-render
     expect(flagOnlyRenders).toBe(2);    // Should re-render
     expect(getterOnlyRenders).toBe(1);  // Should NOT re-render (getter only depends on text)
-    expect(noStateRenders).toBe(4);     // Will re-render (trade-off: components with useBloc always track state)
+    expect(noStateRenders).toBe(1);     // Should NOT re-render (doesn't access state)
     expect(multiplePropsRenders).toBe(3); // Should NOT re-render (doesn't access flag)
   });
 

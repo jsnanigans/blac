@@ -60,7 +60,6 @@ export default function useBloc<B extends BlocConstructor<BlocBase<any>>>(
   bloc: B,
   options?: BlocHookOptions<InstanceType<B>>,
 ): HookTypes<B> {
-  console.log(bloc.name, 'useBloc called with options:', options);
   const {
     externalStore,
     usedKeys,
@@ -121,9 +120,6 @@ export default function useBloc<B extends BlocConstructor<BlocBase<any>>>(
     const proxy = new Proxy(state, {
       get(target, prop) {
         if (typeof prop === 'string') {
-          console.log(
-            `[useBloc] Accessing state property '${prop}' in bloc ${bloc.name}`,
-          )
           // Track access in both legacy and component-aware systems
           usedKeys.current.add(prop);
           dependencyTracker.current?.trackStateAccess(prop);
@@ -146,12 +142,6 @@ export default function useBloc<B extends BlocConstructor<BlocBase<any>>>(
     return proxy;
   }, [state]);
 
-  console.log(
-    `[useBloc] Bloc ${bloc.name} state
-    accessed with keys: ${Array.from(usedKeys.current).join(', ')}`,
-    options
-  );
-
   const returnClass = useMemo(() => {
     if (!instance.current) {
       throw new Error(
@@ -166,9 +156,6 @@ export default function useBloc<B extends BlocConstructor<BlocBase<any>>>(
     // Always create a new proxy for each component to ensure proper tracking
     const proxy = new Proxy(instance.current, {
       get(target, prop) {
-        console.log(
-          `[useBloc] Accessing class property '${String(prop)}' in bloc ${bloc.name}`,
-        );
         if (!target) {
           throw new Error(
             `[useBloc] Bloc target is null for ${bloc.name}. This should never happen - bloc target must be defined.`,

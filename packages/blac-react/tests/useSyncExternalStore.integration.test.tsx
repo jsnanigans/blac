@@ -206,7 +206,9 @@ describe('useSyncExternalStore Integration', () => {
 
   describe('Snapshot Management', () => {
     test('should return correct snapshots', () => {
-      const { result } = renderHook(() => useExternalBlocStore(CounterCubit, {}));
+      // Use a selector to explicitly track dependencies
+      const selector = (state: CounterState) => [state.count, state.step];
+      const { result } = renderHook(() => useExternalBlocStore(CounterCubit, { selector }));
       const { externalStore, instance } = result.current;
 
       // Initial snapshot
@@ -323,7 +325,9 @@ describe('useSyncExternalStore Integration', () => {
   describe('React useSyncExternalStore Integration', () => {
     test('should work correctly with React useSyncExternalStore', () => {
       const TestComponent: FC = () => {
-        const { externalStore, instance } = useExternalBlocStore(CounterCubit, {});
+        // Use a selector to track count property
+        const selector = (state: CounterState) => [state.count];
+        const { externalStore, instance } = useExternalBlocStore(CounterCubit, { selector });
         
         const state = useSyncExternalStore(
           externalStore.subscribe,
@@ -354,7 +358,9 @@ describe('useSyncExternalStore Integration', () => {
 
     test('should handle rapid state changes with React', () => {
       const TestComponent: FC = () => {
-        const { externalStore, instance } = useExternalBlocStore(CounterCubit, {});
+        // Use a selector to track count property
+        const selector = (state: CounterState) => [state.count];
+        const { externalStore, instance } = useExternalBlocStore(CounterCubit, { selector });
         
         const state = useSyncExternalStore(
           externalStore.subscribe,
@@ -391,7 +397,9 @@ describe('useSyncExternalStore Integration', () => {
 
     test('should handle async state changes', async () => {
       const TestComponent: FC = () => {
-        const { externalStore, instance } = useExternalBlocStore(AsyncCubit, {});
+        // Use a selector to track all AsyncState properties
+        const selector = (state: AsyncState) => [state.loading, state.data, state.error];
+        const { externalStore, instance } = useExternalBlocStore(AsyncCubit, { selector });
         
         const state = useSyncExternalStore(
           externalStore.subscribe,

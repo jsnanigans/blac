@@ -161,10 +161,15 @@ const useExternalBlocStore = <B extends BlocConstructor<BlocBase<any>>>(
             currentDependencies[0].length === 0 &&
             currentDependencies[1].length === 0
           ) {
-            // If no properties were accessed, don't track anything
-            // This prevents unnecessary re-renders for components that only use methods
-            // Components must explicitly access state properties to subscribe to changes
-            currentDependencies = [[], []];
+            // For initial render, we need to trigger the first update
+            // For subsequent renders with no dependencies, we'll return empty arrays
+            if (!hasCompletedInitialRender.current) {
+              // Track a synthetic dependency for initial render only
+              currentDependencies = [[Symbol('initial-render')], []];
+            } else {
+              // No dependencies tracked = no re-renders needed
+              currentDependencies = [[], []];
+            }
           }
 
           // Also update legacy refs for backward compatibility
