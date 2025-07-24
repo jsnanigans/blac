@@ -1,17 +1,27 @@
-import { Blac, BlacObserver, BlocBase, BlocBaseAbstract, BlocConstructor, BlocHookDependencyArrayFn, BlocState, BlocLifecycleState, generateUUID } from '@blac/core';
+import {
+  Blac,
+  BlacObserver,
+  BlocBase,
+  BlocBaseAbstract,
+  BlocConstructor,
+  BlocHookDependencyArrayFn,
+  BlocState,
+  BlocLifecycleState,
+  generateUUID,
+} from '@blac/core';
 import { useCallback, useMemo, useRef } from 'react';
 import { BlocHookOptions } from './useBloc';
 import { globalComponentTracker } from './ComponentDependencyTracker';
 
-export interface ExternalStore<
-  B extends BlocConstructor<BlocBase<any>>
-> {
+export interface ExternalStore<B extends BlocConstructor<BlocBase<any>>> {
   /**
    * Subscribes to changes in the store and returns an unsubscribe function.
    * @param onStoreChange - Callback function that will be called whenever the store changes
    * @returns A function that can be called to unsubscribe from store changes
    */
-  subscribe: (onStoreChange: (state: BlocState<InstanceType<B>>) => void) => () => void;
+  subscribe: (
+    onStoreChange: (state: BlocState<InstanceType<B>>) => void,
+  ) => () => void;
 
   /**
    * Gets the current snapshot of the store state.
@@ -27,9 +37,7 @@ export interface ExternalStore<
   getServerSnapshot?: () => BlocState<InstanceType<B>> | undefined;
 }
 
-export interface ExternalBlacStore<
-  B extends BlocConstructor<BlocBase<any>>
-> {
+export interface ExternalBlacStore<B extends BlocConstructor<BlocBase<any>>> {
   usedKeys: React.RefObject<Set<string>>;
   usedClassPropKeys: React.RefObject<Set<string>>;
   externalStore: ExternalStore<B>;
@@ -43,9 +51,7 @@ export interface ExternalBlacStore<
  * Creates an external store that wraps a Bloc instance, providing a React-compatible interface
  * for subscribing to and accessing bloc state.
  */
-const useExternalBlocStore = <
-  B extends BlocConstructor<BlocBase<any>>
->(
+const useExternalBlocStore = <B extends BlocConstructor<BlocBase<any>>>(
   bloc: B,
   options: BlocHookOptions<InstanceType<B>> | undefined,
 ): ExternalBlacStore<B> => {
@@ -62,7 +68,7 @@ const useExternalBlocStore = <
 
   // Component reference for global dependency tracker
   const componentRef = useRef<object>({});
-  
+
   // Register component with global tracker
   useMemo(() => {
     globalComponentTracker.registerComponent(rid, componentRef.current);
@@ -70,11 +76,11 @@ const useExternalBlocStore = <
 
   const usedKeys = useRef<Set<string>>(new Set());
   const usedClassPropKeys = useRef<Set<string>>(new Set());
-  
+
   // Track whether proxy-based dependency tracking has been initialized
   // This helps distinguish between direct external store usage and useBloc proxy usage
   const hasProxyTracking = useRef<boolean>(false);
-  
+
   // Track whether we've completed the initial render
   const hasCompletedInitialRender = useRef<boolean>(false);
 
@@ -82,7 +88,7 @@ const useExternalBlocStore = <
     return Blac.getBloc(bloc, {
       id: effectiveBlocId,
       props,
-      instanceRef: rid
+      instanceRef: rid,
     });
   }, [bloc, effectiveBlocId, props, rid]);
 
@@ -94,16 +100,23 @@ const useExternalBlocStore = <
   }, [getBloc]);
 
   // Track previous state and dependencies for selector
-  const previousStateRef = useRef<BlocState<InstanceType<B>> | undefined>(undefined);
+  const previousStateRef = useRef<BlocState<InstanceType<B>> | undefined>(
+    undefined,
+  );
   const lastDependenciesRef = useRef<unknown[][] | undefined>(undefined);
-  const lastStableSnapshot = useRef<BlocState<InstanceType<B>> | undefined>(undefined);
-  
+  const lastStableSnapshot = useRef<BlocState<InstanceType<B>> | undefined>(
+    undefined,
+  );
+
   // Create stable external store object that survives React Strict Mode
   const stableExternalStore = useRef<ExternalStore<B> | null>(null);
 
   const dependencyArray = useMemo(
     () =>
-      (newState: BlocState<InstanceType<B>>, oldState?: BlocState<InstanceType<B>>): unknown[][] => {
+      (
+        newState: BlocState<InstanceType<B>>,
+        oldState?: BlocState<InstanceType<B>>,
+      ): unknown[][] => {
         const instance = blocInstance.current;
 
         if (!instance) {
@@ -112,7 +125,7 @@ const useExternalBlocStore = <
 
         // Use the provided oldState or fall back to our tracked previous state
         const previousState = oldState ?? previousStateRef.current;
-        
+
         let currentDependencies: unknown[][];
 
         // Use custom dependency selector if provided
@@ -123,7 +136,11 @@ const useExternalBlocStore = <
         }
         // Fall back to bloc's default dependency selector if available
         else if (instance.defaultDependencySelector) {
-          const flatDeps = instance.defaultDependencySelector(newState, previousState, instance);
+          const flatDeps = instance.defaultDependencySelector(
+            newState,
+            previousState,
+            instance,
+          );
           // Wrap flat default selector result in the two-array structure for consistency
           currentDependencies = [flatDeps, []]; // [defaultSelectorDeps, classArray]
         }
@@ -131,17 +148,19 @@ const useExternalBlocStore = <
         else if (typeof newState !== 'object') {
           // Default behavior for primitive states: re-render if the state itself changes.
           currentDependencies = [[newState], []]; // [primitiveStateArray, classArray]
-        }
-        else {
+        } else {
           // Use global component tracker for fine-grained dependency tracking
           currentDependencies = globalComponentTracker.getComponentDependencies(
             componentRef.current,
             newState,
-            instance
+            instance,
           );
-          
+
           // If no dependencies were tracked yet, we need to decide what to track
-          if (currentDependencies[0].length === 0 && currentDependencies[1].length === 0) {
+          if (
+            currentDependencies[0].length === 0 &&
+            currentDependencies[1].length === 0
+          ) {
             // Always track the entire state object when no specific properties are accessed
             // This ensures:
             // 1. Initial render gets state
@@ -150,11 +169,15 @@ const useExternalBlocStore = <
             // Trade-off: Components that only use cubit methods might re-render unnecessarily
             currentDependencies = [[newState], []];
           }
-          
+
           // Also update legacy refs for backward compatibility
-          const stateAccess = globalComponentTracker.getStateAccess(componentRef.current);
-          const classAccess = globalComponentTracker.getClassAccess(componentRef.current);
-          
+          const stateAccess = globalComponentTracker.getStateAccess(
+            componentRef.current,
+          );
+          const classAccess = globalComponentTracker.getClassAccess(
+            componentRef.current,
+          );
+
           usedKeys.current = stateAccess;
           usedClassPropKeys.current = classAccess;
         }
@@ -162,15 +185,22 @@ const useExternalBlocStore = <
         // Update tracked state
         previousStateRef.current = newState;
 
-
         // Return the dependencies for BlacObserver to compare
         return currentDependencies;
-        },
-      [],
-    );
+      },
+    [],
+  );
 
   // Store active subscriptions to reuse observers
-  const activeObservers = useRef<Map<Function, { observer: BlacObserver<BlocState<InstanceType<B>>>, unsubscribe: () => void }>>(new Map());
+  const activeObservers = useRef<
+    Map<
+      Function,
+      {
+        observer: BlacObserver<BlocState<InstanceType<B>>>;
+        unsubscribe: () => void;
+      }
+    >
+  >(new Map());
 
   // Create stable external store once and reuse it
   if (!stableExternalStore.current) {
@@ -202,7 +232,7 @@ const useExternalBlocStore = <
           existing.unsubscribe();
           activeObservers.current.delete(listener);
         }
-        
+
         const observer: BlacObserver<BlocState<InstanceType<B>>> = {
           fn: () => {
             try {
@@ -211,20 +241,19 @@ const useExternalBlocStore = <
               if (!notificationInstance || notificationInstance.isDisposed) {
                 return;
               }
-              
+
               // Only reset dependency tracking if we're not using a custom selector
               // Custom selectors override proxy-based tracking entirely
               // NOTE: Commenting out reset logic that was causing premature dependency clearing
               // if (!selector && !notificationInstance.defaultDependencySelector) {
               //   // Reset component-specific tracking instead of global refs
               //   globalComponentTracker.resetComponent(componentRef.current);
-              //   
+              //
               //   // Also reset legacy refs for backward compatibility
               //   usedKeys.current = new Set();
               //   usedClassPropKeys.current = new Set();
               // }
 
-              
               // Only trigger listener if there are actual subscriptions
               listener(notificationInstance.state);
             } catch (e) {
@@ -241,14 +270,13 @@ const useExternalBlocStore = <
           dependencyArray,
           // Use the provided id to identify this subscription
           id: rid,
-        }
+        };
 
         // Only activate if the bloc is not disposed
         if (!currentInstance.isDisposed) {
           Blac.activateBloc(currentInstance);
         }
 
-        
         // Subscribe to the bloc's observer with the provided listener function
         // This will trigger the callback whenever the bloc's state changes
         const unSub = currentInstance._observer.subscribe(observer);
@@ -265,7 +293,7 @@ const useExternalBlocStore = <
         // Return an unsubscribe function that can be called to clean up the subscription
         return unsubscribe;
       },
-      
+
       getSnapshot: (): BlocState<InstanceType<B>> | undefined => {
         const instance = blocInstance.current;
         if (!instance) {
@@ -285,38 +313,49 @@ const useExternalBlocStore = <
         }
 
         const currentState = instance.state;
-        const currentDependencies = dependencyArray(currentState, previousStateRef.current);
-        
-        
+        const currentDependencies = dependencyArray(
+          currentState,
+          previousStateRef.current,
+        );
+
         // Check if dependencies have changed using the two-array comparison logic
         const lastDeps = lastDependenciesRef.current;
         let dependenciesChanged = false;
-        
+
         // Check if this is a primitive state (number, string, boolean, etc)
-        const isPrimitive = typeof currentState !== 'object' || currentState === null;
-        
+        const isPrimitive =
+          typeof currentState !== 'object' || currentState === null;
+
         // For primitive states, always detect changes by reference
-        if (!selector && !instance.defaultDependencySelector && isPrimitive &&
-            !Object.is(currentState, lastStableSnapshot.current)) {
+        if (
+          !selector &&
+          !instance.defaultDependencySelector &&
+          isPrimitive &&
+          !Object.is(currentState, lastStableSnapshot.current)
+        ) {
           dependenciesChanged = true;
         } else if (!lastDeps) {
           // First time - check if we have any dependencies
-          const hasAnyDeps = currentDependencies.some(arr => arr.length > 0);
+          const hasAnyDeps = currentDependencies.some((arr) => arr.length > 0);
           dependenciesChanged = hasAnyDeps;
         } else if (lastDeps.length !== currentDependencies.length) {
           // Array structure changed
           dependenciesChanged = true;
         } else {
           // Compare each array (state and class dependencies)
-          for (let arrayIndex = 0; arrayIndex < currentDependencies.length; arrayIndex++) {
+          for (
+            let arrayIndex = 0;
+            arrayIndex < currentDependencies.length;
+            arrayIndex++
+          ) {
             const lastArray = lastDeps[arrayIndex] || [];
             const newArray = currentDependencies[arrayIndex] || [];
-            
+
             if (lastArray.length !== newArray.length) {
               dependenciesChanged = true;
               break;
             }
-            
+
             // Compare each dependency value using Object.is
             for (let i = 0; i < newArray.length; i++) {
               if (!Object.is(lastArray[i], newArray[i])) {
@@ -324,31 +363,30 @@ const useExternalBlocStore = <
                 break;
               }
             }
-            
+
             if (dependenciesChanged) break;
           }
         }
-        
-        
+
         // Update dependency tracking
         lastDependenciesRef.current = currentDependencies;
-        
+
         // Mark that we've completed initial render after first getSnapshot call
         if (!hasCompletedInitialRender.current) {
           hasCompletedInitialRender.current = true;
         }
-        
-        // If dependencies haven't changed AND we have a stable snapshot, 
+
+        // If dependencies haven't changed AND we have a stable snapshot,
         // return the same reference to prevent re-renders
         if (!dependenciesChanged && lastStableSnapshot.current !== undefined) {
           return lastStableSnapshot.current;
         }
-        
+
         // Dependencies changed or first render - update and return new snapshot
         lastStableSnapshot.current = currentState;
         return currentState;
       },
-      
+
       getServerSnapshot: (): BlocState<InstanceType<B>> | undefined => {
         const instance = blocInstance.current;
         if (!instance) {

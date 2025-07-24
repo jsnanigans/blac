@@ -12,6 +12,7 @@
       "dependsOn": ["^typecheck"]
     },
     "lint": {},
+    "format": {},
     "test": {},
     "test:watch": {
       "persistent": true,

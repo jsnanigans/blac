@@ -25,7 +25,7 @@ export interface ComponentDependencyMetrics {
 export class ComponentDependencyTracker {
   private componentAccessMap = new WeakMap<object, ComponentAccessRecord>();
   private componentIdMap = new Map<string, WeakRef<object>>();
-  
+
   private metrics = {
     totalStateAccess: 0,
     totalClassAccess: 0,
@@ -45,7 +45,7 @@ export class ComponentDependencyTracker {
         lastAccessTime: Date.now(),
         hasEverAccessedState: false,
       });
-      
+
       this.componentIdMap.set(componentId, new WeakRef(componentRef));
       this.metrics.componentCount++;
     }
@@ -60,7 +60,9 @@ export class ComponentDependencyTracker {
     const record = this.componentAccessMap.get(componentRef);
     if (!record) {
       // Component not registered - this shouldn't happen in normal usage
-      console.warn('[ComponentDependencyTracker] Tracking access for unregistered component');
+      console.warn(
+        '[ComponentDependencyTracker] Tracking access for unregistered component',
+      );
       return;
     }
 
@@ -80,7 +82,9 @@ export class ComponentDependencyTracker {
   public trackClassAccess(componentRef: object, propertyPath: string): void {
     const record = this.componentAccessMap.get(componentRef);
     if (!record) {
-      console.warn('[ComponentDependencyTracker] Tracking access for unregistered component');
+      console.warn(
+        '[ComponentDependencyTracker] Tracking access for unregistered component',
+      );
       return;
     }
 
@@ -101,7 +105,7 @@ export class ComponentDependencyTracker {
   public shouldNotifyComponent(
     componentRef: object,
     changedStatePaths: Set<string>,
-    changedClassPaths: Set<string>
+    changedClassPaths: Set<string>,
   ): boolean {
     const record = this.componentAccessMap.get(componentRef);
     if (!record) {
@@ -135,7 +139,7 @@ export class ComponentDependencyTracker {
   public getComponentDependencies(
     componentRef: object,
     state: any,
-    classInstance: any
+    classInstance: any,
   ): unknown[][] {
     const record = this.componentAccessMap.get(componentRef);
     if (!record) {
@@ -230,7 +234,7 @@ export class ComponentDependencyTracker {
    */
   public getMetrics(): ComponentDependencyMetrics {
     let totalComponents = 0;
-    
+
     // Count valid component references
     for (const [componentId, weakRef] of this.componentIdMap.entries()) {
       if (weakRef.deref()) {
@@ -241,15 +245,18 @@ export class ComponentDependencyTracker {
       }
     }
 
-    const averageAccess = totalComponents > 0 
-      ? (this.metrics.totalStateAccess + this.metrics.totalClassAccess) / totalComponents 
-      : 0;
+    const averageAccess =
+      totalComponents > 0
+        ? (this.metrics.totalStateAccess + this.metrics.totalClassAccess) /
+          totalComponents
+        : 0;
 
     // Rough memory estimation
     const estimatedMemoryKB = Math.round(
       (this.componentIdMap.size * 100 + // ComponentId mapping overhead
-       this.metrics.totalStateAccess * 50 + // State access tracking
-       this.metrics.totalClassAccess * 50) / 1024 // Class access tracking
+        this.metrics.totalStateAccess * 50 + // State access tracking
+        this.metrics.totalClassAccess * 50) /
+        1024, // Class access tracking
     );
 
     return {
@@ -266,14 +273,14 @@ export class ComponentDependencyTracker {
    */
   public cleanup(): void {
     const expiredRefs: string[] = [];
-    
+
     for (const [componentId, weakRef] of this.componentIdMap.entries()) {
       if (!weakRef.deref()) {
         expiredRefs.push(componentId);
       }
     }
-    
-    expiredRefs.forEach(id => this.componentIdMap.delete(id));
+
+    expiredRefs.forEach((id) => this.componentIdMap.delete(id));
   }
 }
 

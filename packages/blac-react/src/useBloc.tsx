@@ -141,7 +141,7 @@ export default function useBloc<B extends BlocConstructor<BlocBase<any>>>(
         return Reflect.getOwnPropertyDescriptor(target, prop);
       },
     });
-    
+
     return proxy;
   }, [state]);
 
@@ -170,7 +170,7 @@ export default function useBloc<B extends BlocConstructor<BlocBase<any>>>(
         return value;
       },
     });
-    
+
     return proxy;
   }, [instance.current?.uid]);
 

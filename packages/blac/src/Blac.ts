@@ -212,7 +212,10 @@ export class Blac {
     // Use disposeBloc method to ensure proper cleanup
     oldBlocInstanceMap.forEach((bloc) => {
       // TODO: Type assertion for private property access (see explanation above)
-      if (!bloc._keepAlive && (bloc as any)._disposalState === BlocLifecycleState.ACTIVE) {
+      if (
+        !bloc._keepAlive &&
+        (bloc as any)._disposalState === BlocLifecycleState.ACTIVE
+      ) {
         this.disposeBloc(bloc);
       }
     });
@@ -220,7 +223,10 @@ export class Blac {
     oldIsolatedBlocMap.forEach((blocArray) => {
       blocArray.forEach((bloc) => {
         // TODO: Type assertion for private property access (see explanation above)
-        if (!bloc._keepAlive && (bloc as any)._disposalState === BlocLifecycleState.ACTIVE) {
+        if (
+          !bloc._keepAlive &&
+          (bloc as any)._disposalState === BlocLifecycleState.ACTIVE
+        ) {
           this.disposeBloc(bloc);
         }
       });
@@ -249,8 +255,11 @@ export class Blac {
     // private property access across class boundaries. Alternative would be to make
     // _disposalState protected, but that would expose internal implementation details.
     const currentState = (bloc as any)._disposalState;
-    const validStatesForDisposal = [BlocLifecycleState.ACTIVE, BlocLifecycleState.DISPOSAL_REQUESTED];
-    
+    const validStatesForDisposal = [
+      BlocLifecycleState.ACTIVE,
+      BlocLifecycleState.DISPOSAL_REQUESTED,
+    ];
+
     if (!validStatesForDisposal.includes(currentState)) {
       this.log(
         `[${bloc._name}:${String(bloc._id)}] disposeBloc called on bloc in invalid state: ${currentState}`,

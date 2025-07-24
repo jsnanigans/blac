@@ -1,4 +1,3 @@
-
 export interface DependencyMetrics {
   stateAccessCount: number;
   classAccessCount: number;
@@ -24,7 +23,7 @@ export class DependencyTracker {
   private batchedCallbacks = new Set<DependencyChangeCallback>();
   private flushScheduled = false;
   private flushTimeoutId: ReturnType<typeof setTimeout> | undefined;
-  
+
   private metrics: DependencyMetrics = {
     stateAccessCount: 0,
     classAccessCount: 0,
@@ -33,17 +32,17 @@ export class DependencyTracker {
     averageResolutionTime: 0,
     memoryUsageKB: 0,
   };
-  
+
   private resolutionTimes: number[] = [];
-  
+
   private config: DependencyTrackerConfig;
-  
+
   private stateProxyCache = new WeakMap<object, object>();
   private classProxyCache = new WeakMap<object, object>();
-  
+
   private lastStateSnapshot: unknown = null;
   private lastClassSnapshot: unknown = null;
-  
+
   constructor(config: Partial<DependencyTrackerConfig> = {}) {
     this.config = {
       enableBatching: true,
@@ -59,9 +58,9 @@ export class DependencyTracker {
     if (this.config.enableMetrics) {
       this.metrics.stateAccessCount++;
     }
-    
+
     this.stateKeys.add(key);
-    
+
     if (this.config.enableBatching) {
       this.scheduleFlush();
     }
@@ -71,15 +70,18 @@ export class DependencyTracker {
     if (this.config.enableMetrics) {
       this.metrics.classAccessCount++;
     }
-    
+
     this.classKeys.add(key);
-    
+
     if (this.config.enableBatching) {
       this.scheduleFlush();
     }
   }
 
-  public createStateProxy<T extends object>(target: T, onAccess?: (prop: string) => void): T {
+  public createStateProxy<T extends object>(
+    target: T,
+    onAccess?: (prop: string) => void,
+  ): T {
     const cachedProxy = this.stateProxyCache.get(target);
     if (cachedProxy) {
       return cachedProxy as T;
@@ -93,9 +95,9 @@ export class DependencyTracker {
           this.trackStateAccess(prop);
           onAccess?.(prop);
         }
-        
+
         const value = obj[prop as keyof T];
-        
+
         if (
           this.config.enableDeepTracking &&
           value &&
@@ -104,25 +106,25 @@ export class DependencyTracker {
         ) {
           return this.createStateProxy(value as object);
         }
-        
+
         return value;
       },
-      
+
       has: (obj: T, prop: string | symbol) => {
         return prop in obj;
       },
-      
+
       ownKeys: (obj: T) => {
         return Reflect.ownKeys(obj);
       },
-      
+
       getOwnPropertyDescriptor: (obj: T, prop: string | symbol) => {
         return Reflect.getOwnPropertyDescriptor(obj, prop);
       },
     });
 
     this.stateProxyCache.set(target, proxy);
-    
+
     if (this.config.enableMetrics) {
       this.metrics.proxyCreationCount++;
       const endTime = performance.now();
@@ -133,7 +135,10 @@ export class DependencyTracker {
     return proxy;
   }
 
-  public createClassProxy<T extends object>(target: T, onAccess?: (prop: string) => void): T {
+  public createClassProxy<T extends object>(
+    target: T,
+    onAccess?: (prop: string) => void,
+  ): T {
     const cachedProxy = this.classProxyCache.get(target);
     if (cachedProxy) {
       return cachedProxy as T;
@@ -144,18 +149,18 @@ export class DependencyTracker {
     const proxy = new Proxy(target, {
       get: (obj: T, prop: string | symbol) => {
         const value = obj[prop as keyof T];
-        
+
         if (typeof prop === 'string' && typeof value !== 'function') {
           this.trackClassAccess(prop);
           onAccess?.(prop);
         }
-        
+
         return value;
       },
     });
 
     this.classProxyCache.set(target, proxy);
-    
+
     if (this.config.enableMetrics) {
       this.metrics.proxyCreationCount++;
       const endTime = performance.now();
@@ -182,7 +187,7 @@ export class DependencyTracker {
 
   public subscribe(callback: DependencyChangeCallback): () => void {
     this.batchedCallbacks.add(callback);
-    
+
     return () => {
       this.batchedCallbacks.delete(callback);
     };
@@ -193,7 +198,7 @@ export class DependencyTracker {
     classInstance: TClass,
   ): unknown[] {
     const startTime = this.config.enableMetrics ? performance.now() : 0;
-    
+
     if (typeof state !== 'object' || state === null) {
       return [[state]];
     }
@@ -213,8 +218,7 @@ export class DependencyTracker {
           if (typeof value !== 'function') {
             classValues.push(value);
           }
-        } catch (error) {
-        }
+        } catch (error) {}
       }
     }
 
@@ -227,15 +231,15 @@ export class DependencyTracker {
     if (stateValues.length === 0 && classValues.length === 0) {
       return [[]];
     }
-    
+
     if (classValues.length === 0) {
       return [stateValues];
     }
-    
+
     if (stateValues.length === 0) {
       return [classValues];
     }
-    
+
     return [stateValues, classValues];
   }
 
@@ -251,9 +255,9 @@ export class DependencyTracker {
       };
     }
 
-    const estimatedMemory = 
-      (this.stateKeys.size * 50) +
-      (this.classKeys.size * 50) +
+    const estimatedMemory =
+      this.stateKeys.size * 50 +
+      this.classKeys.size * 50 +
       (this.stateProxyCache instanceof WeakMap ? 100 : 0) +
       (this.classProxyCache instanceof WeakMap ? 100 : 0);
 
@@ -267,7 +271,7 @@ export class DependencyTracker {
     this.stateProxyCache = new WeakMap();
     this.classProxyCache = new WeakMap();
     this.resolutionTimes = [];
-    
+
     if (this.config.enableMetrics) {
       this.metrics = {
         stateAccessCount: 0,
@@ -317,7 +321,7 @@ export class DependencyTracker {
     }
 
     const allChangedKeys = new Set([...this.stateKeys, ...this.classKeys]);
-    
+
     for (const callback of this.batchedCallbacks) {
       try {
         callback(allChangedKeys);

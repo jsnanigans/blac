@@ -27,7 +27,7 @@ export abstract class Cubit<S, P = null> extends BlocBase<S, P> {
   /**
    * Partially updates the current state by merging it with the provided state patch.
    * This method is only applicable when the state is an object type.
-   * 
+   *
    * @param statePatch - A partial state object containing only the properties to update
    * @param ignoreChangeCheck - If true, skips checking if the state has actually changed
    * @throws {TypeError} If the state is not an object type

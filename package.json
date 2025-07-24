@@ -8,6 +8,7 @@
     "test:watch": "turbo run test:watch",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
+    "format": "turbo run format",
     "wcl": "turbo run sb --filter=@9amhealth/wcl",
     "shared": "turbo run sb --filter=@9amhealth/shared",
     "app": "turbo run dev --filter=user-app",

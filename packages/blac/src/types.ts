@@ -71,7 +71,12 @@ export type BlocEventConstraint = BlocEvent & object;
  * Error boundary interface for Bloc error handling
  */
 export interface BlocErrorBoundary<S, A extends BlocEventConstraint> {
-  onError: (error: Error, event: A, currentState: S, bloc: { name: string; id: string }) => void | Promise<void>;
+  onError: (
+    error: Error,
+    event: A,
+    currentState: S,
+    bloc: { name: string; id: string },
+  ) => void | Promise<void>;
   shouldRethrow?: (error: Error, event: A) => boolean;
 }
 
@@ -88,5 +93,5 @@ export interface BlocErrorBoundary<S, A extends BlocEventConstraint> {
 export type BlocHookDependencyArrayFn<S, I = any> = (
   currentState: S,
   previousState: S | undefined,
-  instance: I
+  instance: I,
 ) => unknown[];
