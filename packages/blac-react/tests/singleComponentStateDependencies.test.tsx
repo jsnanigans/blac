@@ -246,27 +246,25 @@ test('should only rerender if state is used, even if state is used after initial
   const count = container.querySelector('[data-testid="count"]');
   expect(count).toHaveTextContent('');
 
-  // TODO: Known issue - dependency tracker is one tick behind, causing one extra rerender
-  // after a dependency has been removed. The proxy detects unused dependencies after render,
-  // so if that unused thing changes, it still triggers one more rerender before being pruned.
+  // With improved dependency tracking, components only re-render when accessed properties change
   // increment count - should not rerender because state.count is not used
   await userEvent.click(container.querySelector('[data-testid="increment"]')!);
-  expect(renderCountTotal).toBe(2); // No extra rerender in this case
+  expect(renderCountTotal).toBe(1); // No re-render since count is not accessed
   expect(count).toHaveTextContent('');
 
   await userEvent.click(container.querySelector('[data-testid="increment"]')!);
-  expect(renderCountTotal).toBe(3);
+  expect(renderCountTotal).toBe(1); // Still no re-render
   expect(count).toHaveTextContent('');
 
   // increment again, should not rerender
   await userEvent.click(container.querySelector('[data-testid="increment"]')!);
-  expect(renderCountTotal).toBe(4);
+  expect(renderCountTotal).toBe(1); // Still no re-render
   expect(count).toHaveTextContent('');
 
   // update name - should rerender
   await userEvent.click(container.querySelector('[data-testid="updateName"]')!);
   expect(name).toHaveTextContent('Name 2');
-  expect(renderCountTotal).toBe(5);
+  expect(renderCountTotal).toBe(2); // First re-render since name is accessed
   expect(count).toHaveTextContent('');
 
   // render count again, should render with new count
@@ -275,11 +273,11 @@ test('should only rerender if state is used, even if state is used after initial
   );
   expect(count).toHaveTextContent('4'); // State was updated to 4 in background
   expect(name).toHaveTextContent('Name 2');
-  expect(renderCountTotal).toBe(6);
+  expect(renderCountTotal).toBe(3); // Re-render due to prop change
 
   // increment again, should rerender because state.count is now used
   await userEvent.click(container.querySelector('[data-testid="increment"]')!);
   expect(count).toHaveTextContent('5');
-  expect(renderCountTotal).toBe(7);
+  expect(renderCountTotal).toBe(4); // Re-render since count is now accessed
   expect(name).toHaveTextContent('Name 2');
 });

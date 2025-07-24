@@ -223,7 +223,7 @@ describe('useBloc Integration Tests', () => {
   });
 
   describe('State Updates and Re-rendering', () => {
-    test('should trigger re-render on state changes', () => {
+    test('should trigger re-render on state changes', async () => {
       let renderCount = 0;
       const { result } = renderHook(() => {
         renderCount++;
@@ -231,42 +231,43 @@ describe('useBloc Integration Tests', () => {
       });
 
       expect(renderCount).toBe(1);
+      expect(result.current[0].count).toBe(0);
 
-      act(() => {
+      await act(async () => {
         result.current[1].increment();
       });
 
-      expect(renderCount).toBe(2);
-      expect(result.current[0].count).toBe(1);
+      await waitFor(() => {
+        expect(renderCount).toBe(2);
+        expect(result.current[0].count).toBe(1);
+      });
     });
 
-    test('should handle multiple rapid state changes', () => {
+    test('should handle multiple rapid state changes', async () => {
       const { result } = renderHook(() => useBloc(CounterCubit));
-      const [, cubit] = result.current;
 
-      act(() => {
-        cubit.increment();
-        cubit.increment();
-        cubit.decrement();
-        cubit.setCount(10);
+      await act(async () => {
+        result.current[1].increment();
+        result.current[1].increment();
+        result.current[1].decrement();
+        result.current[1].setCount(10);
       });
 
       expect(result.current[0].count).toBe(10);
     });
 
-    test('should handle complex nested state updates', () => {
+    test('should handle complex nested state updates', async () => {
       const { result } = renderHook(() => useBloc(ComplexCubit));
-      const [, cubit] = result.current;
 
-      act(() => {
-        cubit.updateUserName('Jane Doe');
+      await act(async () => {
+        result.current[1].updateUserName('Jane Doe');
       });
 
       expect(result.current[0].user.name).toBe('Jane Doe');
       expect(result.current[0].user.age).toBe(30); // Should remain unchanged
 
-      act(() => {
-        cubit.updateTheme('dark');
+      await act(async () => {
+        result.current[1].updateTheme('dark');
       });
 
       expect(result.current[0].user.preferences.theme).toBe('dark');
@@ -694,21 +695,21 @@ describe('useBloc Integration Tests', () => {
       expect(newState).toBe(initialState);
     });
 
-    test('should handle high-frequency updates efficiently', () => {
+    test('should handle high-frequency updates efficiently', async () => {
       const { result } = renderHook(() => useBloc(CounterCubit));
-      const [, cubit] = result.current;
 
       const iterations = 1000;
       const start = performance.now();
 
-      act(() => {
+      await act(async () => {
         for (let i = 0; i < iterations; i++) {
-          cubit.increment();
+          result.current[1].increment();
         }
       });
 
       const end = performance.now();
       const duration = end - start;
+
 
       expect(result.current[0].count).toBe(iterations);
       expect(duration).toBeLessThan(500); // Should complete within 500ms

@@ -7,6 +7,7 @@ export interface ComponentAccessRecord {
   stateAccess: Set<string>;
   classAccess: Set<string>;
   lastAccessTime: number;
+  hasEverAccessedState: boolean;
 }
 
 export interface ComponentDependencyMetrics {
@@ -42,6 +43,7 @@ export class ComponentDependencyTracker {
         stateAccess: new Set(),
         classAccess: new Set(),
         lastAccessTime: Date.now(),
+        hasEverAccessedState: false,
       });
       
       this.componentIdMap.set(componentId, new WeakRef(componentRef));
@@ -67,6 +69,7 @@ export class ComponentDependencyTracker {
       record.lastAccessTime = Date.now();
       this.metrics.totalStateAccess++;
     }
+    record.hasEverAccessedState = true;
   }
 
   /**
@@ -198,6 +201,27 @@ export class ComponentDependencyTracker {
   public getClassAccess(componentRef: object): Set<string> {
     const record = this.componentAccessMap.get(componentRef);
     return record ? new Set(record.classAccess) : new Set();
+  }
+
+  /**
+   * Check if a component has accessed any state or class properties
+   * @param componentRef - Component reference object
+   * @returns true if any properties have been accessed
+   */
+  public hasAnyAccess(componentRef: object): boolean {
+    const record = this.componentAccessMap.get(componentRef);
+    if (!record) return false;
+    return record.stateAccess.size > 0 || record.classAccess.size > 0;
+  }
+
+  /**
+   * Check if a component has ever accessed state (across all renders)
+   * @param componentRef - Component reference object
+   * @returns true if state has ever been accessed
+   */
+  public hasEverAccessedState(componentRef: object): boolean {
+    const record = this.componentAccessMap.get(componentRef);
+    return record?.hasEverAccessedState || false;
   }
 
   /**

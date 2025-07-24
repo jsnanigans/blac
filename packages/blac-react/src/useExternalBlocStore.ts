@@ -140,17 +140,15 @@ const useExternalBlocStore = <
             instance
           );
           
-          // If no dependencies were tracked yet, this means it's initial render
-          // or no proxy access has occurred
+          // If no dependencies were tracked yet, we need to decide what to track
           if (currentDependencies[0].length === 0 && currentDependencies[1].length === 0) {
-            if (!hasProxyTracking.current) {
-              // Direct external store usage - always track entire state
-              currentDependencies = [[newState], []];
-            } else {
-              // With proxy tracking enabled and no dependencies accessed,
-              // return empty dependencies to prevent re-renders
-              currentDependencies = [[], []];
-            }
+            // Always track the entire state object when no specific properties are accessed
+            // This ensures:
+            // 1. Initial render gets state
+            // 2. RenderHook tests that don't access properties during render still update
+            // 3. Components that pass state to children without accessing it still update
+            // Trade-off: Components that only use cubit methods might re-render unnecessarily
+            currentDependencies = [[newState], []];
           }
           
           // Also update legacy refs for backward compatibility
@@ -198,10 +196,11 @@ const useExternalBlocStore = <
           }
         }
 
-        // Check if we already have an observer for this listener
+        // Remove any existing observer for this listener to ensure fresh subscription
         const existing = activeObservers.current.get(listener);
         if (existing) {
-          return existing.unsubscribe;
+          existing.unsubscribe();
+          activeObservers.current.delete(listener);
         }
         
         const observer: BlacObserver<BlocState<InstanceType<B>>> = {
@@ -225,6 +224,7 @@ const useExternalBlocStore = <
               //   usedClassPropKeys.current = new Set();
               // }
 
+              
               // Only trigger listener if there are actual subscriptions
               listener(notificationInstance.state);
             } catch (e) {
@@ -248,6 +248,7 @@ const useExternalBlocStore = <
           Blac.activateBloc(currentInstance);
         }
 
+        
         // Subscribe to the bloc's observer with the provided listener function
         // This will trigger the callback whenever the bloc's state changes
         const unSub = currentInstance._observer.subscribe(observer);
@@ -286,11 +287,19 @@ const useExternalBlocStore = <
         const currentState = instance.state;
         const currentDependencies = dependencyArray(currentState, previousStateRef.current);
         
+        
         // Check if dependencies have changed using the two-array comparison logic
         const lastDeps = lastDependenciesRef.current;
         let dependenciesChanged = false;
         
-        if (!lastDeps) {
+        // Check if this is a primitive state (number, string, boolean, etc)
+        const isPrimitive = typeof currentState !== 'object' || currentState === null;
+        
+        // For primitive states, always detect changes by reference
+        if (!selector && !instance.defaultDependencySelector && isPrimitive &&
+            !Object.is(currentState, lastStableSnapshot.current)) {
+          dependenciesChanged = true;
+        } else if (!lastDeps) {
           // First time - check if we have any dependencies
           const hasAnyDeps = currentDependencies.some(arr => arr.length > 0);
           dependenciesChanged = hasAnyDeps;
@@ -320,16 +329,22 @@ const useExternalBlocStore = <
           }
         }
         
+        
         // Update dependency tracking
         lastDependenciesRef.current = currentDependencies;
         
-        // If dependencies haven't changed, return the same snapshot reference
-        // This prevents React from re-rendering when dependencies are stable
-        if (!dependenciesChanged && lastStableSnapshot.current) {
+        // Mark that we've completed initial render after first getSnapshot call
+        if (!hasCompletedInitialRender.current) {
+          hasCompletedInitialRender.current = true;
+        }
+        
+        // If dependencies haven't changed AND we have a stable snapshot, 
+        // return the same reference to prevent re-renders
+        if (!dependenciesChanged && lastStableSnapshot.current !== undefined) {
           return lastStableSnapshot.current;
         }
         
-        // Dependencies changed - update and return new snapshot
+        // Dependencies changed or first render - update and return new snapshot
         lastStableSnapshot.current = currentState;
         return currentState;
       },

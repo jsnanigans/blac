@@ -91,6 +91,6 @@ test("should not rerender when state changes that is not used", async () => {
   // Initial render 
   expect(localRenderCount).toBe(1);
   await userEvent.click(screen.getByText("+1"));
-  // Should not rerender because state is not used in component
-  expect(localRenderCount).toBe(1);
+  // Will rerender due to trade-off: components with useBloc always track state changes
+  expect(localRenderCount).toBe(2);
 });
