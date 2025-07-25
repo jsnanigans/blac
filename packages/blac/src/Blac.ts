@@ -116,7 +116,7 @@ export class Blac {
   // while maintaining type safety at usage sites through the BlocConstructor constraint.
   isolatedBlocMap: Map<BlocConstructor<any>, BlocBase<unknown>[]> = new Map();
   /** Map for O(1) lookup of isolated blocs by UID */
-  private isolatedBlocIndex: Map<string, BlocBase<unknown>> = new Map();
+  isolatedBlocIndex: Map<string, BlocBase<unknown>> = new Map();
   /** Map tracking UIDs to prevent memory leaks */
   uidRegistry: Map<string, BlocBase<unknown>> = new Map();
   /** Set of keep-alive blocs for controlled cleanup */

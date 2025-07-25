@@ -5,10 +5,9 @@ import {
   BlocState,
   InferPropsFromGeneric,
   generateUUID,
-  ConsumerTracker,
-  ProxyFactory,
 } from '@blac/core';
 import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
+import { ReactAdapter } from './ReactAdapter';
 
 /**
  * Type definition for the return type of the useBloc hook
@@ -51,8 +50,6 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
   // Create stable references
   const consumerIdRef = useRef<string>(`react-${generateUUID()}`);
   const componentRef = useRef<object>({});
-  const onMountCalledRef = useRef(false);
-  const consumerTrackerRef = useRef<ConsumerTracker | null>(null);
 
   // Get or create bloc instance
   const bloc = useMemo(() => {
@@ -83,111 +80,40 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
     });
   }, [blocConstructor, options?.id]); // Only recreate if constructor or id changes
 
-  // Initialize consumer tracker for fine-grained dependency tracking
+  // Create adapter instance
+  const adapter = useMemo(() => {
+    return new ReactAdapter(bloc, {
+      consumerId: consumerIdRef.current,
+      consumerRef: componentRef.current,
+      hooks: {
+        onMount: options?.onMount,
+        onUnmount: options?.onUnmount,
+      },
+      enableProxyTracking: options?.enableProxyTracking,
+      selector: options?.selector,
+    });
+  }, [bloc]);
+  
+  // Handle cleanup
   useEffect(() => {
-    if (options?.enableProxyTracking === true && !options?.selector) {
-      if (!consumerTrackerRef.current) {
-        consumerTrackerRef.current = new ConsumerTracker();
-        consumerTrackerRef.current.registerConsumer(
-          consumerIdRef.current,
-          componentRef.current,
-        );
-      }
-    }
-
     return () => {
-      if (consumerTrackerRef.current) {
-        consumerTrackerRef.current.unregisterConsumer(consumerIdRef.current);
-      }
+      adapter.cleanup();
     };
-  }, [options?.enableProxyTracking, options?.selector]);
+  }, [adapter]);
 
-  // Register as consumer and handle lifecycle
-  useEffect(() => {
-    // Register this component as a consumer
-    const consumerId = consumerIdRef.current;
-    bloc._addConsumer(consumerId, componentRef.current);
-
-    // Call onMount callback if provided
-    if (!onMountCalledRef.current) {
-      onMountCalledRef.current = true;
-      options?.onMount?.(bloc);
-    }
-
-    return () => {
-      // Unregister as consumer
-      bloc._removeConsumer(consumerId);
-
-      // Call onUnmount callback
-      options?.onUnmount?.(bloc);
-    };
-  }, [bloc]); // Only re-run if bloc instance changes
-
-  // Subscribe to state changes using useSyncExternalStore
-  const subscribe = useMemo(
-    () => (onStoreChange: () => void) => {
-      const unsubscribe = bloc._observer.subscribe({
-        id: consumerIdRef.current,
-        fn: () => onStoreChange(),
-      });
-      return unsubscribe;
-    },
-    [bloc],
+  // Use adapter with useSyncExternalStore
+  const state = useSyncExternalStore(
+    adapter.subscribe,
+    adapter.getSnapshot,
+    adapter.getServerSnapshot,
   );
 
-  const rawState = useSyncExternalStore(
-    subscribe,
-    // Get snapshot
-    () => bloc.state,
-    // Get server snapshot (same as client for now)
-    () => bloc.state,
-  );
+  // Get proxied bloc instance from adapter
+  const blocProxy = useMemo(() => {
+    return adapter.getBlocProxy();
+  }, [adapter]);
 
-  // Create proxies for fine-grained tracking (if enabled)
-  const proxyState = useMemo(() => {
-    if (
-      options?.selector ||
-      options?.enableProxyTracking !== true ||
-      !consumerTrackerRef.current
-    ) {
-      return rawState;
-    }
-
-    // Reset tracking before each render
-    consumerTrackerRef.current.resetConsumerTracking(componentRef.current);
-
-    return ProxyFactory.createStateProxy(
-      rawState as any,
-      componentRef.current,
-      consumerTrackerRef.current,
-    );
-  }, [rawState, options?.selector, options?.enableProxyTracking]);
-
-  const proxyBloc = useMemo(() => {
-    if (
-      options?.selector ||
-      options?.enableProxyTracking !== true ||
-      !consumerTrackerRef.current
-    ) {
-      return bloc;
-    }
-
-    return ProxyFactory.createClassProxy(
-      bloc,
-      componentRef.current,
-      consumerTrackerRef.current,
-    );
-  }, [bloc, options?.selector, options?.enableProxyTracking]);
-
-  // Apply selector if provided
-  const finalState = useMemo(() => {
-    if (options?.selector) {
-      return options.selector(rawState, bloc);
-    }
-    return proxyState;
-  }, [rawState, bloc, proxyState, options?.selector]);
-
-  return [finalState, proxyBloc];
+  return [state, blocProxy];
 }
 
 export default useBloc;
