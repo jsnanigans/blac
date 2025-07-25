@@ -29,6 +29,8 @@ export interface GetBlocOptions<B extends BlocBase<unknown>> {
   onMount?: (bloc: B) => void;
   instanceRef?: string;
   throwIfNotFound?: boolean;
+  /** Force creation of a new instance for isolated blocs, bypassing instance lookup */
+  forceNewInstance?: boolean;
 }
 
 /**
@@ -98,7 +100,6 @@ export function setBlacInstanceManager(manager: BlacInstanceManager): void {
  * - Providing logging and debugging capabilities
  */
 export class Blac {
-  /** @deprecated Use getInstance() instead */
   static get instance(): Blac {
     return instanceManager.getInstance();
   }
@@ -110,7 +111,6 @@ export class Blac {
   /** Map storing all registered bloc instances by their class name and ID */
   blocInstanceMap: Map<string, BlocBase<unknown>> = new Map();
   /** Map storing isolated bloc instances grouped by their constructor */
-  // TODO: BlocConstructor<any> is required here for type inference to work correctly.
   // Using BlocConstructor<BlocBase<unknown>> would break type inference when storing
   // different bloc types in the same map. The 'any' allows proper polymorphic storage
   // while maintaining type safety at usage sites through the BlocConstructor constraint.
@@ -528,26 +528,39 @@ export class Blac {
     blocClass: B,
     options: GetBlocOptions<InstanceType<B>> = {},
   ): InstanceType<B> => {
-    const { id } = options;
+    const { id, forceNewInstance } = options;
     const base = blocClass as unknown as BlocBaseAbstract;
     const blocId = id ?? blocClass.name;
+    this.log(`[${blocClass.name}:${String(blocId)}] (getBloc) Called:`, {
+      options,
+      base,
+    });
 
-    if (base.isolated) {
-      const isolatedBloc = this.findIsolatedBlocInstance<B>(blocClass, blocId);
-      if (isolatedBloc) {
-        return isolatedBloc;
-      } else {
-        if (options.throwIfNotFound) {
-          throw new Error(`Isolated bloc ${blocClass.name} not found`);
+    // Skip instance lookup if forceNewInstance is true for isolated blocs
+    if (!forceNewInstance) {
+      if (base.isolated) {
+        const isolatedBloc = this.findIsolatedBlocInstance<B>(
+          blocClass,
+          options.instanceRef ?? blocId,
+        );
+        if (isolatedBloc) {
+          return isolatedBloc;
+        } else {
+          if (options.throwIfNotFound) {
+            throw new Error(`Isolated bloc ${blocClass.name} not found`);
+          }
         }
-      }
-    } else {
-      const registeredBloc = this.findRegisteredBlocInstance(blocClass, blocId);
-      if (registeredBloc) {
-        return registeredBloc;
       } else {
-        if (options.throwIfNotFound) {
-          throw new Error(`Registered bloc ${blocClass.name} not found`);
+        const registeredBloc = this.findRegisteredBlocInstance(
+          blocClass,
+          blocId,
+        );
+        if (registeredBloc) {
+          return registeredBloc;
+        } else {
+          if (options.throwIfNotFound) {
+            throw new Error(`Registered bloc ${blocClass.name} not found`);
+          }
         }
       }
     }

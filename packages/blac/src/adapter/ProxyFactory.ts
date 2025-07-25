@@ -1,15 +1,16 @@
-import { ConsumerTracker } from '../tracking/ConsumerTracker';
+import type { BlacAdapter } from './BlacAdapter';
 
 // Cache for proxies to ensure consistent object identity
 const proxyCache = new WeakMap<object, WeakMap<object, any>>();
 
 export class ProxyFactory {
-  static createStateProxy<T extends object>(
-    target: T,
-    consumerRef: object,
-    consumerTracker: ConsumerTracker,
-    path: string = '',
-  ): T {
+  static createStateProxy<T extends object>(options: {
+    target: T;
+    consumerRef: object;
+    consumerTracker: BlacAdapter;
+    path?: string;
+  }): T {
+    const { target, consumerRef, consumerTracker, path = '' } = options;
     if (!consumerRef || !consumerTracker) {
       return target;
     }
@@ -67,12 +68,12 @@ export class ProxyFactory {
           const isArray = Array.isArray(value);
 
           if (isPlainObject || isArray) {
-            return ProxyFactory.createStateProxy(
-              value,
+            return ProxyFactory.createStateProxy({
+              target: value,
               consumerRef,
               consumerTracker,
-              fullPath,
-            );
+              path: fullPath,
+            });
           }
         }
 
@@ -121,11 +122,12 @@ export class ProxyFactory {
     return proxy;
   }
 
-  static createClassProxy<T extends object>(
-    target: T,
-    consumerRef: object,
-    consumerTracker: ConsumerTracker,
-  ): T {
+  static createClassProxy<T extends object>(options: {
+    target: T;
+    consumerRef: object;
+    consumerTracker: BlacAdapter;
+  }): T {
+    const { target, consumerRef, consumerTracker } = options;
     if (!consumerRef || !consumerTracker) {
       return target;
     }

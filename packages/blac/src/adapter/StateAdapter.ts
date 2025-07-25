@@ -2,8 +2,8 @@ import { BlocBase } from '../BlocBase';
 import { BlocConstructor, BlocState } from '../types';
 import { BlocInstanceManager } from '../BlocInstanceManager';
 import { SubscriptionManager } from './subscription/SubscriptionManager';
-import { ConsumerTracker } from './tracking/ConsumerTracker';
-import { ProxyFactory } from './proxy/ProxyFactory';
+import { BlacAdapter } from './BlacAdapter';
+import { ProxyFactory } from './ProxyFactory';
 
 export interface StateAdapterOptions<TBloc extends BlocBase<any>> {
   blocConstructor: BlocConstructor<TBloc>;
