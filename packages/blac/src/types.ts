@@ -20,7 +20,10 @@ export type BlocBaseAbstract =
  * Represents a constructor type for a Bloc that can take any parameters
  * @template B - The type of the Bloc instance
  */
-export type BlocConstructor<B> = new (...args: any) => B;
+export type BlocConstructor<B> = (new (...args: any) => B) & {
+  isolated?: boolean;
+  keepAlive?: boolean;
+};
 
 /**
  * Extracts the state type from a BlocBase instance
