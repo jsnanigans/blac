@@ -139,12 +139,16 @@ export class Blac {
   /** Flag to enable/disable logging */
   static enableLog = false;
   static logLevel: 'warn' | 'log' = 'warn';
+  static logSpy: ((...args: unknown[]) => void) | null = null;
 
   /**
    * Logs messages to console when logging is enabled
    * @param args - Arguments to log
    */
   log = (...args: unknown[]) => {
+    if (Blac.logSpy) {
+      Blac.logSpy(args);
+    }
     if (Blac.enableLog && Blac.logLevel === 'warn')
       console.warn(`☢️ [Blac ${this.createdAt.toString()}]`, ...args);
     if (Blac.enableLog && Blac.logLevel === 'log')

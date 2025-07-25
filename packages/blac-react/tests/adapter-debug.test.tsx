@@ -1,4 +1,4 @@
-import { Cubit } from "@blac/core";
+import { Blac, Cubit } from "@blac/core";
 import { render } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import React from "react";
@@ -16,6 +16,15 @@ class DebugCubit extends Cubit<{ count: number }> {
 }
 
 test("adapter sharing debug", async () => {
+  const log: any[] = [];
+  Blac.logSpy = log.push.bind(log)
+
+  let l = 0
+  const logSoFar = () => {
+    console.log("Debug Log:", ++l, log.map(e => e[0]));
+    log.length = 0; // Clear log after printing
+  }
+
   const Component1 = () => {
     const [state, cubit] = useBloc(DebugCubit);
     return (
@@ -37,12 +46,16 @@ test("adapter sharing debug", async () => {
       <Component2 />
     </>
   );
+  logSoFar();
 
   expect(getByTestId("comp1")).toHaveTextContent("0");
   expect(getByTestId("comp2")).toHaveTextContent("0");
 
   await userEvent.click(getByTestId("btn1"));
+  logSoFar();
 
   expect(getByTestId("comp1")).toHaveTextContent("1");
   expect(getByTestId("comp2")).toHaveTextContent("1");
+
+  logSoFar();
 });

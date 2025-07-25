@@ -45,17 +45,17 @@ export class StateAdapter<TBloc extends BlocBase<any>> {
 
 ### 2. Dependency Tracking System
 
-Move all dependency tracking logic to core:
+The adapter now includes fine-grained dependency tracking with deep object and array support:
 
 ```typescript
 // @blac/core/src/tracking/DependencyTracker.ts
 export interface DependencyTracker {
-  // Track property access
+  // Track property access with full path support
   trackStateAccess(path: string): void;
   trackClassAccess(path: string): void;
 
   // Compute dependencies
-  computeDependencies(state: any, instance: any): DependencyArray;
+  computeDependencies(): DependencyArray;
 
   // Reset tracking
   reset(): void;
@@ -79,7 +79,31 @@ export interface ConsumerTracker {
   // Check if consumer should update
   shouldNotifyConsumer(consumerRef: object, changedPaths: Set<string>): boolean;
 }
+
+// @blac/core/src/proxy/ProxyFactory.ts
+export class ProxyFactory {
+  // Create state proxy with deep tracking
+  static createStateProxy<T extends object>(
+    target: T,
+    consumerRef: object,
+    consumerTracker: ConsumerTracker,
+    path: string = ''
+  ): T;
+  
+  // Create class proxy for method/property tracking
+  static createClassProxy<T extends object>(
+    target: T,
+    consumerRef: object,
+    consumerTracker: ConsumerTracker
+  ): T;
+}
 ```
+
+Key features of the dependency tracking system:
+- **Deep Object Tracking**: Automatically tracks access to nested objects and arrays
+- **Path-based Tracking**: Each property access is tracked with its full path (e.g., "user.profile.name")
+- **Proxy Caching**: Maintains consistent object identity for better performance
+- **Selective Re-renders**: Components only re-render when their accessed properties change
 
 ### 3. Subscription Management
 
@@ -145,7 +169,7 @@ export interface StateAdapterOptions<TBloc extends BlocBase<any>> {
 
 ### React Integration Example
 
-The React integration becomes a thin wrapper:
+The React integration now supports fine-grained dependency tracking:
 
 ```typescript
 // @blac/react/src/useBloc.tsx
@@ -153,45 +177,98 @@ export function useBloc<B extends BlocConstructor<BlocBase<any>>>(
   bloc: B,
   options?: BlocHookOptions<InstanceType<B>>,
 ): [BlocState<InstanceType<B>>, InstanceType<B>] {
-  // Create unique consumer ID
-  const consumerId = useMemo(() => generateUUID(), []);
-  const consumerRef = useRef({});
+  // Create stable references
+  const consumerIdRef = useRef(`react-${generateUUID()}`);
+  const componentRef = useRef({});
+  const consumerTrackerRef = useRef<ConsumerTracker | null>(null);
 
-  // Create adapter instance
-  const adapter = useMemo(() => {
-    return new StateAdapter({
-      blocConstructor: bloc,
-      blocId: options?.id,
-      blocProps: options?.props,
-      selector: options?.selector,
-      onMount: options?.onMount,
-      onUnmount: options?.onUnmount,
-      enableProxyTracking: !options?.selector,
+  // Get or create bloc instance
+  const bloc = useMemo(() => {
+    const blac = Blac.getInstance();
+    const isolated = (blocConstructor as any).isolated;
+    
+    if (isolated) {
+      const newBloc = new blocConstructor(options?.props);
+      const uniqueId = options?.id || `${blocConstructor.name}_${generateUUID()}`;
+      newBloc._updateId(uniqueId);
+      blac.activateBloc(newBloc);
+      return newBloc;
+    }
+    
+    return blac.getBloc(blocConstructor, {
+      id: options?.id,
+      props: options?.props,
     });
-  }, [bloc, options?.id, options?.props]);
+  }, [blocConstructor, options?.id]);
 
-  // Register consumer
+  // Initialize consumer tracker for fine-grained dependency tracking
   useEffect(() => {
-    adapter.addConsumer(consumerId, consumerRef.current);
-    return () => adapter.removeConsumer(consumerId);
-  }, [adapter, consumerId]);
+    if (options?.enableProxyTracking === true && !options?.selector) {
+      if (!consumerTrackerRef.current) {
+        consumerTrackerRef.current = new ConsumerTracker();
+        consumerTrackerRef.current.registerConsumer(consumerIdRef.current, componentRef.current);
+      }
+    }
+    return () => {
+      if (consumerTrackerRef.current) {
+        consumerTrackerRef.current.unregisterConsumer(consumerIdRef.current);
+      }
+    };
+  }, [options?.enableProxyTracking, options?.selector]);
 
-  // Use React's useSyncExternalStore
-  const state = useSyncExternalStore(
-    adapter.subscribe.bind(adapter),
-    adapter.getSnapshot.bind(adapter),
-    adapter.getServerSnapshot.bind(adapter),
+  // Subscribe to state changes
+  const rawState = useSyncExternalStore(
+    (onStoreChange) => {
+      const unsubscribe = bloc._observer.subscribe({
+        id: consumerIdRef.current,
+        fn: () => onStoreChange(),
+      });
+      return unsubscribe;
+    },
+    () => bloc.state,
+    () => bloc.state
   );
 
-  // Return proxied state and instance
-  const [proxiedState, proxiedInstance] = useMemo(() => {
-    return [
-      adapter.createStateProxy(state),
-      adapter.createClassProxy(adapter.getInstance()),
-    ];
-  }, [state, adapter]);
+  // Create proxies for fine-grained tracking (if enabled)
+  const proxyState = useMemo(() => {
+    if (options?.enableProxyTracking !== true || !consumerTrackerRef.current) {
+      return rawState;
+    }
+    
+    // Reset tracking before each render
+    consumerTrackerRef.current.resetConsumerTracking(componentRef.current);
+    
+    return ProxyFactory.createStateProxy(
+      rawState,
+      componentRef.current,
+      consumerTrackerRef.current
+    );
+  }, [rawState, options?.enableProxyTracking]);
 
-  return [proxiedState, proxiedInstance];
+  return [proxyState, bloc];
+}
+```
+
+Usage example with fine-grained tracking:
+
+```typescript
+// Component will only re-render when accessed properties change
+function UserProfile() {
+  const [state, bloc] = useBloc(UserBloc, {
+    enableProxyTracking: true  // Enable fine-grained tracking
+  });
+  
+  // Only re-renders when state.user.name changes
+  return <h1>{state.user.name}</h1>;
+}
+
+function UserStats() {
+  const [state, bloc] = useBloc(UserBloc, {
+    enableProxyTracking: true
+  });
+  
+  // Only re-renders when state.stats changes
+  return <div>Posts: {state.stats.postCount}</div>;
 }
 ```
 
