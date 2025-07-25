@@ -124,15 +124,19 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
   }, [bloc]); // Only re-run if bloc instance changes
 
   // Subscribe to state changes using useSyncExternalStore
-  const rawState = useSyncExternalStore(
-    // Subscribe function
-    (onStoreChange) => {
+  const subscribe = useMemo(
+    () => (onStoreChange: () => void) => {
       const unsubscribe = bloc._observer.subscribe({
         id: consumerIdRef.current,
         fn: () => onStoreChange(),
       });
       return unsubscribe;
     },
+    [bloc],
+  );
+
+  const rawState = useSyncExternalStore(
+    subscribe,
     // Get snapshot
     () => bloc.state,
     // Get server snapshot (same as client for now)
