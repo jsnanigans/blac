@@ -26,6 +26,9 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
   // Core components
   private consumerTracker: ConsumerTracker;
 
+  unmountTime: number = 0;
+  mountTime: number = 0;
+
   // Dependency tracking
   private dependencyValues?: unknown[];
   private isUsingDependencies: boolean = false;
