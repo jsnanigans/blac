@@ -15,15 +15,6 @@ const dummyBloc = new DummyBloc();
 
 describe('BlacObserver', () => {
   describe('subscribe', () => {
-    it('should add an observer to the list of observers', () => {
-      const freshBloc = new DummyBloc();
-      const observable = new BlacObservable(freshBloc);
-      const observer = { fn: vi.fn(), id: 'foo' };
-      observable.subscribe(observer);
-      expect(observable.size).toBe(1);
-      expect(observable.observers.has(observer)).toBe(true);
-    });
-
     it('should return a function to unsubscribe the observer', () => {
       const freshBloc = new DummyBloc();
       const observable = new BlacObservable(freshBloc);

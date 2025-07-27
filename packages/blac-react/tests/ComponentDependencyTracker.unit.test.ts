@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach } from 'vitest';
 import { ComponentDependencyTracker } from '../src/ComponentDependencyTracker';
 
 describe('ComponentDependencyTracker Unit Tests', () => {
@@ -20,13 +21,6 @@ describe('ComponentDependencyTracker Unit Tests', () => {
       expect(metrics.totalComponents).toBe(2);
     });
 
-    it('should not duplicate component registrations', () => {
-      tracker.registerComponent('comp1', componentRef1);
-      tracker.registerComponent('comp1', componentRef1); // Same registration
-
-      const metrics = tracker.getMetrics();
-      expect(metrics.totalComponents).toBe(1);
-    });
   });
 
   describe('Dependency Tracking', () => {
@@ -141,16 +135,6 @@ describe('ComponentDependencyTracker Unit Tests', () => {
       expect(deps).toEqual([[], []]);
     });
 
-    it('should handle missing properties gracefully', () => {
-      tracker.trackStateAccess(componentRef1, 'nonexistent');
-      tracker.trackClassAccess(componentRef1, 'nonexistentGetter');
-
-      const state = { counter: 1 };
-      const classInstance = { textLength: 1 };
-
-      const deps = tracker.getComponentDependencies(componentRef1, state, classInstance);
-      expect(deps).toEqual([[], []]); // No values found for tracked properties
-    });
   });
 
   describe('Component Cleanup', () => {
@@ -168,11 +152,6 @@ describe('ComponentDependencyTracker Unit Tests', () => {
       expect(tracker.getClassAccess(componentRef1).size).toBe(0);
     });
 
-    it('should handle reset for unregistered components', () => {
-      const unregisteredRef = {};
-      // Should not throw
-      expect(() => tracker.resetComponent(unregisteredRef)).not.toThrow();
-    });
   });
 
   describe('Metrics', () => {

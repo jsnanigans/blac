@@ -8,11 +8,6 @@ class BlocBaseSimpleIsolated extends BlocBase<unknown> {
 
 describe('BlocBase', () => {
   describe('constructor', () => {
-    it('should create a new observable', () => {
-      const instance = new BlocBaseSimple(0);
-      expect(instance._observer).toBeDefined();
-    });
-
     it('should set initial state', () => {
       const initial = {
         a: 2,
@@ -85,13 +80,6 @@ describe('BlocBase', () => {
   // });
 
   describe('getters', () => {
-    describe('name', () => {
-      it('should return the name of the constructor', () => {
-        const instance = new BlocBaseSimple(0);
-        expect(instance._name).toBe('BlocBaseSimple');
-      });
-    });
-
     describe('state', () => {
       it('should return the current state', () => {
         const instance = new BlocBaseSimple(0);

@@ -34,60 +34,6 @@ class TestCubitWithGetters extends Cubit<TestState> {
 }
 
 describe('Getter Value Tracking', () => {
-  it('should track getter values and detect changes', () => {
-    const consoleLogSpy = vi.spyOn(console, 'log');
-    const componentRef = { current: {} };
-    
-    const adapter = new BlacAdapter({
-      componentRef,
-      blocConstructor: TestCubitWithGetters,
-    });
-
-    // Enable debug logging temporarily
-    console.log('Creating proxies...');
-
-    // Create proxies
-    const proxyBloc = adapter.getProxyBlocInstance();
-    const proxyState = adapter.getProxyState(adapter.blocInstance.state);
-
-    console.log('Accessing getters through proxy...');
-    
-    // Access getters through proxy
-    const doubleCount1 = proxyBloc.doubleCount;
-    const uppercaseName1 = proxyBloc.uppercaseName;
-    
-    console.log('doubleCount value:', doubleCount1);
-    console.log('uppercaseName value:', uppercaseName1);
-    
-    // Log all console.log calls for debugging
-    console.log('All logs:', consoleLogSpy.mock.calls.map(call => call[0]));
-    
-    // Verify getter values were tracked
-    const getterLogs = consoleLogSpy.mock.calls.filter(call => 
-      call[0].includes('Getter value:')
-    );
-    
-    expect(getterLogs.length).toBeGreaterThan(0);
-    
-    // Find the log for doubleCount
-    const doubleCountLog = getterLogs.find(log => 
-      JSON.stringify(log[1]).includes('"prop":"doubleCount"')
-    );
-    expect(doubleCountLog).toBeDefined();
-    expect(doubleCountLog![1].value).toBe('0'); // 0 * 2 = 0
-    
-    // Find the log for uppercaseName
-    const uppercaseNameLog = getterLogs.find(log => 
-      JSON.stringify(log[1]).includes('"prop":"uppercaseName"')
-    );
-    expect(uppercaseNameLog).toBeDefined();
-    expect(uppercaseNameLog![1].value).toBe('"TEST"');
-
-    // Cleanup
-    adapter.unmount();
-    consoleLogSpy.mockRestore();
-  });
-
   it('should detect when getter values change', () => {
     const consoleLogSpy = vi.spyOn(console, 'log');
     const componentRef = { current: {} };

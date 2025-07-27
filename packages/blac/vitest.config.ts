@@ -16,5 +16,11 @@ export default defineConfig({
         'src/**/*.spec.ts', // Spec files themselves
       ],
     },
+    onConsoleLog(log) {
+      if (log.startsWith("UNIT")) {
+        return true;
+      }
+      return false;
+    }
   },
 });

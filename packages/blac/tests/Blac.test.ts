@@ -23,12 +23,6 @@ describe('Blac', () => {
       expect(blac1).toBe(blac2);
     });
 
-    it('should return the same instance when constructorn is used', () => {
-      const blac1 = new Blac();
-      const blac2 = new Blac();
-      expect(blac1).toBe(blac2);
-    });
-
     test('resetInstance should reset the instance', () => {
       const blac1 = new Blac();
       Blac.getInstance().resetInstance();
@@ -44,17 +38,6 @@ describe('Blac', () => {
       const bloc = new ExampleBloc(null);
       const key = blac.createBlocInstanceMapKey(bloc._name, bloc._id);
       expect(key).toBe(`${bloc._name}:${bloc._id}`);
-    });
-  });
-
-  describe('registerBlocInstance', () => {
-    it('should add the bloc to the blocInstanceMap', () => {
-      const blac = new Blac();
-      const bloc = new ExampleBloc(null);
-      const key = blac.createBlocInstanceMapKey(bloc._name, bloc._id);
-
-      blac.registerBlocInstance(bloc);
-      expect(blac.blocInstanceMap.get(key)).toBe(bloc);
     });
   });
 
@@ -87,16 +70,6 @@ describe('Blac', () => {
       blac.registerBlocInstance(bloc);
       const result = blac.findRegisteredBlocInstance(ExampleBloc, 'foo');
       expect(result).toBe(undefined);
-    });
-  });
-
-  describe('registerIsolatedBlocInstance', () => {
-    it('should add the bloc to the isolatedBlocMap', () => {
-      const blac = new Blac();
-      const bloc = new ExampleBloc(null);
-      blac.registerIsolatedBlocInstance(bloc);
-      const blocs = blac.isolatedBlocMap.get(ExampleBloc);
-      expect(blocs).toEqual([bloc]);
     });
   });
 

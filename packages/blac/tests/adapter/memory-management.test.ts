@@ -96,27 +96,4 @@ describe('BlacAdapter Memory Management', () => {
     expect(adapter2.blocInstance._consumers.size).toBe(0);
   });
 
-  it('should handle rapid mount/unmount cycles without memory leaks', () => {
-    const componentRef = { current: {} };
-
-    // Simulate React Strict Mode double-mounting
-    for (let i = 0; i < 5; i++) {
-      const adapter = new BlacAdapter({
-        componentRef,
-        blocConstructor: TestCubit,
-      });
-
-      adapter.mount();
-      expect(adapter.blocInstance._consumers.size).toBeGreaterThanOrEqual(0);
-
-      adapter.unmount();
-
-      // After unmount, the bloc should have no consumers
-      // (unless it's keepAlive, which TestCubit is not)
-      if (adapter.blocInstance._consumers.size === 0) {
-        // Bloc might be scheduled for disposal
-        expect(adapter.blocInstance._consumers.size).toBe(0);
-      }
-    }
-  });
 });

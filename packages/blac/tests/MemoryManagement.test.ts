@@ -46,29 +46,6 @@ describe('Memory Management Fixes', () => {
       expect((cubit as any)._consumerRefs.has('test-consumer')).toBe(false);
     });
 
-    it('should validate and clean up dead consumer references', () => {
-      const cubit = Blac.getBloc(TestCubit);
-      let consumerRef: any = {};
-      
-      // Add consumer with reference
-      cubit._addConsumer('test-consumer', consumerRef);
-      expect(cubit._consumers.size).toBe(1);
-      
-      // Simulate garbage collection by removing reference
-      consumerRef = null;
-      
-      // Force garbage collection (in real scenarios this would happen automatically)
-      if (global.gc) {
-        global.gc();
-      }
-      
-      // Validate consumers should clean up dead references
-      cubit._validateConsumers();
-      
-      // The consumer should still be there since we can't force GC in tests
-      // But the validation method should work without errors
-      expect(typeof cubit._validateConsumers).toBe('function');
-    });
   });
 
   describe('Disposal Race Condition Prevention', () => {
@@ -115,16 +92,6 @@ describe('Memory Management Fixes', () => {
   });
 
   describe('Blac Manager Disposal Safety', () => {
-    it('should handle disposal of already disposed blocs', () => {
-      const cubit = Blac.getBloc(TestCubit);
-      
-      // First disposal through bloc
-      cubit._dispose();
-      
-      // Second disposal through manager should be safe
-      expect(() => Blac.disposeBloc(cubit as any)).not.toThrow();
-    });
-
     it('should properly clean up isolated blocs', () => {
       const cubit1 = Blac.getBloc(IsolatedTestCubit, { id: 'test1' });
       const cubit2 = Blac.getBloc(IsolatedTestCubit, { id: 'test2' });

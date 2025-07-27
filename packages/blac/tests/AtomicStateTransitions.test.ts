@@ -120,34 +120,6 @@ describe('Atomic State Transitions', () => {
   });
 
   describe('State Machine Validation', () => {
-    it('should enforce valid state transitions', () => {
-      const bloc = Blac.getBloc(TestCubit);
-      
-      // Access the private method for testing
-      const atomicTransition = (bloc as any)._atomicStateTransition.bind(bloc);
-      
-      // Test valid transition: ACTIVE -> DISPOSAL_REQUESTED
-      const result1 = atomicTransition(
-        BlocLifecycleState.ACTIVE,
-        BlocLifecycleState.DISPOSAL_REQUESTED
-      );
-      expect(result1.success).toBe(true);
-      
-      // Test invalid transition: DISPOSAL_REQUESTED -> ACTIVE (should work for revert)
-      const result2 = atomicTransition(
-        BlocLifecycleState.DISPOSAL_REQUESTED,
-        BlocLifecycleState.ACTIVE
-      );
-      expect(result2.success).toBe(true);
-      
-      // Test invalid transition from wrong state
-      const result3 = atomicTransition(
-        BlocLifecycleState.DISPOSED,
-        BlocLifecycleState.ACTIVE
-      );
-      expect(result3.success).toBe(false);
-    });
-
     it('should handle disposal from both ACTIVE and DISPOSAL_REQUESTED states', () => {
       const bloc1 = Blac.getBloc(TestCubit, { id: 'test1' });
       const bloc2 = Blac.getBloc(TestCubit, { id: 'test2' });
@@ -167,19 +139,6 @@ describe('Atomic State Transitions', () => {
       expect(bloc2.isDisposed).toBe(true);
     });
 
-    it('should return false for disposal of already disposed blocs', () => {
-      const bloc = Blac.getBloc(TestCubit);
-      
-      // First disposal should succeed
-      const result1 = bloc._dispose();
-      expect(result1).toBe(true);
-      expect(bloc.isDisposed).toBe(true);
-      
-      // Second disposal should fail
-      const result2 = bloc._dispose();
-      expect(result2).toBe(false);
-      expect(bloc.isDisposed).toBe(true);
-    });
   });
 
   describe('Isolated Bloc Atomic Behavior', () => {

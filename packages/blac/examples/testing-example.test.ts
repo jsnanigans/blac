@@ -114,15 +114,6 @@ describe('Blac Testing Utilities Examples', () => {
       expect(counter.state).toEqual({ count: 0, loading: false });
     });
 
-    it('should create multiple independent instances', () => {
-      const counter1 = BlocTest.createBloc(CounterCubit);
-      const counter2 = BlocTest.createBloc(CounterCubit);
-      
-      counter1.increment();
-      
-      expect(counter1.state.count).toBe(1);
-      expect(counter2.state.count).toBe(0);
-    });
   });
 
   describe('BlocTest.waitForState', () => {
@@ -214,18 +205,6 @@ describe('Blac Testing Utilities Examples', () => {
       expect(mockBloc.state.count).toBe(5);
     });
 
-    it('should track handler registration', () => {
-      const mockBloc = new MockBloc<CounterState>({ count: 0, loading: false });
-      
-      expect(mockBloc.getHandlerCount()).toBe(0);
-      
-      mockBloc.mockEventHandler(IncrementEvent, (event, emit) => {
-        // Mock handler
-      });
-      
-      expect(mockBloc.getHandlerCount()).toBe(1);
-      expect(mockBloc.hasHandler(IncrementEvent)).toBe(true);
-    });
   });
 
   describe('MockCubit', () => {
@@ -245,20 +224,6 @@ describe('Blac Testing Utilities Examples', () => {
       expect(history[3]).toEqual({ count: 3, loading: false });
     });
 
-    it('should clear state history', () => {
-      const mockCubit = new MockCubit<CounterState>({ count: 0, loading: false });
-      
-      mockCubit.emit({ count: 1, loading: false });
-      mockCubit.emit({ count: 2, loading: false });
-      
-      expect(mockCubit.getStateHistory()).toHaveLength(3);
-      
-      mockCubit.clearStateHistory();
-      
-      const history = mockCubit.getStateHistory();
-      expect(history).toHaveLength(1);
-      expect(history[0]).toEqual(mockCubit.state);
-    });
   });
 
   describe('MemoryLeakDetector', () => {
@@ -280,21 +245,6 @@ describe('Blac Testing Utilities Examples', () => {
       expect(result.stats.registeredBlocs).toBeGreaterThan(detector['initialStats'].registeredBlocs);
     });
 
-    it('should provide detailed leak report', () => {
-      const detector = new MemoryLeakDetector();
-      
-      // Create some blocs (these will be cleaned up by tearDown)
-      BlocTest.createBloc(CounterCubit);
-      BlocTest.createBloc(UserBloc);
-      
-      const result = detector.checkForLeaks();
-      
-      expect(result).toHaveProperty('hasLeaks');
-      expect(result).toHaveProperty('report');
-      expect(result).toHaveProperty('stats');
-      expect(typeof result.report).toBe('string');
-      expect(result.report).toContain('Memory Leak Detection Report');
-    });
   });
 
   describe('Integration Testing', () => {

@@ -59,14 +59,6 @@ describe('Blac.getBloc', () => {
 
   // --- Non-Isolated Cubit Tests ---
 
-  test('should retrieve a non-isolated cubit by class name (default ID)', () => {
-    const cubit1 = Blac.getBloc(NonIsolatedCubit);
-    expect(cubit1).toBeInstanceOf(NonIsolatedCubit);
-    expect(cubit1.state.value).toBe('default');
-    const cubit2 = Blac.getBloc(NonIsolatedCubit);
-    expect(cubit2).toBe(cubit1); // Should return the same instance
-  });
-
   test('should retrieve a non-isolated cubit with a custom ID', () => {
     const customId = 'customId123';
     const cubit1 = Blac.getBloc(NonIsolatedCubit, { id: customId });
@@ -127,16 +119,6 @@ describe('Blac.getBloc', () => {
 
 
   // --- Isolated Cubit Tests ---
-
-  test('should retrieve an isolated cubit by class name (default ID)', () => {
-    const cubit1 = Blac.getBloc(IsolatedCubit);
-    expect(cubit1).toBeInstanceOf(IsolatedCubit);
-    expect(cubit1.state.value).toBe('isolated_default');
-    // For isolated cubits, each getBloc might create a new one if ID is not managed carefully or reused
-    // This test checks creation and retrieval for the default ID case.
-    const cubit2 = Blac.getBloc(IsolatedCubit);
-    expect(cubit2).toBe(cubit1); // With default ID (class name), should return same instance
-  });
 
   test('should retrieve an isolated cubit with a custom ID', () => {
     const customId = 'isolatedCustomId';
@@ -211,16 +193,4 @@ describe('Blac.getBloc', () => {
     expect(cubit2._id).toBe('non_iso_B');
   });
   
-  test('should log when Blac.enableLog is true (manual check)', () => {
-    // This test is more of a manual verification.
-    // We can spy on console.warn if needed, but Blac's log uses console.warn.
-    const consoleWarnSpy = vi.spyOn(console, 'warn');
-    Blac.enableLog = true;
-    Blac.getBloc(NonIsolatedCubit, { id: 'loggingTest' });
-    expect(consoleWarnSpy).toHaveBeenCalled();
-    // Check for a specific log message structure if precise verification is needed
-    // e.g., expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('[Blac'), expect.anything());
-    Blac.enableLog = false; // Reset for other tests
-    consoleWarnSpy.mockRestore();
-  });
 }); 

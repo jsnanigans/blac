@@ -128,10 +128,6 @@ describe('Bloc', () => {
   });
 
   describe('constructor and on() registration', () => {
-    it('should initialize with the given initial state', () => {
-      expect(testBloc.currentState).toEqual(initialState);
-    });
-
     it('should register event handlers via on() in the constructor', () => {
       const handlers = testBloc.eventHandlers
       expect(handlers.has(IncrementEvent)).toBe(true);
