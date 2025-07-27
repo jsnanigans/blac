@@ -1,4 +1,4 @@
-import { Blac, GetBlocOptions } from '../Blac';
+import { Blac } from '../Blac';
 import { BlocBase } from '../BlocBase';
 import { BlocConstructor, BlocState, InferPropsFromGeneric } from '../types';
 import { generateUUID } from '../utils/uuid';
@@ -32,8 +32,6 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
 
   // Lifecycle state
   private hasMounted = false;
-  private mountTime = 0;
-  private unmountTime = 0;
   private mountCount = 0;
 
   options?: AdapterOptions<InstanceType<B>>;

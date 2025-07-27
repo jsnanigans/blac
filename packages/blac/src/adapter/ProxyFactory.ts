@@ -72,13 +72,13 @@ export class ProxyFactory {
             prop === 'map' ||
             prop === 'filter')
         ) {
-          const value = Reflect.get(obj, prop);
+          // const value = Reflect.get(obj, prop);
           /*
           if (typeof value === 'function') {
             return value.bind(obj);
           }
           */
-          return value;
+          // return value;
         }
 
         const fullPath = path ? `${path}.${prop}` : prop;

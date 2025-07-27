@@ -75,7 +75,7 @@ describe('Bloc Event Handling', () => {
   beforeEach(() => {
     blacInstance = new Blac({ __unsafe_ignore_singleton: true });
     Blac.enableLog = false; // Disable logging for tests
-    bloc = new CounterBloc();
+    bloc = blacInstance.getBloc(CounterBloc);
   });
 
   afterEach(() => {
