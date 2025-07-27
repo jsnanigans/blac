@@ -74,12 +74,21 @@ export class ProxyProvider {
 
     // Log methods and getters
     const proto = Object.getPrototypeOf(target);
-    const methods = Object.getOwnPropertyNames(proto).filter(
-      (name) => typeof proto[name] === 'function' && name !== 'constructor',
-    );
-    const getters = Object.getOwnPropertyNames(proto).filter((name) => {
+    const methods: string[] = [];
+    const getters: string[] = [];
+
+    // Safely check for methods and getters without invoking them
+    Object.getOwnPropertyNames(proto).forEach((name) => {
+      if (name === 'constructor') return;
+
       const descriptor = Object.getOwnPropertyDescriptor(proto, name);
-      return descriptor && descriptor.get;
+      if (descriptor) {
+        if (descriptor.get) {
+          getters.push(name);
+        } else if (typeof descriptor.value === 'function') {
+          methods.push(name);
+        }
+      }
     });
 
     console.log(`🔌 [ProxyProvider] Class structure:`, {
@@ -107,11 +116,6 @@ export class ProxyProvider {
     const startTime = performance.now();
 
     console.log(`🔌 [ProxyProvider] 📦 getProxyState called`);
-    console.log(`🔌 [ProxyProvider] State preview:`, {
-      keys: Object.keys(state),
-      isArray: Array.isArray(state),
-      size: Array.isArray(state) ? state.length : Object.keys(state).length,
-    });
 
     const proxy = this.createStateProxy(state);
 
@@ -130,7 +134,6 @@ export class ProxyProvider {
     console.log(`🔌 [ProxyProvider] Bloc instance:`, {
       name: blocInstance._name,
       id: blocInstance._id,
-      state: blocInstance.state,
     });
 
     const proxy = this.createClassProxy(blocInstance);

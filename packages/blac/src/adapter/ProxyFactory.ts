@@ -94,15 +94,17 @@ export class ProxyFactory {
           `🏭 [ProxyFactory] 🔍 State property accessed: ${fullPath}`,
         );
 
-        // Track the access
-        consumerTracker.trackAccess(consumerRef, 'state', fullPath);
-
         const value = Reflect.get(obj, prop);
         const valueType = typeof value;
         const isObject = value && valueType === 'object' && value !== null;
 
+        // Track the access with value (only for primitives at root level)
+        const trackValue = !isObject ? value : undefined;
+        consumerTracker.trackAccess(consumerRef, 'state', fullPath, trackValue);
+
         console.log(`🏭 [ProxyFactory] Access details:`, {
           path: fullPath,
+          value: !isObject ? JSON.stringify(value) : '[Object/Array]',
           valueType,
           isObject,
           isArray: Array.isArray(value),
@@ -224,7 +226,34 @@ export class ProxyFactory {
     const handler: ProxyHandler<T> = {
       get(obj: T, prop: string | symbol): any {
         const value = Reflect.get(obj, prop);
-        const isGetter = Reflect.getOwnPropertyDescriptor(obj, prop)?.get;
+        // Check for getter on the prototype chain with safety limits
+        let isGetter = false;
+        let currentObj: any = obj;
+        const visitedPrototypes = new WeakSet();
+        const MAX_PROTOTYPE_DEPTH = 10; // Reasonable depth limit
+        let depth = 0;
+
+        while (currentObj && !isGetter && depth < MAX_PROTOTYPE_DEPTH) {
+          // Check for circular references
+          if (visitedPrototypes.has(currentObj)) {
+            console.warn(`🏭 [ProxyFactory] Circular prototype chain detected for property: ${String(prop)}`);
+            break;
+          }
+          visitedPrototypes.add(currentObj);
+
+          try {
+            const descriptor = Object.getOwnPropertyDescriptor(currentObj, prop);
+            if (descriptor && descriptor.get) {
+              isGetter = true;
+              break;
+            }
+            currentObj = Object.getPrototypeOf(currentObj);
+            depth++;
+          } catch (error) {
+            console.warn(`🏭 [ProxyFactory] Error checking prototype chain: ${error}`);
+            break;
+          }
+        }
 
         if (!isGetter) {
           // bind methods to the object if they are functions
@@ -236,14 +265,32 @@ export class ProxyFactory {
             console.log(`🏭 [ProxyFactory] Binding method to object instance`);
             return value.bind(obj);
           }
-          // Return the value directly if it's not a getter
+
+          // Return the value directly if it's not a getter or method
+          console.log(
+            `🏭 [ProxyFactory] 📦 Property accessed: ${String(prop)}`,
+          );
           return value;
         }
 
-        // For getters, track access without binding
+        // For getters, track access and value
         proxyStats.propertyAccesses++;
         console.log(`🏭 [ProxyFactory] 🎟️ Getter accessed: ${String(prop)}`);
-        consumerTracker.trackAccess(consumerRef, 'class', prop);
+
+        // Track the getter value if it's a primitive
+        const getterValue = value;
+        const isGetterValuePrimitive = getterValue !== null && typeof getterValue !== 'object';
+        const trackValue = isGetterValuePrimitive ? getterValue : undefined;
+
+        console.log(`🏭 [ProxyFactory] Getter value:`, {
+          prop: String(prop),
+          value: trackValue !== undefined ? JSON.stringify(trackValue) : '[Object/Function]',
+          valueType: typeof getterValue,
+          isPrimitive: isGetterValuePrimitive,
+        });
+
+        // Track access with value for primitives
+        consumerTracker.trackAccess(consumerRef, 'class', String(prop), trackValue);
         return value;
       },
 

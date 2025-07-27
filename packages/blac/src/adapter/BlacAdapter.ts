@@ -99,11 +99,12 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
     consumerRef: object,
     type: 'state' | 'class',
     path: string,
+    value?: any,
   ): void {
     console.log(
       `🔌 [BlacAdapter] trackAccess - Type: ${type}, Path: ${path}, Consumer ID: ${this.id}`,
     );
-    this.dependencyOrchestrator.trackAccess(consumerRef, type, path);
+    this.dependencyOrchestrator.trackAccess(consumerRef, type, path, value);
   }
 
   getConsumerDependencies(consumerRef: object): DependencyArray | null {
@@ -177,11 +178,46 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
 
     const unsubscribe = this.blocInstance._observer.subscribe({
       id: this.id,
-      fn: () => {
+      fn: (
+        newState: BlocState<InstanceType<B>>,
+        oldState: BlocState<InstanceType<B>>,
+      ) => {
         const callbackStart = performance.now();
         console.log(
           `🔌 [BlacAdapter] 📢 Subscription callback triggered - ID: ${this.id}`,
         );
+
+        // Check if any tracked values have changed
+        const consumerInfo = this.consumerRegistry.getConsumerInfo(
+          this.componentRef.current,
+        );
+        if (consumerInfo && consumerInfo.hasRendered) {
+          // Only check dependencies if component has rendered at least once
+          const hasChanged = consumerInfo.tracker.hasValuesChanged(
+            newState,
+            this.blocInstance,
+          );
+
+          if (!hasChanged) {
+            console.log(
+              `🔌 [BlacAdapter] 🚫 No tracked dependencies changed - skipping re-render`,
+            );
+            const callbackEnd = performance.now();
+            console.log(
+              `🔌 [BlacAdapter] ⏱️ Dependency check time: ${(callbackEnd - callbackStart).toFixed(2)}ms`,
+            );
+            return; // Don't trigger re-render
+          }
+
+          console.log(
+            `🔌 [BlacAdapter] ✅ Tracked dependencies changed - triggering re-render`,
+          );
+        } else {
+          console.log(
+            `🔌 [BlacAdapter] 🆕 First render or no consumer info - triggering re-render to establish baseline`,
+          );
+        }
+
         options.onChange();
         const callbackEnd = performance.now();
         console.log(

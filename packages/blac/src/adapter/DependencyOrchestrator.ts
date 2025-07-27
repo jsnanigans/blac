@@ -17,6 +17,7 @@ export class DependencyOrchestrator {
     consumerRef: object,
     type: 'state' | 'class',
     path: string,
+    value?: any,
   ): void {
     const startTime = performance.now();
     this.accessCount++;
@@ -36,12 +37,12 @@ export class DependencyOrchestrator {
     const beforeMetrics = consumerInfo.tracker.getMetrics();
 
     if (type === 'state') {
-      consumerInfo.tracker.trackStateAccess(path);
+      consumerInfo.tracker.trackStateAccess(path, value);
       console.log(
         `🎯 [DependencyOrchestrator] ✅ Tracked state access: ${path}`,
       );
     } else {
-      consumerInfo.tracker.trackClassAccess(path);
+      consumerInfo.tracker.trackClassAccess(path, value);
       console.log(
         `🎯 [DependencyOrchestrator] ✅ Tracked class access: ${path}`,
       );

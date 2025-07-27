@@ -86,16 +86,12 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
     adapter.options = options;
   }, [options]);
 
-  const bloc = adapter.blocInstance;
-  console.log(
-    `⚛️ [useBloc] 📦 Bloc instance retrieved: ${bloc._name} (${bloc._id})`,
-  );
-
   // Register as consumer and handle lifecycle
   const mountEffectCount = useRef(0);
   useEffect(() => {
     mountEffectCount.current++;
     const effectStart = performance.now();
+    const bloc = adapter.blocInstance;
     console.log(
       `⚛️ [useBloc] 🏔️ Mount effect triggered (run #${mountEffectCount.current}) for ${hookIdRef.current}`,
     );
@@ -117,7 +113,7 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
         `⚛️ [useBloc] ✅ Component unmounted in ${(performance.now() - unmountStart).toFixed(2)}ms`,
       );
     };
-  }, [bloc]);
+  }, [adapter.blocInstance]);
 
   // Subscribe to state changes using useSyncExternalStore
   const subscribeMemoCount = useRef(0);
@@ -128,6 +124,7 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
     );
 
     let subscriptionCount = 0;
+
     return (onStoreChange: () => void) => {
       subscriptionCount++;
       console.log(
@@ -150,7 +147,7 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
         unsubscribe();
       };
     };
-  }, [bloc]);
+  }, [adapter.blocInstance]);
 
   const snapshotCount = useRef(0);
   const serverSnapshotCount = useRef(0);
@@ -160,18 +157,16 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
     // Get snapshot
     () => {
       snapshotCount.current++;
+      const bloc = adapter.blocInstance;
       const state = bloc.state;
       console.log(
         `⚛️ [useBloc] 📸 Getting snapshot (#${snapshotCount.current}) for ${hookIdRef.current}`,
       );
-      console.log(`⚛️ [useBloc] State preview:`, {
-        keys: Object.keys(state),
-        isArray: Array.isArray(state),
-      });
       return state;
     },
     // Get server snapshot (same as client for now)
     () => {
+      const bloc = adapter.blocInstance;
       serverSnapshotCount.current++;
       const state = bloc.state;
       console.log(
@@ -216,7 +211,7 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
       `⚛️ [useBloc] ✅ Bloc proxy created in ${(performance.now() - memoStart).toFixed(2)}ms`,
     );
     return proxyBloc;
-  }, [bloc, options?.selector]);
+  }, [adapter.blocInstance, options?.selector]);
 
   // Track component unmount
   useEffect(() => {
@@ -237,6 +232,14 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
     };
   }, []);
 
+  // Mark consumer as rendered after each render
+  useEffect(() => {
+    console.log(
+      `⚛️ [useBloc] 🎨 Marking consumer as rendered after render #${renderCount.current}`,
+    );
+    adapter.updateLastNotified(componentRef.current);
+  });
+
   // Log final hook return
   console.log(
     `⚛️ [useBloc] 🎁 Returning [state, bloc] for render #${renderCount.current} of ${hookIdRef.current}`,
@@ -244,7 +247,7 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
   console.log(`⚛️ [useBloc] Hook execution summary:`, {
     hookId: hookIdRef.current,
     renderNumber: renderCount.current,
-    bloc: bloc._name,
+    bloc: adapter.blocInstance._name,
     hasSelector: !!options?.selector,
     snapshotsTaken: snapshotCount.current,
     serverSnapshotsTaken: serverSnapshotCount.current,

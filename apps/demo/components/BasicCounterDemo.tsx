@@ -6,6 +6,7 @@ import { Button } from './ui/Button';
 const BasicCounterDemo: React.FC = () => {
   // Uses the global/shared instance of CounterCubit by default (no id, not static isolated)
   const [state, cubit] = useBloc(CounterCubit);
+  console.log('BASIC COUNTER DEMO RENDER', state);
 
   return (
     <div className="space-y-3">
@@ -18,4 +19,4 @@ const BasicCounterDemo: React.FC = () => {
   );
 };
 
-export default BasicCounterDemo; 
+export default BasicCounterDemo;
