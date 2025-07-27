@@ -27,25 +27,46 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
   public calledOnMount = false;
   public blocInstance: InstanceType<B>;
   private consumers = new WeakMap<object, BlacAdapterInfo>();
-  private consumerRefs = new Map<string, WeakRef<object>>();
   options?: AdapterOptions<InstanceType<B>>;
 
   constructor(
     instanceProps: { componentRef: { current: object }; blocConstructor: B },
     options?: typeof this.options,
   ) {
+    console.log(`🔌 [BlacAdapter] Constructor called - ID: ${this.id}`);
+    console.log(
+      `[BlacAdapter] Constructor name: ${instanceProps.blocConstructor.name}`,
+    );
+    console.log(`🔌 [BlacAdapter] Options:`, options);
+
     this.options = options;
     this.blocConstructor = instanceProps.blocConstructor;
     this.blocInstance = this.updateBlocInstance();
     this.componentRef = instanceProps.componentRef;
     this.registerConsumer(instanceProps.componentRef.current);
+
+    console.log(
+      `[BlacAdapter] Constructor complete - Bloc instance ID: ${this.blocInstance._id}`,
+    );
   }
 
   registerConsumer(consumerRef: object): void {
+    console.log(`🔌 [BlacAdapter] registerConsumer called - ID: ${this.id}`);
+    console.log(`🔌 [BlacAdapter] Has selector: ${!!this.options?.selector}`);
+
+    /*
     if (this.options?.selector) {
+      console.log(
+        `🔌 [BlacAdapter] Skipping dependency tracking due to selector`,
+      );
       return;
     }
+    */
+
     const tracker = new DependencyTracker();
+    console.log(
+      `[BlacAdapter] Created DependencyTracker for consumer ${this.id}`,
+    );
 
     this.consumers.set(consumerRef, {
       id: this.id,
@@ -54,17 +75,18 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
       hasRendered: false,
     });
 
-    this.consumerRefs.set(this.id, new WeakRef(consumerRef));
+    console.log(`🔌 [BlacAdapter] Consumer registered successfully`);
   }
 
   unregisterConsumer = (): void => {
-    const weakRef = this.consumerRefs.get(this.id);
-    if (weakRef) {
-      const consumerRef = weakRef.deref();
-      if (consumerRef) {
-        this.consumers.delete(consumerRef);
-      }
-      this.consumerRefs.delete(this.id);
+    console.log(`🔌 [BlacAdapter] unregisterConsumer called - ID: ${this.id}`);
+    // Since we're using WeakMap, we just need to delete from the WeakMap
+    // The componentRef.current should be the key
+    if (this.componentRef.current) {
+      this.consumers.delete(this.componentRef.current);
+      console.log(`🔌 [BlacAdapter] Deleted consumer from WeakMap`);
+    } else {
+      console.log(`🔌 [BlacAdapter] No component reference found`);
     }
   };
 
@@ -73,44 +95,81 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
     type: 'state' | 'class',
     path: string,
   ): void {
+    console.log(
+      `[BlacAdapter] trackAccess called - Type: ${type}, Path: ${path}`,
+    );
     const consumerInfo = this.consumers.get(consumerRef);
-    if (!consumerInfo) return;
+    if (!consumerInfo) {
+      console.log(`🔌 [BlacAdapter] No consumer info found for tracking`);
+      return;
+    }
 
     if (type === 'state') {
       consumerInfo.tracker.trackStateAccess(path);
+      console.log(`🔌 [BlacAdapter] Tracked state access: ${path}`);
     } else {
       consumerInfo.tracker.trackClassAccess(path);
+      console.log(`🔌 [BlacAdapter] Tracked class access: ${path}`);
     }
   }
 
   getConsumerDependencies(consumerRef: object): DependencyArray | null {
     const consumerInfo = this.consumers.get(consumerRef);
-    if (!consumerInfo) return null;
+    if (!consumerInfo) {
+      console.log(
+        `[BlacAdapter] getConsumerDependencies - No consumer info found`,
+      );
+      return null;
+    }
 
-    return consumerInfo.tracker.computeDependencies();
+    const deps = consumerInfo.tracker.computeDependencies();
+    console.log(
+      `[BlacAdapter] getConsumerDependencies - State paths:`,
+      deps.statePaths,
+    );
+    console.log(
+      `[BlacAdapter] getConsumerDependencies - Class paths:`,
+      deps.classPaths,
+    );
+    return deps;
   }
 
   shouldNotifyConsumer(
     consumerRef: object,
     changedPaths: Set<string>,
   ): boolean {
+    console.log(
+      `[BlacAdapter] shouldNotifyConsumer called - Changed paths:`,
+      Array.from(changedPaths),
+    );
+
     const consumerInfo = this.consumers.get(consumerRef);
-    if (!consumerInfo) return true; // If consumer not registered yet, notify by default
+    if (!consumerInfo) {
+      console.log(`🔌 [BlacAdapter] No consumer info - notifying by default`);
+      return true; // If consumer not registered yet, notify by default
+    }
 
     const dependencies = consumerInfo.tracker.computeDependencies();
     const allPaths = [...dependencies.statePaths, ...dependencies.classPaths];
 
+    console.log(`🔌 [BlacAdapter] Consumer dependencies:`, allPaths);
+    console.log(`🔌 [BlacAdapter] Has rendered: ${consumerInfo.hasRendered}`);
+
     // First render - always notify to establish baseline
     if (!consumerInfo.hasRendered) {
+      console.log(`🔌 [BlacAdapter] First render - will notify`);
       return true;
     }
 
     // After first render, if no dependencies tracked, don't notify
     if (allPaths.length === 0) {
+      console.log(`🔌 [BlacAdapter] No dependencies tracked - will NOT notify`);
       return false;
     }
 
-    return allPaths.some((path) => changedPaths.has(path));
+    const shouldNotify = allPaths.some((path) => changedPaths.has(path));
+    console.log(`🔌 [BlacAdapter] Dependency check result: ${shouldNotify}`);
+    return shouldNotify;
   }
 
   updateLastNotified(consumerRef: object): void {
@@ -118,42 +177,31 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
     if (consumerInfo) {
       consumerInfo.lastNotified = Date.now();
       consumerInfo.hasRendered = true;
+      console.log(
+        `🔌 [BlacAdapter] Updated last notified - Has rendered: true`,
+      );
+    } else {
+      console.log(
+        `🔌 [BlacAdapter] updateLastNotified - No consumer info found`,
+      );
     }
   }
 
-  getActiveConsumers(): Array<{ id: string; ref: object }> {
-    const active: Array<{ id: string; ref: object }> = [];
-
-    for (const [id, weakRef] of this.consumerRefs.entries()) {
-      const ref = weakRef.deref();
-      if (ref) {
-        active.push({ id, ref });
-      } else {
-        this.consumerRefs.delete(id);
-      }
-    }
-
-    return active;
-  }
+  // Removed getActiveConsumers() - WeakMaps cannot be iterated
+  // Active consumer tracking is now handled by BlocBase._consumers
 
   resetConsumerTracking(): void {
+    console.log(`🔌 [BlacAdapter] resetConsumerTracking called`);
     const consumerInfo = this.consumers.get(this.componentRef.current);
     if (consumerInfo) {
       consumerInfo.tracker.reset();
+      console.log(`🔌 [BlacAdapter] Consumer tracking reset`);
+    } else {
+      console.log(`🔌 [BlacAdapter] No consumer info found to reset`);
     }
   }
 
-  cleanup(): void {
-    const idsToRemove: string[] = [];
-
-    for (const [id, weakRef] of this.consumerRefs.entries()) {
-      if (!weakRef.deref()) {
-        idsToRemove.push(id);
-      }
-    }
-
-    idsToRemove.forEach((id) => this.consumerRefs.delete(id));
-  }
+  // Removed cleanup() - WeakMap handles garbage collection automatically
 
   createStateProxy = <T extends object>(
     props: Omit<
@@ -193,56 +241,96 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
   }
 
   createSubscription = (options: { onChange: () => void }) => {
-    return this.blocInstance._observer.subscribe({
+    console.log(`🔌 [BlacAdapter] createSubscription called - ID: ${this.id}`);
+    const unsubscribe = this.blocInstance._observer.subscribe({
       id: this.id,
-      fn: () => options.onChange(),
+      fn: () => {
+        console.log(
+          `[BlacAdapter] Subscription callback triggered - ID: ${this.id}`,
+        );
+        options.onChange();
+      },
     });
+    console.log(`🔌 [BlacAdapter] Subscription created`);
+    return unsubscribe;
   };
 
   mount = (): void => {
-    this.blocInstance._addConsumer(this.id, this.consumerRefs);
+    console.log(`🔌 [BlacAdapter] mount called - ID: ${this.id}`);
+    console.log(
+      `[BlacAdapter] Bloc instance: ${this.blocInstance._name} (${this.blocInstance._id})`,
+    );
+
+    this.blocInstance._addConsumer(this.id, this.componentRef.current);
+    console.log(`🔌 [BlacAdapter] Added consumer to bloc`);
 
     // Call onMount callback if provided
     if (!this.calledOnMount) {
       this.calledOnMount = true;
-      this.options?.onMount?.(this.blocInstance);
+      if (this.options?.onMount) {
+        console.log(`🔌 [BlacAdapter] Calling onMount callback`);
+        this.options.onMount(this.blocInstance);
+      }
     }
   };
 
   unmount = (): void => {
+    console.log(`🔌 [BlacAdapter] unmount called - ID: ${this.id}`);
+
     this.unregisterConsumer();
 
     // Unregister as consumer
     this.blocInstance._removeConsumer(this.id);
+    console.log(`🔌 [BlacAdapter] Removed consumer from bloc`);
 
     // Call onUnmount callback
-    this.options?.onUnmount?.(this.blocInstance);
+    if (this.options?.onUnmount) {
+      console.log(`🔌 [BlacAdapter] Calling onUnmount callback`);
+      this.options.onUnmount(this.blocInstance);
+    }
   };
 
   getProxyState = (
     state: BlocState<InstanceType<B>>,
   ): BlocState<InstanceType<B>> => {
+    console.log(`🔌 [BlacAdapter] getProxyState called`);
+    console.log(`🔌 [BlacAdapter] State:`, state);
+
+    /*
     if (this.options?.selector) {
+      console.log(`🔌 [BlacAdapter] Returning raw state due to selector`);
       return state;
     }
+    */
 
     // Reset tracking before each render
-    this.resetConsumerTracking();
+    // this.resetConsumerTracking();
 
-    return this.createStateProxy({
+    const proxy = this.createStateProxy({
       target: state,
       consumerRef: this.componentRef.current,
     });
+    console.log(`🔌 [BlacAdapter] Created state proxy`);
+    return proxy;
   };
 
   getProxyBlocInstance = (): InstanceType<B> => {
+    console.log(`🔌 [BlacAdapter] getProxyBlocInstance called`);
+
+    /*
     if (this.options?.selector) {
+      console.log(
+        `🔌 [BlacAdapter] Returning raw bloc instance due to selector`,
+      );
       return this.blocInstance;
     }
+    */
 
-    return this.createClassProxy({
+    const proxy = this.createClassProxy({
       target: this.blocInstance,
       consumerRef: this.componentRef.current,
     });
+    console.log(`🔌 [BlacAdapter] Created bloc instance proxy`);
+    return proxy;
   };
 }

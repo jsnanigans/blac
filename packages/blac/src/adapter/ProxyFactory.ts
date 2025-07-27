@@ -11,11 +11,19 @@ export class ProxyFactory {
     path?: string;
   }): T {
     const { target, consumerRef, consumerTracker, path = '' } = options;
+    console.log(
+      `🏭 [ProxyFactory] createStateProxy called - Path: ${path || 'root'}`,
+    );
+
     if (!consumerRef || !consumerTracker) {
+      console.log(
+        `🏭 [ProxyFactory] Missing consumerRef or tracker - returning raw target`,
+      );
       return target;
     }
 
     if (typeof target !== 'object' || target === null) {
+      console.log(`🏭 [ProxyFactory] Target is not object - returning as is`);
       return target;
     }
 
@@ -28,6 +36,9 @@ export class ProxyFactory {
 
     const existingProxy = refCache.get(consumerRef);
     if (existingProxy) {
+      console.log(
+        `🏭 [ProxyFactory] Returning cached proxy for path: ${path || 'root'}`,
+      );
       return existingProxy;
     }
 
@@ -54,11 +65,13 @@ export class ProxyFactory {
         }
 
         const fullPath = path ? `${path}.${prop}` : prop;
+        console.log(`🏭 [ProxyFactory] State property accessed: ${fullPath}`);
 
         // Track the access
         consumerTracker.trackAccess(consumerRef, 'state', fullPath);
 
         const value = Reflect.get(obj, prop);
+        console.log(`🏭 [ProxyFactory] Value type: ${typeof value}`);
 
         // Recursively proxy nested objects and arrays
         if (value && typeof value === 'object' && value !== null) {
@@ -118,6 +131,9 @@ export class ProxyFactory {
 
     const proxy = new Proxy(target, handler);
     refCache.set(consumerRef, proxy);
+    console.log(
+      `🏭 [ProxyFactory] Created new state proxy for path: ${path || 'root'}`,
+    );
 
     return proxy;
   }
@@ -128,7 +144,12 @@ export class ProxyFactory {
     consumerTracker: BlacAdapter;
   }): T {
     const { target, consumerRef, consumerTracker } = options;
+    console.log(`🏭 [ProxyFactory] createClassProxy called`);
+
     if (!consumerRef || !consumerTracker) {
+      console.log(
+        `🏭 [ProxyFactory] Missing consumerRef or tracker - returning raw target`,
+      );
       return target;
     }
 
@@ -141,37 +162,29 @@ export class ProxyFactory {
 
     const existingProxy = refCache.get(consumerRef);
     if (existingProxy) {
+      console.log(`🏭 [ProxyFactory] Returning cached class proxy`);
       return existingProxy;
     }
 
     const handler: ProxyHandler<T> = {
       get(obj: T, prop: string | symbol): any {
-        // Handle symbols and special properties
-        if (typeof prop === 'symbol' || prop === 'constructor') {
-          return Reflect.get(obj, prop);
-        }
-
-        // Don't track internal properties
-        if (typeof prop === 'string' && prop.startsWith('_')) {
-          return Reflect.get(obj, prop);
-        }
-
         const value = Reflect.get(obj, prop);
+        const isGetter = Reflect.getOwnPropertyDescriptor(obj, prop)?.get;
 
-        // Track all non-function property accesses
-        if (typeof value !== 'function' && typeof prop === 'string') {
-          consumerTracker.trackAccess(consumerRef, 'class', prop);
-        }
-
-        // For functions, track the access but ensure proper binding
-        if (typeof value === 'function') {
-          // Track method access (for lifecycle tracking)
-          if (typeof prop === 'string') {
-            consumerTracker.trackAccess(consumerRef, 'class', `${prop}()`);
+        if (!isGetter) {
+          // bind methods to the object if they are functions
+          if (typeof value === 'function') {
+            console.log(
+              `🏭 [ProxyFactory] Method accessed: ${String(prop)}, binding to object`,
+            );
+            return value.bind(obj);
           }
-          return value.bind(obj);
+          // Return the value directly if it's not a getter
+          return value;
         }
 
+        // For getters, track access without binding
+        consumerTracker.trackAccess(consumerRef, 'class', prop);
         return value;
       },
 
@@ -193,6 +206,7 @@ export class ProxyFactory {
 
     const proxy = new Proxy(target, handler);
     refCache.set(consumerRef, proxy);
+    console.log(`🏭 [ProxyFactory] Created new class proxy`);
 
     return proxy;
   }

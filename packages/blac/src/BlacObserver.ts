@@ -136,10 +136,23 @@ export class BlacObservable<S = unknown> {
    * @param action - Optional action that triggered the state change
    */
   notify(newState: S, oldState: S, action?: unknown) {
+    console.log(
+      `🔔 [BlacObservable] notify called for ${this.bloc._name} (${this.bloc._id})`,
+    );
+    console.log(`🔔 [BlacObservable] Observer count: ${this._observers.size}`);
+    console.log(`🔔 [BlacObservable] State change:`, {
+      oldState,
+      newState,
+      action,
+    });
+
     this._observers.forEach((observer) => {
       let shouldUpdate = false;
 
       if (observer.dependencyArray) {
+        console.log(
+          `🔔 [BlacObservable] Observer ${observer.id} has dependency array`,
+        );
         const lastDependencyCheck = observer.lastState;
         const newDependencyCheck = observer.dependencyArray(
           newState,
@@ -150,15 +163,28 @@ export class BlacObservable<S = unknown> {
         // If this is the first time (no lastState), trigger initial render
         if (!lastDependencyCheck) {
           shouldUpdate = true;
+          console.log(
+            `🔔 [BlacObservable] First render for observer ${observer.id} - will notify`,
+          );
         } else {
           // Compare dependency arrays
           if (lastDependencyCheck.length !== newDependencyCheck.length) {
             shouldUpdate = true;
+            console.log(
+              `🔔 [BlacObservable] Dependency array length changed for ${observer.id}`,
+            );
           } else {
             // Compare each dependency value using Object.is (same as React)
             for (let i = 0; i < newDependencyCheck.length; i++) {
               if (!Object.is(lastDependencyCheck[i], newDependencyCheck[i])) {
                 shouldUpdate = true;
+                console.log(
+                  `🔔 [BlacObservable] Dependency ${i} changed for ${observer.id}:`,
+                  {
+                    old: lastDependencyCheck[i],
+                    new: newDependencyCheck[i],
+                  },
+                );
                 break;
               }
             }
@@ -168,10 +194,18 @@ export class BlacObservable<S = unknown> {
         observer.lastState = newDependencyCheck;
       } else {
         shouldUpdate = true;
+        console.log(
+          `🔔 [BlacObservable] Observer ${observer.id} has no dependency array - will not notify`,
+        );
       }
 
       if (shouldUpdate) {
+        console.log(`🔔 [BlacObservable] Notifying observer ${observer.id}`);
         void observer.fn(newState, oldState, action);
+      } else {
+        console.log(
+          `🔔 [BlacObservable] Skipping observer ${observer.id} - no relevant changes`,
+        );
       }
     });
   }

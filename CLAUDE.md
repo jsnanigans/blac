@@ -2,113 +2,94 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview
+## Commands
 
-Blac is a TypeScript-first state management library for React implementing the Bloc/Cubit pattern. It's a monorepo with two core packages (`@blac/core` and `@blac/react`) plus demo/docs applications.
-
-## Development Commands
+### Build, Test, and Development
 
 ```bash
-# Primary development workflow
-pnpm dev                 # Run all apps in development mode
-pnpm build              # Build all packages
-pnpm test               # Run all tests across packages
-pnpm lint               # Lint all packages with TypeScript rules
+# Build all packages
+pnpm build
 
-# Individual package development
-pnpm run dev:demo       # Demo app (port 3002)
-pnpm run dev:docs       # Documentation site
-pnpm run dev:perf       # Performance testing app
+# Run tests
+pnpm test
+pnpm test:watch
 
-# Testing specific packages
-pnpm test:blac          # Test core package only
-pnpm test:react         # Test React integration only
+# Run specific package tests
+pnpm test --filter=@blac/core
+pnpm test --filter=@blac/react
 
-# Build pipeline
-turbo build             # Use Turborepo for optimized builds
-turbo test              # Run tests with caching
+# Type checking
+pnpm typecheck
+
+# Linting
+pnpm lint
+
+# Format code
+pnpm format
+
+# Run single test file
+pnpm vitest run tests/specific-test.test.ts --filter=@blac/core
 ```
 
-## Architecture
+## Architecture Overview
 
-### Core State Management Pattern
+Blac is a TypeScript-first state management library implementing the Bloc/Cubit pattern for React applications. It consists of two main packages:
 
-The library implements two primary state container types:
+### Core Architecture (`@blac/core`)
 
-- **`Cubit<State>`**: Simple state container with direct `emit()` and `patch()` methods
-- **`Bloc<State, Event>`**: Event-driven container with reducer-based state transitions
+The foundation provides state management primitives:
 
-### Instance Management System
+- **BlocBase**: Abstract base class for all state containers
+- **Cubit**: Simple state container with direct `emit()` and `patch()` methods
+- **Bloc**: Event-driven state container using reducer pattern
+- **Blac**: Central instance manager handling lifecycle, sharing, and cleanup
+- **BlacObserver**: Global observer for monitoring state changes
+- **Adapter System**: Smart dependency tracking using Proxy-based state wrapping
 
-- **Shared by default**: Same class instances automatically shared across React components
-- **Isolation**: Use `static isolated = true` or unique IDs for component-specific state
-- **Keep Alive**: Use `static keepAlive = true` to persist state beyond component lifecycle
-- **Automatic disposal**: Instances dispose when no consumers remain (unless keep alive)
+### React Integration (`@blac/react`)
 
-### React Integration
+- **useBloc**: Primary hook leveraging `useSyncExternalStore` for optimal React integration
+- **useExternalBlocStore**: Lower-level hook for advanced use cases
+- **Dependency Tracking**: Automatic detection of accessed state properties to minimize re-renders
 
-The `useBloc()` hook leverages React's `useSyncExternalStore` for efficient state subscriptions. It supports:
+### Key Design Patterns
 
-- Dependency tracking with selectors to minimize re-renders
-- External store integration via `useExternalBlocStore`
-- Smart instance creation and cleanup
+1. **Instance Management**: Blac automatically manages instance lifecycle with smart sharing (default), isolation (via `static isolated = true`), and persistence (`static keepAlive = true`)
 
-## Monorepo Structure
+2. **Memory Safety**: Automatic cleanup when components unmount, with manual disposal available via `Blac.disposeBlocs()`
 
-### Core Packages (`/packages/`)
+3. **Type Safety**: Full TypeScript support with comprehensive type inference
 
-- **`@blac/core`**: Zero-dependency state management core
-- **`@blac/react`**: React integration layer (peer deps: React 18/19+)
+4. **Performance**: Proxy-based dependency tracking ensures components only re-render when accessed properties change
 
-### Applications (`/apps/`)
+### Testing Architecture
 
-- **`demo/`**: Comprehensive usage examples showcasing 13+ patterns
-- **`docs/`**: VitePress documentation site with API docs and tutorials
-- **`perf/`**: Performance testing and benchmarking
+- Unit tests use Vitest with jsdom environment
+- Integration tests verify React component behavior
+- Memory leak tests ensure proper cleanup
+- Performance tests validate optimization strategies
 
-## Key Development Context
+## Development Guidelines
 
-### Version Status
+1. **Arrow Functions Required**: Always use arrow functions for Cubit/Bloc methods to maintain proper `this` binding
+2. **State Immutability**: Always emit new state objects, never mutate existing state
+3. **Dependency Tracking**: The adapter system automatically tracks state property access - avoid bypassing proxies
+4. **Error Handling**: State containers should handle errors internally and emit error states rather than throwing
 
-Currently on v2.0.0-rc-3 (Release Candidate). Development happens on `v2` branch, PRs target `v1`.
+## Package Structure
 
-### Build Configuration
-
-- **Turborepo** with pnpm workspaces for build orchestration
-- **Vite** for bundling with dual ESM/CJS output
-- **TypeScript 5.8.3** with strict configuration across all packages
-- **Node 22+** and **pnpm 10.11.0+** required
-
-### Testing Setup
-
-- **Vitest** for unit testing with jsdom environment
-- **React Testing Library** for component integration tests
-- Tests run in parallel across packages via Turborepo
-
-### TypeScript Configuration
-
-Uses path mapping for internal package imports. All packages use strict TypeScript with comprehensive type checking enabled via `tsconfig.base.json`.
-
-## Known Feature Gaps
-
-See `/TODO.md` for planned features including:
-
-- Event transformation (debouncing, filtering)
-- Enhanced `patch()` method for nested state updates
-- Improved debugging tools and DevTools integration
-- SSR support considerations
-
-## Development Patterns
-
-When adding new functionality:
-
-1. Core logic goes in `@blac/core`
-2. React-specific features go in `@blac/react`
-3. Add usage examples to the demo app
-4. Update documentation in the docs app
-5. Follow existing TypeScript strict patterns and testing approaches
-
-## Commit messages
-
-Keep commit messages short and sweet with no useless information. Add a title and a bullet point list in the body.
+```
+packages/
+  blac/           # Core state management library
+    src/
+      adapter/    # Proxy-based state tracking system
+    tests/        # Comprehensive test suite
+  blac-react/     # React integration
+    src/
+    tests/        # React-specific tests
+apps/
+  demo/           # Main demo application
+  docs/           # Documentation site
+  perf/           # Performance testing app
+```
 

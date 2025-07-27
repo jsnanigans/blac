@@ -14,17 +14,20 @@ export class CounterCubit extends Cubit<CounterState, CounterCubitProps> {
     super({ count: props?.initialCount ?? 0 });
   }
 
-  increment = () => {
+  increment() {
     this.patch({ count: this.state.count + 1 });
-  };
+  }
 
-  decrement = () => {
+  decrement() {
     this.patch({ count: this.state.count - 1 });
-  };
+  }
 }
 
 // Example of an inherently isolated version if needed directly
-export class IsolatedCounterCubit extends Cubit<CounterState, CounterCubitProps> {
+export class IsolatedCounterCubit extends Cubit<
+  CounterState,
+  CounterCubitProps
+> {
   static isolated = true;
 
   constructor(props?: CounterCubitProps) {
@@ -38,4 +41,5 @@ export class IsolatedCounterCubit extends Cubit<CounterState, CounterCubitProps>
   decrement = () => {
     this.patch({ count: this.state.count - 1 });
   };
-} 
+}
+
