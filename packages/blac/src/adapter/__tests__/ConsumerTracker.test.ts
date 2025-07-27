@@ -506,4 +506,57 @@ describe('ConsumerTracker', () => {
       expect(hasChanged).toBe(true);
     });
   });
+
+  describe('Dependency Tracking After Access Pattern Changes', () => {
+    it('should not detect changes for properties no longer accessed', () => {
+      tracker.register(consumerRef1, 'id-1');
+
+      // First render: access both count and name
+      tracker.trackAccess(consumerRef1, 'state', 'count', 10);
+      tracker.trackAccess(consumerRef1, 'state', 'name', 'Alice');
+
+      // Initial state
+      const initialState = { count: 10, name: 'Alice' };
+
+      // Verify no changes with same values
+      let hasChanged = tracker.hasValuesChanged(consumerRef1, initialState, {});
+      expect(hasChanged).toBe(false);
+
+      // Change name - should detect change since we're still tracking it
+      hasChanged = tracker.hasValuesChanged(
+        consumerRef1,
+        { count: 10, name: 'Bob' },
+        {},
+      );
+      expect(hasChanged).toBe(true);
+
+      tracker.setHasRendered(consumerRef1, true);
+
+      // Simulate next render cycle where only count is accessed
+      // Reset tracking to simulate a new render
+      tracker.resetTracking(consumerRef1);
+      tracker.trackAccess(consumerRef1, 'state', 'count', 10);
+
+      // Now only 'count' is tracked, not 'name'
+      const deps = tracker.getDependencies(consumerRef1);
+      expect(deps?.statePaths).toEqual(['count']);
+      expect(deps?.statePaths).not.toContain('name');
+
+      // Change name - should NOT detect change since we're no longer tracking it
+      hasChanged = tracker.hasValuesChanged(
+        consumerRef1,
+        { count: 10, name: 'Charlie' },
+        {},
+      );
+      expect(hasChanged).toBe(false);
+
+      // But changing count should still be detected
+      hasChanged = tracker.hasValuesChanged(
+        consumerRef1,
+        { count: 11, name: 'Charlie' },
+        {},
+      );
+      expect(hasChanged).toBe(true);
+    });
+  });
 });

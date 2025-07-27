@@ -40,6 +40,10 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
     return newAdapter;
   }, []);
 
+  // Reset tracking at the start of each render to ensure we only track
+  // properties accessed during the current render
+  adapter.resetConsumerTracking();
+
   // Track options changes
   const optionsChangeCount = useRef(0);
   useEffect(() => {

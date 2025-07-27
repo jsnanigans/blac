@@ -64,23 +64,6 @@ export class ProxyFactory {
           return Reflect.get(obj, prop);
         }
 
-        // For arrays, handle special methods that don't need tracking
-        if (
-          Array.isArray(obj) &&
-          (prop === 'length' ||
-            prop === 'forEach' ||
-            prop === 'map' ||
-            prop === 'filter')
-        ) {
-          // const value = Reflect.get(obj, prop);
-          /*
-          if (typeof value === 'function') {
-            return value.bind(obj);
-          }
-          */
-          // return value;
-        }
-
         const fullPath = path ? `${path}.${prop}` : prop;
         proxyStats.propertyAccesses++;
 
