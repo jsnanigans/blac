@@ -2,12 +2,8 @@ import { Blac, GetBlocOptions } from '../Blac';
 import { BlocBase } from '../BlocBase';
 import { BlocConstructor, BlocState, InferPropsFromGeneric } from '../types';
 import { generateUUID } from '../utils/uuid';
-import { DependencyArray } from './DependencyTracker';
-import { ConsumerRegistry } from './ConsumerRegistry';
-import { DependencyOrchestrator } from './DependencyOrchestrator';
-import { NotificationManager } from './NotificationManager';
-import { ProxyProvider } from './ProxyProvider';
-import { LifecycleManager } from './LifecycleManager';
+import { ConsumerTracker, DependencyArray } from './ConsumerTracker';
+import { ProxyFactory } from './ProxyFactory';
 
 export interface AdapterOptions<B extends BlocBase<any>> {
   id?: string;
@@ -18,8 +14,8 @@ export interface AdapterOptions<B extends BlocBase<any>> {
 }
 
 /**
- * BlacAdapter orchestrates the various responsibilities of managing a Bloc instance
- * and its connection to React components. It delegates specific tasks to focused classes.
+ * BlacAdapter orchestrates the connection between Bloc instances and React components.
+ * It manages dependency tracking, lifecycle hooks, and proxy creation.
  */
 export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
   public readonly id = `consumer-${generateUUID()}`;
@@ -27,16 +23,18 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
   public readonly componentRef: { current: object } = { current: {} };
   public blocInstance: InstanceType<B>;
 
-  // Delegated responsibilities
-  private consumerRegistry: ConsumerRegistry;
-  private dependencyOrchestrator: DependencyOrchestrator;
-  private notificationManager: NotificationManager;
-  private proxyProvider: ProxyProvider;
-  private lifecycleManager: LifecycleManager<InstanceType<B>>;
+  // Core components
+  private consumerTracker: ConsumerTracker;
 
   // Dependency tracking
   private dependencyValues?: unknown[];
   private isUsingDependencies: boolean = false;
+
+  // Lifecycle state
+  private hasMounted = false;
+  private mountTime = 0;
+  private unmountTime = 0;
+  private mountCount = 0;
 
   options?: AdapterOptions<InstanceType<B>>;
 
@@ -49,24 +47,12 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
     this.componentRef = instanceProps.componentRef;
     this.isUsingDependencies = !!options?.dependencies;
 
-    // Initialize delegated responsibilities
-    this.consumerRegistry = new ConsumerRegistry();
-    this.dependencyOrchestrator = new DependencyOrchestrator(
-      this.consumerRegistry,
-    );
-    this.notificationManager = new NotificationManager(this.consumerRegistry);
-    this.proxyProvider = new ProxyProvider({
-      consumerRef: this.componentRef.current,
-      consumerTracker: this,
-    });
-    this.lifecycleManager = new LifecycleManager(this.id, {
-      onMount: options?.onMount,
-      onUnmount: options?.onUnmount,
-    });
+    // Initialize consumer tracker
+    this.consumerTracker = new ConsumerTracker();
 
     // Initialize bloc instance and register consumer
     this.blocInstance = this.updateBlocInstance();
-    this.registerConsumer(instanceProps.componentRef.current);
+    this.consumerTracker.register(instanceProps.componentRef.current, this.id);
 
     // Initialize dependency values if using dependencies
     if (this.isUsingDependencies && options?.dependencies) {
@@ -74,55 +60,60 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
     }
   }
 
-  registerConsumer(consumerRef: object): void {
-    this.consumerRegistry.register(consumerRef, this.id);
-  }
-
-  unregisterConsumer = (): void => {
-    this.consumerRegistry.unregister(this.componentRef.current);
-  };
-
   trackAccess(
     consumerRef: object,
     type: 'state' | 'class',
     path: string,
     value?: any,
   ): void {
-    this.dependencyOrchestrator.trackAccess(consumerRef, type, path, value);
+    this.consumerTracker.trackAccess(consumerRef, type, path, value);
   }
 
   getConsumerDependencies(consumerRef: object): DependencyArray | null {
-    return this.dependencyOrchestrator.getConsumerDependencies(consumerRef);
+    return this.consumerTracker.getDependencies(consumerRef);
   }
 
   shouldNotifyConsumer(
     consumerRef: object,
     changedPaths: Set<string>,
   ): boolean {
-    return this.notificationManager.shouldNotifyConsumer(
-      consumerRef,
-      changedPaths,
-    );
+    const consumerInfo = this.consumerTracker.getConsumerInfo(consumerRef);
+    if (!consumerInfo) {
+      return true; // If consumer not registered yet, notify by default
+    }
+
+    // First render - always notify to establish baseline
+    if (!consumerInfo.hasRendered) {
+      return true;
+    }
+
+    // Use built-in method from ConsumerTracker
+    return this.consumerTracker.shouldNotifyConsumer(consumerRef, changedPaths);
   }
 
   updateLastNotified(consumerRef: object): void {
-    this.notificationManager.updateLastNotified(consumerRef);
+    this.consumerTracker.updateLastNotified(consumerRef);
+    this.consumerTracker.setHasRendered(consumerRef, true);
   }
 
   resetConsumerTracking(): void {
-    this.dependencyOrchestrator.resetConsumerTracking(
-      this.componentRef.current,
-    );
+    this.consumerTracker.resetTracking(this.componentRef.current);
   }
 
-  // These proxy creation methods are kept for backward compatibility
-  // but now delegate to ProxyProvider
   createStateProxy = <T extends object>(props: { target: T }): T => {
-    return this.proxyProvider.createStateProxy(props.target);
+    return ProxyFactory.createStateProxy({
+      target: props.target,
+      consumerRef: this.componentRef.current,
+      consumerTracker: this as any,
+    });
   };
 
   createClassProxy = <T extends object>(props: { target: T }): T => {
-    return this.proxyProvider.createClassProxy(props.target);
+    return ProxyFactory.createClassProxy({
+      target: props.target,
+      consumerRef: this.componentRef.current,
+      consumerTracker: this as any,
+    });
   };
 
   updateBlocInstance(): InstanceType<B> {
@@ -156,12 +147,13 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
           this.dependencyValues = newValues;
         } else {
           // Check if any tracked values have changed (proxy-based tracking)
-          const consumerInfo = this.consumerRegistry.getConsumerInfo(
+          const consumerInfo = this.consumerTracker.getConsumerInfo(
             this.componentRef.current,
           );
           if (consumerInfo && consumerInfo.hasRendered) {
             // Only check dependencies if component has rendered at least once
-            const hasChanged = consumerInfo.tracker.hasValuesChanged(
+            const hasChanged = this.consumerTracker.hasValuesChanged(
+              this.componentRef.current,
               newState,
               this.blocInstance,
             );
@@ -185,12 +177,38 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
       this.dependencyValues = this.options.dependencies(this.blocInstance);
     }
 
-    this.lifecycleManager.mount(this.blocInstance, this.componentRef.current);
+    // Lifecycle management
+    this.mountCount++;
+    this.blocInstance._addConsumer(this.id, this.componentRef.current);
+
+    // Call onMount callback if provided and not already called
+    if (!this.hasMounted) {
+      this.hasMounted = true;
+      this.mountTime = Date.now();
+
+      if (this.options?.onMount) {
+        try {
+          this.options.onMount(this.blocInstance);
+        } catch (error) {
+          throw error;
+        }
+      }
+    }
   };
 
   unmount = (): void => {
-    this.unregisterConsumer();
-    this.lifecycleManager.unmount(this.blocInstance);
+    this.unmountTime = Date.now();
+    this.consumerTracker.unregister(this.componentRef.current);
+    this.blocInstance._removeConsumer(this.id);
+
+    // Call onUnmount callback
+    if (this.options?.onUnmount) {
+      try {
+        this.options.onUnmount(this.blocInstance);
+      } catch (error) {
+        // Don't re-throw on unmount to allow cleanup to continue
+      }
+    }
   };
 
   getProxyState = (
@@ -200,7 +218,11 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
       return state; // Return raw state when using dependencies
     }
 
-    return this.proxyProvider.getProxyState(state);
+    return ProxyFactory.getProxyState({
+      state,
+      consumerRef: this.componentRef.current,
+      consumerTracker: this as any,
+    });
   };
 
   getProxyBlocInstance = (): InstanceType<B> => {
@@ -208,12 +230,16 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
       return this.blocInstance; // Return raw instance when using dependencies
     }
 
-    return this.proxyProvider.getProxyBlocInstance(this.blocInstance);
+    return ProxyFactory.getProxyBlocInstance({
+      blocInstance: this.blocInstance,
+      consumerRef: this.componentRef.current,
+      consumerTracker: this as any,
+    });
   };
 
   // Expose calledOnMount for backward compatibility
   get calledOnMount(): boolean {
-    return this.lifecycleManager.hasCalledOnMount();
+    return this.hasMounted;
   }
 
   private hasDependencyValuesChanged(

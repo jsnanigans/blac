@@ -1,4 +1,14 @@
-import type { BlacAdapter } from './BlacAdapter';
+import { BlocBase } from '../BlocBase';
+import { BlocState } from '../types';
+
+interface ConsumerTracker {
+  trackAccess: (
+    consumerRef: object,
+    type: 'state' | 'class',
+    path: string,
+    value?: any,
+  ) => void;
+}
 
 // Cache for proxies to ensure consistent object identity
 const proxyCache = new WeakMap<object, WeakMap<object, any>>();
@@ -11,13 +21,15 @@ let proxyStats = {
   cacheMisses: 0,
   propertyAccesses: 0,
   nestedProxiesCreated: 0,
+  totalProxiesCreated: 0,
+  createdAt: Date.now(),
 };
 
 export class ProxyFactory {
   static createStateProxy<T extends object>(options: {
     target: T;
     consumerRef: object;
-    consumerTracker: BlacAdapter;
+    consumerTracker: ConsumerTracker;
     path?: string;
   }): T {
     const { target, consumerRef, consumerTracker, path = '' } = options;
@@ -131,6 +143,7 @@ export class ProxyFactory {
     refCache.set(consumerRef, proxy);
 
     proxyStats.stateProxiesCreated++;
+    proxyStats.totalProxiesCreated++;
 
     return proxy;
   }
@@ -138,7 +151,7 @@ export class ProxyFactory {
   static createClassProxy<T extends object>(options: {
     target: T;
     consumerRef: object;
-    consumerTracker: BlacAdapter;
+    consumerTracker: ConsumerTracker;
   }): T {
     const { target, consumerRef, consumerTracker } = options;
 
@@ -250,11 +263,37 @@ export class ProxyFactory {
     refCache.set(consumerRef, proxy);
 
     proxyStats.classProxiesCreated++;
+    proxyStats.totalProxiesCreated++;
 
     return proxy;
   }
 
+  static getProxyState<B extends BlocBase<any>>(options: {
+    state: BlocState<B>;
+    consumerRef: object;
+    consumerTracker: ConsumerTracker;
+  }): BlocState<B> {
+    return ProxyFactory.createStateProxy({
+      target: options.state,
+      consumerRef: options.consumerRef,
+      consumerTracker: options.consumerTracker,
+    });
+  }
+
+  static getProxyBlocInstance<B extends BlocBase<any>>(options: {
+    blocInstance: B;
+    consumerRef: object;
+    consumerTracker: ConsumerTracker;
+  }): B {
+    return ProxyFactory.createClassProxy({
+      target: options.blocInstance,
+      consumerRef: options.consumerRef,
+      consumerTracker: options.consumerTracker,
+    });
+  }
+
   static getStats() {
+    const lifetime = Date.now() - proxyStats.createdAt;
     return {
       ...proxyStats,
       totalProxies:
@@ -262,6 +301,11 @@ export class ProxyFactory {
       cacheEfficiency:
         proxyStats.cacheHits + proxyStats.cacheMisses > 0
           ? `${((proxyStats.cacheHits / (proxyStats.cacheHits + proxyStats.cacheMisses)) * 100).toFixed(1)}%`
+          : 'N/A',
+      lifetime: `${lifetime}ms`,
+      proxiesPerSecond:
+        lifetime > 0
+          ? (proxyStats.totalProxiesCreated / (lifetime / 1000)).toFixed(2)
           : 'N/A',
     };
   }
@@ -274,6 +318,8 @@ export class ProxyFactory {
       cacheMisses: 0,
       propertyAccesses: 0,
       nestedProxiesCreated: 0,
+      totalProxiesCreated: 0,
+      createdAt: Date.now(),
     };
   }
 }
