@@ -4,92 +4,81 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
-### Build, Test, and Development
+### Development
+- `pnpm dev` - Run all apps in parallel in development mode
+- `pnpm app` - Run only the user app in development mode
+- `pnpm build` - Build all packages and apps
+- `pnpm lint` - Run linting across all packages
+- `pnpm typecheck` - Run TypeScript type checking
+- `pnpm format` - Format code with Prettier
 
-```bash
-# Build all packages
-pnpm build
+### Testing
+- `pnpm test` - Run all tests once
+- `pnpm test:watch` - Run tests in watch mode
+- `pnpm test packages/blac` - Run tests for a specific package
+- `pnpm test:watch packages/blac` - Run tests in watch mode for a specific package
+- To run a single test file: `cd packages/blac && pnpm vitest run path/to/test.ts`
 
-# Run tests
-pnpm test
-pnpm test:watch
-
-# Run specific package tests
-pnpm test --filter=@blac/core
-pnpm test --filter=@blac/react
-
-# Type checking
-pnpm typecheck
-
-# Linting
-pnpm lint
-
-# Format code
-pnpm format
-
-# Run single test file
-pnpm vitest run tests/specific-test.test.ts --filter=@blac/core
-```
+### Package-specific Commands
+The main packages are located in:
+- `packages/blac` - Core BlaC state management library (@blac/core)
+- `packages/blac-react` - React integration for BlaC (@blac/react)
 
 ## Architecture Overview
 
-Blac is a TypeScript-first state management library implementing the Bloc/Cubit pattern for React applications. It consists of two main packages:
+### BlaC Pattern
+BlaC (Business Logic as Components) is a state management library inspired by the BLoC pattern from Flutter. It provides predictable state management through:
 
-### Core Architecture (`@blac/core`)
+1. **Cubit**: Simple state container with direct state emissions via `emit()` method
+2. **Bloc**: Event-driven state container using event classes and handlers registered with `on(EventClass, handler)`
+3. **React Integration**: `useBloc` hook with automatic dependency tracking for optimized re-renders
 
-The foundation provides state management primitives:
+### Key Architecture Principles
 
-- **BlocBase**: Abstract base class for all state containers
-- **Cubit**: Simple state container with direct `emit()` and `patch()` methods
-- **Bloc**: Event-driven state container using reducer pattern
-- **Blac**: Central instance manager handling lifecycle, sharing, and cleanup
-- **BlacObserver**: Global observer for monitoring state changes
-- **Adapter System**: Smart dependency tracking using Proxy-based state wrapping
+1. **Arrow Functions Required**: All methods in Bloc/Cubit classes must use arrow function syntax (`method = () => {}`) to maintain proper `this` binding when called from React components.
 
-### React Integration (`@blac/react`)
+2. **Event-Driven Architecture for Blocs**: 
+   - Events are class instances (not strings or objects)
+   - Handlers are registered using `this.on(EventClass, handler)` in constructor
+   - Events are dispatched via `this.add(new EventInstance())`
 
-- **useBloc**: Primary hook leveraging `useSyncExternalStore` for optimal React integration
-- **useExternalBlocStore**: Lower-level hook for advanced use cases
-- **Dependency Tracking**: Automatic detection of accessed state properties to minimize re-renders
+3. **State Management Patterns**:
+   - **Shared State** (default): Single instance shared across all consumers
+   - **Isolated State**: Set `static isolated = true` for component-specific instances
+   - **Persistent State**: Set `static keepAlive = true` to persist when no consumers
 
-### Key Design Patterns
+4. **Lifecycle Management**:
+   - Atomic state transitions prevent race conditions during disposal
+   - Automatic cleanup when no consumers remain (unless keepAlive)
+   - React Strict Mode compatible with deferred disposal
 
-1. **Instance Management**: Blac automatically manages instance lifecycle with smart sharing (default), isolation (via `static isolated = true`), and persistence (`static keepAlive = true`)
+### Monorepo Structure
+- Uses pnpm workspaces and Turbo for monorepo management
+- Workspace packages defined in `pnpm-workspace.yaml`
+- Shared dependencies managed via catalog in workspace file
+- Build orchestration via `turbo.json`
 
-2. **Memory Safety**: Automatic cleanup when components unmount, with manual disposal available via `Blac.disposeBlocs()`
+### Testing Infrastructure
+- Vitest for unit testing with jsdom environment
+- Test utilities provided via `@blac/core/testing`
+- Coverage reporting configured in `vitest.config.ts`
 
-3. **Type Safety**: Full TypeScript support with comprehensive type inference
+## Important Implementation Details
 
-4. **Performance**: Proxy-based dependency tracking ensures components only re-render when accessed properties change
+1. **Disposal Safety**: The disposal system uses atomic state transitions (ACTIVE → DISPOSAL_REQUESTED → DISPOSING → DISPOSED) to handle React Strict Mode's double-mounting behavior.
 
-### Testing Architecture
+2. **Event Queue**: Bloc events are queued and processed sequentially to prevent race conditions in async handlers.
 
-- Unit tests use Vitest with jsdom environment
-- Integration tests verify React component behavior
-- Memory leak tests ensure proper cleanup
-- Performance tests validate optimization strategies
+3. **Dependency Tracking**: The React integration uses Proxies to automatically track which state properties are accessed during render, enabling fine-grained updates.
 
-## Development Guidelines
+4. **Memory Management**: Uses WeakRef for consumer tracking to prevent memory leaks and enable proper garbage collection.
 
-1. **Arrow Functions Required**: Always use arrow functions for Cubit/Bloc methods to maintain proper `this` binding
-2. **State Immutability**: Always emit new state objects, never mutate existing state
-3. **Dependency Tracking**: The adapter system automatically tracks state property access - avoid bypassing proxies
-4. **Error Handling**: State containers should handle errors internally and emit error states rather than throwing
+5. **Plugin System**: Extensible via BlacPlugin interface for adding logging, persistence, or analytics functionality.
 
-## Package Structure
+## Code Conventions
 
-```
-packages/
-  blac/           # Core state management library
-    src/
-      adapter/    # Proxy-based state tracking system
-    tests/        # Comprehensive test suite
-  blac-react/     # React integration
-    src/
-    tests/        # React-specific tests
-apps/
-  demo/           # Main demo application
-  docs/           # Documentation site
-  perf/           # Performance testing app
-```
-
+1. **TypeScript**: Strict mode enabled, avoid `any` types except where necessary (e.g., event constructor parameters)
+2. **File Organization**: Core logic in `src/`, tests alongside source files or in `__tests__`
+3. **Exports**: Public API exported through index.ts files
+4. **Error Handling**: Enhanced error messages with context for debugging
+5. **Logging**: Use `Blac.log()`, `Blac.warn()`, and `Blac.error()` for consistent logging

@@ -26,9 +26,9 @@
   },
   "devDependencies": {
     "@types/bun": "catalog:",
-    "prettier": "^3.5.3",
-    "turbo": "^2.5.3",
+    "prettier": "^3.6.2",
+    "turbo": "^2.5.5",
     "typescript": "^5.8.3"
   },
-  "packageManager": "pnpm@10.11.0"
+  "packageManager": "pnpm@10.13.1"
 }
