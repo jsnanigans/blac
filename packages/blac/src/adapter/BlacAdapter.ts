@@ -11,7 +11,7 @@ import { LifecycleManager } from './LifecycleManager';
 
 export interface AdapterOptions<B extends BlocBase<any>> {
   id?: string;
-  selector?: (state: BlocState<B>, bloc: B) => any;
+  dependencies?: (bloc: B) => unknown[];
   props?: InferPropsFromGeneric<B>;
   onMount?: (bloc: B) => void;
   onUnmount?: (bloc: B) => void;
@@ -34,6 +34,10 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
   private proxyProvider: ProxyProvider;
   private lifecycleManager: LifecycleManager<InstanceType<B>>;
 
+  // Dependency tracking
+  private dependencyValues?: unknown[];
+  private isUsingDependencies: boolean = false;
+
   options?: AdapterOptions<InstanceType<B>>;
 
   constructor(
@@ -46,7 +50,7 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
       `🔌 [BlacAdapter] Constructor name: ${instanceProps.blocConstructor.name}`,
     );
     console.log(`🔌 [BlacAdapter] Options:`, {
-      hasSelector: !!options?.selector,
+      hasDependencies: !!options?.dependencies,
       hasProps: !!options?.props,
       hasOnMount: !!options?.onMount,
       hasOnUnmount: !!options?.onUnmount,
@@ -56,6 +60,7 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
     this.options = options;
     this.blocConstructor = instanceProps.blocConstructor;
     this.componentRef = instanceProps.componentRef;
+    this.isUsingDependencies = !!options?.dependencies;
 
     // Initialize delegated responsibilities
     this.consumerRegistry = new ConsumerRegistry();
@@ -75,6 +80,15 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
     // Initialize bloc instance and register consumer
     this.blocInstance = this.updateBlocInstance();
     this.registerConsumer(instanceProps.componentRef.current);
+
+    // Initialize dependency values if using dependencies
+    if (this.isUsingDependencies && options?.dependencies) {
+      this.dependencyValues = options.dependencies(this.blocInstance);
+      console.log(
+        `🔌 [BlacAdapter] Dependencies mode enabled - Initial values:`,
+        this.dependencyValues
+      );
+    }
 
     const endTime = performance.now();
     console.log(
@@ -173,7 +187,7 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
     const startTime = performance.now();
     console.log(`🔌 [BlacAdapter] createSubscription called - ID: ${this.id}`);
     console.log(
-      `🔌 [BlacAdapter] Current observer count: ${this.blocInstance._observer['_observers']?.length || 0}`,
+      `🔌 [BlacAdapter] Current observer count: ${this.blocInstance._observer.observers?.size || 0}`,
     );
 
     const unsubscribe = this.blocInstance._observer.subscribe({
@@ -187,20 +201,21 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
           `🔌 [BlacAdapter] 📢 Subscription callback triggered - ID: ${this.id}`,
         );
 
-        // Check if any tracked values have changed
-        const consumerInfo = this.consumerRegistry.getConsumerInfo(
-          this.componentRef.current,
-        );
-        if (consumerInfo && consumerInfo.hasRendered) {
-          // Only check dependencies if component has rendered at least once
-          const hasChanged = consumerInfo.tracker.hasValuesChanged(
-            newState,
-            this.blocInstance,
+        // Handle dependency-based change detection
+        if (this.isUsingDependencies && this.options?.dependencies) {
+          console.log(
+            `🔌 [BlacAdapter] 🎯 Dependencies mode - Running dependency function for change detection`,
           );
-
+          
+          const newValues = this.options.dependencies(this.blocInstance);
+          const hasChanged = this.hasDependencyValuesChanged(
+            this.dependencyValues,
+            newValues
+          );
+          
           if (!hasChanged) {
             console.log(
-              `🔌 [BlacAdapter] 🚫 No tracked dependencies changed - skipping re-render`,
+              `🔌 [BlacAdapter] 🚫 Dependency values unchanged - skipping re-render`,
             );
             const callbackEnd = performance.now();
             console.log(
@@ -208,14 +223,48 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
             );
             return; // Don't trigger re-render
           }
-
+          
           console.log(
-            `🔌 [BlacAdapter] ✅ Tracked dependencies changed - triggering re-render`,
+            `🔌 [BlacAdapter] ✅ Dependency values changed - triggering re-render`,
           );
+          console.log(
+            `🔌 [BlacAdapter] Previous values:`,
+            this.dependencyValues
+          );
+          console.log(`🔌 [BlacAdapter] New values:`, newValues);
+          
+          this.dependencyValues = newValues;
         } else {
-          console.log(
-            `🔌 [BlacAdapter] 🆕 First render or no consumer info - triggering re-render to establish baseline`,
+          // Check if any tracked values have changed (proxy-based tracking)
+          const consumerInfo = this.consumerRegistry.getConsumerInfo(
+            this.componentRef.current,
           );
+          if (consumerInfo && consumerInfo.hasRendered) {
+            // Only check dependencies if component has rendered at least once
+            const hasChanged = consumerInfo.tracker.hasValuesChanged(
+              newState,
+              this.blocInstance,
+            );
+
+            if (!hasChanged) {
+              console.log(
+                `🔌 [BlacAdapter] 🚫 No tracked dependencies changed - skipping re-render`,
+              );
+              const callbackEnd = performance.now();
+              console.log(
+                `🔌 [BlacAdapter] ⏱️ Dependency check time: ${(callbackEnd - callbackStart).toFixed(2)}ms`,
+              );
+              return; // Don't trigger re-render
+            }
+
+            console.log(
+              `🔌 [BlacAdapter] ✅ Tracked dependencies changed - triggering re-render`,
+            );
+          } else {
+            console.log(
+              `🔌 [BlacAdapter] 🆕 First render or no consumer info - triggering re-render to establish baseline`,
+            );
+          }
         }
 
         options.onChange();
@@ -240,6 +289,15 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
     console.log(
       `🔌 [BlacAdapter] Mount state - Has onMount: ${!!this.options?.onMount}, Already mounted: ${this.calledOnMount}`,
     );
+
+    // Re-run dependencies on mount to ensure fresh values
+    if (this.isUsingDependencies && this.options?.dependencies) {
+      this.dependencyValues = this.options.dependencies(this.blocInstance);
+      console.log(
+        `🔌 [BlacAdapter] Dependency values refreshed on mount:`,
+        this.dependencyValues
+      );
+    }
 
     this.lifecycleManager.mount(this.blocInstance, this.componentRef.current);
 
@@ -268,6 +326,13 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
   getProxyState = (
     state: BlocState<InstanceType<B>>,
   ): BlocState<InstanceType<B>> => {
+    if (this.isUsingDependencies) {
+      console.log(
+        `🔌 [BlacAdapter] Dependencies mode - Bypassing state proxy creation`,
+      );
+      return state; // Return raw state when using dependencies
+    }
+    
     console.log(
       `🔌 [BlacAdapter] getProxyState called - State keys: ${Object.keys(state).join(', ')}`,
     );
@@ -275,6 +340,13 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
   };
 
   getProxyBlocInstance = (): InstanceType<B> => {
+    if (this.isUsingDependencies) {
+      console.log(
+        `🔌 [BlacAdapter] Dependencies mode - Bypassing bloc proxy creation`,
+      );
+      return this.blocInstance; // Return raw instance when using dependencies
+    }
+    
     console.log(
       `🔌 [BlacAdapter] getProxyBlocInstance called - Bloc: ${this.blocInstance._name} (${this.blocInstance._id})`,
     );
@@ -284,5 +356,25 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
   // Expose calledOnMount for backward compatibility
   get calledOnMount(): boolean {
     return this.lifecycleManager.hasCalledOnMount();
+  }
+
+  private hasDependencyValuesChanged(
+    prev: unknown[] | undefined,
+    next: unknown[]
+  ): boolean {
+    if (!prev) return true; // First run, always trigger
+    if (prev.length !== next.length) return true;
+    
+    // Use Object.is for comparison (handles NaN, +0/-0 correctly)
+    for (let i = 0; i < prev.length; i++) {
+      if (!Object.is(prev[i], next[i])) {
+        console.log(
+          `🔌 [BlacAdapter] Dependency at index ${i} changed: ${JSON.stringify(prev[i])} -> ${JSON.stringify(next[i])}`
+        );
+        return true;
+      }
+    }
+    
+    return false;
   }
 }

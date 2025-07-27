@@ -80,9 +80,11 @@ export class ProxyFactory {
             prop === 'filter')
         ) {
           const value = Reflect.get(obj, prop);
+          /*
           if (typeof value === 'function') {
             return value.bind(obj);
           }
+          */
           return value;
         }
 
@@ -257,6 +259,7 @@ export class ProxyFactory {
 
         if (!isGetter) {
           // bind methods to the object if they are functions
+          /*
           if (typeof value === 'function') {
             proxyStats.propertyAccesses++;
             console.log(
@@ -265,6 +268,7 @@ export class ProxyFactory {
             console.log(`🏭 [ProxyFactory] Binding method to object instance`);
             return value.bind(obj);
           }
+          */
 
           // Return the value directly if it's not a getter or method
           console.log(

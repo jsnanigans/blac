@@ -34,7 +34,7 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
     console.log(`⚛️ [useBloc] 🎬 Hook instance created: ${hookIdRef.current}`);
     console.log(`⚛️ [useBloc] Constructor: ${blocConstructor.name}`);
     console.log(`⚛️ [useBloc] Options:`, {
-      hasSelector: !!options?.selector,
+      hasDependencies: !!options?.dependencies,
       hasProps: !!options?.props,
       hasOnMount: !!options?.onMount,
       hasOnUnmount: !!options?.onUnmount,
@@ -78,7 +78,7 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
       `⚛️ [useBloc] 📝 Options effect triggered (change #${optionsChangeCount.current}) for ${hookIdRef.current}`,
     );
     console.log(`⚛️ [useBloc] Updating adapter options:`, {
-      hasSelector: !!options?.selector,
+      hasDependencies: !!options?.dependencies,
       hasProps: !!options?.props,
       hasOnMount: !!options?.onMount,
       hasOnUnmount: !!options?.onUnmount,
@@ -186,7 +186,7 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
     );
     console.log(`⚛️ [useBloc] Dependencies changed:`, {
       rawStateChanged: true,
-      selectorChanged: stateMemoCount.current === 1 ? 'initial' : 'changed',
+      dependenciesChanged: stateMemoCount.current === 1 ? 'initial' : 'changed',
     });
 
     const proxyState = adapter.getProxyState(rawState);
@@ -195,7 +195,7 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
       `⚛️ [useBloc] ✅ State proxy created in ${(performance.now() - memoStart).toFixed(2)}ms`,
     );
     return proxyState;
-  }, [rawState, options?.selector]);
+  }, [rawState]);
 
   const blocMemoCount = useRef(0);
   const finalBloc = useMemo(() => {
@@ -211,7 +211,7 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
       `⚛️ [useBloc] ✅ Bloc proxy created in ${(performance.now() - memoStart).toFixed(2)}ms`,
     );
     return proxyBloc;
-  }, [adapter.blocInstance, options?.selector]);
+  }, [adapter.blocInstance]);
 
   // Track component unmount
   useEffect(() => {
@@ -248,7 +248,7 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
     hookId: hookIdRef.current,
     renderNumber: renderCount.current,
     bloc: adapter.blocInstance._name,
-    hasSelector: !!options?.selector,
+    hasDependencies: !!options?.dependencies,
     snapshotsTaken: snapshotCount.current,
     serverSnapshotsTaken: serverSnapshotCount.current,
   });
