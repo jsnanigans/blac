@@ -43,7 +43,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         variantHoverStyle = { backgroundColor: COLOR_DESTRUCTIVE_HOVER, borderColor: COLOR_DESTRUCTIVE_HOVER };
         break;
       case 'ghost':
-        variantStyle = { backgroundColor: 'transparent', color: COLOR_PRIMARY_ACCENT, border: '1px solid transparent' };
+        variantStyle = { backgroundColor: 'transparent', color: COLOR_PRIMARY_ACCENT, borderColor: 'transparent' };
         variantHoverStyle = { backgroundColor: `${COLOR_SECONDARY_ACCENT}99` , color: COLOR_PRIMARY_ACCENT_HOVER };
         break;
       case 'default':
