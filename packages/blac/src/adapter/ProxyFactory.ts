@@ -21,25 +21,12 @@ export class ProxyFactory {
     path?: string;
   }): T {
     const { target, consumerRef, consumerTracker, path = '' } = options;
-    const startTime = performance.now();
-    console.log(
-      `🏭 [ProxyFactory] 🎭 createStateProxy called - Path: ${path || 'root'}`,
-    );
-    console.log(`🏭 [ProxyFactory] Target info:`, {
-      type: target?.constructor?.name || typeof target,
-      isArray: Array.isArray(target),
-      keys: Object.keys(target).length,
-    });
 
     if (!consumerRef || !consumerTracker) {
-      console.log(
-        `🏭 [ProxyFactory] Missing consumerRef or tracker - returning raw target`,
-      );
       return target;
     }
 
     if (typeof target !== 'object' || target === null) {
-      console.log(`🏭 [ProxyFactory] Target is not object - returning as is`);
       return target;
     }
 
@@ -53,12 +40,6 @@ export class ProxyFactory {
     const existingProxy = refCache.get(consumerRef);
     if (existingProxy) {
       proxyStats.cacheHits++;
-      console.log(`🏭 [ProxyFactory] 📦 Cache HIT for path: ${path || 'root'}`);
-      console.log(`🏭 [ProxyFactory] Cache stats:`, {
-        hits: proxyStats.cacheHits,
-        misses: proxyStats.cacheMisses,
-        hitRate: `${((proxyStats.cacheHits / (proxyStats.cacheHits + proxyStats.cacheMisses)) * 100).toFixed(1)}%`,
-      });
       return existingProxy;
     }
 
@@ -91,11 +72,6 @@ export class ProxyFactory {
         const fullPath = path ? `${path}.${prop}` : prop;
         proxyStats.propertyAccesses++;
 
-        const accessTime = performance.now();
-        console.log(
-          `🏭 [ProxyFactory] 🔍 State property accessed: ${fullPath}`,
-        );
-
         const value = Reflect.get(obj, prop);
         const valueType = typeof value;
         const isObject = value && valueType === 'object' && value !== null;
@@ -103,15 +79,6 @@ export class ProxyFactory {
         // Track the access with value (only for primitives at root level)
         const trackValue = !isObject ? value : undefined;
         consumerTracker.trackAccess(consumerRef, 'state', fullPath, trackValue);
-
-        console.log(`🏭 [ProxyFactory] Access details:`, {
-          path: fullPath,
-          value: !isObject ? JSON.stringify(value) : '[Object/Array]',
-          valueType,
-          isObject,
-          isArray: Array.isArray(value),
-          accessNumber: proxyStats.propertyAccesses,
-        });
 
         // Recursively proxy nested objects and arrays
         if (value && typeof value === 'object' && value !== null) {
@@ -122,9 +89,6 @@ export class ProxyFactory {
 
           if (isPlainObject || isArray) {
             proxyStats.nestedProxiesCreated++;
-            console.log(
-              `🏭 [ProxyFactory] 🎪 Creating nested proxy for: ${fullPath}`,
-            );
             return ProxyFactory.createStateProxy({
               target: value,
               consumerRef,
@@ -154,21 +118,11 @@ export class ProxyFactory {
 
       set(): boolean {
         // State should not be mutated directly. Use emit() or patch() methods.
-        if (process.env.NODE_ENV === 'development') {
-          console.warn(
-            '[Blac] Direct state mutation detected. Use emit() or patch() instead.',
-          );
-        }
         return false;
       },
 
       deleteProperty(): boolean {
         // State properties should not be deleted directly.
-        if (process.env.NODE_ENV === 'development') {
-          console.warn(
-            '[Blac] State property deletion detected. This is not allowed.',
-          );
-        }
         return false;
       },
     };
@@ -177,16 +131,6 @@ export class ProxyFactory {
     refCache.set(consumerRef, proxy);
 
     proxyStats.stateProxiesCreated++;
-    const endTime = performance.now();
-
-    console.log(
-      `🏭 [ProxyFactory] ✅ Created new state proxy for path: ${path || 'root'}`,
-    );
-    console.log(`🏭 [ProxyFactory] Creation stats:`, {
-      totalStateProxies: proxyStats.stateProxiesCreated,
-      nestedProxies: proxyStats.nestedProxiesCreated,
-      creationTime: `${(endTime - startTime).toFixed(2)}ms`,
-    });
 
     return proxy;
   }
@@ -197,15 +141,8 @@ export class ProxyFactory {
     consumerTracker: BlacAdapter;
   }): T {
     const { target, consumerRef, consumerTracker } = options;
-    const startTime = performance.now();
-
-    console.log(`🏭 [ProxyFactory] 🎯 createClassProxy called`);
-    console.log(`🏭 [ProxyFactory] Target class: ${target?.constructor?.name}`);
 
     if (!consumerRef || !consumerTracker) {
-      console.log(
-        `🏭 [ProxyFactory] Missing consumerRef or tracker - returning raw target`,
-      );
       return target;
     }
 
@@ -219,7 +156,6 @@ export class ProxyFactory {
     const existingProxy = refCache.get(consumerRef);
     if (existingProxy) {
       proxyStats.cacheHits++;
-      console.log(`🏭 [ProxyFactory] 📦 Cache HIT for class proxy`);
       return existingProxy;
     }
 
@@ -238,13 +174,15 @@ export class ProxyFactory {
         while (currentObj && !isGetter && depth < MAX_PROTOTYPE_DEPTH) {
           // Check for circular references
           if (visitedPrototypes.has(currentObj)) {
-            console.warn(`🏭 [ProxyFactory] Circular prototype chain detected for property: ${String(prop)}`);
             break;
           }
           visitedPrototypes.add(currentObj);
 
           try {
-            const descriptor = Object.getOwnPropertyDescriptor(currentObj, prop);
+            const descriptor = Object.getOwnPropertyDescriptor(
+              currentObj,
+              prop,
+            );
             if (descriptor && descriptor.get) {
               isGetter = true;
               break;
@@ -252,7 +190,6 @@ export class ProxyFactory {
             currentObj = Object.getPrototypeOf(currentObj);
             depth++;
           } catch (error) {
-            console.warn(`🏭 [ProxyFactory] Error checking prototype chain: ${error}`);
             break;
           }
         }
@@ -271,30 +208,25 @@ export class ProxyFactory {
           */
 
           // Return the value directly if it's not a getter or method
-          console.log(
-            `🏭 [ProxyFactory] 📦 Property accessed: ${String(prop)}`,
-          );
           return value;
         }
 
         // For getters, track access and value
         proxyStats.propertyAccesses++;
-        console.log(`🏭 [ProxyFactory] 🎟️ Getter accessed: ${String(prop)}`);
 
         // Track the getter value if it's a primitive
         const getterValue = value;
-        const isGetterValuePrimitive = getterValue !== null && typeof getterValue !== 'object';
+        const isGetterValuePrimitive =
+          getterValue !== null && typeof getterValue !== 'object';
         const trackValue = isGetterValuePrimitive ? getterValue : undefined;
 
-        console.log(`🏭 [ProxyFactory] Getter value:`, {
-          prop: String(prop),
-          value: trackValue !== undefined ? JSON.stringify(trackValue) : '[Object/Function]',
-          valueType: typeof getterValue,
-          isPrimitive: isGetterValuePrimitive,
-        });
-
         // Track access with value for primitives
-        consumerTracker.trackAccess(consumerRef, 'class', String(prop), trackValue);
+        consumerTracker.trackAccess(
+          consumerRef,
+          'class',
+          String(prop),
+          trackValue,
+        );
         return value;
       },
 
@@ -318,13 +250,6 @@ export class ProxyFactory {
     refCache.set(consumerRef, proxy);
 
     proxyStats.classProxiesCreated++;
-    const endTime = performance.now();
-
-    console.log(`🏭 [ProxyFactory] ✅ Created new class proxy`);
-    console.log(`🏭 [ProxyFactory] Creation stats:`, {
-      totalClassProxies: proxyStats.classProxiesCreated,
-      creationTime: `${(endTime - startTime).toFixed(2)}ms`,
-    });
 
     return proxy;
   }

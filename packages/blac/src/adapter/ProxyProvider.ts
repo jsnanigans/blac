@@ -23,28 +23,11 @@ export class ProxyProvider {
   private classProxyCount = 0;
   private createdAt = Date.now();
 
-  constructor(private context: ProxyContext) {
-    console.log(`🔌 [ProxyProvider] Initialized`);
-    console.log(`🔌 [ProxyProvider] Context:`, {
-      hasConsumerRef: !!context.consumerRef,
-      hasTracker: !!context.consumerTracker,
-    });
-  }
+  constructor(private context: ProxyContext) {}
 
   createStateProxy<T extends object>(target: T): T {
-    const startTime = performance.now();
     this.proxyCreationCount++;
     this.stateProxyCount++;
-
-    console.log(
-      `🔌 [ProxyProvider] 🎭 Creating state proxy #${this.stateProxyCount}`,
-    );
-    console.log(
-      `🔌 [ProxyProvider] Target type: ${target?.constructor?.name || typeof target}`,
-    );
-    console.log(
-      `🔌 [ProxyProvider] Target keys: ${Object.keys(target).length}`,
-    );
 
     const proxy = ProxyFactory.createStateProxy({
       target,
@@ -52,51 +35,12 @@ export class ProxyProvider {
       consumerTracker: this.context.consumerTracker as any,
     });
 
-    const endTime = performance.now();
-    console.log(
-      `🔌 [ProxyProvider] ✅ State proxy created in ${(endTime - startTime).toFixed(2)}ms`,
-    );
-
     return proxy;
   }
 
   createClassProxy<T extends object>(target: T): T {
-    const startTime = performance.now();
     this.proxyCreationCount++;
     this.classProxyCount++;
-
-    console.log(
-      `🔌 [ProxyProvider] 🎭 Creating class proxy #${this.classProxyCount}`,
-    );
-    console.log(
-      `🔌 [ProxyProvider] Target class: ${target?.constructor?.name}`,
-    );
-
-    // Log methods and getters
-    const proto = Object.getPrototypeOf(target);
-    const methods: string[] = [];
-    const getters: string[] = [];
-
-    // Safely check for methods and getters without invoking them
-    Object.getOwnPropertyNames(proto).forEach((name) => {
-      if (name === 'constructor') return;
-
-      const descriptor = Object.getOwnPropertyDescriptor(proto, name);
-      if (descriptor) {
-        if (descriptor.get) {
-          getters.push(name);
-        } else if (typeof descriptor.value === 'function') {
-          methods.push(name);
-        }
-      }
-    });
-
-    console.log(`🔌 [ProxyProvider] Class structure:`, {
-      methods: methods.length,
-      getters: getters.length,
-      sampleMethods: methods.slice(0, 3),
-      sampleGetters: getters.slice(0, 3),
-    });
 
     const proxy = ProxyFactory.createClassProxy({
       target,
@@ -104,45 +48,16 @@ export class ProxyProvider {
       consumerTracker: this.context.consumerTracker as any,
     });
 
-    const endTime = performance.now();
-    console.log(
-      `🔌 [ProxyProvider] ✅ Class proxy created in ${(endTime - startTime).toFixed(2)}ms`,
-    );
-
     return proxy;
   }
 
   getProxyState<B extends BlocBase<any>>(state: BlocState<B>): BlocState<B> {
-    const startTime = performance.now();
-
-    console.log(`🔌 [ProxyProvider] 📦 getProxyState called`);
-
     const proxy = this.createStateProxy(state);
-
-    const endTime = performance.now();
-    console.log(
-      `🔌 [ProxyProvider] ✅ State proxy ready in ${(endTime - startTime).toFixed(2)}ms`,
-    );
-
     return proxy;
   }
 
   getProxyBlocInstance<B extends BlocBase<any>>(blocInstance: B): B {
-    const startTime = performance.now();
-
-    console.log(`🔌 [ProxyProvider] 🎯 getProxyBlocInstance called`);
-    console.log(`🔌 [ProxyProvider] Bloc instance:`, {
-      name: blocInstance._name,
-      id: blocInstance._id,
-    });
-
     const proxy = this.createClassProxy(blocInstance);
-
-    const endTime = performance.now();
-    console.log(
-      `🔌 [ProxyProvider] ✅ Bloc proxy ready in ${(endTime - startTime).toFixed(2)}ms`,
-    );
-
     return proxy;
   }
 

@@ -517,7 +517,6 @@ export abstract class BlocBase<S, P = unknown> {
   _pushState = (newState: S, oldState: S, action?: unknown): void => {
     // Validate newState
     if (newState === undefined) {
-      console.warn('BlocBase._pushState: newState is undefined', this);
       return;
     }
 
@@ -527,7 +526,6 @@ export abstract class BlocBase<S, P = unknown> {
       typeof action !== 'object' &&
       typeof action !== 'function'
     ) {
-      console.warn('BlocBase._pushState: Invalid action type', this, action);
       return;
     }
 

@@ -149,10 +149,12 @@ export class Blac {
     if (Blac.logSpy) {
       Blac.logSpy(args);
     }
-    if (Blac.enableLog && Blac.logLevel === 'warn')
-      console.warn(`☢️ [Blac ${this.createdAt.toString()}]`, ...args);
-    if (Blac.enableLog && Blac.logLevel === 'log')
-      console.log(`☢️ [Blac ${this.createdAt.toString()}]`, ...args);
+    if (Blac.enableLog && Blac.logLevel === 'warn') {
+      // Logging disabled - console.warn removed
+    }
+    if (Blac.enableLog && Blac.logLevel === 'log') {
+      // Logging disabled - console.log removed
+    }
   };
   static get log() {
     return Blac.instance.log;
@@ -173,11 +175,7 @@ export class Blac {
    */
   warn = (message: string, ...args: unknown[]) => {
     if (Blac.enableLog) {
-      console.warn(
-        `🚨 [Blac ${String(Blac.instance.createdAt)}]`,
-        message,
-        ...args,
-      );
+      // Logging disabled - console.warn removed
     }
   };
   static get warn() {
@@ -190,11 +188,7 @@ export class Blac {
    */
   error = (message: string, ...args: unknown[]) => {
     if (Blac.enableLog) {
-      console.error(
-        `🚨 [Blac ${String(Blac.instance.createdAt)}]`,
-        message,
-        ...args,
-      );
+      // Logging disabled - console.error removed
     }
   };
   static get error() {

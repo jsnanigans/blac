@@ -48,31 +48,6 @@ export class DependencyTracker {
     if (value !== undefined) {
       const previousValue = this.stateValues.get(path);
       this.stateValues.set(path, { value, lastAccessTime: now });
-
-      console.log(
-        `📊 [DependencyTracker-${this.trackerId}] Tracked state access: ${path} (${isNew ? '🆕 NEW' : '🔁 EXISTING'})`,
-      );
-      console.log(
-        `📊 [DependencyTracker-${this.trackerId}] Value: ${JSON.stringify(value)} ${previousValue ? `(was: ${JSON.stringify(previousValue.value)})` : '(first access)'}`,
-      );
-    } else {
-      console.log(
-        `📊 [DependencyTracker-${this.trackerId}] Tracked state access: ${path} (${isNew ? '🆕 NEW' : '🔁 EXISTING'})`,
-      );
-    }
-
-    console.log(
-      `📊 [DependencyTracker-${this.trackerId}] Access count for this path: ${accessCount}`,
-    );
-    console.log(
-      `📊 [DependencyTracker-${this.trackerId}] Total state paths: ${this.stateAccesses.size}`,
-    );
-
-    // Log hot paths
-    if (accessCount > 10 && accessCount % 10 === 0) {
-      console.log(
-        `📊 [DependencyTracker-${this.trackerId}] 🔥 Hot path detected: ${path} (${accessCount} accesses)`,
-      );
     }
   }
 
@@ -96,74 +71,19 @@ export class DependencyTracker {
     if (value !== undefined) {
       const previousValue = this.classValues.get(path);
       this.classValues.set(path, { value, lastAccessTime: now });
-
-      console.log(
-        `📊 [DependencyTracker-${this.trackerId}] Tracked class access: ${path} (${isNew ? '🆕 NEW' : '🔁 EXISTING'})`,
-      );
-      console.log(
-        `📊 [DependencyTracker-${this.trackerId}] Value: ${JSON.stringify(value)} ${previousValue ? `(was: ${JSON.stringify(previousValue.value)})` : '(first access)'}`,
-      );
-    } else {
-      console.log(
-        `📊 [DependencyTracker-${this.trackerId}] Tracked class access: ${path} (${isNew ? '🆕 NEW' : '🔁 EXISTING'})`,
-      );
     }
-
-    console.log(
-      `📊 [DependencyTracker-${this.trackerId}] Access count for this path: ${accessCount}`,
-    );
-    console.log(
-      `📊 [DependencyTracker-${this.trackerId}] Total class paths: ${this.classAccesses.size}`,
-    );
   }
 
   computeDependencies(): DependencyArray {
-    const startTime = performance.now();
     const deps = {
       statePaths: Array.from(this.stateAccesses),
       classPaths: Array.from(this.classAccesses),
     };
-    const endTime = performance.now();
-
-    // Find most accessed paths
-    const hotPaths = Array.from(this.accessPatterns.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3);
-
-    console.log(
-      `📊 [DependencyTracker-${this.trackerId}] 📦 Computing dependencies:`,
-      {
-        statePaths: deps.statePaths.length,
-        classPaths: deps.classPaths.length,
-        totalAccesses: this.accessCount,
-        computationTime: `${(endTime - startTime).toFixed(2)}ms`,
-      },
-    );
-
-    if (hotPaths.length > 0) {
-      console.log(
-        `📊 [DependencyTracker-${this.trackerId}] 🔥 Hot paths:`,
-        hotPaths.map(([path, count]) => `${path} (${count}x)`),
-      );
-    }
 
     return deps;
   }
 
   reset(): void {
-    const lifetime = this.firstAccessTime
-      ? Date.now() - this.firstAccessTime
-      : 0;
-    const previousState = {
-      statePaths: this.stateAccesses.size,
-      classPaths: this.classAccesses.size,
-      accessCount: this.accessCount,
-      lifetime: `${lifetime}ms`,
-      uniqueAccessPatterns: this.accessPatterns.size,
-      trackedStateValues: this.stateValues.size,
-      trackedClassValues: this.classValues.size,
-    };
-
     this.stateAccesses.clear();
     this.classAccesses.clear();
     this.accessPatterns.clear();
@@ -171,18 +91,10 @@ export class DependencyTracker {
     this.classValues.clear();
     this.accessCount = 0;
     this.firstAccessTime = 0;
-
-    console.log(
-      `📊 [DependencyTracker-${this.trackerId}] 🔄 Reset - Previous state:`,
-      previousState,
-    );
   }
 
   getMetrics(): DependencyMetrics {
     const uniquePaths = new Set([...this.stateAccesses, ...this.classAccesses]);
-    const lifetime = this.firstAccessTime
-      ? Date.now() - this.firstAccessTime
-      : 0;
 
     const metrics = {
       totalAccesses: this.accessCount,
@@ -190,36 +102,14 @@ export class DependencyTracker {
       lastAccessTime: this.lastAccessTime,
     };
 
-    console.log(`📊 [DependencyTracker-${this.trackerId}] 📈 Metrics:`, {
-      totalAccesses: metrics.totalAccesses,
-      uniquePaths: uniquePaths.size,
-      lifetime: `${lifetime}ms`,
-      avgAccessRate:
-        lifetime > 0
-          ? `${(this.accessCount / (lifetime / 1000)).toFixed(2)}/sec`
-          : 'N/A',
-    });
-
     return metrics;
   }
 
   hasDependencies(): boolean {
-    const hasDeps = this.stateAccesses.size > 0 || this.classAccesses.size > 0;
-    console.log(
-      `📊 [DependencyTracker-${this.trackerId}] Has dependencies: ${hasDeps ? '✅' : '❌'} (state: ${this.stateAccesses.size}, class: ${this.classAccesses.size})`,
-    );
-    return hasDeps;
+    return this.stateAccesses.size > 0 || this.classAccesses.size > 0;
   }
 
   merge(other: DependencyTracker): void {
-    const startTime = performance.now();
-    const beforeState = {
-      statePaths: this.stateAccesses.size,
-      classPaths: this.classAccesses.size,
-      accessCount: this.accessCount,
-      patterns: this.accessPatterns.size,
-    };
-
     // Merge state and class accesses
     other.stateAccesses.forEach((path) => this.stateAccesses.add(path));
     other.classAccesses.forEach((path) => this.classAccesses.add(path));
@@ -246,27 +136,6 @@ export class DependencyTracker {
     ) {
       this.firstAccessTime = other.firstAccessTime;
     }
-
-    const endTime = performance.now();
-    console.log(
-      `📊 [DependencyTracker-${this.trackerId}] 🤝 Merged with tracker ${other.trackerId}:`,
-      {
-        before: beforeState,
-        after: {
-          statePaths: this.stateAccesses.size,
-          classPaths: this.classAccesses.size,
-          accessCount: this.accessCount,
-          patterns: this.accessPatterns.size,
-        },
-        merged: {
-          trackerId: other.trackerId,
-          statePaths: other.stateAccesses.size,
-          classPaths: other.classAccesses.size,
-          accessCount: other.accessCount,
-        },
-        mergeTime: `${(endTime - startTime).toFixed(2)}ms`,
-      },
-    );
   }
 
   // Get tracked values for comparison
@@ -299,9 +168,6 @@ export class DependencyTracker {
       this.classValues.size === 0 &&
       (this.stateAccesses.size > 0 || this.classAccesses.size > 0)
     ) {
-      console.log(
-        `📊 [DependencyTracker-${this.trackerId}] 🆕 No values tracked yet but paths exist - considering changed`,
-      );
       return true;
     }
 
@@ -310,9 +176,6 @@ export class DependencyTracker {
       try {
         const currentValue = this.getValueAtPath(newState, path);
         if (currentValue !== trackedValue.value) {
-          console.log(
-            `📊 [DependencyTracker-${this.trackerId}] 🔄 State value changed at ${path}: ${JSON.stringify(trackedValue.value)} -> ${JSON.stringify(currentValue)}`,
-          );
           // Update the tracked value for next comparison
           this.stateValues.set(path, {
             value: currentValue,
@@ -321,9 +184,6 @@ export class DependencyTracker {
           hasChanged = true;
         }
       } catch (error) {
-        console.log(
-          `📊 [DependencyTracker-${this.trackerId}] ⚠️ Error accessing state path ${path}: ${error}`,
-        );
         hasChanged = true; // Consider it changed if we can't access it
       }
     }
@@ -333,9 +193,6 @@ export class DependencyTracker {
       try {
         const currentValue = this.getValueAtPath(newBlocInstance, path);
         if (currentValue !== trackedValue.value) {
-          console.log(
-            `📊 [DependencyTracker-${this.trackerId}] 🔄 Class getter value changed at ${path}: ${JSON.stringify(trackedValue.value)} -> ${JSON.stringify(currentValue)}`,
-          );
           // Update the tracked value for next comparison
           this.classValues.set(path, {
             value: currentValue,
@@ -344,17 +201,8 @@ export class DependencyTracker {
           hasChanged = true;
         }
       } catch (error) {
-        console.log(
-          `📊 [DependencyTracker-${this.trackerId}] ⚠️ Error accessing class getter ${path}: ${error}`,
-        );
         hasChanged = true; // Consider it changed if we can't access it
       }
-    }
-
-    if (!hasChanged) {
-      console.log(
-        `📊 [DependencyTracker-${this.trackerId}] ✅ No tracked values have changed`,
-      );
     }
 
     return hasChanged;
