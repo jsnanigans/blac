@@ -31,12 +31,7 @@ Let's build an authentication system using Bloc:
 ```typescript
 // src/blocs/auth/auth.events.ts
 // Define event classes
-export class LoginRequested {
-  constructor(
-    public readonly email: string,
-    public readonly password: string
-  ) {}
-}
+export class LoginRequested {}
 
 export class LogoutRequested {}
 
@@ -44,6 +39,14 @@ export class AuthCheckRequested {}
 
 export class TokenRefreshRequested {
   constructor(public readonly refreshToken: string) {}
+}
+
+export class EmailChanged {
+  constructor(public readonly email: string) {}
+}
+
+export class PasswordChanged {
+  constructor(public readonly password: string) {}
 }
 ```
 
@@ -55,6 +58,9 @@ export interface AuthState {
   isLoading: boolean;
   user: User | null;
   error: string | null;
+  // Form state
+  email: string;
+  password: string;
 }
 
 export interface User {
@@ -72,7 +78,9 @@ import {
   LoginRequested,
   LogoutRequested,
   AuthCheckRequested,
-  TokenRefreshRequested
+  TokenRefreshRequested,
+  EmailChanged,
+  PasswordChanged
 } from './auth.events';
 
 // Union type for all events (optional but helpful)
@@ -80,7 +88,9 @@ type AuthEvent =
   | LoginRequested 
   | LogoutRequested 
   | AuthCheckRequested 
-  | TokenRefreshRequested;
+  | TokenRefreshRequested
+  | EmailChanged
+  | PasswordChanged;
 
 export class AuthBloc extends Bloc<AuthState, AuthEvent> {
   constructor() {
@@ -89,7 +99,9 @@ export class AuthBloc extends Bloc<AuthState, AuthEvent> {
       isAuthenticated: false,
       isLoading: false,
       user: null,
-      error: null
+      error: null,
+      email: '',
+      password: ''
     });
     
     // Register event handlers
@@ -97,6 +109,8 @@ export class AuthBloc extends Bloc<AuthState, AuthEvent> {
     this.on(LogoutRequested, this.handleLogout);
     this.on(AuthCheckRequested, this.handleAuthCheck);
     this.on(TokenRefreshRequested, this.handleTokenRefresh);
+    this.on(EmailChanged, this.handleEmailChanged);
+    this.on(PasswordChanged, this.handlePasswordChanged);
   }
   
   // Event handlers
@@ -114,8 +128,8 @@ export class AuthBloc extends Bloc<AuthState, AuthEvent> {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: event.email,
-          password: event.password
+          email: this.state.email,
+          password: this.state.password
         })
       });
       
@@ -209,9 +223,25 @@ export class AuthBloc extends Bloc<AuthState, AuthEvent> {
     // Similar pattern to login
   };
   
+  private handleEmailChanged = (event: EmailChanged, emit: (state: AuthState) => void) => {
+    emit({
+      ...this.state,
+      email: event.email,
+      error: null
+    });
+  };
+  
+  private handlePasswordChanged = (event: PasswordChanged, emit: (state: AuthState) => void) => {
+    emit({
+      ...this.state,
+      password: event.password,
+      error: null
+    });
+  };
+  
   // Helper methods for dispatching events
-  login = (email: string, password: string) => {
-    this.add(new LoginRequested(email, password));
+  login = () => {
+    this.add(new LoginRequested());
   };
   
   logout = () => {
@@ -220,6 +250,20 @@ export class AuthBloc extends Bloc<AuthState, AuthEvent> {
   
   checkAuth = () => {
     this.add(new AuthCheckRequested());
+  };
+  
+  setEmail = (email: string) => {
+    this.add(new EmailChanged(email));
+  };
+  
+  setPassword = (password: string) => {
+    this.add(new PasswordChanged(password));
+  };
+  
+  // Handle form submission
+  handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    this.login();
   };
 }
 ```
@@ -230,17 +274,9 @@ export class AuthBloc extends Bloc<AuthState, AuthEvent> {
 // src/components/LoginForm.tsx
 import { useBloc } from '@blac/react';
 import { AuthBloc } from '../blocs/auth/AuthBloc';
-import { useState, FormEvent } from 'react';
 
 export function LoginForm() {
   const [state, authBloc] = useBloc(AuthBloc);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    authBloc.login(email, password);
-  };
   
   if (state.isAuthenticated) {
     return (
@@ -252,32 +288,43 @@ export function LoginForm() {
   }
   
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={authBloc.handleSubmit} aria-label="Login form">
       <h2>Login</h2>
       
       {state.error && (
-        <div className="error">{state.error}</div>
+        <div role="alert" aria-live="polite" className="error">
+          {state.error}
+        </div>
       )}
       
       <input
         type="email"
         placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
+        value={state.email}
+        onChange={(e) => authBloc.setEmail(e.target.value)}
         disabled={state.isLoading}
         required
+        aria-label="Email address"
+        aria-invalid={!!state.error}
+        aria-describedby={state.error ? "error-message" : undefined}
       />
       
       <input
         type="password"
         placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
+        value={state.password}
+        onChange={(e) => authBloc.setPassword(e.target.value)}
         disabled={state.isLoading}
         required
+        aria-label="Password"
+        aria-invalid={!!state.error}
       />
       
-      <button type="submit" disabled={state.isLoading}>
+      <button 
+        type="submit" 
+        disabled={state.isLoading}
+        aria-busy={state.isLoading}
+      >
         {state.isLoading ? 'Logging in...' : 'Login'}
       </button>
     </form>

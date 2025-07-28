@@ -103,12 +103,12 @@ export class TodoCubit extends Cubit<TodoState> {
 
   // Handle form submission to add a todo
   handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+    event.preventDefault();
     const trimmedText = this.state.inputText.trim();
     if (!trimmedText) return;
     this.addTodo(trimmedText);
     this.setInputText('');
-  }
+  };
 
   // Computed values (getters)
   get filteredTodos() {
@@ -126,6 +126,10 @@ export class TodoCubit extends Cubit<TodoState> {
 
   get activeTodoCount() {
     return this.state.todos.filter(todo => !todo.completed).length;
+  }
+
+  get allCompleted() {
+    return this.state.todos.length > 0 && this.state.todos.every(todo => todo.completed);
   }
 }
 ```
@@ -147,69 +151,18 @@ Now let's create components that use our TodoCubit:
 // src/components/TodoList.tsx
 import { useBloc } from '@blac/react';
 import { TodoCubit } from '../state/todo/todo.cubit';
-import { useState } from 'react';
 
 export function TodoList() {
-  const [state, todoCubit] = useBloc(TodoCubit);
+  const [/* not using state */, todoCubit] = useBloc(TodoCubit);
 
   return (
     <div className="todo-app">
       <h1>Todo List</h1>
-
-      {/* Add Todo Form */}
-      <form onSubmit={todoCubit.handleFormSubmit}>
-        <input
-          type="text"
-          value={state.inputText}
-          onChange={(e) => todoCubit.setInputText(e.target.value)}
-          placeholder="What needs to be done?"
-        />
-        <button type="submit">Add</button>
-      </form>
-
-      {/* Filter Buttons */}
-      <div className="filters">
-        <button
-          className={state.filter === 'all' ? 'active' : ''}
-          onClick={() => todoCubit.setFilter('all')}
-        >
-          All
-        </button>
-        <button
-          className={state.filter === 'active' ? 'active' : ''}
-          onClick={() => todoCubit.setFilter('active')}
-        >
-          Active ({todoCubit.activeTodoCount})
-        </button>
-        <button
-          className={state.filter === 'completed' ? 'active' : ''}
-          onClick={() => todoCubit.setFilter('completed')}
-        >
-          Completed
-        </button>
-      </div>
-
-      {/* Todo Items */}
-      <ul>
-        {todoCubit.filteredTodos.map(todo => (
-          <li key={todo.id}>
-            <input
-              type="checkbox"
-              checked={todo.completed}
-              onChange={() => todoCubit.toggleTodo(todo.id)}
-            />
-            <span className={todo.completed ? 'completed' : ''}>
-              {todo.text}
-            </span>
-            <button onClick={() => todoCubit.deleteTodo(todo.id)}>
-              Delete
-            </button>
-          </li>
-        ))}
-      </ul>
-
+      <AddTodoForm />
+      <FilterButtons />
+      <TodoListItems />
       {/* Clear Completed */}
-      {state.todos.some(todo => todo.completed) && (
+      {!todoCubit.allCompleted && (
         <button onClick={todoCubit.clearCompleted}>
           Clear Completed
         </button>
@@ -217,6 +170,82 @@ export function TodoList() {
     </div>
   );
 }
+
+function AddTodoForm() {
+  const [state, todoCubit] = useBloc(TodoCubit);
+
+  return (
+    <form onSubmit={todoCubit.handleFormSubmit}>
+      <input
+        type="text"
+        value={state.inputText}
+        onChange={(e) => todoCubit.setInputText(e.target.value)}
+        placeholder="What needs to be done?"
+        aria-label="New todo input"
+      />
+      <button type="submit" aria-label="Add new todo">Add</button>
+    </form>
+  );
+}
+
+function FilterButtons() {
+  const [state, todoCubit] = useBloc(TodoCubit);
+
+  return (
+    <div className="filters" role="radiogroup" aria-label="Filter todos">
+      <button
+        role="radio"
+        aria-checked={state.filter === 'all'}
+        onClick={() => todoCubit.setFilter('all')}
+      >
+        All
+      </button>
+      <button
+        role="radio"
+        aria-checked={state.filter === 'active'}
+        onClick={() => todoCubit.setFilter('active')}
+      >
+        Active ({todoCubit.activeTodoCount})
+      </button>
+      <button
+        role="radio"
+        aria-checked={state.filter === 'completed'}
+        onClick={() => todoCubit.setFilter('completed')}
+      >
+        Completed
+      </button>
+    </div>
+  );
+}
+
+function TodoListItems() {
+  const [state, todoCubit] = useBloc(TodoCubit);
+
+  return (
+    <ul aria-label="Todo items">
+      {todoCubit.filteredTodos.map(todo => (
+        <li key={todo.id}>
+          <input
+            type="checkbox"
+            checked={todo.completed}
+            onChange={() => todoCubit.toggleTodo(todo.id)}
+            aria-label={`Mark "${todo.text}" as ${todo.completed ? 'incomplete' : 'complete'}`}
+          />
+          <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
+            {todo.text}
+          </span>
+          <button
+            onClick={() => todoCubit.deleteTodo(todo.id)}
+            aria-label={`Delete "${todo.text}"`}
+          >
+            Delete
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 ```
 
 ### Step 4: Understanding the Flow
@@ -229,37 +258,6 @@ Here's what happens when a user interacts with the todo list:
 4. **UI updates** → New todo appears in the list
 
 This unidirectional flow makes debugging easy and state changes predictable.
-
-## Advanced: Persisting State
-
-Let's add local storage persistence to our todo list:
-
-```typescript
-// src/state/todo/todo.cubit.ts
-import { Cubit } from '@blac/core';
-import { Todo, TodoState } from './todo.types';
-
-const STORAGE_KEY = 'blac_todos';
-
-export class TodoCubit extends Cubit<TodoState> {
-  constructor() {
-    // Load from localStorage or use default
-    const stored = localStorage.getItem(STORAGE_KEY);
-    const initialState = stored
-      ? JSON.parse(stored)
-      : { todos: [], filter: 'all' };
-
-    super(initialState);
-
-    // Save to localStorage whenever state changes
-    this.on('StateChange', (state) => {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    });
-  }
-
-  // ... rest of the methods remain the same
-}
-```
 
 ## Best Practices
 
