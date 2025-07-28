@@ -68,6 +68,21 @@ function UserProfile() {
 
 In the example above, the component only accesses `state.name`, so changes to other properties like `state.email` or `state.settings` won't cause a re-render.
 
+:::info Proxy Dependency Tracking
+This automatic property tracking is enabled by default through BlaC's proxy-based dependency tracking system. You can disable it globally if needed:
+
+```tsx
+import { Blac } from '@blac/core';
+
+// Disable automatic tracking globally
+Blac.setConfig({ proxyDependencyTracking: false });
+
+// Now components will re-render on ANY state change
+```
+
+See the [Configuration](/api/configuration) page for more details.
+:::
+
 ---
 
 #### Conditional Rendering and Getters with Automatic Tracking
@@ -209,6 +224,10 @@ With this approach, you can have multiple independent instances of state that sh
 ---
 #### Custom Dependency Selector
 While property access is automatically tracked, in some cases you might want more control over when a component re-renders. The custom selector receives the current state, previous state, and bloc instance:
+
+:::tip Manual Dependencies Override Global Config
+When you provide a custom selector (dependencies), it always takes precedence over the global `proxyDependencyTracking` setting. This allows you to have fine-grained control on a per-component basis regardless of global configuration.
+:::
 
 ```tsx
 function OptimizedTodoList() {

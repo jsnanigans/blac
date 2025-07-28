@@ -26,7 +26,8 @@ const siteConfig = defineConfig({
           { text: 'Introduction', link: '/learn/introduction' },
           { text: 'Getting Started', link: '/learn/getting-started' },
           { text: 'Architecture', link: '/learn/architecture' },
-          { text: 'Core Concepts', link: '/learn/core-concepts' }
+          { text: 'Core Concepts', link: '/learn/core-concepts' },
+          { text: 'Agent Instructions', link: '/agent_instructions' }
         ]
       },
       {
@@ -42,7 +43,8 @@ const siteConfig = defineConfig({
         items: [
           { text: 'Core Classes', link: '/api/core-classes' },
           { text: 'React Hooks', link: '/api/react-hooks' },
-          { text: 'Key Methods', link: '/api/key-methods' }
+          { text: 'Key Methods', link: '/api/key-methods' },
+          { text: 'Configuration', link: '/api/configuration' }
         ]
       },
       // {

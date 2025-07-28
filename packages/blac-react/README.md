@@ -123,6 +123,27 @@ The dependency tracking system uses JavaScript Proxies to monitor property acces
 3. **Intelligent Comparison**: The system separately tracks state dependencies and instance dependencies to handle edge cases where properties are dynamically added/removed
 4. **Optimized Updates**: Components only re-render when tracked dependencies actually change their values
 
+#### Configuring Proxy Tracking
+
+By default, BlaC uses proxy-based dependency tracking for optimal performance. You can disable this globally if needed:
+
+```tsx
+import { Blac } from '@blac/core';
+
+// Disable automatic dependency tracking globally
+Blac.setConfig({ proxyDependencyTracking: false });
+
+// Now components will re-render on ANY state change
+// unless you provide manual dependencies
+```
+
+When proxy tracking is disabled:
+- Components re-render on any state change (similar to traditional state management)
+- Manual dependencies via the `selector` option still work as expected
+- Useful for debugging or when proxy behavior causes issues
+
+For more configuration options, see the [@blac/core documentation](https://www.npmjs.com/package/@blac/core).
+
 ### Custom Dependency Selector
 
 For more control over when your component re-renders, you can provide a custom dependency selector. The selector function receives the current state, previous state, and bloc instance, and should return an array of values to track:

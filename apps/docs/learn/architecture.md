@@ -185,6 +185,68 @@ flowchart LR
 
 This is what your users see and interact with. In Blac, React components subscribe to state from `Bloc`s or `Cubit`s using the `useBloc` hook and dispatch intentions by calling methods on the state container instance.
 
+#### Proxy-Based Dependency Tracking
+
+BlaC employs an innovative proxy-based dependency tracking system in the presentation layer to optimize React re-renders automatically. When you use the `useBloc` hook, BlaC wraps both the state and bloc instance in ES6 Proxies that track which properties your component accesses during render.
+
+```typescript
+// How proxy tracking works internally (simplified)
+const stateProxy = new Proxy(actualState, {
+  get(target, property) {
+    // Track that this component accessed 'property'
+    trackDependency(componentId, property);
+    return target[property];
+  }
+});
+```
+
+This tracking happens transparently:
+
+```tsx
+function UserCard() {
+  const [state, bloc] = useBloc(UserBloc);
+  
+  // BlaC tracks that this component only accesses 'name' and 'avatar'
+  return (
+    <div>
+      <img src={state.avatar} />
+      <h3>{state.name}</h3>
+    </div>
+  );
+  // Component only re-renders when 'name' or 'avatar' change
+}
+```
+
+**Benefits:**
+- **Automatic Optimization**: No need to manually specify dependencies
+- **Fine-grained Updates**: Components only re-render when properties they use change
+- **Dynamic Tracking**: Dependencies update automatically based on conditional rendering
+- **Deep Object Support**: Works with nested properties (e.g., `state.user.profile.name`)
+
+**How It Works:**
+1. During render, the proxy intercepts all property access
+2. BlaC builds a dependency map for each component
+3. When state changes, BlaC checks if any tracked properties changed
+4. Only components with changed dependencies re-render
+
+**Disabling Proxy Tracking:**
+If needed, you can disable this globally:
+
+```typescript
+import { Blac } from '@blac/core';
+
+// Disable proxy tracking - all state changes trigger re-renders
+Blac.setConfig({ proxyDependencyTracking: false });
+```
+
+Or use manual dependencies per component:
+
+```tsx
+const [state, bloc] = useBloc(UserBloc, {
+  dependencies: (bloc) => [bloc.state.name] // Manual control
+});
+```
+
 ```tsx
 // Example: A React component in the Presentation Layer
 import { useBloc } from '@blac/react';

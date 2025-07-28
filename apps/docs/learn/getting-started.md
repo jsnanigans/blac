@@ -73,6 +73,32 @@ export default CounterDisplay;
 
 That's it! You've created a simple counter using a Blac `Cubit`.
 
+## Configuration (Optional)
+
+BlaC provides global configuration options to customize its behavior. The most common configuration is controlling proxy dependency tracking:
+
+```tsx
+import { Blac } from '@blac/core';
+
+// Configure BlaC before your app starts
+Blac.setConfig({
+  // Control automatic re-render optimization (default: true)
+  proxyDependencyTracking: true,
+  
+  // Expose Blac instance globally for debugging (default: false)
+  exposeBlacInstance: false
+});
+```
+
+By default, BlaC uses proxy-based dependency tracking to automatically optimize re-renders. Components only re-render when the specific state properties they access change. You can disable this globally if needed:
+
+```tsx
+// Disable automatic optimization - components re-render on any state change
+Blac.setConfig({ proxyDependencyTracking: false });
+```
+
+For more details, see the [Configuration](/api/configuration) documentation.
+
 ## Common Issues
 
 ### "Cannot access 'Blac' before initialization" Error

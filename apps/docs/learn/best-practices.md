@@ -156,6 +156,68 @@ class GoodUserCubit extends Cubit<{
 
 Components should focus on rendering state and dispatching events:
 
+### 2. Optimize Re-renders with Proxy Tracking
+
+BlaC's automatic proxy dependency tracking optimizes re-renders by default. Understanding how to work with it effectively is crucial:
+
+```tsx
+// ✅ Do this - leverage automatic tracking
+function UserCard() {
+  const [state, bloc] = useBloc(UserBloc);
+  
+  // Only re-renders when name or avatar change
+  return (
+    <div>
+      <img src={state.avatar} />
+      <h3>{state.name}</h3>
+    </div>
+  );
+}
+
+// ✅ Do this - use manual dependencies when needed
+function UserStats() {
+  const [state, bloc] = useBloc(UserBloc, {
+    // Explicitly control dependencies
+    dependencies: (bloc) => [
+      bloc.state.postCount,
+      bloc.state.followerCount
+    ]
+  });
+  
+  return (
+    <div>
+      <p>Posts: {state.postCount}</p>
+      <p>Followers: {state.followerCount}</p>
+    </div>
+  );
+}
+```
+
+### 3. When to Disable Proxy Tracking
+
+While proxy tracking is beneficial in most cases, there are scenarios where you might want to disable it:
+
+```tsx
+// Disable globally when:
+// 1. Debugging re-render issues
+// 2. Working with third-party libraries that don't play well with proxies
+// 3. Preferring simpler mental model over optimization
+
+Blac.setConfig({ proxyDependencyTracking: false });
+```
+
+**Consider disabling proxy tracking when:**
+- Your state objects are small and simple
+- You're experiencing compatibility issues with dev tools
+- You prefer explicit control over re-renders
+- You're migrating from another state management solution
+
+**Keep proxy tracking enabled when:**
+- Working with large state objects
+- Building performance-critical applications
+- You have components that only use a subset of state
+- You want automatic optimization without manual work
+
 ```tsx
 // ✅ Do this - simple component that renders state and dispatches events
 function UserProfile() {
@@ -264,6 +326,34 @@ test('CounterCubit fetches count from API', async () => {
   
   expect(cubit.state.count).toBe(42);
   expect(cubit.state.isLoading).toBe(false);
+});
+```
+
+### 2. Test with Different Configurations
+
+When testing components that rely on proxy tracking behavior, consider testing with different configurations:
+
+```tsx
+import { Blac } from '@blac/core';
+
+describe('UserComponent', () => {
+  const originalConfig = { ...Blac.config };
+  
+  afterEach(() => {
+    // Reset configuration after each test
+    Blac.setConfig(originalConfig);
+    Blac.resetInstance();
+  });
+  
+  test('renders efficiently with proxy tracking', () => {
+    Blac.setConfig({ proxyDependencyTracking: true });
+    // Test that component only re-renders when accessed properties change
+  });
+  
+  test('handles all updates without proxy tracking', () => {
+    Blac.setConfig({ proxyDependencyTracking: false });
+    // Test that component re-renders on any state change
+  });
 });
 ```
 
