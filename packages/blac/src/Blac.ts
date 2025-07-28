@@ -20,6 +20,12 @@ import {
 export interface BlacConfig {
   /** Whether to expose the Blac instance globally */
   exposeBlacInstance?: boolean;
+  /** 
+   * Whether to enable proxy dependency tracking for automatic re-render optimization.
+   * When false, state changes always cause re-renders unless dependencies are manually specified.
+   * Default: true
+   */
+  proxyDependencyTracking?: boolean;
 }
 
 export interface GetBlocOptions<B extends BlocBase<unknown>> {
@@ -107,6 +113,46 @@ export class Blac {
   createdAt = Date.now();
   static get getAllBlocs() {
     return Blac.instance.getAllBlocs;
+  }
+  
+  /** Private static configuration */
+  private static _config: BlacConfig = {
+    exposeBlacInstance: false,
+    proxyDependencyTracking: true,
+  };
+  
+  /** Get current configuration */
+  static get config(): Readonly<BlacConfig> {
+    return { ...this._config };
+  }
+  
+  /**
+   * Set or update Blac configuration
+   * @param config - Partial configuration to merge with existing config
+   * @throws Error if configuration is invalid
+   */
+  static setConfig(config: Partial<BlacConfig>): void {
+    // Validate config
+    if (config.proxyDependencyTracking !== undefined && 
+        typeof config.proxyDependencyTracking !== 'boolean') {
+      throw new Error('BlacConfig.proxyDependencyTracking must be a boolean');
+    }
+    
+    if (config.exposeBlacInstance !== undefined && 
+        typeof config.exposeBlacInstance !== 'boolean') {
+      throw new Error('BlacConfig.exposeBlacInstance must be a boolean');
+    }
+    
+    // Merge with existing config
+    this._config = {
+      ...this._config,
+      ...config,
+    };
+    
+    // Log config update if logging is enabled
+    if (this.enableLog) {
+      this.instance.log('Blac config updated:', this._config);
+    }
   }
   /** Map storing all registered bloc instances by their class name and ID */
   blocInstanceMap: Map<string, BlocBase<unknown>> = new Map();

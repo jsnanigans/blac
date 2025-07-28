@@ -133,7 +133,7 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
         newState: BlocState<InstanceType<B>>,
         oldState: BlocState<InstanceType<B>>,
       ) => {
-        // Handle dependency-based change detection
+        // Case 1: Manual dependencies provided
         if (this.isUsingDependencies && this.options?.dependencies) {
           const newValues = this.options.dependencies(this.blocInstance);
           const hasChanged = this.hasDependencyValuesChanged(
@@ -146,7 +146,15 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
           }
 
           this.dependencyValues = newValues;
-        } else {
+        } 
+        // Case 2: Proxy tracking disabled globally (and no manual dependencies)
+        else if (!Blac.config.proxyDependencyTracking) {
+          // Always trigger re-render when proxy tracking is disabled
+          options.onChange();
+          return;
+        } 
+        // Case 3: Proxy tracking enabled (default behavior)
+        else {
           // Check if any tracked values have changed (proxy-based tracking)
           const consumerInfo = this.consumerTracker.getConsumerInfo(
             this.componentRef.current,
@@ -215,8 +223,9 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
   getProxyState = (
     state: BlocState<InstanceType<B>>,
   ): BlocState<InstanceType<B>> => {
-    if (this.isUsingDependencies) {
-      return state; // Return raw state when using dependencies
+    // Return raw state if proxy tracking is disabled globally or using manual dependencies
+    if (this.isUsingDependencies || !Blac.config.proxyDependencyTracking) {
+      return state;
     }
 
     return ProxyFactory.getProxyState({
@@ -227,8 +236,9 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
   };
 
   getProxyBlocInstance = (): InstanceType<B> => {
-    if (this.isUsingDependencies) {
-      return this.blocInstance; // Return raw instance when using dependencies
+    // Return raw instance if proxy tracking is disabled globally or using manual dependencies
+    if (this.isUsingDependencies || !Blac.config.proxyDependencyTracking) {
+      return this.blocInstance;
     }
 
     return ProxyFactory.getProxyBlocInstance({
