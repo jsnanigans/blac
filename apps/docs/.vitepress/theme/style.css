@@ -12,6 +12,7 @@
   --blac-cyan: #61dafb;
   --blac-cyan-dark: #4db8d5;
   --blac-cyan-darker: #3990a8;
+  --blac-cyan-darkest: #2a6e86; /* Even darker for better contrast */
   --blac-cyan-soft: rgba(97, 218, 251, 0.1);
   
   /* Override VitePress defaults */
@@ -348,12 +349,12 @@
 }
 
 .VPButton.brand {
-  background-color: var(--vp-c-brand-1);
+  background-color: var(--vp-c-brand-3); /* Use darker cyan for better contrast */
   color: white;
 }
 
 .VPButton.brand:hover {
-  background-color: var(--vp-c-brand-2);
+  background-color: var(--blac-cyan-darkest);
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
@@ -437,4 +438,21 @@
   font-family: var(--vp-font-family-mono);
   font-size: 0.875em;
   color: var(--vp-c-text-2);
+}
+
+/* ========================================
+   Custom inline buttons for better accessibility
+   ======================================== */
+
+/* Override inline button styles that use brand color */
+a[style*="background: var(--vp-c-brand)"],
+a[style*="background-color: var(--vp-c-brand)"] {
+  background-color: var(--vp-c-brand-3) !important; /* Use darker cyan */
+}
+
+a[style*="background: var(--vp-c-brand)"]:hover,
+a[style*="background-color: var(--vp-c-brand)"]:hover {
+  background-color: var(--blac-cyan-darkest) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }

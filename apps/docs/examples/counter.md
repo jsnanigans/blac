@@ -11,14 +11,14 @@ The simplest possible example - a number that increments and decrements.
 ```typescript
 import { Cubit } from '@blac/core';
 
-export class CounterCubit extends Cubit<number> {
+export class CounterCubit extends Cubit<{ count: number }> {
   constructor() {
-    super(0); // Initial state
+    super({ count: 0 }); // Initial state
   }
   
-  increment = () => this.emit(this.state + 1);
-  decrement = () => this.emit(this.state - 1);
-  reset = () => this.emit(0);
+  increment = () => this.emit({ count: this.state.count + 1 });
+  decrement = () => this.emit({ count: this.state.count - 1 });
+  reset = () => this.emit({ count: 0 });
 }
 ```
 
@@ -29,11 +29,11 @@ import { useBloc } from '@blac/react';
 import { CounterCubit } from './CounterCubit';
 
 function Counter() {
-  const [count, cubit] = useBloc(CounterCubit);
+  const [state, cubit] = useBloc(CounterCubit);
   
   return (
     <div>
-      <h1>Count: {count}</h1>
+      <h1>Count: {state.count}</h1>
       <button onClick={cubit.decrement}>-</button>
       <button onClick={cubit.increment}>+</button>
       <button onClick={cubit.reset}>Reset</button>
@@ -214,15 +214,15 @@ Demonstrating instance management with multiple independent counters.
 ### Isolated Counter
 
 ```typescript
-class IsolatedCounterCubit extends Cubit<number> {
+class IsolatedCounterCubit extends Cubit<{ count: number }> {
   static isolated = true; // Each component gets its own instance
   
   constructor() {
-    super(0);
+    super({ count: 0 });
   }
   
-  increment = () => this.emit(this.state + 1);
-  decrement = () => this.emit(this.state - 1);
+  increment = () => this.emit({ count: this.state.count + 1 });
+  decrement = () => this.emit({ count: this.state.count - 1 });
 }
 
 function MultipleCounters() {
@@ -237,11 +237,11 @@ function MultipleCounters() {
 }
 
 function CounterWidget({ title }: { title: string }) {
-  const [count, cubit] = useBloc(IsolatedCounterCubit);
+  const [state, cubit] = useBloc(IsolatedCounterCubit);
   
   return (
     <div className="counter-widget">
-      <h3>{title}: {count}</h3>
+      <h3>{title}: {state.count}</h3>
       <button onClick={cubit.decrement}>-</button>
       <button onClick={cubit.increment}>+</button>
     </div>
@@ -253,9 +253,9 @@ function CounterWidget({ title }: { title: string }) {
 
 ```typescript
 function NamedCounters() {
-  const [countA] = useBloc(CounterCubit, { id: 'counter-a' });
-  const [countB] = useBloc(CounterCubit, { id: 'counter-b' });
-  const [countC] = useBloc(CounterCubit, { id: 'counter-c' });
+  const [stateA] = useBloc(CounterCubit, { id: 'counter-a' });
+  const [stateB] = useBloc(CounterCubit, { id: 'counter-b' });
+  const [stateC] = useBloc(CounterCubit, { id: 'counter-c' });
   
   return (
     <div>
@@ -265,18 +265,18 @@ function NamedCounters() {
       <NamedCounter id="counter-c" label="Rounds Played" />
       
       <div className="scores">
-        <p>Current Scores: {countA} - {countB} (Round {countC})</p>
+        <p>Current Scores: {stateA.count} - {stateB.count} (Round {stateC.count})</p>
       </div>
     </div>
   );
 }
 
 function NamedCounter({ id, label }: { id: string; label: string }) {
-  const [count, cubit] = useBloc(CounterCubit, { id });
+  const [state, cubit] = useBloc(CounterCubit, { id });
   
   return (
     <div>
-      <h3>{label}: {count}</h3>
+      <h3>{label}: {state.count}</h3>
       <button onClick={cubit.increment}>+1</button>
       <button onClick={cubit.reset}>Reset</button>
     </div>
@@ -421,9 +421,9 @@ Counter that saves its state to localStorage.
 ```typescript
 import { Persist } from '@blac/core';
 
-class PersistentCounterCubit extends Cubit<number> {
+class PersistentCounterCubit extends Cubit<{ count: number }> {
   constructor() {
-    super(0);
+    super({ count: 0 });
     
     // Add persistence
     this.addAddon(new Persist({
@@ -432,19 +432,19 @@ class PersistentCounterCubit extends Cubit<number> {
     }));
   }
   
-  increment = () => this.emit(this.state + 1);
-  decrement = () => this.emit(this.state - 1);
-  reset = () => this.emit(0);
+  increment = () => this.emit({ count: this.state.count + 1 });
+  decrement = () => this.emit({ count: this.state.count - 1 });
+  reset = () => this.emit({ count: 0 });
 }
 
 function PersistentCounter() {
-  const [count, cubit] = useBloc(PersistentCounterCubit);
+  const [state, cubit] = useBloc(PersistentCounterCubit);
   
   return (
     <div>
       <h2>Persistent Counter</h2>
       <p>This counter saves to localStorage!</p>
-      <h1>{count}</h1>
+      <h1>{state.count}</h1>
       <button onClick={cubit.decrement}>-</button>
       <button onClick={cubit.increment}>+</button>
       <button onClick={cubit.reset}>Reset</button>

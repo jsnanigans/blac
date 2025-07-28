@@ -19,14 +19,14 @@ Think of a Cubit as a "smart" variable that knows how to update itself and tell 
 ```typescript
 import { Cubit } from '@blac/core';
 
-// State can be a primitive
-class CounterCubit extends Cubit<number> {
+// State can be an object with a primitive value
+class CounterCubit extends Cubit<{ count: number }> {
   constructor() {
-    super(0); // Initial state
+    super({ count: 0 }); // Initial state
   }
   
-  increment = () => this.emit(this.state + 1);
-  decrement = () => this.emit(this.state - 1);
+  increment = () => this.emit({ count: this.state.count + 1 });
+  decrement = () => this.emit({ count: this.state.count - 1 });
 }
 
 // Or an object
@@ -80,17 +80,17 @@ Cubits provide two methods for updating state:
 Replaces the entire state with a new value:
 
 ```typescript
-class ThemeCubit extends Cubit<'light' | 'dark'> {
+class ThemeCubit extends Cubit<{ theme: 'light' | 'dark' }> {
   constructor() {
-    super('light');
+    super({ theme: 'light' });
   }
   
   toggleTheme = () => {
-    this.emit(this.state === 'light' ? 'dark' : 'light');
+    this.emit({ theme: this.state.theme === 'light' ? 'dark' : 'light' });
   };
   
   setTheme = (theme: 'light' | 'dark') => {
-    this.emit(theme);
+    this.emit({ theme });
   };
 }
 ```
@@ -467,15 +467,15 @@ describe('CounterCubit', () => {
   });
   
   it('should start with initial state', () => {
-    expect(cubit.state).toBe(0);
+    expect(cubit.state).toEqual({ count: 0 });
   });
   
   it('should increment', () => {
     cubit.increment();
-    expect(cubit.state).toBe(1);
+    expect(cubit.state).toEqual({ count: 1 });
     
     cubit.increment();
-    expect(cubit.state).toBe(2);
+    expect(cubit.state).toEqual({ count: 2 });
   });
   
   it('should notify listeners on state change', () => {
@@ -484,7 +484,7 @@ describe('CounterCubit', () => {
     
     cubit.increment();
     
-    expect(listener).toHaveBeenCalledWith(1);
+    expect(listener).toHaveBeenCalledWith({ count: 1 });
   });
 });
 

@@ -36,9 +36,9 @@ constructor(initialState: S)
 ### Example
 
 ```typescript
-class CounterCubit extends Cubit<number> {
+class CounterCubit extends Cubit<{ count: number }> {
   constructor() {
-    super(0); // Initial state is 0
+    super({ count: 0 }); // Initial state is 0
   }
 }
 
@@ -72,17 +72,17 @@ protected emit(state: S): void
 #### Example
 
 ```typescript
-class ThemeCubit extends Cubit<'light' | 'dark'> {
+class ThemeCubit extends Cubit<{ theme: 'light' | 'dark' }> {
   constructor() {
-    super('light');
+    super({ theme: 'light' });
   }
   
   toggleTheme = () => {
-    this.emit(this.state === 'light' ? 'dark' : 'light');
+    this.emit({ theme: this.state.theme === 'light' ? 'dark' : 'light' });
   };
   
   setTheme = (theme: 'light' | 'dark') => {
-    this.emit(theme);
+    this.emit({ theme });
   };
 }
 ```
@@ -156,9 +156,9 @@ get state(): S
 
 Example:
 ```typescript
-class CounterCubit extends Cubit<number> {
+class CounterCubit extends Cubit<{ count: number }> {
   logState = () => {
-    console.log('Current count:', this.state);
+    console.log('Current count:', this.state.count);
   };
 }
 ```
@@ -297,8 +297,8 @@ class PersistentCubit extends Cubit<State> {
 
 // External subscription
 const cubit = new CounterCubit();
-const unsubscribe = cubit.on(BlacEvent.StateChange, (count) => {
-  console.log('Count changed to:', count);
+const unsubscribe = cubit.on(BlacEvent.StateChange, (state) => {
+  console.log('Count changed to:', state.count);
 });
 
 // Cleanup
@@ -335,17 +335,17 @@ class WebSocketCubit extends Cubit<ConnectionState> {
 ### Counter Example
 
 ```typescript
-class CounterCubit extends Cubit<number> {
+class CounterCubit extends Cubit<{ count: number }> {
   constructor() {
-    super(0);
+    super({ count: 0 });
   }
   
-  increment = () => this.emit(this.state + 1);
-  decrement = () => this.emit(this.state - 1);
-  reset = () => this.emit(0);
+  increment = () => this.emit({ count: this.state.count + 1 });
+  decrement = () => this.emit({ count: this.state.count - 1 });
+  reset = () => this.emit({ count: 0 });
   
   incrementBy = (amount: number) => {
-    this.emit(this.state + amount);
+    this.emit({ count: this.state.count + amount });
   };
 }
 ```
@@ -489,12 +489,12 @@ describe('CounterCubit', () => {
   });
   
   it('should start with initial state', () => {
-    expect(cubit.state).toBe(0);
+    expect(cubit.state).toEqual({ count: 0 });
   });
   
   it('should increment', () => {
     cubit.increment();
-    expect(cubit.state).toBe(1);
+    expect(cubit.state).toEqual({ count: 1 });
   });
   
   it('should emit state changes', () => {
@@ -503,7 +503,7 @@ describe('CounterCubit', () => {
     
     cubit.increment();
     
-    expect(listener).toHaveBeenCalledWith(1);
+    expect(listener).toHaveBeenCalledWith({ count: 1 });
   });
 });
 ```

@@ -88,7 +88,7 @@ That's it. No providers, no boilerplate, just clean state management.
   <a href="/introduction" style="
     display: inline-block;
     padding: 12px 24px;
-    background: var(--vp-c-brand);
+    background: var(--vp-c-brand-3);
     color: white;
     border-radius: 24px;
     text-decoration: none;

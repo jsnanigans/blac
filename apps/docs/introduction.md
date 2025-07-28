@@ -48,18 +48,18 @@ BlaC prioritizes developer experience without sacrificing power:
 
 ```typescript
 // This is all you need for a working state container
-class CounterCubit extends Cubit<number> {
+class CounterCubit extends Cubit<{ count: number }> {
   constructor() {
-    super(0);
+    super({ count: 0 });
   }
-  
-  increment = () => this.emit(this.state + 1);
+
+  increment = () => this.emit({ count: this.state.count + 1 });
 }
 
 // And this is how you use it
 function Counter() {
-  const [count, cubit] = useBloc(CounterCubit);
-  return <button onClick={cubit.increment}>{count}</button>;
+  const [state, cubit] = useBloc(CounterCubit);
+  return <button onClick={cubit.increment}>{state.count}</button>;
 }
 ```
 
@@ -84,24 +84,37 @@ BlaC shines in applications that need:
 ## Comparison with Other Solutions
 
 ### vs Redux
-- **Less boilerplate**: With Redux, you need to define actions, action creators, and reducers for every state change. BlaC only requires a method that calls `emit()`
-- **Type safety**: Redux requires complex TypeScript configurations and type assertions. BlaC provides automatic type inference from your state definition
-- **Simpler mental model**: Redux uses a single global store with combineReducers. BlaC uses individual state containers that can be composed naturally
+**Community Pain Points**: Developers report having to "touch five different files just to make one change" and struggle with TypeScript integration requiring separate type definitions for actions, action types, and objects.
+
+**How BlaC Addresses These**:
+- **Minimal boilerplate**: One class with methods that call `emit()` - no actions, action creators, or reducers
+- **Automatic TypeScript inference**: State types flow naturally from your class definition without manual type annotations
+- **No Redux Toolkit learning curve**: Simple API that doesn't require learning additional abstractions
 
 ### vs MobX
-- **Explicit updates**: MobX uses proxies to make state "magically" reactive - any mutation like `state.count++` automatically triggers updates. BlaC requires explicit `emit()` calls to change state. (Note: BlaC also uses proxies, but only for performance optimization to track which properties components read, not to change how state updates work)
-- **Better debugging**: MobX's automatic reactions can create hard-to-trace update chains. BlaC's explicit emit pattern shows exactly when and why state changed in a linear, traceable flow
-- **Framework agnostic core**: MobX is tightly coupled to its reactivity system. BlaC's core can be used with any framework or even vanilla JavaScript
+**Community Pain Points**: Observable arrays aren't real arrays (breaks with lodash, Array.concat), can't make primitive values observable, dynamic property additions require special handling, and debugging automatic reactions can be challenging.
+
+**How BlaC Addresses These**:
+- **Standard JavaScript objects**: Your state is plain JS/TS - no special array types or observable primitives to worry about
+- **Predictable updates**: Explicit `emit()` calls make state changes traceable through your codebase
+- **No "magic" to debug**: While MobX uses proxies for automatic reactivity, BlaC only uses them for render optimization
 
 ### vs Context + useReducer
-- **Automatic optimization**: Context requires manual memoization with useMemo/useCallback to prevent unnecessary renders. BlaC automatically tracks which parts of state each component uses
-- **Better organization**: useReducer keeps logic inside components or requires manual extraction. BlaC enforces separation with dedicated state container classes
-- **Built-in patterns**: useReducer is just a hook - you build patterns yourself. BlaC provides Cubit for simple state and Bloc for complex event-driven flows
+**Community Pain Points**: Any context change re-renders ALL consuming components (even if they only use part of the state), no built-in async support, and complex apps require extensive memoization to prevent performance issues.
+
+**How BlaC Addresses These**:
+- **Automatic render optimization**: Only re-renders components that use the specific properties that changed
+- **Built-in async patterns**: Handle async operations naturally in your state container methods
+- **No manual memoization needed**: Performance optimization happens automatically without useMemo/useCallback
+- **No context providers**: Any component can access any state container without needing to wrap it in a provider
 
 ### vs Zustand/Valtio
-- **Stronger architecture**: Zustand uses function-based stores without clear patterns for complex apps. BlaC provides structured patterns with Cubit/Bloc that scale to enterprise applications
-- **Better testing**: Zustand stores are functions that are harder to mock and test. BlaC's class-based containers are easily instantiated and tested in isolation
-- **More flexibility**: Zustand is primarily hook-based. BlaC lets you choose between simple state (Cubit) and event-driven architecture (Bloc) based on your needs
+**Community Pain Points**: Zustand requires manual selectors for each component usage, both are designed for module state (not component state), and mixing mutable (Valtio) with React's immutable model can cause confusion.
+
+**How BlaC Addresses These**:
+- **Flexible state patterns**: Use `isolated` for component-specific state or share state across components
+- **Clear architectural patterns**: Cubit for simple cases, Bloc for complex event-driven scenarios
+- **Consistent mental model**: Always use explicit updates, matching React's immutable state philosophy
 
 ## Architecture Overview
 

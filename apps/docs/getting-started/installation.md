@@ -71,14 +71,14 @@ Create a simple counter to verify everything is working:
 // src/state/counter.cubit.ts
 import { Cubit } from '@blac/core';
 
-export class CounterCubit extends Cubit<number> {
+export class CounterCubit extends Cubit<{ count: number }> {
   constructor() {
-    super(0);
+    super({ count: 0 });
   }
   
-  increment = () => this.emit(this.state + 1);
-  decrement = () => this.emit(this.state - 1);
-  reset = () => this.emit(0);
+  increment = () => this.emit({ count: this.state.count + 1 });
+  decrement = () => this.emit({ count: this.state.count - 1 });
+  reset = () => this.emit({ count: 0 });
 }
 ```
 
@@ -88,11 +88,11 @@ import { useBloc } from '@blac/react';
 import { CounterCubit } from './state/counter.cubit';
 
 function App() {
-  const [count, counter] = useBloc(CounterCubit);
+  const [state, counter] = useBloc(CounterCubit);
   
   return (
     <div>
-      <h1>Count: {count}</h1>
+      <h1>Count: {state.count}</h1>
       <button onClick={counter.increment}>+</button>
       <button onClick={counter.decrement}>-</button>
       <button onClick={counter.reset}>Reset</button>
@@ -145,7 +145,7 @@ Now that you have BlaC installed, let's create your first Cubit:
   <a href="/getting-started/first-cubit" style="
     display: inline-block;
     padding: 12px 24px;
-    background: var(--vp-c-brand);
+    background: var(--vp-c-brand-3);
     color: white;
     border-radius: 24px;
     text-decoration: none;

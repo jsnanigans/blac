@@ -32,6 +32,7 @@ export interface Todo {
 export interface TodoState {
   todos: Todo[];
   filter: 'all' | 'active' | 'completed';
+  inputText: string;
 }
 ```
 
@@ -48,7 +49,8 @@ export class TodoCubit extends Cubit<TodoState> {
   constructor() {
     super({
       todos: [],
-      filter: 'all'
+      filter: 'all',
+      inputText: ''
     });
   }
 
@@ -94,10 +96,24 @@ export class TodoCubit extends Cubit<TodoState> {
     });
   };
 
+  // Set input text for the form
+  setInputText = (text: string) => {
+    this.patch({ inputText: text });
+  };
+
+  // Handle form submission to add a todo
+  handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const trimmedText = this.state.inputText.trim();
+    if (!trimmedText) return;
+    this.addTodo(trimmedText);
+    this.setInputText('');
+  }
+
   // Computed values (getters)
   get filteredTodos() {
     const { todos, filter } = this.state;
-    
+
     switch (filter) {
       case 'active':
         return todos.filter(todo => !todo.completed);
@@ -119,7 +135,7 @@ export class TodoCubit extends Cubit<TodoState> {
 Let's break down what's happening:
 
 1. **State Initialization**: The constructor calls `super()` with the initial state
-2. **Arrow Functions**: All methods use arrow function syntax to maintain proper `this` binding
+2. **Arrow Functions**: All methods use arrow function syntax to maintain proper `this` binding when used outside the Cubit
 3. **patch() Method**: Updates only the specified properties, leaving others unchanged
 4. **Computed Properties**: Getters derive values from the current state
 
@@ -135,26 +151,17 @@ import { useState } from 'react';
 
 export function TodoList() {
   const [state, todoCubit] = useBloc(TodoCubit);
-  const [inputText, setInputText] = useState('');
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (inputText.trim()) {
-      todoCubit.addTodo(inputText.trim());
-      setInputText('');
-    }
-  };
 
   return (
     <div className="todo-app">
       <h1>Todo List</h1>
-      
+
       {/* Add Todo Form */}
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={todoCubit.handleFormSubmit}>
         <input
           type="text"
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
+          value={state.inputText}
+          onChange={(e) => todoCubit.setInputText(e.target.value)}
           placeholder="What needs to be done?"
         />
         <button type="submit">Add</button>
@@ -162,19 +169,19 @@ export function TodoList() {
 
       {/* Filter Buttons */}
       <div className="filters">
-        <button 
+        <button
           className={state.filter === 'all' ? 'active' : ''}
           onClick={() => todoCubit.setFilter('all')}
         >
           All
         </button>
-        <button 
+        <button
           className={state.filter === 'active' ? 'active' : ''}
           onClick={() => todoCubit.setFilter('active')}
         >
           Active ({todoCubit.activeTodoCount})
         </button>
-        <button 
+        <button
           className={state.filter === 'completed' ? 'active' : ''}
           onClick={() => todoCubit.setFilter('completed')}
         >
@@ -238,18 +245,18 @@ export class TodoCubit extends Cubit<TodoState> {
   constructor() {
     // Load from localStorage or use default
     const stored = localStorage.getItem(STORAGE_KEY);
-    const initialState = stored 
+    const initialState = stored
       ? JSON.parse(stored)
       : { todos: [], filter: 'all' };
-    
+
     super(initialState);
-    
+
     // Save to localStorage whenever state changes
     this.on('StateChange', (state) => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     });
   }
-  
+
   // ... rest of the methods remain the same
 }
 ```
@@ -324,7 +331,7 @@ Ready to level up? Learn about Blocs for event-driven state management:
   <a href="/getting-started/first-bloc" style="
     display: inline-block;
     padding: 12px 24px;
-    background: var(--vp-c-brand);
+    background: var(--vp-c-brand-3);
     color: white;
     border-radius: 24px;
     text-decoration: none;

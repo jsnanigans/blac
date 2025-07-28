@@ -108,10 +108,10 @@ This pattern makes your application:
 Cubits provide direct methods for state updates:
 
 ```typescript
-class CounterCubit extends Cubit<number> {
-  increment = () => this.emit(this.state + 1);
-  decrement = () => this.emit(this.state - 1);
-  reset = () => this.emit(0);
+class CounterCubit extends Cubit<{ count: number }> {
+  increment = () => this.emit({ count: this.state.count + 1 });
+  decrement = () => this.emit({ count: this.state.count - 1 });
+  reset = () => this.emit({ count: 0 });
 }
 ```
 
@@ -120,16 +120,16 @@ class CounterCubit extends Cubit<number> {
 Blocs use events for more structured updates:
 
 ```typescript
-class CounterBloc extends Bloc<number, CounterEvent> {
+class CounterBloc extends Bloc<{ count: number }, CounterEvent> {
   constructor() {
-    super(0);
+    super({ count: 0 });
     
     this.on(Increment, (event, emit) => {
-      emit(this.state + event.amount);
+      emit({ count: this.state.count + event.amount });
     });
     
     this.on(Decrement, (event, emit) => {
-      emit(this.state - event.amount);
+      emit({ count: this.state.count - event.amount });
     });
   }
 }
@@ -137,7 +137,36 @@ class CounterBloc extends Bloc<number, CounterEvent> {
 
 ## State Structure Best Practices
 
-### 1. Keep State Normalized
+### 1. Use Serializable Objects
+
+Always use serializable objects for your state instead of primitives. This ensures compatibility with persistence, debugging tools, and state management patterns:
+
+```typescript
+// ❌ Avoid primitive state
+class CounterCubit extends Cubit<number> {
+  constructor() {
+    super(0);
+  }
+}
+
+// ✅ Use serializable objects
+class CounterCubit extends Cubit<{ count: number }> {
+  constructor() {
+    super({ count: 0 });
+  }
+  
+  increment = () => this.emit({ count: this.state.count + 1 });
+}
+```
+
+Benefits of serializable state:
+- **Persistence**: Easy to save/restore with `JSON.stringify/parse`
+- **Debugging**: Better inspection in DevTools
+- **Extensibility**: Add properties without breaking existing code
+- **Type Safety**: More explicit about state shape
+- **Immutability**: Clearer when creating new state objects
+
+### 2. Keep State Normalized
 
 Instead of nested data, use normalized structures:
 
