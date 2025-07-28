@@ -128,8 +128,8 @@ export class TodoCubit extends Cubit<TodoState> {
     return this.state.todos.filter(todo => !todo.completed).length;
   }
 
-  get allCompleted() {
-    return this.state.todos.length > 0 && this.state.todos.every(todo => todo.completed);
+  get hasCompletedTodos() {
+    return this.state.todos.some(todo => todo.completed);
   }
 }
 ```
@@ -153,96 +153,79 @@ import { useBloc } from '@blac/react';
 import { TodoCubit } from '../state/todo/todo.cubit';
 
 export function TodoList() {
-  const [/* not using state */, todoCubit] = useBloc(TodoCubit);
+  const [state, todoCubit] = useBloc(TodoCubit);
 
   return (
     <div className="todo-app">
       <h1>Todo List</h1>
-      <AddTodoForm />
-      <FilterButtons />
-      <TodoListItems />
-      {/* Clear Completed */}
-      {!todoCubit.allCompleted && (
+
+      {/* Add Todo Form */}
+      <form onSubmit={todoCubit.handleFormSubmit}>
+        <input
+          type="text"
+          value={state.inputText}
+          onChange={(e) => todoCubit.setInputText(e.target.value)}
+          placeholder="What needs to be done?"
+          aria-label="New todo input"
+        />
+        <button type="submit" aria-label="Add new todo">Add</button>
+      </form>
+
+      {/* Filter Buttons */}
+      <div className="filters" role="radiogroup" aria-label="Filter todos">
+        <button
+          role="radio"
+          aria-checked={state.filter === 'all'}
+          onClick={() => todoCubit.setFilter('all')}
+        >
+          All
+        </button>
+        <button
+          role="radio"
+          aria-checked={state.filter === 'active'}
+          onClick={() => todoCubit.setFilter('active')}
+        >
+          Active ({todoCubit.activeTodoCount})
+        </button>
+        <button
+          role="radio"
+          aria-checked={state.filter === 'completed'}
+          onClick={() => todoCubit.setFilter('completed')}
+        >
+          Completed
+        </button>
+      </div>
+
+      {/* Todo List Items */}
+      <ul aria-label="Todo items">
+        {todoCubit.filteredTodos.map(todo => (
+          <li key={todo.id}>
+            <input
+              type="checkbox"
+              checked={todo.completed}
+              onChange={() => todoCubit.toggleTodo(todo.id)}
+              aria-label={`Mark "${todo.text}" as ${todo.completed ? 'incomplete' : 'complete'}`}
+            />
+            <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
+              {todo.text}
+            </span>
+            <button
+              onClick={() => todoCubit.deleteTodo(todo.id)}
+              aria-label={`Delete "${todo.text}"`}
+            >
+              Delete
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      {/* Clear Completed Button */}
+      {todoCubit.hasCompletedTodos && (
         <button onClick={todoCubit.clearCompleted}>
           Clear Completed
         </button>
       )}
     </div>
-  );
-}
-
-function AddTodoForm() {
-  const [state, todoCubit] = useBloc(TodoCubit);
-
-  return (
-    <form onSubmit={todoCubit.handleFormSubmit}>
-      <input
-        type="text"
-        value={state.inputText}
-        onChange={(e) => todoCubit.setInputText(e.target.value)}
-        placeholder="What needs to be done?"
-        aria-label="New todo input"
-      />
-      <button type="submit" aria-label="Add new todo">Add</button>
-    </form>
-  );
-}
-
-function FilterButtons() {
-  const [state, todoCubit] = useBloc(TodoCubit);
-
-  return (
-    <div className="filters" role="radiogroup" aria-label="Filter todos">
-      <button
-        role="radio"
-        aria-checked={state.filter === 'all'}
-        onClick={() => todoCubit.setFilter('all')}
-      >
-        All
-      </button>
-      <button
-        role="radio"
-        aria-checked={state.filter === 'active'}
-        onClick={() => todoCubit.setFilter('active')}
-      >
-        Active ({todoCubit.activeTodoCount})
-      </button>
-      <button
-        role="radio"
-        aria-checked={state.filter === 'completed'}
-        onClick={() => todoCubit.setFilter('completed')}
-      >
-        Completed
-      </button>
-    </div>
-  );
-}
-
-function TodoListItems() {
-  const [state, todoCubit] = useBloc(TodoCubit);
-
-  return (
-    <ul aria-label="Todo items">
-      {todoCubit.filteredTodos.map(todo => (
-        <li key={todo.id}>
-          <input
-            type="checkbox"
-            checked={todo.completed}
-            onChange={() => todoCubit.toggleTodo(todo.id)}
-            aria-label={`Mark "${todo.text}" as ${todo.completed ? 'incomplete' : 'complete'}`}
-          />
-          <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
-            {todo.text}
-          </span>
-          <button
-            onClick={() => todoCubit.deleteTodo(todo.id)}
-            aria-label={`Delete "${todo.text}"`}
-          >
-            Delete
-          </button>
-        </li>
-      ))}
-    </ul>
   );
 }
 

@@ -4,44 +4,120 @@ Learn best practices and common patterns for using BlaC effectively in your Reac
 
 ## Component Organization
 
-### Container vs Presentational
+### Component Splitting for Performance
 
-Separate business logic from UI components:
+Split your UI into focused components that each use `useBloc` directly. This eliminates prop drilling and provides automatic performance optimization:
 
 ```typescript
-// Container component (connected to BlaC)
-function TodoListContainer() {
-  const [state, cubit] = useBloc(TodoCubit);
-  
+// Main container component
+function TodoApp() {
   return (
-    <TodoListView
-      todos={state.todos}
-      isLoading={state.isLoading}
-      onToggle={cubit.toggle}
-      onRemove={cubit.remove}
-      onAdd={cubit.add}
-    />
-  );
-}
-
-// Presentational component (pure UI)
-interface TodoListViewProps {
-  todos: Todo[];
-  isLoading: boolean;
-  onToggle: (id: string) => void;
-  onRemove: (id: string) => void;
-  onAdd: (text: string) => void;
-}
-
-function TodoListView({ todos, isLoading, onToggle, onRemove, onAdd }: TodoListViewProps) {
-  // Pure UI logic only
-  return (
-    <div>
-      {/* UI implementation */}
+    <div className="todo-app">
+      <h1>Todo List</h1>
+      <AddTodoForm />
+      <FilterButtons />
+      <TodoList />
+      <ClearCompletedButton />
     </div>
   );
 }
+
+// Each component accesses only the state it needs
+function AddTodoForm() {
+  const [state, todoCubit] = useBloc(TodoCubit);
+  
+  return (
+    <form onSubmit={todoCubit.handleSubmit}>
+      <input
+        value={state.inputText}
+        onChange={(e) => todoCubit.setInputText(e.target.value)}
+        placeholder="What needs to be done?"
+      />
+      <button type="submit">Add</button>
+    </form>
+  );
+}
+
+function FilterButtons() {
+  const [state, todoCubit] = useBloc(TodoCubit);
+  
+  return (
+    <div role="radiogroup" aria-label="Filter todos">
+      <button
+        role="radio"
+        aria-checked={state.filter === 'all'}
+        onClick={() => todoCubit.setFilter('all')}
+      >
+        All
+      </button>
+      <button
+        role="radio"
+        aria-checked={state.filter === 'active'}
+        onClick={() => todoCubit.setFilter('active')}
+      >
+        Active ({todoCubit.activeTodoCount})
+      </button>
+      <button
+        role="radio"
+        aria-checked={state.filter === 'completed'}
+        onClick={() => todoCubit.setFilter('completed')}
+      >
+        Completed
+      </button>
+    </div>
+  );
+}
+
+function TodoList() {
+  const [state, todoCubit] = useBloc(TodoCubit);
+  
+  return (
+    <ul>
+      {todoCubit.filteredTodos.map(todo => (
+        <li key={todo.id}>
+          <input
+            type="checkbox"
+            checked={todo.completed}
+            onChange={() => todoCubit.toggleTodo(todo.id)}
+          />
+          <span>{todo.text}</span>
+          <button onClick={() => todoCubit.deleteTodo(todo.id)}>
+            Delete
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function ClearCompletedButton() {
+  const [state, todoCubit] = useBloc(TodoCubit);
+  const hasCompletedTodos = state.todos.some(todo => todo.completed);
+  
+  if (!hasCompletedTodos) {
+    return null;
+  }
+  
+  return (
+    <button onClick={todoCubit.clearCompleted}>
+      Clear Completed
+    </button>
+  );
+}
 ```
+
+**Benefits of this pattern:**
+
+1. **Automatic Performance Optimization**: Each component only re-renders when the specific state or getters it uses change
+2. **No Prop Drilling**: Components directly access what they need via `useBloc`
+3. **Better Maintainability**: Components are self-contained and can be moved around easily
+4. **Cleaner Code**: No need to pass callbacks or state through multiple component layers
+
+For example:
+- `AddTodoForm` only re-renders when `inputText` changes
+- `FilterButtons` only re-renders when `filter` or `activeTodoCount` changes
+- `TodoList` only re-renders when `filteredTodos` changes
+- `ClearCompletedButton` only re-renders when the presence of completed todos changes
 
 ### Feature-Based Structure
 

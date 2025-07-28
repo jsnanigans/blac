@@ -271,63 +271,104 @@ export class AuthBloc extends Bloc<AuthState, AuthEvent> {
 ## Using the Bloc in React
 
 ```tsx
-// src/components/LoginForm.tsx
+// src/components/AuthPage.tsx
 import { useBloc } from '@blac/react';
 import { AuthBloc } from '../blocs/auth/AuthBloc';
 
-export function LoginForm() {
-  const [state, authBloc] = useBloc(AuthBloc);
+export function AuthPage() {
+  const [state] = useBloc(AuthBloc);
   
   if (state.isAuthenticated) {
-    return (
-      <div>
-        <h2>Welcome, {state.user?.name}!</h2>
-        <button onClick={authBloc.logout}>Logout</button>
-      </div>
-    );
+    return <AuthenticatedView />;
   }
+  
+  return <LoginForm />;
+}
+
+function AuthenticatedView() {
+  const [state, authBloc] = useBloc(AuthBloc);
+  
+  return (
+    <div>
+      <h2>Welcome, {state.user?.name}!</h2>
+      <button onClick={authBloc.logout}>Logout</button>
+    </div>
+  );
+}
+
+function LoginForm() {
+  const [/* not using state */, authBloc] = useBloc(AuthBloc);
   
   return (
     <form onSubmit={authBloc.handleSubmit} aria-label="Login form">
       <h2>Login</h2>
-      
-      {state.error && (
-        <div role="alert" aria-live="polite" className="error">
-          {state.error}
-        </div>
-      )}
-      
-      <input
-        type="email"
-        placeholder="Email"
-        value={state.email}
-        onChange={(e) => authBloc.setEmail(e.target.value)}
-        disabled={state.isLoading}
-        required
-        aria-label="Email address"
-        aria-invalid={!!state.error}
-        aria-describedby={state.error ? "error-message" : undefined}
-      />
-      
-      <input
-        type="password"
-        placeholder="Password"
-        value={state.password}
-        onChange={(e) => authBloc.setPassword(e.target.value)}
-        disabled={state.isLoading}
-        required
-        aria-label="Password"
-        aria-invalid={!!state.error}
-      />
-      
-      <button 
-        type="submit" 
-        disabled={state.isLoading}
-        aria-busy={state.isLoading}
-      >
-        {state.isLoading ? 'Logging in...' : 'Login'}
-      </button>
+      <ErrorMessage />
+      <EmailInput />
+      <PasswordInput />
+      <SubmitButton />
     </form>
+  );
+}
+
+function ErrorMessage() {
+  const [state] = useBloc(AuthBloc);
+  
+  if (!state.error) {
+    return null;
+  }
+  
+  return (
+    <div role="alert" aria-live="polite" className="error">
+      {state.error}
+    </div>
+  );
+}
+
+function EmailInput() {
+  const [state, authBloc] = useBloc(AuthBloc);
+  
+  return (
+    <input
+      type="email"
+      placeholder="Email"
+      value={state.email}
+      onChange={(e) => authBloc.setEmail(e.target.value)}
+      disabled={state.isLoading}
+      required
+      aria-label="Email address"
+      aria-invalid={!!state.error}
+    />
+  );
+}
+
+function PasswordInput() {
+  const [state, authBloc] = useBloc(AuthBloc);
+  
+  return (
+    <input
+      type="password"
+      placeholder="Password"
+      value={state.password}
+      onChange={(e) => authBloc.setPassword(e.target.value)}
+      disabled={state.isLoading}
+      required
+      aria-label="Password"
+      aria-invalid={!!state.error}
+    />
+  );
+}
+
+function SubmitButton() {
+  const [state] = useBloc(AuthBloc);
+  
+  return (
+    <button 
+      type="submit" 
+      disabled={state.isLoading}
+      aria-busy={state.isLoading}
+    >
+      {state.isLoading ? 'Logging in...' : 'Login'}
+    </button>
   );
 }
 ```
