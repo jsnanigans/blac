@@ -1,69 +1,379 @@
+/**
+ * Customize default theme styling by overriding CSS variables
+ */
+
 :root {
-  --vp-c-brand: #61dafb;
-  --vp-c-brand-light: #7de3ff;
-  --vp-c-brand-lighter: #9eeaff;
-  --vp-c-brand-dark: #4db8d5;
-  --vp-c-brand-darker: #3990a8;
+  /* Brand Colors */
+  --vp-c-brand-1: #61dafb;
+  --vp-c-brand-2: #4db8d5;
+  --vp-c-brand-3: #3990a8;
+  --vp-c-brand-soft: rgba(97, 218, 251, 0.14);
   
-  --vp-c-brand-accent: #ff00ff;
+  /* Override theme colors */
+  --vp-c-default-1: #515c67;
+  --vp-c-default-2: #414853;
+  --vp-c-default-3: #32383f;
+  --vp-c-default-soft: rgba(101, 117, 133, 0.16);
   
-  --vp-home-hero-name-color: transparent;
-  --vp-home-hero-name-background: linear-gradient(
-    120deg,
-    #61dafb 30%,
-    #ff00ff
-  );
+  /* Text Colors */
+  --vp-c-text-1: var(--vp-c-brand-darker);
+  --vp-c-text-2: #3c4349;
+  --vp-c-text-3: #8b9aa8;
   
-  --vp-c-bg-alt: #f9f9f9;
-  --vp-c-bg-soft: #f3f3f3;
+  /* Background Colors */
+  --vp-c-bg: #ffffff;
+  --vp-c-bg-soft: #f9fafb;
+  --vp-c-bg-mute: #f3f4f6;
+  --vp-c-bg-alt: #f9fafb;
+  
+  /* Typography */
+  --vp-font-family-base: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 
+    Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  --vp-font-family-mono: 'JetBrains Mono', source-code-pro, Menlo, Monaco, Consolas, 
+    'Courier New', monospace;
 }
 
 .dark {
-  --vp-c-bg-alt: #1a1a1a;
-  --vp-c-bg-soft: #242424;
+  /* Dark mode overrides */
+  --vp-c-bg: #0d1117;
+  --vp-c-bg-soft: #161b22;
+  --vp-c-bg-mute: #1f2428;
+  --vp-c-bg-alt: #161b22;
+  
+  --vp-c-text-1: #e6edf3;
+  --vp-c-text-2: #b1bac4;
+  --vp-c-text-3: #8b949e;
+  
+  --vp-c-default-soft: rgba(101, 117, 133, 0.16);
 }
 
-/* Code block styling */
-html.dark .vp-doc div[class*='language-'] {
-  background-color: #1a1a1a;
+/**
+ * Component: Custom Block
+ */
+.custom-block {
+  border-radius: 8px;
 }
 
-/* Logo animation */
-.VPNavBarTitle .logo {
-  transition: transform 0.3s ease;
-}
-
-.VPNavBarTitle:hover .logo {
-  transform: rotate(10deg);
-}
-
-/* Button styling */
-.VPButton.brand {
-  border-color: var(--vp-c-brand);
-  color: white;
-  background-color: var(--vp-c-brand);
-}
-
-.VPButton.brand:hover {
-  border-color: var(--vp-c-brand-light);
-  background-color: var(--vp-c-brand-light);
-}
-
-/* Custom block styling */
 .custom-block.tip {
-  border-color: var(--vp-c-brand);
+  border-color: var(--vp-c-brand-1);
+  background-color: var(--vp-c-brand-soft);
 }
 
 .custom-block.warning {
-  border-color: var(--vp-c-brand-accent);
+  border-color: #f59e0b;
+  background-color: rgba(245, 158, 11, 0.12);
 }
 
-/* Feature section */
+.custom-block.danger {
+  border-color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.12);
+}
+
+.custom-block.info {
+  border-color: #3b82f6;
+  background-color: rgba(59, 130, 246, 0.12);
+}
+
+/**
+ * Component: Code
+ */
+.vp-doc div[class*='language-'] {
+  border-radius: 8px;
+  margin: 16px 0;
+}
+
+.vp-doc div[class*='language-'] code {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Inline code */
+.vp-doc :not(pre) > code {
+  color: var(--vp-c-brand-1);
+  background-color: var(--vp-c-default-soft);
+  padding: 0.25rem 0.375rem;
+  border-radius: 4px;
+  font-size: 0.875em;
+}
+
+/**
+ * Component: Button
+ */
+.vp-button {
+  border-radius: 24px;
+  font-weight: 500;
+  transition: all 0.25s;
+}
+
+.vp-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/**
+ * Component: Home
+ */
+.VPHome {
+  padding-top: 0 !important;
+}
+
+.VPHomeHero {
+  padding: 48px 24px !important;
+}
+
+.VPHomeHero .name {
+  font-size: 48px !important;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.VPHomeHero .text {
+  font-size: 24px !important;
+  font-weight: 500;
+  margin: 8px 0 16px !important;
+}
+
+.VPHomeHero .tagline {
+  font-size: 20px !important;
+  color: var(--vp-c-text-2);
+  font-weight: 400;
+  margin: 0 0 32px !important;
+}
+
+/**
+ * Component: Features
+ */
+.VPFeatures {
+  padding: 32px 24px 0 !important;
+}
+
 .VPFeature {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 12px;
+  padding: 24px !important;
+  background-color: var(--vp-c-bg-soft);
+  transition: all 0.25s;
 }
 
 .VPFeature:hover {
+  border-color: var(--vp-c-brand-1);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-} 
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.VPFeature .icon {
+  width: 48px;
+  height: 48px;
+  font-size: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.VPFeature .title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.VPFeature .details {
+  font-size: 14px;
+  color: var(--vp-c-text-2);
+  line-height: 1.6;
+}
+
+/**
+ * Component: Sidebar
+ */
+.VPSidebar {
+  padding-top: 24px;
+}
+
+.VPSidebarItem {
+  margin: 0;
+}
+
+.VPSidebarItem .text {
+  font-size: 14px;
+  transition: color 0.25s;
+}
+
+.VPSidebarItem.level-0 > .item > .text {
+  font-weight: 600;
+  color: var(--vp-c-text-1);
+}
+
+.VPSidebarItem .link:hover .text {
+  color: var(--vp-c-brand-1);
+}
+
+.VPSidebarItem .link.active .text {
+  color: var(--vp-c-brand-1);
+  font-weight: 500;
+}
+
+/**
+ * Component: Nav
+ */
+.VPNavBar {
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--vp-c-divider);
+}
+
+.dark .VPNavBar {
+  background-color: rgba(13, 17, 23, 0.8);
+}
+
+.VPNavBarTitle .title {
+  font-weight: 600;
+  font-size: 18px;
+}
+
+/**
+ * Component: Tables
+ */
+.vp-doc table {
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--vp-c-divider);
+}
+
+.vp-doc tr {
+  border-top: 1px solid var(--vp-c-divider);
+}
+
+.vp-doc th {
+  background-color: var(--vp-c-bg-soft);
+  font-weight: 600;
+}
+
+.vp-doc td {
+  padding: 12px 16px;
+}
+
+/**
+ * Component: Doc Footer
+ */
+.VPDocFooter {
+  margin-top: 64px;
+  padding-top: 32px;
+  border-top: 1px solid var(--vp-c-divider);
+}
+
+/**
+ * Utilities
+ */
+.vp-doc h1 {
+  font-size: 32px;
+  font-weight: 700;
+  margin: 32px 0 16px;
+  letter-spacing: -0.02em;
+}
+
+.vp-doc h2 {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 48px 0 16px;
+  padding-top: 24px;
+  letter-spacing: -0.02em;
+  border-top: 1px solid var(--vp-c-divider);
+}
+
+.vp-doc h2:first-child {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 0;
+}
+
+.vp-doc h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 32px 0 16px;
+  letter-spacing: -0.01em;
+}
+
+.vp-doc p {
+  line-height: 1.7;
+  margin: 16px 0;
+}
+
+.vp-doc ul, .vp-doc ol {
+  margin: 16px 0;
+  padding-left: 24px;
+}
+
+.vp-doc li {
+  margin: 8px 0;
+  line-height: 1.7;
+}
+
+/* Blockquotes */
+.vp-doc blockquote {
+  border-left: 4px solid var(--vp-c-brand-1);
+  padding-left: 16px;
+  margin: 24px 0;
+  color: var(--vp-c-text-2);
+  font-style: italic;
+}
+
+/* Details/Summary */
+.vp-doc details {
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+  background-color: var(--vp-c-bg-soft);
+}
+
+.vp-doc summary {
+  cursor: pointer;
+  font-weight: 600;
+  margin: -16px -16px 0;
+  padding: 16px;
+  background-color: var(--vp-c-bg-mute);
+  border-radius: 8px 8px 0 0;
+}
+
+.vp-doc details[open] summary {
+  margin-bottom: 16px;
+}
+
+/* Horizontal Rule */
+.vp-doc hr {
+  border: none;
+  border-top: 1px solid var(--vp-c-divider);
+  margin: 48px 0;
+}
+
+/* Focus styles */
+:focus-visible {
+  outline: 2px solid var(--vp-c-brand-1);
+  outline-offset: 2px;
+}
+
+/* Selection */
+::selection {
+  background-color: var(--vp-c-brand-soft);
+  color: var(--vp-c-text-1);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--vp-c-bg-soft);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--vp-c-default-3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--vp-c-default-2);
+}

@@ -1,8 +1,9 @@
 import DefaultTheme from 'vitepress/theme';
 import { h } from 'vue';
 import NotFound from './NotFound.vue';
-import './custom-home.css';
 import './custom.css';
+import './custom-home.css';
+import './style.css';
 
 export default {
   extends: DefaultTheme,
@@ -12,4 +13,7 @@ export default {
     })
   },
   NotFound,
+  enhanceApp({ app }) {
+    // You can register global components here if needed
+  }
 } 

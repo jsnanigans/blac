@@ -1,108 +1,51 @@
-/* Custom Home Page Styling */
-.home-content {
-  padding: 2rem 0;
+/* Custom styles for the home page */
+
+/* Hero section */
+.VPHero {
+  padding: 48px 24px !important;
 }
 
-.tagline {
-  font-size: 1.5rem;
-  color: var(--vp-c-text-2);
-  margin-bottom: 2rem;
-  text-align: center;
+.VPHomeHero {
+  margin: 0 auto;
+  padding: 48px 24px;
 }
 
-.image-container {
-  display: flex;
-  justify-content: center;
-  margin: 3rem 0;
+/* Features section */
+.VPHomeFeatures {
+  padding: 24px;
 }
 
-.image-container img {
-  width: 180px;
-  height: auto;
-  transition: transform 0.5s ease;
+.VPFeatures {
+  padding: 0 24px;
 }
 
-.image-container img:hover {
-  transform: rotate(10deg) scale(1.1);
-}
-
-.actions {
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-  margin: 2rem 0;
-}
-
-.action {
-  display: inline-block;
-  padding: 0.75rem 1.5rem;
-  font-weight: 500;
-  background-color: var(--vp-c-brand);
-  color: white;
-  border-radius: 4px;
-  transition: background-color 0.2s ease;
-  text-decoration: none;
-}
-
-.action:hover {
-  background-color: var(--vp-c-brand-light);
-}
-
-.action.alt {
-  background-color: var(--vp-c-bg-soft);
-  color: var(--vp-c-text-1);
-  border: 1px solid var(--vp-c-divider);
-}
-
-.action.alt:hover {
-  border-color: var(--vp-c-brand);
-  color: var(--vp-c-brand);
-}
-
-.features {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
-  margin: 3rem 0;
-}
-
-.feature {
-  padding: 1.5rem;
-  border-radius: 8px;
-  background-color: var(--vp-c-bg-soft);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  border: 1px solid var(--vp-c-divider);
-}
-
-.feature:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
-}
-
-.feature h3 {
-  margin-top: 0;
-  color: var(--vp-c-brand);
-  font-size: 1.3rem;
-}
-
-/* Dark mode adjustments */
-.dark .action.alt {
-  background-color: rgba(255, 255, 255, 0.1);
+/* Feature cards */
+.VPFeature {
+  border-radius: 12px;
+  padding: 24px;
 }
 
 /* Responsive adjustments */
-@media (max-width: 640px) {
-  .features {
-    grid-template-columns: 1fr;
+@media (min-width: 640px) {
+  .VPHero {
+    padding: 64px 48px !important;
   }
   
-  .actions {
-    flex-direction: column;
-    align-items: center;
+  .VPHomeHero {
+    padding: 64px 48px;
   }
   
-  .action {
-    width: 80%;
-    text-align: center;
+  .VPHomeFeatures {
+    padding: 48px;
   }
-} 
+}
+
+@media (min-width: 960px) {
+  .VPHero {
+    padding: 96px 64px !important;
+  }
+  
+  .VPHomeHero {
+    padding: 96px 64px;
+  }
+}

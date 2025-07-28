@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Documentation for Blac state management library",
   "scripts": {
-    "dev:docs": "vitepress dev",
+    "dev": "vitepress dev",
     "build:docs": "vitepress build",
     "preview:docs": "vitepress preview"
   },

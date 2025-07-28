@@ -1,57 +1,121 @@
 import { defineConfig } from 'vitepress';
 import { withMermaid } from "vitepress-plugin-mermaid";
 
-
 // https://vitepress.dev/reference/site-config
 const siteConfig = defineConfig({
-  title: "Blac Documentation",
-  description: "Lightweight, flexible state management for React applications with predictable data flow",
+  title: "BlaC",
+  description: "Business Logic as Components - Simple, powerful state management that separates business logic from UI. Type-safe, testable, and scales with your React application.",
   head: [
-    ['link', { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' }]
+    ['link', { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' }],
+    ['meta', { name: 'theme-color', content: '#61dafb' }],
+    ['meta', { name: 'og:type', content: 'website' }],
+    ['meta', { name: 'og:site_name', content: 'BlaC' }],
+    ['meta', { name: 'og:image', content: '/logo.svg' }],
+    ['meta', { name: 'twitter:card', content: 'summary' }],
+    ['meta', { name: 'twitter:image', content: '/logo.svg' }]
   ],
   themeConfig: {
-    // https://vitepress.dev/reference/default-theme-config
     logo: '/logo.svg',
+    siteTitle: 'BlaC',
+    
     nav: [
-      { text: 'Home', link: '/' },
-      { text: 'Learn', link: '/learn/introduction' },
-      { text: 'Reference', link: '/reference/core-classes' },
-      { text: 'Examples', link: '/examples/counter' }
+      { text: 'Guide', link: '/introduction' },
+      { text: 'API', link: '/api/core/blac' },
+      { text: 'GitHub', link: 'https://github.com/jsnanigans/blac' }
     ],
 
     sidebar: [
       {
         text: 'Introduction',
         items: [
-          { text: 'Introduction', link: '/learn/introduction' },
-          { text: 'Getting Started', link: '/learn/getting-started' },
-          { text: 'Architecture', link: '/learn/architecture' },
-          { text: 'Core Concepts', link: '/learn/core-concepts' },
-          { text: 'Agent Instructions', link: '/agent_instructions' }
+          { text: 'What is BlaC?', link: '/introduction' }
         ]
       },
       {
-        text: 'Basic Usage',
+        text: 'Getting Started',
         items: [
-          { text: 'The Blac Pattern', link: '/learn/blac-pattern' },
-          { text: 'State Management Patterns', link: '/learn/state-management-patterns' },
-          { text: 'Best Practices', link: '/learn/best-practices' }
+          { text: 'Installation', link: '/getting-started/installation' },
+          { text: 'Your First Cubit', link: '/getting-started/first-cubit' },
+          { text: 'Async Operations', link: '/getting-started/async-operations' },
+          { text: 'Your First Bloc', link: '/getting-started/first-bloc' }
+        ]
+      },
+      {
+        text: 'Core Concepts',
+        items: [
+          { text: 'State Management', link: '/concepts/state-management' },
+          { text: 'Cubits', link: '/concepts/cubits' },
+          { text: 'Blocs', link: '/concepts/blocs' },
+          { text: 'Instance Management', link: '/concepts/instance-management' }
         ]
       },
       {
         text: 'API Reference',
         items: [
-          { text: 'Core Classes', link: '/api/core-classes' },
-          { text: 'React Hooks', link: '/api/react-hooks' },
+          {
+            text: '@blac/core',
+            collapsed: false,
+            items: [
+              { text: 'Blac', link: '/api/core/blac' },
+              { text: 'Cubit', link: '/api/core/cubit' },
+              { text: 'Bloc', link: '/api/core/bloc' },
+              { text: 'BlocBase', link: '/api/core/bloc-base' }
+            ]
+          },
+          {
+            text: '@blac/react',
+            collapsed: false,
+            items: [
+              { text: 'useBloc', link: '/api/react/use-bloc' },
+              { text: 'useValue', link: '/api/react/use-value' },
+              { text: 'createBloc', link: '/api/react/create-bloc' }
+            ]
+          }
+        ]
+      },
+      {
+        text: 'React Integration',
+        items: [
+          { text: 'Hooks', link: '/react/hooks' },
+          { text: 'Patterns', link: '/react/patterns' }
+        ]
+      },
+      {
+        text: 'Patterns & Recipes',
+        collapsed: true,
+        items: [
+          { text: 'Testing', link: '/patterns/testing' },
+          { text: 'Persistence', link: '/patterns/persistence' },
+          { text: 'Error Handling', link: '/patterns/error-handling' },
+          { text: 'Performance', link: '/patterns/performance' }
+        ]
+      },
+      {
+        text: 'Examples',
+        items: [
+          { text: 'Counter', link: '/examples/counter' },
+          { text: 'Todo List', link: '/examples/todo' },
+          { text: 'Authentication', link: '/examples/auth' },
+          { text: 'Shopping Cart', link: '/examples/cart' }
+        ]
+      },
+      {
+        text: 'Legacy',
+        collapsed: true,
+        items: [
+          { text: 'Old Introduction', link: '/learn/introduction' },
+          { text: 'Old Getting Started', link: '/learn/getting-started' },
+          { text: 'Old Architecture', link: '/learn/architecture' },
+          { text: 'Old Core Concepts', link: '/learn/core-concepts' },
+          { text: 'The Blac Pattern', link: '/learn/blac-pattern' },
+          { text: 'State Management Patterns', link: '/learn/state-management-patterns' },
+          { text: 'Best Practices', link: '/learn/best-practices' },
+          { text: 'Old Core Classes', link: '/api/core-classes' },
+          { text: 'Old React Hooks', link: '/api/react-hooks' },
           { text: 'Key Methods', link: '/api/key-methods' },
           { text: 'Configuration', link: '/api/configuration' }
         ]
-      },
-      // {
-      //   text: 'Examples',
-      //   items: [
-      //   ]
-      // }
+      }
     ],
 
     socialLinks: [
@@ -59,72 +123,100 @@ const siteConfig = defineConfig({
     ],
 
     search: {
-      provider: 'local'
+      provider: 'local',
+      options: {
+        detailedView: true
+      }
     },
 
     footer: {
       message: 'Released under the MIT License.',
-      copyright: 'Copyright © 2023-present Blac Contributors'
+      copyright: 'Copyright © 2023-present BlaC Contributors'
     },
+    
+    editLink: {
+      pattern: 'https://github.com/jsnanigans/blac/edit/main/apps/docs/:path',
+      text: 'Edit this page on GitHub'
+    },
+    
+    lastUpdated: {
+      text: 'Updated at',
+      formatOptions: {
+        dateStyle: 'short',
+        timeStyle: 'medium'
+      }
+    }
   },
-  // The mermaidPlugin block that was previously here has been removed
-  // and is now handled by the withMermaid wrapper.
+  
+  markdown: {
+    theme: {
+      light: 'github-light',
+      dark: 'github-dark'
+    }
+  }
 });
 
 export default withMermaid({
-  ...siteConfig, // Spread the base VitePress configuration
-
-  // MermaidConfig - for mermaid.js core options
+  ...siteConfig,
+  
+  // Mermaid configuration
   mermaid: {
-    // refer https://mermaid.js.org/config/setup/modules/mermaidAPI.html#mermaidapi-configuration-defaults for options
-    // Add future Mermaid core configurations here (e.g., theme, securityLevel)
-    theme: 'base', // We use 'base' and override variables for a custom neon look
+    theme: 'base',
     themeVariables: {
-      // --- Core Colors for Neon Look ---
-      primaryColor: '#00BFFF',        // DeepSkyBlue (Vibrant Blue for main nodes)
-      primaryTextColor: '#FFFFFF',    // White text on nodes
-      primaryBorderColor: '#FF00FF',  // Neon Magenta (for borders, "cute" pop)
-
-      lineColor: '#39FF14',           // Neon Green (for arrows, connectors)
-      textColor: '#E0E0E0',           // Light Grey for general text/labels
-
-      // --- Backgrounds ---
-      mainBkg: '#1A1A1A',             // Very Dark Grey (to make neons pop)
-      clusterBkg: '#242424',          // Dark Grey Soft (for subgraphs)
-      clusterBorderColor: '#00BFFF',  // DeepSkyBlue border for clusters
-
-      // --- Node specific (if not covered by primary) ---
-      // These often inherit from primary, but can be set explicitly
-      nodeBorder: '#FF00FF',          // Consistent with primaryBorderColor (Neon Magenta)
-      nodeTextColor: '#FFFFFF',       // Consistent with primaryTextColor (White)
-
-      // --- Accents & Special Elements: "Cute Neon" Notes ---
-      noteBkgColor: '#2c003e',        // Deep Dark Magenta/Purple base for notes
-      noteTextColor: '#FFFFA0',       // Neon Pale Yellow text on notes (cute & readable)
-      noteBorderColor: '#FF00AA',     // Bright Neon Pink border for notes
-
-      // --- For Sequence Diagrams (Neon) ---
-      actorBkg: '#39FF14',            // Neon Green for actor boxes
-      actorBorder: '#2E8B57',         // SeaGreen (darker green border for actors for definition)
-      actorTextColor: '#000000',      // Black text on Neon Green actors for contrast
-
-      signalColor: '#FF00FF',         // Neon Magenta for signal lines
-      signalTextColor: '#FFFFFF',     // White text on signal lines
-
-      labelBoxBkgColor: '#BF00FF',    // Electric Purple for label boxes (like 'loop', 'alt')
-      labelTextColor: '#FFFFFF',      // White text on label boxes
-
-      sequenceNumberColor: '#FFFFFF', // White for sequence numbers for visibility on dark lanes
-
-      // --- Fonts - aligning with common VitePress/modern web defaults ---
-      fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif',
-      fontSize: '22px',               // Standard readable size
+      // Clean, minimal theme
+      primaryColor: '#61dafb',
+      primaryTextColor: '#fff',
+      primaryBorderColor: '#4db8d5',
+      lineColor: '#5e6c84',
+      secondaryColor: '#f4f5f7',
+      tertiaryColor: '#e3e4e6',
+      background: '#ffffff',
+      mainBkg: '#61dafb',
+      secondBkg: '#f4f5f7',
+      tertiaryBkg: '#e3e4e6',
+      primaryBorderColor: '#4db8d5',
+      secondaryBorderColor: '#c1c7d0',
+      tertiaryBorderColor: '#d3d5d9',
+      primaryTextColor: '#ffffff',
+      secondaryTextColor: '#172b4d',
+      tertiaryTextColor: '#42526e',
+      lineColor: '#5e6c84',
+      textColor: '#172b4d',
+      mainContrastColor: '#172b4d',
+      darkTextColor: '#172b4d',
+      border1: '#4db8d5',
+      border2: '#c1c7d0',
+      arrowheadColor: '#5e6c84',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+      fontSize: '16px',
+      labelBackground: '#f4f5f7',
+      nodeBkg: '#61dafb',
+      nodeBorder: '#4db8d5',
+      clusterBkg: '#f4f5f7',
+      clusterBorder: '#c1c7d0',
+      defaultLinkColor: '#5e6c84',
+      titleColor: '#172b4d',
+      edgeLabelBackground: '#ffffff',
+      actorBorder: '#4db8d5',
+      actorBkg: '#61dafb',
+      actorTextColor: '#ffffff',
+      actorLineColor: '#5e6c84',
+      signalColor: '#172b4d',
+      signalTextColor: '#172b4d',
+      labelBoxBkgColor: '#61dafb',
+      labelBoxBorderColor: '#4db8d5',
+      labelTextColor: '#ffffff',
+      loopTextColor: '#172b4d',
+      noteBorderColor: '#c1c7d0',
+      noteBkgColor: '#fff8dc',
+      noteTextColor: '#172b4d',
+      activationBorderColor: '#172b4d',
+      activationBkgColor: '#f4f5f7',
+      sequenceNumberColor: '#ffffff'
     }
   },
-
-  // MermaidPluginConfig - for the vitepress-plugin-mermaid itself
+  
   mermaidPlugin: {
-    class: "mermaid my-class", // existing setting: set additional css classes for parent container
-    // Add other vitepress-plugin-mermaid specific options here if needed
-  },
+    class: "mermaid"
+  }
 });

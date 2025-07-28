@@ -1,120 +1,100 @@
 ---
-# https://vitepress.dev/reference/default-theme-home-page
 layout: home
-title: Blac - Beautiful State Management for React
-description: Lightweight, flexible, and predictable state management for modern React applications.
-head:
-  - - meta
-    - name: description
-      content: Blac is a lightweight, flexible, and predictable state management library for React applications.
-  - - meta
-    - name: keywords
-      content: blac, react, state management, bloc, cubit, typescript, reactive, predictable state
-  - - meta
-    - property: og:title
-      content: Blac - Beautiful State Management for React
-  - - meta
-    - property: og:description
-      content: Lightweight, flexible, and predictable state management for modern React applications.
-  - - meta
-    - property: og:type
-      content: website
-  - - meta
-    - property: og:image
-      content: /logo.svg
-  - - meta
-    - name: twitter:card
-      content: summary
-  - - meta
-    - name: twitter:title
-      content: Blac - Beautiful State Management for React
-  - - meta
-    - name: twitter:description
-      content: Lightweight, flexible, and predictable state management for modern React applications.
+
+hero:
+  name: BlaC
+  text: Business Logic as Components
+  tagline: Simple, powerful state management for React with zero boilerplate
+  image:
+    src: /logo.svg
+    alt: BlaC
+  actions:
+    - theme: brand
+      text: Get Started
+      link: /introduction
+    - theme: alt
+      text: View on GitHub
+      link: https://github.com/jsnanigans/blac
+
+features:
+  - icon: ⚡
+    title: Zero Boilerplate
+    details: Get started in seconds. No actions, reducers, or complex setup required.
+  - icon: 🎯
+    title: Type-Safe by Default
+    details: Full TypeScript support with perfect type inference and autocompletion.
+  - icon: 🚀
+    title: Optimized Performance
+    details: Automatic render optimization through intelligent dependency tracking.
+  - icon: 🧩
+    title: Flexible Architecture
+    details: Scale from simple Cubits to complex event-driven Blocs as needed.
 ---
 
-# Blac
-
-<div class="tagline"><strong>Lightweight, flexible, and predictable state management for modern React applications.</strong></div>
-
-<div class="image-container">
-  <img src="/logo.svg" alt="Blac Logo" style="width: 150px;" />
-</div>
-
-<div class="actions">
-  <a href="/learn/introduction" class="action">Get Started</a>
-  <a href="https://github.com/jsnanigans/blac" class="action alt">View on GitHub</a>
-</div>
-
-## Features
-
-<div class="features">
-  <div class="feature">
-    <h3>💡 Simple & Intuitive API</h3>
-    <p>Get started quickly with familiar concepts and less boilerplate. Focus on your business logic, not on complex state management rituals.</p>
-  </div>
-  <div class="feature">
-    <h3>🧠 Smart Instance Management</h3>
-    <p>Automatic creation, sharing (default for non-isolated Blocs using class name or provided ID), and disposal of Bloc/Cubit instances by the central `Blac` class. Supports `keepAlive` for in-memory persistence and isolated instances (via `static isolated = true` or unique IDs) for component-specific or distinct states.</p>
-  </div>
-  <div class="feature">
-    <h3>🔒 TypeScript First</h3>
-    <p>Built from the ground up with TypeScript, offering full type safety for robust applications and an excellent developer experience with autocompletion and refactoring support.</p>
-  </div>
-  <div class="feature">
-    <h3>🧩 Extensible via Plugins & Addons</h3>
-    <p>Enhance Blac's core or individual Bloc capabilities. Use the plugin system for global extensions (like logging) or addons for Bloc-specific features (like state persistence).</p>
-  </div>
-  <div class="feature">
-    <h3>🚀 Performance Focused</h3>
-    <p>Minimal dependencies for a small bundle size. Efficient state updates and optimized re-renders in React components.</p>
-  </div>
-  <div class="feature">
-    <h3>🧩 Flexible Architecture</h3>
-    <p>Adapts to various React project structures and complexities. Suitable for small features or large-scale applications.</p>
-  </div>
-</div>
-
-::: tip Just getting started?
-Check out the [Introduction](/learn/introduction) for a comprehensive guide to using Blac in your projects.
-:::
-
-## Quick Example
-
-```tsx
-// 1. Define your Cubit (e.g., in src/cubits/CounterCubit.ts)
-import { Cubit } from '@blac/core';
-
-interface CounterState {
-  count: number;
+<style>
+.VPHome {
+  padding-bottom: 96px !important;
 }
 
-export class CounterCubit extends Cubit<CounterState> {
-  constructor() {
-    super({ count: 0 }); // Initial state
-  }
+.VPHero {
+  padding: 64px 24px 48px !important;
+}
 
-  // Methods must be arrow functions!
+.VPFeatures {
+  padding: 64px 24px 0 !important;
+}
+
+.VPFeature {
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 12px;
+  padding: 24px !important;
+}
+</style>
+
+## Quick Start
+
+```typescript
+// 1. Define your state container
+import { Cubit } from '@blac/core';
+
+class CounterCubit extends Cubit<{ count: number }> {
+  constructor() {
+    super({ count: 0 });
+  }
+  
   increment = () => this.emit({ count: this.state.count + 1 });
   decrement = () => this.emit({ count: this.state.count - 1 });
 }
 
-// 2. Use the Cubit in your React component
+// 2. Use it in your React component
 import { useBloc } from '@blac/react';
-import { CounterCubit } from '../cubits/CounterCubit'; // Adjust path
 
-function MyCounter() {
-  const [state, counterCubit] = useBloc(CounterCubit);
-
+function Counter() {
+  const [state, cubit] = useBloc(CounterCubit);
+  
   return (
     <div>
-      <p>Count: {state.count}</p>
-      <button onClick={counterCubit.decrement}>-</button>
-      <button onClick={counterCubit.increment}>+</button>
+      <button onClick={cubit.decrement}>-</button>
+      <span>{state.count}</span>
+      <button onClick={cubit.increment}>+</button>
     </div>
   );
 }
-
-export default MyCounter;
 ```
 
+That's it. No providers, no boilerplate, just clean state management.
+
+<div style="text-align: center; margin: 48px 0;">
+  <a href="/introduction" style="
+    display: inline-block;
+    padding: 12px 24px;
+    background: var(--vp-c-brand);
+    color: white;
+    border-radius: 24px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.25s;
+  " onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+    Learn More →
+  </a>
+</div>
