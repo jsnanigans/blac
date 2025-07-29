@@ -1,6 +1,5 @@
 import { Bloc } from '@blac/core';
 
-// 1. Define your events as classes (must extend BlocEvent)
 class CounterIncremented {
   constructor(public readonly amount: number = 1) {
   }
@@ -17,7 +16,6 @@ type CounterState = {
   count: number;
 };
 
-// 2. Create your Bloc with registered events
 export default class CounterBloc extends Bloc<CounterState> {
   constructor() {
     super({ count: 0 }); // Initial state

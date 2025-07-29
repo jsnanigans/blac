@@ -33,7 +33,7 @@ class CounterCubit extends Cubit<{ count: number }> {
   constructor() {
     super({ count: 0 });
   }
-  
+
   increment() {
     this.emit({ count: this.state.count + 1 });
   }
@@ -43,16 +43,16 @@ describe('Counter Tests', () => {
   beforeEach(() => {
     BlocTest.setUp();
   });
-  
+
   afterEach(() => {
     BlocTest.tearDown();
   });
-  
+
   it('should increment counter', async () => {
     const counter = BlocTest.createBloc(CounterCubit);
-    
+
     counter.increment();
-    
+
     expect(counter.state.count).toBe(1);
   });
 });
@@ -145,11 +145,11 @@ interface CounterState {
   loading: boolean;
 }
 
-class IncrementEvent implements BlocEvent {
+class IncrementEvent {
   constructor(public amount: number = 1) {}
 }
 
-class LoadingEvent implements BlocEvent {}
+class LoadingEvent {}
 
 const mockBloc = new MockBloc<CounterState>({
   count: 0,
@@ -172,10 +172,10 @@ mockBloc.mockEventHandler(IncrementEvent, (event, emit) => {
 // Mock async event handler
 mockBloc.mockEventHandler(LoadingEvent, async (event, emit) => {
   emit({ ...mockBloc.state, loading: true });
-  
+
   // Simulate async operation
   await new Promise(resolve => setTimeout(resolve, 100));
-  
+
   emit({ ...mockBloc.state, loading: false });
 });
 ```
@@ -218,7 +218,7 @@ const mockCubit = new MockCubit<UserState>({
 it('should track state history', () => {
   mockCubit.emit({ name: 'Jane', email: 'jane@example.com' });
   mockCubit.emit({ name: 'Bob', email: 'bob@example.com' });
-  
+
   const history = mockCubit.getStateHistory();
   expect(history).toHaveLength(3); // Initial + 2 emissions
   expect(history[0]).toEqual({ name: 'John', email: 'john@example.com' });
@@ -229,7 +229,7 @@ it('should track state history', () => {
 it('should clear state history', () => {
   mockCubit.emit({ name: 'Test', email: 'test@example.com' });
   mockCubit.clearStateHistory();
-  
+
   const history = mockCubit.getStateHistory();
   expect(history).toHaveLength(1); // Only current state
   expect(history[0]).toEqual(mockCubit.state);
@@ -245,32 +245,32 @@ Detects potential memory leaks by monitoring bloc instances before and after tes
 ```typescript
 describe('Memory Leak Tests', () => {
   let detector: MemoryLeakDetector;
-  
+
   beforeEach(() => {
     BlocTest.setUp();
     detector = new MemoryLeakDetector();
   });
-  
+
   afterEach(() => {
     const result = detector.checkForLeaks();
-    
+
     if (result.hasLeaks) {
       console.warn('Memory leak detected:', result.report);
     }
-    
+
     BlocTest.tearDown();
   });
-  
+
   it('should not leak memory', () => {
     const bloc1 = BlocTest.createBloc(CounterCubit);
     const bloc2 = BlocTest.createBloc(UserCubit);
-    
+
     // Test operations...
-    
+
     // Clean up blocs
     Blac.disposeBloc(bloc1);
     Blac.disposeBloc(bloc2);
-    
+
     const result = detector.checkForLeaks();
     expect(result.hasLeaks).toBe(false);
   });
@@ -302,7 +302,7 @@ console.log(result.report);
 describe('Test Suite', () => {
   beforeEach(() => BlocTest.setUp());
   afterEach(() => BlocTest.tearDown());
-  
+
   // Your tests...
 });
 ```
@@ -312,10 +312,10 @@ describe('Test Suite', () => {
 ```typescript
 it('should transition through loading states', async () => {
   const bloc = BlocTest.createBloc(DataBloc);
-  
+
   // Trigger async operation
   bloc.loadData();
-  
+
   // Test state sequence
   await BlocTest.expectStates(bloc, [
     { data: null, loading: true, error: null },
@@ -329,12 +329,12 @@ it('should transition through loading states', async () => {
 ```typescript
 it('should handle errors gracefully', async () => {
   const mockBloc = new MockBloc<DataState>(initialState);
-  
+
   mockBloc.mockEventHandler(LoadDataEvent, async (event, emit) => {
     emit({ ...mockBloc.state, loading: true });
     throw new Error('Network error');
   });
-  
+
   await expect(mockBloc.add(new LoadDataEvent())).rejects.toThrow('Network error');
 });
 ```
@@ -344,18 +344,18 @@ it('should handle errors gracefully', async () => {
 ```typescript
 describe('Performance Tests', () => {
   let detector: MemoryLeakDetector;
-  
+
   beforeEach(() => {
     BlocTest.setUp();
     detector = new MemoryLeakDetector();
   });
-  
+
   afterEach(() => {
     const result = detector.checkForLeaks();
     expect(result.hasLeaks).toBe(false);
     BlocTest.tearDown();
   });
-  
+
   // Tests that verify no memory leaks...
 });
 ```
@@ -368,13 +368,13 @@ describe('Performance Tests', () => {
 class ApiBloc extends Bloc<ApiState, ApiEvent> {
   constructor() {
     super({ data: null, loading: false, error: null });
-    
+
     this.on(FetchDataEvent, this.handleFetchData);
   }
-  
+
   private async handleFetchData(event: FetchDataEvent, emit: (state: ApiState) => void) {
     emit({ ...this.state, loading: true, error: null });
-    
+
     try {
       const data = await apiService.fetchData(event.id);
       emit({ data, loading: false, error: null });
@@ -386,12 +386,12 @@ class ApiBloc extends Bloc<ApiState, ApiEvent> {
 
 it('should handle successful API call', async () => {
   const bloc = BlocTest.createBloc(ApiBloc);
-  
+
   // Mock the API service
   vi.spyOn(apiService, 'fetchData').mockResolvedValue(mockData);
-  
+
   bloc.add(new FetchDataEvent('123'));
-  
+
   await BlocTest.expectStates(bloc, [
     { data: null, loading: true, error: null },
     { data: mockData, loading: false, error: null }
@@ -400,11 +400,11 @@ it('should handle successful API call', async () => {
 
 it('should handle API errors', async () => {
   const bloc = BlocTest.createBloc(ApiBloc);
-  
+
   vi.spyOn(apiService, 'fetchData').mockRejectedValue(new Error('API Error'));
-  
+
   bloc.add(new FetchDataEvent('123'));
-  
+
   await BlocTest.expectStates(bloc, [
     { data: null, loading: true, error: null },
     { data: null, loading: false, error: 'API Error' }
@@ -418,17 +418,17 @@ it('should handle API errors', async () => {
 it('should wait for specific conditions', async () => {
   const userBloc = BlocTest.createBloc(UserBloc);
   const permissionBloc = BlocTest.createBloc(PermissionBloc);
-  
+
   // Start async operations
   userBloc.loadUser('123');
   permissionBloc.loadPermissions('123');
-  
+
   // Wait for both to complete
   await Promise.all([
     BlocTest.waitForState(userBloc, (state) => state.user !== null),
     BlocTest.waitForState(permissionBloc, (state) => state.permissions !== null)
   ]);
-  
+
   expect(userBloc.state.user).toBeDefined();
   expect(permissionBloc.state.permissions).toBeDefined();
 });
@@ -439,20 +439,20 @@ it('should wait for specific conditions', async () => {
 ```typescript
 it('should handle complex wizard flow', async () => {
   const wizardBloc = BlocTest.createBloc(WizardBloc);
-  
+
   // Navigate through wizard steps
   wizardBloc.add(new NextStepEvent());
   wizardBloc.add(new SetDataEvent({ name: 'John' }));
   wizardBloc.add(new NextStepEvent());
   wizardBloc.add(new SetDataEvent({ email: 'john@example.com' }));
   wizardBloc.add(new SubmitEvent());
-  
+
   // Verify final state
   await BlocTest.waitForState(
     wizardBloc,
     (state) => state.isComplete && !state.isSubmitting
   );
-  
+
   expect(wizardBloc.state.data).toEqual({
     name: 'John',
     email: 'john@example.com'
@@ -471,7 +471,7 @@ import { BlocTest } from '@blac/core';
 describe('Integration with Vitest', () => {
   beforeEach(() => BlocTest.setUp());
   afterEach(() => BlocTest.tearDown());
-  
+
   // Tests...
 });
 ```
@@ -484,7 +484,7 @@ import { BlocTest } from '@blac/core';
 describe('Integration with Jest', () => {
   beforeEach(() => BlocTest.setUp());
   afterEach(() => BlocTest.tearDown());
-  
+
   // Tests...
 });
 ```
@@ -526,4 +526,4 @@ describe('Integration with Jest', () => {
 
 ---
 
-*"By the infinite power of the galaxy, test with confidence!"* ⭐️ 
+*"By the infinite power of the galaxy, test with confidence!"* ⭐️
