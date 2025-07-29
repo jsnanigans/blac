@@ -1,10 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// TODO: The 'any' types in this file are necessary for proper type inference in complex generic scenarios.
-// Specifically:
-// 1. BlocConstructor<any> in Maps - allows any bloc type to be stored while maintaining type safety in usage
-// 2. Type assertions for _disposalState - private property access across inheritance hierarchy
-// 3. Constructor argument types - enables flexible bloc instantiation patterns
-// These 'any' usages are carefully controlled and don't compromise runtime type safety.
 import { BlocBase, BlocInstanceId, BlocLifecycleState } from './BlocBase';
 import {
   BlocBaseAbstract,
@@ -20,7 +13,7 @@ import {
 export interface BlacConfig {
   /** Whether to expose the Blac instance globally */
   exposeBlacInstance?: boolean;
-  /** 
+  /**
    * Whether to enable proxy dependency tracking for automatic re-render optimization.
    * When false, state changes always cause re-renders unless dependencies are manually specified.
    * Default: true
@@ -114,18 +107,18 @@ export class Blac {
   static get getAllBlocs() {
     return Blac.instance.getAllBlocs;
   }
-  
+
   /** Private static configuration */
   private static _config: BlacConfig = {
     exposeBlacInstance: false,
     proxyDependencyTracking: true,
   };
-  
+
   /** Get current configuration */
   static get config(): Readonly<BlacConfig> {
     return { ...this._config };
   }
-  
+
   /**
    * Set or update Blac configuration
    * @param config - Partial configuration to merge with existing config
@@ -133,22 +126,22 @@ export class Blac {
    */
   static setConfig(config: Partial<BlacConfig>): void {
     // Validate config
-    if (config.proxyDependencyTracking !== undefined && 
+    if (config.proxyDependencyTracking !== undefined &&
         typeof config.proxyDependencyTracking !== 'boolean') {
       throw new Error('BlacConfig.proxyDependencyTracking must be a boolean');
     }
-    
-    if (config.exposeBlacInstance !== undefined && 
+
+    if (config.exposeBlacInstance !== undefined &&
         typeof config.exposeBlacInstance !== 'boolean') {
       throw new Error('BlacConfig.exposeBlacInstance must be a boolean');
     }
-    
+
     // Merge with existing config
     this._config = {
       ...this._config,
       ...config,
     };
-    
+
     // Log config update if logging is enabled
     if (this.enableLog) {
       this.instance.log('Blac config updated:', this._config);

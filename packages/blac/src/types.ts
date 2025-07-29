@@ -57,18 +57,9 @@ export type BlocConstructorParameters<B extends BlocBase<any>> =
   BlocConstructor<B> extends new (...args: infer P) => B ? P : never;
 
 /**
- * Base interface for all Bloc events
- * Events must be objects with a constructor to enable proper type matching
- */
-export interface BlocEvent {
-  readonly type?: string;
-  readonly timestamp?: number;
-}
-
-/**
  * Enhanced constraint for Bloc events - must be objects with proper constructor
  */
-export type BlocEventConstraint = BlocEvent & object;
+export type BlocEventConstraint = object;
 
 /**
  * Error boundary interface for Bloc error handling
