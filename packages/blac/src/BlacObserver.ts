@@ -174,6 +174,9 @@ export class BlacObservable<S = unknown> {
         void observer.fn(newState, oldState, action);
       }
     });
+
+    // Notify system plugins of state change
+    Blac.instance.plugins.notifyStateChanged(this.bloc, oldState, newState);
   }
 
   /**

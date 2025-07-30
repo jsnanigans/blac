@@ -15,3 +15,6 @@ export * from './testing';
 
 // Adapter
 export * from './adapter';
+
+// Plugins
+export * from './plugins';

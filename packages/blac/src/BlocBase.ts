@@ -1,5 +1,7 @@
 import { BlacObservable } from './BlacObserver';
 import { generateUUID } from './utils/uuid';
+import { BlocPlugin, ErrorContext } from './plugins/core/types';
+import { BlocPluginRegistry } from './plugins/bloc/BlocPluginRegistry';
 
 export type BlocInstanceId = string | number | undefined;
 type DependencySelector<S> = (
@@ -32,6 +34,7 @@ export interface StateTransitionResult {
 interface BlocStaticProperties {
   isolated: boolean;
   keepAlive: boolean;
+  plugins?: BlocPlugin<any, any>[];
 }
 
 /**
@@ -159,6 +162,11 @@ export abstract class BlocBase<S, P = unknown> {
   private _consumerRefs = new Map<string, WeakRef<object>>();
 
   /**
+   * Plugin registry for this bloc instance
+   */
+  protected _plugins: BlocPluginRegistry<S, any>;
+
+  /**
    * @internal
    * Validates that all consumer references are still alive
    * Removes dead consumers automatically
@@ -210,6 +218,16 @@ export abstract class BlocBase<S, P = unknown> {
         : false;
     this._isolated =
       typeof Constructor.isolated === 'boolean' ? Constructor.isolated : false;
+    
+    // Initialize plugin registry
+    this._plugins = new BlocPluginRegistry<S, any>();
+    
+    // Register static plugins
+    if (Constructor.plugins && Array.isArray(Constructor.plugins)) {
+      for (const plugin of Constructor.plugins) {
+        this.addPlugin(plugin);
+      }
+    }
   }
 
   /**
@@ -529,24 +547,54 @@ export abstract class BlocBase<S, P = unknown> {
       return;
     }
 
+    // Transform state through plugins
+    let transformedState: S = newState;
+    try {
+      const result = this._plugins.transformState(oldState, newState);
+      transformedState = result;
+    } catch (error) {
+      this._plugins.notifyError(error as Error, {
+        phase: 'state-change',
+        operation: 'transformState'
+      });
+      // Continue with original state if transformation fails
+    }
+
     if (this._batchingEnabled) {
       // When batching, just accumulate the updates
-      this._pendingUpdates.push({ newState, oldState, action });
+      this._pendingUpdates.push({ newState: transformedState, oldState, action });
 
       // Update internal state for consistency
       this._oldState = oldState;
-      this._state = newState;
+      this._state = transformedState;
       return;
     }
 
     // Normal state update flow
     this._oldState = oldState;
-    this._state = newState;
+    this._state = transformedState;
+
+    // Notify bloc plugins first
+    try {
+      this._plugins.notifyStateChange(oldState, transformedState);
+    } catch (error) {
+      console.error('Error notifying bloc plugins of state change:', error);
+    }
 
     // Notify observers of the state change
-    this._observer.notify(newState, oldState, action);
+    this._observer.notify(transformedState, oldState, action);
     this.lastUpdate = Date.now();
   };
+
+  /**
+   * Notify observers of a state change
+   * @internal Used by plugins for state hydration
+   * @param newState The new state
+   * @param oldState The old state
+   */
+  _notifyObservers(newState: S, oldState: S): void {
+    this._observer.notify(newState, oldState);
+  }
 
   /**
    * Enables batching for multiple state updates
@@ -586,4 +634,59 @@ export abstract class BlocBase<S, P = unknown> {
       this._pendingUpdates = [];
     }
   };
+
+  /**
+   * Add a plugin to this bloc instance
+   */
+  addPlugin(plugin: BlocPlugin<S, any>): void {
+    this._plugins.add(plugin);
+    
+    // Attach if already active
+    if (this._disposalState === BlocLifecycleState.ACTIVE) {
+      try {
+        if (plugin.onAttach) {
+          plugin.onAttach(this);
+        }
+      } catch (error) {
+        console.error(`Failed to attach plugin '${plugin.name}':`, error);
+        this._plugins.remove(plugin.name);
+        throw error;
+      }
+    }
+  }
+
+  /**
+   * Remove a plugin from this bloc instance
+   */
+  removePlugin(pluginName: string): boolean {
+    return this._plugins.remove(pluginName);
+  }
+
+  /**
+   * Get a plugin by name
+   */
+  getPlugin(pluginName: string): BlocPlugin<S, any> | undefined {
+    return this._plugins.get(pluginName);
+  }
+
+  /**
+   * Get all plugins
+   */
+  getPlugins(): ReadonlyArray<BlocPlugin<S, any>> {
+    return this._plugins.getAll();
+  }
+
+  /**
+   * @internal
+   * Activate plugins when bloc becomes active
+   */
+  _activatePlugins(): void {
+    if (this._disposalState === BlocLifecycleState.ACTIVE) {
+      try {
+        this._plugins.attach(this);
+      } catch (error) {
+        console.error(`Failed to activate plugins for ${this._name}:`, error);
+      }
+    }
+  }
 }

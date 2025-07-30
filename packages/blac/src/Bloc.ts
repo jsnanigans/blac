@@ -55,7 +55,31 @@ export abstract class Bloc<
    * @param action The action/event instance to be processed.
    */
   public add = async (action: A): Promise<void> => {
-    this._eventQueue.push(action);
+    // Transform event through plugins
+    let transformedAction: A | null = action;
+    try {
+      transformedAction = (this._plugins as any).transformEvent(action);
+    } catch (error) {
+      console.error('Error transforming event:', error);
+      // Continue with original event if transformation fails
+    }
+    
+    // If event was cancelled by plugin, don't process it
+    if (transformedAction === null) {
+      return;
+    }
+    
+    // Notify bloc plugins of event
+    try {
+      (this._plugins as any).notifyEvent(transformedAction);
+    } catch (error) {
+      console.error('Error notifying plugins of event:', error);
+    }
+    
+    // Notify system plugins of event
+    Blac.instance.plugins.notifyEventAdded(this as any, transformedAction);
+    
+    this._eventQueue.push(transformedAction);
 
     if (!this._isProcessingEvent) {
       await this._processEventQueue();
@@ -118,6 +142,25 @@ export abstract class Bloc<
           'Context:',
           errorContext,
         );
+
+        // Notify plugins of the error
+        if (error instanceof Error) {
+          try {
+            this._plugins.notifyError(error, {
+              phase: 'event-processing',
+              operation: 'handler',
+              metadata: { event: action }
+            });
+            
+            Blac.instance.plugins.notifyError(error, this as any, {
+              phase: 'event-processing',
+              operation: 'handler',
+              metadata: { event: action }
+            });
+          } catch (pluginError) {
+            console.error('Error notifying plugins:', pluginError);
+          }
+        }
 
         if (error instanceof Error && error.name === 'CriticalError') {
           throw error;

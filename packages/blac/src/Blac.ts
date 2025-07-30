@@ -6,6 +6,7 @@ import {
   BlocState,
   InferPropsFromGeneric,
 } from './types';
+import { SystemPluginRegistry } from './plugins/system/SystemPluginRegistry';
 
 /**
  * Configuration options for the Blac instance
@@ -162,6 +163,8 @@ export class Blac {
   keepAliveBlocs: Set<BlocBase<unknown>> = new Set();
   /** Flag to control whether changes should be posted to document */
   postChangesToDocument = false;
+  /** System plugin registry */
+  readonly plugins = new SystemPluginRegistry();
 
   /**
    * Creates a new Blac instance.
@@ -173,6 +176,9 @@ export class Blac {
       return Blac.instance;
     }
     instanceManager.setInstance(this);
+    
+    // Bootstrap plugins on creation
+    this.plugins.bootstrap();
   }
 
   /** Flag to enable/disable logging */
@@ -312,6 +318,9 @@ export class Blac {
 
     // First dispose the bloc to prevent further operations
     bloc._dispose();
+
+    // Notify plugins of bloc disposal
+    this.plugins.notifyBlocDisposed(bloc);
 
     // Then clean up from registries
     if (base.isolated) {
@@ -507,10 +516,16 @@ export class Blac {
 
     if (newBloc.isIsolated) {
       this.registerIsolatedBlocInstance(newBloc);
-      return newBloc;
+    } else {
+      this.registerBlocInstance(newBloc);
     }
 
-    this.registerBlocInstance(newBloc);
+    // Activate bloc plugins
+    newBloc._activatePlugins();
+    
+    // Notify system plugins of bloc creation
+    this.plugins.notifyBlocCreated(newBloc);
+
     return newBloc;
   }
 
@@ -786,4 +801,35 @@ export class Blac {
   static get validateConsumers() {
     return Blac.instance.validateConsumers;
   }
+
+  /**
+   * Bootstrap the Blac instance and all plugins
+   */
+  bootstrap(): void {
+    this.plugins.bootstrap();
+  }
+
+  /**
+   * Shutdown the Blac instance and all plugins
+   */
+  shutdown(): void {
+    this.plugins.shutdown();
+    
+    // Dispose all non-keepAlive blocs
+    for (const bloc of this.blocInstanceMap.values()) {
+      if (!bloc._keepAlive) {
+        this.disposeBloc(bloc);
+      }
+    }
+    
+    for (const blocs of this.isolatedBlocMap.values()) {
+      for (const bloc of blocs) {
+        if (!bloc._keepAlive) {
+          this.disposeBloc(bloc);
+        }
+      }
+    }
+  }
+
+
 }
