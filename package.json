@@ -8,16 +8,7 @@
     "test:watch": "turbo run test:watch",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
-    "format": "turbo run format",
-    "wcl": "turbo run sb --filter=@9amhealth/wcl",
-    "shared": "turbo run sb --filter=@9amhealth/shared",
-    "app": "turbo run dev --filter=user-app",
-    "pmp": "turbo run dev --filter=pmp",
-    "health-report": "turbo run dev --filter=@9amhealth/health-report",
-    "generate:wcl": "turbo run generate:wcl",
-    "generate:api:dev": "turbo run generate:api:dev",
-    "generate:api:prod": "turbo run generate:api:prod",
-    "generate:api:qa": "turbo run generate:api:qa"
+    "format": "turbo run format"
   },
   "pnpm": {},
   "engines": {
