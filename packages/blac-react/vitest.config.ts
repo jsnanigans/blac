@@ -7,10 +7,11 @@ export default defineConfig({
     environment: 'happy-dom',
     setupFiles: './vitest-setup.ts',
     onConsoleLog(log) {
-      if (log.startsWith("UNIT")) {
-        return true;
-      }
-      return false;
+    //   if (log.startsWith("UNIT")) {
+    //     return true;
+    //   }
+    //   return false;
+      return true
     }
   },
 });

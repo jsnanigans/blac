@@ -9,6 +9,20 @@ import { BlocBase } from './BlocBase';
  */
 export abstract class Cubit<S, P = null> extends BlocBase<S, P> {
   /**
+   * @internal
+   * Protected method for useBloc to call
+   */
+  protected _updateProps(props: P): void {
+    const oldProps = this.props;
+    this.props = props;
+    this.onPropsChanged?.(oldProps as P | undefined, props);
+  }
+  
+  /**
+   * Optional override for props handling
+   */
+  protected onPropsChanged?(oldProps: P | undefined, newProps: P): void;
+  /**
    * Updates the current state and notifies all observers of the change.
    * If the new state is identical to the current state (using Object.is),
    * no update will occur.

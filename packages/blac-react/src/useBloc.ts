@@ -20,7 +20,13 @@ type HookTypes<B extends BlocConstructor<BlocBase<any>>> = [
  */
 function useBloc<B extends BlocConstructor<BlocBase<any>>>(
   blocConstructor: B,
-  options?: AdapterOptions<InstanceType<B>>,
+  options?: {
+    props?: ConstructorParameters<B>[0];
+    id?: string;
+    dependencies?: (bloc: InstanceType<B>) => unknown[];
+    onMount?: (bloc: InstanceType<B>) => void;
+    onUnmount?: (bloc: InstanceType<B>) => void;
+  },
 ): HookTypes<B> {
   // Create a unique identifier for this hook instance
   const renderCount = useRef(0);
@@ -35,7 +41,13 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
         componentRef: componentRef,
         blocConstructor,
       },
-      options,
+      {
+        id: options?.id,
+        dependencies: options?.dependencies,
+        props: options?.props,
+        onMount: options?.onMount,
+        onUnmount: options?.onUnmount,
+      },
     );
     return newAdapter;
   }, []);
@@ -44,12 +56,22 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
   // properties accessed during the current render
   adapter.resetConsumerTracking();
 
-  // Track options changes
+  // Track options changes and update props
   const optionsChangeCount = useRef(0);
   useEffect(() => {
     optionsChangeCount.current++;
-    adapter.options = options;
-  }, [options]);
+    adapter.options = {
+      id: options?.id,
+      dependencies: options?.dependencies,
+      props: options?.props,
+      onMount: options?.onMount,
+      onUnmount: options?.onUnmount,
+    };
+
+    if (options?.props !== undefined) {
+      adapter.updateProps(options.props);
+    }
+  }, [options?.props, options?.id, options?.dependencies, options?.onMount, options?.onUnmount]);
 
   // Register as consumer and handle lifecycle
   const mountEffectCount = useRef(0);
