@@ -1,4 +1,4 @@
-import { BlocPlugin, PluginRegistry, ErrorContext } from '../core/types';
+import { BlocPlugin, PluginRegistry, ErrorContext } from './types';
 
 /**
  * Registry for bloc-specific plugins

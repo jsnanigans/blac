@@ -1,4 +1,4 @@
-import { BlacPlugin, PluginRegistry, PluginMetrics, ErrorContext } from '../core/types';
+import { BlacPlugin, PluginRegistry, PluginMetrics, ErrorContext } from './types';
 import { BlocBase } from '../BlocBase';
 import { Bloc } from '../Bloc';
 
