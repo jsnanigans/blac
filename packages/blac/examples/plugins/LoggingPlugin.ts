@@ -1,6 +1,4 @@
-import { BlacPlugin, ErrorContext } from '../core/types';
-import { BlocBase } from '../../BlocBase';
-import { Bloc } from '../../Bloc';
+import { BlacPlugin, ErrorContext, BlocBase, Bloc } from '@blac/core';
 
 /**
  * Example system-wide logging plugin

@@ -3,7 +3,10 @@ import { Blac } from '../Blac';
 import { Cubit } from '../Cubit';
 import { Bloc } from '../Bloc';
 import { BlacPlugin, BlocPlugin } from '../plugins';
-import { LoggingPlugin, PersistencePlugin, ValidationPlugin } from '../plugins/examples';
+// Import example plugins from examples directory
+import { LoggingPlugin } from '../../examples/plugins/LoggingPlugin';
+import { PersistencePlugin } from '../../examples/plugins/PersistencePlugin';
+import { ValidationPlugin } from '../../examples/plugins/ValidationPlugin';
 
 // Test Cubit
 class CounterCubit extends Cubit<number> {

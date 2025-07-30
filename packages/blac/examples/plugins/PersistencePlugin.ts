@@ -1,5 +1,4 @@
-import { BlocPlugin, PluginCapabilities, ErrorContext } from '../core/types';
-import { BlocBase } from '../../BlocBase';
+import { BlocPlugin, PluginCapabilities, ErrorContext, BlocBase } from '@blac/core';
 
 /**
  * Storage adapter interface

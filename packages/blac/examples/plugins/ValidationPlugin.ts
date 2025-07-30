@@ -1,4 +1,4 @@
-import { BlocPlugin, PluginCapabilities, ErrorContext } from '../core/types';
+import { BlocPlugin, PluginCapabilities, ErrorContext } from '@blac/core';
 
 /**
  * Example validation plugin that prevents invalid state transitions
