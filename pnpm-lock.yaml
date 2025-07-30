@@ -50,6 +50,9 @@ importers:
       '@blac/core':
         specifier: workspace:*
         version: link:../../packages/blac
+      '@blac/plugin-persistence':
+        specifier: workspace:*
+        version: link:../../packages/plugins/bloc/persistence
       '@blac/react':
         specifier: workspace:*
         version: link:../../packages/blac-react
@@ -4246,8 +4249,8 @@ snapshots:
 
   '@jridgewell/source-map@0.3.6':
     dependencies:
-      '@jridgewell/gen-mapping': 0.3.5
-      '@jridgewell/trace-mapping': 0.3.25
+      '@jridgewell/gen-mapping': 0.3.12
+      '@jridgewell/trace-mapping': 0.3.29
     optional: true
 
   '@jridgewell/sourcemap-codec@1.5.0': {}

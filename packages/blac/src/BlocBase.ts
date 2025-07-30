@@ -1,7 +1,7 @@
 import { BlacObservable } from './BlacObserver';
 import { generateUUID } from './utils/uuid';
-import { BlocPlugin, ErrorContext } from './plugins/core/types';
-import { BlocPluginRegistry } from './plugins/bloc/BlocPluginRegistry';
+import { BlocPlugin, ErrorContext } from './plugins/types';
+import { BlocPluginRegistry } from './plugins/BlocPluginRegistry';
 
 export type BlocInstanceId = string | number | undefined;
 type DependencySelector<S> = (
@@ -218,10 +218,10 @@ export abstract class BlocBase<S, P = unknown> {
         : false;
     this._isolated =
       typeof Constructor.isolated === 'boolean' ? Constructor.isolated : false;
-    
+
     // Initialize plugin registry
     this._plugins = new BlocPluginRegistry<S, any>();
-    
+
     // Register static plugins
     if (Constructor.plugins && Array.isArray(Constructor.plugins)) {
       for (const plugin of Constructor.plugins) {
@@ -640,7 +640,7 @@ export abstract class BlocBase<S, P = unknown> {
    */
   addPlugin(plugin: BlocPlugin<S, any>): void {
     this._plugins.add(plugin);
-    
+
     // Attach if already active
     if (this._disposalState === BlocLifecycleState.ACTIVE) {
       try {

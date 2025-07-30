@@ -16,6 +16,7 @@ import KeepAliveDemo from './components/KeepAliveDemo';
 import TodoBlocDemo from './components/TodoBlocDemo';
 import { Button } from './components/ui/Button';
 import UserProfileDemo from './components/UserProfileDemo';
+import PersistenceDemo from './components/PersistenceDemo';
 import {
   APP_CONTAINER_STYLE, // For potentially lighter description text or default card text
   COLOR_PRIMARY_ACCENT,
@@ -100,6 +101,7 @@ function App() {
     blocToBlocComms: showDefault,
     keepAlive: showDefault,
     sharedCounterTest: showDefault,
+    persistence: showDefault,
   });
 
   return (
@@ -247,6 +249,15 @@ function App() {
           setShow={() => setShow({ ...show, keepAlive: !show.keepAlive })}
         >
           <KeepAliveDemo />
+        </DemoCard>
+
+        <DemoCard
+          title="Persistence Plugin"
+          description="Automatic state persistence to localStorage using the official @blac/plugin-persistence plugin."
+          show={show.persistence}
+          setShow={() => setShow({ ...show, persistence: !show.persistence })}
+        >
+          <PersistenceDemo />
         </DemoCard>
       </main>
 

@@ -1,8 +1,8 @@
 // Core types
-export * from './core/types';
+export * from './types';
 
 // System plugins
-export { SystemPluginRegistry } from './system/SystemPluginRegistry';
+export { SystemPluginRegistry } from './SystemPluginRegistry';
 
 // Bloc plugins
-export { BlocPluginRegistry } from './bloc/BlocPluginRegistry';
+export { BlocPluginRegistry } from './BlocPluginRegistry';

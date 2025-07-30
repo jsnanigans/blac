@@ -1,5 +1,5 @@
-import { BlocBase } from '../../BlocBase';
-import { Bloc } from '../../Bloc';
+import { BlocBase } from '../BlocBase';
+import { Bloc } from '../Bloc';
 
 /**
  * Error context provided to error handlers
@@ -39,7 +39,7 @@ export interface BlacPlugin extends Plugin {
   afterBootstrap?(): void;
   beforeShutdown?(): void;
   afterShutdown?(): void;
-  
+
   // System-wide observations
   onBlocCreated?(bloc: BlocBase<any>): void;
   onBlocDisposed?(bloc: BlocBase<any>): void;
@@ -55,11 +55,11 @@ export interface BlocPlugin<TState = any, TEvent = never> extends Plugin {
   // Transform hooks - can modify data
   transformState?(previousState: TState, nextState: TState): TState;
   transformEvent?(event: TEvent): TEvent | null;
-  
+
   // Lifecycle hooks
   onAttach?(bloc: BlocBase<TState, any>): void;
   onDetach?(): void;
-  
+
   // Observation hooks
   onStateChange?(previousState: TState, currentState: TState): void;
   onEvent?(event: TEvent): void;

@@ -6,7 +6,7 @@ import {
   BlocState,
   InferPropsFromGeneric,
 } from './types';
-import { SystemPluginRegistry } from './plugins/system/SystemPluginRegistry';
+import { SystemPluginRegistry } from './plugins/SystemPluginRegistry';
 
 /**
  * Configuration options for the Blac instance
@@ -176,7 +176,7 @@ export class Blac {
       return Blac.instance;
     }
     instanceManager.setInstance(this);
-    
+
     // Bootstrap plugins on creation
     this.plugins.bootstrap();
   }
@@ -522,7 +522,7 @@ export class Blac {
 
     // Activate bloc plugins
     newBloc._activatePlugins();
-    
+
     // Notify system plugins of bloc creation
     this.plugins.notifyBlocCreated(newBloc);
 
@@ -814,14 +814,14 @@ export class Blac {
    */
   shutdown(): void {
     this.plugins.shutdown();
-    
+
     // Dispose all non-keepAlive blocs
     for (const bloc of this.blocInstanceMap.values()) {
       if (!bloc._keepAlive) {
         this.disposeBloc(bloc);
       }
     }
-    
+
     for (const blocs of this.isolatedBlocMap.values()) {
       for (const bloc of blocs) {
         if (!bloc._keepAlive) {

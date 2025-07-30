@@ -1,4 +1,5 @@
-import { Cubit, Persist } from '@blac/core';
+import { Cubit } from '@blac/core';
+import { PersistencePlugin } from '@blac/plugin-persistence';
 
 interface SettingsState {
   theme: 'light' | 'dark';
@@ -13,28 +14,26 @@ const initialSettings: SettingsState = {
 };
 
 export class PersistentSettingsCubit extends Cubit<SettingsState> {
-  // Configure the Persist addon
-  // This will automatically save/load state to/from localStorage
-  static addons = [
-    Persist({
-      keyName: 'demoAppSettings', // The key used in localStorage
-      defaultValue: {
-        theme: 'light',
-        notificationsEnabled: true,
-        userName: 'Guest',
+  // Use the new official persistence plugin
+  static plugins = [
+    new PersistencePlugin<SettingsState>({
+      key: 'demoAppSettings',
+      // Optional: debounce saves for better performance
+      debounceMs: 200,
+      // Optional: handle errors
+      onError: (error, operation) => {
+        console.error(`Persistence ${operation} failed:`, error);
       },
-      // initialState: initialSettings, // The addon can take an initial state too, useful if Cubit's super(initialState) is different or complex
-      // storage: sessionStorage, // To use sessionStorage instead of localStorage (default)
-      // serialize: (state) => JSON.stringify(state), // Custom serialize function
-      // deserialize: (jsonString) => JSON.parse(jsonString), // Custom deserialize function
+      // Optional: version your persisted data
+      version: 1,
     }),
   ];
 
   constructor() {
-    // The Persist addon will attempt to load from localStorage first.
-    // If not found, or if loading fails, it will use this initial state.
+    // The PersistencePlugin will automatically restore state from localStorage
+    // If not found, it will use this initial state
     super(initialSettings);
-    console.log('PersistentSettingsCubit CONSTRUCTED. Initial state (after potential load):', this.state);
+    console.log('PersistentSettingsCubit initialized. Current state:', this.state);
   }
 
   toggleTheme = () => {
@@ -48,12 +47,19 @@ export class PersistentSettingsCubit extends Cubit<SettingsState> {
 
   setUserName = (name: string) => {
     this.patch({ userName: name });
-  }
+  };
 
   resetToDefaults = () => {
-    this.emit(initialSettings); // This will also be persisted
+    this.emit(initialSettings);
     console.log('Settings reset to defaults and persisted.');
-  }
+  };
 
-  // No onDispose needed here for linter sanity
-} 
+  // Method to clear persisted data
+  clearPersistedData = async () => {
+    const plugin = this.getPlugin('persistence') as PersistencePlugin<SettingsState>;
+    if (plugin) {
+      await plugin.clear();
+      console.log('Persisted data cleared from storage');
+    }
+  };
+}
