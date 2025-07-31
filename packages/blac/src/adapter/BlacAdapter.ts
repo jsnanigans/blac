@@ -1,6 +1,6 @@
 import { Blac } from '../Blac';
 import { BlocBase } from '../BlocBase';
-import { BlocConstructor, BlocState, InferPropsFromGeneric } from '../types';
+import { BlocConstructor, BlocState } from '../types';
 import { generateUUID } from '../utils/uuid';
 import { generateInstanceIdFromProps } from '../utils/generateInstanceId';
 import { ConsumerTracker, DependencyArray } from './ConsumerTracker';
@@ -131,7 +131,7 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
     }
 
     this.blocInstance = Blac.instance.getBloc<B>(this.blocConstructor, {
-      props: this.options?.staticProps,
+      constructorParams: this.options?.staticProps,
       id: instanceId,
       instanceRef: this.id,
     });
@@ -143,7 +143,6 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
       id: this.id,
       fn: (
         newState: BlocState<InstanceType<B>>,
-        oldState: BlocState<InstanceType<B>>,
       ) => {
         // Case 1: Manual dependencies provided
         if (this.isUsingDependencies && this.options?.dependencies) {

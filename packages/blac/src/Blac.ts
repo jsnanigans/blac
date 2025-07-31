@@ -4,7 +4,6 @@ import {
   BlocConstructor,
   BlocHookDependencyArrayFn,
   BlocState,
-  InferPropsFromGeneric,
 } from './types';
 import { SystemPluginRegistry } from './plugins/SystemPluginRegistry';
 
@@ -25,7 +24,7 @@ export interface BlacConfig {
 export interface GetBlocOptions<B extends BlocBase<unknown>> {
   id?: string;
   selector?: BlocHookDependencyArrayFn<BlocState<B>>;
-  props?: InferPropsFromGeneric<B>;
+  constructorParams?: ConstructorParameters<BlocConstructor<B>>[];
   onMount?: (bloc: B) => void;
   instanceRef?: string;
   throwIfNotFound?: boolean;
@@ -507,10 +506,9 @@ export class Blac {
     id: BlocInstanceId,
     options: GetBlocOptions<InstanceType<B>> = {},
   ): InstanceType<B> {
-    const { props, instanceRef } = options;
-    const newBloc = new blocClass(props as never) as InstanceType<B>;
+    const { constructorParams, instanceRef } = options;
+    const newBloc = new blocClass(constructorParams) as InstanceType<B>;
     newBloc._instanceRef = instanceRef;
-    newBloc.props = props || null;
     newBloc._updateId(id);
 
     // Set up disposal handler to break circular dependency
@@ -632,38 +630,6 @@ export class Blac {
   };
   static get getBloc() {
     return Blac.instance.getBloc;
-  }
-
-  /**
-   * Gets a bloc instance or throws an error if it doesn't exist
-   * @param blocClass - The bloc class to get
-   * @param options - Options including:
-   *   - id: The instance ID (defaults to class name if not provided)
-   *   - props: Properties to pass to the bloc constructor
-   *   - instanceRef: Optional reference string for the instance
-   */
-  getBlocOrThrow = <B extends BlocConstructor<any>>(
-    blocClass: B,
-    options: {
-      id?: BlocInstanceId;
-      props?: InferPropsFromGeneric<B>;
-      instanceRef?: string;
-    } = {},
-  ): InstanceType<B> => {
-    const isIsolated = (blocClass as unknown as BlocBaseAbstract).isolated;
-    const id = options.id || blocClass.name;
-
-    const registered = isIsolated
-      ? this.findIsolatedBlocInstance(blocClass, id)
-      : this.findRegisteredBlocInstance(blocClass, id);
-
-    if (registered) {
-      return registered;
-    }
-    throw new Error(`Bloc ${blocClass.name} not found`);
-  };
-  static get getBlocOrThrow() {
-    return Blac.instance.getBlocOrThrow;
   }
 
   /**

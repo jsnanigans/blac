@@ -1,6 +1,11 @@
-import { Blac, Bloc, Cubit, PropsUpdated } from '@blac/core';
+import {
+  Blac,
+  Bloc,
+  BlocConstructorParams,
+  Cubit,
+  PropsUpdated,
+} from '@blac/core';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import React from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import useBloc from '../useBloc';
 
@@ -16,20 +21,20 @@ interface SearchState {
 }
 
 class SearchBloc extends Bloc<SearchState, PropsUpdated<SearchProps>> {
+  props: BlocConstructorParams<typeof SearchBloc>;
+
   constructor(props?: SearchProps) {
     // Initialize with props
     super({
       results: props ? [`Search: ${props.query}`] : [],
       loading: false,
     });
-    this.props = props || null;
+    this.props = props;
 
     this.on(PropsUpdated<SearchProps>, (event, emit) => {
       emit({ results: [`Search: ${event.props.query}`], loading: false });
     });
   }
-
-  override props: SearchProps | null = null;
 }
 
 interface CounterProps {
@@ -41,13 +46,13 @@ interface CounterState {
   stepSize: number;
 }
 
-class CounterCubit extends Cubit<CounterState, CounterProps> {
+class CounterCubit extends Cubit<CounterState> {
   constructor(props?: CounterProps) {
     super({ count: 0, stepSize: props?.step ?? 1 });
     this.props = props || null;
   }
 
-  override props: CounterProps | null = null;
+  props: CounterProps | null = null;
 
   protected onPropsChanged(
     oldProps: CounterProps | undefined,

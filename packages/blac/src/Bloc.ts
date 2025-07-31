@@ -5,8 +5,7 @@ import { BlocEventConstraint } from './types';
 export abstract class Bloc<
   S, // State type
   A extends BlocEventConstraint = BlocEventConstraint, // Base Action/Event type with proper constraints
-  P = unknown, // Props type
-> extends BlocBase<S, P> {
+> extends BlocBase<S> {
   readonly eventHandlers: Map<
     new (...args: any[]) => A,
     (event: A, emit: (newState: S) => void) => void | Promise<void>

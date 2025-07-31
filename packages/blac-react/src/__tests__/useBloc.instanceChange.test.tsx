@@ -1,6 +1,6 @@
-import { act, renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { Cubit } from '@blac/core';
+import { BlocConstructorParams, Cubit } from '@blac/core';
 import useBloc from '../useBloc';
 
 interface CounterProps {
@@ -8,8 +8,10 @@ interface CounterProps {
   step?: number;
 }
 
-class CounterCubit extends Cubit<number, CounterProps> {
-  constructor(public override props: CounterProps | null = null) {
+class CounterCubit extends Cubit<number> {
+  props: BlocConstructorParams<typeof CounterCubit>;
+
+  constructor(props?: CounterProps) {
     super(props?.initialValue ?? 0);
   }
 

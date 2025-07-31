@@ -3,14 +3,13 @@ import {
   BlocBase,
   BlocConstructor,
   BlocState,
-  InferPropsFromGeneric,
   generateUUID,
 } from '@blac/core';
-import { useCallback, useMemo, useRef } from 'react';
+import { useMemo, useRef } from 'react';
 
 interface ExternalStoreOptions<B extends BlocBase<any>> {
   id?: string;
-  props?: InferPropsFromGeneric<B>;
+  staticProps?: ConstructorParameters<BlocConstructor<B>>[0];
   selector?: (
     currentState: BlocState<B>,
     previousState: BlocState<B>,
@@ -57,7 +56,7 @@ export default function useExternalBlocStore<
       (base.constructor as any).isolated ||
       (blocConstructor as any).isolated
     ) {
-      const newBloc = new blocConstructor(options?.props) as InstanceType<B>;
+      const newBloc = new blocConstructor(options?.staticProps) as InstanceType<B>;
       const uniqueId =
         options?.id || `${blocConstructor.name}_${generateUUID()}`;
       newBloc._updateId(uniqueId);
@@ -68,7 +67,7 @@ export default function useExternalBlocStore<
     // For shared blocs, use the existing getBloc logic
     return blac.getBloc(blocConstructor, {
       id: options?.id,
-      props: options?.props,
+      constructorParams: options?.staticProps,
     });
   }, [blocConstructor, options?.id]);
 

@@ -1,6 +1,5 @@
-import { Blac, Bloc, Cubit, PropsUpdated } from '@blac/core';
-import { act, renderHook, waitFor } from '@testing-library/react';
-import React from 'react';
+import { Blac, Cubit } from '@blac/core';
+import { renderHook } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import useBloc from '../useBloc';
 
@@ -16,9 +15,12 @@ interface UserDetailsState {
   page: number;
 }
 
-class UserDetailsCubit extends Cubit<UserDetailsState, UserDetailsProps> {
+class UserDetailsCubit extends Cubit<UserDetailsState> {
+  props: ConstructorParameters<typeof UserDetailsCubit>[0];
+
   constructor(props: UserDetailsProps) {
     super({ user: null, loading: false, page: props.page });
+    this.props = props;
   }
 
   loadUser = () => {
@@ -44,7 +46,7 @@ interface SearchState {
   loading: boolean;
 }
 
-class SearchCubit extends Cubit<SearchState, SearchProps> {
+class SearchCubit extends Cubit<SearchState> {
   constructor(props: SearchProps) {
     super({ results: [], loading: false });
   }
@@ -219,10 +221,7 @@ describe('useBloc staticProps integration', () => {
         debugInfo?: { level: string };
       }
 
-      class ConfigCubit extends Cubit<
-        { config: ConfigProps | null },
-        ConfigProps
-      > {
+      class ConfigCubit extends Cubit<{ config: ConfigProps | null }> {
         constructor(props: ConfigProps) {
           super({ config: props });
         }
@@ -263,7 +262,7 @@ describe('useBloc staticProps integration', () => {
         nullable: string | null;
       }
 
-      class OptionalCubit extends Cubit<{ data: any }, OptionalProps> {
+      class OptionalCubit extends Cubit<{ data: any }> {
         constructor(props: OptionalProps) {
           super({ data: props });
         }

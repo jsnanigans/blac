@@ -5,23 +5,8 @@ import { BlocBase } from './BlocBase';
  * A Cubit is a simpler version of a Bloc that doesn't handle events.
  * It manages state and provides methods to update it.
  * @template S - The type of state this Cubit manages
- * @template P - The type of parameters (optional, defaults to null)
  */
-export abstract class Cubit<S, P = null> extends BlocBase<S, P> {
-  /**
-   * @internal
-   * Protected method for useBloc to call
-   */
-  protected _updateProps(props: P): void {
-    const oldProps = this.props;
-    this.props = props;
-    this.onPropsChanged?.(oldProps as P | undefined, props);
-  }
-
-  /**
-   * Optional override for props handling
-   */
-  protected onPropsChanged?(oldProps: P | undefined, newProps: P): void;
+export abstract class Cubit<S> extends BlocBase<S> {
   /**
    * Updates the current state and notifies all observers of the change.
    * If the new state is identical to the current state (using Object.is),

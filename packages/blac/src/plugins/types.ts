@@ -65,7 +65,7 @@ export interface BlocPlugin<TState = any, TEvent = never> extends Plugin {
   transformEvent?(event: TEvent): TEvent | null;
 
   // Lifecycle hooks
-  onAttach?(bloc: BlocBase<TState, any>): void;
+  onAttach?(bloc: BlocBase<TState>): void;
   onDetach?(): void;
 
   // Observation hooks

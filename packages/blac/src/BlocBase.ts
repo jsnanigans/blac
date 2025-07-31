@@ -43,9 +43,8 @@ interface BlocStaticProperties {
  *
  * @abstract This class should be extended, not instantiated directly
  * @template S The type of state managed by this Bloc
- * @template P The type of props that can be passed during instance creation (optional)
  */
-export abstract class BlocBase<S, P = unknown> {
+export abstract class BlocBase<S> {
   public uid = generateUUID();
   /**
    * When true, every consumer will receive its own unique instance of this Bloc.
@@ -132,12 +131,6 @@ export abstract class BlocBase<S, P = unknown> {
    * The previous state of the Bloc, maintained for comparison and history.
    */
   public _oldState: S | undefined;
-
-  /**
-   * Props passed during Bloc instance creation.
-   * Can be used to configure or parameterize the Bloc's behavior.
-   */
-  public props: P | null = null;
 
   /**
    * @internal

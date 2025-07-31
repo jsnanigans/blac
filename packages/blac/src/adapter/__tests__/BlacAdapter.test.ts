@@ -102,9 +102,9 @@ describe('BlacAdapter', () => {
     });
 
     it('should pass staticProps to bloc constructor', () => {
-      class PropsCubit extends Cubit<string, { initialValue: string }> {
+      class PropsCubit extends Cubit<string> {
         constructor(
-          public override props: { initialValue: string } | null = null,
+          props?: { initialValue: string },
         ) {
           super(props?.initialValue || 'default');
         }

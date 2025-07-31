@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Blac } from '../Blac';
 import { Cubit } from '../Cubit';
 import { Bloc } from '../Bloc';
@@ -6,7 +6,6 @@ import {
   BlacPlugin,
   BlocPlugin,
   PluginCapabilities,
-  ErrorContext,
 } from '../plugins';
 import { BlocBase } from '../BlocBase';
 
@@ -131,7 +130,7 @@ class TestPersistencePlugin<TState> implements BlocPlugin<TState> {
     this.saveDebounceMs = options.saveDebounceMs ?? 100;
   }
 
-  onAttach(bloc: BlocBase<TState, any>): void {
+  onAttach(bloc: BlocBase<TState>): void {
     const savedData = this.storage.getItem(this.key);
     if (savedData) {
       const restoredState = JSON.parse(savedData);

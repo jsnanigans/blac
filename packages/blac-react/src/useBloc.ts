@@ -1,5 +1,4 @@
 import {
-  AdapterOptions,
   BlacAdapter,
   BlocBase,
   BlocConstructor,
