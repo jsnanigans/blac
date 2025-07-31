@@ -6,20 +6,13 @@ import {
   BlocState,
 } from './types';
 import { SystemPluginRegistry } from './plugins/SystemPluginRegistry';
-import {
-  BlacError,
-  ErrorCategory,
-  ErrorSeverity,
-  BlacErrorContext,
-} from './errors/BlacError';
+import { BlacError, ErrorCategory, ErrorSeverity } from './errors/BlacError';
 import { ErrorManager } from './errors/ErrorManager';
 
 /**
  * Configuration options for the Blac instance
  */
 export interface BlacConfig {
-  /** Whether to expose the Blac instance globally */
-  exposeBlacInstance?: boolean;
   /**
    * Whether to enable proxy dependency tracking for automatic re-render optimization.
    * When false, state changes always cause re-renders unless dependencies are manually specified.
@@ -118,7 +111,6 @@ export class Blac {
 
   /** Private static configuration */
   private static _config: BlacConfig = {
-    exposeBlacInstance: false,
     proxyDependencyTracking: true,
   };
 
@@ -140,18 +132,6 @@ export class Blac {
     ) {
       const error = new BlacError(
         'BlacConfig.proxyDependencyTracking must be a boolean',
-        ErrorCategory.VALIDATION,
-        ErrorSeverity.FATAL,
-      );
-      this.instance.errorManager.handle(error);
-    }
-
-    if (
-      config.exposeBlacInstance !== undefined &&
-      typeof config.exposeBlacInstance !== 'boolean'
-    ) {
-      const error = new BlacError(
-        'BlacConfig.exposeBlacInstance must be a boolean',
         ErrorCategory.VALIDATION,
         ErrorSeverity.FATAL,
       );

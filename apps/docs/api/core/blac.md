@@ -61,19 +61,17 @@ interface BlacConfig {
   enableWarn?: boolean;
   enableError?: boolean;
   proxyDependencyTracking?: boolean;
-  exposeBlacInstance?: boolean;
 }
 ```
 
 #### Configuration Options
 
-| Option                    | Type      | Default | Description                                 |
-| ------------------------- | --------- | ------- | ------------------------------------------- |
-| `enableLog`               | `boolean` | `false` | Enable console logging                      |
-| `enableWarn`              | `boolean` | `true`  | Enable warning messages                     |
-| `enableError`             | `boolean` | `true`  | Enable error messages                       |
-| `proxyDependencyTracking` | `boolean` | `true`  | Enable automatic render optimization        |
-| `exposeBlacInstance`      | `boolean` | `false` | Expose Blac instance globally for debugging |
+| Option                    | Type      | Default | Description                          |
+| ------------------------- | --------- | ------- | ------------------------------------ |
+| `enableLog`               | `boolean` | `false` | Enable console logging               |
+| `enableWarn`              | `boolean` | `true`  | Enable warning messages              |
+| `enableError`             | `boolean` | `true`  | Enable error messages                |
+| `proxyDependencyTracking` | `boolean` | `true`  | Enable automatic render optimization |
 
 Example:
 
@@ -81,7 +79,6 @@ Example:
 Blac.setConfig({
   enableLog: true,
   proxyDependencyTracking: true,
-  exposeBlacInstance: process.env.NODE_ENV === 'development',
 });
 ```
 
@@ -372,18 +369,6 @@ class Blac {
 ```
 
 ## Debugging
-
-### Global Access
-
-When `exposeBlacInstance` is enabled:
-
-```typescript
-Blac.setConfig({ exposeBlacInstance: true });
-
-// Access from browser console
-window.Blac.get(CounterCubit);
-window.Blac.instances; // View all instances
-```
 
 ### Instance Inspection
 

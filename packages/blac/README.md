@@ -36,9 +36,6 @@ import { Blac } from '@blac/core';
 Blac.setConfig({
   // Enable/disable automatic dependency tracking for optimized re-renders
   proxyDependencyTracking: true, // default: true
-
-  // Expose Blac instance globally for debugging
-  exposeBlacInstance: false, // default: false
 });
 
 // Read current configuration
@@ -49,8 +46,6 @@ console.log(config.proxyDependencyTracking); // true
 ### Configuration Options
 
 - **`proxyDependencyTracking`**: When enabled (default), BlaC automatically tracks which state properties your components access and only triggers re-renders when those specific properties change. Disable this for simpler behavior where any state change triggers re-renders.
-
-- **`exposeBlacInstance`**: When enabled, exposes the BlaC instance globally (useful for debugging). Not recommended for production.
 
 ## Testing
 

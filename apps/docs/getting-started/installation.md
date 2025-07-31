@@ -123,9 +123,6 @@ Blac.setConfig({
 
   // Control automatic render optimization
   proxyDependencyTracking: true,
-
-  // Expose Blac instance globally (for debugging)
-  exposeBlacInstance: process.env.NODE_ENV === 'development'
 });
 
 // Then render your app

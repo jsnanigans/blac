@@ -21,7 +21,6 @@ Blac.setConfig({
 // Set multiple options at once
 Blac.setConfig({
   proxyDependencyTracking: false,
-  exposeBlacInstance: true,
 });
 ```
 
@@ -40,7 +39,7 @@ Note: `Blac.config` returns a readonly copy of the configuration to prevent acci
 
 ### `proxyDependencyTracking`
 
-**Type:** `boolean`  
+**Type:** `boolean`
 **Default:** `true`
 
 Controls whether BlaC uses automatic proxy-based dependency tracking for optimized re-renders in React components.
@@ -90,37 +89,6 @@ const [state, bloc] = useBloc(UserBloc, {
 });
 ```
 
-### `exposeBlacInstance`
-
-**Type:** `boolean`  
-**Default:** `false`
-
-Controls whether the BlaC instance is exposed globally for debugging purposes.
-
-```typescript
-// Enable global instance exposure
-Blac.setConfig({ exposeBlacInstance: true });
-
-// Access instance globally (useful for debugging)
-if (window.Blac) {
-  console.log(window.Blac.getInstance().getMemoryStats());
-}
-```
-
-## Configuration Validation
-
-BlaC validates configuration values and throws descriptive errors for invalid inputs:
-
-```typescript
-try {
-  Blac.setConfig({
-    proxyDependencyTracking: 'yes' as any, // Invalid type
-  });
-} catch (error) {
-  // Error: BlacConfig.proxyDependencyTracking must be a boolean
-}
-```
-
 ## Best Practices
 
 ### 1. Configure Early
@@ -147,7 +115,6 @@ Adjust configuration based on your environment:
 ```typescript
 Blac.setConfig({
   proxyDependencyTracking: process.env.NODE_ENV === 'production',
-  exposeBlacInstance: process.env.NODE_ENV === 'development',
 });
 ```
 

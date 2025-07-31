@@ -84,9 +84,6 @@ import { Blac } from '@blac/core';
 Blac.setConfig({
   // Control automatic re-render optimization (default: true)
   proxyDependencyTracking: true,
-
-  // Expose Blac instance globally for debugging (default: false)
-  exposeBlacInstance: false,
 });
 ```
 

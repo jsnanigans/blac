@@ -191,7 +191,7 @@ describe('ProxyFactory', () => {
       expect(userName).toBe('Jane');
 
       // Array methods should work
-      const mapped = proxy.items.map((x) => x * 2);
+      const mapped = proxy.items.map((x: number) => x * 2);
       expect(mapped).toEqual([2, 4, 6]);
     });
 

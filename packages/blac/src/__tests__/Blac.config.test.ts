@@ -7,7 +7,6 @@ describe('Blac.config', () => {
   beforeEach(() => {
     // Reset to default config before each test
     Blac.setConfig({
-      exposeBlacInstance: false,
       proxyDependencyTracking: true,
     });
   });
@@ -20,7 +19,6 @@ describe('Blac.config', () => {
   describe('setConfig', () => {
     it('should have default configuration', () => {
       expect(Blac.config).toEqual({
-        exposeBlacInstance: false,
         proxyDependencyTracking: true,
       });
     });
@@ -29,17 +27,18 @@ describe('Blac.config', () => {
       Blac.setConfig({ proxyDependencyTracking: false });
 
       expect(Blac.config).toEqual({
-        exposeBlacInstance: false,
         proxyDependencyTracking: false,
       });
     });
 
     it('should merge configuration properly', () => {
-      Blac.setConfig({ exposeBlacInstance: true });
+      // First set to false
       Blac.setConfig({ proxyDependencyTracking: false });
 
+      // Then set empty config - should keep false
+      Blac.setConfig({});
+
       expect(Blac.config).toEqual({
-        exposeBlacInstance: true,
         proxyDependencyTracking: false,
       });
     });
@@ -48,12 +47,6 @@ describe('Blac.config', () => {
       expect(() => {
         Blac.setConfig({ proxyDependencyTracking: 'true' as any });
       }).toThrow('BlacConfig.proxyDependencyTracking must be a boolean');
-    });
-
-    it('should throw error for invalid exposeBlacInstance type', () => {
-      expect(() => {
-        Blac.setConfig({ exposeBlacInstance: 1 as any });
-      }).toThrow('BlacConfig.exposeBlacInstance must be a boolean');
     });
 
     it('should return a copy of config, not the original', () => {
