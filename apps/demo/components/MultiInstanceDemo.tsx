@@ -5,8 +5,8 @@ import { Button } from './ui/Button';
 
 const CounterInstance: React.FC<{ id: string; initialCount?: number }> = ({ id, initialCount }) => {
   const [state, cubit] = useBloc(CounterCubit, {
-    id: `multiInstanceDemo-${id}`,
-    props: { initialCount: initialCount ?? 0 },
+    instanceId: `multiInstanceDemo-${id}`,
+    staticProps: { initialCount: initialCount ?? 0 },
   });
 
   return (
@@ -28,8 +28,8 @@ const MultiInstanceDemo: React.FC = () => {
       <CounterInstance id="gamma" />
       <CounterInstance id="gamma" />
       <p className="text-xs text-muted-foreground mt-2">
-        Each counter above uses the same `CounterCubit` class but is provided a unique `id` 
-        via `useBloc(CounterCubit, &#123; id: 'unique-id' &#125;)`. This ensures they maintain separate states.
+        Each counter above uses the same `CounterCubit` class but is provided a unique `instanceId` 
+        via `useBloc(CounterCubit, &#123; instanceId: 'unique-id' &#125;)`. This ensures they maintain separate states.
       </p>
     </div>
   );

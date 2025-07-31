@@ -9,6 +9,7 @@ export * from './events';
 // Utilities
 export * from './utils/uuid';
 export * from './utils/shallowEqual';
+export * from './utils/generateInstanceId';
 
 // Test utilities
 export * from './testing';

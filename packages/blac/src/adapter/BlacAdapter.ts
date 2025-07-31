@@ -1,16 +1,15 @@
 import { Blac } from '../Blac';
-import { BlocBase, BlocLifecycleState } from '../BlocBase';
+import { BlocBase } from '../BlocBase';
 import { BlocConstructor, BlocState, InferPropsFromGeneric } from '../types';
-import { PropsUpdated } from '../events';
 import { generateUUID } from '../utils/uuid';
-import { shallowEqual } from '../utils/shallowEqual';
+import { generateInstanceIdFromProps } from '../utils/generateInstanceId';
 import { ConsumerTracker, DependencyArray } from './ConsumerTracker';
 import { ProxyFactory } from './ProxyFactory';
 
 export interface AdapterOptions<B extends BlocBase<any>> {
-  id?: string;
+  instanceId?: string;
   dependencies?: (bloc: B) => unknown[];
-  props?: any;
+  staticProps?: any;
   onMount?: (bloc: B) => void;
   onUnmount?: (bloc: B) => void;
 }
@@ -27,10 +26,6 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
 
   // Core components
   private consumerTracker: ConsumerTracker;
-
-  // Props ownership tracking
-  private static propsOwners = new WeakMap<BlocBase<any>, string>();
-  private lastProps?: any;
 
   unmountTime: number = 0;
   mountTime: number = 0;
@@ -64,11 +59,6 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
     // Initialize dependency values if using dependencies
     if (this.isUsingDependencies && options?.dependencies) {
       this.dependencyValues = options.dependencies(this.blocInstance);
-    }
-
-    // Handle initial props if provided
-    if (options?.props !== undefined) {
-      this.updateProps(options.props);
     }
   }
 
@@ -129,9 +119,20 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
   };
 
   updateBlocInstance(): InstanceType<B> {
+    // Determine the instance ID
+    let instanceId = this.options?.instanceId;
+
+    // If no explicit instanceId provided but staticProps exist, generate from them
+    if (!instanceId && this.options?.staticProps) {
+      const generatedId = generateInstanceIdFromProps(this.options.staticProps);
+      if (generatedId) {
+        instanceId = generatedId;
+      }
+    }
+
     this.blocInstance = Blac.instance.getBloc<B>(this.blocConstructor, {
-      props: this.options?.props,
-      id: this.options?.id,
+      props: this.options?.staticProps,
+      id: instanceId,
       instanceRef: this.id,
     });
     return this.blocInstance;
@@ -157,13 +158,13 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
           }
 
           this.dependencyValues = newValues;
-        } 
+        }
         // Case 2: Proxy tracking disabled globally (and no manual dependencies)
         else if (!Blac.config.proxyDependencyTracking) {
           // Always trigger re-render when proxy tracking is disabled
           options.onChange();
           return;
-        } 
+        }
         // Case 3: Proxy tracking enabled (default behavior)
         else {
           // Check if any tracked values have changed (proxy-based tracking)
@@ -221,10 +222,7 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
     this.consumerTracker.unregister(this.componentRef.current);
     this.blocInstance._removeConsumer(this.id);
 
-    // Clear ownership if we own this bloc
-    if (BlacAdapter.propsOwners.get(this.blocInstance) === this.id) {
-      BlacAdapter.propsOwners.delete(this.blocInstance);
-    }
+    // No ownership tracking needed anymore
 
     // Call onUnmount callback
     if (this.options?.onUnmount) {
@@ -267,45 +265,6 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
   // Expose calledOnMount for backward compatibility
   get calledOnMount(): boolean {
     return this.hasMounted;
-  }
-
-  updateProps(props: any): void {
-    const bloc = this.blocInstance;
-    
-    // Check ownership
-    if (!BlacAdapter.propsOwners.has(bloc)) {
-      // First adapter with props becomes the owner
-      BlacAdapter.propsOwners.set(bloc, this.id);
-    }
-    
-    if (BlacAdapter.propsOwners.get(bloc) !== this.id) {
-      Blac.warn(
-        `[BlacAdapter] Attempted to set props on ${bloc.constructor.name} from non-owner adapter`
-      );
-      return;
-    }
-    
-    // Disposal safety
-    if ((bloc as any)._disposalState === BlocLifecycleState.DISPOSED ||
-        (bloc as any)._disposalState === BlocLifecycleState.DISPOSING) {
-      return;
-    }
-    
-    // Check if props have changed
-    if (shallowEqual(this.lastProps, props)) {
-      return;
-    }
-    
-    // Update props based on bloc type
-    if ('add' in bloc && typeof bloc.add === 'function') {
-      // Bloc: dispatch PropsUpdated event
-      (bloc as any).add(new PropsUpdated(props));
-    } else if ('_updateProps' in bloc && typeof (bloc as any)._updateProps === 'function') {
-      // Cubit: direct props update
-      (bloc as any)._updateProps(props);
-    }
-    
-    this.lastProps = props;
   }
 
   private hasDependencyValuesChanged(

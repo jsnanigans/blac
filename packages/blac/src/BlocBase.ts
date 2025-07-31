@@ -555,14 +555,18 @@ export abstract class BlocBase<S, P = unknown> {
     } catch (error) {
       this._plugins.notifyError(error as Error, {
         phase: 'state-change',
-        operation: 'transformState'
+        operation: 'transformState',
       });
       // Continue with original state if transformation fails
     }
 
     if (this._batchingEnabled) {
       // When batching, just accumulate the updates
-      this._pendingUpdates.push({ newState: transformedState, oldState, action });
+      this._pendingUpdates.push({
+        newState: transformedState,
+        oldState,
+        action,
+      });
 
       // Update internal state for consistency
       this._oldState = oldState;

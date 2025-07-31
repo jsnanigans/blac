@@ -4,6 +4,7 @@ import {
   BlocBase,
   BlocConstructor,
   BlocState,
+  generateInstanceIdFromProps,
 } from '@blac/core';
 import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
 
@@ -21,8 +22,8 @@ type HookTypes<B extends BlocConstructor<BlocBase<any>>> = [
 function useBloc<B extends BlocConstructor<BlocBase<any>>>(
   blocConstructor: B,
   options?: {
-    props?: ConstructorParameters<B>[0];
-    id?: string;
+    staticProps?: ConstructorParameters<B>[0];
+    instanceId?: string;
     dependencies?: (bloc: InstanceType<B>) => unknown[];
     onMount?: (bloc: InstanceType<B>) => void;
     onUnmount?: (bloc: InstanceType<B>) => void;
@@ -34,7 +35,21 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
 
   const componentRef = useRef<object>({});
 
-  // Track adapter creation
+  // Pass through options
+  const normalizedOptions = options;
+
+  // Generate instance id from static props if needed
+  const instanceKey = useMemo(() => {
+    if (normalizedOptions?.instanceId) {
+      return normalizedOptions.instanceId;
+    }
+    if (normalizedOptions?.staticProps) {
+      return generateInstanceIdFromProps(normalizedOptions.staticProps) || null;
+    }
+    return null;
+  }, [normalizedOptions?.instanceId, normalizedOptions?.staticProps]);
+
+  // Track adapter creation - recreate when instanceId/staticProps change
   const adapter = useMemo(() => {
     const newAdapter = new BlacAdapter<B>(
       {
@@ -42,36 +57,37 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
         blocConstructor,
       },
       {
-        id: options?.id,
-        dependencies: options?.dependencies,
-        props: options?.props,
-        onMount: options?.onMount,
-        onUnmount: options?.onUnmount,
+        instanceId: normalizedOptions?.instanceId,
+        dependencies: normalizedOptions?.dependencies,
+        staticProps: normalizedOptions?.staticProps,
+        onMount: normalizedOptions?.onMount,
+        onUnmount: normalizedOptions?.onUnmount,
       },
     );
     return newAdapter;
-  }, []);
+  }, [blocConstructor, instanceKey]); // Recreate adapter when instance key changes
 
   // Reset tracking at the start of each render to ensure we only track
   // properties accessed during the current render
   adapter.resetConsumerTracking();
 
-  // Track options changes and update props
+  // Update adapter options when they change (except instanceId/staticProps which recreate the adapter)
   const optionsChangeCount = useRef(0);
   useEffect(() => {
     optionsChangeCount.current++;
     adapter.options = {
-      id: options?.id,
-      dependencies: options?.dependencies,
-      props: options?.props,
-      onMount: options?.onMount,
-      onUnmount: options?.onUnmount,
+      instanceId: normalizedOptions?.instanceId,
+      dependencies: normalizedOptions?.dependencies,
+      staticProps: normalizedOptions?.staticProps,
+      onMount: normalizedOptions?.onMount,
+      onUnmount: normalizedOptions?.onUnmount,
     };
-
-    if (options?.props !== undefined) {
-      adapter.updateProps(options.props);
-    }
-  }, [options?.props, options?.id, options?.dependencies, options?.onMount, options?.onUnmount]);
+  }, [
+    adapter,
+    normalizedOptions?.dependencies,
+    normalizedOptions?.onMount,
+    normalizedOptions?.onUnmount,
+  ]);
 
   // Register as consumer and handle lifecycle
   const mountEffectCount = useRef(0);
@@ -82,7 +98,7 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
     return () => {
       adapter.unmount();
     };
-  }, [adapter.blocInstance]);
+  }, [adapter]);
 
   // Subscribe to state changes using useSyncExternalStore
   const subscribeMemoCount = useRef(0);
@@ -102,7 +118,7 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
         unsubscribe();
       };
     };
-  }, [adapter.blocInstance]);
+  }, [adapter]);
 
   const snapshotCount = useRef(0);
   const serverSnapshotCount = useRef(0);
@@ -138,7 +154,7 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
     blocMemoCount.current++;
     const proxyBloc = adapter.getProxyBlocInstance();
     return proxyBloc;
-  }, [adapter.blocInstance]);
+  }, [adapter]);
 
   // Mark consumer as rendered after each render
   useEffect(() => {

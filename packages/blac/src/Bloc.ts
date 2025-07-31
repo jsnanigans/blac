@@ -63,22 +63,22 @@ export abstract class Bloc<
       console.error('Error transforming event:', error);
       // Continue with original event if transformation fails
     }
-    
+
     // If event was cancelled by plugin, don't process it
     if (transformedAction === null) {
       return;
     }
-    
+
     // Notify bloc plugins of event
     try {
       (this._plugins as any).notifyEvent(transformedAction);
     } catch (error) {
       console.error('Error notifying plugins of event:', error);
     }
-    
+
     // Notify system plugins of event
     Blac.instance.plugins.notifyEventAdded(this as any, transformedAction);
-    
+
     this._eventQueue.push(transformedAction);
 
     if (!this._isProcessingEvent) {
@@ -149,13 +149,13 @@ export abstract class Bloc<
             this._plugins.notifyError(error, {
               phase: 'event-processing',
               operation: 'handler',
-              metadata: { event: action }
+              metadata: { event: action },
             });
-            
+
             Blac.instance.plugins.notifyError(error, this as any, {
               phase: 'event-processing',
               operation: 'handler',
-              metadata: { event: action }
+              metadata: { event: action },
             });
           } catch (pluginError) {
             console.error('Error notifying plugins:', pluginError);

@@ -22,17 +22,17 @@ class SearchBloc extends Bloc<SearchState, PropsUpdated<SearchProps>> {
     // Handle prop updates as events
     this.on(PropsUpdated<SearchProps>, async (event, emit) => {
       const { query, filters } = event.props;
-      
+
       if (!query) {
         emit({ results: [], loading: false });
         return;
       }
 
       emit({ ...this.state, loading: true });
-      
+
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 500));
-      
+
       emit({
         results: [`Result for: ${query}`, ...(filters || [])],
         loading: false
@@ -91,7 +91,7 @@ class CounterCubit extends Cubit<CounterState, CounterProps> {
   increment = () => {
     const step = this.props?.step ?? 1;
     const max = this.props?.max ?? Infinity;
-    
+
     const newCount = Math.min(this.state.count + step, max);
     this.emit({ count: newCount, stepSize: step });
   };
@@ -132,19 +132,19 @@ function App() {
   return (
     <div>
       <h1>Props Example</h1>
-      
+
       {/* This component owns the SearchBloc props */}
       <SearchComponent query={searchQuery} filters={['active']} />
-      
+
       {/* This component reads the same SearchBloc but can't set props */}
       <SearchStatusReader />
-      
+
       <input
         value={searchQuery}
         onChange={e => setSearchQuery(e.target.value)}
         placeholder="Search..."
       />
-      
+
       <Counter step={5} max={100} />
     </div>
   );
@@ -153,7 +153,7 @@ function App() {
 function SearchStatusReader() {
   // Read-only consumer - constructor params but no reactive props
   const bloc = useBloc(SearchBloc, { props: { apiEndpoint: '/api/search' } });
-  
+
   return <p>Total results: {bloc.state.results.length}</p>;
 }
 
@@ -162,7 +162,7 @@ function SearchStatusReader() {
 
 class IsolatedCounter extends Cubit<CounterState, CounterProps> {
   static isolated = true; // Each component gets its own instance
-  
+
   constructor() {
     super({ count: 0, stepSize: 1 });
   }

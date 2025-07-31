@@ -1,4 +1,9 @@
-import { BlacPlugin, PluginRegistry, PluginMetrics, ErrorContext } from './types';
+import {
+  BlacPlugin,
+  PluginRegistry,
+  PluginMetrics,
+  ErrorContext,
+} from './types';
 import { BlocBase } from '../BlocBase';
 import { Bloc } from '../Bloc';
 
@@ -32,7 +37,9 @@ export class SystemPluginRegistry implements PluginRegistry<BlacPlugin> {
 
     this.plugins.delete(pluginName);
     this.metrics.delete(pluginName);
-    this.executionOrder = this.executionOrder.filter(name => name !== pluginName);
+    this.executionOrder = this.executionOrder.filter(
+      (name) => name !== pluginName,
+    );
 
     return true;
   }
@@ -48,7 +55,7 @@ export class SystemPluginRegistry implements PluginRegistry<BlacPlugin> {
    * Get all plugins in execution order
    */
   getAll(): ReadonlyArray<BlacPlugin> {
-    return this.executionOrder.map(name => this.plugins.get(name)!);
+    return this.executionOrder.map((name) => this.plugins.get(name)!);
   }
 
   /**
@@ -66,7 +73,7 @@ export class SystemPluginRegistry implements PluginRegistry<BlacPlugin> {
   executeHook(
     hookName: keyof BlacPlugin,
     args: unknown[],
-    errorHandler?: (error: Error, plugin: BlacPlugin) => void
+    errorHandler?: (error: Error, plugin: BlacPlugin) => void,
   ): void {
     for (const pluginName of this.executionOrder) {
       const plugin = this.plugins.get(pluginName)!;
@@ -86,7 +93,10 @@ export class SystemPluginRegistry implements PluginRegistry<BlacPlugin> {
           errorHandler(error as Error, plugin);
         } else {
           // Default: log and continue
-          console.error(`Plugin '${pluginName}' error in hook '${hookName as string}':`, error);
+          console.error(
+            `Plugin '${pluginName}' error in hook '${hookName as string}':`,
+            error,
+          );
         }
       }
     }
@@ -125,7 +135,11 @@ export class SystemPluginRegistry implements PluginRegistry<BlacPlugin> {
   /**
    * Notify plugins of state change
    */
-  notifyStateChanged(bloc: BlocBase<any>, previousState: any, currentState: any): void {
+  notifyStateChanged(
+    bloc: BlocBase<any>,
+    previousState: any,
+    currentState: any,
+  ): void {
     this.executeHook('onStateChanged', [bloc, previousState, currentState]);
   }
 
@@ -139,7 +153,11 @@ export class SystemPluginRegistry implements PluginRegistry<BlacPlugin> {
   /**
    * Notify plugins of errors
    */
-  notifyError(error: Error, bloc: BlocBase<unknown>, context: ErrorContext): void {
+  notifyError(
+    error: Error,
+    bloc: BlocBase<unknown>,
+    context: ErrorContext,
+  ): void {
     this.executeHook('onError', [error, bloc, context], (hookError, plugin) => {
       // Double fault protection - if error handler fails, just log
       console.error(`Plugin '${plugin.name}' error handler failed:`, hookError);
@@ -157,12 +175,16 @@ export class SystemPluginRegistry implements PluginRegistry<BlacPlugin> {
     this.metrics.set(pluginName, new Map());
   }
 
-  private recordSuccess(pluginName: string, hookName: string, startTime: number): void {
+  private recordSuccess(
+    pluginName: string,
+    hookName: string,
+    startTime: number,
+  ): void {
     const pluginMetrics = this.metrics.get(pluginName)!;
     const hookMetrics = pluginMetrics.get(hookName) || {
       executionTime: 0,
       executionCount: 0,
-      errorCount: 0
+      errorCount: 0,
     };
 
     const executionTime = performance.now() - startTime;
@@ -171,22 +193,26 @@ export class SystemPluginRegistry implements PluginRegistry<BlacPlugin> {
       ...hookMetrics,
       executionTime: hookMetrics.executionTime + executionTime,
       executionCount: hookMetrics.executionCount + 1,
-      lastExecutionTime: executionTime
+      lastExecutionTime: executionTime,
     });
   }
 
-  private recordError(pluginName: string, hookName: string, error: Error): void {
+  private recordError(
+    pluginName: string,
+    hookName: string,
+    error: Error,
+  ): void {
     const pluginMetrics = this.metrics.get(pluginName)!;
     const hookMetrics = pluginMetrics.get(hookName) || {
       executionTime: 0,
       executionCount: 0,
-      errorCount: 0
+      errorCount: 0,
     };
 
     pluginMetrics.set(hookName, {
       ...hookMetrics,
       errorCount: hookMetrics.errorCount + 1,
-      lastError: error
+      lastError: error,
     });
   }
 }

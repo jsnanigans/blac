@@ -11,7 +11,7 @@ interface UserProfileDemoProps {
 }
 
 const UserProfileDemo: React.FC<UserProfileDemoProps> = (props) => {
-  const [state, bloc] = useBloc(UserProfileBloc, { props });
+  const [state, bloc] = useBloc(UserProfileBloc, { staticProps: props });
 
   return (
     <div className="space-y-6">

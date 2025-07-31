@@ -17,7 +17,7 @@ export abstract class Cubit<S, P = null> extends BlocBase<S, P> {
     this.props = props;
     this.onPropsChanged?.(oldProps as P | undefined, props);
   }
-  
+
   /**
    * Optional override for props handling
    */

@@ -127,13 +127,17 @@ export class Blac {
    */
   static setConfig(config: Partial<BlacConfig>): void {
     // Validate config
-    if (config.proxyDependencyTracking !== undefined &&
-        typeof config.proxyDependencyTracking !== 'boolean') {
+    if (
+      config.proxyDependencyTracking !== undefined &&
+      typeof config.proxyDependencyTracking !== 'boolean'
+    ) {
       throw new Error('BlacConfig.proxyDependencyTracking must be a boolean');
     }
 
-    if (config.exposeBlacInstance !== undefined &&
-        typeof config.exposeBlacInstance !== 'boolean') {
+    if (
+      config.exposeBlacInstance !== undefined &&
+      typeof config.exposeBlacInstance !== 'boolean'
+    ) {
       throw new Error('BlacConfig.exposeBlacInstance must be a boolean');
     }
 
@@ -219,9 +223,7 @@ export class Blac {
    * @param args - Additional arguments
    */
   warn = (message: string, ...args: unknown[]) => {
-    if (Blac.enableLog) {
-      // Logging disabled - console.warn removed
-    }
+    console.warn(message, ...args);
   };
   static get warn() {
     return Blac.instance.warn;
@@ -830,6 +832,4 @@ export class Blac {
       }
     }
   }
-
-
 }

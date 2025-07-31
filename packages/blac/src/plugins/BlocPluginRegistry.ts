@@ -3,11 +3,13 @@ import { BlocPlugin, PluginRegistry, ErrorContext } from './types';
 /**
  * Registry for bloc-specific plugins
  */
-export class BlocPluginRegistry<TState, TEvent = never> implements PluginRegistry<BlocPlugin<TState, TEvent>> {
+export class BlocPluginRegistry<TState, TEvent = never>
+  implements PluginRegistry<BlocPlugin<TState, TEvent>>
+{
   private plugins = new Map<string, BlocPlugin<TState, TEvent>>();
   private executionOrder: string[] = [];
   private attached = false;
-  
+
   /**
    * Add a bloc plugin
    */
@@ -15,23 +17,23 @@ export class BlocPluginRegistry<TState, TEvent = never> implements PluginRegistr
     if (this.plugins.has(plugin.name)) {
       throw new Error(`Plugin '${plugin.name}' is already registered`);
     }
-    
+
     // Validate capabilities
     if (plugin.capabilities) {
       this.validateCapabilities(plugin);
     }
-    
+
     this.plugins.set(plugin.name, plugin);
     this.executionOrder.push(plugin.name);
   }
-  
+
   /**
    * Remove a bloc plugin
    */
   remove(pluginName: string): boolean {
     const plugin = this.plugins.get(pluginName);
     if (!plugin) return false;
-    
+
     // Call onDetach if attached
     if (this.attached && plugin.onDetach) {
       try {
@@ -40,27 +42,29 @@ export class BlocPluginRegistry<TState, TEvent = never> implements PluginRegistr
         console.error(`Plugin '${pluginName}' error in onDetach:`, error);
       }
     }
-    
+
     this.plugins.delete(pluginName);
-    this.executionOrder = this.executionOrder.filter(name => name !== pluginName);
-    
+    this.executionOrder = this.executionOrder.filter(
+      (name) => name !== pluginName,
+    );
+
     return true;
   }
-  
+
   /**
    * Get a plugin by name
    */
   get(pluginName: string): BlocPlugin<TState, TEvent> | undefined {
     return this.plugins.get(pluginName);
   }
-  
+
   /**
    * Get all plugins in execution order
    */
   getAll(): ReadonlyArray<BlocPlugin<TState, TEvent>> {
-    return this.executionOrder.map(name => this.plugins.get(name)!);
+    return this.executionOrder.map((name) => this.plugins.get(name)!);
   }
-  
+
   /**
    * Clear all plugins
    */
@@ -77,12 +81,12 @@ export class BlocPluginRegistry<TState, TEvent = never> implements PluginRegistr
         }
       }
     }
-    
+
     this.plugins.clear();
     this.executionOrder = [];
     this.attached = false;
   }
-  
+
   /**
    * Attach all plugins to a bloc
    */
@@ -90,7 +94,7 @@ export class BlocPluginRegistry<TState, TEvent = never> implements PluginRegistr
     if (this.attached) {
       throw new Error('Plugins are already attached');
     }
-    
+
     for (const plugin of this.getAll()) {
       if (plugin.onAttach) {
         try {
@@ -102,52 +106,61 @@ export class BlocPluginRegistry<TState, TEvent = never> implements PluginRegistr
         }
       }
     }
-    
+
     this.attached = true;
   }
-  
+
   /**
    * Transform state through all plugins
    */
   transformState(previousState: TState, nextState: TState): TState {
     let transformedState = nextState;
-    
+
     for (const plugin of this.getAll()) {
       if (plugin.transformState && this.canTransformState(plugin)) {
         try {
-          transformedState = plugin.transformState(previousState, transformedState);
+          transformedState = plugin.transformState(
+            previousState,
+            transformedState,
+          );
         } catch (error) {
-          console.error(`Plugin '${plugin.name}' error in transformState:`, error);
+          console.error(
+            `Plugin '${plugin.name}' error in transformState:`,
+            error,
+          );
           // Continue with untransformed state
         }
       }
     }
-    
+
     return transformedState;
   }
-  
+
   /**
    * Transform event through all plugins
    */
   transformEvent(event: TEvent): TEvent | null {
     let transformedEvent: TEvent | null = event;
-    
+
     for (const plugin of this.getAll()) {
       if (transformedEvent === null) break;
-      
+
       if (plugin.transformEvent && this.canInterceptEvents(plugin)) {
         try {
           transformedEvent = plugin.transformEvent(transformedEvent);
         } catch (error) {
-          console.error(`Plugin '${plugin.name}' error in transformEvent:`, error);
+          console.error(
+            `Plugin '${plugin.name}' error in transformEvent:`,
+            error,
+          );
           // Continue with untransformed event
         }
       }
     }
-    
+
     return transformedEvent;
   }
-  
+
   /**
    * Notify plugins of state change
    */
@@ -157,12 +170,15 @@ export class BlocPluginRegistry<TState, TEvent = never> implements PluginRegistr
         try {
           plugin.onStateChange(previousState, currentState);
         } catch (error) {
-          console.error(`Plugin '${plugin.name}' error in onStateChange:`, error);
+          console.error(
+            `Plugin '${plugin.name}' error in onStateChange:`,
+            error,
+          );
         }
       }
     }
   }
-  
+
   /**
    * Notify plugins of event
    */
@@ -177,7 +193,7 @@ export class BlocPluginRegistry<TState, TEvent = never> implements PluginRegistr
       }
     }
   }
-  
+
   /**
    * Notify plugins of error
    */
@@ -192,28 +208,32 @@ export class BlocPluginRegistry<TState, TEvent = never> implements PluginRegistr
       }
     }
   }
-  
+
   private validateCapabilities(plugin: BlocPlugin<TState, TEvent>): void {
     const caps = plugin.capabilities!;
-    
+
     // Validate logical constraints
     if (caps.transformState && !caps.readState) {
-      throw new Error(`Plugin '${plugin.name}': transformState requires readState capability`);
+      throw new Error(
+        `Plugin '${plugin.name}': transformState requires readState capability`,
+      );
     }
-    
+
     if (caps.interceptEvents && !caps.readState) {
-      throw new Error(`Plugin '${plugin.name}': interceptEvents requires readState capability`);
+      throw new Error(
+        `Plugin '${plugin.name}': interceptEvents requires readState capability`,
+      );
     }
   }
-  
+
   private canReadState(plugin: BlocPlugin<TState, TEvent>): boolean {
     return !plugin.capabilities || plugin.capabilities.readState !== false;
   }
-  
+
   private canTransformState(plugin: BlocPlugin<TState, TEvent>): boolean {
     return !plugin.capabilities || plugin.capabilities.transformState === true;
   }
-  
+
   private canInterceptEvents(plugin: BlocPlugin<TState, TEvent>): boolean {
     return !plugin.capabilities || plugin.capabilities.interceptEvents === true;
   }

@@ -27,7 +27,7 @@ describe('Blac.config', () => {
 
     it('should update configuration with partial config', () => {
       Blac.setConfig({ proxyDependencyTracking: false });
-      
+
       expect(Blac.config).toEqual({
         exposeBlacInstance: false,
         proxyDependencyTracking: false,
@@ -37,7 +37,7 @@ describe('Blac.config', () => {
     it('should merge configuration properly', () => {
       Blac.setConfig({ exposeBlacInstance: true });
       Blac.setConfig({ proxyDependencyTracking: false });
-      
+
       expect(Blac.config).toEqual({
         exposeBlacInstance: true,
         proxyDependencyTracking: false,
@@ -59,7 +59,7 @@ describe('Blac.config', () => {
     it('should return a copy of config, not the original', () => {
       const config1 = Blac.config;
       const config2 = Blac.config;
-      
+
       expect(config1).not.toBe(config2);
       expect(config1).toEqual(config2);
     });
@@ -67,7 +67,7 @@ describe('Blac.config', () => {
     it('should not allow direct modification of config', () => {
       const config = Blac.config as any;
       config.proxyDependencyTracking = false;
-      
+
       // Original config should remain unchanged
       expect(Blac.config.proxyDependencyTracking).toBe(true);
     });
@@ -78,7 +78,7 @@ describe('Blac.config', () => {
       const testConfig: Partial<BlacConfig> = {
         proxyDependencyTracking: false,
       };
-      
+
       Blac.setConfig(testConfig);
       expect(Blac.config.proxyDependencyTracking).toBe(false);
     });

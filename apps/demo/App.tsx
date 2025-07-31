@@ -17,6 +17,7 @@ import TodoBlocDemo from './components/TodoBlocDemo';
 import { Button } from './components/ui/Button';
 import UserProfileDemo from './components/UserProfileDemo';
 import PersistenceDemo from './components/PersistenceDemo';
+import StaticPropsDemo from './components/StaticPropsDemo';
 import {
   APP_CONTAINER_STYLE, // For potentially lighter description text or default card text
   COLOR_PRIMARY_ACCENT,
@@ -102,6 +103,7 @@ function App() {
     keepAlive: showDefault,
     sharedCounterTest: showDefault,
     persistence: showDefault,
+    staticProps: showDefault,
   });
 
   return (
@@ -258,6 +260,15 @@ function App() {
           setShow={() => setShow({ ...show, persistence: !show.persistence })}
         >
           <PersistenceDemo />
+        </DemoCard>
+
+        <DemoCard
+          title="Static Props & Auto-Generated Instance IDs"
+          description="Demonstrates the new staticProps API with automatic instance ID generation from primitive values."
+          show={show.staticProps}
+          setShow={() => setShow({ ...show, staticProps: !show.staticProps })}
+        >
+          <StaticPropsDemo />
         </DemoCard>
       </main>
 

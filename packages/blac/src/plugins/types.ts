@@ -5,7 +5,11 @@ import { Bloc } from '../Bloc';
  * Error context provided to error handlers
  */
 export interface ErrorContext {
-  readonly phase: 'initialization' | 'state-change' | 'event-processing' | 'disposal';
+  readonly phase:
+    | 'initialization'
+    | 'state-change'
+    | 'event-processing'
+    | 'disposal';
   readonly operation: string;
   readonly metadata?: Record<string, unknown>;
 }
@@ -43,7 +47,11 @@ export interface BlacPlugin extends Plugin {
   // System-wide observations
   onBlocCreated?(bloc: BlocBase<any>): void;
   onBlocDisposed?(bloc: BlocBase<any>): void;
-  onStateChanged?(bloc: BlocBase<any>, previousState: any, currentState: any): void;
+  onStateChanged?(
+    bloc: BlocBase<any>,
+    previousState: any,
+    currentState: any,
+  ): void;
   onEventAdded?(bloc: Bloc<any, any>, event: any): void;
   onError?(error: Error, bloc: BlocBase<unknown>, context: ErrorContext): void;
 }

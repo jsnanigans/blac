@@ -115,16 +115,16 @@ describe('useBloc with proxy tracking config', () => {
     it('should still respect manual dependencies when provided', () => {
       const renderSpy = vi.fn();
 
-      const { result } = renderHook(() => 
+      const { result } = renderHook(() =>
         useBloc(TestCubit, {
-          dependencies: (bloc) => [bloc.state.count]
-        })
+          dependencies: (bloc) => [bloc.state.count],
+        }),
       );
 
       // Create another hook that tracks renders
       renderHook(() => {
         const [state] = useBloc(TestCubit, {
-          dependencies: (bloc) => [bloc.state.count]
+          dependencies: (bloc) => [bloc.state.count],
         });
         renderSpy(state);
         return state;

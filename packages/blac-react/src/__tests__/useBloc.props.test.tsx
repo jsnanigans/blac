@@ -16,13 +16,20 @@ interface SearchState {
 }
 
 class SearchBloc extends Bloc<SearchState, PropsUpdated<SearchProps>> {
-  constructor(private config: { apiEndpoint: string }) {
-    super({ results: [], loading: false });
+  constructor(props?: SearchProps) {
+    // Initialize with props
+    super({
+      results: props ? [`Search: ${props.query}`] : [],
+      loading: false,
+    });
+    this.props = props || null;
 
     this.on(PropsUpdated<SearchProps>, (event, emit) => {
       emit({ results: [`Search: ${event.props.query}`], loading: false });
     });
   }
+
+  override props: SearchProps | null = null;
 }
 
 interface CounterProps {
@@ -35,11 +42,17 @@ interface CounterState {
 }
 
 class CounterCubit extends Cubit<CounterState, CounterProps> {
-  constructor() {
-    super({ count: 0, stepSize: 1 });
+  constructor(props?: CounterProps) {
+    super({ count: 0, stepSize: props?.step ?? 1 });
+    this.props = props || null;
   }
 
-  protected onPropsChanged(oldProps: CounterProps | undefined, newProps: CounterProps): void {
+  override props: CounterProps | null = null;
+
+  protected onPropsChanged(
+    oldProps: CounterProps | undefined,
+    newProps: CounterProps,
+  ): void {
     if (oldProps?.step !== newProps.step) {
       this.emit({ ...this.state, stepSize: newProps.step });
     }
@@ -47,7 +60,11 @@ class CounterCubit extends Cubit<CounterState, CounterProps> {
 
   increment = () => {
     const step = this.props?.step ?? 1;
-    this.emit({ ...this.state, count: this.state.count + step, stepSize: step });
+    this.emit({
+      ...this.state,
+      count: this.state.count + step,
+      stepSize: step,
+    });
   };
 }
 
@@ -59,65 +76,61 @@ describe('useBloc props integration', () => {
   describe('Basic props functionality', () => {
     it('should pass props to Bloc via adapter', async () => {
       const { result } = renderHook(
-        ({ query }) => useBloc(
-          SearchBloc,
-          { props: { apiEndpoint: '/api/search', query } }
-        ),
-        { initialProps: { query: 'initial' } }
+        ({ query }) => useBloc(SearchBloc, { staticProps: { query } }),
+        { initialProps: { query: 'initial' } },
       );
 
       await act(async () => {
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise((resolve) => setTimeout(resolve, 0));
       });
 
       const [state] = result.current;
       expect(state.results).toEqual(['Search: initial']);
     });
 
-    it('should update props when they change', async () => {
+    it('should create new instance when staticProps change', async () => {
       const { result, rerender } = renderHook(
-        ({ query }) => useBloc(
-          SearchBloc,
-          { props: { apiEndpoint: '/api/search', query } }
-        ),
-        { initialProps: { query: 'initial' } }
+        ({ query }) => useBloc(SearchBloc, { staticProps: { query } }),
+        { initialProps: { query: 'initial' } },
       );
 
       await act(async () => {
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise((resolve) => setTimeout(resolve, 0));
       });
 
+      const firstInstance = result.current[1];
       expect(result.current[0].results).toEqual(['Search: initial']);
 
       rerender({ query: 'updated' });
 
       await act(async () => {
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise((resolve) => setTimeout(resolve, 0));
       });
 
+      const secondInstance = result.current[1];
+      expect(secondInstance).not.toBe(firstInstance); // New instance created
       expect(result.current[0].results).toEqual(['Search: updated']);
     });
 
     it('should work with Cubit props', async () => {
       const { result } = renderHook(
         ({ step }) => {
-          const [state, cubit] = useBloc(
-            CounterCubit,
-            { props: { step } }
-          );
+          const [state, cubit] = useBloc(CounterCubit, {
+            staticProps: { step },
+          });
           // Access count to ensure it's tracked
           void state.count;
           return [state, cubit];
         },
-        { initialProps: { step: 1 } }
+        { initialProps: { step: 1 } },
       );
 
       // Wait for props to be set
       await act(async () => {
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise((resolve) => setTimeout(resolve, 0));
       });
 
-      const [state, cubit] = result.current;
+      const [state, cubit] = result.current as [CounterState, CounterCubit];
       expect(state.stepSize).toBe(1);
 
       act(() => {
@@ -126,137 +139,141 @@ describe('useBloc props integration', () => {
 
       // Wait for React to re-render with new state
       await waitFor(() => {
-        expect(result.current[0].count).toBe(1);
+        expect((result.current[0] as CounterState).count).toBe(1);
       });
     });
 
-    it('should update Cubit props reactively', async () => {
+    it('should create new Cubit instance when staticProps change', async () => {
       const { result, rerender } = renderHook(
         ({ step }) => {
-          const [state, cubit] = useBloc(
-            CounterCubit,
-            { props: { step } }
-          );
+          const [state, cubit] = useBloc(CounterCubit, {
+            staticProps: { step },
+          });
           // Access count to ensure it's tracked
           void state.count;
           return [state, cubit];
         },
-        { initialProps: { step: 1 } }
+        { initialProps: { step: 1 } },
       );
 
       // Wait for initial props to be set
       await act(async () => {
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise((resolve) => setTimeout(resolve, 0));
       });
 
-      expect(result.current[0].stepSize).toBe(1);
+      const firstInstance = result.current[1];
+      expect((result.current[0] as CounterState).stepSize).toBe(1);
 
       rerender({ step: 5 });
 
-      // Wait for props update
+      // Wait for new instance to be created
       await act(async () => {
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise((resolve) => setTimeout(resolve, 0));
       });
 
-      expect(result.current[0].stepSize).toBe(5);
+      const secondInstance = result.current[1];
+      expect(secondInstance).not.toBe(firstInstance); // New instance
+      expect((result.current[0] as CounterState).stepSize).toBe(5);
+      expect((result.current[0] as CounterState).count).toBe(0); // New instance starts at 0
 
       act(() => {
-        result.current[1].increment();
+        (result.current[1] as CounterCubit).increment();
       });
 
       // Wait for React to re-render with new state
       await waitFor(() => {
-        expect(result.current[0].count).toBe(5);
+        expect((result.current[0] as CounterState).count).toBe(5);
       });
     });
   });
 
-  describe('Props ownership', () => {
-    it('should enforce single owner for props', async () => {
-      const warnSpy = vi.spyOn(Blac, 'warn').mockImplementation(() => {});
-
-      // First hook owns props
+  describe('Instance sharing', () => {
+    it('should share instance when using same instanceId', async () => {
+      // First hook creates instance with explicit id
       const { result: result1 } = renderHook(() =>
-        useBloc(
-          SearchBloc,
-          { props: { apiEndpoint: '/api/search', query: 'owner' } }
-        )
+        useBloc(SearchBloc, {
+          staticProps: { query: 'first' },
+          instanceId: 'shared-search',
+        }),
       );
 
-      // Second hook cannot override props
+      // Second hook uses same instanceId - gets same instance
       const { result: result2 } = renderHook(() =>
-        useBloc(
-          SearchBloc,
-          { props: { apiEndpoint: '/api/search', query: 'hijacker' } }
-        )
+        useBloc(SearchBloc, {
+          staticProps: { query: 'second' }, // Different props, but same instanceId
+          instanceId: 'shared-search',
+        }),
       );
 
       await act(async () => {
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise((resolve) => setTimeout(resolve, 0));
       });
 
-      expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('non-owner adapter')
-      );
+      // Both should share the same instance (check by ID)
+      expect(result1.current[1]._id).toBe('shared-search');
+      expect(result2.current[1]._id).toBe('shared-search');
 
-      // Both should see the owner's state
-      expect(result1.current[0].results).toEqual(['Search: owner']);
-      expect(result2.current[0].results).toEqual(['Search: owner']);
-
-      warnSpy.mockRestore();
+      // Both see the state from the first instance (query: 'first')
+      expect(result1.current[0].results).toEqual(['Search: first']);
+      expect(result2.current[0].results).toEqual(['Search: first']);
     });
 
-    it('should allow read-only consumers without props', async () => {
-      // Owner with props
-      const { result: ownerResult } = renderHook(() =>
-        useBloc(
-          SearchBloc,
-          { props: { apiEndpoint: '/api/search', query: 'test' } }
-        )
+    it('should allow consumers without staticProps to share instance', async () => {
+      // First consumer with props and explicit id
+      const { result: firstResult } = renderHook(() =>
+        useBloc(SearchBloc, {
+          staticProps: { query: 'test' },
+          instanceId: 'search-instance',
+        }),
       );
 
-      // Read-only consumer without props
-      const { result: readerResult } = renderHook(() =>
-        useBloc(SearchBloc, { props: { apiEndpoint: '/api/search' } })
+      // Second consumer without props but same instanceId
+      const { result: secondResult } = renderHook(() =>
+        useBloc(SearchBloc, { instanceId: 'search-instance' }),
       );
 
       await act(async () => {
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise((resolve) => setTimeout(resolve, 0));
       });
 
-      // Both see the same state (but different object references due to proxy)
-      expect(ownerResult.current[0]).toEqual(readerResult.current[0]);
-      expect(readerResult.current[0].results).toEqual(['Search: test']);
+      // Same instance (check by ID)
+      expect(firstResult.current[1]._id).toBe('search-instance');
+      expect(secondResult.current[1]._id).toBe('search-instance');
+
+      // Both see the same state
+      expect(secondResult.current[0].results).toEqual(['Search: test']);
     });
 
-    it('should transfer ownership when owner unmounts', async () => {
+    it('should create independent instances with different staticProps', async () => {
       const { result: result1, unmount: unmount1 } = renderHook(() =>
-        useBloc(
-          SearchBloc,
-          { props: { apiEndpoint: '/api/search', query: 'first' } }
-        )
+        useBloc(SearchBloc, { staticProps: { query: 'first' } }),
       );
 
       await act(async () => {
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise((resolve) => setTimeout(resolve, 0));
       });
 
       expect(result1.current[0].results).toEqual(['Search: first']);
+      const instance1Id = result1.current[1]._id;
 
-      // Unmount first owner
-      unmount1();
-
-      // New owner can take over
+      // Create second instance with different props
       const { result: result2 } = renderHook(() =>
-        useBloc(
-          SearchBloc,
-          { props: { apiEndpoint: '/api/search', query: 'second' } }
-        )
+        useBloc(SearchBloc, { staticProps: { query: 'second' } }),
       );
 
       await act(async () => {
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise((resolve) => setTimeout(resolve, 0));
       });
+
+      expect(result2.current[0].results).toEqual(['Search: second']);
+      const instance2Id = result2.current[1]._id;
+
+      // Different instances with different auto-generated IDs
+      expect(instance1Id).not.toBe(instance2Id);
+      expect(result1.current[1]).not.toBe(result2.current[1]);
+
+      // Unmount first - second is unaffected
+      unmount1();
 
       expect(result2.current[0].results).toEqual(['Search: second']);
     });
@@ -265,17 +282,14 @@ describe('useBloc props integration', () => {
   describe('Props with other options', () => {
     it('should work with key option', async () => {
       const { result } = renderHook(() =>
-        useBloc(
-          SearchBloc,
-          {
-            id: 'custom-search',
-            props: { apiEndpoint: '/api/search', query: 'test' }
-          }
-        )
+        useBloc(SearchBloc, {
+          instanceId: 'custom-search',
+          staticProps: { query: 'test' },
+        }),
       );
 
       await act(async () => {
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise((resolve) => setTimeout(resolve, 0));
       });
 
       expect(result.current[0].results).toEqual(['Search: test']);
@@ -287,14 +301,11 @@ describe('useBloc props integration', () => {
       const onUnmount = vi.fn();
 
       const { result, unmount } = renderHook(() =>
-        useBloc(
-          SearchBloc,
-          {
-            props: { apiEndpoint: '/api/search', query: 'test' },
-            onMount,
-            onUnmount
-          }
-        )
+        useBloc(SearchBloc, {
+          staticProps: { query: 'test' },
+          onMount,
+          onUnmount,
+        }),
       );
 
       expect(onMount).toHaveBeenCalledWith(result.current[1]);
@@ -306,38 +317,43 @@ describe('useBloc props integration', () => {
 
     it('should work with manual dependencies', () => {
       const { result, rerender } = renderHook(
-        ({ step }) => useBloc(
-          CounterCubit,
-          {
-            props: { step },
-            dependencies: (cubit) => [cubit.state.count]
-          }
-        ),
-        { initialProps: { step: 1 } }
+        ({ step }) =>
+          useBloc(CounterCubit, {
+            staticProps: { step },
+            dependencies: (cubit) => [cubit.state.count],
+          }),
+        { initialProps: { step: 1 } },
       );
 
-      const [, cubit] = result.current;
+      const [, cubit] = result.current as [CounterState, CounterCubit];
 
       // Increment should trigger re-render (count is a dependency)
       act(() => {
         cubit.increment();
       });
 
-      expect(result.current[0].count).toBe(1);
+      expect((result.current[0] as CounterState).count).toBe(1);
 
-      // Changing props should also work
+      // Changing props creates new instance
       rerender({ step: 2 });
-      expect(result.current[0].stepSize).toBe(2);
+
+      // New instance has different state
+      const [newState, newCubit] = result.current as [
+        CounterState,
+        CounterCubit,
+      ];
+      expect(newCubit).not.toBe(cubit); // New instance
+      expect(newState.stepSize).toBe(2);
+      expect(newState.count).toBe(0); // New instance starts at 0
     });
   });
 
   describe('Edge cases', () => {
     it('should handle undefined props', async () => {
       const { result } = renderHook(() => {
-        const [state, cubit] = useBloc(
-          CounterCubit,
-          { props: undefined }
-        );
+        const [state, cubit] = useBloc(CounterCubit, {
+          staticProps: undefined,
+        });
         // Access count to ensure it's tracked
         void state.count;
         return [state, cubit];
@@ -345,10 +361,10 @@ describe('useBloc props integration', () => {
 
       // Wait for any effects
       await act(async () => {
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise((resolve) => setTimeout(resolve, 0));
       });
 
-      const [state, cubit] = result.current;
+      const [state, cubit] = result.current as [CounterState, CounterCubit];
       expect(state.stepSize).toBe(1);
 
       act(() => {
@@ -357,7 +373,7 @@ describe('useBloc props integration', () => {
 
       // Wait for React to re-render with new state
       await waitFor(() => {
-        expect(result.current[0].count).toBe(1); // Uses default step
+        expect((result.current[0] as CounterState).count).toBe(1); // Uses default step
       });
     });
 
@@ -367,12 +383,9 @@ describe('useBloc props integration', () => {
       const { rerender } = renderHook(
         ({ query }) => {
           renderCount++;
-          return useBloc(
-            SearchBloc,
-            { props: { apiEndpoint: '/api/search', query } }
-          );
+          return useBloc(SearchBloc, { staticProps: { query } });
         },
-        { initialProps: { query: 'test' } }
+        { initialProps: { query: 'test' } },
       );
 
       const initialRenderCount = renderCount;
@@ -386,25 +399,29 @@ describe('useBloc props integration', () => {
 
     it('should handle rapid props updates', async () => {
       const { result, rerender } = renderHook(
-        ({ query }) => useBloc(
-          SearchBloc,
-          { props: { apiEndpoint: '/api/search', query } }
-        ),
-        { initialProps: { query: 'initial' } }
+        ({ query }) => useBloc(SearchBloc, { staticProps: { query } }),
+        { initialProps: { query: 'initial' } },
       );
 
       // Wait for initial render
       await act(async () => {
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise((resolve) => setTimeout(resolve, 0));
       });
 
-      // Rapid updates
+      const firstInstance = result.current[1];
+
+      // Rapid updates - each creates a new instance
       await act(async () => {
         rerender({ query: 'update1' });
         rerender({ query: 'update2' });
         rerender({ query: 'update3' });
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await new Promise((resolve) => setTimeout(resolve, 50));
       });
+
+      const lastInstance = result.current[1];
+
+      // Different instance after updates
+      expect(lastInstance).not.toBe(firstInstance);
 
       // Should have the latest value
       expect(result.current[0].results).toEqual(['Search: update3']);

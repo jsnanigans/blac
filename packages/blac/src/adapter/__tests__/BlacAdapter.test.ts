@@ -74,7 +74,7 @@ describe('BlacAdapter', () => {
     it('should create adapter with proper initialization', () => {
       const adapter = new BlacAdapter(
         { componentRef, blocConstructor: CounterCubit },
-        { id: 'test-counter' },
+        { instanceId: 'test-counter' },
       );
 
       expect(adapter.id).toMatch(/^consumer-/);
@@ -87,21 +87,21 @@ describe('BlacAdapter', () => {
       // Create first adapter
       const adapter1 = new BlacAdapter(
         { componentRef, blocConstructor: CounterCubit },
-        { id: 'shared-counter' },
+        { instanceId: 'shared-counter' },
       );
 
       // Create second adapter with same id
       const componentRef2 = { current: {} };
       const adapter2 = new BlacAdapter(
         { componentRef: componentRef2, blocConstructor: CounterCubit },
-        { id: 'shared-counter' },
+        { instanceId: 'shared-counter' },
       );
 
       // Should share the same bloc instance
       expect(adapter1.blocInstance).toBe(adapter2.blocInstance);
     });
 
-    it('should pass props to bloc constructor', () => {
+    it('should pass staticProps to bloc constructor', () => {
       class PropsCubit extends Cubit<string, { initialValue: string }> {
         constructor(
           public override props: { initialValue: string } | null = null,
@@ -112,7 +112,7 @@ describe('BlacAdapter', () => {
 
       const adapter = new BlacAdapter(
         { componentRef, blocConstructor: PropsCubit as any },
-        { props: { initialValue: 'custom' } },
+        { staticProps: { initialValue: 'custom' } },
       );
 
       expect(adapter.blocInstance.state).toBe('custom');
