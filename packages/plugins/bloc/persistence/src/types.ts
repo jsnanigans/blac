@@ -61,6 +61,18 @@ export interface PersistenceOptions<T> extends SerializationOptions<T> {
    * Called when persistence fails
    */
   onError?: (error: Error, operation: 'save' | 'load' | 'migrate') => void;
+
+  /**
+   * Selectively persist only parts of the state
+   * Return the parts to persist, or undefined to persist everything
+   */
+  select?: (state: T) => Partial<T> | undefined;
+
+  /**
+   * Merge persisted partial state with current state
+   * Used when select is provided
+   */
+  merge?: (persisted: Partial<T>, current: T) => T;
 }
 
 /**

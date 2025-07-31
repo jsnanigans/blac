@@ -27,8 +27,9 @@ export class PersistencePlugin<TState> implements BlocPlugin<TState> {
   private serialize: (state: TState) => string;
   private deserialize: (data: string) => TState;
   private debounceMs: number;
-  private saveTimer?: any;
-  private isHydrated = false;
+  private saveTimer?: ReturnType<typeof setTimeout>;
+  private isHydrating = false;
+  private isSaving = false;
   private options: PersistenceOptions<TState>;
 
   constructor(options: PersistenceOptions<TState>) {
@@ -42,13 +43,22 @@ export class PersistencePlugin<TState> implements BlocPlugin<TState> {
   }
 
   async onAttach(bloc: BlocBase<TState>): Promise<void> {
+    if (this.isHydrating) {
+      return; // Prevent concurrent hydration
+    }
+
+    this.isHydrating = true;
+
     try {
       // Try migrations first
       if (this.options.migrations) {
         const migrated = await this.tryMigrations();
         if (migrated) {
+          // Update state directly since we're in a plugin
+          const oldState = bloc.state;
           (bloc as any)._state = migrated;
-          this.isHydrated = true;
+          // Notify observers of the state change
+          (bloc as any)._observer.notify(migrated, oldState);
           return;
         }
       }
@@ -56,7 +66,7 @@ export class PersistencePlugin<TState> implements BlocPlugin<TState> {
       // Try to restore state from storage
       const storedData = await Promise.resolve(this.storage.getItem(this.key));
       if (storedData) {
-        let state: TState;
+        let state: TState | Partial<TState>;
 
         // Handle encryption
         if (this.options.encrypt) {
@@ -79,12 +89,26 @@ export class PersistencePlugin<TState> implements BlocPlugin<TState> {
           }
         }
 
-        // Restore state
-        (bloc as any)._state = state;
-        this.isHydrated = true;
+        // Handle selective persistence
+        if (this.options.select && this.options.merge) {
+          const oldState = bloc.state;
+          const mergedState = this.options.merge(
+            state as Partial<TState>,
+            bloc.state,
+          );
+          (bloc as any)._state = mergedState;
+          (bloc as any)._observer.notify(mergedState, oldState);
+        } else {
+          // Restore full state
+          const oldState = bloc.state;
+          (bloc as any)._state = state;
+          (bloc as any)._observer.notify(state, oldState);
+        }
       }
     } catch (error) {
       this.handleError(error as Error, 'load');
+    } finally {
+      this.isHydrating = false;
     }
   }
 
@@ -97,15 +121,15 @@ export class PersistencePlugin<TState> implements BlocPlugin<TState> {
   }
 
   onStateChange(previousState: TState, currentState: TState): void {
-    // Don't save if we just hydrated
-    if (!this.isHydrated) {
-      this.isHydrated = true;
+    // Don't save while hydrating
+    if (this.isHydrating) {
       return;
     }
 
     // Debounce saves
     if (this.saveTimer) {
       clearTimeout(this.saveTimer);
+      this.saveTimer = undefined;
     }
 
     if (this.debounceMs > 0) {
@@ -122,11 +146,29 @@ export class PersistencePlugin<TState> implements BlocPlugin<TState> {
   }
 
   private async saveState(state: TState): Promise<void> {
+    if (this.isSaving) {
+      // Queue another save after current one completes
+      if (this.saveTimer) {
+        clearTimeout(this.saveTimer);
+      }
+      this.saveTimer = setTimeout(() => {
+        void this.saveState(state);
+      }, this.debounceMs || 10);
+      return;
+    }
+
+    this.isSaving = true;
+
     try {
       let dataToStore: string;
 
-      // Serialize state
-      const serialized = this.serialize(state);
+      // Handle selective persistence
+      const stateToSave = this.options.select
+        ? (this.options.select(state) ?? state)
+        : state;
+
+      // Serialize state (ensure it's the full type, not partial)
+      const serialized = this.serialize(stateToSave as TState);
 
       // Handle encryption
       if (this.options.encrypt) {
@@ -149,6 +191,8 @@ export class PersistencePlugin<TState> implements BlocPlugin<TState> {
       }
     } catch (error) {
       this.handleError(error as Error, 'save');
+    } finally {
+      this.isSaving = false;
     }
   }
 
@@ -166,8 +210,9 @@ export class PersistencePlugin<TState> implements BlocPlugin<TState> {
             ? migration.transform(parsed)
             : parsed;
 
-          // Save migrated data
-          await this.saveState(migrated);
+          // Save migrated data to new key directly (bypass saveState to avoid timing issues)
+          const serialized = this.serialize(migrated);
+          await Promise.resolve(this.storage.setItem(this.key, serialized));
 
           // Remove old data
           await Promise.resolve(this.storage.removeItem(migration.from));

@@ -5,6 +5,7 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
+    "typecheck": "tsc --noEmit",
     "format": "prettier --write \".\"",
     "dev": "vite --port 3002"
   },

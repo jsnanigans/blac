@@ -8,7 +8,7 @@ export class LocalStorageAdapter implements StorageAdapter {
     try {
       return localStorage.getItem(key);
     } catch (error) {
-      console.error('LocalStorage getItem error:', error);
+      // Silently return null on read errors (e.g., security restrictions)
       return null;
     }
   }
@@ -17,8 +17,10 @@ export class LocalStorageAdapter implements StorageAdapter {
     try {
       localStorage.setItem(key, value);
     } catch (error) {
-      console.error('LocalStorage setItem error:', error);
-      throw error;
+      // Re-throw to let plugin handle the error
+      throw new Error(
+        `Failed to save to localStorage: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     }
   }
 
@@ -26,7 +28,8 @@ export class LocalStorageAdapter implements StorageAdapter {
     try {
       localStorage.removeItem(key);
     } catch (error) {
-      console.error('LocalStorage removeItem error:', error);
+      // Removal errors are not critical
+      console.warn(`Failed to remove from localStorage: ${key}`, error);
     }
   }
 
@@ -34,7 +37,7 @@ export class LocalStorageAdapter implements StorageAdapter {
     try {
       localStorage.clear();
     } catch (error) {
-      console.error('LocalStorage clear error:', error);
+      console.warn('Failed to clear localStorage', error);
     }
   }
 }
@@ -47,7 +50,6 @@ export class SessionStorageAdapter implements StorageAdapter {
     try {
       return sessionStorage.getItem(key);
     } catch (error) {
-      console.error('SessionStorage getItem error:', error);
       return null;
     }
   }
@@ -56,8 +58,9 @@ export class SessionStorageAdapter implements StorageAdapter {
     try {
       sessionStorage.setItem(key, value);
     } catch (error) {
-      console.error('SessionStorage setItem error:', error);
-      throw error;
+      throw new Error(
+        `Failed to save to sessionStorage: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     }
   }
 
@@ -65,7 +68,7 @@ export class SessionStorageAdapter implements StorageAdapter {
     try {
       sessionStorage.removeItem(key);
     } catch (error) {
-      console.error('SessionStorage removeItem error:', error);
+      console.warn(`Failed to remove from sessionStorage: ${key}`, error);
     }
   }
 
@@ -73,7 +76,7 @@ export class SessionStorageAdapter implements StorageAdapter {
     try {
       sessionStorage.clear();
     } catch (error) {
-      console.error('SessionStorage clear error:', error);
+      console.warn('Failed to clear sessionStorage', error);
     }
   }
 }
@@ -125,7 +128,6 @@ export class AsyncStorageAdapter implements StorageAdapter {
     try {
       return await this.asyncStorage.getItem(key);
     } catch (error) {
-      console.error('AsyncStorage getItem error:', error);
       return null;
     }
   }
@@ -134,8 +136,9 @@ export class AsyncStorageAdapter implements StorageAdapter {
     try {
       await this.asyncStorage.setItem(key, value);
     } catch (error) {
-      console.error('AsyncStorage setItem error:', error);
-      throw error;
+      throw new Error(
+        `Failed to save to AsyncStorage: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     }
   }
 
@@ -143,7 +146,7 @@ export class AsyncStorageAdapter implements StorageAdapter {
     try {
       await this.asyncStorage.removeItem(key);
     } catch (error) {
-      console.error('AsyncStorage removeItem error:', error);
+      console.warn(`Failed to remove from AsyncStorage: ${key}`, error);
     }
   }
 
@@ -152,7 +155,7 @@ export class AsyncStorageAdapter implements StorageAdapter {
       try {
         await this.asyncStorage.clear();
       } catch (error) {
-        console.error('AsyncStorage clear error:', error);
+        console.warn('Failed to clear AsyncStorage', error);
       }
     }
   }
