@@ -212,4 +212,71 @@ describe('useBloc', () => {
       expect(result1.current[0].count).toBe(1)
     })
   })
+
+  describe('Strict Mode Compatibility', () => {
+    it('should handle double mounting correctly', async () => {
+      let mountCount = 0
+      let unmountCount = 0
+
+      const Component = () => {
+        const [state, bloc] = useBloc(CounterCubit)
+        
+        React.useEffect(() => {
+          mountCount++
+          return () => {
+            unmountCount++
+          }
+        }, [])
+
+        return <div>{state.count}</div>
+      }
+
+      const { rerender } = render(
+        <React.StrictMode>
+          <Component />
+        </React.StrictMode>
+      )
+
+      // In React 18+ Strict Mode, effects run twice
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 0))
+      })
+
+      // Should handle multiple mount/unmount cycles
+      expect(mountCount).toBeGreaterThanOrEqual(1)
+      
+      // Force a re-render to ensure stability
+      rerender(
+        <React.StrictMode>
+          <Component />
+        </React.StrictMode>
+      )
+    })
+
+    it('should maintain state consistency in Strict Mode', async () => {
+      const Component = () => {
+        const [state, bloc] = useBloc(CounterCubit)
+        return (
+          <div>
+            <span data-testid="strict-count">{state.count}</span>
+            <button onClick={bloc.increment}>Increment</button>
+          </div>
+        )
+      }
+
+      render(
+        <React.StrictMode>
+          <Component />
+        </React.StrictMode>
+      )
+
+      expect(screen.getByTestId('strict-count')).toHaveTextContent('0')
+
+      await act(async () => {
+        screen.getByText('Increment').click()
+      })
+
+      expect(screen.getByTestId('strict-count')).toHaveTextContent('1')
+    })
+  })
 })

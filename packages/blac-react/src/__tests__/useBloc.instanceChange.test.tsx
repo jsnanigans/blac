@@ -13,6 +13,7 @@ class CounterCubit extends Cubit<number> {
 
   constructor(props?: CounterProps) {
     super(props?.initialValue ?? 0);
+    this.props = props;
   }
 
   increment = () => {

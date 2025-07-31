@@ -140,38 +140,54 @@ export class BlacObservable<S = unknown> {
       let shouldUpdate = false;
 
       if (observer.dependencyArray) {
-        const lastDependencyCheck = observer.lastState;
-        const newDependencyCheck = observer.dependencyArray(
-          newState,
-          oldState,
-          this.bloc,
-        );
+        try {
+          const lastDependencyCheck = observer.lastState;
+          const newDependencyCheck = observer.dependencyArray(
+            newState,
+            oldState,
+            this.bloc,
+          );
 
-        // If this is the first time (no lastState), trigger initial render
-        if (!lastDependencyCheck) {
-          shouldUpdate = true;
-        } else {
-          // Compare dependency arrays
-          if (lastDependencyCheck.length !== newDependencyCheck.length) {
+          // If this is the first time (no lastState), trigger initial render
+          if (!lastDependencyCheck) {
             shouldUpdate = true;
           } else {
-            // Compare each dependency value using Object.is (same as React)
-            for (let i = 0; i < newDependencyCheck.length; i++) {
-              if (!Object.is(lastDependencyCheck[i], newDependencyCheck[i])) {
-                shouldUpdate = true;
-                break;
+            // Compare dependency arrays
+            if (lastDependencyCheck.length !== newDependencyCheck.length) {
+              shouldUpdate = true;
+            } else {
+              // Compare each dependency value using Object.is (same as React)
+              for (let i = 0; i < newDependencyCheck.length; i++) {
+                if (!Object.is(lastDependencyCheck[i], newDependencyCheck[i])) {
+                  shouldUpdate = true;
+                  break;
+                }
               }
             }
           }
-        }
 
-        observer.lastState = newDependencyCheck;
+          observer.lastState = newDependencyCheck;
+        } catch (error) {
+          Blac.error(
+            `BlacObservable.notify: Dependency function error in ${observer.id}:`,
+            error,
+          );
+          // Don't update on error
+          shouldUpdate = false;
+        }
       } else {
         shouldUpdate = true;
       }
 
       if (shouldUpdate) {
-        void observer.fn(newState, oldState, action);
+        try {
+          void observer.fn(newState, oldState, action);
+        } catch (error) {
+          Blac.error(
+            `BlacObservable.notify: Observer error in ${observer.id}:`,
+            error,
+          );
+        }
       }
     });
 

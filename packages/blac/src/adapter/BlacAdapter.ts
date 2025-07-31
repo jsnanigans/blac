@@ -141,9 +141,7 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
   createSubscription = (options: { onChange: () => void }) => {
     const unsubscribe = this.blocInstance._observer.subscribe({
       id: this.id,
-      fn: (
-        newState: BlocState<InstanceType<B>>,
-      ) => {
+      fn: (newState: BlocState<InstanceType<B>>) => {
         // Case 1: Manual dependencies provided
         if (this.isUsingDependencies && this.options?.dependencies) {
           const newValues = this.options.dependencies(this.blocInstance);

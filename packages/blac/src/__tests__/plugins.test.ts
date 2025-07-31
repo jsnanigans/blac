@@ -2,11 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Blac } from '../Blac';
 import { Cubit } from '../Cubit';
 import { Bloc } from '../Bloc';
-import {
-  BlacPlugin,
-  BlocPlugin,
-  PluginCapabilities,
-} from '../plugins';
+import { BlacPlugin, BlocPlugin, PluginCapabilities } from '../plugins';
 import { BlocBase } from '../BlocBase';
 
 // Test Cubit

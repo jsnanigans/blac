@@ -56,7 +56,9 @@ export default function useExternalBlocStore<
       (base.constructor as any).isolated ||
       (blocConstructor as any).isolated
     ) {
-      const newBloc = new blocConstructor(options?.staticProps) as InstanceType<B>;
+      const newBloc = new blocConstructor(
+        options?.staticProps,
+      ) as InstanceType<B>;
       const uniqueId =
         options?.id || `${blocConstructor.name}_${generateUUID()}`;
       newBloc._updateId(uniqueId);

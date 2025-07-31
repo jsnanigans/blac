@@ -103,10 +103,11 @@ describe('BlacAdapter', () => {
 
     it('should pass staticProps to bloc constructor', () => {
       class PropsCubit extends Cubit<string> {
-        constructor(
-          props?: { initialValue: string },
-        ) {
+        props?: { initialValue: string };
+
+        constructor(props?: { initialValue: string }) {
           super(props?.initialValue || 'default');
+          this.props = props;
         }
       }
 
@@ -116,7 +117,9 @@ describe('BlacAdapter', () => {
       );
 
       expect(adapter.blocInstance.state).toBe('custom');
-      expect(adapter.blocInstance.props).toEqual({ initialValue: 'custom' });
+      expect((adapter.blocInstance as PropsCubit).props).toEqual({
+        initialValue: 'custom',
+      });
     });
   });
 
