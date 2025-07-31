@@ -4,8 +4,8 @@ Welcome to Blac! This guide will walk you through setting up Blac and creating y
 
 Blac is a collection of packages designed for robust state management:
 
--   `@blac/core`: The core engine providing `Cubit`, `Bloc`, `BlocBase`, and the underlying instance management logic.
--   `@blac/react`: The React integration, offering hooks like `useBloc` to connect your components to Blac state containers.
+- `@blac/core`: The core engine providing `Cubit`, `Bloc`, `BlocBase`, and the underlying instance management logic.
+- `@blac/react`: The React integration, offering hooks like `useBloc` to connect your components to Blac state containers.
 
 ## Installation
 
@@ -84,9 +84,9 @@ import { Blac } from '@blac/core';
 Blac.setConfig({
   // Control automatic re-render optimization (default: true)
   proxyDependencyTracking: true,
-  
+
   // Expose Blac instance globally for debugging (default: false)
-  exposeBlacInstance: false
+  exposeBlacInstance: false,
 });
 ```
 
@@ -129,7 +129,7 @@ If you're experiencing TypeScript errors with `useBloc` not properly inferring y
 // This should now work correctly with proper type inference
 const [state, cubit] = useBloc(CounterCubit, {
   id: 'unique-id',
-  props: { initialCount: 0 }
+  props: { initialCount: 0 },
 });
 // state.count is properly typed as number
 // cubit.increment is properly typed as () => void
@@ -138,13 +138,13 @@ const [state, cubit] = useBloc(CounterCubit, {
 ### How It Works
 
 1.  **`CounterCubit`**: Extends `Cubit` from `@blac/core`.
-    *   Defines its state structure (`CounterState`).
-    *   Sets an initial state in its constructor.
-    *   Provides methods (`increment`, `decrement`, `reset`) that call `this.emit()` with a new state object. `emit` replaces the entire state.
+    - Defines its state structure (`CounterState`).
+    - Sets an initial state in its constructor.
+    - Provides methods (`increment`, `decrement`, `reset`) that call `this.emit()` with a new state object. `emit` replaces the entire state.
 2.  **`CounterDisplay` Component**: Uses the `useBloc` hook from `@blac/react`.
-    *   `useBloc(CounterCubit)` gets (or creates) an instance of `CounterCubit`.
-    *   It returns an array `[state, counterCubit]`. The `state` object is a reactive proxy that tracks property access.
-    *   The component re-renders automatically and efficiently when `state.count` changes due to a `counterCubit` method call.
+    - `useBloc(CounterCubit)` gets (or creates) an instance of `CounterCubit`.
+    - It returns an array `[state, counterCubit]`. The `state` object is a reactive proxy that tracks property access.
+    - The component re-renders automatically and efficiently when `state.count` changes due to a `counterCubit` method call.
 
 ### Important: Arrow Functions for Methods
 
@@ -169,6 +169,7 @@ Cubits can easily handle asynchronous operations. Let's extend our counter to fe
 `Cubit` provides a `patch()` method for updating only specific parts of an object state.
 
 ::: code-group
+
 ```tsx [CounterCubit.ts]
 import { Cubit } from '@blac/core';
 
@@ -196,7 +197,7 @@ export class AsyncCounterCubit extends Cubit<AsyncCounterState> {
     this.patch({ isLoading: true, error: null });
     try {
       // Simulate API call (replace with your actual fetch logic)
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate delay
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate delay
       const randomNumber = Math.floor(Math.random() * 100);
       // const response = await fetch('https://api.example.com/random-number');
       // if (!response.ok) throw new Error('Network response was not ok');
@@ -209,7 +210,10 @@ export class AsyncCounterCubit extends Cubit<AsyncCounterState> {
     } catch (error) {
       this.patch({
         isLoading: false,
-        error: error instanceof Error ? error.message : 'Failed to fetch random count',
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Failed to fetch random count',
       });
     }
   };
@@ -240,12 +244,14 @@ function AsyncCounterDisplay() {
 
 export default AsyncCounterDisplay;
 ```
+
 :::
 
 Notice in the async example:
--   The state (`AsyncCounterState`) now includes `isLoading` and `error` fields.
--   `this.patch()` is used to update parts of the state without needing to spread the rest (`{ ...this.state, isLoading: true }`).
--   Error handling is included within the `fetchRandomCount` method.
--   The UI (`AsyncCounterDisplay`) conditionally renders loading/error messages and disables buttons during loading.
+
+- The state (`AsyncCounterState`) now includes `isLoading` and `error` fields.
+- `this.patch()` is used to update parts of the state without needing to spread the rest (`{ ...this.state, isLoading: true }`).
+- Error handling is included within the `fetchRandomCount` method.
+- The UI (`AsyncCounterDisplay`) conditionally renders loading/error messages and disables buttons during loading.
 
 This covers the basics of getting started with Blac using `Cubit`. Explore further sections to learn about the more advanced `Bloc` class (which uses an event-handler pattern: `this.on(EventType, handler)` and `this.add(new EventType())`), advanced patterns, and API details.

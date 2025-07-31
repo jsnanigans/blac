@@ -5,6 +5,7 @@ Real-world applications need to fetch data, save to APIs, and handle other async
 ## Loading States Pattern
 
 The key to good async handling is explicit state management. Always track:
+
 - Loading status
 - Success data
 - Error states
@@ -30,40 +31,40 @@ export class UserCubit extends Cubit<UserState> {
     super({
       user: null,
       isLoading: false,
-      error: null
+      error: null,
     });
   }
-  
+
   fetchUser = async (userId: string) => {
     // Start loading
     this.patch({ isLoading: true, error: null });
-    
+
     try {
       // Simulate API call
       const response = await fetch(`/api/users/${userId}`);
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch user');
       }
-      
+
       const user = await response.json();
-      
+
       // Success - update state with data
       this.patch({
         user,
         isLoading: false,
-        error: null
+        error: null,
       });
     } catch (error) {
       // Error - update state with error message
       this.patch({
         user: null,
         isLoading: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   };
-  
+
   clearError = () => {
     this.patch({ error: null });
   };
@@ -80,16 +81,16 @@ import { useEffect } from 'react';
 
 export function UserProfile({ userId }: { userId: string }) {
   const [state, cubit] = useBloc(UserCubit);
-  
+
   // Fetch user when component mounts or userId changes
   useEffect(() => {
     cubit.fetchUser(userId);
   }, [userId, cubit]);
-  
+
   if (state.isLoading) {
     return <div>Loading user...</div>;
   }
-  
+
   if (state.error) {
     return (
       <div>
@@ -98,11 +99,11 @@ export function UserProfile({ userId }: { userId: string }) {
       </div>
     );
   }
-  
+
   if (!state.user) {
     return <div>No user data</div>;
   }
-  
+
   return (
     <div>
       <h2>{state.user.name}</h2>
@@ -121,20 +122,19 @@ Prevent race conditions when rapid requests occur:
 ```typescript
 export class SearchCubit extends Cubit<SearchState> {
   private abortController?: AbortController;
-  
+
   search = async (query: string) => {
     // Cancel previous request
     this.abortController?.abort();
     this.abortController = new AbortController();
-    
+
     this.patch({ isLoading: true, error: null });
-    
+
     try {
-      const response = await fetch(
-        `/api/search?q=${query}`,
-        { signal: this.abortController.signal }
-      );
-      
+      const response = await fetch(`/api/search?q=${query}`, {
+        signal: this.abortController.signal,
+      });
+
       const results = await response.json();
       this.patch({ results, isLoading: false });
     } catch (error) {
@@ -142,14 +142,14 @@ export class SearchCubit extends Cubit<SearchState> {
       if (error instanceof Error && error.name === 'AbortError') {
         return;
       }
-      
+
       this.patch({
         isLoading: false,
-        error: error instanceof Error ? error.message : 'Search failed'
+        error: error instanceof Error ? error.message : 'Search failed',
       });
     }
   };
-  
+
   // Clean up on disposal
   dispose() {
     this.abortController?.abort();
@@ -165,24 +165,24 @@ Update UI immediately for better UX:
 ```typescript
 export class TodoCubit extends Cubit<TodoState> {
   toggleTodo = async (id: string) => {
-    const todo = this.state.todos.find(t => t.id === id);
+    const todo = this.state.todos.find((t) => t.id === id);
     if (!todo) return;
-    
+
     // Optimistic update
-    const optimisticTodos = this.state.todos.map(t =>
-      t.id === id ? { ...t, completed: !t.completed } : t
+    const optimisticTodos = this.state.todos.map((t) =>
+      t.id === id ? { ...t, completed: !t.completed } : t,
     );
     this.patch({ todos: optimisticTodos });
-    
+
     try {
       // API call
       await fetch(`/api/todos/${id}/toggle`, { method: 'POST' });
       // Success - state already updated
     } catch (error) {
       // Revert on error
-      this.patch({ 
+      this.patch({
         todos: this.state.todos,
-        error: 'Failed to update todo'
+        error: 'Failed to update todo',
       });
     }
   };
@@ -209,37 +209,37 @@ export class ProductsCubit extends Cubit<PaginatedState<Product>> {
       currentPage: 1,
       totalPages: 1,
       isLoading: false,
-      error: null
+      error: null,
     });
   }
-  
+
   loadPage = async (page: number) => {
     this.patch({ isLoading: true, error: null });
-    
+
     try {
       const response = await fetch(`/api/products?page=${page}`);
       const data = await response.json();
-      
+
       this.patch({
         items: data.items,
         currentPage: page,
         totalPages: data.totalPages,
-        isLoading: false
+        isLoading: false,
       });
     } catch (error) {
       this.patch({
         isLoading: false,
-        error: 'Failed to load products'
+        error: 'Failed to load products',
       });
     }
   };
-  
+
   nextPage = () => {
     if (this.state.currentPage < this.state.totalPages) {
       this.loadPage(this.state.currentPage + 1);
     }
   };
-  
+
   previousPage = () => {
     if (this.state.currentPage > 1) {
       this.loadPage(this.state.currentPage - 1);
@@ -251,6 +251,7 @@ export class ProductsCubit extends Cubit<PaginatedState<Product>> {
 ## Best Practices
 
 ### 1. Always Handle All States
+
 Never leave your UI in an undefined state:
 
 ```typescript
@@ -267,6 +268,7 @@ return <div>{state.data.name}</div>;
 ```
 
 ### 2. Separate API Logic
+
 Keep API calls separate from your Cubits:
 
 ```typescript
@@ -276,7 +278,7 @@ export const userApi = {
     const response = await fetch(`/api/users/${id}`);
     if (!response.ok) throw new Error('Failed to fetch');
     return response.json();
-  }
+  },
 };
 
 // In your Cubit
@@ -292,6 +294,7 @@ fetchUser = async (id: string) => {
 ```
 
 ### 3. Use TypeScript for API Responses
+
 Define types for your API responses:
 
 ```typescript
@@ -319,19 +322,19 @@ import { UserCubit } from './UserCubit';
 describe('UserCubit', () => {
   it('should fetch user successfully', async () => {
     const cubit = new UserCubit();
-    
+
     // Mock fetch
     global.fetch = jest.fn().mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ id: '1', name: 'John' })
+      json: async () => ({ id: '1', name: 'John' }),
     });
-    
+
     await cubit.fetchUser('1');
-    
+
     expect(cubit.state).toEqual({
       user: { id: '1', name: 'John' },
       isLoading: false,
-      error: null
+      error: null,
     });
   });
 });

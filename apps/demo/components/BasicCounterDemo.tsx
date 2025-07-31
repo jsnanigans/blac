@@ -9,10 +9,17 @@ const BasicCounterDemo: React.FC = () => {
 
   return (
     <div className="space-y-3">
-      <p className="text-lg font-medium">Shared Count: <span className="text-primary font-bold text-xl">{state.count}</span></p>
+      <p className="text-lg font-medium">
+        Shared Count:{' '}
+        <span className="text-primary font-bold text-xl">{state.count}</span>
+      </p>
       <div className="flex space-x-2">
-        <Button onClick={cubit.increment} variant="default" size="sm">Increment</Button>
-        <Button onClick={cubit.decrement} variant="secondary" size="sm">Decrement</Button>
+        <Button onClick={cubit.increment} variant="default" size="sm">
+          Increment
+        </Button>
+        <Button onClick={cubit.decrement} variant="secondary" size="sm">
+          Decrement
+        </Button>
       </div>
     </div>
   );

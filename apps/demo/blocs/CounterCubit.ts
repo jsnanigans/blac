@@ -24,7 +24,10 @@ export class CounterCubit extends Cubit<CounterState, CounterCubitProps> {
 }
 
 // Example of an inherently isolated version if needed directly
-export class IsolatedCounterCubit extends Cubit<CounterState, CounterCubitProps> {
+export class IsolatedCounterCubit extends Cubit<
+  CounterState,
+  CounterCubitProps
+> {
   static isolated = true;
 
   constructor(props?: CounterCubitProps) {

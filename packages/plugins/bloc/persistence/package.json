@@ -21,6 +21,7 @@
     "build": "tsup src/index.ts --format cjs,esm --dts --clean",
     "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
     "test": "vitest run",
+    "format": "prettier --write \".\"",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
@@ -46,6 +47,7 @@
     "@types/node": "catalog:",
     "tsup": "catalog:",
     "typescript": "catalog:",
+    "prettier": "catalog:",
     "vitest": "catalog:"
   },
   "peerDependencies": {

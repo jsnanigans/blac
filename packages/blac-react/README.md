@@ -22,16 +22,17 @@ All methods in Bloc or Cubit classes must use arrow function syntax (`method = (
 class CounterBloc extends Cubit<CounterState> {
   increment = () => {
     this.emit({ ...this.state, count: this.state.count + 1 });
-  }
+  };
 
   decrement = () => {
     this.emit({ ...this.state, count: this.state.count - 1 });
-  }
+  };
 }
 
 // Incorrect way (will cause issues when called from React):
 class CounterBloc extends Cubit<CounterState> {
-  increment() { // ❌ Will lose 'this' context when called from components
+  increment() {
+    // ❌ Will lose 'this' context when called from components
     this.emit({ ...this.state, count: this.state.count + 1 });
   }
 }
@@ -82,9 +83,15 @@ The hook accepts configuration options for more control:
 ```tsx
 const [state, bloc] = useBloc(YourBloc, {
   id: 'custom-id', // Optional: Custom identifier for the bloc
-  props: { /* ... */ }, // Optional: Props to pass to the bloc
-  onMount: (bloc) => { /* ... */ }, // Optional: Callback when bloc is mounted (similar to useEffect(<>, []))
-  selector: (currentState, previousState, instance) => [/* ... */], // Optional: Custom dependency tracking
+  props: {
+    /* ... */
+  }, // Optional: Props to pass to the bloc
+  onMount: (bloc) => {
+    /* ... */
+  }, // Optional: Callback when bloc is mounted (similar to useEffect(<>, []))
+  selector: (currentState, previousState, instance) => [
+    /* ... */
+  ], // Optional: Custom dependency tracking
 });
 ```
 
@@ -119,7 +126,7 @@ function UserProfile() {
 The dependency tracking system uses JavaScript Proxies to monitor property access during component renders:
 
 1. **State Properties**: When you access `state.propertyName`, it's automatically tracked
-2. **Instance Properties**: When you access `bloc.computedValue`, it's automatically tracked  
+2. **Instance Properties**: When you access `bloc.computedValue`, it's automatically tracked
 3. **Intelligent Comparison**: The system separately tracks state dependencies and instance dependencies to handle edge cases where properties are dynamically added/removed
 4. **Optimized Updates**: Components only re-render when tracked dependencies actually change their values
 
@@ -138,6 +145,7 @@ Blac.setConfig({ proxyDependencyTracking: false });
 ```
 
 When proxy tracking is disabled:
+
 - Components re-render on any state change (similar to traditional state management)
 - Manual dependencies via the `selector` option still work as expected
 - Useful for debugging or when proxy behavior causes issues
@@ -153,8 +161,8 @@ const [state, bloc] = useBloc(YourBloc, {
   selector: (currentState, previousState, instance) => [
     currentState.specificField,
     currentState.anotherField,
-    instance.computedValue // You can also track computed properties from the bloc instance
-  ]
+    instance.computedValue, // You can also track computed properties from the bloc instance
+  ],
 });
 ```
 
@@ -163,31 +171,33 @@ The component will only re-render when any of the values in the returned array c
 #### Examples of Custom Selectors
 
 **Track only specific state properties:**
+
 ```tsx
 const [state, userBloc] = useBloc(UserBloc, {
-  selector: (currentState) => [
-    currentState.name,
-    currentState.email
-  ] // Only re-render when name or email changes, ignore other properties
+  selector: (currentState) => [currentState.name, currentState.email], // Only re-render when name or email changes, ignore other properties
 });
 ```
 
 **Track computed values:**
+
 ```tsx
 const [state, shoppingCartBloc] = useBloc(ShoppingCartBloc, {
   selector: (currentState, previousState, instance) => [
     instance.totalPrice, // Computed getter
-    currentState.items.length // Number of items
-  ] // Only re-render when total price or item count changes
+    currentState.items.length, // Number of items
+  ], // Only re-render when total price or item count changes
 });
 ```
 
 **Compare with previous state:**
+
 ```tsx
 const [state, chatBloc] = useBloc(ChatBloc, {
   selector: (currentState, previousState) => [
-    currentState.messages.length > (previousState?.messages.length || 0) ? 'new-message' : 'no-change'
-  ] // Only re-render when new messages are added, not when existing messages change
+    currentState.messages.length > (previousState?.messages.length || 0)
+      ? 'new-message'
+      : 'no-change',
+  ], // Only re-render when new messages are added, not when existing messages change
 });
 ```
 
@@ -198,8 +208,8 @@ const [state, chatBloc] = useBloc(ChatBloc, {
 ```typescript
 function useBloc<B extends BlocConstructor<BlocGeneric>>(
   bloc: B,
-  options?: BlocHookOptions<InstanceType<B>>
-): [BlocState<InstanceType<B>>, InstanceType<B>]
+  options?: BlocHookOptions<InstanceType<B>>,
+): [BlocState<InstanceType<B>>, InstanceType<B>];
 ```
 
 #### Options
@@ -212,6 +222,7 @@ function useBloc<B extends BlocConstructor<BlocGeneric>>(
 ## Best Practices
 
 1. **Use Isolated Blocs**: When you need component-specific state, use isolated blocs:
+
    ```tsx
    class MyIsolatedBloc extends BlocBase {
      static isolated = true;
@@ -220,18 +231,19 @@ function useBloc<B extends BlocConstructor<BlocGeneric>>(
    ```
 
 2. **Use Custom Identifiers**: When you need multiple independent instances of the same Bloc type, use custom identifiers to manage different state contexts:
+
    ```tsx
    // In a chat application with multiple chat rooms
    function ChatRoom({ roomId }: { roomId: string }) {
      const [state, chatBloc] = useBloc(ChatBloc, {
        id: `chat-${roomId}`, // Each room gets its own instance
-       props: { roomId }
+       props: { roomId },
      });
 
      return (
        <div>
          <h2>Room: {roomId}</h2>
-         {state.messages.map(msg => (
+         {state.messages.map((msg) => (
            <Message key={msg.id} message={msg} />
          ))}
        </div>
@@ -249,7 +261,7 @@ function useBloc<B extends BlocConstructor<BlocGeneric>>(
    }
    ```
 
-3. **Choose the Right Dependency Strategy**: 
+3. **Choose the Right Dependency Strategy**:
    - **Use automatic tracking** (default) for most cases - it's efficient and requires no setup
    - **Use custom selectors** when you need complex logic, computed comparisons, or want to ignore certain property changes
    - **Avoid custom selectors** for simple property access - automatic tracking is more efficient

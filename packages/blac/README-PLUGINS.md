@@ -22,7 +22,7 @@ const loggingPlugin: BlacPlugin = {
   version: '1.0.0',
   onStateChanged: (bloc, prev, next) => {
     console.log(`${bloc._name} changed:`, { prev, next });
-  }
+  },
 };
 
 // Register globally
@@ -36,14 +36,12 @@ import { Cubit, BlocPlugin } from '@blac/core';
 
 // Create a bloc-specific persistence plugin
 class CounterCubit extends Cubit<number> {
-  static plugins = [
-    new PersistencePlugin<number>({ key: 'counter' })
-  ];
-  
+  static plugins = [new PersistencePlugin<number>({ key: 'counter' })];
+
   constructor() {
     super(0);
   }
-  
+
   increment = () => this.emit(this.state + 1);
 }
 ```
@@ -60,35 +58,35 @@ import { BlacPlugin, ErrorContext } from '@blac/core';
 class LoggingPlugin implements BlacPlugin {
   readonly name = 'logging';
   readonly version = '1.0.0';
-  
+
   // Lifecycle hooks
   beforeBootstrap(): void {
     console.log('System bootstrapping...');
   }
-  
+
   afterBootstrap(): void {
     console.log('System ready');
   }
-  
+
   // Bloc lifecycle hooks
   onBlocCreated<T>(bloc: BlocBase<T>): void {
     console.log(`Bloc created: ${bloc._name}`);
   }
-  
+
   onBlocDisposed<T>(bloc: BlocBase<T>): void {
     console.log(`Bloc disposed: ${bloc._name}`);
   }
-  
+
   // State observation
   onStateChanged<T>(bloc: BlocBase<T>, prev: T, next: T): void {
     console.log(`State changed in ${bloc._name}:`, { prev, next });
   }
-  
+
   // Event observation (Blocs only)
   onEventAdded<T, E>(bloc: Bloc<E, T>, event: E): void {
     console.log(`Event dispatched to ${bloc._name}:`, event);
   }
-  
+
   // Error handling
   onError(error: Error, bloc: BlocBase<unknown>, context: ErrorContext): void {
     console.error(`Error in ${bloc._name}:`, error);
@@ -123,18 +121,18 @@ import { BlocPlugin, PluginCapabilities } from '@blac/core';
 class ValidationPlugin<T> implements BlocPlugin<T> {
   readonly name = 'validation';
   readonly version = '1.0.0';
-  
+
   // Declare capabilities
   readonly capabilities: PluginCapabilities = {
     readState: true,
     transformState: true,
     interceptEvents: false,
     persistData: false,
-    accessMetadata: false
+    accessMetadata: false,
   };
-  
+
   constructor(private validator: (state: T) => boolean) {}
-  
+
   // Transform state before it's applied
   transformState(prevState: T, nextState: T): T {
     if (this.validator(nextState)) {
@@ -143,16 +141,16 @@ class ValidationPlugin<T> implements BlocPlugin<T> {
     console.warn('State validation failed');
     return prevState; // Reject invalid state
   }
-  
+
   // Lifecycle hooks
   onAttach(bloc: BlocBase<T>): void {
     console.log(`Validation attached to ${bloc._name}`);
   }
-  
+
   onDetach(): void {
     console.log('Validation detached');
   }
-  
+
   // Observe state changes
   onStateChange(prev: T, next: T): void {
     console.log('State changed:', { prev, next });
@@ -170,9 +168,9 @@ There are two ways to attach plugins to blocs:
 class UserCubit extends Cubit<UserState> {
   static plugins = [
     new ValidationPlugin<UserState>(isValidUser),
-    new PersistencePlugin<UserState>({ key: 'user-state' })
+    new PersistencePlugin<UserState>({ key: 'user-state' }),
   ];
-  
+
   constructor() {
     super(initialState);
   }
@@ -193,10 +191,10 @@ Bloc plugins declare their capabilities for security and optimization:
 
 ```typescript
 interface PluginCapabilities {
-  readState: boolean;      // Can read bloc state
+  readState: boolean; // Can read bloc state
   transformState: boolean; // Can modify state transitions
   interceptEvents: boolean; // Can modify events (Bloc only)
-  persistData: boolean;    // Can persist data externally
+  persistData: boolean; // Can persist data externally
   accessMetadata: boolean; // Can access bloc metadata
 }
 ```
@@ -212,14 +210,14 @@ class PersistencePlugin<T> implements BlocPlugin<T> {
     transformState: true,
     interceptEvents: false,
     persistData: true,
-    accessMetadata: false
+    accessMetadata: false,
   };
-  
+
   constructor(
     private key: string,
-    private storage = localStorage
+    private storage = localStorage,
   ) {}
-  
+
   onAttach(bloc: BlocBase<T>): void {
     // Restore state from storage
     const saved = this.storage.getItem(this.key);
@@ -228,7 +226,7 @@ class PersistencePlugin<T> implements BlocPlugin<T> {
       (bloc as any)._state = state; // Restore state
     }
   }
-  
+
   onStateChange(prev: T, next: T): void {
     // Save state to storage
     this.storage.setItem(this.key, JSON.stringify(next));
@@ -242,6 +240,7 @@ class PersistencePlugin<T> implements BlocPlugin<T> {
 2. **System Plugins execute second** - They observe the final state
 
 For multiple plugins of the same type:
+
 - Plugins execute in the order they were added
 - State transformations are chained
 - Event transformations are chained
@@ -280,6 +279,7 @@ The old plugin system has been completely replaced. Key differences:
 5. **Better performance** - Metrics and optimizations built-in
 
 To migrate:
+
 1. Determine if your plugin is system-wide or bloc-specific
 2. Implement the appropriate interface (BlacPlugin or BlocPlugin)
 3. Update hook method signatures (all synchronous now)

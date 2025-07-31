@@ -61,7 +61,7 @@ class CounterCubit extends Cubit<{ count: number }> {
   constructor() {
     super({ count: 0 });
   }
-  
+
   increment = () => this.emit({ count: this.state.count + 1 });
   decrement = () => this.emit({ count: this.state.count - 1 });
 }
@@ -71,7 +71,7 @@ import { useBloc } from '@blac/react';
 
 function Counter() {
   const [state, cubit] = useBloc(CounterCubit);
-  
+
   return (
     <div>
       <button onClick={cubit.decrement}>-</button>

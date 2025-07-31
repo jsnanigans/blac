@@ -8,7 +8,10 @@ interface IsolatedCounterDemoProps {
   idSuffix?: string;
 }
 
-const IsolatedCounterDemo: React.FC<IsolatedCounterDemoProps> = ({ initialCount = 0, idSuffix }) => {
+const IsolatedCounterDemo: React.FC<IsolatedCounterDemoProps> = ({
+  initialCount = 0,
+  idSuffix,
+}) => {
   // Each instance of this component will get its own IsolatedCounterCubit instance
   // because IsolatedCounterCubit has `static isolated = true;`
   const [state, cubit] = useBloc(IsolatedCounterCubit, {
@@ -18,14 +21,21 @@ const IsolatedCounterDemo: React.FC<IsolatedCounterDemoProps> = ({ initialCount 
     // we would need a unique ID here, often derived from React.useId().
   });
 
-  const title = idSuffix ? `Isolated Count ${idSuffix}` : "Isolated Count";
+  const title = idSuffix ? `Isolated Count ${idSuffix}` : 'Isolated Count';
 
   return (
     <div className="space-y-3 p-3 border border-dashed border-muted-foreground rounded-md mt-2">
-      <p className="text-lg font-medium">{title}: <span className="text-secondary font-bold text-xl">{state.count}</span></p>
+      <p className="text-lg font-medium">
+        {title}:{' '}
+        <span className="text-secondary font-bold text-xl">{state.count}</span>
+      </p>
       <div className="flex space-x-2">
-        <Button onClick={cubit.increment} variant="default" size="sm">Increment</Button>
-        <Button onClick={cubit.decrement} variant="outline" size="sm">Decrement</Button>
+        <Button onClick={cubit.increment} variant="default" size="sm">
+          Increment
+        </Button>
+        <Button onClick={cubit.decrement} variant="outline" size="sm">
+          Decrement
+        </Button>
       </div>
     </div>
   );

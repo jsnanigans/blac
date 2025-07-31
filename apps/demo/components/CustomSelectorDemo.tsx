@@ -1,14 +1,12 @@
 import { useBloc } from '@blac/react';
 import React from 'react';
-import {
-  ComplexStateCubit,
-} from '../blocs/ComplexStateCubit';
+import { ComplexStateCubit } from '../blocs/ComplexStateCubit';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 
 const CustomSelectorDisplay: React.FC = () => {
   const [state, cubit] = useBloc(ComplexStateCubit, {
-    dependencies: ({state}) => {
+    dependencies: ({ state }) => {
       // This component only cares if the counter is divisible by 3
       // and the first character of the text.
       // It also uses a getter directly in the selector's dependency array.
@@ -123,4 +121,3 @@ const CustomSelectorDemo: React.FC = () => {
 };
 
 export default CustomSelectorDemo;
-

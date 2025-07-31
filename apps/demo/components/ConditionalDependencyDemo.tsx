@@ -1,10 +1,7 @@
 import { useBloc } from '@blac/react';
 import React from 'react';
 import { ConditionalUserProfileCubit } from '../blocs/ConditionalUserProfileCubit';
-import {
-  DEMO_COMPONENT_CONTAINER_STYLE,
-  LCARS_ORANGE
-} from '../lib/styles';
+import { DEMO_COMPONENT_CONTAINER_STYLE, LCARS_ORANGE } from '../lib/styles';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Label } from './ui/Label';
@@ -26,29 +23,59 @@ const UserProfileDisplay: React.FC = () => {
         // For instance, bg-background-component might map to a specific color if not covered.
       }}
     >
-      <div style={{ fontSize: '0.875rem', color: '#6c757d' /* text-sm text-muted-foreground */ }}>
+      <div
+        style={{
+          fontSize: '0.875rem',
+          color: '#6c757d' /* text-sm text-muted-foreground */,
+        }}
+      >
         Component Render Count: {renderCountRef.current}
       </div>
-      <h3 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '0.5rem' /* text-lg font-semibold mb-2 */ }}>
+      <h3
+        style={{
+          fontSize: '1.125rem',
+          fontWeight: '600',
+          marginBottom: '0.5rem' /* text-lg font-semibold mb-2 */,
+        }}
+      >
         User Profile Display
       </h3>
       {state.showFullName ? (
         <p>
           Name (via getter):{' '}
-          <span style={{ fontWeight: 'bold', color: LCARS_ORANGE /* font-bold text-primary (assuming primary is orange) */ }}>
+          <span
+            style={{
+              fontWeight: 'bold',
+              color:
+                LCARS_ORANGE /* font-bold text-primary (assuming primary is orange) */,
+            }}
+          >
             {cubit.fullName}
           </span>
         </p>
       ) : (
         <p>
           First Name:{' '}
-          <span style={{ fontWeight: 'bold', color: LCARS_ORANGE /* font-bold text-primary */ }}>
+          <span
+            style={{
+              fontWeight: 'bold',
+              color: LCARS_ORANGE /* font-bold text-primary */,
+            }}
+          >
             {state.firstName}
           </span>
         </p>
       )}
       <p>
-        Age: <span style={{ fontWeight: 'bold', color: LCARS_ORANGE /* font-bold text-primary */ }}>{state.age}</span>
+        Age:{' '}
+        <span
+          style={{
+            fontWeight: 'bold',
+            color: LCARS_ORANGE /* font-bold text-primary */,
+          }}
+        >
+          {state.age}
+        </span>
       </p>
     </div>
   );
@@ -77,7 +104,12 @@ const NameInputs: React.FC = () => {
         // To truly replicate md:grid-cols-2, a media query approach in styles.ts or a resize listener would be needed.
       }}
     >
-      <div style={{ fontSize: '0.875rem', color: '#6c757d' /* text-sm text-muted-foreground */ }}>
+      <div
+        style={{
+          fontSize: '0.875rem',
+          color: '#6c757d' /* text-sm text-muted-foreground */,
+        }}
+      >
         Component Render Count: {renderCountRef.current}
       </div>
       {/* Tailwind: space-y-2 -> direct children have margin-top: 0.5rem except first */}
@@ -93,7 +125,9 @@ const NameInputs: React.FC = () => {
           placeholder="Set First Name"
         />
       </div>
-      <div style={{ marginTop: '0.5rem' }}> {/* Simplified space-y-2 for the second item */}
+      <div style={{ marginTop: '0.5rem' }}>
+        {' '}
+        {/* Simplified space-y-2 for the second item */}
         <Label htmlFor="lastNameConditional">Last Name:</Label>
         <Input
           id="lastNameConditional"
@@ -120,7 +154,8 @@ const ActionButtons: React.FC = () => {
       }}
     >
       <Button onClick={cubit.toggleShowFullName}>
-        Toggle Full Name Display (Currently: {state.showFullName ? 'ON' : 'OFF'})
+        Toggle Full Name Display (Currently: {state.showFullName ? 'ON' : 'OFF'}
+        )
       </Button>
       <Button onClick={() => cubit.setFirstName('Alex')}>
         Set First to Alex
@@ -160,7 +195,9 @@ const InfoSection: React.FC = () => {
         `state.lastName`. Now, changing *either* `firstName` or `lastName` WILL
         cause a re-render.
       </p>
-      <p> {/* Last p doesn't need bottom margin from space-y-1 */}
+      <p>
+        {' '}
+        {/* Last p doesn't need bottom margin from space-y-1 */}
         `incrementAccessCount` changes state not used in render output, so it
         shouldn't trigger re-renders unless `accessCount` is added as a
         dependency elsewhere (e.g. console log, or if the getter used it).

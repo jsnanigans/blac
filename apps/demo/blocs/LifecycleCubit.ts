@@ -47,5 +47,5 @@ export class LifecycleCubit extends Cubit<LifecycleState> {
       mountTime: null,
       unmountTime: null,
     });
-  }
-} 
+  };
+}

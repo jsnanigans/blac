@@ -6,7 +6,7 @@ export type {
   StorageAdapter,
   SerializationOptions,
   PersistenceOptions,
-  StorageMetadata
+  StorageMetadata,
 } from './types';
 
 // Storage adapters
@@ -15,5 +15,5 @@ export {
   SessionStorageAdapter,
   InMemoryStorageAdapter,
   AsyncStorageAdapter,
-  getDefaultStorage
+  getDefaultStorage,
 } from './storage-adapters';

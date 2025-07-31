@@ -16,6 +16,12 @@
     "resolveJsonModule": true,
     "types": ["vitest/globals"]
   },
-  "include": ["src", "tests", "vite.config.ts", "vitest-setup.ts", "vitest.d.ts"],
+  "include": [
+    "src",
+    "tests",
+    "vite.config.ts",
+    "vitest-setup.ts",
+    "vitest.d.ts"
+  ],
   "exclude": ["publish.ts", "dev.ts"]
 }

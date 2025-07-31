@@ -40,4 +40,4 @@ export class LoggerEventCubit extends Cubit<LoggerEventState> {
   //   super.onDispose();
   //   console.log('LoggerEventCubit disposed');
   // }
-} 
+}

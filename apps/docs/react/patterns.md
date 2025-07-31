@@ -25,7 +25,7 @@ function TodoApp() {
 // Each component accesses only the state it needs
 function AddTodoForm() {
   const [state, todoCubit] = useBloc(TodoCubit);
-  
+
   return (
     <form onSubmit={todoCubit.handleSubmit}>
       <input
@@ -40,7 +40,7 @@ function AddTodoForm() {
 
 function FilterButtons() {
   const [state, todoCubit] = useBloc(TodoCubit);
-  
+
   return (
     <div role="radiogroup" aria-label="Filter todos">
       <button
@@ -70,7 +70,7 @@ function FilterButtons() {
 
 function TodoList() {
   const [state, todoCubit] = useBloc(TodoCubit);
-  
+
   return (
     <ul>
       {todoCubit.filteredTodos.map(todo => (
@@ -93,11 +93,11 @@ function TodoList() {
 function ClearCompletedButton() {
   const [state, todoCubit] = useBloc(TodoCubit);
   const hasCompletedTodos = state.todos.some(todo => todo.completed);
-  
+
   if (!hasCompletedTodos) {
     return null;
   }
-  
+
   return (
     <button onClick={todoCubit.clearCompleted}>
       Clear Completed
@@ -114,6 +114,7 @@ function ClearCompletedButton() {
 4. **Cleaner Code**: No need to pass callbacks or state through multiple component layers
 
 For example:
+
 - `AddTodoForm` only re-renders when `inputText` changes
 - `FilterButtons` only re-renders when `filter` or `activeTodoCount` changes
 - `TodoList` only re-renders when `filteredTodos` changes
@@ -152,11 +153,11 @@ Encapsulate BlaC usage in custom hooks:
 // hooks/useCounter.ts
 export function useCounter(id?: string) {
   const [count, cubit] = useBloc(CounterCubit, { id });
-  
+
   const increment = useCallback(() => cubit.increment(), [cubit]);
   const decrement = useCallback(() => cubit.decrement(), [cubit]);
   const reset = useCallback(() => cubit.reset(), [cubit]);
-  
+
   return {
     count,
     increment,
@@ -169,7 +170,7 @@ export function useCounter(id?: string) {
 // Usage
 function Counter() {
   const { count, increment, isEven } = useCounter();
-  
+
   return (
     <div>
       <p>Count: {count} {isEven && '(even)'}</p>
@@ -185,28 +186,31 @@ function Counter() {
 export function useUserProfile(userId: string) {
   const [state, cubit] = useBloc(UserCubit, {
     id: `user-${userId}`,
-    props: { userId }
+    props: { userId },
   });
-  
+
   // Load user on mount and userId change
   useEffect(() => {
     cubit.load(userId);
   }, [userId, cubit]);
-  
+
   // Refresh every 5 minutes
   useEffect(() => {
-    const interval = setInterval(() => {
-      cubit.refresh();
-    }, 5 * 60 * 1000);
-    
+    const interval = setInterval(
+      () => {
+        cubit.refresh();
+      },
+      5 * 60 * 1000,
+    );
+
     return () => clearInterval(interval);
   }, [cubit]);
-  
+
   return {
     user: state.user,
     isLoading: state.isLoading,
     error: state.error,
-    refresh: cubit.refresh
+    refresh: cubit.refresh,
   };
 }
 ```
@@ -218,19 +222,19 @@ export function useAppState() {
   const auth = useAuth();
   const theme = useTheme();
   const notifications = useNotifications();
-  
+
   return {
     isReady: auth.isAuthenticated && !auth.isLoading,
     currentUser: auth.user,
     isDarkMode: theme.mode === 'dark',
     unreadCount: notifications.unread.length,
-    
+
     // Combined actions
     logout: () => {
       auth.logout();
       notifications.clear();
       theme.reset();
-    }
+    },
   };
 }
 ```
@@ -283,7 +287,7 @@ Share within a specific component tree:
 ```typescript
 function FeatureRoot() {
   const featureId = useId();
-  
+
   return (
     <FeatureContext.Provider value={featureId}>
       <FeatureHeader />
@@ -308,12 +312,12 @@ BlaC automatically tracks dependencies:
 ```typescript
 function TodoItem({ id }: { id: string }) {
   const [state] = useBloc(TodoCubit);
-  
+
   // Only re-renders when this specific todo changes
   const todo = state.todos.find(t => t.id === id);
-  
+
   if (!todo) return null;
-  
+
   return <div>{todo.text}</div>;
 }
 ```
@@ -325,21 +329,21 @@ For expensive computations:
 ```typescript
 function TodoStats() {
   const [state] = useBloc(TodoCubit);
-  
+
   const stats = useMemo(() => {
     const completed = state.todos.filter(t => t.completed);
     const active = state.todos.filter(t => !t.completed);
-    
+
     return {
       total: state.todos.length,
       completed: completed.length,
       active: active.length,
-      percentComplete: state.todos.length > 0 
+      percentComplete: state.todos.length > 0
         ? Math.round((completed.length / state.todos.length) * 100)
         : 0
     };
   }, [state.todos]);
-  
+
   return <StatsDisplay {...stats} />;
 }
 ```
@@ -353,7 +357,7 @@ class ExpensiveDataCubit extends Cubit<DataState> {
   constructor() {
     super({ data: null, isInitialized: false });
   }
-  
+
   initialize = once(async () => {
     const data = await this.loadExpensiveData();
     this.patch({ data, isInitialized: true });
@@ -362,11 +366,11 @@ class ExpensiveDataCubit extends Cubit<DataState> {
 
 function DataComponent() {
   const [state, cubit] = useBloc(ExpensiveDataCubit);
-  
+
   useEffect(() => {
     cubit.initialize();
   }, [cubit]);
-  
+
   if (!state.isInitialized) return <Loading />;
   return <DataView data={state.data} />;
 }
@@ -386,7 +390,7 @@ class ContactFormCubit extends Cubit<ContactFormState> {
       isSubmitting: false
     });
   }
-  
+
   updateField = (field: keyof FormValues, value: string) => {
     this.patch({
       values: { ...this.state.values, [field]: value },
@@ -394,10 +398,10 @@ class ContactFormCubit extends Cubit<ContactFormState> {
     });
     this.validateField(field, value);
   };
-  
+
   validateField = (field: string, value: string) => {
     const errors = { ...this.state.errors };
-    
+
     switch (field) {
       case 'email':
         errors.email = !value.includes('@') ? 'Invalid email' : undefined;
@@ -406,14 +410,14 @@ class ContactFormCubit extends Cubit<ContactFormState> {
         errors.name = !value.trim() ? 'Required' : undefined;
         break;
     }
-    
+
     this.patch({ errors });
   };
 }
 
 function ContactForm() {
   const [state, form] = useBloc(ContactFormCubit);
-  
+
   return (
     <form onSubmit={e => { e.preventDefault(); form.submit(); }}>
       <Field
@@ -438,23 +442,23 @@ class WizardCubit extends Cubit<WizardState> {
       currentStep: 0,
       steps: ['personal', 'contact', 'review'],
       data: {},
-      errors: {}
+      errors: {},
     });
   }
-  
+
   nextStep = () => {
     if (this.validateCurrentStep()) {
       this.patch({ currentStep: this.state.currentStep + 1 });
     }
   };
-  
+
   previousStep = () => {
     this.patch({ currentStep: Math.max(0, this.state.currentStep - 1) });
   };
-  
+
   updateStepData = (data: Partial<FormData>) => {
     this.patch({
-      data: { ...this.state.data, ...data }
+      data: { ...this.state.data, ...data },
     });
   };
 }
@@ -470,21 +474,21 @@ class ErrorBoundary extends React.Component<
   { hasError: boolean; error: Error | null }
 > {
   state = { hasError: false, error: null };
-  
+
   static getDerivedStateFromError(error: Error) {
     return { hasError: true, error };
   }
-  
+
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('Error caught by boundary:', error, errorInfo);
     // Send to error tracking service
   }
-  
+
   render() {
     if (this.state.hasError && this.state.error) {
       return <this.props.fallback error={this.state.error} />;
     }
-    
+
     return this.props.children;
   }
 }
@@ -506,18 +510,18 @@ class GlobalErrorCubit extends Cubit<ErrorState> {
   constructor() {
     super({ errors: [] });
   }
-  
+
   addError = (error: AppError) => {
     this.patch({
       errors: [...this.state.errors, { ...error, id: Date.now() }]
     });
-    
+
     // Auto-dismiss after 5 seconds
     setTimeout(() => {
       this.removeError(error.id);
     }, 5000);
   };
-  
+
   removeError = (id: number) => {
     this.patch({
       errors: this.state.errors.filter(e => e.id !== id)
@@ -528,7 +532,7 @@ class GlobalErrorCubit extends Cubit<ErrorState> {
 // Global error display
 function ErrorToasts() {
   const [{ errors }] = useBloc(GlobalErrorCubit);
-  
+
   return (
     <div className="error-toasts">
       {errors.map(error => (
@@ -552,22 +556,22 @@ jest.mock('./CounterCubit');
 
 describe('Counter Component', () => {
   let mockCubit: jest.Mocked<CounterCubit>;
-  
+
   beforeEach(() => {
     mockCubit = {
       state: 0,
       increment: jest.fn(),
       decrement: jest.fn()
     } as any;
-    
+
     (CounterCubit as any).mockImplementation(() => mockCubit);
   });
-  
+
   test('renders count and handles clicks', () => {
     render(<Counter />);
-    
+
     expect(screen.getByText('Count: 0')).toBeInTheDocument();
-    
+
     fireEvent.click(screen.getByText('+'));
     expect(mockCubit.increment).toHaveBeenCalled();
   });
@@ -582,13 +586,13 @@ import { useCounter } from './useCounter';
 
 test('useCounter hook', () => {
   const { result } = renderHook(() => useCounter());
-  
+
   expect(result.current.count).toBe(0);
-  
+
   act(() => {
     result.current.increment();
   });
-  
+
   expect(result.current.count).toBe(1);
   expect(result.current.isEven).toBe(false);
 });
@@ -600,16 +604,16 @@ test('useCounter hook', () => {
 
 ```typescript
 function withLogging<T extends BlocBase<any>>(
-  BlocClass: new (...args: any[]) => T
+  BlocClass: new (...args: any[]) => T,
 ): new (...args: any[]) => T {
   return class extends BlocClass {
     constructor(...args: any[]) {
       super(...args);
-      
+
       this.on(BlacEvent.StateChange, ({ detail }) => {
         console.log(`[${this.constructor.name}] State changed:`, {
           from: detail.previousState,
-          to: detail.state
+          to: detail.state,
         });
       });
     }
@@ -631,20 +635,20 @@ interface CubitPlugin<S> {
 
 class PluggableCubit<S> extends Cubit<S> {
   private plugins: CubitPlugin<S>[] = [];
-  
+
   use(plugin: CubitPlugin<S>) {
     this.plugins.push(plugin);
     plugin.onInit?.(this);
-    
+
     if (plugin.onStateChange) {
       this.on(BlacEvent.StateChange, ({ detail }) => {
         plugin.onStateChange!(detail.state, detail.previousState);
       });
     }
   }
-  
+
   dispose() {
-    this.plugins.forEach(p => p.onDispose?.());
+    this.plugins.forEach((p) => p.onDispose?.());
     super.dispose();
   }
 }

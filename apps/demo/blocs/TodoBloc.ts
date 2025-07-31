@@ -58,7 +58,10 @@ export class TodoBloc extends Bloc<TodoState, TodoActions> {
   }
 
   // --- Event Handlers ---
-  private handleAddTodo = (action: AddTodoAction, emit: (newState: TodoState) => void) => {
+  private handleAddTodo = (
+    action: AddTodoAction,
+    emit: (newState: TodoState) => void,
+  ) => {
     if (!action.text.trim()) return; // No change if text is empty
     const newState = {
       ...this.state,
@@ -71,17 +74,23 @@ export class TodoBloc extends Bloc<TodoState, TodoActions> {
     emit(newState);
   };
 
-  private handleToggleTodo = (action: ToggleTodoAction, emit: (newState: TodoState) => void) => {
+  private handleToggleTodo = (
+    action: ToggleTodoAction,
+    emit: (newState: TodoState) => void,
+  ) => {
     const newState = {
       ...this.state,
       todos: this.state.todos.map((todo) =>
-        todo.id === action.id ? { ...todo, completed: !todo.completed } : todo
+        todo.id === action.id ? { ...todo, completed: !todo.completed } : todo,
       ),
     };
     emit(newState);
   };
 
-  private handleRemoveTodo = (action: RemoveTodoAction, emit: (newState: TodoState) => void) => {
+  private handleRemoveTodo = (
+    action: RemoveTodoAction,
+    emit: (newState: TodoState) => void,
+  ) => {
     const newState = {
       ...this.state,
       todos: this.state.todos.filter((todo) => todo.id !== action.id),
@@ -89,7 +98,10 @@ export class TodoBloc extends Bloc<TodoState, TodoActions> {
     emit(newState);
   };
 
-  private handleSetFilter = (action: SetFilterAction, emit: (newState: TodoState) => void) => {
+  private handleSetFilter = (
+    action: SetFilterAction,
+    emit: (newState: TodoState) => void,
+  ) => {
     const newState = {
       ...this.state,
       filter: action.filter,
@@ -97,7 +109,10 @@ export class TodoBloc extends Bloc<TodoState, TodoActions> {
     emit(newState);
   };
 
-  private handleClearCompleted = (_action: ClearCompletedAction, emit: (newState: TodoState) => void) => {
+  private handleClearCompleted = (
+    _action: ClearCompletedAction,
+    emit: (newState: TodoState) => void,
+  ) => {
     const newState = {
       ...this.state,
       todos: this.state.todos.filter((todo) => !todo.completed),
@@ -109,19 +124,20 @@ export class TodoBloc extends Bloc<TodoState, TodoActions> {
   addTodo = (text: string) => this.add(new AddTodoAction(text));
   toggleTodo = (id: number) => this.add(new ToggleTodoAction(id));
   removeTodo = (id: number) => this.add(new RemoveTodoAction(id));
-  setFilter = (filter: 'all' | 'active' | 'completed') => this.add(new SetFilterAction(filter));
+  setFilter = (filter: 'all' | 'active' | 'completed') =>
+    this.add(new SetFilterAction(filter));
   clearCompleted = () => this.add(new ClearCompletedAction());
 
   // Getter for filtered todos
   get filteredTodos(): Todo[] {
     switch (this.state.filter) {
       case 'active':
-        return this.state.todos.filter(todo => !todo.completed);
+        return this.state.todos.filter((todo) => !todo.completed);
       case 'completed':
-        return this.state.todos.filter(todo => todo.completed);
+        return this.state.todos.filter((todo) => todo.completed);
       case 'all':
       default:
         return this.state.todos;
     }
   }
-} 
+}

@@ -6,6 +6,13 @@ import {
   BlocState,
 } from './types';
 import { SystemPluginRegistry } from './plugins/SystemPluginRegistry';
+import {
+  BlacError,
+  ErrorCategory,
+  ErrorSeverity,
+  BlacErrorContext,
+} from './errors/BlacError';
+import { ErrorManager } from './errors/ErrorManager';
 
 /**
  * Configuration options for the Blac instance
@@ -104,6 +111,7 @@ export class Blac {
   }
   /** Timestamp when the instance was created */
   createdAt = Date.now();
+  private errorManager = ErrorManager.getInstance();
   static get getAllBlocs() {
     return Blac.instance.getAllBlocs;
   }
@@ -130,14 +138,24 @@ export class Blac {
       config.proxyDependencyTracking !== undefined &&
       typeof config.proxyDependencyTracking !== 'boolean'
     ) {
-      throw new Error('BlacConfig.proxyDependencyTracking must be a boolean');
+      const error = new BlacError(
+        'BlacConfig.proxyDependencyTracking must be a boolean',
+        ErrorCategory.VALIDATION,
+        ErrorSeverity.FATAL,
+      );
+      this.instance.errorManager.handle(error);
     }
 
     if (
       config.exposeBlacInstance !== undefined &&
       typeof config.exposeBlacInstance !== 'boolean'
     ) {
-      throw new Error('BlacConfig.exposeBlacInstance must be a boolean');
+      const error = new BlacError(
+        'BlacConfig.exposeBlacInstance must be a boolean',
+        ErrorCategory.VALIDATION,
+        ErrorSeverity.FATAL,
+      );
+      this.instance.errorManager.handle(error);
     }
 
     // Merge with existing config
@@ -234,7 +252,7 @@ export class Blac {
    */
   error = (message: string, ...args: unknown[]) => {
     if (Blac.enableLog) {
-      // Logging disabled - console.error removed
+      console.error(message, ...args);
     }
   };
   static get error() {

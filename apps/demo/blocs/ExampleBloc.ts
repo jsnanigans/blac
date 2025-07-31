@@ -1,13 +1,11 @@
 import { Bloc } from '@blac/core';
 
 class CounterIncremented {
-  constructor(public readonly amount: number = 1) {
-  }
+  constructor(public readonly amount: number = 1) {}
 }
 
 class CounterDecremented {
-  constructor(public readonly amount: number = 1) {
-  }
+  constructor(public readonly amount: number = 1) {}
 }
 
 class CounterReset {}

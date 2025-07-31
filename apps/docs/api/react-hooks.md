@@ -11,38 +11,37 @@ The primary hook for connecting a component to a Bloc/Cubit.
 ```tsx
 function useBloc<
   B extends BlocConstructor<BlocGeneric>,
-  O extends BlocHookOptions<InstanceType<B>>
->(
-  blocClass: B,
-  options?: O
-): [BlocState<InstanceType<B>>, InstanceType<B>]
+  O extends BlocHookOptions<InstanceType<B>>,
+>(blocClass: B, options?: O): [BlocState<InstanceType<B>>, InstanceType<B>];
 ```
 
 ### Parameters
 
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| `blocClass` | `BlocConstructor<BlocGeneric>` | Yes | The Bloc/Cubit class to use |
-| `options.id` | `string` | No | Optional identifier for the Bloc/Cubit instance |
-| `options.props` | `InferPropsFromGeneric<B>` | No | Props to pass to the Bloc/Cubit constructor |
-| `options.selector` | `(currentState: BlocState<InstanceType<B>>, previousState: BlocState<InstanceType<B>> \| undefined, instance: InstanceType<B>) => unknown[]` | No | Function to select dependencies that should trigger re-renders |
-| `options.onMount` | `(bloc: InstanceType<B>) => void` | No | Callback function invoked when the Bloc is mounted |
+| Name               | Type                                                                                                                                         | Required | Description                                                    |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------- |
+| `blocClass`        | `BlocConstructor<BlocGeneric>`                                                                                                               | Yes      | The Bloc/Cubit class to use                                    |
+| `options.id`       | `string`                                                                                                                                     | No       | Optional identifier for the Bloc/Cubit instance                |
+| `options.props`    | `InferPropsFromGeneric<B>`                                                                                                                   | No       | Props to pass to the Bloc/Cubit constructor                    |
+| `options.selector` | `(currentState: BlocState<InstanceType<B>>, previousState: BlocState<InstanceType<B>> \| undefined, instance: InstanceType<B>) => unknown[]` | No       | Function to select dependencies that should trigger re-renders |
+| `options.onMount`  | `(bloc: InstanceType<B>) => void`                                                                                                            | No       | Callback function invoked when the Bloc is mounted             |
 
 ### Returns
 
 An array containing:
 `[state, bloc]` where:
+
 1. `state` is the current state of the Bloc/Cubit.
 2. `bloc` is the Bloc/Cubit instance with methods.
 
 ### Examples
 
 #### Basic Usage
+
 ```tsx
 function Counter() {
   // Basic usage
   const [state, bloc] = useBloc(CounterBloc);
-  
+
   return (
     <div>
       <h1>Count: {state.count}</h1>
@@ -59,7 +58,7 @@ A major advantage of useBloc is its automatic tracking of property access. The h
 ```tsx
 function UserProfile() {
   const [state, bloc] = useBloc(UserProfileBloc);
-  
+
   // This component will only re-render when state.name changes,
   // even if other properties in the state object change
   return <h1>Welcome, {state.name}!</h1>;
@@ -120,12 +119,14 @@ export class UserProfileCubit extends Cubit<UserProfileState> {
     return `${this.state.firstName} ${this.state.lastName}`;
   }
 
-  toggleShowFullName = () => this.patch({ showFullName: !this.state.showFullName });
+  toggleShowFullName = () =>
+    this.patch({ showFullName: !this.state.showFullName });
   setFirstName = (firstName: string) => this.patch({ firstName });
   setLastName = (lastName: string) => this.patch({ lastName });
   incrementAge = () => this.patch({ age: this.state.age + 1 });
   // Method to update a non-rendered property
-  incrementAccessCount = () => this.patch({ accessCount: this.state.accessCount + 1 });
+  incrementAccessCount = () =>
+    this.patch({ accessCount: this.state.accessCount + 1 });
 }
 ```
 
@@ -155,10 +156,16 @@ function UserProfileDemo() {
       <button onClick={cubit.toggleShowFullName}>
         Toggle Full Name Display
       </button>
-      <button onClick={() => cubit.setFirstName('John')}>Set First Name to John</button>
-      <button onClick={() => cubit.setLastName('Smith')}>Set Last Name to Smith</button>
+      <button onClick={() => cubit.setFirstName('John')}>
+        Set First Name to John
+      </button>
+      <button onClick={() => cubit.setLastName('Smith')}>
+        Set Last Name to Smith
+      </button>
       <button onClick={cubit.incrementAge}>Increment Age</button>
-      <button onClick={cubit.incrementAccessCount}>Increment Access Count (No Re-render Expected Initially)</button>
+      <button onClick={cubit.incrementAccessCount}>
+        Increment Access Count (No Re-render Expected Initially)
+      </button>
     </div>
   );
 }
@@ -169,32 +176,33 @@ export default UserProfileDemo;
 **Behavior Explanation:**
 
 1.  **Initial Render (`showFullName` is `true`):**
-    *   The component accesses `state.showFullName`, `cubit.fullName` (which in turn accesses `state.firstName` and `state.lastName` via the getter), and `state.age`.
-    *   `useBloc` tracks these dependencies: `showFullName`, `firstName`, `lastName`, `age`.
-    *   Changing `state.accessCount` via `cubit.incrementAccessCount()` will *not* cause a re-render because `accessCount` is not directly used in the JSX.
+    - The component accesses `state.showFullName`, `cubit.fullName` (which in turn accesses `state.firstName` and `state.lastName` via the getter), and `state.age`.
+    - `useBloc` tracks these dependencies: `showFullName`, `firstName`, `lastName`, `age`.
+    - Changing `state.accessCount` via `cubit.incrementAccessCount()` will _not_ cause a re-render because `accessCount` is not directly used in the JSX.
 
 2.  **Click "Toggle Full Name Display" (`showFullName` becomes `false`):**
-    *   The component re-renders because `state.showFullName` changed.
-    *   Now, the JSX accesses `state.showFullName`, `state.firstName`, and `state.age`. The `cubit.fullName` getter is no longer called.
-    *   `useBloc` updates its dependency tracking. The new dependencies are: `showFullName`, `firstName`, `age`.
-    *   **Crucially, `state.lastName` is no longer a dependency.**
+    - The component re-renders because `state.showFullName` changed.
+    - Now, the JSX accesses `state.showFullName`, `state.firstName`, and `state.age`. The `cubit.fullName` getter is no longer called.
+    - `useBloc` updates its dependency tracking. The new dependencies are: `showFullName`, `firstName`, `age`.
+    - **Crucially, `state.lastName` is no longer a dependency.**
 
 3.  **After Toggling ( `showFullName` is `false`):**
-    *   If you click "Set Last Name to Smith" (changing `state.lastName`), the component **will not re-render** because `state.lastName` is not currently an active dependency in the rendered output.
-    *   If you click "Set First Name to John" (changing `state.firstName`), the component **will re-render** because `state.firstName` is an active dependency.
-    *   If you click "Increment Age" (changing `state.age`), the component **will re-render**.
+    - If you click "Set Last Name to Smith" (changing `state.lastName`), the component **will not re-render** because `state.lastName` is not currently an active dependency in the rendered output.
+    - If you click "Set First Name to John" (changing `state.firstName`), the component **will re-render** because `state.firstName` is an active dependency.
+    - If you click "Increment Age" (changing `state.age`), the component **will re-render**.
 
 4.  **Toggle Back (`showFullName` becomes `true` again):**
-    *   The component re-renders due to `state.showFullName` changing.
-    *   The JSX now accesses `cubit.fullName` again.
-    *   `useBloc` re-establishes `firstName` and `lastName` (via the getter) as dependencies, along with `showFullName` and `age`.
-    *   Now, changing `state.lastName` will cause a re-render.
+    - The component re-renders due to `state.showFullName` changing.
+    - The JSX now accesses `cubit.fullName` again.
+    - `useBloc` re-establishes `firstName` and `lastName` (via the getter) as dependencies, along with `showFullName` and `age`.
+    - Now, changing `state.lastName` will cause a re-render.
 
-This dynamic dependency tracking ensures optimal performance by only re-rendering your component when the state it *currently* relies on for rendering actually changes. The use of getters is also seamlessly handled, with dependencies being tracked through the getter's own state access.
+This dynamic dependency tracking ensures optimal performance by only re-rendering your component when the state it _currently_ relies on for rendering actually changes. The use of getters is also seamlessly handled, with dependencies being tracked through the getter's own state access.
 
 ---
 
 #### Custom ID for Instance Management
+
 If you want to share the same state between multiple components but need different instances of the Bloc/Cubit, you can define a custom ID.
 
 :::info
@@ -204,12 +212,13 @@ By default, each Bloc/Cubit uses its class name as an identifier.
 ```tsx
 const [state, bloc] = useBloc(ChatThreadBloc, { id: 'thread-123' });
 ```
+
 On its own, this is not very useful, but it becomes very powerful when the ID is dynamic.
 
 ```tsx
 function ChatThread({ conversationId }: { conversationId: string }) {
-  const [state, bloc] = useBloc(ChatThreadBloc, { 
-    id: `thread-${conversationId}`
+  const [state, bloc] = useBloc(ChatThreadBloc, {
+    id: `thread-${conversationId}`,
   });
 
   return (
@@ -219,10 +228,13 @@ function ChatThread({ conversationId }: { conversationId: string }) {
   );
 }
 ```
+
 With this approach, you can have multiple independent instances of state that share the same business logic.
 
 ---
+
 #### Custom Dependency Selector
+
 While property access is automatically tracked, in some cases you might want more control over when a component re-renders. The custom selector receives the current state, previous state, and bloc instance:
 
 :::tip Manual Dependencies Override Global Config
@@ -234,12 +246,12 @@ function OptimizedTodoList() {
   // Using custom selector for optimization
   const [state, bloc] = useBloc(TodoBloc, {
     selector: (currentState, previousState, instance) => [
-      currentState.todos.length,  // Only track todo count
-      currentState.filter,        // Track filter changes  
-      instance.hasUnsavedChanges  // Track computed property from bloc
-    ]
+      currentState.todos.length, // Only track todo count
+      currentState.filter, // Track filter changes
+      instance.hasUnsavedChanges, // Track computed property from bloc
+    ],
   });
-  
+
   // Component will only re-render when tracked dependencies change
   return (
     <div>
@@ -254,41 +266,44 @@ function OptimizedTodoList() {
 #### Advanced Custom Selector Examples
 
 **Track only specific computed values:**
+
 ```tsx
 const [state, shoppingCart] = useBloc(ShoppingCartBloc, {
   selector: (currentState, previousState, instance) => [
-    instance.totalPrice,     // Computed getter
-    instance.itemCount,      // Another computed getter
-    currentState.couponCode  // Specific state property
-  ]
+    instance.totalPrice, // Computed getter
+    instance.itemCount, // Another computed getter
+    currentState.couponCode, // Specific state property
+  ],
 });
 ```
 
 **Conditional dependency tracking:**
+
 ```tsx
 const [state, userBloc] = useBloc(UserBloc, {
   selector: (currentState, previousState, instance) => {
     const deps = [currentState.isLoggedIn];
-    
+
     // Only track user details when logged in
     if (currentState.isLoggedIn) {
       deps.push(currentState.username, currentState.email);
     }
-    
+
     return deps;
-  }
+  },
 });
 ```
 
 **Compare with previous state:**
+
 ```tsx
 const [state, chatBloc] = useBloc(ChatBloc, {
   selector: (currentState, previousState) => [
     // Only re-render when new messages are added, not when existing ones change
-    currentState.messages.length > (previousState?.messages.length || 0) 
-      ? currentState.messages.length 
-      : 'no-new-messages'
-  ]
+    currentState.messages.length > (previousState?.messages.length || 0)
+      ? currentState.messages.length
+      : 'no-new-messages',
+  ],
 });
 ```
 
@@ -308,25 +323,27 @@ class ThemeCubit extends Cubit<ThemeState, ThemeProps> {
 
 // In component
 function ThemeToggle() {
-  const [state, bloc] = useBloc(ThemeCubit, { 
-    props: { defaultTheme: 'dark' } 
+  const [state, bloc] = useBloc(ThemeCubit, {
+    props: { defaultTheme: 'dark' },
   });
-  
+
   return (
     <button onClick={bloc.toggleTheme}>
       {state.theme === 'dark' ? '🌙' : '☀️'}
     </button>
   );
 }
-``` 
+```
+
 If a prop changes, it will be updated in the Bloc/Cubit instance. This is useful for seamless integration with React components that use props to configure the Bloc/Cubit.
+
 ```tsx
 function ThemeToggle(props: ThemeProps) {
   const [state, bloc] = useBloc(ThemeCubit, { props });
   // ...
 }
 
-<ThemeToggle defaultTheme="dark" />
+<ThemeToggle defaultTheme="dark" />;
 ```
 
 ### Initialization with onMount
@@ -339,9 +356,9 @@ function UserProfile({ userId }: { userId: string }) {
     onMount: (bloc) => {
       // Load user data when the component mounts
       bloc.fetchUserData(userId);
-    }
+    },
   });
-  
+
   return (
     <div>
       {state.isLoading ? (
@@ -370,15 +387,15 @@ Make sure to only use the `props` option in the `useBloc` hook in a single place
 
 ```tsx
 function ThemeToggle() {
-  const [state, bloc] = useBloc(ThemeCubit, { 
-    props: { defaultTheme: 'dark' }
+  const [state, bloc] = useBloc(ThemeCubit, {
+    props: { defaultTheme: 'dark' },
   });
   // ...
 }
 
 function UseThemeToggle() {
-  const [state, bloc] = useBloc(ThemeCubit, { 
-    props: { name: 'John' }// [!code error]
+  const [state, bloc] = useBloc(ThemeCubit, {
+    props: { name: 'John' }, // [!code error]
   });
   // ...
 }
@@ -390,14 +407,14 @@ If you need to pass props to a Bloc/Cubit that is not known at the time of initi
 
 ```tsx{10-12}
 function ThemeToggle() {
-  const [state, bloc] = useBloc(ThemeCubit, { 
+  const [state, bloc] = useBloc(ThemeCubit, {
     props: { defaultTheme: 'dark' }
   });
   // ...
 }
 
 function UseThemeToggle() {
-  const [state, bloc] = useBloc(ThemeCubit, { 
+  const [state, bloc] = useBloc(ThemeCubit, {
     onMount: (bloc) => {
       bloc.setName('John');
     }

@@ -29,8 +29,7 @@
     "bloc-pattern"
   ],
   "scripts": {
-    "prettier": "prettier --write ./src",
-    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx}\"",
+    "format": "prettier --write \".\"",
     "test": "vitest run",
     "test:watch": "vitest --watch",
     "coverage": "vitest run --coverage",
@@ -40,14 +39,14 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "@testing-library/jest-dom": "^6.6.4",
-    "@testing-library/user-event": "^14.6.1",
-    "@vitest/browser": "^3.2.4",
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/user-event": "catalog:",
+    "@vitest/browser": "catalog:",
     "jsdom": "catalog:",
-    "prettier": "^3.6.2",
-    "typescript": "^5.8.3",
+    "prettier": "catalog:",
+    "typescript": "catalog:",
     "vite": "catalog:",
-    "vite-plugin-dts": "^4.5.4",
+    "vite-plugin-dts": "catalog:",
     "vitest": "catalog:"
   }
 }

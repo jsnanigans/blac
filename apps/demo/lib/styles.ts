@@ -1,21 +1,22 @@
 // Global Font
-export const FONT_FAMILY_SANS = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+export const FONT_FAMILY_SANS =
+  'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
 
 // New Color Palette
 export const COLOR_BACKGROUND_LIGHT = '#F7F9FA'; // Very light gray, almost white
 export const COLOR_BACKGROUND_SECTION = '#FFFFFF'; // White for cards/sections
-export const COLOR_TEXT_PRIMARY = '#2C3E50';      // Dark, slightly desaturated blue/gray
-export const COLOR_TEXT_SECONDARY = '#566573';   // Medium gray for secondary text
-export const COLOR_PRIMARY_ACCENT = '#3498DB';   // A calm, friendly blue
+export const COLOR_TEXT_PRIMARY = '#2C3E50'; // Dark, slightly desaturated blue/gray
+export const COLOR_TEXT_SECONDARY = '#566573'; // Medium gray for secondary text
+export const COLOR_PRIMARY_ACCENT = '#3498DB'; // A calm, friendly blue
 export const COLOR_PRIMARY_ACCENT_HOVER = '#2980B9'; // Darker blue for hover
 export const COLOR_SECONDARY_ACCENT = '#EAECEE'; // Light gray for borders, subtle backgrounds
-export const COLOR_DESTRUCTIVE = '#E74C3C';      // A clear red for destructive actions
+export const COLOR_DESTRUCTIVE = '#E74C3C'; // A clear red for destructive actions
 export const COLOR_DESTRUCTIVE_HOVER = '#C0392B'; // Darker red for hover
-export const COLOR_DISABLED = '#BDC3C7';         // Light gray for disabled states
-export const COLOR_TEXT_ON_PRIMARY = '#FFFFFF';  // White text on primary accent color
+export const COLOR_DISABLED = '#BDC3C7'; // Light gray for disabled states
+export const COLOR_TEXT_ON_PRIMARY = '#FFFFFF'; // White text on primary accent color
 export const COLOR_TEXT_ON_DESTRUCTIVE = '#FFFFFF'; // White text on destructive color
-export const COLOR_CODE_BACKGROUND = '#ECF0F1';  // Light gray for code blocks
-export const COLOR_CODE_TEXT = '#2C3E50';         // Dark text for code
+export const COLOR_CODE_BACKGROUND = '#ECF0F1'; // Light gray for code blocks
+export const COLOR_CODE_TEXT = '#2C3E50'; // Dark text for code
 
 export const APP_CONTAINER_STYLE = {
   fontFamily: FONT_FAMILY_SANS,
@@ -46,7 +47,8 @@ export const SECTION_STYLE = {
   boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
 };
 
-export const BUTTON_BASE_STYLE = { // Renamed from BUTTON_STYLE to avoid conflict with component prop
+export const BUTTON_BASE_STYLE = {
+  // Renamed from BUTTON_STYLE to avoid conflict with component prop
   fontFamily: FONT_FAMILY_SANS,
   padding: '10px 18px',
   border: '1px solid transparent',
@@ -56,7 +58,8 @@ export const BUTTON_BASE_STYLE = { // Renamed from BUTTON_STYLE to avoid conflic
   fontWeight: '500' as const,
   fontSize: '0.95em',
   textAlign: 'center' as const,
-  transition: 'background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease',
+  transition:
+    'background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease',
   textTransform: 'none' as const, // Removed uppercase
   letterSpacing: 'normal' as const, // Removed letter spacing
 };
@@ -92,7 +95,8 @@ export const LINK_STYLE = {
   fontWeight: '500' as const,
 };
 
-LINK_STYLE[':hover'] = { // Example for pseudo-class if using a CSS-in-JS lib that supports it
+LINK_STYLE[':hover'] = {
+  // Example for pseudo-class if using a CSS-in-JS lib that supports it
   textDecoration: 'underline',
 };
 
@@ -155,13 +159,13 @@ export const LCARS_BACKGROUND_DARK = COLOR_BACKGROUND_LIGHT;
 export const LCARS_BACKGROUND_SECTION = COLOR_BACKGROUND_SECTION;
 export const LCARS_BACKGROUND_DEMO_TINT = COLOR_BACKGROUND_SECTION;
 export const LCARS_TEXT_LIGHT = COLOR_TEXT_PRIMARY; // This might need context, assuming for on dark
-export const LCARS_TEXT_DARK = COLOR_TEXT_PRIMARY;  // Assuming for on light
+export const LCARS_TEXT_DARK = COLOR_TEXT_PRIMARY; // Assuming for on light
 export const LCARS_ORANGE = COLOR_PRIMARY_ACCENT;
 export const LCARS_BLUE = COLOR_PRIMARY_ACCENT; // Consolidate accents if possible or define new semantic names
 export const LCARS_PURPLE = '#9B59B6'; // Example secondary accent if needed, or remove
-export const LCARS_PEACH = '#FDEBD0';  // Example tertiary accent, or remove
+export const LCARS_PEACH = '#FDEBD0'; // Example tertiary accent, or remove
 export const LCARS_RED_ACCENT = COLOR_DESTRUCTIVE;
 
 // Legacy button styles just map to new base for now, Button.tsx will handle variants.
 export const BUTTON_STYLE = BUTTON_BASE_STYLE;
-export const BUTTON_HOVER_STYLE = {}; // Will be handled by Button.tsx variants 
+export const BUTTON_HOVER_STYLE = {}; // Will be handled by Button.tsx variants

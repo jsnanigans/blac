@@ -5,6 +5,7 @@ Let's learn Cubits by building a simple counter. This focuses on the core concep
 ## What is a Cubit?
 
 A Cubit is a simple state container that:
+
 - Holds a single piece of state
 - Provides methods to update that state
 - Notifies listeners when state changes
@@ -106,16 +107,16 @@ export class CounterCubit extends Cubit<CounterState> {
   }
 
   increment = () => {
-    this.emit({ 
+    this.emit({
       count: this.state.count + this.state.step,
-      step: this.state.step 
+      step: this.state.step,
     });
   };
 
   setStep = (step: number) => {
-    this.emit({ 
+    this.emit({
       count: this.state.count,
-      step: step 
+      step: step,
     });
   };
 }
@@ -153,7 +154,7 @@ export class CounterCubit extends Cubit<CounterState> {
 // Use in React
 function Counter() {
   const [state, counter] = useBloc(CounterCubit);
-  
+
   return (
     <div>
       <h1>Count: {state.count}</h1>
@@ -167,6 +168,7 @@ function Counter() {
 ## What You've Learned
 
 Congratulations! You've now:
+
 - ✅ Created your first Cubit
 - ✅ Managed state with `emit()` and `patch()`
 - ✅ Connected a Cubit to React components with `useBloc`

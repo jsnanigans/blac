@@ -13,18 +13,24 @@ export class KeepAliveCounterCubit extends Cubit<CounterState> {
   constructor() {
     instanceCounter++;
     super({ count: 0, instanceId: instanceCounter });
-    console.log(`KeepAliveCounterCubit instance ${this.state.instanceId} CONSTRUCTED.`);
+    console.log(
+      `KeepAliveCounterCubit instance ${this.state.instanceId} CONSTRUCTED.`,
+    );
   }
 
   increment = () => {
     this.patch({ count: this.state.count + 1 });
-    console.log(`KeepAliveCounterCubit instance ${this.state.instanceId} incremented to ${this.state.count +1}`);
+    console.log(
+      `KeepAliveCounterCubit instance ${this.state.instanceId} incremented to ${this.state.count + 1}`,
+    );
   };
 
   reset = () => {
     // Reset count but keep instanceId
     this.patch({ count: 0 });
-    console.log(`KeepAliveCounterCubit instance ${this.state.instanceId} RESET.`);
+    console.log(
+      `KeepAliveCounterCubit instance ${this.state.instanceId} RESET.`,
+    );
   };
 
   // Linter has issues with onDispose override, so we'll skip it.
@@ -33,4 +39,4 @@ export class KeepAliveCounterCubit extends Cubit<CounterState> {
   //   super.onDispose(); // Important to call super
   //   console.log(`KeepAliveCounterCubit instance ${this.state.instanceId} DISPOSED.`);
   // }
-} 
+}

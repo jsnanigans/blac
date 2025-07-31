@@ -1,4 +1,6 @@
 import { BlocPlugin, PluginRegistry, ErrorContext } from './types';
+import { handleError } from '../errors/handleError';
+import { ErrorCategory } from '../errors/BlacError';
 
 /**
  * Registry for bloc-specific plugins
@@ -36,11 +38,10 @@ export class BlocPluginRegistry<TState, TEvent = never>
 
     // Call onDetach if attached
     if (this.attached && plugin.onDetach) {
-      try {
-        plugin.onDetach();
-      } catch (error) {
-        console.error(`Plugin '${pluginName}' error in onDetach:`, error);
-      }
+      handleError.wrap(() => plugin.onDetach!(), ErrorCategory.PLUGIN, {
+        pluginName,
+        operation: 'onDetach',
+      });
     }
 
     this.plugins.delete(pluginName);
@@ -73,11 +74,10 @@ export class BlocPluginRegistry<TState, TEvent = never>
     if (this.attached) {
       for (const plugin of this.getAll()) {
         if (plugin.onDetach) {
-          try {
-            plugin.onDetach();
-          } catch (error) {
-            console.error(`Plugin '${plugin.name}' error in onDetach:`, error);
-          }
+          handleError.wrap(() => plugin.onDetach!(), ErrorCategory.PLUGIN, {
+            pluginName: plugin.name,
+            operation: 'onDetach',
+          });
         }
       }
     }

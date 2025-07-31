@@ -1,6 +1,6 @@
 {
-  "name": "user-frontend",
-  "version": "3.2.0",
+  "name": "blac",
+  "version": "0.0.1",
   "scripts": {
     "dev": "turbo run dev --parallel",
     "build": "turbo run build",
@@ -17,9 +17,9 @@
   },
   "devDependencies": {
     "@types/bun": "catalog:",
-    "prettier": "^3.6.2",
+    "prettier": "catalog:",
     "turbo": "^2.5.5",
-    "typescript": "^5.8.3"
+    "typescript": "catalog:"
   },
-  "packageManager": "pnpm@10.13.1"
+  "packageManager": "pnpm@10.14.0"
 }

@@ -1,11 +1,12 @@
 import * as React from 'react';
 import {
-    INPUT_DISABLED_STYLE,
-    INPUT_FOCUS_STYLE,
-    INPUT_STYLE,
+  INPUT_DISABLED_STYLE,
+  INPUT_FOCUS_STYLE,
+  INPUT_STYLE,
 } from '../../lib/styles';
 
-export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {}
+export interface InputProps
+  extends React.InputHTMLAttributes<HTMLInputElement> {}
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, style, type, disabled, ...props }, ref) => {

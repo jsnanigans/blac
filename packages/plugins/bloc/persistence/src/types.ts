@@ -24,18 +24,18 @@ export interface PersistenceOptions<T> extends SerializationOptions<T> {
    * Storage key for this bloc's state
    */
   key: string;
-  
+
   /**
    * Storage adapter (defaults to localStorage if available)
    */
   storage?: StorageAdapter;
-  
+
   /**
    * Debounce time in milliseconds for saving state
    * @default 100
    */
   debounceMs?: number;
-  
+
   /**
    * Whether to migrate data from old keys
    */
@@ -43,12 +43,12 @@ export interface PersistenceOptions<T> extends SerializationOptions<T> {
     from: string;
     transform?: (oldData: any) => T;
   }[];
-  
+
   /**
    * Version for data schema
    */
   version?: number;
-  
+
   /**
    * Whether to encrypt the stored data
    */
@@ -56,7 +56,7 @@ export interface PersistenceOptions<T> extends SerializationOptions<T> {
     encrypt: (data: string) => string | Promise<string>;
     decrypt: (data: string) => string | Promise<string>;
   };
-  
+
   /**
    * Called when persistence fails
    */

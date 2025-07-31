@@ -7,4 +7,4 @@ export default defineConfig({
   server: {
     port: 3001, // Optional: specify port if needed
   },
-}); 
+});

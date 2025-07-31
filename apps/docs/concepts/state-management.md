@@ -75,7 +75,7 @@ function TodoApp() {
         id: Date.now(),
         text,
         completed: false,
-        userId: user?.id
+        userId: user?.id,
       };
 
       // Optimistic update
@@ -95,16 +95,18 @@ function TodoApp() {
   };
 
   // More methods that follow the same problematic pattern...
-  const toggleTodo = async (id) => { /* ... */ };
-  const deleteTodo = async (id) => { /* ... */ };
-  const setFilter = (newFilter) => { /* ... */ };
+  const toggleTodo = async (id) => {
+    /* ... */
+  };
+  const deleteTodo = async (id) => {
+    /* ... */
+  };
+  const setFilter = (newFilter) => {
+    /* ... */
+  };
 
   // Component becomes a massive mixed bag of concerns
-  return (
-    <div>
-      {/* 100+ lines of JSX */}
-    </div>
-  );
+  return <div>{/* 100+ lines of JSX */}</div>;
 }
 ```
 
@@ -174,6 +176,7 @@ const [filter, setFilter] = useState('all');
 ### 🤯 **Mental Model Breakdown**
 
 Your components become responsible for:
+
 - Rendering UI
 - Managing state
 - Handling async operations
@@ -204,6 +207,7 @@ function TodoProvider({ children }) {
 ```
 
 This solves prop drilling, but creates new problems:
+
 - **Performance**: Any context change re-renders all consumers
 - **Testing**: Still difficult to test logic in isolation
 - **Organization**: Logic is still mixed with state management
@@ -218,13 +222,13 @@ BlaC takes a fundamentally different approach. Instead of trying to fix React's 
 class TodoCubit extends Cubit<TodoState> {
   constructor(
     private api: TodoAPI,
-    private analytics: Analytics
+    private analytics: Analytics,
   ) {
     super({
       todos: [],
       filter: 'all',
       isLoading: false,
-      error: null
+      error: null,
     });
   }
 
@@ -238,18 +242,17 @@ class TodoCubit extends Cubit<TodoState> {
       // Optimistic update
       this.patch({
         todos: [...this.state.todos, newTodo],
-        isLoading: false
+        isLoading: false,
       });
 
       // Side effects in the right place
       this.analytics.track('todo_added');
       await this.api.saveTodo(newTodo);
-
     } catch (error) {
       // Clean error handling
       this.patch({
         error: error.message,
-        isLoading: false
+        isLoading: false,
       });
     }
   };
@@ -269,10 +272,7 @@ function TodoApp() {
     <div>
       <TodoForm onSubmit={cubit.addTodo} disabled={state.isLoading} />
       <TodoList todos={state.todos} filter={state.filter} />
-      <FilterButtons
-        current={state.filter}
-        onChange={cubit.setFilter}
-      />
+      <FilterButtons current={state.filter} onChange={cubit.setFilter} />
       {state.error && <ErrorMessage error={state.error} />}
     </div>
   );
@@ -292,6 +292,7 @@ graph TD
 ```
 
 This pattern makes your application:
+
 - **Predictable**: State changes follow a clear path
 - **Debuggable**: You can trace every state change
 - **Testable**: Business logic is isolated
@@ -355,6 +356,7 @@ class CounterCubit extends Cubit<{ count: number }> {
 ```
 
 Benefits of serializable state:
+
 - **Persistence**: Easy to save/restore with `JSON.stringify/parse`
 - **Debugging**: Better inspection in DevTools
 - **Extensibility**: Add properties without breaking existing code
@@ -450,13 +452,13 @@ class DataCubit extends Cubit<DataState> {
       this.patch({
         data,
         isLoading: false,
-        lastFetched: new Date()
+        lastFetched: new Date(),
       });
     } catch (error) {
       // Handle errors
       this.patch({
         error: error.message,
-        isLoading: false
+        isLoading: false,
       });
     }
   };
@@ -537,11 +539,11 @@ Update UI immediately, sync with server in background:
 class TodoCubit extends Cubit<TodoState> {
   toggleTodo = async (id: string) => {
     // Optimistic update
-    const todo = this.state.todos.find(t => t.id === id);
+    const todo = this.state.todos.find((t) => t.id === id);
     this.patch({
-      todos: this.state.todos.map(t =>
-        t.id === id ? { ...t, completed: !t.completed } : t
-      )
+      todos: this.state.todos.map((t) =>
+        t.id === id ? { ...t, completed: !t.completed } : t,
+      ),
     });
 
     try {
@@ -550,9 +552,7 @@ class TodoCubit extends Cubit<TodoState> {
     } catch (error) {
       // Revert on error
       this.patch({
-        todos: this.state.todos.map(t =>
-          t.id === id ? todo : t
-        )
+        todos: this.state.todos.map((t) => (t.id === id ? todo : t)),
       });
       this.showError('Failed to update todo');
     }
@@ -568,7 +568,7 @@ Derive values instead of storing them:
 class TodoCubit extends Cubit<TodoState> {
   // Don't store computed values in state
   get completedCount() {
-    return this.state.todos.filter(t => t.completed).length;
+    return this.state.todos.filter((t) => t.completed).length;
   }
 
   get progress() {
@@ -604,6 +604,7 @@ class PaymentCubit extends Cubit<PaymentState> {
 ## Summary
 
 BlaC's state management approach provides:
+
 - **Separation of Concerns**: Business logic stays out of components
 - **Predictability**: State changes are explicit and traceable
 - **Testability**: State logic can be tested in isolation

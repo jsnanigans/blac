@@ -15,13 +15,13 @@ import { Blac } from '@blac/core';
 
 // Set a single configuration option
 Blac.setConfig({
-  proxyDependencyTracking: false
+  proxyDependencyTracking: false,
 });
 
 // Set multiple options at once
 Blac.setConfig({
   proxyDependencyTracking: false,
-  exposeBlacInstance: true
+  exposeBlacInstance: true,
 });
 ```
 
@@ -46,6 +46,7 @@ Note: `Blac.config` returns a readonly copy of the configuration to prevent acci
 Controls whether BlaC uses automatic proxy-based dependency tracking for optimized re-renders in React components.
 
 #### When enabled (default):
+
 - Components only re-render when properties they actually access change
 - BlaC automatically tracks which state properties your components use
 - Provides fine-grained reactivity and optimal performance
@@ -54,13 +55,14 @@ Controls whether BlaC uses automatic proxy-based dependency tracking for optimiz
 // With proxy tracking enabled (default)
 const MyComponent = () => {
   const [state, bloc] = useBloc(UserBloc);
-  
+
   // Only re-renders when state.name changes
   return <div>{state.name}</div>;
 };
 ```
 
 #### When disabled:
+
 - Components re-render on any state change
 - Simpler mental model but potentially more re-renders
 - Useful for debugging or when proxy behavior causes issues
@@ -71,7 +73,7 @@ Blac.setConfig({ proxyDependencyTracking: false });
 
 const MyComponent = () => {
   const [state, bloc] = useBloc(UserBloc);
-  
+
   // Re-renders on ANY state change
   return <div>{state.name}</div>;
 };
@@ -84,7 +86,7 @@ You can always override the global setting by providing manual dependencies:
 ```typescript
 // This always uses manual dependencies, regardless of global config
 const [state, bloc] = useBloc(UserBloc, {
-  dependencies: (bloc) => [bloc.state.name, bloc.state.email]
+  dependencies: (bloc) => [bloc.state.name, bloc.state.email],
 });
 ```
 
@@ -112,7 +114,7 @@ BlaC validates configuration values and throws descriptive errors for invalid in
 ```typescript
 try {
   Blac.setConfig({
-    proxyDependencyTracking: 'yes' as any // Invalid type
+    proxyDependencyTracking: 'yes' as any, // Invalid type
   });
 } catch (error) {
   // Error: BlacConfig.proxyDependencyTracking must be a boolean
@@ -145,7 +147,7 @@ Adjust configuration based on your environment:
 ```typescript
 Blac.setConfig({
   proxyDependencyTracking: process.env.NODE_ENV === 'production',
-  exposeBlacInstance: process.env.NODE_ENV === 'development'
+  exposeBlacInstance: process.env.NODE_ENV === 'development',
 });
 ```
 
@@ -156,11 +158,11 @@ Reset configuration between tests to ensure isolation:
 ```typescript
 describe('MyComponent', () => {
   const originalConfig = { ...Blac.config };
-  
+
   afterEach(() => {
     Blac.setConfig(originalConfig);
   });
-  
+
   it('works without proxy tracking', () => {
     Blac.setConfig({ proxyDependencyTracking: false });
     // ... test implementation
@@ -173,16 +175,19 @@ describe('MyComponent', () => {
 ### Proxy Dependency Tracking
 
 **Benefits:**
+
 - Minimal re-renders - components only update when accessed properties change
 - Automatic optimization without manual work
 - Ideal for complex state objects with many properties
 
 **Costs:**
+
 - Small overhead from proxy creation
 - May interfere with certain debugging tools
 - Can be confusing if you expect all state changes to trigger re-renders
 
 **When to disable:**
+
 - Debugging re-render issues
 - Working with state objects that don't benefit from fine-grained tracking
 - Compatibility issues with certain tools or libraries
@@ -195,7 +200,7 @@ BlaC exports the `BlacConfig` interface for type-safe configuration:
 import { BlacConfig } from '@blac/core';
 
 const myConfig: Partial<BlacConfig> = {
-  proxyDependencyTracking: false
+  proxyDependencyTracking: false,
 };
 
 Blac.setConfig(myConfig);
@@ -204,6 +209,7 @@ Blac.setConfig(myConfig);
 ## Future Configuration Options
 
 The configuration system is designed to be extensible. Future versions may include options for:
+
 - Custom error boundaries
 - Development mode warnings
 - Performance profiling

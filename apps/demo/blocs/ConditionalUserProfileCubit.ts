@@ -29,20 +29,20 @@ export class ConditionalUserProfileCubit extends Cubit<UserProfileState> {
 
   toggleShowFullName = () => {
     this.patch({ showFullName: !this.state.showFullName });
-  }
+  };
   setFirstName = (firstName: string) => {
     this.patch({ firstName });
-  }
+  };
   setLastName = (lastName: string) => {
     this.patch({ lastName });
-  }
+  };
   incrementAge = () => {
     this.patch({ age: this.state.age + 1 });
-  }
+  };
   // Method to update a non-rendered property, to show it doesn't trigger re-render if not used
   incrementAccessCount = () => {
     this.patch({ accessCount: this.state.accessCount + 1 });
-  }
+  };
 
   resetState = () => {
     this.emit({
@@ -52,5 +52,5 @@ export class ConditionalUserProfileCubit extends Cubit<UserProfileState> {
       showFullName: true,
       accessCount: 0,
     });
-  }
-} 
+  };
+}

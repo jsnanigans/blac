@@ -49,7 +49,11 @@ h1 {
   height: 2px;
   width: 60px;
   margin: 24px auto;
-  background: linear-gradient(90deg, var(--vp-c-brand), var(--vp-c-brand-accent));
+  background: linear-gradient(
+    90deg,
+    var(--vp-c-brand),
+    var(--vp-c-brand-accent)
+  );
 }
 
 h2 {
@@ -102,4 +106,4 @@ p {
     gap: 12px;
   }
 }
-</style> 
+</style>

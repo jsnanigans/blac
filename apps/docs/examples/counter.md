@@ -15,7 +15,7 @@ export class CounterCubit extends Cubit<{ count: number }> {
   constructor() {
     super({ count: 0 }); // Initial state
   }
-  
+
   increment = () => this.emit({ count: this.state.count + 1 });
   decrement = () => this.emit({ count: this.state.count - 1 });
   reset = () => this.emit({ count: 0 });
@@ -30,7 +30,7 @@ import { CounterCubit } from './CounterCubit';
 
 function Counter() {
   const [state, cubit] = useBloc(CounterCubit);
-  
+
   return (
     <div>
       <h1>Count: {state.count}</h1>
@@ -64,65 +64,65 @@ export class AdvancedCounterCubit extends Cubit<CounterState> {
       step: 1,
       min: -10,
       max: 10,
-      history: [0]
+      history: [0],
     });
   }
-  
+
   increment = () => {
     const newValue = Math.min(
       this.state.value + this.state.step,
-      this.state.max
+      this.state.max,
     );
-    
+
     this.emit({
       ...this.state,
       value: newValue,
-      history: [...this.state.history, newValue]
+      history: [...this.state.history, newValue],
     });
   };
-  
+
   decrement = () => {
     const newValue = Math.max(
       this.state.value - this.state.step,
-      this.state.min
+      this.state.min,
     );
-    
+
     this.emit({
       ...this.state,
       value: newValue,
-      history: [...this.state.history, newValue]
+      history: [...this.state.history, newValue],
     });
   };
-  
+
   setStep = (step: number) => {
     this.patch({ step: Math.max(1, step) });
   };
-  
+
   setLimits = (min: number, max: number) => {
     this.patch({
       min,
       max,
-      value: Math.max(min, Math.min(max, this.state.value))
+      value: Math.max(min, Math.min(max, this.state.value)),
     });
   };
-  
+
   undo = () => {
     if (this.state.history.length <= 1) return;
-    
+
     const newHistory = this.state.history.slice(0, -1);
     const previousValue = newHistory[newHistory.length - 1];
-    
+
     this.patch({
       value: previousValue,
-      history: newHistory
+      history: newHistory,
     });
   };
-  
+
   reset = () => {
     this.emit({
       ...this.state,
       value: 0,
-      history: [0]
+      history: [0],
     });
   };
 }
@@ -136,68 +136,64 @@ function AdvancedCounter() {
   const canUndo = state.history.length > 1;
   const canIncrement = state.value < state.max;
   const canDecrement = state.value > state.min;
-  
+
   return (
     <div className="counter-container">
       <h1>Advanced Counter</h1>
-      
+
       <div className="counter-display">
         <h2>{state.value}</h2>
-        <p>Range: {state.min} to {state.max}</p>
+        <p>
+          Range: {state.min} to {state.max}
+        </p>
       </div>
-      
+
       <div className="counter-controls">
-        <button 
-          onClick={cubit.decrement} 
-          disabled={!canDecrement}
-        >
+        <button onClick={cubit.decrement} disabled={!canDecrement}>
           - {state.step}
         </button>
-        
-        <button 
-          onClick={cubit.increment} 
-          disabled={!canIncrement}
-        >
+
+        <button onClick={cubit.increment} disabled={!canIncrement}>
           + {state.step}
         </button>
-        
+
         <button onClick={cubit.reset}>Reset</button>
-        
+
         <button onClick={cubit.undo} disabled={!canUndo}>
           Undo
         </button>
       </div>
-      
+
       <div className="counter-settings">
         <label>
           Step:
           <input
             type="number"
             value={state.step}
-            onChange={e => cubit.setStep(Number(e.target.value))}
+            onChange={(e) => cubit.setStep(Number(e.target.value))}
             min="1"
           />
         </label>
-        
+
         <label>
           Min:
           <input
             type="number"
             value={state.min}
-            onChange={e => cubit.setLimits(Number(e.target.value), state.max)}
+            onChange={(e) => cubit.setLimits(Number(e.target.value), state.max)}
           />
         </label>
-        
+
         <label>
           Max:
           <input
             type="number"
             value={state.max}
-            onChange={e => cubit.setLimits(state.min, Number(e.target.value))}
+            onChange={(e) => cubit.setLimits(state.min, Number(e.target.value))}
           />
         </label>
       </div>
-      
+
       <div className="counter-history">
         <h3>History ({state.history.length} values)</h3>
         <p>{state.history.join(' → ')}</p>
@@ -216,11 +212,11 @@ Demonstrating instance management with multiple independent counters.
 ```typescript
 class IsolatedCounterCubit extends Cubit<{ count: number }> {
   static isolated = true; // Each component gets its own instance
-  
+
   constructor() {
     super({ count: 0 });
   }
-  
+
   increment = () => this.emit({ count: this.state.count + 1 });
   decrement = () => this.emit({ count: this.state.count - 1 });
 }
@@ -238,7 +234,7 @@ function MultipleCounters() {
 
 function CounterWidget({ title }: { title: string }) {
   const [state, cubit] = useBloc(IsolatedCounterCubit);
-  
+
   return (
     <div className="counter-widget">
       <h3>{title}: {state.count}</h3>
@@ -256,14 +252,14 @@ function NamedCounters() {
   const [stateA] = useBloc(CounterCubit, { id: 'counter-a' });
   const [stateB] = useBloc(CounterCubit, { id: 'counter-b' });
   const [stateC] = useBloc(CounterCubit, { id: 'counter-c' });
-  
+
   return (
     <div>
       <h2>Named Counter Instances</h2>
       <NamedCounter id="counter-a" label="Team A Score" />
       <NamedCounter id="counter-b" label="Team B Score" />
       <NamedCounter id="counter-c" label="Rounds Played" />
-      
+
       <div className="scores">
         <p>Current Scores: {stateA.count} - {stateB.count} (Round {stateC.count})</p>
       </div>
@@ -273,7 +269,7 @@ function NamedCounters() {
 
 function NamedCounter({ id, label }: { id: string; label: string }) {
   const [state, cubit] = useBloc(CounterCubit, { id });
-  
+
   return (
     <div>
       <h3>{label}: {state.count}</h3>
@@ -323,48 +319,57 @@ export class CounterBloc extends Bloc<CounterState, CounterEvent> {
     super({
       value: 0,
       step: 1,
-      eventCount: 0
+      eventCount: 0,
     });
-    
+
     // Register event handlers
     this.on(Increment, this.handleIncrement);
     this.on(Decrement, this.handleDecrement);
     this.on(Reset, this.handleReset);
     this.on(SetStep, this.handleSetStep);
   }
-  
-  private handleIncrement = (event: Increment, emit: (state: CounterState) => void) => {
+
+  private handleIncrement = (
+    event: Increment,
+    emit: (state: CounterState) => void,
+  ) => {
     emit({
       ...this.state,
-      value: this.state.value + (event.amount * this.state.step),
-      eventCount: this.state.eventCount + 1
+      value: this.state.value + event.amount * this.state.step,
+      eventCount: this.state.eventCount + 1,
     });
   };
-  
-  private handleDecrement = (event: Decrement, emit: (state: CounterState) => void) => {
+
+  private handleDecrement = (
+    event: Decrement,
+    emit: (state: CounterState) => void,
+  ) => {
     emit({
       ...this.state,
-      value: this.state.value - (event.amount * this.state.step),
-      eventCount: this.state.eventCount + 1
+      value: this.state.value - event.amount * this.state.step,
+      eventCount: this.state.eventCount + 1,
     });
   };
-  
+
   private handleReset = (_: Reset, emit: (state: CounterState) => void) => {
     emit({
       ...this.state,
       value: 0,
-      eventCount: this.state.eventCount + 1
+      eventCount: this.state.eventCount + 1,
     });
   };
-  
-  private handleSetStep = (event: SetStep, emit: (state: CounterState) => void) => {
+
+  private handleSetStep = (
+    event: SetStep,
+    emit: (state: CounterState) => void,
+  ) => {
     emit({
       ...this.state,
       step: event.step,
-      eventCount: this.state.eventCount + 1
+      eventCount: this.state.eventCount + 1,
     });
   };
-  
+
   // Helper methods
   increment = (amount?: number) => this.add(new Increment(amount));
   decrement = (amount?: number) => this.add(new Decrement(amount));
@@ -378,16 +383,18 @@ export class CounterBloc extends Bloc<CounterState, CounterEvent> {
 ```tsx
 function EventDrivenCounter() {
   const [state, bloc] = useBloc(CounterBloc);
-  
+
   return (
     <div>
       <h2>Event-Driven Counter</h2>
-      
+
       <div className="counter-value">
         <h1>{state.value}</h1>
-        <p>Step: {state.step} | Events: {state.eventCount}</p>
+        <p>
+          Step: {state.step} | Events: {state.eventCount}
+        </p>
       </div>
-      
+
       <div className="controls">
         <button onClick={() => bloc.decrement()}>-1</button>
         <button onClick={() => bloc.decrement(5)}>-5</button>
@@ -395,7 +402,7 @@ function EventDrivenCounter() {
         <button onClick={() => bloc.increment()}>+1</button>
         <button onClick={() => bloc.increment(5)}>+5</button>
       </div>
-      
+
       <div className="step-control">
         <label>
           Step Size:
@@ -404,7 +411,7 @@ function EventDrivenCounter() {
             min="1"
             max="10"
             value={state.step}
-            onChange={e => bloc.setStep(Number(e.target.value))}
+            onChange={(e) => bloc.setStep(Number(e.target.value))}
           />
           <span>{state.step}</span>
         </label>
@@ -424,14 +431,14 @@ import { Persist } from '@blac/core';
 class PersistentCounterCubit extends Cubit<{ count: number }> {
   constructor() {
     super({ count: 0 });
-    
+
     // Add persistence
     this.addAddon(new Persist({
       key: 'counter-state',
       storage: localStorage
     }));
   }
-  
+
   increment = () => this.emit({ count: this.state.count + 1 });
   decrement = () => this.emit({ count: this.state.count - 1 });
   reset = () => this.emit({ count: 0 });
@@ -439,7 +446,7 @@ class PersistentCounterCubit extends Cubit<{ count: number }> {
 
 function PersistentCounter() {
   const [state, cubit] = useBloc(PersistentCounterCubit);
-  
+
   return (
     <div>
       <h2>Persistent Counter</h2>
@@ -469,24 +476,24 @@ function CounterApp() {
       <header>
         <h1>BlaC Counter Examples</h1>
       </header>
-      
+
       <main>
         <section>
           <Counter />
         </section>
-        
+
         <section>
           <AdvancedCounter />
         </section>
-        
+
         <section>
           <MultipleCounters />
         </section>
-        
+
         <section>
           <EventDrivenCounter />
         </section>
-        
+
         <section>
           <PersistentCounter />
         </section>

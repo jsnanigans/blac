@@ -9,9 +9,17 @@ interface LcarsHeaderButtonBlockProps {
   onClick?: () => void;
 }
 
-const LcarsHeaderButtonBlock: React.FC<LcarsHeaderButtonBlockProps> = ({ text, colorClass, align, onClick }) => {
+const LcarsHeaderButtonBlock: React.FC<LcarsHeaderButtonBlockProps> = ({
+  text,
+  colorClass,
+  align,
+  onClick,
+}) => {
   return (
-    <div className={`lcars-header-button-block ${colorClass} ${align === 'left' ? 'left-rounded' : 'right-rounded'}`} onClick={onClick}>
+    <div
+      className={`lcars-header-button-block ${colorClass} ${align === 'left' ? 'left-rounded' : 'right-rounded'}`}
+      onClick={onClick}
+    >
       {align === 'left' && <div className="end-cap"></div>}
       <div className="text-label">{text}</div>
       {align === 'right' && <div className="end-cap"></div>}
@@ -28,7 +36,15 @@ const LcarsHeader: React.FC = () => {
     const timer = setInterval(() => {
       const now = new Date();
       setCurrentTime(now.toLocaleTimeString('en-GB', { hour12: false }));
-      setCurrentDate(now.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '.'));
+      setCurrentDate(
+        now
+          .toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+          })
+          .replace(/\//g, '.'),
+      );
     }, 1000);
     return () => clearInterval(timer);
   }, []);
@@ -38,30 +54,54 @@ const LcarsHeader: React.FC = () => {
       {/* Top bar with buttons */}
       <div className="lcars-header-top-bar">
         <div className="left-group">
-            <LcarsHeaderButtonBlock text="LCARS 23295" colorClass="peach" align="right" />
-            <LcarsHeaderButtonBlock text="01-23584" colorClass="blue" align="left" />
+          <LcarsHeaderButtonBlock
+            text="LCARS 23295"
+            colorClass="peach"
+            align="right"
+          />
+          <LcarsHeaderButtonBlock
+            text="01-23584"
+            colorClass="blue"
+            align="left"
+          />
         </div>
         <div className="lcars-date-display">
-          <span>FRIDAY</span> <span style={{color: 'var(--lcars-orange)'}}>&#x2022;</span> <span>{currentDate || '22. 03. 2019'}</span>
+          <span>FRIDAY</span>{' '}
+          <span style={{ color: 'var(--lcars-orange)' }}>&#x2022;</span>{' '}
+          <span>{currentDate || '22. 03. 2019'}</span>
         </div>
         <div className="right-group">
-            <div className="quit-button-area">
-                <LcarsHeaderButtonBlock text="07-3215" colorClass="orange" align="right" />
-                <LcarsHeaderButtonBlock text="QUIT" colorClass="red" align="right" />
-            </div>
-            <div className="quit-button-area" style={{marginLeft: '5px'}}>
-                <LcarsHeaderButtonBlock text="09-2548" colorClass="peach" align="right" />
-                <LcarsHeaderButtonBlock text="10-9215" colorClass="tan" align="right" />
-            </div>
+          <div className="quit-button-area">
+            <LcarsHeaderButtonBlock
+              text="07-3215"
+              colorClass="orange"
+              align="right"
+            />
+            <LcarsHeaderButtonBlock
+              text="QUIT"
+              colorClass="red"
+              align="right"
+            />
+          </div>
+          <div className="quit-button-area" style={{ marginLeft: '5px' }}>
+            <LcarsHeaderButtonBlock
+              text="09-2548"
+              colorClass="peach"
+              align="right"
+            />
+            <LcarsHeaderButtonBlock
+              text="10-9215"
+              colorClass="tan"
+              align="right"
+            />
+          </div>
         </div>
       </div>
 
       {/* Main title bar row */}
       <div className="lcars-header-row">
         <div className="lcars-header-left-curve"></div>
-        <div className="lcars-header-title-bar">
-            MASTER SITUATION DISPLAY
-        </div>
+        <div className="lcars-header-title-bar">MASTER SITUATION DISPLAY</div>
         {/* This space can be used for other elements if needed, or just be part of the title bar's flex properties */}
       </div>
 
@@ -78,4 +118,4 @@ const LcarsHeader: React.FC = () => {
   );
 };
 
-export default LcarsHeader; 
+export default LcarsHeader;

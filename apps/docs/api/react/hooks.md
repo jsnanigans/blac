@@ -11,8 +11,8 @@ The primary hook for connecting React components to BlaC state containers.
 ```typescript
 function useBloc<T extends BlocBase<any, any>>(
   BlocClass: BlocConstructor<T>,
-  options?: UseBlocOptions<T>
-): [StateType<T>, T]
+  options?: UseBlocOptions<T>,
+): [StateType<T>, T];
 ```
 
 ### Type Parameters
@@ -30,13 +30,13 @@ function useBloc<T extends BlocBase<any, any>>(
 interface UseBlocOptions<T> {
   // Unique identifier for the instance
   id?: string;
-  
+
   // Props to pass to the constructor
   props?: PropsType<T>;
-  
+
   // Disable automatic render optimization
   disableProxyTracking?: boolean;
-  
+
   // Dependencies array (similar to useEffect)
   deps?: React.DependencyList;
 }
@@ -45,6 +45,7 @@ interface UseBlocOptions<T> {
 ### Returns
 
 Returns a tuple `[state, instance]`:
+
 - `state` - The current state (with automatic dependency tracking)
 - `instance` - The Cubit/Bloc instance
 
@@ -56,7 +57,7 @@ import { CounterCubit } from './CounterCubit';
 
 function Counter() {
   const [count, cubit] = useBloc(CounterCubit);
-  
+
   return (
     <div>
       <p>Count: {count}</p>
@@ -71,7 +72,7 @@ function Counter() {
 ```typescript
 function TodoList() {
   const [state, cubit] = useBloc(TodoCubit);
-  
+
   return (
     <div>
       <h2>Todos ({state.items.length})</h2>
@@ -92,7 +93,7 @@ Use the `id` option to create separate instances:
 function Dashboard() {
   const [user1] = useBloc(UserCubit, { id: 'user-1' });
   const [user2] = useBloc(UserCubit, { id: 'user-2' });
-  
+
   return (
     <div>
       <UserCard user={user1} />
@@ -117,7 +118,7 @@ function TodoList({ userId, filter = 'all' }: TodoListProps) {
     id: `todos-${userId}`,
     props: { userId, initialFilter: filter }
   });
-  
+
   return <div>{/* ... */}</div>;
 }
 ```
@@ -129,7 +130,7 @@ By default, useBloc uses proxy-based dependency tracking for optimal re-renders:
 ```typescript
 function OptimizedComponent() {
   const [state] = useBloc(LargeStateCubit);
-  
+
   // Only re-renders when state.specificField changes
   return <div>{state.specificField}</div>;
 }
@@ -138,8 +139,8 @@ function OptimizedComponent() {
 Disable if needed:
 
 ```typescript
-const [state] = useBloc(CubitClass, { 
-  disableProxyTracking: true // Re-renders on any state change
+const [state] = useBloc(CubitClass, {
+  disableProxyTracking: true, // Re-renders on any state change
 });
 ```
 
@@ -154,7 +155,7 @@ function UserProfile({ userId }: { userId: string }) {
     props: { userId },
     deps: [userId] // Re-create when userId changes
   });
-  
+
   return <div>{state.user?.name}</div>;
 }
 ```
@@ -168,8 +169,8 @@ A simplified hook for subscribing to a specific value without accessing the inst
 ```typescript
 function useValue<T extends BlocBase<any, any>>(
   BlocClass: BlocConstructor<T>,
-  options?: UseValueOptions<T>
-): StateType<T>
+  options?: UseValueOptions<T>,
+): StateType<T>;
 ```
 
 ### Parameters
@@ -203,8 +204,8 @@ Creates a Cubit-like class with a simplified API similar to React's setState.
 
 ```typescript
 function createBloc<S extends object>(
-  initialState: S | (() => S)
-): BlocConstructor<SetStateCubit<S>>
+  initialState: S | (() => S),
+): BlocConstructor<SetStateCubit<S>>;
 ```
 
 ### Parameters
@@ -229,7 +230,7 @@ class Counter extends CounterBloc {
   increment = () => {
     this.setState({ count: this.state.count + this.state.step });
   };
-  
+
   setStep = (step: number) => {
     this.setState({ step });
   };
@@ -238,13 +239,13 @@ class Counter extends CounterBloc {
 // Use in component
 function CounterComponent() {
   const [state, counter] = useBloc(Counter);
-  
+
   return (
     <div>
       <p>Count: {state.count} (step: {state.step})</p>
       <button onClick={counter.increment}>+</button>
-      <input 
-        type="number" 
+      <input
+        type="number"
         value={state.step}
         onChange={e => counter.setStep(Number(e.target.value))}
       />
@@ -265,8 +266,8 @@ setState({ count: 5, step: 1 });
 setState({ count: 10 }); // step remains unchanged
 
 // Function update
-setState(prevState => ({
-  count: prevState.count + 1
+setState((prevState) => ({
+  count: prevState.count + 1,
 }));
 
 // Async function update
@@ -284,11 +285,11 @@ setState(async (prevState) => {
 function ConditionalComponent({ showCounter }: { showCounter: boolean }) {
   // ✅ Correct - always call hooks
   const [count, cubit] = useBloc(CounterCubit);
-  
+
   if (!showCounter) {
     return null;
   }
-  
+
   return <div>Count: {count}</div>;
 }
 
@@ -309,18 +310,18 @@ Create custom hooks for complex logic:
 ```typescript
 function useAuth() {
   const [state, bloc] = useBloc(AuthBloc);
-  
+
   const login = useCallback(
     (email: string, password: string) => {
       bloc.login(email, password);
     },
     [bloc]
   );
-  
+
   const logout = useCallback(() => {
     bloc.logout();
   }, [bloc]);
-  
+
   return {
     isAuthenticated: state.isAuthenticated,
     user: state.user,
@@ -334,11 +335,11 @@ function useAuth() {
 // Usage
 function LoginButton() {
   const { isAuthenticated, login, logout } = useAuth();
-  
+
   if (isAuthenticated) {
     return <button onClick={logout}>Logout</button>;
   }
-  
+
   return <button onClick={() => login('user@example.com', 'password')}>Login</button>;
 }
 ```
@@ -350,11 +351,11 @@ function useAppState() {
   const [auth] = useBloc(AuthBloc);
   const [todos] = useBloc(TodoBloc);
   const [settings] = useBloc(SettingsBloc);
-  
+
   return {
     isReady: auth.isAuthenticated && !todos.isLoading,
     isDarkMode: settings.theme === 'dark',
-    userName: auth.user?.name
+    userName: auth.user?.name,
   };
 }
 ```
@@ -368,7 +369,7 @@ BlaC automatically optimizes re-renders by tracking which state properties your 
 ```typescript
 function UserCard() {
   const [state] = useBloc(UserBloc);
-  
+
   // Only re-renders when state.user.name changes
   // Changes to other properties don't trigger re-renders
   return <h2>{state.user.name}</h2>;
@@ -382,7 +383,7 @@ For fine-grained control, use React's built-in optimization:
 ```typescript
 const MemoizedTodoItem = React.memo(({ todo }: { todo: Todo }) => {
   const [, cubit] = useBloc(TodoCubit);
-  
+
   return (
     <div>
       <span>{todo.text}</span>
@@ -399,18 +400,18 @@ For complex derived state:
 ```typescript
 function TodoStats() {
   const [state] = useBloc(TodoCubit);
-  
+
   // Memoize expensive computations
   const stats = useMemo(() => ({
     total: state.items.length,
     completed: state.items.filter(t => t.completed).length,
     active: state.items.filter(t => !t.completed).length
   }), [state.items]);
-  
+
   return (
     <div>
-      Total: {stats.total} | 
-      Active: {stats.active} | 
+      Total: {stats.total} |
+      Active: {stats.active} |
       Completed: {stats.completed}
     </div>
   );
@@ -440,7 +441,7 @@ const [state, bloc] = useBloc(TodoBloc);
 ```typescript
 // Custom hook with generic constraints
 function useGenericBloc<T extends BlocBase<any, any>>(
-  BlocClass: BlocConstructor<T>
+  BlocClass: BlocConstructor<T>,
 ) {
   return useBloc(BlocClass);
 }
@@ -462,10 +463,10 @@ class UserCubit extends Cubit<UserState, UserCubitProps> {
 
 // Props are type-checked
 const [state] = useBloc(UserCubit, {
-  props: { 
+  props: {
     userId: '123',
     // initialData is optional
-  }
+  },
 });
 ```
 
@@ -476,15 +477,15 @@ const [state] = useBloc(UserCubit, {
 ```typescript
 function DataComponent() {
   const [state, cubit] = useBloc(DataCubit);
-  
+
   useEffect(() => {
     cubit.load();
   }, [cubit]);
-  
+
   if (state.isLoading) return <Spinner />;
   if (state.error) return <Error message={state.error} />;
   if (!state.data) return <Empty />;
-  
+
   return <DataView data={state.data} />;
 }
 ```
@@ -494,7 +495,7 @@ function DataComponent() {
 ```typescript
 function LoginForm() {
   const [state, cubit] = useBloc(LoginFormCubit);
-  
+
   return (
     <form onSubmit={e => { e.preventDefault(); cubit.submit(); }}>
       <input
@@ -504,7 +505,7 @@ function LoginForm() {
         className={state.email.error ? 'error' : ''}
       />
       {state.email.error && <span>{state.email.error}</span>}
-      
+
       <button type="submit" disabled={!cubit.isValid || state.isSubmitting}>
         {state.isSubmitting ? 'Logging in...' : 'Login'}
       </button>
@@ -518,17 +519,17 @@ function LoginForm() {
 ```typescript
 function LiveData() {
   const [state, cubit] = useBloc(LiveDataCubit);
-  
+
   useEffect(() => {
     // Subscribe to updates
     const unsubscribe = cubit.subscribe();
-    
+
     // Cleanup
     return () => {
       unsubscribe();
     };
   }, [cubit]);
-  
+
   return <div>Live value: {state.value}</div>;
 }
 ```
@@ -546,14 +547,16 @@ If your component doesn't update when state changes:
 ```typescript
 // ❌ Wrong
 class BadCubit extends Cubit<State> {
-  update() { // Regular method loses 'this'
+  update() {
+    // Regular method loses 'this'
     this.state.value = 5; // Mutating state
   }
 }
 
 // ✅ Correct
 class GoodCubit extends Cubit<State> {
-  update = () => { // Arrow function
+  update = () => {
+    // Arrow function
     this.emit({ ...this.state, value: 5 }); // New state
   };
 }
@@ -566,12 +569,12 @@ BlaC automatically handles cleanup, but be careful with:
 ```typescript
 function Component() {
   const [, cubit] = useBloc(TimerCubit);
-  
+
   useEffect(() => {
     const timer = setInterval(() => {
       cubit.tick();
     }, 1000);
-    
+
     // Important: cleanup
     return () => clearInterval(timer);
   }, [cubit]);
@@ -586,14 +589,14 @@ import { useBloc } from '@blac/react';
 
 test('useBloc hook', () => {
   const { result } = renderHook(() => useBloc(CounterCubit));
-  
+
   const [count, cubit] = result.current;
   expect(count).toBe(0);
-  
+
   act(() => {
     cubit.increment();
   });
-  
+
   expect(result.current[0]).toBe(1);
 });
 ```

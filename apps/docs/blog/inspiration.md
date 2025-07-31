@@ -1,5 +1,5 @@
-
 ## Inspiration
+
 > "standing on the shoulders of giants"
 
 ### BLoC Pattern
@@ -15,15 +15,19 @@ Although Blac is framework agnostic, it was initially created to be used with Re
 > Although I have some frustrations with React, I still love working with it and use it for most of my projects. This list is not meant to be a critique, but rather an explanation of why Blac was created.
 
 #### useState
+
 The bread and butter of React state management, useState is great for managing the state of a single component, as long as the component is very simple and the state is not shared with other components.
 During development, I often find myself reaching the limit of what I am comfortable with useState, usually when I reach a unspecific amount of `useState` calls and my component becomes cluttered with `setState` calls.
 
 #### useEffect
+
 Using `useEffect` for lifecycle management is confusing and error prone, not to mention the pain it is to test with unit tests.
 Handling side effects is incredibly error prone and hard to reason about.
 
 #### Context API
+
 Although the Context API is a godsend to avoid prop drilling and setting the context for a branch in the render tree. When overused it can lead to a tight coupling between components and make it hard to move or reuse components outside of the current context tree.
 
 #### Component Props
+
 Most of the props passed to components are references to the business logic and state of the component. This is mostly just boilerplate to pass the state and callbacks to the component. When refactoring, updating props takes up a lot of time and causes a lot of noise in the code.

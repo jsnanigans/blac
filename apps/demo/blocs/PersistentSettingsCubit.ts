@@ -33,12 +33,18 @@ export class PersistentSettingsCubit extends Cubit<SettingsState> {
     // The PersistencePlugin will automatically restore state from localStorage
     // If not found, it will use this initial state
     super(initialSettings);
-    console.log('PersistentSettingsCubit initialized. Current state:', this.state);
+    console.log(
+      'PersistentSettingsCubit initialized. Current state:',
+      this.state,
+    );
   }
 
   toggleTheme = () => {
     this.patch({ theme: this.state.theme === 'light' ? 'dark' : 'light' });
-    console.log('Theme toggled to:', this.state.theme === 'light' ? 'dark' : 'light');
+    console.log(
+      'Theme toggled to:',
+      this.state.theme === 'light' ? 'dark' : 'light',
+    );
   };
 
   setNotifications = (enabled: boolean) => {
@@ -56,7 +62,9 @@ export class PersistentSettingsCubit extends Cubit<SettingsState> {
 
   // Method to clear persisted data
   clearPersistedData = async () => {
-    const plugin = this.getPlugin('persistence') as PersistencePlugin<SettingsState>;
+    const plugin = this.getPlugin(
+      'persistence',
+    ) as PersistencePlugin<SettingsState>;
     if (plugin) {
       await plugin.clear();
       console.log('Persisted data cleared from storage');

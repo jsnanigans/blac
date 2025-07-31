@@ -6,26 +6,26 @@ Understanding the architecture of Blac helps in leveraging its full potential fo
 
 Blac deliberately uses ES6 classes for defining `Bloc` and `Cubit` state containers. This approach offers several advantages in the context of state management and aligns well with TypeScript:
 
--   **Identifier for Instances**: The class definition itself (e.g., `UserBloc` or `CounterCubit`) acts as a primary, human-readable key for Blac's internal instance manager. This allows Blac to uniquely identify, retrieve, and manage shared or isolated instances of state containers.
+- **Identifier for Instances**: The class definition itself (e.g., `UserBloc` or `CounterCubit`) acts as a primary, human-readable key for Blac's internal instance manager. This allows Blac to uniquely identify, retrieve, and manage shared or isolated instances of state containers.
 
--   **Clear Structure and Encapsulation**: Classes provide a natural and well-understood way to:
-    *   Define the shape of the state using generic type parameters (e.g., `Cubit<MyState>`).
-    *   Initialize the state within the `constructor`.
-    *   Encapsulate related business logic as methods within the same unit.
+- **Clear Structure and Encapsulation**: Classes provide a natural and well-understood way to:
+  - Define the shape of the state using generic type parameters (e.g., `Cubit<MyState>`).
+  - Initialize the state within the `constructor`.
+  - Encapsulate related business logic as methods within the same unit.
 
--   **TypeScript Benefits**: The class-based approach integrates seamlessly with TypeScript, enabling:
-    *   Strong typing for state, constructor props, and methods, enhancing code reliability and maintainability.
-    *   Correct `this` context binding when instance methods are defined as arrow functions (e.g., `increment = () => ...`), which is crucial for their use as event handlers or when passed as callbacks.
-    *   Visibility modifiers (`public`, `private`, `protected`) if needed, though often not strictly necessary for typical Blac usage.
+- **TypeScript Benefits**: The class-based approach integrates seamlessly with TypeScript, enabling:
+  - Strong typing for state, constructor props, and methods, enhancing code reliability and maintainability.
+  - Correct `this` context binding when instance methods are defined as arrow functions (e.g., `increment = () => ...`), which is crucial for their use as event handlers or when passed as callbacks.
+  - Visibility modifiers (`public`, `private`, `protected`) if needed, though often not strictly necessary for typical Blac usage.
 
--   **Static Properties for Configuration**: Classes allow the use of `static` properties to declaratively configure the behavior of `Bloc`s and `Cubit`s. This includes:
-    *   `static isolated = true;`: To mark a Bloc/Cubit for isolated instance management.
-    *   `static keepAlive = true;`: To prevent a shared instance from being disposed of when it has no active listeners.
-    *   `static addons = [/* ... */];`: To attach addons like `Persist` for enhanced functionality.
+- **Static Properties for Configuration**: Classes allow the use of `static` properties to declaratively configure the behavior of `Bloc`s and `Cubit`s. This includes:
+  - `static isolated = true;`: To mark a Bloc/Cubit for isolated instance management.
+  - `static keepAlive = true;`: To prevent a shared instance from being disposed of when it has no active listeners.
+  - `static addons = [/* ... */];`: To attach addons like `Persist` for enhanced functionality.
 
--   **Extensibility and Reusability**: Standard Object-Oriented Programming (OOP) patterns like inheritance can be used if desired, allowing for the creation of base Blocs/Cubits with common functionality that can be extended by more specialized ones. However, composition using addons is often a more flexible approach for adding features.
+- **Extensibility and Reusability**: Standard Object-Oriented Programming (OOP) patterns like inheritance can be used if desired, allowing for the creation of base Blocs/Cubits with common functionality that can be extended by more specialized ones. However, composition using addons is often a more flexible approach for adding features.
 
--   **Testability**: State containers defined as classes have a clear public API (constructor, methods). This makes them straightforward to instantiate, interact with, and assert against in unit tests, independent of the UI.
+- **Testability**: State containers defined as classes have a clear public API (constructor, methods). This makes them straightforward to instantiate, interact with, and assert against in unit tests, independent of the UI.
 
 While functional approaches to state management are popular, the class-based design in Blac provides a robust, type-safe, and extensible foundation for organizing and managing application state, particularly as complexity grows.
 
@@ -40,7 +40,9 @@ Blac employs lazy initialization to avoid circular dependency issues. The core `
 ```typescript
 // A Cubit definition (Blocs are similar)
 class MyCounterCubit extends Cubit<number> {
-  constructor() { super(0); }
+  constructor() {
+    super(0);
+  }
   increment = () => this.emit(this.state + 1);
 }
 ```
@@ -61,8 +63,8 @@ function MyComponent() {
 
 When the last consumer of a shared `Bloc`/`Cubit` instance unregisters (e.g., its component unmounts), the instance is typically disposed of to free up resources. This behavior can be overridden:
 
--   **`static keepAlive = true;`**: If set on the `Bloc`/`Cubit` class, the shared instance will persist in memory even if no components are currently listening to it. See [State Management Patterns](/learn/state-management-patterns#3-in-memory-persistence-keepalive) for more.
--   **`static isolated = true;`**: If set, each `useBloc(MyIsolatedBloc)` call creates a new, independent instance of the `Bloc`/`Cubit`. This instance is then tied to the lifecycle of the component that created it and will be disposed of when that component unmounts (unless `keepAlive` is also true for that isolated class, which is a more advanced scenario).
+- **`static keepAlive = true;`**: If set on the `Bloc`/`Cubit` class, the shared instance will persist in memory even if no components are currently listening to it. See [State Management Patterns](/learn/state-management-patterns#3-in-memory-persistence-keepalive) for more.
+- **`static isolated = true;`**: If set, each `useBloc(MyIsolatedBloc)` call creates a new, independent instance of the `Bloc`/`Cubit`. This instance is then tied to the lifecycle of the component that created it and will be disposed of when that component unmounts (unless `keepAlive` is also true for that isolated class, which is a more advanced scenario).
 
 ```mermaid
 graph TD
@@ -136,6 +138,7 @@ function AnotherComponent() {
 This is powerful for scenarios like managing state for multiple instances of a feature (e.g., different chat conversation windows, multiple editable data records on a page).
 
 #### Scenario 1: Default Sharing (No isolation, No custom ID)
+
 ```mermaid
 graph TD
   CompA["Comp A: useBloc(MyBloc)"] --> SharedMyBloc["Shared MyBloc Instance"];
@@ -144,6 +147,7 @@ graph TD
 ```
 
 #### Scenario 2: Isolated Instances (static isolated = true on MyIsolatedBloc)
+
 ```mermaid
 graph TD
   CompA["Comp A: useBloc(MyIsolatedBloc)"] --> IsolatedA["MyIsolatedBloc for A"];
@@ -151,6 +155,7 @@ graph TD
 ```
 
 #### Scenario 3: Custom ID Sharing (ChatBloc is not isolated by default)
+
 ```mermaid
 graph TD
   CompX["Comp X: useBloc(ChatBloc, {id: 'chat1'})"] --> Chat1["ChatBloc ('chat1')"];
@@ -169,9 +174,9 @@ While inspired by the BLoC pattern, Blac does not strictly enforce all its origi
 
 This typically leads to a layered architecture:
 
--   **Presentation Layer (UI)**: Renders the UI based on state and forwards user events/intentions to the Business Logic Layer.
--   **Business Logic Layer (State Containers)**: Contains `Bloc`s/`Cubit`s that hold application state, manage state mutations in response to events, and interact with the Data Layer.
--   **Data Layer**: Handles data fetching, persistence, and communication with external services or APIs.
+- **Presentation Layer (UI)**: Renders the UI based on state and forwards user events/intentions to the Business Logic Layer.
+- **Business Logic Layer (State Containers)**: Contains `Bloc`s/`Cubit`s that hold application state, manage state mutations in response to events, and interact with the Data Layer.
+- **Data Layer**: Handles data fetching, persistence, and communication with external services or APIs.
 
 ```mermaid
 flowchart LR
@@ -196,7 +201,7 @@ const stateProxy = new Proxy(actualState, {
     // Track that this component accessed 'property'
     trackDependency(componentId, property);
     return target[property];
-  }
+  },
 });
 ```
 
@@ -205,7 +210,7 @@ This tracking happens transparently:
 ```tsx
 function UserCard() {
   const [state, bloc] = useBloc(UserBloc);
-  
+
   // BlaC tracks that this component only accesses 'name' and 'avatar'
   return (
     <div>
@@ -218,12 +223,14 @@ function UserCard() {
 ```
 
 **Benefits:**
+
 - **Automatic Optimization**: No need to manually specify dependencies
 - **Fine-grained Updates**: Components only re-render when properties they use change
 - **Dynamic Tracking**: Dependencies update automatically based on conditional rendering
 - **Deep Object Support**: Works with nested properties (e.g., `state.user.profile.name`)
 
 **How It Works:**
+
 1. During render, the proxy intercepts all property access
 2. BlaC builds a dependency map for each component
 3. When state changes, BlaC checks if any tracked properties changed
@@ -243,7 +250,7 @@ Or use manual dependencies per component:
 
 ```tsx
 const [state, bloc] = useBloc(UserBloc, {
-  dependencies: (bloc) => [bloc.state.name] // Manual control
+  dependencies: (bloc) => [bloc.state.name], // Manual control
 });
 ```
 
@@ -261,7 +268,9 @@ function UserProfileDisplay() {
   return (
     <div>
       <h1>{userState.name}</h1>
-      <button onClick={() => userProfileBloc.fetchProfile()}>Refresh Profile</button>
+      <button onClick={() => userProfileBloc.fetchProfile()}>
+        Refresh Profile
+      </button>
     </div>
   );
 }
@@ -297,4 +306,5 @@ class MyBloc extends Cubit<MyStateType> {
   };
 }
 ```
+
 Ensure the target `Bloc` (`OtherBloc` in this example) is indeed shared (not `static isolated = true`) and has been initialized (i.e., `useBloc(OtherBloc)` has been called elsewhere or it's `keepAlive`).

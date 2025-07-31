@@ -101,7 +101,7 @@ Waits for a bloc to emit a state matching the given predicate.
 await BlocTest.waitForState(
   userBloc,
   (state) => !state.isLoading,
-  3000 // timeout in milliseconds
+  3000, // timeout in milliseconds
 );
 ```
 
@@ -111,14 +111,11 @@ Expects a bloc to emit specific states in order.
 
 ```typescript
 // Test a sequence of state changes
-await BlocTest.expectStates(
-  counterBloc,
-  [
-    { count: 1 },
-    { count: 2 },
-    { count: 3 }
-  ]
-);
+await BlocTest.expectStates(counterBloc, [
+  { count: 1 },
+  { count: 2 },
+  { count: 3 },
+]);
 ```
 
 ### Error Handling
@@ -153,7 +150,7 @@ class LoadingEvent {}
 
 const mockBloc = new MockBloc<CounterState>({
   count: 0,
-  loading: false
+  loading: false,
 });
 ```
 
@@ -165,7 +162,7 @@ mockBloc.mockEventHandler(IncrementEvent, (event, emit) => {
   const currentState = mockBloc.state;
   emit({
     ...currentState,
-    count: currentState.count + event.amount
+    count: currentState.count + event.amount,
   });
 });
 
@@ -174,7 +171,7 @@ mockBloc.mockEventHandler(LoadingEvent, async (event, emit) => {
   emit({ ...mockBloc.state, loading: true });
 
   // Simulate async operation
-  await new Promise(resolve => setTimeout(resolve, 100));
+  await new Promise((resolve) => setTimeout(resolve, 100));
 
   emit({ ...mockBloc.state, loading: false });
 });
@@ -208,7 +205,7 @@ interface UserState {
 
 const mockCubit = new MockCubit<UserState>({
   name: 'John',
-  email: 'john@example.com'
+  email: 'john@example.com',
 });
 ```
 
@@ -319,7 +316,7 @@ it('should transition through loading states', async () => {
   // Test state sequence
   await BlocTest.expectStates(bloc, [
     { data: null, loading: true, error: null },
-    { data: mockData, loading: false, error: null }
+    { data: mockData, loading: false, error: null },
   ]);
 });
 ```
@@ -335,7 +332,9 @@ it('should handle errors gracefully', async () => {
     throw new Error('Network error');
   });
 
-  await expect(mockBloc.add(new LoadDataEvent())).rejects.toThrow('Network error');
+  await expect(mockBloc.add(new LoadDataEvent())).rejects.toThrow(
+    'Network error',
+  );
 });
 ```
 
@@ -372,7 +371,10 @@ class ApiBloc extends Bloc<ApiState, ApiEvent> {
     this.on(FetchDataEvent, this.handleFetchData);
   }
 
-  private async handleFetchData(event: FetchDataEvent, emit: (state: ApiState) => void) {
+  private async handleFetchData(
+    event: FetchDataEvent,
+    emit: (state: ApiState) => void,
+  ) {
     emit({ ...this.state, loading: true, error: null });
 
     try {
@@ -394,7 +396,7 @@ it('should handle successful API call', async () => {
 
   await BlocTest.expectStates(bloc, [
     { data: null, loading: true, error: null },
-    { data: mockData, loading: false, error: null }
+    { data: mockData, loading: false, error: null },
   ]);
 });
 
@@ -407,7 +409,7 @@ it('should handle API errors', async () => {
 
   await BlocTest.expectStates(bloc, [
     { data: null, loading: true, error: null },
-    { data: null, loading: false, error: 'API Error' }
+    { data: null, loading: false, error: 'API Error' },
   ]);
 });
 ```
@@ -426,7 +428,10 @@ it('should wait for specific conditions', async () => {
   // Wait for both to complete
   await Promise.all([
     BlocTest.waitForState(userBloc, (state) => state.user !== null),
-    BlocTest.waitForState(permissionBloc, (state) => state.permissions !== null)
+    BlocTest.waitForState(
+      permissionBloc,
+      (state) => state.permissions !== null,
+    ),
   ]);
 
   expect(userBloc.state.user).toBeDefined();
@@ -450,12 +455,12 @@ it('should handle complex wizard flow', async () => {
   // Verify final state
   await BlocTest.waitForState(
     wizardBloc,
-    (state) => state.isComplete && !state.isSubmitting
+    (state) => state.isComplete && !state.isSubmitting,
   );
 
   expect(wizardBloc.state.data).toEqual({
     name: 'John',
-    email: 'john@example.com'
+    email: 'john@example.com',
   });
 });
 ```
@@ -495,35 +500,35 @@ describe('Integration with Jest', () => {
 
 ### BlocTest
 
-| Method | Parameters | Returns | Description |
-|--------|------------|---------|-------------|
-| `setUp()` | None | `void` | Sets up clean test environment |
-| `tearDown()` | None | `void` | Cleans up test environment |
-| `createBloc<T>()` | `BlocClass`, `...args` | `T` | Creates and activates bloc |
-| `waitForState<T,S>()` | `bloc`, `predicate`, `timeout?` | `Promise<S>` | Waits for state condition |
-| `expectStates<T,S>()` | `bloc`, `states[]`, `timeout?` | `Promise<void>` | Expects state sequence |
+| Method                | Parameters                      | Returns         | Description                    |
+| --------------------- | ------------------------------- | --------------- | ------------------------------ |
+| `setUp()`             | None                            | `void`          | Sets up clean test environment |
+| `tearDown()`          | None                            | `void`          | Cleans up test environment     |
+| `createBloc<T>()`     | `BlocClass`, `...args`          | `T`             | Creates and activates bloc     |
+| `waitForState<T,S>()` | `bloc`, `predicate`, `timeout?` | `Promise<S>`    | Waits for state condition      |
+| `expectStates<T,S>()` | `bloc`, `states[]`, `timeout?`  | `Promise<void>` | Expects state sequence         |
 
 ### MockBloc
 
-| Method | Parameters | Returns | Description |
-|--------|------------|---------|-------------|
-| `mockEventHandler<E>()` | `eventConstructor`, `handler` | `void` | Mocks event handler |
-| `getHandlerCount()` | None | `number` | Gets handler count |
-| `hasHandler()` | `eventConstructor` | `boolean` | Checks handler existence |
+| Method                  | Parameters                    | Returns   | Description              |
+| ----------------------- | ----------------------------- | --------- | ------------------------ |
+| `mockEventHandler<E>()` | `eventConstructor`, `handler` | `void`    | Mocks event handler      |
+| `getHandlerCount()`     | None                          | `number`  | Gets handler count       |
+| `hasHandler()`          | `eventConstructor`            | `boolean` | Checks handler existence |
 
 ### MockCubit
 
-| Method | Parameters | Returns | Description |
-|--------|------------|---------|-------------|
-| `getStateHistory()` | None | `S[]` | Gets state history |
-| `clearStateHistory()` | None | `void` | Clears state history |
+| Method                | Parameters | Returns | Description          |
+| --------------------- | ---------- | ------- | -------------------- |
+| `getStateHistory()`   | None       | `S[]`   | Gets state history   |
+| `clearStateHistory()` | None       | `void`  | Clears state history |
 
 ### MemoryLeakDetector
 
-| Method | Parameters | Returns | Description |
-|--------|------------|---------|-------------|
-| `checkForLeaks()` | None | `LeakReport` | Checks for memory leaks |
+| Method            | Parameters | Returns      | Description             |
+| ----------------- | ---------- | ------------ | ----------------------- |
+| `checkForLeaks()` | None       | `LeakReport` | Checks for memory leaks |
 
 ---
 
-*"By the infinite power of the galaxy, test with confidence!"* ⭐️
+_"By the infinite power of the galaxy, test with confidence!"_ ⭐️

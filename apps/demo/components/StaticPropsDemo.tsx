@@ -31,10 +31,10 @@ class UserDetailsCubit extends Cubit<UserDetailsState, UserDetailsProps> {
 
   loadUser = async () => {
     this.emit({ ...this.state, loading: true, error: null });
-    
+
     // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
     this.emit({
       data: {
         id: this.props!.userId,
@@ -53,10 +53,10 @@ class UserDetailsCubit extends Cubit<UserDetailsState, UserDetailsProps> {
 }
 
 // Component that uses UserDetailsCubit
-const UserDetailsComponent: React.FC<{ 
-  userId: string; 
-  includeProfile?: boolean; 
-  showInstanceId?: boolean 
+const UserDetailsComponent: React.FC<{
+  userId: string;
+  includeProfile?: boolean;
+  showInstanceId?: boolean;
 }> = ({ userId, includeProfile, showInstanceId }) => {
   const [state, cubit] = useBloc(UserDetailsCubit, {
     staticProps: {
@@ -83,7 +83,7 @@ const UserDetailsComponent: React.FC<{
             Instance ID: {(cubit as any)._id}
           </p>
         )}
-        
+
         <div className="space-y-2">
           {state.loading && <p className="text-sm">Loading...</p>}
           {state.data && (
@@ -92,7 +92,7 @@ const UserDetailsComponent: React.FC<{
             </pre>
           )}
         </div>
-        
+
         <div className="flex gap-2">
           <Button onClick={cubit.loadUser} size="sm" disabled={state.loading}>
             Load User
@@ -112,10 +112,14 @@ const StaticPropsDemo: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <h3 className="text-lg font-semibold">Static Props with Auto-Generated Instance IDs</h3>
+        <h3 className="text-lg font-semibold">
+          Static Props with Auto-Generated Instance IDs
+        </h3>
         <p className="text-sm text-muted-foreground">
-          When using <code className="bg-muted px-1 py-0.5 rounded">staticProps</code>, BlaC can automatically 
-          generate instance IDs from primitive values (string, number, boolean, null, undefined).
+          When using{' '}
+          <code className="bg-muted px-1 py-0.5 rounded">staticProps</code>,
+          BlaC can automatically generate instance IDs from primitive values
+          (string, number, boolean, null, undefined).
         </p>
       </div>
 
@@ -127,26 +131,50 @@ const StaticPropsDemo: React.FC = () => {
           onChange={(e) => setShowInstanceIds(e.target.checked)}
           className="rounded"
         />
-        <label htmlFor="showIds" className="text-sm">Show Instance IDs</label>
+        <label htmlFor="showIds" className="text-sm">
+          Show Instance IDs
+        </label>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <h4 className="font-medium">Same User ID = Same Instance</h4>
-          <UserDetailsComponent userId="user123" includeProfile={true} showInstanceId={showInstanceIds} />
-          <UserDetailsComponent userId="user123" includeProfile={false} showInstanceId={showInstanceIds} />
+          <UserDetailsComponent
+            userId="user123"
+            includeProfile={true}
+            showInstanceId={showInstanceIds}
+          />
+          <UserDetailsComponent
+            userId="user123"
+            includeProfile={false}
+            showInstanceId={showInstanceIds}
+          />
           <p className="text-xs text-muted-foreground">
-            Both components share the same instance because they have the same userId. 
-            The generated ID is: <code className="bg-muted px-1">apiVersion:2|includeProfile:true|userId:user123</code>
+            Both components share the same instance because they have the same
+            userId. The generated ID is:{' '}
+            <code className="bg-muted px-1">
+              apiVersion:2|includeProfile:true|userId:user123
+            </code>
           </p>
         </div>
 
         <div className="space-y-2">
-          <h4 className="font-medium">Different User ID = Different Instance</h4>
-          <UserDetailsComponent userId="user456" includeProfile={true} showInstanceId={showInstanceIds} />
-          <UserDetailsComponent userId="user789" includeProfile={true} showInstanceId={showInstanceIds} />
+          <h4 className="font-medium">
+            Different User ID = Different Instance
+          </h4>
+          <UserDetailsComponent
+            userId="user456"
+            includeProfile={true}
+            showInstanceId={showInstanceIds}
+          />
+          <UserDetailsComponent
+            userId="user789"
+            includeProfile={true}
+            showInstanceId={showInstanceIds}
+          />
           <p className="text-xs text-muted-foreground">
-            Different userIds create different instances with unique generated IDs.
+            Different userIds create different instances with unique generated
+            IDs.
           </p>
         </div>
       </div>
@@ -154,11 +182,29 @@ const StaticPropsDemo: React.FC = () => {
       <div className="mt-6 p-4 bg-muted rounded-lg space-y-2">
         <h4 className="font-medium">Key Features:</h4>
         <ul className="text-sm space-y-1 list-disc list-inside">
-          <li>Instance IDs are generated deterministically from primitive staticProps values</li>
-          <li>Complex objects, arrays, and functions in staticProps are ignored for ID generation</li>
+          <li>
+            Instance IDs are generated deterministically from primitive
+            staticProps values
+          </li>
+          <li>
+            Complex objects, arrays, and functions in staticProps are ignored
+            for ID generation
+          </li>
           <li>Props are sorted alphabetically to ensure consistent IDs</li>
-          <li>You can still provide an explicit <code className="bg-background px-1 py-0.5 rounded">instanceId</code> to override auto-generation</li>
-          <li>The <code className="bg-background px-1 py-0.5 rounded">id</code> option is deprecated in favor of <code className="bg-background px-1 py-0.5 rounded">instanceId</code></li>
+          <li>
+            You can still provide an explicit{' '}
+            <code className="bg-background px-1 py-0.5 rounded">
+              instanceId
+            </code>{' '}
+            to override auto-generation
+          </li>
+          <li>
+            The <code className="bg-background px-1 py-0.5 rounded">id</code>{' '}
+            option is deprecated in favor of{' '}
+            <code className="bg-background px-1 py-0.5 rounded">
+              instanceId
+            </code>
+          </li>
         </ul>
       </div>
 

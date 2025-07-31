@@ -12,7 +12,7 @@ Keep business logic in Blocs/Cubits and UI logic in components:
 // ❌ Don't do this - business logic in components
 function BadCounter() {
   const [count, setCount] = useState(0);
-  
+
   const fetchCountFromAPI = async () => {
     try {
       const response = await fetch('/api/count');
@@ -22,7 +22,7 @@ function BadCounter() {
       console.error(error);
     }
   };
-  
+
   return (
     <div>
       <h1>Count: {count}</h1>
@@ -33,15 +33,15 @@ function BadCounter() {
 }
 
 // ✅ Do this - business logic in Cubit, UI in component
-class CounterCubit extends Cubit<{ count: number, isLoading: boolean }> {
+class CounterCubit extends Cubit<{ count: number; isLoading: boolean }> {
   constructor() {
     super({ count: 0, isLoading: false });
   }
-  
+
   increment = () => {
     this.patch({ count: this.state.count + 1 });
   };
-  
+
   fetchCount = async () => {
     try {
       this.patch({ isLoading: true });
@@ -57,7 +57,7 @@ class CounterCubit extends Cubit<{ count: number, isLoading: boolean }> {
 
 function GoodCounter() {
   const [state, bloc] = useBloc(CounterCubit);
-  
+
   return (
     <div>
       <h1>Count: {state.count}</h1>
@@ -95,16 +95,18 @@ Design your state to be serializable to make debugging easier:
 // ❌ Don't do this - non-serializable state
 class BadUserCubit extends Cubit<{
   user: {
-    name: string,
-    dateJoined: Date,  // Date objects aren't serializable
-    logout: () => void // Functions aren't serializable
-  }
-}> { /* ... */ }
+    name: string;
+    dateJoined: Date; // Date objects aren't serializable
+    logout: () => void; // Functions aren't serializable
+  };
+}> {
+  /* ... */
+}
 
 // ✅ Do this - serializable state
 class GoodUserCubit extends Cubit<{
-  name: string,
-  dateJoinedTimestamp: number, // Use timestamps instead of Date objects
+  name: string;
+  dateJoinedTimestamp: number; // Use timestamps instead of Date objects
 }> {
   logout = () => {
     // Keep methods in the cubit, not in the state
@@ -121,32 +123,32 @@ Flatten state to reduce the number of re-renders, and to make it easier to patch
 // ❌ Don't do this - nested state
 class BadUserCubit extends Cubit<{
   user: {
-    name: string,
-    email: string,
-  },
-  isLoading: boolean
-}> { 
+    name: string;
+    email: string;
+  };
+  isLoading: boolean;
+}> {
   // ...
   updateName = (name: string) => {
-    this.patch({ 
+    this.patch({
       user: {
         ...this.state.user,
-        name 
-      } 
+        name,
+      },
     });
-  }
-}  
+  };
+}
 
 // ✅ Do this - flattened state
 class GoodUserCubit extends Cubit<{
-  name: string,
-  email: string,
-  isLoading: boolean
-}> { 
+  name: string;
+  email: string;
+  isLoading: boolean;
+}> {
   // ...
   updateName = (name: string) => {
     this.patch({ name });
-  }
+  };
 }
 ```
 
@@ -164,7 +166,7 @@ BlaC's automatic proxy dependency tracking optimizes re-renders by default. Unde
 // ✅ Do this - leverage automatic tracking
 function UserCard() {
   const [state, bloc] = useBloc(UserBloc);
-  
+
   // Only re-renders when name or avatar change
   return (
     <div>
@@ -178,12 +180,9 @@ function UserCard() {
 function UserStats() {
   const [state, bloc] = useBloc(UserBloc, {
     // Explicitly control dependencies
-    dependencies: (bloc) => [
-      bloc.state.postCount,
-      bloc.state.followerCount
-    ]
+    dependencies: (bloc) => [bloc.state.postCount, bloc.state.followerCount],
   });
-  
+
   return (
     <div>
       <p>Posts: {state.postCount}</p>
@@ -207,12 +206,14 @@ Blac.setConfig({ proxyDependencyTracking: false });
 ```
 
 **Consider disabling proxy tracking when:**
+
 - Your state objects are small and simple
 - You're experiencing compatibility issues with dev tools
 - You prefer explicit control over re-renders
 - You're migrating from another state management solution
 
 **Keep proxy tracking enabled when:**
+
 - Working with large state objects
 - Building performance-critical applications
 - You have components that only use a subset of state
@@ -222,7 +223,7 @@ Blac.setConfig({ proxyDependencyTracking: false });
 // ✅ Do this - simple component that renders state and dispatches events
 function UserProfile() {
   const [state, bloc] = useBloc(UserBloc);
-  
+
   return (
     <div>
       {state.isLoading ? (
@@ -248,14 +249,14 @@ Errors should be handled in the Bloc/Cubit and reflected in the state:
 
 ```tsx
 class UserBloc extends Cubit<{
-  user: User | null,
-  isLoading: boolean,
-  error: string | null
+  user: User | null;
+  isLoading: boolean;
+  error: string | null;
 }> {
   constructor() {
     super({ user: null, isLoading: false, error: null });
   }
-  
+
   fetchUser = async (id: string) => {
     try {
       this.patch({ isLoading: true, error: null });
@@ -264,7 +265,7 @@ class UserBloc extends Cubit<{
     } catch (error) {
       this.patch({
         isLoading: false,
-        error: error instanceof Error ? error.message : 'Failed to fetch user'
+        error: error instanceof Error ? error.message : 'Failed to fetch user',
       });
     }
   };
@@ -279,16 +280,24 @@ Each Bloc/Cubit should manage a single aspect of your application state:
 
 ```tsx
 // ✅ Do this - separate blocs for different concerns
-class AuthBloc extends Cubit<AuthState> { /* ... */ }
-class ProfileBloc extends Cubit<ProfileState> { /* ... */ }
-class SettingsBloc extends Cubit<SettingsState> { /* ... */ }
+class AuthBloc extends Cubit<AuthState> {
+  /* ... */
+}
+class ProfileBloc extends Cubit<ProfileState> {
+  /* ... */
+}
+class SettingsBloc extends Cubit<SettingsState> {
+  /* ... */
+}
 
 // ❌ Don't do this - one bloc handling too many concerns
 class MegaBloc extends Cubit<{
-  auth: AuthState,
-  profile: ProfileState,
-  settings: SettingsState
-}> { /* ... */ }
+  auth: AuthState;
+  profile: ProfileState;
+  settings: SettingsState;
+}> {
+  /* ... */
+}
 ```
 
 ### 2. Choose the Right Instance Pattern
@@ -310,7 +319,7 @@ Test your Blocs/Cubits independently of components:
 test('CounterCubit increments count', async () => {
   const cubit = new CounterCubit();
   expect(cubit.state.count).toBe(0);
-  
+
   cubit.increment();
   expect(cubit.state.count).toBe(1);
 });
@@ -318,12 +327,12 @@ test('CounterCubit increments count', async () => {
 test('CounterCubit fetches count from API', async () => {
   // Mock API
   global.fetch = jest.fn().mockResolvedValue({
-    json: jest.fn().mockResolvedValue({ count: 42 })
+    json: jest.fn().mockResolvedValue({ count: 42 }),
   });
-  
+
   const cubit = new CounterCubit();
   await cubit.fetchCount();
-  
+
   expect(cubit.state.count).toBe(42);
   expect(cubit.state.isLoading).toBe(false);
 });
@@ -338,18 +347,18 @@ import { Blac } from '@blac/core';
 
 describe('UserComponent', () => {
   const originalConfig = { ...Blac.config };
-  
+
   afterEach(() => {
     // Reset configuration after each test
     Blac.setConfig(originalConfig);
     Blac.resetInstance();
   });
-  
+
   test('renders efficiently with proxy tracking', () => {
     Blac.setConfig({ proxyDependencyTracking: true });
     // Test that component only re-renders when accessed properties change
   });
-  
+
   test('handles all updates without proxy tracking', () => {
     Blac.setConfig({ proxyDependencyTracking: false });
     // Test that component re-renders on any state change
@@ -357,4 +366,4 @@ describe('UserComponent', () => {
 });
 ```
 
-By following these best practices, you'll create more maintainable, testable, and efficient applications with Blac. 
+By following these best practices, you'll create more maintainable, testable, and efficient applications with Blac.

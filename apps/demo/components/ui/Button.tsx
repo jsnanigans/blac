@@ -10,7 +10,7 @@ import {
   COLOR_SECONDARY_ACCENT,
   COLOR_TEXT_ON_DESTRUCTIVE,
   COLOR_TEXT_ON_PRIMARY,
-  COLOR_TEXT_PRIMARY
+  COLOR_TEXT_PRIMARY,
 } from '../../lib/styles';
 
 export interface ButtonProps
@@ -31,28 +31,64 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     switch (variant) {
       case 'secondary':
-        variantStyle = { backgroundColor: COLOR_SECONDARY_ACCENT, color: COLOR_TEXT_PRIMARY, borderColor: COLOR_SECONDARY_ACCENT };
-        variantHoverStyle = { backgroundColor: '#D5DBDB', borderColor: '#D5DBDB' };
+        variantStyle = {
+          backgroundColor: COLOR_SECONDARY_ACCENT,
+          color: COLOR_TEXT_PRIMARY,
+          borderColor: COLOR_SECONDARY_ACCENT,
+        };
+        variantHoverStyle = {
+          backgroundColor: '#D5DBDB',
+          borderColor: '#D5DBDB',
+        };
         break;
       case 'outline':
-        variantStyle = { backgroundColor: 'transparent', color: COLOR_PRIMARY_ACCENT, borderColor: COLOR_PRIMARY_ACCENT };
-        variantHoverStyle = { backgroundColor: `${COLOR_PRIMARY_ACCENT}1A`, color: COLOR_PRIMARY_ACCENT_HOVER, borderColor: COLOR_PRIMARY_ACCENT_HOVER };
+        variantStyle = {
+          backgroundColor: 'transparent',
+          color: COLOR_PRIMARY_ACCENT,
+          borderColor: COLOR_PRIMARY_ACCENT,
+        };
+        variantHoverStyle = {
+          backgroundColor: `${COLOR_PRIMARY_ACCENT}1A`,
+          color: COLOR_PRIMARY_ACCENT_HOVER,
+          borderColor: COLOR_PRIMARY_ACCENT_HOVER,
+        };
         break;
       case 'destructive':
-        variantStyle = { backgroundColor: COLOR_DESTRUCTIVE, color: COLOR_TEXT_ON_DESTRUCTIVE, borderColor: COLOR_DESTRUCTIVE };
-        variantHoverStyle = { backgroundColor: COLOR_DESTRUCTIVE_HOVER, borderColor: COLOR_DESTRUCTIVE_HOVER };
+        variantStyle = {
+          backgroundColor: COLOR_DESTRUCTIVE,
+          color: COLOR_TEXT_ON_DESTRUCTIVE,
+          borderColor: COLOR_DESTRUCTIVE,
+        };
+        variantHoverStyle = {
+          backgroundColor: COLOR_DESTRUCTIVE_HOVER,
+          borderColor: COLOR_DESTRUCTIVE_HOVER,
+        };
         break;
       case 'ghost':
-        variantStyle = { backgroundColor: 'transparent', color: COLOR_PRIMARY_ACCENT, borderColor: 'transparent' };
-        variantHoverStyle = { backgroundColor: `${COLOR_SECONDARY_ACCENT}99` , color: COLOR_PRIMARY_ACCENT_HOVER };
+        variantStyle = {
+          backgroundColor: 'transparent',
+          color: COLOR_PRIMARY_ACCENT,
+          borderColor: 'transparent',
+        };
+        variantHoverStyle = {
+          backgroundColor: `${COLOR_SECONDARY_ACCENT}99`,
+          color: COLOR_PRIMARY_ACCENT_HOVER,
+        };
         break;
       case 'default':
       default:
-        variantStyle = { backgroundColor: COLOR_PRIMARY_ACCENT, color: COLOR_TEXT_ON_PRIMARY, borderColor: COLOR_PRIMARY_ACCENT };
-        variantHoverStyle = { backgroundColor: COLOR_PRIMARY_ACCENT_HOVER, borderColor: COLOR_PRIMARY_ACCENT_HOVER };
+        variantStyle = {
+          backgroundColor: COLOR_PRIMARY_ACCENT,
+          color: COLOR_TEXT_ON_PRIMARY,
+          borderColor: COLOR_PRIMARY_ACCENT,
+        };
+        variantHoverStyle = {
+          backgroundColor: COLOR_PRIMARY_ACCENT_HOVER,
+          borderColor: COLOR_PRIMARY_ACCENT_HOVER,
+        };
         break;
     }
-    
+
     combinedStyle = { ...combinedStyle, ...variantStyle };
 
     if (disabled) {

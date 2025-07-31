@@ -21,14 +21,14 @@ import { PersistencePlugin } from '@blac/plugin-persistence';
 class CounterCubit extends Cubit<number> {
   static plugins = [
     new PersistencePlugin({
-      key: 'counter-state'
-    })
+      key: 'counter-state',
+    }),
   ];
-  
+
   constructor() {
     super(0);
   }
-  
+
   increment = () => this.emit(this.state + 1);
 }
 
@@ -55,18 +55,18 @@ class CounterCubit extends Cubit<number> {
 new PersistencePlugin({
   // Required: Storage key
   key: 'my-app-state',
-  
+
   // Optional: Storage adapter (defaults to localStorage)
   storage: new LocalStorageAdapter(),
-  
+
   // Optional: Debounce saves (ms)
   debounceMs: 100,
-  
+
   // Optional: Error handler
   onError: (error, operation) => {
     console.error(`Persistence ${operation} failed:`, error);
-  }
-})
+  },
+});
 ```
 
 ### Custom Serialization
@@ -74,18 +74,18 @@ new PersistencePlugin({
 ```typescript
 new PersistencePlugin({
   key: 'user-state',
-  
+
   // Custom serialization
   serialize: (state) => {
     // Transform dates to ISO strings, etc.
     return JSON.stringify(state, dateReplacer);
   },
-  
+
   deserialize: (data) => {
     // Restore dates from ISO strings, etc.
     return JSON.parse(data, dateReviver);
-  }
-})
+  },
+});
 ```
 
 ### Encryption
@@ -95,12 +95,12 @@ import { encrypt, decrypt } from 'your-crypto-lib';
 
 new PersistencePlugin({
   key: 'secure-state',
-  
+
   encrypt: {
     encrypt: async (data) => encrypt(data, SECRET_KEY),
-    decrypt: async (data) => decrypt(data, SECRET_KEY)
-  }
-})
+    decrypt: async (data) => decrypt(data, SECRET_KEY),
+  },
+});
 ```
 
 ### Migrations
@@ -111,7 +111,7 @@ Handle data structure changes between versions:
 new PersistencePlugin({
   key: 'user-settings',
   version: 2,
-  
+
   migrations: [
     {
       from: 'old-user-settings',
@@ -120,12 +120,12 @@ new PersistencePlugin({
         // Add new fields
         notifications: {
           email: oldData.emailNotifications ?? true,
-          push: oldData.pushNotifications ?? false
-        }
-      })
-    }
-  ]
-})
+          push: oldData.pushNotifications ?? false,
+        },
+      }),
+    },
+  ],
+});
 ```
 
 ## Storage Adapters
@@ -137,8 +137,8 @@ import { LocalStorageAdapter } from '@blac/plugin-persistence';
 
 new PersistencePlugin({
   key: 'state',
-  storage: new LocalStorageAdapter()
-})
+  storage: new LocalStorageAdapter(),
+});
 ```
 
 ### SessionStorageAdapter
@@ -150,8 +150,8 @@ import { SessionStorageAdapter } from '@blac/plugin-persistence';
 
 new PersistencePlugin({
   key: 'session-state',
-  storage: new SessionStorageAdapter()
-})
+  storage: new SessionStorageAdapter(),
+});
 ```
 
 ### InMemoryStorageAdapter
@@ -165,8 +165,8 @@ const storage = new InMemoryStorageAdapter();
 
 new PersistencePlugin({
   key: 'test-state',
-  storage
-})
+  storage,
+});
 ```
 
 ### AsyncStorageAdapter
@@ -179,8 +179,8 @@ import { AsyncStorageAdapter } from '@blac/plugin-persistence';
 
 new PersistencePlugin({
   key: 'app-state',
-  storage: new AsyncStorageAdapter(AsyncStorage)
-})
+  storage: new AsyncStorageAdapter(AsyncStorage),
+});
 ```
 
 ### Custom Storage Adapter
@@ -194,11 +194,11 @@ class CustomStorage implements StorageAdapter {
   async getItem(key: string): Promise<string | null> {
     // Your implementation
   }
-  
+
   async setItem(key: string, value: string): Promise<void> {
     // Your implementation
   }
-  
+
   async removeItem(key: string): Promise<void> {
     // Your implementation
   }
@@ -227,8 +227,8 @@ class SettingsCubit extends Cubit<Settings> {
     new PersistencePlugin({
       key: 'settings',
       // Only save if user is logged in
-      shouldSave: (state) => state.isLoggedIn
-    })
+      shouldSave: (state) => state.isLoggedIn,
+    }),
   ];
 }
 ```
@@ -243,15 +243,15 @@ class AppCubit extends Cubit<AppState> {
     // User preferences in localStorage
     new PersistencePlugin({
       key: 'user-prefs',
-      serialize: (state) => JSON.stringify(state.preferences)
+      serialize: (state) => JSON.stringify(state.preferences),
     }),
-    
+
     // Sensitive data in sessionStorage
     new PersistencePlugin({
       key: 'session-data',
       storage: new SessionStorageAdapter(),
-      serialize: (state) => JSON.stringify(state.session)
-    })
+      serialize: (state) => JSON.stringify(state.session),
+    }),
   ];
 }
 ```
@@ -283,7 +283,7 @@ const plugin = new PersistencePlugin<UserState>({
   key: 'user',
   // TypeScript ensures serialize/deserialize handle UserState
   serialize: (state) => JSON.stringify(state),
-  deserialize: (data) => JSON.parse(data) as UserState
+  deserialize: (data) => JSON.parse(data) as UserState,
 });
 ```
 

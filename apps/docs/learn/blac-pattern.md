@@ -22,10 +22,10 @@ interface CounterState {
 
 **Best Practices for State Design:**
 
--   Keep state serializable (avoid complex class instances, functions, etc., directly in the state if persistence or straightforward debugging is a goal).
--   Prefer flatter state structures where possible, but organize logically.
--   Explicitly include UI-related states like `isLoading`, `error`, etc.
--   Utilize TypeScript interfaces or types for robust type safety.
+- Keep state serializable (avoid complex class instances, functions, etc., directly in the state if persistence or straightforward debugging is a goal).
+- Prefer flatter state structures where possible, but organize logically.
+- Explicitly include UI-related states like `isLoading`, `error`, etc.
+- Utilize TypeScript interfaces or types for robust type safety.
 
 See more in [Best Practices for State Container Design](/learn/best-practices#state-container-design).
 
@@ -35,50 +35,60 @@ State containers are classes that hold the current `State` and contain the busin
 
 Blac offers two main types of state containers:
 
--   **`Cubit<State>`**: A simpler container that exposes methods to directly `emit` new states or `patch` the existing state.
+- **`Cubit<State>`**: A simpler container that exposes methods to directly `emit` new states or `patch` the existing state.
 
-    ```typescript
-    // Example of a Cubit state container
-    import { Cubit } from '@blac/core';
+  ```typescript
+  // Example of a Cubit state container
+  import { Cubit } from '@blac/core';
 
-    class CounterCubit extends Cubit<CounterState> {
-      constructor() {
-        super({ count: 0, isLoading: false, error: null });
-      }
-
-      increment = () => {
-        this.patch({ count: this.state.count + 1, lastUpdated: Date.now() });
-      };
-
-      decrement = () => {
-        this.patch({ count: this.state.count - 1, lastUpdated: Date.now() });
-      };
-
-      reset = () => {
-        // 'emit' can be used to completely replace the state
-        this.emit({ count: 0, isLoading: false, error: null, lastUpdated: Date.now() });
-      };
-
-      // Example async operation
-      fetchCount = async () => {
-        this.patch({ isLoading: true, error: null });
-        try {
-          // const response = await api.fetchCount(); // Replace with actual API call
-          await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
-          const fetchedCount = Math.floor(Math.random() * 100);
-          this.patch({ count: fetchedCount, isLoading: false, lastUpdated: Date.now() });
-        } catch (err) {
-          this.patch({
-            isLoading: false,
-            error: err instanceof Error ? err.message : 'An unknown error occurred',
-            lastUpdated: Date.now(),
-          });
-        }
-      };
+  class CounterCubit extends Cubit<CounterState> {
+    constructor() {
+      super({ count: 0, isLoading: false, error: null });
     }
-    ```
 
--   **`Bloc<State, Event>`**: A more structured container that processes instances of event *classes* through registered *handler functions* to produce new `State`. Event instances are dispatched via `this.add(new EventType())`, and handlers are registered with `this.on(EventType, handler)`. This is ideal for more complex, type-safe state transitions.
+    increment = () => {
+      this.patch({ count: this.state.count + 1, lastUpdated: Date.now() });
+    };
+
+    decrement = () => {
+      this.patch({ count: this.state.count - 1, lastUpdated: Date.now() });
+    };
+
+    reset = () => {
+      // 'emit' can be used to completely replace the state
+      this.emit({
+        count: 0,
+        isLoading: false,
+        error: null,
+        lastUpdated: Date.now(),
+      });
+    };
+
+    // Example async operation
+    fetchCount = async () => {
+      this.patch({ isLoading: true, error: null });
+      try {
+        // const response = await api.fetchCount(); // Replace with actual API call
+        await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate API call
+        const fetchedCount = Math.floor(Math.random() * 100);
+        this.patch({
+          count: fetchedCount,
+          isLoading: false,
+          lastUpdated: Date.now(),
+        });
+      } catch (err) {
+        this.patch({
+          isLoading: false,
+          error:
+            err instanceof Error ? err.message : 'An unknown error occurred',
+          lastUpdated: Date.now(),
+        });
+      }
+    };
+  }
+  ```
+
+- **`Bloc<State, Event>`**: A more structured container that processes instances of event _classes_ through registered _handler functions_ to produce new `State`. Event instances are dispatched via `this.add(new EventType())`, and handlers are registered with `this.on(EventType, handler)`. This is ideal for more complex, type-safe state transitions.
 
 Details on these are in the [Core Classes API](/api/core-classes) and [Core Concepts](/learn/core-concepts).
 
@@ -97,13 +107,26 @@ function CounterDisplay() {
   return (
     <div className="counter">
       {state.isLoading && <p>Loading...</p>}
-      {!state.isLoading && state.error && <p className="error">Error: {state.error}</p>}
+      {!state.isLoading && state.error && (
+        <p className="error">Error: {state.error}</p>
+      )}
       {!state.isLoading && !state.error && <h1>Count: {state.count}</h1>}
-      <p>Last updated: {state.lastUpdated ? new Date(state.lastUpdated).toLocaleTimeString() : 'N/A'}</p>
+      <p>
+        Last updated:{' '}
+        {state.lastUpdated
+          ? new Date(state.lastUpdated).toLocaleTimeString()
+          : 'N/A'}
+      </p>
       <div className="button-group">
-        <button onClick={counterCubit.increment} disabled={state.isLoading}>Increment</button>
-        <button onClick={counterCubit.decrement} disabled={state.isLoading}>Decrement</button>
-        <button onClick={counterCubit.reset} disabled={state.isLoading}>Reset</button>
+        <button onClick={counterCubit.increment} disabled={state.isLoading}>
+          Increment
+        </button>
+        <button onClick={counterCubit.decrement} disabled={state.isLoading}>
+          Decrement
+        </button>
+        <button onClick={counterCubit.reset} disabled={state.isLoading}>
+          Reset
+        </button>
         <button onClick={counterCubit.fetchCount} disabled={state.isLoading}>
           {state.isLoading ? 'Fetching...' : 'Fetch Random Count'}
         </button>
@@ -160,22 +183,22 @@ This cycle ensures that changes are easy to follow and debug.
 
 The Blac pattern is beneficial for:
 
--   Components or features with non-trivial business logic.
--   Managing asynchronous operations, including loading and error states.
--   Sharing state across multiple components or sections of your application.
--   Applications requiring a robust, predictable, and traceable state management architecture.
+- Components or features with non-trivial business logic.
+- Managing asynchronous operations, including loading and error states.
+- Sharing state across multiple components or sections of your application.
+- Applications requiring a robust, predictable, and traceable state management architecture.
 
 ## How to Choose: `Cubit` vs. `Bloc` vs. `createBloc().setState()`
 
--   Use **`Cubit`** when:
-    -   State logic is relatively simple.
-    -   You prefer updating state via direct method calls (`emit`, `patch`).
-    -   Formal event classes and handlers feel like overkill.
--   Use **`Bloc`** (with its `this.on(EventType, handler)` and `this.add(new EventType())` pattern) when:
-    -   State transitions are complex and benefit from distinct, type-safe event classes and dedicated handlers.
-    -   You want a clear, event-driven architecture for managing state changes and side effects, enhancing traceability and maintainability.
--   Use **`createBloc().setState()` style** when:
-    -   You want `Cubit`-like simplicity (direct state changes via methods).
-    -   You prefer a `this.setState()` API similar to React class components for its conciseness (often handles partial state updates on objects conveniently).
+- Use **`Cubit`** when:
+  - State logic is relatively simple.
+  - You prefer updating state via direct method calls (`emit`, `patch`).
+  - Formal event classes and handlers feel like overkill.
+- Use **`Bloc`** (with its `this.on(EventType, handler)` and `this.add(new EventType())` pattern) when:
+  - State transitions are complex and benefit from distinct, type-safe event classes and dedicated handlers.
+  - You want a clear, event-driven architecture for managing state changes and side effects, enhancing traceability and maintainability.
+- Use **`createBloc().setState()` style** when:
+  - You want `Cubit`-like simplicity (direct state changes via methods).
+  - You prefer a `this.setState()` API similar to React class components for its conciseness (often handles partial state updates on objects conveniently).
 
-Refer to the [Core Classes API](/api/core-classes) and [Key Methods API](/api/key-methods) for more implementation details. 
+Refer to the [Core Classes API](/api/core-classes) and [Key Methods API](/api/key-methods) for more implementation details.

@@ -50,9 +50,9 @@ function SettingsPage() {
 
 ### Best For
 
--   Global application state (e.g., user authentication, theme, global settings).
--   State that needs to be consistently synchronized between distinct components.
--   Features where multiple components interact with or display the same slice of data.
+- Global application state (e.g., user authentication, theme, global settings).
+- State that needs to be consistently synchronized between distinct components.
+- Features where multiple components interact with or display the same slice of data.
 
 ## 2. Isolated State
 
@@ -66,7 +66,10 @@ There are times when you need each component (or a specific part of your UI) to 
     // src/blocs/WidgetSettingsCubit.ts
     import { Cubit } from '@blac/core';
 
-    interface SettingsState { color: string; fontSize: number; }
+    interface SettingsState {
+      color: string;
+      fontSize: number;
+    }
 
     export class WidgetSettingsCubit extends Cubit<SettingsState> {
       static isolated = true; // Each component gets its own instance
@@ -87,12 +90,18 @@ There are times when you need each component (or a specific part of your UI) to 
     import { useBloc } from '@blac/react';
     import { WidgetSettingsCubit } from '../blocs/WidgetSettingsCubit';
 
-    function ConfigurableWidget({ widgetId, initialColor }: { widgetId: string; initialColor?: string }) {
+    function ConfigurableWidget({
+      widgetId,
+      initialColor,
+    }: {
+      widgetId: string;
+      initialColor?: string;
+    }) {
       // WidgetSettingsCubit does NOT need `static isolated = true` for this to work.
       // The unique `id` ensures a distinct instance for this widgetId.
       const [settings, settingsCubit] = useBloc(WidgetSettingsCubit, {
         id: `widget-settings-${widgetId}`,
-        props: initialColor // Assuming constructor takes props for initialColor
+        props: initialColor, // Assuming constructor takes props for initialColor
       });
       // ... render widget based on settings ...
     }
@@ -107,7 +116,7 @@ If `WidgetSettingsCubit` has `static isolated = true;`:
 function App() {
   return (
     <>
-      <MyWidget /> 
+      <MyWidget />
       <MyWidget />
     </>
   );
@@ -116,12 +125,12 @@ function App() {
 
 ### Best For
 
--   Components that require their own, non-shared state (e.g., a reusable form Bloc, settings for multiple instances of a widget on one page).
--   Avoiding state conflicts when multiple instances of the same component are rendered.
+- Components that require their own, non-shared state (e.g., a reusable form Bloc, settings for multiple instances of a widget on one page).
+- Avoiding state conflicts when multiple instances of the same component are rendered.
 
 ## 3. In-Memory Persistence (`keepAlive`)
 
-Normally, a shared `Bloc` or `Cubit` is disposed of when it no longer has any active listeners (i.e., components using it via `useBloc` have unmounted). If you need a shared instance to persist in memory *even when no components are currently using it*, you can set `static keepAlive = true;`.
+Normally, a shared `Bloc` or `Cubit` is disposed of when it no longer has any active listeners (i.e., components using it via `useBloc` have unmounted). If you need a shared instance to persist in memory _even when no components are currently using it_, you can set `static keepAlive = true;`.
 
 This is useful for caching data, managing background tasks, or maintaining state across navigations where components might unmount and remount later, expecting the state to be preserved.
 
@@ -131,7 +140,10 @@ This is useful for caching data, managing background tasks, or maintaining state
 // src/blocs/DataCacheBloc.ts
 import { Cubit } from '@blac/core';
 
-interface CacheState { data: Record<string, any> | null; isLoading: boolean; }
+interface CacheState {
+  data: Record<string, any> | null;
+  isLoading: boolean;
+}
 
 export class DataCacheBloc extends Cubit<CacheState> {
   static keepAlive = true; // Instance persists in memory
@@ -141,8 +153,12 @@ export class DataCacheBloc extends Cubit<CacheState> {
     this.loadInitialData(); // Example: load data on init
   }
 
-  loadInitialData = async () => { /* ... */ }
-  fetchData = async (key: string) => { /* ... update state ... */ };
+  loadInitialData = async () => {
+    /* ... */
+  };
+  fetchData = async (key: string) => {
+    /* ... update state ... */
+  };
   getCachedData = (key: string) => this.state.data?.[key];
 }
 ```
@@ -153,9 +169,9 @@ When a component using `DataCacheBloc` unmounts, the `DataCacheBloc` instance (a
 
 ### Best For
 
--   Caching data that is expensive to fetch, across component lifecycles or navigation.
--   Managing application-wide services or settings that should always be available.
--   Background tasks that need to maintain state independently of the UI.
+- Caching data that is expensive to fetch, across component lifecycles or navigation.
+- Managing application-wide services or settings that should always be available.
+- Background tasks that need to maintain state independently of the UI.
 
 **Note**: `keepAlive` prevents disposal from lack of listeners. It does not inherently save state to disk or browser storage.
 
@@ -169,7 +185,9 @@ To persist state across browser sessions (e.g., to `localStorage` or `sessionSto
 // src/blocs/ThemeCubit.ts
 import { Cubit, Persist } from '@blac/core';
 
-interface ThemeState { mode: 'light' | 'dark'; }
+interface ThemeState {
+  mode: 'light' | 'dark';
+}
 
 export class ThemeCubit extends Cubit<ThemeState> {
   // Connect the Persist addon
@@ -191,10 +209,10 @@ export class ThemeCubit extends Cubit<ThemeState> {
 
 ### Key Points for Storage Persistence:
 
--   Use an addon like `Persist` (or create your own).
--   Configure the addon (e.g., with a storage key, storage type).
--   The addon typically handles loading state from storage on initialization and saving state to storage on changes.
--   You might combine this with `static keepAlive = true;` if you want the instance managing the persisted state to also stay in memory regardless of listeners.
+- Use an addon like `Persist` (or create your own).
+- Configure the addon (e.g., with a storage key, storage type).
+- The addon typically handles loading state from storage on initialization and saving state to storage on changes.
+- You might combine this with `static keepAlive = true;` if you want the instance managing the persisted state to also stay in memory regardless of listeners.
 
 Refer to documentation on specific addons (like `Persist`) for detailed setup and options.
 
@@ -212,6 +230,7 @@ export class UserTaskBloc extends Bloc<TaskState, TaskAction> {
   // ...
 }
 ```
+
 This would create a unique `UserTaskBloc` for each component instance that requests it, and each of those unique instances would persist in memory even if its originating component unmounts.
 
 ## Choosing the Right Pattern
@@ -219,14 +238,14 @@ This would create a unique `UserTaskBloc` for each component instance that reque
 Consider these questions:
 
 1.  **Shared vs. Unique Instance?**
-    *   Multiple components need the *exact same* state instance: Use **Shared State** (default).
-    *   Each component (or context) needs its *own independent* state: Use **Isolated State** (via `static isolated` or dynamic `id` in `useBloc`).
+    - Multiple components need the _exact same_ state instance: Use **Shared State** (default).
+    - Each component (or context) needs its _own independent_ state: Use **Isolated State** (via `static isolated` or dynamic `id` in `useBloc`).
 
 2.  **Lifecycle when No Components Listen?**
-    *   State/Instance can be discarded if nothing is listening: Default behavior (no `keepAlive`).
-    *   State/Instance *must remain in memory* even if nothing is listening: Use **In-Memory Persistence (`keepAlive`)**.
+    - State/Instance can be discarded if nothing is listening: Default behavior (no `keepAlive`).
+    - State/Instance _must remain in memory_ even if nothing is listening: Use **In-Memory Persistence (`keepAlive`)**.
 
 3.  **Persistence Across Browser Sessions?**
-    *   State should be saved to `localStorage`/`sessionStorage` and reloaded: Use **Storage Persistence (Addons)** like `Persist`.
+    - State should be saved to `localStorage`/`sessionStorage` and reloaded: Use **Storage Persistence (Addons)** like `Persist`.
 
 By understanding these distinctions, you can architect your state management effectively with Blac.

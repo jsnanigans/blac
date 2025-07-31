@@ -19,6 +19,7 @@ Blac.enableLog: boolean = false;
 ```
 
 Example:
+
 ```typescript
 // Enable logging in development
 if (process.env.NODE_ENV === 'development') {
@@ -57,7 +58,7 @@ static setConfig(config: Partial<BlacConfig>): void
 ```typescript
 interface BlacConfig {
   enableLog?: boolean;
-  enableWarn?: boolean; 
+  enableWarn?: boolean;
   enableError?: boolean;
   proxyDependencyTracking?: boolean;
   exposeBlacInstance?: boolean;
@@ -66,20 +67,21 @@ interface BlacConfig {
 
 #### Configuration Options
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `enableLog` | `boolean` | `false` | Enable console logging |
-| `enableWarn` | `boolean` | `true` | Enable warning messages |
-| `enableError` | `boolean` | `true` | Enable error messages |
-| `proxyDependencyTracking` | `boolean` | `true` | Enable automatic render optimization |
-| `exposeBlacInstance` | `boolean` | `false` | Expose Blac instance globally for debugging |
+| Option                    | Type      | Default | Description                                 |
+| ------------------------- | --------- | ------- | ------------------------------------------- |
+| `enableLog`               | `boolean` | `false` | Enable console logging                      |
+| `enableWarn`              | `boolean` | `true`  | Enable warning messages                     |
+| `enableError`             | `boolean` | `true`  | Enable error messages                       |
+| `proxyDependencyTracking` | `boolean` | `true`  | Enable automatic render optimization        |
+| `exposeBlacInstance`      | `boolean` | `false` | Expose Blac instance globally for debugging |
 
 Example:
+
 ```typescript
 Blac.setConfig({
   enableLog: true,
   proxyDependencyTracking: true,
-  exposeBlacInstance: process.env.NODE_ENV === 'development'
+  exposeBlacInstance: process.env.NODE_ENV === 'development',
 });
 ```
 
@@ -92,6 +94,7 @@ static log(...args: any[]): void
 ```
 
 Example:
+
 ```typescript
 Blac.log('State updated:', newState);
 ```
@@ -105,6 +108,7 @@ static warn(...args: any[]): void
 ```
 
 Example:
+
 ```typescript
 Blac.warn('Deprecated feature used');
 ```
@@ -118,6 +122,7 @@ static error(...args: any[]): void
 ```
 
 Example:
+
 ```typescript
 Blac.error('Failed to update state:', error);
 ```
@@ -128,12 +133,13 @@ Get a Bloc/Cubit instance by ID or class constructor.
 
 ```typescript
 static get<T extends BlocBase<any>>(
-  blocClass: Constructor<T> | string, 
+  blocClass: Constructor<T> | string,
   id?: string
 ): T | undefined
 ```
 
 Example:
+
 ```typescript
 // Get by class
 const counter = Blac.get(CounterCubit);
@@ -158,14 +164,15 @@ static getOrCreate<T extends BlocBase<any, any>>(
 ```
 
 Example:
+
 ```typescript
 // Get or create with default ID
 const counter = Blac.getOrCreate(CounterCubit);
 
 // Get or create with custom ID and props
-const chat = Blac.getOrCreate(ChatCubit, 'room-123', { 
+const chat = Blac.getOrCreate(ChatCubit, 'room-123', {
   roomId: '123',
-  userId: 'user-456'
+  userId: 'user-456',
 });
 ```
 
@@ -178,6 +185,7 @@ static dispose(blocClass: Constructor<BlocBase<any>> | string, id?: string): voi
 ```
 
 Example:
+
 ```typescript
 // Dispose by class
 Blac.dispose(CounterCubit);
@@ -198,6 +206,7 @@ static disposeAll(): void
 ```
 
 Example:
+
 ```typescript
 // Clean up everything (useful for testing)
 Blac.disposeAll();
@@ -212,6 +221,7 @@ static resetConfig(): void
 ```
 
 Example:
+
 ```typescript
 // Reset after tests
 afterEach(() => {
@@ -234,37 +244,45 @@ static use(plugin: BlacPlugin): void
 
 ```typescript
 interface BlacPlugin {
-  beforeCreate?: <T extends BlocBase<any>>(blocClass: Constructor<T>, id: string) => void;
+  beforeCreate?: <T extends BlocBase<any>>(
+    blocClass: Constructor<T>,
+    id: string,
+  ) => void;
   afterCreate?: <T extends BlocBase<any>>(instance: T) => void;
   beforeDispose?: <T extends BlocBase<any>>(instance: T) => void;
-  afterDispose?: <T extends BlocBase<any>>(blocClass: Constructor<T>, id: string) => void;
+  afterDispose?: <T extends BlocBase<any>>(
+    blocClass: Constructor<T>,
+    id: string,
+  ) => void;
   onStateChange?: <S>(instance: BlocBase<S>, newState: S, oldState: S) => void;
 }
 ```
 
 Example: Logging Plugin
+
 ```typescript
 const loggingPlugin: BlacPlugin = {
   afterCreate: (instance) => {
     console.log(`[BlaC] Created ${instance.constructor.name}`);
   },
-  
+
   onStateChange: (instance, newState, oldState) => {
     console.log(`[BlaC] ${instance.constructor.name} state changed:`, {
       old: oldState,
-      new: newState
+      new: newState,
     });
   },
-  
+
   beforeDispose: (instance) => {
     console.log(`[BlaC] Disposing ${instance.constructor.name}`);
-  }
+  },
 };
 
 Blac.use(loggingPlugin);
 ```
 
 Example: State Persistence Plugin
+
 ```typescript
 const persistencePlugin: BlacPlugin = {
   afterCreate: (instance) => {
@@ -275,36 +293,37 @@ const persistencePlugin: BlacPlugin = {
       instance.emit(JSON.parse(saved));
     }
   },
-  
+
   onStateChange: (instance, newState) => {
     // Save state changes
     const key = `blac_${instance.constructor.name}`;
     localStorage.setItem(key, JSON.stringify(newState));
-  }
+  },
 };
 
 Blac.use(persistencePlugin);
 ```
 
 Example: Analytics Plugin
+
 ```typescript
 const analyticsPlugin: BlacPlugin = {
   afterCreate: (instance) => {
     analytics.track('bloc_created', {
       type: instance.constructor.name,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   },
-  
+
   onStateChange: (instance, newState, oldState) => {
     if (instance.constructor.name === 'CartCubit') {
       const cartState = newState as CartState;
       analytics.track('cart_updated', {
         itemCount: cartState.items.length,
-        total: cartState.total
+        total: cartState.total,
       });
     }
-  }
+  },
 };
 
 Blac.use(analyticsPlugin);
@@ -341,10 +360,10 @@ Internally, BlaC stores instances in a Map:
 // Simplified internal structure
 class Blac {
   private static instances = new Map<string, BlocInstance>();
-  
+
   private static getInstanceId(
     blocClass: Constructor<BlocBase<any>> | string,
-    id?: string
+    id?: string,
   ): string {
     if (typeof blocClass === 'string') return blocClass;
     return id || blocClass.name;
@@ -376,7 +395,7 @@ if (Blac.enableLog) {
     console.log(`Instance ${id}:`, {
       state: instance.bloc.state,
       consumers: instance.consumers.size,
-      props: instance.bloc.props
+      props: instance.bloc.props,
     });
   });
 }
@@ -392,7 +411,7 @@ Set configuration once at app startup:
 // main.ts or index.ts
 Blac.setConfig({
   enableLog: process.env.NODE_ENV === 'development',
-  proxyDependencyTracking: true
+  proxyDependencyTracking: true,
 });
 ```
 
@@ -459,6 +478,7 @@ Blac.enableError = true;
 ## Summary
 
 The Blac class provides:
+
 - **Global instance management**: Centralized control over all state containers
 - **Configuration**: Customize behavior for your app's needs
 - **Plugin system**: Extend functionality with custom logic

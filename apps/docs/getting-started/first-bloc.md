@@ -5,10 +5,12 @@ Blocs provide event-driven state management for more complex scenarios. To demon
 ## When to Use Blocs
 
 **Use Cubit when:**
+
 - Simple state updates
 - Direct method calls are fine
 
 **Use Bloc when:**
+
 - You want a clear audit trail
 - Multiple events affect the same state
 - Complex async operations
@@ -45,11 +47,17 @@ export class CounterBloc extends Bloc<CounterState, CounterEvent> {
     this.on(Reset, this.handleReset);
   }
 
-  private handleIncrement = (event: Increment, emit: (state: CounterState) => void) => {
+  private handleIncrement = (
+    event: Increment,
+    emit: (state: CounterState) => void,
+  ) => {
     emit({ count: this.state.count + 1 });
   };
 
-  private handleDecrement = (event: Decrement, emit: (state: CounterState) => void) => {
+  private handleDecrement = (
+    event: Decrement,
+    emit: (state: CounterState) => void,
+  ) => {
     emit({ count: this.state.count - 1 });
   };
 
@@ -101,6 +109,7 @@ bloc.increment(); // which calls this.add(new Increment())
 ### Event Handlers
 
 Event handlers receive:
+
 - The event instance
 - An `emit` function to update state
 

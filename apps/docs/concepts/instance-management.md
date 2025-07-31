@@ -10,7 +10,7 @@ When you use `useBloc`, BlaC automatically creates instances as needed:
 function MyComponent() {
   // BlaC creates a CounterCubit instance if it doesn't exist
   const [count, counter] = useBloc(CounterCubit);
-  
+
   return <div>{count}</div>;
 }
 ```
@@ -28,7 +28,7 @@ function HeaderCounter() {
   return <span>Header: {count}</span>;
 }
 
-// Component B  
+// Component B
 function MainCounter() {
   const [count, counter] = useBloc(CounterCubit);
   return (
@@ -67,7 +67,7 @@ Sometimes you want each component to have its own instance. Use the `static isol
 ```typescript
 class FormCubit extends Cubit<FormState> {
   static isolated = true; // Each component gets its own instance
-  
+
   constructor() {
     super({ name: '', email: '' });
   }
@@ -99,6 +99,7 @@ function DynamicForm({ formId }: { formId: string }) {
 ## Lifecycle Management
 
 ### Creation
+
 Instances are created on first use:
 
 ```typescript
@@ -110,13 +111,14 @@ function App() {
 ```
 
 ### Reference Counting
+
 BlaC tracks how many components are using each instance:
 
 ```typescript
 function Parent() {
   const [showA, setShowA] = useState(true);
   const [showB, setShowB] = useState(true);
-  
+
   return (
     <>
       {showA && <ComponentA />} {/* Uses CounterCubit */}
@@ -134,22 +136,23 @@ function Parent() {
 ```
 
 ### Disposal
+
 Instances are automatically disposed when no components use them:
 
 ```typescript
 class WebSocketCubit extends Cubit<ConnectionState> {
   private ws?: WebSocket;
-  
+
   constructor() {
     super({ status: 'disconnected' });
     this.connect();
   }
-  
+
   connect = () => {
     this.ws = new WebSocket('wss://example.com');
     // ... setup
   };
-  
+
   // Called automatically when disposed
   onDispose = () => {
     console.log('Cleaning up WebSocket');
@@ -167,17 +170,18 @@ Keep instances alive even when no components use them:
 ```typescript
 class SessionCubit extends Cubit<SessionState> {
   static keepAlive = true; // Never dispose this instance
-  
+
   constructor() {
     super({ user: null, token: null });
     this.loadSession();
   }
-  
+
   // Stays in memory for entire app lifecycle
 }
 ```
 
 Use cases for `keepAlive`:
+
 - User session management
 - App-wide settings
 - Cache management
@@ -197,7 +201,7 @@ class ChatCubit extends Cubit<ChatState, ChatProps> {
   constructor() {
     super({ messages: [], connected: false });
   }
-  
+
   // Access props via this.props
   connect = () => {
     const socket = io(`/room/${this.props.roomId}`);
@@ -211,7 +215,7 @@ function ChatRoom({ roomId, userId }: { roomId: string; userId: string }) {
     id: `chat-${roomId}`, // Unique instance per room
     props: { roomId, userId }
   });
-  
+
   return <div>{/* Chat UI */}</div>;
 }
 ```
@@ -255,7 +259,7 @@ let globalInstance: AppCubit | null = null;
 class AppCubit extends Cubit<AppState> {
   static isolated = false;
   static keepAlive = true;
-  
+
   constructor() {
     if (globalInstance) {
       return globalInstance;
@@ -276,7 +280,7 @@ function Workspace({ workspaceId }: { workspaceId: string }) {
   // All children share these workspace-specific instances
   const [projects] = useBloc(ProjectsCubit, { id: `workspace-${workspaceId}` });
   const [members] = useBloc(MembersCubit, { id: `workspace-${workspaceId}` });
-  
+
   return (
     <div>
       <ProjectList projects={projects} />
@@ -296,7 +300,7 @@ BlaC uses WeakRef for consumer tracking to prevent memory leaks:
 // Internally, BlaC tracks consumers without preventing garbage collection
 class BlocInstance {
   private consumers = new Set<WeakRef<Consumer>>();
-  
+
   addConsumer(consumer: Consumer) {
     this.consumers.add(new WeakRef(consumer));
   }
@@ -310,18 +314,18 @@ Always clean up resources in `onDispose`:
 ```typescript
 class TimerCubit extends Cubit<number> {
   private timer?: NodeJS.Timeout;
-  
+
   constructor() {
     super(0);
     this.startTimer();
   }
-  
+
   startTimer = () => {
     this.timer = setInterval(() => {
       this.emit(this.state + 1);
     }, 1000);
   };
-  
+
   onDispose = () => {
     // Clean up timer to prevent memory leaks
     if (this.timer) {
@@ -341,7 +345,7 @@ class DebugCubit extends Cubit<State> {
     super(initialState);
     console.log(`[${this.constructor.name}] Created`);
   }
-  
+
   onDispose = () => {
     console.log(`[${this.constructor.name}] Disposed`);
   };
@@ -365,6 +369,7 @@ function StrictModeComponent() {
 ```
 
 The disposal system uses atomic state transitions to handle this:
+
 1. First unmount: Marks for disposal
 2. Quick remount: Cancels disposal
 3. Final unmount: Actually disposes
@@ -378,11 +383,11 @@ App-wide state that persists:
 ```typescript
 class ThemeCubit extends Cubit<Theme> {
   static keepAlive = true; // Never dispose
-  
+
   constructor() {
     super(loadThemeFromStorage() || 'light');
   }
-  
+
   setTheme = (theme: Theme) => {
     this.emit(theme);
     saveThemeToStorage(theme);
@@ -408,7 +413,7 @@ State for individual component instances:
 ```typescript
 class DropdownCubit extends Cubit<DropdownState> {
   static isolated = true; // Each dropdown is independent
-  
+
   constructor() {
     super({ isOpen: false, selectedItem: null });
   }
@@ -430,7 +435,7 @@ function ProductList() {
 
 // ❌ Avoid: Creates new instance each time
 function ProductItem({ product }: { product: Product }) {
-  const [state] = useBloc(ProductCubit, { 
+  const [state] = useBloc(ProductCubit, {
     id: product.id // New instance per product
   });
 }
@@ -450,7 +455,7 @@ class ExpensiveService {
 
 class ServiceCubit extends Cubit<ServiceState> {
   private service?: ExpensiveService;
-  
+
   // Lazy initialize expensive resources
   get expensiveService() {
     if (!this.service) {
@@ -464,6 +469,7 @@ class ServiceCubit extends Cubit<ServiceState> {
 ## Summary
 
 BlaC's instance management provides:
+
 - **Automatic lifecycle**: No manual creation or disposal
 - **Smart sharing**: Instances shared by default, isolated when needed
 - **Memory efficiency**: Automatic cleanup and weak references

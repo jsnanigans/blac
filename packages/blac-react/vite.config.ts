@@ -4,7 +4,10 @@ import dts from 'vite-plugin-dts';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [reactRefresh(), dts({ include: ['src'], rollupTypes: true, entryRoot: 'src' })],
+  plugins: [
+    reactRefresh(),
+    dts({ include: ['src'], rollupTypes: true, entryRoot: 'src' }),
+  ],
   publicDir: 'public',
   build: {
     lib: {

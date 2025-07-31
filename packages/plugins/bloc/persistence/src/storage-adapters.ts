@@ -12,7 +12,7 @@ export class LocalStorageAdapter implements StorageAdapter {
       return null;
     }
   }
-  
+
   setItem(key: string, value: string): void {
     try {
       localStorage.setItem(key, value);
@@ -21,7 +21,7 @@ export class LocalStorageAdapter implements StorageAdapter {
       throw error;
     }
   }
-  
+
   removeItem(key: string): void {
     try {
       localStorage.removeItem(key);
@@ -29,7 +29,7 @@ export class LocalStorageAdapter implements StorageAdapter {
       console.error('LocalStorage removeItem error:', error);
     }
   }
-  
+
   clear(): void {
     try {
       localStorage.clear();
@@ -51,7 +51,7 @@ export class SessionStorageAdapter implements StorageAdapter {
       return null;
     }
   }
-  
+
   setItem(key: string, value: string): void {
     try {
       sessionStorage.setItem(key, value);
@@ -60,7 +60,7 @@ export class SessionStorageAdapter implements StorageAdapter {
       throw error;
     }
   }
-  
+
   removeItem(key: string): void {
     try {
       sessionStorage.removeItem(key);
@@ -68,7 +68,7 @@ export class SessionStorageAdapter implements StorageAdapter {
       console.error('SessionStorage removeItem error:', error);
     }
   }
-  
+
   clear(): void {
     try {
       sessionStorage.clear();
@@ -83,23 +83,23 @@ export class SessionStorageAdapter implements StorageAdapter {
  */
 export class InMemoryStorageAdapter implements StorageAdapter {
   private store = new Map<string, string>();
-  
+
   getItem(key: string): string | null {
     return this.store.get(key) || null;
   }
-  
+
   setItem(key: string, value: string): void {
     this.store.set(key, value);
   }
-  
+
   removeItem(key: string): void {
     this.store.delete(key);
   }
-  
+
   clear(): void {
     this.store.clear();
   }
-  
+
   /**
    * Get all stored data (useful for debugging)
    */
@@ -118,9 +118,9 @@ export class AsyncStorageAdapter implements StorageAdapter {
       setItem: (key: string, value: string) => Promise<void>;
       removeItem: (key: string) => Promise<void>;
       clear?: () => Promise<void>;
-    }
+    },
   ) {}
-  
+
   async getItem(key: string): Promise<string | null> {
     try {
       return await this.asyncStorage.getItem(key);
@@ -129,7 +129,7 @@ export class AsyncStorageAdapter implements StorageAdapter {
       return null;
     }
   }
-  
+
   async setItem(key: string, value: string): Promise<void> {
     try {
       await this.asyncStorage.setItem(key, value);
@@ -138,7 +138,7 @@ export class AsyncStorageAdapter implements StorageAdapter {
       throw error;
     }
   }
-  
+
   async removeItem(key: string): Promise<void> {
     try {
       await this.asyncStorage.removeItem(key);
@@ -146,7 +146,7 @@ export class AsyncStorageAdapter implements StorageAdapter {
       console.error('AsyncStorage removeItem error:', error);
     }
   }
-  
+
   async clear(): Promise<void> {
     if (this.asyncStorage.clear) {
       try {
@@ -166,7 +166,7 @@ export function getDefaultStorage(): StorageAdapter {
   if (typeof window !== 'undefined' && window.localStorage) {
     return new LocalStorageAdapter();
   }
-  
+
   // Fallback to in-memory
   return new InMemoryStorageAdapter();
 }

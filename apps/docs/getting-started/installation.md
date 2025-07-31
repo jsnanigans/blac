@@ -11,12 +11,14 @@ Getting started with BlaC is straightforward. This guide will walk you through i
 ## Install BlaC
 
 BlaC is distributed as two packages:
+
 - `@blac/core` - The core state management engine
 - `@blac/react` - React integration with hooks
 
 For React applications, install the React package which includes core:
 
 ::: code-group
+
 ```bash [npm]
 npm install @blac/react
 ```
@@ -28,6 +30,7 @@ yarn add @blac/react
 ```bash [pnpm]
 pnpm add @blac/react
 ```
+
 :::
 
 ## TypeScript Configuration
@@ -75,7 +78,7 @@ export class CounterCubit extends Cubit<{ count: number }> {
   constructor() {
     super({ count: 0 });
   }
-  
+
   increment = () => this.emit({ count: this.state.count + 1 });
   decrement = () => this.emit({ count: this.state.count - 1 });
   reset = () => this.emit({ count: 0 });
@@ -89,7 +92,7 @@ import { CounterCubit } from './state/counter.cubit';
 
 function App() {
   const [state, counter] = useBloc(CounterCubit);
-  
+
   return (
     <div>
       <h1>Count: {state.count}</h1>
@@ -117,10 +120,10 @@ import { Blac } from '@blac/core';
 Blac.setConfig({
   // Enable console logging for debugging
   enableLog: process.env.NODE_ENV === 'development',
-  
+
   // Control automatic render optimization
   proxyDependencyTracking: true,
-  
+
   // Expose Blac instance globally (for debugging)
   exposeBlacInstance: process.env.NODE_ENV === 'development'
 });

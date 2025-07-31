@@ -47,11 +47,8 @@ const DemoCard: React.FC<{
   return (
     <div style={SECTION_STYLE}>
       <div>
-        <Button onClick={() => setShow(!show)}>
-          {show ? 'Hide' : 'Show'}
-        </Button>
-      </div>
-      {' '}
+        <Button onClick={() => setShow(!show)}>{show ? 'Hide' : 'Show'}</Button>
+      </div>{' '}
       {/* Uses new flat SECTION_STYLE */}
       <h2
         style={{
@@ -79,9 +76,7 @@ const DemoCard: React.FC<{
       >
         {description}
       </p>
-      <div style={DEMO_COMPONENT_CONTAINER_STYLE}>
-        {show && children}
-      </div>
+      <div style={DEMO_COMPONENT_CONTAINER_STYLE}>{show && children}</div>
     </div>
   );
 };
@@ -135,7 +130,9 @@ function App() {
           title="Shared Counter Test"
           description="Multiple components using the same CounterCubit instance without IDs."
           show={show.sharedCounterTest}
-          setShow={() => setShow({ ...show, sharedCounterTest: !show.sharedCounterTest })}
+          setShow={() =>
+            setShow({ ...show, sharedCounterTest: !show.sharedCounterTest })
+          }
         >
           <SharedCounterTestDemo />
         </DemoCard>

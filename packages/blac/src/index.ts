@@ -19,3 +19,13 @@ export * from './adapter';
 
 // Plugins
 export * from './plugins';
+
+// Error handling
+export {
+  BlacError,
+  ErrorCategory,
+  ErrorSeverity,
+  BlacErrorContext,
+} from './errors/BlacError';
+export { ErrorManager } from './errors/ErrorManager';
+export { handleError } from './errors/handleError';

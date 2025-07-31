@@ -13,11 +13,12 @@ const [state, cubit] = useBloc(CounterCubit);
 ```
 
 With options:
+
 ```typescript
 const [state, cubit] = useBloc(UserCubit, {
-  id: 'user-123',          // Custom instance ID
+  id: 'user-123', // Custom instance ID
   props: { userId: '123' }, // Constructor props
-  deps: [userId]           // Re-create on change
+  deps: [userId], // Re-create on change
 });
 ```
 
@@ -38,7 +39,7 @@ Create a Cubit with setState API:
 const FormBloc = createBloc({
   name: '',
   email: '',
-  isValid: false
+  isValid: false,
 });
 
 class FormManager extends FormBloc {
@@ -55,7 +56,7 @@ class FormManager extends FormBloc {
 ```typescript
 function Counter() {
   const [count, cubit] = useBloc(CounterCubit);
-  
+
   return (
     <button onClick={cubit.increment}>
       Count: {count}
@@ -69,9 +70,9 @@ function Counter() {
 ```typescript
 function TodoList() {
   const [{ todos, isLoading }, cubit] = useBloc(TodoCubit);
-  
+
   if (isLoading) return <Loading />;
-  
+
   return (
     <ul>
       {todos.map(todo => (
@@ -94,7 +95,7 @@ function TodoList() {
 ```typescript
 function LoginForm() {
   const [state, form] = useBloc(LoginFormCubit);
-  
+
   return (
     <form onSubmit={e => { e.preventDefault(); form.submit(); }}>
       <input
@@ -124,12 +125,12 @@ function LoginForm() {
 ```typescript
 function useAuth() {
   const [state, bloc] = useBloc(AuthBloc);
-  
+
   return {
     user: state.user,
     isAuthenticated: state.isAuthenticated,
     login: bloc.login,
-    logout: bloc.logout
+    logout: bloc.logout,
   };
 }
 ```
@@ -139,11 +140,11 @@ function useAuth() {
 ```typescript
 function UserProfile() {
   const [state] = useBloc(UserCubit);
-  
+
   if (state.isLoading) return <Skeleton />;
   if (state.error) return <Error message={state.error} />;
   if (!state.user) return <NotFound />;
-  
+
   return <Profile user={state.user} />;
 }
 ```
@@ -153,11 +154,11 @@ function UserProfile() {
 ```typescript
 function DataLoader({ id }: { id: string }) {
   const [state, cubit] = useBloc(DataCubit);
-  
+
   useEffect(() => {
     cubit.load(id);
   }, [id, cubit]);
-  
+
   return <DataView data={state.data} />;
 }
 ```

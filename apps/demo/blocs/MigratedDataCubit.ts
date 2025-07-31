@@ -1,5 +1,8 @@
 import { Cubit } from '@blac/core';
-import { PersistencePlugin, InMemoryStorageAdapter } from '@blac/plugin-persistence';
+import {
+  PersistencePlugin,
+  InMemoryStorageAdapter,
+} from '@blac/plugin-persistence';
 
 interface UserProfileV2 {
   version: number;
@@ -37,7 +40,7 @@ export class MigratedDataCubit extends Cubit<UserProfileV2> {
           transform: (oldData: UserProfileV1): UserProfileV2 => {
             // Split name into first and last
             const [firstName = '', lastName = ''] = oldData.name.split(' ');
-            
+
             return {
               version: 2,
               firstName,
@@ -82,7 +85,7 @@ export class MigratedDataCubit extends Cubit<UserProfileV2> {
       darkMode: true,
       emailAlerts: false,
     };
-    
+
     // Store old data with old key
     this.storage.setItem('userProfile-v1', JSON.stringify(oldData));
   }

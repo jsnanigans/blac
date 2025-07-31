@@ -36,9 +36,9 @@ import { Blac } from '@blac/core';
 Blac.setConfig({
   // Enable/disable automatic dependency tracking for optimized re-renders
   proxyDependencyTracking: true, // default: true
-  
+
   // Expose Blac instance globally for debugging
-  exposeBlacInstance: false // default: false
+  exposeBlacInstance: false, // default: false
 });
 
 // Read current configuration
@@ -65,27 +65,27 @@ describe('Counter Tests', () => {
 
   it('should increment counter', async () => {
     const counter = BlocTest.createBloc(CounterCubit);
-    
+
     counter.increment();
-    
+
     expect(counter.state.count).toBe(1);
   });
 
   it('should track state history', () => {
     const mockCubit = new MockCubit({ count: 0 });
-    
+
     mockCubit.emit({ count: 1 });
     mockCubit.emit({ count: 2 });
-    
+
     const history = mockCubit.getStateHistory();
     expect(history).toHaveLength(3); // Initial + 2 emissions
   });
 
   it('should detect memory leaks', () => {
     const detector = new MemoryLeakDetector();
-    
+
     // Create and use blocs...
-    
+
     const result = detector.checkForLeaks();
     expect(result.hasLeaks).toBe(false);
   });
@@ -108,11 +108,11 @@ class CounterCubit extends Cubit<number> {
 
   increment = () => {
     this.emit(this.state + 1);
-  }
+  };
 
   decrement = () => {
     this.emit(this.state - 1);
-  }
+  };
 }
 ```
 
@@ -120,8 +120,12 @@ class CounterCubit extends Cubit<number> {
 
 ```typescript
 // Define event classes
-class IncrementEvent { constructor(public readonly amount: number = 1) {} }
-class DecrementEvent { constructor(public readonly amount: number = 1) {} }
+class IncrementEvent {
+  constructor(public readonly amount: number = 1) {}
+}
+class DecrementEvent {
+  constructor(public readonly amount: number = 1) {}
+}
 
 // Optional: Union type for all events
 type CounterEvent = IncrementEvent | DecrementEvent;
@@ -143,11 +147,11 @@ class CounterBloc extends Bloc<number, CounterEvent> {
   // Helper methods to dispatch event instances (optional)
   increment = (amount = 1) => {
     this.add(new IncrementEvent(amount));
-  }
+  };
 
   decrement = (amount = 1) => {
     this.add(new DecrementEvent(amount));
-  }
+  };
 }
 ```
 
@@ -166,10 +170,10 @@ class GlobalCounterCubit extends Cubit<number> {
   constructor() {
     super(0);
   }
-  
+
   increment = () => {
     this.emit(this.state + 1);
-  }
+  };
 }
 ```
 
@@ -180,14 +184,14 @@ When each consumer needs its own state instance:
 ```typescript
 class LocalCounterCubit extends Cubit<number> {
   static isolated = true; // Each consumer gets its own instance
-  
+
   constructor() {
     super(0);
   }
-  
+
   increment = () => {
     this.emit(this.state + 1);
-  }
+  };
 }
 ```
 
@@ -198,14 +202,14 @@ Keep state alive even when no consumers are using it:
 ```typescript
 class PersistentCounterCubit extends Cubit<number> {
   static keepAlive = true; // State persists even when no consumers
-  
+
   constructor() {
     super(0);
   }
-  
+
   increment = () => {
     this.emit(this.state + 1);
-  }
+  };
 }
 ```
 
@@ -220,7 +224,7 @@ import { BlacPlugin, BlacLifecycleEvent, BlocBase } from '@blac/core';
 
 class LoggerPlugin implements BlacPlugin {
   name = 'LoggerPlugin';
-  
+
   onEvent(event: BlacLifecycleEvent, bloc: BlocBase, params?: any) {
     if (event === BlacLifecycleEvent.STATE_CHANGED) {
       console.log(`[${bloc._name}] State changed:`, bloc.state);
@@ -254,12 +258,23 @@ interface UserProfileState {
 
 // Define Event Classes for UserProfileBloc
 class UserProfileFetchEvent {}
-class UserProfileDataLoadedEvent { constructor(public readonly data: any) {} }
-class UserProfileErrorEvent { constructor(public readonly error: string) {} }
+class UserProfileDataLoadedEvent {
+  constructor(public readonly data: any) {}
+}
+class UserProfileErrorEvent {
+  constructor(public readonly error: string) {}
+}
 
-type UserProfileEvents = UserProfileFetchEvent | UserProfileDataLoadedEvent | UserProfileErrorEvent;
+type UserProfileEvents =
+  | UserProfileFetchEvent
+  | UserProfileDataLoadedEvent
+  | UserProfileErrorEvent;
 
-class UserProfileBloc extends Bloc<UserProfileState, UserProfileEvents, UserProfileProps> {
+class UserProfileBloc extends Bloc<
+  UserProfileState,
+  UserProfileEvents,
+  UserProfileProps
+> {
   private userId: string;
 
   constructor(props: UserProfileProps) {
@@ -270,7 +285,12 @@ class UserProfileBloc extends Bloc<UserProfileState, UserProfileEvents, UserProf
     // Register event handlers
     this.on(UserProfileFetchEvent, this.handleFetchUserProfile);
     this.on(UserProfileDataLoadedEvent, (event, emit) => {
-      emit({ ...this.state, loading: false, userData: event.data, error: null });
+      emit({
+        ...this.state,
+        loading: false,
+        userData: event.data,
+        error: null,
+      });
     });
     this.on(UserProfileErrorEvent, (event, emit) => {
       emit({ ...this.state, loading: false, error: event.error });
@@ -280,24 +300,33 @@ class UserProfileBloc extends Bloc<UserProfileState, UserProfileEvents, UserProf
     this.add(new UserProfileFetchEvent());
   }
 
-  private handleFetchUserProfile = async (_event: UserProfileFetchEvent, emit: (state: UserProfileState) => void) => {
+  private handleFetchUserProfile = async (
+    _event: UserProfileFetchEvent,
+    emit: (state: UserProfileState) => void,
+  ) => {
     // Emit loading state directly if not already covered by initial state or another event
     // For this example, constructor sets loading: true, so an immediate emit here might be redundant
     // unless an event handler could set loading to false before this runs.
     // emit({ ...this.state, loading: true }); // Ensure loading is true
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-      const mockUserData = { id: this.userId, name: `User ${this.userId}`, bio: 'Loves Blac states!' };
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
+      const mockUserData = {
+        id: this.userId,
+        name: `User ${this.userId}`,
+        bio: 'Loves Blac states!',
+      };
       this.add(new UserProfileDataLoadedEvent(mockUserData));
-    } catch (e:any) {
-      this.add(new UserProfileErrorEvent(e.message || 'Failed to fetch user profile'));
+    } catch (e: any) {
+      this.add(
+        new UserProfileErrorEvent(e.message || 'Failed to fetch user profile'),
+      );
     }
-  }
-  
+  };
+
   // Public method to re-trigger fetch if needed
   refetchUserProfile = () => {
     this.add(new UserProfileFetchEvent());
-  }
+  };
 }
 ```
 

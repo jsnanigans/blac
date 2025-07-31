@@ -55,4 +55,3 @@ export class UserProfileBloc extends Cubit<
     return `${firstInitial}${lastInitial}`.toUpperCase();
   }
 }
-

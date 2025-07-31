@@ -16,9 +16,9 @@ emit(state: S): void
 
 #### Parameters
 
-| Name | Type | Description |
-|------|------|-------------|
-| `state` | `S` | The new state object that will replace the current state |
+| Name    | Type | Description                                              |
+| ------- | ---- | -------------------------------------------------------- |
+| `state` | `S`  | The new state object that will replace the current state |
 
 #### Example
 
@@ -47,10 +47,10 @@ patch(statePatch: S extends object ? Partial<S> : S, ignoreChangeCheck?: boolean
 
 #### Parameters
 
-| Name | Type | Description |
-|------|------|-------------|
-| `statePatch` | `Partial<S>` | An object containing the properties to update |
-| `ignoreChangeCheck` | `boolean` | Optional flag to skip checking if values have changed (defaults to false) |
+| Name                | Type         | Description                                                               |
+| ------------------- | ------------ | ------------------------------------------------------------------------- |
+| `statePatch`        | `Partial<S>` | An object containing the properties to update                             |
+| `ignoreChangeCheck` | `boolean`    | Optional flag to skip checking if values have changed (defaults to false) |
 
 #### Example
 
@@ -66,7 +66,7 @@ class UserCubit extends Cubit<{
       name: '',
       email: '',
       isLoading: false,
-      error: null
+      error: null,
     });
   }
 
@@ -102,15 +102,17 @@ on<EClass extends new (...args: any[]) => any>(
 
 #### Parameters
 
-| Name                 | Type                                                                 | Description                                                                 |
-|----------------------|----------------------------------------------------------------------|-----------------------------------------------------------------------------|
-| `eventConstructor`   | `new (...args: any[]) => E`                                          | The constructor of the event class to listen for.                           |
-| `handler`            | `(event: InstanceType<EClass>, emit: (newState: S) => void) => void` | A function that processes the event and can emit new states.              |
+| Name               | Type                                                                 | Description                                                  |
+| ------------------ | -------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `eventConstructor` | `new (...args: any[]) => E`                                          | The constructor of the event class to listen for.            |
+| `handler`          | `(event: InstanceType<EClass>, emit: (newState: S) => void) => void` | A function that processes the event and can emit new states. |
 
 #### Example
 
 ```tsx
-class MyEvent { constructor(public data: string) {} }
+class MyEvent {
+  constructor(public data: string) {}
+}
 class AnotherEvent {}
 
 class MyBloc extends Bloc<{ value: string }, MyEvent | AnotherEvent> {
@@ -140,20 +142,24 @@ add(event: E): void // Where E is the union of event types the Bloc handles
 
 #### Parameters
 
-| Name    | Type | Description                                                                 |
-|---------|------|-----------------------------------------------------------------------------|
-| `event` | `E`  | The event instance to dispatch.                                               |
+| Name    | Type | Description                     |
+| ------- | ---- | ------------------------------- |
+| `event` | `E`  | The event instance to dispatch. |
 
 #### Example
 
 ```tsx
 // Define event classes
-class AddTodoEvent { constructor(public readonly text: string) {} }
-class ToggleTodoEvent { constructor(public readonly id: number) {} }
+class AddTodoEvent {
+  constructor(public readonly text: string) {}
+}
+class ToggleTodoEvent {
+  constructor(public readonly id: number) {}
+}
 
 // Define state
 interface TodoState {
-  todos: Array<{ id: number, text: string, completed: boolean }>;
+  todos: Array<{ id: number; text: string; completed: boolean }>;
   nextId: number;
 }
 
@@ -162,7 +168,11 @@ class TodoBloc extends Bloc<TodoState, AddTodoEvent | ToggleTodoEvent> {
     super({ todos: [], nextId: 1 });
 
     this.on(AddTodoEvent, (event, emit) => {
-      const newTodo = { id: this.state.nextId, text: event.text, completed: false };
+      const newTodo = {
+        id: this.state.nextId,
+        text: event.text,
+        completed: false,
+      };
       emit({
         ...this.state,
         todos: [...this.state.todos, newTodo],
@@ -174,7 +184,7 @@ class TodoBloc extends Bloc<TodoState, AddTodoEvent | ToggleTodoEvent> {
       emit({
         ...this.state,
         todos: this.state.todos.map((todo) =>
-          todo.id === event.id ? { ...todo, completed: !todo.completed } : todo
+          todo.id === event.id ? { ...todo, completed: !todo.completed } : todo,
         ),
       });
     });
@@ -210,11 +220,11 @@ on(event: BlacEvent, listener: StateListener<S>, signal?: AbortSignal): () => vo
 
 #### Parameters
 
-| Name | Type | Description |
-|------|------|-------------|
-| `event` | `BlacEvent` | The event to listen to (e.g., BlacEvent.StateChange) |
+| Name       | Type               | Description                                          |
+| ---------- | ------------------ | ---------------------------------------------------- |
+| `event`    | `BlacEvent`        | The event to listen to (e.g., BlacEvent.StateChange) |
 | `listener` | `StateListener<S>` | A function that will be called when the event occurs |
-| `signal` | `AbortSignal` | An optional signal to abort the subscription |
+| `signal`   | `AbortSignal`      | An optional signal to abort the subscription         |
 
 #### Returns
 
@@ -241,9 +251,13 @@ const counterBloc = new CounterBloc();
 const abortController = new AbortController();
 
 // Subscribe to state changes
-counterBloc.on(BlacEvent.StateChange, (state) => {
-  console.log('State changed:', state);
-}, abortController.signal);
+counterBloc.on(
+  BlacEvent.StateChange,
+  (state) => {
+    console.log('State changed:', state);
+  },
+  abortController.signal,
+);
 
 // Abort the subscription
 abortController.abort();
@@ -267,7 +281,7 @@ todoBloc.on(BlacEvent.Action, (state, oldState, event) => {
 - Use `emit()` when you want to replace the entire state object, typically for simple states
 - Use `patch()` when you want to update specific properties without touching others, ideal for complex states
 
-## Choosing Between Bloc and Cubit  
+## Choosing Between Bloc and Cubit
 
-- Use `Bloc` for more complex state logic where an event-driven approach is beneficial. `Bloc`s process specific event *classes* through registered *handlers* (using `this.on(EventType, handler)` and `this.add(new EventType())`) to produce new `State`. This pattern is excellent for managing intricate state transitions and side effects in a structured and type-safe way.
+- Use `Bloc` for more complex state logic where an event-driven approach is beneficial. `Bloc`s process specific event _classes_ through registered _handlers_ (using `this.on(EventType, handler)` and `this.add(new EventType())`) to produce new `State`. This pattern is excellent for managing intricate state transitions and side effects in a structured and type-safe way.
 - Use `Cubit` for simpler state management scenarios where state changes can be triggered by direct method calls on the `Cubit` instance. These methods then use `emit()` or `patch()` to update the state. This direct approach is often more concise for straightforward cases.
