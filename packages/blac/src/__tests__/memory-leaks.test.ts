@@ -6,8 +6,8 @@ import { BlacAdapter } from '../adapter/BlacAdapter';
 
 // Helper to force garbage collection if available
 const forceGC = () => {
-  if (global.gc) {
-    global.gc();
+  if ((global as any).gc) {
+    (global as any).gc();
   }
 };
 
@@ -44,14 +44,17 @@ class IncrementEvent {
 }
 
 // Test Bloc
-class TestBloc extends Bloc<IncrementEvent, TestState> {
+class TestBloc extends Bloc<TestState, IncrementEvent> {
   constructor() {
     super(new TestState(0));
     this.on(IncrementEvent, this.handleIncrement);
   }
 
-  handleIncrement = (event: IncrementEvent) => {
-    this.emit(new TestState(this.state.value + event.amount));
+  handleIncrement = (
+    event: IncrementEvent,
+    emit: (state: TestState) => void,
+  ) => {
+    emit(new TestState(this.state.value + event.amount));
   };
 }
 
@@ -75,7 +78,7 @@ describe('Memory Leak Tests', () => {
 
       // Add consumer
       cubit._addConsumer('test-consumer', consumer);
-      expect(cubit._consumerRefs.size).toBe(1);
+      expect((cubit as any)._consumerRefs.size).toBe(1);
       expect(cubit._consumers.size).toBe(1);
 
       // Clear strong reference
@@ -83,13 +86,13 @@ describe('Memory Leak Tests', () => {
 
       // Wait for GC to clean up WeakRef
       const cleaned = await waitForCleanup(() => {
-        const ref = cubit._consumerRefs.get('test-consumer');
+        const ref = (cubit as any)._consumerRefs.get('test-consumer');
         return !ref || ref.deref() === undefined;
       });
 
       if (cleaned) {
         // Verify WeakRef was cleaned
-        const ref = cubit._consumerRefs.get('test-consumer');
+        const ref = (cubit as any)._consumerRefs.get('test-consumer');
         expect(!ref || ref.deref() === undefined).toBe(true);
       }
     });
@@ -105,7 +108,7 @@ describe('Memory Leak Tests', () => {
       cubit._addConsumer('consumer-2', consumer2);
       cubit._addConsumer('consumer-3', consumer3);
 
-      expect(cubit._consumerRefs.size).toBe(3);
+      expect((cubit as any)._consumerRefs.size).toBe(3);
 
       // Clear some references
       consumer1 = null;
@@ -113,8 +116,8 @@ describe('Memory Leak Tests', () => {
 
       // Wait for cleanup
       await waitForCleanup(() => {
-        const ref1 = cubit._consumerRefs.get('consumer-1');
-        const ref2 = cubit._consumerRefs.get('consumer-2');
+        const ref1 = (cubit as any)._consumerRefs.get('consumer-1');
+        const ref2 = (cubit as any)._consumerRefs.get('consumer-2');
         return (
           (!ref1 || ref1.deref() === undefined) &&
           (!ref2 || ref2.deref() === undefined)
@@ -122,7 +125,7 @@ describe('Memory Leak Tests', () => {
       });
 
       // Consumer 3 should still be accessible
-      const ref3 = cubit._consumerRefs.get('consumer-3');
+      const ref3 = (cubit as any)._consumerRefs.get('consumer-3');
       expect(ref3?.deref()).toBe(consumer3);
     });
   });
@@ -147,7 +150,7 @@ describe('Memory Leak Tests', () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Bloc should be disposed
-      expect(cubit._disposalState).toBe('disposed');
+      expect((cubit as any)._disposalState).toBe('disposed');
     });
 
     it('should not dispose keepAlive blocs when no consumers remain', async () => {
@@ -172,7 +175,7 @@ describe('Memory Leak Tests', () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Bloc should still be active
-      expect(cubit._disposalState).toBe('active');
+      expect((cubit as any)._disposalState).toBe('active');
     });
   });
 
@@ -189,7 +192,7 @@ describe('Memory Leak Tests', () => {
       }
 
       expect(cubit._consumers.size).toBe(1000);
-      expect(cubit._consumerRefs.size).toBe(1000);
+      expect((cubit as any)._consumerRefs.size).toBe(1000);
 
       // Clear half the consumers
       for (let i = 0; i < 500; i++) {
@@ -200,7 +203,7 @@ describe('Memory Leak Tests', () => {
       await waitForCleanup(() => {
         let cleaned = 0;
         for (let i = 0; i < 500; i++) {
-          const ref = cubit._consumerRefs.get(`consumer-${i}`);
+          const ref = (cubit as any)._consumerRefs.get(`consumer-${i}`);
           if (!ref || ref.deref() === undefined) cleaned++;
         }
         return cleaned > 0; // At least some should be cleaned
@@ -208,13 +211,13 @@ describe('Memory Leak Tests', () => {
 
       // Verify remaining consumers are still valid
       for (let i = 500; i < 1000; i++) {
-        const ref = cubit._consumerRefs.get(`consumer-${i}`);
+        const ref = (cubit as any)._consumerRefs.get(`consumer-${i}`);
         expect(ref?.deref()).toBe(consumers[i]);
       }
     });
 
     it('should handle concurrent bloc creation and disposal', async () => {
-      const adapters: BlacAdapter[] = [];
+      const adapters: BlacAdapter<typeof TestBloc>[] = [];
       const unsubscribes: (() => void)[] = [];
 
       // Create many blocs through adapters
@@ -238,7 +241,7 @@ describe('Memory Leak Tests', () => {
 
       // All blocs should be disposed
       for (const adapter of adapters) {
-        expect(adapter.blocInstance._disposalState).toBe('disposed');
+        expect((adapter.blocInstance as any)._disposalState).toBe('disposed');
       }
     });
   });
@@ -291,7 +294,7 @@ describe('Memory Leak Tests', () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Queue should be empty after processing
-      expect(bloc._eventQueue.length).toBe(0);
+      expect((bloc as any)._eventQueue.length).toBe(0);
     });
 
     it('should handle disposal during event processing', async () => {
@@ -317,8 +320,8 @@ describe('Memory Leak Tests', () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Bloc should be disposed and queue cleared
-      expect(bloc._disposalState).toBe('disposed');
-      expect(bloc._eventQueue.length).toBe(0);
+      expect((bloc as any)._disposalState).toBe('disposed');
+      expect((bloc as any)._eventQueue.length).toBe(0);
     });
   });
 
@@ -356,7 +359,7 @@ describe('Memory Leak Tests', () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Should be disposed exactly once
-      expect(cubit._disposalState).toBe('disposed');
+      expect((cubit as any)._disposalState).toBe('disposed');
     });
 
     it('should prevent adding consumers during disposal', async () => {

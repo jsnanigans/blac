@@ -14,14 +14,14 @@ export enum ErrorSeverity {
   INFO = 'INFO', // Informational, not an error
 }
 
-export interface BlacErrorContext {
+export type BlacErrorContext = {
   blocName?: string;
   blocId?: string;
   consumerId?: string;
   pluginName?: string;
   operation?: string;
   metadata?: Record<string, unknown>;
-}
+};
 
 export class BlacError extends Error {
   constructor(
@@ -52,11 +52,11 @@ export class BlacError extends Error {
 
 export type ErrorHandler = (error: BlacError) => void;
 
-export interface ErrorHandlingStrategy {
+export type ErrorHandlingStrategy = {
   shouldPropagate: (error: BlacError) => boolean;
   shouldLog: (error: BlacError) => boolean;
   handle: (error: BlacError) => void;
-}
+};
 
 export const DefaultErrorStrategy: ErrorHandlingStrategy = {
   shouldPropagate: (error) => error.severity === ErrorSeverity.FATAL,
