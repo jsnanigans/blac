@@ -191,18 +191,6 @@ export class ProxyFactory {
         }
 
         if (!isGetter) {
-          // bind methods to the object if they are functions
-          /*
-          if (typeof value === 'function') {
-            proxyStats.propertyAccesses++;
-            console.log(
-              `🏭 [ProxyFactory] 🔧 Method accessed: ${String(prop)}`,
-            );
-            console.log(`🏭 [ProxyFactory] Binding method to object instance`);
-            return value.bind(obj);
-          }
-          */
-
           // Return the value directly if it's not a getter or method
           return value;
         }

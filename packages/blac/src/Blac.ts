@@ -646,7 +646,6 @@ export class Blac {
     } = {},
   ): InstanceType<B>[] => {
     const results: InstanceType<B>[] = [];
-    // const blocClassName = (blocClass as any).name; // Temporarily removed for debugging
 
     // Search non-isolated blocs
     this.blocInstanceMap.forEach((blocInstance) => {
