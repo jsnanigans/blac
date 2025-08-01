@@ -45,6 +45,13 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
   private hasMounted = false;
   private mountCount = 0;
 
+  // Rerender tracking
+  private lastState?: BlocState<InstanceType<B>>;
+  private lastDependencyValues?: unknown[];
+  private componentName?: string;
+  private renderCount = 0;
+  private lastDependenciesFn?: (bloc: InstanceType<B>) => unknown[];
+
   options?: AdapterOptions<InstanceType<B>>;
 
   constructor(
@@ -63,6 +70,10 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
     if (this.isUsingDependencies && options?.dependencies) {
       this.dependencyValues = options.dependencies(this.blocInstance);
     }
+
+    // Notify plugins
+    const metadata = this.getAdapterMetadata();
+    Blac.getInstance().plugins.notifyAdapterCreated(this, metadata);
   }
 
   trackAccess(
@@ -186,7 +197,7 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
     // Create new proxy for new state
     this.lastProxiedState = currentState;
     this.cachedStateProxy = this.createStateProxy({ target: currentState });
-    return this.cachedStateProxy;
+    return this.cachedStateProxy!;
   };
 
   getBlocProxy = (): InstanceType<B> => {
@@ -236,6 +247,10 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
     if (this.isUsingDependencies && this.options?.dependencies) {
       this.dependencyValues = this.options.dependencies(this.blocInstance);
     }
+
+    // Notify plugins
+    const metadata = this.getAdapterMetadata();
+    Blac.getInstance().plugins.notifyAdapterMount(this, metadata);
   };
 
   unmount = () => {
@@ -256,6 +271,10 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
         console.error('Error in onUnmount hook:', error);
       }
     }
+
+    // Notify plugins
+    const metadata = this.getAdapterMetadata();
+    Blac.getInstance().plugins.notifyAdapterUnmount(this, metadata);
   };
 
   // Reset tracking for next render
@@ -274,5 +293,175 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
         subscription.dependencies.clear();
       }
     }
+  }
+
+  // Set component name for rerender logging
+  setComponentName(name: string): void {
+    this.componentName = name;
+  }
+
+  // Notify plugins about render
+  notifyRender(): void {
+    this.renderCount++;
+
+    // Update dependency values if using manual tracking
+    if (this.isUsingDependencies && this.options?.dependencies) {
+      this.lastDependencyValues = this.dependencyValues;
+      this.dependencyValues = this.options.dependencies(this.blocInstance);
+    }
+
+    const metadata = this.getAdapterMetadata();
+    Blac.getInstance().plugins.notifyAdapterRender(this, metadata);
+  }
+
+  // Get adapter metadata for plugins
+  private getAdapterMetadata(): any {
+    return {
+      componentName: this.componentName,
+      blocInstance: this.blocInstance,
+      renderCount: this.renderCount,
+      trackedPaths: Array.from(this.trackedPaths),
+      isUsingDependencies: this.isUsingDependencies,
+      lastState: this.lastState,
+      lastDependencyValues: this.lastDependencyValues,
+      currentDependencyValues: this.dependencyValues,
+    };
+  }
+
+  // Get value at a dot-notated path
+  private getValueAtPath(obj: any, path: string): any {
+    const parts = path.split('.');
+    let current = obj;
+
+    for (const part of parts) {
+      if (current == null) return undefined;
+      current = current[part];
+    }
+
+    return current;
+  }
+
+  // Get paths that changed between states
+  private getStateChangedPaths(oldState: any, newState: any): string[] {
+    const changedPaths: string[] = [];
+
+    // Only check tracked paths if we have any
+    if (this.trackedPaths.size > 0) {
+      for (const path of this.trackedPaths) {
+        // Skip class property paths
+        if (path.startsWith('_class.')) continue;
+
+        const oldValue = this.getValueAtPath(oldState, path);
+        const newValue = this.getValueAtPath(newState, path);
+
+        if (!Object.is(oldValue, newValue)) {
+          changedPaths.push(path);
+        }
+      }
+    } else {
+      // No tracked paths - do deep comparison to find what changed
+      if (oldState !== newState) {
+        const deepChanges = this.getDeepChangedPaths(oldState, newState);
+        if (deepChanges.length > 0) {
+          return deepChanges;
+        }
+        changedPaths.push('(entire state)');
+      }
+    }
+
+    return changedPaths;
+  }
+
+  // Deep comparison to find all changed paths
+  private getDeepChangedPaths(
+    oldObj: any,
+    newObj: any,
+    basePath: string = '',
+  ): string[] {
+    const changes: string[] = [];
+
+    // Handle null/undefined
+    if (oldObj === newObj) return changes;
+    if (oldObj == null || newObj == null) {
+      changes.push(basePath || '(root)');
+      return changes;
+    }
+
+    // Handle primitives
+    if (typeof oldObj !== 'object' || typeof newObj !== 'object') {
+      if (oldObj !== newObj) {
+        changes.push(basePath || '(root)');
+      }
+      return changes;
+    }
+
+    // Handle arrays
+    if (Array.isArray(oldObj) || Array.isArray(newObj)) {
+      if (
+        !Array.isArray(oldObj) ||
+        !Array.isArray(newObj) ||
+        oldObj.length !== newObj.length
+      ) {
+        changes.push(basePath || '(root)');
+        return changes;
+      }
+      // Compare array elements
+      for (let i = 0; i < oldObj.length; i++) {
+        const elementPath = basePath ? `${basePath}[${i}]` : `[${i}]`;
+        changes.push(
+          ...this.getDeepChangedPaths(oldObj[i], newObj[i], elementPath),
+        );
+      }
+      return changes;
+    }
+
+    // Handle objects
+    const allKeys = new Set([...Object.keys(oldObj), ...Object.keys(newObj)]);
+    for (const key of allKeys) {
+      const keyPath = basePath ? `${basePath}.${key}` : key;
+
+      if (!(key in oldObj)) {
+        changes.push(`${keyPath} (added)`);
+      } else if (!(key in newObj)) {
+        changes.push(`${keyPath} (removed)`);
+      } else {
+        const oldVal = oldObj[key];
+        const newVal = newObj[key];
+
+        // Use Object.is for comparison
+        if (!Object.is(oldVal, newVal)) {
+          // For primitives and different object references, record the change
+          if (
+            typeof oldVal !== 'object' ||
+            typeof newVal !== 'object' ||
+            oldVal === null ||
+            newVal === null
+          ) {
+            changes.push(keyPath);
+          } else {
+            // For objects/arrays, recurse deeper
+            const deeperChanges = this.getDeepChangedPaths(
+              oldVal,
+              newVal,
+              keyPath,
+            );
+            if (deeperChanges.length > 0) {
+              changes.push(...deeperChanges);
+            } else {
+              // Objects are different references but have same content
+              changes.push(keyPath);
+            }
+          }
+        }
+      }
+    }
+
+    return changes;
+  }
+
+  // Get last rerender reason
+  getLastRerenderReason(): any {
+    // This method is deprecated - render reason is now handled by the RenderLoggingPlugin
+    return undefined;
   }
 }

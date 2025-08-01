@@ -4,6 +4,7 @@ import {
   BlocConstructor,
   BlocState,
   generateInstanceIdFromProps,
+  Blac,
 } from '@blac/core';
 import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
 
@@ -34,6 +35,62 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
 
   const componentRef = useRef<object>({});
 
+  // Get component name for debugging
+  const componentName = useRef<string>('');
+  if (!componentName.current) {
+    // Try to get component name from stack trace
+    try {
+      const error = new Error();
+      const stack = error.stack || '';
+      const lines = stack.split('\n');
+
+      // Look for React component in stack - try multiple patterns
+      for (let i = 2; i < lines.length && i < 15; i++) {
+        const line = lines[i];
+
+        // Pattern 1: "at ComponentName" or "at Object.ComponentName"
+        let match = line.match(/at\s+(?:Object\.)?([A-Z][a-zA-Z0-9_$]*)/);
+
+        // Pattern 2: Look for component files like "ComponentName.tsx"
+        if (!match) {
+          match = line.match(/([A-Z][a-zA-Z0-9_$]*)\.tsx/);
+        }
+
+        // Pattern 3: Look for render functions
+        if (!match) {
+          match = line.match(/render([A-Z][a-zA-Z0-9_$]*)/);
+          if (match && match[1]) {
+            match[1] = match[1]; // Use the part after "render"
+          }
+        }
+
+        if (
+          match &&
+          match[1] !== 'Object' &&
+          !match[1].startsWith('use') &&
+          !match[1].startsWith('Use')
+        ) {
+          componentName.current = match[1];
+          break;
+        }
+      }
+
+      // If still no name, try to get it from the bloc constructor name
+      if (!componentName.current) {
+        const blocName = blocConstructor.name;
+        if (blocName && blocName !== 'Object') {
+          // Remove 'Cubit' or 'Bloc' suffix to guess component name
+          componentName.current =
+            blocName.replace(/(Cubit|Bloc)$/, '') || 'Component';
+        } else {
+          componentName.current = 'Component';
+        }
+      }
+    } catch (e) {
+      componentName.current = 'Component';
+    }
+  }
+
   // Pass through options
   const normalizedOptions = options;
 
@@ -63,12 +120,19 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
         onUnmount: normalizedOptions?.onUnmount,
       },
     );
+    // Set component name for rerender logging
+    if (componentName.current) {
+      newAdapter.setComponentName(componentName.current);
+    }
     return newAdapter;
   }, [blocConstructor, instanceKey]); // Recreate adapter when instance key changes
 
   // Reset tracking at the start of each render to ensure we only track
   // properties accessed during the current render
   adapter.resetTracking();
+
+  // Notify plugins about render
+  adapter.notifyRender();
 
   // Update adapter options when they change (except instanceId/staticProps which recreate the adapter)
   const optionsChangeCount = useRef(0);

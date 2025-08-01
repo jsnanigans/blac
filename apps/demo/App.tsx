@@ -18,6 +18,7 @@ import { Button } from './components/ui/Button';
 import UserProfileDemo from './components/UserProfileDemo';
 import PersistenceDemo from './components/PersistenceDemo';
 import StaticPropsDemo from './components/StaticPropsDemo';
+import RerenderLoggingDemo from './components/RerenderLoggingDemo';
 import {
   APP_CONTAINER_STYLE, // For potentially lighter description text or default card text
   COLOR_PRIMARY_ACCENT,
@@ -99,6 +100,7 @@ function App() {
     sharedCounterTest: showDefault,
     persistence: showDefault,
     staticProps: showDefault,
+    rerenderLogging: showDefault,
   });
 
   return (
@@ -266,6 +268,17 @@ function App() {
           setShow={() => setShow({ ...show, staticProps: !show.staticProps })}
         >
           <StaticPropsDemo />
+        </DemoCard>
+
+        <DemoCard
+          title="Rerender Logging"
+          description="Debug and optimize component rerenders with detailed logging. Shows why components rerender and helps identify optimization opportunities."
+          show={show.rerenderLogging}
+          setShow={() =>
+            setShow({ ...show, rerenderLogging: !show.rerenderLogging })
+          }
+        >
+          <RerenderLoggingDemo />
         </DemoCard>
       </main>
 

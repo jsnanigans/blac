@@ -10,6 +10,7 @@ export * from './subscription';
 export * from './utils/uuid';
 export * from './utils/shallowEqual';
 export * from './utils/generateInstanceId';
+export * from './utils/RerenderLogger';
 
 // Test utilities
 export * from './testing';

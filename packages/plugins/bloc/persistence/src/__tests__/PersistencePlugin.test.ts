@@ -551,11 +551,8 @@ describe('PersistencePlugin', () => {
 
       // Track observer notifications
       const notificationCount = { value: 0 };
-      const unsubscribe = (cubit as any)._observer.subscribe({
-        id: 'test-hydration',
-        fn: () => {
-          notificationCount.value++;
-        },
+      const unsubscribe = cubit.subscribe(() => {
+        notificationCount.value++;
       });
 
       // Attach and hydrate

@@ -9,20 +9,14 @@ import { Label } from './ui/Label';
 const UserProfileDisplay: React.FC = () => {
   const [state, cubit] = useBloc(ConditionalUserProfileCubit);
 
+  console.log(state, cubit);
+
   const renderCountRef = React.useRef(0);
   React.useEffect(() => {
     renderCountRef.current += 1;
   });
   return (
-    <div
-      style={{
-        ...DEMO_COMPONENT_CONTAINER_STYLE, // Base container style
-        // Tailwind: p-4 border rounded-md bg-background-component
-        // DEMO_COMPONENT_CONTAINER_STYLE already has padding, border, borderRadius, backgroundColor
-        // If specific overrides are needed, they can be added here.
-        // For instance, bg-background-component might map to a specific color if not covered.
-      }}
-    >
+    <div style={DEMO_COMPONENT_CONTAINER_STYLE}>
       <div
         style={{
           fontSize: '0.875rem',

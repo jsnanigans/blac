@@ -1,0 +1,49 @@
+{
+  "name": "@blac/plugin-render-logging",
+  "version": "2.0.0-rc-1",
+  "description": "Render logging plugin for BlaC state management",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "echo 'No tests yet' && exit 0",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts,.tsx"
+  },
+  "dependencies": {
+    "@blac/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsup": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "@blac/core": ">=2.0.0"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "keywords": [
+    "blac",
+    "plugin",
+    "render",
+    "logging",
+    "debugging",
+    "state-management"
+  ],
+  "author": "",
+  "license": "MIT"
+}

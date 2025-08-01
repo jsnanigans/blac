@@ -35,6 +35,20 @@ export interface Plugin {
 }
 
 /**
+ * Adapter metadata provided to plugins
+ */
+export interface AdapterMetadata {
+  componentName?: string;
+  blocInstance: BlocBase<any>;
+  renderCount: number;
+  trackedPaths?: string[];
+  isUsingDependencies?: boolean;
+  lastState?: any;
+  lastDependencyValues?: any[];
+  currentDependencyValues?: any[];
+}
+
+/**
  * System-wide plugin that observes all blocs
  */
 export interface BlacPlugin extends Plugin {
@@ -54,6 +68,13 @@ export interface BlacPlugin extends Plugin {
   ): void;
   onEventAdded?(bloc: Bloc<any, any>, event: any): void;
   onError?(error: Error, bloc: BlocBase<unknown>, context: ErrorContext): void;
+
+  // Adapter lifecycle hooks
+  onAdapterCreated?(adapter: any, metadata: AdapterMetadata): void;
+  onAdapterMount?(adapter: any, metadata: AdapterMetadata): void;
+  onAdapterUnmount?(adapter: any, metadata: AdapterMetadata): void;
+  onAdapterRender?(adapter: any, metadata: AdapterMetadata): void;
+  onAdapterDisposed?(adapter: any, metadata: AdapterMetadata): void;
 }
 
 /**

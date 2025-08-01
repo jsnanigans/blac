@@ -4,20 +4,17 @@ import { ComplexStateCubit } from '../blocs/ComplexStateCubit';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 
+const depfn = (cubit: ComplexStateCubit) => [
+  cubit.state.counter % 3 === 0, // Is counter divisible by 3?
+  cubit.state.text.length > 0 ? cubit.state.text[0] : '', // First character of text
+];
+
 const CustomSelectorDisplay: React.FC = () => {
   const [state, cubit] = useBloc(ComplexStateCubit, {
-    dependencies: ({ state }) => {
-      // This component only cares if the counter is divisible by 3
-      // and the first character of the text.
-      // It also uses a getter directly in the selector's dependency array.
-      const db3 = state.counter % 3 === 0;
-      const firstChar = state.text.length > 0 ? state.text[0] : '';
-      return [db3, firstChar];
-    },
+    dependencies: depfn,
   });
 
   const db3 = state.counter % 3 === 0;
-  const firstChar = state.text.length > 0 ? state.text[0] : '';
 
   const renderCountRef = React.useRef(0);
   React.useEffect(() => {
@@ -48,12 +45,6 @@ const CustomSelectorDisplay: React.FC = () => {
         </span>
       </p>
       <p className="text-base text-foreground">
-        First Char of Text:{' '}
-        <span className="font-bold text-lcars-orange-panel font-body normal-case">
-          ‘{firstChar}’
-        </span>
-      </p>
-      <p className="text-base text-foreground">
         Uppercased Text (from getter, tracked by selector):{' '}
         <span className="font-bold text-lcars-orange-panel font-body normal-case">
           {cubit.uppercasedText}
@@ -73,7 +64,7 @@ const ShowAnotherCount: React.FC = () => {
   return <span className="font-bold text-primary">{state.anotherCounter}</span>;
 };
 
-const CustomSelectorDemo: React.FC = () => {
+const CustomSelectorDemo: React.FC = React.memo(() => {
   const [state, cubit] = useBloc(ComplexStateCubit); // For controlling the cubit
 
   return (
@@ -118,6 +109,6 @@ const CustomSelectorDemo: React.FC = () => {
       </p>
     </div>
   );
-};
+});
 
 export default CustomSelectorDemo;

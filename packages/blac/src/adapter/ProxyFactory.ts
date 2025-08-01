@@ -134,18 +134,16 @@ export const createBlocProxy = <T extends object>(
 
       // Only track getters, not methods or regular properties
       const descriptor = findPropertyDescriptor(obj, prop);
-      if (!descriptor?.get) {
-        return value;
+      if (descriptor?.get) {
+        // Track getter access with value for primitives
+        const isPrimitive = value !== null && typeof value !== 'object';
+        consumerTracker.trackAccess(
+          consumerRef,
+          'class',
+          String(prop),
+          isPrimitive ? value : undefined,
+        );
       }
-
-      // Track getter access with value for primitives
-      const isPrimitive = value !== null && typeof value !== 'object';
-      consumerTracker.trackAccess(
-        consumerRef,
-        'class',
-        String(prop),
-        isPrimitive ? value : undefined,
-      );
 
       return value;
     },

@@ -3,6 +3,7 @@ import {
   PluginRegistry,
   PluginMetrics,
   ErrorContext,
+  AdapterMetadata,
 } from './types';
 import { BlocBase } from '../BlocBase';
 import { Bloc } from '../Bloc';
@@ -162,6 +163,29 @@ export class SystemPluginRegistry implements PluginRegistry<BlacPlugin> {
       // Double fault protection - if error handler fails, just log
       console.error(`Plugin '${plugin.name}' error handler failed:`, hookError);
     });
+  }
+
+  /**
+   * Notify plugins of adapter lifecycle events
+   */
+  notifyAdapterCreated(adapter: any, metadata: AdapterMetadata): void {
+    this.executeHook('onAdapterCreated', [adapter, metadata]);
+  }
+
+  notifyAdapterMount(adapter: any, metadata: AdapterMetadata): void {
+    this.executeHook('onAdapterMount', [adapter, metadata]);
+  }
+
+  notifyAdapterUnmount(adapter: any, metadata: AdapterMetadata): void {
+    this.executeHook('onAdapterUnmount', [adapter, metadata]);
+  }
+
+  notifyAdapterRender(adapter: any, metadata: AdapterMetadata): void {
+    this.executeHook('onAdapterRender', [adapter, metadata]);
+  }
+
+  notifyAdapterDisposed(adapter: any, metadata: AdapterMetadata): void {
+    this.executeHook('onAdapterDisposed', [adapter, metadata]);
   }
 
   /**

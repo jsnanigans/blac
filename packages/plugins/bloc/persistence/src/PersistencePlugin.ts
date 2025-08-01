@@ -54,11 +54,8 @@ export class PersistencePlugin<TState> implements BlocPlugin<TState> {
       if (this.options.migrations) {
         const migrated = await this.tryMigrations();
         if (migrated) {
-          // Update state directly since we're in a plugin
-          const oldState = bloc.state;
-          (bloc as any)._state = migrated;
-          // Notify observers of the state change
-          (bloc as any)._observer.notify(migrated, oldState);
+          // Use protected emit method through type assertion
+          (bloc as any).emit(migrated);
           return;
         }
       }
@@ -91,18 +88,16 @@ export class PersistencePlugin<TState> implements BlocPlugin<TState> {
 
         // Handle selective persistence
         if (this.options.select && this.options.merge) {
-          const oldState = bloc.state;
           const mergedState = this.options.merge(
             state as Partial<TState>,
             bloc.state,
           );
-          (bloc as any)._state = mergedState;
-          (bloc as any)._observer.notify(mergedState, oldState);
+          // Use protected emit method through type assertion
+          (bloc as any).emit(mergedState);
         } else {
           // Restore full state
-          const oldState = bloc.state;
-          (bloc as any)._state = state;
-          (bloc as any)._observer.notify(state, oldState);
+          // Use protected emit method through type assertion
+          (bloc as any).emit(state);
         }
       }
     } catch (error) {

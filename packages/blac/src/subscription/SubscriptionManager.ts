@@ -282,12 +282,24 @@ export class SubscriptionManager<S = unknown> {
     const subscription = this.subscriptions.get(subscriptionId);
     if (!subscription || !subscription.dependencies) return true;
 
-    // Check direct path matches
-    for (const changedPath of changedPaths) {
-      if (subscription.dependencies.has(changedPath)) return true;
+    // Check if any tracked dependencies match changed paths
+    for (const trackedPath of subscription.dependencies) {
+      // Handle class getter dependencies (_class.propertyName)
+      if (trackedPath.startsWith('_class.')) {
+        // For class getters, we need to notify on any state change
+        // since we can't determine which state properties the getter depends on
+        // This is conservative but ensures correctness
+        if (changedPaths.size > 0) {
+          return true;
+        }
+        continue;
+      }
+
+      // Check direct path matches
+      if (changedPaths.has(trackedPath)) return true;
 
       // Check nested paths
-      for (const trackedPath of subscription.dependencies) {
+      for (const changedPath of changedPaths) {
         if (
           changedPath.startsWith(trackedPath + '.') ||
           trackedPath.startsWith(changedPath + '.')

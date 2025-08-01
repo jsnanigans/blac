@@ -126,6 +126,9 @@ importers:
       mermaid:
         specifier: ^11.9.0
         version: 11.9.0
+      prettier:
+        specifier: 'catalog:'
+        version: 3.6.2
       vitepress-plugin-mermaid:
         specifier: ^2.0.17
         version: 2.0.17(mermaid@11.9.0)(vitepress@1.6.3(@algolia/client-search@5.21.0)(@types/node@24.1.0)(@types/react@18.3.18)(lightningcss@1.30.1)(nprogress@0.2.0)(postcss@8.5.6)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(search-insights@2.17.3)(terser@5.39.0)(typescript@5.9.2))
@@ -161,6 +164,9 @@ importers:
       '@vitejs/plugin-react':
         specifier: ^4.7.0
         version: 4.7.0(vite@7.0.6(@types/node@24.1.0)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.39.0)(tsx@4.19.2)(yaml@2.7.0))
+      prettier:
+        specifier: 'catalog:'
+        version: 3.6.2
       typescript:
         specifier: 'catalog:'
         version: 5.9.2
@@ -204,6 +210,9 @@ importers:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.1.5(@types/react@19.1.9)
     devDependencies:
+      '@blac/plugin-render-logging':
+        specifier: workspace:*
+        version: link:../plugin-render-logging
       '@testing-library/dom':
         specifier: 'catalog:'
         version: 10.4.1
@@ -252,6 +261,25 @@ importers:
       vite-plugin-dts:
         specifier: 'catalog:'
         version: 4.5.4(@types/node@24.1.0)(rollup@4.40.2)(typescript@5.9.2)(vite@7.0.6(@types/node@24.1.0)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.39.0)(tsx@4.19.2)(yaml@2.7.0))
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.4(@types/node@24.1.0)(@vitest/browser@3.2.4)(happy-dom@18.0.1)(jiti@2.4.2)(jsdom@26.1.0)(lightningcss@1.30.1)(msw@2.7.3(@types/node@24.1.0)(typescript@5.9.2))(terser@5.39.0)(tsx@4.19.2)(yaml@2.7.0)
+
+  packages/plugin-render-logging:
+    dependencies:
+      '@blac/core':
+        specifier: workspace:*
+        version: link:../blac
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.1.0
+      tsup:
+        specifier: 'catalog:'
+        version: 8.5.0(@microsoft/api-extractor@7.52.1(@types/node@24.1.0))(jiti@2.4.2)(postcss@8.5.6)(tsx@4.19.2)(typescript@5.9.2)(yaml@2.7.0)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.2
       vitest:
         specifier: 'catalog:'
         version: 3.2.4(@types/node@24.1.0)(@vitest/browser@3.2.4)(happy-dom@18.0.1)(jiti@2.4.2)(jsdom@26.1.0)(lightningcss@1.30.1)(msw@2.7.3(@types/node@24.1.0)(typescript@5.9.2))(terser@5.39.0)(tsx@4.19.2)(yaml@2.7.0)
@@ -5061,7 +5089,7 @@ snapshots:
 
   bun-types@1.2.19(@types/react@19.1.9):
     dependencies:
-      '@types/node': 20.12.14
+      '@types/node': 24.1.0
       '@types/react': 19.1.9
 
   bundle-require@5.1.0(esbuild@0.25.4):

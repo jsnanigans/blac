@@ -55,6 +55,7 @@
     }
   },
   "devDependencies": {
+    "@blac/plugin-render-logging": "workspace:*",
     "@testing-library/dom": "catalog:",
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/react": "^16.3.0",
