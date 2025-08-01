@@ -15,8 +15,8 @@ export interface AdapterOptions<B extends BlocBase<any>> {
 }
 
 /**
- * BlacAdapter orchestrates the connection between Bloc instances and React components.
- * It manages dependency tracking, lifecycle hooks, and proxy creation.
+ * BlacAdapter v3 - Generator-based implementation
+ * Manages the connection between Bloc instances and React components using async generators
  */
 export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
   public readonly id = `consumer-${generateUUID()}`;
@@ -98,186 +98,153 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
     this.consumerTracker.setHasRendered(consumerRef, true);
   }
 
-  resetConsumerTracking(): void {
-    this.consumerTracker.resetTracking(this.componentRef.current);
-  }
+  private updateBlocInstance(): InstanceType<B> {
+    const instanceKey = this.options?.instanceId || 
+      (this.options?.staticProps ? generateInstanceIdFromProps(this.options.staticProps) : null) || 
+      this.blocConstructor.name;
 
-  createStateProxy = <T extends object>(props: { target: T }): T => {
-    return ProxyFactory.createStateProxy({
-      target: props.target,
-      consumerRef: this.componentRef.current,
-      consumerTracker: this as any,
-    });
-  };
-
-  createClassProxy = <T extends object>(props: { target: T }): T => {
-    return ProxyFactory.createClassProxy({
-      target: props.target,
-      consumerRef: this.componentRef.current,
-      consumerTracker: this as any,
-    });
-  };
-
-  updateBlocInstance(): InstanceType<B> {
-    // Determine the instance ID
-    let instanceId = this.options?.instanceId;
-
-    // If no explicit instanceId provided but staticProps exist, generate from them
-    if (!instanceId && this.options?.staticProps) {
-      const generatedId = generateInstanceIdFromProps(this.options.staticProps);
-      if (generatedId) {
-        instanceId = generatedId;
-      }
-    }
-
-    this.blocInstance = Blac.instance.getBloc<B>(this.blocConstructor, {
+    this.blocInstance = Blac.getBloc(this.blocConstructor, {
+      id: instanceKey,
       constructorParams: this.options?.staticProps,
-      id: instanceId,
       instanceRef: this.id,
     });
     return this.blocInstance;
   }
 
-  createSubscription = (options: { onChange: () => void }) => {
-    const unsubscribe = this.blocInstance._observer.subscribe({
-      id: this.id,
-      fn: (newState: BlocState<InstanceType<B>>) => {
-        // Case 1: Manual dependencies provided
-        if (this.isUsingDependencies && this.options?.dependencies) {
-          const newValues = this.options.dependencies(this.blocInstance);
-          const hasChanged = this.hasDependencyValuesChanged(
-            this.dependencyValues,
-            newValues,
-          );
+  /**
+   * Creates a generator-based state stream with dependency checking
+   */
+  async *createStateStream(): AsyncGenerator<BlocState<InstanceType<B>>, void, void> {
+    let isFirst = true;
+    
+    for await (const newState of this.blocInstance.stateStream()) {
+      // Skip initial state from stateStream since it's already handled by useSyncExternalStore
+      if (isFirst) {
+        isFirst = false;
+        continue;
+      }
+      // Case 1: Manual dependencies provided
+      if (this.isUsingDependencies && this.options?.dependencies) {
+        const newValues = this.options.dependencies(this.blocInstance);
+        const hasChanged = this.hasDependencyValuesChanged(
+          this.dependencyValues,
+          newValues,
+        );
 
-          if (!hasChanged) {
-            return; // Don't trigger re-render
-          }
-
-          this.dependencyValues = newValues;
-        }
-        // Case 2: Proxy tracking disabled globally (and no manual dependencies)
-        else if (!Blac.config.proxyDependencyTracking) {
-          // Always trigger re-render when proxy tracking is disabled
-          options.onChange();
-          return;
-        }
-        // Case 3: Proxy tracking enabled (default behavior)
-        else {
-          // Check if any tracked values have changed (proxy-based tracking)
-          const consumerInfo = this.consumerTracker.getConsumerInfo(
-            this.componentRef.current,
-          );
-          if (consumerInfo && consumerInfo.hasRendered) {
-            // Only check dependencies if component has rendered at least once
-            const hasChanged = this.consumerTracker.hasValuesChanged(
-              this.componentRef.current,
-              newState,
-              this.blocInstance,
-            );
-
-            if (!hasChanged) {
-              return; // Don't trigger re-render
-            }
-          }
+        if (!hasChanged) {
+          continue; // Skip this state update
         }
 
-        options.onChange();
-      },
-    });
-
-    return unsubscribe;
-  };
-
-  mount = (): void => {
-    // Re-run dependencies on mount to ensure fresh values
-    if (this.isUsingDependencies && this.options?.dependencies) {
-      this.dependencyValues = this.options.dependencies(this.blocInstance);
-    }
-
-    // Lifecycle management
-    this.mountCount++;
-    this.blocInstance._addConsumer(this.id, this.componentRef.current);
-
-    // Call onMount callback if provided and not already called
-    if (!this.hasMounted) {
-      this.hasMounted = true;
-      this.mountTime = Date.now();
-
-      if (this.options?.onMount) {
-        try {
-          this.options.onMount(this.blocInstance);
-        } catch (error) {
-          throw error;
+        this.dependencyValues = newValues;
+      }
+      
+      // Case 2: Proxy tracking
+      else if (Blac.config.proxyDependencyTracking) {
+        const changedPaths = this.getChangedPaths(this.blocInstance._oldState || this.blocInstance.state, newState);
+        
+        if (!this.shouldNotifyConsumer(this.componentRef.current, changedPaths)) {
+          continue; // Skip this update
         }
       }
+
+      // Yield the new state
+      yield newState;
     }
-  };
-
-  unmount = (): void => {
-    this.unmountTime = Date.now();
-    this.consumerTracker.unregister(this.componentRef.current);
-    this.blocInstance._removeConsumer(this.id);
-
-    // No ownership tracking needed anymore
-
-    // Call onUnmount callback
-    if (this.options?.onUnmount) {
-      try {
-        this.options.onUnmount(this.blocInstance);
-      } catch (error) {
-        // Don't re-throw on unmount to allow cleanup to continue
-      }
-    }
-  };
-
-  getProxyState = (
-    state: BlocState<InstanceType<B>>,
-  ): BlocState<InstanceType<B>> => {
-    // Return raw state if proxy tracking is disabled globally or using manual dependencies
-    if (this.isUsingDependencies || !Blac.config.proxyDependencyTracking) {
-      return state;
-    }
-
-    return ProxyFactory.getProxyState({
-      state,
-      consumerRef: this.componentRef.current,
-      consumerTracker: this as any,
-    });
-  };
-
-  getProxyBlocInstance = (): InstanceType<B> => {
-    // Return raw instance if proxy tracking is disabled globally or using manual dependencies
-    if (this.isUsingDependencies || !Blac.config.proxyDependencyTracking) {
-      return this.blocInstance;
-    }
-
-    return ProxyFactory.getProxyBlocInstance({
-      blocInstance: this.blocInstance,
-      consumerRef: this.componentRef.current,
-      consumerTracker: this as any,
-    });
-  };
-
-  // Expose calledOnMount for backward compatibility
-  get calledOnMount(): boolean {
-    return this.hasMounted;
   }
 
   private hasDependencyValuesChanged(
-    prev: unknown[] | undefined,
-    next: unknown[],
+    oldValues: unknown[] | undefined,
+    newValues: unknown[],
   ): boolean {
-    if (!prev) return true; // First run, always trigger
-    if (prev.length !== next.length) return true;
-
-    // Use Object.is for comparison (handles NaN, +0/-0 correctly)
-    for (let i = 0; i < prev.length; i++) {
-      if (!Object.is(prev[i], next[i])) {
+    if (!oldValues) return true;
+    if (oldValues.length !== newValues.length) return true;
+    
+    for (let i = 0; i < newValues.length; i++) {
+      if (!Object.is(oldValues[i], newValues[i])) {
         return true;
       }
     }
-
+    
     return false;
+  }
+
+  private getChangedPaths(oldState: any, newState: any): Set<string> {
+    const paths = new Set<string>();
+    
+    const traverse = (oldObj: any, newObj: any, path: string = '') => {
+      if (oldObj === newObj) return;
+      
+      if (typeof newObj !== 'object' || newObj === null) {
+        paths.add(path);
+        return;
+      }
+      
+      for (const key in newObj) {
+        const newPath = path ? `${path}.${key}` : key;
+        if (!Object.is(oldObj?.[key], newObj[key])) {
+          traverse(oldObj?.[key], newObj[key], newPath);
+        }
+      }
+    };
+    
+    traverse(oldState, newState);
+    return paths;
+  }
+
+  resetConsumerTracking(): void {
+    this.consumerTracker.resetTracking(this.componentRef.current);
+  }
+
+  mount(): void {
+    this.mountCount++;
+    this.hasMounted = true;
+    this.mountTime = Date.now();
+
+    // Add consumer to bloc
+    this.blocInstance._addConsumer(this.id, this.componentRef.current);
+
+    // Call onMount lifecycle
+    if (this.options?.onMount) {
+      this.options.onMount(this.blocInstance);
+    }
+  }
+
+  unmount(): void {
+    this.unmountTime = Date.now();
+
+    // Remove consumer from bloc
+    this.blocInstance._removeConsumer(this.id);
+
+    // Call onUnmount lifecycle
+    if (this.options?.onUnmount) {
+      this.options.onUnmount(this.blocInstance);
+    }
+
+    // Cleanup consumer tracking
+    this.consumerTracker.unregister(this.componentRef.current);
+  }
+
+  getProxyState(rawState: BlocState<InstanceType<B>>): BlocState<InstanceType<B>> {
+    if (!Blac.config.proxyDependencyTracking) {
+      return rawState;
+    }
+
+    return ProxyFactory.createStateProxy({
+      target: rawState,
+      consumerRef: this.componentRef.current,
+      consumerTracker: this,
+    });
+  }
+
+  getProxyBlocInstance(): InstanceType<B> {
+    if (!Blac.config.proxyDependencyTracking) {
+      return this.blocInstance;
+    }
+
+    return ProxyFactory.createClassProxy({
+      target: this.blocInstance,
+      consumerRef: this.componentRef.current,
+      consumerTracker: this,
+    });
   }
 }

@@ -1,141 +1,230 @@
-import {
-  Blac,
-  BlocBase,
-  BlocConstructor,
-  BlocState,
-  generateUUID,
-} from '@blac/core';
-import { useMemo, useRef } from 'react';
+import { BlocBase, BlocConstructor, BlocState, Blac } from '@blac/core';
+import { useRef, useMemo, useEffect, MutableRefObject } from 'react';
+import { generateUUID } from '@blac/core';
 
-interface ExternalStoreOptions<B extends BlocBase<any>> {
+export type BlocBaseInstance = BlocBase<any>;
+
+type ExternalBlocStoreOptions<T extends BlocBase<any>> = {
   id?: string;
-  staticProps?: ConstructorParameters<BlocConstructor<B>>[0];
   selector?: (
-    currentState: BlocState<B>,
-    previousState: BlocState<B>,
-    instance: B,
-  ) => any[];
-}
+    currentState: BlocState<T>,
+    previousState: BlocState<T> | undefined,
+    instance: T
+  ) => unknown[];
+};
 
-interface ExternalStore<T> {
-  getSnapshot: () => T | undefined;
+type ExternalBlocStore<T extends BlocBase<any>> = {
   subscribe: (listener: () => void) => () => void;
-  getServerSnapshot?: () => T | undefined;
-}
+  getSnapshot: () => BlocState<T> | undefined;
+  getServerSnapshot?: () => BlocState<T> | undefined;
+};
 
-interface ExternalBlocStoreResult<B extends BlocBase<any>> {
-  externalStore: ExternalStore<BlocState<B>>;
-  instance: { current: B | null };
-  usedKeys: { current: Set<string> };
-  usedClassPropKeys: { current: Set<string> };
-  rid: string;
-}
+type UseExternalBlocStoreResult<T extends BlocBase<any>> = {
+  externalStore: ExternalBlocStore<T>;
+  instance: MutableRefObject<T | null>;
+};
 
 /**
- * Hook for using an external bloc store
- * Provides low-level access to bloc instances for use with React's useSyncExternalStore
+ * React hook for subscribing to an external Bloc instance - v3 generator-based
+ * Useful when you need to observe a Bloc instance that was created outside of React
  */
-export default function useExternalBlocStore<
+export function useExternalBlocStore<
   B extends BlocConstructor<BlocBase<any>>,
+  T extends InstanceType<B> = InstanceType<B>,
+  S = BlocState<T>
 >(
   blocConstructor: B,
-  options: ExternalStoreOptions<InstanceType<B>> = {},
-): ExternalBlocStoreResult<InstanceType<B>> {
-  const ridRef = useRef<string>(`external-${generateUUID()}`);
-  const usedKeysRef = useRef<Set<string>>(new Set());
-  const usedClassPropKeysRef = useRef<Set<string>>(new Set());
-  const instanceRef = useRef<InstanceType<B> | null>(null);
-
-  // Get or create bloc instance
-  const bloc = useMemo(() => {
-    const blac = Blac.getInstance();
-    const base = blocConstructor as unknown as BlocBase<any>;
-
-    // For isolated blocs, always create a new instance
-    if (
-      (base.constructor as any).isolated ||
-      (blocConstructor as any).isolated
-    ) {
-      const newBloc = new blocConstructor(
-        options?.staticProps,
-      ) as InstanceType<B>;
-      const uniqueId =
-        options?.id || `${blocConstructor.name}_${generateUUID()}`;
-      newBloc._updateId(uniqueId);
-      blac.activateBloc(newBloc);
-      return newBloc;
+  options?: ExternalBlocStoreOptions<T>
+): UseExternalBlocStoreResult<T> {
+  const ridRef = useRef(`external-consumer-${generateUUID()}`);
+  
+  // Get or create the bloc instance
+  const instance = useMemo(() => {
+    const Constructor = blocConstructor as any;
+    const isIsolated = Constructor.isolated === true;
+    
+    if (isIsolated) {
+      // Always create new instance for isolated blocs
+      const newInstance = new Constructor() as T;
+      // Use a unique ID for isolated instances
+      const uniqueId = options?.id || `${Constructor.name}-${generateUUID()}`;
+      newInstance._updateId(uniqueId);
+      return newInstance;
+    } else {
+      // Use shared instance
+      const sharedInstance = Blac.getBloc(Constructor, { id: options?.id }) as T;
+      return sharedInstance;
     }
-
-    // For shared blocs, use the existing getBloc logic
-    return blac.getBloc(blocConstructor, {
-      id: options?.id,
-      constructorParams: options?.staticProps,
-    });
   }, [blocConstructor, options?.id]);
+  
+  const instanceRef = useRef<T | null>(instance);
+  instanceRef.current = instance;
 
-  // Create external store interface
-  const externalStore = useMemo<ExternalStore<BlocState<InstanceType<B>>>>(
-    () => ({
-      getSnapshot: () => {
+  // Track state and subscription
+  const listenersRef = useRef<Set<() => void>>(new Set());
+  const streamActiveRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const lastSeenStateRef = useRef<S>(instance.state);
+  const versionRef = useRef(0);
+
+  // Function to start the stream subscription
+  const startStream = () => {
+    if (streamActiveRef.current || !instanceRef.current) return;
+    streamActiveRef.current = true;
+    abortControllerRef.current = new AbortController();
+    
+    (async () => {
+      try {
         const currentInstance = instanceRef.current;
-        return currentInstance ? currentInstance.state : undefined;
-      },
-      subscribe: (listener: () => void) => {
-        const currentInstance = instanceRef.current;
-        if (!currentInstance) {
-          // Return no-op unsubscribe if no instance
-          return () => {};
-        }
-
-        // Wrap listener to handle errors gracefully
-        const safeListener = (
-          newState: BlocState<InstanceType<B>>,
-          oldState: BlocState<InstanceType<B>>,
-        ) => {
-          try {
-            // Reset tracking keys on each listener call
-            usedKeysRef.current.clear();
-            usedClassPropKeysRef.current.clear();
-
-            // Call selector if provided
-            if (options.selector && currentInstance) {
-              options.selector(newState, oldState, currentInstance);
+        if (!currentInstance || typeof currentInstance.stateStream !== 'function') return;
+        
+        let previousState = currentInstance.state as S;
+        let isFirst = true;
+        
+        for await (const newState of currentInstance.stateStream()) {
+          if (abortControllerRef.current?.signal.aborted) break;
+          
+          // Skip the first state (initial state)
+          if (isFirst) {
+            isFirst = false;
+            continue;
+          }
+          
+          // Check selector if provided
+          if (options?.selector) {
+            const prevDeps = options.selector(previousState, undefined, currentInstance);
+            const currDeps = options.selector(newState as S, previousState, currentInstance);
+            
+            const depsChanged = prevDeps.length !== currDeps.length || 
+              prevDeps.some((dep, i) => !Object.is(dep, currDeps[i]));
+            if (!depsChanged) {
+              previousState = newState as S;
+              continue;
             }
-
-            // Call listener with state if it expects it
-            if (listener.length > 0) {
-              (listener as any)(newState);
-            } else {
+          }
+          
+          previousState = newState as S;
+          
+          // Notify all listeners synchronously
+          listenersRef.current.forEach(listener => {
+            try {
               listener();
+            } catch (error) {
+              console.error('Listener error in useExternalBlocStore:', error);
             }
-          } catch (error) {
-            console.error('Listener error in useExternalBlocStore:', error);
-            // Don't rethrow to prevent breaking other listeners
+          });
+        }
+      } catch (error) {
+        if (!abortControllerRef.current?.signal.aborted) {
+          console.error('External bloc stream error:', error);
+        }
+      } finally {
+        streamActiveRef.current = false;
+      }
+    })();
+  };
+
+  // Function to stop the stream
+  const stopStream = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    streamActiveRef.current = false;
+  };
+
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      stopStream();
+    };
+  }, []);
+
+  // Create the external store
+  const externalStore = useMemo<ExternalBlocStore<T>>(() => {
+    return {
+      subscribe: (listener: () => void) => {
+        listenersRef.current.add(listener);
+        
+        // Call selector immediately if provided
+        if (options?.selector && instanceRef.current) {
+          const state = instanceRef.current.state as S;
+          options.selector(state, undefined, instanceRef.current);
+        }
+        
+        // Start the stream if this is the first listener
+        if (listenersRef.current.size === 1) {
+          startStream();
+        }
+        
+        // Create a wrapper listener that checks for immediate state changes
+        const wrappedListener = () => {
+          const currentInstance = instanceRef.current;
+          if (!currentInstance) return;
+          
+          const currentState = currentInstance.state;
+          if (!Object.is(lastSeenStateRef.current, currentState)) {
+            const prevState = lastSeenStateRef.current;
+            lastSeenStateRef.current = currentState;
+            versionRef.current++;
+            
+            // Check selector if provided
+            if (options?.selector) {
+              const prevDeps = options.selector(prevState, undefined, currentInstance);
+              const currDeps = options.selector(currentState, prevState, currentInstance);
+              
+              const depsChanged = prevDeps.length !== currDeps.length || 
+                prevDeps.some((dep, i) => !Object.is(dep, currDeps[i]));
+              if (!depsChanged) return;
+            }
+            
+            // Notify original listener
+            try {
+              listener();
+            } catch (error) {
+              console.error('Listener error in useExternalBlocStore:', error);
+            }
           }
         };
-
-        const unsubscribe = currentInstance._observer.subscribe({
-          id: ridRef.current,
-          fn: safeListener,
-        });
-        return unsubscribe;
+        
+        // Override the bloc's emit method to call our listener immediately
+        const originalEmit = instanceRef.current.emit;
+        instanceRef.current.emit = function(newState: any) {
+          originalEmit.call(this, newState);
+          // Call wrapped listener immediately after emit
+          wrappedListener();
+        };
+        
+        return () => {
+          // Restore original emit if this is the last listener
+          if (listenersRef.current.size === 1 && instanceRef.current) {
+            instanceRef.current.emit = originalEmit;
+          }
+          
+          listenersRef.current.delete(listener);
+          
+          // Stop the stream if no more listeners
+          if (listenersRef.current.size === 0) {
+            stopStream();
+          }
+        };
+      },
+      getSnapshot: () => {
+        const currentInstance = instanceRef.current;
+        if (!currentInstance) return undefined;
+        // Always return the current state from the instance
+        return currentInstance.state;
       },
       getServerSnapshot: () => {
         const currentInstance = instanceRef.current;
         return currentInstance ? currentInstance.state : undefined;
       },
-    }),
-    [],
-  );
-
-  // Update instance ref
-  instanceRef.current = bloc;
+    };
+  }, [options?.selector]);
 
   return {
     externalStore,
     instance: instanceRef,
-    usedKeys: usedKeysRef,
-    usedClassPropKeys: usedClassPropKeysRef,
-    rid: ridRef.current,
   };
 }
+

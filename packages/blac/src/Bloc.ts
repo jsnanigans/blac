@@ -1,10 +1,15 @@
+/**
+ * Bloc v3.0.0 - Full generator implementation
+ * Simplified event processing using generators throughout
+ */
+
 import { Blac } from './Blac';
 import { BlocBase } from './BlocBase';
 import { BlocEventConstraint } from './types';
 
 export abstract class Bloc<
-  S, // State type
-  A extends BlocEventConstraint = BlocEventConstraint, // Base Action/Event type with proper constraints
+  S,
+  A extends BlocEventConstraint = BlocEventConstraint,
 > extends BlocBase<S> {
   readonly eventHandlers: Map<
     new (...args: any[]) => A,
@@ -12,23 +17,214 @@ export abstract class Bloc<
   > = new Map();
 
   /**
-   * @internal
-   * Event queue to ensure sequential processing of async events
+   * Generator-based event channel for efficient processing
    */
-  private _eventQueue: A[] = [];
+  private _eventChannel: AsyncGenerator<A, void, void>;
+  private _eventSender: (event: A) => void;
+  private _eventProcessor: Promise<void>;
+  
+  /**
+   * Event stream for external consumption
+   */
+  private _eventStreamChannel: {
+    send: (event: A) => void;
+    generator: AsyncGenerator<A, void, void>;
+  };
+
+  constructor(initialState: S) {
+    super(initialState);
+
+    // Create event channels
+    const { channel, sender } = this._createEventChannel();
+    this._eventChannel = channel;
+    this._eventSender = sender;
+    
+    // Create event stream channel for external consumption
+    this._eventStreamChannel = this._createEventStreamChannel();
+
+    // Start processing events
+    this._eventProcessor = this._processEvents();
+
+    // Cleanup on dispose
+    const originalDispose = this.onDispose;
+    this.onDispose = () => {
+      originalDispose?.();
+      // Signal channel closure
+      this._eventSender(null as any);
+    };
+  }
 
   /**
-   * @internal
-   * Flag indicating if an event is currently being processed
+   * Creates the main event processing channel
    */
-  private _isProcessingEvent = false;
+  private _createEventChannel(): {
+    channel: AsyncGenerator<A, void, void>;
+    sender: (event: A) => void;
+  } {
+    const queue: A[] = [];
+    let resolver: ((value: A | null) => void) | null = null;
+    let closed = false;
+
+    const channel = (async function* (): AsyncGenerator<A, void, void> {
+      while (!closed) {
+        if (queue.length > 0) {
+          yield queue.shift()!;
+        } else {
+          const event = await new Promise<A | null>((resolve) => {
+            resolver = resolve;
+          });
+
+          if (event === null) {
+            closed = true;
+            break;
+          }
+
+          yield event;
+        }
+      }
+    })();
+
+    const sender = (event: A | null) => {
+      if (event === null) {
+        closed = true;
+        if (resolver) {
+          resolver(null);
+          resolver = null;
+        }
+        return;
+      }
+
+      if (resolver) {
+        resolver(event);
+        resolver = null;
+      } else {
+        queue.push(event);
+      }
+    };
+
+    return { channel, sender };
+  }
 
   /**
-   * Registers an event handler for a specific event type.
-   * This method is typically called in the constructor of a derived Bloc class.
-   * @param eventConstructor The constructor of the event to handle (e.g., LoadDataEvent).
-   * @param handler A function that processes the event and can emit new states.
-   *                The 'event' parameter in the handler will be typed to the specific eventConstructor.
+   * Creates event stream channel for external consumption
+   */
+  private _createEventStreamChannel(): {
+    send: (event: A) => void;
+    generator: AsyncGenerator<A, void, void>;
+  } {
+    const queue: A[] = [];
+    const resolvers: ((value: { event: A } | { done: true }) => void)[] = [];
+    let closed = false;
+
+    const generator = (async function* (): AsyncGenerator<A, void, void> {
+      while (!closed) {
+        if (queue.length > 0) {
+          yield queue.shift()!;
+        } else {
+          const result = await new Promise<{ event: A } | { done: true }>(
+            (resolve) => {
+              resolvers.push(resolve);
+            },
+          );
+
+          if ('event' in result) {
+            yield result.event;
+          } else {
+            break;
+          }
+        }
+      }
+    })();
+
+    return {
+      send: (event: A) => {
+        if (closed) return;
+
+        if (resolvers.length > 0) {
+          const resolver = resolvers.shift()!;
+          resolver({ event });
+        } else {
+          queue.push(event);
+        }
+      },
+      generator,
+    };
+  }
+
+  /**
+   * Main event processing loop
+   */
+  private async _processEvents(): Promise<void> {
+    try {
+      for await (const event of this._eventChannel) {
+        if (this.isDisposed) break;
+        
+        // Process the event
+        await this._handleEvent(event);
+        
+        // Send to event stream
+        this._eventStreamChannel.send(event);
+      }
+    } catch (error) {
+      if (!this.isDisposed) {
+        console.error(`[Bloc ${this._name}] Error in event processor:`, error);
+      }
+    }
+  }
+
+  /**
+   * Handles a single event
+   */
+  private async _handleEvent(action: A): Promise<void> {
+    const eventConstructor = action.constructor as new (...args: any[]) => A;
+    const handler = this.eventHandlers.get(eventConstructor);
+
+    if (handler) {
+      const emit = (newState: S): void => {
+        const previousState = this.state;
+        this._pushState(newState, previousState, action);
+      };
+
+      try {
+        await handler(action, emit);
+      } catch (error) {
+        const constructorName = eventConstructor.name || 'UnnamedEvent';
+        
+        Blac.error(
+          `[Bloc ${this._name}:${String(this._id)}] Error in handler for '${constructorName}':`,
+          error,
+        );
+
+        // Notify plugins
+        if (error instanceof Error) {
+          this._plugins.notifyError(error, {
+            phase: 'event-processing',
+            operation: 'handler',
+            metadata: { event: action },
+          });
+
+          Blac.instance.plugins.notifyError(error, this as any, {
+            phase: 'event-processing',
+            operation: 'handler',
+            metadata: { event: action },
+          });
+        }
+
+        // Re-throw critical errors
+        if (error instanceof Error && error.name === 'CriticalError') {
+          throw error;
+        }
+      }
+    } else {
+      const constructorName = eventConstructor.name || 'UnnamedEvent';
+      Blac.warn(
+        `[Bloc ${this._name}] No handler for event: '${constructorName}'`,
+      );
+    }
+  }
+
+  /**
+   * Registers an event handler
    */
   protected on<E extends A>(
     eventConstructor: new (...args: any[]) => E,
@@ -36,145 +232,72 @@ export abstract class Bloc<
   ): void {
     if (this.eventHandlers.has(eventConstructor)) {
       Blac.warn(
-        `[Bloc ${this._name}:${String(this._id)}] Handler for event '${eventConstructor.name}' already registered. It will be overwritten.`,
+        `[Bloc ${this._name}] Overwriting handler for: ${eventConstructor.name}`,
       );
     }
+    
     this.eventHandlers.set(
       eventConstructor,
-      handler as (
-        event: A,
-        emit: (newState: S) => void,
-      ) => void | Promise<void>,
+      handler as (event: A, emit: (newState: S) => void) => void | Promise<void>,
     );
   }
 
   /**
-   * Dispatches an action/event to the Bloc.
-   * Events are queued and processed sequentially to prevent race conditions.
-   * @param action The action/event instance to be processed.
+   * Simplified event dispatch - no more complex queue management
    */
-  public add = async (action: A): Promise<void> => {
+  public add = (action: A): void => {
+    if (this.isDisposed) {
+      Blac.warn(`[Bloc ${this._name}] Cannot add event to disposed bloc`);
+      return;
+    }
+
     // Transform event through plugins
     let transformedAction: A | null = action;
     try {
       transformedAction = (this._plugins as any).transformEvent(action);
     } catch (error) {
       console.error('Error transforming event:', error);
-      // Continue with original event if transformation fails
     }
 
-    // If event was cancelled by plugin, don't process it
-    if (transformedAction === null) {
-      return;
-    }
+    if (transformedAction === null) return;
 
-    // Notify bloc plugins of event
+    // Notify plugins
     try {
       (this._plugins as any).notifyEvent(transformedAction);
     } catch (error) {
       console.error('Error notifying plugins of event:', error);
     }
 
-    // Notify system plugins of event
+    // Notify system plugins
     Blac.instance.plugins.notifyEventAdded(this as any, transformedAction);
 
-    this._eventQueue.push(transformedAction);
-
-    if (!this._isProcessingEvent) {
-      await this._processEventQueue();
-    }
+    // Send event to channel
+    this._eventSender(transformedAction);
   };
 
   /**
-   * @internal
-   * Processes events from the queue sequentially
+   * Returns an async generator that yields all events
+   * Primary API for observing events
    */
-  private async _processEventQueue(): Promise<void> {
-    if (this._isProcessingEvent) {
-      return;
-    }
+  async *events(): AsyncGenerator<A, void, void> {
+    if (this.isDisposed) return;
 
-    this._isProcessingEvent = true;
-
-    try {
-      while (this._eventQueue.length > 0) {
-        const action = this._eventQueue.shift()!;
-        await this._processEvent(action);
-      }
-    } finally {
-      this._isProcessingEvent = false;
+    for await (const event of this._eventStreamChannel.generator) {
+      yield event;
+      if (this.isDisposed) break;
     }
   }
 
   /**
-   * @internal
-   * Processes a single event
+   * Returns an async generator that yields events of a specific type
    */
-  private async _processEvent(action: A): Promise<void> {
-    const eventConstructor = action.constructor as new (...args: any[]) => A;
-    const handler = this.eventHandlers.get(eventConstructor);
-
-    if (handler) {
-      const emit = (newState: S): void => {
-        const previousState = this.state; // State just before this specific emission
-        this._pushState(newState, previousState, action);
-      };
-
-      try {
-        await handler(action, emit);
-      } catch (error) {
-        const constructorName =
-          (action.constructor as { name?: string }).name ||
-          'UnnamedConstructor';
-        const errorContext = {
-          blocName: this._name,
-          blocId: String(this._id),
-          eventType: constructorName,
-          currentState: this.state,
-          action: action,
-          timestamp: new Date().toISOString(),
-        };
-
-        Blac.error(
-          `[Bloc ${this._name}:${String(this._id)}] Error in event handler for '${constructorName}':`,
-          error,
-          'Context:',
-          errorContext,
-        );
-
-        // Notify plugins of the error
-        if (error instanceof Error) {
-          try {
-            this._plugins.notifyError(error, {
-              phase: 'event-processing',
-              operation: 'handler',
-              metadata: { event: action },
-            });
-
-            Blac.instance.plugins.notifyError(error, this as any, {
-              phase: 'event-processing',
-              operation: 'handler',
-              metadata: { event: action },
-            });
-          } catch (pluginError) {
-            console.error('Error notifying plugins:', pluginError);
-          }
-        }
-
-        if (error instanceof Error && error.name === 'CriticalError') {
-          throw error;
-        }
+  async *eventsOfType<E extends A>(
+    EventType: new (...args: any[]) => E,
+  ): AsyncGenerator<E, void, void> {
+    for await (const event of this.events()) {
+      if (event instanceof EventType) {
+        yield event as E;
       }
-    } else {
-      const constructorName =
-        (action.constructor as { name?: string }).name || 'UnnamedConstructor';
-      Blac.warn(
-        `[Bloc ${this._name}:${String(this._id)}] No handler registered for action type: '${constructorName}'.`,
-        'Registered handlers:',
-        Array.from(this.eventHandlers.keys()).map((k) => k.name),
-        'Action was:',
-        action,
-      );
     }
   }
 }

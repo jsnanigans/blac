@@ -1,5 +1,4 @@
 export * from './Blac';
-export * from './BlacObserver';
 export * from './Bloc';
 export * from './BlocBase';
 export * from './Cubit';
@@ -22,3 +21,6 @@ export * from './plugins';
 
 // Error handling
 export * from './errors';
+
+// Stream utilities
+export * from './streams';

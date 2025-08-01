@@ -253,7 +253,7 @@ export class Blac {
     // Dispose non-keepAlive blocs from the current instance
     // Use disposeBloc method to ensure proper cleanup
     oldBlocInstanceMap.forEach((bloc) => {
-      // TODO: Type assertion for private property access (see explanation above)
+      // Type assertion needed for cross-class private property access
       if (
         !bloc._keepAlive &&
         (bloc as any)._disposalState === BlocLifecycleState.ACTIVE
@@ -264,7 +264,7 @@ export class Blac {
 
     oldIsolatedBlocMap.forEach((blocArray) => {
       blocArray.forEach((bloc) => {
-        // TODO: Type assertion for private property access (see explanation above)
+        // Type assertion needed for cross-class private property access
         if (
           !bloc._keepAlive &&
           (bloc as any)._disposalState === BlocLifecycleState.ACTIVE
@@ -292,10 +292,8 @@ export class Blac {
    */
   disposeBloc = (bloc: BlocBase<unknown>): void => {
     // Check if bloc is already disposed to prevent double disposal
-    // TODO: Type assertion needed to access private _disposalState property from external class.
-    // This is safe because we know BlocBase has this property, but TypeScript can't verify
-    // private property access across class boundaries. Alternative would be to make
-    // _disposalState protected, but that would expose internal implementation details.
+    // Type assertion required: accessing private _disposalState across class boundaries.
+    // Safe operation - BlocBase guarantees this property exists.
     const currentState = (bloc as any)._disposalState;
     const validStatesForDisposal = [
       BlocLifecycleState.ACTIVE,
@@ -509,8 +507,7 @@ export class Blac {
     newBloc._instanceRef = instanceRef;
     newBloc._updateId(id);
 
-    // Set up disposal handler to break circular dependency
-    newBloc._setDisposalHandler((bloc) => this.disposeBloc(bloc));
+    // No disposal handler needed - automatic disposal is handled by BlocBase
 
     if (newBloc.isIsolated) {
       this.registerIsolatedBlocInstance(newBloc);
@@ -742,7 +739,7 @@ export class Blac {
       bloc._validateConsumers();
 
       // Check if bloc should be disposed after validation
-      // TODO: Type assertion for private property access (see explanation above)
+      // Type assertion needed for cross-class private property access
       if (
         bloc._consumers.size === 0 &&
         !bloc._keepAlive &&
@@ -751,7 +748,7 @@ export class Blac {
         // Schedule disposal for blocs with no consumers
         setTimeout(() => {
           // Double-check conditions before disposal
-          // TODO: Type assertion for private property access (see explanation above)
+          // Type assertion needed for cross-class private property access
           if (
             bloc._consumers.size === 0 &&
             !bloc._keepAlive &&

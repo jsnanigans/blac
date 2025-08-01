@@ -18,6 +18,8 @@ import { Button } from './components/ui/Button';
 import UserProfileDemo from './components/UserProfileDemo';
 import PersistenceDemo from './components/PersistenceDemo';
 import StaticPropsDemo from './components/StaticPropsDemo';
+import MigrationExample from './src/examples/MigrationExample';
+import GeneratorHooksExample from './src/examples/GeneratorHooksExample';
 import {
   APP_CONTAINER_STYLE, // For potentially lighter description text or default card text
   COLOR_PRIMARY_ACCENT,
@@ -99,6 +101,8 @@ function App() {
     sharedCounterTest: showDefault,
     persistence: showDefault,
     staticProps: showDefault,
+    migration: showDefault,
+    generatorHooks: showDefault,
   });
 
   return (
@@ -266,6 +270,24 @@ function App() {
           setShow={() => setShow({ ...show, staticProps: !show.staticProps })}
         >
           <StaticPropsDemo />
+        </DemoCard>
+
+        <DemoCard
+          title="Migration Guide: Callbacks → Generators"
+          description="Side-by-side comparison of deprecated callback APIs vs new generator-based APIs. Shows how to migrate your code."
+          show={show.migration}
+          setShow={() => setShow({ ...show, migration: !show.migration })}
+        >
+          <MigrationExample />
+        </DemoCard>
+
+        <DemoCard
+          title="Generator-Based React Hooks"
+          description="Advanced examples using useBlocStream, useBlocEvents, useDerivedState, and BlocStreams utilities."
+          show={show.generatorHooks}
+          setShow={() => setShow({ ...show, generatorHooks: !show.generatorHooks })}
+        >
+          <GeneratorHooksExample />
         </DemoCard>
       </main>
 

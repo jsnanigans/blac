@@ -17,10 +17,10 @@ export default defineConfig({
       ],
     },
     onConsoleLog(log) {
-      if (log.startsWith('UNIT')) {
-        return true;
-      }
-      return false;
+      // if (log.startsWith('UNIT')) {
+      return true;
+      // }
+      // return false;
     },
   },
 });

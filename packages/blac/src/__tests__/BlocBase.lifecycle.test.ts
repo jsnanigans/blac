@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { BlocBase, BlocLifecycleState } from '../BlocBase';
+import { BlocBase } from '../BlocBase';
 import { Blac } from '../Blac';
 
 // Test implementation of BlocBase
@@ -9,7 +9,7 @@ class TestBloc extends BlocBase<number> {
   }
 
   increment() {
-    this._pushState(this.state + 1, this.state);
+    this.emit(this.state + 1);
   }
 }
 
@@ -30,6 +30,27 @@ class IsolatedBloc extends BlocBase<string> {
   }
 }
 
+// Helper to track state changes
+async function collectStateChanges<T>(bloc: BlocBase<T>, action: () => void): Promise<Array<{ newState: T; oldState: T }>> {
+  const changes: Array<{ newState: T; oldState: T }> = [];
+  const iterator = bloc.stateChanges();
+  
+  // Start collecting in background
+  const collectPromise = (async () => {
+    for await (const change of iterator) {
+      changes.push(change);
+    }
+  })();
+  
+  // Perform action
+  action();
+  
+  // Wait a bit for changes to be collected
+  await new Promise(resolve => setTimeout(resolve, 50));
+  
+  return changes;
+}
+
 describe('BlocBase Lifecycle Management', () => {
   let blac: Blac;
 
@@ -43,399 +64,355 @@ describe('BlocBase Lifecycle Management', () => {
     vi.clearAllMocks();
   });
 
-  describe('Atomic State Transitions', () => {
-    it('should transition through lifecycle states atomically', () => {
+  describe('Lifecycle States', () => {
+    it('should start in ACTIVE state', () => {
       const bloc = new TestBloc();
 
-      // Initial state should be ACTIVE
-      expect((bloc as any)._disposalState).toBe(BlocLifecycleState.ACTIVE);
-
-      // Transition to DISPOSAL_REQUESTED
-      const result1 = (bloc as any)._atomicStateTransition(
-        BlocLifecycleState.ACTIVE,
-        BlocLifecycleState.DISPOSAL_REQUESTED,
-      );
-      expect(result1.success).toBe(true);
-      expect((bloc as any)._disposalState).toBe(
-        BlocLifecycleState.DISPOSAL_REQUESTED,
-      );
-
-      // Transition to DISPOSING
-      const result2 = (bloc as any)._atomicStateTransition(
-        BlocLifecycleState.DISPOSAL_REQUESTED,
-        BlocLifecycleState.DISPOSING,
-      );
-      expect(result2.success).toBe(true);
-      expect((bloc as any)._disposalState).toBe(BlocLifecycleState.DISPOSING);
-
-      // Transition to DISPOSED
-      const result3 = (bloc as any)._atomicStateTransition(
-        BlocLifecycleState.DISPOSING,
-        BlocLifecycleState.DISPOSED,
-      );
-      expect(result3.success).toBe(true);
-      expect((bloc as any)._disposalState).toBe(BlocLifecycleState.DISPOSED);
+      expect(bloc.lifecycleState).toBe('ACTIVE');
+      expect(bloc.isDisposed).toBe(false);
     });
 
-    it('should reject invalid state transitions', () => {
+    it('should transition to DISPOSED on disposal', () => {
       const bloc = new TestBloc();
+      
+      bloc.dispose();
 
-      // Try to transition from ACTIVE to DISPOSED directly (should work in _dispose but not here)
-      const result = (bloc as any)._atomicStateTransition(
-        BlocLifecycleState.DISPOSAL_REQUESTED,
-        BlocLifecycleState.DISPOSED,
-      );
-      expect(result.success).toBe(false);
-      expect(result.currentState).toBe(BlocLifecycleState.ACTIVE); // Still in ACTIVE because expectedState didn't match
-    });
-
-    it('should handle concurrent transition attempts', () => {
-      const bloc = new TestBloc();
-
-      // First transition succeeds
-      const result1 = (bloc as any)._atomicStateTransition(
-        BlocLifecycleState.ACTIVE,
-        BlocLifecycleState.DISPOSAL_REQUESTED,
-      );
-      expect(result1.success).toBe(true);
-
-      // Second attempt with same expected state fails
-      const result2 = (bloc as any)._atomicStateTransition(
-        BlocLifecycleState.ACTIVE,
-        BlocLifecycleState.DISPOSAL_REQUESTED,
-      );
-      expect(result2.success).toBe(false);
-      expect(result2.currentState).toBe(BlocLifecycleState.DISPOSAL_REQUESTED);
-    });
-  });
-
-  describe('Consumer Management', () => {
-    it('should register and unregister consumers', () => {
-      const bloc = new TestBloc();
-      const consumerId = 'test-consumer-1';
-      const consumerRef = {};
-
-      // Add consumer
-      const added = bloc._addConsumer(consumerId, consumerRef);
-      expect(added).toBe(true);
-      expect(bloc._consumers.has(consumerId)).toBe(true);
-      expect(bloc._consumers.size).toBe(1);
-
-      // Remove consumer
-      bloc._removeConsumer(consumerId);
-      expect(bloc._consumers.has(consumerId)).toBe(false);
-      expect(bloc._consumers.size).toBe(0);
-    });
-
-    it('should prevent duplicate consumer registration', () => {
-      const bloc = new TestBloc();
-      const consumerId = 'test-consumer-1';
-
-      bloc._addConsumer(consumerId);
-      expect(bloc._consumers.size).toBe(1);
-
-      // Try to add same consumer again
-      bloc._addConsumer(consumerId);
-      expect(bloc._consumers.size).toBe(1); // Should still be 1
-    });
-
-    it('should schedule disposal when last consumer is removed', async () => {
-      const bloc = new TestBloc();
-      const consumerId = 'test-consumer-1';
-
-      // Register bloc with Blac instance
-      blac.registerBlocInstance(bloc as BlocBase<unknown>);
-
-      // Add and remove consumer
-      bloc._addConsumer(consumerId);
-      bloc._removeConsumer(consumerId);
-
-      // Should transition to DISPOSAL_REQUESTED immediately
-      expect((bloc as any)._disposalState).toBe(
-        BlocLifecycleState.DISPOSAL_REQUESTED,
-      );
-
-      // After microtask, should be disposed
-      await vi.runAllTimersAsync();
-      expect((bloc as any)._disposalState).toBe(BlocLifecycleState.DISPOSED);
-    });
-
-    it('should cancel disposal if consumer is re-added during grace period', () => {
-      const bloc = new TestBloc();
-      const consumerId1 = 'test-consumer-1';
-      const consumerId2 = 'test-consumer-2';
-
-      // Register bloc
-      blac.registerBlocInstance(bloc as BlocBase<unknown>);
-
-      // Add and remove consumer to trigger disposal
-      bloc._addConsumer(consumerId1);
-      bloc._removeConsumer(consumerId1);
-
-      // State should transition to DISPOSAL_REQUESTED immediately
-      expect((bloc as any)._disposalState).toBe(
-        BlocLifecycleState.DISPOSAL_REQUESTED,
-      );
-
-      // Add new consumer before microtask runs - should fail
-      const added = bloc._addConsumer(consumerId2);
-      expect(added).toBe(false); // Should fail because bloc is in disposal process
-    });
-
-    it('should clean up dead WeakRef consumers', () => {
-      const bloc = new TestBloc();
-      const consumerId1 = 'consumer-1';
-      const consumerId2 = 'consumer-2';
-      let consumerRef1: any = { name: 'consumer1' };
-      const consumerRef2 = { name: 'consumer2' };
-
-      // Add consumers with refs first
-      bloc._addConsumer(consumerId1, consumerRef1);
-      bloc._addConsumer(consumerId2, consumerRef2);
-      expect(bloc._consumers.size).toBe(2);
-
-      // Now mock the WeakRef's deref method to simulate garbage collection
-      const consumerRefsMap = (bloc as any)._consumerRefs as Map<
-        string,
-        WeakRef<object>
-      >;
-      const weakRef1 = consumerRefsMap.get(consumerId1);
-      const weakRef2 = consumerRefsMap.get(consumerId2);
-
-      if (weakRef1) {
-        // Mock the deref method to return undefined (simulating GC)
-        vi.spyOn(weakRef1, 'deref').mockReturnValue(undefined);
-      }
-
-      // Validate consumers
-      bloc._validateConsumers();
-
-      // First consumer should be removed
-      expect(bloc._consumers.size).toBe(1);
-      expect(bloc._consumers.has(consumerId1)).toBe(false);
-      expect(bloc._consumers.has(consumerId2)).toBe(true);
-    });
-
-    it('should reject consumer additions when bloc is disposed', () => {
-      const bloc = new TestBloc();
-
-      // Force dispose
-      bloc._dispose();
-      expect((bloc as any)._disposalState).toBe(BlocLifecycleState.DISPOSED);
-
-      // Try to add consumer
-      const added = bloc._addConsumer('new-consumer');
-      expect(added).toBe(false);
-      expect(bloc._consumers.size).toBe(0);
-    });
-  });
-
-  describe('Disposal Behavior', () => {
-    it('should properly dispose bloc and clean up resources', () => {
-      const bloc = new TestBloc();
-      const onDisposeSpy = vi.fn();
-      bloc.onDispose = onDisposeSpy;
-
-      // Add some consumers and observers
-      bloc._addConsumer('consumer-1');
-      const unsubscribe = bloc._observer.subscribe({
-        id: 'observer-1',
-        fn: vi.fn(),
-      });
-
-      // Dispose
-      const disposed = bloc._dispose();
-      expect(disposed).toBe(true);
-      expect(onDisposeSpy).toHaveBeenCalled();
-      expect(bloc._consumers.size).toBe(0);
-      expect(bloc._observer.size).toBe(0);
+      expect(bloc.lifecycleState).toBe('DISPOSED');
       expect(bloc.isDisposed).toBe(true);
     });
 
-    it('should handle disposal failures gracefully', () => {
+    it('should prevent state changes after disposal', async () => {
       const bloc = new TestBloc();
-      bloc.onDispose = () => {
-        throw new Error('Disposal error');
-      };
+      const iterator = bloc.stateChanges();
+      
+      bloc.dispose();
+      bloc.increment(); // Should be ignored
 
-      // Disposal should reset state on error
-      expect(() => bloc._dispose()).toThrow('Disposal error');
-      expect((bloc as any)._disposalState).toBe(BlocLifecycleState.ACTIVE);
-    });
-
-    it('should schedule disposal with microtask deferral', () => {
-      const bloc = new TestBloc();
-      blac.registerBlocInstance(bloc as BlocBase<unknown>);
-
-      // Remove last consumer
-      bloc._addConsumer('consumer-1');
-      bloc._removeConsumer('consumer-1');
-
-      // Disposal should be scheduled immediately
-      expect((bloc as any)._disposalState).toBe(
-        BlocLifecycleState.DISPOSAL_REQUESTED,
-      );
-    });
-
-    it('should be idempotent - multiple dispose calls should be safe', () => {
-      const bloc = new TestBloc();
-
-      const result1 = bloc._dispose();
-      expect(result1).toBe(true);
-
-      const result2 = bloc._dispose();
-      expect(result2).toBe(false); // Already disposed
+      // Iterator should complete
+      const result = await iterator.next();
+      expect(result.done).toBe(true);
+      expect(bloc.state).toBe(0); // State unchanged
     });
   });
 
-  describe('keepAlive and isolated flags', () => {
-    it('should respect keepAlive flag and not dispose when consumers are removed', async () => {
-      const bloc = new KeepAliveBloc();
-      blac.registerBlocInstance(bloc as BlocBase<unknown>);
+  describe('Consumer Tracking', () => {
+    it('should track consumer count', () => {
+      const bloc = new TestBloc();
 
-      expect(bloc.isKeepAlive).toBe(true);
+      expect(bloc.consumerCount).toBe(0);
+      expect(bloc.hasConsumers).toBe(false);
+
+      bloc._addConsumer('test-1');
+      expect(bloc.consumerCount).toBe(1);
+      expect(bloc.hasConsumers).toBe(true);
+
+      bloc._addConsumer('test-2');
+      expect(bloc.consumerCount).toBe(2);
+
+      bloc._removeConsumer('test-1');
+      expect(bloc.consumerCount).toBe(1);
+
+      bloc._removeConsumer('test-2');
+      expect(bloc.consumerCount).toBe(0);
+      expect(bloc.hasConsumers).toBe(false);
+    });
+
+    it('should handle duplicate consumer additions', () => {
+      const bloc = new TestBloc();
+
+      bloc._addConsumer('test-1');
+      bloc._addConsumer('test-1'); // Duplicate
+
+      expect(bloc.consumerCount).toBe(1);
+    });
+
+    it('should clean up consumers on disposal', () => {
+      const bloc = new TestBloc();
+
+      bloc._addConsumer('test-1');
+      bloc._addConsumer('test-2');
+      expect(bloc.consumerCount).toBe(2);
+
+      bloc.dispose();
+      expect(bloc.consumerCount).toBe(0);
+    });
+  });
+
+  describe('Mount/Unmount Lifecycle', () => {
+    it('should call onMount when first consumer is added', () => {
+      const bloc = new TestBloc();
+      const onMountSpy = vi.spyOn(bloc, 'onMount');
+
+      bloc._addConsumer('test-1');
+      expect(onMountSpy).toHaveBeenCalledTimes(1);
+
+      // Adding more consumers should not call onMount again
+      bloc._addConsumer('test-2');
+      expect(onMountSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('should call onUnmount when last consumer is removed', () => {
+      const bloc = new TestBloc();
+      const onUnmountSpy = vi.spyOn(bloc, 'onUnmount');
+
+      bloc._addConsumer('test-1');
+      bloc._addConsumer('test-2');
+
+      bloc._removeConsumer('test-1');
+      expect(onUnmountSpy).not.toHaveBeenCalled();
+
+      bloc._removeConsumer('test-2');
+      expect(onUnmountSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('should handle mount/unmount cycles', () => {
+      const bloc = new TestBloc();
+      const onMountSpy = vi.spyOn(bloc, 'onMount');
+      const onUnmountSpy = vi.spyOn(bloc, 'onUnmount');
+
+      // First cycle
+      bloc._addConsumer('test-1');
+      expect(onMountSpy).toHaveBeenCalledTimes(1);
+
+      bloc._removeConsumer('test-1');
+      expect(onUnmountSpy).toHaveBeenCalledTimes(1);
+
+      // Second cycle
+      bloc._addConsumer('test-2');
+      expect(onMountSpy).toHaveBeenCalledTimes(2);
+
+      bloc._removeConsumer('test-2');
+      expect(onUnmountSpy).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('KeepAlive Behavior', () => {
+    it('should respect keepAlive static property', () => {
+      const bloc = blac.getBloc(KeepAliveBloc);
+      const instanceId = blac.repository.getInstanceId(KeepAliveBloc, {});
 
       // Add and remove consumer
-      bloc._addConsumer('consumer-1');
-      bloc._removeConsumer('consumer-1');
+      bloc._addConsumer('test-1');
+      bloc._removeConsumer('test-1');
 
-      // Should not schedule disposal
-      await vi.runAllTimersAsync();
-      expect((bloc as any)._disposalState).toBe(BlocLifecycleState.ACTIVE);
+      // Should still exist in repository
+      expect(blac.repository.has(KeepAliveBloc, instanceId!)).toBe(true);
+      expect(bloc.isDisposed).toBe(false);
     });
 
-    it('should properly inherit isolated flag from static property', () => {
-      const bloc = new IsolatedBloc();
-      expect(bloc.isIsolated).toBe(true);
+    it('should dispose non-keepAlive blocs when no consumers', async () => {
+      const bloc = blac.getBloc(TestBloc);
+      const instanceId = blac.repository.getInstanceId(TestBloc, {});
+
+      bloc._addConsumer('test-1');
+      bloc._removeConsumer('test-1');
+
+      // Advance timers for deferred disposal
+      vi.advanceTimersByTime(100);
+
+      // Should be removed from repository
+      expect(blac.repository.has(TestBloc, instanceId!)).toBe(false);
+    });
+  });
+
+  describe('Isolated Behavior', () => {
+    it('should create unique instances for isolated blocs', () => {
+      const bloc1 = blac.getBloc(IsolatedBloc, {});
+      const bloc2 = blac.getBloc(IsolatedBloc, {});
+
+      expect(bloc1).not.toBe(bloc2);
+      expect(bloc1.state).toBe('isolated');
+      expect(bloc2.state).toBe('isolated');
     });
 
-    it('should handle missing static properties gracefully', () => {
-      class BlocWithoutStatics extends BlocBase<number> {
+    it('should not share state between isolated instances', async () => {
+      const bloc1 = blac.getBloc(IsolatedBloc, {});
+      const bloc2 = blac.getBloc(IsolatedBloc, {});
+
+      bloc1.emit('changed');
+
+      expect(bloc1.state).toBe('changed');
+      expect(bloc2.state).toBe('isolated');
+    });
+  });
+
+  describe('State Streaming', () => {
+    it('should provide state through stateStream generator', async () => {
+      const bloc = new TestBloc();
+      const iterator = bloc.stateStream();
+
+      // Get initial state
+      const first = await iterator.next();
+      expect(first.value).toBe(0);
+      expect(first.done).toBe(false);
+
+      // Emit new state
+      bloc.increment();
+
+      // Get updated state
+      const second = await iterator.next();
+      expect(second.value).toBe(1);
+      expect(second.done).toBe(false);
+    });
+
+    it('should provide state changes through stateChanges generator', async () => {
+      const bloc = new TestBloc();
+      const changes = await collectStateChanges(bloc, () => {
+        bloc.increment();
+        bloc.increment();
+      });
+
+      expect(changes).toHaveLength(2);
+      expect(changes[0]).toEqual({ newState: 1, oldState: 0 });
+      expect(changes[1]).toEqual({ newState: 2, oldState: 1 });
+    });
+
+    it('should complete generators on disposal', async () => {
+      const bloc = new TestBloc();
+      const iterator = bloc.stateStream();
+
+      bloc.dispose();
+
+      const result = await iterator.next();
+      expect(result.done).toBe(true);
+    });
+
+    it('should support multiple concurrent stream consumers', async () => {
+      const bloc = new TestBloc();
+      const iterator1 = bloc.stateStream();
+      const iterator2 = bloc.stateStream();
+
+      const result1 = await iterator1.next();
+      const result2 = await iterator2.next();
+
+      expect(result1.value).toBe(0);
+      expect(result2.value).toBe(0);
+
+      bloc.increment();
+
+      const next1 = await iterator1.next();
+      const next2 = await iterator2.next();
+
+      expect(next1.value).toBe(1);
+      expect(next2.value).toBe(1);
+    });
+  });
+
+  describe('Error Handling', () => {
+    it('should handle errors in onMount gracefully', () => {
+      class ErrorMountBloc extends BlocBase<number> {
         constructor() {
           super(0);
         }
-      }
-
-      const bloc = new BlocWithoutStatics();
-      expect(bloc.isKeepAlive).toBe(false);
-      expect(bloc.isIsolated).toBe(false);
-    });
-  });
-
-  describe('State Access During Lifecycle', () => {
-    it('should allow state access during all non-disposed states', () => {
-      const bloc = new TestBloc(42);
-
-      // ACTIVE state
-      expect(bloc.state).toBe(42);
-
-      // DISPOSAL_REQUESTED state
-      (bloc as any)._atomicStateTransition(
-        BlocLifecycleState.ACTIVE,
-        BlocLifecycleState.DISPOSAL_REQUESTED,
-      );
-      expect(bloc.state).toBe(42);
-
-      // DISPOSING state
-      (bloc as any)._atomicStateTransition(
-        BlocLifecycleState.DISPOSAL_REQUESTED,
-        BlocLifecycleState.DISPOSING,
-      );
-      expect(bloc.state).toBe(42);
-
-      // DISPOSED state - should return last known state
-      (bloc as any)._atomicStateTransition(
-        BlocLifecycleState.DISPOSING,
-        BlocLifecycleState.DISPOSED,
-      );
-      expect(bloc.state).toBe(42);
-    });
-
-    it('should correctly report isDisposed status', () => {
-      const bloc = new TestBloc();
-
-      expect(bloc.isDisposed).toBe(false);
-
-      bloc._dispose();
-      expect(bloc.isDisposed).toBe(true);
-    });
-  });
-
-  describe('Edge Cases', () => {
-    it('should handle rapid consumer additions and removals', async () => {
-      const bloc = new TestBloc();
-      blac.registerBlocInstance(bloc as BlocBase<unknown>);
-
-      // Rapidly add and remove consumers
-      for (let i = 0; i < 10; i++) {
-        bloc._addConsumer(`consumer-${i}`);
-        bloc._removeConsumer(`consumer-${i}`);
-      }
-
-      // Should be in DISPOSAL_REQUESTED state
-      expect((bloc as any)._disposalState).toBe(
-        BlocLifecycleState.DISPOSAL_REQUESTED,
-      );
-
-      // After microtask, should be disposed
-      await vi.runAllTimersAsync();
-      expect((bloc as any)._disposalState).toBe(BlocLifecycleState.DISPOSED);
-    });
-
-    it('should handle disposal during active state mutations', () => {
-      const bloc = new TestBloc();
-      const observer = vi.fn();
-
-      bloc._observer.subscribe({
-        id: 'observer-1',
-        fn: observer,
-      });
-
-      // Start a state mutation
-      bloc.increment();
-      expect(observer).toHaveBeenCalledWith(1, 0, undefined);
-
-      // Dispose during active usage
-      bloc._dispose();
-
-      // Further mutations should not notify (bloc is disposed)
-      observer.mockClear();
-      bloc.increment();
-      expect(observer).not.toHaveBeenCalled();
-    });
-
-    it('should prevent memory leaks via WeakRef cleanup', () => {
-      const bloc = new TestBloc();
-      const consumerCount = 100;
-      const refs: any[] = [];
-
-      // Add many consumers
-      for (let i = 0; i < consumerCount; i++) {
-        const ref = { id: i };
-        refs.push(ref);
-        bloc._addConsumer(`consumer-${i}`, ref);
-      }
-
-      expect(bloc._consumers.size).toBe(consumerCount);
-
-      // Mock half of the WeakRefs to return undefined (simulating GC)
-      const consumerRefsMap = (bloc as any)._consumerRefs as Map<
-        string,
-        WeakRef<object>
-      >;
-      let mockCount = 0;
-
-      for (const [consumerId, weakRef] of consumerRefsMap) {
-        if (mockCount < consumerCount / 2) {
-          vi.spyOn(weakRef, 'deref').mockReturnValue(undefined);
-          mockCount++;
+        onMount() {
+          throw new Error('Mount error');
         }
       }
 
-      // Validate should clean up dead refs
-      bloc._validateConsumers();
+      const errorSpy = vi.spyOn(Blac, 'error').mockImplementation(() => {});
+      const bloc = new ErrorMountBloc();
 
-      expect(bloc._consumers.size).toBe(consumerCount / 2);
+      expect(() => bloc._addConsumer('test')).not.toThrow();
+      expect(errorSpy).toHaveBeenCalledWith('Error in onMount:', expect.any(Error));
+
+      errorSpy.mockRestore();
+    });
+
+    it('should handle errors in onUnmount gracefully', () => {
+      class ErrorUnmountBloc extends BlocBase<number> {
+        constructor() {
+          super(0);
+        }
+        onUnmount() {
+          throw new Error('Unmount error');
+        }
+      }
+
+      const errorSpy = vi.spyOn(Blac, 'error').mockImplementation(() => {});
+      const bloc = new ErrorUnmountBloc();
+
+      bloc._addConsumer('test');
+      expect(() => bloc._removeConsumer('test')).not.toThrow();
+      expect(errorSpy).toHaveBeenCalledWith('Error in onUnmount:', expect.any(Error));
+
+      errorSpy.mockRestore();
+    });
+
+    it('should handle errors in onDispose gracefully', () => {
+      class ErrorDisposeBloc extends BlocBase<number> {
+        constructor() {
+          super(0);
+        }
+        onDispose() {
+          throw new Error('Dispose error');
+        }
+      }
+
+      const errorSpy = vi.spyOn(Blac, 'error').mockImplementation(() => {});
+      const bloc = new ErrorDisposeBloc();
+
+      expect(() => bloc.dispose()).not.toThrow();
+      expect(errorSpy).toHaveBeenCalledWith('Error in onDispose:', expect.any(Error));
+
+      errorSpy.mockRestore();
+    });
+  });
+
+  describe('Plugin Integration', () => {
+    it('should notify plugins of lifecycle events', () => {
+      const plugin = {
+        blocCreated: vi.fn(),
+        blocDisposed: vi.fn(),
+        stateChanged: vi.fn(),
+      };
+
+      blac.use(plugin);
+
+      const bloc = blac.getBloc(TestBloc);
+      expect(plugin.blocCreated).toHaveBeenCalledWith(bloc);
+
+      bloc.increment();
+      expect(plugin.stateChanged).toHaveBeenCalledWith(bloc, 1, 0);
+
+      bloc.dispose();
+      expect(plugin.blocDisposed).toHaveBeenCalledWith(bloc);
+    });
+  });
+
+  describe('Memory Management', () => {
+    it('should clean up WeakRef consumers properly', () => {
+      const bloc = new TestBloc();
+      
+      // Create consumer objects
+      let consumer1: any = { id: 'consumer-1' };
+      let consumer2: any = { id: 'consumer-2' };
+      
+      // Add as WeakRef consumers
+      bloc._consumers.set('consumer-1', new WeakRef(consumer1));
+      bloc._consumers.set('consumer-2', new WeakRef(consumer2));
+      
+      expect(bloc.consumerCount).toBe(2);
+      
+      // Simulate garbage collection by nullifying one consumer
+      consumer1 = null;
+      
+      // Force cleanup check
+      const aliveCount = Array.from(bloc._consumers.values())
+        .filter(ref => ref.deref() !== undefined).length;
+      
+      expect(aliveCount).toBe(1);
+    });
+
+    it('should handle rapid add/remove consumer cycles', () => {
+      const bloc = new TestBloc();
+      
+      for (let i = 0; i < 100; i++) {
+        bloc._addConsumer(`consumer-${i}`);
+        bloc._removeConsumer(`consumer-${i}`);
+      }
+      
+      expect(bloc.consumerCount).toBe(0);
+      expect(bloc.isDisposed).toBe(false);
     });
   });
 });
