@@ -247,9 +247,9 @@ describe('Rerender Logging', () => {
 
     // In detailed mode with stack trace, it logs the stack
     const logCalls = consoleSpy.log.mock.calls;
-    const hasStackTrace = logCalls.some((call) =>
+    const hasStackTrace = logCalls.some((call: any[]) =>
       call.some(
-        (arg) => typeof arg === 'string' && arg.includes('Stack trace:'),
+        (arg: any) => typeof arg === 'string' && arg.includes('Stack trace:'),
       ),
     );
     expect(hasStackTrace).toBe(true);

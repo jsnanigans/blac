@@ -27,6 +27,11 @@ export class RenderLoggingPlugin implements BlacPlugin {
     this.config = this.normalizeConfig(config);
   }
 
+  updateConfig(config: RenderLoggingConfig | boolean | 'minimal' | 'detailed'): void {
+    this.config = this.normalizeConfig(config);
+    console.log('[RenderLoggingPlugin] Config updated:', this.config);
+  }
+
   private normalizeConfig(config: RenderLoggingConfig | boolean | 'minimal' | 'detailed'): RenderLoggingConfig {
     if (typeof config === 'boolean') {
       return { enabled: config, level: 'normal' };
@@ -165,6 +170,11 @@ export class RenderLoggingPlugin implements BlacPlugin {
       rerenderLogging: this.config 
     };
     
+    // Debug: log the config being used
+    if (this.config.level === 'detailed') {
+      console.log('[RenderLoggingPlugin] Using config:', this.config);
+    }
+    
     RerenderLogger.logRerender(info);
     
     // Restore original config
@@ -189,6 +199,10 @@ export class RenderLoggingPlugin implements BlacPlugin {
     
     // If metadata has tracked paths and proxy tracking is enabled, use those
     if (metadata && Blac.config.proxyDependencyTracking !== false) {
+      // Debug logging
+      if (this.config.level === 'detailed') {
+        console.log('[RenderLoggingPlugin] getStateChangedPaths - metadata.trackedPaths:', metadata.trackedPaths);
+      }
       if (metadata.trackedPaths && metadata.trackedPaths.length > 0) {
         // Check only tracked paths
         for (const path of metadata.trackedPaths) {

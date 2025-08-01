@@ -5,6 +5,7 @@ export * from './Cubit';
 export * from './types';
 export * from './events';
 export * from './subscription';
+export * from './lifecycle';
 
 // Utilities
 export * from './utils/uuid';

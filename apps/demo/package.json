@@ -17,6 +17,7 @@
     "@blac/core": "workspace:*",
     "@blac/react": "workspace:*",
     "@blac/plugin-persistence": "workspace:*",
+    "@blac/plugin-render-logging": "workspace:*",
     "prettier": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",

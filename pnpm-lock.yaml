@@ -83,6 +83,9 @@ importers:
       '@blac/plugin-persistence':
         specifier: workspace:*
         version: link:../../packages/plugins/bloc/persistence
+      '@blac/plugin-render-logging':
+        specifier: workspace:*
+        version: link:../../packages/plugin-render-logging
       '@blac/react':
         specifier: workspace:*
         version: link:../../packages/blac-react

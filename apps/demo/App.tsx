@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { RenderLoggingPlugin } from '@blac/plugin-render-logging';
 
 import BasicCounterDemo from './components/BasicCounterDemo';
 import CustomSelectorDemo from './components/CustomSelectorDemo';
@@ -31,6 +32,15 @@ import {
   LINK_STYLE,
   SECTION_STYLE,
 } from './lib/styles'; // Import the styles
+
+// Initialize Blac and plugins before React renders
+Blac.instance.plugins.add(
+  new RenderLoggingPlugin({
+    enabled: true,
+    level: 'normal',
+    groupRerenders: true,
+  }),
+);
 
 window.Blac = Blac; // Make Blac globally available for debugging
 // Simple Card replacement for demo purposes, adapted for modern look
@@ -300,12 +310,5 @@ function App() {
     </div>
   );
 }
-
-// Initialize Blac after module is fully loaded
-setTimeout(() => {
-  Blac.enableLog = true;
-  window.blac = Blac;
-  console.log(Blac.instance);
-}, 0);
 
 export default App;

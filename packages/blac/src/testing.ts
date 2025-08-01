@@ -57,15 +57,12 @@ export class BlocTest {
         );
       }, timeout);
 
-      const unsubscribe = bloc._observer.subscribe({
-        id: `test-waiter-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        fn: (newState: S) => {
-          if (predicate(newState)) {
-            clearTimeout(timeoutId);
-            unsubscribe();
-            resolve(newState);
-          }
-        },
+      const unsubscribe = bloc.subscribe((newState: S) => {
+        if (predicate(newState)) {
+          clearTimeout(timeoutId);
+          unsubscribe();
+          resolve(newState);
+        }
       });
 
       // Check current state immediately
@@ -97,36 +94,33 @@ export class BlocTest {
         );
       }, timeout);
 
-      const unsubscribe = bloc._observer.subscribe({
-        id: `test-expecter-${crypto.randomUUID()}`,
-        fn: (newState: S) => {
-          receivedStates.push(newState);
+      const unsubscribe = bloc.subscribe((newState: S) => {
+        receivedStates.push(newState);
 
-          // Check if we have all expected states
-          if (receivedStates.length === expectedStates.length) {
-            clearTimeout(timeoutId);
-            unsubscribe();
+        // Check if we have all expected states
+        if (receivedStates.length === expectedStates.length) {
+          clearTimeout(timeoutId);
+          unsubscribe();
 
-            // Verify all states match using deep equality
-            for (let i = 0; i < expectedStates.length; i++) {
-              const expected = expectedStates[i];
-              const received = receivedStates[i];
+          // Verify all states match using deep equality
+          for (let i = 0; i < expectedStates.length; i++) {
+            const expected = expectedStates[i];
+            const received = receivedStates[i];
 
-              // Use JSON comparison for deep equality
-              if (JSON.stringify(expected) !== JSON.stringify(received)) {
-                reject(
-                  new Error(
-                    `State mismatch at index ${i}. Expected: ${JSON.stringify(expected)}, ` +
-                      `Received: ${JSON.stringify(received)}`,
-                  ),
-                );
-                return;
-              }
+            // Use JSON comparison for deep equality
+            if (JSON.stringify(expected) !== JSON.stringify(received)) {
+              reject(
+                new Error(
+                  `State mismatch at index ${i}. Expected: ${JSON.stringify(expected)}, ` +
+                    `Received: ${JSON.stringify(received)}`,
+                ),
+              );
+              return;
             }
-
-            resolve();
           }
-        },
+
+          resolve();
+        }
       });
     });
   }

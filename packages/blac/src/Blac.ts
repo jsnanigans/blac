@@ -1,4 +1,5 @@
-import { BlocBase, BlocInstanceId, BlocLifecycleState } from './BlocBase';
+import { BlocBase, BlocInstanceId } from './BlocBase';
+import { BlocLifecycleState } from './lifecycle/BlocLifecycle';
 import {
   BlocBaseAbstract,
   BlocConstructor,
@@ -316,7 +317,7 @@ export class Blac {
     );
 
     // First dispose the bloc to prevent further operations
-    bloc._dispose();
+    bloc.dispose();
 
     // Notify plugins of bloc disposal
     this.plugins.notifyBlocDisposed(bloc);
@@ -684,7 +685,7 @@ export class Blac {
       }
     }
 
-    toDispose.forEach((bloc) => bloc._dispose());
+    toDispose.forEach((bloc) => bloc.dispose());
   };
   static get disposeKeepAliveBlocs() {
     return Blac.instance.disposeKeepAliveBlocs;
@@ -713,7 +714,7 @@ export class Blac {
       }
     }
 
-    toDispose.forEach((bloc) => bloc._dispose());
+    toDispose.forEach((bloc) => bloc.dispose());
   };
   static get disposeBlocs() {
     return Blac.instance.disposeBlocs;
@@ -739,26 +740,23 @@ export class Blac {
   }
 
   /**
-   * Validates consumer references and cleans up orphaned consumers
+   * Validates subscription references and cleans up orphaned blocs
    */
   validateConsumers = (): void => {
     for (const bloc of this.uidRegistry.values()) {
-      // Validate consumers using the bloc's own validation method
-      bloc._validateConsumers();
-
       // Check if bloc should be disposed after validation
       // TODO: Type assertion for private property access (see explanation above)
       if (
-        bloc._consumers.size === 0 &&
+        bloc.subscriptionCount === 0 &&
         !bloc._keepAlive &&
         (bloc as any)._disposalState === BlocLifecycleState.ACTIVE
       ) {
-        // Schedule disposal for blocs with no consumers
+        // Schedule disposal for blocs with no subscriptions
         setTimeout(() => {
           // Double-check conditions before disposal
           // TODO: Type assertion for private property access (see explanation above)
           if (
-            bloc._consumers.size === 0 &&
+            bloc.subscriptionCount === 0 &&
             !bloc._keepAlive &&
             (bloc as any)._disposalState === BlocLifecycleState.ACTIVE
           ) {

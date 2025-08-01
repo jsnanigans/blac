@@ -217,6 +217,11 @@ export class RerenderLogger {
           new: info.reason.newValues?.[path],
         };
       });
+
+      // If we have values to show in detailed mode, ensure they're not empty
+      if (Object.keys(values).length === 0) {
+        values = null;
+      }
     }
 
     return { header, details, values };

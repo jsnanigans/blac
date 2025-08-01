@@ -3,29 +3,14 @@ import { BlocPlugin, ErrorContext } from './plugins/types';
 import { BlocPluginRegistry } from './plugins/BlocPluginRegistry';
 import { Blac } from './Blac';
 import { SubscriptionManager } from './subscription/SubscriptionManager';
+import {
+  BlocLifecycleManager,
+  BlocLifecycleState,
+  StateTransitionResult,
+} from './lifecycle/BlocLifecycle';
+import { BatchingManager } from './utils/BatchingManager';
 
 export type BlocInstanceId = string | number | undefined;
-type DependencySelector<S> = (
-  currentState: S,
-  previousState: S | undefined,
-  instance: any,
-) => unknown[];
-
-/**
- * Enum representing the lifecycle states of a Bloc instance
- */
-export enum BlocLifecycleState {
-  ACTIVE = 'active',
-  DISPOSAL_REQUESTED = 'disposal_requested',
-  DISPOSING = 'disposing',
-  DISPOSED = 'disposed',
-}
-
-export interface StateTransitionResult {
-  success: boolean;
-  currentState: BlocLifecycleState;
-  previousState: BlocLifecycleState;
-}
 
 interface BlocStaticProperties {
   isolated: boolean;
@@ -49,8 +34,6 @@ export abstract class BlocBase<S> {
     return this._keepAlive;
   }
 
-  defaultDependencySelector: DependencySelector<S> | undefined;
-
   public _isolated = false;
   public _id: BlocInstanceId;
   public _instanceRef?: string;
@@ -62,17 +45,14 @@ export abstract class BlocBase<S> {
   public _subscriptionManager: SubscriptionManager<S>;
 
   _state: S;
-  private _disposalState = BlocLifecycleState.ACTIVE;
-  private _disposalLock = false;
+  private _lifecycleManager = new BlocLifecycleManager();
+  private _batchingManager = new BatchingManager<S>();
   _keepAlive = false;
   public lastUpdate?: number;
 
   _plugins = new BlocPluginRegistry<S, any>();
 
   onDispose?: () => void;
-
-  private _disposalTimer?: NodeJS.Timeout | number;
-  private _disposalHandler?: (bloc: BlocBase<unknown>) => void;
 
   /**
    * Creates a new BlocBase instance with unified subscription management
@@ -114,7 +94,7 @@ export abstract class BlocBase<S> {
    * Returns the current state
    */
   get state(): S {
-    if (this._disposalState === BlocLifecycleState.DISPOSED) {
+    if (this._lifecycleManager.isDisposed) {
       return this._state; // Return last known state for disposed blocs
     }
     return this._state;
@@ -186,9 +166,9 @@ export abstract class BlocBase<S> {
    */
   _pushState(newState: S, oldState: S, action?: unknown): void {
     // Validate state emission conditions
-    if (this._disposalState !== BlocLifecycleState.ACTIVE) {
+    if (this._lifecycleManager.currentState !== BlocLifecycleState.ACTIVE) {
       Blac.error(
-        `[${this._name}:${this._id}] Attempted state update on ${this._disposalState} bloc. Update ignored.`,
+        `[${this._name}:${this._id}] Attempted state update on ${this._lifecycleManager.currentState} bloc. Update ignored.`,
       );
       return;
     }
@@ -200,8 +180,10 @@ export abstract class BlocBase<S> {
     this._state = newState;
 
     // Apply plugins
-    let transformedState = newState;
-    transformedState = this._plugins.transformState(oldState, transformedState);
+    const transformedState = this._plugins.transformState(
+      oldState,
+      newState,
+    ) as S;
     this._state = transformedState;
 
     // Notify plugins of state change
@@ -215,8 +197,8 @@ export abstract class BlocBase<S> {
     );
 
     // Handle batching
-    if (this._isBatching) {
-      this._pendingUpdates.push({
+    if (this._batchingManager.isCurrentlyBatching) {
+      this._batchingManager.addUpdate({
         newState: transformedState,
         oldState,
         action,
@@ -229,41 +211,14 @@ export abstract class BlocBase<S> {
     this.lastUpdate = Date.now();
   }
 
-  /**
-   * Internal state update batching
-   */
-  private _pendingUpdates: Array<{
-    newState: S;
-    oldState: S;
-    action?: unknown;
-  }> = [];
-  private _isBatching = false;
-
   _batchUpdates(callback: () => void): void {
-    if (this._isBatching) {
-      callback();
-      return;
-    }
-
-    this._isBatching = true;
-    this._pendingUpdates = [];
-
-    try {
-      callback();
-
-      if (this._pendingUpdates.length > 0) {
-        const finalUpdate =
-          this._pendingUpdates[this._pendingUpdates.length - 1];
-        this._subscriptionManager.notify(
-          finalUpdate.newState,
-          finalUpdate.oldState,
-          finalUpdate.action,
-        );
-      }
-    } finally {
-      this._isBatching = false;
-      this._pendingUpdates = [];
-    }
+    this._batchingManager.batchUpdates(callback, (finalUpdate) => {
+      this._subscriptionManager.notify(
+        finalUpdate.newState,
+        finalUpdate.oldState,
+        finalUpdate.action,
+      );
+    });
   }
 
   /**
@@ -286,7 +241,7 @@ export abstract class BlocBase<S> {
    * Remove a plugin
    */
   removePlugin(plugin: BlocPlugin<S, any>): void {
-    this._plugins.remove(plugin.id);
+    this._plugins.remove(plugin.name);
   }
 
   /**
@@ -300,7 +255,7 @@ export abstract class BlocBase<S> {
    * Disposal management
    */
   get isDisposed(): boolean {
-    return this._disposalState === BlocLifecycleState.DISPOSED;
+    return this._lifecycleManager.isDisposed;
   }
 
   /**
@@ -310,49 +265,27 @@ export abstract class BlocBase<S> {
     expectedState: BlocLifecycleState,
     newState: BlocLifecycleState,
   ): StateTransitionResult {
-    if (this._disposalLock) {
-      return {
-        success: false,
-        currentState: this._disposalState,
-        previousState: this._disposalState,
-      };
-    }
-
-    this._disposalLock = true;
-    try {
-      if (this._disposalState !== expectedState) {
-        return {
-          success: false,
-          currentState: this._disposalState,
-          previousState: this._disposalState,
-        };
-      }
-
-      const previousState = this._disposalState;
-      this._disposalState = newState;
-
-      return {
-        success: true,
-        currentState: newState,
-        previousState,
-      };
-    } finally {
-      this._disposalLock = false;
-    }
+    return this._lifecycleManager.atomicStateTransition(
+      expectedState,
+      newState,
+    );
   }
 
   /**
    * Dispose the bloc and clean up resources
    */
   async dispose(): Promise<void> {
-    const transitionResult = this._atomicStateTransition(
+    const transitionResult = this._lifecycleManager.atomicStateTransition(
       BlocLifecycleState.ACTIVE,
       BlocLifecycleState.DISPOSING,
     );
 
     if (!transitionResult.success) {
-      if (this._disposalState === BlocLifecycleState.DISPOSAL_REQUESTED) {
-        this._atomicStateTransition(
+      if (
+        this._lifecycleManager.currentState ===
+        BlocLifecycleState.DISPOSAL_REQUESTED
+      ) {
+        this._lifecycleManager.atomicStateTransition(
           BlocLifecycleState.DISPOSAL_REQUESTED,
           BlocLifecycleState.DISPOSING,
         );
@@ -373,18 +306,21 @@ export abstract class BlocBase<S> {
       // Notify plugins of disposal
       for (const plugin of this._plugins.getAll()) {
         try {
-          plugin.onDispose?.(this as any);
+          if ('onDispose' in plugin && typeof plugin.onDispose === 'function') {
+            plugin.onDispose(this as any);
+          }
         } catch (error) {
           console.error('Plugin disposal error:', error);
         }
       }
 
       // Call disposal handler
-      if (this._disposalHandler) {
-        this._disposalHandler(this as any);
+      const handler = this._lifecycleManager.getDisposalHandler();
+      if (handler) {
+        handler(this as any);
       }
     } finally {
-      this._atomicStateTransition(
+      this._lifecycleManager.atomicStateTransition(
         BlocLifecycleState.DISPOSING,
         BlocLifecycleState.DISPOSED,
       );
@@ -395,12 +331,6 @@ export abstract class BlocBase<S> {
    * Schedule disposal when no subscriptions remain
    */
   _scheduleDisposal(): void {
-    // Cancel any existing disposal timer
-    if (this._disposalTimer) {
-      clearTimeout(this._disposalTimer as NodeJS.Timeout);
-      this._disposalTimer = undefined;
-    }
-
     const shouldDispose =
       this._subscriptionManager.size === 0 && !this._keepAlive;
 
@@ -408,37 +338,20 @@ export abstract class BlocBase<S> {
       return;
     }
 
-    const transitionResult = this._atomicStateTransition(
-      BlocLifecycleState.ACTIVE,
-      BlocLifecycleState.DISPOSAL_REQUESTED,
+    this._lifecycleManager.scheduleDisposal(
+      16,
+      () => this._subscriptionManager.size === 0 && !this._keepAlive,
+      () => this.dispose(),
     );
-
-    if (!transitionResult.success) {
-      return;
-    }
-
-    this._disposalTimer = setTimeout(() => {
-      const stillShouldDispose =
-        this._subscriptionManager.size === 0 &&
-        !this._keepAlive &&
-        this._disposalState === BlocLifecycleState.DISPOSAL_REQUESTED;
-
-      if (stillShouldDispose) {
-        this.dispose();
-      } else {
-        this._atomicStateTransition(
-          BlocLifecycleState.DISPOSAL_REQUESTED,
-          BlocLifecycleState.ACTIVE,
-        );
-      }
-    }, 16);
   }
 
   /**
    * Set disposal handler
    */
   setDisposalHandler(handler: (bloc: BlocBase<unknown>) => void): void {
-    this._disposalHandler = handler;
+    this._lifecycleManager.setDisposalHandler(
+      handler as (bloc: unknown) => void,
+    );
   }
 
   /**
@@ -448,7 +361,7 @@ export abstract class BlocBase<S> {
     if (
       this._subscriptionManager.size === 0 &&
       !this._keepAlive &&
-      this._disposalState === BlocLifecycleState.ACTIVE
+      this._lifecycleManager.currentState === BlocLifecycleState.ACTIVE
     ) {
       this._scheduleDisposal();
     }
@@ -459,32 +372,23 @@ export abstract class BlocBase<S> {
    */
   _cancelDisposalIfRequested(): void {
     Blac.log(
-      `[${this._name}:${this._id}] _cancelDisposalIfRequested called. Current state: ${this._disposalState}`,
+      `[${this._name}:${this._id}] _cancelDisposalIfRequested called. Current state: ${this._lifecycleManager.currentState}`,
     );
 
-    if (this._disposalState === BlocLifecycleState.DISPOSAL_REQUESTED) {
-      // Cancel disposal timer
-      if (this._disposalTimer) {
-        clearTimeout(this._disposalTimer as NodeJS.Timeout);
-        this._disposalTimer = undefined;
-      }
+    const success = this._lifecycleManager.cancelDisposal();
 
-      // Transition back to active state
-      const result = this._atomicStateTransition(
-        BlocLifecycleState.DISPOSAL_REQUESTED,
-        BlocLifecycleState.ACTIVE,
+    if (success) {
+      Blac.log(
+        `[${this._name}:${this._id}] Disposal cancelled - new subscription added`,
       );
-
-      if (result.success) {
-        Blac.log(
-          `[${this._name}:${this._id}] Disposal cancelled - new subscription added`,
-        );
-      } else {
-        Blac.warn(
-          `[${this._name}:${this._id}] Failed to cancel disposal. Current state: ${this._disposalState}`,
-        );
-      }
-    } else if (this._disposalState === BlocLifecycleState.DISPOSED) {
+    } else if (
+      this._lifecycleManager.currentState ===
+      BlocLifecycleState.DISPOSAL_REQUESTED
+    ) {
+      Blac.warn(
+        `[${this._name}:${this._id}] Failed to cancel disposal. Current state: ${this._lifecycleManager.currentState}`,
+      );
+    } else if (this._lifecycleManager.isDisposed) {
       Blac.error(
         `[${this._name}:${this._id}] Cannot cancel disposal - bloc is already disposed`,
       );
