@@ -21,7 +21,7 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
   public readonly id = `adapter-${generateUUID()}`;
   public readonly blocConstructor: B;
   public readonly componentRef: { current: object } = { current: {} };
-  public blocInstance: InstanceType<B>;
+  public blocInstance!: InstanceType<B>;
 
   unmountTime: number = 0;
   mountTime: number = 0;
@@ -34,6 +34,12 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
   private dependencyValues?: unknown[];
   private isUsingDependencies: boolean = false;
   private trackedPaths = new Set<string>();
+  private pendingTrackedPaths = new Set<string>(); // Paths tracked before subscription exists
+
+  // Proxy caching
+  private cachedStateProxy?: BlocState<InstanceType<B>>;
+  private cachedBlocProxy?: InstanceType<B>;
+  private lastProxiedState?: BlocState<InstanceType<B>>;
 
   // Lifecycle state
   private hasMounted = false;
@@ -51,7 +57,7 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
     this.isUsingDependencies = !!options?.dependencies;
 
     // Initialize bloc instance
-    this.blocInstance = this.updateBlocInstance();
+    this.updateBlocInstance();
 
     // Initialize dependency values if using dependencies
     if (this.isUsingDependencies && options?.dependencies) {
@@ -65,10 +71,17 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
     path: string,
     value?: any,
   ): void {
+    const fullPath = type === 'class' ? `_class.${path}` : path;
+    this.trackedPaths.add(fullPath);
+
     if (this.subscriptionId) {
-      const fullPath = type === 'class' ? `_class.${path}` : path;
-      this.trackedPaths.add(fullPath);
       this.blocInstance.trackAccess(this.subscriptionId, fullPath, value);
+    } else {
+      // No subscription ID yet - store for later
+      this.pendingTrackedPaths.add(fullPath);
+      if ((Blac.config as any).logLevel === 'debug') {
+        Blac.log(`[BlacAdapter] trackAccess storing pending path: ${path}`);
+      }
     }
   }
 
@@ -121,12 +134,17 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
       const subscriptions = (this.blocInstance._subscriptionManager as any)
         .subscriptions as Map<string, any>;
       this.subscriptionId = Array.from(subscriptions.keys()).pop();
+
+      // Apply any pending tracked paths
+      if (this.subscriptionId && this.pendingTrackedPaths.size > 0) {
+        for (const path of this.pendingTrackedPaths) {
+          this.blocInstance.trackAccess(this.subscriptionId, path);
+        }
+        this.pendingTrackedPaths.clear();
+      }
     }
 
-    // Call onChange initially to establish baseline
-    if (this.hasMounted) {
-      options.onChange();
-    }
+    // Don't call onChange initially - let React handle the initial render
 
     return () => {
       if (this.unsubscribe) {
@@ -154,23 +172,37 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
   };
 
   getStateProxy = (): BlocState<InstanceType<B>> => {
-    // If using manual dependencies, return raw state
-    if (this.isUsingDependencies) {
+    // If using manual dependencies or proxy tracking is disabled, return raw state
+    if (this.isUsingDependencies || !Blac.config.proxyDependencyTracking) {
       return this.blocInstance.state;
     }
 
-    // Otherwise create proxy for automatic dependency tracking
-    return this.createStateProxy({ target: this.blocInstance.state });
+    // Return cached proxy if state hasn't changed
+    const currentState = this.blocInstance.state;
+    if (this.cachedStateProxy && this.lastProxiedState === currentState) {
+      return this.cachedStateProxy;
+    }
+
+    // Create new proxy for new state
+    this.lastProxiedState = currentState;
+    this.cachedStateProxy = this.createStateProxy({ target: currentState });
+    return this.cachedStateProxy;
   };
 
   getBlocProxy = (): InstanceType<B> => {
-    // If using manual dependencies, return raw bloc
-    if (this.isUsingDependencies) {
+    // If using manual dependencies or proxy tracking is disabled, return raw bloc
+    if (this.isUsingDependencies || !Blac.config.proxyDependencyTracking) {
       return this.blocInstance;
     }
 
-    // Otherwise create proxy for automatic dependency tracking
-    return this.createClassProxy({ target: this.blocInstance });
+    // Return cached proxy if bloc instance hasn't changed
+    if (this.cachedBlocProxy) {
+      return this.cachedBlocProxy;
+    }
+
+    // Create and cache proxy
+    this.cachedBlocProxy = this.createClassProxy({ target: this.blocInstance });
+    return this.cachedBlocProxy;
   };
 
   createStateProxy = <T extends object>(props: { target: T }): T => {
@@ -228,6 +260,19 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
 
   // Reset tracking for next render
   resetTracking(): void {
+    // Clear tracked paths from previous render
     this.trackedPaths.clear();
+    this.pendingTrackedPaths.clear();
+
+    // Clear subscription dependencies to track only current render
+    if (this.subscriptionId) {
+      const subscription = (
+        this.blocInstance._subscriptionManager as any
+      ).subscriptions.get(this.subscriptionId);
+      if (subscription && subscription.dependencies) {
+        // Clear old dependencies - we'll track new ones in this render
+        subscription.dependencies.clear();
+      }
+    }
   }
 }

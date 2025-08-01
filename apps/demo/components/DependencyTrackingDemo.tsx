@@ -99,7 +99,7 @@ const DependencyTrackingDemo: React.FC = () => {
           <Button onClick={cubit.incrementCounter} variant="default" size="sm">
             Increment Counter
           </Button>
-          <Button onClick={cubit.toggleFlag} variant="default" size="sm">
+          <Button onClick={cubit.toggleFlag} variant="default">
             Toggle Flag
           </Button>
           <Button

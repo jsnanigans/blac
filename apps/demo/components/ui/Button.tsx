@@ -16,6 +16,7 @@ import {
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'default' | 'secondary' | 'outline' | 'destructive' | 'ghost';
+  size?: 'sm' | 'md' | 'lg'; // size prop is included for consistency, but not implemented in this example
   // size prop is used in demos but its implementation is not part of this focused fix
 }
 

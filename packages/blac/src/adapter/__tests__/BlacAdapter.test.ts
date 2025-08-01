@@ -265,11 +265,11 @@ describe('BlacAdapter', () => {
       adapter.blocInstance.updateName('Jane');
       expect(onChange).toHaveBeenCalledTimes(1);
 
-      // For automatic tracking, all state changes notify by default
-      // unless we use explicit dependencies
+      // For automatic tracking, only tracked properties trigger notifications
+      // Since we only accessed 'name', changing 'theme' should not notify
       onChange.mockClear();
       adapter.blocInstance.updateTheme('dark');
-      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange).not.toHaveBeenCalled();
 
       unsubscribe();
     });
@@ -453,17 +453,14 @@ describe('BlacAdapter', () => {
       const onChange = vi.fn();
       const unsubscribe = adapter.createSubscription({ onChange });
 
-      // Initial notification
-      expect(onChange).toHaveBeenCalledTimes(1);
-
       // State change should notify
       adapter.blocInstance.increment();
-      expect(onChange).toHaveBeenCalledTimes(2);
+      expect(onChange).toHaveBeenCalledTimes(1);
 
       // After unsubscribe, no more notifications
       unsubscribe();
       adapter.blocInstance.increment();
-      expect(onChange).toHaveBeenCalledTimes(2);
+      expect(onChange).toHaveBeenCalledTimes(1);
     });
 
     it('should reset tracking state properly', () => {

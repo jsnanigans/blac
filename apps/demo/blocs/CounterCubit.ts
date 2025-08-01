@@ -9,7 +9,7 @@ interface CounterCubitProps {
   id?: string; // For identifying instances if needed, though isolation is usually per component instance
 }
 
-export class CounterCubit extends Cubit<CounterState, CounterCubitProps> {
+export class CounterCubit extends Cubit<CounterState> {
   constructor(props?: CounterCubitProps) {
     super({ count: props?.initialCount ?? 0 });
   }
@@ -24,10 +24,7 @@ export class CounterCubit extends Cubit<CounterState, CounterCubitProps> {
 }
 
 // Example of an inherently isolated version if needed directly
-export class IsolatedCounterCubit extends Cubit<
-  CounterState,
-  CounterCubitProps
-> {
+export class IsolatedCounterCubit extends Cubit<CounterState> {
   static isolated = true;
 
   constructor(props?: CounterCubitProps) {

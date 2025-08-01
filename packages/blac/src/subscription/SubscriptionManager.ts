@@ -60,6 +60,9 @@ export class SubscriptionManager<S = unknown> {
       `[${this.bloc._name}:${this.bloc._id}] Subscription added: ${id}. Total: ${this.subscriptions.size}`,
     );
 
+    // Cancel disposal if bloc is in disposal_requested state
+    (this.bloc as any)._cancelDisposalIfRequested();
+
     // Return unsubscribe function
     return () => this.unsubscribe(id);
   }
@@ -137,8 +140,29 @@ export class SubscriptionManager<S = unknown> {
           continue;
         }
       } else {
-        // No selector, always notify with full state
-        shouldNotify = true;
+        // No selector - check if tracked dependencies changed
+        if (subscription.dependencies && subscription.dependencies.size > 0) {
+          // Check which paths changed between old and new state
+          const changedPaths = this.getChangedPaths(oldState, newState);
+          shouldNotify = this.shouldNotifyForPaths(
+            subscription.id,
+            changedPaths,
+          );
+          if ((Blac.config as any).logLevel === 'debug') {
+            Blac.log(
+              `[SubscriptionManager] Subscription ${subscription.id} dependencies:`,
+              Array.from(subscription.dependencies),
+            );
+            Blac.log(
+              `[SubscriptionManager] Changed paths:`,
+              Array.from(changedPaths),
+            );
+            Blac.log(`[SubscriptionManager] Should notify:`, shouldNotify);
+          }
+        } else {
+          // No tracked dependencies, always notify
+          shouldNotify = true;
+        }
         newValue = newState;
         oldValue = oldState;
       }
@@ -189,6 +213,63 @@ export class SubscriptionManager<S = unknown> {
         (subscription.metadata.accessCount || 0) + 1;
       subscription.metadata.lastAccessTime = Date.now();
     }
+  }
+
+  /**
+   * Get the paths that changed between two states
+   */
+  private getChangedPaths(
+    oldState: any,
+    newState: any,
+    path = '',
+  ): Set<string> {
+    const changedPaths = new Set<string>();
+
+    if (oldState === newState) return changedPaths;
+
+    // Handle primitives
+    if (
+      typeof oldState !== 'object' ||
+      typeof newState !== 'object' ||
+      oldState === null ||
+      newState === null
+    ) {
+      if (path) changedPaths.add(path);
+      return changedPaths;
+    }
+
+    // Get all keys from both objects
+    const allKeys = new Set([
+      ...Object.keys(oldState),
+      ...Object.keys(newState),
+    ]);
+
+    for (const key of allKeys) {
+      const fullPath = path ? `${path}.${key}` : key;
+      const oldValue = oldState[key];
+      const newValue = newState[key];
+
+      if (oldValue !== newValue) {
+        changedPaths.add(fullPath);
+
+        // For nested objects, get all nested changed paths
+        if (
+          typeof oldValue === 'object' &&
+          typeof newValue === 'object' &&
+          oldValue !== null &&
+          newValue !== null
+        ) {
+          const nestedChanges = this.getChangedPaths(
+            oldValue,
+            newValue,
+            fullPath,
+          );
+          nestedChanges.forEach((p) => changedPaths.add(p));
+        }
+      }
+    }
+
+    return changedPaths;
   }
 
   /**

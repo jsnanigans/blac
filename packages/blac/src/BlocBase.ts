@@ -453,4 +453,41 @@ export abstract class BlocBase<S> {
       this._scheduleDisposal();
     }
   }
+
+  /**
+   * Cancel disposal if bloc is in disposal_requested state
+   */
+  _cancelDisposalIfRequested(): void {
+    Blac.log(
+      `[${this._name}:${this._id}] _cancelDisposalIfRequested called. Current state: ${this._disposalState}`,
+    );
+
+    if (this._disposalState === BlocLifecycleState.DISPOSAL_REQUESTED) {
+      // Cancel disposal timer
+      if (this._disposalTimer) {
+        clearTimeout(this._disposalTimer as NodeJS.Timeout);
+        this._disposalTimer = undefined;
+      }
+
+      // Transition back to active state
+      const result = this._atomicStateTransition(
+        BlocLifecycleState.DISPOSAL_REQUESTED,
+        BlocLifecycleState.ACTIVE,
+      );
+
+      if (result.success) {
+        Blac.log(
+          `[${this._name}:${this._id}] Disposal cancelled - new subscription added`,
+        );
+      } else {
+        Blac.warn(
+          `[${this._name}:${this._id}] Failed to cancel disposal. Current state: ${this._disposalState}`,
+        );
+      }
+    } else if (this._disposalState === BlocLifecycleState.DISPOSED) {
+      Blac.error(
+        `[${this._name}:${this._id}] Cannot cancel disposal - bloc is already disposed`,
+      );
+    }
+  }
 }

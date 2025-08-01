@@ -392,6 +392,12 @@ export class Blac {
 
     const key = this.createBlocInstanceMapKey(blocClass.name, id);
     const found = this.blocInstanceMap.get(key) as InstanceType<B> | undefined;
+
+    // Don't return disposed blocs
+    if (found && (found as any).isDisposed) {
+      return undefined;
+    }
+
     return found;
   }
 
@@ -476,7 +482,7 @@ export class Blac {
       return undefined;
     }
     // Find the specific bloc by ID within the isolated array
-    const found = blocs.find((b) => b._id === id) as
+    const found = blocs.find((b) => b._id === id && !(b as any).isDisposed) as
       | InstanceType<B>
       | undefined;
     return found;

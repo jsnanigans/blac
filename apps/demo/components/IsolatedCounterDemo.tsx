@@ -15,7 +15,7 @@ const IsolatedCounterDemo: React.FC<IsolatedCounterDemoProps> = ({
   // Each instance of this component will get its own IsolatedCounterCubit instance
   // because IsolatedCounterCubit has `static isolated = true;`
   const [state, cubit] = useBloc(IsolatedCounterCubit, {
-    props: { initialCount },
+    staticProps: { initialCount },
     // No need to pass 'id' for isolation if `static isolated = true` is set on the Cubit.
     // If we were using the non-static `CounterCubit` and wanted isolation per component instance,
     // we would need a unique ID here, often derived from React.useId().

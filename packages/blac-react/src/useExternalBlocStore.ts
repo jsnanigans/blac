@@ -61,7 +61,7 @@ export default function useExternalBlocStore<
       ) as InstanceType<B>;
       const uniqueId =
         options?.id || `${blocConstructor.name}_${generateUUID()}`;
-      newBloc._updateId(uniqueId);
+      newBloc._id = uniqueId;
       blac.activateBloc(newBloc);
       return newBloc;
     }
@@ -114,9 +114,13 @@ export default function useExternalBlocStore<
           }
         };
 
-        const unsubscribe = currentInstance._observer.subscribe({
-          id: ridRef.current,
-          fn: safeListener,
+        // Store the previous state for the listener
+        let previousState = currentInstance.state;
+
+        const unsubscribe = currentInstance.subscribe((state) => {
+          const oldState = previousState;
+          previousState = state;
+          safeListener(state, oldState);
         });
         return unsubscribe;
       },

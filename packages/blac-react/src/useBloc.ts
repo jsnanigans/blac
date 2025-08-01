@@ -68,7 +68,7 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
 
   // Reset tracking at the start of each render to ensure we only track
   // properties accessed during the current render
-  adapter.resetConsumerTracking();
+  adapter.resetTracking();
 
   // Update adapter options when they change (except instanceId/staticProps which recreate the adapter)
   const optionsChangeCount = useRef(0);
@@ -144,21 +144,17 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
   const stateMemoCount = useRef(0);
   const finalState = useMemo(() => {
     stateMemoCount.current++;
-    const proxyState = adapter.getProxyState(rawState);
+    // Always return the proxy - it will handle whether to actually proxy or not
+    const proxyState = adapter.getStateProxy();
     return proxyState;
-  }, [rawState]);
+  }, [rawState, adapter]);
 
   const blocMemoCount = useRef(0);
   const finalBloc = useMemo(() => {
     blocMemoCount.current++;
-    const proxyBloc = adapter.getProxyBlocInstance();
+    const proxyBloc = adapter.getBlocProxy();
     return proxyBloc;
   }, [adapter]);
-
-  // Mark consumer as rendered after each render
-  useEffect(() => {
-    adapter.updateLastNotified(componentRef.current);
-  });
 
   // Log final hook return
   return [finalState, finalBloc];
