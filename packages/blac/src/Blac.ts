@@ -507,10 +507,10 @@ export class Blac {
     const { constructorParams, instanceRef } = options;
     const newBloc = new blocClass(constructorParams) as InstanceType<B>;
     newBloc._instanceRef = instanceRef;
-    newBloc._updateId(id);
+    newBloc._id = id;
 
     // Set up disposal handler to break circular dependency
-    newBloc._setDisposalHandler((bloc) => this.disposeBloc(bloc));
+    newBloc.setDisposalHandler((bloc) => this.disposeBloc(bloc));
 
     if (newBloc.isIsolated) {
       this.registerIsolatedBlocInstance(newBloc);
@@ -518,8 +518,7 @@ export class Blac {
       this.registerBlocInstance(newBloc);
     }
 
-    // Activate bloc plugins
-    newBloc._activatePlugins();
+    // Plugins are activated in constructor
 
     // Notify system plugins of bloc creation
     this.plugins.notifyBlocCreated(newBloc);

@@ -3,7 +3,6 @@ import { BlocBase } from '../BlocBase';
 import { BlocConstructor, BlocState } from '../types';
 import { generateUUID } from '../utils/uuid';
 import { generateInstanceIdFromProps } from '../utils/generateInstanceId';
-import { ConsumerTracker, DependencyArray } from './ConsumerTracker';
 import { ProxyFactory } from './ProxyFactory';
 
 export interface AdapterOptions<B extends BlocBase<any>> {
@@ -19,20 +18,22 @@ export interface AdapterOptions<B extends BlocBase<any>> {
  * It manages dependency tracking, lifecycle hooks, and proxy creation.
  */
 export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
-  public readonly id = `consumer-${generateUUID()}`;
+  public readonly id = `adapter-${generateUUID()}`;
   public readonly blocConstructor: B;
   public readonly componentRef: { current: object } = { current: {} };
   public blocInstance: InstanceType<B>;
 
-  // Core components
-  private consumerTracker: ConsumerTracker;
-
   unmountTime: number = 0;
   mountTime: number = 0;
+
+  // Subscription management
+  private subscriptionId?: string;
+  private unsubscribe?: () => void;
 
   // Dependency tracking
   private dependencyValues?: unknown[];
   private isUsingDependencies: boolean = false;
+  private trackedPaths = new Set<string>();
 
   // Lifecycle state
   private hasMounted = false;
@@ -49,12 +50,8 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
     this.componentRef = instanceProps.componentRef;
     this.isUsingDependencies = !!options?.dependencies;
 
-    // Initialize consumer tracker
-    this.consumerTracker = new ConsumerTracker();
-
-    // Initialize bloc instance and register consumer
+    // Initialize bloc instance
     this.blocInstance = this.updateBlocInstance();
-    this.consumerTracker.register(instanceProps.componentRef.current, this.id);
 
     // Initialize dependency values if using dependencies
     if (this.isUsingDependencies && options?.dependencies) {
@@ -68,55 +65,12 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
     path: string,
     value?: any,
   ): void {
-    this.consumerTracker.trackAccess(consumerRef, type, path, value);
-  }
-
-  getConsumerDependencies(consumerRef: object): DependencyArray | null {
-    return this.consumerTracker.getDependencies(consumerRef);
-  }
-
-  shouldNotifyConsumer(
-    consumerRef: object,
-    changedPaths: Set<string>,
-  ): boolean {
-    const consumerInfo = this.consumerTracker.getConsumerInfo(consumerRef);
-    if (!consumerInfo) {
-      return true; // If consumer not registered yet, notify by default
+    if (this.subscriptionId) {
+      const fullPath = type === 'class' ? `_class.${path}` : path;
+      this.trackedPaths.add(fullPath);
+      this.blocInstance.trackAccess(this.subscriptionId, fullPath, value);
     }
-
-    // First render - always notify to establish baseline
-    if (!consumerInfo.hasRendered) {
-      return true;
-    }
-
-    // Use built-in method from ConsumerTracker
-    return this.consumerTracker.shouldNotifyConsumer(consumerRef, changedPaths);
   }
-
-  updateLastNotified(consumerRef: object): void {
-    this.consumerTracker.updateLastNotified(consumerRef);
-    this.consumerTracker.setHasRendered(consumerRef, true);
-  }
-
-  resetConsumerTracking(): void {
-    this.consumerTracker.resetTracking(this.componentRef.current);
-  }
-
-  createStateProxy = <T extends object>(props: { target: T }): T => {
-    return ProxyFactory.createStateProxy({
-      target: props.target,
-      consumerRef: this.componentRef.current,
-      consumerTracker: this as any,
-    });
-  };
-
-  createClassProxy = <T extends object>(props: { target: T }): T => {
-    return ProxyFactory.createClassProxy({
-      target: props.target,
-      consumerRef: this.componentRef.current,
-      consumerTracker: this as any,
-    });
-  };
 
   updateBlocInstance(): InstanceType<B> {
     // Determine the instance ID
@@ -139,145 +93,141 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
   }
 
   createSubscription = (options: { onChange: () => void }) => {
-    const unsubscribe = this.blocInstance._observer.subscribe({
-      id: this.id,
-      fn: (newState: BlocState<InstanceType<B>>) => {
-        // Case 1: Manual dependencies provided
-        if (this.isUsingDependencies && this.options?.dependencies) {
-          const newValues = this.options.dependencies(this.blocInstance);
+    // If using manual dependencies, create a selector-based subscription
+    if (this.isUsingDependencies && this.options?.dependencies) {
+      this.unsubscribe = this.blocInstance.subscribeWithSelector(
+        (_state) => this.options!.dependencies!(this.blocInstance),
+        (newValues) => {
           const hasChanged = this.hasDependencyValuesChanged(
             this.dependencyValues,
-            newValues,
+            newValues as unknown[],
           );
 
-          if (!hasChanged) {
-            return; // Don't trigger re-render
+          if (hasChanged) {
+            this.dependencyValues = newValues as unknown[];
+            options.onChange();
           }
+        },
+      );
+    } else {
+      // Create a component subscription with weak reference
+      const weakRef = new WeakRef(this.componentRef.current);
+      this.unsubscribe = this.blocInstance.subscribeComponent(
+        weakRef,
+        options.onChange,
+      );
 
-          this.dependencyValues = newValues;
-        }
-        // Case 2: Proxy tracking disabled globally (and no manual dependencies)
-        else if (!Blac.config.proxyDependencyTracking) {
-          // Always trigger re-render when proxy tracking is disabled
-          options.onChange();
-          return;
-        }
-        // Case 3: Proxy tracking enabled (default behavior)
-        else {
-          // Check if any tracked values have changed (proxy-based tracking)
-          const consumerInfo = this.consumerTracker.getConsumerInfo(
-            this.componentRef.current,
-          );
-          if (consumerInfo && consumerInfo.hasRendered) {
-            // Only check dependencies if component has rendered at least once
-            const hasChanged = this.consumerTracker.hasValuesChanged(
-              this.componentRef.current,
-              newState,
-              this.blocInstance,
-            );
-
-            if (!hasChanged) {
-              return; // Don't trigger re-render
-            }
-          }
-        }
-
-        options.onChange();
-      },
-    });
-
-    return unsubscribe;
-  };
-
-  mount = (): void => {
-    // Re-run dependencies on mount to ensure fresh values
-    if (this.isUsingDependencies && this.options?.dependencies) {
-      this.dependencyValues = this.options.dependencies(this.blocInstance);
+      // Get the subscription ID for tracking
+      const subscriptions = (this.blocInstance._subscriptionManager as any)
+        .subscriptions as Map<string, any>;
+      this.subscriptionId = Array.from(subscriptions.keys()).pop();
     }
 
-    // Lifecycle management
-    this.mountCount++;
-    this.blocInstance._addConsumer(this.id, this.componentRef.current);
+    // Call onChange initially to establish baseline
+    if (this.hasMounted) {
+      options.onChange();
+    }
 
-    // Call onMount callback if provided and not already called
-    if (!this.hasMounted) {
-      this.hasMounted = true;
-      this.mountTime = Date.now();
-
-      if (this.options?.onMount) {
-        try {
-          this.options.onMount(this.blocInstance);
-        } catch (error) {
-          throw error;
-        }
+    return () => {
+      if (this.unsubscribe) {
+        this.unsubscribe();
+        this.unsubscribe = undefined;
+        this.subscriptionId = undefined;
       }
-    }
+    };
   };
 
-  unmount = (): void => {
-    this.unmountTime = Date.now();
-    this.consumerTracker.unregister(this.componentRef.current);
-    this.blocInstance._removeConsumer(this.id);
+  hasDependencyValuesChanged = (
+    oldValues: unknown[] | undefined,
+    newValues: unknown[],
+  ): boolean => {
+    if (!oldValues) return true;
+    if (oldValues.length !== newValues.length) return true;
 
-    // No ownership tracking needed anymore
-
-    // Call onUnmount callback
-    if (this.options?.onUnmount) {
-      try {
-        this.options.onUnmount(this.blocInstance);
-      } catch (error) {
-        // Don't re-throw on unmount to allow cleanup to continue
-      }
-    }
-  };
-
-  getProxyState = (
-    state: BlocState<InstanceType<B>>,
-  ): BlocState<InstanceType<B>> => {
-    // Return raw state if proxy tracking is disabled globally or using manual dependencies
-    if (this.isUsingDependencies || !Blac.config.proxyDependencyTracking) {
-      return state;
-    }
-
-    return ProxyFactory.getProxyState({
-      state,
-      consumerRef: this.componentRef.current,
-      consumerTracker: this as any,
-    });
-  };
-
-  getProxyBlocInstance = (): InstanceType<B> => {
-    // Return raw instance if proxy tracking is disabled globally or using manual dependencies
-    if (this.isUsingDependencies || !Blac.config.proxyDependencyTracking) {
-      return this.blocInstance;
-    }
-
-    return ProxyFactory.getProxyBlocInstance({
-      blocInstance: this.blocInstance,
-      consumerRef: this.componentRef.current,
-      consumerTracker: this as any,
-    });
-  };
-
-  // Expose calledOnMount for backward compatibility
-  get calledOnMount(): boolean {
-    return this.hasMounted;
-  }
-
-  private hasDependencyValuesChanged(
-    prev: unknown[] | undefined,
-    next: unknown[],
-  ): boolean {
-    if (!prev) return true; // First run, always trigger
-    if (prev.length !== next.length) return true;
-
-    // Use Object.is for comparison (handles NaN, +0/-0 correctly)
-    for (let i = 0; i < prev.length; i++) {
-      if (!Object.is(prev[i], next[i])) {
+    for (let i = 0; i < oldValues.length; i++) {
+      if (!Object.is(oldValues[i], newValues[i])) {
         return true;
       }
     }
 
     return false;
+  };
+
+  getStateProxy = (): BlocState<InstanceType<B>> => {
+    // If using manual dependencies, return raw state
+    if (this.isUsingDependencies) {
+      return this.blocInstance.state;
+    }
+
+    // Otherwise create proxy for automatic dependency tracking
+    return this.createStateProxy({ target: this.blocInstance.state });
+  };
+
+  getBlocProxy = (): InstanceType<B> => {
+    // If using manual dependencies, return raw bloc
+    if (this.isUsingDependencies) {
+      return this.blocInstance;
+    }
+
+    // Otherwise create proxy for automatic dependency tracking
+    return this.createClassProxy({ target: this.blocInstance });
+  };
+
+  createStateProxy = <T extends object>(props: { target: T }): T => {
+    return ProxyFactory.createStateProxy({
+      target: props.target,
+      consumerRef: this.componentRef.current,
+      consumerTracker: this as any,
+    });
+  };
+
+  createClassProxy = <T extends object>(props: { target: T }): T => {
+    return ProxyFactory.createClassProxy({
+      target: props.target,
+      consumerRef: this.componentRef.current,
+      consumerTracker: this as any,
+    });
+  };
+
+  // Lifecycle methods
+  mount = () => {
+    this.hasMounted = true;
+    this.mountCount++;
+    this.mountTime = Date.now();
+
+    // Call onMount hook
+    if (this.options?.onMount) {
+      this.options.onMount(this.blocInstance);
+    }
+
+    // Refresh dependencies if using manual tracking
+    if (this.isUsingDependencies && this.options?.dependencies) {
+      this.dependencyValues = this.options.dependencies(this.blocInstance);
+    }
+  };
+
+  unmount = () => {
+    this.unmountTime = Date.now();
+
+    // Cancel subscription
+    if (this.unsubscribe) {
+      this.unsubscribe();
+      this.unsubscribe = undefined;
+      this.subscriptionId = undefined;
+    }
+
+    // Call onUnmount hook
+    if (this.options?.onUnmount) {
+      try {
+        this.options.onUnmount(this.blocInstance);
+      } catch (error) {
+        console.error('Error in onUnmount hook:', error);
+      }
+    }
+  };
+
+  // Reset tracking for next render
+  resetTracking(): void {
+    this.trackedPaths.clear();
   }
 }

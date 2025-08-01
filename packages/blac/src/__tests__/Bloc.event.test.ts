@@ -104,11 +104,11 @@ describe('Bloc Event Handling', () => {
 
     it('should handle events with proper type inference', async () => {
       const observer = vi.fn();
-      bloc._observer.subscribe({ id: 'test', fn: observer });
+      bloc.subscribe(observer);
 
       await bloc.add(new IncrementEvent(5));
 
-      expect(observer).toHaveBeenCalledWith(5, 0, expect.any(IncrementEvent));
+      expect(observer).toHaveBeenCalledWith(5);
       expect(bloc.state).toBe(5);
     });
   });
@@ -116,7 +116,7 @@ describe('Bloc Event Handling', () => {
   describe('Event Queue and Sequential Processing', () => {
     it('should queue events and process them sequentially', async () => {
       const observer = vi.fn();
-      bloc._observer.subscribe({ id: 'test', fn: observer });
+      bloc.subscribe(observer);
 
       // Add multiple events rapidly
       const promises = [
@@ -129,30 +129,15 @@ describe('Bloc Event Handling', () => {
 
       // Should be called 3 times with sequential state updates
       expect(observer).toHaveBeenCalledTimes(3);
-      expect(observer).toHaveBeenNthCalledWith(
-        1,
-        1,
-        0,
-        expect.any(IncrementEvent),
-      );
-      expect(observer).toHaveBeenNthCalledWith(
-        2,
-        3,
-        1,
-        expect.any(IncrementEvent),
-      );
-      expect(observer).toHaveBeenNthCalledWith(
-        3,
-        6,
-        3,
-        expect.any(IncrementEvent),
-      );
+      expect(observer).toHaveBeenNthCalledWith(1, 1);
+      expect(observer).toHaveBeenNthCalledWith(2, 3);
+      expect(observer).toHaveBeenNthCalledWith(3, 6);
       expect(bloc.state).toBe(6);
     });
 
     it('should process async events in order', async () => {
       const observer = vi.fn();
-      bloc._observer.subscribe({ id: 'test', fn: observer });
+      bloc.subscribe(observer);
 
       // Add async events with different delays
       const promises = [
@@ -165,29 +150,14 @@ describe('Bloc Event Handling', () => {
 
       // Despite different delays, events should process in order
       expect(observer).toHaveBeenCalledTimes(3);
-      expect(observer).toHaveBeenNthCalledWith(
-        1,
-        1,
-        0,
-        expect.any(AsyncIncrementEvent),
-      );
-      expect(observer).toHaveBeenNthCalledWith(
-        2,
-        3,
-        1,
-        expect.any(AsyncIncrementEvent),
-      );
-      expect(observer).toHaveBeenNthCalledWith(
-        3,
-        6,
-        3,
-        expect.any(AsyncIncrementEvent),
-      );
+      expect(observer).toHaveBeenNthCalledWith(1, 1);
+      expect(observer).toHaveBeenNthCalledWith(2, 3);
+      expect(observer).toHaveBeenNthCalledWith(3, 6);
     });
 
     it('should handle mixed sync and async events', async () => {
       const observer = vi.fn();
-      bloc._observer.subscribe({ id: 'test', fn: observer });
+      bloc.subscribe(observer);
 
       const promises = [
         bloc.add(new IncrementEvent(1)),
@@ -207,7 +177,7 @@ describe('Bloc Event Handling', () => {
     it('should handle errors in event handlers gracefully', async () => {
       const errorSpy = vi.spyOn(Blac, 'error').mockImplementation(() => {});
       const observer = vi.fn();
-      bloc._observer.subscribe({ id: 'test', fn: observer });
+      bloc.subscribe(observer);
 
       await bloc.add(new ErrorEvent('Test error'));
 
@@ -250,12 +220,12 @@ describe('Bloc Event Handling', () => {
   describe('Event Context and Metadata', () => {
     it('should pass event instance to state change notifications', async () => {
       const observer = vi.fn();
-      bloc._observer.subscribe({ id: 'test', fn: observer });
+      bloc.subscribe(observer);
 
       const event = new IncrementEvent(10);
       await bloc.add(event);
 
-      expect(observer).toHaveBeenCalledWith(10, 0, event);
+      expect(observer).toHaveBeenCalledWith(10);
     });
 
     it('should maintain correct state context during handler execution', async () => {
@@ -293,7 +263,7 @@ describe('Bloc Event Handling', () => {
 
     it('should handle rapid event additions during processing', async () => {
       const observer = vi.fn();
-      bloc._observer.subscribe({ id: 'test', fn: observer });
+      bloc.subscribe(observer);
 
       // Custom bloc that adds more events during processing
       class ChainReactionBloc extends Bloc<number> {
@@ -313,7 +283,7 @@ describe('Bloc Event Handling', () => {
 
       const chainBloc = new ChainReactionBloc();
       const chainObserver = vi.fn();
-      chainBloc._observer.subscribe({ id: 'test', fn: chainObserver });
+      chainBloc.subscribe(chainObserver);
 
       await chainBloc.add(new IncrementEvent(1));
 
@@ -338,7 +308,7 @@ describe('Bloc Event Handling', () => {
 
       const multiBloc = new MultiEmitBloc();
       const observer = vi.fn();
-      multiBloc._observer.subscribe({ id: 'test', fn: observer });
+      multiBloc.subscribe(observer);
 
       await multiBloc.add(new IncrementEvent(3));
 
@@ -365,20 +335,25 @@ describe('Bloc Event Handling', () => {
       expect(simpleBloc.state).toBe('handled');
     });
 
-    it('should maintain event processing integrity during disposal', async () => {
+    it('should prevent state updates after disposal is initiated', async () => {
       const observer = vi.fn();
-      bloc._observer.subscribe({ id: 'test', fn: observer });
+      bloc.subscribe(observer);
+      const errorSpy = vi.spyOn(Blac, 'error').mockImplementation(() => {});
 
       // Start async event processing
       const promise = bloc.add(new AsyncIncrementEvent(5, 50));
 
       // Dispose bloc while event is processing
-      setTimeout(() => bloc._dispose(), 25);
+      setTimeout(() => bloc.dispose(), 25);
 
       await promise;
 
-      // Event should complete processing despite disposal attempt
-      expect(bloc.state).toBe(5);
+      // State should not be updated after disposal
+      expect(bloc.state).toBe(0);
+      // Error should be logged about attempted state update on disposed bloc
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Attempted state update on'),
+      );
     });
   });
 

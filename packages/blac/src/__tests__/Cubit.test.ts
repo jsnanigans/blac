@@ -69,11 +69,11 @@ describe('Cubit State Emissions', () => {
       const cubit = new CounterCubit();
       const observer = vi.fn();
 
-      cubit._observer.subscribe({ id: 'test', fn: observer });
+      cubit.subscribe(observer);
 
       cubit.increment();
 
-      expect(observer).toHaveBeenCalledWith(1, 0, undefined);
+      expect(observer).toHaveBeenCalledWith(1);
       expect(cubit.state).toBe(1);
     });
 
@@ -81,7 +81,7 @@ describe('Cubit State Emissions', () => {
       const cubit = new CounterCubit(5);
       const observer = vi.fn();
 
-      cubit._observer.subscribe({ id: 'test', fn: observer });
+      cubit.subscribe(observer);
 
       // Try to emit same value
       cubit.set(5);
@@ -94,7 +94,7 @@ describe('Cubit State Emissions', () => {
       const cubit = new CounterCubit(NaN);
       const observer = vi.fn();
 
-      cubit._observer.subscribe({ id: 'test', fn: observer });
+      cubit.subscribe(observer);
 
       // NaN === NaN is false, but Object.is(NaN, NaN) is true
       cubit.set(NaN);
@@ -106,28 +106,28 @@ describe('Cubit State Emissions', () => {
       const cubit = new CounterCubit(0);
       const observer = vi.fn();
 
-      cubit._observer.subscribe({ id: 'test', fn: observer });
+      cubit.subscribe(observer);
 
       // Object.is can distinguish +0 and -0
       cubit.set(-0);
 
-      expect(observer).toHaveBeenCalledWith(-0, 0, undefined);
+      expect(observer).toHaveBeenCalledWith(-0);
     });
 
     it('should emit multiple state changes sequentially', () => {
       const cubit = new CounterCubit();
       const observer = vi.fn();
 
-      cubit._observer.subscribe({ id: 'test', fn: observer });
+      cubit.subscribe(observer);
 
       cubit.increment();
       cubit.increment();
       cubit.decrement();
 
       expect(observer).toHaveBeenCalledTimes(3);
-      expect(observer).toHaveBeenNthCalledWith(1, 1, 0, undefined);
-      expect(observer).toHaveBeenNthCalledWith(2, 2, 1, undefined);
-      expect(observer).toHaveBeenNthCalledWith(3, 1, 2, undefined);
+      expect(observer).toHaveBeenNthCalledWith(1, 1);
+      expect(observer).toHaveBeenNthCalledWith(2, 2);
+      expect(observer).toHaveBeenNthCalledWith(3, 1);
       expect(cubit.state).toBe(1);
     });
   });
@@ -137,23 +137,15 @@ describe('Cubit State Emissions', () => {
       const cubit = new UserCubit();
       const observer = vi.fn();
 
-      cubit._observer.subscribe({ id: 'test', fn: observer });
+      cubit.subscribe(observer);
 
       cubit.updateName('Jane Doe');
 
-      expect(observer).toHaveBeenCalledWith(
-        {
-          name: 'Jane Doe',
-          age: 30,
-          email: 'john@example.com',
-        },
-        {
-          name: 'John Doe',
-          age: 30,
-          email: 'john@example.com',
-        },
-        undefined,
-      );
+      expect(observer).toHaveBeenCalledWith({
+        name: 'Jane Doe',
+        age: 30,
+        email: 'john@example.com',
+      });
       expect(cubit.state.name).toBe('Jane Doe');
       expect(cubit.state.age).toBe(30); // Unchanged
     });
@@ -162,7 +154,7 @@ describe('Cubit State Emissions', () => {
       const cubit = new UserCubit();
       const observer = vi.fn();
 
-      cubit._observer.subscribe({ id: 'test', fn: observer });
+      cubit.subscribe(observer);
 
       cubit.updateMultiple({ name: 'Jane Smith', age: 25 });
 
@@ -178,7 +170,7 @@ describe('Cubit State Emissions', () => {
       const cubit = new UserCubit();
       const observer = vi.fn();
 
-      cubit._observer.subscribe({ id: 'test', fn: observer });
+      cubit.subscribe(observer);
 
       // Patch with same values
       cubit.patch({ name: 'John Doe', age: 30 });
@@ -190,7 +182,7 @@ describe('Cubit State Emissions', () => {
       const cubit = new UserCubit();
       const observer = vi.fn();
 
-      cubit._observer.subscribe({ id: 'test', fn: observer });
+      cubit.subscribe(observer);
 
       // One value different
       cubit.patch({ name: 'John Doe', age: 31 });
@@ -203,7 +195,7 @@ describe('Cubit State Emissions', () => {
       const cubit = new UserCubit();
       const observer = vi.fn();
 
-      cubit._observer.subscribe({ id: 'test', fn: observer });
+      cubit.subscribe(observer);
 
       cubit.setPreferences('dark', true);
 
@@ -218,7 +210,7 @@ describe('Cubit State Emissions', () => {
       const cubit = new UserCubit();
       const observer = vi.fn();
 
-      cubit._observer.subscribe({ id: 'test', fn: observer });
+      cubit.subscribe(observer);
 
       // Force emit even with same values
       cubit.patch({ name: 'John Doe' }, true);
@@ -278,7 +270,7 @@ describe('Cubit State Emissions', () => {
       const cubit = new ArrayCubit();
       const observer = vi.fn();
 
-      cubit._observer.subscribe({ id: 'test', fn: observer });
+      cubit.subscribe(observer);
 
       // New array reference should trigger update
       cubit.add(4);
@@ -306,13 +298,13 @@ describe('Cubit State Emissions', () => {
       const cubit = new NullableCubit();
       const observer = vi.fn();
 
-      cubit._observer.subscribe({ id: 'test', fn: observer });
+      cubit.subscribe(observer);
 
       // null and undefined are different according to Object.is
       expect(Object.is(null, undefined)).toBe(false);
 
       cubit.setNull();
-      expect(observer).toHaveBeenCalledWith(null, 'initial', undefined);
+      expect(observer).toHaveBeenCalledWith(null);
       expect(cubit.state).toBe(null);
 
       observer.mockClear();
@@ -328,7 +320,7 @@ describe('Cubit State Emissions', () => {
 
       observer.mockClear();
       cubit.setString('value');
-      expect(observer).toHaveBeenCalledWith('value', null, undefined);
+      expect(observer).toHaveBeenCalledWith('value');
       expect(cubit.state).toBe('value');
     });
 
@@ -354,7 +346,7 @@ describe('Cubit State Emissions', () => {
       const cubit = new ComplexCubit();
       const observer = vi.fn();
 
-      cubit._observer.subscribe({ id: 'test', fn: observer });
+      cubit.subscribe(observer);
 
       // Different object reference with same values
       cubit.updateData({ id: 1, values: [1, 2, 3] });
@@ -369,19 +361,18 @@ describe('Cubit State Emissions', () => {
       const cubit = new CounterCubit();
 
       // Should have BlocBase properties and methods
-      expect(cubit._state).toBe(0);
-      expect(cubit._observer).toBeDefined();
-      expect(cubit._consumers).toBeDefined();
-      expect(typeof cubit._addConsumer).toBe('function');
+      expect(cubit.state).toBe(0);
+      expect(cubit._subscriptionManager).toBeDefined();
+      expect(typeof cubit.subscribe).toBe('function');
     });
 
     it('should work with state batching', () => {
       const cubit = new CounterCubit();
       const observer = vi.fn();
 
-      cubit._observer.subscribe({ id: 'test', fn: observer });
+      cubit.subscribe(observer);
 
-      cubit.batch(() => {
+      cubit._batchUpdates(() => {
         cubit.increment(); // 0 -> 1
         cubit.increment(); // 1 -> 2
         cubit.increment(); // 2 -> 3
@@ -390,7 +381,7 @@ describe('Cubit State Emissions', () => {
       // Should only notify once with final state
       // The oldState in the batch notification is from the last update (2 -> 3)
       expect(observer).toHaveBeenCalledTimes(1);
-      expect(observer).toHaveBeenCalledWith(3, 2, undefined);
+      expect(observer).toHaveBeenCalledWith(3);
       expect(cubit.state).toBe(3);
     });
 
@@ -398,12 +389,11 @@ describe('Cubit State Emissions', () => {
       const cubit = new CounterCubit();
 
       cubit.increment();
-      expect(cubit._oldState).toBe(0);
-      expect(cubit._state).toBe(1);
+      // Old state tracking was removed in new model
+      expect(cubit.state).toBe(1);
 
       cubit.increment();
-      expect(cubit._oldState).toBe(1);
-      expect(cubit._state).toBe(2);
+      expect(cubit.state).toBe(2);
     });
   });
 
@@ -412,7 +402,7 @@ describe('Cubit State Emissions', () => {
       const cubit = new CounterCubit();
       const observer = vi.fn();
 
-      cubit._observer.subscribe({ id: 'test', fn: observer });
+      cubit.subscribe(observer);
 
       // Rapid emissions
       for (let i = 0; i < 1000; i++) {
@@ -422,16 +412,15 @@ describe('Cubit State Emissions', () => {
       expect(cubit.state).toBe(1000);
       expect(observer).toHaveBeenCalledTimes(1000);
 
-      // Check no accumulation of state
-      expect(cubit._state).toBe(1000);
-      expect(cubit._oldState).toBe(999);
+      // Check final state
+      expect(cubit.state).toBe(1000);
     });
 
     it('should handle concurrent patch operations', () => {
       const cubit = new UserCubit();
       const observer = vi.fn();
 
-      cubit._observer.subscribe({ id: 'test', fn: observer });
+      cubit.subscribe(observer);
 
       // Multiple patches in quick succession
       cubit.patch({ name: 'Name1' });

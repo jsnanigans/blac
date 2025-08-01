@@ -1,8 +1,8 @@
-import { BlacObservable } from './BlacObserver';
 import { generateUUID } from './utils/uuid';
 import { BlocPlugin, ErrorContext } from './plugins/types';
 import { BlocPluginRegistry } from './plugins/BlocPluginRegistry';
 import { Blac } from './Blac';
+import { SubscriptionManager } from './subscription/SubscriptionManager';
 
 export type BlocInstanceId = string | number | undefined;
 type DependencySelector<S> = (
@@ -13,7 +13,6 @@ type DependencySelector<S> = (
 
 /**
  * Enum representing the lifecycle states of a Bloc instance
- * Used for atomic state transitions to prevent race conditions
  */
 export enum BlocLifecycleState {
   ACTIVE = 'active',
@@ -22,16 +21,12 @@ export enum BlocLifecycleState {
   DISPOSED = 'disposed',
 }
 
-/**
- * Result of an atomic state transition operation
- */
 export interface StateTransitionResult {
   success: boolean;
   currentState: BlocLifecycleState;
   previousState: BlocLifecycleState;
 }
 
-// Define an interface for the static properties expected on a Bloc/Cubit constructor
 interface BlocStaticProperties {
   isolated: boolean;
   keepAlive: boolean;
@@ -39,173 +34,61 @@ interface BlocStaticProperties {
 }
 
 /**
- * Base class for both Blocs and Cubits that provides core state management functionality.
- * Handles state transitions, observer notifications, lifecycle management, and addon integration.
- *
- * @abstract This class should be extended, not instantiated directly
- * @template S The type of state managed by this Bloc
+ * Base class for both Blocs and Cubits using unified subscription model.
  */
 export abstract class BlocBase<S> {
   public uid = generateUUID();
-  /**
-   * When true, every consumer will receive its own unique instance of this Bloc.
-   * Use this when state should not be shared between components.
-   * @default false
-   */
+
   static isolated = false;
   get isIsolated() {
     return this._isolated;
   }
 
-  /**
-   * When true, the Bloc instance persists even when there are no active consumers.
-   * Useful for maintaining state between component unmount/remount cycles.
-   * @default false
-   */
   static keepAlive = false;
   get isKeepAlive() {
     return this._keepAlive;
   }
 
-  /**
-   * Defines how dependencies are selected from the state for efficient updates.
-   * When provided, observers will only be notified when selected dependencies change.
-   */
   defaultDependencySelector: DependencySelector<S> | undefined;
 
-  /**
-   * @internal
-   * Indicates if this specific Bloc instance is isolated from others of the same type.
-   */
   public _isolated = false;
-
-  /**
-   * @internal
-   * Observable responsible for managing state listeners and notifying consumers.
-   */
-  public _observer: BlacObservable<S>;
-
-  /**
-   * The unique identifier for this Bloc instance.
-   * Defaults to the class name, but can be customized.
-   */
   public _id: BlocInstanceId;
-
-  /**
-   * @internal
-   * Reference string used internally for tracking and debugging.
-   */
   public _instanceRef?: string;
+  public _name: string;
 
   /**
-   * @internal
-   * Indicates if this specific Bloc instance should be kept alive when no consumers are present.
+   * Unified subscription manager for all state notifications
    */
-  public _keepAlive = false;
+  public _subscriptionManager: SubscriptionManager<S>;
+
+  _state: S;
+  private _disposalState = BlocLifecycleState.ACTIVE;
+  private _disposalLock = false;
+  _keepAlive = false;
+  public lastUpdate?: number;
+
+  _plugins = new BlocPluginRegistry<S, any>();
+
+  onDispose?: () => void;
+
+  private _disposalTimer?: NodeJS.Timeout | number;
+  private _disposalHandler?: (bloc: BlocBase<unknown>) => void;
 
   /**
-   * @readonly
-   * Timestamp when this Bloc instance was created, useful for debugging and performance tracking.
-   */
-  public readonly _createdAt = Date.now();
-
-  /**
-   * @internal
-   * Atomic disposal state to prevent race conditions
-   */
-  private _disposalState: BlocLifecycleState = BlocLifecycleState.ACTIVE;
-
-  /**
-   * @internal
-   * Timestamp when disposal was requested (for React Strict Mode grace period)
-   */
-  private _disposalRequestTime: number = 0;
-
-  /**
-   * @internal
-   * The current state of the Bloc.
-   */
-  public _state: S;
-
-  /**
-   * @internal
-   * The previous state of the Bloc, maintained for comparison and history.
-   */
-  public _oldState: S | undefined;
-
-  /**
-   * @internal
-   * Flag to prevent batching race conditions
-   */
-  private _batchingLock = false;
-
-  /**
-   * @internal
-   * Pending batched updates
-   */
-  private _pendingUpdates: Array<{
-    newState: S;
-    oldState: S;
-    action?: unknown;
-  }> = [];
-
-  /**
-   * @internal
-   * Map of consumer IDs to their WeakRef objects for proper cleanup
-   */
-  private _consumerRefs = new Map<string, WeakRef<object>>();
-
-  /**
-   * Plugin registry for this bloc instance
-   */
-  protected _plugins: BlocPluginRegistry<S, any>;
-
-  /**
-   * @internal
-   * Validates that all consumer references are still alive
-   * Removes dead consumers automatically
-   */
-  _validateConsumers = (): void => {
-    const deadConsumers: string[] = [];
-
-    for (const [consumerId, weakRef] of this._consumerRefs) {
-      if (weakRef.deref() === undefined) {
-        deadConsumers.push(consumerId);
-      }
-    }
-
-    // Clean up dead consumers
-    for (const consumerId of deadConsumers) {
-      this._consumers.delete(consumerId);
-      this._consumerRefs.delete(consumerId);
-    }
-
-    // Schedule disposal if no live consumers remain
-    if (
-      this._consumers.size === 0 &&
-      !this._keepAlive &&
-      this._disposalState === BlocLifecycleState.ACTIVE
-    ) {
-      this._scheduleDisposal();
-    }
-  };
-
-  /**
-   * Creates a new BlocBase instance with the given initial state.
-   * Sets up the observer, registers with the Blac manager, and initializes addons.
-   *
-   * @param initialState The initial state value for this Bloc
+   * Creates a new BlocBase instance with unified subscription management
    */
   constructor(initialState: S) {
     this._state = initialState;
-    this._observer = new BlacObservable(this);
     this._id = this.constructor.name;
+    this._name = this.constructor.name;
 
-    // Access static properties safely with proper type checking
+    // Initialize unified subscription system
+    this._subscriptionManager = new SubscriptionManager(this as any);
+
+    // Access static properties
     const Constructor = this.constructor as typeof BlocBase &
       BlocStaticProperties;
 
-    // Validate that the static properties exist and are boolean
     this._keepAlive =
       typeof Constructor.keepAlive === 'boolean'
         ? Constructor.keepAlive
@@ -219,467 +102,355 @@ export abstract class BlocBase<S> {
     // Register static plugins
     if (Constructor.plugins && Array.isArray(Constructor.plugins)) {
       for (const plugin of Constructor.plugins) {
-        this.addPlugin(plugin);
+        this._plugins.add(plugin);
       }
     }
+
+    // Attach all plugins
+    this._plugins.attach(this);
   }
 
   /**
-   * Returns the current state of the Bloc.
-   * Use this getter to access the state in a read-only manner.
-   * Returns the state even during transitional lifecycle states for React compatibility.
+   * Returns the current state
    */
   get state(): S {
-    // Allow state access during all states except DISPOSED for React compatibility
     if (this._disposalState === BlocLifecycleState.DISPOSED) {
-      // Return the last known state for disposed blocs to prevent crashes
-      return this._state;
+      return this._state; // Return last known state for disposed blocs
     }
     return this._state;
   }
 
   /**
-   * Returns whether this Bloc instance has been disposed.
-   * @returns true if the bloc is in DISPOSED state
+   * Subscribe to all state changes
+   */
+  subscribe(callback: (state: S) => void): () => void {
+    return this._subscriptionManager.subscribe({
+      type: 'observer',
+      notify: (state) => callback(state as S),
+    });
+  }
+
+  /**
+   * Subscribe with a selector for optimized updates
+   */
+  subscribeWithSelector<T>(
+    selector: (state: S) => T,
+    callback: (value: T) => void,
+    equalityFn?: (a: T, b: T) => boolean,
+  ): () => void {
+    return this._subscriptionManager.subscribe({
+      type: 'consumer',
+      selector: selector as any,
+      equalityFn: equalityFn as any,
+      notify: (value) => callback(value as T),
+    });
+  }
+
+  /**
+   * Subscribe with React component reference for automatic cleanup
+   */
+  subscribeComponent(
+    componentRef: WeakRef<object>,
+    callback: () => void,
+  ): () => void {
+    return this._subscriptionManager.subscribe({
+      type: 'consumer',
+      weakRef: componentRef,
+      notify: callback,
+    });
+  }
+
+  /**
+   * Get current subscription count
+   */
+  get subscriptionCount(): number {
+    return this._subscriptionManager.size;
+  }
+
+  /**
+   * Track property access for a subscription
+   */
+  trackAccess(subscriptionId: string, path: string, value?: unknown): void {
+    this._subscriptionManager.trackAccess(subscriptionId, path, value);
+  }
+
+  /**
+   * Emit a new state
+   */
+  protected emit(newState: S, action?: unknown): void {
+    this._pushState(newState, this._state, action);
+  }
+
+  /**
+   * Internal state push method used by Bloc
+   */
+  _pushState(newState: S, oldState: S, action?: unknown): void {
+    // Validate state emission conditions
+    if (this._disposalState !== BlocLifecycleState.ACTIVE) {
+      Blac.error(
+        `[${this._name}:${this._id}] Attempted state update on ${this._disposalState} bloc. Update ignored.`,
+      );
+      return;
+    }
+
+    if (newState === undefined) {
+      return; // Silent failure for undefined states
+    }
+
+    this._state = newState;
+
+    // Apply plugins
+    let transformedState = newState;
+    transformedState = this._plugins.transformState(oldState, transformedState);
+    this._state = transformedState;
+
+    // Notify plugins of state change
+    this._plugins.notifyStateChange(oldState, transformedState);
+
+    // Notify system plugins of state change
+    Blac.instance.plugins.notifyStateChanged(
+      this as any,
+      oldState,
+      transformedState,
+    );
+
+    // Handle batching
+    if (this._isBatching) {
+      this._pendingUpdates.push({
+        newState: transformedState,
+        oldState,
+        action,
+      });
+      return;
+    }
+
+    // Notify all subscriptions
+    this._subscriptionManager.notify(transformedState, oldState, action);
+    this.lastUpdate = Date.now();
+  }
+
+  /**
+   * Internal state update batching
+   */
+  private _pendingUpdates: Array<{
+    newState: S;
+    oldState: S;
+    action?: unknown;
+  }> = [];
+  private _isBatching = false;
+
+  _batchUpdates(callback: () => void): void {
+    if (this._isBatching) {
+      callback();
+      return;
+    }
+
+    this._isBatching = true;
+    this._pendingUpdates = [];
+
+    try {
+      callback();
+
+      if (this._pendingUpdates.length > 0) {
+        const finalUpdate =
+          this._pendingUpdates[this._pendingUpdates.length - 1];
+        this._subscriptionManager.notify(
+          finalUpdate.newState,
+          finalUpdate.oldState,
+          finalUpdate.action,
+        );
+      }
+    } finally {
+      this._isBatching = false;
+      this._pendingUpdates = [];
+    }
+  }
+
+  /**
+   * Add a plugin
+   */
+  addPlugin(plugin: BlocPlugin<S, any>): void {
+    this._plugins.add(plugin);
+
+    // If plugins are already attached (bloc is active), attach the new plugin
+    if ((this._plugins as any).attached && plugin.onAttach) {
+      try {
+        plugin.onAttach(this);
+      } catch (error) {
+        console.error(`Plugin '${plugin.name}' error in onAttach:`, error);
+      }
+    }
+  }
+
+  /**
+   * Remove a plugin
+   */
+  removePlugin(plugin: BlocPlugin<S, any>): void {
+    this._plugins.remove(plugin.id);
+  }
+
+  /**
+   * Get all plugins
+   */
+  get plugins(): ReadonlyArray<BlocPlugin<S, any>> {
+    return this._plugins.getAll();
+  }
+
+  /**
+   * Disposal management
    */
   get isDisposed(): boolean {
     return this._disposalState === BlocLifecycleState.DISPOSED;
   }
 
   /**
-   * @internal
-   * Returns the name of the Bloc class for identification and debugging.
-   */
-  get _name() {
-    return this.constructor.name;
-  }
-
-  /**
-   * @internal
-   * Updates the Bloc instance's ID to a new value.
-   * Only updates if the new ID is defined and different from the current one.
-   *
-   * @param id The new ID to assign to this Bloc instance
-   */
-  _updateId = (id?: BlocInstanceId) => {
-    const originalId = this._id;
-    if (!id || id === originalId) return;
-    this._id = id;
-  };
-
-  /**
-   * @internal
-   * Performs atomic state transition using compare-and-swap semantics
-   * @param expectedState The expected current state
-   * @param newState The desired new state
-   * @returns Result indicating success/failure and state information
+   * Atomic state transition for disposal
    */
   _atomicStateTransition(
     expectedState: BlocLifecycleState,
     newState: BlocLifecycleState,
   ): StateTransitionResult {
-    if (this._disposalState === expectedState) {
+    if (this._disposalLock) {
+      return {
+        success: false,
+        currentState: this._disposalState,
+        previousState: this._disposalState,
+      };
+    }
+
+    this._disposalLock = true;
+    try {
+      if (this._disposalState !== expectedState) {
+        return {
+          success: false,
+          currentState: this._disposalState,
+          previousState: this._disposalState,
+        };
+      }
+
       const previousState = this._disposalState;
       this._disposalState = newState;
-
-      // Log state transition for debugging
-      if ((globalThis as any).Blac?.enableLog) {
-        (globalThis as any).Blac?.log(
-          `[${this._name}:${this._id}] State transition: ${previousState} -> ${newState} (SUCCESS)`,
-        );
-      }
 
       return {
         success: true,
         currentState: newState,
         previousState,
       };
+    } finally {
+      this._disposalLock = false;
     }
-
-    // Log failed transition attempt
-    if ((globalThis as any).Blac?.enableLog) {
-      (globalThis as any).Blac?.log(
-        `[${this._name}:${this._id}] State transition failed: expected ${expectedState}, current ${this._disposalState}`,
-      );
-    }
-
-    return {
-      success: false,
-      currentState: this._disposalState,
-      previousState: expectedState,
-    };
   }
 
   /**
-   * @internal
-   * Cleans up resources and removes this Bloc from the system.
-   * Notifies the Blac manager and clears all observers.
+   * Dispose the bloc and clean up resources
    */
-  _dispose(): boolean {
-    // Step 1: Attempt atomic transition to DISPOSING state from either ACTIVE or DISPOSAL_REQUESTED
-    let transitionResult = this._atomicStateTransition(
+  async dispose(): Promise<void> {
+    const transitionResult = this._atomicStateTransition(
       BlocLifecycleState.ACTIVE,
       BlocLifecycleState.DISPOSING,
     );
 
-    // If that failed, try from DISPOSAL_REQUESTED state
     if (!transitionResult.success) {
-      transitionResult = this._atomicStateTransition(
-        BlocLifecycleState.DISPOSAL_REQUESTED,
-        BlocLifecycleState.DISPOSING,
-      );
-    }
-
-    if (!transitionResult.success) {
-      // Already disposing or disposed - idempotent operation
-      return false;
+      if (this._disposalState === BlocLifecycleState.DISPOSAL_REQUESTED) {
+        this._atomicStateTransition(
+          BlocLifecycleState.DISPOSAL_REQUESTED,
+          BlocLifecycleState.DISPOSING,
+        );
+      } else {
+        return;
+      }
     }
 
     try {
-      // Step 2: Perform cleanup operations
-      this._consumers.clear();
-      this._consumerRefs.clear();
-      this._observer.clear();
+      // Clear subscriptions
+      this._subscriptionManager.clear();
 
-      // Call user-defined disposal hook
-      this.onDispose?.();
+      // Call disposal hook
+      if (this.onDispose) {
+        this.onDispose();
+      }
 
-      // Step 3: Final state transition to DISPOSED
-      const finalResult = this._atomicStateTransition(
+      // Notify plugins of disposal
+      for (const plugin of this._plugins.getAll()) {
+        try {
+          plugin.onDispose?.(this as any);
+        } catch (error) {
+          console.error('Plugin disposal error:', error);
+        }
+      }
+
+      // Call disposal handler
+      if (this._disposalHandler) {
+        this._disposalHandler(this as any);
+      }
+    } finally {
+      this._atomicStateTransition(
         BlocLifecycleState.DISPOSING,
         BlocLifecycleState.DISPOSED,
       );
-
-      return finalResult.success;
-    } catch (error) {
-      // Recovery: Reset state on cleanup failure
-      this._disposalState = BlocLifecycleState.ACTIVE;
-      throw error;
     }
   }
 
   /**
-   * @internal
-   * Optional function to be called when the Bloc is disposed.
+   * Schedule disposal when no subscriptions remain
    */
-  onDispose?: () => void;
-
-  /**
-   * @internal
-   * Set of consumer IDs currently listening to this Bloc's state changes.
-   */
-  _consumers = new Set<string>();
-
-  /**
-   * @internal
-   * Registers a new consumer to this Bloc instance.
-   * Notifies the Blac manager that a consumer has been added.
-   *
-   * @param consumerId The unique ID of the consumer being added
-   * @param consumerRef Optional reference to the consumer object for cleanup validation
-   */
-  _addConsumer = (consumerId: string, consumerRef?: object): boolean => {
-    // Atomic state validation - only allow consumer addition in ACTIVE state
-    if (this._disposalState !== BlocLifecycleState.ACTIVE) {
-      return false; // Clear failure indication
+  _scheduleDisposal(): void {
+    // Cancel any existing disposal timer
+    if (this._disposalTimer) {
+      clearTimeout(this._disposalTimer as NodeJS.Timeout);
+      this._disposalTimer = undefined;
     }
 
-    // Prevent duplicate consumers
-    if (this._consumers.has(consumerId)) return true;
+    const shouldDispose =
+      this._subscriptionManager.size === 0 && !this._keepAlive;
 
-    // Safe consumer addition
-    this._consumers.add(consumerId);
-
-    // Store WeakRef for proper memory management
-    if (consumerRef) {
-      this._consumerRefs.set(consumerId, new WeakRef(consumerRef));
+    if (!shouldDispose) {
+      return;
     }
 
-    Blac.log(
-      `[${this._name}:${this._id}] Consumer added. Total consumers: ${this._consumers.size}`,
-    );
-
-    return true;
-  };
-
-  /**
-   * @internal
-   * Unregisters a consumer from this Bloc instance.
-   * Notifies the Blac manager that a consumer has been removed.
-   *
-   * @param consumerId The unique ID of the consumer being removed
-   */
-  _removeConsumer = (consumerId: string) => {
-    if (!this._consumers.has(consumerId)) return;
-
-    this._consumers.delete(consumerId);
-    this._consumerRefs.delete(consumerId);
-
-    Blac.log(
-      `[${this._name}:${this._id}] Consumer removed. Remaining consumers: ${this._consumers.size}, keepAlive: ${this._keepAlive}`,
-    );
-
-    // If no consumers remain and not keep-alive, schedule disposal
-    if (
-      this._consumers.size === 0 &&
-      !this._keepAlive &&
-      this._disposalState === BlocLifecycleState.ACTIVE
-    ) {
-      Blac.log(
-        `[${this._name}:${this._id}] No consumers left and not keep-alive. Scheduling disposal.`,
-      );
-      this._scheduleDisposal();
-    }
-  };
-
-  /**
-   * @internal
-   * Handler function for disposal (can be set by Blac manager)
-   */
-  private _disposalHandler?: (bloc: BlocBase<unknown>) => void;
-
-  /**
-   * @internal
-   * Sets the disposal handler for this bloc
-   */
-  _setDisposalHandler(handler: (bloc: BlocBase<unknown>) => void) {
-    this._disposalHandler = handler;
-  }
-
-  /**
-   * @internal
-   * Schedules disposal of this bloc instance if it has no consumers
-   * Uses atomic state transitions to prevent race conditions
-   */
-  private _scheduleDisposal(): void {
-    // Step 1: Atomic transition to DISPOSAL_REQUESTED
-    const requestResult = this._atomicStateTransition(
+    const transitionResult = this._atomicStateTransition(
       BlocLifecycleState.ACTIVE,
       BlocLifecycleState.DISPOSAL_REQUESTED,
     );
 
-    if (!requestResult.success) {
-      // Already requested, disposing, or disposed
+    if (!transitionResult.success) {
       return;
     }
 
-    // Step 2: Verify disposal conditions under atomic protection
-    const shouldDispose = this._consumers.size === 0 && !this._keepAlive;
-
-    if (!shouldDispose) {
-      // Conditions no longer met, revert to active
-      this._atomicStateTransition(
-        BlocLifecycleState.DISPOSAL_REQUESTED,
-        BlocLifecycleState.ACTIVE,
-      );
-      return;
-    }
-
-    // Record disposal request time for tracking
-    this._disposalRequestTime = Date.now();
-
-    // Step 3: Defer disposal until after current execution completes
-    // This allows React Strict Mode's immediate remount to cancel disposal
-    queueMicrotask(() => {
-      // Re-verify disposal conditions - React Strict Mode remount may have cancelled this
+    this._disposalTimer = setTimeout(() => {
       const stillShouldDispose =
-        this._consumers.size === 0 &&
+        this._subscriptionManager.size === 0 &&
         !this._keepAlive &&
-        this._observer.size === 0 &&
-        (this as any)._disposalState === BlocLifecycleState.DISPOSAL_REQUESTED;
+        this._disposalState === BlocLifecycleState.DISPOSAL_REQUESTED;
 
       if (stillShouldDispose) {
-        // No cancellation occurred, proceed with disposal
-        if (this._disposalHandler) {
-          this._disposalHandler(this as any);
-        } else {
-          this._dispose();
-        }
+        this.dispose();
       } else {
-        // Disposal was cancelled (React Strict Mode remount), revert to active
         this._atomicStateTransition(
           BlocLifecycleState.DISPOSAL_REQUESTED,
           BlocLifecycleState.ACTIVE,
         );
       }
-    });
+    }, 16);
   }
 
-  lastUpdate = Date.now();
+  /**
+   * Set disposal handler
+   */
+  setDisposalHandler(handler: (bloc: BlocBase<unknown>) => void): void {
+    this._disposalHandler = handler;
+  }
 
   /**
-   * @internal
-   * Flag to indicate if batching is enabled for this bloc
+   * Check if disposal should be scheduled (called by subscription manager)
    */
-  private _batchingEnabled = false;
-
-  /**
-   * @internal
-   * Updates the state and notifies all observers of the change.
-   *
-   * @param newState The new state to be set
-   * @param oldState The previous state for comparison
-   * @param action Optional metadata about what caused the state change
-   */
-  _pushState = (newState: S, oldState: S, action?: unknown): void => {
-    // Validate newState
-    if (newState === undefined) {
-      return;
-    }
-
-    // Validate action type if provided
+  checkDisposal(): void {
     if (
-      action !== undefined &&
-      typeof action !== 'object' &&
-      typeof action !== 'function'
+      this._subscriptionManager.size === 0 &&
+      !this._keepAlive &&
+      this._disposalState === BlocLifecycleState.ACTIVE
     ) {
-      return;
-    }
-
-    // Transform state through plugins
-    let transformedState: S = newState;
-    try {
-      const result = this._plugins.transformState(oldState, newState);
-      transformedState = result;
-    } catch (error) {
-      this._plugins.notifyError(error as Error, {
-        phase: 'state-change',
-        operation: 'transformState',
-      });
-      // Continue with original state if transformation fails
-    }
-
-    if (this._batchingEnabled) {
-      // When batching, just accumulate the updates
-      this._pendingUpdates.push({
-        newState: transformedState,
-        oldState,
-        action,
-      });
-
-      // Update internal state for consistency
-      this._oldState = oldState;
-      this._state = transformedState;
-      return;
-    }
-
-    // Normal state update flow
-    this._oldState = oldState;
-    this._state = transformedState;
-
-    // Notify bloc plugins first
-    try {
-      this._plugins.notifyStateChange(oldState, transformedState);
-    } catch (error) {
-      console.error('Error notifying bloc plugins of state change:', error);
-    }
-
-    // Notify observers of the state change
-    this._observer.notify(transformedState, oldState, action);
-    this.lastUpdate = Date.now();
-  };
-
-  /**
-   * Notify observers of a state change
-   * @internal Used by plugins for state hydration
-   * @param newState The new state
-   * @param oldState The old state
-   */
-  _notifyObservers(newState: S, oldState: S): void {
-    this._observer.notify(newState, oldState);
-  }
-
-  /**
-   * Enables batching for multiple state updates
-   * @param batchFn Function to execute with batching enabled
-   */
-  batch = <T>(batchFn: () => T): T => {
-    // Prevent batching race conditions
-    if (this._batchingLock) {
-      // If already batching, just execute the function without nesting batches
-      return batchFn();
-    }
-
-    this._batchingLock = true;
-    this._batchingEnabled = true;
-    this._pendingUpdates = [];
-
-    try {
-      const result = batchFn();
-
-      // Process all batched updates
-      if (this._pendingUpdates.length > 0) {
-        // Only notify once with the final state
-        const finalUpdate =
-          this._pendingUpdates[this._pendingUpdates.length - 1];
-        this._observer.notify(
-          finalUpdate.newState,
-          finalUpdate.oldState,
-          finalUpdate.action,
-        );
-        this.lastUpdate = Date.now();
-      }
-
-      return result;
-    } finally {
-      this._batchingEnabled = false;
-      this._batchingLock = false;
-      this._pendingUpdates = [];
-    }
-  };
-
-  /**
-   * Add a plugin to this bloc instance
-   */
-  addPlugin(plugin: BlocPlugin<S, any>): void {
-    this._plugins.add(plugin);
-
-    // Attach if already active
-    if (this._disposalState === BlocLifecycleState.ACTIVE) {
-      try {
-        if (plugin.onAttach) {
-          plugin.onAttach(this);
-        }
-      } catch (error) {
-        console.error(`Failed to attach plugin '${plugin.name}':`, error);
-        this._plugins.remove(plugin.name);
-        throw error;
-      }
-    }
-  }
-
-  /**
-   * Remove a plugin from this bloc instance
-   */
-  removePlugin(pluginName: string): boolean {
-    return this._plugins.remove(pluginName);
-  }
-
-  /**
-   * Get a plugin by name
-   */
-  getPlugin(pluginName: string): BlocPlugin<S, any> | undefined {
-    return this._plugins.get(pluginName);
-  }
-
-  /**
-   * Get all plugins
-   */
-  getPlugins(): ReadonlyArray<BlocPlugin<S, any>> {
-    return this._plugins.getAll();
-  }
-
-  /**
-   * @internal
-   * Activate plugins when bloc becomes active
-   */
-  _activatePlugins(): void {
-    if (this._disposalState === BlocLifecycleState.ACTIVE) {
-      try {
-        this._plugins.attach(this);
-      } catch (error) {
-        console.error(`Failed to activate plugins for ${this._name}:`, error);
-      }
+      this._scheduleDisposal();
     }
   }
 }
