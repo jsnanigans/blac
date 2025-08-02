@@ -17,13 +17,13 @@ function useBloc<
 
 ### Parameters
 
-| Name               | Type                                                                                                                                         | Required | Description                                                    |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------- |
-| `blocClass`        | `BlocConstructor<BlocGeneric>`                                                                                                               | Yes      | The Bloc/Cubit class to use                                    |
-| `options.id`       | `string`                                                                                                                                     | No       | Optional identifier for the Bloc/Cubit instance                |
-| `options.props`    | `InferPropsFromGeneric<B>`                                                                                                                   | No       | Props to pass to the Bloc/Cubit constructor                    |
-| `options.selector` | `(currentState: BlocState<InstanceType<B>>, previousState: BlocState<InstanceType<B>> \| undefined, instance: InstanceType<B>) => unknown[]` | No       | Function to select dependencies that should trigger re-renders |
-| `options.onMount`  | `(bloc: InstanceType<B>) => void`                                                                                                            | No       | Callback function invoked when the Bloc is mounted             |
+| Name                  | Type                                                                                                                                         | Required | Description                                                    |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------- |
+| `blocClass`           | `BlocConstructor<BlocGeneric>`                                                                                                               | Yes      | The Bloc/Cubit class to use                                    |
+| `options.instanceId`  | `string`                                                                                                                                     | No       | Optional identifier for the Bloc/Cubit instance                |
+| `options.staticProps` | `ConstructorParameters<B>[0]`                                                                                                                | No       | Static props to pass to the Bloc/Cubit constructor             |
+| `options.selector`    | `(currentState: BlocState<InstanceType<B>>, previousState: BlocState<InstanceType<B>> \| undefined, instance: InstanceType<B>) => unknown[]` | No       | Function to select dependencies that should trigger re-renders |
+| `options.onMount`     | `(bloc: InstanceType<B>) => void`                                                                                                            | No       | Callback function invoked when the Bloc is mounted             |
 
 ### Returns
 
@@ -201,16 +201,16 @@ This dynamic dependency tracking ensures optimal performance by only re-renderin
 
 ---
 
-#### Custom ID for Instance Management
+#### Custom Instance ID for Instance Management
 
-If you want to share the same state between multiple components but need different instances of the Bloc/Cubit, you can define a custom ID.
+If you want to share the same state between multiple components but need different instances of the Bloc/Cubit, you can define a custom instance ID.
 
 :::info
 By default, each Bloc/Cubit uses its class name as an identifier.
 :::
 
 ```tsx
-const [state, bloc] = useBloc(ChatThreadBloc, { id: 'thread-123' });
+const [state, bloc] = useBloc(ChatThreadBloc, { instanceId: 'thread-123' });
 ```
 
 On its own, this is not very useful, but it becomes very powerful when the ID is dynamic.
@@ -218,7 +218,7 @@ On its own, this is not very useful, but it becomes very powerful when the ID is
 ```tsx
 function ChatThread({ conversationId }: { conversationId: string }) {
   const [state, bloc] = useBloc(ChatThreadBloc, {
-    id: `thread-${conversationId}`,
+    instanceId: `thread-${conversationId}`,
   });
 
   return (
@@ -309,22 +309,22 @@ const [state, chatBloc] = useBloc(ChatBloc, {
 
 ## Advanced Usage
 
-### Props & Dependency Injection
+### Static Props
 
-Pass configuration to blocs during initialization.
+Pass configuration to blocs during initialization using `staticProps`:
 
 ```tsx
-// Bloc with props
-class ThemeCubit extends Cubit<ThemeState, ThemeProps> {
-  constructor(props: ThemeProps) {
-    super({ theme: props.defaultTheme });
+// Bloc with constructor parameters
+class ThemeCubit extends Cubit<ThemeState> {
+  constructor(private config: { defaultTheme: string }) {
+    super({ theme: config.defaultTheme });
   }
 }
 
 // In component
 function ThemeToggle() {
   const [state, bloc] = useBloc(ThemeCubit, {
-    props: { defaultTheme: 'dark' },
+    staticProps: { defaultTheme: 'dark' },
   });
 
   return (
@@ -335,16 +335,7 @@ function ThemeToggle() {
 }
 ```
 
-If a prop changes, it will be updated in the Bloc/Cubit instance. This is useful for seamless integration with React components that use props to configure the Bloc/Cubit.
-
-```tsx
-function ThemeToggle(props: ThemeProps) {
-  const [state, bloc] = useBloc(ThemeCubit, { props });
-  // ...
-}
-
-<ThemeToggle defaultTheme="dark" />;
-```
+**Note**: Static props are passed once during bloc creation and don't update if changed.
 
 ### Initialization with onMount
 
@@ -381,44 +372,6 @@ The `onMount` callback runs once after the Bloc instance is created and the comp
 - Initializing the Bloc with component-specific data
 - Avoiding prop conflicts when multiple components use the same Bloc
 
-:::warning
-Make sure to only use the `props` option in the `useBloc` hook in a single place for each Bloc/Cubit. If there are multiple places that try to set the props, they might conflict with each other and cause unexpected behavior.
-:::
-
-```tsx
-function ThemeToggle() {
-  const [state, bloc] = useBloc(ThemeCubit, {
-    props: { defaultTheme: 'dark' },
-  });
-  // ...
-}
-
-function UseThemeToggle() {
-  const [state, bloc] = useBloc(ThemeCubit, {
-    props: { name: 'John' }, // [!code error]
-  });
-  // ...
-}
-```
-
 :::tip
-If you need to pass props to a Bloc/Cubit that is not known at the time of initialization, you can use the `onMount` option.
+Use `onMount` when you need to initialize a bloc with component-specific data or trigger initial data loading.
 :::
-
-```tsx{10-12}
-function ThemeToggle() {
-  const [state, bloc] = useBloc(ThemeCubit, {
-    props: { defaultTheme: 'dark' }
-  });
-  // ...
-}
-
-function UseThemeToggle() {
-  const [state, bloc] = useBloc(ThemeCubit, {
-    onMount: (bloc) => {
-      bloc.setName('John');
-    }
-  });
-  // ...
-}
-```

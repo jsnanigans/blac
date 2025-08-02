@@ -79,6 +79,8 @@ export class CounterCubit extends Cubit<{ count: number }> {
     super({ count: 0 });
   }
 
+  // IMPORTANT: Always use arrow functions for methods!
+  // This ensures proper 'this' binding when used in React
   increment = () => this.emit({ count: this.state.count + 1 });
   decrement = () => this.emit({ count: this.state.count - 1 });
   reset = () => this.emit({ count: 0 });
@@ -118,12 +120,14 @@ import { Blac } from '@blac/core';
 
 // Configure before your app renders
 Blac.setConfig({
-  // Enable console logging for debugging
-  enableLog: process.env.NODE_ENV === 'development',
-
   // Control automatic render optimization
   proxyDependencyTracking: true,
 });
+
+// Enable logging for debugging
+if (process.env.NODE_ENV === 'development') {
+  Blac.enableLog = true;
+}
 
 // Then render your app
 import React from 'react';

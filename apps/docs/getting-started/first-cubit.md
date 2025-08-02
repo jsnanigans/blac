@@ -55,6 +55,23 @@ Let's break down what's happening:
 3. **Arrow Functions**: All methods use arrow function syntax to maintain proper `this` binding
 4. **emit() Method**: Updates the entire state with a new object
 
+:::warning Critical: Arrow Functions Required
+You MUST use arrow function syntax (`method = () => {}`) for all Cubit/Bloc methods. Regular methods (`method() {}`) will break in React due to `this` binding issues:
+
+```typescript
+// ✅ CORRECT - Arrow function
+increment = () => {
+  this.emit({ count: this.state.count + 1 });
+};
+
+// ❌ WRONG - Will throw "Cannot read property 'emit' of undefined"
+increment() {
+  this.emit({ count: this.state.count + 1 });
+}
+```
+
+:::
+
 ### Step 2: Use the Cubit in React
 
 Now let's create a component that uses our CounterCubit:

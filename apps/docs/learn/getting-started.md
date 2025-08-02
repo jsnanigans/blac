@@ -1,5 +1,9 @@
 # Getting Started
 
+:::tip Recommended Reading
+This page contains legacy content. For the most up-to-date getting started guide, please see the [Getting Started](/getting-started/installation) section.
+:::
+
 Welcome to Blac! This guide will walk you through setting up Blac and creating your first reactive state container.
 
 Blac is a collection of packages designed for robust state management:

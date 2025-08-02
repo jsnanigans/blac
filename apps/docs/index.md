@@ -62,6 +62,7 @@ class CounterCubit extends Cubit<{ count: number }> {
     super({ count: 0 });
   }
 
+  // Important: Use arrow functions for all methods!
   increment = () => this.emit({ count: this.state.count + 1 });
   decrement = () => this.emit({ count: this.state.count - 1 });
 }

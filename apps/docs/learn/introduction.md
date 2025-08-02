@@ -1,5 +1,9 @@
 # Introduction to Blac
 
+:::tip Recommended Reading
+This page contains legacy content. For the most up-to-date introduction, please see the main [Introduction](/introduction) page.
+:::
+
 Welcome to Blac, a modern state management library designed to bring simplicity, power, and predictability to your React projects! Blac aims to reduce the mental overhead of state management by cleanly separating business logic from your UI components.
 
 ## What is Blac?
@@ -31,7 +35,7 @@ In Blac's architecture, state becomes a well-defined side effect of your busines
 
 ## Documentation Structure
 
-This documentation is organized to help you learn Blac 효과적으로 (effectively):
+This documentation is organized to help you learn Blac effectively:
 
 - **Learn**: Foundational concepts, patterns, and guides.
   - [Getting Started](/learn/getting-started): Your first steps with Blac.

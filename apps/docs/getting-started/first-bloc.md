@@ -47,6 +47,7 @@ export class CounterBloc extends Bloc<CounterState, CounterEvent> {
     this.on(Reset, this.handleReset);
   }
 
+  // IMPORTANT: Always use arrow functions for methods!
   private handleIncrement = (
     event: Increment,
     emit: (state: CounterState) => void,
@@ -93,6 +94,21 @@ export function Counter() {
 ```
 
 ## Key Concepts
+
+:::warning Critical: Arrow Functions Required
+Just like with Cubits, you MUST use arrow function syntax for all Bloc methods and event handlers:
+
+```typescript
+// ✅ CORRECT
+handleIncrement = (event, emit) => { ... };
+increment = () => this.add(new Increment());
+
+// ❌ WRONG - Will break in React
+handleIncrement(event, emit) { ... }
+increment() { this.add(new Increment()); }
+```
+
+:::
 
 ### Events vs Methods
 

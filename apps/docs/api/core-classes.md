@@ -2,22 +2,20 @@
 
 Blac provides three primary classes for state management:
 
-## BlocBase<S, P>
+## BlocBase<S>
 
 `BlocBase` is the abstract base class for all state containers in Blac.
 
 ### Type Parameters
 
 - `S` - The state type
-- `P` - The props type (optional)
 
 ### Properties
 
-| Name         | Type        | Description                                              |
-| ------------ | ----------- | -------------------------------------------------------- |
-| `state`      | `S`         | The current state of the container                       |
-| `props`      | `P \| null` | Props passed during Bloc instance creation (can be null) |
-| `lastUpdate` | `number`    | Timestamp when the state was last updated                |
+| Name         | Type     | Description                               |
+| ------------ | -------- | ----------------------------------------- |
+| `state`      | `S`      | The current state of the container        |
+| `lastUpdate` | `number` | Timestamp when the state was last updated |
 
 ### Static Properties
 
@@ -28,18 +26,21 @@ Blac provides three primary classes for state management:
 
 ### Methods
 
-| Name | Parameters                                                           | Return Type  | Description                                                     |
-| ---- | -------------------------------------------------------------------- | ------------ | --------------------------------------------------------------- |
-| `on` | `event: BlacEvent, listener: StateListener<S>, signal?: AbortSignal` | `() => void` | Subscribes to state changes and returns an unsubscribe function |
+| Name           | Parameters                                                           | Return Type                    | Description                                                     |
+| -------------- | -------------------------------------------------------------------- | ------------------------------ | --------------------------------------------------------------- |
+| `on`           | `event: BlacEvent, listener: StateListener<S>, signal?: AbortSignal` | `() => void`                   | Subscribes to state changes and returns an unsubscribe function |
+| `addPlugin`    | `plugin: BlocPlugin<S>`                                              | `void`                         | Adds a plugin to this bloc instance                             |
+| `removePlugin` | `pluginName: string`                                                 | `boolean`                      | Removes a plugin by name                                        |
+| `getPlugin`    | `pluginName: string`                                                 | `BlocPlugin<S> \| undefined`   | Gets a plugin by name                                           |
+| `getPlugins`   |                                                                      | `ReadonlyArray<BlocPlugin<S>>` | Gets all plugins                                                |
 
-## Cubit<S, P>
+## Cubit<S>
 
 `Cubit` is a simple state container that extends `BlocBase`. It's ideal for simpler state management needs.
 
 ### Type Parameters
 
 - `S` - The state type
-- `P` - The props type (optional, defaults to null)
 
 ### Constructor
 
@@ -62,6 +63,7 @@ class CounterCubit extends Cubit<{ count: number }> {
     super({ count: 0 });
   }
 
+  // IMPORTANT: Always use arrow functions for React compatibility
   increment = () => {
     this.emit({ count: this.state.count + 1 });
   };
@@ -77,7 +79,7 @@ class CounterCubit extends Cubit<{ count: number }> {
 }
 ```
 
-## Bloc<S, E, P>
+## Bloc<S, E>
 
 `Bloc` is a more sophisticated state container that uses an event-handler pattern. It extends `BlocBase` and manages state transitions by registering handlers for specific event classes.
 
@@ -85,7 +87,6 @@ class CounterCubit extends Cubit<{ count: number }> {
 
 - `S` - The state type
 - `E` - The base type or union of event classes that this Bloc can process.
-- `P` - The props type (optional)
 
 ### Constructor
 
@@ -118,18 +119,32 @@ class CounterBloc extends Bloc<{ count: number }, CounterEvent> {
     super({ count: 0 });
 
     // Register event handlers
-    this.on(IncrementEvent, (event, emit) => {
-      emit({ count: this.state.count + event.value });
-    });
-
-    this.on(DecrementEvent, (_event, emit) => {
-      emit({ count: this.state.count - 1 });
-    });
-
-    this.on(ResetEvent, (_event, emit) => {
-      emit({ count: 0 });
-    });
+    this.on(IncrementEvent, this.handleIncrement);
+    this.on(DecrementEvent, this.handleDecrement);
+    this.on(ResetEvent, this.handleReset);
   }
+
+  // IMPORTANT: Always use arrow functions for proper this binding
+  private handleIncrement = (
+    event: IncrementEvent,
+    emit: (state: { count: number }) => void,
+  ) => {
+    emit({ count: this.state.count + event.value });
+  };
+
+  private handleDecrement = (
+    event: DecrementEvent,
+    emit: (state: { count: number }) => void,
+  ) => {
+    emit({ count: this.state.count - 1 });
+  };
+
+  private handleReset = (
+    event: ResetEvent,
+    emit: (state: { count: number }) => void,
+  ) => {
+    emit({ count: 0 });
+  };
 
   // Helper methods to dispatch events (optional but common)
   increment = (value?: number) => this.add(new IncrementEvent(value));

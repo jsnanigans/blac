@@ -513,6 +513,7 @@ export class Blac {
   ): InstanceType<B> {
     const { constructorParams, instanceRef } = options;
     const newBloc = new blocClass(constructorParams) as InstanceType<B>;
+    newBloc.blacInstance = this;
     newBloc._instanceRef = instanceRef;
     newBloc._id = id;
 

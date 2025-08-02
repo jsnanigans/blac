@@ -249,16 +249,16 @@ function CounterWidget({ title }: { title: string }) {
 
 ```typescript
 function NamedCounters() {
-  const [stateA] = useBloc(CounterCubit, { id: 'counter-a' });
-  const [stateB] = useBloc(CounterCubit, { id: 'counter-b' });
-  const [stateC] = useBloc(CounterCubit, { id: 'counter-c' });
+  const [stateA] = useBloc(CounterCubit, { instanceId: 'counter-a' });
+  const [stateB] = useBloc(CounterCubit, { instanceId: 'counter-b' });
+  const [stateC] = useBloc(CounterCubit, { instanceId: 'counter-c' });
 
   return (
     <div>
       <h2>Named Counter Instances</h2>
-      <NamedCounter id="counter-a" label="Team A Score" />
-      <NamedCounter id="counter-b" label="Team B Score" />
-      <NamedCounter id="counter-c" label="Rounds Played" />
+      <NamedCounter instanceId="counter-a" label="Team A Score" />
+      <NamedCounter instanceId="counter-b" label="Team B Score" />
+      <NamedCounter instanceId="counter-c" label="Rounds Played" />
 
       <div className="scores">
         <p>Current Scores: {stateA.count} - {stateB.count} (Round {stateC.count})</p>
@@ -267,8 +267,8 @@ function NamedCounters() {
   );
 }
 
-function NamedCounter({ id, label }: { id: string; label: string }) {
-  const [state, cubit] = useBloc(CounterCubit, { id });
+function NamedCounter({ instanceId, label }: { instanceId: string; label: string }) {
+  const [state, cubit] = useBloc(CounterCubit, { instanceId });
 
   return (
     <div>
@@ -426,16 +426,15 @@ function EventDrivenCounter() {
 Counter that saves its state to localStorage.
 
 ```typescript
-import { Persist } from '@blac/core';
+import { PersistencePlugin } from '@blac/plugin-persistence';
 
 class PersistentCounterCubit extends Cubit<{ count: number }> {
   constructor() {
     super({ count: 0 });
 
     // Add persistence
-    this.addAddon(new Persist({
+    this.addPlugin(new PersistencePlugin({
       key: 'counter-state',
-      storage: localStorage
     }));
   }
 
@@ -511,7 +510,7 @@ export default CounterApp;
 2. **Type Safety**: Full TypeScript support out of the box
 3. **Flexible Instances**: Shared, isolated, or named instances
 4. **Event-Driven**: Use `Bloc` for complex state transitions
-5. **Persistence**: Easy to add with addons
+5. **Persistence**: Easy to add with plugins
 6. **Testing**: State logic is separate from UI
 
 ## Next Steps

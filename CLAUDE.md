@@ -2,83 +2,289 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Commands
+# BlaC State Management Library
 
-### Development
-- `pnpm dev` - Run all apps in parallel in development mode
-- `pnpm app` - Run only the user app in development mode
-- `pnpm build` - Build all packages and apps
-- `pnpm lint` - Run linting across all packages
-- `pnpm typecheck` - Run TypeScript type checking
-- `pnpm format` - Format code with Prettier
+A sophisticated TypeScript state management library implementing the BLoC (Business Logic Component) pattern with innovative proxy-based dependency tracking for JavaScript/TypeScript applications.
 
-### Testing
-- `pnpm test` - Run all tests once
-- `pnpm test:watch` - Run tests in watch mode
-- `pnpm test packages/blac` - Run tests for a specific package
-- `pnpm test:watch packages/blac` - Run tests in watch mode for a specific package
-- To run a single test file: `cd packages/blac && pnpm vitest run path/to/test.ts`
+## Project Overview
 
-### Package-specific Commands
-The main packages are located in:
-- `packages/blac` - Core BlaC state management library (@blac/core)
-- `packages/blac-react` - React integration for BlaC (@blac/react)
+BlaC is a monorepo containing:
+- **Core state management library** (`@blac/core`) with reactive Bloc/Cubit pattern
+- **React integration** (`@blac/react`) with optimized hooks and dependency tracking
+- **Plugin ecosystem** for persistence, logging, and extensibility
+- **Demo applications** showcasing patterns and usage
+- **Comprehensive documentation** and examples
 
-## Architecture Overview
+## Architecture
 
-### BlaC Pattern
-BlaC (Business Logic as Components) is a state management library inspired by the BLoC pattern from Flutter. It provides predictable state management through:
+### Core Concepts
+- **Blocs**: Event-driven state containers using class-based event handlers
+- **Cubits**: Simple state containers with direct state emission
+- **Proxy-based dependency tracking**: Automatic optimization of React re-renders
+- **Plugin system**: Extensible architecture for custom functionality
+- **Instance management**: Shared, isolated, and persistent state patterns
 
-1. **Cubit**: Simple state container with direct state emissions via `emit()` method
-2. **Bloc**: Event-driven state container using event classes and handlers registered with `on(EventClass, handler)`
-3. **React Integration**: `useBloc` hook with automatic dependency tracking for optimized re-renders
+### Key Design Patterns
+- Arrow function methods required for proper `this` binding in React
+- Type-safe event handling with class-based events
+- Automatic memory management with WeakRef-based consumer tracking
+- Configuration-driven behavior (proxy tracking, logging, etc.)
 
-### Key Architecture Principles
+## Development Setup
 
-1. **Arrow Functions Required**: All methods in Bloc/Cubit classes must use arrow function syntax (`method = () => {}`) to maintain proper `this` binding when called from React components.
+### Prerequisites
+- Node.js 22+
+- pnpm 9+
 
-2. **Event-Driven Architecture for Blocs**: 
-   - Events are class instances (not strings or objects)
-   - Handlers are registered using `this.on(EventClass, handler)` in constructor
-   - Events are dispatched via `this.add(new EventInstance())`
+### Installation
+```bash
+pnpm install
+```
 
-3. **State Management Patterns**:
-   - **Shared State** (default): Single instance shared across all consumers
-   - **Isolated State**: Set `static isolated = true` for component-specific instances
-   - **Persistent State**: Set `static keepAlive = true` to persist when no consumers
+### Key Commands
+- **Development**: `pnpm dev` - Start all demo apps in parallel
+- **Build**: `pnpm build` - Build all packages
+- **Test**: `pnpm test` - Run all tests
+- **Test (watch)**: `pnpm test:watch` - Run tests in watch mode
+- **Lint**: `pnpm lint` - Run ESLint across all packages
+- **Type check**: `pnpm typecheck` - Verify TypeScript types
+- **Format**: `pnpm format` - Format code with Prettier
 
-4. **Lifecycle Management**:
-   - Atomic state transitions prevent race conditions during disposal
-   - Automatic cleanup when no consumers remain (unless keepAlive)
-   - React Strict Mode compatible with deferred disposal
-
-### Monorepo Structure
-- Uses pnpm workspaces and Turbo for monorepo management
-- Workspace packages defined in `pnpm-workspace.yaml`
-- Shared dependencies managed via catalog in workspace file
-- Build orchestration via `turbo.json`
-
-### Testing Infrastructure
-- Vitest for unit testing with jsdom environment
-- Test utilities provided via `@blac/core/testing`
-- Coverage reporting configured in `vitest.config.ts`
-
-## Important Implementation Details
-
-1. **Disposal Safety**: The disposal system uses atomic state transitions (ACTIVE → DISPOSAL_REQUESTED → DISPOSING → DISPOSED) to handle React Strict Mode's double-mounting behavior.
-
-2. **Event Queue**: Bloc events are queued and processed sequentially to prevent race conditions in async handlers.
-
-3. **Dependency Tracking**: The React integration uses Proxies to automatically track which state properties are accessed during render, enabling fine-grained updates.
-
-4. **Memory Management**: Uses WeakRef for consumer tracking to prevent memory leaks and enable proper garbage collection.
-
-5. **Plugin System**: Extensible via BlacPlugin interface for adding logging, persistence, or analytics functionality.
+### Project Structure
+```
+/
+├── packages/
+│   ├── blac/              # Core state management (@blac/core)
+│   ├── blac-react/        # React integration (@blac/react)
+│   ├── plugin-render-logging/  # Render logging plugin
+│   └── plugins/
+│       └── bloc/
+│           └── persistence/    # Persistence plugin
+├── apps/
+│   ├── demo/              # Main demo application
+│   ├── docs/              # Documentation site
+│   └── perf/              # Performance testing app
+├── turbo.json             # Turbo build configuration
+├── pnpm-workspace.yaml    # pnpm workspace configuration
+└── tsconfig.base.json     # Base TypeScript configuration
+```
 
 ## Code Conventions
 
-1. **TypeScript**: Strict mode enabled, avoid `any` types except where necessary (e.g., event constructor parameters)
-2. **File Organization**: Core logic in `src/`, tests alongside source files or in `__tests__`
-3. **Exports**: Public API exported through index.ts files
-4. **Error Handling**: Enhanced error messages with context for debugging
-5. **Logging**: Use `Blac.log()`, `Blac.warn()`, and `Blac.error()` for consistent logging
+### Critical Requirements
+1. **Arrow Functions**: All methods in Bloc/Cubit classes MUST use arrow function syntax:
+   ```typescript
+   // ✅ Correct
+   increment = () => {
+     this.emit(this.state + 1);
+   };
+   
+   // ❌ Incorrect - will break in React
+   increment() {
+     this.emit(this.state + 1);
+   }
+   ```
+
+2. **Type Safety**: Prefer explicit types over `any`, use proper generic constraints
+3. **Event Classes**: Use class-based events for Blocs, not plain objects
+4. **State Immutability**: Always emit new state objects, never mutate existing state
+
+### Code Style
+- **TypeScript**: Strict mode enabled with comprehensive type checking
+- **ESLint**: Strict TypeScript rules enforced
+- **Prettier**: Automatic code formatting
+- **Testing**: Comprehensive test coverage with Vitest
+
+## State Management Patterns
+
+### Basic Cubit Example
+```typescript
+class CounterCubit extends Cubit<number> {
+  constructor() {
+    super(0); // Initial state
+  }
+
+  increment = () => {
+    this.emit(this.state + 1);
+  };
+
+  decrement = () => {
+    this.emit(this.state - 1);
+  };
+}
+```
+
+### Event-Driven Bloc Example
+```typescript
+// Define event classes
+class IncrementEvent {
+  constructor(public readonly amount: number = 1) {}
+}
+
+class CounterBloc extends Bloc<number, IncrementEvent> {
+  constructor() {
+    super(0);
+    
+    this.on(IncrementEvent, (event, emit) => {
+      emit(this.state + event.amount);
+    });
+  }
+
+  increment = (amount = 1) => {
+    this.add(new IncrementEvent(amount));
+  };
+}
+```
+
+### React Integration
+```typescript
+function Counter() {
+  const [state, counterBloc] = useBloc(CounterBloc);
+  
+  return (
+    <div>
+      <p>Count: {state.count}</p>
+      <button onClick={counterBloc.increment}>+</button>
+    </div>
+  );
+}
+```
+
+## Configuration & Features
+
+### Global Configuration
+```typescript
+import { Blac } from '@blac/core';
+
+Blac.setConfig({
+  proxyDependencyTracking: true, // Automatic dependency tracking
+});
+```
+
+### Instance Management Patterns
+- **Shared (default)**: Single instance across all consumers
+- **Isolated**: Each consumer gets its own instance (`static isolated = true`)
+- **Persistent**: Keep alive even without consumers (`static keepAlive = true`)
+
+### Plugin System
+```typescript
+class LoggerPlugin implements BlacPlugin {
+  name = 'LoggerPlugin';
+  
+  onEvent(event: BlacLifecycleEvent, bloc: BlocBase, params?: any) {
+    if (event === BlacLifecycleEvent.STATE_CHANGED) {
+      console.log(`[${bloc._name}] State changed:`, bloc.state);
+    }
+  }
+}
+
+Blac.addPlugin(new LoggerPlugin());
+```
+
+## Testing
+
+### Test Utilities
+- **BlocTest**: Set up isolated test environments
+- **MockCubit**: Mock state containers with history tracking
+- **MemoryLeakDetector**: Detect subscription leaks
+
+### Example Test
+```typescript
+describe('Counter Tests', () => {
+  beforeEach(() => BlocTest.setUp());
+  afterEach(() => BlocTest.tearDown());
+
+  it('should increment counter', () => {
+    const counter = BlocTest.createBloc(CounterCubit);
+    counter.increment();
+    expect(counter.state).toBe(1);
+  });
+});
+```
+
+## Performance Considerations
+
+- **Proxy overhead**: Automatic dependency tracking uses Proxies (can be disabled)
+- **Consumer validation**: O(n) consumer cleanup on state changes
+- **Memory management**: WeakRef-based consumer tracking prevents memory leaks
+- **Batched updates**: State changes are batched for performance
+
+## Common Patterns
+
+### Conditional Dependencies
+```typescript
+const [state, bloc] = useBloc(UserBloc, {
+  selector: (currentState, previousState, instance) => [
+    currentState.isLoggedIn ? currentState.userData : null,
+    instance.computedValue
+  ]
+});
+```
+
+### Props-Based Blocs
+```typescript
+class UserProfileBloc extends Bloc<UserState, UserEvents, {userId: string}> {
+  constructor(props: {userId: string}) {
+    super(initialState);
+    this.userId = props.userId;
+    this._name = `UserProfileBloc_${this.userId}`;
+  }
+}
+```
+
+## Known Issues & Limitations
+
+### Current Architecture Challenges
+- Circular dependencies between core classes
+- Complex dual consumer/observer subscription system
+- Performance bottlenecks with deep object proxies
+- Security considerations with global state access
+
+### Recommended Improvements
+- Simplify subscription architecture
+- Implement reference counting for lifecycle management
+- Add selector-based optimization options
+- Enhance type safety throughout
+
+## Building & Deployment
+
+### Local Development
+```bash
+# Start demo app
+cd apps/demo && pnpm dev
+
+# Run specific package tests
+cd packages/blac && pnpm test
+
+# Build specific package
+cd packages/blac && pnpm build
+```
+
+### Publishing
+```bash
+# Build and publish core package
+cd packages/blac && pnpm deploy
+
+# Build and publish React package  
+cd packages/blac-react && pnpm deploy
+```
+
+## Additional Resources
+
+- **Documentation**: `/apps/docs/` contains comprehensive guides
+- **Examples**: `/apps/demo/` showcases all major patterns
+- **Performance**: `/apps/perf/` for performance testing
+- **Architecture Review**: `/blac-improvements.md` contains detailed improvement proposals
+- **Code Review**: `/review.md` contains comprehensive codebase analysis
+
+## Contributing
+
+1. Follow arrow function convention for all Bloc/Cubit methods
+2. Write comprehensive tests for new features
+3. Update documentation for public API changes
+4. Run full test suite before submitting PRs
+5. Follow existing TypeScript strict mode conventions
+
+---
+
+*This codebase implements advanced state management patterns with sophisticated dependency tracking. Pay special attention to the arrow function requirement and proxy-based optimizations when working with the code.*

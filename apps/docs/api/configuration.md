@@ -13,12 +13,7 @@ Use the `Blac.setConfig()` method to update configuration:
 ```typescript
 import { Blac } from '@blac/core';
 
-// Set a single configuration option
-Blac.setConfig({
-  proxyDependencyTracking: false,
-});
-
-// Set multiple options at once
+// Set configuration
 Blac.setConfig({
   proxyDependencyTracking: false,
 });
@@ -85,7 +80,10 @@ You can always override the global setting by providing manual dependencies:
 ```typescript
 // This always uses manual dependencies, regardless of global config
 const [state, bloc] = useBloc(UserBloc, {
-  dependencies: (bloc) => [bloc.state.name, bloc.state.email],
+  selector: (currentState, previousState, instance) => [
+    currentState.name,
+    currentState.email,
+  ],
 });
 ```
 
@@ -173,14 +171,39 @@ const myConfig: Partial<BlacConfig> = {
 Blac.setConfig(myConfig);
 ```
 
-## Future Configuration Options
+## Logging Configuration
 
-The configuration system is designed to be extensible. Future versions may include options for:
+BlaC also provides static properties for debugging:
 
-- Custom error boundaries
-- Development mode warnings
-- Performance profiling
-- Plugin systems
+```typescript
+// Enable logging
+Blac.enableLog = true;
+Blac.logLevel = 'log'; // or 'warn'
+
+// Custom log spy for testing
+Blac.logSpy = (args) => {
+  // Custom logging logic
+};
+```
+
+## Plugin Configuration
+
+BlaC's plugin system can be configured globally:
+
+```typescript
+import { Blac } from '@blac/core';
+import { LoggerPlugin } from './plugins';
+
+// Add global plugins
+Blac.plugins.add(new LoggerPlugin());
+
+// Configure plugins based on environment
+if (process.env.NODE_ENV === 'development') {
+  Blac.plugins.add(new DevToolsPlugin());
+}
+```
+
+See the [Plugin System documentation](/plugins/overview) for more details.
 
 ## Migration Guide
 

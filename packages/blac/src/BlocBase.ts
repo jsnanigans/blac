@@ -1,7 +1,6 @@
 import { generateUUID } from './utils/uuid';
-import { BlocPlugin, ErrorContext } from './plugins/types';
+import { BlocPlugin } from './plugins/types';
 import { BlocPluginRegistry } from './plugins/BlocPluginRegistry';
-import { Blac } from './Blac';
 import { SubscriptionManager } from './subscription/SubscriptionManager';
 import {
   BlocLifecycleManager,
@@ -9,6 +8,7 @@ import {
   StateTransitionResult,
 } from './lifecycle/BlocLifecycle';
 import { BatchingManager } from './utils/BatchingManager';
+import type { Blac } from './Blac';
 
 export type BlocInstanceId = string | number | undefined;
 
@@ -23,6 +23,7 @@ interface BlocStaticProperties {
  */
 export abstract class BlocBase<S> {
   public uid = generateUUID();
+  blacInstance?: Blac;
 
   static isolated = false;
   get isIsolated() {
@@ -167,7 +168,7 @@ export abstract class BlocBase<S> {
   _pushState(newState: S, oldState: S, action?: unknown): void {
     // Validate state emission conditions
     if (this._lifecycleManager.currentState !== BlocLifecycleState.ACTIVE) {
-      Blac.error(
+      this.blacInstance?.error(
         `[${this._name}:${this._id}] Attempted state update on ${this._lifecycleManager.currentState} bloc. Update ignored.`,
       );
       return;
@@ -190,7 +191,7 @@ export abstract class BlocBase<S> {
     this._plugins.notifyStateChange(oldState, transformedState);
 
     // Notify system plugins of state change
-    Blac.instance.plugins.notifyStateChanged(
+    this.blacInstance?.plugins.notifyStateChanged(
       this as any,
       oldState,
       transformedState,
@@ -371,25 +372,25 @@ export abstract class BlocBase<S> {
    * Cancel disposal if bloc is in disposal_requested state
    */
   _cancelDisposalIfRequested(): void {
-    Blac.log(
+    this.blacInstance?.log(
       `[${this._name}:${this._id}] _cancelDisposalIfRequested called. Current state: ${this._lifecycleManager.currentState}`,
     );
 
     const success = this._lifecycleManager.cancelDisposal();
 
     if (success) {
-      Blac.log(
+      this.blacInstance?.log(
         `[${this._name}:${this._id}] Disposal cancelled - new subscription added`,
       );
     } else if (
       this._lifecycleManager.currentState ===
       BlocLifecycleState.DISPOSAL_REQUESTED
     ) {
-      Blac.warn(
+      this.blacInstance?.warn(
         `[${this._name}:${this._id}] Failed to cancel disposal. Current state: ${this._lifecycleManager.currentState}`,
       );
     } else if (this._lifecycleManager.isDisposed) {
-      Blac.error(
+      this.blacInstance?.error(
         `[${this._name}:${this._id}] Cannot cancel disposal - bloc is already disposed`,
       );
     }

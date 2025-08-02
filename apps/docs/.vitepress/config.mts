@@ -28,7 +28,10 @@ const siteConfig = defineConfig({
     sidebar: [
       {
         text: 'Introduction',
-        items: [{ text: 'What is BlaC?', link: '/introduction' }],
+        items: [
+          { text: 'What is BlaC?', link: '/introduction' },
+          { text: 'Comparisons', link: '/comparisons' },
+        ],
       },
       {
         text: 'Getting Started',
@@ -72,8 +75,10 @@ const siteConfig = defineConfig({
             collapsed: false,
             items: [
               { text: 'useBloc', link: '/api/react/use-bloc' },
-              { text: 'useValue', link: '/api/react/use-value' },
-              { text: 'createBloc', link: '/api/react/create-bloc' },
+              {
+                text: 'useExternalBlocStore',
+                link: '/api/react/use-external-bloc-store',
+              },
             ],
           },
         ],
@@ -83,6 +88,17 @@ const siteConfig = defineConfig({
         items: [
           { text: 'Hooks', link: '/react/hooks' },
           { text: 'Patterns', link: '/react/patterns' },
+        ],
+      },
+      {
+        text: 'Plugin System',
+        items: [
+          { text: 'Overview', link: '/plugins/overview' },
+          { text: 'System Plugins', link: '/plugins/system-plugins' },
+          { text: 'Bloc Plugins', link: '/plugins/bloc-plugins' },
+          { text: 'Creating Plugins', link: '/plugins/creating-plugins' },
+          { text: 'Persistence Plugin', link: '/plugins/persistence' },
+          { text: 'API Reference', link: '/plugins/api-reference' },
         ],
       },
       {
@@ -99,9 +115,8 @@ const siteConfig = defineConfig({
         text: 'Examples',
         items: [
           { text: 'Counter', link: '/examples/counter' },
-          { text: 'Todo List', link: '/examples/todo' },
-          { text: 'Authentication', link: '/examples/auth' },
-          { text: 'Shopping Cart', link: '/examples/cart' },
+          { text: 'Todo List', link: '/examples/todo-list' },
+          { text: 'Authentication', link: '/examples/authentication' },
         ],
       },
       {

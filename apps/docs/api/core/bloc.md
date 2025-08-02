@@ -37,10 +37,15 @@ class CounterBloc extends Bloc<number, CounterEvent> {
   constructor() {
     super(0); // Initial state
 
-    // Register handlers
+    // Register handlers - can use inline arrow functions for simple cases
     this.on(Increment, (event, emit) => emit(this.state + 1));
     this.on(Decrement, (event, emit) => emit(this.state - 1));
   }
+
+  // For complex handlers, use arrow function class methods:
+  // private handleIncrement = (event: Increment, emit: (state: number) => void) => {
+  //   emit(this.state + 1);
+  // };
 }
 ```
 
