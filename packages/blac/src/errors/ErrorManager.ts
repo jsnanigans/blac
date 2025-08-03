@@ -5,11 +5,18 @@ import {
   DefaultErrorStrategy,
 } from './BlacError';
 
+/**
+ * Centralized error management system for BlaC framework.
+ * Handles error processing, logging, and propagation strategies.
+ */
 export class ErrorManager {
   private static instance: ErrorManager;
   private handlers: Set<ErrorHandler> = new Set();
   private strategy: ErrorHandlingStrategy = DefaultErrorStrategy;
 
+  /**
+   * Get the singleton instance of ErrorManager
+   */
   static getInstance(): ErrorManager {
     if (!ErrorManager.instance) {
       ErrorManager.instance = new ErrorManager();
@@ -17,18 +24,30 @@ export class ErrorManager {
     return ErrorManager.instance;
   }
 
+  /**
+   * Set a custom error handling strategy
+   */
   setStrategy(strategy: ErrorHandlingStrategy): void {
     this.strategy = strategy;
   }
 
+  /**
+   * Add a custom error handler that will be called for all errors
+   */
   addHandler(handler: ErrorHandler): void {
     this.handlers.add(handler);
   }
 
+  /**
+   * Remove a previously added error handler
+   */
   removeHandler(handler: ErrorHandler): void {
     this.handlers.delete(handler);
   }
 
+  /**
+   * Process an error through all handlers and apply the configured strategy
+   */
   handle(error: BlacError): void {
     // Always notify handlers first
     this.handlers.forEach((handler) => {
