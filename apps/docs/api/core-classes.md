@@ -16,6 +16,7 @@ Blac provides three primary classes for state management:
 | ------------ | -------- | ----------------------------------------- |
 | `state`      | `S`      | The current state of the container        |
 | `lastUpdate` | `number` | Timestamp when the state was last updated |
+| `subscriptionCount` | `number` | Number of active subscriptions       |
 
 ### Static Properties
 
@@ -23,16 +24,15 @@ Blac provides three primary classes for state management:
 | ----------- | --------- | ------- | --------------------------------------------------------------------- |
 | `isolated`  | `boolean` | `false` | When true, every consumer will receive its own unique instance        |
 | `keepAlive` | `boolean` | `false` | When true, the instance persists even when no components are using it |
+| `plugins`   | `BlocPlugin[]` | `undefined` | Array of plugins to automatically attach to instances         |
 
 ### Methods
 
 | Name           | Parameters                                                           | Return Type                    | Description                                                     |
 | -------------- | -------------------------------------------------------------------- | ------------------------------ | --------------------------------------------------------------- |
-| `on`           | `event: BlacEvent, listener: StateListener<S>, signal?: AbortSignal` | `() => void`                   | Subscribes to state changes and returns an unsubscribe function |
-| `addPlugin`    | `plugin: BlocPlugin<S>`                                              | `void`                         | Adds a plugin to this bloc instance                             |
-| `removePlugin` | `pluginName: string`                                                 | `boolean`                      | Removes a plugin by name                                        |
-| `getPlugin`    | `pluginName: string`                                                 | `BlocPlugin<S> \| undefined`   | Gets a plugin by name                                           |
-| `getPlugins`   |                                                                      | `ReadonlyArray<BlocPlugin<S>>` | Gets all plugins                                                |
+| `subscribe`    | `callback: (state: S) => void`                                       | `() => void`                   | Subscribes to state changes and returns an unsubscribe function |
+| `subscribeWithSelector` | `selector: (state: S) => T, callback: (value: T) => void, equalityFn?: (a: T, b: T) => boolean` | `() => void` | Subscribe with a selector for optimized updates |
+| `onDispose`    | Optional method                                                      | `void`                         | Override to perform cleanup when the instance is disposed      |
 
 ## Cubit<S>
 
@@ -79,14 +79,14 @@ class CounterCubit extends Cubit<{ count: number }> {
 }
 ```
 
-## Bloc<S, E>
+## Bloc<S, A extends BlocEventConstraint>
 
 `Bloc` is a more sophisticated state container that uses an event-handler pattern. It extends `BlocBase` and manages state transitions by registering handlers for specific event classes.
 
 ### Type Parameters
 
 - `S` - The state type
-- `E` - The base type or union of event classes that this Bloc can process.
+- `A` - The base type or union of event classes that this Bloc can process (must be class instances, not plain objects)
 
 ### Constructor
 
@@ -98,8 +98,8 @@ constructor(initialState: S)
 
 | Name  | Parameters                                                                                                                                  | Return Type | Description                                                                                                        |
 | ----- | ------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------ |
-| `on`  | `eventConstructor: new (...args: any[]) => E, handler: (event: InstanceType<typeof eventConstructor>, emit: (newState: S) => void) => void` | `void`      | Registers an event handler for a specific event class.                                                             |
-| `add` | `event: E`                                                                                                                                  | `void`      | Dispatches an event instance to its registered handler. The handler is looked up based on the event's constructor. |
+| `on`  | `eventConstructor: new (...args: any[]) => E, handler: (event: E, emit: (newState: S) => void) => void \| Promise<void>` | `void`      | Registers an event handler for a specific event class. Protected method called in constructor.                     |
+| `add` | `event: A`                                                                                                                                  | `Promise<void>` | Dispatches an event instance to its registered handler. Events are processed sequentially.                    |
 
 ### Example
 
@@ -153,15 +153,6 @@ class CounterBloc extends Bloc<{ count: number }, CounterEvent> {
 }
 ```
 
-## BlacEvent
-
-`BlacEvent` is an enum that defines the different events that can be dispatched by Blac.
-
-| Event         | Description                                            |
-| ------------- | ------------------------------------------------------ |
-| `StateChange` | Triggered when a state changes                         |
-| `Error`       | Triggered when an error occurs                         |
-| `Action`      | Triggered when an event is dispatched via `bloc.add()` |
 
 ## Choosing Between Cubit and Bloc
 

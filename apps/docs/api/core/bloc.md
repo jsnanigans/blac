@@ -5,14 +5,13 @@ The `Bloc` class provides event-driven state management by processing event inst
 ## Class Definition
 
 ```typescript
-class Bloc<S, E, P = null> extends BlocBase<S, P>
+abstract class Bloc<S, A extends BlocEventConstraint = BlocEventConstraint> extends BlocBase<S>
 ```
 
 **Type Parameters:**
 
 - `S` - The state type
-- `E` - The base event type or union of event classes
-- `P` - The props type (optional, defaults to null)
+- `A` - The base action/event type with proper constraints (must be class instances)
 
 ## Constructor
 
@@ -59,13 +58,6 @@ The current state value (inherited from BlocBase).
 get state(): S
 ```
 
-### props
-
-Optional props passed during creation (inherited from BlocBase).
-
-```typescript
-get props(): P | null
-```
 
 ### lastUpdate
 
@@ -131,15 +123,19 @@ class TodoBloc extends Bloc<TodoState, TodoEvent> {
 
 ### add
 
-Dispatch an event to be processed by its registered handler.
+Dispatch an event to be processed by its registered handler. Events are processed sequentially - if multiple events are added, they will be queued and processed one at a time.
 
 ```typescript
-add(event: E): void
+add(event: A): Promise<void>
 ```
 
 **Parameters:**
 
 - `event` - The event instance to process
+
+**Returns:**
+
+A Promise that resolves when the event has been processed.
 
 **Example:**
 
@@ -162,34 +158,110 @@ class TodoBloc extends Bloc<TodoState, TodoEvent> {
 }
 ```
 
-### on (State Subscription)
+## Inherited from BlocBase
 
-Subscribe to state changes (inherited from BlocBase).
+### Properties
+
+#### state
+
+The current state value.
 
 ```typescript
-on(
-  event: BlacEvent,
-  listener: StateListener<S>,
-  signal?: AbortSignal
-): () => void
+get state(): S
 ```
 
-**Note:** This is a different `on` method for subscribing to BlaC events like state changes.
+#### lastUpdate
+
+Timestamp of the last state update.
+
+```typescript
+get lastUpdate(): number
+```
+
+#### subscriptionCount
+
+Get the current number of active subscriptions.
+
+```typescript
+get subscriptionCount(): number
+```
+
+### Methods
+
+#### subscribe()
+
+Subscribe to state changes.
+
+```typescript
+subscribe(callback: (state: S) => void): () => void
+```
 
 **Example:**
 
 ```typescript
-const unsubscribe = bloc.on(BlacEvent.StateChange, ({ detail }) => {
-  console.log('State changed:', detail.state);
+const bloc = new CounterBloc();
+const unsubscribe = bloc.subscribe((state) => {
+  console.log('State changed to:', state);
 });
+
+// Later: cleanup
+unsubscribe();
 ```
 
-### dispose
+#### subscribeWithSelector()
 
-Clean up resources and cancel pending events.
+Subscribe with a selector for optimized updates.
 
 ```typescript
-dispose(): void
+subscribeWithSelector<T>(
+  selector: (state: S) => T,
+  callback: (value: T) => void,
+  equalityFn?: (a: T, b: T) => boolean
+): () => void
+```
+
+**Example:**
+
+```typescript
+// Only notified when todos length changes
+const unsubscribe = bloc.subscribeWithSelector(
+  state => state.todos.length,
+  (count) => console.log('Todo count:', count)
+);
+```
+
+### Static Properties
+
+#### isolated
+
+When `true`, each component gets its own instance.
+
+```typescript
+static isolated: boolean = false
+```
+
+#### keepAlive
+
+When `true`, instance persists even with no consumers.
+
+```typescript
+static keepAlive: boolean = false
+```
+
+#### plugins
+
+Array of plugins to automatically attach to this Bloc class.
+
+```typescript
+static plugins?: BlocPlugin<any, any>[]
+```
+
+### onDispose
+
+Override this method to perform cleanup when the Bloc is disposed. This is called automatically when the last consumer unsubscribes and `keepAlive` is false.
+
+```typescript
+onDispose?: () => void
 ```
 
 **Example:**
@@ -206,10 +278,10 @@ class DataBloc extends Bloc<DataState, DataEvent> {
     });
   }
 
-  dispose() {
+  onDispose = () => {
     this.subscription?.unsubscribe();
-    super.dispose(); // Important: call parent
-  }
+    console.log('DataBloc cleaned up');
+  };
 }
 ```
 

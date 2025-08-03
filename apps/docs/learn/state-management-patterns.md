@@ -17,7 +17,7 @@ No special configuration is needed on your `Bloc` or `Cubit` class for shared st
 import { Bloc } from '@blac/core';
 // Define UserState, UserAction, initialUserState appropriately
 
-export class UserBloc extends Bloc<UserState, UserAction> {
+export class UserBloc extends Bloc<UserState, UserAction extends BlocEventConstraint> {
   constructor() {
     super(initialUserState);
   }
@@ -83,7 +83,7 @@ There are times when you need each component (or a specific part of your UI) to 
     }
     ```
 
-2.  **Dynamic ID with `useBloc`**: Provide a unique `id` string in the `options` argument of `useBloc`.
+2.  **Dynamic ID with `useBloc`**: Provide a unique `instanceId` string in the `options` argument of `useBloc`.
 
     ```tsx
     // src/components/ConfigurableWidget.tsx
@@ -224,7 +224,7 @@ You can combine these patterns. For example, an isolated Bloc that also stays al
 // src/blocs/UserTaskBloc.ts
 import { Bloc } from '@blac/core';
 
-export class UserTaskBloc extends Bloc<TaskState, TaskAction> {
+export class UserTaskBloc extends Bloc<TaskState, TaskAction extends BlocEventConstraint> {
   static isolated = true;
   static keepAlive = true;
   // ...

@@ -89,14 +89,14 @@ class UserCubit extends Cubit<{
 
 ### `on(eventConstructor, handler)`
 
-This method is specific to `Bloc` instances and is used to register a handler function for a specific type of event class.
+This method is specific to `Bloc` instances and is used to register a handler function for a specific type of event class. It should be called in the constructor.
 
 #### Signature
 
 ```tsx
-on<EClass extends new (...args: any[]) => any>(
-  eventConstructor: EClass,
-  handler: (event: InstanceType<EClass>, emit: (newState: S) => void) => void
+protected on<E extends A>(
+  eventConstructor: new (...args: any[]) => E,
+  handler: (event: E, emit: (newState: S) => void) => void | Promise<void>
 ): void
 ```
 
@@ -137,7 +137,7 @@ The `add` method dispatches an event instance. The `Bloc` will then look up and 
 #### Signature
 
 ```tsx
-add(event: E): void // Where E is the union of event types the Bloc handles
+add(event: A): Promise<void> // Where A is the union of event types the Bloc handles
 ```
 
 #### Parameters
@@ -208,35 +208,33 @@ todoBloc.toggleTodo(1);
 
 ## Subscription Management (BlocBase)
 
-### `on(blacEvent, listener, signal?)`
+### `subscribe(callback)`
 
-The `on` method (from `BlocBase`) subscribes to generic `BlacEvent` types (like state changes or errors) and returns an unsubscribe function.
+The `subscribe` method subscribes to state changes and returns an unsubscribe function.
 
 #### Signature
 
 ```tsx
-on(event: BlacEvent, listener: StateListener<S>, signal?: AbortSignal): () => void
+subscribe(callback: (state: S) => void): () => void
 ```
 
 #### Parameters
 
-| Name       | Type               | Description                                          |
-| ---------- | ------------------ | ---------------------------------------------------- |
-| `event`    | `BlacEvent`        | The event to listen to (e.g., BlacEvent.StateChange) |
-| `listener` | `StateListener<S>` | A function that will be called when the event occurs |
-| `signal`   | `AbortSignal`      | An optional signal to abort the subscription         |
+| Name       | Type                   | Description                                          |
+| ---------- | ---------------------- | ---------------------------------------------------- |
+| `callback` | `(state: S) => void`   | A function that will be called when state changes    |
 
 #### Returns
 
 A function that, when called, unsubscribes the listener.
 
-#### Example 1: Basic State Change Subscription
+#### Example
 
 ```tsx
 const counterBloc = new CounterBloc();
 
 // Subscribe to state changes
-const unsubscribe = counterBloc.on(BlacEvent.StateChange, (state) => {
+const unsubscribe = counterBloc.subscribe((state) => {
   console.log('State changed:', state);
 });
 
@@ -244,36 +242,40 @@ const unsubscribe = counterBloc.on(BlacEvent.StateChange, (state) => {
 unsubscribe();
 ```
 
-#### Example 2: Using AbortController
+### `subscribeWithSelector(selector, callback, equalityFn?)`
+
+Subscribe to state changes with a selector for optimized updates.
+
+#### Signature
 
 ```tsx
-const counterBloc = new CounterBloc();
-const abortController = new AbortController();
-
-// Subscribe to state changes
-counterBloc.on(
-  BlacEvent.StateChange,
-  (state) => {
-    console.log('State changed:', state);
-  },
-  abortController.signal,
-);
-
-// Abort the subscription
-abortController.abort();
+subscribeWithSelector<T>(
+  selector: (state: S) => T,
+  callback: (value: T) => void,
+  equalityFn?: (a: T, b: T) => boolean
+): () => void
 ```
 
-#### Example 3: Listening to Actions
+#### Parameters
+
+| Name         | Type                      | Description                                          |
+| ------------ | ------------------------- | ---------------------------------------------------- |
+| `selector`   | `(state: S) => T`         | Function to select specific data from state         |
+| `callback`   | `(value: T) => void`      | Function called when selected value changes         |
+| `equalityFn` | `(a: T, b: T) => boolean` | Optional custom equality function (default: Object.is) |
+
+#### Example
 
 ```tsx
 const todoBloc = new TodoBloc();
 
-// Subscribe to actions
-todoBloc.on(BlacEvent.Action, (state, oldState, event) => {
-  console.log('Event dispatched:', event);
-  console.log('Old state:', oldState);
-  console.log('New state:', state);
-});
+// Only get notified when the todo count changes
+const unsubscribe = todoBloc.subscribeWithSelector(
+  state => state.todos.length,
+  (count) => {
+    console.log('Todo count changed:', count);
+  }
+);
 ```
 
 ## Choosing Between emit() and patch()

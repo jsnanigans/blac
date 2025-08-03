@@ -611,11 +611,9 @@ function withLogging<T extends BlocBase<any>>(
     constructor(...args: any[]) {
       super(...args);
 
-      this.on(BlacEvent.StateChange, ({ detail }) => {
-        console.log(`[${this.constructor.name}] State changed:`, {
-          from: detail.previousState,
-          to: detail.state,
-        });
+      // Use subscribe to listen for state changes
+      this.subscribe((state) => {
+        console.log(`[${this.constructor.name}] State changed:`, state);
       });
     }
   };
@@ -636,16 +634,24 @@ interface CubitPlugin<S> {
 
 class PluggableCubit<S> extends Cubit<S> {
   private plugins: CubitPlugin<S>[] = [];
+  private previousState: S;
+
+  constructor(initialState: S) {
+    super(initialState);
+    this.previousState = initialState;
+
+    // Subscribe to state changes
+    this.subscribe((state) => {
+      this.plugins.forEach((p) => 
+        p.onStateChange?.(state, this.previousState)
+      );
+      this.previousState = state;
+    });
+  }
 
   use(plugin: CubitPlugin<S>) {
     this.plugins.push(plugin);
     plugin.onInit?.(this);
-
-    if (plugin.onStateChange) {
-      this.on(BlacEvent.StateChange, ({ detail }) => {
-        plugin.onStateChange!(detail.state, detail.previousState);
-      });
-    }
   }
 
   dispose() {

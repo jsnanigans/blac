@@ -204,7 +204,7 @@ import { PerformanceMonitorPlugin } from './PerformanceMonitorPlugin';
 
 // Register globally
 const perfMonitor = new PerformanceMonitorPlugin();
-Blac.plugins.add(perfMonitor);
+Blac.instance.plugins.add(perfMonitor);
 
 // Later, get performance report
 console.log(perfMonitor.getReport());
@@ -437,7 +437,7 @@ class ConditionalPlugin implements BlacPlugin {
 }
 
 // Use based on environment
-Blac.plugins.add(
+Blac.instance.plugins.add(
   new ConditionalPlugin(() => process.env.NODE_ENV === 'development'),
 );
 ```
@@ -459,7 +459,7 @@ class CommunicatingPlugin implements BlacPlugin {
   // Send message to other plugins
   emit(event: string, data: any) {
     // Find other plugins that can receive
-    const plugins = Blac.plugins.getAll();
+    const plugins = Blac.instance.plugins.getAll();
     plugins.forEach((plugin) => {
       if ('onMessage' in plugin && plugin !== this) {
         (plugin as any).onMessage(event, data, this.name);
@@ -526,7 +526,7 @@ describe('PerformanceMonitorPlugin', () => {
   beforeEach(() => {
     BlocTest.setUp();
     plugin = new PerformanceMonitorPlugin();
-    Blac.plugins.add(plugin);
+    Blac.instance.plugins.add(plugin);
   });
 
   afterEach(() => {

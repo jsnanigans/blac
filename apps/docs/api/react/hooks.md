@@ -9,15 +9,21 @@ The primary hook for connecting React components to BlaC state containers.
 ### Signature
 
 ```typescript
-function useBloc<T extends BlocBase<any, any>>(
-  BlocClass: BlocConstructor<T>,
-  options?: UseBlocOptions<T>,
-): [StateType<T>, T];
+function useBloc<B extends BlocConstructor<BlocBase<any>>>(
+  blocConstructor: B,
+  options?: {
+    staticProps?: ConstructorParameters<B>[0];
+    instanceId?: string;
+    dependencies?: (bloc: InstanceType<B>) => unknown[];
+    onMount?: (bloc: InstanceType<B>) => void;
+    onUnmount?: (bloc: InstanceType<B>) => void;
+  }
+): [BlocState<InstanceType<B>>, InstanceType<B>];
 ```
 
 ### Type Parameters
 
-- `T` - The Cubit or Bloc class type
+- `B` - The constructor type of your Cubit or Bloc class
 
 ### Parameters
 
@@ -26,22 +32,13 @@ function useBloc<T extends BlocBase<any, any>>(
 
 ### Options
 
-```typescript
-interface UseBlocOptions<T> {
-  // Unique identifier for the instance
-  instanceId?: string;
-
-  // Props to pass to the constructor
-  staticProps?: PropsType<T>;
-
-  // Dependencies function that returns values to track
-  dependencies?: (bloc: T) => unknown[];
-
-  // Lifecycle callbacks
-  onMount?: (bloc: T) => void;
-  onUnmount?: (bloc: T) => void;
-}
-```
+| Option | Type | Description |
+| ------ | ---- | ----------- |
+| `instanceId` | `string` | Unique identifier for the instance |
+| `staticProps` | Constructor's first parameter type | Props to pass to the constructor |
+| `dependencies` | `(bloc: T) => unknown[]` | Function that returns values to track for re-creation |
+| `onMount` | `(bloc: T) => void` | Called when the component mounts |
+| `onUnmount` | `(bloc: T) => void` | Called when the component unmounts |
 
 ### Returns
 
@@ -170,121 +167,51 @@ function UserProfile({ userId }: { userId: string }) {
 }
 ```
 
-## useValue
+## useExternalBlocStore
 
-A simplified hook for subscribing to a specific value without accessing the instance.
-
-### Signature
-
-```typescript
-function useValue<T extends BlocBase<any, any>>(
-  BlocClass: BlocConstructor<T>,
-  options?: UseValueOptions<T>,
-): StateType<T>;
-```
-
-### Parameters
-
-- `BlocClass` - The Cubit or Bloc class constructor
-- `options` - Same as `UseBlocOptions` but without instance-related options
-
-### Returns
-
-The current state value
-
-### Usage
-
-```typescript
-function CountDisplay() {
-  const count = useValue(CounterCubit);
-  return <span>Count: {count}</span>;
-}
-
-function TodoCount() {
-  const state = useValue(TodoCubit);
-  return <span>Todos: {state.items.length}</span>;
-}
-```
-
-## createBloc
-
-Creates a Cubit-like class with a simplified API similar to React's setState.
+A hook for using Bloc instances from external stores or dependency injection systems.
 
 ### Signature
 
 ```typescript
-function createBloc<S extends object>(
-  initialState: S | (() => S),
-): BlocConstructor<SetStateCubit<S>>;
+function useExternalBlocStore<B extends BlocBase<any>>(
+  externalBlocInstance: B
+): [BlocState<B>, B];
 ```
 
 ### Parameters
 
-- `initialState` - Initial state object or factory function
+- `externalBlocInstance` - An existing Bloc/Cubit instance from an external source
 
 ### Returns
 
-A Cubit class with `setState` method
+Returns a tuple `[state, instance]` just like `useBloc`
 
 ### Usage
 
+This hook is useful when you have Bloc instances managed by an external system:
+
 ```typescript
-// Define the state container
-const CounterBloc = createBloc({
-  count: 0,
-  step: 1
-});
-
-// Extend with custom methods
-class Counter extends CounterBloc {
-  increment = () => {
-    this.setState({ count: this.state.count + this.state.step });
-  };
-
-  setStep = (step: number) => {
-    this.setState({ step });
-  };
-}
-
-// Use in component
-function CounterComponent() {
-  const [state, counter] = useBloc(Counter);
-
+// Using with dependency injection
+function TodoListWithDI({ todoBloc }: { todoBloc: TodoCubit }) {
+  const [state, cubit] = useExternalBlocStore(todoBloc);
+  
   return (
     <div>
-      <p>Count: {state.count} (step: {state.step})</p>
-      <button onClick={counter.increment}>+</button>
-      <input
-        type="number"
-        value={state.step}
-        onChange={e => counter.setStep(Number(e.target.value))}
-      />
+      {state.items.map(todo => (
+        <TodoItem key={todo.id} todo={todo} onToggle={cubit.toggle} />
+      ))}
     </div>
   );
 }
-```
 
-### setState API
+// Using with a global store
+const globalAuthBloc = new AuthBloc();
 
-The `setState` method works like React's class component setState:
-
-```typescript
-// Replace entire state
-setState({ count: 5, step: 1 });
-
-// Merge with current state (most common)
-setState({ count: 10 }); // step remains unchanged
-
-// Function update
-setState((prevState) => ({
-  count: prevState.count + 1,
-}));
-
-// Async function update
-setState(async (prevState) => {
-  const data = await fetchData();
-  return { ...prevState, data };
-});
+function AuthStatus() {
+  const [state] = useExternalBlocStore(globalAuthBloc);
+  return <div>Logged in: {state.isAuthenticated ? 'Yes' : 'No'}</div>;
+}
 ```
 
 ## Hook Patterns
@@ -450,8 +377,8 @@ const [state, bloc] = useBloc(TodoBloc);
 
 ```typescript
 // Custom hook with generic constraints
-function useGenericBloc<T extends BlocBase<any, any>>(
-  BlocClass: BlocConstructor<T>,
+function useGenericBloc<B extends BlocConstructor<BlocBase<any>>>(
+  BlocClass: B,
 ) {
   return useBloc(BlocClass);
 }
@@ -465,7 +392,7 @@ interface UserCubitProps {
   initialData?: User;
 }
 
-class UserCubit extends Cubit<UserState, UserCubitProps> {
+class UserCubit extends Cubit<UserState> {
   constructor(props: UserCubitProps) {
     super({ user: props.initialData || null });
   }

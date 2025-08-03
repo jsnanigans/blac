@@ -50,6 +50,6 @@ This documentation is organized to help you learn Blac effectively:
     - [Core Classes (BlocBase, Bloc, Cubit)](/api/core-classes): Detailed references for the main state containers.
     - [Key Methods](/api/key-methods): Essential methods for creating and managing state.
   - React (`@blac/react`):
-    - [React Hooks (useBloc, useValue, etc.)](/api/react-hooks): Learn how to use Blac with your React components.
+    - [React Hooks (useBloc, useExternalBlocStore)](/api/react-hooks): Learn how to use Blac with your React components.
 
 Ready to begin? Jump into the [Getting Started](/learn/getting-started) guide!

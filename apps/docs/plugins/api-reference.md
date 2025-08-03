@@ -161,15 +161,15 @@ class SystemPluginRegistry {
 }
 ```
 
-Access via `Blac.plugins`:
+Access via `Blac.instance.plugins`:
 
 ```typescript
 import { Blac } from '@blac/core';
 
-Blac.plugins.add(myPlugin);
-Blac.plugins.remove('plugin-name');
-const plugin = Blac.plugins.get('plugin-name');
-const all = Blac.plugins.getAll();
+Blac.instance.plugins.add(myPlugin);
+Blac.instance.plugins.remove('plugin-name');
+const plugin = Blac.instance.plugins.get('plugin-name');
+const all = Blac.instance.plugins.getAll();
 ```
 
 ### Bloc Plugin Registry

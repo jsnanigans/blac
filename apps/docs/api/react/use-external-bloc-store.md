@@ -1,303 +1,323 @@
 # useExternalBlocStore
 
-A React hook for subscribing to external bloc instances that are created and managed outside of React components.
+A low-level React hook that provides an external store interface for use with React's `useSyncExternalStore`. This hook is primarily for advanced use cases and library integrations.
 
 ## Overview
 
-`useExternalBlocStore` allows you to connect React components to bloc instances that exist independently of React's lifecycle. This is useful for:
+`useExternalBlocStore` creates an external store interface compatible with React 18's `useSyncExternalStore` API. This is useful for:
 
-- Blocs created at the module level
-- Blocs managed by external systems
-- Testing scenarios where you need direct bloc control
-- Integration with non-React parts of your application
+- Building custom hooks on top of BlaC
+- Integration with third-party state management tools
+- Advanced performance optimizations
+- Library authors extending BlaC functionality
 
 ## Signature
 
 ```typescript
-function useExternalBlocStore<B extends BlocBase<any>>(
-  bloc: B,
+function useExternalBlocStore<B extends BlocConstructor<BlocBase<any>>>(
+  blocConstructor: B,
   options?: {
+    id?: string;
+    staticProps?: ConstructorParameters<B>[0];
     selector?: (
-      currentState: BlocState<B>,
-      previousState: BlocState<B> | undefined,
-      instance: B,
-    ) => unknown[];
-  },
-): BlocState<B>;
+      currentState: BlocState<InstanceType<B>>,
+      previousState: BlocState<InstanceType<B>>,
+      instance: InstanceType<B>,
+    ) => any[];
+  }
+): {
+  externalStore: ExternalStore<BlocState<InstanceType<B>>>;
+  instance: { current: InstanceType<B> | null };
+  usedKeys: { current: Set<string> };
+  usedClassPropKeys: { current: Set<string> };
+  rid: string;
+};
 ```
 
 ## Parameters
 
 | Name               | Type                      | Required | Description                                        |
 | ------------------ | ------------------------- | -------- | -------------------------------------------------- |
-| `bloc`             | `B extends BlocBase<any>` | Yes      | The bloc instance to subscribe to                  |
+| `blocConstructor`  | `B extends BlocConstructor` | Yes      | The bloc class constructor                         |
+| `options.id`       | `string`                  | No       | Unique identifier for the instance                 |
+| `options.staticProps` | Constructor params     | No       | Props to pass to the constructor                  |
 | `options.selector` | `Function`                | No       | Custom dependency selector for render optimization |
 
 ## Returns
 
-Returns the current state of the bloc. The component will re-render when:
+Returns an object containing:
 
-- Any state property changes (if no selector provided)
-- Selected dependencies change (if selector provided)
+- `externalStore`: An external store interface with `getSnapshot`, `subscribe`, and `getServerSnapshot` methods
+- `instance`: A ref containing the bloc instance
+- `usedKeys`: A ref tracking used state keys
+- `usedClassPropKeys`: A ref tracking used class property keys  
+- `rid`: A unique render ID
 
 ## Basic Usage
 
-### Module-Level Bloc
+### Using with useSyncExternalStore
 
 ```typescript
-// store.ts - Create bloc outside React
-import { Cubit } from '@blac/core';
-
-export class AppSettingsCubit extends Cubit<{
-  theme: 'light' | 'dark';
-  language: string;
-}> {
-  constructor() {
-    super({ theme: 'light', language: 'en' });
-  }
-
-  toggleTheme = () => {
-    this.patch({
-      theme: this.state.theme === 'light' ? 'dark' : 'light',
-    });
-  };
-
-  setLanguage = (language: string) => {
-    this.patch({ language });
-  };
-}
-
-// Create singleton instance
-export const appSettings = new AppSettingsCubit();
-```
-
-```typescript
-// App.tsx - Use in React component
+import { useSyncExternalStore } from 'react';
 import { useExternalBlocStore } from '@blac/react';
-import { appSettings } from './store';
+import { CounterCubit } from './CounterCubit';
 
-function ThemeToggle() {
-  const state = useExternalBlocStore(appSettings);
+function Counter() {
+  const { externalStore, instance } = useExternalBlocStore(CounterCubit);
+  
+  const state = useSyncExternalStore(
+    externalStore.subscribe,
+    externalStore.getSnapshot,
+    externalStore.getServerSnapshot
+  );
 
   return (
-    <button onClick={appSettings.toggleTheme}>
-      Current theme: {state.theme}
-    </button>
+    <div>
+      <p>Count: {state?.count ?? 0}</p>
+      <button onClick={() => instance.current?.increment()}>
+        Increment
+      </button>
+    </div>
   );
 }
 ```
 
 ## Advanced Usage
 
-### With Selector
-
-Optimize re-renders by selecting specific dependencies:
+### Building a Custom Hook
 
 ```typescript
-function LanguageDisplay() {
-  // Only re-render when language changes
-  const state = useExternalBlocStore(appSettings, {
-    selector: (state) => [state.language]
+import { useSyncExternalStore } from 'react';
+import { useExternalBlocStore } from '@blac/react';
+import { BlocConstructor, BlocBase } from '@blac/core';
+
+// Custom hook using external store
+function useSimpleBloc<B extends BlocConstructor<BlocBase<any>>>(
+  blocConstructor: B,
+  options?: Parameters<typeof useExternalBlocStore>[1]
+) {
+  const { externalStore, instance } = useExternalBlocStore(
+    blocConstructor,
+    options
+  );
+  
+  const state = useSyncExternalStore(
+    externalStore.subscribe,
+    externalStore.getSnapshot,
+    externalStore.getServerSnapshot
+  );
+
+  return [state, instance.current] as const;
+}
+
+// Usage
+function TodoList() {
+  const [state, cubit] = useSimpleBloc(TodoCubit, {
+    selector: (state) => [state.items.length]
   });
 
-  return <div>Language: {state.language}</div>;
+  return <div>Todos: {state?.items.length ?? 0}</div>;
 }
 ```
 
-### Shared External State
-
-Multiple components can subscribe to the same external bloc:
+### With Selector for Optimization
 
 ```typescript
-// WebSocket managed state
-class WebSocketCubit extends Cubit<{
-  connected: boolean;
-  messages: string[]
-}> {
-  constructor() {
-    super({ connected: false, messages: [] });
-  }
+function useOptimizedBloc<B extends BlocConstructor<BlocBase<any>>>(
+  blocConstructor: B,
+  selector: (state: any) => any
+) {
+  const { externalStore, instance } = useExternalBlocStore(
+    blocConstructor,
+    {
+      selector: (currentState, previousState, bloc) => {
+        // Track dependencies for optimization
+        return [selector(currentState)];
+      }
+    }
+  );
+  
+  const state = useSyncExternalStore(
+    externalStore.subscribe,
+    () => {
+      const snapshot = externalStore.getSnapshot();
+      return snapshot ? selector(snapshot) : undefined;
+    },
+    () => {
+      const snapshot = externalStore.getServerSnapshot?.();
+      return snapshot ? selector(snapshot) : undefined;
+    }
+  );
 
-  addMessage = (message: string) => {
-    this.patch({
-      messages: [...this.state.messages, message]
-    });
-  };
+  return [state, instance.current] as const;
 }
 
-// Created and managed by WebSocket service
-export const wsState = new WebSocketCubit();
+// Usage - only re-renders when count changes
+function CountDisplay() {
+  const [count] = useOptimizedBloc(
+    ComplexStateCubit,
+    state => state.metrics.count
+  );
 
-// Multiple components can subscribe
-function ConnectionStatus() {
-  const state = useExternalBlocStore(wsState, {
-    selector: (state) => [state.connected]
-  });
-
-  return <div>Status: {state.connected ? '🟢' : '🔴'}</div>;
-}
-
-function MessageList() {
-  const state = useExternalBlocStore(wsState, {
-    selector: (state) => [state.messages.length]
-  });
-
-  return <div>Messages: {state.messages.length}</div>;
+  return <div>Count: {count}</div>;
 }
 ```
 
-### Testing with External Blocs
+### Integration with State Libraries
 
 ```typescript
-// In tests, create and control blocs directly
-describe('Component Tests', () => {
-  let testBloc: CounterCubit;
+// Integrate with Zustand, Valtio, or other state libraries
+import { create } from 'zustand';
+import { useExternalBlocStore } from '@blac/react';
+import { useSyncExternalStore } from 'react';
 
-  beforeEach(() => {
-    testBloc = new CounterCubit();
-  });
+interface StoreState {
+  bloc: CounterCubit | null;
+  initializeBloc: () => void;
+}
 
-  it('responds to external state changes', () => {
-    const { result, rerender } = renderHook(() =>
-      useExternalBlocStore(testBloc),
-    );
+const useStore = create<StoreState>((set) => ({
+  bloc: null,
+  initializeBloc: () => {
+    const { instance } = useExternalBlocStore(CounterCubit);
+    set({ bloc: instance.current });
+  },
+}));
 
-    expect(result.current.count).toBe(0);
+// Component using the integrated store
+function Counter() {
+  const bloc = useStore(state => state.bloc);
+  const initializeBloc = useStore(state => state.initializeBloc);
+  
+  useEffect(() => {
+    if (!bloc) initializeBloc();
+  }, [bloc, initializeBloc]);
 
-    // Change state externally
-    act(() => {
-      testBloc.increment();
-    });
+  if (!bloc) return null;
 
-    expect(result.current.count).toBe(1);
-  });
-});
+  // Use the bloc with external store
+  const { externalStore } = useExternalBlocStore(CounterCubit);
+  const state = useSyncExternalStore(
+    externalStore.subscribe,
+    externalStore.getSnapshot
+  );
+
+  return <div>Count: {state?.count ?? 0}</div>;
+}
 ```
 
 ## Best Practices
 
-### 1. Lifecycle Management
+### 1. Use useBloc Instead
 
-External blocs aren't automatically disposed. Manage their lifecycle explicitly:
+For most use cases, prefer the higher-level `useBloc` hook:
 
 ```typescript
-// Dispose when no longer needed
-appSettings.dispose();
+// ✅ Preferred for most cases
+const [state, cubit] = useBloc(CounterCubit);
 
-// Or use keepAlive for persistent blocs
-class PersistentCubit extends Cubit<State> {
-  static keepAlive = true;
+// ⚠️ Only use external store for advanced cases
+const { externalStore } = useExternalBlocStore(CounterCubit);
+```
+
+### 2. Proper Instance Management
+
+The external store creates and manages bloc instances:
+
+```typescript
+function MyComponent() {
+  // Instance is created and managed by the hook
+  const { instance } = useExternalBlocStore(CounterCubit, {
+    id: 'my-counter',
+    staticProps: { initialCount: 0 }
+  });
+
+  // Access the instance via ref
+  const handleClick = () => {
+    instance.current?.increment();
+  };
+  
+  return <button onClick={handleClick}>Increment</button>;
 }
 ```
 
-### 2. Avoid Memory Leaks
+### 3. Server-Side Rendering
 
-Ensure proper cleanup for dynamically created external blocs:
-
-```typescript
-function useWebSocketBloc(url: string) {
-  const blocRef = useRef<WebSocketCubit>();
-
-  useEffect(() => {
-    blocRef.current = new WebSocketCubit(url);
-
-    return () => {
-      blocRef.current?.dispose();
-    };
-  }, [url]);
-
-  const state = useExternalBlocStore(blocRef.current!);
-
-  return [state, blocRef.current] as const;
-}
-```
-
-### 3. Type Safety
-
-Leverage TypeScript for type-safe external stores:
+The external store provides SSR support:
 
 ```typescript
-// Type-safe store module
-interface StoreBlocs {
-  auth: AuthCubit;
-  settings: SettingsCubit;
-  notifications: NotificationsCubit;
-}
+function SSRComponent() {
+  const { externalStore } = useExternalBlocStore(DataCubit);
+  
+  const state = useSyncExternalStore(
+    externalStore.subscribe,
+    externalStore.getSnapshot,
+    externalStore.getServerSnapshot // SSR support
+  );
 
-class Store {
-  auth = new AuthCubit();
-  settings = new SettingsCubit();
-  notifications = new NotificationsCubit();
-
-  dispose() {
-    Object.values(this).forEach(bloc => bloc.dispose());
-  }
-}
-
-export const store = new Store();
-
-// Type-safe hook
-function useStore<K extends keyof StoreBlocs>(
-  key: K
-): BlocState<StoreBlocs[K]> {
-  return useExternalBlocStore(store[key]);
-}
-
-// Usage
-function AuthStatus() {
-  const authState = useStore('auth');
-  return <div>{authState.isAuthenticated ? 'Logged in' : 'Guest'}</div>;
+  return <div>{state?.data}</div>;
 }
 ```
 
 ## Common Patterns
 
-### Global App State
+### Custom Hook Library
 
 ```typescript
-// Global state management
-export const globalState = {
-  auth: new AuthCubit(),
-  theme: new ThemeCubit(),
-  i18n: new I18nCubit(),
-};
+// Build a library of custom hooks
+export function createBlocHook<B extends BlocConstructor<BlocBase<any>>>(
+  blocConstructor: B
+) {
+  return function useCustomBloc(
+    options?: Parameters<typeof useExternalBlocStore>[1]
+  ) {
+    const { externalStore, instance } = useExternalBlocStore(
+      blocConstructor,
+      options
+    );
+    
+    const state = useSyncExternalStore(
+      externalStore.subscribe,
+      externalStore.getSnapshot,
+      externalStore.getServerSnapshot
+    );
 
-// Hook for global state
-export function useGlobalState<T extends keyof typeof globalState>(key: T) {
-  return useExternalBlocStore(globalState[key]);
+    return [state, instance.current] as const;
+  };
 }
+
+// Create specific hooks
+export const useCounter = createBlocHook(CounterCubit);
+export const useTodos = createBlocHook(TodoCubit);
+export const useAuth = createBlocHook(AuthCubit);
 ```
 
-### Service Integration
+### Performance Monitoring
 
 ```typescript
-// Service that manages its own state
-class DataService {
-  private cubit = new DataCubit();
+// Track render performance
+function useMonitoredBloc<B extends BlocConstructor<BlocBase<any>>>(
+  blocConstructor: B
+) {
+  const renderCount = useRef(0);
+  const { externalStore, instance, usedKeys } = useExternalBlocStore(
+    blocConstructor
+  );
+  
+  useEffect(() => {
+    renderCount.current++;
+    console.log(`Render #${renderCount.current}`, {
+      blocName: blocConstructor.name,
+      usedKeys: Array.from(usedKeys.current)
+    });
+  });
 
-  get state() {
-    return this.cubit;
-  }
+  const state = useSyncExternalStore(
+    externalStore.subscribe,
+    externalStore.getSnapshot
+  );
 
-  async fetchData() {
-    this.cubit.setLoading(true);
-    try {
-      const data = await api.getData();
-      this.cubit.setData(data);
-    } finally {
-      this.cubit.setLoading(false);
-    }
-  }
-}
-
-export const dataService = new DataService();
-
-// Component subscribes to service state
-function DataDisplay() {
-  const state = useExternalBlocStore(dataService.state);
-
-  if (state.loading) return <div>Loading...</div>;
-  return <div>{state.data}</div>;
+  return [state, instance.current] as const;
 }
 ```
 
@@ -305,45 +325,69 @@ function DataDisplay() {
 
 | Feature              | useBloc         | useExternalBlocStore  |
 | -------------------- | --------------- | --------------------- |
-| Bloc creation        | Automatic       | Manual                |
-| Lifecycle management | Automatic       | Manual                |
-| Instance sharing     | Configurable    | Always shared         |
-| Props support        | Yes             | No                    |
-| Good for             | Component state | Global/external state |
+| Level of abstraction | High-level      | Low-level             |
+| Use with             | Direct usage    | useSyncExternalStore  |
+| Return value         | [state, instance] | External store object |
+| Lifecycle management | Automatic       | Automatic             |
+| Props support        | Yes             | Yes                   |
+| Best for             | Most use cases  | Library authors       |
 
 ## Troubleshooting
 
-### Component Not Re-rendering
+### TypeScript Errors
 
-Ensure the bloc is emitting new state objects:
+Ensure proper type inference:
 
 ```typescript
-// ❌ Bad - mutating state
-this.state.count++;
+// ❌ Type errors with generic constraints
+const { externalStore } = useExternalBlocStore<CounterCubit>(CounterCubit);
 
-// ✅ Good - new state object
-this.emit({ ...this.state, count: this.state.count + 1 });
+// ✅ Let TypeScript infer types
+const { externalStore } = useExternalBlocStore(CounterCubit);
 ```
 
-### Stale State
+### Missing State Updates
 
-Check that you're subscribing to the correct bloc instance:
+Check subscription setup:
 
 ```typescript
-// ❌ Creating new instance each render
-function Component() {
-  const state = useExternalBlocStore(new MyCubit()); // New instance!
-}
+// ❌ Forgetting to use the subscribe method
+const state = externalStore.getSnapshot();
 
-// ✅ Using stable instance
-const myCubit = new MyCubit();
-function Component() {
-  const state = useExternalBlocStore(myCubit);
+// ✅ Proper subscription with useSyncExternalStore
+const state = useSyncExternalStore(
+  externalStore.subscribe,
+  externalStore.getSnapshot,
+  externalStore.getServerSnapshot
+);
+```
+
+## When to Use This Hook
+
+Use `useExternalBlocStore` when:
+
+1. Building custom React hooks on top of BlaC
+2. Integrating with React 18's concurrent features
+3. Creating a state management library wrapper
+4. Need fine-grained control over subscriptions
+5. Implementing server-side rendering with hydration
+
+For standard application development, use the `useBloc` hook instead.
+
+## API Reference
+
+### ExternalStore Interface
+
+```typescript
+interface ExternalStore<T> {
+  getSnapshot: () => T | undefined;
+  subscribe: (listener: () => void) => () => void;
+  getServerSnapshot?: () => T | undefined;
 }
 ```
 
 ## Next Steps
 
-- [useBloc](/api/react/use-bloc) - Standard hook for component-managed blocs
+- [useBloc](/api/react/hooks#usebloc) - High-level hook for most use cases
+- [useSyncExternalStore](https://react.dev/reference/react/useSyncExternalStore) - React documentation
 - [Instance Management](/concepts/instance-management) - Learn about bloc lifecycle
-- [Plugin System](/plugins/overview) - Extend bloc functionality

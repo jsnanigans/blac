@@ -15,7 +15,7 @@ import { Blac } from '@blac/core';
 Enable or disable console logging for debugging.
 
 ```typescript
-Blac.enableLog: boolean = false;
+static enableLog: boolean = false;
 ```
 
 Example:
@@ -27,20 +27,38 @@ if (process.env.NODE_ENV === 'development') {
 }
 ```
 
-### enableWarn
+### logLevel
 
-Enable or disable warning messages.
+Set the minimum log level for console output.
 
 ```typescript
-Blac.enableWarn: boolean = true;
+static logLevel: 'warn' | 'log' = 'warn';
 ```
 
-### enableError
-
-Enable or disable error messages.
+Example:
 
 ```typescript
-Blac.enableError: boolean = true;
+// Show all logs including debug logs
+Blac.logLevel = 'log';
+
+// Only show warnings and errors (default)
+Blac.logLevel = 'warn';
+```
+
+### logSpy
+
+Set a custom function to intercept all log messages (useful for testing).
+
+```typescript
+static logSpy: ((...args: unknown[]) => void) | null = null;
+```
+
+Example:
+
+```typescript
+// Capture logs in tests
+const logs: any[] = [];
+Blac.logSpy = (...args) => logs.push(args);
 ```
 
 ## Static Methods
@@ -57,9 +75,6 @@ static setConfig(config: Partial<BlacConfig>): void
 
 ```typescript
 interface BlacConfig {
-  enableLog?: boolean;
-  enableWarn?: boolean;
-  enableError?: boolean;
   proxyDependencyTracking?: boolean;
 }
 ```
@@ -68,16 +83,12 @@ interface BlacConfig {
 
 | Option                    | Type      | Default | Description                          |
 | ------------------------- | --------- | ------- | ------------------------------------ |
-| `enableLog`               | `boolean` | `false` | Enable console logging               |
-| `enableWarn`              | `boolean` | `true`  | Enable warning messages              |
-| `enableError`             | `boolean` | `true`  | Enable error messages                |
 | `proxyDependencyTracking` | `boolean` | `true`  | Enable automatic render optimization |
 
 Example:
 
 ```typescript
 Blac.setConfig({
-  enableLog: true,
   proxyDependencyTracking: true,
 });
 ```
@@ -112,7 +123,7 @@ Blac.warn('Deprecated feature used');
 
 ### error()
 
-Log an error if errors are enabled.
+Log an error message (when logging is enabled at 'log' level).
 
 ```typescript
 static error(...args: any[]): void
@@ -124,97 +135,108 @@ Example:
 Blac.error('Failed to update state:', error);
 ```
 
-### get()
+### getBloc()
 
-Get a Bloc/Cubit instance by ID or class constructor.
+Get or create a Bloc/Cubit instance. This is the primary method for getting bloc instances.
 
 ```typescript
-static get<T extends BlocBase<any>>(
-  blocClass: Constructor<T> | string,
-  id?: string
-): T | undefined
+static getBloc<B extends BlocBase<unknown>>(
+  blocClass: BlocConstructor<B>,
+  options?: GetBlocOptions<B>
+): B
 ```
 
-Example:
+#### GetBlocOptions Interface
 
 ```typescript
-// Get by class
-const counter = Blac.get(CounterCubit);
-
-// Get by custom ID
-const userCounter = Blac.get(CounterCubit, 'user-123');
-
-// Get by string ID
-const instance = Blac.get('CustomBlocId');
-```
-
-### getOrCreate()
-
-Get an existing instance or create a new one.
-
-```typescript
-static getOrCreate<T extends BlocBase<any, any>>(
-  blocClass: Constructor<T>,
-  id?: string,
-  props?: T extends BlocBase<any, infer P> ? P : never
-): T
+interface GetBlocOptions<B extends BlocBase<unknown>> {
+  id?: string;
+  selector?: BlocHookDependencyArrayFn<BlocState<B>>;
+  constructorParams?: ConstructorParameters<BlocConstructor<B>>[];
+  onMount?: (bloc: B) => void;
+  instanceRef?: string;
+  throwIfNotFound?: boolean;
+  forceNewInstance?: boolean;
+}
 ```
 
 Example:
 
 ```typescript
 // Get or create with default ID
-const counter = Blac.getOrCreate(CounterCubit);
+const counter = Blac.getBloc(CounterCubit);
 
-// Get or create with custom ID and props
-const chat = Blac.getOrCreate(ChatCubit, 'room-123', {
-  roomId: '123',
-  userId: 'user-456',
+// Get or create with custom ID
+const userCounter = Blac.getBloc(CounterCubit, { id: 'user-123' });
+
+// Get or create with constructor params
+const chat = Blac.getBloc(ChatCubit, {
+  id: 'room-123',
+  constructorParams: [{ roomId: '123', userId: 'user-456' }]
 });
 ```
 
-### dispose()
 
-Manually dispose a Bloc/Cubit instance.
+### disposeBloc()
+
+Manually dispose a specific Bloc/Cubit instance.
 
 ```typescript
-static dispose(blocClass: Constructor<BlocBase<any>> | string, id?: string): void
+static disposeBloc(bloc: BlocBase<unknown>): void
 ```
 
 Example:
 
 ```typescript
-// Dispose by class
-Blac.dispose(CounterCubit);
+// Get bloc instance first
+const counter = Blac.getBloc(CounterCubit);
 
-// Dispose by custom ID
-Blac.dispose(CounterCubit, 'user-123');
-
-// Dispose by string ID
-Blac.dispose('CustomBlocId');
+// Later dispose it
+Blac.disposeBloc(counter);
 ```
 
-### disposeAll()
+### disposeBlocs()
 
-Dispose all Bloc/Cubit instances.
+Dispose all blocs matching a predicate function.
 
 ```typescript
-static disposeAll(): void
+static disposeBlocs(predicate: (bloc: BlocBase<unknown>) => boolean): void
 ```
 
 Example:
 
 ```typescript
-// Clean up everything (useful for testing)
-Blac.disposeAll();
+// Dispose all CounterCubit instances
+Blac.disposeBlocs(bloc => bloc instanceof CounterCubit);
+
+// Dispose all blocs with specific ID pattern
+Blac.disposeBlocs(bloc => bloc._id.toString().startsWith('temp-'));
 ```
 
-### resetConfig()
+### disposeKeepAliveBlocs()
 
-Reset configuration to defaults.
+Dispose all keep-alive blocs, optionally filtered by type.
 
 ```typescript
-static resetConfig(): void
+static disposeKeepAliveBlocs<B extends BlocConstructor<any>>(blocClass?: B): void
+```
+
+Example:
+
+```typescript
+// Dispose all keep-alive blocs
+Blac.disposeKeepAliveBlocs();
+
+// Dispose only keep-alive CounterCubit instances
+Blac.disposeKeepAliveBlocs(CounterCubit);
+```
+
+### resetInstance()
+
+Reset the global Blac instance, clearing all registrations except keep-alive blocs.
+
+```typescript
+static resetInstance(): void
 ```
 
 Example:
@@ -222,36 +244,62 @@ Example:
 ```typescript
 // Reset after tests
 afterEach(() => {
-  Blac.resetConfig();
-  Blac.disposeAll();
+  Blac.resetInstance();
 });
 ```
 
 ## Plugin System
 
-### use()
+### instance.plugins.add()
 
-Register a global plugin.
+Register a global plugin to the system plugin registry.
 
 ```typescript
-static use(plugin: BlacPlugin): void
+Blac.instance.plugins.add(plugin: BlacPlugin): void
+```
+
+Example:
+
+```typescript
+// Create and add a plugin
+const loggingPlugin: BlacPlugin = {
+  name: 'LoggingPlugin',
+  version: '1.0.0',
+  onStateChanged: (bloc, previousState, currentState) => {
+    console.log(`[${bloc._name}] State changed`, { previousState, currentState });
+  }
+};
+
+Blac.instance.plugins.add(loggingPlugin);
 ```
 
 #### BlacPlugin Interface
 
 ```typescript
 interface BlacPlugin {
-  beforeCreate?: <T extends BlocBase<any>>(
-    blocClass: Constructor<T>,
-    id: string,
-  ) => void;
-  afterCreate?: <T extends BlocBase<any>>(instance: T) => void;
-  beforeDispose?: <T extends BlocBase<any>>(instance: T) => void;
-  afterDispose?: <T extends BlocBase<any>>(
-    blocClass: Constructor<T>,
-    id: string,
-  ) => void;
-  onStateChange?: <S>(instance: BlocBase<S>, newState: S, oldState: S) => void;
+  readonly name: string;
+  readonly version: string;
+  readonly capabilities?: PluginCapabilities;
+  
+  // Lifecycle hooks - all synchronous
+  beforeBootstrap?(): void;
+  afterBootstrap?(): void;
+  beforeShutdown?(): void;
+  afterShutdown?(): void;
+
+  // System-wide observations
+  onBlocCreated?(bloc: BlocBase<any>): void;
+  onBlocDisposed?(bloc: BlocBase<any>): void;
+  onStateChanged?(bloc: BlocBase<any>, previousState: any, currentState: any): void;
+  onEventAdded?(bloc: Bloc<any, any>, event: any): void;
+  onError?(error: Error, bloc: BlocBase<unknown>, context: ErrorContext): void;
+
+  // Adapter lifecycle hooks
+  onAdapterCreated?(adapter: any, metadata: AdapterMetadata): void;
+  onAdapterMount?(adapter: any, metadata: AdapterMetadata): void;
+  onAdapterUnmount?(adapter: any, metadata: AdapterMetadata): void;
+  onAdapterRender?(adapter: any, metadata: AdapterMetadata): void;
+  onAdapterDisposed?(adapter: any, metadata: AdapterMetadata): void;
 }
 ```
 
@@ -259,71 +307,90 @@ Example: Logging Plugin
 
 ```typescript
 const loggingPlugin: BlacPlugin = {
-  afterCreate: (instance) => {
-    console.log(`[BlaC] Created ${instance.constructor.name}`);
+  name: 'LoggingPlugin',
+  version: '1.0.0',
+  
+  onBlocCreated: (bloc) => {
+    console.log(`[BlaC] Created ${bloc._name}`);
   },
 
-  onStateChange: (instance, newState, oldState) => {
-    console.log(`[BlaC] ${instance.constructor.name} state changed:`, {
-      old: oldState,
-      new: newState,
+  onStateChanged: (bloc, previousState, currentState) => {
+    console.log(`[BlaC] ${bloc._name} state changed:`, {
+      old: previousState,
+      new: currentState,
     });
   },
 
-  beforeDispose: (instance) => {
-    console.log(`[BlaC] Disposing ${instance.constructor.name}`);
+  onBlocDisposed: (bloc) => {
+    console.log(`[BlaC] Disposed ${bloc._name}`);
   },
 };
 
-Blac.use(loggingPlugin);
+Blac.instance.plugins.add(loggingPlugin);
 ```
 
 Example: State Persistence Plugin
 
 ```typescript
 const persistencePlugin: BlacPlugin = {
-  afterCreate: (instance) => {
+  name: 'PersistencePlugin',
+  version: '1.0.0',
+  
+  onBlocCreated: (bloc) => {
     // Load persisted state
-    const key = `blac_${instance.constructor.name}`;
+    const key = `blac_${bloc._name}_${bloc._id}`;
     const saved = localStorage.getItem(key);
-    if (saved && instance instanceof Cubit) {
-      instance.emit(JSON.parse(saved));
+    if (saved && 'emit' in bloc) {
+      (bloc as any).emit(JSON.parse(saved));
     }
   },
 
-  onStateChange: (instance, newState) => {
+  onStateChanged: (bloc, previousState, currentState) => {
     // Save state changes
-    const key = `blac_${instance.constructor.name}`;
-    localStorage.setItem(key, JSON.stringify(newState));
+    const key = `blac_${bloc._name}_${bloc._id}`;
+    localStorage.setItem(key, JSON.stringify(currentState));
   },
 };
 
-Blac.use(persistencePlugin);
+Blac.instance.plugins.add(persistencePlugin);
 ```
 
 Example: Analytics Plugin
 
 ```typescript
 const analyticsPlugin: BlacPlugin = {
-  afterCreate: (instance) => {
+  name: 'AnalyticsPlugin',
+  version: '1.0.0',
+  
+  onBlocCreated: (bloc) => {
     analytics.track('bloc_created', {
-      type: instance.constructor.name,
+      type: bloc._name,
       timestamp: Date.now(),
     });
   },
 
-  onStateChange: (instance, newState, oldState) => {
-    if (instance.constructor.name === 'CartCubit') {
-      const cartState = newState as CartState;
+  onStateChanged: (bloc, previousState, currentState) => {
+    if (bloc._name === 'CartCubit') {
+      const cartState = currentState as CartState;
       analytics.track('cart_updated', {
         itemCount: cartState.items.length,
         total: cartState.total,
       });
     }
   },
+
+  onEventAdded: (bloc, event) => {
+    // Track important events
+    if (event.constructor.name === 'CheckoutStarted') {
+      analytics.track('checkout_started', {
+        blocName: bloc._name,
+        timestamp: Date.now(),
+      });
+    }
+  },
 };
 
-Blac.use(analyticsPlugin);
+Blac.instance.plugins.add(analyticsPlugin);
 ```
 
 ## Instance Management
@@ -406,8 +473,8 @@ Register plugins before creating any instances:
 
 ```typescript
 // Register plugins first
-Blac.use(loggingPlugin);
-Blac.use(persistencePlugin);
+Blac.instance.plugins.add(loggingPlugin);
+Blac.instance.plugins.add(persistencePlugin);
 
 // Then render app
 ReactDOM.render(<App />, document.getElementById('root'));
@@ -419,12 +486,12 @@ Reset state between tests:
 
 ```typescript
 beforeEach(() => {
-  Blac.resetConfig();
-  Blac.disposeAll();
+  Blac.setConfig({ proxyDependencyTracking: true });
+  Blac.resetInstance();
 });
 
 afterEach(() => {
-  Blac.disposeAll();
+  Blac.resetInstance();
 });
 ```
 
@@ -439,25 +506,53 @@ function Component() {
 }
 
 // ⚠️ Avoid: Manual management
-const counter = Blac.getOrCreate(CounterCubit);
+const counter = Blac.getBloc(CounterCubit);
 // Remember to dispose when done
-Blac.dispose(CounterCubit);
+Blac.disposeBloc(counter);
 ```
 
-## Error Handling
+## Additional Static Methods
 
-BlaC provides detailed error messages:
+### getAllBlocs()
+
+Get all instances of a specific bloc class.
 
 ```typescript
-try {
-  const instance = Blac.get(NonExistentCubit);
-} catch (error) {
-  // Error: No instance found for NonExistentCubit
-}
+static getAllBlocs<B extends BlocConstructor<any>>(
+  blocClass: B,
+  options?: { searchIsolated?: boolean }
+): InstanceType<B>[]
+```
 
-// With error logging enabled
-Blac.enableError = true;
-// Errors are logged to console automatically
+Example:
+
+```typescript
+// Get all CounterCubit instances
+const allCounters = Blac.getAllBlocs(CounterCubit);
+
+// Get only non-isolated instances
+const sharedCounters = Blac.getAllBlocs(CounterCubit, { searchIsolated: false });
+```
+
+### getMemoryStats()
+
+Get memory usage statistics for debugging.
+
+```typescript
+static getMemoryStats(): {
+  totalBlocs: number;
+  registeredBlocs: number;
+  isolatedBlocs: number;
+  keepAliveBlocs: number;
+}
+```
+
+### validateConsumers()
+
+Validate consumer integrity across all blocs.
+
+```typescript
+static validateConsumers(): { valid: boolean; errors: string[] }
 ```
 
 ## Summary

@@ -461,23 +461,26 @@ class SearchBloc extends Bloc<SearchState, SearchEvent> {
 
 ### Event Logging
 
-Track all events for debugging:
+Use plugins to track all events for debugging:
 
 ```typescript
-class LoggingBloc<S, E> extends Bloc<S, E> {
-  constructor(initialState: S) {
-    super(initialState);
+import { BlacPlugin } from '@blac/core';
 
-    // Log all events
-    this.on('Action', (event) => {
-      console.log(`[${this.constructor.name}]`, {
-        event: event.constructor.name,
-        data: event,
-        timestamp: new Date().toISOString(),
-      });
+class EventLoggingPlugin implements BlacPlugin {
+  name = 'EventLoggingPlugin';
+  version = '1.0.0';
+
+  onEventAdded(bloc: Bloc<any, any>, event: any) {
+    console.log(`[${bloc._name}]`, {
+      event: event.constructor.name,
+      data: event,
+      timestamp: new Date().toISOString(),
     });
   }
 }
+
+// Add to specific bloc or globally
+Blac.instance.plugins.add(new EventLoggingPlugin());
 ```
 
 ### Async Event Sequences

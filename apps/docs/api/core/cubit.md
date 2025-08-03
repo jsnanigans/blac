@@ -11,7 +11,7 @@ import { Cubit } from '@blac/core';
 ## Class Definition
 
 ```typescript
-abstract class Cubit<S, P = null> extends BlocBase<S, P>
+abstract class Cubit<S> extends BlocBase<S>
 ```
 
 ### Type Parameters
@@ -19,7 +19,6 @@ abstract class Cubit<S, P = null> extends BlocBase<S, P>
 | Parameter | Description                                                 |
 | --------- | ----------------------------------------------------------- |
 | `S`       | The state type that this Cubit manages                      |
-| `P`       | Optional props type for initialization (defaults to `null`) |
 
 ## Constructor
 
@@ -57,10 +56,10 @@ class UserCubit extends Cubit<UserState> {
 
 ### emit()
 
-Replaces the entire state with a new value.
+Replaces the entire state with a new value. If the new state is identical to the current state (using `Object.is`), no update will occur.
 
 ```typescript
-protected emit(state: S): void
+emit(state: S): void
 ```
 
 #### Parameters
@@ -89,10 +88,10 @@ class ThemeCubit extends Cubit<{ theme: 'light' | 'dark' }> {
 
 ### patch()
 
-Updates specific properties of an object state. Only available when state is an object.
+Partially updates the current state by merging it with the provided state patch. This method is only applicable when the state is an object type. If the state is not an object, a warning will be logged and no update will occur.
 
 ```typescript
-protected patch(
+patch(
   statePatch: S extends object ? Partial<S> : S,
   ignoreChangeCheck?: boolean
 ): void
@@ -164,29 +163,6 @@ class CounterCubit extends Cubit<{ count: number }> {
 }
 ```
 
-#### props
-
-Props passed during instance creation.
-
-```typescript
-get props(): P | null
-```
-
-Example:
-
-```typescript
-interface TodoProps {
-  userId: string;
-  filter: 'all' | 'active' | 'completed';
-}
-
-class TodoCubit extends Cubit<TodoState, TodoProps> {
-  loadUserTodos = async () => {
-    const todos = await api.getTodos(this.props.userId);
-    this.emit({ todos });
-  };
-}
-```
 
 #### lastUpdate
 
@@ -249,65 +225,118 @@ class SessionCubit extends Cubit<SessionState> {
 }
 ```
 
-### Methods
+#### plugins
 
-#### on()
-
-Subscribe to state changes or BlaC events.
+Array of plugins to automatically attach to this Cubit class.
 
 ```typescript
-on(
-  event: BlacEvent | BlacEvent[],
-  listener: StateListener<S>,
-  signal?: AbortSignal
-): () => void
+static plugins?: BlocPlugin<any, any>[]
+```
+
+Example:
+
+```typescript
+import { PersistencePlugin } from '@blac/persistence';
+
+class SettingsCubit extends Cubit<SettingsState> {
+  static plugins = [
+    new PersistencePlugin<SettingsState>({
+      key: 'app-settings',
+      storage: localStorage,
+    })
+  ];
+
+  constructor() {
+    super({ theme: 'light', language: 'en' });
+  }
+}
+```
+
+### Methods
+
+#### subscribe()
+
+Subscribe to state changes.
+
+```typescript
+subscribe(callback: (state: S) => void): () => void
 ```
 
 ##### Parameters
 
 | Parameter  | Type                         | Description                       |
 | ---------- | ---------------------------- | --------------------------------- |
-| `event`    | `BlacEvent` or `BlacEvent[]` | Event(s) to listen for            |
-| `listener` | `StateListener<S>`           | Callback function                 |
-| `signal`   | `AbortSignal`                | Optional abort signal for cleanup |
+| `callback` | `(state: S) => void`        | Function called on state changes  |
 
-##### BlacEvent Enum
+##### Returns
+
+An unsubscribe function that removes the subscription when called.
+
+##### Example
 
 ```typescript
-enum BlacEvent {
-  StateChange = 'StateChange',
-  Error = 'Error',
-  Action = 'Action',
-}
+// External subscription
+const cubit = new CounterCubit();
+const unsubscribe = cubit.subscribe((state) => {
+  console.log('Count changed to:', state.count);
+});
+
+// Later: cleanup
+unsubscribe();
+```
+
+#### subscribeWithSelector()
+
+Subscribe to state changes with a selector for optimized updates.
+
+```typescript
+subscribeWithSelector<T>(
+  selector: (state: S) => T,
+  callback: (value: T) => void,
+  equalityFn?: (a: T, b: T) => boolean
+): () => void
+```
+
+##### Parameters
+
+| Parameter    | Type                      | Description                                         |
+| ------------ | ------------------------- | --------------------------------------------------- |
+| `selector`   | `(state: S) => T`        | Function to select specific data from state        |
+| `callback`   | `(value: T) => void`     | Function called when selected value changes        |
+| `equalityFn` | `(a: T, b: T) => boolean`| Optional custom equality function (default: Object.is) |
+
+##### Example
+
+```typescript
+const cubit = new UserCubit();
+
+// Only notified when user name changes
+const unsubscribe = cubit.subscribeWithSelector(
+  state => state.user?.name,
+  (name) => console.log('Name changed to:', name)
+);
+```
+
+#### subscriptionCount
+
+Get the current number of active subscriptions.
+
+```typescript
+get subscriptionCount(): number
 ```
 
 ##### Example
 
 ```typescript
-class PersistentCubit extends Cubit<State> {
-  constructor() {
-    super(initialState);
-
-    // Save to localStorage on state change
-    this.on(BlacEvent.StateChange, (newState) => {
-      localStorage.setItem('state', JSON.stringify(newState));
-    });
-
-    // Log errors
-    this.on(BlacEvent.Error, (error) => {
-      console.error('Cubit error:', error);
-    });
-  }
-}
-
-// External subscription
 const cubit = new CounterCubit();
-const unsubscribe = cubit.on(BlacEvent.StateChange, (state) => {
-  console.log('Count changed to:', state.count);
-});
+console.log(cubit.subscriptionCount); // 0
 
-// Cleanup
-unsubscribe();
+const unsub1 = cubit.subscribe(() => {});
+const unsub2 = cubit.subscribe(() => {});
+console.log(cubit.subscriptionCount); // 2
+
+unsub1();
+console.log(cubit.subscriptionCount); // 1
 ```
 
 #### onDispose()
@@ -511,13 +540,15 @@ describe('CounterCubit', () => {
     expect(cubit.state).toEqual({ count: 1 });
   });
 
-  it('should emit state changes', () => {
+  it('should notify subscribers on state changes', () => {
     const listener = jest.fn();
-    cubit.on(BlacEvent.StateChange, listener);
+    const unsubscribe = cubit.subscribe(listener);
 
     cubit.increment();
 
     expect(listener).toHaveBeenCalledWith({ count: 1 });
+    
+    unsubscribe();
   });
 });
 ```

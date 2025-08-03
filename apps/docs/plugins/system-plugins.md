@@ -92,19 +92,19 @@ import { Blac } from '@blac/core';
 
 // Add a plugin
 const plugin = new MySystemPlugin();
-Blac.plugins.add(plugin);
+Blac.instance.plugins.add(plugin);
 
 // Remove a plugin
-Blac.plugins.remove('my-plugin');
+Blac.instance.plugins.remove('my-plugin');
 
 // Get a specific plugin
-const myPlugin = Blac.plugins.get('my-plugin');
+const myPlugin = Blac.instance.plugins.get('my-plugin');
 
 // Get all plugins
-const allPlugins = Blac.plugins.getAll();
+const allPlugins = Blac.instance.plugins.getAll();
 
 // Clear all plugins
-Blac.plugins.clear();
+Blac.instance.plugins.clear();
 ```
 
 ## Common Use Cases
@@ -308,12 +308,12 @@ Enable plugins based on environment or configuration:
 ```typescript
 // Only in development
 if (process.env.NODE_ENV === 'development') {
-  Blac.plugins.add(new DevLoggerPlugin());
+  Blac.instance.plugins.add(new DevLoggerPlugin());
 }
 
 // Feature flag
 if (config.features.analytics) {
-  Blac.plugins.add(new AnalyticsPlugin(analyticsService));
+  Blac.instance.plugins.add(new AnalyticsPlugin(analyticsService));
 }
 ```
 
@@ -323,9 +323,9 @@ Plugins execute in registration order. Register critical plugins first:
 
 ```typescript
 // Register in priority order
-Blac.plugins.add(new ErrorHandlerPlugin()); // First - catch errors
-Blac.plugins.add(new PerformancePlugin()); // Second - measure performance
-Blac.plugins.add(new LoggerPlugin()); // Third - log events
+Blac.instance.plugins.add(new ErrorHandlerPlugin()); // First - catch errors
+Blac.instance.plugins.add(new PerformancePlugin()); // Second - measure performance
+Blac.instance.plugins.add(new LoggerPlugin()); // Third - log events
 ```
 
 ## Plugin Lifecycle
@@ -372,7 +372,7 @@ describe('MyPlugin', () => {
   beforeEach(() => {
     BlocTest.setUp();
     plugin = new MyPlugin();
-    Blac.plugins.add(plugin);
+    Blac.instance.plugins.add(plugin);
   });
 
   afterEach(() => {

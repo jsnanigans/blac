@@ -55,7 +55,7 @@ class LoggingPlugin implements BlacPlugin {
 }
 
 // Register the plugin globally
-Blac.plugins.add(new LoggingPlugin());
+Blac.instance.plugins.add(new LoggingPlugin());
 ```
 
 ## Plugin Capabilities

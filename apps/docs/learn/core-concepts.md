@@ -25,9 +25,9 @@ Blac offers two primary types of state containers, both built upon a common `Blo
 - Lifecycle event dispatching through the main `Blac` instance.
 - Instance management (ID, isolation, keep-alive status).
 
-You typically won't extend `BlocBase` directly. Instead, you'll use `Cubit` or `Bloc` (or `createBloc`). Refer to the [Core Classes API](/api/core-classes) for deeper details.
+You typically won't extend `BlocBase` directly. Instead, you'll use `Cubit` or `Bloc`. Refer to the [Core Classes API](/api/core-classes) for deeper details.
 
-### `Cubit<State, Props>`
+### `Cubit<State>`
 
 A `Cubit` is the simpler of the two. It exposes methods that directly cause state changes by calling `this.emit()` or `this.patch()`. This approach is often preferred for straightforward state management where the logic for state changes can be encapsulated within direct method calls, similar to how state is managed in libraries like Zustand.
 
@@ -65,7 +65,7 @@ class CounterCubit extends Cubit<CounterState> {
 
 Cubits are excellent for straightforward state management. See [Cubit API details](/api/core-classes#cubit-s-p).
 
-### `Bloc<State, Event, Props>`
+### `Bloc<State, A extends BlocEventConstraint>`
 
 A `Bloc` is more structured and suited for complex state logic. It processes instances of event _classes_ which are dispatched to it via its `add(eventInstance)` method. These events are then handled by specific handler functions registered for each event class using `this.on(EventClass, handler)`. This event-driven update cycle, where state transitions are explicit and type-safe, allows for clear and decoupled business logic.
 

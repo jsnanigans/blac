@@ -485,11 +485,14 @@ describe('CounterCubit', () => {
 
   it('should notify listeners on state change', () => {
     const listener = jest.fn();
-    cubit.on('StateChange', listener);
+    const unsubscribe = cubit.subscribe(listener);
 
     cubit.increment();
 
     expect(listener).toHaveBeenCalledWith({ count: 1 });
+    
+    // Clean up
+    unsubscribe();
   });
 });
 

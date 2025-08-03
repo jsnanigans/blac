@@ -88,7 +88,7 @@ Blac offers two main types of state containers:
   }
   ```
 
-- **`Bloc<State, Event>`**: A more structured container that processes instances of event _classes_ through registered _handler functions_ to produce new `State`. Event instances are dispatched via `this.add(new EventType())`, and handlers are registered with `this.on(EventType, handler)`. This is ideal for more complex, type-safe state transitions.
+- **`Bloc<State, A extends BlocEventConstraint>`**: A more structured container that processes instances of event _classes_ through registered _handler functions_ to produce new `State`. Event instances are dispatched via `this.add(new EventType())`, and handlers are registered with `this.on(EventType, handler)`. This is ideal for more complex, type-safe state transitions.
 
 Details on these are in the [Core Classes API](/api/core-classes) and [Core Concepts](/learn/core-concepts).
 
@@ -188,7 +188,7 @@ The Blac pattern is beneficial for:
 - Sharing state across multiple components or sections of your application.
 - Applications requiring a robust, predictable, and traceable state management architecture.
 
-## How to Choose: `Cubit` vs. `Bloc` vs. `createBloc().setState()`
+## How to Choose: `Cubit` vs. `Bloc`
 
 - Use **`Cubit`** when:
   - State logic is relatively simple.
@@ -197,8 +197,5 @@ The Blac pattern is beneficial for:
 - Use **`Bloc`** (with its `this.on(EventType, handler)` and `this.add(new EventType())` pattern) when:
   - State transitions are complex and benefit from distinct, type-safe event classes and dedicated handlers.
   - You want a clear, event-driven architecture for managing state changes and side effects, enhancing traceability and maintainability.
-- Use **`createBloc().setState()` style** when:
-  - You want `Cubit`-like simplicity (direct state changes via methods).
-  - You prefer a `this.setState()` API similar to React class components for its conciseness (often handles partial state updates on objects conveniently).
 
 Refer to the [Core Classes API](/api/core-classes) and [Key Methods API](/api/key-methods) for more implementation details.
