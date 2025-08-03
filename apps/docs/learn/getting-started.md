@@ -129,8 +129,8 @@ If you're experiencing TypeScript errors with `useBloc` not properly inferring y
 ```tsx
 // This should now work correctly with proper type inference
 const [state, cubit] = useBloc(CounterCubit, {
-  id: 'unique-id',
-  props: { initialCount: 0 },
+  instanceId: 'unique-id',
+  staticProps: { initialCount: 0 },
 });
 // state.count is properly typed as number
 // cubit.increment is properly typed as () => void

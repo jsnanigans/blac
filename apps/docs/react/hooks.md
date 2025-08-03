@@ -16,9 +16,9 @@ With options:
 
 ```typescript
 const [state, cubit] = useBloc(UserCubit, {
-  id: 'user-123', // Custom instance ID
-  props: { userId: '123' }, // Constructor props
-  deps: [userId], // Re-create on change
+  instanceId: 'user-123', // Custom instance ID
+  staticProps: { userId: '123' }, // Constructor props
+  dependencies: (bloc) => [userId], // Re-create on change
 });
 ```
 

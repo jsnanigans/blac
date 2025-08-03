@@ -98,10 +98,10 @@ There are times when you need each component (or a specific part of your UI) to 
       initialColor?: string;
     }) {
       // WidgetSettingsCubit does NOT need `static isolated = true` for this to work.
-      // The unique `id` ensures a distinct instance for this widgetId.
+      // The unique `instanceId` ensures a distinct instance for this widgetId.
       const [settings, settingsCubit] = useBloc(WidgetSettingsCubit, {
-        id: `widget-settings-${widgetId}`,
-        props: initialColor, // Assuming constructor takes props for initialColor
+        instanceId: `widget-settings-${widgetId}`,
+        staticProps: initialColor, // Assuming constructor takes props for initialColor
       });
       // ... render widget based on settings ...
     }

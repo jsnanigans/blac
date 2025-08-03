@@ -29,16 +29,17 @@ function useBloc<T extends BlocBase<any, any>>(
 ```typescript
 interface UseBlocOptions<T> {
   // Unique identifier for the instance
-  id?: string;
+  instanceId?: string;
 
   // Props to pass to the constructor
-  props?: PropsType<T>;
+  staticProps?: PropsType<T>;
 
-  // Disable automatic render optimization
-  disableProxyTracking?: boolean;
+  // Dependencies function that returns values to track
+  dependencies?: (bloc: T) => unknown[];
 
-  // Dependencies array (similar to useEffect)
-  deps?: React.DependencyList;
+  // Lifecycle callbacks
+  onMount?: (bloc: T) => void;
+  onUnmount?: (bloc: T) => void;
 }
 ```
 
@@ -87,12 +88,12 @@ function TodoList() {
 
 ### Multiple Instances
 
-Use the `id` option to create separate instances:
+Use the `instanceId` option to create separate instances:
 
 ```typescript
 function Dashboard() {
-  const [user1] = useBloc(UserCubit, { id: 'user-1' });
-  const [user2] = useBloc(UserCubit, { id: 'user-2' });
+  const [user1] = useBloc(UserCubit, { instanceId: 'user-1' });
+  const [user2] = useBloc(UserCubit, { instanceId: 'user-2' });
 
   return (
     <div>
@@ -115,8 +116,8 @@ interface TodoListProps {
 
 function TodoList({ userId, filter = 'all' }: TodoListProps) {
   const [state, cubit] = useBloc(TodoCubit, {
-    id: `todos-${userId}`,
-    props: { userId, initialFilter: filter }
+    instanceId: `todos-${userId}`,
+    staticProps: { userId, initialFilter: filter }
   });
 
   return <div>{/* ... */}</div>;
@@ -136,11 +137,20 @@ function OptimizedComponent() {
 }
 ```
 
-Disable if needed:
+To disable proxy tracking globally (not recommended):
+
+```typescript
+import { Blac } from '@blac/core';
+
+// Disable for all components
+Blac.setConfig({ proxyDependencyTracking: false });
+```
+
+Or use manual dependencies for specific components:
 
 ```typescript
 const [state] = useBloc(CubitClass, {
-  disableProxyTracking: true, // Re-renders on any state change
+  dependencies: (bloc) => [bloc.state.specificField] // Manual dependency tracking
 });
 ```
 
@@ -151,9 +161,9 @@ Re-create the instance when dependencies change:
 ```typescript
 function UserProfile({ userId }: { userId: string }) {
   const [state, cubit] = useBloc(UserCubit, {
-    id: `user-${userId}`,
-    props: { userId },
-    deps: [userId] // Re-create when userId changes
+    instanceId: `user-${userId}`,
+    staticProps: { userId },
+    dependencies: () => [userId] // Re-create when userId changes
   });
 
   return <div>{state.user?.name}</div>;
@@ -463,7 +473,7 @@ class UserCubit extends Cubit<UserState, UserCubitProps> {
 
 // Props are type-checked
 const [state] = useBloc(UserCubit, {
-  props: {
+  staticProps: {
     userId: '123',
     // initialData is optional
   },

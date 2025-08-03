@@ -106,23 +106,23 @@ A `Bloc`/`Cubit` with `static isolated = true` behaves much like component-local
 
 ## Controlled Sharing Groups with Custom IDs
 
-For more granular control over sharing, you can provide a custom `id` string in the `options` argument of the `useBloc` hook. Components that use the same `Bloc`/`Cubit` class **and the same `id`** will share an instance. This allows you to create specific sharing groups independent of the default class-name-based sharing or full isolation.
+For more granular control over sharing, you can provide a custom `instanceId` string in the `options` argument of the `useBloc` hook. Components that use the same `Bloc`/`Cubit` class **and the same `instanceId`** will share an instance. This allows you to create specific sharing groups independent of the default class-name-based sharing or full isolation.
 
 ```tsx
 // ComponentA and ComponentB share one instance of ChatBloc for 'thread-alpha'
 function ComponentA() {
-  const [chatState, chatBloc] = useBloc(ChatBloc, { id: 'thread-alpha' });
+  const [chatState, chatBloc] = useBloc(ChatBloc, { instanceId: 'thread-alpha' });
   // ...
 }
 
 function ComponentB() {
-  const [chatState, chatBloc] = useBloc(ChatBloc, { id: 'thread-alpha' });
+  const [chatState, chatBloc] = useBloc(ChatBloc, { instanceId: 'thread-alpha' });
   // ...
 }
 
 // ComponentC uses a *different* instance of ChatBloc for 'thread-beta'
 function ComponentC() {
-  const [chatState, chatBloc] = useBloc(ChatBloc, { id: 'thread-beta' });
+  const [chatState, chatBloc] = useBloc(ChatBloc, { instanceId: 'thread-beta' });
   // ...
 }
 
@@ -158,9 +158,9 @@ graph TD
 
 ```mermaid
 graph TD
-  CompX["Comp X: useBloc(ChatBloc, {id: 'chat1'})"] --> Chat1["ChatBloc ('chat1')"];
-  CompY["Comp Y: useBloc(ChatBloc, {id: 'chat1'})"] --> Chat1;
-  CompZ["Comp Z: useBloc(ChatBloc, {id: 'chat2'})"] --> Chat2["ChatBloc ('chat2')"];
+  CompX["Comp X: useBloc(ChatBloc, {instanceId: 'chat1'})"] --> Chat1["ChatBloc ('chat1')"];
+  CompY["Comp Y: useBloc(ChatBloc, {instanceId: 'chat1'})"] --> Chat1;
+  CompZ["Comp Z: useBloc(ChatBloc, {instanceId: 'chat2'})"] --> Chat2["ChatBloc ('chat2')"];
   CompDef["Comp Default: useBloc(ChatBloc)"] --> DefaultChat["Default Shared ChatBloc (if any)"];
 ```
 

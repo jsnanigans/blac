@@ -151,8 +151,8 @@ Encapsulate BlaC usage in custom hooks:
 
 ```typescript
 // hooks/useCounter.ts
-export function useCounter(id?: string) {
-  const [count, cubit] = useBloc(CounterCubit, { id });
+export function useCounter(instanceId?: string) {
+  const [count, cubit] = useBloc(CounterCubit, { instanceId });
 
   const increment = useCallback(() => cubit.increment(), [cubit]);
   const decrement = useCallback(() => cubit.decrement(), [cubit]);
@@ -185,8 +185,8 @@ function Counter() {
 ```typescript
 export function useUserProfile(userId: string) {
   const [state, cubit] = useBloc(UserCubit, {
-    id: `user-${userId}`,
-    props: { userId },
+    instanceId: `user-${userId}`,
+    staticProps: { userId },
   });
 
   // Load user on mount and userId change
@@ -298,7 +298,7 @@ function FeatureRoot() {
 
 function FeatureComponent() {
   const featureId = useContext(FeatureContext);
-  const [state] = useBloc(FeatureCubit, { id: featureId });
+  const [state] = useBloc(FeatureCubit, { instanceId: featureId });
   // All components in this feature share the same instance
 }
 ```
@@ -512,13 +512,14 @@ class GlobalErrorCubit extends Cubit<ErrorState> {
   }
 
   addError = (error: AppError) => {
+    const id = Date.now();
     this.patch({
-      errors: [...this.state.errors, { ...error, id: Date.now() }]
+      errors: [...this.state.errors, { ...error, id }]
     });
 
     // Auto-dismiss after 5 seconds
     setTimeout(() => {
-      this.removeError(error.id);
+      this.removeError(id);
     }, 5000);
   };
 

@@ -47,22 +47,42 @@ function MainCounter() {
 
 BlaC identifies instances using:
 
-1. **Class name** (default)
-2. **Custom ID** (when provided)
+1. **Class name** (default) - Used as the instance ID
+2. **Custom instance ID** (when provided via `instanceId` option)
+3. **Generated ID from props** (when using `staticProps`)
 
 ```typescript
-// Default: Uses class name as ID
-const [state1] = useBloc(UserCubit); // ID: "UserCubit"
+// Default: Uses class name as instance ID
+const [state1] = useBloc(UserCubit); // Instance ID: "UserCubit"
 
-// Custom ID: Creates separate instance
-const [state2] = useBloc(UserCubit, { id: 'admin-user' }); // ID: "admin-user"
+// Custom instance ID: Creates separate instance
+const [state2] = useBloc(UserCubit, { instanceId: 'admin-user' }); // Instance ID: "admin-user"
+
+// Generated from props: Primitive values in staticProps create deterministic IDs
+const [state3] = useBloc(UserCubit, { 
+  staticProps: { userId: 123, role: 'admin' } 
+}); // Instance ID: "role:admin|userId:123"
 
 // Different instances, different states
 ```
 
-## Isolated Instances
+### How Instance IDs are Generated from Props
 
-Sometimes you want each component to have its own instance. Use the `static isolated = true` property:
+When you provide `staticProps`, BlaC can automatically generate a deterministic instance ID by:
+- Extracting primitive values (string, number, boolean, null, undefined)
+- Ignoring complex types (objects, arrays, functions)
+- Sorting keys alphabetically
+- Creating a formatted string like "key1:value1|key2:value2"
+
+This is useful for creating unique instances based on props without manually specifying IDs.
+
+## Static Properties
+
+BlaC supports several static properties to control instance behavior:
+
+### `static isolated = true`
+
+Makes each component get its own instance:
 
 ```typescript
 class FormCubit extends Cubit<FormState> {
@@ -86,12 +106,52 @@ function FormB() {
 }
 ```
 
-Alternatively, use unique IDs:
+### `static keepAlive = true`
+
+Prevents the instance from being disposed when no components use it:
+
+```typescript
+class SessionCubit extends Cubit<SessionState> {
+  static keepAlive = true; // Never dispose this instance
+
+  constructor() {
+    super({ user: null, token: null });
+    this.loadSession();
+  }
+
+  // Stays in memory for entire app lifecycle
+}
+```
+
+### `static plugins = []`
+
+Attach plugins directly to a specific Bloc/Cubit class:
+
+```typescript
+import { PersistencePlugin } from '@bloc/persistence';
+
+class SettingsCubit extends Cubit<SettingsState> {
+  static plugins = [
+    new PersistencePlugin<SettingsState>({
+      key: 'app-settings',
+      storage: localStorage,
+    })
+  ];
+
+  constructor() {
+    super({ theme: 'light', language: 'en' });
+  }
+}
+```
+
+## Isolated Instances
+
+Sometimes you want each component to have its own instance. Use the `static isolated = true` property shown above, or alternatively, use unique instance IDs:
 
 ```typescript
 function DynamicForm({ formId }: { formId: string }) {
   // Each formId gets its own instance
-  const [state, form] = useBloc(FormCubit, { id: formId });
+  const [state, form] = useBloc(FormCubit, { instanceId: formId });
   // ...
 }
 ```
@@ -163,33 +223,10 @@ class WebSocketCubit extends Cubit<ConnectionState> {
 // WebSocket closes automatically when last component unmounts
 ```
 
-## Keep Alive Pattern
 
-Keep instances alive even when no components use them:
+## Static Props and Dynamic Instances
 
-```typescript
-class SessionCubit extends Cubit<SessionState> {
-  static keepAlive = true; // Never dispose this instance
-
-  constructor() {
-    super({ user: null, token: null });
-    this.loadSession();
-  }
-
-  // Stays in memory for entire app lifecycle
-}
-```
-
-Use cases for `keepAlive`:
-
-- User session management
-- App-wide settings
-- Cache management
-- Background data syncing
-
-## Props and Dynamic Instances
-
-Pass props to customize instance initialization:
+Pass static props to customize instance initialization:
 
 ```typescript
 interface ChatProps {
@@ -197,14 +234,23 @@ interface ChatProps {
   userId: string;
 }
 
-class ChatCubit extends Cubit<ChatState, ChatProps> {
-  constructor() {
+class ChatCubit extends Cubit<ChatState> {
+  constructor(props?: ChatProps) {
     super({ messages: [], connected: false });
+    // Access props via constructor parameter
+    this.roomId = props?.roomId;
+    this.userId = props?.userId;
+    
+    // Optional: Set a custom name for debugging
+    this._name = `ChatCubit_${props?.roomId}`;
   }
 
-  // Access props via this.props
+  private roomId?: string;
+  private userId?: string;
+
   connect = () => {
-    const socket = io(`/room/${this.props.roomId}`);
+    if (!this.roomId) return;
+    const socket = io(`/room/${this.roomId}`);
     // ...
   };
 }
@@ -212,8 +258,8 @@ class ChatCubit extends Cubit<ChatState, ChatProps> {
 // Usage
 function ChatRoom({ roomId, userId }: { roomId: string; userId: string }) {
   const [state, chat] = useBloc(ChatCubit, {
-    id: `chat-${roomId}`, // Unique instance per room
-    props: { roomId, userId }
+    instanceId: `chat-${roomId}`, // Unique instance per room
+    staticProps: { roomId, userId }
   });
 
   return <div>{/* Chat UI */}</div>;
@@ -278,8 +324,8 @@ Create instances scoped to specific parts of your app:
 // Workspace-scoped instances
 function Workspace({ workspaceId }: { workspaceId: string }) {
   // All children share these workspace-specific instances
-  const [projects] = useBloc(ProjectsCubit, { id: `workspace-${workspaceId}` });
-  const [members] = useBloc(MembersCubit, { id: `workspace-${workspaceId}` });
+  const [projects] = useBloc(ProjectsCubit, { instanceId: `workspace-${workspaceId}` });
+  const [members] = useBloc(MembersCubit, { instanceId: `workspace-${workspaceId}` });
 
   return (
     <div>
@@ -436,7 +482,7 @@ function ProductList() {
 // ❌ Avoid: Creates new instance each time
 function ProductItem({ product }: { product: Product }) {
   const [state] = useBloc(ProductCubit, {
-    id: product.id // New instance per product
+    instanceId: product.id // New instance per product
   });
 }
 ```
@@ -472,8 +518,16 @@ BlaC's instance management provides:
 
 - **Automatic lifecycle**: No manual creation or disposal
 - **Smart sharing**: Instances shared by default, isolated when needed
+- **Flexible identification**: Use class names, custom instance IDs, or auto-generated IDs from props
+- **Static configuration**: Control behavior with `isolated`, `keepAlive`, and `plugins` properties
 - **Memory efficiency**: Automatic cleanup and weak references
 - **Flexible scoping**: Global, feature, or component-level instances
 - **React compatibility**: Handles Strict Mode and concurrent features
+
+Key options for `useBloc`:
+- `instanceId`: Custom instance identifier
+- `staticProps`: Props passed to constructor, can generate instance IDs
+- `dependencies`: Re-create instance when dependencies change
+- `onMount`/`onUnmount`: Lifecycle callbacks
 
 This intelligent system lets you focus on your business logic while BlaC handles the infrastructure.
