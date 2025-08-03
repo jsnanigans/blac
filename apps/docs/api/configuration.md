@@ -80,10 +80,7 @@ You can always override the global setting by providing manual dependencies:
 ```typescript
 // This always uses manual dependencies, regardless of global config
 const [state, bloc] = useBloc(UserBloc, {
-  dependencies: (instance) => [
-    instance.state.name,
-    instance.state.email,
-  ],
+  dependencies: (instance) => [instance.state.name, instance.state.email],
 });
 ```
 

@@ -17,7 +17,7 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
     dependencies?: (bloc: InstanceType<B>) => unknown[];
     onMount?: (bloc: InstanceType<B>) => void;
     onUnmount?: (bloc: InstanceType<B>) => void;
-  }
+  },
 ): [BlocState<InstanceType<B>>, InstanceType<B>];
 ```
 
@@ -32,13 +32,13 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
 
 ### Options
 
-| Option | Type | Description |
-| ------ | ---- | ----------- |
-| `instanceId` | `string` | Unique identifier for the instance |
-| `staticProps` | Constructor's first parameter type | Props to pass to the constructor |
-| `dependencies` | `(bloc: T) => unknown[]` | Function that returns values to track for re-creation |
-| `onMount` | `(bloc: T) => void` | Called when the component mounts |
-| `onUnmount` | `(bloc: T) => void` | Called when the component unmounts |
+| Option         | Type                               | Description                                           |
+| -------------- | ---------------------------------- | ----------------------------------------------------- |
+| `instanceId`   | `string`                           | Unique identifier for the instance                    |
+| `staticProps`  | Constructor's first parameter type | Props to pass to the constructor                      |
+| `dependencies` | `(bloc: T) => unknown[]`           | Function that returns values to track for re-creation |
+| `onMount`      | `(bloc: T) => void`                | Called when the component mounts                      |
+| `onUnmount`    | `(bloc: T) => void`                | Called when the component unmounts                    |
 
 ### Returns
 
@@ -147,7 +147,7 @@ Or use manual dependencies for specific components:
 
 ```typescript
 const [state] = useBloc(CubitClass, {
-  dependencies: (bloc) => [bloc.state.specificField] // Manual dependency tracking
+  dependencies: (bloc) => [bloc.state.specificField], // Manual dependency tracking
 });
 ```
 
@@ -175,7 +175,7 @@ A hook for using Bloc instances from external stores or dependency injection sys
 
 ```typescript
 function useExternalBlocStore<B extends BlocBase<any>>(
-  externalBlocInstance: B
+  externalBlocInstance: B,
 ): [BlocState<B>, B];
 ```
 
@@ -195,7 +195,7 @@ This hook is useful when you have Bloc instances managed by an external system:
 // Using with dependency injection
 function TodoListWithDI({ todoBloc }: { todoBloc: TodoCubit }) {
   const [state, cubit] = useExternalBlocStore(todoBloc);
-  
+
   return (
     <div>
       {state.items.map(todo => (

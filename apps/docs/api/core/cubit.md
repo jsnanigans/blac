@@ -16,9 +16,9 @@ abstract class Cubit<S> extends BlocBase<S>
 
 ### Type Parameters
 
-| Parameter | Description                                                 |
-| --------- | ----------------------------------------------------------- |
-| `S`       | The state type that this Cubit manages                      |
+| Parameter | Description                            |
+| --------- | -------------------------------------- |
+| `S`       | The state type that this Cubit manages |
 
 ## Constructor
 
@@ -163,7 +163,6 @@ class CounterCubit extends Cubit<{ count: number }> {
 }
 ```
 
-
 #### lastUpdate
 
 Timestamp of the last state update.
@@ -243,7 +242,7 @@ class SettingsCubit extends Cubit<SettingsState> {
     new PersistencePlugin<SettingsState>({
       key: 'app-settings',
       storage: localStorage,
-    })
+    }),
   ];
 
   constructor() {
@@ -264,9 +263,9 @@ subscribe(callback: (state: S) => void): () => void
 
 ##### Parameters
 
-| Parameter  | Type                         | Description                       |
-| ---------- | ---------------------------- | --------------------------------- |
-| `callback` | `(state: S) => void`        | Function called on state changes  |
+| Parameter  | Type                 | Description                      |
+| ---------- | -------------------- | -------------------------------- |
+| `callback` | `(state: S) => void` | Function called on state changes |
 
 ##### Returns
 
@@ -299,11 +298,11 @@ subscribeWithSelector<T>(
 
 ##### Parameters
 
-| Parameter    | Type                      | Description                                         |
-| ------------ | ------------------------- | --------------------------------------------------- |
-| `selector`   | `(state: S) => T`        | Function to select specific data from state        |
-| `callback`   | `(value: T) => void`     | Function called when selected value changes        |
-| `equalityFn` | `(a: T, b: T) => boolean`| Optional custom equality function (default: Object.is) |
+| Parameter    | Type                      | Description                                            |
+| ------------ | ------------------------- | ------------------------------------------------------ |
+| `selector`   | `(state: S) => T`         | Function to select specific data from state            |
+| `callback`   | `(value: T) => void`      | Function called when selected value changes            |
+| `equalityFn` | `(a: T, b: T) => boolean` | Optional custom equality function (default: Object.is) |
 
 ##### Example
 
@@ -312,8 +311,8 @@ const cubit = new UserCubit();
 
 // Only notified when user name changes
 const unsubscribe = cubit.subscribeWithSelector(
-  state => state.user?.name,
-  (name) => console.log('Name changed to:', name)
+  (state) => state.user?.name,
+  (name) => console.log('Name changed to:', name),
 );
 ```
 
@@ -547,7 +546,7 @@ describe('CounterCubit', () => {
     cubit.increment();
 
     expect(listener).toHaveBeenCalledWith({ count: 1 });
-    
+
     unsubscribe();
   });
 });

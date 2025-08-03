@@ -111,18 +111,24 @@ For more granular control over sharing, you can provide a custom `instanceId` st
 ```tsx
 // ComponentA and ComponentB share one instance of ChatBloc for 'thread-alpha'
 function ComponentA() {
-  const [chatState, chatBloc] = useBloc(ChatBloc, { instanceId: 'thread-alpha' });
+  const [chatState, chatBloc] = useBloc(ChatBloc, {
+    instanceId: 'thread-alpha',
+  });
   // ...
 }
 
 function ComponentB() {
-  const [chatState, chatBloc] = useBloc(ChatBloc, { instanceId: 'thread-alpha' });
+  const [chatState, chatBloc] = useBloc(ChatBloc, {
+    instanceId: 'thread-alpha',
+  });
   // ...
 }
 
 // ComponentC uses a *different* instance of ChatBloc for 'thread-beta'
 function ComponentC() {
-  const [chatState, chatBloc] = useBloc(ChatBloc, { instanceId: 'thread-beta' });
+  const [chatState, chatBloc] = useBloc(ChatBloc, {
+    instanceId: 'thread-beta',
+  });
   // ...
 }
 

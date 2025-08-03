@@ -24,7 +24,7 @@ function useExternalBlocStore<B extends BlocConstructor<BlocBase<any>>>(
       previousState: BlocState<InstanceType<B>>,
       instance: InstanceType<B>,
     ) => any[];
-  }
+  },
 ): {
   externalStore: ExternalStore<BlocState<InstanceType<B>>>;
   instance: { current: InstanceType<B> | null };
@@ -36,12 +36,12 @@ function useExternalBlocStore<B extends BlocConstructor<BlocBase<any>>>(
 
 ## Parameters
 
-| Name               | Type                      | Required | Description                                        |
-| ------------------ | ------------------------- | -------- | -------------------------------------------------- |
-| `blocConstructor`  | `B extends BlocConstructor` | Yes      | The bloc class constructor                         |
-| `options.id`       | `string`                  | No       | Unique identifier for the instance                 |
-| `options.staticProps` | Constructor params     | No       | Props to pass to the constructor                  |
-| `options.selector` | `Function`                | No       | Custom dependency selector for render optimization |
+| Name                  | Type                        | Required | Description                                        |
+| --------------------- | --------------------------- | -------- | -------------------------------------------------- |
+| `blocConstructor`     | `B extends BlocConstructor` | Yes      | The bloc class constructor                         |
+| `options.id`          | `string`                    | No       | Unique identifier for the instance                 |
+| `options.staticProps` | Constructor params          | No       | Props to pass to the constructor                   |
+| `options.selector`    | `Function`                  | No       | Custom dependency selector for render optimization |
 
 ## Returns
 
@@ -50,7 +50,7 @@ Returns an object containing:
 - `externalStore`: An external store interface with `getSnapshot`, `subscribe`, and `getServerSnapshot` methods
 - `instance`: A ref containing the bloc instance
 - `usedKeys`: A ref tracking used state keys
-- `usedClassPropKeys`: A ref tracking used class property keys  
+- `usedClassPropKeys`: A ref tracking used class property keys
 - `rid`: A unique render ID
 
 ## Basic Usage
@@ -64,7 +64,7 @@ import { CounterCubit } from './CounterCubit';
 
 function Counter() {
   const { externalStore, instance } = useExternalBlocStore(CounterCubit);
-  
+
   const state = useSyncExternalStore(
     externalStore.subscribe,
     externalStore.getSnapshot,
@@ -100,7 +100,7 @@ function useSimpleBloc<B extends BlocConstructor<BlocBase<any>>>(
     blocConstructor,
     options
   );
-  
+
   const state = useSyncExternalStore(
     externalStore.subscribe,
     externalStore.getSnapshot,
@@ -136,7 +136,7 @@ function useOptimizedBloc<B extends BlocConstructor<BlocBase<any>>>(
       }
     }
   );
-  
+
   const state = useSyncExternalStore(
     externalStore.subscribe,
     () => {
@@ -188,7 +188,7 @@ const useStore = create<StoreState>((set) => ({
 function Counter() {
   const bloc = useStore(state => state.bloc);
   const initializeBloc = useStore(state => state.initializeBloc);
-  
+
   useEffect(() => {
     if (!bloc) initializeBloc();
   }, [bloc, initializeBloc]);
@@ -236,7 +236,7 @@ function MyComponent() {
   const handleClick = () => {
     instance.current?.increment();
   };
-  
+
   return <button onClick={handleClick}>Increment</button>;
 }
 ```
@@ -248,7 +248,7 @@ The external store provides SSR support:
 ```typescript
 function SSRComponent() {
   const { externalStore } = useExternalBlocStore(DataCubit);
-  
+
   const state = useSyncExternalStore(
     externalStore.subscribe,
     externalStore.getSnapshot,
@@ -266,20 +266,20 @@ function SSRComponent() {
 ```typescript
 // Build a library of custom hooks
 export function createBlocHook<B extends BlocConstructor<BlocBase<any>>>(
-  blocConstructor: B
+  blocConstructor: B,
 ) {
   return function useCustomBloc(
-    options?: Parameters<typeof useExternalBlocStore>[1]
+    options?: Parameters<typeof useExternalBlocStore>[1],
   ) {
     const { externalStore, instance } = useExternalBlocStore(
       blocConstructor,
-      options
+      options,
     );
-    
+
     const state = useSyncExternalStore(
       externalStore.subscribe,
       externalStore.getSnapshot,
-      externalStore.getServerSnapshot
+      externalStore.getServerSnapshot,
     );
 
     return [state, instance.current] as const;
@@ -297,24 +297,23 @@ export const useAuth = createBlocHook(AuthCubit);
 ```typescript
 // Track render performance
 function useMonitoredBloc<B extends BlocConstructor<BlocBase<any>>>(
-  blocConstructor: B
+  blocConstructor: B,
 ) {
   const renderCount = useRef(0);
-  const { externalStore, instance, usedKeys } = useExternalBlocStore(
-    blocConstructor
-  );
-  
+  const { externalStore, instance, usedKeys } =
+    useExternalBlocStore(blocConstructor);
+
   useEffect(() => {
     renderCount.current++;
     console.log(`Render #${renderCount.current}`, {
       blocName: blocConstructor.name,
-      usedKeys: Array.from(usedKeys.current)
+      usedKeys: Array.from(usedKeys.current),
     });
   });
 
   const state = useSyncExternalStore(
     externalStore.subscribe,
-    externalStore.getSnapshot
+    externalStore.getSnapshot,
   );
 
   return [state, instance.current] as const;
@@ -323,14 +322,14 @@ function useMonitoredBloc<B extends BlocConstructor<BlocBase<any>>>(
 
 ## Comparison with useBloc
 
-| Feature              | useBloc         | useExternalBlocStore  |
-| -------------------- | --------------- | --------------------- |
-| Level of abstraction | High-level      | Low-level             |
-| Use with             | Direct usage    | useSyncExternalStore  |
+| Feature              | useBloc           | useExternalBlocStore  |
+| -------------------- | ----------------- | --------------------- |
+| Level of abstraction | High-level        | Low-level             |
+| Use with             | Direct usage      | useSyncExternalStore  |
 | Return value         | [state, instance] | External store object |
-| Lifecycle management | Automatic       | Automatic             |
-| Props support        | Yes             | Yes                   |
-| Best for             | Most use cases  | Library authors       |
+| Lifecycle management | Automatic         | Automatic             |
+| Props support        | Yes               | Yes                   |
+| Best for             | Most use cases    | Library authors       |
 
 ## Troubleshooting
 
@@ -358,7 +357,7 @@ const state = externalStore.getSnapshot();
 const state = useSyncExternalStore(
   externalStore.subscribe,
   externalStore.getSnapshot,
-  externalStore.getServerSnapshot
+  externalStore.getServerSnapshot,
 );
 ```
 

@@ -85,7 +85,7 @@ importers:
         version: link:../../packages/plugins/bloc/persistence
       '@blac/plugin-render-logging':
         specifier: workspace:*
-        version: link:../../packages/plugin-render-logging
+        version: link:../../packages/plugins/system/render-logging
       '@blac/react':
         specifier: workspace:*
         version: link:../../packages/blac-react
@@ -215,7 +215,7 @@ importers:
     devDependencies:
       '@blac/plugin-render-logging':
         specifier: workspace:*
-        version: link:../plugin-render-logging
+        version: link:../plugins/system/render-logging
       '@testing-library/dom':
         specifier: 'catalog:'
         version: 10.4.1
@@ -268,25 +268,6 @@ importers:
         specifier: 'catalog:'
         version: 3.2.4(@types/node@24.1.0)(@vitest/browser@3.2.4)(happy-dom@18.0.1)(jiti@2.4.2)(jsdom@26.1.0)(lightningcss@1.30.1)(msw@2.7.3(@types/node@24.1.0)(typescript@5.9.2))(terser@5.39.0)(tsx@4.19.2)(yaml@2.7.0)
 
-  packages/plugin-render-logging:
-    dependencies:
-      '@blac/core':
-        specifier: workspace:*
-        version: link:../blac
-    devDependencies:
-      '@types/node':
-        specifier: 'catalog:'
-        version: 24.1.0
-      tsup:
-        specifier: 'catalog:'
-        version: 8.5.0(@microsoft/api-extractor@7.52.1(@types/node@24.1.0))(jiti@2.4.2)(postcss@8.5.6)(tsx@4.19.2)(typescript@5.9.2)(yaml@2.7.0)
-      typescript:
-        specifier: 'catalog:'
-        version: 5.9.2
-      vitest:
-        specifier: 'catalog:'
-        version: 3.2.4(@types/node@24.1.0)(@vitest/browser@3.2.4)(happy-dom@18.0.1)(jiti@2.4.2)(jsdom@26.1.0)(lightningcss@1.30.1)(msw@2.7.3(@types/node@24.1.0)(typescript@5.9.2))(terser@5.39.0)(tsx@4.19.2)(yaml@2.7.0)
-
   packages/plugins/bloc/persistence:
     dependencies:
       '@blac/core':
@@ -299,6 +280,25 @@ importers:
       prettier:
         specifier: 'catalog:'
         version: 3.6.2
+      tsup:
+        specifier: 'catalog:'
+        version: 8.5.0(@microsoft/api-extractor@7.52.1(@types/node@24.1.0))(jiti@2.4.2)(postcss@8.5.6)(tsx@4.19.2)(typescript@5.9.2)(yaml@2.7.0)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.2
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.4(@types/node@24.1.0)(@vitest/browser@3.2.4)(happy-dom@18.0.1)(jiti@2.4.2)(jsdom@26.1.0)(lightningcss@1.30.1)(msw@2.7.3(@types/node@24.1.0)(typescript@5.9.2))(terser@5.39.0)(tsx@4.19.2)(yaml@2.7.0)
+
+  packages/plugins/system/render-logging:
+    dependencies:
+      '@blac/core':
+        specifier: workspace:*
+        version: link:../../../blac
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.1.0
       tsup:
         specifier: 'catalog:'
         version: 8.5.0(@microsoft/api-extractor@7.52.1(@types/node@24.1.0))(jiti@2.4.2)(postcss@8.5.6)(tsx@4.19.2)(typescript@5.9.2)(yaml@2.7.0)

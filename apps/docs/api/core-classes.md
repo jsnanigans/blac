@@ -12,27 +12,27 @@ Blac provides three primary classes for state management:
 
 ### Properties
 
-| Name         | Type     | Description                               |
-| ------------ | -------- | ----------------------------------------- |
-| `state`      | `S`      | The current state of the container        |
-| `lastUpdate` | `number` | Timestamp when the state was last updated |
-| `subscriptionCount` | `number` | Number of active subscriptions       |
+| Name                | Type     | Description                               |
+| ------------------- | -------- | ----------------------------------------- |
+| `state`             | `S`      | The current state of the container        |
+| `lastUpdate`        | `number` | Timestamp when the state was last updated |
+| `subscriptionCount` | `number` | Number of active subscriptions            |
 
 ### Static Properties
 
-| Name        | Type      | Default | Description                                                           |
-| ----------- | --------- | ------- | --------------------------------------------------------------------- |
-| `isolated`  | `boolean` | `false` | When true, every consumer will receive its own unique instance        |
-| `keepAlive` | `boolean` | `false` | When true, the instance persists even when no components are using it |
-| `plugins`   | `BlocPlugin[]` | `undefined` | Array of plugins to automatically attach to instances         |
+| Name        | Type           | Default     | Description                                                           |
+| ----------- | -------------- | ----------- | --------------------------------------------------------------------- |
+| `isolated`  | `boolean`      | `false`     | When true, every consumer will receive its own unique instance        |
+| `keepAlive` | `boolean`      | `false`     | When true, the instance persists even when no components are using it |
+| `plugins`   | `BlocPlugin[]` | `undefined` | Array of plugins to automatically attach to instances                 |
 
 ### Methods
 
-| Name           | Parameters                                                           | Return Type                    | Description                                                     |
-| -------------- | -------------------------------------------------------------------- | ------------------------------ | --------------------------------------------------------------- |
-| `subscribe`    | `callback: (state: S) => void`                                       | `() => void`                   | Subscribes to state changes and returns an unsubscribe function |
-| `subscribeWithSelector` | `selector: (state: S) => T, callback: (value: T) => void, equalityFn?: (a: T, b: T) => boolean` | `() => void` | Subscribe with a selector for optimized updates |
-| `onDispose`    | Optional method                                                      | `void`                         | Override to perform cleanup when the instance is disposed      |
+| Name                    | Parameters                                                                                      | Return Type  | Description                                                     |
+| ----------------------- | ----------------------------------------------------------------------------------------------- | ------------ | --------------------------------------------------------------- |
+| `subscribe`             | `callback: (state: S) => void`                                                                  | `() => void` | Subscribes to state changes and returns an unsubscribe function |
+| `subscribeWithSelector` | `selector: (state: S) => T, callback: (value: T) => void, equalityFn?: (a: T, b: T) => boolean` | `() => void` | Subscribe with a selector for optimized updates                 |
+| `onDispose`             | Optional method                                                                                 | `void`       | Override to perform cleanup when the instance is disposed       |
 
 ## Cubit<S>
 
@@ -96,10 +96,10 @@ constructor(initialState: S)
 
 ### Methods
 
-| Name  | Parameters                                                                                                                                  | Return Type | Description                                                                                                        |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------ |
-| `on`  | `eventConstructor: new (...args: any[]) => E, handler: (event: E, emit: (newState: S) => void) => void \| Promise<void>` | `void`      | Registers an event handler for a specific event class. Protected method called in constructor.                     |
-| `add` | `event: A`                                                                                                                                  | `Promise<void>` | Dispatches an event instance to its registered handler. Events are processed sequentially.                    |
+| Name  | Parameters                                                                                                               | Return Type     | Description                                                                                    |
+| ----- | ------------------------------------------------------------------------------------------------------------------------ | --------------- | ---------------------------------------------------------------------------------------------- |
+| `on`  | `eventConstructor: new (...args: any[]) => E, handler: (event: E, emit: (newState: S) => void) => void \| Promise<void>` | `void`          | Registers an event handler for a specific event class. Protected method called in constructor. |
+| `add` | `event: A`                                                                                                               | `Promise<void>` | Dispatches an event instance to its registered handler. Events are processed sequentially.     |
 
 ### Example
 
@@ -152,7 +152,6 @@ class CounterBloc extends Bloc<{ count: number }, CounterEvent> {
   reset = () => this.add(new ResetEvent());
 }
 ```
-
 
 ## Choosing Between Cubit and Bloc
 

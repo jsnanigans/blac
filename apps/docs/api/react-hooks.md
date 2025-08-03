@@ -17,13 +17,13 @@ function useBloc<
 
 ### Parameters
 
-| Name                  | Type                                                                                                                                         | Required | Description                                                    |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------- |
-| `blocClass`           | `BlocConstructor<BlocGeneric>`                                                                                                               | Yes      | The Bloc/Cubit class to use                                    |
-| `options.instanceId`  | `string`                                                                                                                                     | No       | Optional identifier for the Bloc/Cubit instance                |
-| `options.staticProps` | `ConstructorParameters<B>[0]`                                                                                                                | No       | Static props to pass to the Bloc/Cubit constructor             |
-| `options.dependencies`| `(bloc: InstanceType<B>) => unknown[]`                                                                                                       | No       | Function to select dependencies that should trigger re-renders |
-| `options.onMount`     | `(bloc: InstanceType<B>) => void`                                                                                                            | No       | Callback function invoked when the Bloc is mounted             |
+| Name                   | Type                                   | Required | Description                                                    |
+| ---------------------- | -------------------------------------- | -------- | -------------------------------------------------------------- |
+| `blocClass`            | `BlocConstructor<BlocGeneric>`         | Yes      | The Bloc/Cubit class to use                                    |
+| `options.instanceId`   | `string`                               | No       | Optional identifier for the Bloc/Cubit instance                |
+| `options.staticProps`  | `ConstructorParameters<B>[0]`          | No       | Static props to pass to the Bloc/Cubit constructor             |
+| `options.dependencies` | `(bloc: InstanceType<B>) => unknown[]` | No       | Function to select dependencies that should trigger re-renders |
+| `options.onMount`      | `(bloc: InstanceType<B>) => void`      | No       | Callback function invoked when the Bloc is mounted             |
 
 ### Returns
 

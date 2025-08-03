@@ -59,8 +59,8 @@ const [state1] = useBloc(UserCubit); // Instance ID: "UserCubit"
 const [state2] = useBloc(UserCubit, { instanceId: 'admin-user' }); // Instance ID: "admin-user"
 
 // Generated from props: Primitive values in staticProps create deterministic IDs
-const [state3] = useBloc(UserCubit, { 
-  staticProps: { userId: 123, role: 'admin' } 
+const [state3] = useBloc(UserCubit, {
+  staticProps: { userId: 123, role: 'admin' },
 }); // Instance ID: "role:admin|userId:123"
 
 // Different instances, different states
@@ -69,6 +69,7 @@ const [state3] = useBloc(UserCubit, {
 ### How Instance IDs are Generated from Props
 
 When you provide `staticProps`, BlaC can automatically generate a deterministic instance ID by:
+
 - Extracting primitive values (string, number, boolean, null, undefined)
 - Ignoring complex types (objects, arrays, functions)
 - Sorting keys alphabetically
@@ -135,7 +136,7 @@ class SettingsCubit extends Cubit<SettingsState> {
     new PersistencePlugin<SettingsState>({
       key: 'app-settings',
       storage: localStorage,
-    })
+    }),
   ];
 
   constructor() {
@@ -223,7 +224,6 @@ class WebSocketCubit extends Cubit<ConnectionState> {
 // WebSocket closes automatically when last component unmounts
 ```
 
-
 ## Static Props and Dynamic Instances
 
 Pass static props to customize instance initialization:
@@ -240,7 +240,7 @@ class ChatCubit extends Cubit<ChatState> {
     // Access props via constructor parameter
     this.roomId = props?.roomId;
     this.userId = props?.userId;
-    
+
     // Optional: Set a custom name for debugging
     this._name = `ChatCubit_${props?.roomId}`;
   }
@@ -525,6 +525,7 @@ BlaC's instance management provides:
 - **React compatibility**: Handles Strict Mode and concurrent features
 
 Key options for `useBloc`:
+
 - `instanceId`: Custom instance identifier
 - `staticProps`: Props passed to constructor, can generate instance IDs
 - `dependencies`: Re-create instance when dependencies change

@@ -172,10 +172,9 @@ const userCounter = Blac.getBloc(CounterCubit, { id: 'user-123' });
 // Get or create with constructor params
 const chat = Blac.getBloc(ChatCubit, {
   id: 'room-123',
-  constructorParams: [{ roomId: '123', userId: 'user-456' }]
+  constructorParams: [{ roomId: '123', userId: 'user-456' }],
 });
 ```
-
 
 ### disposeBloc()
 
@@ -207,10 +206,10 @@ Example:
 
 ```typescript
 // Dispose all CounterCubit instances
-Blac.disposeBlocs(bloc => bloc instanceof CounterCubit);
+Blac.disposeBlocs((bloc) => bloc instanceof CounterCubit);
 
 // Dispose all blocs with specific ID pattern
-Blac.disposeBlocs(bloc => bloc._id.toString().startsWith('temp-'));
+Blac.disposeBlocs((bloc) => bloc._id.toString().startsWith('temp-'));
 ```
 
 ### disposeKeepAliveBlocs()
@@ -266,8 +265,11 @@ const loggingPlugin: BlacPlugin = {
   name: 'LoggingPlugin',
   version: '1.0.0',
   onStateChanged: (bloc, previousState, currentState) => {
-    console.log(`[${bloc._name}] State changed`, { previousState, currentState });
-  }
+    console.log(`[${bloc._name}] State changed`, {
+      previousState,
+      currentState,
+    });
+  },
 };
 
 Blac.instance.plugins.add(loggingPlugin);
@@ -280,7 +282,7 @@ interface BlacPlugin {
   readonly name: string;
   readonly version: string;
   readonly capabilities?: PluginCapabilities;
-  
+
   // Lifecycle hooks - all synchronous
   beforeBootstrap?(): void;
   afterBootstrap?(): void;
@@ -290,7 +292,11 @@ interface BlacPlugin {
   // System-wide observations
   onBlocCreated?(bloc: BlocBase<any>): void;
   onBlocDisposed?(bloc: BlocBase<any>): void;
-  onStateChanged?(bloc: BlocBase<any>, previousState: any, currentState: any): void;
+  onStateChanged?(
+    bloc: BlocBase<any>,
+    previousState: any,
+    currentState: any,
+  ): void;
   onEventAdded?(bloc: Bloc<any, any>, event: any): void;
   onError?(error: Error, bloc: BlocBase<unknown>, context: ErrorContext): void;
 
@@ -309,7 +315,7 @@ Example: Logging Plugin
 const loggingPlugin: BlacPlugin = {
   name: 'LoggingPlugin',
   version: '1.0.0',
-  
+
   onBlocCreated: (bloc) => {
     console.log(`[BlaC] Created ${bloc._name}`);
   },
@@ -335,7 +341,7 @@ Example: State Persistence Plugin
 const persistencePlugin: BlacPlugin = {
   name: 'PersistencePlugin',
   version: '1.0.0',
-  
+
   onBlocCreated: (bloc) => {
     // Load persisted state
     const key = `blac_${bloc._name}_${bloc._id}`;
@@ -361,7 +367,7 @@ Example: Analytics Plugin
 const analyticsPlugin: BlacPlugin = {
   name: 'AnalyticsPlugin',
   version: '1.0.0',
-  
+
   onBlocCreated: (bloc) => {
     analytics.track('bloc_created', {
       type: bloc._name,
@@ -531,7 +537,9 @@ Example:
 const allCounters = Blac.getAllBlocs(CounterCubit);
 
 // Get only non-isolated instances
-const sharedCounters = Blac.getAllBlocs(CounterCubit, { searchIsolated: false });
+const sharedCounters = Blac.getAllBlocs(CounterCubit, {
+  searchIsolated: false,
+});
 ```
 
 ### getMemoryStats()

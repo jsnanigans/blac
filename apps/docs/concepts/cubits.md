@@ -490,7 +490,7 @@ describe('CounterCubit', () => {
     cubit.increment();
 
     expect(listener).toHaveBeenCalledWith({ count: 1 });
-    
+
     // Clean up
     unsubscribe();
   });

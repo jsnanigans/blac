@@ -220,9 +220,9 @@ subscribe(callback: (state: S) => void): () => void
 
 #### Parameters
 
-| Name       | Type                   | Description                                          |
-| ---------- | ---------------------- | ---------------------------------------------------- |
-| `callback` | `(state: S) => void`   | A function that will be called when state changes    |
+| Name       | Type                 | Description                                       |
+| ---------- | -------------------- | ------------------------------------------------- |
+| `callback` | `(state: S) => void` | A function that will be called when state changes |
 
 #### Returns
 
@@ -258,10 +258,10 @@ subscribeWithSelector<T>(
 
 #### Parameters
 
-| Name         | Type                      | Description                                          |
-| ------------ | ------------------------- | ---------------------------------------------------- |
-| `selector`   | `(state: S) => T`         | Function to select specific data from state         |
-| `callback`   | `(value: T) => void`      | Function called when selected value changes         |
+| Name         | Type                      | Description                                            |
+| ------------ | ------------------------- | ------------------------------------------------------ |
+| `selector`   | `(state: S) => T`         | Function to select specific data from state            |
+| `callback`   | `(value: T) => void`      | Function called when selected value changes            |
 | `equalityFn` | `(a: T, b: T) => boolean` | Optional custom equality function (default: Object.is) |
 
 #### Example
@@ -271,10 +271,10 @@ const todoBloc = new TodoBloc();
 
 // Only get notified when the todo count changes
 const unsubscribe = todoBloc.subscribeWithSelector(
-  state => state.todos.length,
+  (state) => state.todos.length,
   (count) => {
     console.log('Todo count changed:', count);
-  }
+  },
 );
 ```
 

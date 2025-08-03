@@ -642,9 +642,7 @@ class PluggableCubit<S> extends Cubit<S> {
 
     // Subscribe to state changes
     this.subscribe((state) => {
-      this.plugins.forEach((p) => 
-        p.onStateChange?.(state, this.previousState)
-      );
+      this.plugins.forEach((p) => p.onStateChange?.(state, this.previousState));
       this.previousState = state;
     });
   }

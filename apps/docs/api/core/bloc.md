@@ -58,7 +58,6 @@ The current state value (inherited from BlocBase).
 get state(): S
 ```
 
-
 ### lastUpdate
 
 Timestamp of the last state update (inherited from BlocBase).
@@ -225,8 +224,8 @@ subscribeWithSelector<T>(
 ```typescript
 // Only notified when todos length changes
 const unsubscribe = bloc.subscribeWithSelector(
-  state => state.todos.length,
-  (count) => console.log('Todo count:', count)
+  (state) => state.todos.length,
+  (count) => console.log('Todo count:', count),
 );
 ```
 
