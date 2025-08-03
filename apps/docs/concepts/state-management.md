@@ -319,11 +319,7 @@ class SettingsCubit extends Cubit<Settings> {
 
 // Gradually expand
 class AppCubit extends Cubit<AppState> {
-  constructor(
-    private settings: SettingsCubit,
-    private auth: AuthCubit,
-    private data: DataCubit,
-  ) {
+  constructor() {
     super(computeInitialState());
 
     // Compose state from multiple sources
