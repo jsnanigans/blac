@@ -1,21 +1,20 @@
 {
   "name": "@blac/core",
-  "version": "2.0.0-rc-14",
+  "version": "2.0.0-rc-16",
   "license": "MIT",
   "author": "Brendan Mullins <jsnanigans@gmail.com>",
-  "main": "src/index.ts",
-  "module": "src/index.ts",
-  "typings": "src/index.ts",
-  "types": "src/index.ts",
-  "publishConfig": {
-    "main": "dist/index.cjs.js",
-    "module": "dist/index.es.js",
-    "types": "dist/index.d.ts",
-    "typings": "dist/index.d.ts"
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
   },
   "files": [
     "dist",
-    "src",
     "README.md",
     "LICENSE"
   ],
@@ -29,13 +28,18 @@
     "bloc-pattern"
   ],
   "scripts": {
+    "dev": "tsc --watch --project tsconfig.build.json",
+    "build": "pnpm run clean && pnpm run build:esm && pnpm run build:cjs",
+    "build:esm": "tsc --project tsconfig.build.json",
+    "build:cjs": "tsc --project tsconfig.build.json --module commonjs --outDir dist --declaration false --declarationMap false && mv dist/index.js dist/index.cjs",
+    "clean": "rm -rf dist",
     "format": "prettier --write \".\"",
     "test": "vitest run",
     "test:watch": "vitest --watch",
     "coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
-    "build": "vite build",
-    "deploy": "pnpm run build && pnpm publish --access public"
+    "prepublishOnly": "pnpm run build && pnpm run test && pnpm run typecheck",
+    "deploy": "pnpm publish --access public"
   },
   "dependencies": {},
   "devDependencies": {
@@ -45,8 +49,6 @@
     "jsdom": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:",
-    "vite": "catalog:",
-    "vite-plugin-dts": "catalog:",
     "vitest": "catalog:"
   }
 }

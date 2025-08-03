@@ -1,28 +1,32 @@
 {
   "name": "@blac/plugin-persistence",
-  "version": "2.0.0-rc-14",
+  "version": "2.0.0-rc-16",
   "description": "Persistence plugin for BlaC state management",
-  "main": "dist/index.js",
-  "module": "dist/index.mjs",
-  "types": "dist/index.d.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     }
   },
   "files": [
     "dist",
-    "src",
     "README.md"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format cjs,esm --dts --clean",
-    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "dev": "tsc --watch --project tsconfig.build.json",
+    "build": "pnpm run clean && pnpm run build:esm && pnpm run build:cjs",
+    "build:esm": "tsc --project tsconfig.build.json",
+    "build:cjs": "tsc --project tsconfig.build.json --module commonjs --outDir dist --declaration false --declarationMap false && mv dist/index.js dist/index.cjs",
+    "clean": "rm -rf dist",
     "test": "vitest run",
     "format": "prettier --write \".\"",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm run build && pnpm run test && pnpm run typecheck"
   },
   "keywords": [
     "blac",
@@ -39,17 +43,15 @@
     "url": "https://github.com/blac/blac",
     "directory": "packages/plugins/bloc/persistence"
   },
-  "dependencies": {
-    "@blac/core": "workspace:*"
-  },
+  "dependencies": {},
   "devDependencies": {
+    "@blac/core": "workspace:*",
     "@types/node": "catalog:",
-    "tsup": "catalog:",
     "typescript": "catalog:",
     "prettier": "catalog:",
     "vitest": "catalog:"
   },
   "peerDependencies": {
-    "@blac/core": ">=2.0.0"
+    "@blac/core": "^2.0.0-rc"
   }
 }

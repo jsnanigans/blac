@@ -1,40 +1,41 @@
 {
   "name": "@blac/plugin-render-logging",
-  "version": "2.0.0-rc-14",
+  "version": "2.0.0-rc-16",
   "description": "Render logging plugin for BlaC state management",
-  "main": "dist/index.js",
-  "module": "dist/index.mjs",
-  "types": "dist/index.d.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     }
   },
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
+    "dev": "tsc --watch --project tsconfig.build.json",
+    "build": "pnpm run clean && pnpm run build:esm && pnpm run build:cjs",
+    "build:esm": "tsc --project tsconfig.build.json",
+    "build:cjs": "tsc --project tsconfig.build.json --module commonjs --outDir dist --declaration false --declarationMap false && mv dist/index.js dist/index.cjs",
+    "clean": "rm -rf dist",
     "test": "echo 'No tests yet' && exit 0",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src --ext .ts,.tsx"
+    "lint": "eslint src --ext .ts,.tsx",
+    "prepublishOnly": "pnpm run build && pnpm run test && pnpm run typecheck"
   },
-  "dependencies": {
-    "@blac/core": "workspace:*"
-  },
+  "dependencies": {},
   "devDependencies": {
+    "@blac/core": "workspace:*",
     "@types/node": "catalog:",
-    "tsup": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
   "peerDependencies": {
-    "@blac/core": ">=2.0.0"
+    "@blac/core": "^2.0.0-rc"
   },
   "files": [
-    "dist",
-    "src"
+    "dist"
   ],
   "keywords": [
     "blac",

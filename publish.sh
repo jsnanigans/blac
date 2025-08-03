@@ -10,7 +10,6 @@ CONFIG_FILE=".publish.config.json"
 # Default configuration
 PUBLISH_TAG=${PUBLISH_TAG:-"preview"}
 DRY_RUN=${DRY_RUN:-false}
-SKIP_BUILD=${SKIP_BUILD:-false}
 SYNC_DEPS=${SYNC_DEPS:-true}
 
 # Colors for output
@@ -161,7 +160,6 @@ echo ""
 echo -e "${YELLOW}Configuration:${NC}"
 echo -e "  Version bump: ${GREEN}$VERSION_BUMP${NC}"
 echo -e "  Publish tag: ${GREEN}$PUBLISH_TAG${NC}"
-echo -e "  Skip build: ${GREEN}$SKIP_BUILD${NC}"
 echo -e "  Sync workspace deps: ${GREEN}$SYNC_DEPS${NC}"
 echo -e "  Dry run: ${GREEN}$DRY_RUN${NC}"
 echo ""
@@ -227,21 +225,8 @@ for package_dir in "${PACKAGES[@]}"; do
     echo -e "New version: ${YELLOW}[DRY RUN]${NC}"
   fi
   
-  # Build
-  if [ "$SKIP_BUILD" = false ]; then
-    echo -e "Building ${YELLOW}$name${NC}..."
-    if [ "$DRY_RUN" = false ]; then
-      pnpm run build || {
-        echo -e "${RED}Failed to build $name${NC}"
-        FAILED_PACKAGES+=("$name")
-        continue
-      }
-    else
-      echo -e "${YELLOW}[DRY RUN] Would run: pnpm run build${NC}"
-    fi
-  else
-    echo -e "${YELLOW}Skipping build for $name${NC}"
-  fi
+  # No build step needed - publishing TypeScript source directly
+  echo -e "${GREEN}Publishing TypeScript source directly (no build required)${NC}"
   
   # Publish
   echo -e "Publishing ${YELLOW}$name${NC}..."

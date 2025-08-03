@@ -6,7 +6,18 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", "generated/**"]
+      "outputs": ["dist/**", ".tsbuildinfo"]
+    },
+    "build:esm": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".tsbuildinfo"]
+    },
+    "build:cjs": {
+      "dependsOn": ["build:esm"],
+      "outputs": ["dist/**"]
+    },
+    "clean": {
+      "cache": false
     },
     "typecheck": {
       "dependsOn": ["^typecheck"]
@@ -14,7 +25,9 @@
     "lint": {},
     "format": {},
     "prettier": {},
-    "test": {},
+    "test": {
+      "dependsOn": ["build"]
+    },
     "test:watch": {
       "persistent": true,
       "interactive": true,
@@ -26,6 +39,10 @@
     },
     "sb": {
       "persistent": true,
+      "cache": false
+    },
+    "prepublishOnly": {
+      "dependsOn": ["build", "test", "typecheck"],
       "cache": false
     },
     "generate:wcl": {},
