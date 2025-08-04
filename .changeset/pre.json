@@ -2,13 +2,15 @@
   "mode": "pre",
   "tag": "rc",
   "initialVersions": {
-    "demo": "1.0.0",
-    "blac-docs": "1.0.0",
-    "perf": "1.0.0",
     "@blac/core": "2.0.0-rc-16",
     "@blac/react": "2.0.0-rc-16",
     "@blac/plugin-persistence": "2.0.0-rc-16",
-    "@blac/plugin-render-logging": "2.0.0-rc-16"
+    "@blac/plugin-render-logging": "2.0.0-rc-16",
+    "demo": "1.0.0",
+    "blac-docs": "1.0.0",
+    "perf": "1.0.0"
   },
-  "changesets": []
+  "changesets": [
+    "cyan-rats-vanish"
+  ]
 }

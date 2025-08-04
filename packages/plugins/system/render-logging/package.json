@@ -1,6 +1,6 @@
 {
   "name": "@blac/plugin-render-logging",
-  "version": "2.0.0-rc-16",
+  "version": "2.0.0-rc.0",
   "description": "Render logging plugin for BlaC state management",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -32,7 +32,7 @@
     "vitest": "catalog:"
   },
   "peerDependencies": {
-    "@blac/core": "^2.0.0-rc"
+    "@blac/core": "^2.0.0-rc.0"
   },
   "files": [
     "dist"
