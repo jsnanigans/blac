@@ -30,7 +30,7 @@
     "format": "prettier --write \".\"",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "pnpm run build && pnpm run test && pnpm run typecheck"
+    "prepublishOnly": "echo 'Skipping prepublishOnly - build should be done at root level'"
   },
   "keywords": [
     "blac",

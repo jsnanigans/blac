@@ -12,7 +12,7 @@
     "format": "turbo run format",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "pnpm build && changeset publish"
+    "release": "pnpm build && pnpm test && pnpm typecheck && changeset publish --no-git-tag"
   },
   "pnpm": {},
   "engines": {

@@ -38,7 +38,7 @@
     "test:watch": "vitest --watch",
     "coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "pnpm run build && pnpm run test && pnpm run typecheck",
+    "prepublishOnly": "echo 'Skipping prepublishOnly - build should be done at root level'",
     "deploy": "pnpm publish --access public"
   },
   "dependencies": {},
