@@ -338,14 +338,18 @@ describe('Bloc Event Handling', () => {
     it('should prevent state updates after disposal is initiated', async () => {
       const observer = vi.fn();
       bloc.subscribe(observer);
-      const errorSpy = vi.spyOn(Blac, 'error').mockImplementation(() => {});
+      const errorSpy = vi
+        .spyOn(blacInstance, 'error')
+        .mockImplementation(() => {});
 
-      // Start async event processing
-      const promise = bloc.add(new AsyncIncrementEvent(5, 50));
+      // Start async event processing with longer delay
+      const promise = bloc.add(new AsyncIncrementEvent(5, 100));
 
-      // Dispose bloc while event is processing
-      setTimeout(() => bloc.dispose(), 25);
+      // Wait a bit, then dispose bloc while event is still processing
+      await new Promise((resolve) => setTimeout(resolve, 25));
+      bloc.dispose();
 
+      // Wait for the event to complete
       await promise;
 
       // State should not be updated after disposal
@@ -354,6 +358,8 @@ describe('Bloc Event Handling', () => {
       expect(errorSpy).toHaveBeenCalledWith(
         expect.stringContaining('Attempted state update on'),
       );
+
+      errorSpy.mockRestore();
     });
   });
 

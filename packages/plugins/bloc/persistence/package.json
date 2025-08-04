@@ -8,8 +8,12 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": {
+        "development": "./src/index.ts",
+        "default": "./dist/index.js"
+      },
+      "require": "./dist/index.cjs",
+      "source": "./src/index.ts"
     }
   },
   "files": [
@@ -52,6 +56,6 @@
     "vitest": "catalog:"
   },
   "peerDependencies": {
-    "@blac/core": "^2.0.0-rc.0"
+    "@blac/core": "workspace:*"
   }
 }

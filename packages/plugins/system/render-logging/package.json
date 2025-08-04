@@ -16,7 +16,7 @@
     "dev": "tsc --watch --project tsconfig.build.json",
     "build": "pnpm run clean && pnpm run build:esm && pnpm run build:cjs",
     "build:esm": "tsc --project tsconfig.build.json",
-    "build:cjs": "tsc --project tsconfig.build.json --module commonjs --outDir dist --declaration false --declarationMap false && mv dist/index.js dist/index.cjs",
+    "build:cjs": "tsc --project tsconfig.build.json --module commonjs --outDir dist --declaration false --declarationMap false && cp dist/index.js dist/index.cjs",
     "clean": "rm -rf dist",
     "test": "echo 'No tests yet' && exit 0",
     "test:watch": "vitest",
@@ -32,7 +32,7 @@
     "vitest": "catalog:"
   },
   "peerDependencies": {
-    "@blac/core": "^2.0.0-rc.0"
+    "@blac/core": "workspace:*"
   },
   "files": [
     "dist"

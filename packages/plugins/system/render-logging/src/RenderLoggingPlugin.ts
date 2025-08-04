@@ -96,7 +96,7 @@ export class RenderLoggingPlugin implements BlacPlugin {
       if (hasChanged) {
         const changedIndices: number[] = [];
         if (savedLastDependencies) {
-          currentDependencyValues.forEach((val, i) => {
+          currentDependencyValues.forEach((val: any, i: number) => {
             if (!Object.is(val, savedLastDependencies![i])) {
               changedIndices.push(i);
             }
@@ -106,7 +106,7 @@ export class RenderLoggingPlugin implements BlacPlugin {
         reason = {
           type: 'dependency-change',
           description: `Manual dependencies changed: indices ${changedIndices.join(', ')}`,
-          dependencies: currentDependencyValues.map((val, i) => {
+          dependencies: currentDependencyValues.map((val: any, i: number) => {
             const changed = changedIndices.includes(i);
             return `dep[${i}]${changed ? ' (changed)' : ''}: ${JSON.stringify(val)}`;
           }),
