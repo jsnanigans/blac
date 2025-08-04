@@ -1,7 +1,8 @@
 {
   "extends": "../../../../tsconfig.base.json",
   "compilerOptions": {
-    "rootDir": "./src",
+    "target": "ES2021",
+    "lib": ["ES2021", "DOM"],
     "outDir": "./dist",
     "paths": {
       "@blac/core": ["../../../../packages/blac/src/index.ts"]
