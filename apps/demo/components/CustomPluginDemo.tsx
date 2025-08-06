@@ -1,19 +1,32 @@
 import React, { useState, useEffect } from 'react';
-import { Cubit, Blac, BlacPlugin, BlacLifecycleEvent, BlocBase } from '@blac/core';
+import { Cubit, Blac, BlacPlugin, BlocBase } from '@blac/core';
 import { useBloc } from '@blac/react';
 import { Button } from './ui/Button';
 
 // Custom Analytics Plugin
 class AnalyticsPlugin implements BlacPlugin {
   name = 'AnalyticsPlugin';
+  version = '1.0.0';
   private events: Array<{ timestamp: number; event: string; bloc: string; data?: any }> = [];
 
-  onEvent(event: BlacLifecycleEvent, bloc: BlocBase, params?: any) {
+  onBlocCreated(bloc: BlocBase<any>) {
+    this.recordEvent('CREATED', bloc);
+  }
+
+  onBlocDisposed(bloc: BlocBase<any>) {
+    this.recordEvent('DISPOSED', bloc);
+  }
+
+  onStateChanged(bloc: BlocBase<any>, previousState: any, currentState: any) {
+    this.recordEvent('STATE_CHANGED', bloc, { previous: previousState, current: currentState });
+  }
+
+  private recordEvent(event: string, bloc: BlocBase<any>, data?: any) {
     const entry = {
       timestamp: Date.now(),
-      event: BlacLifecycleEvent[event],
+      event,
       bloc: bloc._name || 'Unknown',
-      data: params
+      data
     };
     
     this.events.push(entry);
@@ -24,7 +37,7 @@ class AnalyticsPlugin implements BlacPlugin {
     }
 
     // Log to console for demo
-    console.log(`[Analytics] ${entry.bloc}: ${entry.event}`, params);
+    console.log(`[Analytics] ${entry.bloc}: ${entry.event}`, data);
   }
 
   getEvents() {
@@ -39,22 +52,20 @@ class AnalyticsPlugin implements BlacPlugin {
 // Custom Performance Monitoring Plugin
 class PerformancePlugin implements BlacPlugin {
   name = 'PerformancePlugin';
+  version = '1.0.0';
   private metrics: Map<string, { count: number; totalTime: number; lastUpdate: number }> = new Map();
 
-  onEvent(event: BlacLifecycleEvent, bloc: BlocBase, params?: any) {
+  onStateChanged(bloc: BlocBase<any>, previousState: any, currentState: any) {
     const blocName = bloc._name || 'Unknown';
+    const now = Date.now();
+    const metric = this.metrics.get(blocName) || { count: 0, totalTime: 0, lastUpdate: now };
     
-    if (event === BlacLifecycleEvent.STATE_CHANGED) {
-      const now = Date.now();
-      const metric = this.metrics.get(blocName) || { count: 0, totalTime: 0, lastUpdate: now };
-      
-      const timeSinceLastUpdate = now - metric.lastUpdate;
-      metric.count++;
-      metric.totalTime += timeSinceLastUpdate;
-      metric.lastUpdate = now;
-      
-      this.metrics.set(blocName, metric);
-    }
+    const timeSinceLastUpdate = now - metric.lastUpdate;
+    metric.count++;
+    metric.totalTime += timeSinceLastUpdate;
+    metric.lastUpdate = now;
+    
+    this.metrics.set(blocName, metric);
   }
 
   getMetrics() {
@@ -77,6 +88,7 @@ class PerformancePlugin implements BlacPlugin {
 // Custom Validation Plugin
 class ValidationPlugin implements BlacPlugin {
   name = 'ValidationPlugin';
+  version = '1.0.0';
   private validators: Map<string, (state: any) => string | null> = new Map();
   private errors: Map<string, string> = new Map();
 
@@ -84,19 +96,17 @@ class ValidationPlugin implements BlacPlugin {
     this.validators.set(blocName, validator);
   }
 
-  onEvent(event: BlacLifecycleEvent, bloc: BlocBase, params?: any) {
-    if (event === BlacLifecycleEvent.STATE_CHANGED) {
-      const blocName = bloc._name || 'Unknown';
-      const validator = this.validators.get(blocName);
-      
-      if (validator) {
-        const error = validator(bloc.state);
-        if (error) {
-          this.errors.set(blocName, error);
-          console.warn(`[Validation] ${blocName}: ${error}`);
-        } else {
-          this.errors.delete(blocName);
-        }
+  onStateChanged(bloc: BlocBase<any>, previousState: any, currentState: any) {
+    const blocName = bloc._name || 'Unknown';
+    const validator = this.validators.get(blocName);
+    
+    if (validator) {
+      const error = validator(currentState);
+      if (error) {
+        this.errors.set(blocName, error);
+        console.warn(`[Validation] ${blocName}: ${error}`);
+      } else {
+        this.errors.delete(blocName);
       }
     }
   }
@@ -329,10 +339,10 @@ const CustomPluginDemo: React.FC = () => {
         
         <strong style={{ display: 'block', marginTop: '15px' }}>Plugin API:</strong>
         <ul style={{ marginTop: '5px', paddingLeft: '20px' }}>
-          <li><code>BlacPlugin</code> interface with <code>name</code> and <code>onEvent</code></li>
+          <li><code>BlacPlugin</code> interface with lifecycle hooks</li>
           <li><code>Blac.addPlugin(plugin)</code> - Register a plugin globally</li>
           <li><code>Blac.removePlugin(plugin)</code> - Unregister a plugin</li>
-          <li>Receives all lifecycle events: CREATED, STATE_CHANGED, DESTROYED, etc.</li>
+          <li>Hooks: <code>onBlocCreated</code>, <code>onStateChanged</code>, <code>onBlocDisposed</code></li>
         </ul>
       </div>
     </div>
