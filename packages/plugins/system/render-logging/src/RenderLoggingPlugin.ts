@@ -58,7 +58,7 @@ export class RenderLoggingPlugin implements BlacPlugin {
     }
   };
   
-  onAdapterDisposed = (adapter: any, metadata: AdapterMetadata) => {
+  onAdapterDisposed = (adapter: any, _metadata: AdapterMetadata) => {
     // Clean up tracking for this adapter
     this.adapterLastState.delete(adapter);
     this.adapterLastDependencies.delete(adapter);

@@ -23,6 +23,9 @@
       "dependsOn": ["^typecheck"]
     },
     "lint": {},
+    "lint:fix": {
+      "outputs": []
+    },
     "format": {},
     "prettier": {},
     "test": {

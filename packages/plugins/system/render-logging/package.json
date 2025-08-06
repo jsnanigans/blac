@@ -22,6 +22,7 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
     "prepublishOnly": "echo 'Skipping prepublishOnly - build should be done at root level'"
   },
   "dependencies": {},

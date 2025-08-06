@@ -8,6 +8,7 @@
     "test": "turbo run test",
     "test:watch": "turbo run test:watch",
     "lint": "turbo run lint",
+    "lint:fix": "turbo run lint:fix",
     "typecheck": "turbo run typecheck",
     "format": "turbo run format",
     "changeset": "changeset",

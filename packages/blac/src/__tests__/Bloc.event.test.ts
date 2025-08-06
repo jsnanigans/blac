@@ -38,20 +38,20 @@ class CounterBloc extends Bloc<
     super(initialValue);
 
     // Register event handlers
-    this.on(IncrementEvent, (event, emit) => {
-      emit(this.state + event.amount);
+    this.on(IncrementEvent, (event, _emit) => {
+      _emit(this.state + event.amount);
     });
 
-    this.on(AsyncIncrementEvent, async (event, emit) => {
+    this.on(AsyncIncrementEvent, async (event, _emit) => {
       await new Promise((resolve) => setTimeout(resolve, event.delay));
-      emit(this.state + event.amount);
+      _emit(this.state + event.amount);
     });
 
     this.on(DecrementEvent, (event, emit) => {
       emit(this.state - event.amount);
     });
 
-    this.on(ErrorEvent, (event, emit) => {
+    this.on(ErrorEvent, (event, _emit) => {
       throw new Error(event.message);
     });
   }
@@ -236,9 +236,9 @@ describe('Bloc Event Handling', () => {
         constructor() {
           super(0);
 
-          this.on(IncrementEvent, (event, emit) => {
+          this.on(IncrementEvent, (event, _emit) => {
             capturedStates.push(this.state); // Capture current state
-            emit(this.state + event.amount);
+            _emit(this.state + event.amount);
           });
         }
       }
@@ -270,8 +270,8 @@ describe('Bloc Event Handling', () => {
         constructor() {
           super(0);
 
-          this.on(IncrementEvent, async (event, emit) => {
-            emit(this.state + event.amount);
+          this.on(IncrementEvent, async (event, _emit) => {
+            _emit(this.state + event.amount);
 
             // Add another event during processing
             if (this.state < 5) {
@@ -297,10 +297,10 @@ describe('Bloc Event Handling', () => {
         constructor() {
           super([]);
 
-          this.on(IncrementEvent, (event, emit) => {
+          this.on(IncrementEvent, (event, _emit) => {
             // Emit multiple state updates
             for (let i = 1; i <= event.amount; i++) {
-              emit([...this.state, i]);
+              _emit([...this.state, i]);
             }
           });
         }
@@ -323,8 +323,8 @@ describe('Bloc Event Handling', () => {
       class SimpleBloc extends Bloc<string> {
         constructor() {
           super('initial');
-          this.on(SimpleEvent, (event, emit) => {
-            emit('handled');
+          this.on(SimpleEvent, (event, _emit) => {
+            _emit('handled');
           });
         }
       }

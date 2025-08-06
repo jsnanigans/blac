@@ -7,8 +7,7 @@ export class LocalStorageAdapter implements StorageAdapter {
   getItem(key: string): string | null {
     try {
       return localStorage.getItem(key);
-    } catch (error) {
-      // Silently return null on read errors (e.g., security restrictions)
+    } catch {
       return null;
     }
   }
@@ -17,7 +16,6 @@ export class LocalStorageAdapter implements StorageAdapter {
     try {
       localStorage.setItem(key, value);
     } catch (error) {
-      // Re-throw to let plugin handle the error
       throw new Error(
         `Failed to save to localStorage: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
@@ -28,7 +26,6 @@ export class LocalStorageAdapter implements StorageAdapter {
     try {
       localStorage.removeItem(key);
     } catch (error) {
-      // Removal errors are not critical
       console.warn(`Failed to remove from localStorage: ${key}`, error);
     }
   }
@@ -49,7 +46,7 @@ export class SessionStorageAdapter implements StorageAdapter {
   getItem(key: string): string | null {
     try {
       return sessionStorage.getItem(key);
-    } catch (error) {
+    } catch {
       return null;
     }
   }
@@ -127,7 +124,7 @@ export class AsyncStorageAdapter implements StorageAdapter {
   async getItem(key: string): Promise<string | null> {
     try {
       return await this.asyncStorage.getItem(key);
-    } catch (error) {
+    } catch {
       return null;
     }
   }

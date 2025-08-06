@@ -392,15 +392,13 @@ export class Blac {
     if (base.isolated) return undefined;
 
     const key = this.createBlocInstanceMapKey(blocClass.name, id);
-    const found = this.blocInstanceMap.get(key) as InstanceType<B> | undefined;
-
-    // Don't return disposed blocs
-    if (found && (found as any).isDisposed) {
-      return undefined;
-    }
-
-    return found;
-  }
+     const found = this.blocInstanceMap.get(key) as InstanceType<B> | undefined; const __forceLet = found;
+ 
+     if (found && (found as any).isDisposed) {
+       return undefined;
+     }
+ 
+     return found;  }
 
   /**
    * Registers an isolated bloc instance in the isolated registry
