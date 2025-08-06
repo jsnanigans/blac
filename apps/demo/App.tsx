@@ -12,6 +12,7 @@ import SharedCounterTestDemo from './components/SharedCounterTestDemo';
 // import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/Card'; // Removing Card components for simpler styling
 import { Blac } from '@blac/core';
 import BlocToBlocCommsDemo from './components/BlocToBlocCommsDemo';
+import BlocWithReducerDemo from './components/BlocWithReducerDemo';
 import ConditionalDependencyDemo from './components/ConditionalDependencyDemo';
 import KeepAliveDemo from './components/KeepAliveDemo';
 import TodoBlocDemo from './components/TodoBlocDemo';
@@ -20,6 +21,12 @@ import UserProfileDemo from './components/UserProfileDemo';
 import PersistenceDemo from './components/PersistenceDemo';
 import StaticPropsDemo from './components/StaticPropsDemo';
 import RerenderLoggingDemo from './components/RerenderLoggingDemo';
+import ExternalStoreDemo from './components/ExternalStoreDemo';
+import StreamApiDemo from './components/StreamApiDemo';
+import AsyncOperationsDemo from './components/AsyncOperationsDemo';
+import TestingUtilitiesDemo from './components/TestingUtilitiesDemo';
+import CustomPluginDemo from './components/CustomPluginDemo';
+import AdvancedSelectorsDemo from './components/AdvancedSelectorsDemo';
 import {
   APP_CONTAINER_STYLE, // For potentially lighter description text or default card text
   COLOR_PRIMARY_ACCENT,
@@ -105,12 +112,19 @@ function App() {
     customSelector: showDefault,
     conditionalDependency: showDefault,
     todoBloc: showDefault,
+    blocWithReducer: showDefault,
     blocToBlocComms: showDefault,
     keepAlive: showDefault,
     sharedCounterTest: showDefault,
     persistence: showDefault,
     staticProps: showDefault,
     rerenderLogging: showDefault,
+    externalStore: showDefault,
+    streamApi: showDefault,
+    asyncOperations: showDefault,
+    testingUtilities: showDefault,
+    customPlugin: showDefault,
+    advancedSelectors: showDefault,
   });
 
   return (
@@ -289,6 +303,69 @@ function App() {
           }
         >
           <RerenderLoggingDemo />
+        </DemoCard>
+
+        <DemoCard
+          title="Bloc with Reducer Pattern"
+          description="Redux-style reducer pattern using Bloc with pure event handlers for complex state transitions."
+          show={show.blocWithReducer}
+          setShow={() => setShow({ ...show, blocWithReducer: !show.blocWithReducer })}
+        >
+          <BlocWithReducerDemo />
+        </DemoCard>
+
+        <DemoCard
+          title="External Store (useExternalBlocStore)"
+          description="Use Bloc instances created outside React components for global state management."
+          show={show.externalStore}
+          setShow={() => setShow({ ...show, externalStore: !show.externalStore })}
+        >
+          <ExternalStoreDemo />
+        </DemoCard>
+
+        <DemoCard
+          title="Stream/Observable API"
+          description="Direct subscription methods for observing state changes outside React."
+          show={show.streamApi}
+          setShow={() => setShow({ ...show, streamApi: !show.streamApi })}
+        >
+          <StreamApiDemo />
+        </DemoCard>
+
+        <DemoCard
+          title="Async Operations & Error Handling"
+          description="Handle async operations, loading states, errors, retries, and cancellable requests."
+          show={show.asyncOperations}
+          setShow={() => setShow({ ...show, asyncOperations: !show.asyncOperations })}
+        >
+          <AsyncOperationsDemo />
+        </DemoCard>
+
+        <DemoCard
+          title="Testing Utilities"
+          description="BlocTest utilities for unit testing, mocking, and performance benchmarking."
+          show={show.testingUtilities}
+          setShow={() => setShow({ ...show, testingUtilities: !show.testingUtilities })}
+        >
+          <TestingUtilitiesDemo />
+        </DemoCard>
+
+        <DemoCard
+          title="Custom Plugin System"
+          description="Create custom plugins for analytics, validation, performance monitoring, and more."
+          show={show.customPlugin}
+          setShow={() => setShow({ ...show, customPlugin: !show.customPlugin })}
+        >
+          <CustomPluginDemo />
+        </DemoCard>
+
+        <DemoCard
+          title="Advanced Selectors"
+          description="Complex selector patterns for fine-grained control over component re-renders."
+          show={show.advancedSelectors}
+          setShow={() => setShow({ ...show, advancedSelectors: !show.advancedSelectors })}
+        >
+          <AdvancedSelectorsDemo />
         </DemoCard>
       </main>
 

@@ -1,135 +1,347 @@
+import React from 'react';
+import { Bloc } from '@blac/core';
 import { useBloc } from '@blac/react';
-import React, { useState } from 'react';
-import { Todo, TodoBloc } from '../blocs/TodoBloc';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 
-const TodoItem: React.FC<{
-  todo: Todo;
-  onToggle: (id: number) => void;
-  onRemove: (id: number) => void;
-}> = ({ todo, onToggle, onRemove }) => {
-  return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '8px 0',
-        borderBottom: '1px solid #eee',
-        opacity: todo.completed ? 0.6 : 1,
-      }}
-    >
-      <span
-        onClick={() => onToggle(todo.id)}
-        style={{
-          textDecoration: todo.completed ? 'line-through' : 'none',
-          cursor: 'pointer',
-          flexGrow: 1,
-        }}
-      >
-        {todo.text}
-      </span>
-      <Button
-        onClick={() => onRemove(todo.id)}
-        variant="destructive"
-        style={{ padding: '2px 6px', fontSize: '0.8em' }}
-      >
-        Remove
-      </Button>
-    </div>
-  );
-};
+// State shape
+interface ShoppingCartState {
+  items: Array<{ id: string; name: string; quantity: number; price: number }>;
+  discount: number;
+  couponCode: string | null;
+}
 
-const TodoBlocDemo: React.FC = () => {
-  const [state, bloc] = useBloc(TodoBloc);
-  const [newTodoText, setNewTodoText] = useState('');
+// Event classes
+class AddItemEvent {
+  constructor(
+    public readonly id: string,
+    public readonly name: string,
+    public readonly price: number
+  ) {}
+}
 
-  const handleAddTodo = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newTodoText.trim()) {
-      bloc.addTodo(newTodoText.trim());
-      setNewTodoText('');
+class RemoveItemEvent {
+  constructor(public readonly id: string) {}
+}
+
+class UpdateQuantityEvent {
+  constructor(
+    public readonly id: string,
+    public readonly quantity: number
+  ) {}
+}
+
+class ApplyCouponEvent {
+  constructor(public readonly code: string) {}
+}
+
+class ClearCartEvent {}
+
+type CartEvents = 
+  | AddItemEvent 
+  | RemoveItemEvent 
+  | UpdateQuantityEvent 
+  | ApplyCouponEvent 
+  | ClearCartEvent;
+
+// Reducer-style Bloc with pure functions for state transitions
+class ShoppingCartBloc extends Bloc<ShoppingCartState, CartEvents> {
+  constructor() {
+    super({
+      items: [],
+      discount: 0,
+      couponCode: null
+    });
+
+    // Register handlers using reducer-like pure functions
+    this.on(AddItemEvent, this.handleAddItem);
+    this.on(RemoveItemEvent, this.handleRemoveItem);
+    this.on(UpdateQuantityEvent, this.handleUpdateQuantity);
+    this.on(ApplyCouponEvent, this.handleApplyCoupon);
+    this.on(ClearCartEvent, this.handleClearCart);
+  }
+
+  // Reducer-style handlers - pure functions that return new state
+  private handleAddItem = (event: AddItemEvent, emit: (state: ShoppingCartState) => void) => {
+    const existingItem = this.state.items.find(item => item.id === event.id);
+    
+    if (existingItem) {
+      // Item exists, increment quantity
+      emit({
+        ...this.state,
+        items: this.state.items.map(item =>
+          item.id === event.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        )
+      });
+    } else {
+      // Add new item
+      emit({
+        ...this.state,
+        items: [...this.state.items, {
+          id: event.id,
+          name: event.name,
+          price: event.price,
+          quantity: 1
+        }]
+      });
     }
   };
 
-  const activeTodosCount = state.todos.filter((todo) => !todo.completed).length;
+  private handleRemoveItem = (event: RemoveItemEvent, emit: (state: ShoppingCartState) => void) => {
+    emit({
+      ...this.state,
+      items: this.state.items.filter(item => item.id !== event.id)
+    });
+  };
+
+  private handleUpdateQuantity = (event: UpdateQuantityEvent, emit: (state: ShoppingCartState) => void) => {
+    if (event.quantity <= 0) {
+      // Remove item if quantity is 0 or less
+      this.handleRemoveItem(new RemoveItemEvent(event.id), emit);
+    } else {
+      emit({
+        ...this.state,
+        items: this.state.items.map(item =>
+          item.id === event.id
+            ? { ...item, quantity: event.quantity }
+            : item
+        )
+      });
+    }
+  };
+
+  private handleApplyCoupon = (event: ApplyCouponEvent, emit: (state: ShoppingCartState) => void) => {
+    // Simple coupon logic
+    const discounts: Record<string, number> = {
+      'SAVE10': 0.10,
+      'SAVE20': 0.20,
+      'HALFOFF': 0.50
+    };
+
+    const discount = discounts[event.code.toUpperCase()] || 0;
+    
+    emit({
+      ...this.state,
+      discount,
+      couponCode: discount > 0 ? event.code.toUpperCase() : null
+    });
+  };
+
+  private handleClearCart = (_event: ClearCartEvent, emit: (state: ShoppingCartState) => void) => {
+    emit({
+      items: [],
+      discount: 0,
+      couponCode: null
+    });
+  };
+
+  // Helper methods for dispatching events
+  addItem = (id: string, name: string, price: number) => {
+    this.add(new AddItemEvent(id, name, price));
+  };
+
+  removeItem = (id: string) => {
+    this.add(new RemoveItemEvent(id));
+  };
+
+  updateQuantity = (id: string, quantity: number) => {
+    this.add(new UpdateQuantityEvent(id, quantity));
+  };
+
+  applyCoupon = (code: string) => {
+    this.add(new ApplyCouponEvent(code));
+  };
+
+  clearCart = () => {
+    this.add(new ClearCartEvent());
+  };
+
+  // Computed getters
+  get subtotal(): number {
+    return this.state.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  }
+
+  get discountAmount(): number {
+    return this.subtotal * this.state.discount;
+  }
+
+  get total(): number {
+    return this.subtotal - this.discountAmount;
+  }
+
+  get itemCount(): number {
+    return this.state.items.reduce((sum, item) => sum + item.quantity, 0);
+  }
+}
+
+// Sample products
+const PRODUCTS = [
+  { id: '1', name: 'Coffee', price: 4.99 },
+  { id: '2', name: 'Sandwich', price: 8.99 },
+  { id: '3', name: 'Salad', price: 7.99 },
+  { id: '4', name: 'Cookie', price: 2.99 }
+];
+
+const BlocWithReducerDemo: React.FC = () => {
+  const [state, bloc] = useBloc(ShoppingCartBloc);
+  const [couponInput, setCouponInput] = React.useState('');
 
   return (
-    <div style={{ maxWidth: '500px', margin: '0 auto' }}>
-      <form
-        onSubmit={handleAddTodo}
-        style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}
-      >
-        <Input
-          type="text"
-          value={newTodoText}
-          onChange={(e) => setNewTodoText(e.target.value)}
-          placeholder="What needs to be done?"
-          style={{ flexGrow: 1 }}
-        />
-        <Button type="submit" variant="default">
-          Add Todo
-        </Button>
-      </form>
+    <div style={{ display: 'flex', gap: '30px' }}>
+      <div style={{ flex: 1 }}>
+        <h4>Products</h4>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {PRODUCTS.map(product => (
+            <div key={product.id} style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '10px',
+              border: '1px solid #ddd',
+              borderRadius: '4px'
+            }}>
+              <div>
+                <strong>{product.name}</strong>
+                <div style={{ fontSize: '0.9em', color: '#666' }}>
+                  ${product.price.toFixed(2)}
+                </div>
+              </div>
+              <Button 
+                onClick={() => bloc.addItem(product.id, product.name, product.price)}
+                size="sm"
+              >
+                Add to Cart
+              </Button>
+            </div>
+          ))}
+        </div>
 
-      <div>
-        {bloc.filteredTodos.map((todo) => (
-          <TodoItem
-            key={todo.id}
-            todo={todo}
-            onToggle={bloc.toggleTodo}
-            onRemove={bloc.removeTodo}
-          />
-        ))}
+        <div style={{ marginTop: '20px' }}>
+          <h4>Apply Coupon</h4>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <Input
+              value={couponInput}
+              onChange={(e) => setCouponInput(e.target.value)}
+              placeholder="Enter code"
+              style={{ flex: 1 }}
+            />
+            <Button onClick={() => {
+              bloc.applyCoupon(couponInput);
+              setCouponInput('');
+            }}>
+              Apply
+            </Button>
+          </div>
+          <div style={{ fontSize: '0.8em', color: '#666', marginTop: '5px' }}>
+            Try: SAVE10, SAVE20, or HALFOFF
+          </div>
+        </div>
       </div>
 
-      {state.todos.length > 0 && (
-        <div
-          style={{
-            marginTop: '16px',
-            paddingTop: '16px',
-            borderTop: '1px solid #eee',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            fontSize: '0.9em',
-            color: '#555',
-          }}
-        >
-          <span>
-            {activeTodosCount} item{activeTodosCount !== 1 ? 's' : ''} left
-          </span>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            {(['all', 'active', 'completed'] as const).map((filter) => (
-              <Button
-                key={filter}
-                onClick={() => bloc.setFilter(filter)}
-                variant={state.filter === filter ? 'default' : 'outline'}
-              >
-                {filter.charAt(0).toUpperCase() + filter.slice(1)}
-              </Button>
-            ))}
+      <div style={{ flex: 1 }}>
+        <h4>Shopping Cart ({bloc.itemCount} items)</h4>
+        
+        {state.items.length === 0 ? (
+          <div style={{ 
+            padding: '20px', 
+            textAlign: 'center', 
+            color: '#999',
+            border: '1px dashed #ddd',
+            borderRadius: '4px'
+          }}>
+            Cart is empty
           </div>
-          {state.todos.some((todo) => todo.completed) && (
-            <Button onClick={bloc.clearCompleted} variant="ghost">
-              Clear Completed
+        ) : (
+          <>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {state.items.map(item => (
+                <div key={item.id} style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '10px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px'
+                }}>
+                  <div>
+                    <strong>{item.name}</strong>
+                    <div style={{ fontSize: '0.9em', color: '#666' }}>
+                      ${item.price.toFixed(2)} each
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <Button 
+                      onClick={() => bloc.updateQuantity(item.id, item.quantity - 1)}
+                      size="sm"
+                      variant="outline"
+                    >
+                      -
+                    </Button>
+                    <span style={{ minWidth: '30px', textAlign: 'center' }}>
+                      {item.quantity}
+                    </span>
+                    <Button 
+                      onClick={() => bloc.updateQuantity(item.id, item.quantity + 1)}
+                      size="sm"
+                      variant="outline"
+                    >
+                      +
+                    </Button>
+                    <Button 
+                      onClick={() => bloc.removeItem(item.id)}
+                      size="sm"
+                      variant="destructive"
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ 
+              marginTop: '20px', 
+              padding: '15px', 
+              backgroundColor: '#f5f5f5',
+              borderRadius: '4px'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                <span>Subtotal:</span>
+                <span>${bloc.subtotal.toFixed(2)}</span>
+              </div>
+              {state.discount > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', color: '#28a745' }}>
+                  <span>Discount ({state.couponCode}):</span>
+                  <span>-${bloc.discountAmount.toFixed(2)}</span>
+                </div>
+              )}
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                fontWeight: 'bold',
+                fontSize: '1.1em',
+                borderTop: '1px solid #ddd',
+                paddingTop: '5px'
+              }}>
+                <span>Total:</span>
+                <span>${bloc.total.toFixed(2)}</span>
+              </div>
+            </div>
+
+            <Button 
+              onClick={bloc.clearCart}
+              variant="destructive"
+              style={{ width: '100%', marginTop: '10px' }}
+            >
+              Clear Cart
             </Button>
-          )}
-        </div>
-      )}
-      <p className="text-xs text-muted-foreground mt-4">
-        This demo showcases a <code>Bloc</code> using the new event-handler
-        pattern (<code>this.on(EventType, handler)</code>) to manage a todo
-        list. Actions (which are now classes like <code>AddTodoAction</code>,{' '}
-        <code>ToggleTodoAction</code>, etc.) are dispatched via{' '}
-        <code>bloc.add(new EventType())</code>, often through helper methods on
-        the <code>TodoBloc</code> itself (e.g., <code>bloc.addTodo(text)</code>
-        ). The <code>TodoBloc</code> then processes these events with registered
-        handlers to produce new state.
-      </p>
+          </>
+        )}
+      </div>
     </div>
   );
 };
 
-export default TodoBlocDemo;
+export default BlocWithReducerDemo;
