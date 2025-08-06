@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Cubit } from '@blac/core';
 import { useBloc } from '@blac/react';
 import { Button } from './ui/Button';
@@ -199,7 +199,7 @@ const ThemeDisplay: React.FC = () => {
 
 // Component with complex selector
 const CartSummary: React.FC = () => {
-  const [state, cubit] = useBloc(AppStateCubit, {
+  const [_state, cubit] = useBloc(AppStateCubit, {
     selector: (state, _prevState, instance) => {
       // Only re-render when cart items or their prices change
       const cartData = state.cart.map((item) => {

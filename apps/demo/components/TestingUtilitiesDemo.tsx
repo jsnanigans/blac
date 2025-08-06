@@ -163,7 +163,7 @@ const TestingUtilitiesDemo: React.FC = () => {
     try {
       BlocTest.setUp();
       const cubit = BlocTest.createBloc(TestCounterCubit);
-      const weakRef = new WeakRef(cubit);
+      const _weakRef = new WeakRef(cubit);
 
       // Create subscriptions
       const unsub1 = cubit.subscribe(() => {});
@@ -205,7 +205,7 @@ const TestingUtilitiesDemo: React.FC = () => {
 
       try {
         errorCubit.causeError();
-      } catch (e) {
+      } catch {
         errorCaught = true;
       }
 

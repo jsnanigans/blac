@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { render, screen, waitFor , act } from '@testing-library/react';
 import { Cubit, Blac } from '@blac/core';
 import useBloc from '../useBloc';
@@ -109,7 +109,7 @@ describe('useBloc disposal issues', () => {
       );
     };
 
-    const { rerender } = render(<App />);
+    render(<App />);
 
     // Initially showing Component A
     expect(screen.getByTestId('component-a-counter')).toHaveTextContent('0');

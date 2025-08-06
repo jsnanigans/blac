@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import './App.css'; // Ensure this is imported
 
 // Helper component for the header buttons like LCARS 23295
 interface LcarsHeaderButtonBlockProps {

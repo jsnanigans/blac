@@ -47,7 +47,7 @@ interface SearchState {
 }
 
 class SearchCubit extends Cubit<SearchState> {
-  constructor(props: SearchProps) {
+  constructor(_props: SearchProps) {
     super({ results: [], loading: false });
   }
 }

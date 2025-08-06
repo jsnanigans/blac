@@ -118,7 +118,7 @@ describe('Rerender Logging', () => {
     Blac.getInstance().plugins.add(plugin);
 
     let depValue = 1;
-    const { result, rerender } = renderHook(() =>
+    const { result: _result, rerender: _rerender } = renderHook(() =>
       useBloc(TestCubit, {
         dependencies: () => [depValue],
       }),
@@ -129,7 +129,7 @@ describe('Rerender Logging', () => {
 
     // Change dependency
     depValue = 2;
-    rerender();
+    _rerender();
 
     expect(consoleSpy.log).toHaveBeenCalled();
     const logCall = consoleSpy.log.mock.calls[0];

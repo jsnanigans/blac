@@ -4,10 +4,7 @@ import {
   RenderLoggingPlugin,
   RenderLoggingConfig,
 } from '@blac/plugin-render-logging';
-import { Button } from './ui/Button';
 import {
-  COLOR_PRIMARY_ACCENT,
-  COLOR_SECONDARY_ACCENT,
   COLOR_TEXT_SECONDARY,
   FONT_FAMILY_SANS,
 } from '../lib/styles';

@@ -56,10 +56,10 @@ class PrimitiveCubit extends Cubit<string> {
 }
 
 describe('Cubit State Emissions', () => {
-  let blacInstance: Blac;
+  let _blacInstance: Blac;
 
   beforeEach(() => {
-    blacInstance = new Blac({ __unsafe_ignore_singleton: true });
+    _blacInstance = new Blac({ __unsafe_ignore_singleton: true });
     Blac.enableLog = false;
     vi.clearAllMocks();
   });

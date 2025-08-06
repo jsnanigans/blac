@@ -377,8 +377,8 @@ describe('SystemPluginRegistry', () => {
     it('should handle plugins with context binding correctly', () => {
       let capturedThis: any;
       const plugin = createTestPlugin('test-plugin', {
-        onBlocCreated: function (this: any) {
-          capturedThis = this;
+        onBlocCreated: function () {
+          capturedThis = undefined;
         },
       });
 

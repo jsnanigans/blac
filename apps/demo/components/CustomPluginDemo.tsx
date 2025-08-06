@@ -66,7 +66,7 @@ class PerformancePlugin implements BlacPlugin {
     { count: number; totalTime: number; lastUpdate: number }
   > = new Map();
 
-  onStateChanged(bloc: BlocBase<any>, previousState: any, currentState: any) {
+  onStateChanged(bloc: BlocBase<any>, _previousState: any, _currentState: any) {
     const blocName = bloc._name || 'Unknown';
     const now = Date.now();
     const metric = this.metrics.get(blocName) || {

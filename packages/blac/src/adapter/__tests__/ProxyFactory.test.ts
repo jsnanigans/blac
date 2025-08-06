@@ -538,14 +538,14 @@ describe('ProxyFactory', () => {
     });
 
     it('should calculate cache efficiency', () => {
-      const proxy1 = ProxyFactory.createStateProxy({
+      const _proxy1 = ProxyFactory.createStateProxy({
         target: simpleObject,
         consumerRef,
         consumerTracker: tracker,
       });
 
       // Cache hit
-      const proxy2 = ProxyFactory.createStateProxy({
+      const _proxy2 = ProxyFactory.createStateProxy({
         target: simpleObject,
         consumerRef,
         consumerTracker: tracker,

@@ -1,5 +1,5 @@
 import { Blac } from '../Blac';
-import { BlocBase } from '../BlocBase';
+
 
 export interface RerenderInfo {
   componentName: string;

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SubscriptionManager } from '../SubscriptionManager';
-import { BlocBase } from '../../BlocBase';
+
 import { Cubit } from '../../Cubit';
 
 class TestCubit extends Cubit<{ count: number; nested: { value: string } }> {
@@ -197,7 +197,7 @@ describe('SubscriptionManager', () => {
   describe('trackAccess', () => {
     it('should track path dependencies', () => {
       const notify = vi.fn();
-      const unsubscribe = manager.subscribe({
+      const _unsubscribe = manager.subscribe({
         type: 'consumer',
         notify,
       });

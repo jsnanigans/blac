@@ -3,20 +3,32 @@ import reactHooks from "eslint-plugin-react-hooks";
 import tseslint from "typescript-eslint";
 
 export default [
+  {
+    ignores: [
+      ".vitepress/**",
+      "node_modules/**",
+      "dist/**",
+      "build/**",
+      ".turbo/**",
+      "coverage/**",
+      "out/**",
+      "output/**",
+      ".cache/**",
+      "temp/**",
+      "tmp/**"
+    ]
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
     plugins: { 'react-hooks': reactHooks },
-    ignores: [
-      ".vitepress/theme/mermaid-theme.js",
-      ".vitepress/theme/index.js",
-    ],
     rules: {
       "react-hooks/exhaustive-deps": "warn",
       "@typescript-eslint/no-unused-vars": [
         "warn",
         { args: "after-used", argsIgnorePattern: "^_", varsIgnorePattern: "^_" }
       ],
+      "no-undef": "off"
     },
   },
 ];

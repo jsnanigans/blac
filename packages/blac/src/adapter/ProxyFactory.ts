@@ -205,7 +205,7 @@ export const ProxyFactory = {
       options.consumerTracker,
     ),
 
-  getProxyState: <B extends BlocBase<any>>(options: {
+  getProxyState: (options: {
     state: any;
     consumerRef: object;
     consumerTracker: ConsumerTracker;

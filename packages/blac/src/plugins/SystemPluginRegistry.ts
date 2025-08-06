@@ -78,7 +78,7 @@ export class SystemPluginRegistry implements PluginRegistry<BlacPlugin> {
   ): void {
     for (const pluginName of this.executionOrder) {
       const plugin = this.plugins.get(pluginName)!;
-      const hook = plugin[hookName] as Function | undefined;
+      const hook = plugin[hookName] as ((...args: any[]) => any) | undefined;
 
       if (typeof hook !== 'function') continue;
 

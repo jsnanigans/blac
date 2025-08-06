@@ -57,11 +57,11 @@ class UserCubit extends Cubit<UserState> {
 }
 
 describe('BlacAdapter', () => {
-  let blacInstance: Blac;
+  let _blacInstance: Blac;
   let componentRef: { current: object };
 
   beforeEach(() => {
-    blacInstance = new Blac({ __unsafe_ignore_singleton: true });
+    _blacInstance = new Blac({ __unsafe_ignore_singleton: true });
     componentRef = { current: {} };
     vi.clearAllMocks();
   });
@@ -203,7 +203,7 @@ describe('BlacAdapter', () => {
 
       // Access state through proxy
       const proxyState = adapter.getStateProxy();
-      const name = proxyState.name;
+      const _name = proxyState.name;
       const email = proxyState.profile.email;
 
       // Verify proxy state works correctly
@@ -256,7 +256,7 @@ describe('BlacAdapter', () => {
 
       // Access specific property through proxy to track it
       const proxyState = adapter.getStateProxy();
-      const name = proxyState.name; // Track name property
+      const _name = proxyState.name; // Track name property
 
       // Clear onChange calls from initial subscription
       onChange.mockClear();
@@ -471,7 +471,7 @@ describe('BlacAdapter', () => {
 
       // Access state to potentially track
       const proxyState = adapter.getStateProxy();
-      const name = proxyState.name;
+      const _name = proxyState.name;
 
       // Reset tracking clears internal state
       adapter.resetTracking();

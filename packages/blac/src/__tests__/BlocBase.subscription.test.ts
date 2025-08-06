@@ -35,10 +35,10 @@ class KeepAliveBloc extends BlocBase<string> {
 }
 
 describe('BlocBase Subscription Model', () => {
-  let blac: Blac;
+  let _blac: Blac;
 
   beforeEach(() => {
-    blac = new Blac({ __unsafe_ignore_singleton: true });
+    _blac = new Blac({ __unsafe_ignore_singleton: true });
     vi.useFakeTimers();
   });
 

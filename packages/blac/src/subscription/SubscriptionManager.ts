@@ -189,7 +189,7 @@ export class SubscriptionManager<S = unknown> {
   /**
    * Track a path access for a subscription
    */
-  trackAccess(subscriptionId: string, path: string, value?: unknown): void {
+  trackAccess(subscriptionId: string, path: string, _value?: unknown): void {
     const subscription = this.subscriptions.get(subscriptionId);
     if (!subscription) return;
 

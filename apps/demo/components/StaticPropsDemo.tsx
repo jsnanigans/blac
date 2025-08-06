@@ -1,5 +1,5 @@
 import { useBloc } from '@blac/react';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 import { Cubit } from '@blac/core';
@@ -49,7 +49,7 @@ class UserDetailsCubit extends Cubit<UserDetailsState> {
         UserDetailsCubit.instanceCount,
       );
     }
-    this.instanceNumber = UserDetailsCubit.instanceMap.get(instanceId)!;
+    this.instanceNumber = UserDetailsCubit.instanceMap.get(instanceId) ?? 0;
 
     console.log('UserDetailsCubit created with props:', props);
     console.log('Instance ID:', instanceId);

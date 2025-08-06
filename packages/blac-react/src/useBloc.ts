@@ -4,7 +4,6 @@ import {
   BlocConstructor,
   BlocState,
   generateInstanceIdFromProps,
-  Blac,
 } from '@blac/core';
 import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
 
@@ -59,9 +58,7 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
         // Pattern 3: Look for render functions
         if (!match) {
           match = line.match(/render([A-Z][a-zA-Z0-9_$]*)/);
-          if (match && match[1]) {
-            match[1] = match[1]; // Use the part after "render"
-          }
+          // keep as-is; no additional processing
         }
 
         if (
@@ -86,7 +83,7 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
           componentName.current = 'Component';
         }
       }
-    } catch (e) {
+    } catch {
       componentName.current = 'Component';
     }
   }
@@ -167,10 +164,10 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
   const subscribeMemoCount = useRef(0);
   const subscribe = useMemo(() => {
     subscribeMemoCount.current++;
-    let subscriptionCount = 0;
+    let _subscriptionCount = 0;
 
     return (onStoreChange: () => void) => {
-      subscriptionCount++;
+      _subscriptionCount++;
       const unsubscribe = adapter.createSubscription({
         onChange: () => {
           onStoreChange();

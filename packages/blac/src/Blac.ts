@@ -544,7 +544,7 @@ export class Blac {
     const base = bloc.constructor as unknown as BlocConstructor<BlocBase<any>>;
     const isIsolated = bloc.isIsolated;
 
-    let found = isIsolated
+    const found = isIsolated
       ? this.findIsolatedBlocInstance(base, bloc._id)
       : this.findRegisteredBlocInstance(base, bloc._id);
     if (found) {

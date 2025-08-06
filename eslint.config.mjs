@@ -15,7 +15,16 @@ export default tseslint.config(
       "**/*.config.js",
       "**/*.config.ts",
       "**/vite.config.ts",
-      "**/vitest.config.ts"
+      "**/vitest.config.ts",
+      "**/.vitepress/**",
+      "**/out/**",
+      "**/output/**",
+      "**/.next/**",
+      "**/.nuxt/**",
+      "**/public/**",
+      "**/.cache/**",
+      "**/temp/**",
+      "**/tmp/**"
     ]
   },
   eslint.configs.recommended,
@@ -130,7 +139,7 @@ export default tseslint.config(
       "import/no-duplicates": "error",
       
       // General rules
-      "no-undef": "error",
+      "no-undef": "off", // TypeScript handles this better
       "no-console": "off",
       "no-debugger": "warn"
     }

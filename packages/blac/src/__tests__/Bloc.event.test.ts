@@ -229,7 +229,7 @@ describe('Bloc Event Handling', () => {
     });
 
     it('should maintain correct state context during handler execution', async () => {
-      let capturedStates: number[] = [];
+      const capturedStates: number[] = [];
 
       // Custom bloc that captures state during handler
       class StateCapturingBloc extends Bloc<number> {

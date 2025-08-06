@@ -12,7 +12,7 @@ const forceGC = () => {
 };
 
 // Helper to wait for WeakRef cleanup
-const waitForCleanup = async (checkFn: () => boolean, maxWait = 1000) => {
+const _waitForCleanup = async (checkFn: () => boolean, maxWait = 1000) => {
   const start = Date.now();
   while (Date.now() - start < maxWait) {
     forceGC();
@@ -75,7 +75,7 @@ describe('Memory Leak Tests', () => {
   describe('WeakRef Cleanup', () => {
     it('should support component WeakRefs for automatic cleanup', async () => {
       const cubit = blac.getBloc(TestCubit);
-      let component: any = { id: 'test-component' };
+      const component: any = { id: 'test-component' };
       const weakRef = new WeakRef(component);
 
       // Subscribe with component reference
