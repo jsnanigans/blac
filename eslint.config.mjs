@@ -1,15 +1,116 @@
 import tseslint from "typescript-eslint";
 import eslint from "@eslint/js";
+import reactPlugin from "eslint-plugin-react";
+import reactHooksPlugin from "eslint-plugin-react-hooks";
+import importPlugin from "eslint-plugin-import";
 
 export default tseslint.config(
-  eslint.configs.recommended,
-  ...tseslint.configs.strictTypeChecked,
   {
-    languageOptions: {
-      parserOptions: {
-        project: true,
-        tsconfigRootDir: import.meta.dirname,
-      },
-    },
+    ignores: [
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/build/**",
+      "**/.turbo/**",
+      "**/coverage/**",
+      "**/*.config.js",
+      "**/*.config.ts",
+      "**/vite.config.ts",
+      "**/vitest.config.ts"
+    ]
   },
+  eslint.configs.recommended,
+  ...tseslint.configs.recommended,
+  {
+    files: ["**/*.ts", "**/*.tsx"],
+    plugins: {
+      react: reactPlugin,
+      "react-hooks": reactHooksPlugin,
+      import: importPlugin
+    },
+    languageOptions: {
+      parser: tseslint.parser,
+      parserOptions: {
+        ecmaVersion: 2020,
+        sourceType: "module",
+        ecmaFeatures: {
+          jsx: true
+        }
+      },
+      globals: {
+        console: "readonly",
+        process: "readonly",
+        Buffer: "readonly",
+        __dirname: "readonly",
+        __filename: "readonly",
+        exports: "writable",
+        module: "writable",
+        require: "readonly",
+        global: "writable",
+        window: "readonly",
+        document: "readonly",
+        localStorage: "readonly",
+        sessionStorage: "readonly",
+        setTimeout: "readonly",
+        clearTimeout: "readonly",
+        setInterval: "readonly",
+        clearInterval: "readonly",
+        Promise: "readonly",
+        performance: "readonly"
+      }
+    },
+    settings: {
+      react: {
+        version: "detect"
+      },
+      "import/resolver": {
+        typescript: {
+          alwaysTryTypes: true
+        }
+      }
+    },
+    rules: {
+      // TypeScript rules
+      "@typescript-eslint/no-unused-vars": ["error", {
+        argsIgnorePattern: "^_",
+        varsIgnorePattern: "^_"
+      }],
+      "@typescript-eslint/explicit-module-boundary-types": "off",
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-non-null-assertion": "warn",
+      
+      // React rules
+      "react/react-in-jsx-scope": "off",
+      "react/prop-types": "off",
+      
+      // React Hooks rules
+      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "warn",
+      
+      // Import rules
+      "import/no-unresolved": ["error", {
+        ignore: ["^@blac/", "^vite", "^vitest"]
+      }],
+      "import/named": "error",
+      "import/default": "error",
+      "import/namespace": "error",
+      "import/no-duplicates": "error",
+      
+      // General rules
+      "no-undef": "error",
+      "no-console": "off",
+      "no-debugger": "warn"
+    }
+  },
+  {
+    files: ["**/*.js"],
+    rules: {
+      "@typescript-eslint/no-var-requires": "off"
+    }
+  },
+  {
+    files: ["**/*.test.ts", "**/*.test.tsx"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off"
+    }
+  }
 );

@@ -34,6 +34,8 @@
     "build:cjs": "tsc --project tsconfig.build.json --module commonjs --outDir dist --declaration false --declarationMap false && cp dist/index.js dist/index.cjs",
     "clean": "rm -rf dist",
     "format": "prettier --write \".\"",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
     "test": "vitest run",
     "test:watch": "vitest --watch",
     "coverage": "vitest run --coverage",
