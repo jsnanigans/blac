@@ -28,7 +28,9 @@ class MockHistoryCubit extends Cubit<{ value: number; timestamp: number }> {
   };
 
   getHistory = () => this.history;
-  clearHistory = () => { this.history = []; };
+  clearHistory = () => {
+    this.history = [];
+  };
 }
 
 const TestingUtilitiesDemo: React.FC = () => {
@@ -97,7 +99,9 @@ const TestingUtilitiesDemo: React.FC = () => {
       if (history.length === 3 && history[2].value === 3) {
         results.push('✅ Test 4: History tracking works');
       } else {
-        results.push(`❌ Test 4: History length ${history.length}, last value ${history[2]?.value}`);
+        results.push(
+          `❌ Test 4: History length ${history.length}, last value ${history[2]?.value}`,
+        );
       }
       BlocTest.tearDown();
     } catch (error) {
@@ -110,7 +114,7 @@ const TestingUtilitiesDemo: React.FC = () => {
       const cubit = BlocTest.createBloc(TestCounterCubit);
       let callCount = 0;
       let lastValue = 0;
-      
+
       const unsubscribe = cubit.subscribe((state) => {
         callCount++;
         lastValue = state;
@@ -118,13 +122,15 @@ const TestingUtilitiesDemo: React.FC = () => {
 
       cubit.increment();
       cubit.increment();
-      
+
       if (callCount === 2 && lastValue === 2) {
         results.push('✅ Test 5: Subscriptions work correctly');
       } else {
-        results.push(`❌ Test 5: Call count ${callCount}, last value ${lastValue}`);
+        results.push(
+          `❌ Test 5: Call count ${callCount}, last value ${lastValue}`,
+        );
       }
-      
+
       unsubscribe();
       BlocTest.tearDown();
     } catch (error) {
@@ -136,16 +142,18 @@ const TestingUtilitiesDemo: React.FC = () => {
       BlocTest.setUp();
       const cubit1 = BlocTest.createBloc(TestCounterCubit);
       const cubit2 = BlocTest.createBloc(TestCounterCubit);
-      
+
       cubit1.increment();
       cubit2.setValue(10);
-      
+
       if (cubit1.state === 1 && cubit2.state === 10) {
         results.push('✅ Test 6: Bloc instances are isolated');
       } else {
-        results.push(`❌ Test 6: Cubit1=${cubit1.state}, Cubit2=${cubit2.state}`);
+        results.push(
+          `❌ Test 6: Cubit1=${cubit1.state}, Cubit2=${cubit2.state}`,
+        );
       }
-      
+
       BlocTest.tearDown();
     } catch (error) {
       results.push(`❌ Test 6: ${error}`);
@@ -156,22 +164,24 @@ const TestingUtilitiesDemo: React.FC = () => {
       BlocTest.setUp();
       const cubit = BlocTest.createBloc(TestCounterCubit);
       const weakRef = new WeakRef(cubit);
-      
+
       // Create subscriptions
       const unsub1 = cubit.subscribe(() => {});
       const unsub2 = cubit.subscribe(() => {});
-      
+
       // Clean up
       unsub1();
       unsub2();
       BlocTest.tearDown();
-      
+
       // Force garbage collection (if available)
       if (global.gc) {
         global.gc();
       }
-      
-      results.push('✅ Test 7: Memory cleanup completed (check console for leaks)');
+
+      results.push(
+        '✅ Test 7: Memory cleanup completed (check console for leaks)',
+      );
     } catch (error) {
       results.push(`❌ Test 7: ${error}`);
     }
@@ -179,32 +189,32 @@ const TestingUtilitiesDemo: React.FC = () => {
     // Test 8: Error handling
     try {
       BlocTest.setUp();
-      
+
       class ErrorCubit extends Cubit<number> {
         constructor() {
           super(0);
         }
-        
+
         causeError = () => {
           throw new Error('Intentional error');
         };
       }
-      
+
       const errorCubit = BlocTest.createBloc(ErrorCubit);
       let errorCaught = false;
-      
+
       try {
         errorCubit.causeError();
       } catch (e) {
         errorCaught = true;
       }
-      
+
       if (errorCaught) {
         results.push('✅ Test 8: Error handling works');
       } else {
         results.push('❌ Test 8: Error was not caught');
       }
-      
+
       BlocTest.tearDown();
     } catch (error) {
       results.push(`❌ Test 8: ${error}`);
@@ -217,43 +227,47 @@ const TestingUtilitiesDemo: React.FC = () => {
   // Run performance benchmark
   const runBenchmark = () => {
     const results: string[] = [];
-    
+
     BlocTest.setUp();
     const cubit = BlocTest.createBloc(TestCounterCubit);
-    
+
     // Benchmark 1: State updates
     const iterations = 10000;
     const startTime = performance.now();
-    
+
     for (let i = 0; i < iterations; i++) {
       cubit.increment();
     }
-    
+
     const endTime = performance.now();
     const duration = endTime - startTime;
     const opsPerSecond = (iterations / (duration / 1000)).toFixed(0);
-    
-    results.push(`⚡ Benchmark: ${iterations} state updates in ${duration.toFixed(2)}ms`);
+
+    results.push(
+      `⚡ Benchmark: ${iterations} state updates in ${duration.toFixed(2)}ms`,
+    );
     results.push(`⚡ Performance: ${opsPerSecond} operations/second`);
-    
+
     // Benchmark 2: Subscription overhead
     const subscriptions: (() => void)[] = [];
     const subStartTime = performance.now();
-    
+
     for (let i = 0; i < 1000; i++) {
       subscriptions.push(cubit.subscribe(() => {}));
     }
-    
+
     const subEndTime = performance.now();
     const subDuration = subEndTime - subStartTime;
-    
-    results.push(`⚡ Created 1000 subscriptions in ${subDuration.toFixed(2)}ms`);
-    
+
+    results.push(
+      `⚡ Created 1000 subscriptions in ${subDuration.toFixed(2)}ms`,
+    );
+
     // Cleanup
-    subscriptions.forEach(unsub => unsub());
+    subscriptions.forEach((unsub) => unsub());
     BlocTest.tearDown();
-    
-    setTestResults(prev => [...prev, '', ...results]);
+
+    setTestResults((prev) => [...prev, '', ...results]);
   };
 
   return (
@@ -261,37 +275,31 @@ const TestingUtilitiesDemo: React.FC = () => {
       <div style={{ marginBottom: '20px' }}>
         <h4>BlaC Testing Utilities</h4>
         <p style={{ fontSize: '0.9em', color: '#666', marginBottom: '15px' }}>
-          Demonstrates testing utilities and patterns for unit testing BlaC components
+          Demonstrates testing utilities and patterns for unit testing BlaC
+          components
         </p>
-        
+
         <div style={{ display: 'flex', gap: '10px' }}>
-          <Button 
-            onClick={runTests}
-            disabled={isRunning}
-          >
+          <Button onClick={runTests} disabled={isRunning}>
             {isRunning ? 'Running Tests...' : 'Run Test Suite'}
           </Button>
-          <Button 
-            onClick={runBenchmark}
-            variant="outline"
-          >
+          <Button onClick={runBenchmark} variant="outline">
             Run Performance Benchmark
           </Button>
-          <Button 
-            onClick={() => setTestResults([])}
-            variant="outline"
-          >
+          <Button onClick={() => setTestResults([])} variant="outline">
             Clear Results
           </Button>
         </div>
       </div>
 
-      <div style={{ 
-        padding: '15px', 
-        backgroundColor: '#f9f9f9', 
-        borderRadius: '4px',
-        minHeight: '200px'
-      }}>
+      <div
+        style={{
+          padding: '15px',
+          backgroundColor: '#f9f9f9',
+          borderRadius: '4px',
+          minHeight: '200px',
+        }}
+      >
         {testResults.length === 0 ? (
           <div style={{ textAlign: 'center', color: '#999' }}>
             Click "Run Test Suite" to execute tests
@@ -301,12 +309,19 @@ const TestingUtilitiesDemo: React.FC = () => {
             <h5 style={{ marginBottom: '10px' }}>Test Results:</h5>
             <div style={{ fontFamily: 'monospace', fontSize: '0.9em' }}>
               {testResults.map((result, i) => (
-                <div key={i} style={{ 
-                  marginBottom: '5px',
-                  color: result.startsWith('✅') ? '#0a0' : 
-                         result.startsWith('❌') ? '#c00' : 
-                         result.startsWith('⚡') ? '#00a' : '#333'
-                }}>
+                <div
+                  key={i}
+                  style={{
+                    marginBottom: '5px',
+                    color: result.startsWith('✅')
+                      ? '#0a0'
+                      : result.startsWith('❌')
+                        ? '#c00'
+                        : result.startsWith('⚡')
+                          ? '#00a'
+                          : '#333',
+                  }}
+                >
                   {result}
                 </div>
               ))}
@@ -315,26 +330,41 @@ const TestingUtilitiesDemo: React.FC = () => {
         )}
       </div>
 
-      <div style={{ 
-        marginTop: '20px',
-        padding: '15px', 
-        backgroundColor: '#f5f5f5', 
-        borderRadius: '4px',
-        fontSize: '0.85em'
-      }}>
+      <div
+        style={{
+          marginTop: '20px',
+          padding: '15px',
+          backgroundColor: '#f5f5f5',
+          borderRadius: '4px',
+          fontSize: '0.85em',
+        }}
+      >
         <strong>Testing Utilities Available:</strong>
         <ul style={{ marginTop: '10px', paddingLeft: '20px' }}>
-          <li><code>BlocTest.setUp()</code> - Initialize test environment</li>
-          <li><code>BlocTest.tearDown()</code> - Clean up after tests</li>
-          <li><code>BlocTest.createBloc()</code> - Create isolated Bloc/Cubit instances</li>
-          <li><code>MockCubit</code> - Track state changes and history</li>
+          <li>
+            <code>BlocTest.setUp()</code> - Initialize test environment
+          </li>
+          <li>
+            <code>BlocTest.tearDown()</code> - Clean up after tests
+          </li>
+          <li>
+            <code>BlocTest.createBloc()</code> - Create isolated Bloc/Cubit
+            instances
+          </li>
+          <li>
+            <code>MockCubit</code> - Track state changes and history
+          </li>
           <li>Memory leak detection utilities</li>
           <li>Performance benchmarking helpers</li>
         </ul>
-        
-        <strong style={{ display: 'block', marginTop: '15px' }}>Best Practices:</strong>
+
+        <strong style={{ display: 'block', marginTop: '15px' }}>
+          Best Practices:
+        </strong>
         <ul style={{ marginTop: '5px', paddingLeft: '20px' }}>
-          <li>Always use <code>setUp()</code> and <code>tearDown()</code></li>
+          <li>
+            Always use <code>setUp()</code> and <code>tearDown()</code>
+          </li>
           <li>Test state changes and subscriptions</li>
           <li>Verify isolation between instances</li>
           <li>Check for memory leaks in long-running tests</li>

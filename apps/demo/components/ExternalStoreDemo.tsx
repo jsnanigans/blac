@@ -25,17 +25,21 @@ const incrementFromOutside = () => {
 // Component that subscribes to external store
 const ExternalSubscriber: React.FC = () => {
   const state = useExternalBlocStore(externalCounter);
-  
+
   return (
-    <div style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px' }}>
-      <p>Subscriber sees: <strong>{state}</strong></p>
+    <div
+      style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '4px' }}
+    >
+      <p>
+        Subscriber sees: <strong>{state}</strong>
+      </p>
     </div>
   );
 };
 
 const ExternalStoreDemo: React.FC = () => {
   const [manualState, setManualState] = useState(externalCounter.state);
-  
+
   // Example of manual subscription outside the hook
   useEffect(() => {
     const unsubscribe = externalCounter.subscribe((state) => {
@@ -52,7 +56,7 @@ const ExternalStoreDemo: React.FC = () => {
         <p style={{ fontSize: '0.9em', color: '#666', marginBottom: '10px' }}>
           This Cubit instance exists outside React and can be accessed anywhere
         </p>
-        
+
         <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
           <Button onClick={() => externalCounter.increment()}>
             Increment (from component)
@@ -71,7 +75,13 @@ const ExternalStoreDemo: React.FC = () => {
 
       <div>
         <h4>Multiple Subscribers</h4>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '10px',
+          }}
+        >
           <ExternalSubscriber />
           <ExternalSubscriber />
         </div>
@@ -84,12 +94,14 @@ const ExternalStoreDemo: React.FC = () => {
         </p>
       </div>
 
-      <div style={{ 
-        padding: '15px', 
-        backgroundColor: '#f5f5f5', 
-        borderRadius: '4px',
-        fontSize: '0.85em'
-      }}>
+      <div
+        style={{
+          padding: '15px',
+          backgroundColor: '#f5f5f5',
+          borderRadius: '4px',
+          fontSize: '0.85em',
+        }}
+      >
         <strong>Use Cases:</strong>
         <ul style={{ marginTop: '5px', paddingLeft: '20px' }}>
           <li>Sharing state between React and non-React code</li>

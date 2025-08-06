@@ -4,6 +4,9 @@
   "description": "Documentation for Blac state management library",
   "scripts": {
     "format": "prettier --write \".\"",
+    "lint": "eslint . --ext .ts,.tsx,.js,.md",
+    "lint:fix": "eslint . --ext .ts,.tsx,.js,.md --fix",
+    "typecheck": "tsc --noEmit",
     "dev": "vitepress dev",
     "build:docs": "vitepress build",
     "preview:docs": "vitepress preview"

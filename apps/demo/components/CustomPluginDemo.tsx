@@ -7,7 +7,12 @@ import { Button } from './ui/Button';
 class AnalyticsPlugin implements BlacPlugin {
   name = 'AnalyticsPlugin';
   version = '1.0.0';
-  private events: Array<{ timestamp: number; event: string; bloc: string; data?: any }> = [];
+  private events: Array<{
+    timestamp: number;
+    event: string;
+    bloc: string;
+    data?: any;
+  }> = [];
 
   onBlocCreated(bloc: BlocBase<any>) {
     this.recordEvent('CREATED', bloc);
@@ -18,7 +23,10 @@ class AnalyticsPlugin implements BlacPlugin {
   }
 
   onStateChanged(bloc: BlocBase<any>, previousState: any, currentState: any) {
-    this.recordEvent('STATE_CHANGED', bloc, { previous: previousState, current: currentState });
+    this.recordEvent('STATE_CHANGED', bloc, {
+      previous: previousState,
+      current: currentState,
+    });
   }
 
   private recordEvent(event: string, bloc: BlocBase<any>, data?: any) {
@@ -26,11 +34,11 @@ class AnalyticsPlugin implements BlacPlugin {
       timestamp: Date.now(),
       event,
       bloc: bloc._name || 'Unknown',
-      data
+      data,
     };
-    
+
     this.events.push(entry);
-    
+
     // Keep only last 20 events
     if (this.events.length > 20) {
       this.events.shift();
@@ -53,18 +61,25 @@ class AnalyticsPlugin implements BlacPlugin {
 class PerformancePlugin implements BlacPlugin {
   name = 'PerformancePlugin';
   version = '1.0.0';
-  private metrics: Map<string, { count: number; totalTime: number; lastUpdate: number }> = new Map();
+  private metrics: Map<
+    string,
+    { count: number; totalTime: number; lastUpdate: number }
+  > = new Map();
 
   onStateChanged(bloc: BlocBase<any>, previousState: any, currentState: any) {
     const blocName = bloc._name || 'Unknown';
     const now = Date.now();
-    const metric = this.metrics.get(blocName) || { count: 0, totalTime: 0, lastUpdate: now };
-    
+    const metric = this.metrics.get(blocName) || {
+      count: 0,
+      totalTime: 0,
+      lastUpdate: now,
+    };
+
     const timeSinceLastUpdate = now - metric.lastUpdate;
     metric.count++;
     metric.totalTime += timeSinceLastUpdate;
     metric.lastUpdate = now;
-    
+
     this.metrics.set(blocName, metric);
   }
 
@@ -74,7 +89,8 @@ class PerformancePlugin implements BlacPlugin {
       results.push({
         bloc: blocName,
         updates: metric.count,
-        avgTime: metric.count > 0 ? (metric.totalTime / metric.count).toFixed(2) : 0
+        avgTime:
+          metric.count > 0 ? (metric.totalTime / metric.count).toFixed(2) : 0,
       });
     });
     return results;
@@ -92,14 +108,17 @@ class ValidationPlugin implements BlacPlugin {
   private validators: Map<string, (state: any) => string | null> = new Map();
   private errors: Map<string, string> = new Map();
 
-  registerValidator(blocName: string, validator: (state: any) => string | null) {
+  registerValidator(
+    blocName: string,
+    validator: (state: any) => string | null,
+  ) {
     this.validators.set(blocName, validator);
   }
 
   onStateChanged(bloc: BlocBase<any>, previousState: any, currentState: any) {
     const blocName = bloc._name || 'Unknown';
     const validator = this.validators.get(blocName);
-    
+
     if (validator) {
       const error = validator(currentState);
       if (error) {
@@ -112,7 +131,10 @@ class ValidationPlugin implements BlacPlugin {
   }
 
   getErrors() {
-    return Array.from(this.errors.entries()).map(([bloc, error]) => ({ bloc, error }));
+    return Array.from(this.errors.entries()).map(([bloc, error]) => ({
+      bloc,
+      error,
+    }));
   }
 
   hasErrors() {
@@ -215,39 +237,60 @@ const CustomPluginDemo: React.FC = () => {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '20px' }}>
+      <div
+        style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '20px' }}
+      >
         <div>
           <h5>State Controls</h5>
-          <div style={{ 
-            padding: '15px', 
-            backgroundColor: '#f9f9f9', 
-            borderRadius: '4px',
-            marginBottom: '10px'
-          }}>
+          <div
+            style={{
+              padding: '15px',
+              backgroundColor: '#f9f9f9',
+              borderRadius: '4px',
+              marginBottom: '10px',
+            }}
+          >
             <div style={{ marginBottom: '10px' }}>
               <strong>Count:</strong> {state.count}
             </div>
             <div style={{ marginBottom: '15px' }}>
               <strong>Message:</strong> {state.message}
             </div>
-            
+
             <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
-              <Button onClick={cubit.increment} size="sm">+1</Button>
-              <Button onClick={cubit.decrement} size="sm">-1</Button>
-              <Button onClick={() => cubit.updateMessage('Hi!')} size="sm">Hi!</Button>
-              <Button onClick={() => cubit.updateMessage('This is a very long message')} size="sm">Long Msg</Button>
-              <Button onClick={cubit.reset} size="sm" variant="outline">Reset</Button>
+              <Button onClick={cubit.increment} size="sm">
+                +1
+              </Button>
+              <Button onClick={cubit.decrement} size="sm">
+                -1
+              </Button>
+              <Button onClick={() => cubit.updateMessage('Hi!')} size="sm">
+                Hi!
+              </Button>
+              <Button
+                onClick={() =>
+                  cubit.updateMessage('This is a very long message')
+                }
+                size="sm"
+              >
+                Long Msg
+              </Button>
+              <Button onClick={cubit.reset} size="sm" variant="outline">
+                Reset
+              </Button>
             </div>
           </div>
 
           {validationErrors.length > 0 && (
-            <div style={{ 
-              padding: '10px', 
-              backgroundColor: '#fee', 
-              border: '1px solid #fcc',
-              borderRadius: '4px',
-              color: '#c00'
-            }}>
+            <div
+              style={{
+                padding: '10px',
+                backgroundColor: '#fee',
+                border: '1px solid #fcc',
+                borderRadius: '4px',
+                color: '#c00',
+              }}
+            >
               <strong>Validation Errors:</strong>
               {validationErrors.map((error, i) => (
                 <div key={i} style={{ fontSize: '0.9em', marginTop: '5px' }}>
@@ -260,37 +303,44 @@ const CustomPluginDemo: React.FC = () => {
 
         <div>
           {!pluginsEnabled ? (
-            <div style={{ 
-              textAlign: 'center', 
-              padding: '40px', 
-              backgroundColor: '#f5f5f5',
-              borderRadius: '4px'
-            }}>
-              Enable plugins to see analytics, performance metrics, and validation
+            <div
+              style={{
+                textAlign: 'center',
+                padding: '40px',
+                backgroundColor: '#f5f5f5',
+                borderRadius: '4px',
+              }}
+            >
+              Enable plugins to see analytics, performance metrics, and
+              validation
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <div
+              style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}
+            >
               <div>
                 <h5>Analytics Events (Last 5)</h5>
-                <div style={{ 
-                  padding: '10px', 
-                  backgroundColor: '#f9f9f9', 
-                  borderRadius: '4px',
-                  fontSize: '0.85em',
-                  fontFamily: 'monospace',
-                  maxHeight: '150px',
-                  overflowY: 'auto'
-                }}>
+                <div
+                  style={{
+                    padding: '10px',
+                    backgroundColor: '#f9f9f9',
+                    borderRadius: '4px',
+                    fontSize: '0.85em',
+                    fontFamily: 'monospace',
+                    maxHeight: '150px',
+                    overflowY: 'auto',
+                  }}
+                >
                   {analyticsEvents.slice(-5).map((event, i) => (
                     <div key={i} style={{ marginBottom: '5px' }}>
                       <span style={{ color: '#666' }}>
                         {new Date(event.timestamp).toLocaleTimeString()}
-                      </span>
-                      {' '}
+                      </span>{' '}
                       <span style={{ color: '#00a' }}>{event.event}</span>
                       {event.data && (
                         <span style={{ color: '#080' }}>
-                          {' '}{JSON.stringify(event.data)}
+                          {' '}
+                          {JSON.stringify(event.data)}
                         </span>
                       )}
                     </div>
@@ -300,19 +350,21 @@ const CustomPluginDemo: React.FC = () => {
 
               <div>
                 <h5>Performance Metrics</h5>
-                <div style={{ 
-                  padding: '10px', 
-                  backgroundColor: '#f9f9f9', 
-                  borderRadius: '4px',
-                  fontSize: '0.9em'
-                }}>
+                <div
+                  style={{
+                    padding: '10px',
+                    backgroundColor: '#f9f9f9',
+                    borderRadius: '4px',
+                    fontSize: '0.9em',
+                  }}
+                >
                   {performanceMetrics.length === 0 ? (
                     <div style={{ color: '#999' }}>No metrics yet</div>
                   ) : (
                     performanceMetrics.map((metric, i) => (
                       <div key={i}>
-                        <strong>{metric.bloc}:</strong> {metric.updates} updates, 
-                        avg {metric.avgTime}ms between updates
+                        <strong>{metric.bloc}:</strong> {metric.updates}{' '}
+                        updates, avg {metric.avgTime}ms between updates
                       </div>
                     ))
                   )}
@@ -323,26 +375,48 @@ const CustomPluginDemo: React.FC = () => {
         </div>
       </div>
 
-      <div style={{ 
-        marginTop: '20px',
-        padding: '15px', 
-        backgroundColor: '#f5f5f5', 
-        borderRadius: '4px',
-        fontSize: '0.85em'
-      }}>
+      <div
+        style={{
+          marginTop: '20px',
+          padding: '15px',
+          backgroundColor: '#f5f5f5',
+          borderRadius: '4px',
+          fontSize: '0.85em',
+        }}
+      >
         <strong>Custom Plugins Demonstrated:</strong>
         <ul style={{ marginTop: '10px', paddingLeft: '20px' }}>
-          <li><strong>Analytics Plugin:</strong> Tracks all state changes and lifecycle events</li>
-          <li><strong>Performance Plugin:</strong> Measures update frequency and timing</li>
-          <li><strong>Validation Plugin:</strong> Validates state changes against rules</li>
+          <li>
+            <strong>Analytics Plugin:</strong> Tracks all state changes and
+            lifecycle events
+          </li>
+          <li>
+            <strong>Performance Plugin:</strong> Measures update frequency and
+            timing
+          </li>
+          <li>
+            <strong>Validation Plugin:</strong> Validates state changes against
+            rules
+          </li>
         </ul>
-        
-        <strong style={{ display: 'block', marginTop: '15px' }}>Plugin API:</strong>
+
+        <strong style={{ display: 'block', marginTop: '15px' }}>
+          Plugin API:
+        </strong>
         <ul style={{ marginTop: '5px', paddingLeft: '20px' }}>
-          <li><code>BlacPlugin</code> interface with lifecycle hooks</li>
-          <li><code>Blac.addPlugin(plugin)</code> - Register a plugin globally</li>
-          <li><code>Blac.removePlugin(plugin)</code> - Unregister a plugin</li>
-          <li>Hooks: <code>onBlocCreated</code>, <code>onStateChanged</code>, <code>onBlocDisposed</code></li>
+          <li>
+            <code>BlacPlugin</code> interface with lifecycle hooks
+          </li>
+          <li>
+            <code>Blac.addPlugin(plugin)</code> - Register a plugin globally
+          </li>
+          <li>
+            <code>Blac.removePlugin(plugin)</code> - Unregister a plugin
+          </li>
+          <li>
+            Hooks: <code>onBlocCreated</code>, <code>onStateChanged</code>,{' '}
+            <code>onBlocDisposed</code>
+          </li>
         </ul>
       </div>
     </div>

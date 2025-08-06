@@ -309,7 +309,9 @@ function App() {
           title="Bloc with Reducer Pattern"
           description="Redux-style reducer pattern using Bloc with pure event handlers for complex state transitions."
           show={show.blocWithReducer}
-          setShow={() => setShow({ ...show, blocWithReducer: !show.blocWithReducer })}
+          setShow={() =>
+            setShow({ ...show, blocWithReducer: !show.blocWithReducer })
+          }
         >
           <BlocWithReducerDemo />
         </DemoCard>
@@ -318,7 +320,9 @@ function App() {
           title="External Store (useExternalBlocStore)"
           description="Use Bloc instances created outside React components for global state management."
           show={show.externalStore}
-          setShow={() => setShow({ ...show, externalStore: !show.externalStore })}
+          setShow={() =>
+            setShow({ ...show, externalStore: !show.externalStore })
+          }
         >
           <ExternalStoreDemo />
         </DemoCard>
@@ -336,7 +340,9 @@ function App() {
           title="Async Operations & Error Handling"
           description="Handle async operations, loading states, errors, retries, and cancellable requests."
           show={show.asyncOperations}
-          setShow={() => setShow({ ...show, asyncOperations: !show.asyncOperations })}
+          setShow={() =>
+            setShow({ ...show, asyncOperations: !show.asyncOperations })
+          }
         >
           <AsyncOperationsDemo />
         </DemoCard>
@@ -345,7 +351,9 @@ function App() {
           title="Testing Utilities"
           description="BlocTest utilities for unit testing, mocking, and performance benchmarking."
           show={show.testingUtilities}
-          setShow={() => setShow({ ...show, testingUtilities: !show.testingUtilities })}
+          setShow={() =>
+            setShow({ ...show, testingUtilities: !show.testingUtilities })
+          }
         >
           <TestingUtilitiesDemo />
         </DemoCard>
@@ -363,7 +371,9 @@ function App() {
           title="Advanced Selectors"
           description="Complex selector patterns for fine-grained control over component re-renders."
           show={show.advancedSelectors}
-          setShow={() => setShow({ ...show, advancedSelectors: !show.advancedSelectors })}
+          setShow={() =>
+            setShow({ ...show, advancedSelectors: !show.advancedSelectors })
+          }
         >
           <AdvancedSelectorsDemo />
         </DemoCard>

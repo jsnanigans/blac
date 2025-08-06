@@ -21,7 +21,7 @@ class ApiCubit extends Cubit<ApiState> {
       loading: false,
       error: null,
       successCount: 0,
-      errorCount: 0
+      errorCount: 0,
     });
   }
 
@@ -32,7 +32,7 @@ class ApiCubit extends Cubit<ApiState> {
 
     try {
       // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       if (shouldFail) {
         throw new Error('Network request failed: 500 Internal Server Error');
@@ -43,7 +43,7 @@ class ApiCubit extends Cubit<ApiState> {
         id: Math.random().toString(36).substr(2, 9),
         timestamp: new Date().toISOString(),
         message: 'Data fetched successfully',
-        value: Math.floor(Math.random() * 100)
+        value: Math.floor(Math.random() * 100),
       };
 
       this.emit({
@@ -51,14 +51,15 @@ class ApiCubit extends Cubit<ApiState> {
         loading: false,
         error: null,
         successCount: this.state.successCount + 1,
-        errorCount: this.state.errorCount
+        errorCount: this.state.errorCount,
       });
     } catch (error) {
       this.emit({
         ...this.state,
         loading: false,
-        error: error instanceof Error ? error.message : 'Unknown error occurred',
-        errorCount: this.state.errorCount + 1
+        error:
+          error instanceof Error ? error.message : 'Unknown error occurred',
+        errorCount: this.state.errorCount + 1,
       });
     }
   };
@@ -66,24 +67,29 @@ class ApiCubit extends Cubit<ApiState> {
   // Retry with exponential backoff
   fetchWithRetry = async (maxRetries: number = 3) => {
     let retryCount = 0;
-    
+
     while (retryCount < maxRetries) {
-      this.emit({ 
-        ...this.state, 
-        loading: true, 
-        error: retryCount > 0 ? `Retry attempt ${retryCount}/${maxRetries}...` : null 
+      this.emit({
+        ...this.state,
+        loading: true,
+        error:
+          retryCount > 0
+            ? `Retry attempt ${retryCount}/${maxRetries}...`
+            : null,
       });
 
       try {
-        await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retryCount)));
-        
+        await new Promise((resolve) =>
+          setTimeout(resolve, 1000 * Math.pow(2, retryCount)),
+        );
+
         // 50% chance of success for demo purposes
         if (Math.random() > 0.5) {
           const data = {
             id: Math.random().toString(36).substr(2, 9),
             timestamp: new Date().toISOString(),
             message: `Success after ${retryCount + 1} attempt(s)`,
-            value: Math.floor(Math.random() * 100)
+            value: Math.floor(Math.random() * 100),
           };
 
           this.emit({
@@ -91,7 +97,7 @@ class ApiCubit extends Cubit<ApiState> {
             loading: false,
             error: null,
             successCount: this.state.successCount + 1,
-            errorCount: this.state.errorCount
+            errorCount: this.state.errorCount,
           });
           return;
         } else {
@@ -104,7 +110,7 @@ class ApiCubit extends Cubit<ApiState> {
             ...this.state,
             loading: false,
             error: `Failed after ${maxRetries} attempts: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            errorCount: this.state.errorCount + 1
+            errorCount: this.state.errorCount + 1,
           });
         }
       }
@@ -117,7 +123,7 @@ class ApiCubit extends Cubit<ApiState> {
       loading: false,
       error: null,
       successCount: 0,
-      errorCount: 0
+      errorCount: 0,
     });
   };
 
@@ -149,14 +155,17 @@ class SearchBloc extends Bloc<SearchState, SearchEvent | CancelSearchEvent> {
       loading: false,
       error: null,
       query: '',
-      abortController: null
+      abortController: null,
     });
 
     this.on(SearchEvent, this.handleSearch);
     this.on(CancelSearchEvent, this.handleCancel);
   }
 
-  private handleSearch = async (event: SearchEvent, emit: (state: SearchState) => void) => {
+  private handleSearch = async (
+    event: SearchEvent,
+    emit: (state: SearchState) => void,
+  ) => {
     // Cancel previous search if any
     if (this.state.abortController) {
       this.state.abortController.abort();
@@ -170,14 +179,14 @@ class SearchBloc extends Bloc<SearchState, SearchEvent | CancelSearchEvent> {
       loading: true,
       error: null,
       query: event.query,
-      abortController
+      abortController,
     });
 
     try {
       // Simulate API delay
       await new Promise((resolve, reject) => {
         const timeout = setTimeout(resolve, 1500);
-        
+
         // Listen for abort signal
         abortController.signal.addEventListener('abort', () => {
           clearTimeout(timeout);
@@ -195,7 +204,7 @@ class SearchBloc extends Bloc<SearchState, SearchEvent | CancelSearchEvent> {
         ? Array.from({ length: Math.floor(Math.random() * 5) + 1 }, (_, i) => ({
             id: `${event.query}-${i}`,
             title: `Result ${i + 1} for "${event.query}"`,
-            description: `Description for search result ${i + 1}`
+            description: `Description for search result ${i + 1}`,
           }))
         : [];
 
@@ -204,14 +213,14 @@ class SearchBloc extends Bloc<SearchState, SearchEvent | CancelSearchEvent> {
         loading: false,
         error: null,
         query: event.query,
-        abortController: null
+        abortController: null,
       });
     } catch (error) {
       if (error instanceof Error && error.message === 'Search cancelled') {
         emit({
           ...this.state,
           loading: false,
-          abortController: null
+          abortController: null,
         });
       } else {
         emit({
@@ -219,19 +228,22 @@ class SearchBloc extends Bloc<SearchState, SearchEvent | CancelSearchEvent> {
           results: [],
           loading: false,
           error: error instanceof Error ? error.message : 'Search failed',
-          abortController: null
+          abortController: null,
         });
       }
     }
   };
 
-  private handleCancel = (_event: CancelSearchEvent, emit: (state: SearchState) => void) => {
+  private handleCancel = (
+    _event: CancelSearchEvent,
+    emit: (state: SearchState) => void,
+  ) => {
     if (this.state.abortController) {
       this.state.abortController.abort();
       emit({
         ...this.state,
         loading: false,
-        abortController: null
+        abortController: null,
       });
     }
   };
@@ -254,44 +266,43 @@ const AsyncOperationsDemo: React.FC = () => {
     <div style={{ display: 'flex', gap: '30px' }}>
       <div style={{ flex: 1 }}>
         <h4>Async Operations with Error Handling</h4>
-        
+
         <div style={{ marginBottom: '20px' }}>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            <Button 
+            <Button
               onClick={() => apiCubit.fetchData(false)}
               disabled={apiState.loading}
             >
               Fetch Data (Success)
             </Button>
-            <Button 
+            <Button
               onClick={() => apiCubit.fetchData(true)}
               disabled={apiState.loading}
               variant="destructive"
             >
               Fetch Data (Fail)
             </Button>
-            <Button 
+            <Button
               onClick={() => apiCubit.fetchWithRetry(3)}
               disabled={apiState.loading}
               variant="outline"
             >
               Fetch with Retry
             </Button>
-            <Button 
-              onClick={apiCubit.reset}
-              variant="outline"
-            >
+            <Button onClick={apiCubit.reset} variant="outline">
               Reset
             </Button>
           </div>
         </div>
 
-        <div style={{ 
-          padding: '15px', 
-          backgroundColor: '#f9f9f9', 
-          borderRadius: '4px',
-          minHeight: '150px'
-        }}>
+        <div
+          style={{
+            padding: '15px',
+            backgroundColor: '#f9f9f9',
+            borderRadius: '4px',
+            minHeight: '150px',
+          }}
+        >
           {apiState.loading && (
             <div style={{ textAlign: 'center', color: '#666' }}>
               <div>Loading...</div>
@@ -304,15 +315,17 @@ const AsyncOperationsDemo: React.FC = () => {
           )}
 
           {!apiState.loading && apiState.error && (
-            <div style={{ 
-              padding: '10px', 
-              backgroundColor: '#fee', 
-              border: '1px solid #fcc',
-              borderRadius: '4px',
-              color: '#c00'
-            }}>
+            <div
+              style={{
+                padding: '10px',
+                backgroundColor: '#fee',
+                border: '1px solid #fcc',
+                borderRadius: '4px',
+                color: '#c00',
+              }}
+            >
               <strong>Error:</strong> {apiState.error}
-              <Button 
+              <Button
                 onClick={apiCubit.clearError}
                 size="sm"
                 variant="outline"
@@ -339,21 +352,25 @@ const AsyncOperationsDemo: React.FC = () => {
           )}
         </div>
 
-        <div style={{ 
-          marginTop: '15px', 
-          padding: '10px', 
-          backgroundColor: '#f5f5f5',
-          borderRadius: '4px',
-          fontSize: '0.85em'
-        }}>
+        <div
+          style={{
+            marginTop: '15px',
+            padding: '10px',
+            backgroundColor: '#f5f5f5',
+            borderRadius: '4px',
+            fontSize: '0.85em',
+          }}
+        >
           <strong>Statistics:</strong>
-          <div>Success: {apiState.successCount} | Errors: {apiState.errorCount}</div>
+          <div>
+            Success: {apiState.successCount} | Errors: {apiState.errorCount}
+          </div>
         </div>
       </div>
 
       <div style={{ flex: 1 }}>
         <h4>Cancellable Search (Bloc)</h4>
-        
+
         <div style={{ marginBottom: '20px' }}>
           <div style={{ display: 'flex', gap: '10px' }}>
             <Input
@@ -367,29 +384,28 @@ const AsyncOperationsDemo: React.FC = () => {
               placeholder="Enter search query"
               style={{ flex: 1 }}
             />
-            <Button 
+            <Button
               onClick={() => searchBloc.search(searchInput)}
               disabled={searchState.loading}
             >
               Search
             </Button>
             {searchState.loading && (
-              <Button 
-                onClick={searchBloc.cancelSearch}
-                variant="destructive"
-              >
+              <Button onClick={searchBloc.cancelSearch} variant="destructive">
                 Cancel
               </Button>
             )}
           </div>
         </div>
 
-        <div style={{ 
-          padding: '15px', 
-          backgroundColor: '#f9f9f9', 
-          borderRadius: '4px',
-          minHeight: '200px'
-        }}>
+        <div
+          style={{
+            padding: '15px',
+            backgroundColor: '#f9f9f9',
+            borderRadius: '4px',
+            minHeight: '200px',
+          }}
+        >
           {searchState.loading && (
             <div style={{ textAlign: 'center', color: '#666' }}>
               Searching for "{searchState.query}"...
@@ -400,23 +416,24 @@ const AsyncOperationsDemo: React.FC = () => {
           )}
 
           {!searchState.loading && searchState.error && (
-            <div style={{ color: '#c00' }}>
-              Error: {searchState.error}
-            </div>
+            <div style={{ color: '#c00' }}>Error: {searchState.error}</div>
           )}
 
           {!searchState.loading && searchState.results.length > 0 && (
             <div>
               <strong>Results for "{searchState.query}":</strong>
               <div style={{ marginTop: '10px' }}>
-                {searchState.results.map(result => (
-                  <div key={result.id} style={{
-                    padding: '10px',
-                    marginBottom: '10px',
-                    backgroundColor: '#fff',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px'
-                  }}>
+                {searchState.results.map((result) => (
+                  <div
+                    key={result.id}
+                    style={{
+                      padding: '10px',
+                      marginBottom: '10px',
+                      backgroundColor: '#fff',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                    }}
+                  >
                     <div style={{ fontWeight: 'bold' }}>{result.title}</div>
                     <div style={{ fontSize: '0.9em', color: '#666' }}>
                       {result.description}
@@ -427,11 +444,14 @@ const AsyncOperationsDemo: React.FC = () => {
             </div>
           )}
 
-          {!searchState.loading && searchState.query && searchState.results.length === 0 && !searchState.error && (
-            <div style={{ textAlign: 'center', color: '#999' }}>
-              No results found for "{searchState.query}"
-            </div>
-          )}
+          {!searchState.loading &&
+            searchState.query &&
+            searchState.results.length === 0 &&
+            !searchState.error && (
+              <div style={{ textAlign: 'center', color: '#999' }}>
+                No results found for "{searchState.query}"
+              </div>
+            )}
 
           {!searchState.loading && !searchState.query && (
             <div style={{ textAlign: 'center', color: '#999' }}>
