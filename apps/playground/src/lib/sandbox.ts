@@ -7,6 +7,7 @@ export interface SandboxResult {
   success: boolean;
   error?: string;
   logs: string[];
+  component?: React.ComponentType;
 }
 
 export class Sandbox {
@@ -71,31 +72,43 @@ export class Sandbox {
       (window as any).BlacCore = BlacCore;
       (window as any).BlacReact = BlacReact;
       
+      // Store for the exported component
+      let exportedComponent: React.ComponentType | null = null;
+      
       // Create a sandboxed environment with necessary imports injected
       const sandboxedCode = `
-        (function() {
-          const React = window.React;
-          const ReactDOM = window.ReactDOM;
-          const { Bloc, Cubit, BlocBase, Blac } = window.BlacCore;
-          const { useBloc, useExternalBlocStore } = window.BlacReact;
-          
-          // User code starts here
-          ${code}
-          
-          // Log success
-          console.log('Code executed successfully');
-        })();
+        const React = window.React;
+        const ReactDOM = window.ReactDOM;
+        const { Bloc, Cubit, BlocBase, Blac } = window.BlacCore;
+        const { useBloc, useExternalBlocStore } = window.BlacReact;
+        
+        // User code starts here
+        ${code}
+        
+        // Try to find and return the main component
+        // Look for common component names
+        if (typeof Counter !== 'undefined') return Counter;
+        if (typeof App !== 'undefined') return App;
+        if (typeof Component !== 'undefined') return Component;
+        if (typeof Demo !== 'undefined') return Demo;
+        if (typeof Example !== 'undefined') return Example;
+        if (typeof Main !== 'undefined') return Main;
+        
+        // Log success even if no component found
+        console.log('Code executed successfully');
+        return null;
       `;
       
-      // Execute the code using Function constructor (safer than eval)
+      // Execute the code and capture the returned component
       const executeCode = new Function(sandboxedCode);
-      executeCode();
+      exportedComponent = executeCode();
       
       this.restoreConsole();
       
       return {
         success: true,
         logs: this.logs,
+        component: exportedComponent || undefined,
       };
     } catch (error) {
       this.restoreConsole();

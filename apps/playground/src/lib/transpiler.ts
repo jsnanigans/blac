@@ -33,9 +33,9 @@ export async function transpileTypeScript(code: string): Promise<TranspileResult
       .replace(/export\s+const/g, 'const')
       .replace(/export\s+\{[^}]+\};?/g, '');
     
+    // Don't use IIFE format, just transform the syntax
     const result = await esbuild.transform(codeWithoutImports, {
       loader: 'tsx',
-      format: 'iife',
       target: 'es2020',
       jsx: 'transform',
       jsxFactory: 'React.createElement',

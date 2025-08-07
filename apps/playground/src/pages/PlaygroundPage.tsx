@@ -64,6 +64,8 @@ export function Counter() {
   const [isRunning, setIsRunning] = React.useState(false);
   const [preview, setPreview] = React.useState<React.ReactNode>(null);
   const [theme, setTheme] = React.useState<'blac-dark' | 'light'>('blac-dark');
+  const previewRef = React.useRef<HTMLDivElement>(null);
+  const rootRef = React.useRef<any>(null);
 
   // Check for dark mode
   React.useEffect(() => {
@@ -88,6 +90,11 @@ export function Counter() {
     setOutput(prev => [...prev, '> Running...']);
     
     try {
+      // Clean up any existing BlaC instances
+      if ((window as any).BlacCore?.Blac?.reset) {
+        (window as any).BlacCore.Blac.reset();
+        setOutput(prev => [...prev, '> Cleaned up previous BlaC instances']);
+      }
       // Step 1: Transpile TypeScript to JavaScript
       setOutput(prev => [...prev, '> Transpiling TypeScript...']);
       const transpileResult = await transpileTypeScript(code);
@@ -113,18 +120,44 @@ export function Counter() {
       if (result.success) {
         setOutput(prev => [...prev, '✓ Code executed successfully']);
         
-        // For now, show a success message
-        // In the future, we'll render the actual component
-        setPreview(
-          <div className="text-center p-8">
-            <p className="text-lg mb-4 text-green-600 dark:text-green-400">
-              ✓ Code executed successfully!
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Component rendering coming soon. Check the console for output.
-            </p>
-          </div>
-        );
+        // Check if a component was returned
+        if (result.component) {
+          setOutput(prev => [...prev, '✓ Component detected and rendering...']);
+          
+          // Clean up previous React root if it exists
+          if (rootRef.current) {
+            rootRef.current.unmount();
+            rootRef.current = null;
+          }
+          
+          // Render the component
+          const Component = result.component;
+          setPreview(
+            <div ref={previewRef} className="w-full h-full">
+              <Component />
+            </div>
+          );
+        } else {
+          // No component found, show success message with hint
+          setOutput(prev => [...prev, '⚠ No component found to render']);
+          setPreview(
+            <div className="text-center p-8">
+              <p className="text-lg mb-4 text-green-600 dark:text-green-400">
+                ✓ Code executed successfully!
+              </p>
+              <p className="text-sm text-muted-foreground mb-4">
+                No React component found. Define a component named: Counter, App, Component, Demo, Example, or Main.
+              </p>
+              <div className="text-left bg-zinc-900 dark:bg-zinc-900 text-zinc-100 p-4 rounded-lg font-mono text-xs">
+                <p className="text-zinc-400 mb-2">// Example:</p>
+                <p>function Counter() {'{'}</p>
+                <p className="ml-4">const [count, counterCubit] = useBloc(CounterCubit);</p>
+                <p className="ml-4">return {'<div>Count: {count}</div>'};</p>
+                <p>{'}'}</p>
+              </div>
+            </div>
+          );
+        }
       } else {
         setOutput(prev => [...prev, `✗ Execution error: ${result.error}`]);
         setPreview(
