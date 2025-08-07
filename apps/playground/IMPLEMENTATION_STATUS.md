@@ -133,6 +133,12 @@ pnpm dev
 # The app will be available at http://localhost:3003
 ```
 
+## ✅ Recently Added Demos
+
+### New Demo Examples
+- ✅ **Todo List with Bloc**: Complete CRUD application with event-driven architecture
+- ✅ **Async Operations**: Loading states, error handling, and retry logic with exponential backoff
+
 ## Next Steps
 
 1. ✅ ~~**Fix TypeScript issues in core BlaC package** (WeakRef errors)~~ - COMPLETE
@@ -140,7 +146,13 @@ pnpm dev
 3. ✅ ~~**Implement live preview execution** - esbuild-wasm transpilation~~ - COMPLETE
 4. ✅ ~~**Render actual React components in preview** - Mount transpiled components~~ - COMPLETE
 5. ✅ ~~**Implement performance monitoring**~~ - COMPLETE
-6. **Add more demo examples** from the existing demo app
+6. **Add more demo examples** from the existing demo app - IN PROGRESS
+   - ✅ Todo List (Bloc pattern)
+   - ✅ Async Operations
+   - 📋 Isolated vs Shared instances
+   - 📋 Persistence demo
+   - 📋 Custom selectors
+   - 📋 Lifecycle management
 7. **Add state visualization tools** (dependency graph, state tree)
 8. **Create shareable playground links**
 9. **Add performance benchmarking** (compare different implementations)
@@ -203,3 +215,28 @@ The playground is now fully functional with performance monitoring! Users can:
 - Save/load their work
 
 The playground successfully demonstrates the BlaC state management pattern with live, interactive examples and comprehensive performance monitoring.
+
+### Latest Updates (Current Session):
+1. ✅ Added **Todo List Demo** - Complete CRUD application showcasing Bloc pattern with event-driven architecture
+2. ✅ Added **Async Operations Demo** - Demonstrates loading states, error handling, and retry logic
+3. ✅ Added **Isolated vs Shared Instances Demo** - Shows difference between shared and isolated Cubit instances
+4. ✅ Added **KeepAlive Pattern Demo** - Demonstrates persistent Cubits that survive component unmounting
+5. ✅ Added **Custom Selectors Demo** - Shows how to optimize re-renders with dependency selectors
+6. ✅ Added **Stream API Demo** - Demonstrates observable pattern and real-time streaming
+7. ✅ Created proper demo structure with categories (01-basics, 02-patterns, 03-advanced)
+8. ✅ Successfully built and verified all demos work correctly
+
+The playground now has **7 fully functional demos** showcasing comprehensive BlaC features:
+
+**01-basics:**
+- **Basic Counter**: Simple state management with Cubit
+- **Isolated vs Shared**: Instance management patterns
+
+**02-patterns:**
+- **Todo List**: Event-driven Bloc pattern for real-world apps
+- **KeepAlive**: Persistent state management
+
+**03-advanced:**
+- **Async Operations**: Loading states, error handling, retry logic
+- **Custom Selectors**: Render optimization with dependency tracking
+- **Stream API**: Observable pattern for real-time data
