@@ -1,6 +1,7 @@
 import React from 'react';
 import Editor from '@monaco-editor/react';
 import { Play, Save, Share2, Download, RotateCcw } from 'lucide-react';
+import { configureMonaco } from '../core/utils/monacoConfig';
 
 export function PlaygroundPage() {
   const [code, setCode] = React.useState(`import { Cubit } from '@blac/core';
@@ -60,16 +61,16 @@ export function Counter() {
   const [output, setOutput] = React.useState<string[]>(['> Ready']);
   const [isRunning, setIsRunning] = React.useState(false);
   const [preview, setPreview] = React.useState<React.ReactNode>(null);
-  const [theme, setTheme] = React.useState<'vs-dark' | 'light'>('vs-dark');
+  const [theme, setTheme] = React.useState<'blac-dark' | 'light'>('blac-dark');
 
   // Check for dark mode
   React.useEffect(() => {
     const isDark = document.documentElement.classList.contains('dark');
-    setTheme(isDark ? 'vs-dark' : 'light');
+    setTheme(isDark ? 'blac-dark' : 'light');
 
     const observer = new MutationObserver(() => {
       const isDark = document.documentElement.classList.contains('dark');
-      setTheme(isDark ? 'vs-dark' : 'light');
+      setTheme(isDark ? 'blac-dark' : 'light');
     });
 
     observer.observe(document.documentElement, {
@@ -252,10 +253,15 @@ export function Counter() {
         <div className="flex-1 border-r">
           <Editor
             height="100%"
-            defaultLanguage="typescript"
+            language="typescript"
+            path="playground.tsx"
             theme={theme}
             value={code}
             onChange={(value) => setCode(value || '')}
+            beforeMount={(monaco) => {
+              // Initialize Monaco with BlaC types
+              configureMonaco(monaco);
+            }}
             options={{
               minimap: { enabled: false },
               fontSize: 14,
