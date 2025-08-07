@@ -52,8 +52,7 @@ export function ApiPage() {
       title: 'Utilities',
       icon: Zap,
       items: [
-        { name: 'BlocTest', description: 'Testing utilities for Bloc/Cubit' },
-        { name: 'MockCubit', description: 'Mock implementation for testing' },
+        { name: 'Testing', description: 'Testing utilities and helpers' },
         {
           name: 'Selectors',
           description: 'Performance optimization with selectors',
@@ -217,11 +216,17 @@ export function ApiPage() {
             <h3 className="font-semibold mb-3">Testing</h3>
             <pre className="bg-zinc-950 text-zinc-100 p-3 rounded-md text-xs overflow-x-auto">
               <code>{`describe('CounterCubit', () => {
-  beforeEach(() => BlocTest.setUp());
-  afterEach(() => BlocTest.tearDown());
+  beforeEach(() => {
+    Blac.resetInstance();
+    Blac.enableLog = false;
+  });
+  
+  afterEach(() => {
+    Blac.resetInstance();
+  });
   
   it('increments count', () => {
-    const cubit = BlocTest.createBloc(CounterCubit);
+    const cubit = Blac.getBloc(CounterCubit);
     cubit.increment();
     expect(cubit.state).toBe(1);
   });

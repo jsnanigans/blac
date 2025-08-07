@@ -6,236 +6,88 @@ import { BlocEventConstraint } from './types';
 
 /**
  * Test utilities for Blac state management
+ * 
+ * @deprecated Use Blac methods directly instead:
+ * - Blac.resetInstance() for test setup
+ * - Blac.getBloc() to create/get bloc instances
+ * - bloc.subscribe() for state monitoring
+ * 
+ * Example:
+ * ```typescript
+ * beforeEach(() => {
+ *   Blac.resetInstance();
+ *   Blac.enableLog = false;
+ * });
+ * 
+ * it('should test bloc', () => {
+ *   const bloc = Blac.getBloc(MyBloc);
+ *   // test logic
+ * });
+ * ```
  */
-export class BlocTest {
-  private static _originalInstance: Blac;
 
-  /**
-   * Sets up a clean test environment
-   */
-  static setUp(): void {
-    this._originalInstance = Blac.instance;
-    Blac.resetInstance();
-    Blac.enableLog = false; // Disable logging in tests by default
-  }
+/**
+ * Waits for a bloc to emit a specific state
+ */
+export async function waitForState<T extends BlocBase<S>, S>(
+  bloc: T,
+  predicate: (state: S) => boolean,
+  timeout = 5000,
+): Promise<S> {
+  return new Promise<S>((resolve, reject) => {
+    const timeoutId = setTimeout(() => {
+      reject(
+        new Error(
+          `Timeout waiting for state matching predicate after ${timeout}ms`,
+        ),
+      );
+    }, timeout);
 
-  /**
-   * Tears down the test environment and restores original state
-   */
-  static tearDown(): void {
-    Blac.resetInstance();
-    // Note: Cannot restore original instance due to singleton pattern
-    // Tests should use setUp/tearDown properly to manage state
-  }
-
-  /**
-   * Creates a test bloc with automatic cleanup
-   */
-  static createBloc<T extends BlocBase<any>>(
-    BlocClass: new (...args: any[]) => T,
-    ...args: any[]
-  ): T {
-    const bloc = new BlocClass(...args);
-    Blac.activateBloc(bloc);
-    return bloc;
-  }
-
-  /**
-   * Waits for a bloc to emit a specific state
-   */
-  static async waitForState<T extends BlocBase<S>, S>(
-    bloc: T,
-    predicate: (state: S) => boolean,
-    timeout = 5000,
-  ): Promise<S> {
-    return new Promise<S>((resolve, reject) => {
-      const timeoutId = setTimeout(() => {
-        reject(
-          new Error(
-            `Timeout waiting for state matching predicate after ${timeout}ms`,
-          ),
-        );
-      }, timeout);
-
-      const unsubscribe = bloc.subscribe((newState: S) => {
-        if (predicate(newState)) {
-          clearTimeout(timeoutId);
-          unsubscribe();
-          resolve(newState);
-        }
-      });
-
-      // Check current state immediately
-      if (predicate(bloc.state)) {
+    const unsubscribe = bloc.subscribe((newState: S) => {
+      if (predicate(newState)) {
         clearTimeout(timeoutId);
         unsubscribe();
-        resolve(bloc.state);
+        resolve(newState);
       }
     });
-  }
 
-  /**
-   * Expects a bloc to emit specific states in order
-   */
-  static async expectStates<T extends BlocBase<S>, S>(
-    bloc: T,
-    expectedStates: S[],
-    timeout = 5000,
-  ): Promise<void> {
-    const receivedStates: S[] = [];
-
-    return new Promise<void>((resolve, reject) => {
-      const timeoutId = setTimeout(() => {
-        reject(
-          new Error(
-            `Timeout waiting for states. Expected: ${JSON.stringify(expectedStates)}, ` +
-              `Received: ${JSON.stringify(receivedStates)}`,
-          ),
-        );
-      }, timeout);
-
-      const unsubscribe = bloc.subscribe((newState: S) => {
-        receivedStates.push(newState);
-
-        // Check if we have all expected states
-        if (receivedStates.length === expectedStates.length) {
-          clearTimeout(timeoutId);
-          unsubscribe();
-
-          // Verify all states match using deep equality
-          for (let i = 0; i < expectedStates.length; i++) {
-            const expected = expectedStates[i];
-            const received = receivedStates[i];
-
-            // Use JSON comparison for deep equality
-            if (JSON.stringify(expected) !== JSON.stringify(received)) {
-              reject(
-                new Error(
-                  `State mismatch at index ${i}. Expected: ${JSON.stringify(expected)}, ` +
-                    `Received: ${JSON.stringify(received)}`,
-                ),
-              );
-              return;
-            }
-          }
-
-          resolve();
-        }
-      });
-    });
-  }
+    // Check current state immediately
+    if (predicate(bloc.state)) {
+      clearTimeout(timeoutId);
+      unsubscribe();
+      resolve(bloc.state);
+    }
+  });
 }
 
 /**
- * Mock Bloc for testing
+ * Waits for a bloc to emit a specific event
  */
-export class MockBloc<
-  S,
-  A extends BlocEventConstraint = BlocEventConstraint,
-> extends Bloc<S, A> {
-  constructor(initialState: S) {
-    super(initialState);
-  }
+export async function waitForEvent<
+  T extends Bloc<any, E>,
+  E extends BlocEventConstraint,
+>(
+  bloc: T,
+  eventType: new (...args: any[]) => E,
+  timeout = 5000,
+): Promise<E> {
+  return new Promise<E>((resolve, reject) => {
+    const timeoutId = setTimeout(() => {
+      reject(
+        new Error(
+          `Timeout waiting for event ${eventType.name} after ${timeout}ms`,
+        ),
+      );
+    }, timeout);
 
-  /**
-   * Mock an event handler for testing
-   */
-  mockEventHandler<E extends A>(
-    eventConstructor: new (...args: any[]) => E,
-    handler: (event: E, emit: (newState: S) => void) => void | Promise<void>,
-  ): void {
-    // Use the on method to register the mock handler
-    this.on(eventConstructor, handler);
-  }
-
-  /**
-   * Get the number of registered handlers
-   */
-  getHandlerCount(): number {
-    return this.eventHandlers.size;
-  }
-
-  /**
-   * Check if a handler is registered for an event type
-   */
-  hasHandler(eventConstructor: new (...args: any[]) => A): boolean {
-    return this.eventHandlers.has(eventConstructor);
-  }
-}
-
-/**
- * Mock Cubit for testing
- */
-export class MockCubit<S> extends Cubit<S> {
-  private stateHistory: S[] = [];
-
-  constructor(initialState: S) {
-    super(initialState);
-    this.stateHistory.push(initialState);
-  }
-
-  /**
-   * Override emit to track state history
-   */
-  emit(newState: S): void {
-    this.stateHistory.push(newState);
-    super.emit(newState);
-  }
-
-  /**
-   * Get the history of all states
-   */
-  getStateHistory(): S[] {
-    return [...this.stateHistory];
-  }
-
-  /**
-   * Clear state history
-   */
-  clearStateHistory(): void {
-    this.stateHistory = [this.state];
-  }
-}
-
-/**
- * Memory leak detector for tests
- */
-export class MemoryLeakDetector {
-  private initialStats: ReturnType<typeof Blac.getMemoryStats>;
-
-  constructor() {
-    this.initialStats = Blac.getMemoryStats();
-  }
-
-  /**
-   * Check for memory leaks and return a report
-   */
-  checkForLeaks(): {
-    hasLeaks: boolean;
-    report: string;
-    stats: ReturnType<typeof Blac.getMemoryStats>;
-  } {
-    const currentStats = Blac.getMemoryStats();
-    const hasLeaks =
-      currentStats.registeredBlocs > this.initialStats.registeredBlocs ||
-      currentStats.isolatedBlocs > this.initialStats.isolatedBlocs ||
-      currentStats.keepAliveBlocs > this.initialStats.keepAliveBlocs;
-
-    const report = `
-Memory Leak Detection Report:
-- Initial registered blocs: ${this.initialStats.registeredBlocs}
-- Current registered blocs: ${currentStats.registeredBlocs}
-- Initial isolated blocs: ${this.initialStats.isolatedBlocs}  
-- Current isolated blocs: ${currentStats.isolatedBlocs}
-- Initial keep-alive blocs: ${this.initialStats.keepAliveBlocs}
-- Current keep-alive blocs: ${currentStats.keepAliveBlocs}
-- Potential leaks detected: ${hasLeaks ? 'YES' : 'NO'}
-    `.trim();
-
-    return {
-      hasLeaks,
-      report,
-      stats: currentStats,
+    const originalAdd = bloc.add.bind(bloc);
+    bloc.add = (event: E) => {
+      if (event instanceof eventType) {
+        clearTimeout(timeoutId);
+        bloc.add = originalAdd;
+        resolve(event);
+      }
+      return originalAdd(event);
     };
-  }
+  });
 }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Cubit, BlocTest } from '@blac/core';
+import { Cubit, Blac } from '@blac/core';
 import { Button } from './ui/Button';
 
 // Sample Cubit for testing
@@ -44,331 +44,289 @@ const TestingUtilitiesDemo: React.FC = () => {
 
     // Test 1: Basic state management
     try {
-      BlocTest.setUp();
-      const cubit = BlocTest.createBloc(TestCounterCubit);
+      Blac.resetInstance();
+      Blac.enableLog = false;
+      const cubit = new TestCounterCubit();
+      Blac.activateBloc(cubit as any);
       cubit.increment();
       if (cubit.state === 1) {
-        results.push('✅ Test 1: Increment works correctly');
+        results.push('✅ Test 1: Basic state management - PASSED');
       } else {
-        results.push(`❌ Test 1: Expected 1, got ${cubit.state}`);
+        results.push('❌ Test 1: Basic state management - FAILED');
       }
-      BlocTest.tearDown();
+      Blac.resetInstance();
     } catch (error) {
-      results.push(`❌ Test 1: ${error}`);
+      results.push(`❌ Test 1: Error - ${error}`);
     }
 
-    // Test 2: Initial value
+    // Test 2: Initial state
     try {
-      BlocTest.setUp();
-      const cubit = BlocTest.createBloc(TestCounterCubit, 10);
+      Blac.resetInstance();
+      Blac.enableLog = false;
+      const cubit = new TestCounterCubit(10);
+      Blac.activateBloc(cubit as any);
       if (cubit.state === 10) {
-        results.push('✅ Test 2: Initial value set correctly');
+        results.push('✅ Test 2: Initial state - PASSED');
       } else {
-        results.push(`❌ Test 2: Expected 10, got ${cubit.state}`);
+        results.push('❌ Test 2: Initial state - FAILED');
       }
-      BlocTest.tearDown();
+      Blac.resetInstance();
     } catch (error) {
-      results.push(`❌ Test 2: ${error}`);
+      results.push(`❌ Test 2: Error - ${error}`);
     }
 
     // Test 3: Multiple operations
     try {
-      BlocTest.setUp();
-      const cubit = BlocTest.createBloc(TestCounterCubit, 5);
+      Blac.resetInstance();
+      Blac.enableLog = false;
+      const cubit = new TestCounterCubit(5);
+      Blac.activateBloc(cubit as any);
       cubit.increment();
       cubit.increment();
       cubit.decrement();
       if (cubit.state === 6) {
-        results.push('✅ Test 3: Multiple operations work correctly');
+        results.push('✅ Test 3: Multiple operations - PASSED');
       } else {
-        results.push(`❌ Test 3: Expected 6, got ${cubit.state}`);
+        results.push('❌ Test 3: Multiple operations - FAILED');
       }
-      BlocTest.tearDown();
+      Blac.resetInstance();
     } catch (error) {
-      results.push(`❌ Test 3: ${error}`);
+      results.push(`❌ Test 3: Error - ${error}`);
     }
 
-    // Test 4: State history tracking
+    // Test 4: Mock with history
     try {
-      BlocTest.setUp();
-      const mockCubit = BlocTest.createBloc(MockHistoryCubit);
-      mockCubit.updateValue(1);
-      mockCubit.updateValue(2);
-      mockCubit.updateValue(3);
+      Blac.resetInstance();
+      Blac.enableLog = false;
+      const mockCubit = new MockHistoryCubit();
+      Blac.activateBloc(mockCubit as any);
+      mockCubit.updateValue(10);
+      mockCubit.updateValue(20);
+      mockCubit.updateValue(30);
       const history = mockCubit.getHistory();
-      if (history.length === 3 && history[2].value === 3) {
-        results.push('✅ Test 4: History tracking works');
+      if (history.length === 3 && mockCubit.state.value === 30) {
+        results.push('✅ Test 4: Mock with history - PASSED');
       } else {
-        results.push(
-          `❌ Test 4: History length ${history.length}, last value ${history[2]?.value}`,
-        );
+        results.push('❌ Test 4: Mock with history - FAILED');
       }
-      BlocTest.tearDown();
+      Blac.resetInstance();
     } catch (error) {
-      results.push(`❌ Test 4: ${error}`);
+      results.push(`❌ Test 4: Error - ${error}`);
     }
 
     // Test 5: Subscription testing
     try {
-      BlocTest.setUp();
-      const cubit = BlocTest.createBloc(TestCounterCubit);
+      Blac.resetInstance();
+      Blac.enableLog = false;
+      const cubit = new TestCounterCubit();
+      Blac.activateBloc(cubit as any);
       let callCount = 0;
-      let lastValue = 0;
-
-      const unsubscribe = cubit.subscribe((state) => {
+      const unsubscribe = cubit.subscribe(() => {
         callCount++;
-        lastValue = state;
       });
-
       cubit.increment();
       cubit.increment();
-
-      if (callCount === 2 && lastValue === 2) {
-        results.push('✅ Test 5: Subscriptions work correctly');
-      } else {
-        results.push(
-          `❌ Test 5: Call count ${callCount}, last value ${lastValue}`,
-        );
-      }
-
       unsubscribe();
-      BlocTest.tearDown();
-    } catch (error) {
-      results.push(`❌ Test 5: ${error}`);
-    }
-
-    // Test 6: Isolation test
-    try {
-      BlocTest.setUp();
-      const cubit1 = BlocTest.createBloc(TestCounterCubit);
-      const cubit2 = BlocTest.createBloc(TestCounterCubit);
-
-      cubit1.increment();
-      cubit2.setValue(10);
-
-      if (cubit1.state === 1 && cubit2.state === 10) {
-        results.push('✅ Test 6: Bloc instances are isolated');
+      cubit.increment(); // Should not trigger callback
+      if (callCount === 2) {
+        results.push('✅ Test 5: Subscription testing - PASSED');
       } else {
-        results.push(
-          `❌ Test 6: Cubit1=${cubit1.state}, Cubit2=${cubit2.state}`,
-        );
+        results.push('❌ Test 5: Subscription testing - FAILED');
       }
-
-      BlocTest.tearDown();
+      Blac.resetInstance();
     } catch (error) {
-      results.push(`❌ Test 6: ${error}`);
+      results.push(`❌ Test 5: Error - ${error}`);
     }
 
-    // Test 7: Memory cleanup
+    // Test 6: Isolated instances
     try {
-      BlocTest.setUp();
-      const cubit = BlocTest.createBloc(TestCounterCubit);
-      const _weakRef = new WeakRef(cubit);
-
-      // Create subscriptions
-      const unsub1 = cubit.subscribe(() => {});
-      const unsub2 = cubit.subscribe(() => {});
-
-      // Clean up
-      unsub1();
-      unsub2();
-      BlocTest.tearDown();
-
-      // Force garbage collection (if available)
-      if (global.gc) {
-        global.gc();
+      Blac.resetInstance();
+      Blac.enableLog = false;
+      const cubit1 = new TestCounterCubit();
+      const cubit2 = new TestCounterCubit();
+      Blac.activateBloc(cubit1 as any);
+      Blac.activateBloc(cubit2 as any);
+      cubit1.increment();
+      if (cubit1.state === 1 && cubit2.state === 0) {
+        results.push('✅ Test 6: Isolated instances - PASSED');
+      } else {
+        results.push('❌ Test 6: Isolated instances - FAILED');
       }
-
-      results.push(
-        '✅ Test 7: Memory cleanup completed (check console for leaks)',
-      );
+      Blac.resetInstance();
     } catch (error) {
-      results.push(`❌ Test 7: ${error}`);
+      results.push(`❌ Test 6: Error - ${error}`);
+    }
+
+    // Test 7: State transitions
+    try {
+      Blac.resetInstance();
+      Blac.enableLog = false;
+      const cubit = new TestCounterCubit();
+      Blac.activateBloc(cubit as any);
+      const states: number[] = [];
+      cubit.subscribe((state: number) => states.push(state));
+      cubit.setValue(5);
+      cubit.setValue(10);
+      cubit.setValue(15);
+      if (states.length === 3 && states[2] === 15) {
+        results.push('✅ Test 7: State transitions - PASSED');
+      } else {
+        results.push('❌ Test 7: State transitions - FAILED');
+      }
+      Blac.resetInstance();
+    } catch (error) {
+      results.push(`❌ Test 7: Error - ${error}`);
     }
 
     // Test 8: Error handling
-    try {
-      BlocTest.setUp();
-
-      class ErrorCubit extends Cubit<number> {
-        constructor() {
-          super(0);
-        }
-
-        causeError = () => {
-          throw new Error('Intentional error');
-        };
+    class ErrorCubit extends Cubit<number> {
+      constructor() {
+        super(0);
       }
+      throwError = () => {
+        throw new Error('Test error');
+      };
+    }
 
-      const errorCubit = BlocTest.createBloc(ErrorCubit);
+    try {
+      Blac.resetInstance();
+      Blac.enableLog = false;
+      const errorCubit = new ErrorCubit();
+      Blac.activateBloc(errorCubit as any);
       let errorCaught = false;
-
       try {
-        errorCubit.causeError();
+        errorCubit.throwError();
       } catch {
         errorCaught = true;
       }
-
       if (errorCaught) {
-        results.push('✅ Test 8: Error handling works');
+        results.push('✅ Test 8: Error handling - PASSED');
       } else {
-        results.push('❌ Test 8: Error was not caught');
+        results.push('❌ Test 8: Error handling - FAILED');
       }
-
-      BlocTest.tearDown();
+      Blac.resetInstance();
     } catch (error) {
-      results.push(`❌ Test 8: ${error}`);
+      results.push(`❌ Test 8: Error - ${error}`);
     }
 
     setTestResults(results);
     setIsRunning(false);
   };
 
-  // Run performance benchmark
+  // Performance benchmark
   const runBenchmark = () => {
-    const results: string[] = [];
+    Blac.resetInstance();
+    Blac.enableLog = false;
+    const cubit = new TestCounterCubit();
+    Blac.activateBloc(cubit as any);
 
-    BlocTest.setUp();
-    const cubit = BlocTest.createBloc(TestCounterCubit);
-
-    // Benchmark 1: State updates
     const iterations = 10000;
-    const startTime = performance.now();
+    const start = performance.now();
 
     for (let i = 0; i < iterations; i++) {
       cubit.increment();
     }
 
-    const endTime = performance.now();
-    const duration = endTime - startTime;
+    const end = performance.now();
+    const duration = end - start;
     const opsPerSecond = (iterations / (duration / 1000)).toFixed(0);
 
-    results.push(
-      `⚡ Benchmark: ${iterations} state updates in ${duration.toFixed(2)}ms`,
-    );
-    results.push(`⚡ Performance: ${opsPerSecond} operations/second`);
+    setTestResults([
+      `⚡ Performance Benchmark:`,
+      `   Iterations: ${iterations.toLocaleString()}`,
+      `   Duration: ${duration.toFixed(2)}ms`,
+      `   Operations/sec: ${Number(opsPerSecond).toLocaleString()}`,
+      `   Final state: ${cubit.state}`,
+    ]);
 
-    // Benchmark 2: Subscription overhead
-    const subscriptions: (() => void)[] = [];
-    const subStartTime = performance.now();
+    Blac.resetInstance();
+  };
 
-    for (let i = 0; i < 1000; i++) {
-      subscriptions.push(cubit.subscribe(() => {}));
+  // Memory leak detection simulation
+  const checkMemoryLeaks = () => {
+    const results: string[] = ['🔍 Memory Leak Detection:'];
+
+    // Create and dispose multiple cubits
+    for (let i = 0; i < 100; i++) {
+      Blac.resetInstance();
+      const cubit = new TestCounterCubit();
+      Blac.activateBloc(cubit as any);
+      const unsub = cubit.subscribe(() => {});
+      unsub();
     }
 
-    const subEndTime = performance.now();
-    const subDuration = subEndTime - subStartTime;
+    // Check if instances are properly cleaned up
+    // Note: WeakRef is used for memory leak detection in real scenarios
+    // but requires manual GC to verify cleanup
 
-    results.push(
-      `⚡ Created 1000 subscriptions in ${subDuration.toFixed(2)}ms`,
-    );
+    // Force garbage collection (note: this is just a simulation)
+    results.push('   ✅ Created 100 cubits');
+    results.push('   ✅ All subscriptions cleaned up');
+    results.push('   ✅ Memory leak detection simulated');
+    results.push('   ℹ️  Manual GC required to verify cleanup');
 
-    // Cleanup
-    subscriptions.forEach((unsub) => unsub());
-    BlocTest.tearDown();
-
-    setTestResults((prev) => [...prev, '', ...results]);
+    setTestResults(results);
   };
 
   return (
-    <div>
-      <div style={{ marginBottom: '20px' }}>
-        <h4>BlaC Testing Utilities</h4>
-        <p style={{ fontSize: '0.9em', color: '#666', marginBottom: '15px' }}>
-          Demonstrates testing utilities and patterns for unit testing BlaC
-          components
-        </p>
+    <div className="p-6 max-w-4xl mx-auto">
+      <h2 className="text-2xl font-bold mb-4">Testing Utilities</h2>
 
-        <div style={{ display: 'flex', gap: '10px' }}>
+      <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+        <h3 className="text-lg font-semibold mb-2">Test Utilities</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          Blac provides utilities for testing your state management logic.
+        </p>
+        <ul className="space-y-2 text-sm">
+          <li>
+            <code>Blac.resetInstance()</code> - Initialize test environment
+          </li>
+          <li>
+            <code>Blac.enableLog = false</code> - Disable logging in tests
+          </li>
+          <li>
+            <code>Blac.getBloc()</code> - Create/get Bloc/Cubit instances
+          </li>
+          <li>
+            <code>Blac.activateBloc()</code> - Activate isolated instances
+          </li>
+        </ul>
+      </div>
+
+      <div className="space-y-4">
+        <div className="flex gap-2">
           <Button onClick={runTests} disabled={isRunning}>
             {isRunning ? 'Running Tests...' : 'Run Test Suite'}
           </Button>
-          <Button onClick={runBenchmark} variant="outline">
-            Run Performance Benchmark
+          <Button onClick={runBenchmark} variant="secondary">
+            Run Benchmark
           </Button>
-          <Button onClick={() => setTestResults([])} variant="outline">
-            Clear Results
+          <Button onClick={checkMemoryLeaks} variant="secondary">
+            Check Memory
           </Button>
         </div>
-      </div>
 
-      <div
-        style={{
-          padding: '15px',
-          backgroundColor: '#f9f9f9',
-          borderRadius: '4px',
-          minHeight: '200px',
-        }}
-      >
-        {testResults.length === 0 ? (
-          <div style={{ textAlign: 'center', color: '#999' }}>
-            Click "Run Test Suite" to execute tests
-          </div>
-        ) : (
-          <div>
-            <h5 style={{ marginBottom: '10px' }}>Test Results:</h5>
-            <div style={{ fontFamily: 'monospace', fontSize: '0.9em' }}>
-              {testResults.map((result, i) => (
-                <div
-                  key={i}
-                  style={{
-                    marginBottom: '5px',
-                    color: result.startsWith('✅')
-                      ? '#0a0'
-                      : result.startsWith('❌')
-                        ? '#c00'
-                        : result.startsWith('⚡')
-                          ? '#00a'
-                          : '#333',
-                  }}
-                >
-                  {result}
-                </div>
+        {testResults.length > 0 && (
+          <div className="mt-4 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
+            <h4 className="font-semibold mb-2">Test Results:</h4>
+            <div className="space-y-1 font-mono text-sm">
+              {testResults.map((result, index) => (
+                <div key={index}>{result}</div>
               ))}
             </div>
           </div>
         )}
       </div>
 
-      <div
-        style={{
-          marginTop: '20px',
-          padding: '15px',
-          backgroundColor: '#f5f5f5',
-          borderRadius: '4px',
-          fontSize: '0.85em',
-        }}
-      >
-        <strong>Testing Utilities Available:</strong>
-        <ul style={{ marginTop: '10px', paddingLeft: '20px' }}>
-          <li>
-            <code>BlocTest.setUp()</code> - Initialize test environment
-          </li>
-          <li>
-            <code>BlocTest.tearDown()</code> - Clean up after tests
-          </li>
-          <li>
-            <code>BlocTest.createBloc()</code> - Create isolated Bloc/Cubit
-            instances
-          </li>
-          <li>
-            <code>MockCubit</code> - Track state changes and history
-          </li>
-          <li>Memory leak detection utilities</li>
-          <li>Performance benchmarking helpers</li>
-        </ul>
-
-        <strong style={{ display: 'block', marginTop: '15px' }}>
-          Best Practices:
-        </strong>
-        <ul style={{ marginTop: '5px', paddingLeft: '20px' }}>
-          <li>
-            Always use <code>setUp()</code> and <code>tearDown()</code>
-          </li>
-          <li>Test state changes and subscriptions</li>
-          <li>Verify isolation between instances</li>
-          <li>Check for memory leaks in long-running tests</li>
-          <li>Benchmark critical paths for performance</li>
+      <div className="mt-8 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+        <h3 className="text-lg font-semibold mb-2">Testing Best Practices</h3>
+        <ul className="space-y-2 text-sm">
+          <li>• Always call <code>Blac.resetInstance()</code> in beforeEach</li>
+          <li>• Use <code>Blac.enableLog = false</code> to reduce test noise</li>
+          <li>• Clean up subscriptions to prevent memory leaks</li>
+          <li>• Test state transitions, not implementation details</li>
+          <li>• Use mocks for external dependencies</li>
+          <li>• Verify error handling and edge cases</li>
         </ul>
       </div>
     </div>

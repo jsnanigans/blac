@@ -78,7 +78,7 @@ pnpm install
    increment = () => {
      this.emit(this.state + 1);
    };
-   
+
    // ❌ Incorrect - will break in React
    increment() {
      this.emit(this.state + 1);
@@ -124,7 +124,7 @@ class IncrementEvent {
 class CounterBloc extends Bloc<number, IncrementEvent> {
   constructor() {
     super(0);
-    
+
     this.on(IncrementEvent, (event, emit) => {
       emit(this.state + event.amount);
     });
@@ -140,7 +140,7 @@ class CounterBloc extends Bloc<number, IncrementEvent> {
 ```typescript
 function Counter() {
   const [state, counterBloc] = useBloc(CounterBloc);
-  
+
   return (
     <div>
       <p>Count: {state.count}</p>
@@ -170,7 +170,7 @@ Blac.setConfig({
 ```typescript
 class LoggerPlugin implements BlacPlugin {
   name = 'LoggerPlugin';
-  
+
   onEvent(event: BlacLifecycleEvent, bloc: BlocBase, params?: any) {
     if (event === BlacLifecycleEvent.STATE_CHANGED) {
       console.log(`[${bloc._name}] State changed:`, bloc.state);
@@ -179,27 +179,6 @@ class LoggerPlugin implements BlacPlugin {
 }
 
 Blac.addPlugin(new LoggerPlugin());
-```
-
-## Testing
-
-### Test Utilities
-- **BlocTest**: Set up isolated test environments
-- **MockCubit**: Mock state containers with history tracking
-- **MemoryLeakDetector**: Detect subscription leaks
-
-### Example Test
-```typescript
-describe('Counter Tests', () => {
-  beforeEach(() => BlocTest.setUp());
-  afterEach(() => BlocTest.tearDown());
-
-  it('should increment counter', () => {
-    const counter = BlocTest.createBloc(CounterCubit);
-    counter.increment();
-    expect(counter.state).toBe(1);
-  });
-});
 ```
 
 ## Performance Considerations
@@ -265,7 +244,7 @@ cd packages/blac && pnpm build
 # Build and publish core package
 cd packages/blac && pnpm deploy
 
-# Build and publish React package  
+# Build and publish React package
 cd packages/blac-react && pnpm deploy
 ```
 
