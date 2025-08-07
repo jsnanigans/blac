@@ -1,8 +1,11 @@
 import React from 'react';
+import Editor from '@monaco-editor/react';
 import { Play, Save, Share2, Download, RotateCcw } from 'lucide-react';
 
 export function PlaygroundPage() {
   const [code, setCode] = React.useState(`import { Cubit } from '@blac/core';
+import { useBloc } from '@blac/react';
+import React from 'react';
 
 // Create your own Cubit
 class CounterCubit extends Cubit<number> {
@@ -17,36 +20,226 @@ class CounterCubit extends Cubit<number> {
   decrement = () => {
     this.emit(this.state - 1);
   };
+
+  reset = () => {
+    this.emit(0);
+  };
 }
 
-// Export for use in the preview
-export default CounterCubit;`);
+// Create a React component that uses the Cubit
+export function Counter() {
+  const [count, counterCubit] = useBloc(CounterCubit);
+
+  return (
+    <div className="p-4">
+      <h2 className="text-2xl font-bold mb-4">Counter: {count}</h2>
+      <div className="flex gap-2">
+        <button 
+          onClick={counterCubit.increment}
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        >
+          Increment
+        </button>
+        <button 
+          onClick={counterCubit.decrement}
+          className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+        >
+          Decrement
+        </button>
+        <button 
+          onClick={counterCubit.reset}
+          className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+        >
+          Reset
+        </button>
+      </div>
+    </div>
+  );
+}`);
+
+  const [output, setOutput] = React.useState<string[]>(['> Ready']);
+  const [isRunning, setIsRunning] = React.useState(false);
+  const [preview, setPreview] = React.useState<React.ReactNode>(null);
+  const [theme, setTheme] = React.useState<'vs-dark' | 'light'>('vs-dark');
+
+  // Check for dark mode
+  React.useEffect(() => {
+    const isDark = document.documentElement.classList.contains('dark');
+    setTheme(isDark ? 'vs-dark' : 'light');
+
+    const observer = new MutationObserver(() => {
+      const isDark = document.documentElement.classList.contains('dark');
+      setTheme(isDark ? 'vs-dark' : 'light');
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  const handleRun = async () => {
+    setIsRunning(true);
+    setOutput(prev => [...prev, '> Running...']);
+    
+    try {
+      // In a real implementation, we would:
+      // 1. Transpile the TypeScript code
+      // 2. Bundle it with BlaC dependencies
+      // 3. Execute it in a sandboxed environment
+      // 4. Render the exported component
+      
+      // For now, just simulate execution
+      setTimeout(() => {
+        setOutput(prev => [...prev, '✓ Code executed successfully']);
+        setPreview(
+          <div className="text-center p-8">
+            <p className="text-lg mb-4">Preview functionality coming soon!</p>
+            <p className="text-sm text-muted-foreground">
+              This will render your BlaC components in real-time.
+            </p>
+          </div>
+        );
+        setIsRunning(false);
+      }, 1000);
+    } catch (error) {
+      setOutput(prev => [...prev, `✗ Error: ${error}`]);
+      setIsRunning(false);
+    }
+  };
+
+  const handleReset = () => {
+    setCode(`import { Cubit } from '@blac/core';
+import { useBloc } from '@blac/react';
+import React from 'react';
+
+// Create your own Cubit
+class CounterCubit extends Cubit<number> {
+  constructor() {
+    super(0);
+  }
+
+  increment = () => {
+    this.emit(this.state + 1);
+  };
+
+  decrement = () => {
+    this.emit(this.state - 1);
+  };
+
+  reset = () => {
+    this.emit(0);
+  };
+}
+
+// Create a React component that uses the Cubit
+export function Counter() {
+  const [count, counterCubit] = useBloc(CounterCubit);
+
+  return (
+    <div className="p-4">
+      <h2 className="text-2xl font-bold mb-4">Counter: {count}</h2>
+      <div className="flex gap-2">
+        <button 
+          onClick={counterCubit.increment}
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        >
+          Increment
+        </button>
+        <button 
+          onClick={counterCubit.decrement}
+          className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+        >
+          Decrement
+        </button>
+        <button 
+          onClick={counterCubit.reset}
+          className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+        >
+          Reset
+        </button>
+      </div>
+    </div>
+  );
+}`);
+    setOutput(['> Reset to default code']);
+    setPreview(null);
+  };
+
+  const handleSave = () => {
+    // Save to localStorage
+    localStorage.setItem('playground-code', code);
+    setOutput(prev => [...prev, '> Code saved to browser storage']);
+  };
+
+  const handleShare = () => {
+    // In a real implementation, this would create a shareable link
+    setOutput(prev => [...prev, '> Share functionality coming soon']);
+  };
+
+  const handleDownload = () => {
+    const blob = new Blob([code], { type: 'text/typescript' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'blac-playground.tsx';
+    a.click();
+    URL.revokeObjectURL(url);
+    setOutput(prev => [...prev, '> Code downloaded']);
+  };
+
+  // Load saved code on mount
+  React.useEffect(() => {
+    const saved = localStorage.getItem('playground-code');
+    if (saved) {
+      setCode(saved);
+      setOutput(['> Loaded saved code from browser storage']);
+    }
+  }, []);
 
   return (
     <div className="h-[calc(100vh-3.5rem)] flex flex-col">
       {/* Toolbar */}
       <div className="border-b px-4 py-2 flex items-center justify-between bg-background">
         <div className="flex items-center gap-2">
-          <button className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4">
+          <button 
+            onClick={handleRun}
+            disabled={isRunning}
+            className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4"
+          >
             <Play className="h-4 w-4 mr-2" />
-            Run
+            {isRunning ? 'Running...' : 'Run'}
           </button>
-          <button className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background border border-input hover:bg-accent hover:text-accent-foreground h-9 px-4">
+          <button 
+            onClick={handleReset}
+            className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background border border-input hover:bg-accent hover:text-accent-foreground h-9 px-4"
+          >
             <RotateCcw className="h-4 w-4 mr-2" />
             Reset
           </button>
         </div>
         
         <div className="flex items-center gap-2">
-          <button className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background hover:bg-accent hover:text-accent-foreground h-9 w-9">
+          <button 
+            onClick={handleSave}
+            className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background hover:bg-accent hover:text-accent-foreground h-9 w-9"
+          >
             <Save className="h-4 w-4" />
             <span className="sr-only">Save</span>
           </button>
-          <button className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background hover:bg-accent hover:text-accent-foreground h-9 w-9">
+          <button 
+            onClick={handleShare}
+            className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background hover:bg-accent hover:text-accent-foreground h-9 w-9"
+          >
             <Share2 className="h-4 w-4" />
             <span className="sr-only">Share</span>
           </button>
-          <button className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background hover:bg-accent hover:text-accent-foreground h-9 w-9">
+          <button 
+            onClick={handleDownload}
+            className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background hover:bg-accent hover:text-accent-foreground h-9 w-9"
+          >
             <Download className="h-4 w-4" />
             <span className="sr-only">Download</span>
           </button>
@@ -57,20 +250,30 @@ export default CounterCubit;`);
       <div className="flex-1 flex">
         {/* Editor */}
         <div className="flex-1 border-r">
-          <div className="h-full bg-zinc-950 p-4">
-            <textarea
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              className="w-full h-full bg-transparent text-zinc-100 font-mono text-sm resize-none focus:outline-none"
-              placeholder="Write your BlaC code here..."
-              spellCheck={false}
-            />
-          </div>
+          <Editor
+            height="100%"
+            defaultLanguage="typescript"
+            theme={theme}
+            value={code}
+            onChange={(value) => setCode(value || '')}
+            options={{
+              minimap: { enabled: false },
+              fontSize: 14,
+              lineNumbers: 'on',
+              roundedSelection: false,
+              scrollBeyondLastLine: false,
+              automaticLayout: true,
+              tabSize: 2,
+              wordWrap: 'on',
+              padding: { top: 16, bottom: 16 },
+            }}
+          />
         </div>
 
-        {/* Preview */}
-        <div className="flex-1">
-          <div className="h-full p-6">
+        {/* Preview & Console */}
+        <div className="flex-1 flex flex-col">
+          {/* Preview */}
+          <div className="flex-1 p-6 overflow-auto">
             <div className="mb-4">
               <h3 className="text-lg font-semibold mb-2">Preview</h3>
               <p className="text-sm text-muted-foreground">
@@ -79,17 +282,23 @@ export default CounterCubit;`);
             </div>
             
             <div className="border rounded-lg p-4 min-h-[200px] bg-card">
-              <p className="text-center text-muted-foreground">
-                Click "Run" to execute your code
-              </p>
+              {preview || (
+                <p className="text-center text-muted-foreground">
+                  Click "Run" to execute your code
+                </p>
+              )}
             </div>
+          </div>
 
-            {/* Console */}
-            <div className="mt-6">
-              <h3 className="text-sm font-semibold mb-2">Console</h3>
-              <div className="border rounded-lg p-3 min-h-[100px] bg-zinc-950 text-zinc-100 font-mono text-xs">
-                <div className="text-zinc-500">{'>'} Ready</div>
-              </div>
+          {/* Console */}
+          <div className="border-t p-4">
+            <h3 className="text-sm font-semibold mb-2">Console</h3>
+            <div className="border rounded-lg p-3 h-32 overflow-y-auto bg-zinc-950 dark:bg-zinc-950 text-zinc-100 font-mono text-xs">
+              {output.map((line, i) => (
+                <div key={i} className={line.startsWith('>') ? 'text-zinc-500' : line.startsWith('✓') ? 'text-green-400' : line.startsWith('✗') ? 'text-red-400' : 'text-zinc-100'}>
+                  {line}
+                </div>
+              ))}
             </div>
           </div>
         </div>

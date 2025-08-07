@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
-    "target": "es2015",
+    "target": "es2021",
+    "lib": ["es2021", "dom"],
     "allowJs": false,
     "skipLibCheck": true,
     "esModuleInterop": true,

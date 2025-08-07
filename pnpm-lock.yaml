@@ -219,7 +219,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/blac-react
       '@monaco-editor/react':
-        specifier: ^4.6.0
+        specifier: ^4.7.0
         version: 4.7.0(monaco-editor@0.52.2)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@radix-ui/react-accordion':
         specifier: ^1.1.2
@@ -281,6 +281,9 @@ importers:
       lucide-react:
         specifier: ^0.400.0
         version: 0.400.0(react@19.1.1)
+      monaco-editor:
+        specifier: ^0.52.2
+        version: 0.52.2
       prism-react-renderer:
         specifier: ^2.3.1
         version: 2.4.1(react@19.1.1)

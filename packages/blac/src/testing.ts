@@ -8,13 +8,13 @@ import { BlocEventConstraint } from './types';
  * Test utilities for Blac state management
  */
 export class BlocTest {
-  private static originalInstance: Blac;
+  private static _originalInstance: Blac;
 
   /**
    * Sets up a clean test environment
    */
   static setUp(): void {
-    this.originalInstance = Blac.instance;
+    this._originalInstance = Blac.instance;
     Blac.resetInstance();
     Blac.enableLog = false; // Disable logging in tests by default
   }
@@ -133,11 +133,6 @@ export class MockBloc<
   S,
   A extends BlocEventConstraint = BlocEventConstraint,
 > extends Bloc<S, A> {
-  private mockHandlers = new Map<
-    string,
-    (event: A, emit: (newState: S) => void) => void | Promise<void>
-  >();
-
   constructor(initialState: S) {
     super(initialState);
   }

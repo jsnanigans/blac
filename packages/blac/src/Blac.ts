@@ -392,7 +392,7 @@ export class Blac {
     if (base.isolated) return undefined;
 
     const key = this.createBlocInstanceMapKey(blocClass.name, id);
-     const found = this.blocInstanceMap.get(key) as InstanceType<B> | undefined; const __forceLet = found;
+     const found = this.blocInstanceMap.get(key) as InstanceType<B> | undefined;
  
      if (found && (found as any).isDisposed) {
        return undefined;
