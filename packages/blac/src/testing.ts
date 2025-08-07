@@ -6,19 +6,19 @@ import { BlocEventConstraint } from './types';
 
 /**
  * Test utilities for Blac state management
- * 
+ *
  * @deprecated Use Blac methods directly instead:
  * - Blac.resetInstance() for test setup
  * - Blac.getBloc() to create/get bloc instances
  * - bloc.subscribe() for state monitoring
- * 
+ *
  * Example:
  * ```typescript
  * beforeEach(() => {
  *   Blac.resetInstance();
  *   Blac.enableLog = false;
  * });
- * 
+ *
  * it('should test bloc', () => {
  *   const bloc = Blac.getBloc(MyBloc);
  *   // test logic
@@ -66,11 +66,7 @@ export async function waitForState<T extends BlocBase<S>, S>(
 export async function waitForEvent<
   T extends Bloc<any, E>,
   E extends BlocEventConstraint,
->(
-  bloc: T,
-  eventType: new (...args: any[]) => E,
-  timeout = 5000,
-): Promise<E> {
+>(bloc: T, eventType: new (...args: any[]) => E, timeout = 5000): Promise<E> {
   return new Promise<E>((resolve, reject) => {
     const timeoutId = setTimeout(() => {
       reject(

@@ -321,8 +321,12 @@ const TestingUtilitiesDemo: React.FC = () => {
       <div className="mt-8 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
         <h3 className="text-lg font-semibold mb-2">Testing Best Practices</h3>
         <ul className="space-y-2 text-sm">
-          <li>• Always call <code>Blac.resetInstance()</code> in beforeEach</li>
-          <li>• Use <code>Blac.enableLog = false</code> to reduce test noise</li>
+          <li>
+            • Always call <code>Blac.resetInstance()</code> in beforeEach
+          </li>
+          <li>
+            • Use <code>Blac.enableLog = false</code> to reduce test noise
+          </li>
           <li>• Clean up subscriptions to prevent memory leaks</li>
           <li>• Test state transitions, not implementation details</li>
           <li>• Use mocks for external dependencies</li>
