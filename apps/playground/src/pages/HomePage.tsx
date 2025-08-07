@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Link } from 'react-router-dom';
 import { ArrowRight, Zap, Code2, TestTube, BookOpen } from 'lucide-react';
 

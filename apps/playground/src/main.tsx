@@ -6,6 +6,7 @@ import { Blac } from '@blac/core';
 import { RenderLoggingPlugin } from '@blac/plugin-render-logging';
 import App from './App';
 import './index.css';
+import './demos'; // Register all demos
 
 // Initialize BlaC plugins
 Blac.instance.plugins.add(
