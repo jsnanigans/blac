@@ -2,6 +2,8 @@ import React from 'react';
 import Editor from '@monaco-editor/react';
 import { Play, Save, Share2, Download, RotateCcw } from 'lucide-react';
 import { configureMonaco } from '../core/utils/monacoConfig';
+import { transpileTypeScript } from '../lib/transpiler';
+import { createSandbox } from '../lib/sandbox';
 
 export function PlaygroundPage() {
   const [code, setCode] = React.useState(`import { Cubit } from '@blac/core';
@@ -86,25 +88,59 @@ export function Counter() {
     setOutput(prev => [...prev, '> Running...']);
     
     try {
-      // In a real implementation, we would:
-      // 1. Transpile the TypeScript code
-      // 2. Bundle it with BlaC dependencies
-      // 3. Execute it in a sandboxed environment
-      // 4. Render the exported component
+      // Step 1: Transpile TypeScript to JavaScript
+      setOutput(prev => [...prev, '> Transpiling TypeScript...']);
+      const transpileResult = await transpileTypeScript(code);
       
-      // For now, just simulate execution
-      setTimeout(() => {
+      if (transpileResult.error) {
+        setOutput(prev => [...prev, `✗ Transpilation error: ${transpileResult.error}`]);
+        setIsRunning(false);
+        return;
+      }
+      
+      setOutput(prev => [...prev, '✓ Transpilation successful']);
+      
+      // Step 2: Execute in sandbox
+      setOutput(prev => [...prev, '> Executing code...']);
+      const sandbox = createSandbox();
+      const result = await sandbox.execute(transpileResult.code!, 'preview-container');
+      
+      // Add console logs to output
+      result.logs.forEach(log => {
+        setOutput(prev => [...prev, log]);
+      });
+      
+      if (result.success) {
         setOutput(prev => [...prev, '✓ Code executed successfully']);
+        
+        // For now, show a success message
+        // In the future, we'll render the actual component
         setPreview(
           <div className="text-center p-8">
-            <p className="text-lg mb-4">Preview functionality coming soon!</p>
+            <p className="text-lg mb-4 text-green-600 dark:text-green-400">
+              ✓ Code executed successfully!
+            </p>
             <p className="text-sm text-muted-foreground">
-              This will render your BlaC components in real-time.
+              Component rendering coming soon. Check the console for output.
             </p>
           </div>
         );
-        setIsRunning(false);
-      }, 1000);
+      } else {
+        setOutput(prev => [...prev, `✗ Execution error: ${result.error}`]);
+        setPreview(
+          <div className="text-center p-8">
+            <p className="text-lg mb-4 text-red-600 dark:text-red-400">
+              ✗ Execution failed
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {result.error}
+            </p>
+          </div>
+        );
+      }
+      
+      sandbox.cleanup();
+      setIsRunning(false);
     } catch (error) {
       setOutput(prev => [...prev, `✗ Error: ${error}`]);
       setIsRunning(false);
