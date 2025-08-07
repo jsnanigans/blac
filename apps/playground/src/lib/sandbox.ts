@@ -75,9 +75,12 @@ export class Sandbox {
       // Reset performance monitor for new execution
       performanceMonitor.reset();
 
-      // Add performance monitoring plugin to Blac
-      const plugin = new PerformanceMonitorPlugin(performanceMonitor);
-      BlacCore.Blac.instance.plugins.add(plugin);
+      // Add performance monitoring plugin to Blac (if not already added)
+      const pluginName = 'PerformanceMonitor';
+      if (!BlacCore.Blac.instance.plugins.get(pluginName)) {
+        const plugin = new PerformanceMonitorPlugin(performanceMonitor);
+        BlacCore.Blac.instance.plugins.add(plugin);
+      }
 
       // Make libraries available globally for the sandbox
       (window as any).React = React;
