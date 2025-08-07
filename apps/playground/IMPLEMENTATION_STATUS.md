@@ -149,10 +149,12 @@ pnpm dev
 6. **Add more demo examples** from the existing demo app - IN PROGRESS
    - ✅ Todo List (Bloc pattern)
    - ✅ Async Operations
-   - 📋 Isolated vs Shared instances
-   - 📋 Persistence demo
-   - 📋 Custom selectors
+   - ✅ Persistence demo (Basic & Selective)
+   - ✅ Bloc-to-Bloc communication
+   - ✅ Custom plugins
    - 📋 Lifecycle management
+   - 📋 Bloc with Reducer pattern
+   - 📋 External store integration
 7. **Add state visualization tools** (dependency graph, state tree)
 8. **Create shareable playground links**
 9. **Add performance benchmarking** (compare different implementations)
@@ -223,10 +225,13 @@ The playground successfully demonstrates the BlaC state management pattern with 
 4. ✅ Added **KeepAlive Pattern Demo** - Demonstrates persistent Cubits that survive component unmounting
 5. ✅ Added **Custom Selectors Demo** - Shows how to optimize re-renders with dependency selectors
 6. ✅ Added **Stream API Demo** - Demonstrates observable pattern and real-time streaming
-7. ✅ Created proper demo structure with categories (01-basics, 02-patterns, 03-advanced)
-8. ✅ Successfully built and verified all demos work correctly
+7. ✅ Added **Persistence Plugin Demo** - Showcases automatic state persistence with localStorage and selective persistence
+8. ✅ Added **Bloc-to-Bloc Communication Demo** - Shows how Blocs can communicate, access shared state, and subscribe to changes
+9. ✅ Added **Custom Plugins Demo** - Demonstrates creating custom plugins for analytics, validation, logging, and performance monitoring
+10. ✅ Created proper demo structure with categories (01-basics, 02-patterns, 03-advanced, 04-plugins)
+11. ✅ Successfully built and verified all demos work correctly
 
-The playground now has **7 fully functional demos** showcasing comprehensive BlaC features:
+The playground now has **10 fully functional demos** showcasing comprehensive BlaC features:
 
 **01-basics:**
 - **Basic Counter**: Simple state management with Cubit
@@ -235,8 +240,13 @@ The playground now has **7 fully functional demos** showcasing comprehensive Bla
 **02-patterns:**
 - **Todo List**: Event-driven Bloc pattern for real-world apps
 - **KeepAlive**: Persistent state management
+- **Persistence Plugin**: Automatic localStorage persistence with selective saving
 
 **03-advanced:**
 - **Async Operations**: Loading states, error handling, retry logic
 - **Custom Selectors**: Render optimization with dependency tracking
 - **Stream API**: Observable pattern for real-time data
+- **Bloc-to-Bloc Communication**: Cross-Bloc state access and subscriptions
+
+**04-plugins:**
+- **Custom Plugins**: Create analytics, validation, logging, and performance monitoring plugins
