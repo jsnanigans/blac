@@ -23,7 +23,7 @@ export function CodeViewer({ code }: CodeViewerProps) {
     { key: 'bloc', label: 'Bloc/Cubit', content: code.bloc },
     { key: 'demo', label: 'Usage', content: code.demo },
     { key: 'test', label: 'Tests', content: code.test },
-  ].filter(s => s.content);
+  ].filter((s) => s.content);
 
   return (
     <div className="space-y-6">

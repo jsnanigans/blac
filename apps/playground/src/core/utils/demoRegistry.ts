@@ -1,6 +1,6 @@
 import { ComponentType } from 'react';
 
-export type DemoCategory = 
+export type DemoCategory =
   | '01-basics'
   | '02-patterns'
   | '03-advanced'
@@ -53,7 +53,7 @@ class DemoRegistryClass {
 
   register(demo: Demo) {
     this.demos.set(demo.id, demo);
-    
+
     const categoryDemos = this.categories.get(demo.category) || [];
     categoryDemos.push(demo);
     this.categories.set(demo.category, categoryDemos);
@@ -77,24 +77,23 @@ class DemoRegistryClass {
 
   search(query: string): Demo[] {
     const lowerQuery = query.toLowerCase();
-    return this.getAllDemos().filter(demo => 
-      demo.title.toLowerCase().includes(lowerQuery) ||
-      demo.description.toLowerCase().includes(lowerQuery) ||
-      demo.tags.some(tag => tag.toLowerCase().includes(lowerQuery)) ||
-      demo.concepts.some(concept => concept.toLowerCase().includes(lowerQuery))
+    return this.getAllDemos().filter(
+      (demo) =>
+        demo.title.toLowerCase().includes(lowerQuery) ||
+        demo.description.toLowerCase().includes(lowerQuery) ||
+        demo.tags.some((tag) => tag.toLowerCase().includes(lowerQuery)) ||
+        demo.concepts.some((concept) =>
+          concept.toLowerCase().includes(lowerQuery),
+        ),
     );
   }
 
   getByTag(tag: string): Demo[] {
-    return this.getAllDemos().filter(demo => 
-      demo.tags.includes(tag)
-    );
+    return this.getAllDemos().filter((demo) => demo.tags.includes(tag));
   }
 
   getByDifficulty(difficulty: DemoDifficulty): Demo[] {
-    return this.getAllDemos().filter(demo => 
-      demo.difficulty === difficulty
-    );
+    return this.getAllDemos().filter((demo) => demo.difficulty === difficulty);
   }
 
   getRelated(demoId: string): Demo[] {
@@ -102,25 +101,24 @@ class DemoRegistryClass {
     if (!demo) return [];
 
     const related: Demo[] = [];
-    
+
     // Add explicitly related demos
     if (demo.relatedDemos) {
-      demo.relatedDemos.forEach(id => {
+      demo.relatedDemos.forEach((id) => {
         const relatedDemo = this.get(id);
         if (relatedDemo) related.push(relatedDemo);
       });
     }
 
     // Add demos with similar tags
-    const similarDemos = this.getAllDemos().filter(d => 
-      d.id !== demoId && 
-      d.tags.some(tag => demo.tags.includes(tag))
+    const similarDemos = this.getAllDemos().filter(
+      (d) => d.id !== demoId && d.tags.some((tag) => demo.tags.includes(tag)),
     );
 
     // Combine and deduplicate
     const uniqueDemos = new Map<string, Demo>();
-    [...related, ...similarDemos].forEach(d => uniqueDemos.set(d.id, d));
-    
+    [...related, ...similarDemos].forEach((d) => uniqueDemos.set(d.id, d));
+
     return Array.from(uniqueDemos.values()).slice(0, 5);
   }
 }

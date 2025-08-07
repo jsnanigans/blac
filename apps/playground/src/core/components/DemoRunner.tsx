@@ -7,8 +7,10 @@ import { ArrowLeft, Code2, Play, TestTube } from 'lucide-react';
 
 export function DemoRunner() {
   const { demoId } = useParams<{ category: string; demoId: string }>();
-  const [activeTab, setActiveTab] = React.useState<'demo' | 'code' | 'tests'>('demo');
-  
+  const [activeTab, setActiveTab] = React.useState<'demo' | 'code' | 'tests'>(
+    'demo',
+  );
+
   const demo = React.useMemo(() => {
     if (!demoId) return null;
     return DemoRegistry.get(demoId);
@@ -47,19 +49,23 @@ export function DemoRunner() {
           <ArrowLeft className="h-4 w-4 mr-1" />
           Back to Demos
         </Link>
-        
+
         <h1 className="text-3xl font-bold mb-2">{demo.title}</h1>
         <p className="text-lg text-muted-foreground">{demo.description}</p>
-        
+
         <div className="flex items-center gap-2 mt-4">
-          <span className={`px-2 py-1 text-xs rounded-full ${
-            demo.difficulty === 'beginner' ? 'bg-green-100 text-green-800' :
-            demo.difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-800' :
-            'bg-red-100 text-red-800'
-          }`}>
+          <span
+            className={`px-2 py-1 text-xs rounded-full ${
+              demo.difficulty === 'beginner'
+                ? 'bg-green-100 text-green-800'
+                : demo.difficulty === 'intermediate'
+                  ? 'bg-yellow-100 text-yellow-800'
+                  : 'bg-red-100 text-red-800'
+            }`}
+          >
             {demo.difficulty}
           </span>
-          {demo.tags.map(tag => (
+          {demo.tags.map((tag) => (
             <span key={tag} className="px-2 py-1 text-xs bg-secondary rounded">
               {tag}
             </span>
@@ -115,11 +121,9 @@ export function DemoRunner() {
             <DemoComponent />
           </div>
         )}
-        
-        {activeTab === 'code' && (
-          <CodeViewer code={demo.code} />
-        )}
-        
+
+        {activeTab === 'code' && <CodeViewer code={demo.code} />}
+
         {activeTab === 'tests' && demo.tests && (
           <TestRunner tests={demo.tests} />
         )}
@@ -130,10 +134,10 @@ export function DemoRunner() {
         <div className="mt-12">
           <h3 className="text-lg font-semibold mb-4">Related Demos</h3>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {demo.relatedDemos.map(relatedId => {
+            {demo.relatedDemos.map((relatedId) => {
               const related = DemoRegistry.get(relatedId);
               if (!related) return null;
-              
+
               return (
                 <Link
                   key={relatedId}

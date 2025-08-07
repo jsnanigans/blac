@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen, waitFor , act } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import { Cubit, Blac } from '@blac/core';
 import useBloc from '../useBloc';
 import React from 'react';

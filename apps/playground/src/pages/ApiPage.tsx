@@ -1,5 +1,12 @@
 import React from 'react';
-import { Search, ChevronRight, Package, Layers, Zap, Puzzle } from 'lucide-react';
+import {
+  Search,
+  ChevronRight,
+  Package,
+  Layers,
+  Zap,
+  Puzzle,
+} from 'lucide-react';
 
 export function ApiPage() {
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -9,18 +16,36 @@ export function ApiPage() {
       title: 'Core',
       icon: Package,
       items: [
-        { name: 'Cubit', description: 'Simple state container with direct state emission' },
-        { name: 'Bloc', description: 'Event-driven state container with event handlers' },
-        { name: 'BlocBase', description: 'Base class for all state containers' },
-        { name: 'Blac', description: 'Global configuration and instance management' },
+        {
+          name: 'Cubit',
+          description: 'Simple state container with direct state emission',
+        },
+        {
+          name: 'Bloc',
+          description: 'Event-driven state container with event handlers',
+        },
+        {
+          name: 'BlocBase',
+          description: 'Base class for all state containers',
+        },
+        {
+          name: 'Blac',
+          description: 'Global configuration and instance management',
+        },
       ],
     },
     {
       title: 'React Hooks',
       icon: Layers,
       items: [
-        { name: 'useBloc', description: 'Hook for using Bloc/Cubit in React components' },
-        { name: 'useExternalBlocStore', description: 'Hook for external Bloc instances' },
+        {
+          name: 'useBloc',
+          description: 'Hook for using Bloc/Cubit in React components',
+        },
+        {
+          name: 'useExternalBlocStore',
+          description: 'Hook for external Bloc instances',
+        },
       ],
     },
     {
@@ -29,27 +54,39 @@ export function ApiPage() {
       items: [
         { name: 'BlocTest', description: 'Testing utilities for Bloc/Cubit' },
         { name: 'MockCubit', description: 'Mock implementation for testing' },
-        { name: 'Selectors', description: 'Performance optimization with selectors' },
+        {
+          name: 'Selectors',
+          description: 'Performance optimization with selectors',
+        },
       ],
     },
     {
       title: 'Plugins',
       icon: Puzzle,
       items: [
-        { name: 'PersistencePlugin', description: 'Automatic state persistence' },
-        { name: 'RenderLoggingPlugin', description: 'Debug render performance' },
+        {
+          name: 'PersistencePlugin',
+          description: 'Automatic state persistence',
+        },
+        {
+          name: 'RenderLoggingPlugin',
+          description: 'Debug render performance',
+        },
         { name: 'Custom Plugins', description: 'Create your own plugins' },
       ],
     },
   ];
 
-  const filteredSections = apiSections.map(section => ({
-    ...section,
-    items: section.items.filter(item =>
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchQuery.toLowerCase())
-    ),
-  })).filter(section => section.items.length > 0);
+  const filteredSections = apiSections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter(
+        (item) =>
+          item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.description.toLowerCase().includes(searchQuery.toLowerCase()),
+      ),
+    }))
+    .filter((section) => section.items.length > 0);
 
   return (
     <div className="container py-10">
@@ -59,7 +96,7 @@ export function ApiPage() {
         <p className="text-lg text-muted-foreground mb-6">
           Complete API documentation for BlaC state management framework.
         </p>
-        
+
         {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -83,7 +120,7 @@ export function ApiPage() {
                 <Icon className="h-5 w-5 text-primary" />
                 <h2 className="text-xl font-semibold">{section.title}</h2>
               </div>
-              
+
               <div className="space-y-2">
                 {section.items.map((item) => (
                   <div
@@ -112,7 +149,7 @@ export function ApiPage() {
       {/* Quick Examples */}
       <section className="mx-auto max-w-[980px] mt-12">
         <h2 className="text-2xl font-bold mb-6">Quick Examples</h2>
-        
+
         <div className="grid gap-6 md:grid-cols-2">
           <div className="border rounded-lg p-6">
             <h3 className="font-semibold mb-3">Creating a Cubit</h3>
@@ -134,7 +171,7 @@ export function ApiPage() {
 }`}</code>
             </pre>
           </div>
-          
+
           <div className="border rounded-lg p-6">
             <h3 className="font-semibold mb-3">Using with React</h3>
             <pre className="bg-zinc-950 text-zinc-100 p-3 rounded-md text-xs overflow-x-auto">
@@ -154,7 +191,7 @@ export function ApiPage() {
 }`}</code>
             </pre>
           </div>
-          
+
           <div className="border rounded-lg p-6">
             <h3 className="font-semibold mb-3">Event-Driven Bloc</h3>
             <pre className="bg-zinc-950 text-zinc-100 p-3 rounded-md text-xs overflow-x-auto">
@@ -175,7 +212,7 @@ export function ApiPage() {
 }`}</code>
             </pre>
           </div>
-          
+
           <div className="border rounded-lg p-6">
             <h3 className="font-semibold mb-3">Testing</h3>
             <pre className="bg-zinc-950 text-zinc-100 p-3 rounded-md text-xs overflow-x-auto">

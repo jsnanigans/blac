@@ -5,7 +5,8 @@ DemoRegistry.register({
   id: 'counter',
   category: '01-basics',
   title: 'Basic Counter',
-  description: 'A simple counter demonstrating basic Cubit usage with increment, decrement, and reset functionality.',
+  description:
+    'A simple counter demonstrating basic Cubit usage with increment, decrement, and reset functionality.',
   difficulty: 'beginner',
   tags: ['cubit', 'state', 'basics'],
   concepts: ['state management', 'event handlers', 'React hooks'],

@@ -1,6 +1,5 @@
 import { Blac } from '../Blac';
 
-
 export interface RerenderInfo {
   componentName: string;
   blocName: string;

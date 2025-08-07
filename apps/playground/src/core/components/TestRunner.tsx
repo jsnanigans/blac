@@ -20,9 +20,9 @@ export function TestRunner({ tests }: TestRunnerProps) {
   const runTests = async () => {
     setIsRunning(true);
     setResults([]);
-    
+
     const newResults: TestResult[] = [];
-    
+
     for (const test of tests) {
       const startTime = performance.now();
       try {
@@ -44,13 +44,13 @@ export function TestRunner({ tests }: TestRunnerProps) {
       }
       setResults([...newResults]);
     }
-    
+
     setIsRunning(false);
   };
 
   const totalTests = tests.length;
-  const passedTests = results.filter(r => r.passed).length;
-  const failedTests = results.filter(r => !r.passed).length;
+  const passedTests = results.filter((r) => r.passed).length;
+  const failedTests = results.filter((r) => !r.passed).length;
   const totalDuration = results.reduce((sum, r) => sum + r.duration, 0);
 
   return (
@@ -66,7 +66,7 @@ export function TestRunner({ tests }: TestRunnerProps) {
             <Play className="h-4 w-4" />
             {isRunning ? 'Running...' : 'Run Tests'}
           </button>
-          
+
           {results.length > 0 && (
             <div className="flex items-center gap-4 text-sm">
               <span className="text-green-600">
@@ -91,8 +91,8 @@ export function TestRunner({ tests }: TestRunnerProps) {
       {/* Test List */}
       <div className="space-y-2">
         {tests.map((test) => {
-          const result = results.find(r => r.name === test.name);
-          
+          const result = results.find((r) => r.name === test.name);
+
           return (
             <div
               key={test.name}
@@ -142,16 +142,20 @@ export function TestRunner({ tests }: TestRunnerProps) {
 
       {/* Summary */}
       {results.length === totalTests && totalTests > 0 && (
-        <div className={`border rounded-lg p-4 ${
-          failedTests === 0
-            ? 'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800'
-            : 'bg-red-50 border-red-200 dark:bg-red-950 dark:border-red-800'
-        }`}>
+        <div
+          className={`border rounded-lg p-4 ${
+            failedTests === 0
+              ? 'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800'
+              : 'bg-red-50 border-red-200 dark:bg-red-950 dark:border-red-800'
+          }`}
+        >
           <div className="text-center">
             {failedTests === 0 ? (
               <>
                 <Check className="h-8 w-8 text-green-600 mx-auto mb-2" />
-                <p className="font-semibold text-green-600">All tests passed!</p>
+                <p className="font-semibold text-green-600">
+                  All tests passed!
+                </p>
               </>
             ) : (
               <>

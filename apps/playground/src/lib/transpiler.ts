@@ -4,11 +4,11 @@ let isInitialized = false;
 
 export async function initializeTranspiler() {
   if (isInitialized) return;
-  
+
   await esbuild.initialize({
     wasmURL: 'https://unpkg.com/esbuild-wasm@0.25.8/esbuild.wasm',
   });
-  
+
   isInitialized = true;
 }
 
@@ -17,10 +17,12 @@ export interface TranspileResult {
   error?: string;
 }
 
-export async function transpileTypeScript(code: string): Promise<TranspileResult> {
+export async function transpileTypeScript(
+  code: string,
+): Promise<TranspileResult> {
   try {
     await initializeTranspiler();
-    
+
     // Remove import statements - they'll be provided by the sandbox
     const codeWithoutImports = code
       .replace(/import\s+\{[^}]+\}\s+from\s+['"]@blac\/core['"];?/g, '')
@@ -32,7 +34,7 @@ export async function transpileTypeScript(code: string): Promise<TranspileResult
       .replace(/export\s+class/g, 'class')
       .replace(/export\s+const/g, 'const')
       .replace(/export\s+\{[^}]+\};?/g, '');
-    
+
     // Don't use IIFE format, just transform the syntax
     const result = await esbuild.transform(codeWithoutImports, {
       loader: 'tsx',
@@ -41,11 +43,12 @@ export async function transpileTypeScript(code: string): Promise<TranspileResult
       jsxFactory: 'React.createElement',
       jsxFragment: 'React.Fragment',
     });
-    
+
     return { code: result.code };
   } catch (error) {
-    return { 
-      error: error instanceof Error ? error.message : 'Unknown transpilation error' 
+    return {
+      error:
+        error instanceof Error ? error.message : 'Unknown transpilation error',
     };
   }
 }
@@ -53,7 +56,7 @@ export async function transpileTypeScript(code: string): Promise<TranspileResult
 export async function bundleCode(code: string): Promise<TranspileResult> {
   try {
     await initializeTranspiler();
-    
+
     const result = await esbuild.build({
       stdin: {
         contents: code,
@@ -68,16 +71,16 @@ export async function bundleCode(code: string): Promise<TranspileResult> {
       write: false,
       external: ['react', 'react-dom', '@blac/core', '@blac/react'],
     });
-    
+
     const outputCode = result.outputFiles?.[0]?.text;
     if (!outputCode) {
       return { error: 'No output generated' };
     }
-    
+
     return { code: outputCode };
   } catch (error) {
-    return { 
-      error: error instanceof Error ? error.message : 'Unknown bundling error' 
+    return {
+      error: error instanceof Error ? error.message : 'Unknown bundling error',
     };
   }
 }

@@ -155,15 +155,27 @@ declare global {
 export function configureMonaco(monaco: any) {
   // Configure for both TypeScript and TSX
   const libSource = [
-    { content: blacCoreTypes, filePath: 'file:///node_modules/@blac/core/index.d.ts' },
-    { content: blacReactTypes, filePath: 'file:///node_modules/@blac/react/index.d.ts' },
-    { content: reactTypes, filePath: 'file:///node_modules/react/index.d.ts' }
+    {
+      content: blacCoreTypes,
+      filePath: 'file:///node_modules/@blac/core/index.d.ts',
+    },
+    {
+      content: blacReactTypes,
+      filePath: 'file:///node_modules/@blac/react/index.d.ts',
+    },
+    { content: reactTypes, filePath: 'file:///node_modules/react/index.d.ts' },
   ];
 
   // Add type definitions to both typescript and typescriptreact
-  libSource.forEach(lib => {
-    monaco.languages.typescript.typescriptDefaults.addExtraLib(lib.content, lib.filePath);
-    monaco.languages.typescript.javascriptDefaults.addExtraLib(lib.content, lib.filePath);
+  libSource.forEach((lib) => {
+    monaco.languages.typescript.typescriptDefaults.addExtraLib(
+      lib.content,
+      lib.filePath,
+    );
+    monaco.languages.typescript.javascriptDefaults.addExtraLib(
+      lib.content,
+      lib.filePath,
+    );
   });
 
   // Configure TypeScript compiler options for TSX
@@ -205,7 +217,7 @@ export function configureMonaco(monaco: any) {
     noSemanticValidation: false,
     noSyntaxValidation: false,
   });
-  
+
   monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
     noSemanticValidation: false,
     noSyntaxValidation: false,

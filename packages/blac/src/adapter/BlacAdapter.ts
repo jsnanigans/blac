@@ -51,7 +51,6 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
   private componentName?: string;
   private renderCount = 0;
 
-
   options?: AdapterOptions<InstanceType<B>>;
 
   constructor(

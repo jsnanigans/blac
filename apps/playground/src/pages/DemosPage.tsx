@@ -6,34 +6,63 @@ import { ChevronRight, Search, Filter } from 'lucide-react';
 
 export function DemosPage() {
   const [searchQuery, setSearchQuery] = React.useState('');
-  const [selectedCategory, setSelectedCategory] = React.useState<DemoCategory | 'all'>('all');
-  const [selectedDifficulty, setSelectedDifficulty] = React.useState<'all' | 'beginner' | 'intermediate' | 'advanced'>('all');
+  const [selectedCategory, setSelectedCategory] = React.useState<
+    DemoCategory | 'all'
+  >('all');
+  const [selectedDifficulty, setSelectedDifficulty] = React.useState<
+    'all' | 'beginner' | 'intermediate' | 'advanced'
+  >('all');
 
-  const categories: { id: DemoCategory; label: string; description: string }[] = [
-    { id: '01-basics', label: 'Basics', description: 'Getting started with BlaC' },
-    { id: '02-patterns', label: 'Patterns', description: 'Common state management patterns' },
-    { id: '03-advanced', label: 'Advanced', description: 'Advanced features and optimizations' },
-    { id: '04-plugins', label: 'Plugins', description: 'Plugin ecosystem and extensions' },
-    { id: '05-testing', label: 'Testing', description: 'Testing patterns and utilities' },
-    { id: '06-real-world', label: 'Real World', description: 'Complete application examples' },
-  ];
+  const categories: { id: DemoCategory; label: string; description: string }[] =
+    [
+      {
+        id: '01-basics',
+        label: 'Basics',
+        description: 'Getting started with BlaC',
+      },
+      {
+        id: '02-patterns',
+        label: 'Patterns',
+        description: 'Common state management patterns',
+      },
+      {
+        id: '03-advanced',
+        label: 'Advanced',
+        description: 'Advanced features and optimizations',
+      },
+      {
+        id: '04-plugins',
+        label: 'Plugins',
+        description: 'Plugin ecosystem and extensions',
+      },
+      {
+        id: '05-testing',
+        label: 'Testing',
+        description: 'Testing patterns and utilities',
+      },
+      {
+        id: '06-real-world',
+        label: 'Real World',
+        description: 'Complete application examples',
+      },
+    ];
 
   // Filter demos based on search and filters
   const filteredDemos = React.useMemo(() => {
     let demos = DemoRegistry.getAllDemos();
-    
+
     if (searchQuery) {
       demos = DemoRegistry.search(searchQuery);
     }
-    
+
     if (selectedCategory !== 'all') {
-      demos = demos.filter(d => d.category === selectedCategory);
+      demos = demos.filter((d) => d.category === selectedCategory);
     }
-    
+
     if (selectedDifficulty !== 'all') {
-      demos = demos.filter(d => d.difficulty === selectedDifficulty);
+      demos = demos.filter((d) => d.difficulty === selectedDifficulty);
     }
-    
+
     return demos;
   }, [searchQuery, selectedCategory, selectedDifficulty]);
 
@@ -63,10 +92,12 @@ export function DemosPage() {
                 <Filter className="h-4 w-4" />
                 Filters
               </h3>
-              
+
               {/* Difficulty Filter */}
               <div className="mb-4">
-                <label className="text-sm font-medium mb-2 block">Difficulty</label>
+                <label className="text-sm font-medium mb-2 block">
+                  Difficulty
+                </label>
                 <select
                   value={selectedDifficulty}
                   onChange={(e) => setSelectedDifficulty(e.target.value as any)}
@@ -87,10 +118,10 @@ export function DemosPage() {
                 <button
                   onClick={() => setSelectedCategory('all')}
                   className={cn(
-                    "w-full text-left px-3 py-2 text-sm rounded-md transition-colors",
+                    'w-full text-left px-3 py-2 text-sm rounded-md transition-colors',
                     selectedCategory === 'all'
-                      ? "bg-accent text-accent-foreground"
-                      : "hover:bg-accent/50"
+                      ? 'bg-accent text-accent-foreground'
+                      : 'hover:bg-accent/50',
                   )}
                 >
                   All Demos
@@ -100,10 +131,10 @@ export function DemosPage() {
                     key={cat.id}
                     onClick={() => setSelectedCategory(cat.id)}
                     className={cn(
-                      "w-full text-left px-3 py-2 text-sm rounded-md transition-colors",
+                      'w-full text-left px-3 py-2 text-sm rounded-md transition-colors',
                       selectedCategory === cat.id
-                        ? "bg-accent text-accent-foreground"
-                        : "hover:bg-accent/50"
+                        ? 'bg-accent text-accent-foreground'
+                        : 'hover:bg-accent/50',
                     )}
                   >
                     {cat.label}
@@ -128,15 +159,19 @@ export function DemosPage() {
 
 function DemoList({ demos }: { demos: any[] }) {
   const difficultyColors = {
-    beginner: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-    intermediate: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+    beginner:
+      'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+    intermediate:
+      'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
     advanced: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
   };
 
   if (demos.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-muted-foreground">No demos found matching your criteria.</p>
+        <p className="text-muted-foreground">
+          No demos found matching your criteria.
+        </p>
       </div>
     );
   }
@@ -155,10 +190,14 @@ function DemoList({ demos }: { demos: any[] }) {
               <h3 className="font-semibold group-hover:text-accent-foreground">
                 {demo.title}
               </h3>
-              <span className={cn(
-                "px-2 py-1 text-xs rounded-full",
-                difficultyColors[demo.difficulty as keyof typeof difficultyColors]
-              )}>
+              <span
+                className={cn(
+                  'px-2 py-1 text-xs rounded-full',
+                  difficultyColors[
+                    demo.difficulty as keyof typeof difficultyColors
+                  ],
+                )}
+              >
                 {demo.difficulty}
               </span>
             </div>
@@ -184,10 +223,16 @@ function DemoList({ demos }: { demos: any[] }) {
 }
 
 function DemoViewer() {
-  const DemoRunner = React.lazy(() => import('@/core/components/DemoRunner').then(m => ({ default: m.DemoRunner })));
-  
+  const DemoRunner = React.lazy(() =>
+    import('@/core/components/DemoRunner').then((m) => ({
+      default: m.DemoRunner,
+    })),
+  );
+
   return (
-    <React.Suspense fallback={<div className="p-6 text-center">Loading demo...</div>}>
+    <React.Suspense
+      fallback={<div className="p-6 text-center">Loading demo...</div>}
+    >
       <DemoRunner />
     </React.Suspense>
   );

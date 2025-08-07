@@ -4,10 +4,7 @@ import {
   RenderLoggingPlugin,
   RenderLoggingConfig,
 } from '@blac/plugin-render-logging';
-import {
-  COLOR_TEXT_SECONDARY,
-  FONT_FAMILY_SANS,
-} from '../lib/styles';
+import { COLOR_TEXT_SECONDARY, FONT_FAMILY_SANS } from '../lib/styles';
 
 // Main component for configuring render logging
 export default function RerenderLoggingDemo() {

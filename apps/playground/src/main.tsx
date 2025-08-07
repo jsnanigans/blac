@@ -14,7 +14,7 @@ Blac.instance.plugins.add(
     enabled: true,
     level: 'normal',
     groupRerenders: true,
-  })
+  }),
 );
 
 // Make BlaC available globally for debugging
@@ -42,5 +42,5 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <App />
       </BrowserRouter>
     </QueryClientProvider>
-  </React.StrictMode>
+  </React.StrictMode>,
 );

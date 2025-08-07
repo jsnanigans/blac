@@ -1,4 +1,3 @@
-
 import { Link } from 'react-router-dom';
 import { ArrowRight, Zap, Code2, TestTube, BookOpen } from 'lucide-react';
 
@@ -11,7 +10,8 @@ export function HomePage() {
           Interactive BlaC State Management
         </h1>
         <p className="max-w-[750px] text-center text-lg text-muted-foreground sm:text-xl">
-          Learn, experiment, and master BlaC through interactive demos, live coding, and comprehensive examples.
+          Learn, experiment, and master BlaC through interactive demos, live
+          coding, and comprehensive examples.
         </p>
         <div className="flex gap-4 mt-8">
           <Link
@@ -36,31 +36,35 @@ export function HomePage() {
           <Zap className="h-12 w-12 text-primary mb-4" />
           <h3 className="font-bold mb-2">Live Demos</h3>
           <p className="text-sm text-muted-foreground">
-            Interactive examples with real-time state visualization and performance metrics.
+            Interactive examples with real-time state visualization and
+            performance metrics.
           </p>
         </div>
-        
+
         <div className="relative overflow-hidden rounded-lg border bg-background p-6">
           <Code2 className="h-12 w-12 text-primary mb-4" />
           <h3 className="font-bold mb-2">Code Playground</h3>
           <p className="text-sm text-muted-foreground">
-            Write and test BlaC code with instant feedback and Monaco editor support.
+            Write and test BlaC code with instant feedback and Monaco editor
+            support.
           </p>
         </div>
-        
+
         <div className="relative overflow-hidden rounded-lg border bg-background p-6">
           <TestTube className="h-12 w-12 text-primary mb-4" />
           <h3 className="font-bold mb-2">Testing Suite</h3>
           <p className="text-sm text-muted-foreground">
-            Built-in testing utilities with visual test runners and benchmarking tools.
+            Built-in testing utilities with visual test runners and benchmarking
+            tools.
           </p>
         </div>
-        
+
         <div className="relative overflow-hidden rounded-lg border bg-background p-6">
           <BookOpen className="h-12 w-12 text-primary mb-4" />
           <h3 className="font-bold mb-2">Learning Paths</h3>
           <p className="text-sm text-muted-foreground">
-            Structured tutorials from basics to advanced patterns and best practices.
+            Structured tutorials from basics to advanced patterns and best
+            practices.
           </p>
         </div>
       </section>
@@ -80,7 +84,7 @@ export function HomePage() {
               Start with the fundamentals - a simple counter using Cubit.
             </p>
           </Link>
-          
+
           <Link
             to="/demos/02-patterns/shared-state"
             className="group relative overflow-hidden rounded-lg border p-6 hover:bg-accent transition-colors"
@@ -92,7 +96,7 @@ export function HomePage() {
               Learn about shared vs isolated state and when to use each.
             </p>
           </Link>
-          
+
           <Link
             to="/demos/03-advanced/selectors"
             className="group relative overflow-hidden rounded-lg border p-6 hover:bg-accent transition-colors"
@@ -112,7 +116,9 @@ export function HomePage() {
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
           <div className="text-center">
             <div className="text-3xl font-bold">24+</div>
-            <div className="text-sm text-muted-foreground">Interactive Demos</div>
+            <div className="text-sm text-muted-foreground">
+              Interactive Demos
+            </div>
           </div>
           <div className="text-center">
             <div className="text-3xl font-bold">15+</div>

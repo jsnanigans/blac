@@ -1,5 +1,12 @@
 import { Link } from 'react-router-dom';
-import { BookOpen, Video, FileText, Code2, Users, ExternalLink } from 'lucide-react';
+import {
+  BookOpen,
+  Video,
+  FileText,
+  Code2,
+  Users,
+  ExternalLink,
+} from 'lucide-react';
 
 export function LearnPage() {
   const learningPaths = [
@@ -19,7 +26,11 @@ export function LearnPage() {
       description: 'Master advanced state management patterns.',
       icon: Code2,
       lessons: [
-        { title: 'Selectors & Performance', duration: '15 min', completed: false },
+        {
+          title: 'Selectors & Performance',
+          duration: '15 min',
+          completed: false,
+        },
         { title: 'Async Operations', duration: '20 min', completed: false },
         { title: 'Plugin Development', duration: '25 min', completed: false },
         { title: 'Testing Strategies', duration: '18 min', completed: false },
@@ -54,7 +65,8 @@ export function LearnPage() {
       <div className="mx-auto max-w-[980px] text-center mb-12">
         <h1 className="text-3xl font-bold mb-4">Learn BlaC</h1>
         <p className="text-lg text-muted-foreground">
-          Master state management with our structured learning paths and comprehensive resources.
+          Master state management with our structured learning paths and
+          comprehensive resources.
         </p>
       </div>
 
@@ -72,10 +84,12 @@ export function LearnPage() {
                   </div>
                   <div className="flex-1">
                     <h3 className="font-semibold mb-1">{path.title}</h3>
-                    <p className="text-sm text-muted-foreground">{path.description}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {path.description}
+                    </p>
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   {path.lessons.map((lesson, idx) => (
                     <div
@@ -83,19 +97,23 @@ export function LearnPage() {
                       className="flex items-center justify-between p-3 rounded-md hover:bg-accent/50 transition-colors cursor-pointer"
                     >
                       <div className="flex items-center gap-3">
-                        <div className={cn(
-                          "h-5 w-5 rounded-full border-2",
-                          lesson.completed
-                            ? "bg-primary border-primary"
-                            : "border-muted-foreground"
-                        )} />
+                        <div
+                          className={cn(
+                            'h-5 w-5 rounded-full border-2',
+                            lesson.completed
+                              ? 'bg-primary border-primary'
+                              : 'border-muted-foreground',
+                          )}
+                        />
                         <span className="text-sm">{lesson.title}</span>
                       </div>
-                      <span className="text-xs text-muted-foreground">{lesson.duration}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {lesson.duration}
+                      </span>
                     </div>
                   ))}
                 </div>
-                
+
                 <button className="w-full mt-4 inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-9">
                   Start Learning
                 </button>
@@ -116,7 +134,7 @@ export function LearnPage() {
                 <code>npm install @blac/core @blac/react</code>
               </pre>
             </div>
-            
+
             <div>
               <h3 className="font-semibold mb-2">2. Create Your First Cubit</h3>
               <pre className="bg-zinc-950 text-zinc-100 p-3 rounded-md text-sm overflow-x-auto">
@@ -131,7 +149,7 @@ class CounterCubit extends Cubit<number> {
 }`}</code>
               </pre>
             </div>
-            
+
             <div>
               <h3 className="font-semibold mb-2">3. Use in React</h3>
               <pre className="bg-zinc-950 text-zinc-100 p-3 rounded-md text-sm overflow-x-auto">
@@ -169,7 +187,9 @@ function Counter() {
                   <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-foreground" />
                 </div>
                 <h3 className="font-semibold mb-1">{resource.title}</h3>
-                <p className="text-sm text-muted-foreground">{resource.description}</p>
+                <p className="text-sm text-muted-foreground">
+                  {resource.description}
+                </p>
               </Link>
             );
           })}

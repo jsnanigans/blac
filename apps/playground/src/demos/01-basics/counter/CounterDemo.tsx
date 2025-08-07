@@ -36,7 +36,7 @@ export function CounterDemo() {
           A simple counter demonstrating basic Cubit usage
         </p>
       </div>
-      
+
       <div className="flex justify-center gap-2">
         <button
           onClick={cubit.decrement}
@@ -90,5 +90,5 @@ export const counterDemoCode = {
       <button onClick={cubit.decrement}>-</button>
     </div>
   );
-}`
+}`,
 };

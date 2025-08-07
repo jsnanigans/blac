@@ -5,7 +5,7 @@ import {
   INPUT_STYLE,
 } from '../../lib/styles';
 
-export type InputProps = React.InputHTMLAttributes<HTMLInputElement>
+export type InputProps = React.InputHTMLAttributes<HTMLInputElement>;
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, style, type, disabled, ...props }, ref) => {
