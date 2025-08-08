@@ -1,5 +1,6 @@
 import { DemoRegistry } from '@/core/utils/demoRegistry';
-import { SelectorsDemo, selectorsCode } from './SelectorsDemo';
+import { SelectorsDemo } from './SelectorsDemo';
+// eslint-disable-next-line import/no-unused-modules
 
 DemoRegistry.register({
   id: 'custom-selectors',
@@ -17,8 +18,7 @@ DemoRegistry.register({
   ],
   component: SelectorsDemo,
   code: {
-    demo: selectorsCode.usage,
-    bloc: selectorsCode.bloc,
+    demo: '',
   },
   tests: [
     {

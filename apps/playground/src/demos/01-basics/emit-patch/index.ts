@@ -1,5 +1,6 @@
 import { DemoRegistry } from '@/core/utils/demoRegistry';
-import { EmitPatchDemo, emitPatchCode } from './EmitPatchDemo';
+import { EmitPatchDemo } from './EmitPatchDemo';
+// eslint-disable-next-line import/no-unused-modules
 
 DemoRegistry.register({
   id: 'emit-patch',
@@ -12,8 +13,7 @@ DemoRegistry.register({
   concepts: ['state updates', 'shallow merge', 'state replacement'],
   component: EmitPatchDemo,
   code: {
-    demo: emitPatchCode.usage,
-    bloc: emitPatchCode.bloc,
+    demo: '',
   },
   tests: [
     {

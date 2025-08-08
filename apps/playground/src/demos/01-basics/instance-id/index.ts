@@ -1,5 +1,6 @@
 import { DemoRegistry } from '@/core/utils/demoRegistry';
-import { InstanceIdDemo, instanceIdCode } from './InstanceIdDemo';
+import { InstanceIdDemo } from './InstanceIdDemo';
+// eslint-disable-next-line import/no-unused-modules
 
 DemoRegistry.register({
   id: 'instance-id',
@@ -12,8 +13,7 @@ DemoRegistry.register({
   concepts: ['instance management', 'instance lifecycle', 'shared vs unique'],
   component: InstanceIdDemo,
   code: {
-    demo: instanceIdCode.usage,
-    bloc: instanceIdCode.bloc,
+    demo: '',
   },
   tests: [
     {

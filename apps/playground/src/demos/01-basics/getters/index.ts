@@ -1,5 +1,6 @@
 import { DemoRegistry } from '@/core/utils/demoRegistry';
-import { GettersDemo, gettersCode } from './GettersDemo';
+import { GettersDemo } from './GettersDemo';
+// eslint-disable-next-line import/no-unused-modules
 
 DemoRegistry.register({
   id: 'getters',
@@ -12,8 +13,7 @@ DemoRegistry.register({
   concepts: ['computed properties', 'derived state', 'reactive calculations'],
   component: GettersDemo,
   code: {
-    demo: gettersCode.usage,
-    bloc: gettersCode.bloc,
+    demo: '',
   },
   tests: [
     {

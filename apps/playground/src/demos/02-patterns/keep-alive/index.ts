@@ -1,5 +1,6 @@
 import { DemoRegistry } from '@/core/utils/demoRegistry';
-import { KeepAliveDemo, keepAliveCode } from './KeepAliveDemo';
+import { KeepAliveDemo } from './KeepAliveDemo';
+// eslint-disable-next-line import/no-unused-modules
 
 DemoRegistry.register({
   id: 'keep-alive',
@@ -17,8 +18,7 @@ DemoRegistry.register({
   ],
   component: KeepAliveDemo,
   code: {
-    demo: keepAliveCode.usage,
-    bloc: keepAliveCode.bloc,
+    demo: '',
   },
   tests: [
     {

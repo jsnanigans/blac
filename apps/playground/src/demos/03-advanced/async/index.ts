@@ -1,5 +1,6 @@
 import { DemoRegistry } from '@/core/utils/demoRegistry';
-import { AsyncDemo, asyncDemoCode } from './AsyncDemo';
+import { AsyncDemo } from './AsyncDemo';
+// eslint-disable-next-line import/no-unused-modules
 
 DemoRegistry.register({
   id: 'async-operations',
@@ -18,8 +19,7 @@ DemoRegistry.register({
   ],
   component: AsyncDemo,
   code: {
-    demo: asyncDemoCode.usage,
-    bloc: asyncDemoCode.bloc,
+    demo: '',
   },
   tests: [
     {

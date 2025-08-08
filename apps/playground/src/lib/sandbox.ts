@@ -1,7 +1,8 @@
+import * as BlacCore from '@blac/core';
+import * as Persistence from '@blac/plugin-persistence';
+import * as BlacReact from '@blac/react';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import * as BlacCore from '@blac/core';
-import * as BlacReact from '@blac/react';
 import {
   performanceMonitor,
   PerformanceMonitorPlugin,
@@ -87,6 +88,7 @@ export class Sandbox {
       (window as any).ReactDOM = ReactDOM;
       (window as any).BlacCore = BlacCore;
       (window as any).BlacReact = BlacReact;
+      (window as any).BlacPlugins = { ...Persistence };
       (window as any).performanceMonitor = performanceMonitor;
 
       // Store for the exported component
@@ -115,13 +117,28 @@ export class Sandbox {
         ${code}
         
         // Try to find and return the main component with performance tracking
-        // Look for common component names
-        if (typeof Counter !== 'undefined') return withPerformanceTracking(Counter, 'Counter');
-        if (typeof App !== 'undefined') return withPerformanceTracking(App, 'App');
-        if (typeof Component !== 'undefined') return withPerformanceTracking(Component, 'Component');
-        if (typeof Demo !== 'undefined') return withPerformanceTracking(Demo, 'Demo');
-        if (typeof Example !== 'undefined') return withPerformanceTracking(Example, 'Example');
-        if (typeof Main !== 'undefined') return withPerformanceTracking(Main, 'Main');
+        // Look for exported functions or common component names
+        const componentNames = [
+          'App', 'Demo', 'Counter', 'CounterDemo', 'Example', 'Main', 'Component',
+          'TodoDemo', 'AsyncDemo', 'StreamDemo', 'SelectorsDemo', 
+          'BlocCommunicationDemo', 'CustomPluginsDemo', 'PersistenceDemo',
+          'PropsDemo', 'KeepAliveDemo', 'IsolatedCounterDemo', 
+          'InstanceIdDemo', 'GettersDemo', 'EmitPatchDemo'
+        ];
+        
+        for (const name of componentNames) {
+          if (typeof window[name] !== 'undefined' && typeof window[name] === 'function') {
+            return withPerformanceTracking(window[name], name);
+          }
+          try {
+            const component = eval(name);
+            if (typeof component === 'function') {
+              return withPerformanceTracking(component, name);
+            }
+          } catch (e) {
+            // Component doesn't exist, continue checking
+          }
+        }
         
         // Log success even if no component found
         console.log('Code executed successfully');

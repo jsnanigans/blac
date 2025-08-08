@@ -52,7 +52,7 @@ declare module '@blac/react' {
   import { BlocBase, Cubit, Bloc } from '@blac/core';
   
   export interface UseBlocOptions<T extends BlocBase> {
-    selector?: (state: any) => any;
+    selector?: (currentState: any, previousState: any, instance: T) => any;
     dependencies?: any[];
   }
   

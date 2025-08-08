@@ -10,6 +10,9 @@ import {
 
 export function ApiPage() {
   const [searchQuery, setSearchQuery] = React.useState('');
+  const copy = async (text: string) => {
+    await navigator.clipboard.writeText(text);
+  };
 
   const apiSections = [
     {
@@ -124,7 +127,7 @@ export function ApiPage() {
                 {section.items.map((item) => (
                   <div
                     key={item.name}
-                    className="group border rounded-lg p-4 hover:bg-accent/50 transition-colors cursor-pointer"
+                    className="group border rounded-lg p-4 hover:bg-accent/50 transition-colors"
                   >
                     <div className="flex items-center justify-between">
                       <div>
@@ -135,7 +138,13 @@ export function ApiPage() {
                           {item.description}
                         </p>
                       </div>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground" />
+                      <button
+                        onClick={() => copy(item.name)}
+                        className="text-xs rounded border px-2 py-1 opacity-0 transition-opacity group-hover:opacity-100"
+                        title="Copy symbol name"
+                      >
+                        Copy
+                      </button>
                     </div>
                   </div>
                 ))}

@@ -1,5 +1,7 @@
 import { DemoRegistry } from '@/core/utils/demoRegistry';
 import { PersistenceDemo } from './PersistenceDemo';
+// Inline actual source for code viewer and playground export
+// eslint-disable-next-line import/no-unused-modules
 
 // Read the source code
 const demoCode = `import React, { useState } from 'react';
@@ -265,7 +267,6 @@ DemoRegistry.register({
   ],
   component: PersistenceDemo,
   code: {
-    demo: demoCode,
-    test: testCode,
+    demo: '',
   },
 });

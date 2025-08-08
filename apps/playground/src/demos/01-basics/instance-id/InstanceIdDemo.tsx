@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Cubit } from '@blac/core';
 import { useBloc } from '@blac/react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/ui/Card';
+import { Button } from '@/ui/Button';
+import { Callout } from '@/ui/Callout';
 
 interface TrackedState {
   value: number;
@@ -191,15 +194,19 @@ export const InstanceIdDemo: React.FC = () => {
   const [dynamicId, setDynamicId] = useState('user-123');
 
   return (
-    <div className="max-w-6xl mx-auto p-4">
-      <div className="mb-6">
-        <h3 className="text-xl font-bold mb-2">Understanding InstanceId</h3>
-        <p className="text-gray-600 dark:text-gray-400">
-          InstanceId controls whether components share the same Cubit instance
-          or get their own. Watch how different components interact with shared
-          vs unique instances.
-        </p>
-      </div>
+    <div className="max-w-6xl mx-auto p-4 space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Understanding InstanceId</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">
+            InstanceId controls whether components share the same Cubit instance
+            or get their own. Watch how different components interact with
+            shared vs unique instances.
+          </p>
+        </CardContent>
+      </Card>
 
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
@@ -284,74 +291,79 @@ export const InstanceIdDemo: React.FC = () => {
           <InstanceRegistry />
 
           {/* Component Controls */}
-          <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
-            <h4 className="font-semibold mb-2">Component Controls</h4>
-            <div className="space-y-2">
-              {Object.entries(showComponents).map(([key, value]) => (
-                <label key={key} className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={value}
-                    onChange={(e) =>
-                      setShowComponents({
-                        ...showComponents,
-                        [key]: e.target.checked,
-                      })
-                    }
-                    className="rounded"
-                  />
-                  <span className="capitalize">
-                    {key.replace(/\d+/, ' $&')}
-                  </span>
-                </label>
-              ))}
-            </div>
-            <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
-              Toggle components to see instance lifecycle
-            </p>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Component Controls</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {Object.entries(showComponents).map(([key, value]) => (
+                  <label key={key} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={value}
+                      onChange={(e) =>
+                        setShowComponents({
+                          ...showComponents,
+                          [key]: e.target.checked,
+                        })
+                      }
+                      className="rounded"
+                    />
+                    <span className="capitalize">
+                      {key.replace(/\d+/, ' $&')}
+                    </span>
+                  </label>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Toggle components to see instance lifecycle
+              </p>
+            </CardContent>
+          </Card>
 
           {/* Key Insights */}
-          <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-lg">
-            <h4 className="font-semibold text-yellow-700 dark:text-yellow-300 mb-2">
-              Key Insights
-            </h4>
-            <ul className="text-sm space-y-1 text-gray-700 dark:text-gray-300">
+          <Callout variant="warning" title="Key Insights">
+            <ul className="text-sm space-y-1">
               <li>• Same color = same instance</li>
               <li>• No ID = all share one instance</li>
               <li>• Same ID = share that instance</li>
               <li>• Different IDs = different instances</li>
               <li>• Instances persist until all components unmount</li>
             </ul>
-          </div>
+          </Callout>
         </div>
       </div>
 
       {/* How It Works */}
-      <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-300 dark:border-blue-700 rounded-lg">
-        <h4 className="font-semibold text-blue-700 dark:text-blue-300 mb-2">
-          How InstanceId Works
-        </h4>
-        <div className="grid md:grid-cols-3 gap-4 text-sm text-gray-700 dark:text-gray-300">
-          <div>
-            <h5 className="font-semibold mb-1">No InstanceId</h5>
-            <code className="text-xs">useBloc(MyCubit)</code>
-            <p className="mt-1">All components share the default instance</p>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">How InstanceId Works</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid md:grid-cols-3 gap-4 text-sm">
+            <div>
+              <h5 className="font-semibold mb-1">No InstanceId</h5>
+              <code className="text-xs">useBloc(MyCubit)</code>
+              <p className="mt-1">All components share the default instance</p>
+            </div>
+            <div>
+              <h5 className="font-semibold mb-1">With InstanceId</h5>
+              <code className="text-xs">
+                useBloc(MyCubit, {`{ instanceId: 'abc' }`})
+              </code>
+              <p className="mt-1">
+                Components with same ID share that instance
+              </p>
+            </div>
+            <div>
+              <h5 className="font-semibold mb-1">Dynamic InstanceId</h5>
+              <code className="text-xs">instanceId: `user-{`{userId}`}`</code>
+              <p className="mt-1">Create instances based on runtime data</p>
+            </div>
           </div>
-          <div>
-            <h5 className="font-semibold mb-1">With InstanceId</h5>
-            <code className="text-xs">
-              useBloc(MyCubit, {`{ instanceId: 'abc' }`})
-            </code>
-            <p className="mt-1">Components with same ID share that instance</p>
-          </div>
-          <div>
-            <h5 className="font-semibold mb-1">Dynamic InstanceId</h5>
-            <code className="text-xs">instanceId: `user-{`{userId}`}`</code>
-            <p className="mt-1">Create instances based on runtime data</p>
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

@@ -1,6 +1,8 @@
-import { useBloc } from '@blac/react';
-import React, { useRef, useEffect } from 'react';
+import { Button } from '@/ui/Button';
+import { Card, CardContent } from '@/ui/Card';
 import { Cubit } from '@blac/core';
+import { useBloc } from '@blac/react';
+import React, { useEffect, useRef } from 'react';
 
 interface ComplexState {
   counter: number;
@@ -218,68 +220,57 @@ export const SelectorsDemo: React.FC = () => {
         <NoSelectorDisplay />
       </div>
 
-      <div className="space-y-4 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
-        <h4 className="font-semibold mb-2">Controls</h4>
+      <Card>
+        <CardContent className="space-y-4">
+          <h4 className="font-semibold">Controls</h4>
 
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={cubit.incrementCounter}
-            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            Increment ({state.counter})
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={cubit.incrementCounter} variant="primary">
+              Increment ({state.counter})
+            </Button>
 
-          <input
-            type="text"
-            value={state.text}
-            onChange={(e) => cubit.updateText(e.target.value)}
-            placeholder="Type something..."
-            className="px-3 py-1 border rounded dark:bg-gray-700"
-          />
+            <input
+              type="text"
+              value={state.text}
+              onChange={(e) => cubit.updateText(e.target.value)}
+              placeholder="Type something..."
+              className="px-3 py-1 border rounded dark:bg-gray-700"
+            />
 
-          <button
-            onClick={cubit.toggleTheme}
-            className="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600"
-          >
-            Toggle Theme
-          </button>
+            <Button onClick={cubit.toggleTheme} variant="secondary">
+              Toggle Theme
+            </Button>
 
-          <button
-            onClick={cubit.toggleNotifications}
-            className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
-          >
-            Toggle Notifications
-          </button>
-        </div>
+            <Button onClick={cubit.toggleNotifications} variant="secondary">
+              Toggle Notifications
+            </Button>
+          </div>
 
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={newItem}
-            onChange={(e) => setNewItem(e.target.value)}
-            placeholder="Add item..."
-            className="px-3 py-1 border rounded dark:bg-gray-700 flex-1"
-          />
-          <button
-            onClick={() => {
-              if (newItem) {
-                cubit.addItem(newItem);
-                setNewItem('');
-              }
-            }}
-            className="px-3 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600"
-          >
-            Add Item ({state.items.length})
-          </button>
-        </div>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newItem}
+              onChange={(e) => setNewItem(e.target.value)}
+              placeholder="Add item..."
+              className="px-3 py-1 border rounded dark:bg-gray-700 flex-1"
+            />
+            <Button
+              onClick={() => {
+                if (newItem) {
+                  cubit.addItem(newItem);
+                  setNewItem('');
+                }
+              }}
+            >
+              Add Item ({state.items.length})
+            </Button>
+          </div>
 
-        <button
-          onClick={cubit.reset}
-          className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-        >
-          Reset All
-        </button>
-      </div>
+          <Button onClick={cubit.reset} variant="muted">
+            Reset All
+          </Button>
+        </CardContent>
+      </Card>
 
       <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
         <p>Notice how different components have different render counts!</p>

@@ -1,5 +1,8 @@
 import { DemoRegistry } from '@/core/utils/demoRegistry';
-import { TodoDemo, todoDemoCode } from './TodoDemo';
+import { TodoDemo } from './TodoDemo';
+// Inline raw source for code viewer and playground export
+// eslint-disable-next-line import/no-unused-modules
+// eslint-disable-next-line import/no-unused-modules
 
 DemoRegistry.register({
   id: 'todo-bloc',
@@ -18,8 +21,8 @@ DemoRegistry.register({
   ],
   component: TodoDemo,
   code: {
-    demo: todoDemoCode.usage,
-    bloc: todoDemoCode.bloc,
+    demo: '',
+    bloc: '',
   },
   tests: [
     {

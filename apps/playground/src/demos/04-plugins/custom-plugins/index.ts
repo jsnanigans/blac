@@ -1,5 +1,6 @@
 import { DemoRegistry } from '@/core/utils/demoRegistry';
 import { CustomPluginsDemo } from './CustomPluginsDemo';
+// eslint-disable-next-line import/no-unused-modules
 
 const demoCode = `import React, { useState, useEffect } from 'react';
 import { Cubit, Blac, BlacPlugin, BlocBase } from '@blac/core';
@@ -291,7 +292,6 @@ DemoRegistry.register({
   ],
   component: CustomPluginsDemo,
   code: {
-    demo: demoCode,
-    test: testCode,
+    demo: '',
   },
 });

@@ -1,8 +1,9 @@
-import React from 'react';
-import { Routes, Route, Link } from 'react-router-dom';
-import { cn } from '@/lib/utils';
 import { DemoRegistry, type DemoCategory } from '@/core/utils/demoRegistry';
-import { ChevronRight, Search, Filter } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Card } from '@/ui/Card';
+import { ChevronRight, Filter, Search, Sparkles } from 'lucide-react';
+import React from 'react';
+import { Link, Route, Routes } from 'react-router-dom';
 
 export function DemosPage() {
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -68,6 +69,23 @@ export function DemosPage() {
 
   return (
     <div className="container py-6">
+      {/* Page header with summary */}
+      <div className="mb-6 rounded-xl border bg-card p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Interactive Demos</h1>
+            <p className="text-sm text-muted-foreground">
+              Explore concepts, patterns, and performance characteristics of
+              BlaC.
+            </p>
+          </div>
+          <div className="hidden items-center gap-2 rounded-md border px-3 py-1.5 text-xs text-muted-foreground md:flex">
+            <Sparkles className="h-3.5 w-3.5" />
+            {DemoRegistry.getAllDemos().length} demos
+          </div>
+        </div>
+      </div>
+
       <div className="flex gap-6">
         {/* Sidebar */}
         <aside className="w-64 shrink-0">
@@ -181,41 +199,42 @@ function DemoList({ demos }: { demos: any[] }) {
       <h1 className="text-3xl font-bold mb-6">Interactive Demos</h1>
       <div className="grid gap-4 md:grid-cols-2">
         {demos.map((demo) => (
-          <Link
-            key={demo.id}
-            to={`/demos/${demo.category}/${demo.id}`}
-            className="group relative overflow-hidden rounded-lg border p-6 hover:bg-accent/50 transition-colors"
-          >
-            <div className="flex items-start justify-between mb-2">
-              <h3 className="font-semibold group-hover:text-accent-foreground">
-                {demo.title}
-              </h3>
-              <span
-                className={cn(
-                  'px-2 py-1 text-xs rounded-full',
-                  difficultyColors[
-                    demo.difficulty as keyof typeof difficultyColors
-                  ],
-                )}
-              >
-                {demo.difficulty}
-              </span>
-            </div>
-            <p className="text-sm text-muted-foreground mb-3">
-              {demo.description}
-            </p>
-            <div className="flex items-center gap-2 flex-wrap">
-              {demo.tags.slice(0, 3).map((tag: string) => (
+          <Card key={demo.id}>
+            <Link
+              to={`/demos/${demo.category}/${demo.id}`}
+              className="group block p-6"
+            >
+              <div className="flex items-start justify-between mb-2">
+                <h3 className="font-semibold group-hover:text-accent-foreground">
+                  {demo.title}
+                </h3>
                 <span
-                  key={tag}
-                  className="px-2 py-1 text-xs bg-secondary text-secondary-foreground rounded"
+                  className={cn(
+                    'px-2 py-1 text-xs rounded-full',
+                    difficultyColors[
+                      demo.difficulty as keyof typeof difficultyColors
+                    ],
+                  )}
                 >
-                  {tag}
+                  {demo.difficulty}
                 </span>
-              ))}
-              <ChevronRight className="h-4 w-4 ml-auto text-muted-foreground group-hover:text-accent-foreground" />
-            </div>
-          </Link>
+              </div>
+              <p className="text-sm text-muted-foreground mb-3">
+                {demo.description}
+              </p>
+              <div className="flex items-center gap-2 flex-wrap">
+                {demo.tags.slice(0, 3).map((tag: string) => (
+                  <span
+                    key={tag}
+                    className="px-2 py-1 text-xs bg-secondary text-secondary-foreground rounded"
+                  >
+                    {tag}
+                  </span>
+                ))}
+                <ChevronRight className="h-4 w-4 ml-auto text-muted-foreground group-hover:text-accent-foreground" />
+              </div>
+            </Link>
+          </Card>
         ))}
       </div>
     </div>

@@ -1,6 +1,8 @@
-import React from 'react';
+import { Button } from '@/ui/Button';
+import { Card, CardContent } from '@/ui/Card';
 import { Cubit } from '@blac/core';
 import { useBloc } from '@blac/react';
+import React from 'react';
 
 // State for async operations with error handling
 interface ApiState {
@@ -135,83 +137,83 @@ export const AsyncDemo: React.FC = () => {
 
   return (
     <div className="max-w-2xl mx-auto p-4">
-      <div className="mb-4">
-        <h3 className="text-lg font-semibold mb-3">
-          Async Operations with Error Handling
-        </h3>
+      <Card className="mb-4">
+        <CardContent>
+          <h3 className="text-lg font-semibold mb-3">
+            Async Operations with Error Handling
+          </h3>
 
-        <div className="flex flex-wrap gap-2 mb-4">
-          <button
-            onClick={() => apiCubit.fetchData(false)}
-            disabled={apiState.loading}
-            className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            Fetch Data (Success)
-          </button>
-          <button
-            onClick={() => apiCubit.fetchData(true)}
-            disabled={apiState.loading}
-            className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            Fetch Data (Fail)
-          </button>
-          <button
-            onClick={() => apiCubit.fetchWithRetry(3)}
-            disabled={apiState.loading}
-            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            Fetch with Retry
-          </button>
-          <button
-            onClick={apiCubit.reset}
-            className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
-          >
-            Reset
-          </button>
-        </div>
-      </div>
-
-      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 min-h-[200px]">
-        {apiState.loading && (
-          <div className="text-center text-gray-600 dark:text-gray-400">
-            <div className="mb-2">Loading...</div>
-            {apiState.error && <div className="text-sm">{apiState.error}</div>}
+          <div className="flex flex-wrap gap-2 mb-2">
+            <Button
+              onClick={() => apiCubit.fetchData(false)}
+              disabled={apiState.loading}
+              variant="primary"
+            >
+              Fetch Data (Success)
+            </Button>
+            <Button
+              onClick={() => apiCubit.fetchData(true)}
+              disabled={apiState.loading}
+              variant="danger"
+            >
+              Fetch Data (Fail)
+            </Button>
+            <Button
+              onClick={() => apiCubit.fetchWithRetry(3)}
+              disabled={apiState.loading}
+              variant="secondary"
+            >
+              Fetch with Retry
+            </Button>
+            <Button onClick={apiCubit.reset} variant="muted">
+              Reset
+            </Button>
           </div>
-        )}
+        </CardContent>
+      </Card>
 
-        {!apiState.loading && apiState.error && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
-            <div className="flex items-center justify-between">
-              <div className="text-red-700 dark:text-red-400">
-                <strong>Error:</strong> {apiState.error}
+      <Card>
+        <CardContent className="min-h-[200px]">
+          {apiState.loading && (
+            <div className="text-center text-gray-600 dark:text-gray-400">
+              <div className="mb-2">Loading...</div>
+              {apiState.error && (
+                <div className="text-sm">{apiState.error}</div>
+              )}
+            </div>
+          )}
+
+          {!apiState.loading && apiState.error && (
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
+              <div className="flex items-center justify-between">
+                <div className="text-red-700 dark:text-red-400">
+                  <strong>Error:</strong> {apiState.error}
+                </div>
+                <Button onClick={apiCubit.clearError} size="sm" variant="ghost">
+                  Dismiss
+                </Button>
               </div>
-              <button
-                onClick={apiCubit.clearError}
-                className="text-sm px-2 py-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
-              >
-                Dismiss
-              </button>
             </div>
-          </div>
-        )}
+          )}
 
-        {!apiState.loading && apiState.data && (
-          <div>
-            <div className="font-semibold text-green-600 dark:text-green-400 mb-2">
-              Success!
+          {!apiState.loading && apiState.data && (
+            <div>
+              <div className="font-semibold text-green-600 dark:text-green-400 mb-2">
+                Success!
+              </div>
+              <pre className="bg-white dark:bg-gray-900 p-3 rounded border border-gray-200 dark:border-gray-700 text-sm overflow-x-auto">
+                {JSON.stringify(apiState.data, null, 2)}
+              </pre>
             </div>
-            <pre className="bg-white dark:bg-gray-900 p-3 rounded border border-gray-200 dark:border-gray-700 text-sm overflow-x-auto">
-              {JSON.stringify(apiState.data, null, 2)}
-            </pre>
-          </div>
-        )}
+          )}
 
-        {!apiState.loading && !apiState.data && !apiState.error && (
-          <div className="text-center text-gray-500 dark:text-gray-400">
-            Click a button to fetch data
-          </div>
-        )}
-      </div>
+          {!apiState.loading && !apiState.data && !apiState.error && (
+            <div className="text-center text-gray-500 dark:text-gray-400">
+              Click a button to fetch data
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="mt-4 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm">
         <strong>Statistics:</strong>

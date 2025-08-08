@@ -1,6 +1,8 @@
 import { useBloc } from '@blac/react';
 import React, { useState } from 'react';
 import { Todo, TodoBloc } from './TodoBloc';
+import { Card, CardContent, CardHeader, CardTitle } from '@/ui/Card';
+import { Button } from '@/ui/Button';
 
 const TodoItem: React.FC<{
   todo: Todo;
@@ -52,71 +54,69 @@ export const TodoDemo: React.FC = () => {
 
   return (
     <div className="max-w-2xl mx-auto p-4">
-      <form onSubmit={handleAddTodo} className="flex gap-2 mb-4">
-        <input
-          type="text"
-          value={newTodoText}
-          onChange={(e) => setNewTodoText(e.target.value)}
-          placeholder="What needs to be done?"
-          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100"
-        />
-        <button
-          type="submit"
-          className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
-        >
-          Add Todo
-        </button>
-      </form>
-
-      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        {bloc.filteredTodos.length === 0 ? (
-          <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-            {state.filter === 'all'
-              ? 'No todos yet. Add one above!'
-              : `No ${state.filter} todos.`}
-          </div>
-        ) : (
-          bloc.filteredTodos.map((todo) => (
-            <TodoItem
-              key={todo.id}
-              todo={todo}
-              onToggle={bloc.toggleTodo}
-              onRemove={bloc.removeTodo}
+      <Card>
+        <CardHeader>
+          <CardTitle>Todos</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleAddTodo} className="flex gap-2 mb-4">
+            <input
+              type="text"
+              value={newTodoText}
+              onChange={(e) => setNewTodoText(e.target.value)}
+              placeholder="What needs to be done?"
+              className="flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-ring dark:bg-gray-800"
             />
-          ))
-        )}
-      </div>
+            <Button type="submit" variant="primary">
+              Add Todo
+            </Button>
+          </form>
 
-      {state.todos.length > 0 && (
-        <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg flex items-center justify-between text-sm">
-          <span className="text-gray-600 dark:text-gray-400">
-            {activeTodosCount} item{activeTodosCount !== 1 ? 's' : ''} left
-          </span>
-          <div className="flex gap-1">
-            {(['all', 'active', 'completed'] as const).map((filter) => (
-              <button
-                key={filter}
-                onClick={() => bloc.setFilter(filter)}
-                className={`px-3 py-1 rounded transition-colors ${
-                  state.filter === filter
-                    ? 'bg-blue-500 text-white'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-                }`}
-              >
-                {filter.charAt(0).toUpperCase() + filter.slice(1)}
-              </button>
-            ))}
+          <div className="rounded-lg border">
+            {bloc.filteredTodos.length === 0 ? (
+              <div className="p-8 text-center text-muted-foreground">
+                {state.filter === 'all'
+                  ? 'No todos yet. Add one above!'
+                  : `No ${state.filter} todos.`}
+              </div>
+            ) : (
+              bloc.filteredTodos.map((todo) => (
+                <TodoItem
+                  key={todo.id}
+                  todo={todo}
+                  onToggle={bloc.toggleTodo}
+                  onRemove={bloc.removeTodo}
+                />
+              ))
+            )}
           </div>
-          {state.todos.some((todo) => todo.completed) && (
-            <button
-              onClick={bloc.clearCompleted}
-              className="text-gray-600 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
-            >
-              Clear Completed
-            </button>
+
+          {state.todos.length > 0 && (
+            <div className="mt-4 p-3 bg-muted rounded-lg flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">
+                {activeTodosCount} item{activeTodosCount !== 1 ? 's' : ''} left
+              </span>
+              <div className="flex gap-1">
+                {(['all', 'active', 'completed'] as const).map((filter) => (
+                  <Button
+                    key={filter}
+                    onClick={() => bloc.setFilter(filter)}
+                    variant={state.filter === filter ? 'primary' : 'ghost'}
+                    size="sm"
+                  >
+                    {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                  </Button>
+                ))}
+              </div>
+              {state.todos.some((todo) => todo.completed) && (
+                <Button onClick={bloc.clearCompleted} size="sm" variant="ghost">
+                  Clear Completed
+                </Button>
+              )}
+            </div>
           )}
-        </div>
-      )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

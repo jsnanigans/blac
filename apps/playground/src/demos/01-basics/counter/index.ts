@@ -1,5 +1,5 @@
 import { DemoRegistry } from '@/core/utils/demoRegistry';
-import { CounterDemo, counterDemoCode } from './CounterDemo';
+import { CounterDemo } from './CounterDemo';
 
 DemoRegistry.register({
   id: 'counter',
@@ -12,8 +12,7 @@ DemoRegistry.register({
   concepts: ['state management', 'event handlers', 'React hooks'],
   component: CounterDemo,
   code: {
-    demo: counterDemoCode.usage,
-    bloc: counterDemoCode.cubit,
+    demo: '', // Code will be provided by demoCodeExports.ts
   },
   tests: [
     {

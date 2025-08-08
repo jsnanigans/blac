@@ -1,5 +1,6 @@
 import { DemoRegistry } from '@/core/utils/demoRegistry';
 import { BlocCommunicationDemo } from './BlocCommunicationDemo';
+// eslint-disable-next-line import/no-unused-modules
 
 const demoCode = `import React, { useState } from 'react';
 import { useBloc } from '@blac/react';
@@ -286,7 +287,6 @@ DemoRegistry.register({
   ],
   component: BlocCommunicationDemo,
   code: {
-    demo: demoCode,
-    test: testCode,
+    demo: '',
   },
 });

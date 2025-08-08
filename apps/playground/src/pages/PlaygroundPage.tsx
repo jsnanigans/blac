@@ -1,17 +1,21 @@
-import React from 'react';
+import { Card } from '@/ui/Card';
 import Editor from '@monaco-editor/react';
 import {
+  Activity,
+  Download,
+  PanelsLeftRight,
   Play,
+  RotateCcw,
   Save,
   Share2,
-  Download,
-  RotateCcw,
-  Activity,
 } from 'lucide-react';
-import { configureMonaco } from '../core/utils/monacoConfig';
-import { transpileTypeScript } from '../lib/transpiler';
-import { createSandbox } from '../lib/sandbox';
+import React from 'react';
 import { PerformanceMonitorPanel } from '../components/PerformanceMonitor';
+import { configureMonaco } from '../core/utils/monacoConfig';
+import { createSandbox } from '../lib/sandbox';
+import { transpileTypeScript } from '../lib/transpiler';
+import { processDemoForPlayground } from '../lib/demoCodeProcessor';
+import { getDemoCode } from '../demos/demoCodeExports';
 
 export function PlaygroundPage() {
   const [code, setCode] = React.useState(`import { Cubit } from '@blac/core';
@@ -75,6 +79,11 @@ export function Counter() {
   const [activeTab, setActiveTab] = React.useState<'preview' | 'performance'>(
     'preview',
   );
+  const [split, setSplit] = React.useState<number>(() => {
+    const stored = localStorage.getItem('playground-split');
+    return stored ? Number(stored) : 50; // percentage editor width
+  });
+  const dragRef = React.useRef<HTMLDivElement | null>(null);
   const previewRef = React.useRef<HTMLDivElement>(null);
   const rootRef = React.useRef<any>(null);
 
@@ -283,11 +292,80 @@ export function Counter() {
 
   // Load saved code on mount
   React.useEffect(() => {
-    const saved = localStorage.getItem('playground-code');
-    if (saved) {
-      setCode(saved);
-      setOutput(['> Loaded saved code from browser storage']);
-    }
+    (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const demoId = params.get('demo');
+      const encoded = params.get('code');
+      if (encoded) {
+        try {
+          const decoded = decodeURIComponent(atob(encoded));
+          setCode(decoded);
+          setOutput(['> Loaded shared code snippet']);
+          return;
+        } catch {}
+      }
+      if (demoId) {
+        // First try to get clean code from our exports
+        const cleanCode = getDemoCode(demoId);
+        if (cleanCode) {
+          setCode(cleanCode);
+          setOutput([`> Loaded demo: ${demoId}`]);
+          return;
+        }
+
+        // Fallback to processing the demo registry
+        try {
+          const { DemoRegistry } = await import('@/core/utils/demoRegistry');
+          const demo = DemoRegistry.get(demoId);
+          if (demo?.code) {
+            // Build a playground-ready, self-contained code sample
+            const processed = processDemoForPlayground(demo);
+            setCode(processed.code);
+            setOutput([`> Loaded demo: ${demo.title}`]);
+            return;
+          }
+        } catch {}
+      }
+
+      const saved = localStorage.getItem('playground-code');
+      if (saved) {
+        setCode(saved);
+        setOutput(['> Loaded saved code from browser storage']);
+      }
+    })();
+  }, []);
+
+  // Draggable splitter
+  React.useEffect(() => {
+    const handleMove = (e: MouseEvent) => {
+      if (!dragRef.current) return;
+      const container = dragRef.current.parentElement as HTMLDivElement | null;
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      const percent = Math.min(
+        80,
+        Math.max(20, ((e.clientX - rect.left) / rect.width) * 100),
+      );
+      setSplit(percent);
+      localStorage.setItem('playground-split', String(percent));
+    };
+    const stop = () => {
+      document.removeEventListener('mousemove', handleMove);
+      document.removeEventListener('mouseup', stop);
+      document.body.style.cursor = '';
+    };
+    const start = () => {
+      document.addEventListener('mousemove', handleMove);
+      document.addEventListener('mouseup', stop);
+      document.body.style.cursor = 'col-resize';
+    };
+    const handle = dragRef.current;
+    if (handle) handle.addEventListener('mousedown', start);
+    return () => {
+      if (handle) handle.removeEventListener('mousedown', start);
+      document.removeEventListener('mousemove', handleMove);
+      document.removeEventListener('mouseup', stop);
+    };
   }, []);
 
   return (
@@ -313,6 +391,10 @@ export function Counter() {
         </div>
 
         <div className="flex items-center gap-2">
+          <div className="text-xs text-muted-foreground hidden md:flex items-center gap-1 border rounded px-2 py-1">
+            <PanelsLeftRight className="h-3.5 w-3.5" />
+            Drag divider to resize
+          </div>
           <button
             onClick={handleSave}
             className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background hover:bg-accent hover:text-accent-foreground h-9 w-9"
@@ -340,7 +422,7 @@ export function Counter() {
       {/* Main Content */}
       <div className="flex-1 flex">
         {/* Editor */}
-        <div className="flex-1 border-r">
+        <div className="border-r" style={{ width: `${split}%` }}>
           <Editor
             height="100%"
             language="typescript"
@@ -366,8 +448,17 @@ export function Counter() {
           />
         </div>
 
+        {/* Drag handle */}
+        <div
+          ref={dragRef}
+          className="w-1 cursor-col-resize bg-border hover:bg-primary/40 transition-colors"
+        />
+
         {/* Preview & Console */}
-        <div className="flex-1 flex flex-col">
+        <div
+          className="flex-1 flex flex-col"
+          style={{ width: `${100 - split}%` }}
+        >
           {/* Tab Navigation */}
           <div className="border-b px-4">
             <div className="flex gap-4">
@@ -406,13 +497,13 @@ export function Counter() {
                   </p>
                 </div>
 
-                <div className="border rounded-lg p-4 min-h-[200px] bg-card">
+                <Card className="p-4 min-h-[200px]">
                   {preview || (
                     <p className="text-center text-muted-foreground">
                       Click "Run" to execute your code
                     </p>
                   )}
-                </div>
+                </Card>
               </div>
             ) : (
               <div className="p-6">

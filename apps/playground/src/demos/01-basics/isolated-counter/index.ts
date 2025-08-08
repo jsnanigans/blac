@@ -1,8 +1,6 @@
 import { DemoRegistry } from '@/core/utils/demoRegistry';
-import {
-  IsolatedCounterDemo,
-  isolatedCounterCode,
-} from './IsolatedCounterDemo';
+import { IsolatedCounterDemo } from './IsolatedCounterDemo';
+// eslint-disable-next-line import/no-unused-modules
 
 DemoRegistry.register({
   id: 'isolated-counter',
@@ -20,8 +18,7 @@ DemoRegistry.register({
   ],
   component: IsolatedCounterDemo,
   code: {
-    demo: isolatedCounterCode.usage,
-    bloc: isolatedCounterCode.bloc,
+    demo: '',
   },
   tests: [
     {

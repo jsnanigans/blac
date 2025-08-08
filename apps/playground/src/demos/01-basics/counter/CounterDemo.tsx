@@ -1,5 +1,7 @@
 import { useBloc } from '@blac/react';
 import { Cubit } from '@blac/core';
+import { Card, CardContent } from '@/ui/Card';
+import { Button } from '@/ui/Button';
 
 // Counter state and Cubit
 interface CounterState {
@@ -29,35 +31,28 @@ export function CounterDemo() {
   const [state, cubit] = useBloc(CounterCubit);
 
   return (
-    <div className="p-6">
-      <div className="text-center mb-6">
-        <div className="text-6xl font-bold mb-4">{state.count}</div>
-        <p className="text-muted-foreground">
-          A simple counter demonstrating basic Cubit usage
-        </p>
-      </div>
+    <Card className="max-w-md mx-auto">
+      <CardContent>
+        <div className="text-center mb-6">
+          <div className="text-6xl font-bold mb-2">{state.count}</div>
+          <p className="text-muted-foreground text-sm">
+            A simple counter demonstrating basic Cubit usage
+          </p>
+        </div>
 
-      <div className="flex justify-center gap-2">
-        <button
-          onClick={cubit.decrement}
-          className="px-4 py-2 border rounded-md hover:bg-accent"
-        >
-          Decrement
-        </button>
-        <button
-          onClick={cubit.reset}
-          className="px-4 py-2 border rounded-md hover:bg-accent"
-        >
-          Reset
-        </button>
-        <button
-          onClick={cubit.increment}
-          className="px-4 py-2 border rounded-md hover:bg-accent bg-primary text-primary-foreground"
-        >
-          Increment
-        </button>
-      </div>
-    </div>
+        <div className="flex justify-center gap-2">
+          <Button onClick={cubit.decrement} variant="outline">
+            Decrement
+          </Button>
+          <Button onClick={cubit.reset} variant="muted">
+            Reset
+          </Button>
+          <Button onClick={cubit.increment} variant="primary">
+            Increment
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

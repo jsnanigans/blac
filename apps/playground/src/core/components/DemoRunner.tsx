@@ -1,9 +1,18 @@
-import React from 'react';
-import { useParams, Link } from 'react-router-dom';
 import { DemoRegistry } from '@/core/utils/demoRegistry';
+import { Badge } from '@/ui/Badge';
+import { Card, CardContent } from '@/ui/Card';
+import {
+  ArrowLeft,
+  Code2,
+  ExternalLink,
+  Play,
+  Tag,
+  TestTube,
+} from 'lucide-react';
+import React from 'react';
+import { Link, useParams } from 'react-router-dom';
 import { CodeViewer } from './CodeViewer';
 import { TestRunner } from './TestRunner';
-import { ArrowLeft, Code2, Play, TestTube } from 'lucide-react';
 
 export function DemoRunner() {
   const { demoId } = useParams<{ category: string; demoId: string }>();
@@ -50,26 +59,33 @@ export function DemoRunner() {
           Back to Demos
         </Link>
 
-        <h1 className="text-3xl font-bold mb-2">{demo.title}</h1>
-        <p className="text-lg text-muted-foreground">{demo.description}</p>
-
-        <div className="flex items-center gap-2 mt-4">
-          <span
-            className={`px-2 py-1 text-xs rounded-full ${
-              demo.difficulty === 'beginner'
-                ? 'bg-green-100 text-green-800'
-                : demo.difficulty === 'intermediate'
-                  ? 'bg-yellow-100 text-yellow-800'
-                  : 'bg-red-100 text-red-800'
-            }`}
-          >
-            {demo.difficulty}
-          </span>
-          {demo.tags.map((tag) => (
-            <span key={tag} className="px-2 py-1 text-xs bg-secondary rounded">
-              {tag}
-            </span>
-          ))}
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold mb-1">{demo.title}</h1>
+            <p className="text-lg text-muted-foreground">{demo.description}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge
+              variant={
+                demo.difficulty === 'beginner'
+                  ? 'success'
+                  : demo.difficulty === 'intermediate'
+                    ? 'warning'
+                    : 'danger'
+              }
+            >
+              {demo.difficulty}
+            </Badge>
+            {demo.tags.slice(0, 3).map((tag) => (
+              <span
+                key={tag}
+                className="inline-flex items-center gap-1 rounded border px-2 py-1 text-xs text-muted-foreground"
+              >
+                <Tag className="h-3 w-3" />
+                {tag}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -111,21 +127,36 @@ export function DemoRunner() {
               Tests
             </button>
           )}
+
+          {/* Open in Playground */}
+          <a
+            href={`/playground?demo=${demo.id}`}
+            className="ml-auto inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs hover:bg-accent/60"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            Open in Playground
+          </a>
         </nav>
       </div>
 
       {/* Content */}
       <div className="min-h-[400px]">
         {activeTab === 'demo' && (
-          <div className="border rounded-lg">
-            <DemoComponent />
-          </div>
+          <Card>
+            <CardContent className="p-4 md:p-6">
+              <DemoComponent />
+            </CardContent>
+          </Card>
         )}
 
         {activeTab === 'code' && <CodeViewer code={demo.code} />}
 
         {activeTab === 'tests' && demo.tests && (
-          <TestRunner tests={demo.tests} />
+          <Card>
+            <CardContent className="p-4 md:p-6">
+              <TestRunner tests={demo.tests} />
+            </CardContent>
+          </Card>
         )}
       </div>
 

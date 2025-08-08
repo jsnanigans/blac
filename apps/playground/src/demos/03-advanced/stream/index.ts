@@ -1,5 +1,6 @@
 import { DemoRegistry } from '@/core/utils/demoRegistry';
-import { StreamDemo, streamCode } from './StreamDemo';
+import { StreamDemo } from './StreamDemo';
+// eslint-disable-next-line import/no-unused-modules
 
 DemoRegistry.register({
   id: 'stream-api',
@@ -17,8 +18,7 @@ DemoRegistry.register({
   ],
   component: StreamDemo,
   code: {
-    demo: streamCode.usage,
-    bloc: streamCode.bloc,
+    demo: '',
   },
   tests: [
     {
