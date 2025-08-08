@@ -104,7 +104,7 @@ export function App() {
       </div>
     </div>
   );
-}`
+}`,
       },
       {
         name: 'EmitPatchCubit.ts',
@@ -208,12 +208,12 @@ export class EmitPatchCubit extends Cubit<DemoState> {
       }
     });
   };
-}`
-      }
-    ]
+}`,
+      },
+    ],
   },
-  
-  'counter': {
+
+  counter: {
     files: [
       {
         name: 'App.tsx',
@@ -270,7 +270,7 @@ export function App() {
       </div>
     </div>
   );
-}`
+}`,
       },
       {
         name: 'CounterCubit.ts',
@@ -297,12 +297,12 @@ export class CounterCubit extends Cubit<CounterState> {
   reset = () => {
     this.emit({ count: 0 });
   };
-}`
-      }
-    ]
+}`,
+      },
+    ],
   },
 
-  'todo': {
+  todo: {
     files: [
       {
         name: 'App.tsx',
@@ -388,7 +388,7 @@ export function App() {
       )}
     </div>
   );
-}`
+}`,
       },
       {
         name: 'TodoBloc.ts',
@@ -489,7 +489,7 @@ export class TodoBloc extends Bloc<TodoState, TodoEvents> {
         return this.state.todos;
     }
   }
-}`
+}`,
       },
       {
         name: 'TodoEvents.ts',
@@ -518,7 +518,7 @@ export type TodoEvents =
   | ToggleTodoEvent
   | RemoveTodoEvent
   | SetFilterEvent
-  | ClearCompletedEvent;`
+  | ClearCompletedEvent;`,
       },
       {
         name: 'TodoItem.tsx',
@@ -555,7 +555,7 @@ export function TodoItem({ todo, onToggle, onRemove }: TodoItemProps) {
       </button>
     </div>
   );
-}`
+}`,
       },
       {
         name: 'types.ts',
@@ -569,12 +569,12 @@ export interface TodoState {
   todos: Todo[];
   filter: 'all' | 'active' | 'completed';
   nextId: number;
-}`
-      }
-    ]
+}`,
+      },
+    ],
   },
 
-  'async': {
+  async: {
     files: [
       {
         name: 'App.tsx',
@@ -644,7 +644,7 @@ export function App() {
       </div>
     </div>
   );
-}`
+}`,
       },
       {
         name: 'ApiCubit.ts',
@@ -763,12 +763,12 @@ export class ApiCubit extends Cubit<ApiState> {
       errorCount: 0,
     });
   };
-}`
-      }
-    ]
+}`,
+      },
+    ],
   },
 
-  'stream': {
+  stream: {
     files: [
       {
         name: 'App.tsx',
@@ -842,7 +842,7 @@ export function App() {
       </div>
     </div>
   );
-}`
+}`,
       },
       {
         name: 'StreamCubit.ts',
@@ -881,15 +881,15 @@ export class StreamCubit extends Cubit<StreamState> {
       lastUpdate: new Date().toISOString()
     });
   };
-}`
-      }
-    ]
-  }
+}`,
+      },
+    ],
+  },
 };
 
 export function getDemoFiles(demoId: string): PlaygroundFile[] | null {
   const demo = multiFileDemos[demoId];
   if (!demo) return null;
-  
-  return demo.files.map(file => createFile(file.name, file.content));
+
+  return demo.files.map((file) => createFile(file.name, file.content));
 }

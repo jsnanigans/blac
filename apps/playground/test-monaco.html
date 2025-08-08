@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monaco TSX Test</title>
+    <style>
+        body { margin: 0; padding: 20px; font-family: system-ui; }
+        #container { width: 100%; height: 500px; border: 1px solid #ccc; }
+        .info { margin: 20px 0; padding: 10px; background: #f0f0f0; border-radius: 4px; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Monaco Editor TSX Support Test</h1>
+    <div class="info">
+        <h3>Test Results:</h3>
+        <div id="results"></div>
+    </div>
+    <div id="container"></div>
+
+    <script src="https://unpkg.com/monaco-editor@0.45.0/min/vs/loader.js"></script>
+    <script>
+        require.config({ paths: { vs: 'https://unpkg.com/monaco-editor@0.45.0/min/vs' } });
+
+        require(['vs/editor/editor.main'], function() {
+            const results = document.getElementById('results');
+            
+            // Test 1: Check if typescriptreact language is available
+            const languages = monaco.languages.getLanguages();
+            const hasTsxSupport = languages.some(lang => lang.id === 'typescriptreact');
+            results.innerHTML += `<div class="${hasTsxSupport ? 'success' : 'error'}">
+                ✓ TypeScriptReact language support: ${hasTsxSupport ? 'Available' : 'Not found'}
+            </div>`;
+            
+            // Test 2: Create editor with TSX content
+            const tsxCode = `import React from 'react';
+
+interface Props {
+    name: string;
+    count: number;
+}
+
+export function TestComponent({ name, count }: Props) {
+    const [state, setState] = React.useState(0);
+    
+    return (
+        <div className="test">
+            <h1>Hello {name}</h1>
+            <p>Count: {count + state}</p>
+            <button onClick={() => setState(s => s + 1)}>
+                Increment
+            </button>
+        </div>
+    );
+}`;
+
+            // Configure TypeScript compiler options
+            monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+                target: monaco.languages.typescript.ScriptTarget.ES2020,
+                module: monaco.languages.typescript.ModuleKind.ESNext,
+                jsx: monaco.languages.typescript.JsxEmit.React,
+                esModuleInterop: true,
+                allowSyntheticDefaultImports: true,
+                moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
+                allowNonTsExtensions: true,
+                noEmit: true,
+            });
+
+            // Add React types
+            monaco.languages.typescript.typescriptDefaults.addExtraLib(
+                \`declare module 'react' {
+                    export function useState<T>(initial: T): [T, (value: T) => void];
+                    export interface ReactElement {}
+                    export interface FC<P = {}> {
+                        (props: P): ReactElement | null;
+                    }
+                }\`,
+                'file:///node_modules/react/index.d.ts'
+            );
+
+            const editor = monaco.editor.create(document.getElementById('container'), {
+                value: tsxCode,
+                language: 'typescriptreact',
+                theme: 'vs-dark',
+                automaticLayout: true,
+                minimap: { enabled: false },
+            });
+
+            // Test 3: Check if syntax highlighting is working
+            setTimeout(() => {
+                const model = editor.getModel();
+                const tokens = monaco.editor.tokenize(tsxCode, 'typescriptreact');
+                const hasJsxTokens = tokens.some(line => 
+                    line.some(token => token.type.includes('jsx'))
+                );
+                
+                results.innerHTML += `<div class="${hasJsxTokens ? 'success' : 'error'}">
+                    ✓ JSX syntax highlighting: ${hasJsxTokens ? 'Working' : 'Not working'}
+                </div>`;
+                
+                // Test 4: Check language features
+                const languageId = model.getLanguageId();
+                results.innerHTML += `<div class="success">
+                    ✓ Editor language: ${languageId}
+                </div>`;
+                
+                // Test 5: Check if IntelliSense is available
+                monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+                    noSemanticValidation: false,
+                    noSyntaxValidation: false,
+                });
+                
+                results.innerHTML += `<div class="success">
+                    ✓ IntelliSense: Enabled
+                </div>`;
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

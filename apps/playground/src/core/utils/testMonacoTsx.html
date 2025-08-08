@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Monaco TSX Test</title>
+    <style>
+        body { margin: 0; padding: 20px; font-family: system-ui; }
+        #container { width: 100%; height: 500px; border: 1px solid #ccc; }
+        #info { margin-top: 20px; padding: 10px; background: #f5f5f5; }
+    </style>
+</head>
+<body>
+    <h1>Monaco TSX Support Test</h1>
+    <div id="container"></div>
+    <div id="info">Loading...</div>
+
+    <script src="https://unpkg.com/monaco-editor@0.52.2/min/vs/loader.js"></script>
+    <script>
+        require.config({ paths: { vs: 'https://unpkg.com/monaco-editor@0.52.2/min/vs' } });
+        
+        require(['vs/editor/editor.main'], function() {
+            const info = document.getElementById('info');
+            
+            // Check available languages
+            const languages = monaco.languages.getLanguages();
+            const tsxLang = languages.find(l => l.id === 'typescriptreact');
+            const tsLang = languages.find(l => l.id === 'typescript');
+            
+            info.innerHTML = `
+                <strong>Available Languages:</strong><br>
+                TypeScript: ${tsLang ? '✅' : '❌'}<br>
+                TypeScriptReact (TSX): ${tsxLang ? '✅' : '❌'}<br>
+                <br>
+                <strong>Language Details:</strong><br>
+                ${tsxLang ? `TSX Extensions: ${tsxLang.extensions?.join(', ') || 'none'}` : 'TSX not found'}
+            `;
+            
+            // Configure TypeScript options
+            monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+                target: monaco.languages.typescript.ScriptTarget.ES2020,
+                jsx: monaco.languages.typescript.JsxEmit.React,
+                jsxFactory: 'React.createElement',
+                module: monaco.languages.typescript.ModuleKind.ESNext,
+                moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
+                allowSyntheticDefaultImports: true,
+                esModuleInterop: true,
+                allowNonTsExtensions: true,
+                lib: ['es2020', 'dom'],
+            });
+            
+            // Add React types
+            monaco.languages.typescript.typescriptDefaults.addExtraLib(`
+                declare module 'react' {
+                    export function useState<T>(initial: T): [T, (value: T) => void];
+                    export const Fragment: any;
+                }
+                declare global {
+                    namespace JSX {
+                        interface IntrinsicElements {
+                            div: any;
+                            button: any;
+                            span: any;
+                            h1: any;
+                        }
+                    }
+                }
+            `, 'file:///node_modules/react/index.d.ts');
+            
+            // Create TSX content
+            const tsxCode = `import React, { useState } from 'react';
+
+function Counter() {
+  const [count, setCount] = useState(0);
+  
+  return (
+    <div>
+      <h1>Count: {count}</h1>
+      <button onClick={() => setCount(count + 1)}>
+        Increment
+      </button>
+    </div>
+  );
+}
+
+export default Counter;`;
+            
+            // Create editor with TSX
+            const editor = monaco.editor.create(document.getElementById('container'), {
+                value: tsxCode,
+                language: 'typescriptreact',  // This is the key for TSX
+                theme: 'vs-dark',
+                automaticLayout: true,
+                minimap: { enabled: false },
+            });
+            
+            // Check for syntax highlighting
+            setTimeout(() => {
+                const model = editor.getModel();
+                const tokens = monaco.editor.tokenize(tsxCode, 'typescriptreact');
+                
+                info.innerHTML += `<br><br><strong>Tokenization:</strong><br>`;
+                info.innerHTML += `Lines tokenized: ${tokens.length}<br>`;
+                info.innerHTML += `First line tokens: ${tokens[0]?.length || 0}<br>`;
+                
+                // Check for errors
+                const markers = monaco.editor.getModelMarkers({ resource: model.uri });
+                info.innerHTML += `<br><strong>Errors:</strong> ${markers.length === 0 ? '✅ None' : '❌ ' + markers.length}`;
+                
+                if (markers.length > 0) {
+                    markers.forEach(m => {
+                        info.innerHTML += `<br>Line ${m.startLineNumber}: ${m.message}`;
+                    });
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

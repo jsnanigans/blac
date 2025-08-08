@@ -12,6 +12,14 @@ declare module '@blac/core' {
 
   export type BlocEventConstraint = object;
 
+  export interface Subscription {
+    unsubscribe(): void;
+  }
+
+  export interface Stream<T> {
+    subscribe(observer: (value: T) => void): Subscription;
+  }
+
   export abstract class BlocBase<S = any> {
     protected state: S;
     protected _name: string;
@@ -19,30 +27,48 @@ declare module '@blac/core' {
     constructor(initialState: S);
     
     emit(newState: S): void;
+    patch(partialState: Partial<S>): void;
     subscribe(listener: (state: S) => void): () => void;
     dispose(): void;
     
     get currentState(): S;
+    get stream(): Stream<S>;
   }
 
   export class Cubit<S = any> extends BlocBase<S> {
     constructor(initialState: S);
+    
+    emit(newState: S): void;
+    patch(partialState: Partial<S>): void;
+    
+    get state(): S;
+    get stream(): Stream<S>;
   }
 
   export class Bloc<S = any, E extends BlocEventConstraint = BlocEventConstraint> extends BlocBase<S> {
     constructor(initialState: S);
     
+    emit(newState: S): void;
+    patch(partialState: Partial<S>): void;
     add(event: E): void;
     on<T extends E>(
       eventClass: new (...args: any[]) => T,
       handler: (event: T, emit: (newState: S) => void) => void | Promise<void>
     ): void;
+    
+    get state(): S;
+    get stream(): Stream<S>;
   }
 
   export class Blac {
     static setConfig(config: any): void;
     static addPlugin(plugin: any): void;
     static getInstance(): Blac;
+    static resetInstance(): void;
+    static getBloc<T extends BlocBase>(
+      BlocClass: new (...args: any[]) => T,
+      id?: string
+    ): T | undefined;
   }
 }
 `;
@@ -153,7 +179,33 @@ declare global {
 `;
 
 export function configureMonaco(monaco: any) {
-  // Configure for both TypeScript and TSX
+  // Configure TypeScript compiler options FIRST
+  monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+    target: monaco.languages.typescript.ScriptTarget.ES2020,
+    module: monaco.languages.typescript.ModuleKind.ESNext,
+    lib: ['es2020', 'dom', 'dom.iterable', 'esnext'],
+    jsx: monaco.languages.typescript.JsxEmit.React,
+    jsxFactory: 'React.createElement',
+    jsxFragmentFactory: 'React.Fragment',
+    esModuleInterop: true,
+    allowSyntheticDefaultImports: true,
+    moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
+    allowNonTsExtensions: true,
+    noEmit: true,
+    skipLibCheck: true,
+    allowJs: true,
+    strict: false,
+    noResolve: false,
+    allowUmdGlobalAccess: true,
+    baseUrl: '/',
+    paths: {
+      '@blac/core': ['node_modules/@blac/core/index.d.ts'],
+      '@blac/react': ['node_modules/@blac/react/index.d.ts'],
+      react: ['node_modules/react/index.d.ts'],
+    },
+  });
+
+  // Add type definitions AFTER compiler options are set
   const libSource = [
     {
       content: blacCoreTypes,
@@ -166,33 +218,12 @@ export function configureMonaco(monaco: any) {
     { content: reactTypes, filePath: 'file:///node_modules/react/index.d.ts' },
   ];
 
-  // Add type definitions to both typescript and typescriptreact
+  // Add type definitions to TypeScript
   libSource.forEach((lib) => {
     monaco.languages.typescript.typescriptDefaults.addExtraLib(
       lib.content,
       lib.filePath,
     );
-    monaco.languages.typescript.javascriptDefaults.addExtraLib(
-      lib.content,
-      lib.filePath,
-    );
-  });
-
-  // Configure TypeScript compiler options for TSX
-  monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
-    target: monaco.languages.typescript.ScriptTarget.ES2020,
-    module: monaco.languages.typescript.ModuleKind.ESNext,
-    lib: ['es2020', 'dom', 'dom.iterable'],
-    jsx: monaco.languages.typescript.JsxEmit.Preserve,
-    esModuleInterop: true,
-    allowSyntheticDefaultImports: true,
-    moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
-    allowNonTsExtensions: true,
-    noEmit: true,
-    typeRoots: ['node_modules/@types'],
-    skipLibCheck: true,
-    allowJs: true,
-    strict: false,
   });
 
   // Configure JavaScript/JSX compiler options as well

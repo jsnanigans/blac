@@ -171,8 +171,12 @@ export async function transpileMultipleFiles(
       ) {
         mainFile = fileName;
       }
-      if (fileName === 'App.tsx' || fileName === 'App.jsx' || 
-          fileName === 'app.tsx' || fileName === 'app.jsx') {
+      if (
+        fileName === 'App.tsx' ||
+        fileName === 'App.jsx' ||
+        fileName === 'app.tsx' ||
+        fileName === 'app.jsx'
+      ) {
         mainFile = fileName;
       }
     }
@@ -252,9 +256,14 @@ ${windowAssignments}
                 for (const ext of extensions) {
                   const tryPath = basePath + ext;
                   if (virtualFiles[tryPath]) {
-                    const loader = ext === '.tsx' ? 'tsx' :
-                                  ext === '.jsx' ? 'jsx' :
-                                  ext === '.ts' ? 'ts' : 'js';
+                    const loader =
+                      ext === '.tsx'
+                        ? 'tsx'
+                        : ext === '.jsx'
+                          ? 'jsx'
+                          : ext === '.ts'
+                            ? 'ts'
+                            : 'js';
                     return { contents: virtualFiles[tryPath], loader };
                   }
                 }

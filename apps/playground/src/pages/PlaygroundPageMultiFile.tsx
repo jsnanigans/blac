@@ -12,17 +12,21 @@ import {
 import React from 'react';
 import { PerformanceMonitorPanel } from '../components/PerformanceMonitor';
 import { FileTabs } from '../components/FileTabs';
-import { configureMonaco } from '../core/utils/monacoConfig';
+import {
+  setupMonacoForTypeScript,
+  syncMonacoModels,
+  debugMonacoState,
+} from '../core/utils/monacoSetup';
 import { createSandbox } from '../lib/sandbox';
 import { transpileMultipleFiles } from '../lib/transpiler';
 import { getDemoCode } from '../demos/demoCodeExports';
 import { getDemoFiles } from '../demos/demoFileExports';
 
-import { 
-  PlaygroundFile, 
-  DEFAULT_FILES, 
-  createFile, 
-  getFileLanguage 
+import {
+  PlaygroundFile,
+  DEFAULT_FILES,
+  createFile,
+  getFileLanguage,
 } from '../lib/types';
 
 export function PlaygroundPageMultiFile() {
@@ -44,6 +48,7 @@ export function PlaygroundPageMultiFile() {
   const dragRef = React.useRef<HTMLDivElement | null>(null);
   const previewRef = React.useRef<HTMLDivElement>(null);
   const rootRef = React.useRef<any>(null);
+  const monacoRef = React.useRef<any>(null);
 
   // Get active file
   const activeFile = React.useMemo(
@@ -68,6 +73,13 @@ export function PlaygroundPageMultiFile() {
 
     return () => observer.disconnect();
   }, []);
+
+  // Sync Monaco models when files change
+  React.useEffect(() => {
+    if (monacoRef.current) {
+      syncMonacoModels(monacoRef.current, files);
+    }
+  }, [files]);
 
   const handleFileContentChange = (content: string) => {
     setFiles((prev) =>
@@ -277,7 +289,7 @@ export function PlaygroundPageMultiFile() {
       const params = new URLSearchParams(window.location.search);
       const demoId = params.get('demo');
       const encoded = params.get('code');
-      
+
       // Handle demo parameter FIRST
       if (demoId) {
         try {
@@ -286,10 +298,12 @@ export function PlaygroundPageMultiFile() {
           if (multiFileDemo && multiFileDemo.length > 0) {
             setFiles(multiFileDemo);
             setActiveFileId(multiFileDemo[0].id);
-            setOutput([`> Loaded demo: ${demoId} (${multiFileDemo.length} files)`]);
+            setOutput([
+              `> Loaded demo: ${demoId} (${multiFileDemo.length} files)`,
+            ]);
             return;
           }
-          
+
           // Fallback to single-file export
           const singleFileCode = getDemoCode(demoId);
           if (singleFileCode) {
@@ -299,25 +313,27 @@ export function PlaygroundPageMultiFile() {
             setOutput([`> Loaded demo: ${demoId}`]);
             return;
           }
-          
+
           setOutput([`> Demo not found: ${demoId}`]);
         } catch (e) {
           console.error('Failed to load demo:', e);
           setOutput([`> Error loading demo: ${e}`]);
         }
       }
-      
+
       // Handle encoded parameter
       if (encoded) {
         try {
           const decoded = JSON.parse(decodeURIComponent(atob(encoded)));
           if (decoded.files && Array.isArray(decoded.files)) {
-            const loadedFiles = decoded.files.map((f: any) => 
-              createFile(f.name, f.content)
+            const loadedFiles = decoded.files.map((f: any) =>
+              createFile(f.name, f.content),
             );
             setFiles(loadedFiles);
             if (decoded.activeFile) {
-              const activeFile = loadedFiles.find((f: PlaygroundFile) => f.name === decoded.activeFile);
+              const activeFile = loadedFiles.find(
+                (f: PlaygroundFile) => f.name === decoded.activeFile,
+              );
               if (activeFile) {
                 setActiveFileId(activeFile.id);
               }
@@ -333,7 +349,7 @@ export function PlaygroundPageMultiFile() {
       // Try to load from localStorage
       const savedFiles = localStorage.getItem('playground-files');
       const savedActiveFile = localStorage.getItem('playground-active-file');
-      
+
       if (savedFiles) {
         try {
           const parsed = JSON.parse(savedFiles);
@@ -450,6 +466,7 @@ export function PlaygroundPageMultiFile() {
           {/* Monaco Editor */}
           <div className="flex-1">
             <Editor
+              key={activeFile.id} // Force remount when switching files
               height="100%"
               language={activeFile.language}
               path={activeFile.name}
@@ -457,7 +474,27 @@ export function PlaygroundPageMultiFile() {
               value={activeFile.content}
               onChange={(value) => handleFileContentChange(value || '')}
               beforeMount={(monaco) => {
-                configureMonaco(monaco);
+                // Setup TypeScript/TSX support FIRST
+                setupMonacoForTypeScript(monaco);
+                // Store monaco reference for later use
+                monacoRef.current = monaco;
+              }}
+              onMount={(editor, monaco) => {
+                // Sync all file models after setup is complete
+                syncMonacoModels(monaco, files);
+
+                // Debug the current state
+                debugMonacoState(monaco, editor);
+
+                // Log the current language
+                const model = editor.getModel();
+                if (model) {
+                  console.log(
+                    'Editor mounted with language:',
+                    model.getLanguageId(),
+                  );
+                  console.log('File extension:', activeFile.name);
+                }
               }}
               options={{
                 minimap: { enabled: false },
