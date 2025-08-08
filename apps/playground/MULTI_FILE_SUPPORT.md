@@ -1,82 +1,117 @@
 # Multi-File Support for Playground
 
 ## Current Status
-The playground currently supports only single-file editing. All code must be in one file.
+✅ **Multi-file support has been implemented!** The playground now supports multiple files with tabs, allowing you to organize your code across different files.
 
-## Issues with Current Implementation
-1. **UI Dependencies**: Demo source files include UI library imports (`@/ui/Card`, etc.) that don't exist in the sandbox
-2. **Code Generation**: The playground tries to auto-generate wrapper code which creates messy output
-3. **Raw Import Issues**: Using `?raw` imports for demo source causes TypeScript errors
+## Implemented Features
 
-## Current Solution
-Created a `demoCodeExports.ts` file with clean, self-contained demo code that:
-- Has no UI library dependencies
-- Uses simple HTML/CSS instead of custom components
-- Is properly formatted for the playground
-- Exports components with the correct names
+### ✅ Tab-Based File Navigation
+- Multiple files displayed as tabs above the editor
+- Click to switch between files
+- Visual indicator for active file
+- Smooth transitions between files
 
-## Future Multi-File Support
+### ✅ File Management
+- **Add Files**: Click "New File" button to create new files
+- **Rename Files**: Double-click on tab to rename files
+- **Close Files**: Click X button on tabs (minimum 1 file required)
+- **File Type Detection**: Automatic language detection based on file extension
 
-### Option 1: Monaco Editor Tabs
-- Add tab UI above the editor
-- Store multiple files in state
-- Switch between files with tabs
-- Transpile and bundle all files together
+### ✅ Multi-File Transpilation
+- All files are bundled together using esbuild-wasm
+- Proper module resolution between files
+- CSS files are automatically injected as styles
+- Support for TypeScript, JavaScript, CSS, and JSON files
 
-### Option 2: File Tree Sidebar
-- Add a file explorer sidebar
-- Allow creating/deleting files
-- More IDE-like experience
-- Would require significant UI changes
+### ✅ Persistence & Sharing
+- Files are saved to localStorage
+- Share button creates a URL with all files encoded
+- Load shared projects from URL parameters
+- Download individual files
 
-### Option 3: Virtual File System
-- Implement a virtual file system in the sandbox
-- Allow imports between virtual files
-- Use a bundler like esbuild in the browser
-- Most complex but most powerful
+### ✅ Default Example
+The playground starts with a two-file example:
+1. `App.tsx` - Main React component with BlaC integration
+2. `styles.css` - Accompanying styles demonstrating CSS support
 
-### Recommended Approach
-Start with Option 1 (tabs) as it's the simplest and provides immediate value:
+## Technical Implementation
 
+### File Structure
 ```typescript
 interface PlaygroundFile {
-  name: string;
-  content: string;
-  language: 'typescript' | 'javascript' | 'css';
-}
-
-interface PlaygroundState {
-  files: PlaygroundFile[];
-  activeFile: string;
+  id: string;           // Unique identifier
+  name: string;         // File name (e.g., "App.tsx")
+  content: string;      // File content
+  language: 'typescript' | 'javascript' | 'css' | 'json';
 }
 ```
 
-Then the UI would show tabs for each file and bundle them together before execution.
+### Key Components
 
-## Implementation Steps for Multi-File Support
+1. **`PlaygroundPageMultiFile.tsx`**: Main playground component with multi-file state management
+2. **`FileTabs.tsx`**: Tab UI component for file navigation
+3. **`types.ts`**: Type definitions and default file templates
+4. **`transpiler.ts`**: Enhanced with `transpileMultipleFiles()` function
 
-1. **Update State Structure**
-   - Change from single `code` string to array of files
-   - Track active file
+### How It Works
 
-2. **Update UI**
-   - Add tab bar above editor
-   - Add "New File" button
-   - Add file rename/delete options
+1. **File Management**: Files are stored in React state as an array
+2. **Bundling**: When running code, all files are bundled together using esbuild-wasm
+3. **Module Resolution**: Files can import from each other using relative paths
+4. **CSS Injection**: CSS files are automatically injected as `<style>` tags
+5. **Component Detection**: The sandbox automatically finds and renders exported React components
 
-3. **Update Transpilation**
-   - Bundle multiple files together
-   - Handle imports between files
-   - Use esbuild-wasm or similar
+## Usage Examples
 
-4. **Update Sandbox**
-   - Support module resolution
-   - Handle CSS files
-   - Support asset imports
+### Creating a Multi-File Project
 
-## Benefits of Multi-File Support
-- Better organization for complex demos
-- Ability to separate concerns (components, styles, logic)
-- More realistic development experience
-- Support for CSS modules or separate stylesheets
-- Easier to share and understand larger examples
+```typescript
+// App.tsx
+import { Cubit } from '@blac/core';
+import { useBloc } from '@blac/react';
+import './styles.css';
+import { Button } from './Button';
+
+export function App() {
+  const [count, counter] = useBloc(CounterCubit);
+  return (
+    <div className="app">
+      <h1>Count: {count}</h1>
+      <Button onClick={counter.increment}>+</Button>
+    </div>
+  );
+}
+```
+
+```typescript
+// Button.tsx
+export function Button({ onClick, children }) {
+  return (
+    <button className="custom-button" onClick={onClick}>
+      {children}
+    </button>
+  );
+}
+```
+
+```css
+/* styles.css */
+.app {
+  padding: 2rem;
+}
+
+.custom-button {
+  background: blue;
+  color: white;
+  padding: 0.5rem 1rem;
+}
+```
+
+## Future Enhancements
+
+- **File Tree View**: Add a sidebar with hierarchical file structure
+- **Import Autocomplete**: Suggest imports from other files
+- **File Templates**: Quick-start templates for common patterns
+- **Zip Export/Import**: Export/import entire projects as zip files
+- **GitHub Gist Integration**: Save and load from GitHub Gists
+- **Live Collaboration**: Real-time collaborative editing
