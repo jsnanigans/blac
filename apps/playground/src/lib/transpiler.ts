@@ -127,44 +127,52 @@ export async function transpileMultipleFiles(
     const virtualFiles: Record<string, string> = {};
     let mainFile = '';
     let cssContent = '';
-    
+
     // First, collect all CSS content
     for (const file of files) {
       if (file.language === 'css') {
         cssContent += `\n/* ${file.name} */\n${file.content}\n`;
       }
     }
-    
+
     // Process each file
     for (const file of files) {
-      const fileName = file.name.startsWith('./') ? file.name : `./${file.name}`;
-      
+      // Store files without ./ prefix for easier lookup
+      const fileName = file.name.replace(/^\.\//, '');
+
       if (file.language !== 'css') {
         // Process TypeScript/JavaScript files
         let processedContent = file.content;
-        
+
         // Remove CSS imports since we'll inject CSS globally
         processedContent = processedContent
           .replace(/import\s+['"]\.\/[^'"]+\.css['"];?/g, '')
           .replace(/import\s+['"][^'"]+\.css['"];?/g, '');
-        
+
         // Remove external imports that will be provided by sandbox
         processedContent = processedContent
           .replace(/import\s+\{[^}]+\}\s+from\s+['"]@blac\/core['"];?/g, '')
           .replace(/import\s+\{[^}]+\}\s+from\s+['"]@blac\/react['"];?/g, '')
-          .replace(/import\s+\{[^}]+\}\s+from\s+['"]@blac\/plugin-[^'"\n]+['"];?/g, '')
+          .replace(
+            /import\s+\{[^}]+\}\s+from\s+['"]@blac\/plugin-[^'"\n]+['"];?/g,
+            '',
+          )
           .replace(/import\s+.*?from\s+['"]react['"];?/g, '')
           .replace(/import\s+React\s+from\s+['"]react['"];?/g, '')
           .replace(/import\s+\*\s+as\s+React\s+from\s+['"]react['"];?/g, '');
-        
+
         virtualFiles[fileName] = processedContent;
       }
-      
+
       // Determine main file (first tsx/jsx file or App.tsx)
-      if (!mainFile && (file.name.endsWith('.tsx') || file.name.endsWith('.jsx'))) {
+      if (
+        !mainFile &&
+        (file.name.endsWith('.tsx') || file.name.endsWith('.jsx'))
+      ) {
         mainFile = fileName;
       }
-      if (file.name === 'App.tsx' || file.name === 'App.jsx') {
+      if (fileName === 'App.tsx' || fileName === 'App.jsx' || 
+          fileName === 'app.tsx' || fileName === 'app.jsx') {
         mainFile = fileName;
       }
     }
@@ -175,17 +183,18 @@ export async function transpileMultipleFiles(
 
     // Process main file to expose exports to window
     let mainContent = virtualFiles[mainFile];
-    
+
     // Replace export statements to make components available globally
     mainContent = mainContent
       .replace(/export\s+function\s+(\w+)/g, 'function $1')
       .replace(/export\s+const\s+(\w+)/g, 'const $1')
       .replace(/export\s+class\s+(\w+)/g, 'class $1');
-    
+
     // Add window assignments after function/class declarations
-    const componentNames = mainContent.match(/(?:function|class)\s+(\w+)/g) || [];
+    const componentNames =
+      mainContent.match(/(?:function|class)\s+(\w+)/g) || [];
     const windowAssignments = componentNames
-      .map(match => {
+      .map((match) => {
         const name = match.replace(/(?:function|class)\s+/, '');
         return `window.${name} = ${name};`;
       })
@@ -219,31 +228,51 @@ ${windowAssignments}
         {
           name: 'virtual-files',
           setup(build) {
-            // Resolve virtual files
+            // Resolve virtual files (handle both with and without ./ prefix)
             build.onResolve({ filter: /^\.\/.*/ }, (args) => {
               // Skip CSS files
               if (args.path.endsWith('.css')) {
                 return { path: args.path, external: true };
               }
+              // Remove ./ prefix for lookup
+              const normalizedPath = args.path.replace(/^\.\//, '');
               return {
-                path: args.path,
+                path: normalizedPath,
                 namespace: 'virtual',
               };
             });
-            
+
             // Load virtual files
             build.onLoad({ filter: /.*/, namespace: 'virtual' }, (args) => {
               const content = virtualFiles[args.path];
               if (!content) {
+                // Try with different extensions if not found
+                const basePath = args.path.replace(/\.(tsx?|jsx?|ts|js)$/, '');
+                const extensions = ['.ts', '.tsx', '.js', '.jsx'];
+                for (const ext of extensions) {
+                  const tryPath = basePath + ext;
+                  if (virtualFiles[tryPath]) {
+                    const loader = ext === '.tsx' ? 'tsx' :
+                                  ext === '.jsx' ? 'jsx' :
+                                  ext === '.ts' ? 'ts' : 'js';
+                    return { contents: virtualFiles[tryPath], loader };
+                  }
+                }
                 return { errors: [{ text: `File not found: ${args.path}` }] };
               }
-              
-              const loader = args.path.endsWith('.tsx') ? 'tsx' :
-                           args.path.endsWith('.jsx') ? 'jsx' :
-                           args.path.endsWith('.ts') ? 'ts' :
-                           args.path.endsWith('.js') ? 'js' :
-                           args.path.endsWith('.json') ? 'json' : 'text';
-              
+
+              const loader = args.path.endsWith('.tsx')
+                ? 'tsx'
+                : args.path.endsWith('.jsx')
+                  ? 'jsx'
+                  : args.path.endsWith('.ts')
+                    ? 'ts'
+                    : args.path.endsWith('.js')
+                      ? 'js'
+                      : args.path.endsWith('.json')
+                        ? 'json'
+                        : 'text';
+
               return { contents: content, loader };
             });
           },

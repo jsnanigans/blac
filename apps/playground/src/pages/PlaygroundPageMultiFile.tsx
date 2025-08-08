@@ -15,6 +15,8 @@ import { FileTabs } from '../components/FileTabs';
 import { configureMonaco } from '../core/utils/monacoConfig';
 import { createSandbox } from '../lib/sandbox';
 import { transpileMultipleFiles } from '../lib/transpiler';
+import { getDemoCode } from '../demos/demoCodeExports';
+import { getDemoFiles } from '../demos/demoFileExports';
 
 import { 
   PlaygroundFile, 
@@ -25,7 +27,9 @@ import {
 
 export function PlaygroundPageMultiFile() {
   const [files, setFiles] = React.useState<PlaygroundFile[]>(DEFAULT_FILES);
-  const [activeFileId, setActiveFileId] = React.useState<string>(DEFAULT_FILES[0].id);
+  const [activeFileId, setActiveFileId] = React.useState<string>(
+    DEFAULT_FILES[0].id,
+  );
   const [output, setOutput] = React.useState<string[]>(['> Ready']);
   const [isRunning, setIsRunning] = React.useState(false);
   const [preview, setPreview] = React.useState<React.ReactNode>(null);
@@ -43,8 +47,8 @@ export function PlaygroundPageMultiFile() {
 
   // Get active file
   const activeFile = React.useMemo(
-    () => files.find(f => f.id === activeFileId) || files[0],
-    [files, activeFileId]
+    () => files.find((f) => f.id === activeFileId) || files[0],
+    [files, activeFileId],
   );
 
   // Check for dark mode
@@ -66,25 +70,25 @@ export function PlaygroundPageMultiFile() {
   }, []);
 
   const handleFileContentChange = (content: string) => {
-    setFiles(prev => prev.map(f => 
-      f.id === activeFileId ? { ...f, content } : f
-    ));
+    setFiles((prev) =>
+      prev.map((f) => (f.id === activeFileId ? { ...f, content } : f)),
+    );
   };
 
   const handleAddFile = () => {
-    const fileCount = files.filter(f => f.name.startsWith('file')).length;
+    const fileCount = files.filter((f) => f.name.startsWith('file')).length;
     const newFile = createFile(`file${fileCount + 1}.tsx`, '// New file\n');
-    setFiles(prev => [...prev, newFile]);
+    setFiles((prev) => [...prev, newFile]);
     setActiveFileId(newFile.id);
   };
 
   const handleCloseFile = (fileId: string) => {
     if (files.length <= 1) return;
-    
-    const fileIndex = files.findIndex(f => f.id === fileId);
-    const newFiles = files.filter(f => f.id !== fileId);
+
+    const fileIndex = files.findIndex((f) => f.id === fileId);
+    const newFiles = files.filter((f) => f.id !== fileId);
     setFiles(newFiles);
-    
+
     if (activeFileId === fileId) {
       const newActiveIndex = Math.min(fileIndex, newFiles.length - 1);
       setActiveFileId(newFiles[newActiveIndex].id);
@@ -92,11 +96,13 @@ export function PlaygroundPageMultiFile() {
   };
 
   const handleRenameFile = (fileId: string, newName: string) => {
-    setFiles(prev => prev.map(f => 
-      f.id === fileId 
-        ? { ...f, name: newName, language: getFileLanguage(newName) } 
-        : f
-    ));
+    setFiles((prev) =>
+      prev.map((f) =>
+        f.id === fileId
+          ? { ...f, name: newName, language: getFileLanguage(newName) }
+          : f,
+      ),
+    );
   };
 
   const handleRun = async () => {
@@ -105,35 +111,47 @@ export function PlaygroundPageMultiFile() {
 
     try {
       // COMPLETE RESET - Clear everything from previous run
-      
+
       // 1. Clear preview first
       setPreview(null);
-      
+
       // 2. Unmount any existing React root
       if (rootRef.current) {
         rootRef.current.unmount();
         rootRef.current = null;
       }
-      
+
       // 3. Clean up any existing BlaC instances
       if ((window as any).BlacCore?.Blac?.resetInstance) {
         (window as any).BlacCore.Blac.resetInstance();
         setOutput((prev) => [...prev, '> Cleaned up previous BlaC instances']);
       }
-      
+
       // 4. Remove any injected styles from previous runs
-      const existingStyles = document.querySelectorAll('style[data-playground]');
-      existingStyles.forEach(style => style.remove());
-      
+      const existingStyles = document.querySelectorAll(
+        'style[data-playground]',
+      );
+      existingStyles.forEach((style) => style.remove());
+
       // 5. Clear any global window properties from previous runs
-      const componentNames = ['Counter', 'App', 'Component', 'Demo', 'Example', 'Main', 
-                              'TodoDemo', 'AsyncDemo', 'StreamDemo', 'SelectorsDemo'];
-      componentNames.forEach(name => {
+      const componentNames = [
+        'Counter',
+        'App',
+        'Component',
+        'Demo',
+        'Example',
+        'Main',
+        'TodoDemo',
+        'AsyncDemo',
+        'StreamDemo',
+        'SelectorsDemo',
+      ];
+      componentNames.forEach((name) => {
         if ((window as any)[name]) {
           delete (window as any)[name];
         }
       });
-      
+
       // Transpile all files
       setOutput((prev) => [...prev, '> Transpiling files...']);
       const transpileResult = await transpileMultipleFiles(files);
@@ -229,8 +247,8 @@ export function PlaygroundPageMultiFile() {
   const handleShare = () => {
     // Create shareable link with all files
     const data = {
-      files: files.map(f => ({ name: f.name, content: f.content })),
-      activeFile: files.find(f => f.id === activeFileId)?.name,
+      files: files.map((f) => ({ name: f.name, content: f.content })),
+      activeFile: files.find((f) => f.id === activeFileId)?.name,
     };
     const encoded = btoa(encodeURIComponent(JSON.stringify(data)));
     const url = `${window.location.origin}${window.location.pathname}?code=${encoded}`;
@@ -240,7 +258,7 @@ export function PlaygroundPageMultiFile() {
 
   const handleDownload = () => {
     // Download all files as a zip or the active file
-    const activeFile = files.find(f => f.id === activeFileId);
+    const activeFile = files.find((f) => f.id === activeFileId);
     if (activeFile) {
       const blob = new Blob([activeFile.content], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
@@ -257,8 +275,39 @@ export function PlaygroundPageMultiFile() {
   React.useEffect(() => {
     (async () => {
       const params = new URLSearchParams(window.location.search);
+      const demoId = params.get('demo');
       const encoded = params.get('code');
       
+      // Handle demo parameter FIRST
+      if (demoId) {
+        try {
+          // Try multi-file export first
+          const multiFileDemo = getDemoFiles(demoId);
+          if (multiFileDemo && multiFileDemo.length > 0) {
+            setFiles(multiFileDemo);
+            setActiveFileId(multiFileDemo[0].id);
+            setOutput([`> Loaded demo: ${demoId} (${multiFileDemo.length} files)`]);
+            return;
+          }
+          
+          // Fallback to single-file export
+          const singleFileCode = getDemoCode(demoId);
+          if (singleFileCode) {
+            const file = createFile('App.tsx', singleFileCode);
+            setFiles([file]);
+            setActiveFileId(file.id);
+            setOutput([`> Loaded demo: ${demoId}`]);
+            return;
+          }
+          
+          setOutput([`> Demo not found: ${demoId}`]);
+        } catch (e) {
+          console.error('Failed to load demo:', e);
+          setOutput([`> Error loading demo: ${e}`]);
+        }
+      }
+      
+      // Handle encoded parameter
       if (encoded) {
         try {
           const decoded = JSON.parse(decodeURIComponent(atob(encoded)));
@@ -397,7 +446,7 @@ export function PlaygroundPageMultiFile() {
             onCloseFile={handleCloseFile}
             onRenameFile={handleRenameFile}
           />
-          
+
           {/* Monaco Editor */}
           <div className="flex-1">
             <Editor

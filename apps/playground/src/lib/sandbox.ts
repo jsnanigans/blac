@@ -74,10 +74,10 @@ export class Sandbox {
 
     try {
       // COMPLETE RESET - Ensure clean state for each run
-      
+
       // Reset BlaC completely
       BlacCore.Blac.resetInstance();
-      
+
       // Reset performance monitor for new execution
       performanceMonitor.reset();
 
@@ -100,6 +100,7 @@ export class Sandbox {
       const sandboxedCode = `
         const React = window.React;
         const ReactDOM = window.ReactDOM;
+        const { useState, useEffect, useRef, useCallback, useMemo, useReducer, useContext, useLayoutEffect } = React;
         const { Bloc, Cubit, BlocBase, Blac } = window.BlacCore;
         const { useBloc, useExternalBlocStore } = window.BlacReact;
         
