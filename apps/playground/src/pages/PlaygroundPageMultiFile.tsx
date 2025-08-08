@@ -104,11 +104,35 @@ export function PlaygroundPageMultiFile() {
     setOutput((prev) => [...prev, '> Running...']);
 
     try {
-      // Clean up any existing BlaC instances
-      if ((window as any).BlacCore?.Blac?.reset) {
-        (window as any).BlacCore.Blac.reset();
+      // COMPLETE RESET - Clear everything from previous run
+      
+      // 1. Clear preview first
+      setPreview(null);
+      
+      // 2. Unmount any existing React root
+      if (rootRef.current) {
+        rootRef.current.unmount();
+        rootRef.current = null;
+      }
+      
+      // 3. Clean up any existing BlaC instances
+      if ((window as any).BlacCore?.Blac?.resetInstance) {
+        (window as any).BlacCore.Blac.resetInstance();
         setOutput((prev) => [...prev, '> Cleaned up previous BlaC instances']);
       }
+      
+      // 4. Remove any injected styles from previous runs
+      const existingStyles = document.querySelectorAll('style[data-playground]');
+      existingStyles.forEach(style => style.remove());
+      
+      // 5. Clear any global window properties from previous runs
+      const componentNames = ['Counter', 'App', 'Component', 'Demo', 'Example', 'Main', 
+                              'TodoDemo', 'AsyncDemo', 'StreamDemo', 'SelectorsDemo'];
+      componentNames.forEach(name => {
+        if ((window as any)[name]) {
+          delete (window as any)[name];
+        }
+      });
       
       // Transpile all files
       setOutput((prev) => [...prev, '> Transpiling files...']);
@@ -147,16 +171,10 @@ export function PlaygroundPageMultiFile() {
             '✓ Component detected and rendering...',
           ]);
 
-          // Clean up previous React root if it exists
-          if (rootRef.current) {
-            rootRef.current.unmount();
-            rootRef.current = null;
-          }
-
-          // Render the component
+          // Force a new key to ensure complete re-render
           const Component = result.component;
           setPreview(
-            <div ref={previewRef} className="w-full h-full">
+            <div key={Date.now()} ref={previewRef} className="w-full h-full">
               <Component />
             </div>,
           );

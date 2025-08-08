@@ -270,6 +270,7 @@ ${windowAssignments}
       finalCode = `
 (function() {
   const style = document.createElement('style');
+  style.setAttribute('data-playground', 'true');
   style.textContent = ${JSON.stringify(cssContent)};
   document.head.appendChild(style);
 })();
