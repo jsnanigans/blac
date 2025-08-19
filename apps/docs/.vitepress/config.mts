@@ -36,6 +36,7 @@ const siteConfig = defineConfig({
       {
         text: 'Getting Started',
         items: [
+          { text: 'Learning Paths', link: '/getting-started/learning-paths' },
           { text: 'Installation', link: '/getting-started/installation' },
           { text: 'Your First Cubit', link: '/getting-started/first-cubit' },
           {
@@ -197,13 +198,10 @@ export default withMermaid({
       mainBkg: '#61dafb',
       secondBkg: '#f4f5f7',
       tertiaryBkg: '#e3e4e6',
-      primaryBorderColor: '#4db8d5',
       secondaryBorderColor: '#c1c7d0',
       tertiaryBorderColor: '#d3d5d9',
-      primaryTextColor: '#ffffff',
       secondaryTextColor: '#172b4d',
       tertiaryTextColor: '#42526e',
-      lineColor: '#5e6c84',
       textColor: '#172b4d',
       mainContrastColor: '#172b4d',
       darkTextColor: '#172b4d',

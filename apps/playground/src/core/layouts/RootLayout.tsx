@@ -5,12 +5,11 @@ import {
   Home,
   Code2,
   PlayCircle,
-  BookOpen,
-  FileCode2,
   Search,
   Github,
   Moon,
   Sun,
+  ExternalLink,
 } from 'lucide-react';
 import { CommandPalette } from '@/core/components/CommandPalette';
 
@@ -49,8 +48,6 @@ export function RootLayout() {
     { name: 'Home', href: '/', icon: Home },
     { name: 'Demos', href: '/demos', icon: Code2 },
     { name: 'Playground', href: '/playground', icon: PlayCircle },
-    { name: 'Learn', href: '/learn', icon: BookOpen },
-    { name: 'API', href: '/api', icon: FileCode2 },
   ];
 
   return (
@@ -90,6 +87,16 @@ export function RootLayout() {
           </div>
 
           <div className="flex flex-1 items-center justify-end space-x-2">
+            <a
+              href="http://localhost:5173/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-1 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 px-3 border"
+            >
+              <span>Docs</span>
+              <ExternalLink className="h-3 w-3" />
+            </a>
+
             <button
               onClick={() => setIsCmdOpen(true)}
               className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 px-3 gap-2 border hidden sm:flex"

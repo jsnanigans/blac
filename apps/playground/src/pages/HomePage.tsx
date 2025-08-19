@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpen, Code2, TestTube, Zap } from 'lucide-react';
+import { ArrowRight, Code2, TestTube, Zap, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export function HomePage() {
@@ -64,11 +64,11 @@ export function HomePage() {
         </div>
 
         <div className="relative overflow-hidden rounded-lg border bg-background p-6">
-          <BookOpen className="h-12 w-12 text-primary mb-4" />
-          <h3 className="font-bold mb-2">Learning Paths</h3>
+          <Sparkles className="h-12 w-12 text-primary mb-4" />
+          <h3 className="font-bold mb-2">Real-time Updates</h3>
           <p className="text-sm text-muted-foreground">
-            Structured tutorials from basics to advanced patterns and best
-            practices.
+            See state changes instantly with hot module replacement and live
+            preview.
           </p>
         </div>
       </section>
