@@ -1,0 +1,55 @@
+{
+  "name": "@blac/core",
+  "version": "2.0.0-rc.1",
+  "license": "MIT",
+  "author": "Brendan Mullins <jsnanigans@gmail.com>",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "keywords": [
+    "typescript",
+    "state-management",
+    "observer-pattern",
+    "bloc",
+    "bloc-pattern"
+  ],
+  "scripts": {
+    "dev": "tsc --watch --project tsconfig.build.json",
+    "build": "pnpm run clean && pnpm run build:esm && pnpm run build:cjs",
+    "build:esm": "tsc --project tsconfig.build.json",
+    "build:cjs": "tsc --project tsconfig.build.json --module commonjs --outDir dist --declaration false --declarationMap false && cp dist/index.js dist/index.cjs",
+    "clean": "rm -rf dist",
+    "format": "prettier --write \".\"",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "test": "vitest run",
+    "test:watch": "vitest --watch",
+    "coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "echo 'Skipping prepublishOnly - build should be done at root level'",
+    "deploy": "pnpm publish --access public"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/user-event": "catalog:",
+    "@vitest/browser": "catalog:",
+    "jsdom": "catalog:",
+    "prettier": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

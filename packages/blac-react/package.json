@@ -1,0 +1,83 @@
+{
+  "name": "@blac/react",
+  "version": "2.0.0-rc.1",
+  "license": "MIT",
+  "author": "Brendan Mullins <jsnanigans@gmail.com>",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": {
+        "development": "./src/index.ts",
+        "default": "./dist/index.js"
+      },
+      "require": "./dist/index.cjs",
+      "source": "./src/index.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "keywords": [
+    "react",
+    "typescript",
+    "state-management",
+    "reactjs",
+    "observer-pattern",
+    "bloc",
+    "bloc-pattern"
+  ],
+  "scripts": {
+    "dev": "tsc --watch --project tsconfig.build.json",
+    "build": "pnpm run clean && pnpm run build:esm && pnpm run build:cjs",
+    "build:esm": "tsc --project tsconfig.build.json",
+    "build:cjs": "tsc --project tsconfig.build.json --module commonjs --outDir dist --declaration false --declarationMap false && mv dist/index.js dist/index.cjs",
+    "clean": "rm -rf dist",
+    "format": "prettier --write \".\"",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "test": "vitest run --config vitest.config.ts",
+    "test:watch": "vitest --watch --config vitest.config.ts",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "echo 'Skipping prepublishOnly - build should be done at root level'",
+    "deploy": "pnpm publish --access public"
+  },
+  "dependencies": {},
+  "peerDependencies": {
+    "@blac/core": "workspace:*",
+    "@types/react": "^18.0.0 || ^19.0.0",
+    "react": "^18.0.0 || ^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@types/react": {
+      "optional": true
+    },
+    "@types/react-dom": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@blac/core": "workspace:*",
+    "@blac/plugin-render-logging": "workspace:*",
+    "@testing-library/dom": "catalog:",
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "catalog:",
+    "@types/react": "^19.1.9",
+    "@vitejs/plugin-react": "^4.7.0",
+    "@vitest/browser": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "happy-dom": "catalog:",
+    "jsdom": "catalog:",
+    "prettier": "catalog:",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

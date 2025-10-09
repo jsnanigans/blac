@@ -1,0 +1,62 @@
+<svg width="400" height="400" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Gradient for the neon effect -->
+    <linearGradient id="neonGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00d4ff;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#d946ef;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ff0080;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Gradient for the arrow -->
+    <linearGradient id="arrowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00d4ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ff0080;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Glow filter -->
+    <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Stronger outer glow -->
+    <filter id="outerGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="12" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="coloredBlur"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+
+
+  <!-- Outer glow effect -->
+  <rect x="60" y="60" width="280" height="280" rx="20" ry="20"
+        fill="none" stroke="url(#neonGradient)" stroke-width="8"
+        opacity="0.3" filter="url(#outerGlow)"/>
+
+  <!-- Main square frame -->
+  <rect x="80" y="80" width="240" height="240" rx="15" ry="15"
+        fill="none" stroke="url(#neonGradient)" stroke-width="6"
+        filter="url(#neonGlow)"/>
+
+
+
+  <!-- Left-pointing chevron -->
+  <path d="M 160 200 L 240 130 L 240 155 L 185 200 L 240 245 L 240 270 L 160 200 Z"
+        fill="url(#arrowGradient)"
+        filter="url(#neonGlow)"/>
+
+  <!-- Additional glow for chevron -->
+  <path d="M 160 200 L 240 130 L 240 155 L 185 200 L 240 245 L 240 270 L 160 200 Z"
+        fill="none"
+        stroke="url(#arrowGradient)"
+        stroke-width="3"
+        opacity="0.6"
+        filter="url(#outerGlow)"/>
+</svg>

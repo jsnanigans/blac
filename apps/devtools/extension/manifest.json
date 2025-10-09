@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "BlaC DevTools",
+  "version": "0.1.0",
+  "description": "DevTools for BlaC state management - event log, time-travel debugging, state inspection",
+  "devtools_page": "extension/devtools.html",
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["contentScript.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "permissions": ["storage", "tabs"],
+  "host_permissions": ["<all_urls>"],
+  "web_accessible_resources": [
+    {
+      "resources": ["inject.js"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
+}

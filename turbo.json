@@ -1,0 +1,62 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": ["**/.env.*local"],
+  "globalEnv": ["VITE_*"],
+  "ui": "tui",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".tsbuildinfo"]
+    },
+    "build:esm": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".tsbuildinfo"]
+    },
+    "build:cjs": {
+      "dependsOn": ["build:esm"],
+      "outputs": ["dist/**"]
+    },
+    "clean": {
+      "cache": false
+    },
+    "typecheck": {
+      "dependsOn": ["^typecheck"]
+    },
+    "lint": {},
+    "lint:fix": {
+      "outputs": []
+    },
+    "format": {},
+    "prettier": {},
+    "test": {
+      "dependsOn": ["build"]
+    },
+    "test:watch": {
+      "persistent": true,
+      "interactive": true,
+      "cache": false
+    },
+    "dev": {
+      "persistent": true,
+      "cache": false
+    },
+    "sb": {
+      "persistent": true,
+      "cache": false
+    },
+    "prepublishOnly": {
+      "dependsOn": ["build", "test", "typecheck"],
+      "cache": false
+    },
+    "generate:wcl": {},
+    "generate:api:dev": {
+      "cache": false
+    },
+    "generate:api:prod": {
+      "cache": false
+    },
+    "generate:api:qa": {
+      "cache": false
+    }
+  }
+}

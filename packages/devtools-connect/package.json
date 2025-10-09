@@ -1,0 +1,55 @@
+{
+  "name": "@blac/devtools-connect",
+  "version": "0.1.0",
+  "license": "MIT",
+  "author": "Brendan Mullins <jsnanigans@gmail.com>",
+  "description": "DevTools connection plugin for BlaC state management",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "keywords": [
+    "blac",
+    "devtools",
+    "debugging",
+    "state-management",
+    "time-travel"
+  ],
+  "scripts": {
+    "dev": "tsc --watch --project tsconfig.build.json",
+    "build": "pnpm run clean && pnpm run build:esm && pnpm run build:cjs",
+    "build:esm": "tsc --project tsconfig.build.json",
+    "build:cjs": "tsc --project tsconfig.build.json --module commonjs --outDir dist-cjs --declaration false --declarationMap false && cp dist-cjs/index.js dist/index.cjs && rm -rf dist-cjs",
+    "clean": "rm -rf dist dist-cjs",
+    "format": "prettier --write \".\"",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "test": "vitest run",
+    "test:watch": "vitest --watch",
+    "coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "echo 'Skipping prepublishOnly - build should be done at root level'",
+    "deploy": "pnpm publish --access public"
+  },
+  "peerDependencies": {
+    "@blac/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@blac/core": "workspace:*",
+    "prettier": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

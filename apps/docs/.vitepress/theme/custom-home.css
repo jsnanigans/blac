@@ -1,0 +1,51 @@
+/* Custom styles for the home page */
+
+/* Hero section */
+.VPHero {
+  padding: 48px 24px !important;
+}
+
+.VPHomeHero {
+  margin: 0 auto;
+  padding: 48px 24px;
+}
+
+/* Features section */
+.VPHomeFeatures {
+  padding: 24px;
+}
+
+.VPFeatures {
+  padding: 0 24px;
+}
+
+/* Feature cards */
+.VPFeature {
+  border-radius: 12px;
+  padding: 24px;
+}
+
+/* Responsive adjustments */
+@media (min-width: 640px) {
+  .VPHero {
+    padding: 64px 48px !important;
+  }
+
+  .VPHomeHero {
+    padding: 64px 48px;
+  }
+
+  .VPHomeFeatures {
+    padding: 48px;
+  }
+}
+
+@media (min-width: 960px) {
+  .VPHero {
+    padding: 96px 64px !important;
+  }
+
+  .VPHomeHero {
+    padding: 96px 64px;
+  }
+}
