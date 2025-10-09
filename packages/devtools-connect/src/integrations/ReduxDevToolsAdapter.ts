@@ -527,7 +527,7 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
         // Find the matching bloc
         let bloc: BlocBase<any> | undefined;
 
-        for (const [key, registeredBloc] of this.blocRegistry.entries()) {
+        for (const [_key, registeredBloc] of this.blocRegistry.entries()) {
           // Match using the same state key logic as getGlobalState()
           const matchKey = this.getStateKey(registeredBloc);
 

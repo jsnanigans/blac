@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ReduxDevToolsAdapter } from '../ReduxDevToolsAdapter';
-import { Cubit, Bloc, Blac } from '@blac/core';
+import { Cubit } from '@blac/core';
 
 // Mock Redux DevTools Extension
 const mockDevTools = {
@@ -119,7 +119,7 @@ describe('ReduxDevToolsAdapter - State Editing', () => {
   describe('handleStateEdit - error handling', () => {
     it('should handle missing path', () => {
       const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-      const adapter = new ReduxDevToolsAdapter({ enabled: true });
+      const _adapter = new ReduxDevToolsAdapter({ enabled: true });
 
       const messageHandler = mockDevTools.subscribe.mock.calls[0][0];
 
@@ -140,7 +140,7 @@ describe('ReduxDevToolsAdapter - State Editing', () => {
 
     it('should handle empty path', () => {
       const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-      const adapter = new ReduxDevToolsAdapter({ enabled: true });
+      const _adapter = new ReduxDevToolsAdapter({ enabled: true });
 
       const messageHandler = mockDevTools.subscribe.mock.calls[0][0];
 
@@ -162,7 +162,7 @@ describe('ReduxDevToolsAdapter - State Editing', () => {
 
     it('should handle non-existent bloc', () => {
       const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-      const adapter = new ReduxDevToolsAdapter({ enabled: true });
+      const _adapter = new ReduxDevToolsAdapter({ enabled: true });
 
       const messageHandler = mockDevTools.subscribe.mock.calls[0][0];
 

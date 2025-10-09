@@ -171,7 +171,7 @@ describe('useBloc with useDeferredValue', () => {
 
   it('should handle rapid state changes efficiently', async () => {
     const { result } = renderHook(() => {
-      const [state, cubit] = useBloc(LargeDataCubit, { isolated: true });
+      const [state, cubit] = useBloc(LargeDataCubit);
 
       // Heavy filtering operation
       const filteredItems = state.items.filter(item =>
@@ -218,7 +218,7 @@ describe('useBloc with useDeferredValue', () => {
 
     const { result } = renderHook(() => {
       const startTime = performance.now();
-      const [state, cubit] = useBloc(LargeDataCubit, { isolated: true });
+      const [state, cubit] = useBloc(LargeDataCubit);
 
       // Very expensive operation
       const processedData = {
