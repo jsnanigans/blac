@@ -43,11 +43,13 @@
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
     "test": "vitest run --config vitest.config.ts",
     "test:watch": "vitest --watch --config vitest.config.ts",
+    "test:compiler": "vitest run --config vitest.config.compiler.ts",
+    "test:watch:compiler": "vitest --watch --config vitest.config.compiler.ts",
+    "test:both": "pnpm test && echo '\n\n=== Running tests WITH React Compiler ===\n' && pnpm test:compiler",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "echo 'Skipping prepublishOnly - build should be done at root level'",
     "deploy": "pnpm publish --access public"
   },
-  "dependencies": {},
   "peerDependencies": {
     "@blac/core": "workspace:*",
     "@types/react": "^18.0.0 || ^19.0.0",
@@ -72,6 +74,8 @@
     "@vitejs/plugin-react": "^4.7.0",
     "@vitest/browser": "catalog:",
     "@vitest/coverage-v8": "catalog:",
+    "babel-plugin-react-compiler": "^1.0.0",
+    "eslint-plugin-react-compiler": "19.1.0-rc.2",
     "happy-dom": "catalog:",
     "jsdom": "catalog:",
     "prettier": "catalog:",
