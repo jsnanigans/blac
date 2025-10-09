@@ -278,15 +278,15 @@ export class EventPatternBloc extends Bloc<EventDemoState, EventPatternBlocEvent
   // Public API methods (good patterns)
 
   reset = () => {
-    this.add(new ResetStateEvent());
+    return this.add(new ResetStateEvent());
   };
 
   incrementBy = (amount: number) => {
-    this.add(new IncrementByEvent(amount));
+    return this.add(new IncrementByEvent(amount));
   };
 
   updateData = (value: string) => {
-    this.add(
+    return this.add(
       new UpdateDataEvent({
         value,
         timestamp: Date.now(),
@@ -295,32 +295,32 @@ export class EventPatternBloc extends Bloc<EventDemoState, EventPatternBlocEvent
   };
 
   loadData = (id: string) => {
-    this.add(new LoadDataEvent(id));
+    return this.add(new LoadDataEvent(id));
   };
 
   loginUser = (id: string, name: string) => {
-    this.add(new UserLoggedInEvent({ id, name }));
+    return this.add(new UserLoggedInEvent({ id, name }));
   };
 
   setError = (message: string, code?: string) => {
-    this.add(new ErrorOccurredEvent({ message, code }));
+    return this.add(new ErrorOccurredEvent({ message, code }));
   };
 
   // Public API methods (bad patterns - for demonstration)
 
   doIncrement = (value: number) => {
-    this.add(new DoIncrementEvent(value));
+    return this.add(new DoIncrementEvent(value));
   };
 
   sendGenericData = (data: any) => {
-    this.add(new DataEvent(data));
+    return this.add(new DataEvent(data));
   };
 
   sendMutableState = (count: number) => {
-    this.add(new MutableStateEvent({ count }));
+    return this.add(new MutableStateEvent({ count }));
   };
 
   updateOrReset = (newValue?: string, shouldReset?: boolean) => {
-    this.add(new UpdateAndResetEvent(newValue, shouldReset));
+    return this.add(new UpdateAndResetEvent(newValue, shouldReset));
   };
 }

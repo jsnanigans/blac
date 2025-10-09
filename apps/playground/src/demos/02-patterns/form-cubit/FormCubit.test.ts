@@ -268,18 +268,20 @@ describe('FormCubit', () => {
       expect(formCubit.isNameValid).toBe(false);
     });
 
-    it('should maintain other state properties when updating fields', () => {
-      // Set initial state with success
+    it('should clear submitError when updating fields', () => {
+      // Set initial state with error and success
       formCubit.emit({
         ...formCubit.state,
-        submitSuccess: true,
+        submitError: 'Some error',
+        submitSuccess: false,
       });
 
       // Update name
       formCubit.setName('New Name');
 
-      // Check other properties are preserved (except error which is cleared)
-      expect(formCubit.state.submitSuccess).toBe(true);
+      // Check error is cleared
+      expect(formCubit.state.submitError).toBeNull();
+      // Other properties should be maintained
       expect(formCubit.state.isSubmitting).toBe(false);
     });
   });

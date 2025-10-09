@@ -38,7 +38,7 @@ export class FormCubit extends Cubit<FormState> {
 
   // Validation getters
   get isNameValid(): boolean {
-    return this.state.name.trim().length > 0;
+    return this.state.name.trim().length >= 2;
   }
 
   get isEmailValid(): boolean {

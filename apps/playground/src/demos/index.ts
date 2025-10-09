@@ -16,6 +16,9 @@ import './02-patterns/keep-alive';
 import './02-patterns/loading-states';
 import './02-patterns/props';
 import './02-patterns/persistence';
+import './02-patterns/form-cubit';
+import './02-patterns/simple-async';
+import './02-patterns/event-design';
 
 // 03-advanced
 import './03-advanced/async';
