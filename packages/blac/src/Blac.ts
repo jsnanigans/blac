@@ -24,7 +24,7 @@ export interface BlacConfig {
   /**
    * Time to wait before disposing a bloc after all subscriptions are removed.
    * Set to 0 for immediate disposal.
-   * Default: 100ms (increased from 16ms for React Strict Mode compatibility)
+   * Default: 100ms
    *
    * @default 100
    */

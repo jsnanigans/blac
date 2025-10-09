@@ -293,4 +293,85 @@ describe('BlocBase Configurable Disposal', () => {
     cubit.emit(42);
     expect(cubit.state).toBe(oldState); // State unchanged
   });
+
+  it('should dispose cubit with running interval when consumer unmounts', async () => {
+    // This test reproduces the bug where a cubit with a setInterval
+    // is not properly disposed when its only consumer unmounts
+    Blac.setConfig({ disposalTimeout: 100 });
+
+    interface TimerState {
+      count: number;
+      isRunning: boolean;
+    }
+
+    class TimerCubit extends Cubit<TimerState> {
+      private interval: NodeJS.Timeout | null = null;
+
+      constructor() {
+        super({ count: 0, isRunning: false });
+      }
+
+      start = () => {
+        if (this.state.isRunning) return;
+
+        this.emit({ ...this.state, isRunning: true });
+
+        this.interval = setInterval(() => {
+          this.emit({
+            count: this.state.count + 1,
+            isRunning: true,
+          });
+        }, 50);
+      };
+
+      stop = () => {
+        if (this.interval) {
+          clearInterval(this.interval);
+          this.interval = null;
+        }
+        this.emit({ ...this.state, isRunning: false });
+      };
+    }
+
+    const cubit = new TimerCubit();
+    const states: number[] = [];
+
+    // Subscribe to track state changes
+    const unsub = cubit.subscribe((state) => {
+      states.push(state.count);
+    });
+
+    // Start the timer
+    cubit.start();
+    expect(cubit.state.isRunning).toBe(true);
+
+    // Let it tick a few times
+    await vi.advanceTimersByTimeAsync(150); // Should tick 3 times (at 50ms, 100ms, 150ms)
+    expect(states.length).toBeGreaterThan(0);
+
+    const statesBeforeUnmount = states.length;
+
+    // Simulate component unmount - unsubscribe
+    unsub();
+
+    // Cubit should schedule disposal
+    expect((cubit as any)._lifecycleManager.currentState).toBe(
+      'disposal_requested',
+    );
+
+    // Advance past disposal timeout
+    await vi.advanceTimersByTimeAsync(150);
+
+    // BUG: The cubit should be disposed, but it's not because the interval keeps it alive
+    // The interval continues to emit state changes, which are allowed on DISPOSAL_REQUESTED blocs
+    expect(cubit.isDisposed).toBe(true); // This will FAIL - cubit is NOT disposed
+
+    // BUG: The interval should be cleared, but it's not
+    // If we advance timers more, we'll see more state changes
+    const statesAfterDisposal = states.length;
+    await vi.advanceTimersByTimeAsync(100);
+
+    // The interval should have been cleared, so no new states should be added
+    expect(states.length).toBe(statesAfterDisposal); // This will FAIL - interval still running
+  });
 });
