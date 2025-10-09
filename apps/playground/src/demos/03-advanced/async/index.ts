@@ -5,17 +5,18 @@ import { AsyncDemo } from './AsyncDemo';
 DemoRegistry.register({
   id: 'async-operations',
   category: '03-advanced',
-  title: 'Async Operations',
+  title: 'Async Operations (Advanced)',
   description:
-    'Demonstrates async operations in Cubits including loading states, error handling, retries with exponential backoff, and statistics tracking.',
-  difficulty: 'intermediate',
-  tags: ['async', 'cubit', 'error-handling', 'loading', 'retry'],
+    '⚠️ Advanced demo - Start with "Loading States" first! Demonstrates complex async operations including loading states, error handling, retries with exponential backoff, and statistics tracking.',
+  difficulty: 'advanced',
+  tags: ['async', 'cubit', 'error-handling', 'loading', 'retry', 'advanced'],
   concepts: [
     'async state management',
     'loading states',
     'error handling',
     'exponential backoff',
     'retry logic',
+    'statistics tracking',
   ],
   component: AsyncDemo,
   code: {
@@ -47,12 +48,14 @@ DemoRegistry.register({
       description: 'Verifies exponential backoff retry mechanism',
     },
   ],
-  relatedDemos: ['todo-bloc', 'counter'],
-  prerequisites: ['counter'],
+  relatedDemos: ['loading-states', 'todo-bloc', 'counter'],
+  prerequisites: ['loading-states', 'counter'],
   documentation: `
-## Async Operations with BlaC
+## Async Operations with BlaC (Advanced)
 
-This demo showcases how to handle asynchronous operations in BlaC Cubits, including proper loading states, error handling, and retry logic.
+⚠️ **Prerequisites**: Complete the "Loading States" demo first to understand basic async patterns!
+
+This demo showcases **advanced** asynchronous operations in BlaC Cubits, including proper loading states, error handling, and sophisticated retry logic with exponential backoff.
 
 ### Key Patterns:
 

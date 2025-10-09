@@ -9,7 +9,7 @@ DemoRegistry.register({
   category: '02-patterns',
   title: 'Todo List with Bloc',
   description:
-    'A complete todo list application demonstrating event-driven state management with Bloc pattern, including filtering, adding, toggling, and removing todos.',
+    '⚠️ Intermediate complexity - Consider trying a simpler Bloc demo first! A complete todo list application demonstrating event-driven state management with Bloc pattern, including filtering, adding, toggling, and removing todos.',
   difficulty: 'intermediate',
   tags: ['bloc', 'events', 'real-world', 'crud'],
   concepts: [
@@ -50,10 +50,12 @@ DemoRegistry.register({
       description: 'Verifies that all, active, and completed filters work',
     },
   ],
-  relatedDemos: ['counter', 'async-operations'],
-  prerequisites: ['counter'],
+  relatedDemos: ['basic-bloc', 'counter', 'async-operations'],
+  prerequisites: ['basic-bloc', 'counter'],
   documentation: `
 ## Todo List with Bloc Pattern
+
+⚠️ **Note**: This demo is more complex. If you're new to Bloc, start with the "Basic Bloc" demo first!
 
 This demo showcases a full-featured todo list application using the Bloc pattern with event-driven architecture.
 

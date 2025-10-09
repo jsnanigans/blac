@@ -274,9 +274,9 @@ describe('CustomPluginsDemo', () => {
 
 DemoRegistry.register({
   id: 'custom-plugins',
-  title: 'Custom Plugins',
+  title: 'Custom Plugins (Creating)',
   description:
-    'Create custom plugins to extend BlaC functionality with analytics, validation, logging, and more',
+    '⚠️ Advanced - Learn how to USE plugins first! This demo shows how to CREATE custom plugins to extend BlaC functionality with analytics, validation, logging, and more',
   category: '04-plugins',
   difficulty: 'advanced',
   tags: ['plugins', 'extensibility', 'analytics', 'validation', 'logging'],
@@ -294,4 +294,43 @@ DemoRegistry.register({
   code: {
     demo: '',
   },
+  prerequisites: ['persistence'], // Note: middleware-basics will be created later as a better intro
+  relatedDemos: ['persistence'],
+  documentation: `
+## Creating Custom Plugins
+
+⚠️ **Important**: This demo shows how to **CREATE** custom plugins. To learn how to **USE** built-in plugins, see the Persistence demo first!
+
+### Plugin Lifecycle Hooks
+
+Custom plugins can tap into key moments in a Bloc's lifecycle:
+
+- \`onBlocCreated()\` - When a new Bloc instance is created
+- \`onStateChanged()\` - When a Bloc's state changes
+- \`onBlocDisposed()\` - When a Bloc is disposed
+
+### Creating Your Own Plugin
+
+Implement the \`BlacPlugin\` interface:
+
+\`\`\`typescript
+class MyPlugin implements BlacPlugin {
+  name = 'MyPlugin';
+  version = '1.0.0';
+
+  onStateChanged(bloc, previousState, currentState) {
+    // Your custom logic here
+  }
+}
+\`\`\`
+
+### Use Cases
+
+- **Analytics**: Track user interactions and state changes
+- **Validation**: Enforce business rules on state
+- **Logging**: Debug state transitions
+- **Performance**: Monitor render counts and timing
+- **Persistence**: Auto-save state to storage
+- **DevTools**: Integrate with debugging tools
+`,
 });

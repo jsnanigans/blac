@@ -89,6 +89,49 @@ export function DemoRunner() {
         </div>
       </div>
 
+      {/* Prerequisites Section */}
+      {demo.prerequisites && demo.prerequisites.length > 0 && (
+        <Card className="mb-6 border-yellow-200 bg-yellow-50/50 dark:border-yellow-900 dark:bg-yellow-950/20">
+          <CardContent className="p-4">
+            <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+              <span className="text-lg">📚</span>
+              Prerequisites - Complete These First
+            </h3>
+            <p className="text-xs text-muted-foreground mb-3">
+              We recommend completing these demos before starting this one:
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {demo.prerequisites.map((prereqId) => {
+                const prereq = DemoRegistry.get(prereqId);
+                if (!prereq) return null;
+
+                return (
+                  <Link
+                    key={prereqId}
+                    to={`/demos/${prereq.category}/${prereq.id}`}
+                    className="inline-flex items-center gap-1 rounded-md bg-background border px-3 py-1.5 text-sm hover:bg-accent/50 transition-colors"
+                  >
+                    <span className="font-medium">{prereq.title}</span>
+                    <Badge
+                      variant={
+                        prereq.difficulty === 'beginner'
+                          ? 'success'
+                          : prereq.difficulty === 'intermediate'
+                            ? 'warning'
+                            : 'danger'
+                      }
+                      className="text-xs"
+                    >
+                      {prereq.difficulty}
+                    </Badge>
+                  </Link>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Tabs */}
       <div className="border-b mb-6">
         <nav className="flex gap-4">
@@ -163,7 +206,10 @@ export function DemoRunner() {
       {/* Related Demos */}
       {demo.relatedDemos && demo.relatedDemos.length > 0 && (
         <div className="mt-12">
-          <h3 className="text-lg font-semibold mb-4">Related Demos</h3>
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <span className="text-lg">🔗</span>
+            Related Demos
+          </h3>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {demo.relatedDemos.map((relatedId) => {
               const related = DemoRegistry.get(relatedId);
@@ -173,12 +219,42 @@ export function DemoRunner() {
                 <Link
                   key={relatedId}
                   to={`/demos/${related.category}/${related.id}`}
-                  className="border rounded-lg p-4 hover:bg-accent/50 transition-colors"
+                  className="block"
                 >
-                  <h4 className="font-medium mb-1">{related.title}</h4>
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {related.description}
-                  </p>
+                  <Card className="h-full hover:bg-accent/50 transition-colors cursor-pointer">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="font-medium">{related.title}</h4>
+                        <Badge
+                          variant={
+                            related.difficulty === 'beginner'
+                              ? 'success'
+                              : related.difficulty === 'intermediate'
+                                ? 'warning'
+                                : 'danger'
+                          }
+                          className="text-xs"
+                        >
+                          {related.difficulty}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground line-clamp-2">
+                        {related.description}
+                      </p>
+                      {related.tags && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {related.tags.slice(0, 3).map((tag) => (
+                            <span
+                              key={tag}
+                              className="text-xs bg-muted px-2 py-0.5 rounded"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
                 </Link>
               );
             })}

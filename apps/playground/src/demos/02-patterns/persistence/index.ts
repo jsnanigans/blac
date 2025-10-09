@@ -269,4 +269,6 @@ DemoRegistry.register({
   code: {
     demo: '',
   },
+  prerequisites: ['keep-alive', 'props'],
+  relatedDemos: ['keep-alive', 'props'],
 });

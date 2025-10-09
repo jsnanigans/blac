@@ -3,6 +3,8 @@
 
 // 01-basics
 import './01-basics/counter';
+import './01-basics/basic-bloc';
+import './01-basics/bloc-vs-cubit';
 import './01-basics/emit-patch';
 import './01-basics/getters';
 import './01-basics/instance-id';
@@ -11,6 +13,7 @@ import './01-basics/isolated-counter';
 // 02-patterns
 import './02-patterns/todo';
 import './02-patterns/keep-alive';
+import './02-patterns/loading-states';
 import './02-patterns/props';
 import './02-patterns/persistence';
 

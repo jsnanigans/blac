@@ -27,8 +27,8 @@ DemoRegistry.register({
       description: 'Verifies patch() performs shallow merge',
     },
   ],
-  relatedDemos: ['counter'],
-  prerequisites: [],
+  relatedDemos: ['counter', 'loading-states'],
+  prerequisites: ['counter'],
   documentation: `
 ## Emit vs Patch
 

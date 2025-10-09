@@ -289,4 +289,6 @@ DemoRegistry.register({
   code: {
     demo: '',
   },
+  prerequisites: ['todo-bloc', 'keep-alive', 'isolated-counter'],
+  relatedDemos: ['todo-bloc', 'keep-alive', 'isolated-counter'],
 });
