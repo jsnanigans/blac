@@ -1,6 +1,18 @@
 import { BlocBase } from '../BlocBase';
 
 /**
+ * Cache entry for getter values
+ * V2: Used for value-based getter change detection
+ */
+export interface GetterCacheEntry {
+  /** Cached getter value */
+  value: unknown;
+
+  /** Error if getter threw during execution */
+  error?: Error;
+}
+
+/**
  * Unified subscription interface that replaces the dual consumer/observer system
  */
 export interface Subscription<S = unknown> {
@@ -30,6 +42,12 @@ export interface Subscription<S = unknown> {
 
   /** Tracked state path dependencies */
   dependencies?: Set<string>;
+
+  /**
+   * Getter value cache for change detection
+   * V2: Maps getter path (_class.getterName) to cached value/error
+   */
+  getterCache?: Map<string, GetterCacheEntry>;
 
   /** Metadata for tracking and debugging */
   metadata?: SubscriptionMetadata;

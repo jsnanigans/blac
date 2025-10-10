@@ -295,8 +295,8 @@ function OptimizedComponent() {
   const [state, cubit] = useBloc(ComplexCubit, {
     dependencies: evenOddSelector
   });
-  
-  // This component only re-renders when 
+
+  // This component only re-renders when
   // counter changes from even to odd or vice versa
   // Not on every increment!
 }

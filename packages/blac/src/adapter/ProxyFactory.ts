@@ -23,6 +23,7 @@ const stats = {
 
 /**
  * Creates a proxy for state objects that tracks property access
+ * V2: Top-level tracking only - no nested proxies
  */
 export const createStateProxy = <T extends object>(
   target: T,
@@ -39,22 +40,25 @@ export const createStateProxy = <T extends object>(
     return target;
   }
 
-  // Check cache for backward compatibility with tests
-  if (!path) {
-    // Only cache root objects
-    let refCache = proxyCache.get(target);
-    if (!refCache) {
-      refCache = new WeakMap();
-      proxyCache.set(target, refCache);
-    }
-
-    const cached = refCache.get(consumerRef);
-    if (cached) {
-      stats.cacheHits++;
-      return cached;
-    }
-    stats.cacheMisses++;
+  // Only create proxies for root-level state (path is empty)
+  // This is a breaking change from v1 which created nested proxies
+  if (path !== '') {
+    return target;
   }
+
+  // Check cache for root objects only
+  let refCache = proxyCache.get(target);
+  if (!refCache) {
+    refCache = new WeakMap();
+    proxyCache.set(target, refCache);
+  }
+
+  const cached = refCache.get(consumerRef);
+  if (cached) {
+    stats.cacheHits++;
+    return cached;
+  }
+  stats.cacheMisses++;
 
   const proxy = new Proxy(target, {
     get(obj: T, prop: string | symbol): any {
@@ -63,27 +67,19 @@ export const createStateProxy = <T extends object>(
         return Reflect.get(obj, prop);
       }
 
-      const fullPath = path ? `${path}.${prop}` : prop;
       const value = Reflect.get(obj, prop);
-      const isObject = value && typeof value === 'object';
 
-      // Track access with value for primitives
+      // Track only the top-level property name (no nested paths)
+      // Track all accesses regardless of value type
       consumerTracker.trackAccess(
         consumerRef,
         'state',
-        fullPath,
-        isObject ? undefined : value,
+        String(prop), // Just the property name, no path concatenation
+        undefined, // No value tracking for state properties
       );
 
-      // Recursively proxy nested objects and arrays
-      if (
-        isObject &&
-        (Array.isArray(value) ||
-          Object.getPrototypeOf(value) === Object.prototype)
-      ) {
-        return createStateProxy(value, consumerRef, consumerTracker, fullPath);
-      }
-
+      // Return raw value - no nested proxy creation
+      // This means nested property access won't be tracked
       return value;
     },
 
@@ -91,13 +87,11 @@ export const createStateProxy = <T extends object>(
     deleteProperty: () => false, // State properties should not be deleted
   });
 
-  // Cache root proxies
-  if (!path) {
-    const refCache = proxyCache.get(target)!;
-    refCache.set(consumerRef, proxy);
-    stats.stateProxiesCreated++;
-    stats.totalProxiesCreated++;
-  }
+  // Cache root proxy
+  const proxyRefCache = proxyCache.get(target)!;
+  proxyRefCache.set(consumerRef, proxy);
+  stats.stateProxiesCreated++;
+  stats.totalProxiesCreated++;
 
   return proxy;
 };

@@ -229,6 +229,11 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
     return proxyBloc;
   }, [adapter]);
 
+  // V2: Commit tracked dependencies after render completes
+  useEffect(() => {
+    adapter.commitTracking();
+  });
+
   // Log final hook return
   return [finalState, finalBloc];
 }

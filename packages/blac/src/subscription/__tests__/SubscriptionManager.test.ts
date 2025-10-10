@@ -256,7 +256,9 @@ describe('SubscriptionManager', () => {
       )[0] as string;
       manager.trackAccess(subscriptionId, 'nested');
 
-      const changedPaths = new Set(['nested.value']);
+      // V2: Only top-level property name is in changedPaths
+      // When nested.value changes, the top-level 'nested' reference changes
+      const changedPaths = new Set(['nested']);
       expect(manager.shouldNotifyForPaths(subscriptionId, changedPaths)).toBe(
         true,
       );
@@ -271,7 +273,8 @@ describe('SubscriptionManager', () => {
       )[0] as string;
       manager.trackAccess(subscriptionId, 'count');
 
-      const changedPaths = new Set(['nested.value']);
+      // V2: changedPaths only contains top-level property names
+      const changedPaths = new Set(['nested']);
       expect(manager.shouldNotifyForPaths(subscriptionId, changedPaths)).toBe(
         false,
       );

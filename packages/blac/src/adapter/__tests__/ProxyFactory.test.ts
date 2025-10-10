@@ -79,18 +79,18 @@ describe('ProxyFactory', () => {
       expect(name).toBe('John');
       expect(age).toBe(30);
 
-      // Verify tracking
+      // Verify tracking (V2: top-level tracking only, no value tracking)
       expect(tracker.trackAccess).toHaveBeenCalledWith(
         consumerRef,
         'state',
         'name',
-        'John',
+        undefined, // V2 change: no value tracking for state properties
       );
       expect(tracker.trackAccess).toHaveBeenCalledWith(
         consumerRef,
         'state',
         'age',
-        30,
+        undefined, // V2 change: no value tracking for state properties
       );
     });
 
@@ -108,36 +108,22 @@ describe('ProxyFactory', () => {
       expect(email).toBe('john@example.com');
       expect(theme).toBe('dark');
 
-      // Verify nested tracking
+      // V2 change: Only top-level property 'user' is tracked
+      // Nested accesses (profile, email, settings, theme) are NOT tracked
+      // This is the key behavior change in dependency tracking v2
+      expect(tracker.trackAccess).toHaveBeenCalledTimes(2); // Only 'user' calls
       expect(tracker.trackAccess).toHaveBeenCalledWith(
         consumerRef,
         'state',
         'user',
         undefined,
       );
-      expect(tracker.trackAccess).toHaveBeenCalledWith(
+      // No tracking for nested paths - this is intentional
+      expect(tracker.trackAccess).not.toHaveBeenCalledWith(
         consumerRef,
         'state',
         'user.profile',
-        undefined,
-      );
-      expect(tracker.trackAccess).toHaveBeenCalledWith(
-        consumerRef,
-        'state',
-        'user.profile.email',
-        'john@example.com',
-      );
-      expect(tracker.trackAccess).toHaveBeenCalledWith(
-        consumerRef,
-        'state',
-        'user.profile.settings',
-        undefined,
-      );
-      expect(tracker.trackAccess).toHaveBeenCalledWith(
-        consumerRef,
-        'state',
-        'user.profile.settings.theme',
-        'dark',
+        expect.anything(),
       );
     });
 
@@ -460,11 +446,12 @@ describe('ProxyFactory', () => {
 
       const count = proxy.count;
       expect(count).toBe(5);
+      // V2 change: no value tracking for state properties
       expect(tracker.trackAccess).toHaveBeenCalledWith(
         consumerRef,
         'state',
         'count',
-        5,
+        undefined, // V2 change: no value tracking
       );
     });
 

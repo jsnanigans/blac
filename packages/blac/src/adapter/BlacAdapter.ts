@@ -36,6 +36,10 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
   private trackedPaths = new Set<string>();
   private pendingTrackedPaths = new Set<string>(); // Paths tracked before subscription exists
 
+  // V2: Two-phase tracking for atomic dependency updates
+  private pendingDependencies = new Set<string>(); // Collected during render
+  private isTrackingActive = false; // Controls when tracking is enabled
+
   // Proxy caching
   private cachedStateProxy?: BlocState<InstanceType<B>>;
   private cachedBlocProxy?: InstanceType<B>;
@@ -85,17 +89,27 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
     path: string,
     value?: any,
   ): void {
+    // V2: Only track if tracking is active (during render)
+    if (!this.isTrackingActive) {
+      return;
+    }
+
     const fullPath = type === 'class' ? `_class.${path}` : path;
+
+    // V2: Collect in pending dependencies during render
+    this.pendingDependencies.add(fullPath);
     this.trackedPaths.add(fullPath);
 
-    if (this.subscriptionId) {
-      this.blocInstance.trackAccess(this.subscriptionId, fullPath, value);
-    } else {
+    if (!this.subscriptionId) {
       // No subscription ID yet - store for later
       this.pendingTrackedPaths.add(fullPath);
       if ((Blac.config as any).logLevel === 'debug') {
         Blac.log(`[BlacAdapter] trackAccess storing pending path: ${path}`);
       }
+    } else {
+      // V2: Immediately apply to subscription for backwards compatibility
+      // In React useBloc hook, this will be properly managed with commitTracking()
+      this.blocInstance.trackAccess(this.subscriptionId, fullPath, value);
     }
   }
 
@@ -148,6 +162,9 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
       const subscriptions = (this.blocInstance._subscriptionManager as any)
         .subscriptions as Map<string, any>;
       this.subscriptionId = Array.from(subscriptions.keys()).pop();
+
+      // V2: Enable tracking when subscription is created
+      this.isTrackingActive = true;
 
       // Apply any pending tracked paths
       if (this.subscriptionId && this.pendingTrackedPaths.size > 0) {
@@ -281,19 +298,60 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
   };
 
   // Reset tracking for next render
+  // V2: Two-phase tracking - start collecting new dependencies without clearing active ones
   resetTracking(): void {
-    // Clear tracked paths from previous render
+    // Clear pending dependencies to start fresh for this render
+    this.pendingDependencies.clear();
     this.trackedPaths.clear();
-    this.pendingTrackedPaths.clear();
 
-    // Clear subscription dependencies to track only current render
+    // Enable tracking for this render
+    this.isTrackingActive = true;
+
+    // Note: We do NOT clear subscription dependencies here
+    // They will be atomically replaced in commitTracking()
+  }
+
+  // V2: Commit tracked dependencies after render completes
+  commitTracking(): void {
+    // Disable tracking until next render
+    this.isTrackingActive = false;
+
+    // Atomically swap pending dependencies into subscription
     if (this.subscriptionId) {
       const subscription = (
         this.blocInstance._subscriptionManager as any
       ).subscriptions.get(this.subscriptionId);
-      if (subscription && subscription.dependencies) {
-        // Clear old dependencies - we'll track new ones in this render
-        subscription.dependencies.clear();
+
+      if (subscription) {
+        // Remove old path-to-subscription mappings
+        if (subscription.dependencies) {
+          for (const oldPath of subscription.dependencies) {
+            const subs = (this.blocInstance._subscriptionManager as any)
+              .pathToSubscriptions.get(oldPath);
+            if (subs) {
+              subs.delete(this.subscriptionId);
+              if (subs.size === 0) {
+                (this.blocInstance._subscriptionManager as any)
+                  .pathToSubscriptions.delete(oldPath);
+              }
+            }
+          }
+        }
+
+        // Atomic swap: replace old dependencies with new ones
+        subscription.dependencies = new Set(this.pendingDependencies);
+
+        // Add new path-to-subscription mappings
+        for (const newPath of this.pendingDependencies) {
+          let subs = (this.blocInstance._subscriptionManager as any)
+            .pathToSubscriptions.get(newPath);
+          if (!subs) {
+            subs = new Set();
+            (this.blocInstance._subscriptionManager as any)
+              .pathToSubscriptions.set(newPath, subs);
+          }
+          subs.add(this.subscriptionId);
+        }
       }
     }
   }

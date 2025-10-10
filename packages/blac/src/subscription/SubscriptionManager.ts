@@ -87,6 +87,11 @@ export class SubscriptionManager<S = unknown> {
       }
     }
 
+    // V2: Clear getter cache to prevent memory leaks
+    if (subscription.getterCache) {
+      subscription.getterCache.clear();
+    }
+
     this.subscriptions.delete(id);
 
     Blac.log(
@@ -144,9 +149,11 @@ export class SubscriptionManager<S = unknown> {
         if (subscription.dependencies && subscription.dependencies.size > 0) {
           // Check which paths changed between old and new state
           const changedPaths = this.getChangedPaths(oldState, newState);
+          // V2: Pass bloc instance for getter value comparison
           shouldNotify = this.shouldNotifyForPaths(
             subscription.id,
             changedPaths,
+            this.bloc,
           );
           if ((Blac.config as any).logLevel === 'debug') {
             Blac.log(
@@ -217,55 +224,48 @@ export class SubscriptionManager<S = unknown> {
 
   /**
    * Get the paths that changed between two states
+   * V2: Top-level tracking only - no recursive comparison
    */
   private getChangedPaths(
     oldState: any,
     newState: any,
-    path = '',
+    _path = '', // Ignored in v2 - kept for API compatibility
   ): Set<string> {
     const changedPaths = new Set<string>();
 
+    // If states are identical, no changes
     if (oldState === newState) return changedPaths;
 
-    // Handle primitives
+    // If entire state changed (primitive or null), use '*' to indicate all dependencies should update
     if (
       typeof oldState !== 'object' ||
       typeof newState !== 'object' ||
       oldState === null ||
       newState === null
     ) {
-      if (path) changedPaths.add(path);
+      changedPaths.add('*');
       return changedPaths;
     }
 
+    // V2: Only compare top-level properties using reference equality
     // Get all keys from both objects
     const allKeys = new Set([
       ...Object.keys(oldState),
       ...Object.keys(newState),
     ]);
 
+    // Check each top-level property
     for (const key of allKeys) {
-      const fullPath = path ? `${path}.${key}` : key;
       const oldValue = oldState[key];
       const newValue = newState[key];
 
+      // Reference inequality means the property changed
+      // This includes:
+      // - Primitive value changes
+      // - Object/array reference changes (even if nested content changed)
+      // - Added/removed properties (undefined !== value)
       if (oldValue !== newValue) {
-        changedPaths.add(fullPath);
-
-        // For nested objects, get all nested changed paths
-        if (
-          typeof oldValue === 'object' &&
-          typeof newValue === 'object' &&
-          oldValue !== null &&
-          newValue !== null
-        ) {
-          const nestedChanges = this.getChangedPaths(
-            oldValue,
-            newValue,
-            fullPath,
-          );
-          nestedChanges.forEach((p) => changedPaths.add(p));
-        }
+        changedPaths.add(key);
       }
     }
 
@@ -273,40 +273,104 @@ export class SubscriptionManager<S = unknown> {
   }
 
   /**
+   * Check if a getter value has changed
+   * V2: Value-based getter change detection
+   */
+  private checkGetterChanged(
+    subscriptionId: string,
+    getterPath: string,
+    bloc: any,
+  ): boolean {
+    const subscription = this.subscriptions.get(subscriptionId);
+    if (!subscription) return false;
+
+    // Initialize getter cache if not present
+    if (!subscription.getterCache) {
+      subscription.getterCache = new Map();
+    }
+
+    // Extract getter name from path (_class.getterName -> getterName)
+    const getterName = getterPath.startsWith('_class.')
+      ? getterPath.substring(7)
+      : getterPath;
+
+    const cachedEntry = subscription.getterCache.get(getterPath);
+
+    // Execute getter and get new value/error
+    let newValue: unknown;
+    let newError: Error | undefined;
+
+    try {
+      newValue = bloc[getterName];
+    } catch (error) {
+      newError = error instanceof Error ? error : new Error(String(error));
+    }
+
+    // First access - always return true and cache the result
+    if (!cachedEntry) {
+      subscription.getterCache.set(getterPath, {
+        value: newValue,
+        error: newError,
+      });
+      return true;
+    }
+
+    // Compare with cached value/error
+    let hasChanged = false;
+
+    // If error state changed
+    if (!!cachedEntry.error !== !!newError) {
+      hasChanged = true;
+    }
+    // If both have errors, compare error messages
+    else if (cachedEntry.error && newError) {
+      hasChanged = cachedEntry.error.message !== newError.message;
+    }
+    // If no errors, compare values using shallow equality
+    else if (!cachedEntry.error && !newError) {
+      hasChanged = cachedEntry.value !== newValue;
+    }
+
+    // Update cache if changed
+    if (hasChanged) {
+      subscription.getterCache.set(getterPath, {
+        value: newValue,
+        error: newError,
+      });
+    }
+
+    return hasChanged;
+  }
+
+  /**
    * Check if a subscription should be notified based on changed paths
+   * V2: Simplified for top-level tracking + value-based getter comparison
    */
   shouldNotifyForPaths(
     subscriptionId: string,
     changedPaths: Set<string>,
+    bloc?: any,
   ): boolean {
     const subscription = this.subscriptions.get(subscriptionId);
     if (!subscription || !subscription.dependencies) return true;
 
+    // Handle '*' special case - entire state changed
+    if (changedPaths.has('*')) return true;
+
     // Check if any tracked dependencies match changed paths
     for (const trackedPath of subscription.dependencies) {
       // Handle class getter dependencies (_class.propertyName)
+      // V2: Use value-based getter comparison instead of conservative approach
       if (trackedPath.startsWith('_class.')) {
-        // For class getters, we need to notify on any state change
-        // since we can't determine which state properties the getter depends on
-        // This is conservative but ensures correctness
-        if (changedPaths.size > 0) {
+        if (bloc && this.checkGetterChanged(subscriptionId, trackedPath, bloc)) {
           return true;
         }
         continue;
       }
 
-      // Check direct path matches
+      // V2: Direct top-level property matching only
+      // No nested path matching since we only track top-level properties
       if (changedPaths.has(trackedPath)) return true;
-
-      // Check nested paths
-      for (const changedPath of changedPaths) {
-        if (
-          changedPath.startsWith(trackedPath + '.') ||
-          trackedPath.startsWith(changedPath + '.')
-        ) {
-          return true;
-        }
-      }
     }
 
     return false;
