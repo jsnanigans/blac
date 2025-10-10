@@ -35,19 +35,6 @@ export abstract class BlocBase<S> {
     return this._keepAlive;
   }
 
-  /**
-   * Optional bloc-level disposal timeout override.
-   * Set to 0 for immediate disposal.
-   *
-   * @example
-   * ```typescript
-   * class MyCubit extends Cubit<number> {
-   *   static disposalTimeout = 0; // Immediate disposal
-   *   constructor() { super(0); }
-   * }
-   * ```
-   */
-  static disposalTimeout?: number;
 
   public _isolated = false;
   public _id: BlocInstanceId;
@@ -67,6 +54,63 @@ export abstract class BlocBase<S> {
 
   _plugins = new BlocPluginRegistry<S, any>();
 
+  /**
+   * Called synchronously when disposal is scheduled (subscriptionCount === 0).
+   * Use this to clean up intervals, timers, pending promises, and other resources
+   * that might prevent disposal.
+   *
+   * IMPORTANT:
+   * - Must be synchronous (no async/await)
+   * - Errors are logged but do not prevent disposal
+   * - Called before disposal microtask is queued
+   * - Cannot prevent disposal (that's what plugins are for)
+   *
+   * @example
+   * ```typescript
+   * class TimerCubit extends Cubit<number> {
+   *   interval?: NodeJS.Timeout;
+   *
+   *   constructor() {
+   *     super(0);
+   *
+   *     this.onDisposalScheduled = () => {
+   *       if (this.interval) {
+   *         clearInterval(this.interval);
+   *         this.interval = undefined;
+   *       }
+   *     };
+   *
+   *     this.interval = setInterval(() => {
+   *       this.emit(this.state + 1);
+   *     }, 100);
+   *   }
+   * }
+   * ```
+   */
+  onDisposalScheduled?: () => void;
+
+  /**
+   * Called when disposal completes (bloc is fully disposed).
+   * Use for final cleanup like closing connections, clearing caches, etc.
+   *
+   * IMPORTANT:
+   * - Must be synchronous (no async/await)
+   * - Errors are logged but do not prevent disposal completion
+   * - Called after all subscriptions are cleared
+   *
+   * @example
+   * ```typescript
+   * class DatabaseBloc extends Bloc<DbState, DbEvents> {
+   *   constructor(private connection: DbConnection) {
+   *     super(initialState);
+   *
+   *     this.onDispose = () => {
+   *       this.connection.close();
+   *     };
+   *   }
+   * }
+   * ```
+   */
   onDispose?: () => void;
 
   /**
@@ -182,15 +226,12 @@ export abstract class BlocBase<S> {
   _pushState(newState: S, oldState: S, action?: unknown): void {
     const currentState = this._lifecycleManager.currentState;
 
-    // Allow state changes on ACTIVE and DISPOSAL_REQUESTED blocs
-    // DISPOSAL_REQUESTED means "will dispose if no one subscribes soon" - it's not fully disposed yet
-    // This allows error recovery code to reset bloc state even after component unmount
-    if (
-      currentState !== BlocLifecycleState.ACTIVE &&
-      currentState !== BlocLifecycleState.DISPOSAL_REQUESTED
-    ) {
+    // Only allow emissions on ACTIVE blocs
+    if (currentState !== BlocLifecycleState.ACTIVE) {
       this.blacInstance?.error(
-        `[${this._name}:${this._id}] Attempted state update on ${currentState} bloc. Update ignored.`,
+        `[${this._name}:${this._id}] Cannot emit state on ${currentState} bloc. ` +
+          `State update ignored. ` +
+          `If this bloc uses setInterval/setTimeout, clean up in onDisposalScheduled hook.`,
       );
       return;
     }
@@ -322,7 +363,16 @@ export abstract class BlocBase<S> {
 
       // Call disposal hook
       if (this.onDispose) {
-        this.onDispose();
+        try {
+          this.onDispose();
+        } catch (error) {
+          // Log error but don't crash - disposal must complete
+          this.blacInstance?.error(
+            `[${this._name}:${this._id}] Error in onDispose hook:`,
+            error,
+          );
+          // Continue with disposal
+        }
       }
 
       // Notify bloc-level plugins of disposal
@@ -358,28 +408,6 @@ export abstract class BlocBase<S> {
     }
   }
 
-  /**
-   * Get disposal timeout for this bloc.
-   * Priority: bloc static property > global config > default (100ms)
-   *
-   * @returns Disposal timeout in milliseconds
-   */
-  private _getDisposalTimeout(): number {
-    // Check for bloc-level override
-    const BlocConstructor = this.constructor as typeof BlocBase & {
-      disposalTimeout?: number;
-    };
-
-    if (
-      'disposalTimeout' in BlocConstructor &&
-      typeof BlocConstructor.disposalTimeout === 'number'
-    ) {
-      return BlocConstructor.disposalTimeout;
-    }
-
-    // Use global config from static property
-    return Blac.config.disposalTimeout ?? 100;
-  }
 
   /**
    * Schedule disposal when no subscriptions remain
@@ -392,14 +420,25 @@ export abstract class BlocBase<S> {
       return;
     }
 
-    const timeout = this._getDisposalTimeout();
+    // Call cleanup hook synchronously BEFORE scheduling disposal
+    if (this.onDisposalScheduled) {
+      try {
+        this.onDisposalScheduled();
+      } catch (error) {
+        // Log error but don't crash - disposal must proceed
+        this.blacInstance?.error(
+          `[${this._name}:${this._id}] Error in onDisposalScheduled hook:`,
+          error,
+        );
+        // Continue with disposal
+      }
+    }
 
     this.blacInstance?.log(
-      `[${this._name}:${this._id}] Scheduling disposal with ${timeout}ms timeout`,
+      `[${this._name}:${this._id}] Scheduling disposal on next microtask`,
     );
 
     this._lifecycleManager.scheduleDisposal(
-      timeout,
       () => this._subscriptionManager.size === 0 && !this._keepAlive,
       () => this.dispose(),
     );
@@ -443,12 +482,10 @@ export abstract class BlocBase<S> {
         currentState === BlocLifecycleState.DISPOSING ||
         currentState === BlocLifecycleState.DISPOSED
       ) {
-        const timeout = this._getDisposalTimeout();
         this.blacInstance?.warn(
           `[${this._name}:${this._id}] Cannot cancel disposal - ` +
-            `already ${currentState}. This may indicate the disposal ` +
-            `timeout (${timeout}ms) is too short for your use case. ` +
-            `Consider increasing it with Blac.setConfig({ disposalTimeout: ${timeout * 2} }).`,
+            `already ${currentState}. This typically happens when trying to resubscribe ` +
+            `after disposal has already started.`,
         );
       }
       return;

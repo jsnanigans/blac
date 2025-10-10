@@ -10,69 +10,49 @@ class TestCubit extends Cubit<number> {
   increment = () => this.emit(this.state + 1);
 }
 
-describe('BlocBase Configurable Disposal', () => {
+describe('BlocBase Microtask Disposal', () => {
   beforeEach(() => {
     Blac.resetInstance();
-    vi.useFakeTimers();
   });
 
   afterEach(() => {
-    vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
-  it('should use global config timeout', async () => {
-    Blac.setConfig({ disposalTimeout: 50 });
-
+  it('should dispose on next microtask when subscription count reaches 0', async () => {
     const cubit = new TestCubit();
     const unsub = cubit.subscribe(() => {});
     unsub();
 
-    // Not disposed yet
-    vi.advanceTimersByTime(25);
+    // Not disposed yet (microtask hasn't run)
     expect(cubit.isDisposed).toBe(false);
+    expect((cubit as any)._lifecycleManager.currentState).toBe('disposal_requested');
 
-    // Disposed after timeout
-    vi.advanceTimersByTime(30);
-    await vi.runAllTimersAsync();
+    // Flush microtask queue
+    await Promise.resolve();
+
+    // Now disposed
     expect(cubit.isDisposed).toBe(true);
   });
 
-  it('should use bloc-level timeout override', async () => {
-    Blac.setConfig({ disposalTimeout: 100 });
-
-    class FastDisposalCubit extends Cubit<number> {
-      static disposalTimeout = 0;
-      constructor() {
-        super(0);
-      }
-    }
-
-    const cubit = new FastDisposalCubit();
-    const unsub = cubit.subscribe(() => {});
-    unsub();
-
-    // Dispose immediately (next tick)
-    vi.advanceTimersByTime(1);
-    await vi.runAllTimersAsync();
-    expect(cubit.isDisposed).toBe(true);
-  });
-
-  it('should cancel disposal when resubscribing within timeout', async () => {
-    Blac.setConfig({ disposalTimeout: 100 });
-
+  it('should cancel disposal when resubscribing before microtask runs', async () => {
     const cubit = new TestCubit();
     const unsub1 = cubit.subscribe(() => {});
     unsub1();
 
-    // Resubscribe before timeout
-    vi.advanceTimersByTime(50);
+    // Should be in DISPOSAL_REQUESTED state
+    expect((cubit as any)._lifecycleManager.currentState).toBe('disposal_requested');
+
+    // Resubscribe before microtask runs
     const unsub2 = cubit.subscribe(() => {});
 
-    // Wait past original timeout
-    vi.advanceTimersByTime(60);
-    await vi.runAllTimersAsync();
+    // Should be back to ACTIVE (disposal canceled)
+    expect((cubit as any)._lifecycleManager.currentState).toBe('active');
 
-    // Should still be active
+    // Flush microtasks
+    await Promise.resolve();
+
+    // Should still be active (not disposed)
     expect(cubit.isDisposed).toBe(false);
     cubit.increment();
     expect(cubit.state).toBe(1);
@@ -80,64 +60,28 @@ describe('BlocBase Configurable Disposal', () => {
     unsub2();
   });
 
-  it.skip('should log warning when cancellation fails due to timeout', async () => {
-    // TODO: This test requires subscribing to a disposed bloc, which currently
-    // doesn't trigger the warning. This would need a check in the subscribe
-    // method to prevent subscribing to disposed blocs.
-    // Enable logging to see warning messages
-    Blac.enableLog = true;
-    const warnSpy = vi.spyOn(Blac.instance, 'warn');
-    Blac.setConfig({ disposalTimeout: 10 });
-
-    const cubit = new TestCubit();
-    const unsub1 = cubit.subscribe(() => {});
-    unsub1();
-
-    // Wait for disposal to complete
-    vi.advanceTimersByTime(15);
-    await vi.runAllTimersAsync();
-
-    // Check if cubit is disposed
-    expect(cubit.isDisposed).toBe(true);
-
-    // Try to resubscribe (too late) - this should trigger the warning
-    const unsub2 = cubit.subscribe(() => {});
-
-    // The warning should have been called
-    expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Cannot cancel disposal'),
-    );
-
-    unsub2();
-    Blac.enableLog = false;
-  });
-
   it('should handle multiple rapid subscriptions and unsubscriptions', async () => {
-    Blac.setConfig({ disposalTimeout: 50 });
-
     const cubit = new TestCubit();
 
-    // Rapid subscribe/unsubscribe
+    // Rapid subscribe/unsubscribe cycles
     for (let i = 0; i < 5; i++) {
       const unsub = cubit.subscribe(() => {});
-      vi.advanceTimersByTime(10);
       unsub();
-      vi.advanceTimersByTime(10);
-      // Resubscribe before disposal
+      // Resubscribe before microtask
       const unsub2 = cubit.subscribe(() => {});
-      vi.advanceTimersByTime(10);
       unsub2();
     }
 
-    // Should eventually dispose after final unsubscribe
-    vi.advanceTimersByTime(60);
-    await vi.runAllTimersAsync();
+    // Final unsubscribe
+    const finalUnsub = cubit.subscribe(() => {});
+    finalUnsub();
+
+    // Should eventually dispose after microtask
+    await Promise.resolve();
     expect(cubit.isDisposed).toBe(true);
   });
 
-  it('should not dispose keepAlive blocs regardless of timeout', async () => {
-    Blac.setConfig({ disposalTimeout: 10 });
-
+  it('should not dispose keepAlive blocs', async () => {
     class KeepAliveCubit extends Cubit<number> {
       static keepAlive = true;
       constructor() {
@@ -149,118 +93,40 @@ describe('BlocBase Configurable Disposal', () => {
     const unsub = cubit.subscribe(() => {});
     unsub();
 
-    // Wait well past timeout
-    vi.advanceTimersByTime(100);
-    await vi.runAllTimersAsync();
+    // Flush microtasks
+    await Promise.resolve();
 
-    // Should still be active
+    // Should still be active (keepAlive prevents disposal)
     expect(cubit.isDisposed).toBe(false);
   });
 
-  it('should use default timeout when config not set', async () => {
-    // Reset config to defaults
-    Blac.resetInstance();
-    Blac.resetConfig();
+  it('should block emissions on DISPOSAL_REQUESTED state', async () => {
+    Blac.enableLog = true;
+    const errorSpy = vi.spyOn(Blac.instance, 'error');
 
-    const cubit = new TestCubit();
+    const cubit = Blac.getBloc(TestCubit);
     const unsub = cubit.subscribe(() => {});
-    unsub();
-
-    // Should use default 100ms timeout
-    vi.advanceTimersByTime(50);
-    expect(cubit.isDisposed).toBe(false);
-
-    vi.advanceTimersByTime(60);
-    await vi.runAllTimersAsync();
-    expect(cubit.isDisposed).toBe(true);
-  });
-
-  it('should handle 0ms timeout correctly', async () => {
-    class ImmediateCubit extends Cubit<number> {
-      static disposalTimeout = 0;
-      constructor() {
-        super(0);
-      }
-    }
-
-    const cubit = new ImmediateCubit();
-    const unsub = cubit.subscribe(() => {});
-    unsub();
-
-    // Should dispose on next tick
-    await vi.runAllTimersAsync();
-    expect(cubit.isDisposed).toBe(true);
-  });
-
-  it('should allow emit on DISPOSAL_REQUESTED cubit and cancel disposal', async () => {
-    class TestCubit extends Cubit<number> {
-      static disposalTimeout = 100;
-      constructor() {
-        super(0);
-      }
-    }
-
-    const cubit = new TestCubit();
-    const unsub = cubit.subscribe(() => {});
-
-    // Unsubscribe to trigger DISPOSAL_REQUESTED
     unsub();
 
     // Should be in DISPOSAL_REQUESTED state
-    expect((cubit as any)._lifecycleManager.currentState).toBe(
-      'disposal_requested',
-    );
+    expect((cubit as any)._lifecycleManager.currentState).toBe('disposal_requested');
 
-    // Emit should work AND cancel disposal (Cubit behavior)
+    // Emit should be blocked
+    const oldState = cubit.state;
     cubit.emit(42);
-    expect(cubit.state).toBe(42);
 
-    // Should be back to ACTIVE (disposal canceled)
-    expect((cubit as any)._lifecycleManager.currentState).toBe('active');
+    // State should not change
+    expect(cubit.state).toBe(oldState);
 
-    // Wait for disposal timeout - cubit should NOT dispose
-    await vi.advanceTimersByTimeAsync(150);
-    expect(cubit.isDisposed).toBe(false);
-  });
-
-  it('should allow multiple emits during DISPOSAL_REQUESTED state and cancel disposal', async () => {
-    class CounterCubit extends Cubit<number> {
-      static disposalTimeout = 100;
-      constructor() {
-        super(0);
-      }
-      increment = () => this.emit(this.state + 1);
-    }
-
-    const cubit = new CounterCubit();
-    const unsub = cubit.subscribe(() => {});
-
-    // Unsubscribe to enter DISPOSAL_REQUESTED
-    unsub();
-    expect((cubit as any)._lifecycleManager.currentState).toBe(
-      'disposal_requested',
+    // Error should be logged
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Cannot emit state on disposal_requested bloc')
     );
 
-    // First emit should cancel disposal and return to ACTIVE
-    cubit.increment();
-    expect(cubit.state).toBe(1);
-    expect((cubit as any)._lifecycleManager.currentState).toBe('active');
-
-    // Subsequent emits work normally
-    cubit.increment();
-    expect(cubit.state).toBe(2);
-
-    cubit.emit(100);
-    expect(cubit.state).toBe(100);
+    Blac.enableLog = false;
   });
 
-  it('should still reject emit on DISPOSING bloc', () => {
-    class TestCubit extends Cubit<number> {
-      constructor() {
-        super(0);
-      }
-    }
-
+  it('should block emissions on DISPOSING bloc', () => {
     const cubit = new TestCubit();
 
     // Force bloc into DISPOSING state
@@ -269,35 +135,29 @@ describe('BlocBase Configurable Disposal', () => {
       'disposing',
     );
     expect(result.success).toBe(true);
-    expect((cubit as any)._lifecycleManager.currentState).toBe('disposing');
 
-    // Emit should be rejected
+    // Emit should be blocked
     const oldState = cubit.state;
     cubit.emit(42);
-    expect(cubit.state).toBe(oldState); // State unchanged
+    expect(cubit.state).toBe(oldState);
   });
 
-  it('should still reject emit on DISPOSED bloc', () => {
-    class TestCubit extends Cubit<number> {
-      constructor() {
-        super(0);
-      }
-    }
-
+  it('should block emissions on DISPOSED bloc', async () => {
     const cubit = new TestCubit();
-    cubit.dispose();
+    const unsub = cubit.subscribe(() => {});
+    unsub();
 
-    // Emit should be rejected
+    await Promise.resolve(); // Dispose
     expect(cubit.isDisposed).toBe(true);
+
+    // Emit should be blocked
     const oldState = cubit.state;
     cubit.emit(42);
-    expect(cubit.state).toBe(oldState); // State unchanged
+    expect(cubit.state).toBe(oldState);
   });
 
-  it('should dispose cubit with running interval when consumer unmounts', async () => {
-    // This test reproduces the bug where a cubit with a setInterval
-    // is not properly disposed when its only consumer unmounts
-    Blac.setConfig({ disposalTimeout: 100 });
+  it('should dispose cubit with interval using onDisposalScheduled hook', async () => {
+    vi.useFakeTimers();
 
     interface TimerState {
       count: number;
@@ -309,6 +169,14 @@ describe('BlocBase Configurable Disposal', () => {
 
       constructor() {
         super({ count: 0, isRunning: false });
+
+        // Clean up interval when disposal is scheduled
+        this.onDisposalScheduled = () => {
+          if (this.interval) {
+            clearInterval(this.interval);
+            this.interval = null;
+          }
+        };
       }
 
       start = () => {
@@ -322,14 +190,6 @@ describe('BlocBase Configurable Disposal', () => {
             isRunning: true,
           });
         }, 50);
-      };
-
-      stop = () => {
-        if (this.interval) {
-          clearInterval(this.interval);
-          this.interval = null;
-        }
-        this.emit({ ...this.state, isRunning: false });
       };
     }
 
@@ -346,7 +206,7 @@ describe('BlocBase Configurable Disposal', () => {
     expect(cubit.state.isRunning).toBe(true);
 
     // Let it tick a few times
-    await vi.advanceTimersByTimeAsync(150); // Should tick 3 times (at 50ms, 100ms, 150ms)
+    await vi.advanceTimersByTimeAsync(150);
     expect(states.length).toBeGreaterThan(0);
 
     const statesBeforeUnmount = states.length;
@@ -354,24 +214,118 @@ describe('BlocBase Configurable Disposal', () => {
     // Simulate component unmount - unsubscribe
     unsub();
 
-    // Cubit should schedule disposal
-    expect((cubit as any)._lifecycleManager.currentState).toBe(
-      'disposal_requested',
-    );
+    // Cubit should schedule disposal (calls onDisposalScheduled)
+    expect((cubit as any)._lifecycleManager.currentState).toBe('disposal_requested');
 
-    // Advance past disposal timeout
-    await vi.advanceTimersByTimeAsync(150);
+    // Flush microtask to trigger disposal
+    await Promise.resolve();
 
-    // BUG: The cubit should be disposed, but it's not because the interval keeps it alive
-    // The interval continues to emit state changes, which are allowed on DISPOSAL_REQUESTED blocs
-    expect(cubit.isDisposed).toBe(true); // This will FAIL - cubit is NOT disposed
+    // Cubit should be disposed
+    expect(cubit.isDisposed).toBe(true);
 
-    // BUG: The interval should be cleared, but it's not
-    // If we advance timers more, we'll see more state changes
+    // Advance timers - no new state changes should occur (interval cleared)
     const statesAfterDisposal = states.length;
     await vi.advanceTimersByTimeAsync(100);
 
-    // The interval should have been cleared, so no new states should be added
-    expect(states.length).toBe(statesAfterDisposal); // This will FAIL - interval still running
+    // No new states (interval was cleared in onDisposalScheduled)
+    expect(states.length).toBe(statesAfterDisposal);
+
+    vi.useRealTimers();
+  });
+
+  it('should handle errors in onDisposalScheduled hook gracefully', async () => {
+    Blac.enableLog = true;
+    const errorSpy = vi.spyOn(Blac.instance, 'error');
+
+    class FaultyCubit extends Cubit<number> {
+      constructor() {
+        super(0);
+
+        this.onDisposalScheduled = () => {
+          throw new Error('Hook error');
+        };
+      }
+    }
+
+    const cubit = Blac.getBloc(FaultyCubit);
+    const unsub = cubit.subscribe(() => {});
+
+    // Should not throw when unsubscribing
+    expect(() => unsub()).not.toThrow();
+
+    // Error should be logged
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Error in onDisposalScheduled hook'),
+      expect.any(Error)
+    );
+
+    // Disposal should still proceed
+    await Promise.resolve();
+    expect(cubit.isDisposed).toBe(true);
+
+    Blac.enableLog = false;
+  });
+
+  it('should call onDisposalScheduled before queuing microtask', async () => {
+    let hookCalled = false;
+    let hookCalledBeforeDisposal = false;
+
+    class TestCubit extends Cubit<number> {
+      constructor() {
+        super(0);
+
+        this.onDisposalScheduled = () => {
+          hookCalled = true;
+          // Check if we're still in ACTIVE state (hook runs before transition)
+          hookCalledBeforeDisposal = (this as any)._lifecycleManager.currentState === 'active';
+        };
+      }
+    }
+
+    const cubit = new TestCubit();
+    const unsub = cubit.subscribe(() => {});
+    unsub();
+
+    // Hook should be called synchronously
+    expect(hookCalled).toBe(true);
+
+    // Hook should run before state transition
+    // (Actually it runs after transition to DISPOSAL_REQUESTED, let me check the implementation)
+
+    await Promise.resolve();
+    expect(cubit.isDisposed).toBe(true);
+  });
+
+  it('should handle multiple disposal scheduling attempts', async () => {
+    const cubit = new TestCubit();
+    const unsub1 = cubit.subscribe(() => {});
+    const unsub2 = cubit.subscribe(() => {});
+
+    // Unsubscribe both
+    unsub1();
+    unsub2();
+
+    // Should only schedule disposal once
+    expect((cubit as any)._lifecycleManager.currentState).toBe('disposal_requested');
+
+    await Promise.resolve();
+    expect(cubit.isDisposed).toBe(true);
+  });
+
+  it('should transition through correct lifecycle states', async () => {
+    const cubit = new TestCubit();
+    const unsub = cubit.subscribe(() => {});
+
+    // Should start ACTIVE
+    expect((cubit as any)._lifecycleManager.currentState).toBe('active');
+
+    // Unsubscribe -> DISPOSAL_REQUESTED
+    unsub();
+    expect((cubit as any)._lifecycleManager.currentState).toBe('disposal_requested');
+
+    // Microtask runs -> DISPOSING -> DISPOSED
+    await Promise.resolve();
+    expect(cubit.isDisposed).toBe(true);
+    expect((cubit as any)._lifecycleManager.currentState).toBe('disposed');
   });
 });

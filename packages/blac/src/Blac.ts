@@ -20,24 +20,6 @@ export interface BlacConfig {
    * Default: true
    */
   proxyDependencyTracking?: boolean;
-
-  /**
-   * Time to wait before disposing a bloc after all subscriptions are removed.
-   * Set to 0 for immediate disposal.
-   * Default: 100ms
-   *
-   * @default 100
-   */
-  disposalTimeout?: number;
-
-  /**
-   * Automatically adjust disposal behavior for React Strict Mode compatibility.
-   * When enabled, uses longer disposal timeout in development environments.
-   * Default: true
-   *
-   * @default true
-   */
-  strictModeCompatibility?: boolean;
 }
 
 export interface GetBlocOptions<B extends BlocBase<unknown>> {
@@ -131,8 +113,6 @@ export class Blac {
   /** Private static configuration */
   private static _config: BlacConfig = {
     proxyDependencyTracking: true,
-    disposalTimeout: 100,
-    strictModeCompatibility: true,
   };
 
   /** Get current configuration */
@@ -146,8 +126,6 @@ export class Blac {
   static resetConfig(): void {
     this._config = {
       proxyDependencyTracking: true,
-      disposalTimeout: 100,
-      strictModeCompatibility: true,
     };
   }
 
@@ -164,39 +142,6 @@ export class Blac {
     ) {
       const error = new BlacError(
         'BlacConfig.proxyDependencyTracking must be a boolean',
-        ErrorCategory.VALIDATION,
-        ErrorSeverity.FATAL,
-      );
-      this.instance.errorManager.handle(error);
-    }
-
-    // Validate disposalTimeout if provided
-    if (config.disposalTimeout !== undefined) {
-      if (typeof config.disposalTimeout !== 'number') {
-        const error = new BlacError(
-          `BlacConfig.disposalTimeout must be a number. Received: ${typeof config.disposalTimeout}`,
-          ErrorCategory.VALIDATION,
-          ErrorSeverity.FATAL,
-        );
-        this.instance.errorManager.handle(error);
-      }
-      if (config.disposalTimeout < 0) {
-        const error = new BlacError(
-          `BlacConfig.disposalTimeout must be non-negative. Received: ${config.disposalTimeout}`,
-          ErrorCategory.VALIDATION,
-          ErrorSeverity.FATAL,
-        );
-        this.instance.errorManager.handle(error);
-      }
-    }
-
-    // Validate strictModeCompatibility if provided
-    if (
-      config.strictModeCompatibility !== undefined &&
-      typeof config.strictModeCompatibility !== 'boolean'
-    ) {
-      const error = new BlacError(
-        `BlacConfig.strictModeCompatibility must be a boolean. Received: ${typeof config.strictModeCompatibility}`,
         ErrorCategory.VALIDATION,
         ErrorSeverity.FATAL,
       );

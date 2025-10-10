@@ -4,7 +4,6 @@ import { Blac } from '../Blac';
 
 describe('Cubit emit on DISPOSAL_REQUESTED', () => {
   beforeEach(() => {
-    vi.useFakeTimers();
     Blac.resetInstance();
   });
 
@@ -12,32 +11,44 @@ describe('Cubit emit on DISPOSAL_REQUESTED', () => {
     vi.restoreAllMocks();
   });
 
-  it('should update state when emit is called on DISPOSAL_REQUESTED cubit', () => {
+  it('should block state updates when emit is called on DISPOSAL_REQUESTED cubit', async () => {
+    Blac.enableLog = true;
+    const errorSpy = vi.spyOn(Blac.instance, 'error');
+
     class TestCubit extends Cubit<{ value: number; shouldError: boolean }> {
-      static disposalTimeout = 100;
       constructor() {
         super({ value: 0, shouldError: false });
       }
     }
 
-    const cubit = new TestCubit();
+    const cubit = Blac.getBloc(TestCubit);
     const unsub = cubit.subscribe(() => {});
 
     // Unsubscribe to trigger DISPOSAL_REQUESTED
     unsub();
     expect((cubit as any)._lifecycleManager.currentState).toBe('disposal_requested');
 
-    // Emit should work and update state
+    // Emit should be blocked (not update state)
     const stateBefore = { ...cubit.state };
     cubit.emit({ value: 42, shouldError: true });
     const stateAfter = { ...cubit.state };
 
-    console.log('State before:', stateBefore);
-    console.log('State after:', stateAfter);
-    console.log('Lifecycle:', (cubit as any)._lifecycleManager.currentState);
+    // State should NOT change
+    expect(stateAfter.value).toBe(stateBefore.value);
+    expect(stateAfter.shouldError).toBe(stateBefore.shouldError);
 
-    expect(stateAfter.value).toBe(42);
-    expect(stateAfter.shouldError).toBe(true);
-    expect((cubit as any)._lifecycleManager.currentState).toBe('active');
+    // Should still be in DISPOSAL_REQUESTED state
+    expect((cubit as any)._lifecycleManager.currentState).toBe('disposal_requested');
+
+    // Error should be logged
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Cannot emit state on disposal_requested bloc')
+    );
+
+    // Disposal should still proceed
+    await Promise.resolve();
+    expect(cubit.isDisposed).toBe(true);
+
+    Blac.enableLog = false;
   });
 });

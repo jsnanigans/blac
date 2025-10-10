@@ -24,23 +24,6 @@ export abstract class Cubit<S> extends BlocBase<S> {
     this._pushState(newState, oldState);
   }
 
-  /**
-   * Override _pushState to cancel disposal when emit() is called on a Cubit.
-   * This allows error recovery code to reset Cubit state and keep it alive.
-   * Blocs don't cancel disposal to avoid keeping blocs alive during event processing.
-   */
-  _pushState(newState: S, oldState: S, action?: unknown): void {
-    const currentState = (this as any)._lifecycleManager.currentState;
-
-    // If cubit is in DISPOSAL_REQUESTED and emit() is being called,
-    // cancel the disposal - clearly someone still needs this cubit
-    if (currentState === BlocLifecycleState.DISPOSAL_REQUESTED) {
-      this._cancelDisposalIfRequested();
-    }
-
-    // Call parent implementation
-    super._pushState(newState, oldState, action);
-  }
 
   /**
    * Partially updates the current state by merging it with the provided state patch.

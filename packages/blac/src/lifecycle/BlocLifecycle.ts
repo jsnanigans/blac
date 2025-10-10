@@ -21,7 +21,7 @@ export interface StateTransitionResult {
 export class BlocLifecycleManager {
   private disposalState = BlocLifecycleState.ACTIVE;
   private disposalLock = false;
-  private disposalTimer?: NodeJS.Timeout | number;
+  private disposalMicrotaskScheduled = false;
   private disposalHandler?: (bloc: unknown) => void;
 
   get currentState(): BlocLifecycleState {
@@ -71,19 +71,18 @@ export class BlocLifecycleManager {
   }
 
   /**
-   * Schedule disposal after a delay
+   * Schedule disposal on next microtask
    */
   scheduleDisposal(
-    delay: number,
     canDispose: () => boolean,
     onDispose: () => void,
   ): void {
-    // Cancel any existing disposal timer
-    if (this.disposalTimer) {
-      clearTimeout(this.disposalTimer as NodeJS.Timeout);
-      this.disposalTimer = undefined;
+    // Prevent duplicate scheduling
+    if (this.disposalMicrotaskScheduled) {
+      return;
     }
 
+    // Transition ACTIVE → DISPOSAL_REQUESTED
     const transitionResult = this.atomicStateTransition(
       BlocLifecycleState.ACTIVE,
       BlocLifecycleState.DISPOSAL_REQUESTED,
@@ -93,19 +92,27 @@ export class BlocLifecycleManager {
       return;
     }
 
-    this.disposalTimer = setTimeout(() => {
+    // Mark as scheduled
+    this.disposalMicrotaskScheduled = true;
+
+    // Queue disposal check
+    queueMicrotask(() => {
+      this.disposalMicrotaskScheduled = false;
+
+      // Check if disposal should proceed
       if (
         canDispose() &&
         this.disposalState === BlocLifecycleState.DISPOSAL_REQUESTED
       ) {
         onDispose();
-      } else {
+      } else if (this.disposalState === BlocLifecycleState.DISPOSAL_REQUESTED) {
+        // Revert to ACTIVE (resubscription occurred)
         this.atomicStateTransition(
           BlocLifecycleState.DISPOSAL_REQUESTED,
           BlocLifecycleState.ACTIVE,
         );
       }
-    }, delay);
+    });
   }
 
   /**
@@ -113,11 +120,8 @@ export class BlocLifecycleManager {
    */
   cancelDisposal(): boolean {
     if (this.disposalState === BlocLifecycleState.DISPOSAL_REQUESTED) {
-      // Cancel disposal timer
-      if (this.disposalTimer) {
-        clearTimeout(this.disposalTimer as NodeJS.Timeout);
-        this.disposalTimer = undefined;
-      }
+      // Clear scheduled flag (microtask will check state and abort)
+      this.disposalMicrotaskScheduled = false;
 
       // Transition back to active state
       const result = this.atomicStateTransition(
@@ -142,15 +146,5 @@ export class BlocLifecycleManager {
    */
   getDisposalHandler(): ((bloc: unknown) => void) | undefined {
     return this.disposalHandler;
-  }
-
-  /**
-   * Clear disposal timer
-   */
-  clearDisposalTimer(): void {
-    if (this.disposalTimer) {
-      clearTimeout(this.disposalTimer as NodeJS.Timeout);
-      this.disposalTimer = undefined;
-    }
   }
 }

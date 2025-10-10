@@ -8,8 +8,6 @@ describe('Blac.config', () => {
     // Reset to default config before each test
     Blac.setConfig({
       proxyDependencyTracking: true,
-      disposalTimeout: 100,
-      strictModeCompatibility: true,
     });
   });
 
@@ -22,8 +20,6 @@ describe('Blac.config', () => {
     it('should have default configuration', () => {
       expect(Blac.config).toEqual({
         proxyDependencyTracking: true,
-        disposalTimeout: 100,
-        strictModeCompatibility: true,
       });
     });
 
@@ -32,8 +28,6 @@ describe('Blac.config', () => {
 
       expect(Blac.config).toEqual({
         proxyDependencyTracking: false,
-        disposalTimeout: 100,
-        strictModeCompatibility: true,
       });
     });
 
@@ -46,8 +40,6 @@ describe('Blac.config', () => {
 
       expect(Blac.config).toEqual({
         proxyDependencyTracking: false,
-        disposalTimeout: 100,
-        strictModeCompatibility: true,
       });
     });
 
@@ -71,41 +63,6 @@ describe('Blac.config', () => {
 
       // Original config should remain unchanged
       expect(Blac.config.proxyDependencyTracking).toBe(true);
-    });
-  });
-
-  describe('Disposal Configuration', () => {
-    it('should accept valid disposalTimeout', () => {
-      Blac.setConfig({ disposalTimeout: 100 });
-      expect(Blac.config.disposalTimeout).toBe(100);
-    });
-
-    it('should accept 0 as disposalTimeout', () => {
-      Blac.setConfig({ disposalTimeout: 0 });
-      expect(Blac.config.disposalTimeout).toBe(0);
-    });
-
-    it('should reject negative disposalTimeout', () => {
-      expect(() => {
-        Blac.setConfig({ disposalTimeout: -1 });
-      }).toThrow('must be non-negative');
-    });
-
-    it('should reject invalid disposalTimeout type', () => {
-      expect(() => {
-        Blac.setConfig({ disposalTimeout: '100' as any });
-      }).toThrow('must be a number');
-    });
-
-    it('should accept strictModeCompatibility boolean', () => {
-      Blac.setConfig({ strictModeCompatibility: false });
-      expect(Blac.config.strictModeCompatibility).toBe(false);
-    });
-
-    it('should reject invalid strictModeCompatibility type', () => {
-      expect(() => {
-        Blac.setConfig({ strictModeCompatibility: 'true' as any });
-      }).toThrow('must be a boolean');
     });
   });
 

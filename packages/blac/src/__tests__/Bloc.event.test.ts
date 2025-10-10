@@ -356,7 +356,7 @@ describe('Bloc Event Handling', () => {
       expect(bloc.state).toBe(0);
       // Error should be logged about attempted state update on disposed bloc
       expect(errorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Attempted state update on'),
+        expect.stringContaining('Cannot emit state on'),
       );
 
       errorSpy.mockRestore();
