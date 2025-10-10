@@ -19,8 +19,6 @@ class CounterCubit extends Cubit<{ count: number }> {
 }
 
 class FastDisposalCubit extends Cubit<{ value: string }> {
-  static disposalTimeout = 0; // Immediate disposal
-
   constructor() {
     super({ value: 'initial' });
   }
@@ -32,10 +30,6 @@ class FastDisposalCubit extends Cubit<{ value: string }> {
 
 describe('useBloc in React Strict Mode', () => {
   beforeEach(() => {
-    Blac.setConfig({
-      disposalTimeout: 100,
-      strictModeCompatibility: true,
-    });
     Blac.resetInstance();
   });
 
@@ -90,7 +84,7 @@ describe('useBloc in React Strict Mode', () => {
     expect(screen.getByTestId('count')).toHaveTextContent('1');
   });
 
-  it('should maintain state across mount/unmount/remount', async () => {
+  it('should maintain state across mount/unmount/remount with synchronous remount', async () => {
     const App = () => {
       const [show, setShow] = React.useState(true);
       return (
@@ -129,15 +123,12 @@ describe('useBloc in React Strict Mode', () => {
     });
     expect(screen.queryByTestId('count')).not.toBeInTheDocument();
 
-    // Wait a bit but less than disposal timeout
-    await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 50));
-    });
-
-    // Show again - should maintain state
+    // Show again immediately (before microtask runs) - disposal should be cancelled
     act(() => {
       screen.getByText('Toggle').click();
     });
+
+    // State should be maintained because remount happened before microtask disposal
     expect(screen.getByTestId('count')).toHaveTextContent('1');
   });
 
@@ -180,10 +171,7 @@ describe('useBloc in React Strict Mode', () => {
     expect(screen.getByTestId('count')).toHaveTextContent('1');
   });
 
-  it('should work with different timeout configurations', async () => {
-    // Test with short timeout
-    Blac.setConfig({ disposalTimeout: 50 });
-
+  it('should dispose after microtask when unmount completes', async () => {
     const Component = () => {
       const [state, bloc] = useBloc(CounterCubit);
       return (
@@ -207,21 +195,23 @@ describe('useBloc in React Strict Mode', () => {
 
     unmount();
 
-    // Wait less than disposal timeout
-    await new Promise(resolve => setTimeout(resolve, 30));
+    // Flush microtask queue to trigger disposal
+    await act(async () => {
+      await Promise.resolve();
+    });
 
-    // Remount
+    // Remount - should create new instance with initial state
     render(
       <React.StrictMode>
         <Component />
       </React.StrictMode>
     );
 
-    // State should be preserved
-    expect(screen.getByTestId('count')).toHaveTextContent('1');
+    // State should be reset (new instance created)
+    expect(screen.getByTestId('count')).toHaveTextContent('0');
   });
 
-  it('should respect bloc-level disposal timeout override', async () => {
+  it('should dispose bloc after microtask when fully unmounted', async () => {
     const Component = () => {
       const [state, bloc] = useBloc(FastDisposalCubit);
       return (
@@ -245,8 +235,10 @@ describe('useBloc in React Strict Mode', () => {
 
     unmount();
 
-    // Wait just a tiny bit (FastDisposalCubit has 0ms timeout)
-    await new Promise(resolve => setTimeout(resolve, 5));
+    // Flush microtask queue
+    await act(async () => {
+      await Promise.resolve();
+    });
 
     // Remount
     render(
@@ -255,7 +247,7 @@ describe('useBloc in React Strict Mode', () => {
       </React.StrictMode>
     );
 
-    // State should be reset because bloc was disposed immediately
+    // State should be reset because bloc was disposed
     expect(screen.getByTestId('value')).toHaveTextContent('initial');
   });
 

@@ -24,8 +24,7 @@ class IsolatedCounterCubit extends Cubit<{ count: number }> {
 describe('useBloc with isolated blocs in React Strict Mode', () => {
   beforeEach(() => {
     Blac.setConfig({
-      disposalTimeout: 100,
-      strictModeCompatibility: true,
+      proxyDependencyTracking: true,
     });
     Blac.resetInstance();
   });

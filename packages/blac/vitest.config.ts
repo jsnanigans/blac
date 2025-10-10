@@ -3,6 +3,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     environment: 'jsdom', // Using jsdom as it's in devDependencies
+    maxConcurrency: 2,
     globals: true, // Optional: consider if explicit imports are preferred
     coverage: {
       provider: 'v8', // or 'istanbul'

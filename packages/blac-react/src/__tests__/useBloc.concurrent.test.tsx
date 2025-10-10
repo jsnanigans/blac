@@ -1,10 +1,9 @@
-import { describe, it, expect, vi } from 'vitest';
-import { renderHook, act, waitFor } from '@testing-library/react';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import { renderHook, act, waitFor, render } from '@testing-library/react';
 import { Cubit } from '@blac/core';
 import { useState, useTransition, startTransition } from 'react';
 import useBloc from '../useBloc';
-import { flushMicrotasks, rapidStateUpdates } from './utils/react18-helpers';
+import { flushMicrotasks } from './utils/react18-helpers';
 
 // Cubit for testing concurrent updates
 interface ConcurrentState {
@@ -100,12 +99,10 @@ class TearingTestCubit extends Cubit<TearingTestState> {
 
 describe('useBloc in Concurrent Mode', () => {
   it('should handle rapid state changes without tearing', async () => {
-    let renderCount = 0;
     const stateSnapshots: TearingTestState[] = [];
 
     const TestComponent = () => {
       const [state, cubit] = useBloc(TearingTestCubit);
-      renderCount++;
 
       // Capture state snapshot
       stateSnapshots.push({ ...state });
@@ -205,7 +202,6 @@ describe('useBloc in Concurrent Mode', () => {
 
   it('should handle priority updates correctly', async () => {
     let highPriorityRenders = 0;
-    let lowPriorityRenders = 0;
 
     const PriorityTestComponent = () => {
       const [isPending, startTransition] = useTransition();
@@ -214,8 +210,6 @@ describe('useBloc in Concurrent Mode', () => {
       // Track renders by priority
       if (state.priority === 'high') {
         highPriorityRenders++;
-      } else if (state.priority === 'low') {
-        lowPriorityRenders++;
       }
 
       const handleUrgentClick = () => {
@@ -279,7 +273,7 @@ describe('useBloc in Concurrent Mode', () => {
     const InterruptibleComponent = () => {
       renderAttempts++;
       const [state, cubit] = useBloc(ConcurrentCubit);
-      const [isPending, startTransition] = useTransition();
+      const [_isPending, startTransition] = useTransition();
 
       // Simulate expensive render
       const expensiveComputation = () => {
