@@ -22,6 +22,7 @@
   "dependencies": {
     "@blac/core": "workspace:*",
     "@blac/devtools-connect": "workspace:*",
+    "@blac/plugin-graph": "workspace:*",
     "@blac/plugin-persistence": "workspace:*",
     "@blac/plugin-render-logging": "workspace:*",
     "@blac/react": "workspace:*",

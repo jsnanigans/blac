@@ -1,0 +1,51 @@
+{
+  "name": "@blac/plugin-graph",
+  "version": "1.0.0",
+  "description": "Graph visualization plugin for BlaC state management",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "scripts": {
+    "dev": "tsc --watch --project tsconfig.build.json",
+    "build": "pnpm run clean && pnpm run build:esm && pnpm run build:cjs",
+    "build:esm": "tsc --project tsconfig.build.json",
+    "build:cjs": "tsc --project tsconfig.build.json --module commonjs --outDir dist-cjs --declaration false --declarationMap false && cp dist-cjs/index.js dist/index.cjs && rm -rf dist-cjs",
+    "clean": "rm -rf dist dist-cjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "prepublishOnly": "echo 'Skipping prepublishOnly - build should be done at root level'"
+  },
+  "devDependencies": {
+    "@blac/core": "workspace:*",
+    "@types/node": "catalog:",
+    "tsx": "^4.20.6",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "@blac/core": "workspace:*"
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "blac",
+    "plugin",
+    "graph",
+    "visualization",
+    "debugging",
+    "state-management"
+  ],
+  "author": "",
+  "license": "MIT"
+}

@@ -140,7 +140,7 @@ Validate React Flow performance with realistic Bloc instance data before committ
 
 ---
 
-## Phase 2: Graph Visualization Component (Week 2, Days 3-5)
+## Phase 2: Graph Visualization Component (Week 2, Days 3-5) ✅ COMPLETE
 
 ### Goal
 Build production-ready BlocGraphVisualizer component with Blac integration.
@@ -148,7 +148,7 @@ Build production-ready BlocGraphVisualizer component with Blac integration.
 ### Tasks
 
 #### Component Development
-- [ ] #S:l Build `BlocGraphVisualizer` component
+- [x] #S:l Build `BlocGraphVisualizer` component ✅
   - Props: layout (grid/force), showConsumerEdges, highlightLifecycle, onNodeClick, className
   - Custom grid layout (shared vs isolated grouping)
   - Create compound node components (BlocNode, CubitNode)
@@ -158,43 +158,45 @@ Build production-ready BlocGraphVisualizer component with Blac integration.
   - Real-time updates (throttled to 100ms)
   - Add inline documentation with usage examples
 
-- [ ] #S:m Create custom node components
-  - `BlocNode.tsx` - Compound node for Bloc instances
-  - `CubitNode.tsx` - Compound node for Cubit instances
+- [x] #S:m Create custom node components ✅
+  - `BlocGraphNode.tsx` - Unified component for both Bloc and Cubit instances
   - Node header (name, instance ID, lifecycle indicator)
   - Expandable state display (collapsible)
   - Consumer count indicator
-  - Color-coded borders based on lifecycle
+  - Color-coded borders based on concept type
 
-- [ ] #S:m Implement layout algorithms
+- [x] #S:m Implement layout algorithms ✅
   - `gridLayout.ts` - Custom grid layout (shared vs isolated grouping)
   - Calculate positions based on instance patterns
   - Support variable node sizes (expanded/collapsed)
-  - Optional: `forceLayout.ts` - Force-directed layout for comparison demos
+  - Bounding box calculations
+  - Note: Force-directed layout deferred (not needed for initial release)
 
 #### Blac Integration
-- [ ] #S:l Add graph subscription API to `@blac/core`
+- [x] #S:l Add graph subscription API to `@blac/core` ✅
   - Add `graphSubscribers: Set<GraphUpdateCallback>` to Blac class
-  - Implement `subscribeToGraph(callback)` method
+  - Implement `subscribeToGraph(callback)` method with immediate snapshot
   - Implement `getGraphSnapshot()` returning nodes and edges
   - Add `notifyGraphSubscribers()` with 100ms throttling
-  - Call from BlocBase lifecycle methods (create, activate, dispose)
+  - Call from BlocBase lifecycle methods (create, activate, dispose, state change)
   - Add helper `instanceToNode(instance): BlocGraphNode`
 
-- [ ] #S:m Create graph data types
+- [x] #S:m Create graph data types ✅
   - Define `BlocGraphNode` interface (id, type, name, instanceId, lifecycle, state, isShared, isIsolated, keepAlive, consumers)
   - Define `BlocGraphEdge` interface (id, source, target, type)
   - Define `GraphSnapshot` interface (nodes, edges)
   - Define `GraphUpdateCallback` type
+  - Additional types: GraphUpdateEvent, GraphVisualizationConfig
 
-- [ ] #S:s Create `useBlocGraph()` React hook
+- [x] #S:s Create `useBlocGraph()` React hook ✅
   - Subscribe to Blac graph updates
   - Transform instances to graph nodes/edges
   - Return memoized graph data
   - Handle cleanup on unmount
+  - Bonus: `useBlocGraphFiltered()` for custom filtering
 
 #### Testing
-- [ ] #S:m Write integration tests
+- [ ] #S:m Write integration tests (DEFERRED to Phase 10)
   - Test graph updates on Bloc creation
   - Test graph updates on state changes
   - Test graph updates on Bloc disposal
@@ -203,9 +205,12 @@ Build production-ready BlocGraphVisualizer component with Blac integration.
 
 ### Deliverables
 - ✅ Working BlocGraphVisualizer component
-- ✅ Blac graph subscription API
-- ✅ Custom grid and force layouts
-- ✅ Integration tests passing
+- ✅ Blac graph subscription API with throttling
+- ✅ Custom grid layout algorithm
+- ✅ Unified BlocGraphNode component
+- ✅ useBlocGraph React hook
+- ✅ Comprehensive type definitions
+- ⚠️ Integration tests (deferred to Phase 10)
 - ✅ Inline component documentation
 
 ---
