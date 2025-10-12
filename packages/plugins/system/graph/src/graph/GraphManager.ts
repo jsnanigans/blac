@@ -5,9 +5,14 @@ import type {
   GraphSnapshot,
   RootGraphNode,
   BlocGraphNode,
-  StateGraphNode,
+  StateRootNode,
+  StatePropertyNode,
 } from '../types';
-import { analyzeStateValue, type SerializationConfig } from '../serialization';
+import {
+  expandStateTree,
+  type SerializationConfig,
+  type StateTreeExpansionConfig,
+} from '../serialization';
 
 const ROOT_NODE_ID = 'blac-root';
 
@@ -17,12 +22,18 @@ const ROOT_NODE_ID = 'blac-root';
 export class GraphManager {
   private rootNode: RootGraphNode | null = null;
   private blocNodes = new Map<string, BlocGraphNode>();
-  private stateNodes = new Map<string, StateGraphNode>();
+  private stateRootNodes = new Map<string, StateRootNode>();
+  private statePropertyNodes = new Map<string, StatePropertyNode>();
   private edges = new Map<string, GraphEdge>();
-  private config: SerializationConfig;
+  private config: StateTreeExpansionConfig;
 
   constructor(config: SerializationConfig) {
-    this.config = config;
+    this.config = {
+      ...config,
+      maxDepth: config.maxDepth ?? 3,
+      maxArrayItems: 100,
+      detectCircularRefs: true,
+    };
   }
 
   /**
@@ -116,81 +127,187 @@ export class GraphManager {
   }
 
   /**
-   * Adds a State node for a Bloc/Cubit
+   * Adds a State root node and expands state into property nodes
    */
   addStateNode(bloc: BlocBase<unknown>): void {
-    const stateNodeId = `state-${bloc.uid}`;
+    const stateRootNodeId = `state-${bloc.uid}`;
     const blocNodeId = `bloc-${bloc.uid}`;
 
-    const metadata = analyzeStateValue(bloc.state, this.config);
+    // Determine root value type
+    const valueType =
+      bloc.state === null
+        ? 'null'
+        : bloc.state === undefined
+        ? 'undefined'
+        : Array.isArray(bloc.state)
+        ? 'array'
+        : typeof bloc.state;
 
-    const node: StateGraphNode = {
-      id: stateNodeId,
-      type: 'state',
+    // Create state root node
+    const stateRootNode: StateRootNode = {
+      id: stateRootNodeId,
+      type: 'state-root',
       parentId: blocNodeId,
-      displayValue: metadata.displayValue,
-      fullValue: metadata.fullValue,
-      isPrimitive: metadata.isPrimitive,
-      isExpandable: metadata.isExpandable,
-      valueType: metadata.type,
-      childCount: metadata.childCount,
+      valueType,
       hasChanged: false,
     };
 
-    this.stateNodes.set(bloc.uid, node);
+    this.stateRootNodes.set(bloc.uid, stateRootNode);
 
-    // Create edge from bloc to state
-    const edgeId = `edge-${blocNodeId}-${stateNodeId}`;
-    this.edges.set(edgeId, {
-      id: edgeId,
+    // Create edge from bloc to state root
+    const rootEdgeId = `edge-${blocNodeId}-${stateRootNodeId}`;
+    this.edges.set(rootEdgeId, {
+      id: rootEdgeId,
       source: blocNodeId,
-      target: stateNodeId,
+      target: stateRootNodeId,
       type: 'hierarchy',
     });
+
+    // Expand state into property nodes
+    const { nodes } = expandStateTree(bloc.state, stateRootNodeId, this.config);
+
+    // Store all property nodes and create edges
+    for (const node of nodes) {
+      this.statePropertyNodes.set(node.id, node);
+
+      // Create edge from parent to this node
+      const edgeId = `edge-${node.parentId}-${node.id}`;
+      this.edges.set(edgeId, {
+        id: edgeId,
+        source: node.parentId,
+        target: node.id,
+        type: 'hierarchy',
+      });
+    }
   }
 
   /**
    * Updates a State node when state changes
+   * Re-expands the entire state tree for simplicity
    */
   updateStateNode(
     blocUid: string,
     currentState: unknown,
     previousState: unknown
   ): void {
-    const node = this.stateNodes.get(blocUid);
-    if (!node) return;
+    const stateRootNode = this.stateRootNodes.get(blocUid);
+    if (!stateRootNode) return;
 
-    const metadata = analyzeStateValue(currentState, this.config);
+    // Mark state root as changed
+    stateRootNode.hasChanged = true;
 
-    node.displayValue = metadata.displayValue;
-    node.fullValue = metadata.fullValue;
-    node.isPrimitive = metadata.isPrimitive;
-    node.isExpandable = metadata.isExpandable;
-    node.valueType = metadata.type;
-    node.childCount = metadata.childCount;
-    node.hasChanged = true; // Mark for flash animation
+    // Update value type
+    const valueType =
+      currentState === null
+        ? 'null'
+        : currentState === undefined
+        ? 'undefined'
+        : Array.isArray(currentState)
+        ? 'array'
+        : typeof currentState;
 
-    // Clear hasChanged flag after a short delay (for animation)
+    stateRootNode.valueType = valueType;
+
+    // Remove all existing property nodes for this state
+    const propertyNodesToRemove: string[] = [];
+    for (const [nodeId, node] of this.statePropertyNodes.entries()) {
+      if (node.id.startsWith(`${stateRootNode.id}.`)) {
+        propertyNodesToRemove.push(nodeId);
+      }
+    }
+
+    // Remove nodes and their edges
+    for (const nodeId of propertyNodesToRemove) {
+      this.statePropertyNodes.delete(nodeId);
+
+      // Remove edges connected to this node
+      const edgesToRemove: string[] = [];
+      for (const [edgeId, edge] of this.edges.entries()) {
+        if (edge.source === nodeId || edge.target === nodeId) {
+          edgesToRemove.push(edgeId);
+        }
+      }
+
+      for (const edgeId of edgesToRemove) {
+        this.edges.delete(edgeId);
+      }
+    }
+
+    // Re-expand state into property nodes
+    const { nodes } = expandStateTree(
+      currentState,
+      stateRootNode.id,
+      this.config
+    );
+
+    // Store all new property nodes and create edges
+    for (const node of nodes) {
+      // Mark as changed for animation
+      node.hasChanged = true;
+
+      this.statePropertyNodes.set(node.id, node);
+
+      // Create edge from parent to this node
+      const edgeId = `edge-${node.parentId}-${node.id}`;
+      this.edges.set(edgeId, {
+        id: edgeId,
+        source: node.parentId,
+        target: node.id,
+        type: 'hierarchy',
+      });
+    }
+
+    // Clear hasChanged flags after a short delay (for animation)
     setTimeout(() => {
-      node.hasChanged = false;
+      stateRootNode.hasChanged = false;
+      for (const node of nodes) {
+        const storedNode = this.statePropertyNodes.get(node.id);
+        if (storedNode) {
+          storedNode.hasChanged = false;
+        }
+      }
     }, 500);
   }
 
   /**
-   * Removes a State node from the graph
+   * Removes a State root node and all its property nodes from the graph
    */
   removeStateNode(blocUid: string): void {
-    const node = this.stateNodes.get(blocUid);
-    if (!node) return;
+    const stateRootNode = this.stateRootNodes.get(blocUid);
+    if (!stateRootNode) return;
 
     const blocNodeId = `bloc-${blocUid}`;
 
-    // Remove the node
-    this.stateNodes.delete(blocUid);
+    // Remove all property nodes that belong to this state
+    const propertyNodesToRemove: string[] = [];
+    for (const [nodeId, node] of this.statePropertyNodes.entries()) {
+      if (node.id.startsWith(`${stateRootNode.id}.`)) {
+        propertyNodesToRemove.push(nodeId);
+      }
+    }
 
-    // Remove edge from bloc to state
-    const edgeId = `edge-${blocNodeId}-${node.id}`;
-    this.edges.delete(edgeId);
+    for (const nodeId of propertyNodesToRemove) {
+      this.statePropertyNodes.delete(nodeId);
+
+      // Remove edges connected to this node
+      const edgesToRemove: string[] = [];
+      for (const [edgeId, edge] of this.edges.entries()) {
+        if (edge.source === nodeId || edge.target === nodeId) {
+          edgesToRemove.push(edgeId);
+        }
+      }
+
+      for (const edgeId of edgesToRemove) {
+        this.edges.delete(edgeId);
+      }
+    }
+
+    // Remove the state root node
+    this.stateRootNodes.delete(blocUid);
+
+    // Remove edge from bloc to state root
+    const rootEdgeId = `edge-${blocNodeId}-${stateRootNode.id}`;
+    this.edges.delete(rootEdgeId);
   }
 
   /**
@@ -209,9 +326,14 @@ export class GraphManager {
       nodes.push(blocNode);
     }
 
-    // Add all state nodes
-    for (const stateNode of this.stateNodes.values()) {
-      nodes.push(stateNode);
+    // Add all state root nodes
+    for (const stateRootNode of this.stateRootNodes.values()) {
+      nodes.push(stateRootNode);
+    }
+
+    // Add all state property nodes
+    for (const propertyNode of this.statePropertyNodes.values()) {
+      nodes.push(propertyNode);
     }
 
     // Collect all edges
@@ -232,10 +354,17 @@ export class GraphManager {
   }
 
   /**
-   * Gets a State node by Bloc UID
+   * Gets a State root node by Bloc UID
    */
-  getStateNode(blocUid: string): StateGraphNode | undefined {
-    return this.stateNodes.get(blocUid);
+  getStateRootNode(blocUid: string): StateRootNode | undefined {
+    return this.stateRootNodes.get(blocUid);
+  }
+
+  /**
+   * Gets a State property node by ID
+   */
+  getStatePropertyNode(nodeId: string): StatePropertyNode | undefined {
+    return this.statePropertyNodes.get(nodeId);
   }
 
   /**
@@ -244,7 +373,8 @@ export class GraphManager {
   clear(): void {
     this.rootNode = null;
     this.blocNodes.clear();
-    this.stateNodes.clear();
+    this.stateRootNodes.clear();
+    this.statePropertyNodes.clear();
     this.edges.clear();
   }
 }

@@ -183,7 +183,7 @@ function applyGridLayout(nodes: Node[]): Node[] {
   // Group by instance pattern
   const grouped = nodes.reduce(
     (acc, node) => {
-      const pattern = (node.data as BlocNodeData).instancePattern;
+      const pattern = (node.data as unknown as BlocNodeData).instancePattern;
       if (!acc[pattern]) acc[pattern] = [];
       acc[pattern].push(node);
       return acc;
@@ -293,7 +293,7 @@ export function BlocGraphPrototype() {
           data: {
             ...node.data,
             state: {
-              ...(node.data as BlocNodeData).state,
+              ...(node.data as unknown as BlocNodeData).state,
               count: Math.floor(Math.random() * 100),
               timestamp: Date.now(),
             },
@@ -398,7 +398,7 @@ export function BlocGraphPrototype() {
           <Controls />
           <MiniMap
             nodeColor={(node) => {
-              const data = node.data as BlocNodeData;
+              const data = node.data as unknown as BlocNodeData;
               return data.type === 'bloc' ? '#a855f7' : '#3b82f6';
             }}
             nodeStrokeWidth={3}

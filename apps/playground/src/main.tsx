@@ -47,6 +47,9 @@ Blac.instance.plugins.add(
   }),
 );
 
+// Bootstrap Blac to trigger plugin initialization
+Blac.instance.bootstrap();
+
 // Make BlaC available globally for debugging
 declare global {
   interface Window {

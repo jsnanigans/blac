@@ -54,7 +54,7 @@ export function RootLayout() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-14 items-center">
+        <div className="w-full px-4 flex h-14 items-center">
           <div className="mr-4 flex">
             <Link to="/" className="mr-6 flex items-center space-x-2">
               <span className="font-bold text-xl tracking-tight">
@@ -141,7 +141,7 @@ export function RootLayout() {
 
       {/* Footer */}
       <footer className="border-t py-6 md:py-0">
-        <div className="container flex flex-col items-center justify-between gap-4 md:h-16 md:flex-row">
+        <div className="w-full px-4 flex flex-col items-center justify-between gap-4 md:h-16 md:flex-row">
           <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
             Built with BlaC. The source code is available on{' '}
             <a

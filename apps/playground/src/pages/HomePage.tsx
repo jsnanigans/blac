@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom';
 
 export function HomePage() {
   return (
-    <div className="container py-10">
+    <div className="w-full px-4 py-10">
       {/* Hero Section */}
-      <section className="relative mx-auto flex max-w-[1100px] flex-col items-center gap-3 rounded-2xl border bg-gradient-to-b from-background to-muted/40 px-6 py-12 md:py-16 lg:py-24">
+      <section className="relative mx-auto flex w-full flex-col items-center gap-3 rounded-2xl border bg-gradient-to-b from-background to-muted/40 px-6 py-12 md:py-16 lg:py-24">
         <div className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs text-muted-foreground">
           <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
           Now with Command Palette and Resizable Playground
@@ -35,7 +35,7 @@ export function HomePage() {
       </section>
 
       {/* Features Grid */}
-      <section className="mx-auto grid max-w-[1100px] grid-cols-1 gap-6 py-10 md:grid-cols-2 lg:grid-cols-4">
+      <section className="mx-auto grid w-full grid-cols-1 gap-6 py-10 md:grid-cols-2 lg:grid-cols-4">
         <div className="relative overflow-hidden rounded-lg border bg-background p-6">
           <Zap className="h-12 w-12 text-primary mb-4" />
           <h3 className="font-bold mb-2">Live Demos</h3>
@@ -74,7 +74,7 @@ export function HomePage() {
       </section>
 
       {/* Quick Start */}
-      <section className="mx-auto max-w-[1100px] py-8">
+      <section className="mx-auto w-full py-8">
         <h2 className="text-2xl font-bold mb-4">Quick Start</h2>
         <div className="grid gap-4 md:grid-cols-3">
           <Link
@@ -116,7 +116,7 @@ export function HomePage() {
       </section>
 
       {/* Stats */}
-      <section className="mx-auto max-w-[1100px] py-8 border-t">
+      <section className="mx-auto w-full py-8 border-t">
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
           <div className="text-center">
             <div className="text-3xl font-bold">24+</div>

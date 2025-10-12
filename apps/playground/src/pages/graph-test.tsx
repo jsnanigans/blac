@@ -354,6 +354,7 @@ export default function GraphTest() {
               showControls={true}
               showMinimap={true}
               highlightLifecycle={true}
+              animationDuration={400} // Smooth animations when nodes are added/removed
             />
           </div>
         </div>

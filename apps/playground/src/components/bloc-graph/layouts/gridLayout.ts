@@ -23,9 +23,9 @@ export interface GridLayoutOptions {
 
 const DEFAULT_OPTIONS: Required<GridLayoutOptions> = {
   columns: 5,
-  horizontalSpacing: 350,
-  verticalSpacing: 350,
-  groupSpacing: 100,
+  horizontalSpacing: 250,
+  verticalSpacing: 200,
+  groupSpacing: 60,
   groupByPattern: true,
 };
 

@@ -129,16 +129,24 @@ async function test() {
       });
     }
 
-    const stateNodes = snapshot.nodes.filter((n) => n.type === 'state');
-    if (stateNodes.length > 0) {
-      console.log(`   State Nodes:`);
-      stateNodes.forEach((node) => {
-        if (node.type === 'state') {
-          console.log(
-            `     - ${node.valueType}: ${node.displayValue.substring(0, 50)}${node.displayValue.length > 50 ? '...' : ''}`
-          );
+    const stateRootNodes = snapshot.nodes.filter((n) => n.type === 'state-root');
+    if (stateRootNodes.length > 0) {
+      console.log(`   State Root Nodes:`);
+      stateRootNodes.forEach((node) => {
+        if (node.type === 'state-root') {
+          console.log(`     - valueType: ${node.valueType}`);
         }
       });
+    }
+
+    const statePropertyNodes = snapshot.nodes.filter((n) =>
+      n.type === 'state-object' ||
+      n.type === 'state-array' ||
+      n.type === 'state-array-item' ||
+      n.type === 'state-primitive'
+    );
+    if (statePropertyNodes.length > 0) {
+      console.log(`   State Property Nodes: ${statePropertyNodes.length} total`);
     }
   });
 

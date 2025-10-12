@@ -68,7 +68,7 @@ export function DemosPage() {
   }, [searchQuery, selectedCategory, selectedDifficulty]);
 
   return (
-    <div className="container py-6">
+    <div className="w-full px-4 py-6">
       {/* Page header with summary */}
       <div className="mb-6 rounded-xl border bg-card p-4">
         <div className="flex items-center justify-between">

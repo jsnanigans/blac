@@ -48,7 +48,7 @@ export function DemoRunner() {
   const DemoComponent = demo.component;
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="w-full px-4">
       {/* Header */}
       <div className="mb-6">
         <Link

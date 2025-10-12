@@ -10,9 +10,16 @@ export type {
   GraphUpdateCallback,
   RootGraphNode,
   BlocGraphNode,
-  StateGraphNode,
+  StateRootNode,
+  StatePropertyNode,
 } from './types';
 
 // Serialization utilities (for advanced users)
-export { serializeState, analyzeStateValue } from './serialization';
-export type { SerializationConfig, SerializedState, StateValueMetadata } from './serialization';
+export { serializeState, analyzeStateValue, expandStateTree } from './serialization';
+export type {
+  SerializationConfig,
+  SerializedState,
+  StateValueMetadata,
+  StateTreeExpansionConfig,
+  StateTreeExpansionResult,
+} from './serialization';

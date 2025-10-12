@@ -1,6 +1,7 @@
 import { Cubit, Blac } from '@blac/core';
 import { useBloc } from '@blac/react';
 import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { BlocGraphVisualizer } from '@/components/bloc-graph';
 
 interface CounterState {
   count: number;
@@ -340,27 +341,29 @@ export const KeepAliveDemo: React.FC = () => {
   }, []);
 
   return (
-    <div className="max-w-5xl mx-auto p-4">
-      <div className="mb-6">
-        <div className="flex justify-between items-start mb-2">
-          <h3 className="text-2xl font-bold">KeepAlive Pattern Demo</h3>
-          <button
-            onClick={() => setShowDebug(!showDebug)}
-            className="px-2 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-700"
-          >
-            {showDebug ? 'Hide' : 'Show'} Debug
-          </button>
+    <div className="flex h-[calc(100vh-100px)] gap-4 p-4">
+      {/* Left Side - Demo Controls */}
+      <div className="w-[600px] overflow-y-auto">
+        <div className="mb-6">
+          <div className="flex justify-between items-start mb-2">
+            <h3 className="text-2xl font-bold">KeepAlive Pattern Demo</h3>
+            <button
+              onClick={() => setShowDebug(!showDebug)}
+              className="px-2 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-700"
+            >
+              {showDebug ? 'Hide' : 'Show'} Debug
+            </button>
+          </div>
+          <p className="text-gray-600 dark:text-gray-400">
+            KeepAlive Cubits persist in memory even when no components are using
+            them. Regular Cubits are disposed when their last consumer unmounts.
+          </p>
+          <div className="mt-2 p-2 bg-yellow-100 dark:bg-yellow-900/20 rounded text-sm">
+            <strong>📋 Instructions:</strong> Open the browser console (F12) to
+            see detailed lifecycle logs. Try showing/hiding counters and
+            incrementing values to see the difference!
+          </div>
         </div>
-        <p className="text-gray-600 dark:text-gray-400">
-          KeepAlive Cubits persist in memory even when no components are using
-          them. Regular Cubits are disposed when their last consumer unmounts.
-        </p>
-        <div className="mt-2 p-2 bg-yellow-100 dark:bg-yellow-900/20 rounded text-sm">
-          <strong>📋 Instructions:</strong> Open the browser console (F12) to
-          see detailed lifecycle logs. Try showing/hiding counters and
-          incrementing values to see the difference!
-        </div>
-      </div>
 
       <div className="grid md:grid-cols-2 gap-6">
         <div>
@@ -512,27 +515,43 @@ export const KeepAliveDemo: React.FC = () => {
         </div>
       </div>
 
-      {showDebug && <DebugPanel />}
+        {showDebug && <DebugPanel />}
 
-      <div className="mt-6 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
-        <h4 className="font-semibold mb-2">🎯 Try This Sequence:</h4>
-        <ol className="space-y-1 text-sm list-decimal list-inside">
-          <li>Increment KeepAlive Counter 1 a few times</li>
-          <li>Hide KeepAlive Counter 1</li>
-          <li>
-            Show KeepAlive Counter 2 -{' '}
-            <strong>it should show the same count!</strong>
-          </li>
-          <li>Increment Counter 2</li>
-          <li>
-            Show Counter 1 again -{' '}
-            <strong>both counters should be in sync!</strong>
-          </li>
-          <li>
-            Try the same with Regular counters -{' '}
-            <strong>they reset each time!</strong>
-          </li>
-        </ol>
+        <div className="mt-6 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
+          <h4 className="font-semibold mb-2">🎯 Try This Sequence:</h4>
+          <ol className="space-y-1 text-sm list-decimal list-inside">
+            <li>Increment KeepAlive Counter 1 a few times</li>
+            <li>Hide KeepAlive Counter 1</li>
+            <li>
+              Show KeepAlive Counter 2 -{' '}
+              <strong>it should show the same count!</strong>
+            </li>
+            <li>Increment Counter 2</li>
+            <li>
+              Show Counter 1 again -{' '}
+              <strong>both counters should be in sync!</strong>
+            </li>
+            <li>
+              Try the same with Regular counters -{' '}
+              <strong>they reset each time!</strong>
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      {/* Right Side - Graph Visualization */}
+      <div className="flex-1 bg-white dark:bg-gray-900 rounded-lg shadow-lg overflow-hidden">
+        <BlocGraphVisualizer
+          showControls={true}
+          showMinimap={true}
+          treeOptions={{
+            nodeWidth: 180,
+            nodeHeight: 100,
+            siblingSpacing: 10,
+            levelSpacing: 200,
+            orientation: 'horizontal',
+          }}
+        />
       </div>
     </div>
   );
@@ -545,7 +564,7 @@ import { Cubit } from '@blac/core';
 // KeepAlive Cubit - persists when unused
 class KeepAliveCubit extends Cubit<State> {
   static keepAlive = true; // Key property!
-  
+
   constructor() {
     super(initialState);
   }
@@ -554,7 +573,7 @@ class KeepAliveCubit extends Cubit<State> {
 // Regular Cubit - disposed when unused
 class RegularCubit extends Cubit<State> {
   // No keepAlive property
-  
+
   constructor() {
     super(initialState);
   }
@@ -575,34 +594,34 @@ interface AppState {
 // Use KeepAlive for global app state
 export class AppStateCubit extends Cubit<AppState> {
   static keepAlive = true; // Persists throughout app lifecycle
-  
+
   constructor() {
     super({
       user: null,
       settings: defaultSettings,
     });
-    
+
     // Load persisted data on construction
     this.loadPersistedData();
   }
-  
+
   private loadPersistedData = async () => {
     const data = await localStorage.getItem('appState');
     if (data) {
       this.emit(JSON.parse(data));
     }
   };
-  
+
   login = (user: User) => {
     this.patch({ user });
     this.persistState();
   };
-  
+
   logout = () => {
     this.patch({ user: null });
     this.persistState();
   };
-  
+
   private persistState = () => {
     localStorage.setItem('appState', JSON.stringify(this.state));
   };
@@ -611,15 +630,15 @@ export class AppStateCubit extends Cubit<AppState> {
 // Use regular Cubit for temporary UI state
 export class ModalCubit extends Cubit<ModalState> {
   // No keepAlive - disposed when modal closes
-  
+
   constructor() {
     super({ isOpen: false, data: null });
   }
-  
+
   open = (data: any) => {
     this.emit({ isOpen: true, data });
   };
-  
+
   close = () => {
     this.emit({ isOpen: false, data: null });
   };
