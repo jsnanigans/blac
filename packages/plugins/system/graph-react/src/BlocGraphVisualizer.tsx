@@ -11,10 +11,10 @@
 import React, { useMemo } from 'react';
 import { Group } from '@visx/group';
 import { hierarchy, tree } from 'd3-hierarchy';
-import { LinkHorizontal } from '@visx/shape';
+import { linkHorizontal } from 'd3-shape';
 import { Zoom } from '@visx/zoom';
 import * as Tooltip from '@radix-ui/react-tooltip';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useBlocGraph } from '@blac/react';
 import type { GraphNode, GraphSnapshot } from '@blac/plugin-graph';
 
@@ -276,14 +276,20 @@ export function BlocGraphVisualizer({
         width={width}
         height={height}
         scaleXMin={0.1}
-        scaleXMax={2}
+        scaleXMax={3}
         scaleYMin={0.1}
-        scaleYMax={2}
+        scaleYMax={3}
+        wheelDelta={(event) => {
+          // Slower, smoother zoom with scroll (multiplicative factor)
+          // Default is ~1.05, we use 1.02 for smoother control
+          const factor = -event.deltaY > 0 ? 1.02 : 0.98;
+          return { scaleX: factor, scaleY: factor };
+        }}
         initialTransformMatrix={{
-          scaleX: 0.8,
-          scaleY: 0.8,
-          translateX: 150, // More space for left-aligned labels
-          translateY: 50,
+          scaleX: 1,
+          scaleY: 1,
+          translateX: 200, // More space for left-aligned labels
+          translateY: height / 2, // Center vertically
           skewX: 0,
           skewY: 0,
         }}
@@ -309,41 +315,75 @@ export function BlocGraphVisualizer({
               <rect width={width} height={height} rx={14} fill="#2d3748" />
               <Group transform={zoom.toString()}>
                 {/* Render links with animation */}
-                {treeData.links().map((link: any, i: number) => (
-                  <motion.g
-                    key={`link-${link.source.data.id}-${link.target.data.id}`}
-                    initial={{ opacity: 0, pathLength: 0 }}
-                    animate={{ opacity: 0.6, pathLength: 1 }}
-                    exit={{ opacity: 0, pathLength: 0 }}
-                    transition={{ duration: 0.4, ease: 'easeInOut' }}
-                  >
-                    <LinkHorizontal
-                      data={link}
-                      stroke="#4a5568"
-                      strokeWidth="1.5"
-                      fill="none"
-                    />
-                  </motion.g>
-                ))}
+                <AnimatePresence mode="sync">
+                  {treeData.links().map((link: any) => {
+                    const linkId = `link-${link.source.data.id}-${link.target.data.id}`;
+
+                    // Create the path generator for horizontal links
+                    const pathGenerator = linkHorizontal<any, any>()
+                      .x((d) => d.y)
+                      .y((d) => d.x);
+
+                    const linkPath = pathGenerator(link);
+
+                    // For initial render, use a path from the parent to itself (start point)
+                    const initialPath = pathGenerator({
+                      source: link.source,
+                      target: link.source,
+                    });
+
+                    return (
+                      <motion.path
+                        key={linkId}
+                        stroke="#4a5568"
+                        strokeWidth="1.5"
+                        fill="none"
+                        initial={{
+                          d: initialPath || '',
+                          opacity: 0,
+                          pathLength: 0,
+                        }}
+                        animate={{
+                          d: linkPath || '',
+                          opacity: 0.6,
+                          pathLength: 1,
+                        }}
+                        exit={{
+                          d: initialPath || '',
+                          opacity: 0,
+                          pathLength: 0,
+                        }}
+                        transition={{
+                          d: { duration: 0.5, ease: 'easeInOut' },
+                          opacity: { duration: 0.3, ease: 'easeInOut' },
+                          pathLength: { duration: 0.5, ease: 'easeInOut' },
+                        }}
+                      />
+                    );
+                  })}
+                </AnimatePresence>
 
                 {/* Render nodes (swap x/y for horizontal layout) */}
-                {treeData.descendants().map((node: any, i: number) => (
-                  <motion.g
-                    key={`node-${node.data.id}`}
-                    initial={{ x: node.y, y: node.x, opacity: 0 }}
-                    animate={{ x: node.y, y: node.x, opacity: 1 }}
-                    exit={{ opacity: 0, scale: 0 }}
-                    transition={{
-                      duration: 0.5,
-                      ease: 'easeOut',
-                      layout: { duration: 0.5 },
-                    }}
-                  >
-                    <Group top={0} left={0}>
-                      <Node node={node} />
-                    </Group>
-                  </motion.g>
-                ))}
+                <AnimatePresence mode="sync">
+                  {treeData.descendants().map((node: any) => (
+                    <motion.g
+                      key={`node-${node.data.id}`}
+                      initial={{ x: node.y, y: node.x, opacity: 0, scale: 0.3 }}
+                      animate={{ x: node.y, y: node.x, opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.3 }}
+                      transition={{
+                        duration: 0.5,
+                        ease: [0.4, 0, 0.2, 1], // Custom easing for smooth movement
+                        opacity: { duration: 0.3 },
+                        scale: { duration: 0.3 },
+                      }}
+                    >
+                      <Group top={0} left={0}>
+                        <Node node={node} />
+                      </Group>
+                    </motion.g>
+                  ))}
+                </AnimatePresence>
               </Group>
             </svg>
 

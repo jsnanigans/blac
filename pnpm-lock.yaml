@@ -537,6 +537,9 @@ importers:
       d3-hierarchy:
         specifier: ^3.1.2
         version: 3.1.2
+      d3-shape:
+        specifier: ^3.2.0
+        version: 3.2.0
       framer-motion:
         specifier: ^11.18.2
         version: 11.18.2(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
@@ -554,6 +557,9 @@ importers:
         specifier: ^1.0.7
         version: 1.2.7(@types/react-dom@19.1.7(@types/react@19.1.9))(@types/react@19.1.9)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@types/d3-hierarchy':
+        specifier: ^3.1.7
+        version: 3.1.7
+      '@types/d3-shape':
         specifier: ^3.1.7
         version: 3.1.7
       '@types/node':

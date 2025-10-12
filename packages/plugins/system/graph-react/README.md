@@ -23,11 +23,7 @@ Blac.instance.plugins.add(new GraphPlugin());
 // Use the visualizer
 function App() {
   return (
-    <BlocGraphVisualizer
-      width={1200}
-      height={800}
-      className="my-graph"
-    />
+    <BlocGraphVisualizer />
   );
 }
 ```

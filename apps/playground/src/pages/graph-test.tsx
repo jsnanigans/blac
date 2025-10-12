@@ -9,7 +9,7 @@
 import React, { useState } from 'react';
 import { Cubit, Bloc } from '@blac/core';
 import { useBloc } from '@blac/react';
-import { BlocGraphVisualizer } from '../components/bloc-graph';
+import { DemoLayout } from '../core/layouts/DemoLayout';
 
 // Test Cubits
 class CounterCubit extends Cubit<number> {
@@ -237,128 +237,113 @@ export default function GraphTest() {
   const [showKeepAlive, setShowKeepAlive] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <DemoLayout>
       {/* Header */}
-      <div className="bg-white border-b shadow-sm p-4">
+      <div className="mb-6">
         <h1 className="text-2xl font-bold mb-2">
           BlocGraphVisualizer Test
         </h1>
-        <p className="text-gray-600">
+        <p className="text-gray-600 dark:text-gray-400">
           Create and interact with Bloc instances to see them visualized in real-time
         </p>
       </div>
 
-      <div className="flex h-[calc(100vh-100px)]">
-        {/* Left Side - Controls */}
-        <div className="w-1/3 p-4 overflow-auto border-r bg-white">
-          <h2 className="text-lg font-bold mb-4">Instance Controls</h2>
+      {/* Controls */}
+      <div>
+        <h2 className="text-lg font-bold mb-4">Instance Controls</h2>
 
-          {/* Toggle buttons */}
-          <div className="space-y-3 mb-6">
-            <button
-              onClick={() => setShowCounter(!showCounter)}
-              className={`w-full px-4 py-2 rounded font-medium ${
-                showCounter
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-200 text-gray-700'
-              }`}
-            >
-              {showCounter ? '✓ ' : ''}Counter Cubit (Shared)
-            </button>
+        {/* Toggle buttons */}
+        <div className="space-y-3 mb-6">
+          <button
+            onClick={() => setShowCounter(!showCounter)}
+            className={`w-full px-4 py-2 rounded font-medium ${
+              showCounter
+                ? 'bg-blue-500 text-white'
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+            }`}
+          >
+            {showCounter ? '✓ ' : ''}Counter Cubit (Shared)
+          </button>
 
-            <button
-              onClick={() => setShowName(!showName)}
-              className={`w-full px-4 py-2 rounded font-medium ${
-                showName
-                  ? 'bg-green-500 text-white'
-                  : 'bg-gray-200 text-gray-700'
-              }`}
-            >
-              {showName ? '✓ ' : ''}Name Cubit (Shared)
-            </button>
+          <button
+            onClick={() => setShowName(!showName)}
+            className={`w-full px-4 py-2 rounded font-medium ${
+              showName
+                ? 'bg-green-500 text-white'
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+            }`}
+          >
+            {showName ? '✓ ' : ''}Name Cubit (Shared)
+          </button>
 
-            <button
-              onClick={() => setShowBlocCounter(!showBlocCounter)}
-              className={`w-full px-4 py-2 rounded font-medium ${
-                showBlocCounter
-                  ? 'bg-purple-500 text-white'
-                  : 'bg-gray-200 text-gray-700'
-              }`}
-            >
-              {showBlocCounter ? '✓ ' : ''}Counter Bloc (Event-Driven)
-            </button>
+          <button
+            onClick={() => setShowBlocCounter(!showBlocCounter)}
+            className={`w-full px-4 py-2 rounded font-medium ${
+              showBlocCounter
+                ? 'bg-purple-500 text-white'
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+            }`}
+          >
+            {showBlocCounter ? '✓ ' : ''}Counter Bloc (Event-Driven)
+          </button>
 
-            <button
-              onClick={() => setShowIsolated1(!showIsolated1)}
-              className={`w-full px-4 py-2 rounded font-medium ${
-                showIsolated1
-                  ? 'bg-orange-500 text-white'
-                  : 'bg-gray-200 text-gray-700'
-              }`}
-            >
-              {showIsolated1 ? '✓ ' : ''}Isolated Counter #1
-            </button>
+          <button
+            onClick={() => setShowIsolated1(!showIsolated1)}
+            className={`w-full px-4 py-2 rounded font-medium ${
+              showIsolated1
+                ? 'bg-orange-500 text-white'
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+            }`}
+          >
+            {showIsolated1 ? '✓ ' : ''}Isolated Counter #1
+          </button>
 
-            <button
-              onClick={() => setShowIsolated2(!showIsolated2)}
-              className={`w-full px-4 py-2 rounded font-medium ${
-                showIsolated2
-                  ? 'bg-orange-500 text-white'
-                  : 'bg-gray-200 text-gray-700'
-              }`}
-            >
-              {showIsolated2 ? '✓ ' : ''}Isolated Counter #2
-            </button>
+          <button
+            onClick={() => setShowIsolated2(!showIsolated2)}
+            className={`w-full px-4 py-2 rounded font-medium ${
+              showIsolated2
+                ? 'bg-orange-500 text-white'
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+            }`}
+          >
+            {showIsolated2 ? '✓ ' : ''}Isolated Counter #2
+          </button>
 
-            <button
-              onClick={() => setShowKeepAlive(!showKeepAlive)}
-              className={`w-full px-4 py-2 rounded font-medium ${
-                showKeepAlive
-                  ? 'bg-violet-500 text-white'
-                  : 'bg-gray-200 text-gray-700'
-              }`}
-            >
-              {showKeepAlive ? '✓ ' : ''}Keep-Alive Counter
-            </button>
-          </div>
-
-          {/* Active components */}
-          <h2 className="text-lg font-bold mb-4 mt-6">Active Instances</h2>
-          <div className="space-y-3">
-            {showCounter && <CounterDisplay />}
-            {showName && <NameDisplay />}
-            {showBlocCounter && <BlocCounterDisplay />}
-            {showIsolated1 && <IsolatedCounterDisplay />}
-            {showIsolated2 && <IsolatedCounterDisplay />}
-            {showKeepAlive && <KeepAliveCounterDisplay />}
-          </div>
-
-          {/* Instructions */}
-          <div className="mt-6 p-4 bg-blue-50 rounded border border-blue-200">
-            <h3 className="font-bold mb-2">Instructions:</h3>
-            <ul className="text-sm space-y-1 list-disc list-inside">
-              <li>Toggle instances on/off to see them appear/disappear</li>
-              <li>Interact with controls to see state updates</li>
-              <li>Notice how isolated instances create separate nodes</li>
-              <li>Keep-alive persists even when toggled off</li>
-              <li>Expand nodes in the graph to see detailed state</li>
-            </ul>
-          </div>
+          <button
+            onClick={() => setShowKeepAlive(!showKeepAlive)}
+            className={`w-full px-4 py-2 rounded font-medium ${
+              showKeepAlive
+                ? 'bg-violet-500 text-white'
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+            }`}
+          >
+            {showKeepAlive ? '✓ ' : ''}Keep-Alive Counter
+          </button>
         </div>
 
-        {/* Right Side - Graph Visualization */}
-        <div className="flex-1 p-4 bg-gray-100">
-          <div className="h-full bg-white rounded-lg shadow-lg overflow-hidden">
-            <BlocGraphVisualizer
-              layout="grid"
-              showControls={true}
-              showMinimap={true}
-              highlightLifecycle={true}
-              animationDuration={400} // Smooth animations when nodes are added/removed
-            />
-          </div>
+        {/* Active components */}
+        <h2 className="text-lg font-bold mb-4 mt-6">Active Instances</h2>
+        <div className="space-y-3">
+          {showCounter && <CounterDisplay />}
+          {showName && <NameDisplay />}
+          {showBlocCounter && <BlocCounterDisplay />}
+          {showIsolated1 && <IsolatedCounterDisplay />}
+          {showIsolated2 && <IsolatedCounterDisplay />}
+          {showKeepAlive && <KeepAliveCounterDisplay />}
+        </div>
+
+        {/* Instructions */}
+        <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-700">
+          <h3 className="font-bold mb-2">Instructions:</h3>
+          <ul className="text-sm space-y-1 list-disc list-inside">
+            <li>Toggle instances on/off to see them appear/disappear</li>
+            <li>Interact with controls to see state updates</li>
+            <li>Notice how isolated instances create separate nodes</li>
+            <li>Keep-alive persists even when toggled off</li>
+            <li>Expand nodes in the graph to see detailed state</li>
+          </ul>
         </div>
       </div>
-    </div>
+    </DemoLayout>
   );
 }

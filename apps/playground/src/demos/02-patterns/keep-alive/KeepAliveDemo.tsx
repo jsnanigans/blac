@@ -1,7 +1,7 @@
 import { Cubit, Blac } from '@blac/core';
 import { useBloc } from '@blac/react';
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { BlocGraphVisualizer } from '@/components/bloc-graph';
+import { DemoLayout } from '@/core/layouts/DemoLayout';
 
 interface CounterState {
   count: number;
@@ -341,31 +341,29 @@ export const KeepAliveDemo: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex h-[calc(100vh-100px)] gap-4 p-4">
-      {/* Left Side - Demo Controls */}
-      <div className="w-[600px] overflow-y-auto">
-        <div className="mb-6">
-          <div className="flex justify-between items-start mb-2">
-            <h3 className="text-2xl font-bold">KeepAlive Pattern Demo</h3>
-            <button
-              onClick={() => setShowDebug(!showDebug)}
-              className="px-2 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-700"
-            >
-              {showDebug ? 'Hide' : 'Show'} Debug
-            </button>
-          </div>
-          <p className="text-gray-600 dark:text-gray-400">
-            KeepAlive Cubits persist in memory even when no components are using
-            them. Regular Cubits are disposed when their last consumer unmounts.
-          </p>
-          <div className="mt-2 p-2 bg-yellow-100 dark:bg-yellow-900/20 rounded text-sm">
-            <strong>📋 Instructions:</strong> Open the browser console (F12) to
-            see detailed lifecycle logs. Try showing/hiding counters and
-            incrementing values to see the difference!
-          </div>
+    <DemoLayout>
+      <div className="mb-6">
+        <div className="flex justify-between items-start mb-2">
+          <h3 className="text-2xl font-bold">KeepAlive Pattern Demo</h3>
+          <button
+            onClick={() => setShowDebug(!showDebug)}
+            className="px-2 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-700"
+          >
+            {showDebug ? 'Hide' : 'Show'} Debug
+          </button>
         </div>
+        <p className="text-gray-600 dark:text-gray-400">
+          KeepAlive Cubits persist in memory even when no components are using
+          them. Regular Cubits are disposed when their last consumer unmounts.
+        </p>
+        <div className="mt-2 p-2 bg-yellow-100 dark:bg-yellow-900/20 rounded text-sm">
+          <strong>📋 Instructions:</strong> Open the browser console (F12) to
+          see detailed lifecycle logs. Try showing/hiding counters and
+          incrementing values to see the difference!
+        </div>
+      </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div>
           <div className="flex items-center gap-2 mb-3">
             <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
@@ -490,7 +488,7 @@ export const KeepAliveDemo: React.FC = () => {
         </div>
       </div>
 
-      <div className="mt-6 grid md:grid-cols-2 gap-4">
+      <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="p-4 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
           <h4 className="font-semibold mb-2 text-blue-700 dark:text-blue-300">
             🔷 KeepAlive Behavior
@@ -515,45 +513,29 @@ export const KeepAliveDemo: React.FC = () => {
         </div>
       </div>
 
-        {showDebug && <DebugPanel />}
+      {showDebug && <DebugPanel />}
 
-        <div className="mt-6 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
-          <h4 className="font-semibold mb-2">🎯 Try This Sequence:</h4>
-          <ol className="space-y-1 text-sm list-decimal list-inside">
-            <li>Increment KeepAlive Counter 1 a few times</li>
-            <li>Hide KeepAlive Counter 1</li>
-            <li>
-              Show KeepAlive Counter 2 -{' '}
-              <strong>it should show the same count!</strong>
-            </li>
-            <li>Increment Counter 2</li>
-            <li>
-              Show Counter 1 again -{' '}
-              <strong>both counters should be in sync!</strong>
-            </li>
-            <li>
-              Try the same with Regular counters -{' '}
-              <strong>they reset each time!</strong>
-            </li>
-          </ol>
-        </div>
+      <div className="mt-6 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
+        <h4 className="font-semibold mb-2">🎯 Try This Sequence:</h4>
+        <ol className="space-y-1 text-sm list-decimal list-inside">
+          <li>Increment KeepAlive Counter 1 a few times</li>
+          <li>Hide KeepAlive Counter 1</li>
+          <li>
+            Show KeepAlive Counter 2 -{' '}
+            <strong>it should show the same count!</strong>
+          </li>
+          <li>Increment Counter 2</li>
+          <li>
+            Show Counter 1 again -{' '}
+            <strong>both counters should be in sync!</strong>
+          </li>
+          <li>
+            Try the same with Regular counters -{' '}
+            <strong>they reset each time!</strong>
+          </li>
+        </ol>
       </div>
-
-      {/* Right Side - Graph Visualization */}
-      <div className="flex-1 bg-white dark:bg-gray-900 rounded-lg shadow-lg overflow-hidden">
-        <BlocGraphVisualizer
-          showControls={true}
-          showMinimap={true}
-          treeOptions={{
-            nodeWidth: 180,
-            nodeHeight: 100,
-            siblingSpacing: 10,
-            levelSpacing: 200,
-            orientation: 'horizontal',
-          }}
-        />
-      </div>
-    </div>
+    </DemoLayout>
   );
 };
 
