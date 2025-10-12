@@ -537,6 +537,9 @@ importers:
       d3-hierarchy:
         specifier: ^3.1.2
         version: 3.1.2
+      framer-motion:
+        specifier: ^11.18.2
+        version: 11.18.2(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
     devDependencies:
       '@blac/core':
         specifier: workspace:*

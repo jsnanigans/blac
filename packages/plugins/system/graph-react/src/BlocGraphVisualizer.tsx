@@ -14,6 +14,7 @@ import { hierarchy, tree } from 'd3-hierarchy';
 import { LinkHorizontal } from '@visx/shape';
 import { Zoom } from '@visx/zoom';
 import * as Tooltip from '@radix-ui/react-tooltip';
+import { motion } from 'framer-motion';
 import { useBlocGraph } from '@blac/react';
 import type { GraphNode, GraphSnapshot } from '@blac/plugin-graph';
 
@@ -29,13 +30,15 @@ export interface BlocGraphVisualizerProps {
 // Tree layout configuration
 const LAYOUT_CONFIG = {
   nodeRadius: 8, // Small circular nodes
-  labelOffset: 15, // Distance from node to label
-  levelSpacing: 200, // Horizontal spacing between levels
-  siblingSpacing: 10, // Vertical spacing between siblings
+  labelOffset: 12, // Distance from node to label
+  levelSpacing: 250, // Horizontal spacing between levels (increased for left labels)
+  siblingSpacing: 30, // Vertical spacing between siblings
+  minLabelWidth: 120, // Minimum space reserved for labels
 };
 
 /**
  * Converts flat graph snapshot to hierarchical structure for visx
+ * Flattens state-root nodes to connect blocs directly to state properties
  */
 function transformToHierarchy(snapshot: GraphSnapshot): GraphNode {
   const nodeMap = new Map<string, GraphNode & { children?: GraphNode[] }>();
@@ -45,12 +48,36 @@ function transformToHierarchy(snapshot: GraphSnapshot): GraphNode {
     nodeMap.set(node.id, { ...node, children: [] });
   });
 
-  // Build parent-child relationships using edges
+  // Build parent-child relationships using edges, skipping state-root nodes
   snapshot.edges.forEach((edge) => {
     const parent = nodeMap.get(edge.source);
     const child = nodeMap.get(edge.target);
+
     if (parent && child) {
-      parent.children!.push(child);
+      // If child is a state-root node, skip it and connect parent directly to state-root's children
+      if (child.type === 'state-root') {
+        // Don't add state-root as a child
+        // We'll handle its children separately
+      } else {
+        parent.children!.push(child);
+      }
+    }
+  });
+
+  // Now connect blocs/cubits directly to state properties (skip state-root)
+  snapshot.edges.forEach((edge) => {
+    const parent = nodeMap.get(edge.source);
+    const child = nodeMap.get(edge.target);
+
+    if (parent && child && child.type === 'state-root') {
+      // Find all children of the state-root node
+      const stateRootChildren = snapshot.edges
+        .filter((e) => e.source === child.id)
+        .map((e) => nodeMap.get(e.target))
+        .filter((n): n is GraphNode & { children?: GraphNode[] } => n !== undefined);
+
+      // Add state-root's children directly to the parent (bloc/cubit)
+      parent.children!.push(...stateRootChildren);
     }
   });
 
@@ -83,6 +110,7 @@ function transformToHierarchy(snapshot: GraphSnapshot): GraphNode {
  */
 function Node({ node }: { node: any }) {
   const data = node.data as GraphNode;
+  const textRef = React.useRef<SVGTextElement>(null);
 
   // Node colors by type
   const getNodeColor = () => {
@@ -153,34 +181,53 @@ function Node({ node }: { node: any }) {
     <Tooltip.Provider>
       <Tooltip.Root delayDuration={300}>
         <Tooltip.Trigger asChild>
-          <g>
+          <motion.g
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.5 }}
+            transition={{
+              duration: 0.3,
+              ease: 'easeOut',
+            }}
+          >
+            {/* Label text to the LEFT of the node */}
+            <motion.text
+              ref={textRef}
+              x={-LAYOUT_CONFIG.labelOffset}
+              dy=".35em"
+              fontSize={14}
+              fontFamily="'Monaco', 'Menlo', 'Ubuntu Mono', monospace"
+              textAnchor="end"
+              fill="#e2e8f0"
+              className="pointer-events-none select-none"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              {label}
+            </motion.text>
+
             {/* Small circular node */}
-            <circle
+            <motion.circle
               r={LAYOUT_CONFIG.nodeRadius}
               fill={color}
               stroke="none"
-              className="transition-all duration-200"
-              style={{
+              animate={{
                 opacity: (data as any).hasChanged ? 0.8 : 1,
+                scale: (data as any).hasChanged ? 1.2 : 1,
+              }}
+              transition={{
+                duration: 0.3,
+                ease: 'easeOut',
+              }}
+              style={{
                 filter: (data as any).hasChanged
                   ? 'drop-shadow(0 0 6px rgba(255,255,255,0.6))'
                   : undefined,
               }}
             />
-
-            {/* Label text to the right of the node */}
-            <text
-              x={LAYOUT_CONFIG.labelOffset}
-              dy=".35em"
-              fontSize={14}
-              fontFamily="'Monaco', 'Menlo', 'Ubuntu Mono', monospace"
-              textAnchor="start"
-              fill="#e2e8f0"
-              className="pointer-events-none select-none"
-            >
-              {label}
-            </text>
-          </g>
+          </motion.g>
         </Tooltip.Trigger>
         <Tooltip.Portal>
           <Tooltip.Content
@@ -217,7 +264,8 @@ export function BlocGraphVisualizer({
   const treeData = useMemo(() => {
     const treeLayout = tree<GraphNode>()
       .size([height - 100, width - 100])
-      .separation((a: any, b: any) => (a.parent === b.parent ? 0.8 : 1));
+      .nodeSize([LAYOUT_CONFIG.siblingSpacing, LAYOUT_CONFIG.levelSpacing])
+      .separation((a: any, b: any) => (a.parent === b.parent ? 1 : 1.2));
 
     return treeLayout(hierarchyData);
   }, [hierarchyData, width, height]);
@@ -234,7 +282,7 @@ export function BlocGraphVisualizer({
         initialTransformMatrix={{
           scaleX: 0.8,
           scaleY: 0.8,
-          translateX: 50,
+          translateX: 150, // More space for left-aligned labels
           translateY: 50,
           skewX: 0,
           skewY: 0,
@@ -260,23 +308,41 @@ export function BlocGraphVisualizer({
               </defs>
               <rect width={width} height={height} rx={14} fill="#2d3748" />
               <Group transform={zoom.toString()}>
-                {/* Render links */}
+                {/* Render links with animation */}
                 {treeData.links().map((link: any, i: number) => (
-                  <LinkHorizontal
-                    key={`link-${i}`}
-                    data={link}
-                    stroke="#4a5568"
-                    strokeWidth="1.5"
-                    fill="none"
-                    opacity={0.6}
-                  />
+                  <motion.g
+                    key={`link-${link.source.data.id}-${link.target.data.id}`}
+                    initial={{ opacity: 0, pathLength: 0 }}
+                    animate={{ opacity: 0.6, pathLength: 1 }}
+                    exit={{ opacity: 0, pathLength: 0 }}
+                    transition={{ duration: 0.4, ease: 'easeInOut' }}
+                  >
+                    <LinkHorizontal
+                      data={link}
+                      stroke="#4a5568"
+                      strokeWidth="1.5"
+                      fill="none"
+                    />
+                  </motion.g>
                 ))}
 
                 {/* Render nodes (swap x/y for horizontal layout) */}
                 {treeData.descendants().map((node: any, i: number) => (
-                  <Group key={`node-${i}`} top={node.x} left={node.y}>
-                    <Node node={node} />
-                  </Group>
+                  <motion.g
+                    key={`node-${node.data.id}`}
+                    initial={{ x: node.y, y: node.x, opacity: 0 }}
+                    animate={{ x: node.y, y: node.x, opacity: 1 }}
+                    exit={{ opacity: 0, scale: 0 }}
+                    transition={{
+                      duration: 0.5,
+                      ease: 'easeOut',
+                      layout: { duration: 0.5 },
+                    }}
+                  >
+                    <Group top={0} left={0}>
+                      <Node node={node} />
+                    </Group>
+                  </motion.g>
                 ))}
               </Group>
             </svg>
