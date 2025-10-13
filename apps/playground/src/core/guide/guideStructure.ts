@@ -50,14 +50,17 @@ export const guideStructure: GuideStructure = {
       category: '02-patterns',
       color: 'text-green-600 dark:text-green-400',
       demos: [
-        'todo',
+        'simple-form',
+        'form-validation',
+        'async-loading',
+        'data-fetching',
+        'list-management',
+        'filtering-sorting',
+        'event-design',
+        'todo-bloc',
         'keep-alive',
-        'loading-states',
         'props',
-        'persistence',
-        'form-cubit',
-        'simple-async',
-        'event-design'
+        'persistence'
       ]
     },
     {
@@ -68,10 +71,11 @@ export const guideStructure: GuideStructure = {
       category: '03-advanced',
       color: 'text-orange-600 dark:text-orange-400',
       demos: [
-        'async',
-        'selectors',
+        'async-operations',
+        'custom-selectors',
         'stream',
-        'bloc-communication'
+        'bloc-composition',
+        'dependencies'
       ]
     },
     {

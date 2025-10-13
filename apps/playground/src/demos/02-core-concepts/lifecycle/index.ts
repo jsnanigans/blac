@@ -3,7 +3,7 @@ import { LifecycleDemo } from './LifecycleDemo';
 
 DemoRegistry.register({
   id: 'lifecycle',
-  category: '02-patterns',
+  category: '02-core-concepts',
   title: 'Bloc Lifecycle Management',
   description:
     'Understand the lifecycle of Blocs and Cubits: initialization, state updates, instance management, and disposal.',

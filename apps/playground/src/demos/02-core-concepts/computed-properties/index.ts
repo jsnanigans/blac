@@ -6,7 +6,7 @@ DemoRegistry.register({
   id: 'computed-properties',
   title: 'Computed Properties with Getters',
   description: 'Learn how to use TypeScript getters to create computed properties that derive values from state automatically.',
-  category: '02-patterns',
+  category: '02-core-concepts',
   component: ComputedPropertiesDemo,
   difficulty: 'beginner',
   tags: ['cubit', 'getters', 'computed', 'derived-state'],

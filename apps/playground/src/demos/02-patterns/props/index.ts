@@ -1,5 +1,5 @@
 import { DemoRegistry } from '@/core/utils/demoRegistry';
-import { PropsDemo, propsCode } from './PropsDemo';
+import { PropsDemo } from './PropsDemo';
 
 DemoRegistry.register({
   id: 'props',
@@ -12,8 +12,7 @@ DemoRegistry.register({
   concepts: ['constructor props', 'configuration', 'parameterized state'],
   component: PropsDemo,
   code: {
-    demo: propsCode.usage,
-    bloc: propsCode.bloc,
+    demo: '',
   },
   tests: [
     {

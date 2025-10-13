@@ -3,7 +3,7 @@ import { BlocVsCubitDemo, blocVsCubitDemoCode } from './BlocVsCubitDemo';
 
 DemoRegistry.register({
   id: 'bloc-vs-cubit',
-  category: '02-patterns',
+  category: '02-core-concepts',
   title: 'Bloc vs Cubit: When to Use Which?',
   description:
     'Understand the differences between Blocs and Cubits and learn when to use each pattern for your state management needs.',
