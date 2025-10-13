@@ -112,7 +112,7 @@ const demoMetadata = {
 // Demo component
 export function CounterDemo() {
   return (
-    <DemoArticle metadata={demoMetadata} showBlocGraph={true}>
+    <DemoArticle metadata={demoMetadata} showBlocGraph={true} hideNavigation={true}>
       {/* Introduction */}
       <ArticleSection theme="cubit" id="introduction">
         <Prose>

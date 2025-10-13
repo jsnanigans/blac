@@ -822,7 +822,7 @@ const demoMetadata = {
 // ============= Main Demo Component =============
 export function BlocDeepDiveDemo() {
   return (
-    <DemoArticle metadata={demoMetadata} showBlocGraph={true}>
+    <DemoArticle metadata={demoMetadata} showBlocGraph={true} hideNavigation={true}>
       {/* Introduction */}
       <ArticleSection theme="bloc" id="introduction">
         <Prose>

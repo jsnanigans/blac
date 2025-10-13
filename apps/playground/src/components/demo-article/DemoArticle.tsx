@@ -74,6 +74,9 @@ export interface DemoArticleProps {
   /** Highlight lifecycle states in graph */
   highlightLifecycle?: boolean;
 
+  /** Hide navigation footer (useful when used in guide context) */
+  hideNavigation?: boolean;
+
   /** Children components (article content) */
   children: React.ReactNode;
 
@@ -122,6 +125,7 @@ export const DemoArticle: React.FC<DemoArticleProps> = ({
   showBlocGraph = false,
   graphLayout = 'grid',
   highlightLifecycle = true,
+  hideNavigation = false,
   children,
   className,
 }) => {
@@ -226,36 +230,38 @@ export const DemoArticle: React.FC<DemoArticleProps> = ({
         {/* Article Content */}
         <div className="demo-article-content">{children}</div>
 
-        {/* Navigation Footer */}
-        <footer className="mt-16 pt-8 border-t border-border">
-          <div className="flex justify-between items-center">
-            {/* Previous Demo */}
-            {metadata.learningPath?.previous ? (
-              <Link
-                to={`/demos/${metadata.learningPath.previous}`}
-                className="group flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                <span>Previous</span>
-              </Link>
-            ) : (
-              <div />
-            )}
+        {/* Navigation Footer (hidden when used in guide context) */}
+        {!hideNavigation && (
+          <footer className="mt-16 pt-8 border-t border-border">
+            <div className="flex justify-between items-center">
+              {/* Previous Demo */}
+              {metadata.learningPath?.previous ? (
+                <Link
+                  to={`/demos/${metadata.learningPath.previous}`}
+                  className="group flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                  <span>Previous</span>
+                </Link>
+              ) : (
+                <div />
+              )}
 
-            {/* Next Demo */}
-            {metadata.learningPath?.next ? (
-              <Link
-                to={`/demos/${metadata.learningPath.next}`}
-                className="group flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <span>Next</span>
-                <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </Link>
-            ) : (
-              <div />
-            )}
-          </div>
-        </footer>
+              {/* Next Demo */}
+              {metadata.learningPath?.next ? (
+                <Link
+                  to={`/demos/${metadata.learningPath.next}`}
+                  className="group flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <span>Next</span>
+                  <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              ) : (
+                <div />
+              )}
+            </div>
+          </footer>
+        )}
       </motion.article>
     </DemoArticleContext.Provider>
   );

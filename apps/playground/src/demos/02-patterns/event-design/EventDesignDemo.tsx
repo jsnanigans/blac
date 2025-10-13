@@ -45,7 +45,7 @@ export const EventDesignDemo: React.FC = () => {
   const { celebrate } = useInteractionFeedback();
 
   return (
-    <DemoArticle metadata={demoMetadata}>
+    <DemoArticle metadata={demoMetadata} hideNavigation={true}>
       {/* Introduction Section */}
       <ArticleSection id="intro">
         <SectionHeader>Why Event Design Matters</SectionHeader>

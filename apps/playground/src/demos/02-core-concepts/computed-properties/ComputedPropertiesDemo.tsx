@@ -458,7 +458,7 @@ const demoMetadata = {
 // ============= Main Demo Component =============
 export function ComputedPropertiesDemo() {
   return (
-    <DemoArticle metadata={demoMetadata} showBlocGraph={true}>
+    <DemoArticle metadata={demoMetadata} showBlocGraph={true} hideNavigation={true}>
       {/* Introduction */}
       <ArticleSection theme="cubit" id="introduction">
         <Prose>

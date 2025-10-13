@@ -292,7 +292,7 @@ const demoMetadata = {
 // ===== MAIN DEMO COMPONENT =====
 export function BlocVsCubitDemo() {
   return (
-    <DemoArticle metadata={demoMetadata} showBlocGraph={false}>
+    <DemoArticle metadata={demoMetadata} showBlocGraph={false} hideNavigation={true}>
       {/* Introduction */}
       <ArticleSection theme="bloc" id="introduction">
         <Prose>

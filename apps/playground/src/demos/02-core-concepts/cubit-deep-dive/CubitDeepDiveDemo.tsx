@@ -511,7 +511,7 @@ const demoMetadata = {
 // ============= Main Demo Component =============
 export function CubitDeepDiveDemo() {
   return (
-    <DemoArticle metadata={demoMetadata} showBlocGraph={true}>
+    <DemoArticle metadata={demoMetadata} showBlocGraph={true} hideNavigation={true}>
       {/* Introduction */}
       <ArticleSection theme="cubit" id="introduction">
         <Prose>
