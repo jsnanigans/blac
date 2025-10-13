@@ -10,6 +10,7 @@ import {
   Moon,
   Sun,
   ExternalLink,
+  BookOpen,
 } from 'lucide-react';
 import { CommandPalette } from '@/core/components/CommandPalette';
 
@@ -46,7 +47,7 @@ export function RootLayout() {
 
   const navigation = [
     { name: 'Home', href: '/', icon: Home },
-    { name: 'Demos', href: '/demos', icon: Code2 },
+    { name: 'Guide', href: '/guide', icon: BookOpen },
     { name: 'Playground', href: '/playground', icon: PlayCircle },
   ];
 

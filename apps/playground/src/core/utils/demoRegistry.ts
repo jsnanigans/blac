@@ -2,6 +2,7 @@ import { ComponentType } from 'react';
 
 export type DemoCategory =
   | '01-basics'
+  | '02-core-concepts'
   | '02-patterns'
   | '03-advanced'
   | '04-plugins'
