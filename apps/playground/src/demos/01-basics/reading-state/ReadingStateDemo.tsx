@@ -41,12 +41,19 @@ function HeaderDisplay() {
       key={state.timestamp}
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      className="flex items-center gap-3 p-4 rounded-lg bg-concept-cubit/10 border border-concept-cubit/30"
+      className="relative overflow-hidden rounded-3xl border border-border/70 bg-surface px-4 py-4 shadow-subtle"
     >
-      <Eye className="w-5 h-5 text-concept-cubit" />
-      <div>
-        <p className="text-sm font-semibold text-concept-cubit">Header Component</p>
-        <p className="text-foreground">{state.text}</p>
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-sky-400/20 via-transparent to-brand/15 opacity-90" />
+      <div className="relative flex items-center gap-3">
+        <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand/10 text-brand">
+          <Eye className="h-5 w-5" />
+        </span>
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Header component
+          </p>
+          <p className="text-sm text-foreground">{state.text}</p>
+        </div>
       </div>
     </motion.div>
   );
@@ -60,12 +67,19 @@ function SidebarDisplay() {
       key={state.timestamp}
       initial={{ x: -20, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
-      className="flex items-center gap-3 p-4 rounded-lg bg-concept-bloc/10 border border-concept-bloc/30"
+      className="relative overflow-hidden rounded-3xl border border-border/70 bg-surface px-4 py-4 shadow-subtle"
     >
-      <Eye className="w-5 h-5 text-concept-bloc" />
-      <div>
-        <p className="text-sm font-semibold text-concept-bloc">Sidebar Component</p>
-        <p className="text-foreground">{state.text}</p>
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-fuchsia-400/18 via-transparent to-purple-500/15 opacity-90" />
+      <div className="relative flex items-center gap-3">
+        <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-purple-500/15 text-purple-500 dark:text-purple-300">
+          <Eye className="h-5 w-5" />
+        </span>
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Sidebar component
+          </p>
+          <p className="text-sm text-foreground">{state.text}</p>
+        </div>
       </div>
     </motion.div>
   );
@@ -79,12 +93,19 @@ function FooterDisplay() {
       key={state.timestamp}
       initial={{ y: 20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      className="flex items-center gap-3 p-4 rounded-lg bg-concept-event/10 border border-concept-event/30"
+      className="relative overflow-hidden rounded-3xl border border-border/70 bg-surface px-4 py-4 shadow-subtle"
     >
-      <Eye className="w-5 h-5 text-concept-event" />
-      <div>
-        <p className="text-sm font-semibold text-concept-event">Footer Component</p>
-        <p className="text-foreground">{state.text}</p>
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-amber-400/18 via-transparent to-rose-400/15 opacity-90" />
+      <div className="relative flex items-center gap-3">
+        <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-amber-500/15 text-amber-500 dark:text-amber-300">
+          <Eye className="h-5 w-5" />
+        </span>
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Footer component
+          </p>
+          <p className="text-sm text-foreground">{state.text}</p>
+        </div>
       </div>
     </motion.div>
   );
@@ -102,12 +123,15 @@ function MessageControl() {
   ];
 
   return (
-    <div className="flex flex-col gap-3 p-6 rounded-lg bg-gradient-to-br from-muted/50 to-muted/20 border border-border">
-      <div className="flex items-center gap-2 mb-2">
-        <Users className="w-5 h-5 text-muted-foreground" />
-        <p className="font-semibold text-sm">Update Shared State</p>
+    <div className="relative overflow-hidden rounded-3xl border border-border/70 bg-surface px-6 py-6 shadow-subtle">
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-brand/10 via-transparent to-sky-400/10 opacity-90" />
+      <div className="relative flex items-center gap-2 pb-3">
+        <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-brand/10 text-brand">
+          <Users className="h-5 w-5" />
+        </span>
+        <p className="text-sm font-semibold text-foreground">Update shared state</p>
       </div>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="relative grid grid-cols-2 gap-2">
         {messages.map((msg) => (
           <Button
             key={msg}
@@ -130,7 +154,7 @@ const demoMetadata = {
   title: 'Reading State',
   description:
     'Learn how multiple components can read and display the same state. See the power of shared state management!',
-  category: '01-fundamentals',
+  category: '01-basics',
   difficulty: 'beginner' as const,
   tags: ['cubit', 'state', 'useBloc', 'shared-state'],
   estimatedTime: 5,

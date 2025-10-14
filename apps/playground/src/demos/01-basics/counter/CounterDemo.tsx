@@ -54,34 +54,30 @@ function InteractiveCounter() {
   };
 
   return (
-    <div className="flex flex-col items-center gap-6 p-8 rounded-xl bg-gradient-to-br from-concept-cubit/10 to-concept-cubit/5 border-2 border-concept-cubit/20">
-      {/* Count Display */}
+    <div className="relative flex flex-col items-center gap-6 overflow-hidden rounded-3xl border border-border/70 bg-surface px-8 py-10 shadow-subtle">
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-brand/15 via-transparent to-sky-400/20 opacity-90" />
       <motion.div
         key={state.count}
-        initial={{ scale: 0.8, opacity: 0 }}
+        initial={{ scale: 0.85, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-        className="text-8xl font-bold text-concept-cubit"
+        transition={{ type: 'spring', stiffness: 500, damping: 26 }}
+        className="relative font-display text-8xl font-semibold text-foreground"
       >
         {state.count}
       </motion.div>
-
-      {/* Control Buttons */}
-      <div className="flex gap-3">
+      <div className="relative flex flex-wrap justify-center gap-3">
         <Button onClick={cubit.decrement} variant="outline" size="lg">
           Decrement
         </Button>
-        <Button onClick={cubit.reset} variant="muted" size="lg">
+        <Button onClick={cubit.reset} variant="secondary" size="lg">
           Reset
         </Button>
         <Button onClick={handleIncrement} variant="primary" size="lg">
           Increment
         </Button>
       </div>
-
-      {/* Milestone hint */}
       {state.count % 10 !== 0 && state.count > 0 && (
-        <p className="text-sm text-muted-foreground">
+        <p className="relative text-sm text-muted-foreground">
           {10 - (state.count % 10)} more to reach {Math.floor(state.count / 10 + 1) * 10}! 🎉
         </p>
       )}
@@ -95,7 +91,7 @@ const demoMetadata = {
   title: 'Simple Counter',
   description:
     'Your first BlaC application: a simple counter that demonstrates the core concepts of state management with Cubits.',
-  category: '01-fundamentals',
+  category: '01-basics',
   difficulty: 'beginner' as const,
   tags: ['cubit', 'state', 'basics', 'getting-started'],
   estimatedTime: 5,
@@ -145,7 +141,7 @@ export function CounterDemo() {
           <InteractiveCounter />
         </div>
 
-        <div className="my-8">
+        <div className="my-8 rounded-3xl border border-border/70 bg-surface px-4 py-6 shadow-subtle">
           <StateViewer bloc={CounterCubit} title="Live Counter State" />
         </div>
       </ArticleSection>

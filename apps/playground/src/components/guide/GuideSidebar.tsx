@@ -1,11 +1,11 @@
 import React from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { ChevronDown, ChevronRight, Menu, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ChevronDown, ChevronRight, Menu, X, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { guideStructure } from '@/core/guide/guideStructure';
 import { DemoRegistry } from '@/core/utils/demoRegistry';
 import type { GuideSection } from './types';
-import { motion, AnimatePresence } from 'framer-motion';
 
 interface GuideSidebarProps {
   currentSection?: string;
@@ -39,7 +39,7 @@ export function GuideSidebar({ currentSection, currentDemo, className }: GuideSi
   };
 
   const sidebarContent = (
-    <nav className="space-y-2">
+    <nav className="space-y-3">
       {guideStructure.sections.map((section) => (
         <SidebarSection
           key={section.id}
@@ -59,26 +59,36 @@ export function GuideSidebar({ currentSection, currentDemo, className }: GuideSi
       {/* Mobile Menu Toggle */}
       <button
         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-background border shadow-sm"
+        className="lg:hidden fixed left-4 top-24 z-40 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-surface text-foreground shadow-subtle"
         aria-label="Toggle navigation menu"
       >
-        {isMobileMenuOpen ? (
-          <X className="h-5 w-5" />
-        ) : (
-          <Menu className="h-5 w-5" />
-        )}
+        {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </button>
 
       {/* Desktop Sidebar */}
       <aside
         className={cn(
-          'hidden lg:block w-64 shrink-0 border-r bg-card/50',
-          className
+          'hidden lg:block w-72 shrink-0 border-r border-border/80 bg-surface/90 backdrop-blur supports-[backdrop-filter]:bg-surface/80',
+          className,
         )}
       >
-        <div className="sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto p-4">
-          <h2 className="font-semibold text-lg mb-4">Learning Guide</h2>
-          {sidebarContent}
+        <div className="sticky top-24 flex h-[calc(100vh-6rem)] flex-col overflow-hidden">
+          <div className="border-b border-border/80 bg-surface-muted/80 px-5 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                  Guide map
+                </h2>
+                <p className="mt-1 text-xs text-muted-foreground/80">
+                  Follow the curated BlaC learning path.
+                </p>
+              </div>
+              <Sparkles className="h-4 w-4 text-brand" />
+            </div>
+          </div>
+          <div className="flex-1 space-y-3 overflow-y-auto px-4 py-5">
+            {sidebarContent}
+          </div>
         </div>
       </aside>
 
@@ -101,10 +111,17 @@ export function GuideSidebar({ currentSection, currentDemo, className }: GuideSi
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 20 }}
-              className="lg:hidden fixed top-0 left-0 bottom-0 w-72 bg-background border-r z-50 overflow-y-auto"
+              className="lg:hidden fixed top-0 left-0 bottom-0 w-72 border-r border-border bg-surface shadow-elevated z-50 overflow-y-auto"
             >
-              <div className="p-4 pt-16">
-                <h2 className="font-semibold text-lg mb-4">Learning Guide</h2>
+              <div className="p-4 pt-16 space-y-4">
+                <div className="rounded-2xl border border-border bg-surface-muted/70 px-4 py-3">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Guide map
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground/80">
+                    Follow the curated BlaC learning path.
+                  </p>
+                </div>
                 {sidebarContent}
               </div>
             </motion.aside>
@@ -140,18 +157,35 @@ function SidebarSection({
       <button
         onClick={onToggle}
         className={cn(
-          'w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors',
-          'hover:bg-accent/50',
-          isCurrentSection && 'bg-accent/50'
+          'w-full rounded-2xl border border-border bg-surface px-4 py-3 text-left transition-all hover:-translate-y-0.5 hover:shadow-subtle',
+          isCurrentSection && 'border-brand/60 bg-brand/10 shadow-subtle text-brand',
         )}
       >
-        <Icon className={cn('h-4 w-4', section.color)} />
-        <span className="flex-1 text-left">{section.title}</span>
-        {isExpanded ? (
-          <ChevronDown className="h-4 w-4 text-muted-foreground" />
-        ) : (
-          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-        )}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-3">
+            <div
+              className={cn(
+                'flex h-9 w-9 items-center justify-center rounded-full bg-brand/10 text-brand shadow-subtle',
+                section.color,
+              )}
+            >
+              <Icon className="h-4 w-4" />
+            </div>
+            <div>
+              <div className="text-sm font-semibold text-foreground">
+                {section.title}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {section.description}
+              </div>
+            </div>
+          </div>
+          {isExpanded ? (
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          )}
+        </div>
       </button>
 
       <AnimatePresence initial={false}>
@@ -163,7 +197,7 @@ function SidebarSection({
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="ml-6 space-y-0.5">
+            <div className="ml-4 mt-3 space-y-1">
               {section.demos.map((demoId) => {
                 const demo = DemoRegistry.get(demoId);
                 if (!demo) return null;
@@ -178,20 +212,25 @@ function SidebarSection({
                     to={`/guide/${section.id}/${demoId}`}
                     onClick={onDemoClick}
                     className={cn(
-                      'block px-3 py-1.5 rounded-md text-sm transition-colors',
-                      'hover:bg-accent/50',
-                      isActive && 'bg-accent text-accent-foreground font-medium'
+                      'block rounded-xl border border-transparent px-3 py-2 text-sm transition-all hover:-translate-y-0.5 hover:border-border hover:bg-surface',
+                      isActive &&
+                        'border-brand/60 bg-brand/15 text-brand shadow-subtle font-semibold',
                     )}
                   >
                     <div className="flex items-center justify-between">
-                      <span>{demo.title}</span>
+                      <span className="truncate pr-2 text-sm text-foreground">
+                        {demo.title}
+                      </span>
                       {demo.difficulty && (
                         <span
                           className={cn(
-                            'text-xs px-1.5 py-0.5 rounded-full',
-                            demo.difficulty === 'beginner' && 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400',
-                            demo.difficulty === 'intermediate' && 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400',
-                            demo.difficulty === 'advanced' && 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400'
+                            'text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full border',
+                            demo.difficulty === 'beginner' &&
+                              'border-emerald-200/70 bg-emerald-100 text-emerald-700 dark:border-emerald-800/60 dark:bg-emerald-900/30 dark:text-emerald-300',
+                            demo.difficulty === 'intermediate' &&
+                              'border-amber-200/70 bg-amber-100 text-amber-700 dark:border-amber-800/60 dark:bg-amber-900/30 dark:text-amber-300',
+                            demo.difficulty === 'advanced' &&
+                              'border-rose-200/70 bg-rose-100 text-rose-700 dark:border-rose-800/60 dark:bg-rose-900/30 dark:text-rose-300',
                           )}
                         >
                           {demo.difficulty[0].toUpperCase()}

@@ -27,19 +27,21 @@ function GreetingDisplay() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="text-center p-8 rounded-xl bg-gradient-to-br from-concept-cubit/10 to-concept-cubit/5 border-2 border-concept-cubit/20"
+      className="relative overflow-hidden rounded-3xl border border-border/70 bg-surface px-8 py-10 text-center shadow-subtle"
     >
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-brand/15 via-transparent to-sky-500/20 opacity-90" />
+      <div className="pointer-events-none absolute -right-10 bottom-0 h-28 w-28 rounded-full bg-brand/20 blur-3xl" />
       <motion.h2
         key={greeting}
-        initial={{ scale: 0.8 }}
+        initial={{ scale: 0.85 }}
         animate={{ scale: 1 }}
-        transition={{ type: 'spring', stiffness: 300 }}
-        className="text-4xl font-bold text-concept-cubit mb-4"
+        transition={{ type: 'spring', stiffness: 320, damping: 20 }}
+        className="relative font-display text-4xl font-semibold tracking-tight text-foreground"
       >
         {greeting}
       </motion.h2>
-      <p className="text-sm text-muted-foreground">
-        Your first BlaC state, live and reactive!
+      <p className="relative mt-3 text-sm text-muted-foreground">
+        Your first BlaC state, live and reactive.
       </p>
     </motion.div>
   );
@@ -51,7 +53,7 @@ const demoMetadata = {
   title: 'Hello World',
   description:
     'The absolute simplest BlaC application. Start here if you\'re completely new to BlaC!',
-  category: '01-fundamentals',
+  category: '01-basics',
   difficulty: 'beginner' as const,
   tags: ['cubit', 'basics', 'getting-started', 'beginner'],
   estimatedTime: 3,
@@ -96,8 +98,7 @@ export function HelloWorldDemo() {
         <SectionHeader>See It In Action</SectionHeader>
         <Prose>
           <p>
-            Below is your greeting, stored and displayed using BlaC. The state updates
-            automatically when changed!
+            Below is your greeting, stored and displayed using BlaC. Update the Cubit and watch the UI respond instantly.
           </p>
         </Prose>
 
@@ -105,7 +106,7 @@ export function HelloWorldDemo() {
           <GreetingDisplay />
         </div>
 
-        <div className="my-8">
+        <div className="my-8 rounded-3xl border border-border/70 bg-surface px-4 py-6 shadow-subtle">
           <StateViewer bloc={GreetingCubit} title="Current Greeting State" />
         </div>
       </ArticleSection>

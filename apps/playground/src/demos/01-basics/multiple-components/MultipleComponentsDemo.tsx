@@ -173,7 +173,7 @@ const demoMetadata = {
   title: 'Component Composition',
   description:
     'Learn how to share state across parent and child components without prop drilling. See component composition in action!',
-  category: '01-fundamentals',
+  category: '01-basics',
   difficulty: 'beginner' as const,
   tags: ['cubit', 'components', 'composition', 'shared-state', 'prop-drilling'],
   estimatedTime: 8,

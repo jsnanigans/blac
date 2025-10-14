@@ -1,4 +1,11 @@
+import { SplitPane } from '@/components/shared/SplitPane';
+import {
+  WorkspaceToolbar,
+  WorkspaceToolbarGroup,
+  WorkspaceToolbarLabel,
+} from '@/components/workspace/WorkspaceToolbar';
 import { Card } from '@/ui/Card';
+import { cn } from '@/lib/utils';
 import Editor from '@monaco-editor/react';
 import {
   Activity,
@@ -45,7 +52,6 @@ export function PlaygroundPageMultiFile() {
     const stored = localStorage.getItem('playground-split');
     return stored ? Number(stored) : 50;
   });
-  const dragRef = React.useRef<HTMLDivElement | null>(null);
   const previewRef = React.useRef<HTMLDivElement>(null);
   const rootRef = React.useRef<any>(null);
   const monacoRef = React.useRef<any>(null);
@@ -54,6 +60,11 @@ export function PlaygroundPageMultiFile() {
   const activeFile = React.useMemo(
     () => files.find((f) => f.id === activeFileId) || files[0],
     [files, activeFileId],
+  );
+
+  const consoleTimestamp = React.useMemo(
+    () => new Date().toLocaleTimeString(),
+    [output],
   );
 
   // Check for dark mode
@@ -365,247 +376,232 @@ export function PlaygroundPageMultiFile() {
     })();
   }, []);
 
-  // Draggable splitter
-  React.useEffect(() => {
-    const handleMove = (e: MouseEvent) => {
-      if (!dragRef.current) return;
-      const container = dragRef.current.parentElement as HTMLDivElement | null;
-      if (!container) return;
-      const rect = container.getBoundingClientRect();
-      const percent = Math.min(
-        80,
-        Math.max(20, ((e.clientX - rect.left) / rect.width) * 100),
-      );
-      setSplit(percent);
-      localStorage.setItem('playground-split', String(percent));
-    };
-    const stop = () => {
-      document.removeEventListener('mousemove', handleMove);
-      document.removeEventListener('mouseup', stop);
-      document.body.style.cursor = '';
-    };
-    const start = () => {
-      document.addEventListener('mousemove', handleMove);
-      document.addEventListener('mouseup', stop);
-      document.body.style.cursor = 'col-resize';
-    };
-    const handle = dragRef.current;
-    if (handle) handle.addEventListener('mousedown', start);
-    return () => {
-      if (handle) handle.removeEventListener('mousedown', start);
-      document.removeEventListener('mousemove', handleMove);
-      document.removeEventListener('mouseup', stop);
-    };
-  }, []);
-
   return (
-    <div className="h-[calc(100vh-3.5rem)] flex flex-col">
-      {/* Toolbar */}
-      <div className="border-b px-4 py-2 flex items-center justify-between bg-background">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleRun}
-            disabled={isRunning}
-            className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4"
-          >
-            <Play className="h-4 w-4 mr-2" />
-            {isRunning ? 'Running...' : 'Run'}
-          </button>
-          <button
-            onClick={handleReset}
-            className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background border border-input hover:bg-accent hover:text-accent-foreground h-9 px-4"
-          >
-            <RotateCcw className="h-4 w-4 mr-2" />
-            Reset
-          </button>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <div className="text-xs text-muted-foreground hidden md:flex items-center gap-1 border rounded px-2 py-1">
-            <PanelsLeftRight className="h-3.5 w-3.5" />
-            Drag divider to resize
-          </div>
-          <button
-            onClick={handleSave}
-            className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background hover:bg-accent hover:text-accent-foreground h-9 w-9"
-          >
-            <Save className="h-4 w-4" />
-            <span className="sr-only">Save</span>
-          </button>
-          <button
-            onClick={handleShare}
-            className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background hover:bg-accent hover:text-accent-foreground h-9 w-9"
-          >
-            <Share2 className="h-4 w-4" />
-            <span className="sr-only">Share</span>
-          </button>
-          <button
-            onClick={handleDownload}
-            className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background hover:bg-accent hover:text-accent-foreground h-9 w-9"
-          >
-            <Download className="h-4 w-4" />
-            <span className="sr-only">Download</span>
-          </button>
+    <div className="flex min-h-[calc(100vh-3.5rem)] flex-col bg-background/40">
+      <div className="border-b border-border bg-surface shadow-subtle">
+        <div className="mx-auto w-full max-w-6xl px-4 py-4">
+          <WorkspaceToolbar
+            leading={
+              <>
+                <WorkspaceToolbarGroup className="gap-1 bg-surface-muted">
+                  <button
+                    onClick={handleRun}
+                    disabled={isRunning}
+                    className="inline-flex items-center gap-2 rounded-md bg-brand px-3 py-2 text-sm font-semibold text-brand-foreground transition-transform hover:-translate-y-0.5 hover:shadow-subtle disabled:pointer-events-none disabled:opacity-50"
+                  >
+                    <Play className="h-4 w-4" />
+                    {isRunning ? 'Running…' : 'Run'}
+                  </button>
+                  <button
+                    onClick={handleReset}
+                    className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-3 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-surface-muted"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                    Reset
+                  </button>
+                </WorkspaceToolbarGroup>
+                <WorkspaceToolbarLabel className="hidden sm:inline-flex items-center gap-2 rounded-md bg-surface-muted px-3 py-1 text-xs font-medium text-muted-foreground">
+                  <PanelsLeftRight className="h-3.5 w-3.5" />
+                  Drag or use arrow keys to resize panels
+                </WorkspaceToolbarLabel>
+              </>
+            }
+            trailing={
+              <WorkspaceToolbarGroup>
+                <button
+                  onClick={handleSave}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-surface text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <Save className="h-4 w-4" />
+                  <span className="sr-only">Save to browser</span>
+                </button>
+                <button
+                  onClick={handleShare}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-surface text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <Share2 className="h-4 w-4" />
+                  <span className="sr-only">Share workspace</span>
+                </button>
+                <button
+                  onClick={handleDownload}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-surface text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <Download className="h-4 w-4" />
+                  <span className="sr-only">Download active file</span>
+                </button>
+              </WorkspaceToolbarGroup>
+            }
+          />
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex">
-        {/* Editor */}
-        <div className="border-r flex flex-col" style={{ width: `${split}%` }}>
-          {/* File Tabs */}
-          <FileTabs
-            files={files}
-            activeFileId={activeFileId}
-            onSelectFile={setActiveFileId}
-            onAddFile={handleAddFile}
-            onCloseFile={handleCloseFile}
-            onRenameFile={handleRenameFile}
-          />
-
-          {/* Monaco Editor */}
-          <div className="flex-1">
-            <Editor
-              key={activeFile.id} // Force remount when switching files
-              height="100%"
-              language={activeFile.language}
-              path={activeFile.name}
-              theme={theme}
-              value={activeFile.content}
-              onChange={(value) => handleFileContentChange(value || '')}
-              beforeMount={(monaco) => {
-                // Setup TypeScript/TSX support FIRST
-                setupMonacoForTypeScript(monaco);
-                // Store monaco reference for later use
-                monacoRef.current = monaco;
-              }}
-              onMount={(editor, monaco) => {
-                // Sync all file models after setup is complete
-                syncMonacoModels(monaco, files);
-
-                // Debug the current state
-                debugMonacoState(monaco, editor);
-
-                // Log the current language
-                const model = editor.getModel();
-                if (model) {
-                  console.log(
-                    'Editor mounted with language:',
-                    model.getLanguageId(),
-                  );
-                  console.log('File extension:', activeFile.name);
-                }
-              }}
-              options={{
-                minimap: { enabled: false },
-                fontSize: 14,
-                lineNumbers: 'on',
-                roundedSelection: false,
-                scrollBeyondLastLine: false,
-                automaticLayout: true,
-                tabSize: 2,
-                wordWrap: 'on',
-                padding: { top: 16, bottom: 16 },
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Drag handle */}
-        <div
-          ref={dragRef}
-          className="w-1 cursor-col-resize bg-border hover:bg-primary/40 transition-colors"
-        />
-
-        {/* Preview & Console */}
-        <div
-          className="flex-1 flex flex-col"
-          style={{ width: `${100 - split}%` }}
-        >
-          {/* Tab Navigation */}
-          <div className="border-b px-4">
-            <div className="flex gap-4">
-              <button
-                onClick={() => setActiveTab('preview')}
-                className={`py-2 px-1 border-b-2 transition-colors ${
-                  activeTab === 'preview'
-                    ? 'border-primary text-foreground'
-                    : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                Preview
-              </button>
-              <button
-                onClick={() => setActiveTab('performance')}
-                className={`py-2 px-1 border-b-2 transition-colors flex items-center gap-2 ${
-                  activeTab === 'performance'
-                    ? 'border-primary text-foreground'
-                    : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Activity className="h-4 w-4" />
-                Performance
-              </button>
-            </div>
-          </div>
-
-          {/* Tab Content */}
-          <div className="flex-1 overflow-auto">
-            {activeTab === 'preview' ? (
-              <div className="p-6">
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold mb-2">Preview</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Your component will render here when you click Run.
-                  </p>
+      <div className="flex-1 overflow-hidden">
+        <div className="mx-auto flex h-full w-full max-w-6xl flex-col gap-4 px-4 py-6">
+          <SplitPane
+            orientation="horizontal"
+            initialPrimary={split}
+            minPrimary={28}
+            maxPrimary={72}
+            onChange={(value) => {
+              setSplit(value);
+              localStorage.setItem('playground-split', String(value));
+            }}
+            className="flex-1 rounded-3xl border border-border bg-surface shadow-subtle"
+            handleClassName="bg-surface-muted"
+            primary={
+              <div className="flex h-full flex-col">
+                <div className="border-b border-border bg-surface-muted">
+                  <FileTabs
+                    files={files}
+                    activeFileId={activeFileId}
+                    onSelectFile={setActiveFileId}
+                    onAddFile={handleAddFile}
+                    onCloseFile={handleCloseFile}
+                    onRenameFile={handleRenameFile}
+                  />
                 </div>
-
-                <Card className="p-4 min-h-[200px]">
-                  {preview || (
-                    <p className="text-center text-muted-foreground">
-                      Click "Run" to execute your code
-                    </p>
+                <div className="flex-1 bg-surface">
+                  <Editor
+                    key={activeFile.id}
+                    height="100%"
+                    language={activeFile.language}
+                    path={activeFile.name}
+                    theme={theme}
+                    value={activeFile.content}
+                    onChange={(value) => handleFileContentChange(value || '')}
+                    beforeMount={(monaco) => {
+                      setupMonacoForTypeScript(monaco);
+                      monacoRef.current = monaco;
+                    }}
+                    onMount={(editor, monaco) => {
+                      syncMonacoModels(monaco, files);
+                      debugMonacoState(monaco, editor);
+                      const model = editor.getModel();
+                      if (model) {
+                        console.log(
+                          'Editor mounted with language:',
+                          model.getLanguageId(),
+                        );
+                        console.log('File extension:', activeFile.name);
+                      }
+                    }}
+                    options={{
+                      minimap: { enabled: false },
+                      fontSize: 14,
+                      lineNumbers: 'on',
+                      roundedSelection: false,
+                      scrollBeyondLastLine: false,
+                      automaticLayout: true,
+                      tabSize: 2,
+                      wordWrap: 'on',
+                      padding: { top: 16, bottom: 16 },
+                    }}
+                  />
+                </div>
+              </div>
+            }
+            secondary={
+              <div className="flex h-full flex-col">
+                <div className="border-b border-border bg-surface-muted px-4">
+                  <div className="flex items-center gap-4 text-sm font-medium">
+                    <button
+                      onClick={() => setActiveTab('preview')}
+                      className={cn(
+                        'relative py-3 text-sm transition-colors',
+                        activeTab === 'preview'
+                          ? 'text-foreground'
+                          : 'text-muted-foreground hover:text-foreground',
+                      )}
+                    >
+                      Preview
+                      {activeTab === 'preview' && (
+                        <span className="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-brand" />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('performance')}
+                      className={cn(
+                        'relative inline-flex items-center gap-2 py-3 text-sm transition-colors',
+                        activeTab === 'performance'
+                          ? 'text-foreground'
+                          : 'text-muted-foreground hover:text-foreground',
+                      )}
+                    >
+                      <Activity className="h-4 w-4" />
+                      Performance
+                      {activeTab === 'performance' && (
+                        <span className="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-brand" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+                <div className="flex-1 overflow-auto bg-surface">
+                  {activeTab === 'preview' ? (
+                    <div className="flex h-full flex-col gap-4 p-6">
+                      <header className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-lg font-semibold text-foreground">
+                            Preview
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            Your component renders in a sandboxed React root.
+                          </p>
+                        </div>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-1 text-xs font-medium text-success">
+                          Status · {isRunning ? 'Running' : 'Idle'}
+                        </span>
+                      </header>
+                      <Card className="flex min-h-[240px] flex-1 items-center justify-center bg-surface-muted">
+                        {preview || (
+                          <p className="text-sm text-muted-foreground">
+                            Click “Run” to execute the current files.
+                          </p>
+                        )}
+                      </Card>
+                    </div>
+                  ) : (
+                    <div className="flex h-full flex-col gap-4 p-6">
+                      <header>
+                        <h3 className="text-lg font-semibold text-foreground">
+                          Performance Monitor
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          Track state updates, render counts, and memory usage.
+                        </p>
+                      </header>
+                      <PerformanceMonitorPanel />
+                    </div>
                   )}
-                </Card>
-              </div>
-            ) : (
-              <div className="p-6">
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold mb-2">
-                    Performance Monitor
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Track state updates, render counts, and memory usage.
-                  </p>
                 </div>
-
-                <PerformanceMonitorPanel />
-              </div>
-            )}
-          </div>
-
-          {/* Console */}
-          <div className="border-t p-4">
-            <h3 className="text-sm font-semibold mb-2">Console</h3>
-            <div className="border rounded-lg p-3 h-32 overflow-y-auto bg-zinc-950 dark:bg-zinc-950 text-zinc-100 font-mono text-xs">
-              {output.map((line, i) => (
-                <div
-                  key={i}
-                  className={
-                    line.startsWith('>')
-                      ? 'text-zinc-500'
-                      : line.startsWith('✓')
-                        ? 'text-green-400'
-                        : line.startsWith('✗')
-                          ? 'text-red-400'
-                          : 'text-zinc-100'
-                  }
-                >
-                  {line}
+                <div className="border-t border-border bg-surface-muted/80 p-4">
+                  <div className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    <span>Console</span>
+                    <span>{consoleTimestamp}</span>
+                  </div>
+                  <div className="h-32 overflow-y-auto rounded-lg border border-border bg-zinc-950 text-zinc-100 shadow-inner">
+                    <div className="space-y-1 p-3 font-mono text-xs">
+                      {output.map((line, i) => (
+                        <div
+                          key={i}
+                          className={
+                            line.startsWith('>')
+                              ? 'text-zinc-500'
+                              : line.startsWith('✓')
+                                ? 'text-green-400'
+                                : line.startsWith('✗')
+                                  ? 'text-red-400'
+                                  : 'text-zinc-100'
+                          }
+                        >
+                          {line}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              ))}
-            </div>
-          </div>
+              </div>
+            }
+          />
         </div>
       </div>
     </div>

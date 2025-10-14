@@ -1,34 +1,9 @@
-/**
- * DemoArticle Component
- *
- * Required wrapper component for all interactive article-style demos.
- * Enforces consistent structure while allowing flexible content composition.
- *
- * Features:
- * - Renders header with title, difficulty badge, and tags
- * - Renders prev/next navigation
- * - Initializes BlocGraphVisualizer if enabled
- * - Provides context for child components
- * - Handles scroll progress indicator
- *
- * @example
- * ```tsx
- * <DemoArticle
- *   metadata={demoMetadata}
- *   showBlocGraph={true}
- *   graphLayout="grid"
- * >
- *   <ArticleSection>...</ArticleSection>
- * </DemoArticle>
- * ```
- */
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { cn } from '../../lib/utils';
-import { variants } from '../../utils/animations';
+import { cn } from '@/lib/utils';
+import { variants } from '@/utils/animations';
 
 /**
  * Demo difficulty levels
@@ -45,7 +20,7 @@ export interface DemoMetadata {
   category: string;
   difficulty: DemoDifficulty;
   tags: string[];
-  estimatedTime?: number; // in minutes
+  estimatedTime?: number;
   learningPath?: {
     previous?: string;
     next?: string;
@@ -58,35 +33,16 @@ export interface DemoMetadata {
   };
 }
 
-/**
- * DemoArticle props
- */
 export interface DemoArticleProps {
-  /** Demo metadata (required) */
   metadata: DemoMetadata;
-
-  /** Enable Bloc graph visualization */
   showBlocGraph?: boolean;
-
-  /** Graph layout algorithm ('grid' | 'force') */
   graphLayout?: 'grid' | 'force';
-
-  /** Highlight lifecycle states in graph */
   highlightLifecycle?: boolean;
-
-  /** Hide navigation footer (useful when used in guide context) */
   hideNavigation?: boolean;
-
-  /** Children components (article content) */
   children: React.ReactNode;
-
-  /** Additional CSS classes */
   className?: string;
 }
 
-/**
- * Context for child components to access demo metadata
- */
 interface DemoArticleContextValue {
   metadata: DemoMetadata;
   showBlocGraph: boolean;
@@ -96,9 +52,6 @@ interface DemoArticleContextValue {
 
 const DemoArticleContext = createContext<DemoArticleContextValue | null>(null);
 
-/**
- * Hook to access DemoArticle context
- */
 export const useDemoArticle = () => {
   const context = useContext(DemoArticleContext);
   if (!context) {
@@ -107,19 +60,15 @@ export const useDemoArticle = () => {
   return context;
 };
 
-/**
- * Difficulty badge colors
- */
-const difficultyColors: Record<DemoDifficulty, string> = {
-  beginner: 'bg-semantic-success-light text-semantic-success-dark border-semantic-success',
+const difficultyStyles: Record<DemoDifficulty, string> = {
+  beginner:
+    'border-emerald-200/70 bg-emerald-50 text-emerald-700 dark:border-emerald-800/60 dark:bg-emerald-900/30 dark:text-emerald-300',
   intermediate:
-    'bg-semantic-warning-light text-semantic-warning-dark border-semantic-warning',
-  advanced: 'bg-semantic-danger-light text-semantic-danger-dark border-semantic-danger',
+    'border-amber-200/70 bg-amber-50 text-amber-700 dark:border-amber-800/60 dark:bg-amber-900/30 dark:text-amber-300',
+  advanced:
+    'border-rose-200/70 bg-rose-50 text-rose-700 dark:border-rose-800/60 dark:bg-rose-900/30 dark:text-rose-300',
 };
 
-/**
- * DemoArticle Component
- */
 export const DemoArticle: React.FC<DemoArticleProps> = ({
   metadata,
   showBlocGraph = false,
@@ -131,12 +80,11 @@ export const DemoArticle: React.FC<DemoArticleProps> = ({
 }) => {
   const [scrollProgress, setScrollProgress] = useState(0);
 
-  // Calculate scroll progress
   useEffect(() => {
     const handleScroll = () => {
       const scrollTop = window.scrollY;
       const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-      const progress = (scrollTop / docHeight) * 100;
+      const progress = docHeight <= 0 ? 0 : (scrollTop / docHeight) * 100;
       setScrollProgress(Math.min(progress, 100));
     };
 
@@ -151,113 +99,116 @@ export const DemoArticle: React.FC<DemoArticleProps> = ({
     highlightLifecycle,
   };
 
+  const categoryLabel = React.useMemo(() => {
+    const cleaned = metadata.category.replace(/^[0-9]+-/, '').replace(/-/g, ' ');
+    return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+  }, [metadata.category]);
+
+  const formatSlug = (slug?: string) =>
+    slug ? slug.replace(/^[0-9]+-/, '').replace(/-/g, ' ') : '';
+
   return (
     <DemoArticleContext.Provider value={contextValue}>
       <motion.article
         initial="hidden"
         animate="visible"
         variants={variants.fadeIn}
-        className={cn(
-          'demo-article',
-          'max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8',
-          className
-        )}
+        className={cn('relative mx-auto w-full max-w-4xl space-y-10 px-4 py-8 sm:px-6', className)}
       >
-        {/* Scroll Progress Indicator */}
-        <div className="fixed top-0 left-0 right-0 h-1 bg-gray-200 z-50">
+        <div className="pointer-events-none sticky top-[92px] z-30 h-1 w-full overflow-hidden rounded-full bg-surface-muted/80 shadow-subtle">
           <motion.div
-            className="h-full bg-gradient-to-r from-concept-cubit to-concept-bloc"
+            className="h-full bg-brand"
             style={{ width: `${scrollProgress}%` }}
             initial={{ width: 0 }}
             animate={{ width: `${scrollProgress}%` }}
-            transition={{ duration: 0.1 }}
+            transition={{ duration: 0.12 }}
           />
         </div>
 
-        {/* Header */}
-        <header className="mb-12">
-          {/* Category & Difficulty */}
-          <div className="flex items-center gap-3 mb-4">
-            <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-              {metadata.category}
-            </span>
-            <span
-              className={cn(
-                'px-3 py-1 rounded-full text-xs font-semibold border',
-                difficultyColors[metadata.difficulty]
-              )}
-            >
-              {metadata.difficulty}
-            </span>
-            {metadata.estimatedTime && (
-              <span className="text-sm text-muted-foreground">
-                ~{metadata.estimatedTime} min
-              </span>
-            )}
-          </div>
+        <div className="relative overflow-hidden rounded-3xl border border-border/70 bg-surface shadow-subtle">
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-brand/15 via-transparent to-purple-500/15 opacity-90" />
+          <div className="pointer-events-none absolute -right-16 top-0 h-44 w-44 rounded-full bg-brand/20 blur-3xl" />
 
-          {/* Title */}
-          <motion.h1
-            className="text-4xl sm:text-5xl font-bold mb-4 bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent"
-            variants={variants.slideUp}
-          >
-            {metadata.title}
-          </motion.h1>
-
-          {/* Description */}
-          <motion.p
-            className="text-xl text-muted-foreground mb-6"
-            variants={variants.slideUp}
-          >
-            {metadata.description}
-          </motion.p>
-
-          {/* Tags */}
-          {metadata.tags.length > 0 && (
-            <motion.div className="flex flex-wrap gap-2" variants={variants.slideUp}>
-              {metadata.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="px-3 py-1 text-sm rounded-md bg-accent text-accent-foreground"
-                >
-                  {tag}
+          <div className="relative space-y-12 px-6 py-8 sm:px-10 sm:py-12">
+            <header className="space-y-6">
+              <div className="flex flex-wrap items-center gap-3 text-xs font-semibold uppercase tracking-tight text-muted-foreground">
+                <span className="rounded-full bg-surface-muted px-2.5 py-1 text-muted-foreground">
+                  {categoryLabel}
                 </span>
-              ))}
-            </motion.div>
-          )}
-        </header>
+                <span className={cn('rounded-full border px-2.5 py-1', difficultyStyles[metadata.difficulty])}>
+                  {metadata.difficulty}
+                </span>
+                {metadata.estimatedTime && (
+                  <span className="rounded-full border border-border px-2.5 py-1 text-muted-foreground">
+                    ~{metadata.estimatedTime} min
+                  </span>
+                )}
+              </div>
 
-        {/* Article Content */}
-        <div className="demo-article-content">{children}</div>
+              <motion.h1
+                className="font-display text-4xl font-semibold tracking-tight text-foreground sm:text-5xl"
+                variants={variants.slideUp}
+              >
+                {metadata.title}
+              </motion.h1>
 
-        {/* Navigation Footer (hidden when used in guide context) */}
+              <motion.p className="max-w-3xl text-base text-muted-foreground sm:text-lg" variants={variants.slideUp}>
+                {metadata.description}
+              </motion.p>
+
+              {metadata.tags.length > 0 && (
+                <motion.div className="flex flex-wrap gap-2" variants={variants.slideUp}>
+                  {metadata.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </motion.div>
+              )}
+            </header>
+
+            <div className="demo-article-content space-y-16">{children}</div>
+          </div>
+        </div>
+
         {!hideNavigation && (
-          <footer className="mt-16 pt-8 border-t border-border">
-            <div className="flex justify-between items-center">
-              {/* Previous Demo */}
+          <footer className="mx-auto max-w-4xl">
+            <div className="grid gap-4 sm:grid-cols-2">
               {metadata.learningPath?.previous ? (
                 <Link
                   to={`/demos/${metadata.learningPath.previous}`}
-                  className="group flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                  className="group relative flex items-center gap-3 overflow-hidden rounded-2xl border border-border/70 bg-surface px-5 py-4 shadow-subtle transition-transform hover:-translate-y-0.5 hover:shadow-elevated"
                 >
-                  <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                  <span>Previous</span>
+                  <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand/10 text-brand">
+                    <ArrowLeft className="h-5 w-5 transition-transform group-hover:-translate-x-1" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Previous</p>
+                    <p className="text-sm font-semibold text-foreground">{formatSlug(metadata.learningPath.previous)}</p>
+                  </div>
                 </Link>
               ) : (
-                <div />
+                <div className="hidden sm:block" />
               )}
 
-              {/* Next Demo */}
               {metadata.learningPath?.next ? (
                 <Link
                   to={`/demos/${metadata.learningPath.next}`}
-                  className="group flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                  className="group relative flex items-center gap-3 overflow-hidden rounded-2xl border border-border/70 bg-surface px-5 py-4 shadow-subtle transition-transform hover:-translate-y-0.5 hover:shadow-elevated"
                 >
-                  <span>Next</span>
-                  <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand text-brand-foreground">
+                    <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Next</p>
+                    <p className="text-sm font-semibold text-foreground">{formatSlug(metadata.learningPath.next)}</p>
+                  </div>
                 </Link>
               ) : (
-                <div />
+                <div className="hidden sm:block" />
               )}
             </div>
           </footer>
@@ -266,5 +217,3 @@ export const DemoArticle: React.FC<DemoArticleProps> = ({
     </DemoArticleContext.Provider>
   );
 };
-
-export default DemoArticle;

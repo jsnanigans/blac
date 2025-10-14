@@ -22,7 +22,7 @@
  * ```
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Highlight, themes, type Language } from 'prism-react-renderer';
 import { Copy, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -81,9 +81,26 @@ export const CodePanel: React.FC<CodePanelProps> = ({
 }) => {
   const [copied, setCopied] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
+  const [isDarkMode, setIsDarkMode] = useState(() =>
+    document.documentElement.classList.contains('dark')
+  );
+
+  // Listen for theme changes
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsDarkMode(document.documentElement.classList.contains('dark'));
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   // Handle copy to clipboard
-  const handleCopy = async () => {
+const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(code);
       setCopied(true);
@@ -98,31 +115,31 @@ export const CodePanel: React.FC<CodePanelProps> = ({
     setIsCollapsed(!isCollapsed);
   };
 
+  const lightCodeTheme = (themes as Record<string, any>).nightOwlLight ?? themes.github;
+  const darkCodeTheme = themes.nightOwl;
+
   return (
     <motion.div
       initial="hidden"
       animate="visible"
       variants={variants.slideUp}
       className={cn(
-        'code-panel',
-        'rounded-lg overflow-hidden',
-        'border border-border',
-        'bg-slate-900 dark:bg-slate-950',
-        'shadow-lg',
-        className
+        'relative overflow-hidden rounded-3xl border border-border/70 bg-surface shadow-subtle',
+        className,
       )}
     >
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(129,140,248,0.18),_transparent_55%)] opacity-90" />
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 bg-slate-800 dark:bg-slate-900 border-b border-slate-700">
+      <div className="relative flex items-center justify-between border-b border-border/70 bg-surface-muted/80 px-4 py-3">
         <div className="flex items-center gap-3">
           {/* Language badge */}
-          <span className="text-xs font-mono text-slate-400 uppercase">
+          <span className="inline-flex items-center rounded-full bg-brand/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-brand">
             {language}
           </span>
 
           {/* Title */}
           {title && (
-            <span className="text-sm font-medium text-slate-300">{title}</span>
+            <span className="text-sm font-semibold text-foreground">{title}</span>
           )}
         </div>
 
@@ -131,10 +148,9 @@ export const CodePanel: React.FC<CodePanelProps> = ({
           <button
             onClick={handleCopy}
             className={cn(
-              'p-1.5 rounded transition-colors',
-              copied
-                ? 'bg-semantic-success/20 text-semantic-success'
-                : 'hover:bg-slate-700 text-slate-400 hover:text-slate-200'
+              'inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-surface text-muted-foreground transition-colors',
+              copied && 'border-emerald-300/70 bg-emerald-100 text-emerald-700 dark:border-emerald-700/60 dark:bg-emerald-900/30 dark:text-emerald-300',
+              !copied && 'hover:text-foreground',
             )}
             aria-label="Copy code"
           >
@@ -145,7 +161,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({
           {collapsible && (
             <button
               onClick={toggleCollapse}
-              className="p-1.5 rounded hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-colors"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-surface text-muted-foreground transition-colors hover:text-foreground"
               aria-label={isCollapsed ? 'Expand code' : 'Collapse code'}
             >
               {isCollapsed ? (
@@ -167,15 +183,22 @@ export const CodePanel: React.FC<CodePanelProps> = ({
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
           >
-            <Highlight theme={themes.nightOwl} code={code.trim()} language={language}>
+            <Highlight
+              theme={isDarkMode ? darkCodeTheme : lightCodeTheme}
+              code={code.trim()}
+              language={language}
+            >
               {({ className: highlightClassName, style, tokens, getLineProps, getTokenProps }) => (
                 <pre
-                  className={cn(highlightClassName, 'overflow-x-auto')}
+                  className={cn(
+                    highlightClassName,
+                    'relative overflow-auto rounded-b-3xl bg-[rgba(2,6,23,0.92)] dark:bg-[rgba(2,6,23,0.92)]',
+                    !isDarkMode && 'bg-[#0f172a]/90 text-white',
+                  )}
                   style={{
                     ...style,
-                    maxHeight,
                     margin: 0,
-                    padding: '1rem',
+                    padding: '1.25rem 1.5rem',
                   }}
                 >
                   {tokens.map((line, lineIndex) => {
@@ -188,10 +211,9 @@ export const CodePanel: React.FC<CodePanelProps> = ({
                         key={lineIndex}
                         {...getLineProps({ line })}
                         className={cn(
-                          'relative',
-                          isHighlighted && 'bg-concept-cubit/10',
-                          isHighlighted && 'border-l-2 border-l-concept-cubit',
-                          lineLabel && 'mb-6' // Extra space for label
+                          'relative rounded-lg px-2 py-1 transition-colors',
+                          isHighlighted && 'bg-brand/10 ring-1 ring-brand/30',
+                          lineLabel && 'mb-6',
                         )}
                       >
                         <div className="flex">
@@ -199,10 +221,10 @@ export const CodePanel: React.FC<CodePanelProps> = ({
                           {showLineNumbers && (
                             <span
                               className={cn(
-                                'select-none inline-block w-8 text-right mr-4',
+                                'mr-4 inline-block w-10 select-none text-right font-mono text-[11px]',
                                 isHighlighted
-                                  ? 'text-concept-cubit font-semibold'
-                                  : 'text-slate-600'
+                                  ? 'text-brand font-semibold'
+                                  : 'text-slate-500',
                               )}
                             >
                               {lineNumber}
@@ -219,8 +241,8 @@ export const CodePanel: React.FC<CodePanelProps> = ({
 
                         {/* Line label */}
                         {lineLabel && (
-                          <div className="absolute left-0 right-0 mt-1">
-                            <span className="inline-block ml-12 px-2 py-0.5 text-xs font-medium bg-concept-cubit text-white rounded">
+                          <div className="mt-1 flex items-center pl-12">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-brand px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-foreground shadow-subtle">
                               {lineLabel}
                             </span>
                           </div>

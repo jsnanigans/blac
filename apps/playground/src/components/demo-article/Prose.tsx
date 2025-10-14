@@ -78,58 +78,47 @@ export const Prose: React.FC<ProseProps> = ({
     <div
       className={cn(
         'prose prose-slate dark:prose-invert',
-        // Size
         sizeClasses[size],
-        // Max width
         maxWidthClasses[maxWidth],
-        // Custom styling
-        'prose-headings:scroll-mt-20', // Offset for fixed header
-        'prose-headings:font-bold',
-        'prose-h2:text-3xl',
-        'prose-h2:mb-4',
-        'prose-h2:mt-8',
-        'prose-h3:text-2xl',
-        'prose-h3:mb-3',
-        'prose-h3:mt-6',
-        'prose-h4:text-xl',
-        'prose-h4:mb-2',
-        'prose-h4:mt-4',
-        'prose-p:leading-relaxed',
-        'prose-p:mb-4',
-        'prose-a:text-concept-cubit',
-        'prose-a:no-underline',
-        'prose-a:font-medium',
-        'hover:prose-a:underline',
-        'prose-strong:text-foreground',
-        'prose-strong:font-semibold',
-        'prose-code:text-concept-event',
-        'prose-code:bg-accent/50',
-        'prose-code:px-1.5',
-        'prose-code:py-0.5',
-        'prose-code:rounded',
-        'prose-code:font-mono',
-        'prose-code:text-sm',
-        'prose-code:before:content-none',
-        'prose-code:after:content-none',
-        'prose-pre:bg-slate-900',
-        'prose-pre:text-white',
-        'dark:prose-pre:bg-slate-950',
-        'prose-ul:my-4',
-        'prose-ul:list-disc',
-        'prose-ul:pl-6',
-        'prose-ol:my-4',
-        'prose-ol:list-decimal',
-        'prose-ol:pl-6',
-        'prose-li:my-2',
-        'prose-blockquote:border-l-concept-cubit',
-        'prose-blockquote:bg-accent/20',
-        'prose-blockquote:py-2',
-        'prose-blockquote:px-4',
-        'prose-blockquote:rounded-r',
-        'prose-blockquote:not-italic',
-        'prose-img:rounded-lg',
-        'prose-img:shadow-lg',
-        className
+        // Headings
+        'prose-headings:scroll-mt-24',
+        'prose-headings:font-semibold',
+        'prose-headings:tracking-tight',
+        'prose-h2:text-3xl sm:prose-h2:text-4xl',
+        'prose-h2:mt-14 prose-h2:mb-6',
+        'prose-h2:text-brand',
+        'dark:prose-h2:text-brand',
+        'prose-h3:text-2xl sm:prose-h3:text-3xl',
+        'prose-h3:mt-10 prose-h3:mb-4',
+        'prose-h3:text-fuchsia-500 dark:prose-h3:text-fuchsia-400',
+        'prose-h4:text-xl sm:prose-h4:text-2xl',
+        'prose-h4:mt-8 prose-h4:mb-3',
+        'prose-h4:text-indigo-500 dark:prose-h4:text-indigo-300',
+        // Paragraphs
+        'prose-p:leading-[1.75]',
+        'prose-p:mb-6',
+        'prose-p:text-muted-foreground',
+        // Links
+        'prose-a:rounded-full prose-a:bg-brand/10 prose-a:px-2.5 prose-a:py-0.5 prose-a:text-sm prose-a:font-semibold prose-a:text-brand prose-a:no-underline',
+        'hover:prose-a:bg-brand/20',
+        // Strong
+        'prose-strong:text-foreground prose-strong:font-semibold',
+        // Inline code
+        'prose-code:rounded-md prose-code:bg-rose-100 prose-code:px-2 prose-code:py-0.5 prose-code:font-mono prose-code:text-sm prose-code:text-rose-600 dark:prose-code:bg-rose-900/40 dark:prose-code:text-rose-200',
+        'prose-code:before:content-none prose-code:after:content-none',
+        // Code blocks
+        'prose-pre:bg-slate-900 prose-pre:text-slate-200 dark:prose-pre:bg-slate-950',
+        // Lists
+        'prose-ul:my-6 prose-ul:list-disc prose-ul:pl-6',
+        'prose-ol:my-6 prose-ol:list-decimal prose-ol:pl-6',
+        'prose-li:my-2 prose-li:leading-relaxed',
+        // Blockquotes
+        'prose-blockquote:border-l-4 prose-blockquote:border-l-brand/70',
+        'prose-blockquote:bg-gradient-to-r prose-blockquote:from-brand/10 prose-blockquote:via-transparent prose-blockquote:to-transparent',
+        'prose-blockquote:px-5 prose-blockquote:py-3 prose-blockquote:rounded-2xl prose-blockquote:not-italic prose-blockquote:text-foreground/90',
+        // Tables & images
+        'prose-img:rounded-2xl prose-img:shadow-subtle',
+        className,
       )}
     >
       {children}
@@ -147,12 +136,8 @@ export const InlineCode: React.FC<{
   return (
     <code
       className={cn(
-        'text-concept-event',
-        'bg-accent/50',
-        'px-1.5 py-0.5',
-        'rounded',
-        'font-mono text-sm',
-        className
+        'rounded-md bg-rose-100 px-1.5 py-0.5 font-mono text-sm text-rose-600 dark:bg-rose-900/40 dark:text-rose-200',
+        className,
       )}
     >
       {children}

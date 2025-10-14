@@ -125,7 +125,7 @@ const demoMetadata = {
   title: 'Instance Management',
   description:
     'Learn the difference between shared and isolated instances. Control whether your state is shared across all components or isolated to each one.',
-  category: '01-fundamentals',
+  category: '01-basics',
   difficulty: 'beginner' as const,
   tags: ['cubit', 'instances', 'shared', 'isolated', 'lifecycle'],
   estimatedTime: 8,

@@ -11,6 +11,7 @@ import { ComparisonPanel } from '@/components/shared/ComparisonPanel';
 import { WarningCallout, TipCallout, InfoCallout } from '@/components/shared/ConceptCallout';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 // Complex state for demonstration
 interface UserProfile {
@@ -103,22 +104,26 @@ function DiffDisplay({ before, after, operation }: DiffDisplayProps) {
     const removed = beforeVal !== undefined && afterVal === undefined;
 
     return (
-      <div key={key} className="flex items-center gap-2 py-1">
-        <span className="text-muted-foreground w-24">{key}:</span>
+      <div key={key} className="flex items-center gap-3 py-1 text-xs sm:text-sm">
+        <span className="w-28 text-muted-foreground/80">{key}:</span>
         {removed && (
-          <span className="line-through text-red-500">{JSON.stringify(beforeVal)}</span>
+          <span className="font-mono text-rose-500 line-through">
+            {JSON.stringify(beforeVal)}
+          </span>
         )}
         {!removed && (
           <>
             {changed && (
               <>
-                <span className="line-through text-red-500/60">
+                <span className="font-mono text-rose-400/80 line-through">
                   {JSON.stringify(beforeVal)}
                 </span>
-                <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                <ArrowRight className="h-4 w-4 text-muted-foreground/70" />
               </>
             )}
-            <span className={changed ? 'text-green-600 font-semibold' : ''}>
+            <span
+              className={cn('font-mono', changed && 'text-emerald-500 font-semibold')}
+            >
               {JSON.stringify(afterVal)}
             </span>
           </>
@@ -151,15 +156,20 @@ function DiffDisplay({ before, after, operation }: DiffDisplayProps) {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="p-4 rounded-lg bg-muted/50 border border-border"
+      className="relative overflow-hidden rounded-2xl border border-border/70 bg-surface px-4 py-5 shadow-subtle"
     >
-      <div className="flex items-center gap-2 mb-3">
-        <span className="px-2 py-1 rounded bg-concept-cubit text-white text-xs font-semibold">
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-brand/10 via-transparent to-emerald-200/25 dark:to-emerald-900/25 opacity-80" />
+      <div className="relative flex items-center gap-2 pb-3">
+        <span className="inline-flex items-center rounded-full bg-brand px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-brand-foreground">
           {operation}
         </span>
-        <span className="text-sm text-muted-foreground">State Changes</span>
+        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          State changes
+        </span>
       </div>
-      <div className="font-mono text-sm">{renderDiff(before, after)}</div>
+      <div className="relative space-y-2 font-mono text-xs">
+        {renderDiff(before, after)}
+      </div>
     </motion.div>
   );
 }
@@ -183,10 +193,12 @@ function InteractiveComparison() {
   return (
     <div className="space-y-6">
       {/* Controls */}
-      <div className="grid md:grid-cols-2 gap-4">
-        {/* emit() operations */}
-        <div className="p-4 rounded-lg bg-concept-cubit/10 border-2 border-concept-cubit/30">
-          <h4 className="font-semibold text-concept-cubit mb-3">emit() Operations</h4>
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="relative overflow-hidden rounded-3xl border border-border/70 bg-surface px-4 py-5 shadow-subtle">
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-sky-400/15 via-transparent to-brand/25 opacity-90" />
+          <h4 className="relative text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            emit() operations
+          </h4>
           <div className="space-y-2">
             <Button
               onClick={() => executeOp(cubit.loadNewProfile, 'emit()')}
@@ -210,15 +222,17 @@ function InteractiveComparison() {
           </div>
         </div>
 
-        {/* patch() operations */}
-        <div className="p-4 rounded-lg bg-semantic-success-light/30 border-2 border-semantic-success">
-          <h4 className="font-semibold text-semantic-success-dark mb-3">patch() Operations</h4>
+        <div className="relative overflow-hidden rounded-3xl border border-border/70 bg-surface px-4 py-5 shadow-subtle">
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-fuchsia-400/15 via-transparent to-purple-500/20 opacity-90" />
+          <h4 className="relative text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            patch() operations
+          </h4>
           <div className="space-y-2">
             <Button
               onClick={() => executeOp(() => cubit.updateName('Charlie'), 'patch()')}
               variant="primary"
               size="sm"
-              className="w-full bg-semantic-success hover:bg-semantic-success-dark"
+              className="w-full"
             >
               Update Name (patch)
             </Button>
@@ -235,7 +249,6 @@ function InteractiveComparison() {
         </div>
       </div>
 
-      {/* Diff display */}
       <AnimatePresence mode="wait">
         {beforeState && afterState && lastOp && (
           <DiffDisplay before={beforeState} after={afterState} operation={lastOp} />
@@ -243,7 +256,7 @@ function InteractiveComparison() {
       </AnimatePresence>
 
       {!beforeState && (
-        <div className="p-4 text-center text-muted-foreground bg-muted/30 rounded-lg border border-dashed border-border">
+        <div className="rounded-3xl border border-dashed border-border/60 bg-surface px-4 py-6 text-center text-sm text-muted-foreground shadow-subtle">
           Click a button above to see how emit() and patch() differ
         </div>
       )}
@@ -257,7 +270,7 @@ const demoMetadata = {
   title: 'Updating State: emit() vs patch()',
   description:
     'Learn the two ways to update state in BlaC and when to use each one. Master emit() for full replacements and patch() for partial updates.',
-  category: '01-fundamentals',
+  category: '01-basics',
   difficulty: 'beginner' as const,
   tags: ['cubit', 'emit', 'patch', 'state-updates'],
   estimatedTime: 8,
