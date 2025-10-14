@@ -10,6 +10,7 @@ import {
 } from '@/core/guide/guideStructure';
 import { DemoRegistry } from '@/core/utils/demoRegistry';
 import { PageHeader, PageHeaderStat } from '@/layouts/PageHeader';
+import { useHeaderVisibility } from '@/hooks/useHeaderVisibility';
 
 interface GuideLayoutProps {
   children: React.ReactNode;
@@ -26,6 +27,7 @@ export function GuideLayout({
   showNavigation = true,
   className
 }: GuideLayoutProps) {
+  const { isHeaderVisible } = useHeaderVisibility();
   const breadcrumbs = getBreadcrumbs(currentSection, currentDemo);
   const navigation =
     currentSection && currentDemo
@@ -34,6 +36,9 @@ export function GuideLayout({
 
   const section = currentSection ? getSection(currentSection) : undefined;
   const demo = currentDemo ? DemoRegistry.get(currentDemo) : undefined;
+
+  // Calculate top position based on header visibility
+  const navigationTop = isHeaderVisible ? 'top-20' : 'top-1';
 
   const difficultyLabel = demo?.difficulty
     ? `${demo.difficulty.charAt(0).toUpperCase()}${demo.difficulty.slice(1)}`
@@ -50,63 +55,61 @@ export function GuideLayout({
   return (
     <div
       className={cn(
-        'relative flex min-h-[calc(100vh-3.5rem)] bg-gradient-to-br from-background/60 via-background to-surface-muted/60',
+        'relative bg-gradient-to-br from-background/60 via-background to-surface-muted/60',
         className,
       )}
     >
-      <GuideSidebar currentSection={currentSection} currentDemo={currentDemo} />
+      <div className="flex min-h-screen">
+        <GuideSidebar currentSection={currentSection} currentDemo={currentDemo} />
 
-      <div className="relative flex flex-1 flex-col">
-        <div className="border-b border-border/80 bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/80">
-          <PageHeader
-            title={demo?.title ?? 'BlaC Learning Guide'}
-            description={demo?.description ?? section?.description}
-            eyebrow={section?.title ?? 'Guide'}
-            breadcrumbs={breadcrumbs}
-            meta={
-              difficultyLabel && (
-                <span
-                  className={cn(
-                    'inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-semibold uppercase tracking-wide',
-                    difficultyColor[demo?.difficulty ?? 'beginner'],
-                  )}
-                >
-                  {difficultyLabel}
-                </span>
-              )
-            }
-          >
-            {demo && (
-              <div className="grid gap-3 sm:grid-cols-3">
-                <PageHeaderStat value={section?.title ?? 'Learning Path'} label="Section" />
-                <PageHeaderStat
-                  value={`${demo.tags.length || 0}`}
-                  label="Concept Tags"
-                />
-                <PageHeaderStat value={demo.concepts.length || 0} label="Key Concepts" />
-              </div>
-            )}
-          </PageHeader>
-        </div>
-
-        <main className="flex-1">
-          <motion.div
-            key={`${currentSection}-${currentDemo}`}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25 }}
-            className="mx-auto w-full max-w-6xl px-4 py-8 lg:py-12"
-          >
-            <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_260px]">
-              <div className="min-w-0 space-y-10">{children}</div>
-              {showNavigation && navigation && (
-                <aside className="lg:sticky lg:top-24">
-                  <GuideNavigation navigation={navigation} />
-                </aside>
+        <div className="relative flex flex-1 flex-col min-w-0">
+          <div className="border-b border-border/80 bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/80">
+            <PageHeader
+              title={demo?.title ?? 'BlaC Learning Guide'}
+              description={demo?.description ?? section?.description}
+              eyebrow={section?.title ?? 'Guide'}
+              breadcrumbs={breadcrumbs}
+              meta={
+                difficultyLabel && (
+                  <span
+                    className={cn(
+                      'inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-semibold uppercase tracking-wide',
+                      difficultyColor[demo?.difficulty ?? 'beginner'],
+                    )}
+                  >
+                    {difficultyLabel}
+                  </span>
+                )
+              }
+            >
+              {demo && (
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <PageHeaderStat value={section?.title ?? 'Learning Path'} label="Section" />
+                  <PageHeaderStat
+                    value={`${demo.tags.length || 0}`}
+                    label="Concept Tags"
+                  />
+                  <PageHeaderStat value={demo.concepts.length || 0} label="Key Concepts" />
+                </div>
               )}
+            </PageHeader>
+          </div>
+
+          <main className="flex-1">
+            <div className="mx-auto w-full max-w-6xl px-4 py-8 lg:py-12">
+              <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_260px]">
+                <div className="min-w-0 space-y-10">{children}</div>
+                {showNavigation && navigation && (
+                  <div className="relative">
+                    <div className={cn('sticky transition-[top] duration-300', navigationTop)}>
+                      <GuideNavigation navigation={navigation} />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-          </motion.div>
-        </main>
+          </main>
+        </div>
       </div>
     </div>
   );
@@ -146,14 +149,9 @@ export function GuideSimpleLayout({
       </div>
 
       <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:py-12">
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="space-y-10"
-        >
+        <div className="space-y-10">
           {children}
-        </motion.div>
+        </div>
       </main>
     </div>
   );

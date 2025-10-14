@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { guideStructure } from '@/core/guide/guideStructure';
 import { DemoRegistry } from '@/core/utils/demoRegistry';
 import type { GuideSection } from './types';
+import { useHeaderVisibility } from '@/hooks/useHeaderVisibility';
 
 interface GuideSidebarProps {
   currentSection?: string;
@@ -14,10 +15,14 @@ interface GuideSidebarProps {
 }
 
 export function GuideSidebar({ currentSection, currentDemo, className }: GuideSidebarProps) {
+  const { isHeaderVisible } = useHeaderVisibility();
   const [expandedSections, setExpandedSections] = React.useState<Set<string>>(
     new Set(guideStructure.sections.map(s => s.id))
   );
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+
+  // Calculate top position based on header visibility
+  const sidebarTop = isHeaderVisible ? 'top-16' : 'top-1';
 
   // Auto-expand current section on mount
   React.useEffect(() => {
@@ -68,27 +73,27 @@ export function GuideSidebar({ currentSection, currentDemo, className }: GuideSi
       {/* Desktop Sidebar */}
       <aside
         className={cn(
-          'hidden lg:block w-72 shrink-0 border-r border-border/80 bg-surface/90 backdrop-blur supports-[backdrop-filter]:bg-surface/80',
+          'hidden lg:flex w-72 shrink-0 border-r border-border/80 bg-surface/90 backdrop-blur supports-[backdrop-filter]:bg-surface/80 sticky flex-col overflow-hidden transition-[top,height] duration-300',
+          sidebarTop,
+          isHeaderVisible ? 'h-[calc(100vh-4rem)]' : 'h-[calc(100vh-0.25rem)]',
           className,
         )}
       >
-        <div className="sticky top-24 flex h-[calc(100vh-6rem)] flex-col overflow-hidden">
-          <div className="border-b border-border/80 bg-surface-muted/80 px-5 py-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                  Guide map
-                </h2>
-                <p className="mt-1 text-xs text-muted-foreground/80">
-                  Follow the curated BlaC learning path.
-                </p>
-              </div>
-              <Sparkles className="h-4 w-4 text-brand" />
+        <div className="border-b border-border/80 bg-surface-muted/80 px-5 py-4 shrink-0">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                Guide map
+              </h2>
+              <p className="mt-1 text-xs text-muted-foreground/80">
+                Follow the curated BlaC learning path.
+              </p>
             </div>
+            <Sparkles className="h-4 w-4 text-brand" />
           </div>
-          <div className="flex-1 space-y-3 overflow-y-auto px-4 py-5">
-            {sidebarContent}
-          </div>
+        </div>
+        <div className="flex-1 space-y-3 overflow-y-auto px-4 py-5 pb-8">
+          {sidebarContent}
         </div>
       </aside>
 
@@ -157,7 +162,7 @@ function SidebarSection({
       <button
         onClick={onToggle}
         className={cn(
-          'w-full rounded-2xl border border-border bg-surface px-4 py-3 text-left transition-all hover:-translate-y-0.5 hover:shadow-subtle',
+          'w-full rounded-2xl border border-border bg-surface px-4 py-3 text-left hover:shadow-subtle',
           isCurrentSection && 'border-brand/60 bg-brand/10 shadow-subtle text-brand',
         )}
       >
@@ -194,7 +199,7 @@ function SidebarSection({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
             className="overflow-hidden"
           >
             <div className="ml-4 mt-3 space-y-1">
@@ -212,7 +217,7 @@ function SidebarSection({
                     to={`/guide/${section.id}/${demoId}`}
                     onClick={onDemoClick}
                     className={cn(
-                      'block rounded-xl border border-transparent px-3 py-2 text-sm transition-all hover:-translate-y-0.5 hover:border-border hover:bg-surface',
+                      'block rounded-xl border border-transparent px-3 py-2 text-sm hover:border-border hover:bg-surface',
                       isActive &&
                         'border-brand/60 bg-brand/15 text-brand shadow-subtle font-semibold',
                     )}

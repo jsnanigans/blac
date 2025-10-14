@@ -14,15 +14,12 @@ export function GuideNavigation({ navigation, className }: GuideNavigationProps)
   if (!navigation) return null;
 
   return (
-    <motion.nav
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25 }}
+    <nav
       className={cn('space-y-4', className)}
     >
       <div className="rounded-3xl border border-border bg-surface shadow-subtle">
         <div className="flex items-center justify-between border-b border-border/70 bg-surface-muted/80 px-4 py-3">
-          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground pl-2">
             Learning path
           </span>
           <Sparkles className="h-4 w-4 text-brand" />
@@ -50,7 +47,7 @@ export function GuideNavigation({ navigation, className }: GuideNavigationProps)
           )}
         </div>
       </div>
-    </motion.nav>
+    </nav>
   );
 }
 
@@ -68,7 +65,7 @@ function NavCard({ direction, title, to }: NavCardProps) {
     <Link
       to={to}
       className={cn(
-        'group relative overflow-hidden rounded-2xl border border-border bg-surface px-4 py-3 transition-transform hover:-translate-y-0.5 hover:shadow-elevated',
+        'group relative overflow-hidden rounded-2xl border border-border bg-surface px-4 py-3 hover:shadow-elevated',
         isComplete
           ? 'bg-gradient-to-r from-brand/10 via-surface to-accent/20'
           : 'bg-gradient-to-r from-surface to-surface-muted/60',
@@ -94,7 +91,7 @@ function NavCard({ direction, title, to }: NavCardProps) {
           </div>
         </div>
         {!isComplete && (
-          <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-1" />
+          <ArrowRight className="h-4 w-4 text-muted-foreground" />
         )}
       </div>
     </Link>

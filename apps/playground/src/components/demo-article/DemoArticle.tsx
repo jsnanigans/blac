@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -78,20 +78,6 @@ export const DemoArticle: React.FC<DemoArticleProps> = ({
   children,
   className,
 }) => {
-  const [scrollProgress, setScrollProgress] = useState(0);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrollTop = window.scrollY;
-      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-      const progress = docHeight <= 0 ? 0 : (scrollTop / docHeight) * 100;
-      setScrollProgress(Math.min(progress, 100));
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
   const contextValue: DemoArticleContextValue = {
     metadata,
     showBlocGraph,
@@ -115,16 +101,6 @@ export const DemoArticle: React.FC<DemoArticleProps> = ({
         variants={variants.fadeIn}
         className={cn('relative mx-auto w-full max-w-4xl space-y-10 px-4 py-8 sm:px-6', className)}
       >
-        <div className="pointer-events-none sticky top-[92px] z-30 h-1 w-full overflow-hidden rounded-full bg-surface-muted/80 shadow-subtle">
-          <motion.div
-            className="h-full bg-brand"
-            style={{ width: `${scrollProgress}%` }}
-            initial={{ width: 0 }}
-            animate={{ width: `${scrollProgress}%` }}
-            transition={{ duration: 0.12 }}
-          />
-        </div>
-
         <div className="relative overflow-hidden rounded-3xl border border-border/70 bg-surface shadow-subtle">
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-brand/15 via-transparent to-purple-500/15 opacity-90" />
           <div className="pointer-events-none absolute -right-16 top-0 h-44 w-44 rounded-full bg-brand/20 blur-3xl" />

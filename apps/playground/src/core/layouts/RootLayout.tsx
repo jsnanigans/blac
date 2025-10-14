@@ -23,6 +23,9 @@ import {
   Sun,
   X,
 } from 'lucide-react';
+import { useScrollDirection } from '@/hooks/useScrollDirection';
+import { useScrollProgress } from '@/hooks/useScrollProgress';
+import { HeaderVisibilityProvider } from '@/hooks/useHeaderVisibility';
 
 type NavigationItem = {
   name: string;
@@ -63,6 +66,19 @@ export function RootLayout() {
   });
   const [isCmdOpen, setIsCmdOpen] = React.useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = React.useState(false);
+  const scrollDirection = useScrollDirection({ threshold: 10 });
+  const scrollProgress = useScrollProgress();
+  const [scrollY, setScrollY] = React.useState(0);
+
+  // Track scroll position
+  React.useEffect(() => {
+    const onScroll = () => setScrollY(window.scrollY);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // Determine if header should be hidden
+  const shouldHideHeader = scrollDirection === 'down' && scrollY > 100;
 
   React.useEffect(() => {
     localStorage.setItem('blac-theme', isDark ? 'dark' : 'light');
@@ -100,9 +116,23 @@ export function RootLayout() {
   };
 
   return (
-    <AppShell>
-      <div className="sticky top-0 z-40">
-        <ShellTopBar>
+    <HeaderVisibilityProvider>
+      <AppShell>
+        {/* Scroll Progress Indicator */}
+        <div className="fixed top-0 left-0 right-0 z-50 h-1 bg-transparent">
+          <div
+            className="h-full bg-gradient-to-r from-brand via-accent to-brand transition-all duration-300 ease-out"
+            style={{ width: `${scrollProgress}%` }}
+          />
+        </div>
+
+        <div
+          className={cn(
+            'sticky top-0 z-40 transition-transform duration-300 ease-in-out',
+            shouldHideHeader && '-translate-y-full',
+          )}
+        >
+          <ShellTopBar>
           <div className="mx-auto flex h-10 w-full max-w-6xl items-center justify-between px-4 text-xs sm:text-sm">
             <Link
               to="/"
@@ -268,5 +298,6 @@ export function RootLayout() {
 
       <CommandPalette open={isCmdOpen} onOpenChange={setIsCmdOpen} />
     </AppShell>
+    </HeaderVisibilityProvider>
   );
 }

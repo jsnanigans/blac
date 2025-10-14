@@ -49,7 +49,7 @@ export const ShellBody = React.forwardRef<HTMLDivElement, DivProps>(
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn('flex flex-1 min-h-0 w-full bg-background/40', className)}
+      className={cn('flex flex-1 w-full bg-background/40', className)}
       {...props}
     />
   ),
@@ -74,7 +74,7 @@ export const ShellMain = React.forwardRef<HTMLDivElement, DivProps>(
   ({ className, ...props }, ref) => (
     <main
       ref={ref}
-      className={cn('flex-1 min-w-0 overflow-x-hidden', className)}
+      className={cn('flex-1 min-w-0', className)}
       {...props}
     />
   ),
