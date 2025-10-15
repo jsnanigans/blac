@@ -43,8 +43,8 @@ export function GuideSidebar({ currentSection, currentDemo, className }: GuideSi
     });
   };
 
-  const sidebarContent = (
-    <nav className="space-y-3">
+  const renderSidebarNav = (id?: string) => (
+    <nav id={id} className="space-y-3">
       {guideStructure.sections.map((section) => (
         <SidebarSection
           key={section.id}
@@ -63,6 +63,7 @@ export function GuideSidebar({ currentSection, currentDemo, className }: GuideSi
     <>
       {/* Mobile Menu Toggle */}
       <button
+        id="guide-sidebar-toggle"
         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         className="lg:hidden fixed left-4 top-24 z-40 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-surface text-foreground shadow-subtle"
         aria-label="Toggle navigation menu"
@@ -72,6 +73,7 @@ export function GuideSidebar({ currentSection, currentDemo, className }: GuideSi
 
       {/* Desktop Sidebar */}
       <aside
+        id="guide-sidebar-desktop"
         className={cn(
           'hidden lg:flex w-72 shrink-0 border-r border-border/80 bg-surface/90 backdrop-blur supports-[backdrop-filter]:bg-surface/80 sticky flex-col overflow-hidden transition-[top,height] duration-300',
           sidebarTop,
@@ -93,7 +95,7 @@ export function GuideSidebar({ currentSection, currentDemo, className }: GuideSi
           </div>
         </div>
         <div className="flex-1 space-y-3 overflow-y-auto px-4 py-5 pb-8">
-          {sidebarContent}
+          {renderSidebarNav('guide-sidebar-nav-desktop')}
         </div>
       </aside>
 
@@ -112,6 +114,7 @@ export function GuideSidebar({ currentSection, currentDemo, className }: GuideSi
 
             {/* Sidebar */}
             <motion.aside
+              id="guide-sidebar-mobile"
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
@@ -127,7 +130,7 @@ export function GuideSidebar({ currentSection, currentDemo, className }: GuideSi
                     Follow the curated BlaC learning path.
                   </p>
                 </div>
-                {sidebarContent}
+                {renderSidebarNav('guide-sidebar-nav-mobile')}
               </div>
             </motion.aside>
           </>
