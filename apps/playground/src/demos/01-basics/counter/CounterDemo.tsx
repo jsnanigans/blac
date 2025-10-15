@@ -10,11 +10,11 @@ import confetti from 'canvas-confetti';
 import { motion } from 'framer-motion';
 
 // Counter state and Cubit
-interface CounterState {
+export interface CounterState {
   count: number;
 }
 
-class CounterCubit extends Cubit<CounterState> {
+export class CounterCubit extends Cubit<CounterState> {
   constructor() {
     super({ count: 0 });
   }
@@ -81,6 +81,18 @@ function InteractiveCounter() {
           {10 - (state.count % 10)} more to reach {Math.floor(state.count / 10 + 1) * 10}! 🎉
         </p>
       )}
+    </div>
+  );
+}
+
+// Interactive component for embedding in guides
+export function CounterInteractive() {
+  return (
+    <div className="space-y-6">
+      <InteractiveCounter />
+      <div className="rounded-lg border border-border bg-surface p-4">
+        <StateViewer bloc={CounterCubit} title="Live Counter State" />
+      </div>
     </div>
   );
 }

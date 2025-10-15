@@ -1,0 +1,427 @@
+export const demoId = 'instance-management';
+export const sectionId = 'getting-started';
+
+## Introduction
+
+You've learned how multiple components can share the same Cubit instance. But what if you need **multiple independent instances** of the same Cubit—each with its own isolated state?
+
+BlaC gives you complete control over instance management. With a simple property, you can decide whether your Cubit should be shared across all components or isolated to each one.
+
+### What You'll Learn
+
+- How BlaC manages instances by default (shared behavior)
+- Creating isolated instances with `static isolated = true`
+- When to use shared vs. isolated instances
+- Custom IDs for dynamic isolation
+- Keeping instances alive with `static keepAlive = true`
+- Decision matrix for choosing the right pattern
+- Memory management implications
+
+## Default Behavior: Shared Instances
+
+By default, **all components share the same Cubit instance**. When you call `useBloc(MyCubit)` in multiple components, they all get the exact same instance.
+
+```typescript
+class CounterCubit extends Cubit<{ count: number }> {
+  constructor() {
+    super({ count: 0 });
+  }
+
+  increment = () => {
+    this.patch({ count: this.state.count + 1 });
+  };
+}
+
+// These three components all share one CounterCubit instance
+function HeaderCounter() {
+  const [state] = useBloc(CounterCubit);
+  return <div>Header Count: {state.count}</div>;
+}
+
+function SidebarCounter() {
+  const [state] = useBloc(CounterCubit);
+  return <div>Sidebar Count: {state.count}</div>;
+}
+
+function FooterCounter() {
+  const [state, counter] = useBloc(CounterCubit);
+  return (
+    <div>
+      <span>Footer Count: {state.count}</span>
+      <button onClick={counter.increment}>+</button>
+    </div>
+  );
+}
+```
+
+When `FooterCounter` increments the count, **all three components update** because they're reading from the same instance.
+
+<GuideArticleNote title="Why Shared by Default?">
+Shared instances are the most common use case in state management. They enable:
+- **Global state** - Authentication, theme, settings
+- **Coordination** - Multiple components working with the same data
+- **Single source of truth** - No synchronization needed
+
+This is why BlaC makes sharing the default behavior.
+</GuideArticleNote>
+
+## Isolated Instances: Each Component Gets Its Own
+
+Sometimes you want **independent instances**—components that look the same but have completely separate state. This is where isolated instances shine.
+
+```typescript
+class FormFieldCubit extends Cubit<{ value: string; error: string | null }> {
+  static isolated = true; // This makes it isolated!
+
+  constructor() {
+    super({ value: '', error: null });
+  }
+
+  setValue = (value: string) => {
+    this.patch({ value, error: this.validate(value) });
+  };
+
+  private validate = (value: string) => {
+    if (value.length < 3) return 'Too short';
+    return null;
+  };
+}
+
+// Each FormField gets its own independent FormFieldCubit
+function FormField({ label }: { label: string }) {
+  const [state, field] = useBloc(FormFieldCubit);
+
+  return (
+    <div>
+      <label>{label}</label>
+      <input
+        value={state.value}
+        onChange={(e) => field.setValue(e.target.value)}
+      />
+      {state.error && <span className="error">{state.error}</span>}
+    </div>
+  );
+}
+
+// These three fields are completely independent
+function MyForm() {
+  return (
+    <form>
+      <FormField label="Username" />
+      <FormField label="Email" />
+      <FormField label="Password" />
+    </form>
+  );
+}
+```
+
+The **only difference** is `static isolated = true`. Each component now gets its own instance with independent state.
+
+## Try It Out
+
+See the difference between shared and isolated instances in action:
+
+<InstanceManagementInteractive />
+
+### What's Happening
+
+- **Shared Counters**: All three counters display the same count. Click any +/- button, and they all update together. They're reading from one `SharedCounterCubit` instance.
+- **Isolated Counters**: Each counter has its own count. Click one, and only that counter changes. Each has its own `IsolatedCounterCubit` instance.
+
+This is the power of instance management—choosing whether state is shared or private.
+
+## When to Use Shared vs. Isolated
+
+| Pattern | Best For | Examples |
+|---------|----------|----------|
+| **Shared (default)** | Global state, coordination, single source of truth | User auth, theme, shopping cart, notifications |
+| **Isolated** | Component-local state, multiple instances of same UI | Form fields, accordion items, list items, reusable widgets |
+
+### Use Shared Instances When:
+- Multiple components need to stay synchronized
+- You have app-wide or feature-wide state
+- You want centralized control
+- Components need to coordinate behavior
+
+### Use Isolated Instances When:
+- Each component needs independent state
+- You have multiple instances of the same UI pattern
+- Instances shouldn't affect each other
+- You want true component-local state management
+
+<GuideArticleNote title="Rule of Thumb">
+If you're building something that appears **once** in your app (user session, global settings, app navigation), use shared instances.
+
+If you're building something that appears **multiple times** (list items, form fields, tabs, cards), consider isolated instances.
+</GuideArticleNote>
+
+## Custom IDs: Dynamic Isolation
+
+You can create isolated instances of **normally shared Cubits** by passing a custom `id`:
+
+```typescript
+// This Cubit is normally shared
+class ChatCubit extends Cubit<ChatState> {
+  constructor() {
+    super({ messages: [], unreadCount: 0 });
+  }
+
+  sendMessage = (text: string) => {
+    // Send message logic
+  };
+}
+
+// But we can create separate instances for different chats
+function ChatWindow({ chatId }: { chatId: string }) {
+  const [state, chat] = useBloc(ChatCubit, {
+    id: `chat-${chatId}`, // Unique ID = separate instance
+  });
+
+  return (
+    <div>
+      <h3>Chat {chatId}</h3>
+      {/* Chat UI */}
+    </div>
+  );
+}
+
+// These three chat windows have independent state
+function ChatApp() {
+  return (
+    <div>
+      <ChatWindow chatId="general" />
+      <ChatWindow chatId="support" />
+      <ChatWindow chatId="dev-team" />
+    </div>
+  );
+}
+```
+
+Each `ChatWindow` gets its own `ChatCubit` instance because they use different IDs. This is perfect for **props-based isolation**—creating instances dynamically based on data.
+
+<GuideArticleNote title="When to Use Custom IDs">
+Use custom IDs when:
+- Your Cubit is normally shared, but you need multiple instances for specific use cases
+- You're creating instances based on props, routes, or user data
+- You need fine-grained control over which components share instances
+
+Think of IDs as "instance keys"—components with the same ID share an instance, different IDs get different instances.
+</GuideArticleNote>
+
+## Keep-Alive Pattern: Persistent Instances
+
+By default, **isolated instances are disposed** when all components using them unmount. But sometimes you want instances to persist even when nothing is using them.
+
+```typescript
+class DraftCubit extends Cubit<{ title: string; content: string }> {
+  static isolated = true;
+  static keepAlive = true; // Stays alive even when unmounted!
+
+  constructor() {
+    super({ title: '', content: '' });
+  }
+
+  updateTitle = (title: string) => {
+    this.patch({ title });
+  };
+
+  updateContent = (content: string) => {
+    this.patch({ content });
+  };
+}
+
+// Draft persists even when you navigate away
+function DraftEditor() {
+  const [state, draft] = useBloc(DraftCubit, { id: 'current-draft' });
+
+  return (
+    <div>
+      <input value={state.title} onChange={(e) => draft.updateTitle(e.target.value)} />
+      <textarea value={state.content} onChange={(e) => draft.updateContent(e.target.value)} />
+    </div>
+  );
+}
+```
+
+With `static keepAlive = true`, the `DraftCubit` instance **persists in memory** even after `DraftEditor` unmounts. When the component remounts, it reconnects to the same instance with the preserved state.
+
+<GuideArticleNote title="Use Keep-Alive Sparingly" className="border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950">
+Keep-alive instances remain in memory indefinitely. Use this pattern only when you:
+- Need to preserve state across navigation (drafts, forms, temporary data)
+- Have a small number of instances (not lists!)
+- Plan to manually dispose when no longer needed
+
+Too many keep-alive instances can lead to memory leaks. Be intentional about when you need this behavior.
+</GuideArticleNote>
+
+## Decision Matrix
+
+Here's a flowchart to help you choose the right instance pattern:
+
+```
+Do multiple components need to coordinate?
+├─ Yes → Use shared instances (default)
+│   └─ Need multiple independent "groups" of shared state?
+│       └─ Yes → Use custom IDs
+│
+└─ No → Does the same UI pattern appear multiple times?
+    ├─ Yes → Use isolated instances (static isolated = true)
+    │   └─ Need state to persist after unmount?
+    │       └─ Yes → Add static keepAlive = true
+    │
+    └─ No → Use shared instances (default)
+```
+
+## Real-World Examples
+
+### Example 1: Form Field Validation (Isolated)
+
+```typescript
+class FormFieldCubit extends Cubit<FormFieldState> {
+  static isolated = true;
+
+  constructor(private readonly validators: Validator[]) {
+    super({ value: '', error: null, touched: false });
+  }
+
+  setValue = (value: string) => {
+    const error = this.runValidators(value);
+    this.patch({ value, error });
+  };
+
+  setTouched = () => {
+    this.patch({ touched: true });
+  };
+
+  private runValidators = (value: string) => {
+    for (const validator of this.validators) {
+      const error = validator(value);
+      if (error) return error;
+    }
+    return null;
+  };
+}
+
+// Each field is independent
+function SignupForm() {
+  return (
+    <form>
+      <FormFieldComponent
+        label="Email"
+        validators={[requiredValidator, emailValidator]}
+      />
+      <FormFieldComponent
+        label="Password"
+        validators={[requiredValidator, minLengthValidator(8)]}
+      />
+      <FormFieldComponent
+        label="Confirm Password"
+        validators={[requiredValidator, matchValidator('password')]}
+      />
+    </form>
+  );
+}
+```
+
+### Example 2: Shopping Cart (Shared)
+
+```typescript
+class ShoppingCartCubit extends Cubit<CartState> {
+  // No static isolated = shared by default
+
+  constructor() {
+    super({ items: [], total: 0 });
+  }
+
+  addItem = (item: Product) => {
+    const items = [...this.state.items, item];
+    this.patch({ items, total: this.calculateTotal(items) });
+  };
+
+  removeItem = (id: string) => {
+    const items = this.state.items.filter((i) => i.id !== id);
+    this.patch({ items, total: this.calculateTotal(items) });
+  };
+}
+
+// All components share the same cart
+function ProductCard({ product }: { product: Product }) {
+  const [, cart] = useBloc(ShoppingCartCubit);
+  return <button onClick={() => cart.addItem(product)}>Add to Cart</button>;
+}
+
+function CartBadge() {
+  const [state] = useBloc(ShoppingCartCubit);
+  return <span>{state.items.length}</span>;
+}
+
+function CartSummary() {
+  const [state] = useBloc(ShoppingCartCubit);
+  return <div>Total: ${state.total}</div>;
+}
+```
+
+### Example 3: Multi-Workspace Chat (Custom IDs)
+
+```typescript
+class WorkspaceCubit extends Cubit<WorkspaceState> {
+  constructor(private workspaceId: string) {
+    super({ channels: [], activeChannel: null });
+  }
+
+  selectChannel = (channelId: string) => {
+    this.patch({ activeChannel: channelId });
+  };
+}
+
+function Workspace({ workspaceId }: { workspaceId: string }) {
+  const [state, workspace] = useBloc(WorkspaceCubit, {
+    id: `workspace-${workspaceId}`,
+    // Pass workspaceId to constructor
+    factory: () => new WorkspaceCubit(workspaceId),
+  });
+
+  // Each workspace has independent state
+  return <div>{/* Workspace UI */}</div>;
+}
+```
+
+## Memory Management
+
+Understanding instance lifecycle is critical for avoiding memory leaks:
+
+| Pattern | Lifecycle | When Disposed |
+|---------|-----------|---------------|
+| **Shared** | Lives until manually disposed | When you call `dispose()` or app closes |
+| **Isolated** | Lives while components use it | When last component unmounts |
+| **Isolated + Keep-Alive** | Lives indefinitely | When you manually call `dispose()` |
+| **Custom ID** | Lives while components with that ID exist | When last component with that ID unmounts |
+
+<GuideArticleNote title="Automatic Cleanup" className="border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950">
+BlaC automatically cleans up isolated instances when components unmount. You don't need to manually dispose them—just unmount the component and BlaC handles the rest.
+
+Shared instances persist until you explicitly dispose them. This is intentional—shared state often needs to outlive individual components.
+</GuideArticleNote>
+
+## Key Takeaways
+
+- **Shared instances (default)** - All components use the same instance, perfect for global state
+- **Isolated instances** - Each component gets its own independent instance with `static isolated = true`
+- **Custom IDs** - Create dynamic isolated instances based on props or data
+- **Keep-Alive** - Persist isolated instances across unmounts with `static keepAlive = true`
+- **Memory management** - Isolated instances auto-cleanup, shared instances persist
+- **Choose based on need** - Shared for coordination, isolated for independence
+- **One line difference** - `static isolated = true` is all it takes
+
+---
+
+## Next Steps
+
+Congratulations! You've completed the **Getting Started** section. You now understand:
+- State management with Cubits
+- Reading and updating state
+- Component composition
+- Instance management patterns
+
+You're ready to move on to **Core Concepts**, where you'll dive deeper into Blocs, lifecycle management, and advanced patterns.
+

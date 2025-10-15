@@ -156,7 +156,7 @@ export function GuideLayout({
           </div>
 
           <main id="guide-layout-content" className="flex-1">
-            <div id="guide-article-container" className="mx-auto w-full max-w-6xl">
+            <div id="guide-article-container" className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-8 lg:py-12">
               <div id="guide-article-content" className="min-w-0 space-y-12">{children}</div>
               {showNavigation && navigation && (
                 <GuideNavigation id="guide-page-navigation" navigation={navigation} className="mt-12" />

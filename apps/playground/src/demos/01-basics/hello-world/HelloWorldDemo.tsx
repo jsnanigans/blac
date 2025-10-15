@@ -9,7 +9,7 @@ import { TipCallout } from '@/components/shared/ConceptCallout';
 import { motion } from 'framer-motion';
 
 // The simplest possible Cubit
-class GreetingCubit extends Cubit<string> {
+export class GreetingCubit extends Cubit<string> {
   constructor() {
     super('Hello, World!');
   }
@@ -44,6 +44,18 @@ function GreetingDisplay() {
         Your first BlaC state, live and reactive.
       </p>
     </motion.div>
+  );
+}
+
+// Interactive component for embedding in guides
+export function HelloWorldInteractive() {
+  return (
+    <div className="space-y-6">
+      <GreetingDisplay />
+      <div className="rounded-lg border border-border bg-surface p-4">
+        <StateViewer bloc={GreetingCubit} title="Current Greeting State" />
+      </div>
+    </div>
   );
 }
 

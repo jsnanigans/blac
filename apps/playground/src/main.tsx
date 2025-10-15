@@ -6,6 +6,7 @@ import { Blac } from '@blac/core';
 import { RenderLoggingPlugin } from '@blac/plugin-render-logging';
 import { GraphPlugin } from '@blac/plugin-graph';
 import { DevToolsPlugin, ReduxDevToolsAdapter } from '@blac/devtools-connect';
+import { MdxProvider } from './components/mdx/MdxProvider';
 import App from './App';
 import './index.css';
 import './demos'; // Register all demos
@@ -72,7 +73,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <App />
+        <MdxProvider>
+          <App />
+        </MdxProvider>
       </BrowserRouter>
     </QueryClientProvider>
   </React.StrictMode>,

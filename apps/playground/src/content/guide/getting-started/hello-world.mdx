@@ -1,0 +1,83 @@
+export const demoId = 'hello-world';
+export const sectionId = 'getting-started';
+
+## Introduction
+
+Welcome to BlaC! This is the absolute simplest state management example. If you can understand this, you have everything you need to start building with BlaC.
+
+In this guide, you'll create a greeting message and display it in a React component. No complex setup, no configuration—just pure, simple state management.
+
+## What You'll Learn
+
+- How to create a basic Cubit
+- How to connect it to React with `useBloc`
+- How state automatically flows to your components
+
+## The Cubit
+
+A **Cubit** is the simplest state container in BlaC. It holds a single value and provides methods to update it:
+
+```typescript
+import { Cubit } from '@blac/core';
+
+class GreetingCubit extends Cubit<string> {
+  constructor() {
+    super('Hello, World!'); // Initial state
+  }
+
+  updateGreeting = (name: string) => {
+    this.emit(`Hello, ${name}!`);
+  };
+}
+```
+
+That's it! Just:
+1. Extend `Cubit<T>` where `T` is your state type
+2. Call `super()` with the initial state
+3. Use `emit()` to update the state
+
+## Using in React
+
+Connect your Cubit to React with the `useBloc` hook:
+
+```tsx
+import { useBloc } from '@blac/react';
+
+function GreetingDisplay() {
+  const [greeting] = useBloc(GreetingCubit);
+
+  return <h1>{greeting}</h1>;
+}
+```
+
+The `useBloc` hook returns a tuple:
+- `[0]` - The current state
+- `[1]` - The Cubit instance (we'll use this in the next guide)
+
+## How It Works
+
+When you call `useBloc(GreetingCubit)`:
+
+1. **BlaC creates or retrieves** an instance of your Cubit
+2. **Your component subscribes** to state changes
+3. **React re-renders** automatically when state updates
+4. **Everything stays in sync** across all components
+
+By default, BlaC shares one instance across all components that use the same Cubit class. This means multiple components can display the same greeting, and they'll all update together.
+
+## Try It Out
+
+See the Hello World example in action:
+
+<HelloWorldInteractive />
+
+## Key Concepts
+
+- **Cubit**: A simple state container that holds a value
+- **State**: The data you want to track (our greeting message)
+- **useBloc**: React hook that connects components to Cubits
+- **Automatic updates**: React re-renders when state changes
+
+## Next Steps
+
+Now that you understand the basics, let's make it interactive! In the next guide, you'll learn how to **update state** by adding buttons and user interactions.

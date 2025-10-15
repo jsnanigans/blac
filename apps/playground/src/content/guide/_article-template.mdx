@@ -1,0 +1,242 @@
+export const demoId = 'DEMO-NAME-HERE';
+export const sectionId = 'SECTION-NAME-HERE';
+
+## Introduction
+
+[2-3 sentence overview of what this demo teaches. Be concise and clear about the learning objectives.]
+
+### What You'll Learn
+
+- [Specific learning outcome 1]
+- [Specific learning outcome 2]
+- [Specific learning outcome 3]
+
+## [Main Concept Name]
+
+[Detailed explanation of the core concept. Include:]
+- Clear definitions
+- Why it matters in real applications
+- When you should use this pattern/feature
+- How it fits into the bigger picture
+
+<GuideArticleNote title="Key Insight">
+[Important insight or principle that users should understand. This could be a common misconception to avoid or a critical best practice.]
+</GuideArticleNote>
+
+## Code Example
+
+[Brief intro to the code example you're about to show]
+
+```typescript
+// Well-commented code example
+import { Cubit } from '@blac/core';
+
+interface YourState {
+  // Define your state shape
+  field: string;
+}
+
+class YourCubit extends Cubit<YourState> {
+  constructor() {
+    super({ field: 'initial value' }); // Initial state
+  }
+
+  // Use arrow functions for proper 'this' binding
+  yourMethod = () => {
+    this.patch({ field: 'new value' });
+  };
+}
+```
+
+### Key Points
+
+- **Point 1**: [Explanation]
+- **Point 2**: [Explanation]
+- **Point 3**: [Explanation]
+
+<GuideArticleNote title="Important">
+[Critical information users must know. Could be about arrow functions, TypeScript requirements, performance considerations, etc.]
+</GuideArticleNote>
+
+## Using in React
+
+[Explain how to use this in a React component]
+
+```tsx
+import { useBloc } from '@blac/react';
+
+function YourComponent() {
+  const [state, cubit] = useBloc(YourCubit);
+
+  return (
+    <div>
+      {/* Display state */}
+      <p>{state.field}</p>
+
+      {/* Trigger methods */}
+      <button onClick={cubit.yourMethod}>
+        Update
+      </button>
+    </div>
+  );
+}
+```
+
+### How It Works
+
+When [triggering action happens]:
+
+1. [Step 1 of the process]
+2. [Step 2 of the process]
+3. [Step 3 of the process]
+4. [Final result]
+
+## Try It Out
+
+See the live example in action:
+
+<DemoPreview demoId="DEMO-NAME-HERE" />
+
+[1-2 sentences about what to look for in the demo or what to try]
+
+## Common Patterns
+
+[Show 2-3 common ways this feature/pattern is used in real applications]
+
+### Pattern 1: [Pattern Name]
+
+```typescript
+// Example code for pattern 1
+```
+
+[Explanation of when and why to use this pattern]
+
+### Pattern 2: [Pattern Name]
+
+```typescript
+// Example code for pattern 2
+```
+
+[Explanation of when and why to use this pattern]
+
+## Common Pitfalls
+
+[Show what NOT to do. This is extremely valuable for learners.]
+
+<GuideArticleNote title="Warning" className="border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
+[Describe a common mistake or anti-pattern and why it's problematic]
+</GuideArticleNote>
+
+### ❌ Anti-Pattern: [Name]
+
+```typescript
+// Example of what NOT to do
+class BadExample {
+  // Wrong approach
+  wrongMethod() { // ❌ Regular function - loses 'this' context
+    this.emit(newState);
+  }
+}
+```
+
+**Why this is wrong**: [Explanation]
+
+### ✅ Correct Approach: [Name]
+
+```typescript
+// Example of the right way
+class GoodExample {
+  // Correct approach
+  correctMethod = () => { // ✅ Arrow function - preserves 'this'
+    this.emit(newState);
+  };
+}
+```
+
+**Why this works**: [Explanation]
+
+## Real-World Example
+
+[Show a practical, real-world use case. This helps users understand when to apply this concept.]
+
+**Scenario**: [Describe a realistic scenario where this pattern solves a problem]
+
+```typescript
+// Real-world implementation example
+```
+
+[Explain how this solves the real-world problem]
+
+## Advanced Topics
+
+[Optional section for more advanced usage. Only include if relevant.]
+
+### [Advanced Topic 1]
+
+[Brief explanation and example]
+
+### [Advanced Topic 2]
+
+[Brief explanation and example]
+
+<GuideArticleNote title="Pro Tip">
+[Advanced insight or optimization technique that experienced developers will appreciate]
+</GuideArticleNote>
+
+## Type Safety & TypeScript
+
+[Show how TypeScript helps catch errors at compile time. This reinforces best practices.]
+
+```typescript
+// ✅ TypeScript catches mistakes
+const state = cubit.state;
+console.log(state.field); // ✅ Autocomplete and type checking
+
+// ❌ TypeScript prevents errors
+console.log(state.typo); // ❌ Compile error - property doesn't exist
+```
+
+## Testing Considerations
+
+[Optional: Show how to test code using this pattern. Only include if relevant.]
+
+```typescript
+// Example test
+import { describe, it, expect } from 'vitest';
+
+describe('YourCubit', () => {
+  it('should [behavior]', () => {
+    const cubit = new YourCubit();
+    // Test implementation
+  });
+});
+```
+
+## Key Takeaways
+
+- [Key point 1 - What's the most important thing to remember?]
+- [Key point 2 - What's the second most important thing?]
+- [Key point 3 - What common mistake should they avoid?]
+- [Key point 4 - What's the best practice to follow?]
+
+## Next Steps
+
+Now that you understand [this concept], you're ready to learn about:
+
+- **[Related Topic 1]** - [Brief description]
+- **[Related Topic 2]** - [Brief description]
+- **[Related Topic 3]** - [Brief description]
+
+<GuideArticleNote title="Learning Path">
+If you're following the guided path, the next demo will build on what you learned here by [what comes next].
+</GuideArticleNote>
+
+---
+
+## Additional Resources
+
+[Optional: Links to external resources, documentation, or related articles]
+
+- [Resource 1]
+- [Resource 2]
+- [Resource 3]

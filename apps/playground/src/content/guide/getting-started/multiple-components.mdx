@@ -1,0 +1,683 @@
+export const demoId = 'multiple-components';
+export const sectionId = 'getting-started';
+
+## Introduction
+
+Real applications aren't built with single components—they're composed of many components working together. Some need to share state, some need to communicate, and some need to be completely independent.
+
+In this guide, you'll learn how to organize multiple components that work together using BlaC's shared state management.
+
+### What You'll Learn
+
+- How to structure parent-child component relationships
+- When components should share state vs. have their own
+- Component communication patterns
+- Building complex UIs with simple, composable pieces
+- Avoiding unnecessary coupling
+
+## Shared State Across Components
+
+The simplest way to coordinate multiple components is to have them all use the same Cubit. You've already seen this—`useBloc(MyCubit)` gives every component access to the same shared instance.
+
+```tsx
+interface ShoppingCartState {
+  items: Array<{ id: string; name: string; price: number }>;
+  total: number;
+}
+
+class ShoppingCartCubit extends Cubit<ShoppingCartState> {
+  constructor() {
+    super({ items: [], total: 0 });
+  }
+
+  addItem = (item: { id: string; name: string; price: number }) => {
+    const items = [...this.state.items, item];
+    const total = items.reduce((sum, i) => sum + i.price, 0);
+    this.patch({ items, total });
+  };
+
+  removeItem = (id: string) => {
+    const items = this.state.items.filter(i => i.id !== id);
+    const total = items.reduce((sum, i) => sum + i.price, 0);
+    this.patch({ items, total });
+  };
+}
+```
+
+Now multiple components can work with this shared cart:
+
+```tsx
+// Shows the cart badge with item count
+function CartBadge() {
+  const [state] = useBloc(ShoppingCartCubit);
+
+  return (
+    <div className="cart-badge">
+      {state.items.length}
+    </div>
+  );
+}
+
+// Shows the cart total
+function CartTotal() {
+  const [state] = useBloc(ShoppingCartCubit);
+
+  return (
+    <div className="cart-total">
+      ${state.total.toFixed(2)}
+    </div>
+  );
+}
+
+// Lists all items in the cart
+function CartItems() {
+  const [state, cart] = useBloc(ShoppingCartCubit);
+
+  return (
+    <ul>
+      {state.items.map(item => (
+        <li key={item.id}>
+          {item.name} - ${item.price}
+          <button onClick={() => cart.removeItem(item.id)}>
+            Remove
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+// Product button that adds to cart
+function ProductCard({ product }: { product: Product }) {
+  const [, cart] = useBloc(ShoppingCartCubit);
+
+  return (
+    <div className="product-card">
+      <h3>{product.name}</h3>
+      <p>${product.price}</p>
+      <button onClick={() => cart.addItem(product)}>
+        Add to Cart
+      </button>
+    </div>
+  );
+}
+```
+
+All four components work together seamlessly. When `ProductCard` adds an item, `CartBadge`, `CartTotal`, and `CartItems` all update automatically.
+
+<GuideArticleNote title="Component Independence">
+Notice how each component is **completely independent**. They don't know about each other. They don't pass props. They don't call each other's methods.
+
+They only share a Cubit. This makes components:
+- **Easy to move** - Drop them anywhere in your tree
+- **Easy to test** - Test each component in isolation
+- **Easy to understand** - Each component has one clear responsibility
+</GuideArticleNote>
+
+## Parent-Child Communication
+
+Sometimes you need parent components to coordinate child components. There are several patterns for this:
+
+### Pattern 1: Parent Controls, Children Display
+
+The parent owns the Cubit and orchestrates behavior. Children are "dumb" display components.
+
+```tsx
+interface FormState {
+  username: string;
+  email: string;
+  isValid: boolean;
+}
+
+class FormCubit extends Cubit<FormState> {
+  constructor() {
+    super({ username: '', email: '', isValid: false });
+  }
+
+  updateUsername = (username: string) => {
+    this.patch({
+      username,
+      isValid: this.validateForm(username, this.state.email),
+    });
+  };
+
+  updateEmail = (email: string) => {
+    this.patch({
+      email,
+      isValid: this.validateForm(this.state.username, email),
+    });
+  };
+
+  private validateForm = (username: string, email: string) => {
+    return username.length >= 3 && email.includes('@');
+  };
+}
+
+// Parent orchestrates the form
+function UserForm() {
+  const [state, form] = useBloc(FormCubit);
+
+  const handleSubmit = () => {
+    if (state.isValid) {
+      console.log('Submitting:', state);
+    }
+  };
+
+  return (
+    <div>
+      <UsernameInput />
+      <EmailInput />
+      <SubmitButton />
+    </div>
+  );
+}
+
+// Children are simple display components
+function UsernameInput() {
+  const [state, form] = useBloc(FormCubit);
+
+  return (
+    <input
+      value={state.username}
+      onChange={(e) => form.updateUsername(e.target.value)}
+      placeholder="Username"
+    />
+  );
+}
+
+function EmailInput() {
+  const [state, form] = useBloc(FormCubit);
+
+  return (
+    <input
+      value={state.email}
+      onChange={(e) => form.updateEmail(e.target.value)}
+      placeholder="Email"
+    />
+  );
+}
+
+function SubmitButton() {
+  const [state] = useBloc(FormCubit);
+
+  return (
+    <button disabled={!state.isValid}>
+      Submit
+    </button>
+  );
+}
+```
+
+### Pattern 2: Siblings Coordinate Through Shared State
+
+Components at the same level coordinate by reading/writing shared state:
+
+```tsx
+interface FilterState {
+  searchTerm: string;
+  category: string | null;
+  priceRange: [number, number];
+}
+
+class FilterCubit extends Cubit<FilterState> {
+  constructor() {
+    super({
+      searchTerm: '',
+      category: null,
+      priceRange: [0, 1000],
+    });
+  }
+
+  setSearch = (searchTerm: string) => {
+    this.patch({ searchTerm });
+  };
+
+  setCategory = (category: string | null) => {
+    this.patch({ category });
+  };
+
+  setPriceRange = (priceRange: [number, number]) => {
+    this.patch({ priceRange });
+  };
+
+  reset = () => {
+    this.emit({
+      searchTerm: '',
+      category: null,
+      priceRange: [0, 1000],
+    });
+  };
+}
+
+// Sibling components that coordinate
+function FilterBar() {
+  return (
+    <div className="filter-bar">
+      <SearchBox />
+      <CategoryDropdown />
+      <PriceSlider />
+      <ResetButton />
+    </div>
+  );
+}
+
+function SearchBox() {
+  const [state, filter] = useBloc(FilterCubit);
+
+  return (
+    <input
+      value={state.searchTerm}
+      onChange={(e) => filter.setSearch(e.target.value)}
+      placeholder="Search products..."
+    />
+  );
+}
+
+function CategoryDropdown() {
+  const [state, filter] = useBloc(FilterCubit);
+
+  return (
+    <select
+      value={state.category ?? ''}
+      onChange={(e) => filter.setCategory(e.target.value || null)}
+    >
+      <option value="">All Categories</option>
+      <option value="electronics">Electronics</option>
+      <option value="books">Books</option>
+      <option value="clothing">Clothing</option>
+    </select>
+  );
+}
+
+function ProductList() {
+  const [filters] = useBloc(FilterCubit);
+
+  // Filter products based on filter state
+  const filteredProducts = products.filter(product => {
+    const matchesSearch = product.name
+      .toLowerCase()
+      .includes(filters.searchTerm.toLowerCase());
+    const matchesCategory = !filters.category ||
+      product.category === filters.category;
+    const matchesPrice = product.price >= filters.priceRange[0] &&
+      product.price <= filters.priceRange[1];
+
+    return matchesSearch && matchesCategory && matchesPrice;
+  });
+
+  return (
+    <div>
+      {filteredProducts.map(product => (
+        <ProductCard key={product.id} product={product} />
+      ))}
+    </div>
+  );
+}
+```
+
+`FilterBar` and `ProductList` are siblings. They don't know about each other, but they coordinate through `FilterCubit`.
+
+<GuideArticleNote title="When to Share State">
+Components should share a Cubit when they need to:
+- **Display the same data** (cart badge and cart total)
+- **Coordinate behavior** (filters and product list)
+- **Maintain consistency** (form inputs and submit button)
+
+If components don't need to coordinate, give them separate Cubits or make them `isolated` (covered in Instance Management).
+</GuideArticleNote>
+
+## Composition Patterns
+
+### Pattern 3: Layout Components with Smart Children
+
+Layout components don't need state—they just arrange children:
+
+```tsx
+// Layout component (no state)
+function DashboardLayout() {
+  return (
+    <div className="dashboard">
+      <Sidebar />
+      <MainContent />
+      <Notifications />
+    </div>
+  );
+}
+
+// Each child manages its own state
+function Sidebar() {
+  const [state] = useBloc(NavigationCubit);
+  return <nav>{/* navigation */}</nav>;
+}
+
+function MainContent() {
+  const [state] = useBloc(ContentCubit);
+  return <main>{/* content */}</main>;
+}
+
+function Notifications() {
+  const [state] = useBloc(NotificationsCubit);
+  return <aside>{/* notifications */}</aside>;
+}
+```
+
+The layout doesn't care what the children do. Each child has its own Cubit.
+
+### Pattern 4: Conditional Rendering Based on State
+
+Components can mount/unmount based on shared state:
+
+```tsx
+interface AppState {
+  isAuthenticated: boolean;
+  user: User | null;
+}
+
+class AppCubit extends Cubit<AppState> {
+  constructor() {
+    super({ isAuthenticated: false, user: null });
+  }
+
+  login = (user: User) => {
+    this.patch({ isAuthenticated: true, user });
+  };
+
+  logout = () => {
+    this.emit({ isAuthenticated: false, user: null });
+  };
+}
+
+function App() {
+  const [state] = useBloc(AppCubit);
+
+  return (
+    <div>
+      <Header />
+      {state.isAuthenticated ? (
+        <Dashboard />
+      ) : (
+        <LoginForm />
+      )}
+    </div>
+  );
+}
+
+function Header() {
+  const [state, app] = useBloc(AppCubit);
+
+  return (
+    <header>
+      <h1>My App</h1>
+      {state.isAuthenticated && (
+        <button onClick={app.logout}>Logout</button>
+      )}
+    </header>
+  );
+}
+```
+
+`App` and `Header` both use `AppCubit` to coordinate authentication state.
+
+## Avoiding Prop Drilling
+
+One of BlaC's biggest advantages is eliminating prop drilling. Compare these approaches:
+
+### ❌ Traditional Prop Drilling
+
+```tsx
+function App() {
+  const [theme, setTheme] = useState('light');
+
+  return <Layout theme={theme} onThemeChange={setTheme} />;
+}
+
+function Layout({ theme, onThemeChange }: Props) {
+  return (
+    <div>
+      <Sidebar theme={theme} onThemeChange={onThemeChange} />
+      <Content theme={theme} />
+    </div>
+  );
+}
+
+function Sidebar({ theme, onThemeChange }: Props) {
+  return (
+    <aside>
+      <Nav theme={theme} />
+      <ThemeToggle theme={theme} onThemeChange={onThemeChange} />
+    </aside>
+  );
+}
+
+function ThemeToggle({ theme, onThemeChange }: Props) {
+  return (
+    <button onClick={() => onThemeChange(theme === 'light' ? 'dark' : 'light')}>
+      Toggle Theme
+    </button>
+  );
+}
+```
+
+Every intermediate component needs to accept and pass props, even if they don't use them.
+
+### ✅ BlaC: Direct Access
+
+```tsx
+class ThemeCubit extends Cubit<{ theme: 'light' | 'dark' }> {
+  constructor() {
+    super({ theme: 'light' });
+  }
+
+  toggleTheme = () => {
+    this.patch({
+      theme: this.state.theme === 'light' ? 'dark' : 'light',
+    });
+  };
+}
+
+function App() {
+  return <Layout />;
+}
+
+function Layout() {
+  return (
+    <div>
+      <Sidebar />
+      <Content />
+    </div>
+  );
+}
+
+function Sidebar() {
+  return (
+    <aside>
+      <Nav />
+      <ThemeToggle />
+    </aside>
+  );
+}
+
+function ThemeToggle() {
+  const [state, theme] = useBloc(ThemeCubit);
+
+  return (
+    <button onClick={theme.toggleTheme}>
+      Toggle Theme
+    </button>
+  );
+}
+
+function Nav() {
+  const [state] = useBloc(ThemeCubit);
+
+  return <nav className={state.theme}>{/* nav items */}</nav>;
+}
+```
+
+Only components that need the theme access it. No props drilling through intermediate components.
+
+## Real-World Example: Todo App
+
+Here's how multiple components work together in a real Todo application:
+
+```typescript
+interface TodoState {
+  todos: Array<{ id: string; text: string; completed: boolean }>;
+  filter: 'all' | 'active' | 'completed';
+}
+
+class TodoCubit extends Cubit<TodoState> {
+  constructor() {
+    super({ todos: [], filter: 'all' });
+  }
+
+  addTodo = (text: string) => {
+    const todo = {
+      id: Math.random().toString(),
+      text,
+      completed: false,
+    };
+    this.patch({ todos: [...this.state.todos, todo] });
+  };
+
+  toggleTodo = (id: string) => {
+    this.patch({
+      todos: this.state.todos.map(todo =>
+        todo.id === id ? { ...todo, completed: !todo.completed } : todo
+      ),
+    });
+  };
+
+  deleteTodo = (id: string) => {
+    this.patch({
+      todos: this.state.todos.filter(t => t.id !== id),
+    });
+  };
+
+  setFilter = (filter: 'all' | 'active' | 'completed') => {
+    this.patch({ filter });
+  };
+
+  clearCompleted = () => {
+    this.patch({
+      todos: this.state.todos.filter(t => !t.completed),
+    });
+  };
+}
+
+// Parent component
+function TodoApp() {
+  return (
+    <div>
+      <TodoInput />
+      <TodoList />
+      <TodoFooter />
+    </div>
+  );
+}
+
+// Input component
+function TodoInput() {
+  const [, todos] = useBloc(TodoCubit);
+  const [text, setText] = useState('');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (text.trim()) {
+      todos.addTodo(text);
+      setText('');
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="What needs to be done?"
+      />
+    </form>
+  );
+}
+
+// List component
+function TodoList() {
+  const [state] = useBloc(TodoCubit);
+
+  const filteredTodos = state.todos.filter(todo => {
+    if (state.filter === 'active') return !todo.completed;
+    if (state.filter === 'completed') return todo.completed;
+    return true;
+  });
+
+  return (
+    <ul>
+      {filteredTodos.map(todo => (
+        <TodoItem key={todo.id} todo={todo} />
+      ))}
+    </ul>
+  );
+}
+
+// Individual todo item
+function TodoItem({ todo }: { todo: Todo }) {
+  const [, todos] = useBloc(TodoCubit);
+
+  return (
+    <li>
+      <input
+        type="checkbox"
+        checked={todo.completed}
+        onChange={() => todos.toggleTodo(todo.id)}
+      />
+      <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
+        {todo.text}
+      </span>
+      <button onClick={() => todos.deleteTodo(todo.id)}>Delete</button>
+    </li>
+  );
+}
+
+// Footer with filters and stats
+function TodoFooter() {
+  const [state, todos] = useBloc(TodoCubit);
+
+  const activeCount = state.todos.filter(t => !t.completed).length;
+  const completedCount = state.todos.filter(t => t.completed).length;
+
+  return (
+    <footer>
+      <span>{activeCount} items left</span>
+      <div>
+        <button onClick={() => todos.setFilter('all')}>All</button>
+        <button onClick={() => todos.setFilter('active')}>Active</button>
+        <button onClick={() => todos.setFilter('completed')}>Completed</button>
+      </div>
+      {completedCount > 0 && (
+        <button onClick={todos.clearCompleted}>
+          Clear completed
+        </button>
+      )}
+    </footer>
+  );
+}
+```
+
+Five components working together, all coordinating through one `TodoCubit`. No props passing, no callbacks, no complexity.
+
+## Key Takeaways
+
+- **Components share Cubits naturally** - Just use `useBloc` wherever you need the state
+- **No prop drilling required** - Components access state directly
+- **Components stay independent** - They don't need to know about each other
+- **Parent-child relationships are simple** - Share a Cubit or use separate ones
+- **Composition is easy** - Build complex UIs from simple, focused components
+- **Each component has one job** - Display state, update state, or orchestrate children
+- **Testing is easier** - Test each component in isolation
+
+---
+
+## Next Steps
+
+You now understand how to compose multiple components! In the next guide, you'll learn about **instance management**—when to share Cubit instances and when to create separate ones for different components.
+
