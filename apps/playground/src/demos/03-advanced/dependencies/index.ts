@@ -32,8 +32,8 @@ DemoRegistry.register({
       description: 'Verifies computed properties work as dependencies',
     },
   ],
-  relatedDemos: ['selectors', 'bloc-composition'],
-  prerequisites: ['counter', 'emit-patch', 'selectors'],
+  relatedDemos: ['custom-selectors', 'bloc-composition'],
+  prerequisites: ['counter', 'custom-selectors'],
   documentation: `
 ## Dependency Tracking
 

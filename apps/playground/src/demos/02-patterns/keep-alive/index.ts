@@ -33,8 +33,8 @@ DemoRegistry.register({
       description: 'Verifies that regular Cubits are disposed when unmounted',
     },
   ],
-  relatedDemos: ['isolated-counter', 'persistence'],
-  prerequisites: ['counter', 'isolated-counter'],
+  relatedDemos: ['instance-management', 'persistence'],
+  prerequisites: ['counter', 'instance-management'],
   documentation: `
 ## KeepAlive Pattern
 

@@ -38,6 +38,6 @@ DemoRegistry.register({
       description: 'Verifies select all, deselect all, and delete selected',
     },
   ],
-  relatedDemos: ['data-fetching', 'filtering-sorting', 'todo'],
+  relatedDemos: ['data-fetching', 'filtering-sorting', 'todo-bloc'],
   prerequisites: ['updating-state', 'reading-state'],
 });

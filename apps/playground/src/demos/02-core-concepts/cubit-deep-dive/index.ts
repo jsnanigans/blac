@@ -3,7 +3,7 @@ import { CubitDeepDiveDemo } from './CubitDeepDiveDemo';
 
 DemoRegistry.register({
   id: 'cubit-deep-dive',
-  category: '02-patterns',
+  category: '02-core-concepts',
   title: 'Cubit Deep Dive',
   description:
     'Master advanced Cubit patterns including nested state, computed properties, async operations, and performance optimization.',
@@ -31,7 +31,7 @@ DemoRegistry.register({
       description: 'Verifies async patterns handle loading, error, and success states',
     },
   ],
-  relatedDemos: ['simple-counter', 'bloc-deep-dive', 'async'],
+  relatedDemos: ['simple-counter', 'bloc-deep-dive', 'async-operations'],
   prerequisites: ['simple-counter', 'reading-state'],
 });
 

@@ -40,8 +40,8 @@ DemoRegistry.register({
       description: 'Verifies onDispose unsubscribes to prevent memory leaks',
     },
   ],
-  relatedDemos: ['dependencies', 'keep-alive', 'isolated-counter'],
-  prerequisites: ['counter', 'isolated-counter', 'keep-alive'],
+  relatedDemos: ['dependencies', 'keep-alive', 'instance-management'],
+  prerequisites: ['counter', 'instance-management', 'keep-alive'],
   documentation: `
 ## Bloc Composition & Communication
 

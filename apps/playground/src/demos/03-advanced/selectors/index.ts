@@ -27,8 +27,8 @@ DemoRegistry.register({
       description: 'Verifies that selectors prevent unnecessary re-renders',
     },
   ],
-  relatedDemos: ['dependency-tracking'],
-  prerequisites: ['counter', 'isolated-counter'],
+  relatedDemos: ['dependencies'],
+  prerequisites: ['counter', 'instance-management'],
   documentation: `
 ## Custom Selectors for Optimization
 

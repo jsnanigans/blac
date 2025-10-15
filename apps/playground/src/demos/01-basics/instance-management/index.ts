@@ -26,6 +26,6 @@ DemoRegistry.register({
       description: 'Verifies that isolated instances have separate state',
     },
   ],
-  relatedDemos: ['multiple-components', 'isolated-counter'],
+  relatedDemos: ['multiple-components', 'keep-alive'],
   prerequisites: ['multiple-components'],
 });

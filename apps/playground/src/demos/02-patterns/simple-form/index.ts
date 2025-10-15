@@ -26,6 +26,6 @@ DemoRegistry.register({
       description: 'Verifies that form submission works',
     },
   ],
-  relatedDemos: ['form-cubit', 'loading-states'],
+  relatedDemos: ['form-validation', 'async-loading'],
   prerequisites: ['counter', 'updating-state'],
 });

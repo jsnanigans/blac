@@ -21,8 +21,8 @@ DemoRegistry.register({
       description: 'Verifies props set initial state correctly',
     },
   ],
-  relatedDemos: ['isolated-counter'],
-  prerequisites: ['counter', 'emit-patch'],
+  relatedDemos: ['instance-management'],
+  prerequisites: ['counter', 'instance-management'],
   documentation: `
 ## Props Pattern
 

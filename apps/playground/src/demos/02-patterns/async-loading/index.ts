@@ -38,6 +38,6 @@ DemoRegistry.register({
       description: 'Verifies optimistic updates and error handling',
     },
   ],
-  relatedDemos: ['form-validation', 'simple-async', 'data-fetching'],
+  relatedDemos: ['form-validation', 'data-fetching', 'async-operations'],
   prerequisites: ['updating-state', 'reading-state'],
 });

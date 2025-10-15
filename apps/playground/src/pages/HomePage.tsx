@@ -13,28 +13,26 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { PageHeader, PageHeaderStat } from '@/layouts/PageHeader';
+import { DemoRegistry } from '@/core/utils/demoRegistry';
 
 const featurePillars = [
   {
     title: 'Learn by doing',
     description:
-      'Follow a guided curriculum that pairs conceptual explanations with interactive demos that you can edit live.',
+      'Follow a guided curriculum that pairs conceptual explanations with interactive demos you can edit and run in place.',
     icon: Sparkles,
-    accent: 'from-brand/10 via-transparent to-surface-muted/60',
   },
   {
     title: 'Build confidently',
     description:
-      'Prototype features in a production-like workspace with Monaco, hot reload, and BlaC tooling baked in.',
+      'Prototype features in a Monaco workspace with TypeScript tooling, multi-file support, and quick reset actions.',
     icon: Monitor,
-    accent: 'from-purple-500/20 via-transparent to-surface-muted/60',
   },
   {
     title: 'Optimize with clarity',
     description:
-      'Measure render frequency, inspect Bloc graphs, and validate performance with built-in monitors.',
+      'Track render frequency with the performance panel and inspect Bloc relationships in the graph explorer.',
     icon: GaugeCircle,
-    accent: 'from-emerald-500/20 via-transparent to-surface-muted/60',
   },
 ];
 
@@ -42,7 +40,7 @@ const quickStartSteps = [
   {
     step: '01',
     title: 'Explore the guide',
-    description: 'Start with “Hello Bloc” to understand how Cubits and Blocs work together.',
+    description: 'Start with "Hello Bloc" to understand how Cubits and Blocs work together.',
     href: '/guide/getting-started/hello-world',
     estimate: '10 min',
     badge: 'Beginner',
@@ -59,7 +57,7 @@ const quickStartSteps = [
     step: '03',
     title: 'Dive into patterns',
     description: 'Review advanced demos covering shared state, selectors, and plugin authoring.',
-    href: '/guide/patterns/todo',
+    href: '/guide/patterns/todo-bloc',
     estimate: '20 min',
     badge: 'Intermediate',
   },
@@ -90,26 +88,21 @@ function GradientCard({
   title,
   description,
   Icon,
-  accent,
 }: {
   title: string;
   description: string;
   Icon: React.ComponentType<{ className?: string }>;
-  accent: string;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-border bg-surface p-6 shadow-subtle transition-transform hover:-translate-y-1 hover:shadow-elevated">
-      <div
-        className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${accent}`}
-      />
-      <div className="relative flex flex-col gap-4">
-        <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-surface-muted text-brand shadow-subtle">
-          <Icon className="h-6 w-6" />
-        </div>
-        <div>
-          <h3 className="text-lg font-semibold text-foreground">{title}</h3>
-          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
-        </div>
+    <div className="flex h-full flex-col gap-4 rounded-xl border border-border bg-surface p-6 shadow-subtle">
+      <div className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-surface-muted text-brand">
+        <Icon className="h-5 w-5" />
+      </div>
+      <div>
+        <h3 className="text-base font-semibold text-foreground">{title}</h3>
+        <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+          {description}
+        </p>
       </div>
     </div>
   );
@@ -126,27 +119,24 @@ function QuickStartCard({
   return (
     <Link
       to={href}
-      className="group relative overflow-hidden rounded-2xl border border-border bg-surface p-6 shadow-subtle transition-transform hover:-translate-y-1 hover:shadow-elevated"
+      className="group flex h-full flex-col gap-4 rounded-xl border border-border bg-surface p-6 shadow-subtle transition-transform hover:-translate-y-1 hover:shadow-elevated"
     >
-      <div className="absolute inset-0 bg-gradient-to-br from-brand/5 via-transparent to-surface-muted opacity-0 transition-opacity group-hover:opacity-100" />
-      <div className="relative flex h-full flex-col gap-4">
-        <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          <span>{step}</span>
-          <span className="rounded-full bg-surface-muted px-2 py-0.5 text-[10px] text-muted-foreground">
-            {badge}
-          </span>
-        </div>
-        <div>
-          <h3 className="text-lg font-semibold text-foreground">{title}</h3>
-          <p className="mt-2 text-sm text-muted-foreground">{description}</p>
-        </div>
-        <div className="mt-auto flex items-center justify-between text-sm text-brand">
-          <span className="inline-flex items-center gap-1">
-            Start now
-            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
-          </span>
-          <span className="text-muted-foreground">{estimate}</span>
-        </div>
+      <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <span>{step}</span>
+        <span className="rounded-full bg-surface-muted px-2 py-0.5 text-[10px] text-muted-foreground">
+          {badge}
+        </span>
+      </div>
+      <div>
+        <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+        <p className="mt-2 text-sm text-muted-foreground">{description}</p>
+      </div>
+      <div className="mt-auto flex items-center justify-between text-sm text-brand">
+        <span className="inline-flex items-center gap-1">
+          Start now
+          <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+        </span>
+        <span className="text-muted-foreground">{estimate}</span>
       </div>
     </Link>
   );
@@ -182,6 +172,9 @@ function UpdateCard({
 }
 
 export function HomePage() {
+  const demoCount = DemoRegistry.getAllDemos().length;
+  const workspaceActionCount = 5;
+
   return (
     <div className="pb-16">
       <PageHeader
@@ -216,9 +209,9 @@ export function HomePage() {
         }
       >
         <div className="grid gap-3 sm:grid-cols-3">
-          <PageHeaderStat value="24+" label="Interactive demos" />
-          <PageHeaderStat value="12" label="Playground utilities" />
-          <PageHeaderStat value="100%" label="Typed APIs" />
+          <PageHeaderStat value={`${demoCount}`} label="Interactive demos" />
+          <PageHeaderStat value={`${workspaceActionCount}`} label="Workspace actions" />
+          <PageHeaderStat value="TS-first" label="Typed APIs" />
         </div>
       </PageHeader>
 
@@ -232,9 +225,9 @@ export function HomePage() {
             <h2 className="font-display text-3xl font-semibold text-foreground sm:text-4xl">
               A workbench built for iteration
             </h2>
-            <p className="text-base text-muted-foreground sm:text-lg">
-              Configure files, preview UI, inspect state, and review performance metrics without leaving the browser.
-              The workspace borrows the best parts of IDEs while staying simple for quick experiments.
+            <p className="text-base text-muted-foreground sm:text-lg leading-relaxed">
+              Configure files, preview UI, and review performance metrics from one screen.
+              The workspace stays lightweight while giving you the essentials for quick experiments.
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -243,7 +236,7 @@ export function HomePage() {
                 Monaco editor
               </div>
               <p className="mt-1 text-sm text-foreground">
-                Hot reloading, TS language server, and BLAC snippets out of the box.
+                TypeScript-aware Monaco with multi-file editing and synced file models.
               </p>
             </div>
             <div className="rounded-xl border border-border bg-surface-muted p-4">
@@ -251,7 +244,7 @@ export function HomePage() {
                 Diagnostics
               </div>
               <p className="mt-1 text-sm text-foreground">
-                Run history, console timelines, and render metrics live next to your preview.
+                Console output and performance metrics are captured alongside each run.
               </p>
             </div>
           </div>
@@ -325,7 +318,6 @@ export function Counter() {
               title={pillar.title}
               description={pillar.description}
               Icon={pillar.icon}
-              accent={pillar.accent}
             />
           ))}
         </div>
@@ -340,7 +332,7 @@ export function Counter() {
                 Everything you need to iterate quickly
               </h3>
               <p className="mt-1 text-sm text-muted-foreground sm:text-base">
-                Toggle between preview, state, performance, and console views. Save your workspace, copy shareable links, and compare output versions.
+                Toggle between preview and performance views, keep an eye on console output, and store your current files locally or in shareable links.
               </p>
             </div>
             <Link
@@ -366,12 +358,12 @@ export function Counter() {
             <CapabilityCard
               icon={Zap}
               title="One-click reset"
-              description="Reset to curated demos or load predefined scenarios for faster iteration."
+              description="Restore the starter files or jump into a guide demo with a single click."
             />
             <CapabilityCard
               icon={Users}
               title="Shareable sessions"
-              description="Copy URLs with embedded code so teammates can pick up right where you left off."
+              description="Copy URLs with embedded code so teammates can reopen your exact workspace."
             />
           </div>
         </div>

@@ -22,7 +22,7 @@ DemoRegistry.register({
       description: 'Verifies getters recalculate when state changes',
     },
   ],
-  relatedDemos: ['custom-selectors', 'emit-patch'],
+  relatedDemos: ['custom-selectors', 'computed-properties'],
   prerequisites: ['counter'],
   documentation: `
 ## Computed Getters

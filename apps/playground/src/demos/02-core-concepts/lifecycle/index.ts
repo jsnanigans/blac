@@ -31,7 +31,7 @@ DemoRegistry.register({
       description: 'Verifies that keep-alive instances survive component unmounting',
     },
   ],
-  relatedDemos: ['instance-management', 'async', 'bloc-deep-dive'],
+  relatedDemos: ['instance-management', 'async-operations', 'bloc-deep-dive'],
   prerequisites: ['counter', 'updating-state'],
 });
 

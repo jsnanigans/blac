@@ -26,6 +26,6 @@ DemoRegistry.register({
       description: 'Verifies that the counter decrements correctly',
     },
   ],
-  relatedDemos: ['isolated-counter', 'shared-counter'],
+  relatedDemos: ['instance-management', 'multiple-components'],
   prerequisites: [],
 });

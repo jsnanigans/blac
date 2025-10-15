@@ -38,6 +38,6 @@ DemoRegistry.register({
       description: 'Verifies pagination navigation and data loading',
     },
   ],
-  relatedDemos: ['async-loading', 'list-management', 'simple-async'],
+  relatedDemos: ['async-loading', 'list-management', 'async-operations'],
   prerequisites: ['async-loading', 'updating-state'],
 });

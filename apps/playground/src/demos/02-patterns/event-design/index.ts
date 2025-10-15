@@ -7,7 +7,7 @@ DemoRegistry.register({
   category: '02-patterns',
   difficulty: 'intermediate',
   prerequisites: ['basic-bloc', 'bloc-vs-cubit'],
-  relatedDemos: ['form-cubit', 'simple-async'],
+  relatedDemos: ['simple-form', 'async-operations'],
   tags: ['events', 'bloc', 'patterns', 'best-practices', 'anti-patterns'],
   concepts: [
     'event naming conventions',

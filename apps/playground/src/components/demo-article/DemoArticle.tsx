@@ -1,9 +1,5 @@
 import React, { createContext, useContext } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { variants } from '@/utils/animations';
 
 /**
  * Demo difficulty levels
@@ -81,54 +77,35 @@ export const DemoArticle: React.FC<DemoArticleProps> = ({
 
   return (
     <DemoArticleContext.Provider value={contextValue}>
-      <motion.article
-        initial="hidden"
-        animate="visible"
-        variants={variants.fadeIn}
-        className={cn('relative w-full space-y-12 px-6 py-12 sm:px-10', className)}
+      <article
+        className={cn(
+          'mx-auto w-full max-w-3xl space-y-12 px-4 py-10 sm:px-6',
+          className,
+        )}
       >
-        <div className="demo-article-content space-y-16">{children}</div>
+        <div className="space-y-12">{children}</div>
 
-        {!hideNavigation && (
-          <footer className="border-t border-border pt-10">
-            <div className="grid gap-4 sm:grid-cols-2">
-              {metadata.learningPath?.previous ? (
-                <Link
-                  to={`/demos/${metadata.learningPath.previous}`}
-                  className="group relative flex items-center gap-3 rounded-xl border border-border bg-surface px-5 py-4 transition-colors hover:border-brand/60 hover:text-brand"
-                >
-                  <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand/10 text-brand">
-                    <ArrowLeft className="h-5 w-5 transition-transform group-hover:-translate-x-1" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Previous</p>
-                    <p className="text-sm font-semibold text-foreground">{formatSlug(metadata.learningPath.previous)}</p>
-                  </div>
-                </Link>
+        {!hideNavigation && metadata.learningPath && (
+          <footer className="border-t border-border pt-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              {metadata.learningPath.previous ? (
+                <div className="text-sm text-muted-foreground">
+                  Previous: <span className="font-medium text-foreground">{formatSlug(metadata.learningPath.previous)}</span>
+                </div>
               ) : (
-                <div className="hidden sm:block" />
+                <div />
               )}
-
-              {metadata.learningPath?.next ? (
-                <Link
-                  to={`/demos/${metadata.learningPath.next}`}
-                  className="group relative flex items-center gap-3 rounded-xl border border-border bg-surface px-5 py-4 transition-colors hover:border-brand/60 hover:text-brand"
-                >
-                  <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-brand text-brand-foreground">
-                    <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Next</p>
-                    <p className="text-sm font-semibold text-foreground">{formatSlug(metadata.learningPath.next)}</p>
-                  </div>
-                </Link>
+              {metadata.learningPath.next ? (
+                <div className="text-sm text-muted-foreground text-right">
+                  Next: <span className="font-medium text-foreground">{formatSlug(metadata.learningPath.next)}</span>
+                </div>
               ) : (
-                <div className="hidden sm:block" />
+                <div />
               )}
             </div>
           </footer>
         )}
-      </motion.article>
+      </article>
     </DemoArticleContext.Provider>
   );
 };
