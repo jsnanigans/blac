@@ -1,3 +1,498 @@
-import { GuideArticle } from '@/components/guide/GuideArticle';
+import { GuideArticleNote } from '@/components/guide/GuideArticle';
 
-<GuideArticle demoId="bloc-composition" sectionId="advanced" />
+export const demoId = 'bloc-composition';
+export const sectionId = 'advanced';
+
+## Introduction
+
+Real applications rarely use a single Bloc in isolation. More often, you'll have **multiple Blocs working together**: user authentication, feature-specific state, notifications, analytics, and more. Understanding how to compose and coordinate multiple Blocs is essential for building scalable, maintainable applications.
+
+BlaC provides three powerful patterns for Bloc composition, allowing Blocs to share state, communicate with each other, and react to changes across your application architecture.
+
+### What You'll Learn
+
+- How multiple Blocs coordinate and share state
+- Cross-Bloc access patterns with `Blac.getBloc()`
+- Reactive subscriptions between Blocs
+- Shared vs isolated Bloc instances
+- Best practices for Bloc architecture and communication
+- Avoiding common anti-patterns like circular dependencies
+
+## Understanding Bloc Composition
+
+Bloc composition is the practice of coordinating multiple state containers to build complex features. Think of Blocs as **domain-specific state containers**:
+
+- `AuthCubit` handles authentication
+- `DashboardStatsCubit` handles dashboard logic
+- `NotificationCubit` handles notifications
+- Each Bloc focuses on its own responsibility but can communicate with others
+
+This separation of concerns makes your code more maintainable, testable, and easier to understand.
+
+<GuideArticleNote title="Domain-Driven Design">
+Each Bloc should represent a distinct domain or feature area. This aligns with Domain-Driven Design principles and makes your codebase more modular and maintainable.
+</GuideArticleNote>
+
+## Three Patterns for Bloc Composition
+
+BlaC supports three key patterns for composing Blocs:
+
+### 1. Shared State Access (Default)
+
+By default, Blocs are **shared** across all consumers. Multiple components can access the same instance:
+
+```typescript
+class AuthCubit extends Cubit<AuthState> {
+  // No static isolated = true (shared by default)
+  constructor() {
+    super({ isAuthenticated: false, userName: null });
+  }
+
+  login = async (userName: string) => {
+    this.patch({ isAuthenticated: true, userName });
+  };
+}
+
+// Multiple components access the same instance
+function Header() {
+  const [state] = useBloc(AuthCubit);
+  return <div>Welcome, {state.userName}</div>;
+}
+
+function Sidebar() {
+  const [state, cubit] = useBloc(AuthCubit); // Same instance!
+  return <button onClick={() => cubit.logout()}>Logout</button>;
+}
+```
+
+Both components share the **same** `AuthCubit` instance and stay perfectly synchronized.
+
+### 2. Cross-Bloc Access
+
+One Bloc can access another Bloc's state using `Blac.getBloc()`:
+
+```typescript
+class DashboardStatsCubit extends Cubit<DashboardState> {
+  static isolated = true; // Each component gets its own instance
+
+  loadDashboard = async () => {
+    try {
+      // Access the shared AuthCubit
+      const authCubit = Blac.getBloc(AuthCubit, {
+        throwIfNotFound: true,
+      });
+
+      // Read its state
+      const userName = authCubit.state.userName;
+      const isAuth = authCubit.state.isAuthenticated;
+
+      // Use the auth state to load appropriate data
+      if (isAuth) {
+        this.patch({
+          stats: `Personalized stats for ${userName}`,
+        });
+      } else {
+        this.patch({ stats: 'Generic guest stats' });
+      }
+    } catch (error) {
+      // Handle case where AuthCubit doesn't exist
+      console.warn('AuthCubit not found');
+    }
+  };
+}
+```
+
+This is perfect for **one-time reads** of another Bloc's state.
+
+### 3. Reactive Subscriptions
+
+For reactive behavior, one Bloc can subscribe to another's state changes:
+
+```typescript
+class NotificationCubit extends Cubit<NotificationState> {
+  private authSubscription?: () => void;
+
+  constructor() {
+    super({ messages: [], unreadCount: 0 });
+    this.subscribeToAuth();
+  }
+
+  private subscribeToAuth = () => {
+    const authCubit = Blac.getBloc(AuthCubit, {
+      throwIfNotFound: false,
+    });
+
+    if (authCubit) {
+      // Subscribe to auth state changes
+      this.authSubscription = authCubit.subscribe((authState) => {
+        if (authState.isAuthenticated) {
+          this.addMessage(`Welcome, ${authState.userName}!`);
+        } else {
+          this.addMessage('You have been logged out.');
+        }
+      });
+    }
+  };
+
+  addMessage = (message: string) => {
+    this.patch({
+      messages: [...this.state.messages, message],
+      unreadCount: this.state.unreadCount + 1,
+    });
+  };
+
+  onDispose = () => {
+    // CRITICAL: Clean up subscription to prevent memory leaks
+    if (this.authSubscription) {
+      this.authSubscription();
+    }
+  };
+}
+```
+
+This is perfect for **reactive side effects** and cross-feature coordination.
+
+<GuideArticleNote title="Warning">
+Always unsubscribe in `onDispose()` to prevent memory leaks! The `subscribe()` method returns an unsubscribe function—call it when your Bloc is disposed.
+</GuideArticleNote>
+
+## Try It Out
+
+Experience Bloc composition in action. This demo features three Cubits that communicate with each other. Notice how logging in or out affects all three sections:
+
+<BlocCompositionInteractive />
+
+## Pattern Comparison
+
+Let's compare the three patterns to understand when to use each:
+
+| Pattern | Use Case | Example | Memory |
+|---------|----------|---------|--------|
+| **Shared State** | Global state that multiple components need | Auth, Settings, Theme | Single instance |
+| **Cross-Bloc Access** | One-time reads of another Bloc's state | Load data based on auth state | No subscription overhead |
+| **Reactive Subscriptions** | Automatic reactions to state changes | Notifications, Analytics, Logging | Subscription overhead |
+
+### When to Use Each Pattern
+
+**Shared State Access:**
+- ✅ User authentication
+- ✅ App settings and configuration
+- ✅ Global UI state (sidebar open/closed)
+- ✅ Feature flags
+
+**Cross-Bloc Access:**
+- ✅ Loading data based on auth state
+- ✅ Reading user preferences
+- ✅ Accessing configuration
+- ✅ Permission checks
+
+**Reactive Subscriptions:**
+- ✅ Notifications and alerts
+- ✅ Analytics event tracking
+- ✅ Logging state changes
+- ✅ Cache invalidation
+- ✅ Syncing related features
+
+## Real-World Examples
+
+### Example 1: Shopping Cart & Auth
+
+```typescript
+class CartCubit extends Cubit<CartState> {
+  addItem = async (item: Product) => {
+    // Check if user is authenticated
+    const authCubit = Blac.getBloc(AuthCubit);
+
+    if (!authCubit?.state.isAuthenticated) {
+      this.patch({ error: 'Please log in to add items to cart' });
+      return;
+    }
+
+    // Add item to cart
+    this.patch({
+      items: [...this.state.items, item],
+    });
+
+    // Sync with server
+    await this.syncCartToServer(authCubit.state.userId);
+  };
+}
+```
+
+### Example 2: Analytics Tracking
+
+```typescript
+class AnalyticsCubit extends Cubit<AnalyticsState> {
+  private subscriptions: Array<() => void> = [];
+
+  constructor() {
+    super({ events: [] });
+    this.trackAllBlocs();
+  }
+
+  private trackAllBlocs = () => {
+    // Track auth events
+    const authCubit = Blac.getBloc(AuthCubit);
+    if (authCubit) {
+      const unsubscribe = authCubit.subscribe((state) => {
+        if (state.isAuthenticated) {
+          this.trackEvent('user_logged_in', {
+            userName: state.userName,
+          });
+        }
+      });
+      this.subscriptions.push(unsubscribe);
+    }
+
+    // Track cart events
+    const cartCubit = Blac.getBloc(CartCubit);
+    if (cartCubit) {
+      const unsubscribe = cartCubit.subscribe((state) => {
+        this.trackEvent('cart_updated', {
+          itemCount: state.items.length,
+        });
+      });
+      this.subscriptions.push(unsubscribe);
+    }
+  };
+
+  trackEvent = (name: string, properties: any) => {
+    this.patch({
+      events: [
+        ...this.state.events,
+        { name, properties, timestamp: Date.now() },
+      ],
+    });
+
+    // Send to analytics service
+    analytics.track(name, properties);
+  };
+
+  onDispose = () => {
+    // Clean up all subscriptions
+    this.subscriptions.forEach((unsubscribe) => unsubscribe());
+  };
+}
+```
+
+### Example 3: Multi-Step Form Wizard
+
+```typescript
+class WizardCubit extends Cubit<WizardState> {
+  constructor() {
+    super({ currentStep: 0, canProceed: false });
+  }
+
+  checkCanProceed = () => {
+    // Check if current step is complete
+    const step = this.state.currentStep;
+
+    if (step === 0) {
+      const profileCubit = Blac.getBloc(ProfileFormCubit);
+      this.patch({ canProceed: profileCubit?.state.isValid ?? false });
+    } else if (step === 1) {
+      const addressCubit = Blac.getBloc(AddressFormCubit);
+      this.patch({ canProceed: addressCubit?.state.isValid ?? false });
+    } else if (step === 2) {
+      const paymentCubit = Blac.getBloc(PaymentFormCubit);
+      this.patch({ canProceed: paymentCubit?.state.isValid ?? false });
+    }
+  };
+
+  nextStep = () => {
+    if (this.state.canProceed) {
+      this.patch({ currentStep: this.state.currentStep + 1 });
+      this.checkCanProceed();
+    }
+  };
+}
+```
+
+## Best Practices
+
+<GuideArticleNote title="Do">
+- ✅ Keep Blocs focused on single responsibilities
+- ✅ Use shared Blocs for global state (auth, settings)
+- ✅ Use isolated Blocs for feature-specific state
+- ✅ Prefer cross-bloc access for one-time reads
+- ✅ Use subscriptions for reactive side effects
+- ✅ Always clean up subscriptions in `onDispose`
+- ✅ Document Bloc dependencies clearly
+</GuideArticleNote>
+
+<GuideArticleNote title="Don't">
+- ❌ Create circular dependencies between Blocs
+- ❌ Use too many subscriptions (performance impact)
+- ❌ Forget to unsubscribe (memory leaks)
+- ❌ Create deep Bloc dependency chains (hard to test)
+- ❌ Use Blocs for component-local state
+- ❌ Access non-existent Blocs without error handling
+</GuideArticleNote>
+
+## Anti-Patterns to Avoid
+
+### ❌ Circular Dependencies
+
+```typescript
+// BAD: Circular dependency
+class BlocA extends Cubit<StateA> {
+  constructor() {
+    super(initialState);
+    const blocB = Blac.getBloc(BlocB); // Depends on BlocB
+  }
+}
+
+class BlocB extends Cubit<StateB> {
+  constructor() {
+    super(initialState);
+    const blocA = Blac.getBloc(BlocA); // Depends on BlocA
+  }
+}
+```
+
+**Solution:** Introduce a third coordinator Bloc or use events/callbacks instead.
+
+### ❌ Too Many Subscriptions
+
+```typescript
+// BAD: Excessive subscriptions
+class OverlyReactiveCubit extends Cubit<State> {
+  constructor() {
+    super(initialState);
+    // Subscribing to 10+ other Blocs
+    Blac.getBloc(Bloc1)?.subscribe(this.handleBloc1);
+    Blac.getBloc(Bloc2)?.subscribe(this.handleBloc2);
+    // ... 10 more subscriptions
+  }
+}
+```
+
+**Solution:** Consolidate related state or use selective subscriptions.
+
+### ❌ Missing Error Handling
+
+```typescript
+// BAD: No error handling
+class UnsafeCubit extends Cubit<State> {
+  loadData = () => {
+    const authCubit = Blac.getBloc(AuthCubit, { throwIfNotFound: true });
+    // Will crash if AuthCubit doesn't exist!
+    const userId = authCubit.state.userId;
+  };
+}
+
+// GOOD: Proper error handling
+class SafeCubit extends Cubit<State> {
+  loadData = () => {
+    try {
+      const authCubit = Blac.getBloc(AuthCubit, { throwIfNotFound: true });
+      const userId = authCubit.state.userId;
+      // Use userId...
+    } catch (error) {
+      this.patch({ error: 'Auth not available' });
+    }
+  };
+}
+```
+
+## Testing Bloc Composition
+
+Testing composed Blocs requires careful setup:
+
+```typescript
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { Blac } from '@blac/core';
+
+describe('DashboardStatsCubit', () => {
+  let authCubit: AuthCubit;
+  let dashboardCubit: DashboardStatsCubit;
+
+  beforeEach(() => {
+    // Set up shared AuthCubit first
+    authCubit = new AuthCubit();
+    Blac.instance.register(authCubit);
+
+    // Then create DashboardStatsCubit (which depends on AuthCubit)
+    dashboardCubit = new DashboardStatsCubit();
+  });
+
+  afterEach(() => {
+    // Clean up
+    dashboardCubit.dispose();
+    authCubit.dispose();
+    Blac.instance.clear();
+  });
+
+  it('loads personalized stats when authenticated', async () => {
+    // Arrange: Log in
+    await authCubit.login('TestUser');
+
+    // Act: Load dashboard
+    await dashboardCubit.loadDashboard();
+
+    // Assert: Stats should be personalized
+    expect(dashboardCubit.state.lastLoadedForUser).toBe('TestUser');
+    expect(dashboardCubit.state.statsMessage).toContain('personalized');
+  });
+
+  it('loads generic stats when not authenticated', async () => {
+    // Act: Load dashboard (not logged in)
+    await dashboardCubit.loadDashboard();
+
+    // Assert: Stats should be generic
+    expect(dashboardCubit.state.lastLoadedForUser).toBe('Guest');
+    expect(dashboardCubit.state.statsMessage).toContain('generic');
+  });
+});
+```
+
+**Key testing principles:**
+1. Set up dependencies in the correct order
+2. Register shared Blocs with `Blac.instance.register()`
+3. Clean up all Blocs in `afterEach()`
+4. Test both success and error cases
+
+## Architecture Guidelines
+
+### Small Applications (1-5 Blocs)
+
+For small apps, keep it simple:
+- One global `AppCubit` for shared state
+- Feature-specific Cubits (e.g., `TodoListCubit`)
+- Minimal cross-Bloc communication
+
+### Medium Applications (5-20 Blocs)
+
+Organize by domain:
+- **Core Blocs**: `AuthCubit`, `SettingsCubit`, `ThemeCubit`
+- **Feature Blocs**: `DashboardCubit`, `ProfileCubit`, `CartCubit`
+- **Service Blocs**: `AnalyticsCubit`, `NotificationCubit`
+
+### Large Applications (20+ Blocs)
+
+Use a layered architecture:
+- **Application Layer**: Global state, routing, configuration
+- **Domain Layer**: Business logic and domain Blocs
+- **Feature Layer**: Feature-specific Blocs
+- **Infrastructure Layer**: API clients, persistence, external services
+
+## Key Takeaways
+
+- **Multiple Blocs**: Use `useBloc` multiple times to compose features
+- **Shared vs Isolated**: Shared Blocs are global, isolated Blocs are per-consumer
+- **Cross-Bloc Access**: Use `Blac.getBloc()` to read other Blocs' state
+- **Reactive Subscriptions**: Use `bloc.subscribe()` for automatic reactions
+- **Memory Management**: Always unsubscribe in `onDispose()`
+- **Architecture**: Keep Blocs focused, avoid circular dependencies
+- **Testing**: Set up dependencies correctly and clean up after tests
+
+## Next Steps
+
+Now that you understand Bloc composition, explore:
+- **Dependencies** - Fine-tune re-renders with dependency tracking
+- **Custom Plugins** - Add cross-cutting concerns like logging and analytics
+- **Stream API** - Combine streaming data with Bloc composition
+
+<GuideArticleNote title="Pro Tip">
+Bloc composition enables powerful architectural patterns. By combining shared state, cross-bloc access, and reactive subscriptions, you can build complex applications with clean separation of concerns and maintainable code.
+</GuideArticleNote>

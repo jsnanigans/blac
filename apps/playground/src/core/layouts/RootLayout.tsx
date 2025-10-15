@@ -121,7 +121,7 @@ export function RootLayout() {
         {/* Scroll Progress Indicator */}
         <div className="fixed top-0 left-0 right-0 z-50 h-1 bg-transparent">
           <div
-            className="h-full bg-gradient-to-r from-brand via-accent to-brand transition-all duration-300 ease-out"
+            className="h-full bg-gradient-to-r from-brand via-accent to-brand ease-out"
             style={{ width: `${scrollProgress}%` }}
           />
         </div>

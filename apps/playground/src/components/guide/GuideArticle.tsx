@@ -96,3 +96,40 @@ export function GuideArticleNote({
     </div>
   );
 }
+
+// Semantic note variants
+export function InfoNote({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-md border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 shadow-subtle dark:border-blue-900 dark:bg-blue-950 dark:text-blue-100">
+      <p className="font-semibold text-blue-950 dark:text-blue-50">{title}</p>
+      <div className="mt-2 space-y-2">{children}</div>
+    </div>
+  );
+}
+
+export function WarningNote({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 shadow-subtle dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100">
+      <p className="font-semibold text-amber-950 dark:text-amber-50">{title}</p>
+      <div className="mt-2 space-y-2">{children}</div>
+    </div>
+  );
+}
+
+export function DangerNote({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900 shadow-subtle dark:border-red-900 dark:bg-red-950 dark:text-red-100">
+      <p className="font-semibold text-red-950 dark:text-red-50">{title}</p>
+      <div className="mt-2 space-y-2">{children}</div>
+    </div>
+  );
+}
+
+export function SuccessNote({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-900 shadow-subtle dark:border-green-900 dark:bg-green-950 dark:text-green-100">
+      <p className="font-semibold text-green-950 dark:text-green-50">{title}</p>
+      <div className="mt-2 space-y-2">{children}</div>
+    </div>
+  );
+}

@@ -22,6 +22,10 @@ In this deep dive, you'll learn how to manage nested state structures, create co
 Before diving into advanced patterns, let's reinforce the **most important rule** of state management: **never mutate state directly**.
 
 ```typescript
+// Note: This example uses nested state to illustrate immutability.
+// In real apps, prefer flat state (e.g., state.themeSetting) for better
+// dependency tracking and simpler updates!
+
 interface AppState {
   user: {
     name: string;
@@ -38,7 +42,7 @@ class AppCubit extends Cubit<AppState> {
     this.emit(this.state); // React won't detect the change
   };
 
-  // ✅ CORRECT: Create new objects
+  // ✅ CORRECT: Create new objects (but note: flat state is better!)
   changeTheme = (theme: string) => {
     this.patch({
       user: {
@@ -53,9 +57,11 @@ class AppCubit extends Cubit<AppState> {
 }
 ```
 
+<GuideArticleNote title="Object References Matter">
 React relies on **object reference comparisons** to detect changes. When you mutate an object, the reference stays the same, so React thinks nothing changed. Always create **new objects** when updating state.
+</GuideArticleNote>
 
-<GuideArticleNote title="Why Immutability Matters" className="border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950">
+<GuideArticleNote title="Why Immutability Matters">
 Immutability isn't just a React requirement—it enables:
 - **Time-travel debugging** - Replay past states
 - **Undo/redo functionality** - Keep state history
@@ -67,9 +73,50 @@ Embrace immutability from the start. It'll save you countless debugging hours.
 
 ## Managing Nested State
 
-Real applications have **complex state structures** with nested objects and arrays. Managing these requires careful spreading to maintain immutability.
+Real applications sometimes have **complex state structures** with nested objects and arrays. However, **flat state is strongly recommended** for BlaC's dependency tracking to work optimally.
 
-### The Spreading Pattern
+<GuideArticleNote title="Dependency Tracking Limitation">
+**Critical**: BlaC's `useBloc` dependency tracking only works on the **first layer (root level)** of state objects.
+
+<div>
+  <div>
+    <span>✓</span>
+    <code>state.userName</code>
+    <span>Tracked correctly</span>
+  </div>
+  <div>
+    <span>✗</span>
+    <code>state.user.name</code>
+    <span>Only tracks state.user</span>
+  </div>
+</div>
+
+**Recommendation**: Use flat state structures whenever possible:
+
+```typescript
+// ✅ Good: Flat state (dependency tracking works)
+interface UserState {
+  userName: string;
+  userAge: number;
+  userEmail: string;
+}
+
+// ❌ Avoid: Nested state (fine-grained tracking doesn't work)
+interface UserState {
+  user: {
+    name: string;
+    age: number;
+    email: string;
+  };
+}
+```
+
+Flat state also makes `patch()` simpler—no need to spread nested objects!
+</GuideArticleNote>
+
+### When You Must Use Nested State
+
+Sometimes nesting is unavoidable (API responses, complex domains). Here's how to manage it correctly with immutability:
 
 ```typescript
 interface UserProfile {
@@ -167,13 +214,17 @@ class UserProfileCubit extends Cubit<UserProfile> {
 
 This keeps your public API clean while hiding the spreading complexity.
 
-<GuideArticleNote title="When Nesting Gets Too Deep" className="border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950">
-If you're spreading more than 2-3 levels deep, consider:
-1. **Flattening your state** - Reduce nesting levels
+<GuideArticleNote title="When Nesting Gets Too Deep">
+If you're spreading more than 2-3 levels deep, **you've gone too far**. Consider:
+1. **Flattening your state** - Reduce nesting levels (also improves dependency tracking!)
 2. **Splitting into multiple Cubits** - Separate concerns
-3. **Using libraries** - Tools like Immer can help, but understand the basics first
+3. **Using libraries** - Tools like Immer can help with immutability, but they won't fix dependency tracking
 
-Deep nesting is often a sign of poorly structured state. Refactor before it becomes unmanageable.
+Remember: Deep nesting has two problems:
+- **Harder to update immutably** (complex spreading)
+- **Dependency tracking only works at root level** (components re-render unnecessarily)
+
+Flat state solves both problems!
 </GuideArticleNote>
 
 ## Computed Properties with Getters
@@ -372,7 +423,7 @@ function UserList() {
         {state.loading ? 'Loading...' : 'Fetch Users'}
       </button>
 
-      {state.error && <div className="error">{state.error}</div>}
+      {state.error && <div>{state.error}</div>}
 
       {state.data && (
         <ul>
@@ -424,7 +475,7 @@ class CancellableApiCubit<T> extends Cubit<ApiState<T>> {
 }
 ```
 
-<GuideArticleNote title="Cleanup is Critical" className="border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950">
+<GuideArticleNote title="Cleanup is Critical">
 Always clean up async operations:
 - **Cancel pending requests** when components unmount
 - **Ignore state updates** after disposal
@@ -495,11 +546,13 @@ Override `dispose()` when your Cubit:
 - Holds expensive resources (file handles, workers, etc.)
 
 <GuideArticleNote title="Automatic vs Manual Disposal">
-- **Isolated Cubits** are automatically disposed when components unmount
-- **Shared Cubits** must be manually disposed or they'll leak memory
-- **Keep-alive Cubits** must always be manually disposed
+**By default, BlaC counts component listeners**. Both shared and isolated instances automatically dispose when their listener count reaches zero:
 
-Know your instance pattern and dispose accordingly!
+- **Isolated Cubits**: Automatically disposed when the component unmounts (listener count reaches 0)
+- **Shared Cubits**: Automatically disposed when all components using them unmount (listener count reaches 0)
+- **Keep-alive Cubits**: Must be manually disposed—they stay in memory even with zero listeners
+
+You rarely need to manually dispose instances unless using `keepAlive = true`. BlaC handles cleanup automatically based on component lifecycles.
 </GuideArticleNote>
 
 ## Testing Cubits
@@ -666,36 +719,61 @@ updateItems = (items: Item[]) => {
 };
 ```
 
-### 3. Use Selectors in Components
+### 3. Leverage Dependency Tracking (Flat State Only!)
 
-BlaC's dependency tracking optimizes re-renders based on what fields components actually use:
+BlaC's dependency tracking optimizes re-renders based on what **root-level fields** components actually use:
 
 ```tsx
+// ✅ Good: Flat state - fine-grained tracking works
+interface AppState {
+  count: number;
+  userName: string;
+  userAge: number;
+}
+
 // Only re-renders when count changes
 function Counter() {
   const [state] = useBloc(AppCubit);
-  return <div>{state.count}</div>;
+  return <div>{state.count}</div>; // Tracks state.count
 }
 
-// Only re-renders when user.name changes
+// Only re-renders when userName changes
 function UserName() {
   const [state] = useBloc(AppCubit);
-  return <div>{state.user.name}</div>;
+  return <div>{state.userName}</div>; // Tracks state.userName
 }
 ```
 
-This works automatically—no manual selectors needed!
+```tsx
+// ❌ Problem: Nested state - tracking doesn't work deeply
+interface AppState {
+  count: number;
+  user: {
+    name: string;
+    age: number;
+  };
+}
+
+// Re-renders when ANY part of state.user changes!
+function UserName() {
+  const [state] = useBloc(AppCubit);
+  return <div>{state.user.name}</div>; // Only tracks state.user, not state.user.name
+}
+```
+
+**Takeaway**: Flat state structures maximize the benefits of automatic dependency tracking!
 
 ## Key Takeaways
 
+- **Prefer flat state structures** - Dependency tracking only works at root level, and flat state simplifies `patch()`
 - **Never mutate state** - Always create new objects with spreading
-- **Nest carefully** - Deep nesting requires helper methods
+- **Nest only when necessary** - Deep nesting requires helper methods and breaks dependency tracking
 - **Use getters for computed values** - Derive data instead of storing it
 - **Standardize async patterns** - Reusable base classes for loading/error/data
 - **Clean up resources** - Override `dispose()` for timers, connections, subscriptions
 - **Test thoroughly** - Cubits are easy to test without React
 - **Batch updates** - Combine multiple changes into single state updates
-- **Trust dependency tracking** - BlaC optimizes re-renders automatically
+- **Automatic disposal** - Both shared and isolated instances dispose when listener count reaches zero
 
 ---
 

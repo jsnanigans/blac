@@ -1,6 +1,7 @@
 import React from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { cn } from '@/lib/utils';
 
 interface CodeBlockProps {
@@ -13,6 +14,27 @@ export function CodeBlock({ children, className, inline }: CodeBlockProps) {
   // Extract language from className (format: language-js, language-typescript, etc.)
   const match = /language-(\w+)/.exec(className || '');
   const language = match ? match[1] : '';
+
+  // Detect if dark mode is active
+  const [isDark, setIsDark] = React.useState(false);
+
+  React.useEffect(() => {
+    // Check initial theme
+    const checkTheme = () => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    };
+
+    checkTheme();
+
+    // Watch for theme changes
+    const observer = new MutationObserver(checkTheme);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   // If inline code or no language specified, render simple code element
   if (inline || !language) {
@@ -40,7 +62,7 @@ export function CodeBlock({ children, className, inline }: CodeBlockProps) {
       )}
       <SyntaxHighlighter
         language={language}
-        style={vscDarkPlus}
+        style={isDark ? vscDarkPlus : vs}
         customStyle={{
           margin: 0,
           padding: '1rem',

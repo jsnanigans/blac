@@ -52,7 +52,7 @@ function CartBadge() {
   const [state] = useBloc(ShoppingCartCubit);
 
   return (
-    <div className="cart-badge">
+    <div>
       {state.items.length}
     </div>
   );
@@ -63,7 +63,7 @@ function CartTotal() {
   const [state] = useBloc(ShoppingCartCubit);
 
   return (
-    <div className="cart-total">
+    <div>
       ${state.total.toFixed(2)}
     </div>
   );
@@ -92,7 +92,7 @@ function ProductCard({ product }: { product: Product }) {
   const [, cart] = useBloc(ShoppingCartCubit);
 
   return (
-    <div className="product-card">
+    <div>
       <h3>{product.name}</h3>
       <p>${product.price}</p>
       <button onClick={() => cart.addItem(product)}>
@@ -252,7 +252,7 @@ class FilterCubit extends Cubit<FilterState> {
 // Sibling components that coordinate
 function FilterBar() {
   return (
-    <div className="filter-bar">
+    <div>
       <SearchBox />
       <CategoryDropdown />
       <PriceSlider />
@@ -336,7 +336,7 @@ Layout components don't need state—they just arrange children:
 // Layout component (no state)
 function DashboardLayout() {
   return (
-    <div className="dashboard">
+    <div>
       <Sidebar />
       <MainContent />
       <Notifications />
@@ -630,7 +630,7 @@ function TodoItem({ todo }: { todo: Todo }) {
         checked={todo.completed}
         onChange={() => todos.toggleTodo(todo.id)}
       />
-      <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
+      <span}>
         {todo.text}
       </span>
       <button onClick={() => todos.deleteTodo(todo.id)}>Delete</button>

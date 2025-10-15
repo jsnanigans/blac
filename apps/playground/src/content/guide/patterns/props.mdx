@@ -1,3 +1,664 @@
-import { GuideArticle } from '@/components/guide/GuideArticle';
+import { GuideArticleNote } from '@/components/guide/GuideArticle';
 
-<GuideArticle demoId="props" sectionId="patterns" />
+export const demoId = 'props';
+export const sectionId = 'patterns';
+
+## Introduction
+
+Most Cubits and Blocs have hardcoded configuration—initial values, API endpoints, validation rules. But what if you want the **same Cubit logic** with **different configurations**? That's where **props-based Cubits** come in.
+
+Props-based Cubits accept constructor parameters that configure their behavior. This makes them reusable across different contexts: a timer component that can count at different speeds, an API client that hits different endpoints, or a form validator with different rules.
+
+### What You'll Learn
+
+- Creating configurable Cubits/Blocs with constructor props
+- Passing props via `staticProps` in `useBloc`
+- Combining props with `instanceId` for multiple instances
+- Real-world patterns: API clients, forms, timers
+- Props vs state: when to use each
+- Testing props-based Cubits
+- Best practices for reusable state containers
+
+## The Problem: Hardcoded Configuration
+
+Without props, every Cubit has fixed configuration:
+
+```typescript
+// ❌ Hardcoded - not reusable
+class TimerCubit extends Cubit<number> {
+  private step = 1; // Always increments by 1
+  private maxCount = 100; // Always stops at 100
+
+  constructor() {
+    super(0); // Always starts at 0
+  }
+
+  increment = () => {
+    if (this.state < this.maxCount) {
+      this.emit(this.state + this.step);
+    }
+  };
+}
+```
+
+**Problems:**
+- Can't create timers with different steps or max values
+- Need separate Cubit classes for each configuration
+- Not reusable across different contexts
+
+## The Solution: Props Pattern
+
+Accept configuration as constructor parameters:
+
+```typescript
+// ✅ Configurable - highly reusable
+interface TimerProps {
+  initialCount?: number;
+  step?: number;
+  maxCount?: number;
+}
+
+class TimerCubit extends Cubit<number> {
+  private readonly props: Required<TimerProps>;
+
+  constructor(props?: TimerProps) {
+    // 1. Provide defaults
+    const defaults: Required<TimerProps> = {
+      initialCount: 0,
+      step: 1,
+      maxCount: 100,
+    };
+
+    // 2. Merge incoming props with defaults
+    const finalProps = { ...defaults, ...props };
+
+    // 3. Use props for initial state
+    super(finalProps.initialCount);
+
+    // 4. Store props for later use
+    this.props = finalProps;
+  }
+
+  increment = () => {
+    // 5. Use props in methods
+    if (this.state < this.props.maxCount) {
+      this.emit(this.state + this.props.step);
+    }
+  };
+
+  reset = () => {
+    this.emit(this.props.initialCount);
+  };
+}
+```
+
+<GuideArticleNote title="Key Pattern">
+The props pattern has 5 steps:
+1. **Define defaults** for all props
+2. **Merge** incoming props with defaults
+3. **Use props** to initialize state
+4. **Store props** as a private field
+5. **Reference props** throughout the class
+
+This makes all props optional while ensuring type safety.
+</GuideArticleNote>
+
+## Try It Out
+
+See how the same `TimerCubit` class creates four different timer instances with unique configurations:
+
+<PropsInteractive />
+
+### What to Notice
+
+Each timer:
+- Uses the **same `TimerCubit` class**
+- Has **different configuration** (step, maxCount, initialCount)
+- Maintains **independent state** (they don't affect each other)
+- Has a **unique instance ID** (`timer-Default Timer`, etc.)
+
+## Using Props in React
+
+To pass props to a Cubit, use the `staticProps` option in `useBloc`:
+
+```tsx
+function Timer({ config }: { config: TimerProps }) {
+  const [state, cubit] = useBloc(TimerCubit, {
+    staticProps: config,        // Pass props here
+    instanceId: `timer-${config.label}`, // Unique instance per config
+  });
+
+  return (
+    <div>
+      <div>{state}</div>
+      <button onClick={cubit.increment}>Increment</button>
+      <button onClick={cubit.reset}>Reset</button>
+    </div>
+  );
+}
+
+// Create multiple instances with different configurations
+function App() {
+  return (
+    <>
+      <Timer config={{ step: 1, maxCount: 10 }} />
+      <Timer config={{ step: 5, maxCount: 50 }} />
+      <Timer config={{ step: 10, maxCount: 100 }} />
+    </>
+  );
+}
+```
+
+<GuideArticleNote title="Instance ID is Critical">
+Without `instanceId`, all `<Timer>` components would **share the same Cubit instance**. The instance ID must be unique per configuration to create independent instances.
+
+Think of it like: **Same class + different props + unique ID = separate instance**
+</GuideArticleNote>
+
+## Real-World Example: API Client
+
+Props-based Blocs are perfect for API clients that need different configurations:
+
+```typescript
+interface ApiClientProps {
+  baseUrl?: string;
+  apiKey?: string;
+  timeout?: number;
+  retryCount?: number;
+}
+
+interface ApiState {
+  loading: boolean;
+  data: any | null;
+  error: string | null;
+}
+
+class ApiClientBloc extends Bloc<ApiState, ApiEvent> {
+  private readonly props: Required<ApiClientProps>;
+
+  constructor(props?: ApiClientProps) {
+    const defaults: Required<ApiClientProps> = {
+      baseUrl: '/api',
+      apiKey: '',
+      timeout: 5000,
+      retryCount: 3,
+    };
+
+    super({ loading: false, data: null, error: null });
+    this.props = { ...defaults, ...props };
+
+    this.on(FetchDataEvent, this.handleFetch);
+  }
+
+  private handleFetch = async (
+    event: FetchDataEvent,
+    emit: (state: ApiState) => void
+  ) => {
+    emit({ loading: true, data: null, error: null });
+
+    try {
+      // Use props to configure the request
+      const response = await fetch(
+        `${this.props.baseUrl}${event.endpoint}`,
+        {
+          headers: {
+            Authorization: `Bearer ${this.props.apiKey}`,
+          },
+          signal: AbortSignal.timeout(this.props.timeout),
+        }
+      );
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const data = await response.json();
+      emit({ loading: false, data, error: null });
+    } catch (error) {
+      // Retry logic using props.retryCount
+      if (event.retries < this.props.retryCount) {
+        this.add(new FetchDataEvent(event.endpoint, event.retries + 1));
+      } else {
+        emit({ loading: false, data: null, error: error.message });
+      }
+    }
+  };
+
+  fetchData = (endpoint: string) => {
+    this.add(new FetchDataEvent(endpoint, 0));
+  };
+}
+```
+
+**Usage:**
+
+```tsx
+// Production API client
+function ProductionDashboard() {
+  const [state, api] = useBloc(ApiClientBloc, {
+    staticProps: {
+      baseUrl: 'https://api.production.com',
+      apiKey: process.env.PROD_API_KEY,
+      timeout: 10000,
+      retryCount: 5,
+    },
+    instanceId: 'prod-api',
+  });
+
+  return <Dashboard data={state.data} />;
+}
+
+// Development API client (different config)
+function DevDashboard() {
+  const [state, api] = useBloc(ApiClientBloc, {
+    staticProps: {
+      baseUrl: 'http://localhost:3000',
+      apiKey: 'dev-key',
+      timeout: 30000, // Longer timeout for debugging
+      retryCount: 1,
+    },
+    instanceId: 'dev-api',
+  });
+
+  return <Dashboard data={state.data} />;
+}
+```
+
+<GuideArticleNote title="Configuration Over Code">
+With props, you can support multiple environments (dev, staging, prod) without changing code. Just pass different props for each environment.
+</GuideArticleNote>
+
+## Real-World Example: Dynamic Form Validator
+
+Create forms with different validation rules:
+
+```typescript
+interface ValidationRule {
+  field: string;
+  validate: (value: any) => string | null; // Returns error message or null
+}
+
+interface FormValidatorProps {
+  rules: ValidationRule[];
+  validateOnChange?: boolean;
+}
+
+interface FormState {
+  values: Record<string, any>;
+  errors: Record<string, string>;
+  touched: Record<string, boolean>;
+}
+
+class FormValidatorCubit extends Cubit<FormState> {
+  private readonly props: Required<FormValidatorProps>;
+
+  constructor(props: FormValidatorProps) {
+    const defaults = {
+      validateOnChange: true,
+    };
+
+    super({
+      values: {},
+      errors: {},
+      touched: {},
+    });
+
+    this.props = { ...defaults, ...props };
+  }
+
+  setValue = (field: string, value: any) => {
+    const newValues = { ...this.state.values, [field]: value };
+    const newTouched = { ...this.state.touched, [field]: true };
+
+    // Use props to decide when to validate
+    if (this.props.validateOnChange) {
+      const errors = this.validateField(field, value);
+      this.emit({
+        values: newValues,
+        errors: { ...this.state.errors, ...errors },
+        touched: newTouched,
+      });
+    } else {
+      this.emit({
+        ...this.state,
+        values: newValues,
+        touched: newTouched,
+      });
+    }
+  };
+
+  private validateField = (field: string, value: any): Record<string, string> => {
+    // Use props.rules to validate
+    const rule = this.props.rules.find((r) => r.field === field);
+    if (!rule) return {};
+
+    const error = rule.validate(value);
+    return error ? { [field]: error } : {};
+  };
+
+  validateAll = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    // Use props.rules for validation
+    for (const rule of this.props.rules) {
+      const value = this.state.values[rule.field];
+      const error = rule.validate(value);
+      if (error) {
+        errors[rule.field] = error;
+      }
+    }
+
+    this.patch({ errors });
+    return Object.keys(errors).length === 0;
+  };
+}
+```
+
+**Usage:**
+
+```tsx
+// Login form - simple validation
+function LoginForm() {
+  const [state, form] = useBloc(FormValidatorCubit, {
+    staticProps: {
+      rules: [
+        {
+          field: 'email',
+          validate: (v) => (!v ? 'Email required' : !/\S+@\S+/.test(v) ? 'Invalid email' : null),
+        },
+        {
+          field: 'password',
+          validate: (v) => (!v ? 'Password required' : v.length < 6 ? 'Min 6 chars' : null),
+        },
+      ],
+      validateOnChange: true,
+    },
+    instanceId: 'login-form',
+  });
+
+  return <form>...</form>;
+}
+
+// Registration form - complex validation
+function RegisterForm() {
+  const [state, form] = useBloc(FormValidatorCubit, {
+    staticProps: {
+      rules: [
+        { field: 'email', validate: (v) => /* email validation */ null },
+        { field: 'password', validate: (v) => /* password strength */ null },
+        { field: 'confirmPassword', validate: (v) => /* match check */ null },
+        { field: 'age', validate: (v) => /* age >= 18 */ null },
+        { field: 'terms', validate: (v) => (!v ? 'Must accept terms' : null) },
+      ],
+      validateOnChange: false, // Only validate on submit
+    },
+    instanceId: 'register-form',
+  });
+
+  return <form>...</form>;
+}
+```
+
+## Props vs State
+
+**Props** and **State** serve different purposes:
+
+### Props (Configuration)
+- Set **once** during construction
+- **Immutable** - never change
+- Used for **configuration**: API endpoints, validation rules, step sizes
+- Passed via `staticProps` in `useBloc`
+
+### State (Dynamic Data)
+- Changes **over time**
+- **Mutable** via `emit()` or `patch()`
+- Used for **dynamic data**: counters, form values, loading status
+- Accessed via `state` property
+
+```typescript
+class ExampleCubit extends Cubit<State> {
+  private readonly props: Props; // ✅ Immutable config
+
+  constructor(props: Props) {
+    super(initialState); // ✅ Mutable state
+    this.props = props;
+  }
+
+  doSomething = () => {
+    // ❌ NEVER mutate props
+    // this.props.value = newValue; // DON'T DO THIS!
+
+    // ✅ Always emit new state
+    this.emit({ ...this.state, value: newValue });
+  };
+}
+```
+
+<GuideArticleNote title="Rule of Thumb">
+If it **configures** the Cubit → use **props**
+If it **changes** over time → use **state**
+
+**Wrong:** Storing user input in props
+**Right:** Storing validation rules in props, user input in state
+</GuideArticleNote>
+
+## Testing Props-Based Cubits
+
+Props make testing easier—you can test different configurations without changing code:
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { TimerCubit } from './TimerCubit';
+
+describe('TimerCubit', () => {
+  it('should increment by step size', () => {
+    const cubit = new TimerCubit({ step: 5, maxCount: 20 });
+
+    cubit.increment();
+    expect(cubit.state).toBe(5);
+
+    cubit.increment();
+    expect(cubit.state).toBe(10);
+  });
+
+  it('should stop at maxCount', () => {
+    const cubit = new TimerCubit({ step: 10, maxCount: 25 });
+
+    cubit.increment(); // 10
+    cubit.increment(); // 20
+    cubit.increment(); // Should stop at 25, not 30
+
+    expect(cubit.state).toBe(25);
+  });
+
+  it('should reset to initialCount', () => {
+    const cubit = new TimerCubit({ initialCount: 50, step: 1, maxCount: 100 });
+
+    cubit.increment(); // 51
+    cubit.increment(); // 52
+
+    cubit.reset();
+    expect(cubit.state).toBe(50); // Back to initialCount
+  });
+
+  it('should use defaults when no props provided', () => {
+    const cubit = new TimerCubit();
+
+    expect(cubit.state).toBe(0); // Default initialCount
+    cubit.increment();
+    expect(cubit.state).toBe(1); // Default step
+  });
+});
+```
+
+**Benefits:**
+- Test multiple configurations without duplication
+- Verify default behavior
+- Edge cases are easier to test (extreme values)
+
+## Best Practices
+
+### 1. Always Provide Defaults
+
+```typescript
+// ✅ GOOD: All props optional with sensible defaults
+constructor(props?: MyProps) {
+  const defaults: Required<MyProps> = {
+    value: 0,
+    enabled: true,
+    timeout: 5000,
+  };
+  const finalProps = { ...defaults, ...props };
+  // ...
+}
+
+// ❌ BAD: Required props make it hard to use
+constructor(props: MyProps) {
+  // What if user forgets a prop?
+  this.props = props;
+}
+```
+
+### 2. Make Props Readonly
+
+```typescript
+// ✅ GOOD: Props can't be mutated
+private readonly props: Required<MyProps>;
+
+// ❌ BAD: Props could be accidentally mutated
+private props: Required<MyProps>;
+```
+
+### 3. Use Required&lt;T&gt; for Stored Props
+
+```typescript
+interface TimerProps {
+  step?: number;
+  maxCount?: number;
+}
+
+// ✅ GOOD: After merging with defaults, all props exist
+private readonly props: Required<TimerProps>;
+
+// ❌ BAD: Still optional, need to check everywhere
+private readonly props: TimerProps;
+```
+
+### 4. Validate Props in Constructor
+
+```typescript
+constructor(props?: ApiProps) {
+  const defaults = { timeout: 5000, retries: 3 };
+  const finalProps = { ...defaults, ...props };
+
+  // ✅ Validate props early
+  if (finalProps.timeout <= 0) {
+    throw new Error('Timeout must be positive');
+  }
+  if (finalProps.retries < 0) {
+    throw new Error('Retries cannot be negative');
+  }
+
+  super(initialState);
+  this.props = finalProps;
+}
+```
+
+### 5. Expose Props via Getters (Optional)
+
+```typescript
+// Convenient access to props
+get timeout(): number {
+  return this.props.timeout;
+}
+
+get maxRetries(): number {
+  return this.props.retries;
+}
+
+// Usage in components
+console.log(cubit.timeout); // Cleaner than cubit.props.timeout
+```
+
+## Common Use Cases
+
+### 1. Multi-Tenant Applications
+
+```typescript
+interface TenantProps {
+  tenantId: string;
+  apiEndpoint: string;
+}
+
+class TenantDataCubit extends Cubit<Data> {
+  constructor(props: TenantProps) {
+    super(initialState);
+    this.tenantId = props.tenantId;
+    this.apiEndpoint = props.apiEndpoint;
+  }
+}
+
+// Different instance per tenant
+<TenantDashboard tenantId="tenant-a" />
+<TenantDashboard tenantId="tenant-b" />
+```
+
+### 2. Paginated Lists
+
+```typescript
+interface PaginationProps {
+  pageSize?: number;
+  initialPage?: number;
+}
+
+class PaginatedListCubit extends Cubit<ListState> {
+  // Each list can have different page size
+}
+```
+
+### 3. Feature Flags
+
+```typescript
+interface FeatureProps {
+  enableExperimentalFeature?: boolean;
+  maxItems?: number;
+}
+
+class FeatureCubit extends Cubit<State> {
+  constructor(props?: FeatureProps) {
+    const defaults = {
+      enableExperimentalFeature: false,
+      maxItems: 100,
+    };
+    // Behavior changes based on props
+  }
+}
+```
+
+## Key Takeaways
+
+- **Props pattern** makes Cubits/Blocs configurable and reusable
+- **Constructor params** accept configuration at creation time
+- **Always provide defaults** using spread operator for merging
+- **Pass props** using `staticProps` option in `useBloc`
+- **Combine with `instanceId`** to create multiple independent instances
+- **Props are immutable** - set once, never change
+- **State is mutable** - changes over time via `emit()`
+- **Testing is easier** with props - test multiple configurations easily
+
+## Next Steps
+
+Now that you understand props-based Cubits, explore:
+
+- **Persistence** - Save and restore Cubit state across sessions
+- **Keep-Alive** - Combine props with keepAlive for global config
+- **Dependencies** - Inject services alongside props
+- **Instance Management** - Advanced patterns with dynamic instances
+
+<GuideArticleNote title="When to Use Props">
+Use props when you need:
+- **Reusable** components with different configs
+- **Multiple instances** of the same logic
+- **Environment-specific** behavior (dev/prod)
+- **Type-safe** configuration
+
+Don't overuse props. For simple Cubits that don't need configuration, skip the pattern!
+</GuideArticleNote>

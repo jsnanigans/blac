@@ -174,7 +174,7 @@ class UserCubit extends Cubit<UserState> {
 
 The spread operator `...this.state.preferences` copies all existing fields before adding the new `theme` value.
 
-<GuideArticleNote title="Critical: Always Spread Nested Objects" className="border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950">
+<GuideArticleNote title="Critical: Always Spread Nested Objects">
 When using `patch()` with nested objects, **always use the spread operator** to preserve other fields:
 
 ```typescript
@@ -186,6 +186,36 @@ this.patch({ nested: { ...this.state.nested, field: 'new' } });
 ```
 
 This is the #1 source of bugs with `patch()`. Don't skip the spread!
+</GuideArticleNote>
+
+<GuideArticleNote title="Nested State Has Two Problems">
+Nested state creates **two challenges**:
+
+1. **Update Complexity**: You must spread nested objects to avoid data loss (as shown above)
+2. **Dependency Tracking**: BlaC only tracks **root-level properties**, not nested ones
+
+```typescript
+// ❌ Problem: Changes to preferences.theme trigger re-renders in ALL components
+// that access state.preferences, even if they only use state.preferences.language
+function ThemeDisplay() {
+  const [state] = useBloc(UserCubit);
+  return <div>{state.preferences.theme}</div>; // Tracks state.preferences
+}
+```
+
+**Recommendation**: Use flat state structures when possible:
+```typescript
+// ✅ Better: Flat state enables fine-grained tracking
+interface UserState {
+  name: string;
+  preferencesTheme: 'light' | 'dark';
+  preferencesNotifications: boolean;
+  preferencesLanguage: string;
+}
+// Now components only re-render when their specific fields change!
+```
+
+Flat state is easier to update AND enables optimal dependency tracking!
 </GuideArticleNote>
 
 ## Comparison: Side by Side
@@ -322,11 +352,16 @@ this.patch({
 });
 ```
 
-It's time to reconsider your state structure. Deeply nested state is hard to update. Consider:
+It's time to reconsider your state structure. Deeply nested state has **two major problems**:
 
-1. **Flatten your state** - Reduce nesting levels
+1. **Hard to update** - Complex spreading is error-prone
+2. **Poor performance** - Dependency tracking only works at root level, so components re-render unnecessarily
+
+Consider these solutions:
+
+1. **Flatten your state** - Reduce nesting levels (best for dependency tracking!)
 2. **Split into multiple Cubits** - Separate concerns
-3. **Use helper methods** - Encapsulate complex updates
+3. **Use helper methods** - Encapsulate complex updates (doesn't fix dependency tracking)
 
 ```typescript
 // Better: Helper method encapsulates complexity
@@ -353,9 +388,10 @@ updateTheme = (theme: 'light' | 'dark') => {
 - **emit()** replaces the entire state—perfect for resets and complete updates
 - **patch()** merges at the top level—perfect for individual field changes
 - **Always spread nested objects** when using patch() to avoid data loss
+- **Prefer flat state** - Easier to update AND enables fine-grained dependency tracking
 - **Both trigger re-renders equally**—no performance difference
 - **Favor patch()** for most updates—it's more convenient
-- **Deep nesting is a code smell**—consider refactoring your state structure
+- **Deep nesting has two problems**—hard to update AND breaks dependency tracking
 
 ---
 

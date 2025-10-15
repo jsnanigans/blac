@@ -38,6 +38,7 @@ import './02-patterns/event-design';
 // 03-advanced
 import './03-advanced/async';
 import './03-advanced/selectors';
+import './03-advanced/custom-selectors';
 import './03-advanced/stream';
 import './03-advanced/bloc-composition';
 import './03-advanced/dependencies';

@@ -98,7 +98,7 @@ function FormField({ label }: { label: string }) {
         value={state.value}
         onChange={(e) => field.setValue(e.target.value)}
       />
-      {state.error && <span className="error">{state.error}</span>}
+      {state.error && <span>{state.error}</span>}
     </div>
   );
 }
@@ -245,7 +245,7 @@ function DraftEditor() {
 
 With `static keepAlive = true`, the `DraftCubit` instance **persists in memory** even after `DraftEditor` unmounts. When the component remounts, it reconnects to the same instance with the preserved state.
 
-<GuideArticleNote title="Use Keep-Alive Sparingly" className="border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950">
+<GuideArticleNote title="Use Keep-Alive Sparingly">
 Keep-alive instances remain in memory indefinitely. Use this pattern only when you:
 - Need to preserve state across navigation (drafts, forms, temporary data)
 - Have a small number of instances (not lists!)
@@ -392,15 +392,20 @@ Understanding instance lifecycle is critical for avoiding memory leaks:
 
 | Pattern | Lifecycle | When Disposed |
 |---------|-----------|---------------|
-| **Shared** | Lives until manually disposed | When you call `dispose()` or app closes |
-| **Isolated** | Lives while components use it | When last component unmounts |
-| **Isolated + Keep-Alive** | Lives indefinitely | When you manually call `dispose()` |
+| **Shared (default)** | Lives while any component uses it | When last component unmounts (listener count reaches 0) |
+| **Isolated** | Coupled to component lifecycle | When that specific component unmounts |
+| **Shared + Keep-Alive** | Lives indefinitely | Only when you manually call `dispose()` |
+| **Isolated + Keep-Alive** | Lives indefinitely | Only when you manually call `dispose()` |
 | **Custom ID** | Lives while components with that ID exist | When last component with that ID unmounts |
 
-<GuideArticleNote title="Automatic Cleanup" className="border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950">
-BlaC automatically cleans up isolated instances when components unmount. You don't need to manually dispose them—just unmount the component and BlaC handles the rest.
+<GuideArticleNote title="Automatic Disposal">
+**By default, BlaC counts component listeners**. Both shared and isolated instances automatically dispose when their listener count reaches zero.
 
-Shared instances persist until you explicitly dispose them. This is intentional—shared state often needs to outlive individual components.
+- **Shared instances**: Dispose when all components using them unmount
+- **Isolated instances**: Each is coupled to one component, so they dispose when that component unmounts
+- **Keep-alive instances**: The exception—they stay in memory even with zero listeners until you manually dispose them
+
+You rarely need to manually dispose instances. Just unmount components, and BlaC handles cleanup automatically.
 </GuideArticleNote>
 
 ## Key Takeaways
@@ -408,8 +413,9 @@ Shared instances persist until you explicitly dispose them. This is intentional�
 - **Shared instances (default)** - All components use the same instance, perfect for global state
 - **Isolated instances** - Each component gets its own independent instance with `static isolated = true`
 - **Custom IDs** - Create dynamic isolated instances based on props or data
-- **Keep-Alive** - Persist isolated instances across unmounts with `static keepAlive = true`
-- **Memory management** - Isolated instances auto-cleanup, shared instances persist
+- **Keep-Alive** - Persist instances with zero listeners using `static keepAlive = true`
+- **Automatic disposal** - Both shared and isolated instances auto-dispose when listener count reaches zero (unless keepAlive is true)
+- **Memory management** - BlaC handles cleanup automatically when components unmount
 - **Choose based on need** - Shared for coordination, isolated for independence
 - **One line difference** - `static isolated = true` is all it takes
 

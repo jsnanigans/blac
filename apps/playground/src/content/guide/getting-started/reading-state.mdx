@@ -127,7 +127,7 @@ All three components are reading from the **same MessageCubit instance**. When y
 4. React re-renders each component with the new state
 5. All three components show the updated message
 
-<GuideArticleNote title="Performance Note" className="border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950">
+<GuideArticleNote title="Performance Note">
 BlaC only re-renders components that are actually subscribed to the Cubit. Components that don't use `useBloc(MessageCubit)` won't re-render, even if they're siblings or parents of components that do.
 
 This is thanks to BlaC's automatic dependency tracking—you get optimal performance without manual optimization.
@@ -135,33 +135,48 @@ This is thanks to BlaC's automatic dependency tracking—you get optimal perform
 
 ## Reading Specific Parts of State
 
-Sometimes you only need part of a Cubit's state. BlaC automatically tracks which properties you access:
+BlaC automatically tracks which **root-level properties** you access, but there's an important limitation to understand:
+
+<GuideArticleNote title="Dependency Tracking Limitation">
+**Critical**: BlaC's dependency tracking only works on the **first layer (root level)** of state objects.
 
 ```tsx
+// ✅ Good: Flat state - tracking works perfectly
 interface UserState {
-  profile: { name: string; email: string };
-  preferences: { theme: string; language: string };
-  notifications: { unread: number; items: Array<any> };
+  userName: string;
+  userEmail: string;
+  themeSetting: string;
+  unreadCount: number;
 }
 
 function UserName() {
   const [state] = useBloc(UserCubit);
-
-  // This component only re-renders when profile.name changes!
-  return <h1>{state.profile.name}</h1>;
+  // Only re-renders when userName changes!
+  return <h1>{state.userName}</h1>;
 }
 
-function NotificationBadge() {
-  const [state] = useBloc(UserCubit);
+// ❌ Problem: Nested state - tracking only works at root level
+interface UserState {
+  profile: { name: string; email: string };
+  preferences: { theme: string };
+  notifications: { unread: number };
+}
 
-  // This component only re-renders when notifications.unread changes!
-  return <span>{state.notifications.unread}</span>;
+function UserName() {
+  const [state] = useBloc(UserCubit);
+  // Re-renders when ANY part of state.profile changes!
+  // BlaC only tracks state.profile, not state.profile.name
+  return <h1>{state.profile.name}</h1>;
 }
 ```
 
-BlaC's proxy-based dependency tracking means `UserName` won't re-render when `notifications.unread` changes, and `NotificationBadge` won't re-render when `profile.name` changes.
+**Recommendation**: Use flat state structures whenever possible:
+- Flat state enables fine-grained re-render optimization
+- Flat state makes updates simpler (no nested spreading)
+- Flat state is easier to reason about
+</GuideArticleNote>
 
-**You get fine-grained reactivity without selectors or manual optimization.**
+With flat state, you get **true fine-grained reactivity** without selectors or manual optimization. Components only re-render when their specific root-level properties change.
 
 ## No Prop Drilling
 
@@ -262,24 +277,25 @@ function Dashboard() {
 }
 
 // Each component independently accesses what it needs
+// Note: Using flat state for optimal dependency tracking!
 function UserProfile() {
   const [state] = useBloc(UserCubit);
-  return <div>{state.profile.name}</div>;
+  return <div>{state.userName}</div>; // Flat: state.userName
 }
 
 function NotificationCenter() {
   const [state] = useBloc(NotificationsCubit);
-  return <div>{state.unread} new</div>;
+  return <div>{state.unreadCount} new</div>; // Flat: state.unreadCount
 }
 
 function ActivityFeed() {
   const [state] = useBloc(ActivityCubit);
-  return <ul>{state.items.map(/* ... */)}</ul>;
+  return <ul>{state.items.map(/* ... */)}</ul>; // Arrays are fine
 }
 
 function Settings() {
   const [state] = useBloc(SettingsCubit);
-  return <div>{state.theme}</div>;
+  return <div>{state.theme}</div>; // Flat: state.theme
 }
 ```
 
@@ -291,7 +307,7 @@ Each component uses a different Cubit, and they all work independently. No centr
 - **useBloc subscribes**: Calling `useBloc` subscribes your component to state changes
 - **Automatic updates**: When state changes, all subscribed components re-render automatically
 - **No prop drilling**: Components access state directly, no matter where they are in the tree
-- **Fine-grained reactivity**: BlaC tracks which properties you use and only re-renders when those change
+- **Root-level tracking**: BlaC tracks which root-level properties you use—prefer flat state for fine-grained reactivity
 - **Clean separation**: State logic lives in Cubits, UI logic in components
 
 ---

@@ -185,7 +185,7 @@ class ErrorOccurredEvent {
 
 ## Anti-Patterns to Avoid
 
-<GuideArticleNote title="Warning" className="border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-900">
+<GuideArticleNote title="Warning">
 These examples show common mistakes. Don't use these patterns in production code!
 </GuideArticleNote>
 
@@ -252,6 +252,12 @@ class UpdateEvent {
 ```
 
 Events should be pure data. Put logic in handlers, not events.
+
+## Try It Out
+
+Experience good event design patterns and anti-patterns in action. Try the interactive examples to see how different event designs affect state management:
+
+<EventDesignInteractive />
 
 ## Event Handler Best Practices
 

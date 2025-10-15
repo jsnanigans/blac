@@ -204,17 +204,28 @@ What to learn next, with links to related demos.
 ### Phase 2: Core Concepts (5 articles)
 **Priority: MEDIUM** - Building on fundamentals
 
-7. **cubit-deep-dive** 📝 - NEEDS REWRITE
-   - Lifecycle methods explained
-   - State immutability deep dive
-   - Memory management
-   - Testing Cubits
+7. **cubit-deep-dive** ✅ - COMPLETE
+   - Created comprehensive deep dive (~2,900 words)
+   - Covers immutability, nested state, computed properties, async patterns
+   - Interactive demo with 3 sections (nested state, computed, async)
+   - 20+ code blocks with TypeScript
+   - 7 callouts including critical flat state recommendations
+   - Testing section with practical examples
+   - Performance optimization section
+   - Corrected to emphasize flat state and dependency tracking limitations
+   - Upgraded to Grade A quality
 
-8. **bloc-deep-dive** 📝 - NEEDS REWRITE
-   - Event handling in detail
-   - Event transformers
-   - Error handling in events
-   - Testing Blocs
+8. **bloc-deep-dive** ✅ - COMPLETE
+   - Comprehensive event-driven pattern explanation (~2,600 words)
+   - Created BlocDeepDiveInteractive with 3 demos (counter, form, async)
+   - Event classes, handlers, and dispatch patterns
+   - Async event processing with multiple emissions
+   - Event transformation (debouncing, cancellation)
+   - Testing section with Vitest examples
+   - Blocs vs Cubits comparison table
+   - 15+ code blocks, 5 callouts
+   - Emphasizes flat state and correct lifecycle behaviors
+   - Upgraded to Grade A quality
 
 9. **bloc-vs-cubit** 📝 - NEEDS REWRITE
    - Decision matrix
@@ -304,17 +315,37 @@ What to learn next, with links to related demos.
 ### Phase 4: Advanced (5 articles)
 **Priority: LOW** - For experienced users
 
-23. **async-operations** 📝 - NEEDS REWRITE
-    - Advanced async patterns
-    - Cancellation
-    - Debouncing/throttling
-    - Race condition handling
+23. **async-operations** ✅ - COMPLETE
+    - Comprehensive async patterns guide (~3,500 words)
+    - Created AsyncOperationsInteractive component with 4 demos (debounced search, race conditions, retry+backoff, parallel vs sequential)
+    - Debouncing pattern with timer cleanup
+    - Cancellation with AbortController
+    - Race condition handling with request IDs
+    - Retry logic with exponential backoff strategy
+    - Parallel vs sequential execution comparison
+    - Error handling patterns (optimistic updates, error recovery)
+    - Testing async operations with fake timers
+    - 2 real-world examples (autocomplete, infinite scroll)
+    - 15+ code blocks with TypeScript
+    - 4 callouts (Cleanup, AbortController support, Request ID vs AbortController, Production Considerations, Best Practices)
+    - Comparison tables for parallel/sequential trade-offs
+    - Upgraded to Grade A quality
 
-24. **custom-selectors** 📝 - NEEDS REWRITE
-    - Selector functions
-    - Memoization
-    - Dependency tracking customization
-    - Performance optimization
+24. **custom-selectors** ✅ - COMPLETE
+    - Comprehensive selector optimization guide (~3,400 words)
+    - Created CustomSelectorsInteractive component with 5 demos (no selector, basic selector, derived values, custom equality, computed properties)
+    - Basic selector patterns (single property, multiple properties, arrays)
+    - Derived values and memoization strategies
+    - Custom equality functions (shallow vs deep comparison)
+    - Selector function signature (state, previous, instance)
+    - Performance optimization strategies
+    - 3 real-world examples (shopping cart summary, filtered lists, user permissions)
+    - Testing selectors and re-render behavior
+    - Selectors vs Dependencies comparison
+    - 20+ code blocks with TypeScript
+    - 4 callouts (How Selectors Work, Object Identity, Performance Warning, Prefer Selectors, Best Practices)
+    - Common pitfalls section
+    - Upgraded to Grade A quality
 
 25. **stream** 📝 - NEEDS REWRITE
     - Stream integration
@@ -337,11 +368,18 @@ What to learn next, with links to related demos.
 ### Phase 5: Plugins (1 article)
 **Priority: LOW** - Extension points
 
-28. **custom-plugins** 📝 - NEEDS REWRITE
-    - Plugin architecture
-    - Creating plugins
-    - Lifecycle hooks
-    - Best practices
+28. **custom-plugins** ✅ - COMPLETE
+    - Comprehensive plugin system guide (~3,400 words)
+    - Created CustomPluginsInteractive component with 4 plugin examples (analytics, performance, validation, logging)
+    - BlacPlugin interface and lifecycle hooks explanation
+    - System-level vs Bloc-level plugins
+    - 4 real-world plugin implementations (analytics tracking, performance monitoring, state validation, state history)
+    - Testing plugins section with Vitest examples
+    - Performance considerations and batching patterns
+    - Conditional registration (dev/prod/feature-flags)
+    - 20+ code blocks with TypeScript
+    - 2 callouts (Lifecycle Hook Guarantees, Best Practices, Don'ts)
+    - Upgraded to Grade A quality
 
 ## Implementation Strategy
 
@@ -518,35 +556,35 @@ Each article must have:
 - ✅ multiple-components - Complete
 - ✅ instance-management - Complete
 
-### Phase 2: Core Concepts
-- 📝 cubit-deep-dive - Needs rewrite
-- 📝 bloc-deep-dive - Needs rewrite
-- 📝 bloc-vs-cubit - Needs rewrite
-- 📝 computed-properties - Needs rewrite
-- 📝 lifecycle - Needs rewrite
+### Phase 2: Core Concepts (Progress: 5/5 - 100% ✅)
+- ✅ cubit-deep-dive - Complete
+- ✅ bloc-deep-dive - Complete
+- ✅ bloc-vs-cubit - Complete (~2,100 words with decision matrix, migration paths, testing comparison)
+- ✅ computed-properties - Complete (~2,400 words with shopping cart demo, performance guidance, getter patterns)
+- ✅ lifecycle - Complete (~3,000 words with mount/unmount demos, instance patterns, cleanup guidance)
 
-### Phase 3: Patterns
-- 📝 simple-form - Needs rewrite
-- 📝 form-validation - Needs rewrite
-- 📝 async-loading - Needs rewrite
-- 📝 data-fetching - Needs rewrite
-- 📝 list-management - Needs rewrite
-- 📝 filtering-sorting - Needs rewrite
-- ✅ event-design - Complete
-- 📝 todo-bloc - Needs rewrite
-- 📝 keep-alive - Needs rewrite
-- 📝 props - Needs rewrite
-- 📝 persistence - Needs rewrite
+### Phase 3: Patterns (Progress: 11/11 - 100% ✅)
+- ✅ simple-form - Complete (~2,200 words with contact form and newsletter examples)
+- ✅ form-validation - Complete (~2,900 words with async validation, password strength, touch state)
+- ✅ async-loading - Complete (~2,800 words with state machine, retry+backoff, optimistic updates)
+- ✅ data-fetching - Complete (~2,700 words with caching, SWR, pagination patterns)
+- ✅ list-management - Complete (~2,500 words with CRUD, event-driven filtering, bulk operations)
+- ✅ filtering-sorting - Complete (~2,900 words with multi-field search, price range, dynamic sorting, performance optimization)
+- ✅ event-design - Complete (Article was excellent, added EventDesignInteractive component with 6 good patterns + 4 anti-patterns)
+- ✅ todo-bloc - Complete (~3,000 words comprehensive Todo app with 8 event types, computed properties, testing, performance guidance)
+- ✅ keep-alive - Complete (~3,500 words with lifecycle explanation, auth/cart/WebSocket examples, memory considerations, testing guidance)
+- ✅ props - Complete (~3,000 words with timer examples, staticProps usage, API client/form validator patterns, props vs state distinction)
+- ✅ persistence - Complete (~3,400 words with basic/selective persistence, security guidance, localStorage/sessionStorage/IndexedDB, versioning, testing)
 
-### Phase 4: Advanced
-- 📝 async-operations - Needs rewrite
-- 📝 custom-selectors - Needs rewrite
-- 📝 stream - Needs rewrite
-- 📝 bloc-composition - Needs rewrite
-- 📝 dependencies - Needs rewrite
+### Phase 4: Advanced (Progress: 5/5 - 100% ✅)
+- ✅ async-operations - Complete (~3,500 words with debouncing, cancellation, race conditions, retry+backoff, parallel/sequential patterns, testing)
+- ✅ custom-selectors - Complete (~3,400 words with selector patterns, memoization, equality functions, computed properties, testing, real-world examples)
+- ✅ stream - Complete (~2,900 words with WebSocket patterns, buffer management, SSE, real-world examples)
+- ✅ bloc-composition - Complete (~3,200 words with 3 composition patterns, shopping cart/analytics examples, testing guidance, architecture guidelines)
+- ✅ dependencies - Complete (~3,100 words with dependency tracking, computed dependencies, dashboard/form examples, testing, debugging)
 
-### Phase 5: Plugins
-- 📝 custom-plugins - Needs rewrite
+### Phase 5: Plugins (Progress: 1/1 - 100% ✅)
+- ✅ custom-plugins - Complete (~3,400 words with analytics/performance/validation/logging plugin examples, lifecycle hooks, testing, production patterns)
 
 **Status Key:**
 - ✅ Complete - High quality, no changes needed

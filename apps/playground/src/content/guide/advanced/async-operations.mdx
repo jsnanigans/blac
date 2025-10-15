@@ -1,3 +1,762 @@
-import { GuideArticle } from '@/components/guide/GuideArticle';
+import { GuideArticleNote } from '@/components/guide/GuideArticle';
 
-<GuideArticle demoId="async-operations" sectionId="advanced" />
+export const demoId = 'async-operations';
+export const sectionId = 'advanced';
+
+## Introduction
+
+Asynchronous operations are at the heart of modern applications — from API calls to user input handling, managing async behavior correctly is crucial for building reliable, performant apps. However, async code introduces complexity: race conditions, excessive network requests, error handling, and state management challenges.
+
+BlaC provides a structured approach to managing async operations within your state management layer. This guide covers **advanced patterns** for handling common async challenges: debouncing, cancellation, race conditions, retry logic, and parallel execution.
+
+### What You'll Learn
+
+- How to debounce and throttle async operations
+- Cancellation patterns using AbortController
+- Race condition handling for out-of-order responses
+- Retry logic with exponential backoff
+- Parallel vs sequential execution strategies
+- Error handling and recovery patterns
+- Testing async Blocs and Cubits
+
+## Try It Out
+
+Explore four essential async patterns in action:
+
+<AsyncOperationsInteractive />
+
+## Understanding Async State Management
+
+When dealing with async operations in BlaC, you typically follow this pattern:
+
+```typescript
+class DataCubit extends Cubit<DataState> {
+  fetchData = async () => {
+    this.patch({ isLoading: true, error: null });
+
+    try {
+      const response = await fetch('/api/data');
+      const data = await response.json();
+
+      this.patch({ data, isLoading: false });
+    } catch (error) {
+      this.patch({ error: error.message, isLoading: false });
+    }
+  };
+}
+```
+
+This basic pattern works, but real-world applications face additional challenges that require more sophisticated approaches.
+
+## Pattern 1: Debouncing
+
+**Problem**: User types in a search box, triggering an API call on every keystroke. This creates excessive network requests and poor performance.
+
+**Solution**: Debounce the input — wait until the user stops typing before making the request.
+
+### Implementation
+
+```typescript
+class DebouncedSearchCubit extends Cubit<SearchState> {
+  private debounceTimer: NodeJS.Timeout | null = null;
+
+  constructor() {
+    super({ query: '', results: [], isSearching: false });
+  }
+
+  setQuery = (query: string) => {
+    this.patch({ query });
+
+    // Clear previous timer
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
+    }
+
+    if (query.trim()) {
+      // Wait 500ms before searching
+      this.debounceTimer = setTimeout(() => {
+        this.performSearch(query);
+      }, 500);
+    } else {
+      this.patch({ results: [], isSearching: false });
+    }
+  };
+
+  private performSearch = async (query: string) => {
+    this.patch({ isSearching: true });
+
+    try {
+      const response = await fetch(`/api/search?q=${query}`);
+      const results = await response.json();
+
+      this.patch({ results, isSearching: false });
+    } catch (error) {
+      this.patch({ isSearching: false });
+    }
+  };
+
+  onDispose = () => {
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
+    }
+  };
+}
+```
+
+<GuideArticleNote title="Cleanup is Critical">
+Always clear timers in `onDispose()` to prevent memory leaks and unexpected behavior when the Cubit is cleaned up.
+</GuideArticleNote>
+
+### When to Use Debouncing
+
+- **Search inputs**: Wait for user to finish typing
+- **Form validation**: Validate after user stops editing
+- **API calls on input**: Reduce network requests
+- **Auto-save**: Save draft after typing pauses
+
+**Typical debounce delays:**
+- Search: 300-500ms
+- Validation: 500-800ms
+- Auto-save: 1000-2000ms
+
+## Pattern 2: Cancellation with AbortController
+
+**Problem**: User types "cat", triggering a search. Before it completes, they type "dog". The "cat" request might return after "dog", showing stale results.
+
+**Solution**: Cancel in-flight requests when a new request starts.
+
+### Implementation
+
+```typescript
+class CancellableSearchCubit extends Cubit<SearchState> {
+  private abortController: AbortController | null = null;
+
+  setQuery = (query: string) => {
+    // Cancel previous request
+    if (this.abortController) {
+      this.abortController.abort();
+    }
+
+    this.patch({ query, isSearching: true });
+
+    // Create new abort controller for this request
+    this.abortController = new AbortController();
+
+    this.performSearch(query, this.abortController.signal);
+  };
+
+  private performSearch = async (query: string, signal: AbortSignal) => {
+    try {
+      const response = await fetch(`/api/search?q=${query}`, { signal });
+      const results = await response.json();
+
+      // Only update if not aborted
+      if (!signal.aborted) {
+        this.patch({ results, isSearching: false });
+      }
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        // Request was cancelled - don't update state
+        return;
+      }
+
+      this.patch({ error: error.message, isSearching: false });
+    }
+  };
+
+  onDispose = () => {
+    if (this.abortController) {
+      this.abortController.abort();
+    }
+  };
+}
+```
+
+<GuideArticleNote title="AbortController Browser Support">
+`AbortController` is supported in all modern browsers and Node.js 15+. For older environments, use a polyfill or manual cancellation flags.
+</GuideArticleNote>
+
+### Combining Debouncing + Cancellation
+
+For the best user experience, combine both patterns:
+
+```typescript
+class OptimizedSearchCubit extends Cubit<SearchState> {
+  private debounceTimer: NodeJS.Timeout | null = null;
+  private abortController: AbortController | null = null;
+
+  setQuery = (query: string) => {
+    this.patch({ query });
+
+    // Clear debounce timer
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
+    }
+
+    // Cancel in-flight request
+    if (this.abortController) {
+      this.abortController.abort();
+    }
+
+    if (query.trim()) {
+      // Debounce + Cancel
+      this.debounceTimer = setTimeout(() => {
+        this.abortController = new AbortController();
+        this.performSearch(query, this.abortController.signal);
+      }, 500);
+    } else {
+      this.patch({ results: [], isSearching: false });
+    }
+  };
+
+  // ... rest of implementation
+}
+```
+
+This provides the best of both worlds: reduced API calls (debouncing) and correct results (cancellation).
+
+## Pattern 3: Race Condition Handling
+
+**Problem**: Multiple async operations complete in unpredictable order, leading to stale data being displayed.
+
+**Solution**: Track request IDs and only apply results from the latest request.
+
+### Implementation
+
+```typescript
+class RaceConditionSafeCubit extends Cubit<DataState> {
+  private requestId = 0;
+
+  fetchData = async (params: Params) => {
+    const thisRequestId = ++this.requestId;
+    this.patch({ isLoading: true });
+
+    try {
+      const response = await fetch('/api/data', { params });
+      const data = await response.json();
+
+      // Only update if this is still the latest request
+      if (thisRequestId === this.requestId) {
+        this.patch({ data, isLoading: false });
+      }
+    } catch (error) {
+      if (thisRequestId === this.requestId) {
+        this.patch({ error: error.message, isLoading: false });
+      }
+    }
+  };
+}
+```
+
+**How it works:**
+1. Increment `requestId` on each fetch
+2. Capture the current ID in the closure (`thisRequestId`)
+3. When async operation completes, check if `thisRequestId === this.requestId`
+4. Only update state if IDs match (this is still the latest request)
+
+<GuideArticleNote title="Request ID vs AbortController">
+Request ID tracking is simpler than AbortController for race conditions, but doesn't save bandwidth. For best results, use **both**: AbortController to cancel network requests, and request IDs as a safety check.
+</GuideArticleNote>
+
+## Pattern 4: Retry with Exponential Backoff
+
+**Problem**: Network requests fail due to temporary issues (network hiccups, rate limiting, server errors). Immediately giving up provides poor UX.
+
+**Solution**: Automatically retry failed requests with increasing delays.
+
+### Implementation
+
+```typescript
+class RetryableCubit extends Cubit<DataState> {
+  private retryTimer: NodeJS.Timeout | null = null;
+
+  fetchData = async (maxAttempts = 4) => {
+    this.emit({ status: 'loading', data: null, error: null, attempts: 0 });
+    await this.attemptFetch(maxAttempts);
+  };
+
+  private attemptFetch = async (maxAttempts: number) => {
+    const attempt = this.state.attempts + 1;
+    this.patch({ attempts: attempt });
+
+    try {
+      const response = await fetch('/api/data');
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      this.patch({ status: 'success', data });
+    } catch (error) {
+      // Should we retry?
+      if (attempt < maxAttempts) {
+        // Exponential backoff: 1s, 2s, 4s, 8s...
+        const backoffDelay = Math.pow(2, attempt - 1) * 1000;
+
+        this.patch({
+          status: 'error',
+          error: `Attempt ${attempt} failed. Retrying in ${backoffDelay / 1000}s...`,
+        });
+
+        this.retryTimer = setTimeout(() => {
+          this.attemptFetch(maxAttempts);
+        }, backoffDelay);
+      } else {
+        // Max attempts reached
+        this.patch({
+          status: 'error',
+          error: `Failed after ${attempt} attempts.`,
+        });
+      }
+    }
+  };
+
+  onDispose = () => {
+    if (this.retryTimer) {
+      clearTimeout(this.retryTimer);
+    }
+  };
+}
+```
+
+### Exponential Backoff Strategy
+
+| Attempt | Delay | Cumulative Time |
+|---------|-------|-----------------|
+| 1       | 0s    | 0s              |
+| 2       | 1s    | 1s              |
+| 3       | 2s    | 3s              |
+| 4       | 4s    | 7s              |
+| 5       | 8s    | 15s             |
+
+**Why exponential backoff?**
+- **Rate limiting**: Gradual backoff respects API rate limits
+- **Thundering herd**: Prevents all clients retrying simultaneously
+- **Server recovery**: Gives servers time to recover from overload
+- **User experience**: Shows progress while retrying
+
+<GuideArticleNote title="Production Considerations">
+In production, add **jitter** (random variation) to backoff delays to prevent synchronized retries across clients. Also consider **circuit breaker** patterns for persistent failures.
+</GuideArticleNote>
+
+## Pattern 5: Parallel vs Sequential Execution
+
+When you need to fetch multiple resources, you have two choices:
+
+### Parallel Execution (Faster)
+
+```typescript
+class ParallelFetchCubit extends Cubit<CombinedState> {
+  fetchAll = async () => {
+    this.patch({ isLoading: true });
+
+    try {
+      // Execute all requests simultaneously
+      const [users, posts, comments] = await Promise.all([
+        fetch('/api/users').then(r => r.json()),
+        fetch('/api/posts').then(r => r.json()),
+        fetch('/api/comments').then(r => r.json()),
+      ]);
+
+      this.patch({ users, posts, comments, isLoading: false });
+    } catch (error) {
+      this.patch({ error: error.message, isLoading: false });
+    }
+  };
+}
+```
+
+**Pros:**
+- Fastest total execution time
+- All requests complete simultaneously
+
+**Cons:**
+- All-or-nothing (one failure aborts all)
+- Can overwhelm servers with many requests
+
+### Sequential Execution (More Control)
+
+```typescript
+class SequentialFetchCubit extends Cubit<CombinedState> {
+  fetchAll = async () => {
+    this.patch({ isLoading: true });
+
+    try {
+      // Execute requests one at a time
+      const users = await fetch('/api/users').then(r => r.json());
+      this.patch({ users }); // Update UI progressively
+
+      const posts = await fetch('/api/posts').then(r => r.json());
+      this.patch({ posts });
+
+      const comments = await fetch('/api/comments').then(r => r.json());
+      this.patch({ comments, isLoading: false });
+    } catch (error) {
+      this.patch({ error: error.message, isLoading: false });
+    }
+  };
+}
+```
+
+**Pros:**
+- Progressive UI updates (show data as it arrives)
+- Easier error handling per request
+- Prevents server overload
+
+**Cons:**
+- Slower total execution time
+- Dependent on slowest request
+
+### When to Use Each
+
+| Use Parallel When... | Use Sequential When... |
+|---------------------|------------------------|
+| Requests are independent | Later requests depend on earlier data |
+| Speed is critical | Server can't handle burst load |
+| Failure is acceptable | Progressive UI updates matter |
+| Small number of requests | Many requests (>10) |
+
+## Error Handling Patterns
+
+### Pattern 1: Optimistic Updates
+
+```typescript
+class OptimisticCubit extends Cubit<TodoState> {
+  addTodo = async (text: string) => {
+    const tempId = Date.now();
+    const tempTodo = { id: tempId, text, completed: false };
+
+    // Optimistically add to UI
+    this.patch({ todos: [...this.state.todos, tempTodo] });
+
+    try {
+      const response = await fetch('/api/todos', {
+        method: 'POST',
+        body: JSON.stringify({ text }),
+      });
+      const serverTodo = await response.json();
+
+      // Replace temp with server version
+      this.patch({
+        todos: this.state.todos.map(todo =>
+          todo.id === tempId ? serverTodo : todo
+        ),
+      });
+    } catch (error) {
+      // Rollback on error
+      this.patch({
+        todos: this.state.todos.filter(todo => todo.id !== tempId),
+        error: 'Failed to add todo',
+      });
+    }
+  };
+}
+```
+
+### Pattern 2: Error Recovery
+
+```typescript
+class RecoverableCubit extends Cubit<DataState> {
+  fetchData = async () => {
+    this.patch({ isLoading: true, error: null });
+
+    try {
+      const data = await this.fetchWithFallback();
+      this.patch({ data, isLoading: false });
+    } catch (error) {
+      this.patch({ error: error.message, isLoading: false });
+    }
+  };
+
+  private fetchWithFallback = async () => {
+    try {
+      // Try primary API
+      return await fetch('/api/primary').then(r => r.json());
+    } catch {
+      // Fall back to secondary API
+      try {
+        return await fetch('/api/secondary').then(r => r.json());
+      } catch {
+        // Fall back to cached data
+        return this.getCachedData();
+      }
+    }
+  };
+
+  private getCachedData = () => {
+    const cached = localStorage.getItem('cachedData');
+    if (cached) {
+      return JSON.parse(cached);
+    }
+    throw new Error('No data available');
+  };
+}
+```
+
+## Testing Async Operations
+
+### Testing Debouncing
+
+```typescript
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+describe('DebouncedSearchCubit', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('debounces search calls', async () => {
+    const cubit = new DebouncedSearchCubit();
+    const searchSpy = vi.spyOn(cubit as any, 'performSearch');
+
+    cubit.setQuery('a');
+    cubit.setQuery('ab');
+    cubit.setQuery('abc');
+
+    // No calls yet (debouncing)
+    expect(searchSpy).not.toHaveBeenCalled();
+
+    // Fast-forward 500ms
+    vi.advanceTimersByTime(500);
+
+    // Only one call for final query
+    expect(searchSpy).toHaveBeenCalledTimes(1);
+    expect(searchSpy).toHaveBeenCalledWith('abc');
+  });
+});
+```
+
+### Testing Race Conditions
+
+```typescript
+describe('RaceConditionSafeCubit', () => {
+  it('only applies latest request', async () => {
+    const cubit = new RaceConditionSafeCubit();
+
+    // Start slow request
+    const slowPromise = cubit.fetchData({ delay: 1000 });
+
+    // Start fast request
+    const fastPromise = cubit.fetchData({ delay: 100 });
+
+    await Promise.all([slowPromise, fastPromise]);
+
+    // State should reflect fast request, not slow
+    expect(cubit.state.data).toBe('fast-data');
+  });
+});
+```
+
+### Testing Retry Logic
+
+```typescript
+describe('RetryableCubit', () => {
+  it('retries on failure with exponential backoff', async () => {
+    vi.useFakeTimers();
+
+    const cubit = new RetryableCubit();
+    const fetchSpy = vi.spyOn(global, 'fetch')
+      .mockRejectedValueOnce(new Error('Fail 1'))
+      .mockRejectedValueOnce(new Error('Fail 2'))
+      .mockResolvedValueOnce({ ok: true, json: async () => 'success' });
+
+    const promise = cubit.fetchData(4);
+
+    // Attempt 1: immediate
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+    // Attempt 2: after 1s
+    vi.advanceTimersByTime(1000);
+    await Promise.resolve(); // Flush promises
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+
+    // Attempt 3: after 2s more
+    vi.advanceTimersByTime(2000);
+    await Promise.resolve();
+    expect(fetchSpy).toHaveBeenCalledTimes(3);
+
+    await promise;
+    expect(cubit.state.status).toBe('success');
+  });
+});
+```
+
+## Real-World Examples
+
+### Example 1: Autocomplete Search
+
+```typescript
+class AutocompleteCubit extends Cubit<AutocompleteState> {
+  private debounceTimer: NodeJS.Timeout | null = null;
+  private abortController: AbortController | null = null;
+
+  constructor() {
+    super({
+      query: '',
+      suggestions: [],
+      isLoading: false,
+      selectedIndex: -1,
+    });
+  }
+
+  setQuery = (query: string) => {
+    this.patch({ query, selectedIndex: -1 });
+
+    if (this.debounceTimer) clearTimeout(this.debounceTimer);
+    if (this.abortController) this.abortController.abort();
+
+    if (query.length < 2) {
+      this.patch({ suggestions: [], isLoading: false });
+      return;
+    }
+
+    this.debounceTimer = setTimeout(() => {
+      this.fetchSuggestions(query);
+    }, 300);
+  };
+
+  private fetchSuggestions = async (query: string) => {
+    this.abortController = new AbortController();
+    this.patch({ isLoading: true });
+
+    try {
+      const response = await fetch(
+        `/api/autocomplete?q=${encodeURIComponent(query)}`,
+        { signal: this.abortController.signal }
+      );
+      const suggestions = await response.json();
+
+      this.patch({ suggestions, isLoading: false });
+    } catch (error: any) {
+      if (error.name !== 'AbortError') {
+        this.patch({ isLoading: false });
+      }
+    }
+  };
+
+  selectNext = () => {
+    const maxIndex = this.state.suggestions.length - 1;
+    this.patch({
+      selectedIndex: Math.min(this.state.selectedIndex + 1, maxIndex),
+    });
+  };
+
+  selectPrevious = () => {
+    this.patch({
+      selectedIndex: Math.max(this.state.selectedIndex - 1, -1),
+    });
+  };
+
+  onDispose = () => {
+    if (this.debounceTimer) clearTimeout(this.debounceTimer);
+    if (this.abortController) this.abortController.abort();
+  };
+}
+```
+
+### Example 2: Infinite Scroll with Pagination
+
+```typescript
+class InfiniteScrollCubit extends Cubit<PaginatedState> {
+  private isFetching = false;
+
+  constructor() {
+    super({
+      items: [],
+      page: 1,
+      hasMore: true,
+      isLoading: false,
+      error: null,
+    });
+  }
+
+  fetchMore = async () => {
+    if (this.isFetching || !this.state.hasMore) return;
+
+    this.isFetching = true;
+    this.patch({ isLoading: true });
+
+    try {
+      const response = await fetch(`/api/items?page=${this.state.page}`);
+      const newItems = await response.json();
+
+      this.patch({
+        items: [...this.state.items, ...newItems],
+        page: this.state.page + 1,
+        hasMore: newItems.length > 0,
+        isLoading: false,
+      });
+    } catch (error) {
+      this.patch({
+        error: error.message,
+        isLoading: false,
+      });
+    } finally {
+      this.isFetching = false;
+    }
+  };
+
+  reset = () => {
+    this.emit({
+      items: [],
+      page: 1,
+      hasMore: true,
+      isLoading: false,
+      error: null,
+    });
+    this.fetchMore();
+  };
+}
+```
+
+## Best Practices
+
+<GuideArticleNote title="Do">
+- ✅ Always clean up timers and abort controllers in `onDispose()`
+- ✅ Use debouncing for user input that triggers network requests
+- ✅ Implement cancellation for all long-running async operations
+- ✅ Handle race conditions with request IDs or AbortController
+- ✅ Add retry logic with exponential backoff for transient failures
+- ✅ Choose parallel vs sequential based on use case
+- ✅ Provide loading and error states for all async operations
+- ✅ Test async behavior with fake timers and mocked promises
+</GuideArticleNote>
+
+<GuideArticleNote title="Don't">
+- ❌ Forget to clean up async operations in `onDispose()`
+- ❌ Make network requests on every keystroke without debouncing
+- ❌ Ignore race conditions in search/filter operations
+- ❌ Retry indefinitely without max attempts or circuit breaker
+- ❌ Use `setTimeout` without storing the timer ID for cleanup
+- ❌ Assume requests complete in order (they don't!)
+- ❌ Swallow errors without user feedback
+- ❌ Test async code without proper timer/promise control
+</GuideArticleNote>
+
+## Key Takeaways
+
+- **Debouncing** reduces excessive API calls from user input
+- **Cancellation** prevents stale results from out-of-order requests
+- **Race condition handling** ensures the latest request wins
+- **Retry with backoff** gracefully handles transient failures
+- **Parallel execution** is faster; sequential provides more control
+- **Always clean up** timers and controllers in `onDispose()`
+- **Test async operations** with fake timers and mocked APIs
+- **Combine patterns** for robust async behavior (debounce + cancel + retry)
+
+## Next Steps
+
+Now that you understand async operations, explore:
+- **Custom Selectors** - Advanced state selection and memoization
+- **Testing Patterns** - Comprehensive testing strategies for Blocs
+- **Performance Optimization** - Profiling and optimizing async operations
+- **Error Monitoring** - Production error tracking and alerting
+
+<GuideArticleNote title="Pro Tip">
+Most async bugs come from forgetting to clean up resources or mishandling race conditions. Always use `onDispose()` for cleanup, and always implement cancellation or request ID tracking for user-initiated async operations.
+</GuideArticleNote>

@@ -1,3 +1,729 @@
-import { GuideArticle } from '@/components/guide/GuideArticle';
+import { GuideArticleNote } from '@/components/guide/GuideArticle';
 
-<GuideArticle demoId="custom-selectors" sectionId="advanced" />
+export const demoId = 'custom-selectors';
+export const sectionId = 'advanced';
+
+## Introduction
+
+**Custom selectors** are one of BlaC's most powerful optimization tools. They allow you to precisely control **when** your components re-render by selecting only the specific parts of state your component needs. Without selectors, components re-render on every state change. With selectors, they re-render only when the selected values actually change.
+
+This fine-grained control is essential for building **high-performance** applications. In complex apps with hundreds of components sharing state, selectors can reduce re-renders by 90% or more, dramatically improving responsiveness and frame rates.
+
+### What You'll Learn
+
+- How selectors optimize re-render behavior
+- Basic selector patterns and syntax
+- Derived values and memoization
+- Custom equality functions for complex comparisons
+- Shallow vs deep equality strategies
+- Computed property selectors
+- Performance measurement and optimization
+- Testing selector logic
+- Common pitfalls and how to avoid them
+
+## Try It Out
+
+Watch how different selector strategies affect re-render behavior:
+
+<CustomSelectorsInteractive />
+
+## Understanding Selectors
+
+By default, `useBloc` subscribes to **all** state changes:
+
+```typescript
+// ❌ Re-renders on EVERY state change
+const [state, cubit] = useBloc(AppCubit);
+```
+
+With a selector, you choose what to track:
+
+```typescript
+// ✅ Re-renders only when userName changes
+const [userName] = useBloc(AppCubit, {
+  selector: (state) => state.userName,
+});
+```
+
+<GuideArticleNote title="How Selectors Work">
+BlaC runs your selector function on every state change and compares the result with the previous result using **shallow equality** (`Object.is`). If the values are different, the component re-renders. If they're the same, no re-render occurs.
+</GuideArticleNote>
+
+## Basic Selector Patterns
+
+### Pattern 1: Single Property
+
+Select one specific property:
+
+```typescript
+const [userName] = useBloc(UserCubit, {
+  selector: (state) => state.user.name,
+});
+
+// Component only re-renders when user.name changes
+return <h1>Hello, {userName}!</h1>;
+```
+
+### Pattern 2: Multiple Properties (Object)
+
+Select multiple properties as an object:
+
+```typescript
+const [profile] = useBloc(UserCubit, {
+  selector: (state) => ({
+    name: state.user.name,
+    email: state.user.email,
+  }),
+});
+
+// Re-renders when name OR email changes
+return (
+  <div>
+    <p>Name: {profile.name}</p>
+    <p>Email: {profile.email}</p>
+  </div>
+);
+```
+
+<GuideArticleNote title="Object Identity">
+⚠️ **Important**: Returning a new object `{ ... }` creates a new reference every time. BlaC uses shallow equality by default, so this **will cause re-renders on every state change** unless you provide a custom `equalityFn`. See the Custom Equality section below.
+</GuideArticleNote>
+
+### Pattern 3: Array Selection
+
+Select multiple values as an array:
+
+```typescript
+const [values] = useBloc(AppCubit, {
+  selector: (state) => [state.count, state.total, state.status],
+});
+
+const [count, total, status] = values;
+
+// Re-renders when count, total, OR status changes
+```
+
+## Derived Values and Memoization
+
+Selectors can **compute derived values** from state:
+
+```typescript
+const [cartSummary] = useBloc(CartCubit, {
+  selector: (state) => ({
+    itemCount: state.items.length,
+    subtotal: state.items.reduce((sum, item) => sum + item.price, 0),
+    total: state.items.reduce((sum, item) => sum + item.price, 0) * (1 - state.discount),
+  }),
+});
+```
+
+**Problem**: This creates a new object on every state change, causing unnecessary re-renders even when the values haven't changed.
+
+**Solution**: Use a custom equality function or track primitives.
+
+### Memoization Strategy 1: Track Primitives
+
+```typescript
+// ✅ Better: Track primitive values
+const [itemCount] = useBloc(CartCubit, {
+  selector: (state) => state.items.length,
+});
+
+const [total] = useBloc(CartCubit, {
+  selector: (state) =>
+    state.items.reduce((sum, item) => sum + item.price, 0) * (1 - state.discount),
+});
+```
+
+### Memoization Strategy 2: Computed Properties
+
+```typescript
+class CartCubit extends Cubit<CartState> {
+  // Define computed properties as getters
+  get itemCount(): number {
+    return this.state.items.length;
+  }
+
+  get total(): number {
+    const subtotal = this.state.items.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
+    return subtotal * (1 - this.state.discount / 100);
+  }
+}
+
+// Select computed properties directly
+const [, cubit] = useBloc(CartCubit, {
+  selector: (state, prev, instance) => ({
+    itemCount: instance.itemCount,
+    total: instance.total,
+  }),
+});
+
+// Access via cubit instance
+return <p>Total: ${cubit.total.toFixed(2)}</p>;
+```
+
+## Custom Equality Functions
+
+For complex objects, provide a custom comparison function:
+
+```typescript
+const [userProfile] = useBloc(UserCubit, {
+  selector: (state) => ({
+    name: state.user.name,
+    email: state.user.email,
+  }),
+  equalityFn: (prev, next) => {
+    return prev.name === next.name && prev.email === next.email;
+  },
+});
+```
+
+Now the component only re-renders when `name` or `email` actually change, not when a new object is created.
+
+### Shallow Equality (Default)
+
+```typescript
+// Default behavior: Object.is comparison
+const [value] = useBloc(MyCubit, {
+  selector: (state) => state.user.name,
+  // equalityFn: (a, b) => Object.is(a, b) // This is the default
+});
+```
+
+**When it works:**
+- Primitive values (strings, numbers, booleans)
+- References to the same object/array
+
+**When it fails:**
+- New objects/arrays (different references)
+- Nested object comparisons
+
+### Deep Equality (Expensive)
+
+```typescript
+import { isEqual } from 'lodash';
+
+const [data] = useBloc(DataCubit, {
+  selector: (state) => state.complexObject,
+  equalityFn: (prev, next) => isEqual(prev, next), // Deep comparison
+});
+```
+
+<GuideArticleNote title="Performance Warning">
+Deep equality checks are **expensive** and run on **every state change**. Only use them when:
+- The selected object is small
+- State changes infrequently
+- The performance cost is acceptable
+
+For most cases, prefer **shallow equality** with primitive values or custom field-by-field checks.
+</GuideArticleNote>
+
+### Custom Field-by-Field Equality
+
+```typescript
+const [cartItems] = useBloc(CartCubit, {
+  selector: (state) => state.items,
+  equalityFn: (prev, next) => {
+    // Fast: Check length first
+    if (prev.length !== next.length) return false;
+
+    // Check each item ID (assumes items don't change in place)
+    for (let i = 0; i < prev.length; i++) {
+      if (prev[i].id !== next[i].id) return false;
+    }
+
+    return true;
+  },
+});
+```
+
+This is **much faster** than deep equality because it only checks relevant fields.
+
+## Selector Function Signature
+
+The selector function receives three arguments:
+
+```typescript
+selector: (currentState, previousState, blocInstance) => selectedValue
+```
+
+**Parameters:**
+1. **currentState** - The current state after the update
+2. **previousState** - The state before the update (useful for comparisons)
+3. **blocInstance** - The Bloc/Cubit instance (access methods and computed properties)
+
+**Example using all three:**
+
+```typescript
+const [analysis] = useBloc(AnalyticsCubit, {
+  selector: (current, previous, instance) => ({
+    // Current state value
+    currentCount: current.count,
+
+    // Compare with previous
+    delta: current.count - previous.count,
+
+    // Access computed property
+    trend: instance.calculateTrend(),
+  }),
+  equalityFn: (prev, next) =>
+    prev.currentCount === next.currentCount &&
+    prev.delta === next.delta &&
+    prev.trend === next.trend,
+});
+```
+
+## Performance Optimization Strategies
+
+### Strategy 1: Use Primitives When Possible
+
+```typescript
+// ✅ Best: Primitives are compared by value
+const [count] = useBloc(CounterCubit, {
+  selector: (state) => state.count,
+});
+
+// ❌ Avoid: Object creates new reference every time
+const [obj] = useBloc(CounterCubit, {
+  selector: (state) => ({ count: state.count }),
+});
+```
+
+### Strategy 2: Split Complex Selectors
+
+```typescript
+// ❌ Bad: One component tracks everything
+function Dashboard() {
+  const [data] = useBloc(AppCubit, {
+    selector: (state) => ({
+      user: state.user,
+      stats: state.stats,
+      settings: state.settings,
+    }),
+  });
+  // Re-renders when ANY of these change
+}
+
+// ✅ Better: Split into focused components
+function UserSection() {
+  const [user] = useBloc(AppCubit, {
+    selector: (state) => state.user.name,
+  });
+  // Only re-renders on user changes
+}
+
+function StatsSection() {
+  const [stats] = useBloc(AppCubit, {
+    selector: (state) => state.stats,
+  });
+  // Only re-renders on stats changes
+}
+
+function Dashboard() {
+  return (
+    <div>
+      <UserSection />
+      <StatsSection />
+    </div>
+  );
+}
+```
+
+### Strategy 3: Memoize Expensive Computations
+
+```typescript
+class DataCubit extends Cubit<DataState> {
+  // Memoize expensive computation
+  private _cachedAnalysis: Analysis | null = null;
+  private _cacheKey: string | null = null;
+
+  get analysis(): Analysis {
+    const key = `${this.state.data.length}-${this.state.filters.toString()}`;
+
+    if (this._cacheKey === key && this._cachedAnalysis) {
+      return this._cachedAnalysis; // Return cached
+    }
+
+    // Expensive computation
+    const result = this.computeExpensiveAnalysis();
+
+    this._cacheKey = key;
+    this._cachedAnalysis = result;
+
+    return result;
+  }
+
+  private computeExpensiveAnalysis(): Analysis {
+    // Heavy computation here
+    return { /* ... */ };
+  }
+}
+
+// Selector uses memoized getter
+const [analysis] = useBloc(DataCubit, {
+  selector: (state, prev, instance) => instance.analysis,
+});
+```
+
+## Real-World Examples
+
+### Example 1: Shopping Cart Summary
+
+```typescript
+class CartCubit extends Cubit<CartState> {
+  get itemCount(): number {
+    return this.state.items.length;
+  }
+
+  get subtotal(): number {
+    return this.state.items.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
+  }
+
+  get tax(): number {
+    return this.subtotal * 0.08; // 8% tax
+  }
+
+  get total(): number {
+    return this.subtotal + this.tax - this.state.discountAmount;
+  }
+}
+
+// Component only re-renders when cart totals change
+function CartSummary() {
+  const [, cubit] = useBloc(CartCubit, {
+    selector: (state, prev, instance) => ({
+      itemCount: instance.itemCount,
+      subtotal: instance.subtotal,
+      tax: instance.tax,
+      total: instance.total,
+    }),
+    equalityFn: (prev, next) =>
+      prev.itemCount === next.itemCount &&
+      prev.subtotal === next.subtotal &&
+      prev.tax === next.tax &&
+      prev.total === next.total,
+  });
+
+  return (
+    <div>
+      <p>Items: {cubit.itemCount}</p>
+      <p>Subtotal: ${cubit.subtotal.toFixed(2)}</p>
+      <p>Tax: ${cubit.tax.toFixed(2)}</p>
+      <p>Total: ${cubit.total.toFixed(2)}</p>
+    </div>
+  );
+}
+```
+
+### Example 2: Filtered and Sorted List
+
+```typescript
+class ProductListCubit extends Cubit<ProductListState> {
+  get filteredAndSortedProducts(): Product[] {
+    let result = this.state.products;
+
+    // Apply filters
+    if (this.state.filters.category) {
+      result = result.filter(p => p.category === this.state.filters.category);
+    }
+
+    if (this.state.filters.minPrice) {
+      result = result.filter(p => p.price >= this.state.filters.minPrice);
+    }
+
+    if (this.state.filters.searchQuery) {
+      const query = this.state.filters.searchQuery.toLowerCase();
+      result = result.filter(p => p.name.toLowerCase().includes(query));
+    }
+
+    // Apply sorting
+    switch (this.state.sortBy) {
+      case 'price-asc':
+        result.sort((a, b) => a.price - b.price);
+        break;
+      case 'price-desc':
+        result.sort((a, b) => b.price - a.price);
+        break;
+      case 'name':
+        result.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+    }
+
+    return result;
+  }
+}
+
+// Component only re-renders when filtered results change
+function ProductList() {
+  const [products] = useBloc(ProductListCubit, {
+    selector: (state, prev, instance) => instance.filteredAndSortedProducts,
+    equalityFn: (prev, next) => {
+      // Shallow check: compare array length and item IDs
+      if (prev.length !== next.length) return false;
+      return prev.every((item, i) => item.id === next[i].id);
+    },
+  });
+
+  return (
+    <div>
+      {products.map(product => (
+        <ProductCard key={product.id} product={product} />
+      ))}
+    </div>
+  );
+}
+```
+
+### Example 3: User Permissions
+
+```typescript
+class AuthCubit extends Cubit<AuthState> {
+  get hasAdminAccess(): boolean {
+    return this.state.user?.role === 'admin';
+  }
+
+  get canEdit(): boolean {
+    return this.state.user?.permissions.includes('edit') ?? false;
+  }
+
+  get canDelete(): boolean {
+    return this.state.user?.permissions.includes('delete') ?? false;
+  }
+}
+
+// Each component tracks only its permission
+function EditButton() {
+  const [, cubit] = useBloc(AuthCubit, {
+    selector: (state, prev, instance) => instance.canEdit,
+  });
+
+  if (!cubit.canEdit) return null;
+
+  return <button>Edit</button>;
+}
+
+function DeleteButton() {
+  const [, cubit] = useBloc(AuthCubit, {
+    selector: (state, prev, instance) => instance.canDelete,
+  });
+
+  if (!cubit.canDelete) return null;
+
+  return <button>Delete</button>;
+}
+```
+
+## Testing Selectors
+
+### Testing Selector Logic
+
+```typescript
+import { describe, it, expect } from 'vitest';
+
+describe('CartCubit selectors', () => {
+  it('computes correct total', () => {
+    const cubit = new CartCubit();
+
+    cubit.emit({
+      items: [
+        { id: 1, price: 10, quantity: 2 },
+        { id: 2, price: 15, quantity: 1 },
+      ],
+      discount: 0.1, // 10%
+    });
+
+    expect(cubit.subtotal).toBe(35); // (10*2) + (15*1)
+    expect(cubit.total).toBe(31.5); // 35 * 0.9
+  });
+});
+```
+
+### Testing Re-render Behavior
+
+```typescript
+import { renderHook } from '@testing-library/react';
+import { useBloc } from '@blac/react';
+
+describe('Selector re-render behavior', () => {
+  it('only re-renders when selected value changes', () => {
+    const cubit = new AppCubit();
+    let renderCount = 0;
+
+    const { rerender } = renderHook(() => {
+      renderCount++;
+      return useBloc(AppCubit, {
+        selector: (state) => state.user.name,
+      });
+    });
+
+    expect(renderCount).toBe(1); // Initial render
+
+    // Change unrelated state
+    cubit.updateTheme('dark');
+    rerender();
+    expect(renderCount).toBe(1); // No re-render
+
+    // Change selected value
+    cubit.updateUserName('Jane');
+    rerender();
+    expect(renderCount).toBe(2); // Re-rendered!
+  });
+});
+```
+
+## Best Practices
+
+<GuideArticleNote title="Do">
+- ✅ Prefer **primitive values** in selectors (strings, numbers, booleans)
+- ✅ Use **computed properties** (getters) for derived values
+- ✅ Provide custom `equalityFn` when selecting objects/arrays
+- ✅ **Split components** instead of selecting large objects
+- ✅ Memoize expensive computations in Cubit getters
+- ✅ Test selector logic independently from components
+- ✅ Use shallow equality checks for performance
+- ✅ Track only what the component actually uses
+</GuideArticleNote>
+
+<GuideArticleNote title="Don't">
+- ❌ Return new objects/arrays without custom `equalityFn`
+- ❌ Use deep equality checks unless absolutely necessary
+- ❌ Select entire state when you only need one field
+- ❌ Perform expensive computations inside selector function
+- ❌ Forget to test selector behavior and re-render optimization
+- ❌ Assume selectors work like React's `useMemo` (they don't)
+- ❌ Mix selector strategy—be consistent across your app
+</GuideArticleNote>
+
+## Common Pitfalls
+
+### Pitfall 1: New Objects Without Equality Function
+
+```typescript
+// ❌ BAD: Creates new object every time, causes re-renders
+const [data] = useBloc(MyCubit, {
+  selector: (state) => ({
+    name: state.user.name,
+    email: state.user.email,
+  }),
+  // Missing equalityFn!
+});
+
+// ✅ GOOD: Provide custom equality
+const [data] = useBloc(MyCubit, {
+  selector: (state) => ({
+    name: state.user.name,
+    email: state.user.email,
+  }),
+  equalityFn: (prev, next) =>
+    prev.name === next.name && prev.email === next.email,
+});
+```
+
+### Pitfall 2: Expensive Computations in Selector
+
+```typescript
+// ❌ BAD: Heavy computation runs on EVERY state change
+const [result] = useBloc(DataCubit, {
+  selector: (state) => {
+    return expensiveAnalysis(state.data); // Runs every time!
+  },
+});
+
+// ✅ GOOD: Memoize in Cubit
+class DataCubit extends Cubit<DataState> {
+  private _cachedResult: Result | null = null;
+
+  get analysisResult(): Result {
+    if (!this._cachedResult) {
+      this._cachedResult = expensiveAnalysis(this.state.data);
+    }
+    return this._cachedResult;
+  }
+
+  override emit(state: DataState) {
+    this._cachedResult = null; // Invalidate cache
+    super.emit(state);
+  }
+}
+
+const [result] = useBloc(DataCubit, {
+  selector: (state, prev, instance) => instance.analysisResult,
+});
+```
+
+### Pitfall 3: Selecting Too Much
+
+```typescript
+// ❌ BAD: Selecting entire state defeats the purpose
+const [state] = useBloc(AppCubit, {
+  selector: (state) => state,
+});
+
+// ✅ GOOD: Select only what you need
+const [userName] = useBloc(AppCubit, {
+  selector: (state) => state.user.name,
+});
+```
+
+## Selectors vs Dependencies
+
+BlaC offers two optimization mechanisms:
+
+### Selectors
+
+Transform and select state:
+
+```typescript
+const [total] = useBloc(CartCubit, {
+  selector: (state) =>
+    state.items.reduce((sum, item) => sum + item.price, 0),
+});
+```
+
+### Dependencies
+
+Track specific properties:
+
+```typescript
+const [state] = useBloc(CartCubit, {
+  dependencies: (cubit) => [cubit.state.items.length],
+});
+```
+
+**When to use each:**
+- **Selectors**: When you need to derive or transform values
+- **Dependencies**: When you only need specific primitive values
+- **Both**: You can combine them, but selectors take precedence
+
+<GuideArticleNote title="Prefer Selectors">
+For most cases, **selectors** are more flexible and explicit. Use dependencies when you specifically need to track Cubit instance properties or want simpler subscription logic.
+</GuideArticleNote>
+
+## Key Takeaways
+
+- **Selectors optimize re-renders** by tracking only specific values
+- **Return primitives** when possible for best performance
+- **Custom equality functions** enable complex object comparisons
+- **Computed properties** (getters) are perfect for derived values
+- **Memoization** prevents expensive recalculations
+- **Split components** instead of selecting large state objects
+- **Test selector behavior** to verify optimization works
+- **Shallow equality** is fast; deep equality is expensive
+
+## Next Steps
+
+Now that you understand custom selectors, explore:
+- **Dependencies** - Alternative optimization with property tracking
+- **Performance Profiling** - Measure and optimize your application
+- **Bloc Composition** - Coordinate multiple Blocs efficiently
+- **Testing Patterns** - Comprehensive testing strategies
+
+<GuideArticleNote title="Pro Tip">
+Start with **no selectors**, then add them where profiling shows performance issues. Over-optimization early can make code harder to maintain. Measure first, optimize second.
+</GuideArticleNote>

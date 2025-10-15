@@ -48,7 +48,7 @@ class CounterCubit extends Cubit<CounterState> {
 }
 ```
 
-<GuideArticleNote title="Critical: Arrow Functions Required" className="border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950">
+<GuideArticleNote title="Critical: Arrow Functions Required">
 All methods in Cubits MUST use arrow function syntax (`methodName = () => {}`). Regular methods will break in React because `this` binding is lost when passed as callbacks.
 
 ```typescript

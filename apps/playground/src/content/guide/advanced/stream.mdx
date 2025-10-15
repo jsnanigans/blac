@@ -1,3 +1,461 @@
-import { GuideArticle } from '@/components/guide/GuideArticle';
+import { GuideArticleNote } from '@/components/guide/GuideArticle';
 
-<GuideArticle demoId="stream-api" sectionId="advanced" />
+export const demoId = 'stream-api';
+export const sectionId = 'advanced';
+
+## Introduction
+
+BlaC Cubits and Blocs naturally implement the **Observable pattern**, making them perfect for streaming real-time data to multiple subscribers. Every time state changes, all subscribed components automatically receive the update simultaneously.
+
+This fundamental capability enables powerful real-time features like WebSocket connections, server-sent events, live data feeds, chat applications, IoT sensor data, and progress tracking for long-running operations.
+
+###  What You'll Learn
+
+- How BlaC implements the Observable pattern out of the box
+- Streaming real-time data to multiple subscribers
+- Managing WebSocket connections and server-sent events
+- Buffer management and memory optimization for high-frequency streams
+- Best practices for cleanup and resource management
+
+## Understanding the Observable Pattern
+
+In the Observable pattern, an **observable** (data source) emits values over time, and **observers** (subscribers) listen for these emissions and react accordingly. In BlaC:
+
+- **Every Cubit/Bloc is an observable** - it emits state changes
+- **Every `useBloc` call creates a subscription** - components become observers
+- **State changes propagate automatically** - all subscribers are notified
+
+This built-in reactivity means you don't need external libraries like RxJS for most streaming scenarios—BlaC handles it natively.
+
+<GuideArticleNote title="Observable vs Streams">
+While conceptually similar to RxJS observables or Node.js streams, BlaC's approach is simpler: state changes are the stream, and components are the observers. There's no need to manually subscribe/unsubscribe in most cases—React hooks handle lifecycle management automatically.
+</GuideArticleNote>
+
+## Basic Stream Cubit
+
+Here's a simple example of a Cubit that streams messages over time:
+
+```typescript
+interface StreamState {
+  messages: string[];
+  isStreaming: boolean;
+}
+
+class StreamCubit extends Cubit<StreamState> {
+  private interval: NodeJS.Timeout | null = null;
+
+  constructor() {
+    super({
+      messages: [],
+      isStreaming: false,
+    });
+  }
+
+  startStream = () => {
+    this.patch({ isStreaming: true });
+
+    // Simulate real-time data stream (e.g., WebSocket)
+    this.interval = setInterval(() => {
+      const newMessage = `Data at ${new Date().toISOString()}`;
+
+      // Emit new state - all subscribers receive this update!
+      this.patch({
+        messages: [...this.state.messages, newMessage],
+      });
+    }, 1000);
+  };
+
+  stopStream = () => {
+    if (this.interval) {
+      clearInterval(this.interval);
+      this.interval = null;
+    }
+    this.patch({ isStreaming: false });
+  };
+
+  // CRITICAL: Clean up on disposal
+  onDispose = () => {
+    this.stopStream();
+  };
+}
+```
+
+**Key points:**
+- Store the interval reference to clean it up later
+- Use `patch()` to emit state changes that trigger subscriber updates
+- **Always** implement `onDispose()` to prevent resource leaks
+
+## Try It Out
+
+Experience real-time streaming in action. Start the stream and add/remove subscribers to see how all components receive updates simultaneously:
+
+<StreamInteractive />
+
+## WebSocket Stream Example
+
+Here's a real-world pattern for integrating WebSocket connections:
+
+```typescript
+interface WebSocketState {
+  connected: boolean;
+  messages: Message[];
+  error: string | null;
+  lastUpdate: number;
+}
+
+class WebSocketCubit extends Cubit<WebSocketState> {
+  private ws: WebSocket | null = null;
+
+  constructor() {
+    super({
+      connected: false,
+      messages: [],
+      error: null,
+      lastUpdate: 0,
+    });
+  }
+
+  connect = (url: string) => {
+    this.ws = new WebSocket(url);
+
+    this.ws.onopen = () => {
+      this.patch({ connected: true, error: null });
+    };
+
+    this.ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+
+      // Stream message to all subscribers
+      this.patch({
+        messages: [...this.state.messages, data],
+        lastUpdate: Date.now(),
+      });
+    };
+
+    this.ws.onerror = () => {
+      this.patch({
+        connected: false,
+        error: 'Connection failed',
+      });
+    };
+
+    this.ws.onclose = () => {
+      this.patch({ connected: false });
+    };
+  };
+
+  disconnect = () => {
+    this.ws?.close();
+    this.ws = null;
+  };
+
+  onDispose = () => {
+    this.disconnect();
+  };
+}
+
+// Multiple components can subscribe to the same stream
+function MessageDisplay() {
+  const [state] = useBloc(WebSocketCubit);
+
+  return (
+    <div>
+      {state.messages.map((msg) => (
+        <div key={msg.id}>{msg.text}</div>
+      ))}
+    </div>
+  );
+}
+
+function StatusIndicator() {
+  const [state] = useBloc(WebSocketCubit); // Same instance!
+
+  return (
+    <div>
+      Status: {state.connected ? 'Connected' : 'Disconnected'}
+    </div>
+  );
+}
+```
+
+Both `MessageDisplay` and `StatusIndicator` subscribe to the **same** `WebSocketCubit` instance, so they stay perfectly synchronized.
+
+## Buffer Management
+
+For high-frequency streams, you must manage memory by limiting the buffer size:
+
+```typescript
+class BufferedStreamCubit extends Cubit<BufferedState> {
+  private maxBufferSize = 100;
+
+  addMessage = (message: string) => {
+    const messages = this.state.messages;
+
+    // Keep only the most recent N messages
+    const newMessages =
+      messages.length >= this.maxBufferSize
+        ? [...messages.slice(-(this.maxBufferSize - 1)), message]
+        : [...messages, message];
+
+    this.patch({ messages: newMessages });
+  };
+
+  // Alternative: Time-based expiration
+  addMessageWithExpiry = (message: string, ttl: number = 60000) => {
+    const expiresAt = Date.now() + ttl;
+
+    this.patch({
+      messages: [
+        ...this.state.messages.filter((m) => m.expiresAt > Date.now()),
+        { text: message, expiresAt },
+      ],
+    });
+  };
+}
+```
+
+**Why this matters:** Unlimited message accumulation leads to memory leaks and performance degradation. Use either:
+1. **Size-based limits** - Keep only the N most recent messages
+2. **Time-based expiration** - Remove messages older than a threshold
+
+<GuideArticleNote title="Warning">
+Always limit buffer sizes for long-running streams! Unbounded growth will eventually crash your application or cause severe performance issues.
+</GuideArticleNote>
+
+## Server-Sent Events (SSE)
+
+BlaC works excellently with Server-Sent Events for server-push architectures:
+
+```typescript
+class SSECubit extends Cubit<SSEState> {
+  private eventSource: EventSource | null = null;
+
+  connect = (url: string) => {
+    this.eventSource = new EventSource(url);
+
+    this.eventSource.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+
+      this.patch({
+        events: [...this.state.events.slice(-50), data], // Keep last 50
+        lastEventTime: Date.now(),
+      });
+    };
+
+    this.eventSource.onerror = () => {
+      this.patch({
+        connected: false,
+        error: 'SSE connection failed',
+      });
+    };
+
+    this.patch({ connected: true, error: null });
+  };
+
+  disconnect = () => {
+    this.eventSource?.close();
+    this.eventSource = null;
+    this.patch({ connected: false });
+  };
+
+  onDispose = () => {
+    this.disconnect();
+  };
+}
+```
+
+##  Real-World Use Cases
+
+### 1. Real-Time Data Feeds
+
+```typescript
+// Stock prices, crypto prices, sports scores
+class PriceFeedCubit extends Cubit<PriceFeedState> {
+  private ws: WebSocket | null = null;
+
+  subscribeTo = (symbols: string[]) => {
+    this.ws = new WebSocket('wss://api.example.com/prices');
+
+    this.ws.onmessage = (event) => {
+      const update = JSON.parse(event.data);
+
+      this.patch({
+        prices: {
+          ...this.state.prices,
+          [update.symbol]: update.price,
+        },
+      });
+    };
+  };
+
+  onDispose = () => {
+    this.ws?.close();
+  };
+}
+```
+
+### 2. Live Chat/Messaging
+
+```typescript
+class ChatCubit extends Cubit<ChatState> {
+  private ws: WebSocket | null = null;
+
+  connect = (roomId: string) => {
+    this.ws = new WebSocket(`wss://chat.example.com/${roomId}`);
+
+    this.ws.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+
+      this.patch({
+        messages: [...this.state.messages.slice(-100), message],
+        unreadCount: this.state.unreadCount + 1,
+      });
+    };
+  };
+
+  sendMessage = (text: string) => {
+    this.ws?.send(JSON.stringify({ text, timestamp: Date.now() }));
+  };
+
+  onDispose = () => {
+    this.ws?.close();
+  };
+}
+```
+
+### 3. Progress Tracking
+
+```typescript
+class UploadProgressCubit extends Cubit<ProgressState> {
+  uploadFile = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const xhr = new XMLHttpRequest();
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const percentComplete = (event.loaded / event.total) * 100;
+
+        // Stream progress updates to all subscribers
+        this.patch({
+          progress: percentComplete,
+          loaded: event.loaded,
+          total: event.total,
+        });
+      }
+    };
+
+    xhr.onload = () => {
+      this.patch({ complete: true, progress: 100 });
+    };
+
+    xhr.onerror = () => {
+      this.patch({ error: 'Upload failed' });
+    };
+
+    xhr.open('POST', '/upload');
+    xhr.send(formData);
+  };
+}
+```
+
+### 4. IoT Sensor Data
+
+```typescript
+class SensorDataCubit extends Cubit<SensorState> {
+  private eventSource: EventSource | null = null;
+
+  connectToSensor = (sensorId: string) => {
+    this.eventSource = new EventSource(`/api/sensors/${sensorId}/stream`);
+
+    this.eventSource.onmessage = (event) => {
+      const reading = JSON.parse(event.data);
+
+      this.patch({
+        latestReading: reading.value,
+        timestamp: reading.timestamp,
+        history: [...this.state.history.slice(-100), reading],
+      });
+    };
+  };
+
+  onDispose = () => {
+    this.eventSource?.close();
+  };
+}
+```
+
+## Best Practices
+
+<GuideArticleNote title="Do">
+- ✅ Clean up streams on component unmount (use `onDispose()`)
+- ✅ Limit message buffer size for memory efficiency
+- ✅ Use dependencies or selectors to filter stream data
+- ✅ Implement error handling and reconnection logic
+- ✅ Consider throttling/debouncing high-frequency updates
+- ✅ Always close WebSocket/EventSource connections
+</GuideArticleNote>
+
+<GuideArticleNote title="Don't">
+- ❌ Accumulate unlimited messages in state
+- ❌ Forget to unsubscribe or clean up connections
+- ❌ Emit state changes at extremely high frequency (>60/sec)
+- ❌ Store large binary data in state
+- ❌ Create new Cubit instances for each subscriber
+- ❌ Skip implementing `onDispose()`
+</GuideArticleNote>
+
+## Advanced: Throttling High-Frequency Streams
+
+For very high-frequency updates (e.g., mouse movement, scroll events), use throttling:
+
+```typescript
+class ThrottledStreamCubit extends Cubit<StreamState> {
+  private throttleTimer: NodeJS.Timeout | null = null;
+  private pendingUpdate: any = null;
+
+  // Emit at most once per interval
+  throttledEmit = (update: any, intervalMs: number = 16) => {
+    this.pendingUpdate = update;
+
+    if (!this.throttleTimer) {
+      this.throttleTimer = setTimeout(() => {
+        if (this.pendingUpdate) {
+          this.emit(this.pendingUpdate);
+          this.pendingUpdate = null;
+        }
+        this.throttleTimer = null;
+      }, intervalMs);
+    }
+  };
+
+  onDispose = () => {
+    if (this.throttleTimer) {
+      clearTimeout(this.throttleTimer);
+    }
+  };
+}
+```
+
+This ensures you emit **at most once every 16ms** (approximately 60 fps), preventing performance issues.
+
+## Key Takeaways
+
+- **Observable Pattern**: BlaC Cubits naturally implement the observable pattern for streaming data
+- **Multiple Subscribers**: All components using `useBloc` automatically receive stream updates
+- **Automatic Synchronization**: State changes propagate to all subscribers simultaneously
+- **Memory Management**: Limit buffer sizes and clean up resources in `onDispose`
+- **Real-World Applications**: Perfect for WebSockets, SSE, IoT, live data feeds, chat, and progress tracking
+- **Dynamic Subscriptions**: Subscribers can be added/removed at any time without affecting the stream
+
+## Next Steps
+
+Now that you understand streaming with BlaC, explore:
+- **Bloc Composition** - Coordinate multiple streams and state sources
+- **Dependencies** - Fine-tune re-renders with dependency tracking
+- **Custom Plugins** - Add analytics or logging to track stream behavior
+
+<GuideArticleNote title="Pro Tip">
+Streaming data with BlaC is straightforward and efficient. The built-in observable pattern, combined with React's automatic re-rendering, makes it easy to build real-time applications with minimal boilerplate.
+</GuideArticleNote>

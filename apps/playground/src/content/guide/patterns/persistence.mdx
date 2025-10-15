@@ -1,3 +1,952 @@
-import { GuideArticle } from '@/components/guide/GuideArticle';
+export const demoId = 'persistence';
+export const sectionId = 'patterns';
 
-<GuideArticle demoId="persistence" sectionId="patterns" />
+## Introduction
+
+State persistence is a critical feature for modern web applications. Whether you're building user preferences, shopping carts, form drafts, or authentication state, you need a reliable way to save and restore data across browser sessions.
+
+The **Persistence Plugin** for BlaC provides automatic, zero-configuration state persistence with built-in debouncing, error handling, and versioning. Instead of manually calling `localStorage.setItem()` throughout your code, the plugin handles everything automatically.
+
+### What You'll Learn
+
+- How to automatically persist entire Cubit state to localStorage
+- Selective persistence: choosing what to save and what to exclude
+- Security best practices: never persisting sensitive data
+- Configuration options: debouncing, versioning, error handling
+- Hydration patterns: merging persisted data with defaults
+- Testing persisted Cubits
+
+## The Problem: Manual Persistence is Tedious
+
+Without a persistence solution, you have to manually save and load state:
+
+```typescript
+class SettingsCubit extends Cubit<SettingsState> {
+  constructor() {
+    // Manually load from localStorage
+    const saved = localStorage.getItem('settings');
+    const initial = saved ? JSON.parse(saved) : DEFAULT_SETTINGS;
+    super(initial);
+  }
+
+  setTheme = (theme: 'light' | 'dark') => {
+    const newState = { ...this.state, theme };
+    this.emit(newState);
+    // Manually save to localStorage
+    localStorage.setItem('settings', JSON.stringify(newState));
+  };
+
+  setLanguage = (language: string) => {
+    const newState = { ...this.state, language };
+    this.emit(newState);
+    // Manually save again - repetitive!
+    localStorage.setItem('settings', JSON.stringify(newState));
+  };
+
+  // Every method needs manual save logic...
+}
+```
+
+This approach has several problems:
+
+- **Repetitive**: Every method needs manual save logic
+- **Error-prone**: Easy to forget saving after state changes
+- **No debouncing**: Rapid changes cause excessive writes
+- **No error handling**: localStorage can fail (quota exceeded, disabled, etc.)
+- **No versioning**: Data structure changes break old saved data
+
+## The Solution: Automatic Persistence
+
+The Persistence Plugin solves all these problems:
+
+```typescript
+import { Cubit } from '@blac/core';
+import { PersistencePlugin } from '@blac/plugin-persistence';
+
+interface SettingsState {
+  theme: 'light' | 'dark';
+  language: string;
+  fontSize: number;
+}
+
+class SettingsCubit extends Cubit<SettingsState> {
+  static plugins = [
+    new PersistencePlugin<SettingsState>({
+      key: 'settings',     // localStorage key
+      debounceMs: 200,     // Wait 200ms before saving
+      version: 1,          // Track data structure version
+    }),
+  ];
+
+  constructor() {
+    super({
+      theme: 'light',
+      language: 'en',
+      fontSize: 16,
+    });
+    // Plugin automatically loads from localStorage!
+  }
+
+  setTheme = (theme: 'light' | 'dark') => {
+    this.patch({ theme });
+    // Plugin automatically saves after 200ms!
+  };
+
+  setLanguage = (language: string) => {
+    this.patch({ language });
+    // Automatic save - no manual code needed!
+  };
+
+  setFontSize = (fontSize: number) => {
+    this.patch({ fontSize });
+    // Still automatic!
+  };
+}
+```
+
+<GuideArticleNote title="Automatic Save & Load">
+The Persistence Plugin automatically:
+- **Loads** saved state when the Cubit is constructed
+- **Saves** state changes to localStorage (with debouncing)
+- **Handles** errors gracefully
+- **Tracks** data structure versions for migrations
+</GuideArticleNote>
+
+## Try It Out
+
+See automatic persistence in action. Try changing settings, then reload the page:
+
+<PersistenceInteractive />
+
+## Basic Configuration Options
+
+The PersistencePlugin accepts several configuration options:
+
+```typescript
+new PersistencePlugin<State>({
+  // Required: localStorage key
+  key: 'myAppState',
+
+  // Optional: Debounce saves (default: 0ms)
+  debounceMs: 200,
+
+  // Optional: Data structure version (default: 1)
+  version: 1,
+
+  // Optional: Error handler
+  onError: (error, operation) => {
+    console.error(`Persistence ${operation} failed:`, error);
+    // Log to error tracking service
+  },
+
+  // Optional: Storage backend (default: localStorage)
+  storage: window.localStorage, // or sessionStorage, or custom
+})
+```
+
+### Debouncing: Performance Optimization
+
+Debouncing prevents excessive writes during rapid state changes:
+
+```typescript
+class FormCubit extends Cubit<FormState> {
+  static plugins = [
+    new PersistencePlugin<FormState>({
+      key: 'draftForm',
+      debounceMs: 500, // Wait 500ms after last change
+    }),
+  ];
+
+  constructor() {
+    super({ email: '', message: '' });
+  }
+
+  setEmail = (email: string) => {
+    this.patch({ email });
+    // Won't save until user stops typing for 500ms
+  };
+
+  setMessage = (message: string) => {
+    this.patch({ message });
+    // Prevents saving on every keystroke
+  };
+}
+```
+
+<GuideArticleNote title="Recommended Debounce Times">
+- **User settings**: 200-300ms (infrequent changes)
+- **Form inputs**: 500-1000ms (rapid typing)
+- **Shopping cart**: 200-500ms (balance between UX and performance)
+- **Real-time collaboration**: 0-100ms (immediate sync needed)
+</GuideArticleNote>
+
+## Selective Persistence
+
+Sometimes you only want to persist certain fields. Use the `select` option:
+
+```typescript
+interface AppState {
+  // Persisted
+  theme: 'light' | 'dark';
+  language: string;
+  user: {
+    id: string;
+    name: string;
+    token?: string; // NOT persisted
+  } | null;
+  // Not persisted
+  isLoading: boolean;
+  currentTab: string;
+}
+
+class AppCubit extends Cubit<AppState> {
+  static plugins = [
+    new PersistencePlugin<AppState>({
+      key: 'appState',
+      // Only persist certain fields
+      select: (state) => ({
+        theme: state.theme,
+        language: state.language,
+        user: state.user
+          ? {
+              id: state.user.id,
+              name: state.user.name,
+              // Exclude token - security!
+            }
+          : null,
+        // isLoading and currentTab NOT included - ephemeral UI state
+      }),
+    }),
+  ];
+
+  constructor() {
+    super({
+      theme: 'light',
+      language: 'en',
+      user: null,
+      isLoading: false,
+      currentTab: 'home',
+    });
+  }
+}
+```
+
+### Custom Merge Logic
+
+Control how persisted data merges with defaults using the `merge` option:
+
+```typescript
+class AppCubit extends Cubit<AppState> {
+  static plugins = [
+    new PersistencePlugin<AppState>({
+      key: 'appState',
+      select: (state) => ({
+        theme: state.theme,
+        language: state.language,
+        user: state.user
+          ? { id: state.user.id, name: state.user.name }
+          : null,
+      }),
+      // Custom merge logic
+      merge: (persisted, current) => ({
+        ...current, // Start with defaults
+        theme: persisted.theme || current.theme,
+        language: persisted.language || current.language,
+        user: persisted.user
+          ? {
+              ...persisted.user,
+              token: undefined, // Never restore token
+            }
+          : null,
+        // isLoading and currentTab remain as defaults
+      }),
+    }),
+  ];
+}
+```
+
+<GuideArticleNote title="When to Use Selective Persistence">
+Use selective persistence when you have:
+- **Sensitive data** that should never be stored (tokens, passwords, PII)
+- **Ephemeral UI state** that shouldn't persist (loading states, modals, current tab)
+- **Computed values** that can be recalculated (derived data, counts, totals)
+- **Session-specific data** that's only valid during the current session (WebSocket connections, temporary messages)
+</GuideArticleNote>
+
+## Security: Never Persist Sensitive Data
+
+**CRITICAL**: Never persist authentication tokens, passwords, API keys, or personal identification information:
+
+```typescript
+// ❌ WRONG - Security risk!
+class AuthCubit extends Cubit<AuthState> {
+  static plugins = [
+    new PersistencePlugin<AuthState>({
+      key: 'auth',
+      // DON'T DO THIS - Persisting the entire state including token!
+    }),
+  ];
+
+  constructor() {
+    super({
+      user: null,
+      token: null, // NEVER persist tokens!
+      refreshToken: null, // NEVER persist refresh tokens!
+    });
+  }
+}
+
+// ✅ CORRECT - Selective persistence
+class AuthCubit extends Cubit<AuthState> {
+  static plugins = [
+    new PersistencePlugin<AuthState>({
+      key: 'auth',
+      // Only persist user info, not tokens
+      select: (state) =>
+        state.user
+          ? {
+              userId: state.user.id,
+              userName: state.user.name,
+              // Exclude token, refreshToken, email, etc.
+            }
+          : null,
+      merge: (persisted, current) => ({
+        ...current,
+        user: persisted
+          ? {
+              id: persisted.userId,
+              name: persisted.userName,
+            }
+          : null,
+        token: null, // Always null on hydration
+        refreshToken: null, // Always null on hydration
+      }),
+    }),
+  ];
+}
+```
+
+### What NOT to Persist
+
+Never persist these types of data in localStorage:
+
+- **Authentication tokens** (access tokens, refresh tokens, JWT)
+- **Passwords** or password hashes
+- **API keys** or secret keys
+- **Personal Identification Information** (SSN, credit cards, full addresses)
+- **Session IDs** from backend
+- **CSRF tokens**
+- **Private keys** or certificates
+
+<GuideArticleNote title="Security Warning">
+**localStorage is NOT secure**. Any JavaScript code on your domain can access it. Sensitive data should only be stored in:
+- **Memory** (current state, expires on page close)
+- **HTTP-only secure cookies** (tokens, managed by backend)
+- **Browser credential storage** (passwords, via Credential Management API)
+</GuideArticleNote>
+
+## Real-World Examples
+
+### Example 1: User Preferences
+
+Perfect for theme, language, layout preferences:
+
+```typescript
+interface PreferencesState {
+  theme: 'light' | 'dark' | 'auto';
+  language: string;
+  fontSize: 'small' | 'medium' | 'large';
+  compactMode: boolean;
+  notifications: {
+    email: boolean;
+    push: boolean;
+    desktop: boolean;
+  };
+}
+
+class PreferencesCubit extends Cubit<PreferencesState> {
+  static plugins = [
+    new PersistencePlugin<PreferencesState>({
+      key: 'userPreferences',
+      debounceMs: 200,
+      version: 1,
+    }),
+  ];
+  static keepAlive = true; // Persist across routes
+
+  constructor() {
+    super({
+      theme: 'auto',
+      language: navigator.language.split('-')[0],
+      fontSize: 'medium',
+      compactMode: false,
+      notifications: {
+        email: true,
+        push: false,
+        desktop: false,
+      },
+    });
+  }
+
+  setTheme = (theme: PreferencesState['theme']) => {
+    this.patch({ theme });
+    // Apply theme immediately
+    document.documentElement.setAttribute('data-theme', theme);
+  };
+
+  setLanguage = (language: string) => {
+    this.patch({ language });
+    // Trigger i18n update
+  };
+
+  toggleCompactMode = () => {
+    this.patch({ compactMode: !this.state.compactMode });
+  };
+
+  updateNotifications = (updates: Partial<PreferencesState['notifications']>) => {
+    this.patch({
+      notifications: {
+        ...this.state.notifications,
+        ...updates,
+      },
+    });
+  };
+}
+```
+
+### Example 2: Shopping Cart
+
+Persist cart items but not checkout session:
+
+```typescript
+interface CartItem {
+  productId: string;
+  name: string;
+  price: number;
+  quantity: number;
+}
+
+interface CartState {
+  items: CartItem[];
+  // Don't persist:
+  checkoutSessionId: string | null;
+  paymentIntentId: string | null;
+  isProcessing: boolean;
+}
+
+class ShoppingCartCubit extends Cubit<CartState> {
+  static plugins = [
+    new PersistencePlugin<CartState>({
+      key: 'shoppingCart',
+      debounceMs: 300,
+      version: 1,
+      // Only persist items
+      select: (state) => ({
+        items: state.items,
+      }),
+      merge: (persisted, current) => ({
+        ...current,
+        items: persisted.items || [],
+        // Checkout fields remain null/false
+      }),
+    }),
+  ];
+  static keepAlive = true;
+
+  constructor() {
+    super({
+      items: [],
+      checkoutSessionId: null,
+      paymentIntentId: null,
+      isProcessing: false,
+    });
+  }
+
+  addItem = (item: CartItem) => {
+    const existingIndex = this.state.items.findIndex(
+      (i) => i.productId === item.productId,
+    );
+
+    if (existingIndex >= 0) {
+      // Update quantity
+      const updatedItems = [...this.state.items];
+      updatedItems[existingIndex] = {
+        ...updatedItems[existingIndex],
+        quantity: updatedItems[existingIndex].quantity + item.quantity,
+      };
+      this.patch({ items: updatedItems });
+    } else {
+      // Add new item
+      this.patch({ items: [...this.state.items, item] });
+    }
+  };
+
+  removeItem = (productId: string) => {
+    this.patch({
+      items: this.state.items.filter((item) => item.productId !== productId),
+    });
+  };
+
+  updateQuantity = (productId: string, quantity: number) => {
+    if (quantity <= 0) {
+      this.removeItem(productId);
+      return;
+    }
+
+    this.patch({
+      items: this.state.items.map((item) =>
+        item.productId === productId ? { ...item, quantity } : item,
+      ),
+    });
+  };
+
+  clearCart = () => {
+    this.emit({
+      items: [],
+      checkoutSessionId: null,
+      paymentIntentId: null,
+      isProcessing: false,
+    });
+  };
+
+  get itemCount(): number {
+    return this.state.items.reduce((sum, item) => sum + item.quantity, 0);
+  }
+
+  get total(): number {
+    return this.state.items.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0,
+    );
+  }
+}
+```
+
+### Example 3: Form Draft Auto-Save
+
+Save form drafts as user types:
+
+```typescript
+interface FormDraftState {
+  email: string;
+  subject: string;
+  message: string;
+  savedAt: number | null;
+  isDirty: boolean;
+}
+
+class FormDraftCubit extends Cubit<FormDraftState> {
+  static plugins = [
+    new PersistencePlugin<FormDraftState>({
+      key: 'contactFormDraft',
+      debounceMs: 1000, // 1 second after typing stops
+      select: (state) => ({
+        email: state.email,
+        subject: state.subject,
+        message: state.message,
+        savedAt: Date.now(), // Update save timestamp
+      }),
+      merge: (persisted, current) => ({
+        ...current,
+        email: persisted.email || current.email,
+        subject: persisted.subject || current.subject,
+        message: persisted.message || current.message,
+        savedAt: persisted.savedAt || null,
+        isDirty: false, // Reset dirty flag on load
+      }),
+    }),
+  ];
+
+  constructor() {
+    super({
+      email: '',
+      subject: '',
+      message: '',
+      savedAt: null,
+      isDirty: false,
+    });
+  }
+
+  setEmail = (email: string) => {
+    this.patch({ email, isDirty: true });
+  };
+
+  setSubject = (subject: string) => {
+    this.patch({ subject, isDirty: true });
+  };
+
+  setMessage = (message: string) => {
+    this.patch({ message, isDirty: true });
+  };
+
+  submit = async () => {
+    // Submit logic...
+    // Clear draft after successful submission
+    await this.clearDraft();
+  };
+
+  clearDraft = async () => {
+    this.emit({
+      email: '',
+      subject: '',
+      message: '',
+      savedAt: null,
+      isDirty: false,
+    });
+
+    // Manually clear localStorage
+    const plugin = (this._plugins as any).get(
+      'persistence',
+    ) as PersistencePlugin<FormDraftState>;
+    if (plugin) {
+      await plugin.clear();
+    }
+  };
+
+  get hasDraft(): boolean {
+    return this.state.email !== '' || this.state.subject !== '' || this.state.message !== '';
+  }
+
+  get lastSavedText(): string {
+    if (!this.state.savedAt) return 'Not saved';
+    const seconds = Math.floor((Date.now() - this.state.savedAt) / 1000);
+    if (seconds < 60) return 'Saved just now';
+    if (seconds < 3600) return `Saved ${Math.floor(seconds / 60)}m ago`;
+    return `Saved ${Math.floor(seconds / 3600)}h ago`;
+  }
+}
+```
+
+## Versioning & Migrations
+
+Use the `version` option to handle data structure changes:
+
+```typescript
+// Version 1: Original structure
+interface SettingsStateV1 {
+  darkMode: boolean;
+}
+
+// Version 2: Updated structure
+interface SettingsStateV2 {
+  theme: 'light' | 'dark' | 'auto';
+}
+
+class SettingsCubit extends Cubit<SettingsStateV2> {
+  static plugins = [
+    new PersistencePlugin<SettingsStateV2>({
+      key: 'settings',
+      version: 2, // New version!
+      merge: (persisted: any, current) => {
+        // Check version and migrate if needed
+        if (!persisted.theme && persisted.darkMode !== undefined) {
+          // Migrate from v1 to v2
+          return {
+            ...current,
+            theme: persisted.darkMode ? 'dark' : 'light',
+          };
+        }
+
+        // Already v2
+        return {
+          ...current,
+          theme: persisted.theme || current.theme,
+        };
+      },
+    }),
+  ];
+
+  constructor() {
+    super({ theme: 'light' });
+  }
+}
+```
+
+<GuideArticleNote title="Version Best Practices">
+- Increment `version` when changing data structure
+- Use `merge` function to handle migrations from old versions
+- Keep migration code for at least 1 year to support returning users
+- Test migrations with old localStorage data
+</GuideArticleNote>
+
+## Storage Backends
+
+By default, PersistencePlugin uses `localStorage`, but you can use other storage:
+
+```typescript
+// Use sessionStorage (cleared when tab closes)
+new PersistencePlugin<State>({
+  key: 'sessionData',
+  storage: window.sessionStorage,
+})
+
+// Use custom storage (IndexedDB, etc.)
+const customStorage = {
+  getItem: async (key: string) => {
+    // IndexedDB read
+  },
+  setItem: async (key: string, value: string) => {
+    // IndexedDB write
+  },
+  removeItem: async (key: string) => {
+    // IndexedDB delete
+  },
+};
+
+new PersistencePlugin<State>({
+  key: 'largeData',
+  storage: customStorage,
+})
+```
+
+### localStorage vs sessionStorage vs IndexedDB
+
+| Storage | Capacity | Persistence | Use Case |
+|---------|----------|-------------|----------|
+| **localStorage** | ~5-10MB | Permanent (until cleared) | User preferences, cart, drafts |
+| **sessionStorage** | ~5-10MB | Tab session only | Temporary UI state, wizard progress |
+| **IndexedDB** | ~50MB-1GB+ | Permanent (until cleared) | Large datasets, offline data, images |
+
+## Testing Persistent Cubits
+
+Test persistence behavior by mocking the storage:
+
+```typescript
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { PersistencePlugin } from '@blac/plugin-persistence';
+
+describe('PersistentSettingsCubit', () => {
+  let mockStorage: Map<string, string>;
+
+  beforeEach(() => {
+    // Mock localStorage
+    mockStorage = new Map();
+    global.localStorage = {
+      getItem: vi.fn((key) => mockStorage.get(key) || null),
+      setItem: vi.fn((key, value) => mockStorage.set(key, value)),
+      removeItem: vi.fn((key) => mockStorage.delete(key)),
+      clear: vi.fn(() => mockStorage.clear()),
+      length: 0,
+      key: vi.fn(),
+    } as any;
+  });
+
+  it('should load persisted state on construction', () => {
+    // Save initial state
+    mockStorage.set('settings', JSON.stringify({ theme: 'dark' }));
+
+    const cubit = new PersistentSettingsCubit();
+    expect(cubit.state.theme).toBe('dark');
+  });
+
+  it('should save state changes to localStorage', async () => {
+    const cubit = new PersistentSettingsCubit();
+    cubit.setTheme('dark');
+
+    // Wait for debounce
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    const saved = mockStorage.get('settings');
+    expect(saved).toBeDefined();
+    const parsed = JSON.parse(saved!);
+    expect(parsed.theme).toBe('dark');
+  });
+
+  it('should handle localStorage quota exceeded', async () => {
+    const onError = vi.fn();
+    const cubit = new PersistentSettingsCubit();
+
+    // Mock quota exceeded
+    global.localStorage.setItem = vi.fn(() => {
+      throw new DOMException('QuotaExceededError');
+    });
+
+    cubit.setTheme('dark');
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    // Should handle error gracefully without crashing
+    expect(cubit.state.theme).toBe('dark'); // State still updated
+  });
+
+  it('should clear persisted data', async () => {
+    const cubit = new PersistentSettingsCubit();
+    cubit.setTheme('dark');
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    await cubit.clearPersistedData();
+
+    expect(mockStorage.has('settings')).toBe(false);
+  });
+});
+```
+
+## Best Practices
+
+### 1. Use Debouncing
+
+Always use `debounceMs` to prevent excessive writes:
+
+```typescript
+// ✅ Good - debounced
+new PersistencePlugin({
+  key: 'form',
+  debounceMs: 500, // Wait 500ms after last change
+})
+
+// ❌ Bad - saves on every keystroke
+new PersistencePlugin({
+  key: 'form',
+  debounceMs: 0,
+})
+```
+
+### 2. Selective Persistence
+
+Only persist what's necessary:
+
+```typescript
+// ✅ Good - selective
+select: (state) => ({
+  theme: state.theme,
+  language: state.language,
+  // Exclude loading states, temporary UI state
+})
+
+// ❌ Bad - everything
+// (no select option - persists entire state including temporary data)
+```
+
+### 3. Never Persist Sensitive Data
+
+Use `select` to explicitly exclude sensitive fields:
+
+```typescript
+// ✅ Good - excludes sensitive data
+select: (state) => ({
+  userId: state.user?.id,
+  userName: state.user?.name,
+  // Explicitly exclude token, password, etc.
+})
+
+// ❌ Bad - persists token
+select: (state) => state // Includes state.user.token!
+```
+
+### 4. Handle Storage Errors
+
+Provide an `onError` handler:
+
+```typescript
+new PersistencePlugin({
+  key: 'data',
+  onError: (error, operation) => {
+    console.error(`Persistence ${operation} failed:`, error);
+    // Log to error tracking service
+    trackError('persistence_error', { operation, error: error.message });
+  },
+})
+```
+
+### 5. Use Versioning
+
+Track data structure versions:
+
+```typescript
+new PersistencePlugin({
+  key: 'settings',
+  version: 2, // Increment when structure changes
+  merge: (persisted: any, current) => {
+    // Handle migrations from old versions
+    if (persisted.version === 1) {
+      return migrateFromV1(persisted, current);
+    }
+    return { ...current, ...persisted };
+  },
+})
+```
+
+### 6. Combine with keepAlive
+
+For global state that should persist:
+
+```typescript
+class PreferencesCubit extends Cubit<PreferencesState> {
+  static plugins = [new PersistencePlugin({ key: 'preferences' })];
+  static keepAlive = true; // Never disposed + persisted
+}
+```
+
+## Common Pitfalls
+
+### Pitfall 1: Persisting Computed Values
+
+```typescript
+// ❌ Don't persist computed values
+interface CartState {
+  items: CartItem[];
+  total: number; // Computed from items - DON'T persist!
+  itemCount: number; // Computed from items - DON'T persist!
+}
+
+// ✅ Use computed properties instead
+class CartCubit extends Cubit<{ items: CartItem[] }> {
+  get total(): number {
+    return this.state.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  }
+
+  get itemCount(): number {
+    return this.state.items.reduce((sum, item) => sum + item.quantity, 0);
+  }
+}
+```
+
+### Pitfall 2: Forgetting Debouncing
+
+```typescript
+// ❌ No debouncing - saves on every keystroke
+new PersistencePlugin({
+  key: 'searchQuery',
+  // debounceMs: 0 (default)
+})
+
+// ✅ Debounced - saves after user stops typing
+new PersistencePlugin({
+  key: 'searchQuery',
+  debounceMs: 500,
+})
+```
+
+### Pitfall 3: Persisting Large Data
+
+```typescript
+// ❌ Don't persist large datasets in localStorage
+interface AppState {
+  products: Product[]; // Could be 10,000+ items!
+  images: string[]; // Base64 images - very large!
+}
+
+// ✅ Use IndexedDB for large data, or fetch from API
+interface AppState {
+  recentProductIds: string[]; // Just IDs, fetch full data from API
+  // No images - load on demand
+}
+```
+
+## Key Takeaways
+
+- **Automatic**: PersistencePlugin handles saving/loading automatically
+- **Debouncing**: Use `debounceMs` to prevent excessive writes (200-1000ms recommended)
+- **Selective**: Use `select` to persist only necessary fields
+- **Security**: Never persist tokens, passwords, or sensitive PII
+- **Versioning**: Use `version` and `merge` for data structure migrations
+- **Error Handling**: Provide `onError` callback for graceful failures
+- **Testing**: Mock localStorage to test persistence behavior
+- **Storage Choice**: localStorage (preferences), sessionStorage (session), IndexedDB (large data)
+
+## Next Steps
+
+Now that you understand state persistence:
+
+- Learn about [Custom Plugins](/guide/plugins/custom-plugins) to extend BlaC functionality
+- Explore [Async Operations](/guide/advanced/async-operations) for complex async patterns
+- Study [Dependencies](/guide/advanced/dependencies) for injecting services into Cubits

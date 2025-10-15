@@ -1,3 +1,704 @@
-import { GuideArticle } from '@/components/guide/GuideArticle';
+export const demoId = 'computed-properties';
+export const sectionId = 'core-concepts';
 
-<GuideArticle demoId="computed-properties" sectionId="core-concepts" />
+# Computed Properties with Getters
+
+One of the most powerful patterns in state management is **derived state**—values calculated from your existing state rather than stored redundantly. In BlaC, TypeScript **getters** provide an elegant way to create computed properties that stay synchronized with your state automatically.
+
+## What You'll Learn
+
+- How to use TypeScript getters to derive values from state
+- Different types of computed properties (numbers, booleans, formatted strings)
+- Performance considerations and when to cache
+- Using getters with selectors for optimized re-renders
+- Common patterns and best practices
+
+## The Problem: Redundant State
+
+Before we dive into getters, let's understand the problem they solve. Consider a shopping cart:
+
+```typescript
+// ❌ BAD: Storing derived values in state
+interface CartState {
+  items: Item[];
+  subtotal: number;      // Calculated from items
+  tax: number;           // Calculated from subtotal
+  total: number;         // Calculated from subtotal + tax
+  itemCount: number;     // Calculated from items
+}
+
+class CartCubit extends Cubit<CartState> {
+  addItem = (item: Item) => {
+    const newItems = [...this.state.items, item];
+
+    // Have to recalculate everything!
+    const subtotal = newItems.reduce((sum, i) => sum + i.price, 0);
+    const tax = subtotal * 0.08;
+    const total = subtotal + tax;
+    const itemCount = newItems.length;
+
+    this.emit({
+      items: newItems,
+      subtotal,
+      tax,
+      total,
+      itemCount,
+    });
+  };
+}
+```
+
+**Problems with this approach:**
+
+- Lots of redundant calculations
+- Easy to forget to update derived values
+- State grows unnecessarily large
+- Prone to bugs when calculations get out of sync
+
+## The Solution: Computed Properties
+
+Instead of storing calculated values in state, use **getters** to derive them on-the-fly:
+
+```typescript
+// ✅ GOOD: Compute values with getters
+interface CartState {
+  items: Item[];
+  taxRate: number;
+}
+
+class CartCubit extends Cubit<CartState> {
+  constructor() {
+    super({ items: [], taxRate: 0.08 });
+  }
+
+  // Getters calculate values when accessed
+  get subtotal(): number {
+    return this.state.items.reduce((sum, item) => sum + item.price, 0);
+  }
+
+  get tax(): number {
+    return this.subtotal * this.state.taxRate;
+  }
+
+  get total(): number {
+    return this.subtotal + this.tax;
+  }
+
+  get itemCount(): number {
+    return this.state.items.length;
+  }
+
+  // Now adding items is simple!
+  addItem = (item: Item) => {
+    this.patch({ items: [...this.state.items, item] });
+    // All computed values update automatically!
+  };
+}
+```
+
+**Benefits:**
+
+- State stays minimal and clean
+- No manual calculation updates needed
+- Impossible for values to get out of sync
+- Clear separation between stored and derived data
+
+<GuideArticleNote title="Getters Are Properties, Not Methods">
+Access getters **without parentheses**, just like regular properties:
+
+```typescript
+const subtotal = cubit.subtotal;  // ✅ Correct
+const subtotal = cubit.subtotal();  // ❌ Wrong!
+```
+
+This is a key feature of TypeScript getters—they look and act like properties even though they're computed.
+</GuideArticleNote>
+
+## Types of Computed Properties
+
+Getters can return any type. Here are the most common patterns:
+
+### 1. Numeric Calculations
+
+Perfect for totals, counts, averages:
+
+```typescript
+class AnalyticsCubit extends Cubit<AnalyticsState> {
+  get totalUsers(): number {
+    return this.state.activeUsers + this.state.inactiveUsers;
+  }
+
+  get averageSessionTime(): number {
+    const total = this.state.sessions.reduce((sum, s) => sum + s.duration, 0);
+    return this.state.sessions.length > 0 ? total / this.state.sessions.length : 0;
+  }
+
+  get conversionRate(): number {
+    return (this.state.conversions / this.state.visits) * 100;
+  }
+}
+```
+
+### 2. Boolean Flags
+
+Great for conditional logic and UI states:
+
+```typescript
+class FormCubit extends Cubit<FormState> {
+  get isEmpty(): boolean {
+    return Object.values(this.state.fields).every(v => v === '');
+  }
+
+  get hasErrors(): boolean {
+    return Object.values(this.state.errors).some(e => e !== null);
+  }
+
+  get isValid(): boolean {
+    return !this.isEmpty && !this.hasErrors;
+  }
+
+  get canSubmit(): boolean {
+    return this.isValid && !this.state.isSubmitting && this.state.hasChanges;
+  }
+}
+```
+
+<GuideArticleNote title="Chaining Boolean Getters">
+Notice how `canSubmit` uses other getters (`isValid`, `isSubmitting`, `hasChanges`). This creates **composable logic** that's easy to understand and maintain.
+</GuideArticleNote>
+
+### 3. Formatted Strings
+
+Convert raw values to display-friendly formats:
+
+```typescript
+class ProductCubit extends Cubit<ProductState> {
+  get displayPrice(): string {
+    return `$${this.state.price.toFixed(2)}`;
+  }
+
+  get formattedDate(): string {
+    return new Date(this.state.createdAt).toLocaleDateString();
+  }
+
+  get statusLabel(): string {
+    const labels = {
+      pending: 'Awaiting Approval',
+      approved: 'Ready to Ship',
+      shipped: 'In Transit',
+      delivered: 'Delivered',
+    };
+    return labels[this.state.status] || 'Unknown';
+  }
+
+  get summary(): string {
+    return `${this.state.name} - ${this.displayPrice} (${this.statusLabel})`;
+  }
+}
+```
+
+### 4. Filtered/Transformed Data
+
+Derive subsets or transformations of your data:
+
+```typescript
+class TodoCubit extends Cubit<TodoState> {
+  get completedTodos(): Todo[] {
+    return this.state.todos.filter(t => t.completed);
+  }
+
+  get activeTodos(): Todo[] {
+    return this.state.todos.filter(t => !t.completed);
+  }
+
+  get sortedTodos(): Todo[] {
+    return [...this.state.todos].sort((a, b) => b.priority - a.priority);
+  }
+
+  get todaysTodos(): Todo[] {
+    const today = new Date().toDateString();
+    return this.state.todos.filter(t =>
+      new Date(t.dueDate).toDateString() === today
+    );
+  }
+}
+```
+
+### 5. Complex Objects
+
+Return computed objects or collections:
+
+```typescript
+class DashboardCubit extends Cubit<DashboardState> {
+  get statistics(): Statistics {
+    return {
+      totalRevenue: this.state.sales.reduce((sum, s) => sum + s.amount, 0),
+      averageOrder: this.totalRevenue / this.state.sales.length,
+      topProduct: this.findTopProduct(),
+      growthRate: this.calculateGrowth(),
+    };
+  }
+
+  get categoryBreakdown(): Map<string, number> {
+    const breakdown = new Map<string, number>();
+    for (const item of this.state.items) {
+      breakdown.set(
+        item.category,
+        (breakdown.get(item.category) || 0) + item.count
+      );
+    }
+    return breakdown;
+  }
+}
+```
+
+## Try It Out
+
+Explore a fully-featured shopping cart that uses computed properties for all calculations:
+
+<ComputedPropertiesInteractive />
+
+**Try these interactions:**
+
+- Add/remove items and watch totals update automatically
+- Adjust the discount slider to see savings recalculate
+- Change tax rate to see how it affects the total
+- Notice how "Free Shipping" appears when subtotal exceeds $100
+- Check the statistics panel—all values are computed!
+
+## Getters with Dependency Tracking
+
+One of BlaC's most powerful features is using getters with **selectors** for fine-grained re-render optimization:
+
+```typescript
+class TodoCubit extends Cubit<TodoState> {
+  get completedTodos(): Todo[] {
+    return this.state.todos.filter(t => t.completed);
+  }
+
+  get activeTodos(): Todo[] {
+    return this.state.todos.filter(t => !t.completed);
+  }
+
+  get progress(): number {
+    const total = this.state.todos.length;
+    return total > 0 ? (this.completedTodos.length / total) * 100 : 0;
+  }
+}
+
+// Component only re-renders when progress changes
+function ProgressBar() {
+  const [state, cubit] = useBloc(TodoCubit, {
+    selector: (state, prev, instance) => [instance.progress]
+  });
+
+  return <div>Progress: {cubit.progress}%</div>;
+}
+
+// Different component, different dependencies
+function ActiveList() {
+  const [state, cubit] = useBloc(TodoCubit, {
+    selector: (state, prev, instance) => [instance.activeTodos]
+  });
+
+  return (
+    <ul>
+      {cubit.activeTodos.map(todo => (
+        <li key={todo.id}>{todo.text}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+**Key insight:** By using getters in selectors, you create a **dependency graph**. Components only re-render when **their specific computed values** change, not on every state update.
+
+<GuideArticleNote title="Selectors Access Getters via Instance">
+Note the **third parameter** in selectors: `instance`. This is the Cubit/Bloc instance, which gives you access to getters:
+
+```typescript
+selector: (state, prev, instance) => [
+  instance.progress,        // ✅ Access getters
+  instance.completedTodos,  // ✅ Works!
+  state.todos.length,       // ✅ Can also use state
+]
+```
+
+This pattern enables extremely efficient React re-renders!
+</GuideArticleNote>
+
+## Performance Considerations
+
+Getters recalculate **on every access**. For simple operations this is fine, but expensive calculations need special attention.
+
+### When Getters Are Fast Enough
+
+```typescript
+class FastCubit extends Cubit<State> {
+  // ✅ O(1) operations - instant
+  get itemCount(): number {
+    return this.state.items.length;
+  }
+
+  get isEmpty(): boolean {
+    return this.state.count === 0;
+  }
+
+  // ✅ O(n) operations - usually fine for reasonable n
+  get total(): number {
+    return this.state.items.reduce((sum, item) => sum + item.price, 0);
+  }
+
+  get filteredItems(): Item[] {
+    return this.state.items.filter(item => item.active);
+  }
+}
+```
+
+### When To Cache Expensive Calculations
+
+```typescript
+class ExpensiveCubit extends Cubit<State> {
+  // ❌ BAD: Expensive getter recalculates every time
+  get complexAnalysis(): Analysis {
+    console.log('Computing...'); // Runs on EVERY access!
+    return this.state.items
+      .filter(expensiveFilter)      // O(n)
+      .map(expensiveTransform)     // O(n)
+      .sort(complexSort);          // O(n log n)
+  }
+
+  // ✅ GOOD: Store expensive results in state
+  private computeAnalysis = () => {
+    const analysis = this.state.items
+      .filter(expensiveFilter)
+      .map(expensiveTransform)
+      .sort(complexSort);
+
+    this.patch({ cachedAnalysis: analysis });
+  };
+
+  // Update cache when items change
+  updateItems = (items: Item[]) => {
+    this.patch({ items });
+    this.computeAnalysis(); // Recalculate once
+  };
+
+  // Simple getter for cached value
+  get analysis(): Analysis {
+    return this.state.cachedAnalysis;
+  }
+}
+```
+
+**Rule of thumb:**
+
+- **Light calculations** (arithmetic, comparisons, simple filters): Use getters
+- **Moderate calculations** (single array operations): Usually fine with getters
+- **Heavy calculations** (nested loops, complex algorithms): Cache in state
+
+<GuideArticleNote title="Profile Before Optimizing">
+Don't prematurely optimize! Most getters are fast enough. Only cache when you:
+
+1. **Measure** performance issues with React DevTools
+2. **Identify** the getter as the bottleneck
+3. **Verify** caching improves performance
+
+Premature optimization adds complexity without benefit.
+</GuideArticleNote>
+
+## Common Patterns
+
+### Pattern 1: Multi-Step Calculations
+
+Chain getters to build complex calculations from simple ones:
+
+```typescript
+class InvoiceCubit extends Cubit<InvoiceState> {
+  // Step 1: Calculate subtotal
+  get subtotal(): number {
+    return this.state.lineItems.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
+  }
+
+  // Step 2: Apply discount
+  get discountAmount(): number {
+    return this.subtotal * (this.state.discountPercent / 100);
+  }
+
+  // Step 3: Calculate tax on discounted amount
+  get taxableAmount(): number {
+    return this.subtotal - this.discountAmount;
+  }
+
+  get taxAmount(): number {
+    return this.taxableAmount * this.state.taxRate;
+  }
+
+  // Step 4: Final total
+  get total(): number {
+    return this.taxableAmount + this.taxAmount + this.state.shipping;
+  }
+}
+```
+
+### Pattern 2: Conditional Display Logic
+
+Use getters for complex UI state decisions:
+
+```typescript
+class PaymentCubit extends Cubit<PaymentState> {
+  get canPay(): boolean {
+    return this.isValid && this.hasPaymentMethod && !this.isProcessing;
+  }
+
+  get paymentButtonText(): string {
+    if (this.state.isProcessing) return 'Processing...';
+    if (!this.hasPaymentMethod) return 'Add Payment Method';
+    if (!this.isValid) return 'Fix Errors';
+    return `Pay ${this.displayTotal}`;
+  }
+
+  get paymentButtonVariant(): 'primary' | 'secondary' | 'disabled' {
+    if (!this.canPay) return 'disabled';
+    if (this.state.total > 1000) return 'primary';
+    return 'secondary';
+  }
+}
+```
+
+### Pattern 3: Data Aggregation
+
+Compute summaries and statistics:
+
+```typescript
+class SalesCubit extends Cubit<SalesState> {
+  get totalRevenue(): number {
+    return this.state.sales.reduce((sum, sale) => sum + sale.amount, 0);
+  }
+
+  get topCustomer(): string {
+    const customerTotals = new Map<string, number>();
+
+    for (const sale of this.state.sales) {
+      const current = customerTotals.get(sale.customerId) || 0;
+      customerTotals.set(sale.customerId, current + sale.amount);
+    }
+
+    let topCustomer = '';
+    let maxAmount = 0;
+
+    for (const [customerId, amount] of customerTotals) {
+      if (amount > maxAmount) {
+        maxAmount = amount;
+        topCustomer = customerId;
+      }
+    }
+
+    return topCustomer;
+  }
+
+  get salesByCategory(): Map<string, number> {
+    const byCategory = new Map<string, number>();
+
+    for (const sale of this.state.sales) {
+      const current = byCategory.get(sale.category) || 0;
+      byCategory.set(sale.category, current + sale.amount);
+    }
+
+    return byCategory;
+  }
+}
+```
+
+## Getters in Both Cubits and Blocs
+
+Computed properties work identically in both Cubits and Blocs:
+
+```typescript
+// Works in Cubits
+class CounterCubit extends Cubit<number> {
+  get isEven(): boolean {
+    return this.state % 2 === 0;
+  }
+
+  get displayValue(): string {
+    return `Count: ${this.state}`;
+  }
+}
+
+// Works in Blocs
+class CounterBloc extends Bloc<number, CounterEvent> {
+  constructor() {
+    super(0);
+    this.on(IncrementEvent, (event, emit) => emit(this.state + 1));
+  }
+
+  get isEven(): boolean {
+    return this.state % 2 === 0;
+  }
+
+  get displayValue(): string {
+    return `Count: ${this.state}`;
+  }
+}
+```
+
+The pattern is identical—getters are a feature of **TypeScript classes**, not specific to Cubits or Blocs.
+
+## Testing Computed Properties
+
+Testing getters is straightforward—just access them and assert the result:
+
+```typescript
+import { describe, test, expect } from 'vitest';
+
+describe('ShoppingCartCubit computed properties', () => {
+  test('subtotal calculates item totals', () => {
+    const cubit = new ShoppingCartCubit();
+
+    cubit.patch({
+      items: [
+        { id: '1', price: 10, quantity: 2 },  // $20
+        { id: '2', price: 5, quantity: 3 },   // $15
+      ],
+    });
+
+    expect(cubit.subtotal).toBe(35);
+    cubit.dispose();
+  });
+
+  test('isEmpty returns true for empty cart', () => {
+    const cubit = new ShoppingCartCubit();
+    cubit.patch({ items: [] });
+
+    expect(cubit.isEmpty).toBe(true);
+    cubit.dispose();
+  });
+
+  test('total includes tax and shipping', () => {
+    const cubit = new ShoppingCartCubit();
+
+    cubit.patch({
+      items: [{ id: '1', price: 100, quantity: 1 }],
+      taxRate: 0.10,      // 10% tax
+      shippingCost: 10,
+    });
+
+    expect(cubit.subtotal).toBe(100);
+    expect(cubit.taxAmount).toBe(10);
+    expect(cubit.total).toBe(120);  // 100 + 10 + 10
+
+    cubit.dispose();
+  });
+});
+```
+
+**Testing tip:** Test getters that use **other getters** to verify chaining works correctly!
+
+## Common Pitfalls
+
+### Pitfall 1: Side Effects in Getters
+
+```typescript
+// ❌ BAD: Side effects in getter
+class BadCubit extends Cubit<State> {
+  get data(): Data {
+    console.log('Getting data');  // ❌ Side effect
+    this.fetchData();              // ❌ Triggers state change!
+    return this.state.data;
+  }
+}
+
+// ✅ GOOD: Pure getter
+class GoodCubit extends Cubit<State> {
+  get data(): Data {
+    return this.state.data;  // ✅ Pure - no side effects
+  }
+
+  // Separate method for side effects
+  loadData = async () => {
+    const data = await this.fetchData();
+    this.patch({ data });
+  };
+}
+```
+
+**Rule:** Getters should be **pure functions**—same input (state) always produces same output, with no side effects.
+
+### Pitfall 2: Infinite Loops
+
+```typescript
+// ❌ BAD: Getter triggers state update
+class BadCubit extends Cubit<State> {
+  get computedValue(): number {
+    if (this.state.needsUpdate) {
+      this.patch({ needsUpdate: false });  // ❌ Infinite loop!
+    }
+    return this.state.value;
+  }
+}
+
+// ✅ GOOD: State updates in methods, not getters
+class GoodCubit extends Cubit<State> {
+  get computedValue(): number {
+    return this.state.value * 2;  // ✅ Pure calculation
+  }
+
+  updateValue = (value: number) => {
+    this.patch({ value, needsUpdate: false });
+  };
+}
+```
+
+### Pitfall 3: Accessing Getters in Constructors
+
+```typescript
+// ❌ BAD: Using getter before state is initialized
+class BadCubit extends Cubit<State> {
+  constructor() {
+    super({ items: [] });
+    console.log(this.total);  // ❌ May not be fully initialized
+  }
+
+  get total(): number {
+    return this.state.items.reduce((sum, i) => sum + i.price, 0);
+  }
+}
+
+// ✅ GOOD: Use getters after construction
+class GoodCubit extends Cubit<State> {
+  constructor() {
+    super({ items: [] });
+    // ✅ State is initialized, safe to use getters now
+  }
+
+  get total(): number {
+    return this.state.items.reduce((sum, i) => sum + i.price, 0);
+  }
+}
+
+// Usage
+const cubit = new GoodCubit();
+console.log(cubit.total);  // ✅ Safe after construction
+```
+
+## Key Takeaways
+
+- **Getters derive values from state** without storing redundant data
+- **Access like properties** (`cubit.total`), not methods (`cubit.total()`)
+- **Keep getters pure**—no side effects or state modifications
+- **Chain getters** to build complex calculations from simple ones
+- **Use in selectors** for fine-grained React re-render optimization
+- **Cache expensive calculations** in state if performance becomes an issue
+- **Test getters** just like any other class method
+
+## Next Steps
+
+You've mastered computed properties! Now learn about **lifecycle management**:
+
+- **[Lifecycle Management](/guide/core-concepts/lifecycle)** - Understand when Blocs are created and disposed
+- **[Simple Form](/guide/patterns/simple-form)** - Apply computed properties in form validation
+- **[Data Fetching](/guide/patterns/data-fetching)** - Use getters for loading and error states

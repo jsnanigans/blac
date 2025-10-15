@@ -1,3 +1,628 @@
-import { GuideArticle } from '@/components/guide/GuideArticle';
+import { GuideArticleNote } from '@/components/guide/GuideArticle';
 
-<GuideArticle demoId="todo-bloc" sectionId="patterns" />
+export const demoId = 'todo-bloc';
+export const sectionId = 'patterns';
+
+## Introduction
+
+A Todo application is the perfect example for demonstrating how multiple BlaC patterns work together in a real-world scenario. This guide walks through building a complete, production-ready Todo app using **event-driven architecture** with Bloc.
+
+This example brings together everything you've learned: event design, state management, computed properties, filtering, sorting, and CRUD operations—all in one cohesive application.
+
+### What You'll Learn
+
+- Building a complete event-driven Todo application with Bloc
+- Designing type-safe event classes for domain actions
+- Implementing CRUD operations with immutable state updates
+- Using computed properties for filtering and sorting
+- Managing complex UI state (filters, stats, bulk operations)
+- Testing event-driven Blocs effectively
+- Real-world patterns and best practices in action
+
+## Architecture Overview
+
+Our TodoBloc uses **event-driven architecture** where every user action is represented as a typed event class. This makes the application:
+
+- **Testable**: Events are plain data objects easy to create in tests
+- **Traceable**: Every state change has an explicit event that caused it
+- **Maintainable**: Event names document what happened in domain language
+- **Type-safe**: TypeScript catches errors at compile time
+
+<GuideArticleNote title="Why Bloc Instead of Cubit?">
+We use Bloc (not Cubit) for this Todo app because event-driven architecture provides better:
+- **Traceability**: Each action has an explicit event type
+- **Testing**: Events are easier to mock and verify
+- **Debugging**: Event logs show exactly what happened
+- **Scalability**: Easy to add new event types without changing existing code
+
+For simpler use cases, Cubit would work fine. But for applications with complex user interactions and business logic, Bloc shines.
+</GuideArticleNote>
+
+## Event Classes
+
+Our Todo app defines 8 event classes, each representing a single, specific user action:
+
+### 1. Adding a Todo
+
+```typescript
+class AddTodoEvent {
+  constructor(
+    public readonly text: string,
+    public readonly priority: 'low' | 'medium' | 'high'
+  ) {}
+}
+```
+
+**Why this design?** The event carries all the data needed to create a new todo. The `readonly` modifier ensures immutability—once created, the event cannot be mutated.
+
+### 2. Toggling Completion
+
+```typescript
+class ToggleTodoEvent {
+  constructor(public readonly id: number) {}
+}
+```
+
+**Single purpose**: This event only toggles completion. It doesn't update text, priority, or do anything else.
+
+### 3. Deleting a Todo
+
+```typescript
+class DeleteTodoEvent {
+  constructor(public readonly id: number) {}
+}
+```
+
+### 4. Updating Todo Text
+
+```typescript
+class UpdateTodoTextEvent {
+  constructor(
+    public readonly id: number,
+    public readonly text: string
+  ) {}
+}
+```
+
+**Specific, not generic**: Instead of a generic "UpdateTodoEvent" that updates anything, we have specific events for specific changes.
+
+### 5-8. UI State Events
+
+```typescript
+class SetFilterEvent {
+  constructor(public readonly filter: 'all' | 'active' | 'completed') {}
+}
+
+class SetSortByEvent {
+  constructor(public readonly sortBy: 'createdAt' | 'priority') {}
+}
+
+class ClearCompletedEvent {}
+
+class ToggleAllEvent {}
+```
+
+These events manage UI state (filters, sorting) and bulk operations.
+
+<GuideArticleNote title="Event Naming Convention">
+All events use past-tense nouns or domain-appropriate names:
+- `AddTodoEvent` (command pattern)
+- `ToggleTodoEvent` (action pattern)
+- `SetFilterEvent` (setter pattern)
+
+They represent **what happened**, not what to do. See the Event Design guide for more details.
+</GuideArticleNote>
+
+## State Structure
+
+Our state uses **flat, root-level properties** for optimal dependency tracking:
+
+```typescript
+interface TodoState {
+  todos: Todo[];              // Array of todo items
+  filter: 'all' | 'active' | 'completed';  // Current filter
+  sortBy: 'createdAt' | 'priority';        // Sort criterion
+  nextId: number;            // Auto-incrementing ID
+}
+
+interface Todo {
+  id: number;
+  text: string;
+  completed: boolean;
+  priority: 'low' | 'medium' | 'high';
+  createdAt: number;
+}
+```
+
+<GuideArticleNote title="Why Flat State?">
+BlaC's dependency tracking only works at the **root level** of state. Nested property changes like `state.config.theme.color` won't trigger re-renders for components that only depend on `state.config`.
+
+Our state keeps `todos`, `filter`, `sortBy`, and `nextId` at the root level. When any of these change, only components that depend on those specific properties re-render.
+</GuideArticleNote>
+
+## Event Handlers
+
+Each event has a dedicated handler that implements the business logic. Handlers follow three key principles:
+
+1. **Arrow functions** for proper `this` binding
+2. **Immutability** when updating state
+3. **Validation** before state changes
+
+### Example: Adding a Todo
+
+```typescript
+private handleAddTodo = (event: AddTodoEvent, emit: (state: TodoState) => void) => {
+  // Validation: don't add empty todos
+  if (!event.text.trim()) return;
+
+  // Immutable update: spread existing state
+  emit({
+    ...this.state,
+    todos: [
+      ...this.state.todos,  // Spread existing todos
+      {
+        id: this.state.nextId,
+        text: event.text.trim(),
+        completed: false,
+        priority: event.priority,
+        createdAt: Date.now(),
+      },
+    ],
+    nextId: this.state.nextId + 1,  // Increment ID
+  });
+};
+```
+
+**Key points:**
+- Use `...this.state` to spread existing properties
+- Create new array with `[...this.state.todos, newTodo]`
+- Never mutate: `this.state.todos.push(newTodo)` ❌
+- Validate input before emitting
+
+### Example: Toggling Completion
+
+```typescript
+private handleToggleTodo = (event: ToggleTodoEvent, emit: (state: TodoState) => void) => {
+  emit({
+    ...this.state,
+    todos: this.state.todos.map((todo) =>
+      todo.id === event.id
+        ? { ...todo, completed: !todo.completed }  // Toggle this todo
+        : todo  // Keep others unchanged
+    ),
+  });
+};
+```
+
+**Pattern**: Use `.map()` to transform the array immutably. Only the matching todo changes; others remain unchanged.
+
+### Example: Bulk Operations
+
+```typescript
+private handleToggleAll = (event: ToggleAllEvent, emit: (state: TodoState) => void) => {
+  const allCompleted = this.state.todos.every((todo) => todo.completed);
+
+  emit({
+    ...this.state,
+    todos: this.state.todos.map((todo) => ({
+      ...todo,
+      completed: !allCompleted,  // Set all to opposite of current state
+    })),
+  });
+};
+```
+
+## Public API Methods
+
+Public methods provide a clean interface for React components. They dispatch events:
+
+```typescript
+class TodoBloc extends Bloc<TodoState, TodoEvent> {
+  // Public API - components call these methods
+
+  addTodo = (text: string, priority: 'low' | 'medium' | 'high' = 'medium') => {
+    this.add(new AddTodoEvent(text, priority));
+  };
+
+  toggleTodo = (id: number) => {
+    this.add(new ToggleTodoEvent(id));
+  };
+
+  deleteTodo = (id: number) => {
+    this.add(new DeleteTodoEvent(id));
+  };
+
+  setFilter = (filter: 'all' | 'active' | 'completed') => {
+    this.add(new SetFilterEvent(filter));
+  };
+
+  // ... more methods
+}
+```
+
+**Why this pattern?** Components don't create event objects directly. Instead, they call clean methods like `todoBloc.addTodo('Buy milk')`. This encapsulates event creation and makes the API easier to use.
+
+## Computed Properties
+
+Computed properties derive data on-demand using getters. They **never store derived state**—they calculate it when needed.
+
+### Filtering and Sorting
+
+```typescript
+get filteredAndSortedTodos(): Todo[] {
+  // 1. Apply filter
+  let filtered = this.state.todos;
+  switch (this.state.filter) {
+    case 'active':
+      filtered = filtered.filter((t) => !t.completed);
+      break;
+    case 'completed':
+      filtered = filtered.filter((t) => t.completed);
+      break;
+    // 'all' returns everything
+  }
+
+  // 2. Apply sort
+  const sorted = [...filtered].sort((a, b) => {
+    if (this.state.sortBy === 'priority') {
+      const priorityOrder = { high: 0, medium: 1, low: 2 };
+      return priorityOrder[a.priority] - priorityOrder[b.priority];
+    }
+    return b.createdAt - a.createdAt; // Newest first
+  });
+
+  return sorted;
+}
+```
+
+**Usage in components:**
+
+```tsx
+function TodoList() {
+  const [state, todoBloc] = useBloc(TodoBloc);
+
+  // Access computed property like a normal property
+  return (
+    <div>
+      {todoBloc.filteredAndSortedTodos.map((todo) => (
+        <TodoItem key={todo.id} todo={todo} />
+      ))}
+    </div>
+  );
+}
+```
+
+<GuideArticleNote title="Why Not Store Filtered Todos in State?">
+Storing derived data creates two problems:
+1. **Duplication**: You'd have both `todos` and `filteredTodos` in state
+2. **Sync issues**: Whenever `todos` or `filter` changes, you must remember to update `filteredTodos`
+
+Computed properties solve this: calculate once when accessed, always in sync.
+</GuideArticleNote>
+
+### Statistics
+
+```typescript
+get stats() {
+  return {
+    total: this.state.todos.length,
+    active: this.state.todos.filter((t) => !t.completed).length,
+    completed: this.state.todos.filter((t) => t.completed).length,
+  };
+}
+```
+
+**Usage:**
+
+```tsx
+<div>
+  Total: {todoBloc.stats.total} |
+  Active: {todoBloc.stats.active} |
+  Completed: {todoBloc.stats.completed}
+</div>
+```
+
+## Try It Out
+
+Experience the full TodoBloc in action. Try adding todos, toggling completion, filtering, sorting, and bulk operations:
+
+<TodoBlocInteractive />
+
+## Key Patterns in Action
+
+This Todo app demonstrates **8 core patterns** working together:
+
+### 1. Event-Driven Architecture
+
+Every user action is an explicit event: `AddTodoEvent`, `ToggleTodoEvent`, etc. This makes state changes traceable and testable.
+
+### 2. Immutable State Updates
+
+All handlers use spread operators (`...`) and immutable array methods (`.map()`, `.filter()`) to create new state objects.
+
+### 3. Flat State Structure
+
+State uses root-level properties (`todos`, `filter`, `sortBy`) for optimal dependency tracking.
+
+### 4. Computed Properties
+
+Filtering, sorting, and statistics are computed on-demand using getters. No derived data in state.
+
+### 5. Type Safety
+
+TypeScript event classes, interfaces, and union types catch errors at compile time.
+
+### 6. Validation
+
+Handlers validate input (e.g., don't add empty todos) before emitting state.
+
+### 7. Single Responsibility
+
+Each event and handler has one clear purpose. No multi-purpose events with flags.
+
+### 8. Clean Public API
+
+Components interact through simple methods (`addTodo`, `toggleTodo`) instead of directly creating events.
+
+## Testing TodoBloc
+
+Testing event-driven Blocs is straightforward: dispatch events and verify state changes.
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { TodoBloc, AddTodoEvent, ToggleTodoEvent } from './TodoBloc';
+
+describe('TodoBloc', () => {
+  it('should add a new todo', () => {
+    const bloc = new TodoBloc();
+
+    // Dispatch event
+    bloc.addTodo('Buy milk', 'high');
+
+    // Verify state
+    expect(bloc.state.todos).toHaveLength(4); // 3 initial + 1 new
+    expect(bloc.state.todos[3].text).toBe('Buy milk');
+    expect(bloc.state.todos[3].priority).toBe('high');
+    expect(bloc.state.todos[3].completed).toBe(false);
+  });
+
+  it('should toggle todo completion', () => {
+    const bloc = new TodoBloc();
+    const todoId = bloc.state.todos[0].id;
+    const wasCompleted = bloc.state.todos[0].completed;
+
+    // Dispatch toggle event
+    bloc.toggleTodo(todoId);
+
+    // Verify completion toggled
+    const todo = bloc.state.todos.find((t) => t.id === todoId);
+    expect(todo?.completed).toBe(!wasCompleted);
+  });
+
+  it('should filter active todos correctly', () => {
+    const bloc = new TodoBloc();
+
+    // Set filter to active
+    bloc.setFilter('active');
+
+    // Computed property should only return incomplete todos
+    const active = bloc.filteredAndSortedTodos;
+    expect(active.every((t) => !t.completed)).toBe(true);
+  });
+
+  it('should sort by priority', () => {
+    const bloc = new TodoBloc();
+
+    // Set sort to priority
+    bloc.setSortBy('priority');
+
+    // Verify high priority comes first
+    const sorted = bloc.filteredAndSortedTodos;
+    const priorities = sorted.map((t) => t.priority);
+    expect(priorities[0]).toBe('high');
+  });
+
+  it('should clear completed todos', () => {
+    const bloc = new TodoBloc();
+
+    // Mark some todos complete
+    bloc.state.todos.filter((t) => !t.completed).forEach((t) => {
+      bloc.toggleTodo(t.id);
+    });
+
+    const completedCount = bloc.stats.completed;
+
+    // Clear completed
+    bloc.clearCompleted();
+
+    // Verify all completed todos removed
+    expect(bloc.state.todos).toHaveLength(bloc.stats.total);
+    expect(bloc.stats.completed).toBe(0);
+  });
+
+  it('should not add empty todos', () => {
+    const bloc = new TodoBloc();
+    const initialLength = bloc.state.todos.length;
+
+    // Try to add empty todo
+    bloc.addTodo('   ', 'low');
+
+    // Verify no todo added
+    expect(bloc.state.todos).toHaveLength(initialLength);
+  });
+});
+```
+
+<GuideArticleNote title="Testing Computed Properties">
+When testing computed properties, remember they're derived on-demand. Change state first, then verify the computed result:
+
+```typescript
+bloc.setFilter('active');  // Change state
+expect(bloc.filteredAndSortedTodos.length).toBe(2);  // Verify computed result
+```
+</GuideArticleNote>
+
+## Best Practices Demonstrated
+
+This TodoBloc showcases production-ready patterns:
+
+### 1. Event Naming
+
+✅ **Good**: `AddTodoEvent`, `ToggleTodoEvent`, `ClearCompletedEvent`
+- Past tense or domain-appropriate nouns
+- Specific, single-purpose events
+
+❌ **Bad**: `UpdateEvent`, `DoSomethingEvent`, `StateChangedEvent`
+
+### 2. Immutability
+
+✅ **Good**:
+```typescript
+todos: [...this.state.todos, newTodo]  // New array
+todo: { ...todo, completed: !todo.completed }  // New object
+```
+
+❌ **Bad**:
+```typescript
+this.state.todos.push(newTodo);  // Mutation!
+todo.completed = !todo.completed;  // Mutation!
+```
+
+### 3. Validation
+
+✅ **Good**: Validate in handlers before emitting
+```typescript
+if (!event.text.trim()) return;
+```
+
+### 4. Separation of Concerns
+
+- **Events**: Pure data, no logic
+- **Handlers**: Business logic, state transformations
+- **Public API**: Convenient methods for components
+- **Computed properties**: Derived data
+
+### 5. Type Safety
+
+Strong typing throughout:
+- Event classes with `readonly` properties
+- State and Todo interfaces
+- Union types for all events
+- Generic Bloc type parameters
+
+### 6. Arrow Functions
+
+All methods use arrow functions for correct `this` binding in React:
+
+```typescript
+addTodo = (text: string) => { ... }  // ✅ Correct
+// addTodo(text: string) { ... }     // ❌ Wrong
+```
+
+## Performance Considerations
+
+For Todo apps with **thousands of items**, consider:
+
+### 1. Virtual Scrolling
+
+For long lists (1000+ items):
+
+```tsx
+import { useVirtualizer } from '@tanstack/react-virtual';
+
+const filteredTodos = todoBloc.filteredAndSortedTodos;
+const parentRef = useRef<HTMLDivElement>(null);
+
+const virtualizer = useVirtualizer({
+  count: filteredTodos.length,
+  getScrollElement: () => parentRef.current,
+  estimateSize: () => 50,
+});
+```
+
+### 2. Memoization
+
+For expensive computed properties:
+
+```typescript
+// Simple approach: cache last result
+private _cachedFiltered: { filter: string; sortBy: string; result: Todo[] } | null = null;
+
+get filteredAndSortedTodos(): Todo[] {
+  if (
+    this._cachedFiltered &&
+    this._cachedFiltered.filter === this.state.filter &&
+    this._cachedFiltered.sortBy === this.state.sortBy
+  ) {
+    return this._cachedFiltered.result;
+  }
+
+  const result = this.computeFilteredAndSorted();
+  this._cachedFiltered = {
+    filter: this.state.filter,
+    sortBy: this.state.sortBy,
+    result,
+  };
+  return result;
+}
+```
+
+### 3. Debounce Search
+
+If adding real-time search:
+
+```typescript
+class SearchUpdatedEvent {
+  constructor(public readonly query: string) {}
+}
+
+// In component
+const debouncedSearch = useMemo(
+  () => debounce((query: string) => todoBloc.setSearchQuery(query), 300),
+  [todoBloc]
+);
+```
+
+## Real-World Extensions
+
+Production Todo apps might add:
+
+- **Persistence**: Save to localStorage or IndexedDB (see Persistence guide)
+- **Undo/Redo**: Store event history and replay
+- **Optimistic Updates**: Show changes immediately, sync with server
+- **Tags**: Add todo tags and filter by tag
+- **Due Dates**: Add deadlines and sort by urgency
+- **Subtasks**: Nest todos (requires normalized state)
+- **Collaborative Editing**: Sync with other users via WebSocket
+
+## Key Takeaways
+
+- **Event-driven architecture** makes state changes explicit and traceable
+- **Typed event classes** provide type safety and clear intent
+- **Immutable updates** with spread operators prevent bugs
+- **Flat state structure** enables optimal dependency tracking
+- **Computed properties** derive data on-demand without duplication
+- **Arrow functions** are required for correct `this` binding
+- **Testing Blocs** is straightforward: dispatch events, verify state
+- **Real-world apps** combine multiple patterns into cohesive architecture
+
+## Next Steps
+
+Now that you've seen multiple patterns working together, explore:
+
+- **Keep-Alive Pattern** - Persist Bloc instances across unmounts
+- **Props Pattern** - Create dynamic Bloc instances based on props
+- **Persistence** - Save and restore state across sessions
+- **Async Operations** - Handle complex async workflows
+- **Bloc Composition** - Coordinate multiple Blocs
+
+<GuideArticleNote title="Build Your Own">
+The best way to learn is by building. Try extending this Todo app with:
+- Tags or categories
+- Due dates and reminders
+- LocalStorage persistence
+- Undo/redo functionality
+- Drag-and-drop reordering
+
+Each feature will teach you new patterns and edge cases!
+</GuideArticleNote>

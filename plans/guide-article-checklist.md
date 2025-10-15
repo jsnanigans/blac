@@ -90,6 +90,16 @@ Use this checklist when creating or refactoring guide articles to ensure consist
 - [ ] Lifecycle concepts correct
 - [ ] Plugin usage demonstrated properly
 
+### Critical BlaC Behaviors (MUST be accurate)
+- [ ] **Instance Lifecycle**: By default, Blocs/Cubits count React component listeners and dispose when all listeners are removed
+  - Only with `static keepAlive = true` will the instance stay in memory with zero listeners
+  - With `static isolated = true`, each component gets its own instance coupled to that component's lifecycle
+- [ ] **Dependency Tracking Depth**: `useBloc` only tracks the **first layer (root level)** of state objects
+  - Deep property access like `state.user.name` is NOT tracked for fine-grained re-renders
+  - **Recommend flat state**: Use `state.userName` instead of `state.user.name`
+  - Flat state also simplifies `patch()` usage (no spreading nested objects)
+- [ ] **State Structure Guidance**: Articles should emphasize flat state objects when possible
+
 ### TypeScript
 - [ ] Proper interface definitions
 - [ ] Generic types used correctly

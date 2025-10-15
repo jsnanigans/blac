@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { GuideSidebar } from '@/components/guide/GuideSidebar';
 import { GuideNavigation } from '@/components/guide/GuideNavigation';
@@ -99,6 +99,15 @@ export function GuideLayout({
     advanced:
       'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300 border-rose-200/80 dark:border-rose-800/60',
   };
+
+  useEffect(() => {
+    //scroll to top, if in browser
+    document.scrollingElement?.scrollTo({
+      top: 0,
+      behavior: 'instant'
+    })
+
+  }, [navigation?.current.path])
 
   return (
     <div

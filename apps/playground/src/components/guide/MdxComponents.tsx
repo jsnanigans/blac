@@ -1,7 +1,7 @@
 import React from 'react';
 import { CodeBlock } from './CodeBlock';
 import { DemoPreview } from './DemoPreview';
-import { GuideArticleNote } from './GuideArticle';
+import { GuideArticleNote, InfoNote, WarningNote, DangerNote, SuccessNote } from './GuideArticle';
 import { cn } from '@/lib/utils';
 
 // Import interactive demo components
@@ -11,6 +11,27 @@ import { ReadingStateInteractive } from '@/demos/01-basics/reading-state/Reading
 import { UpdatingStateInteractive } from '@/demos/01-basics/updating-state/UpdatingStateInteractive';
 import { InstanceManagementInteractive } from '@/demos/01-basics/instance-management/InstanceManagementInteractive';
 import { CubitDeepDiveInteractive } from '@/demos/02-core-concepts/cubit-deep-dive/CubitDeepDiveInteractive';
+import { BlocDeepDiveInteractive } from '@/demos/02-core-concepts/bloc-deep-dive/BlocDeepDiveInteractive';
+import { BlocVsCubitInteractive } from '@/demos/02-core-concepts/bloc-vs-cubit/BlocVsCubitInteractive';
+import { ComputedPropertiesInteractive } from '@/demos/02-core-concepts/computed-properties/ComputedPropertiesInteractive';
+import { LifecycleInteractive } from '@/demos/02-core-concepts/lifecycle/LifecycleInteractive';
+import { SimpleFormInteractive } from '@/demos/03-patterns/simple-form/SimpleFormInteractive';
+import { FormValidationInteractive } from '@/demos/03-patterns/form-validation/FormValidationInteractive';
+import { AsyncLoadingInteractive } from '@/demos/03-patterns/async-loading/AsyncLoadingInteractive';
+import { DataFetchingInteractive } from '@/demos/03-patterns/data-fetching/DataFetchingInteractive';
+import { ListManagementInteractive } from '@/demos/03-patterns/list-management/ListManagementInteractive';
+import { FilteringSortingInteractive } from '@/demos/03-patterns/filtering-sorting/FilteringSortingInteractive';
+import { EventDesignInteractive } from '@/demos/03-patterns/event-design/EventDesignInteractive';
+import { TodoBlocInteractive } from '@/demos/03-patterns/todo-bloc/TodoBlocInteractive';
+import { KeepAliveInteractive } from '@/demos/03-patterns/keep-alive/KeepAliveInteractive';
+import { PropsInteractive } from '@/demos/03-patterns/props/PropsInteractive';
+import { PersistenceInteractive } from '@/demos/03-patterns/persistence/PersistenceInteractive';
+import { StreamInteractive } from '@/demos/03-advanced/stream/StreamInteractive';
+import { BlocCompositionInteractive } from '@/demos/03-advanced/bloc-composition/BlocCompositionInteractive';
+import { DependenciesInteractive } from '@/demos/03-advanced/dependencies/DependenciesInteractive';
+import { AsyncOperationsInteractive } from '@/demos/03-advanced/async-operations/AsyncOperationsInteractive';
+import { CustomSelectorsInteractive } from '@/demos/03-advanced/custom-selectors/CustomSelectorsInteractive';
+import { CustomPluginsInteractive } from '@/demos/04-plugins/custom-plugins/CustomPluginsInteractive';
 
 // Custom heading components with anchor support
 function H2({ children, ...props }: React.HTMLProps<HTMLHeadingElement>) {
@@ -189,6 +210,10 @@ export const mdxComponents = {
   // Custom components available in MDX
   DemoPreview,
   GuideArticleNote,
+  InfoNote,
+  WarningNote,
+  DangerNote,
+  SuccessNote,
   // Interactive demo components
   HelloWorldInteractive,
   CounterInteractive,
@@ -196,4 +221,25 @@ export const mdxComponents = {
   UpdatingStateInteractive,
   InstanceManagementInteractive,
   CubitDeepDiveInteractive,
+  BlocDeepDiveInteractive,
+  BlocVsCubitInteractive,
+  ComputedPropertiesInteractive,
+  LifecycleInteractive,
+  SimpleFormInteractive,
+  FormValidationInteractive,
+  AsyncLoadingInteractive,
+  DataFetchingInteractive,
+  ListManagementInteractive,
+  FilteringSortingInteractive,
+  EventDesignInteractive,
+  TodoBlocInteractive,
+  KeepAliveInteractive,
+  PropsInteractive,
+  PersistenceInteractive,
+  StreamInteractive,
+  BlocCompositionInteractive,
+  DependenciesInteractive,
+  AsyncOperationsInteractive,
+  CustomSelectorsInteractive,
+  CustomPluginsInteractive,
 };
