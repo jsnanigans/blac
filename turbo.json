@@ -29,7 +29,6 @@
     "format": {},
     "prettier": {},
     "test": {
-      "dependsOn": ["build"]
     },
     "test:watch": {
       "persistent": true,
