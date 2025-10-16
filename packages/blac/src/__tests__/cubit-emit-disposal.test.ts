@@ -22,10 +22,10 @@ describe('Cubit emit on DISPOSAL_REQUESTED', () => {
     }
 
     const cubit = Blac.getBloc(TestCubit);
-    const unsub = cubit.subscribe(() => {});
+    const { unsubscribe } = cubit.subscribe(() => {});
 
     // Unsubscribe to trigger DISPOSAL_REQUESTED
-    unsub();
+    unsubscribe();
     expect((cubit as any)._lifecycleManager.currentState).toBe('disposal_requested');
 
     // Emit should be blocked (not update state)

@@ -21,10 +21,10 @@ describe('Disposal Performance Benchmarks', () => {
 
   it('should dispose within 1ms (microtask-based)', async () => {
     const cubit = new TestCubit();
-    const unsub = cubit.subscribe(() => {});
+    const { unsubscribe } = cubit.subscribe(() => {});
 
     const start = performance.now();
-    unsub();
+    unsubscribe();
     await Promise.resolve(); // Flush microtask queue
     const duration = performance.now() - start;
 
@@ -37,8 +37,8 @@ describe('Disposal Performance Benchmarks', () => {
 
     for (let i = 0; i < 1000; i++) {
       const cubit = new TestCubit();
-      const unsub = cubit.subscribe(() => {});
-      unsub();
+      const { unsubscribe } = cubit.subscribe(() => {});
+      unsubscribe();
       await Promise.resolve(); // Flush microtask
     }
 
@@ -57,10 +57,10 @@ describe('Disposal Performance Benchmarks', () => {
     const start = performance.now();
 
     for (let i = 0; i < iterations; i++) {
-      const unsub = cubit.subscribe(() => {});
-      unsub();
+      const { unsubscribe } = cubit.subscribe(() => {});
+      unsubscribe();
       // Resubscribe before microtask runs (disposal cancelled)
-      const unsub2 = cubit.subscribe(() => {});
+      const { unsubscribe: unsub2 } = cubit.subscribe(() => {});
       unsub2();
     }
 
@@ -85,7 +85,7 @@ describe('Disposal Performance Benchmarks', () => {
         lastUnsub(); // Unsubscribe previous
       }
       // Immediately resubscribe (cancels disposal)
-      lastUnsub = cubit.subscribe(() => {});
+      lastUnsub = cubit.subscribe(() => {}).unsubscribe;
     }
 
     // Final unsubscribe
@@ -104,7 +104,7 @@ describe('Disposal Performance Benchmarks', () => {
 
     // Subscribe with multiple consumers
     for (let i = 0; i < consumerCount; i++) {
-      unsubscribers.push(cubit.subscribe(() => {}));
+      unsubscribers.push(cubit.subscribe(() => {}).unsubscribe);
     }
 
     const start = performance.now();
@@ -129,8 +129,8 @@ describe('Disposal Performance Benchmarks', () => {
 
     for (let i = 0; i < iterations; i++) {
       const cubit = new TestCubit();
-      const unsub = cubit.subscribe(() => {});
-      unsub();
+      const { unsubscribe } = cubit.subscribe(() => {});
+      unsubscribe();
       await Promise.resolve();
     }
 
@@ -160,8 +160,8 @@ describe('Disposal Performance Benchmarks', () => {
 
     for (let i = 0; i < iterations; i++) {
       const cubit = new CubitWithHook();
-      const unsub = cubit.subscribe(() => {});
-      unsub();
+      const { unsubscribe } = cubit.subscribe(() => {});
+      unsubscribe();
       await Promise.resolve();
       expect(cubit.cleanupCallCount).toBe(1);
     }
@@ -175,7 +175,7 @@ describe('Disposal Performance Benchmarks', () => {
 
   it('should handle disposal with state emissions efficiently', async () => {
     const cubit = new TestCubit();
-    const unsub = cubit.subscribe(() => {});
+    const { unsubscribe } = cubit.subscribe(() => {});
 
     // Emit some state changes
     for (let i = 0; i < 100; i++) {
@@ -183,7 +183,7 @@ describe('Disposal Performance Benchmarks', () => {
     }
 
     const start = performance.now();
-    unsub();
+    unsubscribe();
     await Promise.resolve();
     const duration = performance.now() - start;
 

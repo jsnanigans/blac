@@ -2,6 +2,7 @@ import { generateUUID } from './utils/uuid';
 import { BlocPlugin } from './plugins/types';
 import { BlocPluginRegistry } from './plugins/BlocPluginRegistry';
 import { SubscriptionManager } from './subscription/SubscriptionManager';
+import { SubscriptionResult } from './subscription/types';
 import {
   BlocLifecycleManager,
   BlocLifecycleState,
@@ -161,8 +162,9 @@ export abstract class BlocBase<S> {
 
   /**
    * Subscribe to all state changes
+   * @returns Object containing subscription ID and unsubscribe function
    */
-  subscribe(callback: (state: S) => void): () => void {
+  subscribe(callback: (state: S) => void): SubscriptionResult {
     return this._subscriptionManager.subscribe({
       type: 'observer',
       notify: (state) => callback(state as S),
@@ -171,12 +173,13 @@ export abstract class BlocBase<S> {
 
   /**
    * Subscribe with a selector for optimized updates
+   * @returns Object containing subscription ID and unsubscribe function
    */
   subscribeWithSelector<T>(
     selector: (state: S) => T,
     callback: (value: T) => void,
     equalityFn?: (a: T, b: T) => boolean,
-  ): () => void {
+  ): SubscriptionResult {
     return this._subscriptionManager.subscribe({
       type: 'consumer',
       selector: selector as any,
@@ -187,11 +190,12 @@ export abstract class BlocBase<S> {
 
   /**
    * Subscribe with React component reference for automatic cleanup
+   * @returns Object containing subscription ID and unsubscribe function
    */
   subscribeComponent(
     componentRef: WeakRef<object>,
     callback: () => void,
-  ): () => void {
+  ): SubscriptionResult {
     return this._subscriptionManager.subscribe({
       type: 'consumer',
       weakRef: componentRef,

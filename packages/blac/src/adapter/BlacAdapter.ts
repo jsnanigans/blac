@@ -136,7 +136,7 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
   createSubscription = (options: { onChange: () => void }) => {
     // If using manual dependencies, create a selector-based subscription
     if (this.isUsingDependencies && this.options?.dependencies) {
-      this.unsubscribe = this.blocInstance.subscribeWithSelector(
+      const result = this.blocInstance.subscribeWithSelector(
         (_state) => this.options!.dependencies!(this.blocInstance),
         (newValues) => {
           const hasChanged = this.hasDependencyValuesChanged(
@@ -150,18 +150,19 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
           }
         },
       );
+      this.unsubscribe = result.unsubscribe;
+      // Note: subscriptionId not needed for selector-based subscriptions
     } else {
       // Create a component subscription with weak reference
       const weakRef = new WeakRef(this.componentRef.current);
-      this.unsubscribe = this.blocInstance.subscribeComponent(
+      const result = this.blocInstance.subscribeComponent(
         weakRef,
         options.onChange,
       );
 
-      // Get the subscription ID for tracking
-      const subscriptions = (this.blocInstance._subscriptionManager as any)
-        .subscriptions as Map<string, any>;
-      this.subscriptionId = Array.from(subscriptions.keys()).pop();
+      // Get the subscription ID directly from the result (type-safe, race-free)
+      this.unsubscribe = result.unsubscribe;
+      this.subscriptionId = result.id;
 
       // V2: Enable tracking when subscription is created
       this.isTrackingActive = true;

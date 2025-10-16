@@ -327,6 +327,11 @@ cd packages/blac-react && pnpm deploy
 - States: `ACTIVE`, `DISPOSAL_REQUESTED`, `DISPOSING`, `DISPOSED`
 - Instance patterns: Shared (default), Isolated (`static isolated = true`), Persistent (`static keepAlive = true`)
 - WeakRef-based consumer tracking prevents memory leaks
+- **Generation Counter Pattern**: Prevents disposal race conditions using integer versioning (see `spec/2025-10-16-disposal-race-condition/`)
+  - Each disposal request gets a unique generation number
+  - Microtasks validate generation before executing
+  - Cancellation increments generation, invalidating pending microtasks
+  - Eliminates memory leaks in React Strict Mode scenarios
 - Reference counting considered for future improvements (see `blac-improvements.md`)
 
 ### Key Classes

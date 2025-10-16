@@ -24,6 +24,20 @@ export class BlocLifecycleManager {
   private disposalMicrotaskScheduled = false;
   private disposalHandler?: (bloc: unknown) => void;
 
+  /**
+   * Disposal generation counter - incremented on every disposal request or cancellation.
+   * Used to identify and invalidate stale disposal microtasks.
+   * Paired with activeGeneration to implement the generation counter pattern.
+   */
+  private disposalGeneration = 0;
+
+  /**
+   * Active generation - tracks which disposal generation is currently valid.
+   * Microtasks compare their captured generation against this value.
+   * Invariant: A disposal is valid IFF capturedGeneration === activeGeneration at execution time.
+   */
+  private activeGeneration = 0;
+
   get currentState(): BlocLifecycleState {
     return this.disposalState;
   }
@@ -95,8 +109,18 @@ export class BlocLifecycleManager {
     // Mark as scheduled
     this.disposalMicrotaskScheduled = true;
 
+    // Generate unique version for this disposal request
+    const generation = ++this.disposalGeneration;
+    this.activeGeneration = generation;
+
     // Queue disposal check
     queueMicrotask(() => {
+      // Validate this generation is still active
+      if (this.activeGeneration !== generation) {
+        // Cancelled or superseded by newer disposal
+        return;
+      }
+
       this.disposalMicrotaskScheduled = false;
 
       // Check if disposal should proceed
@@ -120,7 +144,11 @@ export class BlocLifecycleManager {
    */
   cancelDisposal(): boolean {
     if (this.disposalState === BlocLifecycleState.DISPOSAL_REQUESTED) {
-      // Clear scheduled flag (microtask will check state and abort)
+      // Invalidate current disposal generation
+      this.disposalGeneration++;
+      this.activeGeneration = this.disposalGeneration;
+
+      // Clear scheduled flag
       this.disposalMicrotaskScheduled = false;
 
       // Transition back to active state

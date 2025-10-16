@@ -1,18 +1,20 @@
 /**
- * Test file demonstrating disposal race condition issue
+ * Test file verifying disposal race condition fix
  *
- * Issue: BlocLifecycleManager can execute stale disposal microtasks after
+ * Issue: BlocLifecycleManager could execute stale disposal microtasks after
  * disposal has been cancelled, causing memory leaks in React Strict Mode.
  *
- * This test file demonstrates the issue BEFORE the generation counter fix.
- * Tests are expected to FAIL until the fix is implemented.
+ * Solution: Generation counter pattern prevents stale microtasks from executing.
+ * These tests verify the fix is working correctly.
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { BlocLifecycleManager } from '../BlocLifecycleManager';
-import { BlocLifecycleState } from '../types';
+import {
+  BlocLifecycleManager,
+  BlocLifecycleState,
+} from '../BlocLifecycle.js';
 
-describe('BlocLifecycleManager - Disposal Race Conditions (ISSUE)', () => {
+describe('BlocLifecycleManager - Disposal Race Conditions (FIXED)', () => {
   let manager: BlocLifecycleManager;
 
   beforeEach(() => {
@@ -40,7 +42,7 @@ describe('BlocLifecycleManager - Disposal Race Conditions (ISSUE)', () => {
     await new Promise(resolve => setTimeout(resolve, 10));
 
     // EXPECTED: disposeCount should be 0 (disposal was cancelled)
-    // ACTUAL (ISSUE): disposeCount is 1 (stale microtask executed!)
+    // FIXED: Generation counter prevents stale microtask from executing
     expect(disposeCount).toBe(0);
   });
 
@@ -62,7 +64,7 @@ describe('BlocLifecycleManager - Disposal Race Conditions (ISSUE)', () => {
     await new Promise(resolve => setTimeout(resolve, 10));
 
     // EXPECTED: disposeCount should be 0 (disposal was cancelled on remount)
-    // ACTUAL (ISSUE): disposeCount is 1 (stale microtask executed!)
+    // FIXED: Generation counter prevents stale microtask from executing
     expect(disposeCount).toBe(0);
 
     // Unmount again (final unmount)
@@ -97,7 +99,7 @@ describe('BlocLifecycleManager - Disposal Race Conditions (ISSUE)', () => {
     await new Promise(resolve => setTimeout(resolve, 50));
 
     // EXPECTED: disposeCount should be 0 (all disposals were cancelled)
-    // ACTUAL (ISSUE): disposeCount is 100 (all stale microtasks executed!)
+    // FIXED: Generation counter prevents all stale microtasks from executing
     expect(disposeCount).toBe(0);
   });
 
@@ -165,13 +167,12 @@ describe('BlocLifecycleManager - Disposal Race Conditions (ISSUE)', () => {
     // Expected timeline:
     // ['disposal scheduled', 'disposal cancelled', 'microtask executed']
 
-    // ISSUE: dispose executed even though it was cancelled!
-    console.log('Timeline:', timeline);
+    // FIXED: dispose should not execute since it was cancelled!
     expect(timeline).not.toContain('dispose executed');
   });
 });
 
-describe('BlocLifecycleManager - Performance Impact (ISSUE)', () => {
+describe('BlocLifecycleManager - Performance Impact (FIXED)', () => {
   it('should measure memory leak from uncancelled disposals', async () => {
     const managers: BlocLifecycleManager[] = [];
     const leakedDisposals: number[] = [];
@@ -198,8 +199,7 @@ describe('BlocLifecycleManager - Performance Impact (ISSUE)', () => {
     await new Promise(resolve => setTimeout(resolve, 50));
 
     // EXPECTED: 0 leaked disposals
-    // ACTUAL (ISSUE): 100 leaked disposals!
-    console.log(`Leaked disposals: ${leakedDisposals.length}/100`);
+    // FIXED: Generation counter prevents all leaked disposals
     expect(leakedDisposals.length).toBe(0);
   });
 });

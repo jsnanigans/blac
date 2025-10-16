@@ -44,7 +44,7 @@ export async function waitForState<T extends BlocBase<S>, S>(
       );
     }, timeout);
 
-    const unsubscribe = bloc.subscribe((newState: S) => {
+    const { unsubscribe } = bloc.subscribe((newState: S) => {
       if (predicate(newState)) {
         clearTimeout(timeoutId);
         unsubscribe();

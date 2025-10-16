@@ -21,8 +21,8 @@ describe('BlocBase Microtask Disposal', () => {
 
   it('should dispose on next microtask when subscription count reaches 0', async () => {
     const cubit = new TestCubit();
-    const unsub = cubit.subscribe(() => {});
-    unsub();
+    const { unsubscribe } = cubit.subscribe(() => {});
+    unsubscribe();
 
     // Not disposed yet (microtask hasn't run)
     expect(cubit.isDisposed).toBe(false);
@@ -37,14 +37,14 @@ describe('BlocBase Microtask Disposal', () => {
 
   it('should cancel disposal when resubscribing before microtask runs', async () => {
     const cubit = new TestCubit();
-    const unsub1 = cubit.subscribe(() => {});
+    const { unsubscribe: unsub1 } = cubit.subscribe(() => {});
     unsub1();
 
     // Should be in DISPOSAL_REQUESTED state
     expect((cubit as any)._lifecycleManager.currentState).toBe('disposal_requested');
 
     // Resubscribe before microtask runs
-    const unsub2 = cubit.subscribe(() => {});
+    const { unsubscribe: unsub2 } = cubit.subscribe(() => {});
 
     // Should be back to ACTIVE (disposal canceled)
     expect((cubit as any)._lifecycleManager.currentState).toBe('active');
@@ -65,15 +65,15 @@ describe('BlocBase Microtask Disposal', () => {
 
     // Rapid subscribe/unsubscribe cycles
     for (let i = 0; i < 5; i++) {
-      const unsub = cubit.subscribe(() => {});
-      unsub();
+      const { unsubscribe } = cubit.subscribe(() => {});
+      unsubscribe();
       // Resubscribe before microtask
-      const unsub2 = cubit.subscribe(() => {});
+      const { unsubscribe: unsub2 } = cubit.subscribe(() => {});
       unsub2();
     }
 
     // Final unsubscribe
-    const finalUnsub = cubit.subscribe(() => {});
+    const { unsubscribe: finalUnsub } = cubit.subscribe(() => {});
     finalUnsub();
 
     // Should eventually dispose after microtask
@@ -90,8 +90,8 @@ describe('BlocBase Microtask Disposal', () => {
     }
 
     const cubit = new KeepAliveCubit();
-    const unsub = cubit.subscribe(() => {});
-    unsub();
+    const { unsubscribe } = cubit.subscribe(() => {});
+    unsubscribe();
 
     // Flush microtasks
     await Promise.resolve();
@@ -105,8 +105,8 @@ describe('BlocBase Microtask Disposal', () => {
     const errorSpy = vi.spyOn(Blac.instance, 'error');
 
     const cubit = Blac.getBloc(TestCubit);
-    const unsub = cubit.subscribe(() => {});
-    unsub();
+    const { unsubscribe } = cubit.subscribe(() => {});
+    unsubscribe();
 
     // Should be in DISPOSAL_REQUESTED state
     expect((cubit as any)._lifecycleManager.currentState).toBe('disposal_requested');
@@ -144,8 +144,8 @@ describe('BlocBase Microtask Disposal', () => {
 
   it('should block emissions on DISPOSED bloc', async () => {
     const cubit = new TestCubit();
-    const unsub = cubit.subscribe(() => {});
-    unsub();
+    const { unsubscribe } = cubit.subscribe(() => {});
+    unsubscribe();
 
     await Promise.resolve(); // Dispose
     expect(cubit.isDisposed).toBe(true);
@@ -197,7 +197,7 @@ describe('BlocBase Microtask Disposal', () => {
     const states: number[] = [];
 
     // Subscribe to track state changes
-    const unsub = cubit.subscribe((state) => {
+    const { unsubscribe } = cubit.subscribe((state) => {
       states.push(state.count);
     });
 
@@ -212,7 +212,7 @@ describe('BlocBase Microtask Disposal', () => {
     const statesBeforeUnmount = states.length;
 
     // Simulate component unmount - unsubscribe
-    unsub();
+    unsubscribe();
 
     // Cubit should schedule disposal (calls onDisposalScheduled)
     expect((cubit as any)._lifecycleManager.currentState).toBe('disposal_requested');
@@ -248,10 +248,10 @@ describe('BlocBase Microtask Disposal', () => {
     }
 
     const cubit = Blac.getBloc(FaultyCubit);
-    const unsub = cubit.subscribe(() => {});
+    const { unsubscribe } = cubit.subscribe(() => {});
 
     // Should not throw when unsubscribing
-    expect(() => unsub()).not.toThrow();
+    expect(() => unsubscribe()).not.toThrow();
 
     // Error should be logged
     expect(errorSpy).toHaveBeenCalledWith(
@@ -283,8 +283,8 @@ describe('BlocBase Microtask Disposal', () => {
     }
 
     const cubit = new TestCubit();
-    const unsub = cubit.subscribe(() => {});
-    unsub();
+    const { unsubscribe } = cubit.subscribe(() => {});
+    unsubscribe();
 
     // Hook should be called synchronously
     expect(hookCalled).toBe(true);
@@ -298,8 +298,8 @@ describe('BlocBase Microtask Disposal', () => {
 
   it('should handle multiple disposal scheduling attempts', async () => {
     const cubit = new TestCubit();
-    const unsub1 = cubit.subscribe(() => {});
-    const unsub2 = cubit.subscribe(() => {});
+    const { unsubscribe: unsub1 } = cubit.subscribe(() => {});
+    const { unsubscribe: unsub2 } = cubit.subscribe(() => {});
 
     // Unsubscribe both
     unsub1();
@@ -314,13 +314,13 @@ describe('BlocBase Microtask Disposal', () => {
 
   it('should transition through correct lifecycle states', async () => {
     const cubit = new TestCubit();
-    const unsub = cubit.subscribe(() => {});
+    const { unsubscribe } = cubit.subscribe(() => {});
 
     // Should start ACTIVE
     expect((cubit as any)._lifecycleManager.currentState).toBe('active');
 
     // Unsubscribe -> DISPOSAL_REQUESTED
-    unsub();
+    unsubscribe();
     expect((cubit as any)._lifecycleManager.currentState).toBe('disposal_requested');
 
     // Microtask runs -> DISPOSING -> DISPOSED

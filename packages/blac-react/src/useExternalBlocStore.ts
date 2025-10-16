@@ -117,7 +117,7 @@ export default function useExternalBlocStore<
         // Store the previous state for the listener
         let previousState = currentInstance.state;
 
-        const unsubscribe = currentInstance.subscribe((state) => {
+        const { unsubscribe } = currentInstance.subscribe((state) => {
           const oldState = previousState;
           previousState = state;
           safeListener(state, oldState);

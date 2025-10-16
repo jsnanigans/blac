@@ -64,7 +64,7 @@ class SimulatedComponent {
     this.listener = vi.fn((state: CounterState) => {
       this.lastSeenValue = state.count;
     });
-    this.unsubscribe = this.bloc.subscribe(this.listener);
+    this.unsubscribe = this.bloc.subscribe(this.listener).unsubscribe;
 
     return this;
   }
@@ -178,7 +178,7 @@ describe('KeepAlive', () => {
 
       // Show counter 1
       const counter1 = Blac.getBloc(KeepAliveCounterCubit);
-      const unsubscribe1 = counter1.subscribe(listener1);
+      const { unsubscribe: unsubscribe1 } = counter1.subscribe(listener1);
 
       // Increment counter 1
       counter1.increment();
@@ -187,7 +187,7 @@ describe('KeepAlive', () => {
 
       // Show counter 2 (same instance)
       const counter2 = Blac.getBloc(KeepAliveCounterCubit);
-      const unsubscribe2 = counter2.subscribe(listener2);
+      const { unsubscribe: unsubscribe2 } = counter2.subscribe(listener2);
 
       // Counter 2 should have the same state
       expect(counter2.state.count).toBe(1);
@@ -217,7 +217,7 @@ describe('KeepAlive', () => {
 
       // Show counter 1 again
       const counter1Again = Blac.getBloc(KeepAliveCounterCubit);
-      const unsubscribe1Again = counter1Again.subscribe(listener1);
+      const { unsubscribe: unsubscribe1Again } = counter1Again.subscribe(listener1);
 
       // Should have the persisted state
       expect(counter1Again.state.count).toBe(3);
@@ -256,9 +256,9 @@ describe('KeepAlive', () => {
       expect(consumer2).toBe(consumer3);
 
       // Subscribe all
-      const unsub1 = consumer1.subscribe(listeners.consumer1);
-      const unsub2 = consumer2.subscribe(listeners.consumer2);
-      const unsub3 = consumer3.subscribe(listeners.consumer3);
+      const { unsubscribe: unsub1 } = consumer1.subscribe(listeners.consumer1);
+      const { unsubscribe: unsub2 } = consumer2.subscribe(listeners.consumer2);
+      const { unsubscribe: unsub3 } = consumer3.subscribe(listeners.consumer3);
 
       // Increment from consumer1
       consumer1.increment();
@@ -285,7 +285,7 @@ describe('KeepAlive', () => {
       expect(listeners.consumer3).toHaveBeenCalledTimes(2);
 
       // Resubscribe consumer2
-      const unsub2Again = consumer2.subscribe(listeners.consumer2);
+      const { unsubscribe: unsub2Again } = consumer2.subscribe(listeners.consumer2);
 
       // Reset from consumer2
       consumer2.reset();
@@ -376,7 +376,7 @@ describe('KeepAlive', () => {
     it('should keep instance alive when all consumers unsubscribe', () => {
       const consumer1 = Blac.getBloc(KeepAliveCounterCubit);
       const listener1 = vi.fn();
-      const unsub1 = consumer1.subscribe(listener1);
+      const { unsubscribe: unsub1 } = consumer1.subscribe(listener1);
 
       // Increment to change state
       consumer1.increment();
@@ -396,7 +396,7 @@ describe('KeepAlive', () => {
       const consumer1 = new RegularCounterCubit();
       Blac.activateBloc(consumer1 as any);
       const listener1 = vi.fn();
-      const unsub1 = consumer1.subscribe(listener1);
+      const { unsubscribe: unsub1 } = consumer1.subscribe(listener1);
 
       const firstInstanceId = consumer1.state.instanceId;
 
@@ -430,7 +430,7 @@ describe('KeepAlive', () => {
 
       // Step 1: Show counter 1
       const counter1 = Blac.getBloc(KeepAliveCounterCubit);
-      const unsub1 = counter1.subscribe(listener1);
+      const { unsubscribe: unsub1 } = counter1.subscribe(listener1);
       expect(counter1.state.count).toBe(0);
 
       // Step 2: Increment counter 1
@@ -440,7 +440,7 @@ describe('KeepAlive', () => {
 
       // Step 3: Show counter 2 (should have correct value)
       const counter2 = Blac.getBloc(KeepAliveCounterCubit);
-      const unsub2 = counter2.subscribe(listener2);
+      const { unsubscribe: unsub2 } = counter2.subscribe(listener2);
       expect(counter2).toBe(counter1); // Same instance
       expect(counter2.state.count).toBe(1); // Has the incremented value
 
@@ -465,7 +465,7 @@ describe('KeepAlive', () => {
 
       // Show counter 1, increment, hide
       const counter1 = Blac.getBloc(KeepAliveCounterCubit);
-      const unsub1 = counter1.subscribe(() =>
+      const { unsubscribe: unsub1 } = counter1.subscribe(() =>
         states.push(counter1.state.count),
       );
       counter1.increment();
@@ -474,7 +474,7 @@ describe('KeepAlive', () => {
 
       // Show counter 2, verify state, increment, hide
       const counter2 = Blac.getBloc(KeepAliveCounterCubit);
-      const unsub2 = counter2.subscribe(() =>
+      const { unsubscribe: unsub2 } = counter2.subscribe(() =>
         states.push(counter2.state.count),
       );
       expect(counter2.state.count).toBe(1);
@@ -485,10 +485,10 @@ describe('KeepAlive', () => {
       // Show both counters
       const counter3 = Blac.getBloc(KeepAliveCounterCubit);
       const counter4 = Blac.getBloc(KeepAliveCounterCubit);
-      const unsub3 = counter3.subscribe(() =>
+      const { unsubscribe: unsub3 } = counter3.subscribe(() =>
         states.push(counter3.state.count),
       );
-      const unsub4 = counter4.subscribe(() =>
+      const { unsubscribe: unsub4 } = counter4.subscribe(() =>
         states.push(counter4.state.count),
       );
 
@@ -517,7 +517,7 @@ describe('KeepAlive', () => {
       // Create multiple consumers rapidly
       const consumers = Array.from({ length: 5 }, (_, i) => {
         const consumer = Blac.getBloc(KeepAliveCounterCubit);
-        const unsub = consumer.subscribe(() => {
+        const { unsubscribe: unsub } = consumer.subscribe(() => {
           results.push({ id: `consumer${i}`, count: consumer.state.count });
         });
         return { consumer, unsub, id: `consumer${i}` };
@@ -613,7 +613,7 @@ describe('KeepAlive', () => {
           seenValue = state.count;
         });
 
-        const unsubscribe = bloc.subscribe(listener);
+        const { unsubscribe } = bloc.subscribe(listener);
 
         return {
           id,
@@ -675,7 +675,7 @@ describe('KeepAlive', () => {
 
       // Rapidly subscribe and unsubscribe
       const unsubscribes = listeners.map((listener) =>
-        consumer.subscribe(listener),
+        consumer.subscribe(listener).unsubscribe,
       );
 
       // Increment once

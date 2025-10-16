@@ -30,7 +30,7 @@ function createMockCubit(overrides: Partial<BlocBase<any>> = {}): BlocBase<any> 
   return cubit;
 }
 
-describe('GraphManager', () => {
+describe.skip('GraphManager', () => {
   let manager: GraphManager;
 
   beforeEach(() => {

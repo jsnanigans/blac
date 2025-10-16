@@ -168,6 +168,18 @@ export class Blac {
   isolatedBlocMap: Map<BlocConstructor<any>, BlocBase<unknown>[]> = new Map();
   /** Map for O(1) lookup of isolated blocs by UID */
   isolatedBlocIndex: Map<string, BlocBase<unknown>> = new Map();
+  /**
+   * Index for O(1) lookup of isolated blocs by their _id property.
+   * Key format: `${blocClassName}:${bloc._id}`
+   * @internal
+   */
+  private isolatedBlocIdIndex: Map<string, BlocBase<unknown>> = new Map();
+  /**
+   * Index for O(1) lookup of isolated blocs by their _instanceRef property.
+   * Key format: `${blocClassName}:${bloc._instanceRef}`
+   * @internal
+   */
+  private isolatedBlocRefIndex: Map<string, BlocBase<unknown>> = new Map();
   /** Map tracking UIDs to prevent memory leaks */
   uidRegistry: Map<string, BlocBase<unknown>> = new Map();
   /** Set of keep-alive blocs for controlled cleanup */
@@ -280,6 +292,8 @@ export class Blac {
     this.blocInstanceMap.clear();
     this.isolatedBlocMap.clear();
     this.isolatedBlocIndex.clear();
+    this.isolatedBlocIdIndex.clear();
+    this.isolatedBlocRefIndex.clear();
 
     // Use instance manager to reset
     instanceManager.resetInstance();
@@ -359,6 +373,35 @@ export class Blac {
   }
 
   /**
+   * Create composite index key for ID-based lookup of isolated blocs.
+   * Format: `${blocClassName}:${id}`
+   *
+   * @param blocClassName - The bloc class name
+   * @param id - The bloc instance ID or instanceRef
+   * @returns Composite key string
+   * @throws {TypeError} If blocClassName is empty
+   * @throws {Error} If id string exceeds 1000 characters
+   * @internal
+   */
+  private createIdIndexKey(blocClassName: string, id: BlocInstanceId): string {
+    if (!blocClassName) {
+      throw new TypeError('blocClassName cannot be empty');
+    }
+
+    const idStr = String(id);
+
+    // Security: Prevent memory exhaustion via long keys
+    if (idStr.length > 1000) {
+      throw new Error(
+        `Bloc instance ID is too long (${idStr.length} chars). ` +
+          `Maximum allowed is 1000 characters.`,
+      );
+    }
+
+    return `${blocClassName}:${idStr}`;
+  }
+
+  /**
    * Unregister a bloc instance from the main registry
    * @param bloc - The bloc instance to unregister
    */
@@ -429,6 +472,38 @@ export class Blac {
     // Add to isolated index for O(1) lookups
     this.isolatedBlocIndex.set(bloc.uid, bloc);
 
+    // NEW: Index by _id (if present and no _instanceRef)
+    // When _instanceRef is present, it takes precedence as the primary key
+    if (bloc._id && !bloc._instanceRef) {
+      const idKey = this.createIdIndexKey(blocClass.name, bloc._id);
+
+      // Detect duplicate IDs (security & correctness)
+      if (this.isolatedBlocIdIndex.has(idKey)) {
+        throw new Error(
+          `Duplicate isolated bloc ID: ${idKey}. ` +
+            `An isolated bloc of type ${blocClass.name} with ID "${String(bloc._id)}" already exists.`,
+        );
+      }
+
+      this.isolatedBlocIdIndex.set(idKey, bloc);
+    }
+
+    // NEW: Index by _instanceRef (if present)
+    // _instanceRef is the primary key for adapter-managed instances
+    if (bloc._instanceRef) {
+      const refKey = this.createIdIndexKey(blocClass.name, bloc._instanceRef);
+
+      // Detect duplicate instanceRefs (security & correctness)
+      if (this.isolatedBlocRefIndex.has(refKey)) {
+        throw new Error(
+          `Duplicate isolated bloc instanceRef: ${refKey}. ` +
+            `An isolated bloc of type ${blocClass.name} with instanceRef "${bloc._instanceRef}" already exists.`,
+        );
+      }
+
+      this.isolatedBlocRefIndex.set(refKey, bloc);
+    }
+
     // Track UID for cleanup
     this.uidRegistry.set(bloc.uid, bloc);
 
@@ -464,6 +539,25 @@ export class Blac {
     // Always try to remove from isolated index, even if not found in map
     const wasInIndex = this.isolatedBlocIndex.delete(bloc.uid);
 
+    // NEW: Clean up ID index (if was indexed)
+    // Only indexed if _id was present and no _instanceRef
+    if (bloc._id && !bloc._instanceRef) {
+      const idKey = this.createIdIndexKey(
+        (bloc.constructor as BlocConstructor<any>).name,
+        bloc._id,
+      );
+      this.isolatedBlocIdIndex.delete(idKey);
+    }
+
+    // NEW: Clean up instanceRef index (if was indexed)
+    if (bloc._instanceRef) {
+      const refKey = this.createIdIndexKey(
+        (bloc.constructor as BlocConstructor<any>).name,
+        bloc._instanceRef,
+      );
+      this.isolatedBlocRefIndex.delete(refKey);
+    }
+
     // Clean up UID tracking
     this.uidRegistry.delete(bloc.uid);
 
@@ -480,7 +574,14 @@ export class Blac {
   }
 
   /**
-   * Finds an isolated bloc instance by its class and ID (O(n) lookup)
+   * Finds an isolated bloc instance by its class and ID.
+   *
+   * This method uses O(1) Map lookups for optimal performance,
+   * regardless of the number of isolated instances.
+   *
+   * @param blocClass - The bloc class to search for
+   * @param id - The bloc instance ID or instanceRef to find
+   * @returns The bloc instance, or undefined if not found or disposed
    */
   findIsolatedBlocInstance<B extends BlocConstructor<any>>(
     blocClass: B,
@@ -489,15 +590,22 @@ export class Blac {
     const base = blocClass as unknown as BlocBaseAbstract;
     if (!base.isolated) return undefined;
 
-    const blocs = this.isolatedBlocMap.get(blocClass);
-    if (!blocs) {
+    // O(1) index lookup (was O(n) linear search)
+    const key = this.createIdIndexKey(blocClass.name, id);
+
+    // Try ID index first
+    let found = this.isolatedBlocIdIndex.get(key) as InstanceType<B> | undefined;
+
+    // If not found in ID index, try instanceRef index
+    if (!found) {
+      found = this.isolatedBlocRefIndex.get(key) as InstanceType<B> | undefined;
+    }
+
+    // Preserve existing behavior: return undefined for disposed blocs
+    if (found && (found as any).isDisposed) {
       return undefined;
     }
-    // Find the specific bloc by instanceRef (for adapter-managed instances) or by ID
-    // This allows lookup by both the adapter's instanceRef and explicit instance IDs
-    const found = blocs.find((b) =>
-      ((b._instanceRef === id || b._id === id) && !(b as any).isDisposed)
-    ) as InstanceType<B> | undefined;
+
     return found;
   }
 

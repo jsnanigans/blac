@@ -1,271 +1,244 @@
-import { Cubit } from '@blac/core';
-import { useBloc } from '@blac/react';
-import React from 'react';
-import { createRoot, Root } from 'react-dom/client';
+import React, { useState } from 'react';
+import { createRoot } from 'react-dom/client';
+import { BenchmarkDashboard } from './src/components/BenchmarkDashboard';
+import { JSFrameworkBenchmark } from './src/benchmarks/JSFrameworkBenchmark';
 import './bootstrap.css';
 import './main.css';
 
-interface DataItem {
-  id: number;
-  label: string;
-}
+type Page = 'home' | 'jsframework' | 'dashboard';
 
-const A = [
-  'pretty',
-  'large',
-  'big',
-  'small',
-  'tall',
-  'short',
-  'long',
-  'handsome',
-  'plain',
-  'quaint',
-  'clean',
-  'elegant',
-  'easy',
-  'angry',
-  'crazy',
-  'helpful',
-  'mushy',
-  'odd',
-  'unsightly',
-  'adorable',
-  'important',
-  'inexpensive',
-  'cheap',
-  'expensive',
-  'fancy',
-];
-const C = [
-  'red',
-  'yellow',
-  'blue',
-  'green',
-  'pink',
-  'brown',
-  'purple',
-  'brown',
-  'white',
-  'black',
-  'orange',
-];
-const N = [
-  'table',
-  'chair',
-  'house',
-  'bbq',
-  'desk',
-  'car',
-  'pony',
-  'cookie',
-  'sandwich',
-  'burger',
-  'pizza',
-  'mouse',
-  'keyboard',
-];
-
-const random = (max: number): number => Math.round(Math.random() * 1000) % max;
-
-let nextId = 1;
-function buildData(count: number): DataItem[] {
-  const data = new Array<DataItem>(count);
-  for (let i = 0; i < count; i++) {
-    data[i] = {
-      id: nextId++,
-      label: `${A[random(A.length)]} ${C[random(C.length)]} ${N[random(N.length)]}`,
-    };
-  }
-  return data;
-}
-
-class DemoBloc extends Cubit<{
-  selected: number[];
-  data: DataItem[];
-}> {
-  constructor() {
-    super({
-      selected: [],
-      data: [],
-    });
-  }
-
-  run = (): void => {
-    const data = buildData(1000);
-    this.emit({
-      selected: [],
-      data,
-    });
-  };
-
-  runLots = (): void => {
-    const data = buildData(10000);
-    this.emit({
-      selected: [],
-      data,
-    });
-  };
-
-  add = (): void => {
-    const addData = buildData(1000);
-    const newState = [...this.state.data, ...addData];
-    this.patch({
-      data: newState,
-    });
-  };
-
-  update = (): void => {
-    const updatedData = this.state.data.map((item, i) => {
-      if (i % 10 === 0) {
-        return { ...item, label: item.label + ' !!!' };
-      }
-      return item;
-    });
-    this.patch({
-      data: updatedData,
-    });
-  };
-
-  select = (id: number): void => {
-    const currentSelected = this.state.selected;
-    const newSelected = currentSelected.includes(id) ? [] : [id];
-    this.patch({ selected: newSelected });
-  };
-
-  remove = (id: number): void => {
-    const newData = this.state.data.filter((item) => item.id !== id);
-    this.patch({ data: newData });
-  };
-
-  clear = (): void => {
-    this.emit({
-      selected: [],
-      data: [],
-    });
-  };
-
-  swapRows = (): void => {
-    const currentData = [...this.state.data];
-    const swappableData = [...currentData];
-    const tmp = swappableData[1];
-    swappableData[1] = swappableData[998];
-    swappableData[998] = tmp;
-    this.patch({ data: swappableData });
-  };
-}
-
-const GlyphIcon = (
-  <span className="glyphicon glyphicon-remove" aria-hidden="true" />
-);
-
-interface RowProps {
-  item: DataItem;
-  isSelected?: boolean;
-  remove: (id: number) => void;
-  select: (id: number) => void;
-}
-
-const Row: React.FC<RowProps> = React.memo(
-  ({ item, isSelected, remove, select }) => {
-    return (
-      <tr className={isSelected ? 'danger' : ''}>
-        <td className="col-md-1">{item.id}</td>
-        <td className="col-md-4">
-          <a onClick={() => select(item.id)}>{item.label}</a>
-        </td>
-        <td className="col-md-1">
-          <a onClick={() => remove(item.id)}>{GlyphIcon}</a>
-        </td>
-        <td className="col-md-6"></td>
-      </tr>
-    );
-  },
-);
-
-const RowList: React.FC = () => {
-  const [{ data, selected }, { remove, select }] = useBloc(DemoBloc);
-
-  const rows = data.map((item) => (
-    <Row
-      key={item.id}
-      item={item}
-      isSelected={selected.includes(item.id)}
-      remove={remove}
-      select={select}
-    />
-  ));
-
-  return rows;
-};
-
-interface ButtonProps {
-  id: string;
-  title: string;
-  cb: () => void;
-}
-
-const Button: React.FC<ButtonProps> = ({ id, title, cb }) => (
-  <div className="col-sm-6 smallpad">
-    <button
-      type="button"
-      className="btn btn-primary btn-block"
-      id={id}
-      onClick={cb}
-    >
-      {title}
-    </button>
-  </div>
-);
-
-const Main: React.FC = () => {
-  const [, { run, runLots, add, update, clear, swapRows }] = useBloc(DemoBloc);
-
+const HomePage: React.FC<{ onNavigate: (page: Page) => void }> = ({ onNavigate }) => {
   return (
-    <div className="container">
-      <div className="jumbotron">
-        <div className="row">
-          <div className="col-md-6">
-            <h1>React + Blac Performance Monitor</h1>
+    <div style={{ minHeight: '100vh', background: '#f5f5f5', padding: '40px 20px' }}>
+      <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+        <div
+          style={{
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: 'white',
+            padding: '60px 40px',
+            borderRadius: '12px',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+            textAlign: 'center',
+            marginBottom: '40px',
+          }}
+        >
+          <h1 style={{ margin: 0, fontSize: '48px', fontWeight: 'bold' }}>
+            BlaC Performance Suite
+          </h1>
+          <p style={{ margin: '20px 0 0 0', fontSize: '20px', opacity: 0.9 }}>
+            Browser-based performance testing for BlaC state management
+          </p>
+        </div>
+
+        <div style={{ display: 'grid', gap: '20px' }}>
+          <div
+            style={{
+              background: 'white',
+              padding: '30px',
+              borderRadius: '8px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+            onClick={() => onNavigate('jsframework')}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-4px)';
+              e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+            }}
+          >
+            <h2 style={{ margin: '0 0 10px 0', color: '#667eea' }}>
+              JS Framework Benchmark
+            </h2>
+            <p style={{ margin: 0, color: '#666', lineHeight: '1.6' }}>
+              Classic framework benchmark based on js-framework-benchmark. Tests list
+              operations like create, update, swap, and delete with 1,000 and 10,000 rows.
+            </p>
+            <div
+              style={{
+                marginTop: '20px',
+                color: '#667eea',
+                fontWeight: '600',
+                fontSize: '14px',
+              }}
+            >
+              Launch Benchmark →
+            </div>
           </div>
-          <div className="col-md-6">
-            <div className="row">
-              <Button id="run" title="Create 1,000 rows" cb={() => run()} />
-              <Button
-                id="runlots"
-                title="Create 10,000 rows"
-                cb={() => runLots()}
-              />
-              <Button id="add" title="Append 1,000 rows" cb={() => add()} />
-              <Button
-                id="update"
-                title="Update every 10th row"
-                cb={() => update()}
-              />
-              <Button id="clear" title="Clear" cb={() => clear()} />
-              <Button id="swaprows" title="Swap Rows" cb={() => swapRows()} />
+
+          <div
+            style={{
+              background: 'white',
+              padding: '30px',
+              borderRadius: '8px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+            onClick={() => onNavigate('dashboard')}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-4px)';
+              e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+            }}
+          >
+            <h2 style={{ margin: '0 0 10px 0', color: '#764ba2' }}>
+              Comprehensive Benchmark Suite
+            </h2>
+            <p style={{ margin: 0, color: '#666', lineHeight: '1.6' }}>
+              Complete performance testing dashboard with multiple benchmark categories:
+            </p>
+            <ul
+              style={{
+                marginTop: '15px',
+                marginBottom: 0,
+                color: '#666',
+                lineHeight: '1.8',
+              }}
+            >
+              <li>Memory leak detection with mount/unmount cycles</li>
+              <li>Dependency tracking optimization tests</li>
+              <li>Large state tree performance</li>
+              <li>Concurrent updates and batching</li>
+              <li>Full metrics and visualization</li>
+            </ul>
+            <div
+              style={{
+                marginTop: '20px',
+                color: '#764ba2',
+                fontWeight: '600',
+                fontSize: '14px',
+              }}
+            >
+              Open Dashboard →
             </div>
           </div>
         </div>
+
+        <div
+          style={{
+            marginTop: '40px',
+            padding: '20px',
+            background: 'white',
+            borderRadius: '8px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          }}
+        >
+          <h3 style={{ margin: '0 0 15px 0', fontSize: '18px' }}>Tips for Best Results</h3>
+          <ul style={{ margin: 0, color: '#666', lineHeight: '1.8' }}>
+            <li>Run benchmarks in Chrome or Edge for full memory profiling support</li>
+            <li>Open DevTools Performance tab before running benchmarks</li>
+            <li>Close other tabs and applications for more accurate results</li>
+            <li>
+              Enable Chrome's memory profiler with{' '}
+              <code style={{ background: '#f5f5f5', padding: '2px 6px' }}>
+                --enable-precise-memory-info
+              </code>
+            </li>
+            <li>
+              For advanced profiling, start Chrome with{' '}
+              <code style={{ background: '#f5f5f5', padding: '2px 6px' }}>
+                --expose-gc
+              </code>
+            </li>
+          </ul>
+        </div>
       </div>
-      <table className="table table-hover table-striped test-data">
-        <tbody>
-          <RowList />
-        </tbody>
-      </table>
-      <span
-        className="preloadicon glyphicon glyphicon-remove"
-        aria-hidden="true"
-      ></span>
     </div>
   );
+};
+
+const App: React.FC = () => {
+  const [currentPage, setCurrentPage] = useState<Page>('home');
+
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'home':
+        return <HomePage onNavigate={setCurrentPage} />;
+      case 'jsframework':
+        return (
+          <div>
+            <div
+              style={{
+                background: '#667eea',
+                color: 'white',
+                padding: '15px 20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '15px',
+              }}
+            >
+              <button
+                onClick={() => setCurrentPage('home')}
+                style={{
+                  background: 'white',
+                  color: '#667eea',
+                  border: 'none',
+                  padding: '8px 16px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                }}
+              >
+                ← Back
+              </button>
+              <div style={{ fontSize: '18px', fontWeight: '600' }}>
+                JS Framework Benchmark
+              </div>
+            </div>
+            <JSFrameworkBenchmark />
+          </div>
+        );
+      case 'dashboard':
+        return (
+          <div>
+            <div
+              style={{
+                background: '#764ba2',
+                color: 'white',
+                padding: '15px 20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '15px',
+              }}
+            >
+              <button
+                onClick={() => setCurrentPage('home')}
+                style={{
+                  background: 'white',
+                  color: '#764ba2',
+                  border: 'none',
+                  padding: '8px 16px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                }}
+              >
+                ← Back
+              </button>
+            </div>
+            <BenchmarkDashboard />
+          </div>
+        );
+      default:
+        return <HomePage onNavigate={setCurrentPage} />;
+    }
+  };
+
+  return <>{renderPage()}</>;
 };
 
 const container = document.getElementById('main');
 
 if (container) {
-  const root: Root = createRoot(container);
-  root.render(<Main />);
+  const root = createRoot(container);
+  root.render(<App />);
 } else {
   console.error("Failed to find the root element with ID 'main'");
 }

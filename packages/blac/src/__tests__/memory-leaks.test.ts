@@ -70,17 +70,18 @@ describe('Memory Leak Tests', () => {
       const weakRef = new WeakRef(component);
 
       // Subscribe with component reference
-      const unsubscribe = cubit.subscribeComponent(weakRef, () => {});
+      const { unsubscribe } = cubit.subscribeComponent(weakRef, () => {});
       expect(cubit.subscriptionCount).toBe(1);
 
       // Verify the subscription works
       const callback = vi.fn();
-      cubit.subscribeComponent(weakRef, callback);
+      const { unsubscribe: unsub2 } = cubit.subscribeComponent(weakRef, callback);
       cubit.increment();
       expect(callback).toHaveBeenCalled();
 
       // Clean up
       unsubscribe();
+      unsub2();
     });
 
     it('should handle multiple subscriptions with weak references', async () => {
@@ -90,15 +91,15 @@ describe('Memory Leak Tests', () => {
       const component3 = { id: 'component-3' };
 
       // Add subscriptions with weak refs
-      const unsub1 = cubit.subscribeComponent(
+      const { unsubscribe: unsub1 } = cubit.subscribeComponent(
         new WeakRef(component1),
         () => {},
       );
-      const unsub2 = cubit.subscribeComponent(
+      const { unsubscribe: unsub2 } = cubit.subscribeComponent(
         new WeakRef(component2),
         () => {},
       );
-      const unsub3 = cubit.subscribeComponent(
+      const { unsubscribe: unsub3 } = cubit.subscribeComponent(
         new WeakRef(component3),
         () => {},
       );
@@ -173,8 +174,8 @@ describe('Memory Leak Tests', () => {
 
       // Add many subscriptions
       for (let i = 0; i < 1000; i++) {
-        const unsub = cubit.subscribe(() => {});
-        unsubscribes.push(unsub);
+        const { unsubscribe } = cubit.subscribe(() => {});
+        unsubscribes.push(unsubscribe);
       }
 
       expect(cubit.subscriptionCount).toBe(1000);
@@ -359,7 +360,7 @@ describe('Memory Leak Tests', () => {
 
       // Try to update state after disposal
       const callback = vi.fn();
-      const unsubscribe = cubit.subscribe(callback);
+      const { unsubscribe } = cubit.subscribe(callback);
 
       // State should not change
       const initialState = cubit.state;
@@ -485,7 +486,7 @@ describe('Memory Leak Tests', () => {
       for (let i = 0; i < 100; i++) {
         const component: any = { id: `component-${i}` };
         const weakRef = new WeakRef(component);
-        const unsubscribe = cubit.subscribeComponent(weakRef, () => {});
+        const { unsubscribe } = cubit.subscribeComponent(weakRef, () => {});
         unsubscribes.push(unsubscribe);
       }
 
@@ -502,7 +503,7 @@ describe('Memory Leak Tests', () => {
 
       // Verify cubit can still work after cleanup
       const callback = vi.fn();
-      const newUnsub = cubit.subscribe(callback);
+      const { unsubscribe: newUnsub } = cubit.subscribe(callback);
       cubit.increment();
       expect(callback).toHaveBeenCalled();
       newUnsub();
@@ -556,7 +557,7 @@ describe('Memory Leak Tests', () => {
 
       // Add many subscriptions
       for (let i = 0; i < subscriptionCount; i++) {
-        unsubscribes.push(cubit.subscribe(() => {}));
+        unsubscribes.push(cubit.subscribe(() => {}).unsubscribe);
       }
 
       // Trigger state change with many listeners

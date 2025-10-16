@@ -5,6 +5,7 @@ import {
   Subscription,
   SubscriptionOptions,
   SubscriptionManagerStats,
+  SubscriptionResult,
 } from './types';
 
 /**
@@ -27,8 +28,9 @@ export class SubscriptionManager<S = unknown> {
 
   /**
    * Subscribe to state changes
+   * @returns Object containing subscription ID and unsubscribe function
    */
-  subscribe(options: SubscriptionOptions<S>): () => void {
+  subscribe(options: SubscriptionOptions<S>): SubscriptionResult {
     const id = `${options.type}-${generateUUID()}`;
 
     const subscription: Subscription<S> = {
@@ -77,8 +79,11 @@ export class SubscriptionManager<S = unknown> {
     // Cancel disposal if bloc is in disposal_requested state
     (this.bloc as any)._cancelDisposalIfRequested();
 
-    // Return unsubscribe function
-    return () => this.unsubscribe(id);
+    // Return object with ID and unsubscribe function
+    return {
+      id,
+      unsubscribe: () => this.unsubscribe(id),
+    };
   }
 
   /**

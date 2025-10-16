@@ -106,3 +106,15 @@ export interface SubscriptionManagerStats {
   /** Number of tracked dependencies */
   trackedDependencies: number;
 }
+
+/**
+ * Result returned from subscription methods
+ * Contains the subscription ID and unsubscribe function
+ */
+export interface SubscriptionResult {
+  /** Unique identifier for this subscription */
+  id: string;
+
+  /** Function to unsubscribe and clean up this subscription */
+  unsubscribe: () => void;
+}

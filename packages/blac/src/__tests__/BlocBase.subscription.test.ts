@@ -52,7 +52,7 @@ describe('BlocBase Subscription Model', () => {
       const bloc = new TestBloc();
       const callback = vi.fn();
 
-      const unsubscribe = bloc.subscribe(callback);
+      const { unsubscribe } = bloc.subscribe(callback);
 
       bloc.increment();
       expect(callback).toHaveBeenCalledWith({ count: 1, message: 'initial' });
@@ -72,10 +72,10 @@ describe('BlocBase Subscription Model', () => {
 
       expect(bloc.subscriptionCount).toBe(0);
 
-      const unsub1 = bloc.subscribe(() => {});
+      const { unsubscribe: unsub1 } = bloc.subscribe(() => {});
       expect(bloc.subscriptionCount).toBe(1);
 
-      const unsub2 = bloc.subscribe(() => {});
+      const { unsubscribe: unsub2 } = bloc.subscribe(() => {});
       expect(bloc.subscriptionCount).toBe(2);
 
       unsub1();
@@ -91,7 +91,7 @@ describe('BlocBase Subscription Model', () => {
       const bloc = new TestBloc();
       const callback = vi.fn();
 
-      const unsubscribe = bloc.subscribeWithSelector(
+      const { unsubscribe } = bloc.subscribeWithSelector(
         (state) => state.count,
         callback,
       );
@@ -118,7 +118,7 @@ describe('BlocBase Subscription Model', () => {
       const callback = vi.fn();
 
       // Only notify when count changes by more than 2
-      const unsubscribe = bloc.subscribeWithSelector(
+      const { unsubscribe } = bloc.subscribeWithSelector(
         (state) => state.count,
         callback,
         (a, b) => Math.abs(a - b) <= 2,
@@ -141,7 +141,7 @@ describe('BlocBase Subscription Model', () => {
       const bloc = new TestBloc();
       const callback = vi.fn();
 
-      const unsubscribe = bloc.subscribeWithSelector(
+      const { unsubscribe } = bloc.subscribeWithSelector(
         (state) => ({
           doubled: state.count * 2,
           upper: state.message.toUpperCase(),
@@ -166,7 +166,7 @@ describe('BlocBase Subscription Model', () => {
       let component: any = { id: 'test-component' };
       const weakRef = new WeakRef(component);
 
-      const unsubscribe = bloc.subscribeComponent(weakRef, callback);
+      const { unsubscribe } = bloc.subscribeComponent(weakRef, callback);
 
       bloc.increment();
       expect(callback).toHaveBeenCalled();
@@ -188,8 +188,8 @@ describe('BlocBase Subscription Model', () => {
       const bloc = new TestBloc();
       const disposeSpy = vi.spyOn(bloc, 'dispose');
 
-      const unsub1 = bloc.subscribe(() => {});
-      const unsub2 = bloc.subscribe(() => {});
+      const { unsubscribe: unsub1 } = bloc.subscribe(() => {});
+      const { unsubscribe: unsub2 } = bloc.subscribe(() => {});
 
       unsub1();
       expect(disposeSpy).not.toHaveBeenCalled();
@@ -205,7 +205,7 @@ describe('BlocBase Subscription Model', () => {
       const bloc = new KeepAliveBloc();
       const disposeSpy = vi.spyOn(bloc, 'dispose');
 
-      const unsubscribe = bloc.subscribe(() => {});
+      const { unsubscribe } = bloc.subscribe(() => {});
       unsubscribe();
 
       await vi.runAllTimersAsync();
@@ -216,14 +216,14 @@ describe('BlocBase Subscription Model', () => {
       const bloc = new TestBloc();
       const disposeSpy = vi.spyOn(bloc, 'dispose');
 
-      const unsub1 = bloc.subscribe(() => {});
+      const { unsubscribe: unsub1 } = bloc.subscribe(() => {});
       unsub1();
 
       // Disposal scheduled
       expect(bloc.subscriptionCount).toBe(0);
 
       // Add new subscription before disposal
-      const unsub2 = bloc.subscribe(() => {});
+      const { unsubscribe: unsub2 } = bloc.subscribe(() => {});
 
       await vi.runAllTimersAsync();
       expect(disposeSpy).not.toHaveBeenCalled();
@@ -238,7 +238,7 @@ describe('BlocBase Subscription Model', () => {
       await bloc.dispose();
 
       const callback = vi.fn();
-      const unsubscribe = bloc.subscribe(callback);
+      const { unsubscribe } = bloc.subscribe(callback);
 
       bloc.increment();
       expect(callback).not.toHaveBeenCalled();
@@ -252,7 +252,7 @@ describe('BlocBase Subscription Model', () => {
       const bloc = new TestBloc();
       const callback = vi.fn();
 
-      bloc.subscribe(callback);
+      const { unsubscribe } = bloc.subscribe(callback);
 
       bloc._batchUpdates(() => {
         bloc.increment();
@@ -263,18 +263,22 @@ describe('BlocBase Subscription Model', () => {
       // Only one notification for the final state
       expect(callback).toHaveBeenCalledTimes(1);
       expect(callback).toHaveBeenCalledWith({ count: 2, message: 'batched' });
+
+      unsubscribe();
     });
 
     it('should not emit undefined states', () => {
       const bloc = new TestBloc();
       const callback = vi.fn();
 
-      bloc.subscribe(callback);
+      const { unsubscribe } = bloc.subscribe(callback);
 
       // Try to emit undefined
       (bloc as any).emit(undefined);
 
       expect(callback).not.toHaveBeenCalled();
+
+      unsubscribe();
     });
   });
 
@@ -320,14 +324,16 @@ describe('BlocBase Subscription Model', () => {
         throw new Error('Subscription error');
       });
 
-      bloc.subscribe(badCallback);
-      bloc.subscribe(goodCallback);
+      const { unsubscribe: unsub1 } = bloc.subscribe(badCallback);
+      const { unsubscribe: unsub2 } = bloc.subscribe(goodCallback);
 
       bloc.increment();
 
       expect(goodCallback).toHaveBeenCalled();
       expect(badCallback).toHaveBeenCalled();
 
+      unsub1();
+      unsub2();
       errorSpy.mockRestore();
     });
 
@@ -336,13 +342,14 @@ describe('BlocBase Subscription Model', () => {
       const callback = vi.fn();
       const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      bloc.subscribeWithSelector(() => {
+      const { unsubscribe } = bloc.subscribeWithSelector(() => {
         throw new Error('Selector error');
       }, callback);
 
       bloc.increment();
       expect(callback).not.toHaveBeenCalled();
 
+      unsubscribe();
       errorSpy.mockRestore();
     });
   });
