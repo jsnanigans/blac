@@ -17,6 +17,12 @@ export class SubscriptionManager<S = unknown> {
   private weakRefCleanupScheduled = false;
   private totalNotifications = 0;
 
+  // Optimization fields for subscription sorting performance
+  // Fast path flag: true when any subscription has non-zero priority
+  private hasNonZeroPriorities = false;
+  // Cached sorted array: null when invalid/needs re-sorting
+  private cachedSortedSubscriptions: Subscription<S>[] | null = null;
+
   constructor(private bloc: BlocBase<S>) {}
 
   /**
@@ -54,7 +60,15 @@ export class SubscriptionManager<S = unknown> {
       }
     }
 
+    // Track if any subscription uses non-zero priority
+    if (subscription.priority !== 0) {
+      this.hasNonZeroPriorities = true;
+    }
+
     this.subscriptions.set(id, subscription);
+
+    // Invalidate cache on subscription add
+    this.cachedSortedSubscriptions = null;
 
     Blac.log(
       `[${this.bloc._name}:${this.bloc._id}] Subscription added: ${id}. Total: ${this.subscriptions.size}`,
@@ -73,6 +87,13 @@ export class SubscriptionManager<S = unknown> {
   unsubscribe(id: string): void {
     const subscription = this.subscriptions.get(id);
     if (!subscription) return;
+
+    // Recalculate flag if removing a priority subscription
+    if (subscription.priority !== 0) {
+      this.hasNonZeroPriorities = Array.from(this.subscriptions.values()).some(
+        (s) => s.id !== id && s.priority !== 0,
+      );
+    }
 
     // Remove from path dependencies
     if (subscription.dependencies) {
@@ -94,6 +115,9 @@ export class SubscriptionManager<S = unknown> {
 
     this.subscriptions.delete(id);
 
+    // Invalidate cache on subscription remove
+    this.cachedSortedSubscriptions = null;
+
     Blac.log(
       `[${this.bloc._name}:${this.bloc._id}] Subscription removed: ${id}. Remaining: ${this.subscriptions.size}`,
     );
@@ -106,12 +130,24 @@ export class SubscriptionManager<S = unknown> {
    * Notify all subscriptions of state change
    */
   notify(newState: S, oldState: S, action?: unknown): void {
-    // Sort subscriptions by priority (descending)
-    const sortedSubscriptions = Array.from(this.subscriptions.values()).sort(
-      (a, b) => (b.priority ?? 0) - (a.priority ?? 0),
-    );
+    // Hybrid optimization - fast path or cached sorted array
+    let subscriptions: Iterable<Subscription<S>>;
 
-    for (const subscription of sortedSubscriptions) {
+    if (!this.hasNonZeroPriorities) {
+      // Fast path: No priorities, iterate Map directly (O(1))
+      subscriptions = this.subscriptions.values();
+    } else {
+      // Slow path: Use cached sorted array (O(1) amortized)
+      if (!this.cachedSortedSubscriptions) {
+        // First notify after add/remove: sort and cache
+        this.cachedSortedSubscriptions = Array.from(
+          this.subscriptions.values(),
+        ).sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
+      }
+      subscriptions = this.cachedSortedSubscriptions;
+    }
+
+    for (const subscription of subscriptions) {
       // Check if WeakRef is still alive
       if (subscription.weakRef && !subscription.weakRef.deref()) {
         this.scheduleWeakRefCleanup();

@@ -36,59 +36,19 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
   // because the object itself stays in memory even when the component unmounts
   const componentRef = useRef<object & { __blocInstanceId?: string }>({});
 
-  // Get component name for debugging
-  const componentName = useRef<string>('');
-  if (!componentName.current) {
-    // Try to get component name from stack trace
-    try {
-      const error = new Error();
-      const stack = error.stack || '';
-      const lines = stack.split('\n');
-
-      // Look for React component in stack - try multiple patterns
-      for (let i = 2; i < lines.length && i < 15; i++) {
-        const line = lines[i];
-
-        // Pattern 1: "at ComponentName" or "at Object.ComponentName"
-        let match = line.match(/at\s+(?:Object\.)?([A-Z][a-zA-Z0-9_$]*)/);
-
-        // Pattern 2: Look for component files like "ComponentName.tsx"
-        if (!match) {
-          match = line.match(/([A-Z][a-zA-Z0-9_$]*)\.tsx/);
-        }
-
-        // Pattern 3: Look for render functions
-        if (!match) {
-          match = line.match(/render([A-Z][a-zA-Z0-9_$]*)/);
-          // keep as-is; no additional processing
-        }
-
-        if (
-          match &&
-          match[1] !== 'Object' &&
-          !match[1].startsWith('use') &&
-          !match[1].startsWith('Use')
-        ) {
-          componentName.current = match[1];
-          break;
-        }
-      }
-
-      // If still no name, try to get it from the bloc constructor name
-      if (!componentName.current) {
-        const blocName = blocConstructor.name;
-        if (blocName && blocName !== 'Object') {
-          // Remove 'Cubit' or 'Bloc' suffix to guess component name
-          componentName.current =
-            blocName.replace(/(Cubit|Bloc)$/, '') || 'Component';
-        } else {
-          componentName.current = 'Component';
-        }
-      }
-    } catch {
-      componentName.current = 'Component';
-    }
-  }
+  // Component name for debugging - DISABLED for now (may be re-enabled for devtools)
+  // TODO: Re-enable when implementing devtools
+  // const componentName = useRef<string>('');
+  // if (!componentName.current) {
+  //   const blocName = blocConstructor.name;
+  //   if (blocName && blocName !== 'Object') {
+  //     // Remove 'Cubit' or 'Bloc' suffix to derive component name
+  //     componentName.current =
+  //       blocName.replace(/(Cubit|Bloc)$/, '') || 'Component';
+  //   } else {
+  //     componentName.current = 'Component';
+  //   }
+  // }
 
   // Pass through options
   const normalizedOptions = options;
@@ -129,10 +89,11 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
       },
     );
 
-    // Set component name for rerender logging
-    if (componentName.current) {
-      newAdapter.setComponentName(componentName.current);
-    }
+    // Set component name for rerender logging - DISABLED (may be re-enabled for devtools)
+    // TODO: Re-enable when implementing devtools
+    // if (componentName.current) {
+    //   newAdapter.setComponentName(componentName.current);
+    // }
     return newAdapter;
   }, [blocConstructor, instanceKey]); // Recreate adapter when instance key changes
 
