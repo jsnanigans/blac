@@ -106,9 +106,6 @@ export class SubscriptionManager<S = unknown> {
    * Notify all subscriptions of state change
    */
   notify(newState: S, oldState: S, action?: unknown): void {
-    // Clean up dead weak references if needed
-    this.cleanupDeadReferences();
-
     // Sort subscriptions by priority (descending)
     const sortedSubscriptions = Array.from(this.subscriptions.values()).sort(
       (a, b) => (b.priority ?? 0) - (a.priority ?? 0),

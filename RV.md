@@ -6,6 +6,30 @@
 
 ---
 
+## Related Specifications
+
+This review identifies issues with detailed specifications available in the `./spec` directory:
+
+### Critical Performance Issues
+- **WeakRef Cleanup**: [`spec/2025-10-16-weakref-cleanup-performance/`](./spec/2025-10-16-weakref-cleanup-performance/)
+- **Subscription Sorting**: [`spec/2025-10-16-subscription-sorting-performance/`](./spec/2025-10-16-subscription-sorting-performance/)
+- **Stack Trace Parsing**: [`spec/2025-10-16-stack-trace-parsing-performance/`](./spec/2025-10-16-stack-trace-parsing-performance/)
+- **Isolated Bloc Lookup**: [`spec/2025-10-16-isolated-bloc-lookup-performance/`](./spec/2025-10-16-isolated-bloc-lookup-performance/)
+
+### Critical Stability Issues
+- **Disposal Race Condition**: [`spec/2025-10-16-disposal-race-condition/`](./spec/2025-10-16-disposal-race-condition/)
+- **Subscription ID Race**: [`spec/2025-10-16-subscription-id-race-condition/`](./spec/2025-10-16-subscription-id-race-condition/)
+- **Circular Dependency**: [`spec/2025-10-16-circular-dependency/`](./spec/2025-10-16-circular-dependency/)
+- **Getter Cache Growth**: [`spec/2025-10-16-getter-cache-unbounded-growth/`](./spec/2025-10-16-getter-cache-unbounded-growth/)
+
+### Task Organization
+- **Comprehensive Task List**: [`spec/tasks/README.md`](./spec/tasks/README.md)
+- **Performance Optimization Tasks**: [`spec/tasks/06-performance-optimization.md`](./spec/tasks/06-performance-optimization.md)
+- **Security Hardening**: [`spec/tasks/02-security-hardening.md`](./spec/tasks/02-security-hardening.md)
+- **Break Circular Dependencies**: [`spec/tasks/03-break-circular-dependencies.md`](./spec/tasks/03-break-circular-dependencies.md)
+
+---
+
 ## Executive Summary
 
 This comprehensive code review analyzes the BlaC state management library with a focus on performance and stability. The library demonstrates sophisticated architectural patterns including proxy-based dependency tracking, WeakRef-based memory management, and a unified subscription system. However, there are several critical performance bottlenecks and stability concerns that should be addressed.
@@ -39,6 +63,7 @@ This comprehensive code review analyzes the BlaC state management library with a
 
 #### 🔴 **WeakRef Cleanup on Every State Change**
 **Location:** `packages/blac/src/subscription/SubscriptionManager.ts:108-111`
+**Spec:** [`spec/2025-10-16-weakref-cleanup-performance/`](./spec/2025-10-16-weakref-cleanup-performance/)
 
 ```typescript
 notify(newState: S, oldState: S, action?: unknown): void {
@@ -73,6 +98,7 @@ notify(newState: S, oldState: S, action?: unknown): void {
 
 #### 🔴 **Subscription Sorting on Every Notification**
 **Location:** `packages/blac/src/subscription/SubscriptionManager.ts:113-115`
+**Spec:** [`spec/2025-10-16-subscription-sorting-performance/`](./spec/2025-10-16-subscription-sorting-performance/)
 
 ```typescript
 // Sort subscriptions by priority (descending)
@@ -132,6 +158,7 @@ notify(newState: S, oldState: S, action?: unknown): void {
 
 #### 🔴 **Stack Trace Parsing in useBloc Hook**
 **Location:** `packages/blac-react/src/useBloc.ts:38-91`
+**Spec:** [`spec/2025-10-16-stack-trace-parsing-performance/`](./spec/2025-10-16-stack-trace-parsing-performance/)
 
 ```typescript
 if (!componentName.current) {
@@ -182,6 +209,7 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
 
 #### 🟡 **O(n) Isolated Bloc Lookup**
 **Location:** `packages/blac/src/Blac.ts:485-502`
+**Spec:** [`spec/2025-10-16-isolated-bloc-lookup-performance/`](./spec/2025-10-16-isolated-bloc-lookup-performance/)
 
 ```typescript
 findIsolatedBlocInstance<B extends BlocConstructor<any>>(
@@ -410,6 +438,7 @@ for (const subscription of this.subscriptions.values()) {
 
 #### 🔴 **Race Condition in Disposal Lifecycle**
 **Location:** `packages/blac/src/lifecycle/BlocLifecycle.ts:76-115`
+**Spec:** [`spec/2025-10-16-disposal-race-condition/`](./spec/2025-10-16-disposal-race-condition/)
 
 **Problem:**
 ```typescript
@@ -524,6 +553,7 @@ scheduleDisposal(
 
 #### 🔴 **Subscription ID Race Condition in BlacAdapter**
 **Location:** `packages/blac/src/adapter/BlacAdapter.ts:161-175`
+**Spec:** [`spec/2025-10-16-subscription-id-race-condition/`](./spec/2025-10-16-subscription-id-race-condition/)
 
 ```typescript
 const unsubscribe = this.blocInstance.subscribeComponent(
@@ -585,6 +615,7 @@ this.subscriptionId = result.id;
 
 #### 🔴 **Circular Dependency Between Blac and BlocBase**
 **Location:** Multiple files
+**Spec:** [`spec/2025-10-16-circular-dependency/`](./spec/2025-10-16-circular-dependency/)
 
 **Problem:**
 ```typescript
@@ -669,6 +700,7 @@ if (!bloc._keepAlive && bloc.isInState(BlocLifecycleState.ACTIVE)) {
 
 #### 🟡 **Memory Leak: Getter Cache Never Cleared**
 **Location:** `packages/blac/src/subscription/SubscriptionManager.ts:287-343`
+**Spec:** [`spec/2025-10-16-getter-cache-unbounded-growth/`](./spec/2025-10-16-getter-cache-unbounded-growth/)
 
 **Problem:**
 ```typescript
@@ -1220,22 +1252,27 @@ export class MemoryMonitor {
 1. **Fix subscription cleanup** (SubscriptionManager:108)
    - Move cleanup to scheduled only, not every notify
    - Estimated gain: 20-30% reduction in notify overhead
+   - **Implementation:** See [`spec/2025-10-16-weakref-cleanup-performance/`](./spec/2025-10-16-weakref-cleanup-performance/)
 
 2. **Fix subscription sorting** (SubscriptionManager:113)
    - Maintain sorted order or conditional sort
    - Estimated gain: 15-25% reduction in notify overhead
+   - **Implementation:** See [`spec/2025-10-16-subscription-sorting-performance/`](./spec/2025-10-16-subscription-sorting-performance/)
 
 3. **Fix race condition in disposal** (BlocLifecycle.ts:76)
    - Add disposal token system
    - Impact: Prevents memory leaks in strict mode
+   - **Implementation:** See [`spec/2025-10-16-disposal-race-condition/`](./spec/2025-10-16-disposal-race-condition/)
 
 4. **Fix subscription ID race condition** (BlacAdapter.ts:161)
    - Return ID from subscribe()
    - Impact: Prevents subtle dependency tracking bugs
+   - **Implementation:** See [`spec/2025-10-16-subscription-id-race-condition/`](./spec/2025-10-16-subscription-id-race-condition/)
 
 5. **Remove stack trace parsing in production** (useBloc.ts:38)
    - Conditional on dev mode or make opt-in
    - Estimated gain: 10-15ms per hook instantiation
+   - **Implementation:** See [`spec/2025-10-16-stack-trace-parsing-performance/`](./spec/2025-10-16-stack-trace-parsing-performance/)
 
 ---
 
@@ -1244,18 +1281,22 @@ export class MemoryMonitor {
 1. **Add O(1) isolated bloc lookup** (Blac.ts:485)
    - Add index by instanceRef/id
    - Estimated gain: O(n) → O(1) for lookups
+   - **Implementation:** See [`spec/2025-10-16-isolated-bloc-lookup-performance/`](./spec/2025-10-16-isolated-bloc-lookup-performance/)
 
 2. **Fix circular dependency** (BlocBase/Blac)
    - Extract interface for context
    - Impact: Better testability, modularity
+   - **Implementation:** See [`spec/2025-10-16-circular-dependency/`](./spec/2025-10-16-circular-dependency/)
 
 3. **Add getter cache limits** (SubscriptionManager.ts:287)
    - LRU cache with max size
    - Impact: Prevents unbounded growth
+   - **Implementation:** See [`spec/2025-10-16-getter-cache-unbounded-growth/`](./spec/2025-10-16-getter-cache-unbounded-growth/)
 
 4. **Fix unsafe type assertions** (Blac.ts:261,301,551,765)
    - Add public accessors
    - Impact: Type safety, maintainability
+   - **Note:** This is addressed in the circular dependency fix (see spec above)
 
 ---
 
@@ -1345,23 +1386,85 @@ describe('Proxy Performance', () => {
 
 ## 8. Summary Table
 
-| Issue | Severity | Location | Est. Impact | Effort |
-|-------|----------|----------|-------------|--------|
-| Subscription cleanup on every notify | 🔴 Critical | SubscriptionManager:108 | 20-30% perf | Low |
-| Subscription sorting on every notify | 🔴 Critical | SubscriptionManager:113 | 15-25% perf | Low |
-| Stack trace parsing | 🔴 Critical | useBloc:38 | 10-15ms/call | Low |
-| Disposal race condition | 🔴 Critical | BlocLifecycle:76 | Memory leaks | Medium |
-| Subscription ID race | 🔴 Critical | BlacAdapter:161 | Bug potential | Low |
-| O(n) isolated lookup | 🟡 High | Blac:485 | Scales poorly | Medium |
-| Circular dependency | 🟡 High | Multiple | Testability | High |
-| Getter cache growth | 🟡 High | SubscriptionManager:287 | Memory leak | Medium |
-| Unsafe type assertions | 🟡 High | Blac:261+ | Type safety | Low |
-| getChangedPaths optimization | 🟢 Medium | SubscriptionManager:229 | 5-10% perf | Low |
-| Plugin overhead | 🟢 Medium | BlocBase:246 | 5-10% perf | Low |
+| Issue | Severity | Location | Est. Impact | Effort | Spec |
+|-------|----------|----------|-------------|--------|------|
+| Subscription cleanup on every notify | 🔴 Critical | SubscriptionManager:108 | 20-30% perf | Low | [weakref-cleanup](./spec/2025-10-16-weakref-cleanup-performance/) |
+| Subscription sorting on every notify | 🔴 Critical | SubscriptionManager:113 | 15-25% perf | Low | [subscription-sorting](./spec/2025-10-16-subscription-sorting-performance/) |
+| Stack trace parsing | 🔴 Critical | useBloc:38 | 10-15ms/call | Low | [stack-trace-parsing](./spec/2025-10-16-stack-trace-parsing-performance/) |
+| Disposal race condition | 🔴 Critical | BlocLifecycle:76 | Memory leaks | Medium | [disposal-race](./spec/2025-10-16-disposal-race-condition/) |
+| Subscription ID race | 🔴 Critical | BlacAdapter:161 | Bug potential | Low | [subscription-id-race](./spec/2025-10-16-subscription-id-race-condition/) |
+| O(n) isolated lookup | 🟡 High | Blac:485 | Scales poorly | Medium | [isolated-lookup](./spec/2025-10-16-isolated-bloc-lookup-performance/) |
+| Circular dependency | 🟡 High | Multiple | Testability | High | [circular-dependency](./spec/2025-10-16-circular-dependency/) |
+| Getter cache growth | 🟡 High | SubscriptionManager:287 | Memory leak | Medium | [getter-cache](./spec/2025-10-16-getter-cache-unbounded-growth/) |
+| Unsafe type assertions | 🟡 High | Blac:261+ | Type safety | Low | [circular-dependency](./spec/2025-10-16-circular-dependency/) |
+| getChangedPaths optimization | 🟢 Medium | SubscriptionManager:229 | 5-10% perf | Low | — |
+| Plugin overhead | 🟢 Medium | BlocBase:246 | 5-10% perf | Low | — |
+
+**Note:** Each linked spec directory contains:
+- `specifications.md` - Detailed requirements and acceptance criteria
+- `research.md` - Technical analysis and investigation
+- `discussion.md` - Design alternatives and trade-offs
+- `recommendation.md` - Recommended solution approach
 
 ---
 
-## 9. Conclusion
+## 9. Implementation Roadmap
+
+### Using the Specifications
+
+Each issue identified in this review has a corresponding specification directory in `./spec/` with the following structure:
+
+```
+spec/2025-10-16-{issue-name}/
+├── specifications.md    # Detailed requirements, constraints, success criteria
+├── research.md         # Technical investigation and root cause analysis
+├── discussion.md       # Design alternatives and trade-offs
+└── recommendation.md   # Recommended solution with implementation details
+```
+
+### Organized Task Lists
+
+For a project-wide view of implementation tasks, see:
+
+- **[`spec/tasks/README.md`](./spec/tasks/README.md)** - Master task list with priorities
+- **[`spec/tasks/06-performance-optimization.md`](./spec/tasks/06-performance-optimization.md)** - Performance-specific tasks
+- **[`spec/tasks/02-security-hardening.md`](./spec/tasks/02-security-hardening.md)** - Security improvements
+- **[`spec/tasks/03-break-circular-dependencies.md`](./spec/tasks/03-break-circular-dependencies.md)** - Architecture refactoring
+- **[`spec/tasks/05-refactor-blocbase.md`](./spec/tasks/05-refactor-blocbase.md)** - Core refactoring work
+
+### Suggested Implementation Order
+
+**Phase 1: Quick Wins (Week 1)**
+- Remove weakref cleanup call (1 line change)
+- Optimize subscription sorting
+- Remove stack trace parsing in production
+
+**Phase 2: Critical Fixes (Week 2-3)**
+- Fix disposal race condition
+- Fix subscription ID race condition
+- Add O(1) isolated bloc lookup
+
+**Phase 3: Architecture (Week 4-6)**
+- Break circular dependencies
+- Add getter cache limits
+- Remove unsafe type assertions
+
+**Phase 4: Polish (Week 7-8)**
+- Optimize getChangedPaths
+- Reduce plugin overhead
+- Add performance monitoring
+
+### Testing Strategy
+
+Each spec includes comprehensive test requirements:
+- Unit tests for isolated functionality
+- Integration tests for full workflows
+- Performance benchmarks with target metrics
+- React Strict Mode compatibility tests
+
+---
+
+## 10. Conclusion
 
 The BlaC library demonstrates sophisticated state management patterns with generally solid architecture. However, several critical performance bottlenecks and stability issues need addressing:
 
