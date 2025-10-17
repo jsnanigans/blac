@@ -429,7 +429,7 @@ function KeepAliveDemo() {
           <div className="flex gap-2">
             <Button onClick={cubit.decrement} variant="outline" size="sm">-</Button>
             <Button onClick={cubit.increment} variant="primary" size="sm">+</Button>
-            <Button onClick={cubit.reset} variant="muted" size="sm">Reset</Button>
+            <Button onClick={cubit.reset} variant="ghost" size="sm">Reset</Button>
           </div>
         </div>
         <p className="text-sm text-muted-foreground mt-2">

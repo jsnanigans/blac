@@ -76,7 +76,7 @@ function Ul({ children, ...props }: React.HTMLProps<HTMLUListElement>) {
   );
 }
 
-function Ol({ children, ...props }: React.HTMLProps<HTMLOListElement>) {
+function Ol({ children, ...props }: React.OlHTMLAttributes<HTMLOListElement> & { children?: React.ReactNode }) {
   return (
     <ol className="my-4 ml-6 list-decimal space-y-1 text-foreground" {...props}>
       {children}
@@ -93,7 +93,7 @@ function Li({ children, ...props }: React.HTMLProps<HTMLLIElement>) {
 }
 
 // Custom code components
-function Pre({ children, ...props }: React.HTMLProps<HTMLPreElement>) {
+function Pre({ children, ...props }: React.HTMLAttributes<HTMLDivElement> & { children?: React.ReactNode }) {
   return <div {...props}>{children}</div>;
 }
 

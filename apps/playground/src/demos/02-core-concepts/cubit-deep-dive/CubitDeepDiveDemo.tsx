@@ -291,7 +291,7 @@ function BasicCounterDemo() {
         <Button onClick={cubit.decrement} variant="outline" size="lg">
           Decrement
         </Button>
-        <Button onClick={cubit.reset} variant="muted" size="lg">
+        <Button onClick={cubit.reset} variant="ghost" size="lg">
           Reset
         </Button>
         <Button onClick={handleIncrement} variant="primary" size="lg">

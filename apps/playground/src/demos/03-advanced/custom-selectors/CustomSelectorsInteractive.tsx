@@ -163,12 +163,12 @@ function NoSelectorComponent() {
 }
 
 // ============================================================================
-// Demo 2: Basic Selector (Re-renders only when selected value changes)
+// Demo 2: Dependencies-based optimization (Re-renders only when dependencies change)
 // ============================================================================
 
 function BasicSelectorComponent() {
   const [state] = useBloc(AppCubit, {
-    selector: (state) => state.user.name,
+    dependencies: (bloc) => [bloc.state.user.name],
   });
 
   return (
@@ -181,12 +181,12 @@ function BasicSelectorComponent() {
       <div className="flex items-center justify-between mb-3">
         <h4 className="font-semibold text-green-900 dark:text-green-100 flex items-center gap-2">
           <Target className="w-4 h-4" />
-          Basic Selector (userName only)
+          Dependencies (userName only)
         </h4>
         <RenderCounter label="Renders" />
       </div>
       <div className="text-sm text-green-800 dark:text-green-200">
-        <p className="font-medium">Hello, {state}!</p>
+        <p className="font-medium">Hello, {state.user.name}!</p>
       </div>
       <p className="text-xs text-green-600 dark:text-green-400 mt-2">
         ✅ Only re-renders when user name changes
@@ -196,21 +196,22 @@ function BasicSelectorComponent() {
 }
 
 // ============================================================================
-// Demo 3: Derived Value Selector (Memoized computation)
+// Demo 3: Derived Value Dependencies (Cart summary)
 // ============================================================================
 
 function DerivedSelectorComponent() {
-  const [cartSummary] = useBloc(AppCubit, {
-    selector: (state) => ({
-      itemCount: state.cart.items.length,
-      total: state.cart.items.reduce(
-        (sum, item) => sum + item.price * item.quantity,
-        0
-      ),
-    }),
-    equalityFn: (prev, next) =>
-      prev.itemCount === next.itemCount && prev.total === next.total,
+  const [state] = useBloc(AppCubit, {
+    dependencies: (bloc) => [
+      bloc.state.cart.items.length,
+      bloc.state.cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0),
+    ],
   });
+
+  const itemCount = state.cart.items.length;
+  const total = state.cart.items.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
 
   return (
     <motion.div
@@ -222,13 +223,13 @@ function DerivedSelectorComponent() {
       <div className="flex items-center justify-between mb-3">
         <h4 className="font-semibold text-blue-900 dark:text-blue-100 flex items-center gap-2">
           <Zap className="w-4 h-4" />
-          Derived Selector (Cart summary)
+          Derived Dependencies (Cart summary)
         </h4>
         <RenderCounter label="Renders" />
       </div>
       <div className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
-        <p>Items: {cartSummary.itemCount}</p>
-        <p>Total: ${cartSummary.total.toFixed(2)}</p>
+        <p>Items: {itemCount}</p>
+        <p>Total: ${total.toFixed(2)}</p>
       </div>
       <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
         ✅ Only re-renders when cart items change
@@ -238,19 +239,12 @@ function DerivedSelectorComponent() {
 }
 
 // ============================================================================
-// Demo 4: Custom Equality Selector (Deep comparison)
+// Demo 4: Multiple Dependencies (User profile)
 // ============================================================================
 
 function CustomEqualityComponent() {
-  const [userProfile] = useBloc(AppCubit, {
-    selector: (state) => ({
-      name: state.user.name,
-      email: state.user.email,
-    }),
-    equalityFn: (prev, next) => {
-      // Custom deep equality check
-      return prev.name === next.name && prev.email === next.email;
-    },
+  const [state] = useBloc(AppCubit, {
+    dependencies: (bloc) => [bloc.state.user.name, bloc.state.user.email],
   });
 
   return (
@@ -263,43 +257,33 @@ function CustomEqualityComponent() {
       <div className="flex items-center justify-between mb-3">
         <h4 className="font-semibold text-purple-900 dark:text-purple-100 flex items-center gap-2">
           <Filter className="w-4 h-4" />
-          Custom Equality (User profile)
+          Multiple Dependencies (User profile)
         </h4>
         <RenderCounter label="Renders" />
       </div>
       <div className="text-sm text-purple-800 dark:text-purple-200 space-y-1">
-        <p>Name: {userProfile.name}</p>
-        <p>Email: {userProfile.email}</p>
+        <p>Name: {state.user.name}</p>
+        <p>Email: {state.user.email}</p>
       </div>
       <p className="text-xs text-purple-600 dark:text-purple-400 mt-2">
-        ✅ Custom equality prevents unnecessary re-renders
+        ✅ Dependencies prevent unnecessary re-renders
       </p>
     </motion.div>
   );
 }
 
 // ============================================================================
-// Demo 5: Computed Property Selector
+// Demo 5: Computed Property Dependencies
 // ============================================================================
 
 function ComputedSelectorComponent() {
   const [, cubit] = useBloc(AppCubit, {
-    selector: (state, prev, instance) => ({
-      total: instance.cartTotal,
-      discount: state.cart.discount,
-      finalTotal: instance.cartTotalWithDiscount,
-    }),
-    equalityFn: (prev, next) =>
-      prev.total === next.total &&
-      prev.discount === next.discount &&
-      prev.finalTotal === next.finalTotal,
+    dependencies: (bloc) => [
+      bloc.cartTotal,
+      bloc.state.cart.discount,
+      bloc.cartTotalWithDiscount,
+    ],
   });
-
-  const selected = {
-    total: cubit.cartTotal,
-    discount: cubit.state.cart.discount,
-    finalTotal: cubit.cartTotalWithDiscount,
-  };
 
   return (
     <motion.div
@@ -310,14 +294,14 @@ function ComputedSelectorComponent() {
     >
       <div className="flex items-center justify-between mb-3">
         <h4 className="font-semibold text-amber-900 dark:text-amber-100">
-          Computed Property Selector
+          Computed Property Dependencies
         </h4>
         <RenderCounter label="Renders" />
       </div>
       <div className="text-sm text-amber-800 dark:text-amber-200 space-y-1">
-        <p>Subtotal: ${selected.total.toFixed(2)}</p>
-        <p>Discount: {selected.discount}%</p>
-        <p className="font-semibold">Final: ${selected.finalTotal.toFixed(2)}</p>
+        <p>Subtotal: ${cubit.cartTotal.toFixed(2)}</p>
+        <p>Discount: {cubit.state.cart.discount}%</p>
+        <p className="font-semibold">Final: ${cubit.cartTotalWithDiscount.toFixed(2)}</p>
       </div>
       <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
         ✅ Tracks computed properties from getters

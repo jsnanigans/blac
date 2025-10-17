@@ -516,7 +516,7 @@ export const CustomPluginsDemo: React.FC = () => {
                   </Button>
                   <Button
                     onClick={cubit.reset}
-                    variant="muted"
+                    variant="ghost"
                     className="col-span-2"
                   >
                     Reset

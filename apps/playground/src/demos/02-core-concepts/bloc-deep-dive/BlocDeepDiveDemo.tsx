@@ -531,7 +531,7 @@ function BasicEventDemo() {
         <Button onClick={() => bloc.decrement()} variant="outline" size="lg">
           Decrement
         </Button>
-        <Button onClick={() => bloc.reset()} variant="muted" size="lg">
+        <Button onClick={() => bloc.reset()} variant="ghost" size="lg">
           Reset
         </Button>
         <Button onClick={handleIncrement} variant="primary" size="lg">
@@ -698,7 +698,7 @@ function AsyncEventDemo() {
           </Button>
           <Button
             onClick={() => bloc.cancelFetch()}
-            variant="muted"
+            variant="ghost"
             size="sm"
             disabled={!state.loading && !state.refreshing}
           >

@@ -354,7 +354,7 @@ export const SelectorsDemo: React.FC = () => {
               </Button>
             </div>
 
-            <Button onClick={cubit.reset} variant="muted" className="w-full">
+            <Button onClick={cubit.reset} variant="ghost" className="w-full">
               Reset All State
             </Button>
           </div>

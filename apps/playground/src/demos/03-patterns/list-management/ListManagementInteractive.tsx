@@ -374,12 +374,28 @@ export function ListManagementInteractive() {
         </div>
 
         <div className="space-y-4">
-          <StateViewer
-            bloc={activeDemo === 'simple' ? SimpleListCubit : activeDemo === 'event-driven' ? TodoBloc : BulkOperationsCubit}
-            title={`${activeDemo === 'simple' ? 'Simple List' : activeDemo === 'event-driven' ? 'Todo Bloc' : 'Bulk Operations'} State`}
-            defaultCollapsed={false}
-            maxDepth={activeDemo === 'event-driven' ? 2 : undefined}
-          />
+          {activeDemo === 'simple' && (
+            <StateViewer
+              bloc={SimpleListCubit}
+              title="Simple List State"
+              defaultCollapsed={false}
+            />
+          )}
+          {activeDemo === 'event-driven' && (
+            <StateViewer
+              bloc={TodoBloc}
+              title="Todo Bloc State"
+              defaultCollapsed={false}
+              maxDepth={2}
+            />
+          )}
+          {activeDemo === 'bulk' && (
+            <StateViewer
+              bloc={BulkOperationsCubit}
+              title="Bulk Operations State"
+              defaultCollapsed={false}
+            />
+          )}
         </div>
       </div>
     </div>

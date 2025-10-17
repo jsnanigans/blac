@@ -218,11 +218,27 @@ export function AsyncLoadingInteractive() {
         </div>
 
         <div className="space-y-4">
-          <StateViewer
-            bloc={activeDemo === 'state-machine' ? DataFetchCubit : activeDemo === 'retry' ? RetryFetchCubit : OptimisticTodoCubit}
-            title={`${activeDemo === 'state-machine' ? 'State Machine' : activeDemo === 'retry' ? 'Retry' : 'Optimistic Updates'} State`}
-            defaultCollapsed={false}
-          />
+          {activeDemo === 'state-machine' && (
+            <StateViewer
+              bloc={DataFetchCubit}
+              title="State Machine State"
+              defaultCollapsed={false}
+            />
+          )}
+          {activeDemo === 'retry' && (
+            <StateViewer
+              bloc={RetryFetchCubit}
+              title="Retry State"
+              defaultCollapsed={false}
+            />
+          )}
+          {activeDemo === 'optimistic' && (
+            <StateViewer
+              bloc={OptimisticTodoCubit}
+              title="Optimistic Updates State"
+              defaultCollapsed={false}
+            />
+          )}
         </div>
       </div>
     </div>

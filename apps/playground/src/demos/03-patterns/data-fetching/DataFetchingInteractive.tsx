@@ -315,11 +315,27 @@ export function DataFetchingInteractive() {
         </div>
 
         <div className="space-y-4">
-          <StateViewer
-            bloc={activeDemo === 'cache' ? SimpleCacheCubit : activeDemo === 'swr' ? SWRCubit : PaginationCubit}
-            title={`${activeDemo === 'cache' ? 'Cache' : activeDemo === 'swr' ? 'SWR' : 'Pagination'} State`}
-            defaultCollapsed={false}
-          />
+          {activeDemo === 'cache' && (
+            <StateViewer
+              bloc={SimpleCacheCubit}
+              title="Cache State"
+              defaultCollapsed={false}
+            />
+          )}
+          {activeDemo === 'swr' && (
+            <StateViewer
+              bloc={SWRCubit}
+              title="SWR State"
+              defaultCollapsed={false}
+            />
+          )}
+          {activeDemo === 'pagination' && (
+            <StateViewer
+              bloc={PaginationCubit}
+              title="Pagination State"
+              defaultCollapsed={false}
+            />
+          )}
         </div>
       </div>
     </div>

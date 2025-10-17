@@ -200,7 +200,7 @@ const KeepAliveCounter: React.FC<{ id: string }> = React.memo(({ id }) => {
         >
           Increment
         </Button>
-        <Button onClick={handleReset} variant="muted">
+        <Button onClick={handleReset} variant="ghost">
           Reset
         </Button>
       </div>
@@ -292,7 +292,7 @@ const RegularCounter: React.FC<{ id: string }> = React.memo(({ id }) => {
         >
           Increment
         </Button>
-        <Button onClick={handleReset} variant="muted">
+        <Button onClick={handleReset} variant="ghost">
           Reset
         </Button>
       </div>

@@ -100,9 +100,8 @@ class TimerCubit extends Cubit<TimerState> {
   }
 
   // Cleanup on disposal
-  onDispose = async () => {
+  onDispose = () => {
     this.stop();
-    return super.onDispose();
   };
 }
 
@@ -166,7 +165,7 @@ function Timer({ config }: { config: TimerProps }) {
           <Button
             onClick={cubit.start}
             disabled={state.isRunning}
-            variant="default"
+            variant="primary"
             size="sm"
             className="flex-1"
           >

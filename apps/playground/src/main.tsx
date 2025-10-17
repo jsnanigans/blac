@@ -4,7 +4,6 @@ import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Blac } from '@blac/core';
 import { RenderLoggingPlugin } from '@blac/plugin-render-logging';
-import { GraphPlugin } from '@blac/plugin-graph';
 import { DevToolsPlugin, ReduxDevToolsAdapter } from '@blac/devtools-connect';
 import { MdxProvider } from './components/mdx/MdxProvider';
 import App from './App';
@@ -12,15 +11,6 @@ import './index.css';
 import './demos'; // Register all demos
 
 // Initialize BlaC plugins
-
-// Graph visualization plugin
-Blac.instance.plugins.add(
-  new GraphPlugin({
-    throttleInterval: 100,
-    maxStateDepth: 2,
-    maxStateStringLength: 100,
-  }),
-);
 
 // Redux DevTools integration (recommended - works immediately!)
 Blac.instance.plugins.add(

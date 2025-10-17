@@ -93,7 +93,7 @@ export function BasicBlocDemo() {
             <Button onClick={handleDecrement} variant="outline">
               Decrement
             </Button>
-            <Button onClick={handleReset} variant="muted">
+            <Button onClick={handleReset} variant="ghost">
               Reset
             </Button>
             <Button onClick={handleIncrement} variant="primary">

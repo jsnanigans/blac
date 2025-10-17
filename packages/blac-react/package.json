@@ -8,13 +8,14 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
       "import": {
-        "development": "./src/index.ts",
+        "types": "./dist/index.d.ts",
         "default": "./dist/index.js"
       },
-      "require": "./dist/index.cjs",
-      "source": "./src/index.ts"
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     }
   },
   "files": [
@@ -33,11 +34,9 @@
     "bloc-pattern"
   ],
   "scripts": {
-    "dev": "tsc --watch --project tsconfig.build.json",
-    "build": "pnpm run clean && pnpm run build:cjs && pnpm run build:esm",
-    "build:esm": "tsc --project tsconfig.build.json",
-    "build:cjs": "tsc --project tsconfig.build.json --module commonjs --outDir dist-cjs --declaration false --declarationMap false && mkdir -p dist && mv dist-cjs/index.js dist/index.cjs && rm -rf dist-cjs",
-    "clean": "rm -rf dist dist-cjs",
+    "dev": "tsdown --watch",
+    "build": "tsdown",
+    "clean": "rm -rf dist",
     "format": "prettier --write \".\"",
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
@@ -81,6 +80,7 @@
     "prettier": "catalog:",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

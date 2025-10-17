@@ -379,11 +379,19 @@ export function SimpleFormInteractive() {
         </div>
 
         <div className="space-y-4">
-          <StateViewer
-            bloc={activeDemo === 'contact' ? ContactFormCubit : NewsletterCubit}
-            title={`${activeDemo === 'contact' ? 'Contact' : 'Newsletter'} Form State`}
-            defaultCollapsed={false}
-          />
+          {activeDemo === 'contact' ? (
+            <StateViewer
+              bloc={ContactFormCubit}
+              title="Contact Form State"
+              defaultCollapsed={false}
+            />
+          ) : (
+            <StateViewer
+              bloc={NewsletterCubit}
+              title="Newsletter Form State"
+              defaultCollapsed={false}
+            />
+          )}
         </div>
       </div>
     </div>

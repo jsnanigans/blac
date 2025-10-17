@@ -165,7 +165,7 @@ export const AsyncDemo: React.FC = () => {
             >
               Fetch with Retry
             </Button>
-            <Button onClick={apiCubit.reset} variant="muted">
+            <Button onClick={apiCubit.reset} variant="ghost">
               Reset
             </Button>
           </div>

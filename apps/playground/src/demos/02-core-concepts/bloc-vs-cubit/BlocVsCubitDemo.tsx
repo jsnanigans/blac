@@ -167,7 +167,7 @@ function InteractiveComparison() {
             <Button onClick={cubit.decrement} variant="outline" disabled={activeImpl !== 'cubit'}>
               -
             </Button>
-            <Button onClick={cubit.reset} variant="muted" disabled={activeImpl !== 'cubit'}>
+            <Button onClick={cubit.reset} variant="ghost" disabled={activeImpl !== 'cubit'}>
               Reset
             </Button>
             <Button
@@ -226,7 +226,7 @@ function InteractiveComparison() {
             <Button onClick={() => bloc.decrement()} variant="outline" disabled={activeImpl !== 'bloc'}>
               -
             </Button>
-            <Button onClick={() => bloc.reset()} variant="muted" disabled={activeImpl !== 'bloc'}>
+            <Button onClick={() => bloc.reset()} variant="ghost" disabled={activeImpl !== 'bloc'}>
               Reset
             </Button>
             <Button

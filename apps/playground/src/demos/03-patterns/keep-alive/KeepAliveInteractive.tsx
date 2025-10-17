@@ -112,7 +112,7 @@ function KeepAliveCounter() {
         </p>
 
         <div className="flex gap-2">
-          <Button onClick={cubit.increment} variant="default" className="flex-1">
+          <Button onClick={cubit.increment} variant="primary" className="flex-1">
             Increment
           </Button>
           <Button onClick={cubit.reset} variant="outline">
@@ -155,7 +155,7 @@ function RegularCounter() {
         </p>
 
         <div className="flex gap-2">
-          <Button onClick={cubit.increment} variant="default" className="flex-1">
+          <Button onClick={cubit.increment} variant="primary" className="flex-1">
             Increment
           </Button>
           <Button onClick={cubit.reset} variant="outline">
@@ -189,7 +189,7 @@ export function KeepAliveInteractive() {
             </div>
             <Button
               onClick={() => setShowKeepAlive(!showKeepAlive)}
-              variant={showKeepAlive ? 'outline' : 'default'}
+              variant={showKeepAlive ? 'outline' : 'primary'}
               size="sm"
               className="flex items-center gap-2"
             >
@@ -244,7 +244,7 @@ export function KeepAliveInteractive() {
             </div>
             <Button
               onClick={() => setShowRegular(!showRegular)}
-              variant={showRegular ? 'outline' : 'default'}
+              variant={showRegular ? 'outline' : 'primary'}
               size="sm"
               className="flex items-center gap-2"
             >

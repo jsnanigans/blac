@@ -324,7 +324,7 @@ export function TodoBlocInteractive() {
                   <Button
                     key={filter}
                     onClick={() => todoBloc.setFilter(filter)}
-                    variant={state.filter === filter ? 'default' : 'outline'}
+                    variant={state.filter === filter ? 'primary' : 'outline'}
                     size="sm"
                     className="text-xs px-2 py-1 capitalize"
                   >

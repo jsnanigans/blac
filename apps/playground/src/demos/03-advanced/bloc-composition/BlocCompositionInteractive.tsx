@@ -127,7 +127,7 @@ class DashboardStatsCubit extends Cubit<DashboardStatsState> {
 // ============================================================================
 
 class NotificationCubit extends Cubit<NotificationState> {
-  private authSubscription?: () => void;
+  private authSubscription?: { unsubscribe: () => void };
 
   constructor() {
     super({ messages: [], unreadCount: 0 });
@@ -169,7 +169,7 @@ class NotificationCubit extends Cubit<NotificationState> {
 
   onDispose = () => {
     if (this.authSubscription) {
-      this.authSubscription();
+      this.authSubscription.unsubscribe();
     }
   };
 }
@@ -293,7 +293,7 @@ export function BlocCompositionInteractive() {
             <Button
               onClick={dashboardCubit.resetStats}
               disabled={dashboardState.isLoading}
-              variant="muted"
+              variant="ghost"
             >
               Reset
             </Button>
@@ -344,7 +344,7 @@ export function BlocCompositionInteractive() {
           <div className="flex gap-2">
             <Button
               onClick={notificationCubit.markAsRead}
-              variant="muted"
+              variant="ghost"
               className="text-xs"
             >
               Mark Read

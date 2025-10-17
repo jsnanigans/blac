@@ -69,8 +69,8 @@ This document tracks the implementation progress of issues identified in the com
 
 ---
 
-### [ ] 6. Subscription ID Race Condition
-**Status:** 🔵 **NOT STARTED**
+### [ ] 6. ~~Subscription ID Race Condition~~ COMPLETE
+**Status:** ✅ **IMPLEMENTED** (2025-10-17)
 **Location:** `packages/blac/src/adapter/BlacAdapter.ts:161-175`
 **Spec:** [`spec/2025-10-16-subscription-id-race-condition/`](./spec/2025-10-16-subscription-id-race-condition/)
 **Impact:** Incorrect dependency tracking

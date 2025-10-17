@@ -9,14 +9,9 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      },
-      "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
-      }
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     }
   },
   "files": [
@@ -33,9 +28,11 @@
     "time-travel"
   ],
   "scripts": {
-    "dev": "tsdown --watch",
-    "build": "tsdown",
-    "clean": "rm -rf dist",
+    "dev": "tsc --watch --project tsconfig.build.json",
+    "build": "pnpm run clean && pnpm run build:esm && pnpm run build:cjs",
+    "build:esm": "tsc --project tsconfig.build.json",
+    "build:cjs": "tsc --project tsconfig.build.json --module commonjs --outDir dist-cjs --declaration false --declarationMap false && cp dist-cjs/index.js dist/index.cjs && rm -rf dist-cjs",
+    "clean": "rm -rf dist dist-cjs",
     "format": "prettier --write \".\"",
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
@@ -53,7 +50,6 @@
     "@blac/core": "workspace:*",
     "prettier": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:",
-    "tsdown": "catalog:"
+    "vitest": "catalog:"
   }
 }

@@ -242,7 +242,7 @@ export const StreamDemo: React.FC = () => {
 
               <Button
                 onClick={cubit.reset}
-                variant="muted"
+                variant="ghost"
                 className="flex items-center gap-2"
               >
                 <RotateCcw className="w-4 h-4" />

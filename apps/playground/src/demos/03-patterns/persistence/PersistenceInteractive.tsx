@@ -264,7 +264,7 @@ export function PersistenceInteractive() {
                 <label className="block text-sm font-medium mb-2">Theme:</label>
                 <Button
                   onClick={settings.toggleTheme}
-                  variant="default"
+                  variant="primary"
                   className="bg-gradient-to-r from-blue-500 to-blue-600"
                 >
                   {settingsState.theme === 'dark' ? '🌙 Dark' : '☀️ Light'}
@@ -305,7 +305,7 @@ export function PersistenceInteractive() {
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Reset to Defaults
                 </Button>
-                <Button onClick={settings.clearPersistedData} variant="destructive" size="sm">
+                <Button onClick={settings.clearPersistedData} variant="danger" size="sm">
                   <Trash2 className="w-4 h-4 mr-2" />
                   Clear Storage
                 </Button>
@@ -349,7 +349,7 @@ export function PersistenceInteractive() {
                     onClick={() =>
                       selective.setTheme(selectiveState.theme === 'dark' ? 'light' : 'dark')
                     }
-                    variant="default"
+                    variant="primary"
                     className="bg-gradient-to-r from-green-500 to-emerald-600"
                   >
                     {selectiveState.theme === 'dark' ? '🌙 Dark' : '☀️ Light'}
@@ -400,7 +400,7 @@ export function PersistenceInteractive() {
                   <label className="block text-sm font-medium mb-2">Loading State:</label>
                   <Button
                     onClick={() => selective.setLoading(!selectiveState.isLoading)}
-                    variant="default"
+                    variant="primary"
                     className="bg-gradient-to-r from-red-500 to-orange-600"
                   >
                     {selectiveState.isLoading ? 'Loading...' : 'Not Loading'}
@@ -455,13 +455,13 @@ export function PersistenceInteractive() {
                 onClick={() =>
                   selective.login('user123', 'John Doe', 'secret-token-xyz')
                 }
-                variant="default"
+                variant="primary"
                 className="bg-gradient-to-r from-blue-500 to-blue-600"
               >
                 Simulate Login
               </Button>
             ) : (
-              <Button onClick={selective.logout} variant="destructive">
+              <Button onClick={selective.logout} variant="danger">
                 Logout
               </Button>
             )}

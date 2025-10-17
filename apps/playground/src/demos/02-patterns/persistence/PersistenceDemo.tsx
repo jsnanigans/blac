@@ -312,7 +312,7 @@ export const PersistenceDemo: React.FC = () => {
               </div>
 
               <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <Button onClick={settings.resetToDefaults} variant="muted">
+                <Button onClick={settings.resetToDefaults} variant="ghost">
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Reset to Defaults
                 </Button>
@@ -483,7 +483,7 @@ export const PersistenceDemo: React.FC = () => {
                       <Button
                         onClick={selective.updateLastSeen}
                         size="sm"
-                        variant="muted"
+                        variant="ghost"
                         className="mt-2"
                       >
                         Update Last Seen

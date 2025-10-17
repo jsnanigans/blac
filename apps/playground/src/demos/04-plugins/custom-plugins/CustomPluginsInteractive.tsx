@@ -416,7 +416,7 @@ export function CustomPluginsInteractive() {
               </Button>
               <Button
                 onClick={cubit.reset}
-                variant="muted"
+                variant="ghost"
                 className="col-span-2"
               >
                 Reset
