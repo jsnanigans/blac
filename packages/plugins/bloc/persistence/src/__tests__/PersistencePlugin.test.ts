@@ -551,7 +551,7 @@ describe('PersistencePlugin', () => {
 
       // Track observer notifications
       const notificationCount = { value: 0 };
-      const unsubscribe = cubit.subscribe(() => {
+      const { unsubscribe } = cubit.subscribe(() => {
         notificationCount.value++;
       });
 

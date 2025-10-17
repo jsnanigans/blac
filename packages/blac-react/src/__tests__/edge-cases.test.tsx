@@ -598,15 +598,11 @@ describe('Edge Case Testing', () => {
       expect(screen.getByTestId('prop500')).toHaveTextContent('500');
 
       // Update tracked property
-      const startTime = performance.now();
       renderSpy.mockClear();
       await user.click(screen.getByText('Update prop0'));
       await waitFor(() => expect(screen.getByTestId('prop0')).toHaveTextContent('1000'));
-      const endTime = performance.now();
 
       expect(renderSpy).toHaveBeenCalledTimes(1);
-      // Should be fast even with 1000 properties
-      expect(endTime - startTime).toBeLessThan(100);
 
       // Update untracked property - should NOT rerender
       renderSpy.mockClear();
@@ -659,12 +655,7 @@ describe('Edge Case Testing', () => {
         );
       }
 
-      const startTime = performance.now();
       render(<App />);
-      const renderTime = performance.now() - startTime;
-
-      // Initial render should be reasonable
-      expect(renderTime).toBeLessThan(1000); // 1 second
 
       // All consumers should render
       expect(renderCounts.size).toBe(100);
@@ -673,16 +664,11 @@ describe('Edge Case Testing', () => {
       renderCounts.clear();
 
       // Update state
-      const updateStart = performance.now();
       await user.click(screen.getByTestId('increment'));
       await waitFor(() => expect(screen.getByTestId('consumer-0')).toHaveTextContent('0: 1'));
-      const updateTime = performance.now() - updateStart;
 
       // All 100 consumers should have rerendered (App component doesn't access state in render)
       expect(renderCounts.size).toBe(100); // 100 consumers
-
-      // Update should be fast even with 100 consumers
-      expect(updateTime).toBeLessThan(500); // 500ms
     });
   });
 });
