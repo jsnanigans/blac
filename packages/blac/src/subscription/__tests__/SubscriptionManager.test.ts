@@ -28,7 +28,7 @@ describe('SubscriptionManager', () => {
   describe('subscribe', () => {
     it('should create a subscription and return unsubscribe function', () => {
       const notify = vi.fn();
-      const unsubscribe = manager.subscribe({
+      const { unsubscribe } = manager.subscribe({
         type: 'observer',
         notify,
       });

@@ -145,7 +145,7 @@ describe('Performance Benchmarks - Dependency Tracking V2', () => {
       const cubit = new LargeStateCubit(1000);
 
       let notificationCount = 0;
-      const unsubscribe = cubit.subscribe(() => {
+      const { unsubscribe } = cubit.subscribe(() => {
         notificationCount++;
       });
 
@@ -256,7 +256,7 @@ describe('Performance Benchmarks - Dependency Tracking V2', () => {
 
       // Create multiple subscriptions
       for (let i = 0; i < subscriptionCount; i++) {
-        const unsubscribe = cubit.subscribe(() => {
+        const { unsubscribe } = cubit.subscribe(() => {
           // Empty callback
         });
         unsubscribers.push(unsubscribe);
@@ -273,7 +273,7 @@ describe('Performance Benchmarks - Dependency Tracking V2', () => {
     it('should clean up getter cache on unsubscribe', () => {
       const cubit = new TestCubit();
 
-      const unsubscribe = cubit.subscribe(() => {});
+      const { unsubscribe } = cubit.subscribe(() => {});
 
       // Trigger some state changes
       cubit.increment();
@@ -307,7 +307,7 @@ describe('Performance Benchmarks - Dependency Tracking V2', () => {
       // Create 100 subscriptions
       for (let i = 0; i < subscriptionCount; i++) {
         const id = i;
-        const unsubscribe = cubit.subscribe(() => {
+        const { unsubscribe } = cubit.subscribe(() => {
           const count = notificationCounts.get(id) || 0;
           notificationCounts.set(id, count + 1);
         });
@@ -340,7 +340,7 @@ describe('Performance Benchmarks - Dependency Tracking V2', () => {
       // Create 1000 subscriptions
       for (let i = 0; i < subscriptionCount; i++) {
         const id = i;
-        const unsubscribe = cubit.subscribe(() => {
+        const { unsubscribe } = cubit.subscribe(() => {
           const count = notificationCounts.get(id) || 0;
           notificationCounts.set(id, count + 1);
         });
@@ -436,7 +436,7 @@ describe('Performance Benchmarks - Dependency Tracking V2', () => {
 
       // Subscribe
       let notifyCount = 0;
-      const unsubscribe = cubit.subscribe(() => {
+      const { unsubscribe } = cubit.subscribe(() => {
         notifyCount++;
       });
 
@@ -463,7 +463,7 @@ describe('Performance Benchmarks - Dependency Tracking V2', () => {
 
       // Create 50 subscriptions
       for (let i = 0; i < 50; i++) {
-        const unsubscribe = cubit.subscribe(() => {});
+        const { unsubscribe } = cubit.subscribe(() => {});
         unsubscribers.push(unsubscribe);
       }
 

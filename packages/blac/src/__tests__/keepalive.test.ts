@@ -709,7 +709,7 @@ describe('KeepAlive', () => {
       const listener = vi.fn();
 
       // Subscribe and immediately change state
-      const unsub = consumer.subscribe(() => {
+      const { unsubscribe: unsub } = consumer.subscribe(() => {
         listener();
         if (consumer.state.count < 3) {
           consumer.increment();

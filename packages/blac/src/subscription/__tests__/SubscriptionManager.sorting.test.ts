@@ -177,7 +177,7 @@ describe('SubscriptionManager - Sorting Optimization', () => {
 
     it('should invalidate cache when subscription removed', () => {
       // Setup with priority subscriptions
-      const unsubscribe1 = manager.subscribe({
+      const { unsubscribe: unsubscribe1 } = manager.subscribe({
         type: 'observer',
         priority: 1,
         notify: () => {},
@@ -202,13 +202,13 @@ describe('SubscriptionManager - Sorting Optimization', () => {
 
   describe('Flag Recalculation', () => {
     it('should reset hasNonZeroPriorities flag when all priority subscriptions removed', () => {
-      const unsubscribe1 = manager.subscribe({
+      const { unsubscribe: unsubscribe1 } = manager.subscribe({
         type: 'observer',
         priority: 1,
         notify: () => {},
       });
 
-      const unsubscribe2 = manager.subscribe({
+      const { unsubscribe: unsubscribe2 } = manager.subscribe({
         type: 'observer',
         priority: 2,
         notify: () => {},
@@ -232,7 +232,7 @@ describe('SubscriptionManager - Sorting Optimization', () => {
     });
 
     it('should keep hasNonZeroPriorities flag when some priority subscriptions remain', () => {
-      const unsubscribe1 = manager.subscribe({
+      const { unsubscribe: unsubscribe1 } = manager.subscribe({
         type: 'observer',
         priority: 1,
         notify: () => {},

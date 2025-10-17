@@ -232,12 +232,12 @@ describe('SubscriptionManager - Sorting Performance', () => {
       // Add initial subscriptions
       const unsubscribes: Array<() => void> = [];
       for (let i = 0; i < 50; i++) {
-        const unsub = manager.subscribe({
+        const { unsubscribe } = manager.subscribe({
           type: 'observer',
           priority: i % 3,
           notify: () => {},
         });
-        unsubscribes.push(unsub);
+        unsubscribes.push(unsubscribe);
       }
 
       // Create cache
