@@ -294,7 +294,7 @@ describe('Edge Case Testing', () => {
       }
 
       render(
-        <ErrorBoundary ref={ref => (boundaryRef = ref)}>
+        <ErrorBoundary ref={ref => { boundaryRef = ref; }}>
           <TestComponent />
         </ErrorBoundary>
       );

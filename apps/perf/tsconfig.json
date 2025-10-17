@@ -22,5 +22,5 @@
     },
     "types": ["vite/client"]
   },
-  "include": ["main.ts", "vite.config.ts"]
+  "include": ["src", "main.ts", "vite.config.ts"]
 }

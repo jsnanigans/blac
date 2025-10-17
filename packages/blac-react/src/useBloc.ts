@@ -5,7 +5,7 @@ import {
   BlocState,
   generateInstanceIdFromProps,
 } from '@blac/core';
-import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 
 /**
  * Type definition for the return type of the useBloc hook
@@ -23,7 +23,7 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
   options?: {
     staticProps?: ConstructorParameters<B>[0];
     instanceId?: string;
-    dependencies?: (bloc: InstanceType<B>) => unknown[];
+    dependencies?: (bloc: InstanceType<B>) => unknown[] | Generator<unknown, void, unknown>;
     onMount?: (bloc: InstanceType<B>) => void;
     onUnmount?: (bloc: InstanceType<B>) => void;
   },
@@ -99,7 +99,7 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
     };
   }, [adapter]);
 
-  // Subscribe to state changes
+  // Subscribe to state changes only when needed
   const subscribe = useMemo(() => {
     return (onStoreChange: () => void) => {
       const unsubscribe = adapter.createSubscription({
@@ -117,11 +117,21 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
   const rawState: BlocState<InstanceType<B>> = useSyncExternalStore(
     subscribe,
     () => {
+      // When using dependencies, return snapshot (only updates when dependencies change)
+      // This prevents re-renders when state changes but dependencies haven't changed
+      if (adapter.options?.dependencies) {
+        return (adapter as any).stateSnapshot ?? adapter.blocInstance.state;
+      }
+      // Normal mode: always return latest state
       const bloc = adapter.blocInstance;
       const state = bloc.state;
       return state;
     },
     () => {
+      // Server-side rendering snapshot
+      if (adapter.options?.dependencies) {
+        return (adapter as any).stateSnapshot ?? adapter.blocInstance.state;
+      }
       const bloc = adapter.blocInstance;
       const state = bloc.state;
       return state;

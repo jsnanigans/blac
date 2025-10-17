@@ -1,6 +1,6 @@
 import { Cubit } from '@blac/core';
 import { useBloc } from '@blac/react';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { PerformanceMetrics, BenchmarkResult } from '../utils/PerformanceMetrics';
 
 /**
@@ -36,12 +36,26 @@ class IsolatedCounterCubit extends Cubit<number> {
   increment = () => {
     this.emit(this.state + 1);
   };
+
+  reset = () => {
+    this.emit(0);
+  };
 }
 
-const SharedCounterComponent: React.FC<{ id: number }> = ({ id }) => {
+interface ComponentHandle {
+  increment: () => void;
+  getRenderCount: () => number;
+}
+
+const SharedCounterComponent = forwardRef<ComponentHandle, { id: number }>(({ id }, ref) => {
   const [count, { increment }] = useBloc(CounterCubit);
-  const renderCount = React.useRef(0);
+  const renderCount = useRef(0);
   renderCount.current++;
+
+  useImperativeHandle(ref, () => ({
+    increment,
+    getRenderCount: () => renderCount.current,
+  }));
 
   return (
     <div
@@ -59,12 +73,17 @@ const SharedCounterComponent: React.FC<{ id: number }> = ({ id }) => {
       </button>
     </div>
   );
-};
+});
 
-const IsolatedCounterComponent: React.FC<{ id: number }> = ({ id }) => {
+const IsolatedCounterComponent = forwardRef<ComponentHandle, { id: number }>(({ id }, ref) => {
   const [count, { increment }] = useBloc(IsolatedCounterCubit);
-  const renderCount = React.useRef(0);
+  const renderCount = useRef(0);
   renderCount.current++;
+
+  useImperativeHandle(ref, () => ({
+    increment,
+    getRenderCount: () => renderCount.current,
+  }));
 
   return (
     <div
@@ -82,97 +101,123 @@ const IsolatedCounterComponent: React.FC<{ id: number }> = ({ id }) => {
       </button>
     </div>
   );
-};
-
-const AutoIncrementComponent: React.FC<{
-  id: number;
-  interval: number;
-  onUpdate: () => void;
-}> = ({ id, interval, onUpdate }) => {
-  const [count, { increment }] = useBloc(CounterCubit);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      increment();
-      onUpdate();
-    }, interval);
-
-    return () => clearInterval(timer);
-  }, [interval]);
-
-  return (
-    <div
-      style={{
-        padding: '8px',
-        border: '2px solid #4caf50',
-        margin: '2px',
-        fontSize: '11px',
-        background: '#f1f8f4',
-      }}
-    >
-      <div>Auto #{id}</div>
-      <div>Count: {count}</div>
-    </div>
-  );
-};
+});
 
 export const ConcurrentUpdatesBenchmark: React.FC = () => {
   const [componentCount, setComponentCount] = useState(10);
   const [useIsolated, setUseIsolated] = useState(false);
-  const [autoUpdateCount, setAutoUpdateCount] = useState(0);
-  const [autoUpdateInterval, setAutoUpdateInterval] = useState(100);
-  const [isAutoRunning, setIsAutoRunning] = useState(false);
   const [results, setResults] = useState<BenchmarkResult[]>([]);
-  const [updateCounter, setUpdateCounter] = useState(0);
 
-  const [count, { increment, reset }] = useBloc(CounterCubit);
+  const componentRefs = useRef<(ComponentHandle | null)[]>([]);
+  const [, forceUpdate] = useState(0);
+
+  const [sharedCount, sharedCubit] = useBloc(CounterCubit);
 
   const Component = useIsolated ? IsolatedCounterComponent : SharedCounterComponent;
 
-  const runSimultaneousUpdates = () => {
+  // Update refs array when component count changes
+  useEffect(() => {
+    componentRefs.current = componentRefs.current.slice(0, componentCount);
+  }, [componentCount]);
+
+  const getTotalRenderCount = () => {
+    return componentRefs.current.reduce(
+      (sum, ref) => sum + (ref?.getRenderCount() || 0),
+      0
+    );
+  };
+
+  const resetAllRenderCounts = () => {
+    // Force component re-mount to reset render counts
+    forceUpdate((prev) => prev + 1);
+  };
+
+  const runSharedStateTest = async () => {
     PerformanceMetrics.clearResults();
 
-    const result = PerformanceMetrics.measure('Simultaneous Updates', () => {
-      // Trigger multiple updates rapidly
-      for (let i = 0; i < 100; i++) {
-        increment();
+    // Reset before test
+    sharedCubit.reset();
+    await PerformanceMetrics.nextFrame();
+
+    const initialRenderCount = getTotalRenderCount();
+
+    const result = PerformanceMetrics.measure(
+      `Shared: ${componentCount} components, 100 updates`,
+      () => {
+        // Single state change that affects all N components
+        for (let i = 0; i < 100; i++) {
+          sharedCubit.increment();
+        }
       }
-    });
+    );
 
     setTimeout(() => {
-      setResults([result.metrics]);
+      const finalRenderCount = getTotalRenderCount();
+      const rendersDuringTest = finalRenderCount - initialRenderCount;
+
+      setResults([
+        result.metrics,
+        {
+          name: 'Total Component Re-renders',
+          duration: 0,
+          timestamp: Date.now(),
+          iterations: rendersDuringTest,
+        } as BenchmarkResult,
+        {
+          name: 'Expected Re-renders',
+          duration: 0,
+          timestamp: Date.now(),
+          iterations: componentCount * 100, // N components × 100 updates
+        } as BenchmarkResult,
+      ]);
     }, 100);
   };
 
-  const runRapidFireUpdates = async () => {
+  const runIsolatedStateTest = async () => {
     PerformanceMetrics.clearResults();
 
-    PerformanceMetrics.start('Rapid Fire Updates (1000x with RAF)');
+    const initialRenderCount = getTotalRenderCount();
 
-    for (let i = 0; i < 1000; i++) {
-      increment();
-      if (i % 50 === 0) {
-        await PerformanceMetrics.nextFrame();
+    const result = PerformanceMetrics.measure(
+      `Isolated: ${componentCount} components, 100 updates each`,
+      () => {
+        // Each component gets 100 updates to its own isolated state
+        for (let i = 0; i < 100; i++) {
+          componentRefs.current.forEach((ref) => {
+            ref?.increment();
+          });
+        }
       }
+    );
+
+    setTimeout(() => {
+      const finalRenderCount = getTotalRenderCount();
+      const rendersDuringTest = finalRenderCount - initialRenderCount;
+
+      setResults([
+        result.metrics,
+        {
+          name: 'Total Component Re-renders',
+          duration: 0,
+          timestamp: Date.now(),
+          iterations: rendersDuringTest,
+        } as BenchmarkResult,
+        {
+          name: 'Expected Re-renders',
+          duration: 0,
+          timestamp: Date.now(),
+          iterations: componentCount * 100, // N components × 100 updates each
+        } as BenchmarkResult,
+      ]);
+    }, 100);
+  };
+
+  const runConcurrentTest = () => {
+    if (useIsolated) {
+      runIsolatedStateTest();
+    } else {
+      runSharedStateTest();
     }
-
-    const result = PerformanceMetrics.end('Rapid Fire Updates (1000x with RAF)');
-    setResults([result]);
-  };
-
-  const handleUpdate = () => {
-    setUpdateCounter((prev) => prev + 1);
-  };
-
-  const startAutoUpdates = () => {
-    setIsAutoRunning(true);
-    PerformanceMetrics.start('Auto Updates');
-  };
-
-  const stopAutoUpdates = () => {
-    setIsAutoRunning(false);
-    const result = PerformanceMetrics.end('Auto Updates');
-    setResults((prev) => [...prev, result]);
   };
 
   return (
@@ -183,13 +228,18 @@ export const ConcurrentUpdatesBenchmark: React.FC = () => {
         subscription performance, and re-render optimization.
       </p>
 
-      <div style={{ marginBottom: '20px', padding: '10px', background: '#f5f5f5' }}>
-        <h3>Shared State</h3>
-        <div>Global Counter: {count}</div>
-        <div>Total Updates: {updateCounter}</div>
-        <button onClick={reset} style={{ marginTop: '10px', padding: '5px 10px' }}>
-          Reset Counter
-        </button>
+      <div style={{ marginBottom: '20px', padding: '15px', background: '#f0f7ff', borderLeft: '4px solid #2196f3' }}>
+        <h3 style={{ marginTop: 0 }}>Understanding This Benchmark</h3>
+        <div style={{ fontSize: '14px', lineHeight: '1.6' }}>
+          <p style={{ marginBottom: '10px' }}>
+            <strong>Shared Mode:</strong> All {componentCount} components subscribe to ONE shared state.
+            Each update triggers re-renders in all components (1 update → {componentCount} re-renders).
+          </p>
+          <p style={{ marginBottom: 0 }}>
+            <strong>Isolated Mode:</strong> Each component has its OWN isolated state instance.
+            Updates only affect the specific component (1 update → 1 re-render).
+          </p>
+        </div>
       </div>
 
       <div style={{ marginBottom: '20px', padding: '10px', background: '#f5f5f5' }}>
@@ -200,9 +250,9 @@ export const ConcurrentUpdatesBenchmark: React.FC = () => {
             <input
               type="number"
               value={componentCount}
-              onChange={(e) => setComponentCount(parseInt(e.target.value, 10))}
+              onChange={(e) => setComponentCount(Math.max(1, parseInt(e.target.value, 10) || 1))}
               min="1"
-              max="500"
+              max="100"
               style={{ width: '80px', marginLeft: '5px' }}
             />
           </label>
@@ -216,60 +266,35 @@ export const ConcurrentUpdatesBenchmark: React.FC = () => {
             Use Isolated Blocs
           </label>
         </div>
+        <div style={{ fontSize: '12px', color: '#666', marginTop: '8px' }}>
+          Current: {useIsolated ? 'Each component has its own state' : `All ${componentCount} components share one state`}
+        </div>
       </div>
+
+      {!useIsolated && (
+        <div style={{ marginBottom: '20px', padding: '10px', background: '#f5f5f5' }}>
+          <h3>Shared State</h3>
+          <div>Global Counter: {sharedCount}</div>
+          <button onClick={sharedCubit.reset} style={{ marginTop: '10px', padding: '5px 10px' }}>
+            Reset Counter
+          </button>
+        </div>
+      )}
 
       <div style={{ marginBottom: '20px' }}>
-        <h3>Manual Benchmarks</h3>
+        <h3>Benchmark</h3>
         <button
-          onClick={runSimultaneousUpdates}
-          style={{ marginRight: '10px', padding: '10px 20px' }}
+          onClick={runConcurrentTest}
+          style={{ marginRight: '10px', padding: '10px 20px', background: '#4caf50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
         >
-          100 Simultaneous Updates
+          Run Concurrent Update Test (100 updates)
         </button>
         <button
-          onClick={runRapidFireUpdates}
-          style={{ marginRight: '10px', padding: '10px 20px' }}
+          onClick={resetAllRenderCounts}
+          style={{ padding: '10px 20px', background: '#ff9800', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
         >
-          1000 Rapid Fire Updates (with RAF)
+          Reset Render Counts
         </button>
-      </div>
-
-      <div style={{ marginBottom: '20px', padding: '10px', background: '#f5f5f5' }}>
-        <h3>Auto-Update Test</h3>
-        <div style={{ marginBottom: '10px' }}>
-          <label style={{ marginRight: '20px' }}>
-            Auto-Update Components:{' '}
-            <input
-              type="number"
-              value={autoUpdateCount}
-              onChange={(e) => setAutoUpdateCount(parseInt(e.target.value, 10))}
-              min="0"
-              max="20"
-              style={{ width: '80px', marginLeft: '5px' }}
-            />
-          </label>
-          <label>
-            Interval (ms):{' '}
-            <input
-              type="number"
-              value={autoUpdateInterval}
-              onChange={(e) => setAutoUpdateInterval(parseInt(e.target.value, 10))}
-              min="10"
-              max="1000"
-              step="10"
-              style={{ width: '80px', marginLeft: '5px' }}
-            />
-          </label>
-        </div>
-        <button
-          onClick={isAutoRunning ? stopAutoUpdates : startAutoUpdates}
-          style={{ padding: '10px 20px' }}
-        >
-          {isAutoRunning ? 'Stop Auto Updates' : 'Start Auto Updates'}
-        </button>
-        <div style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
-          Creates components that automatically update at the specified interval
-        </div>
       </div>
 
       <div
@@ -284,23 +309,30 @@ export const ConcurrentUpdatesBenchmark: React.FC = () => {
           padding: '10px',
         }}
       >
-        {isAutoRunning &&
-          Array.from({ length: autoUpdateCount }, (_, i) => (
-            <AutoIncrementComponent
-              key={`auto-${i}`}
-              id={i}
-              interval={autoUpdateInterval}
-              onUpdate={handleUpdate}
-            />
-          ))}
         {Array.from({ length: componentCount }, (_, i) => (
-          <Component key={`comp-${i}`} id={i} />
+          <Component
+            key={`comp-${i}`}
+            id={i}
+            ref={(el) => {
+              componentRefs.current[i] = el;
+            }}
+          />
         ))}
       </div>
 
       {results.length > 0 && (
         <div>
           <h3>Results</h3>
+          <div style={{ marginBottom: '15px', padding: '12px', background: useIsolated ? '#f3e5f5' : '#e3f2fd', borderRadius: '4px' }}>
+            <strong>Mode: {useIsolated ? 'Isolated' : 'Shared'}</strong>
+            <div style={{ fontSize: '13px', marginTop: '5px', color: '#666' }}>
+              {useIsolated
+                ? `Each of ${componentCount} components received 100 updates to their own state`
+                : `1 shared state received 100 updates, notifying ${componentCount} components`
+              }
+            </div>
+          </div>
+
           <table
             style={{
               width: '100%',
@@ -310,37 +342,66 @@ export const ConcurrentUpdatesBenchmark: React.FC = () => {
           >
             <thead>
               <tr style={{ background: '#f0f0f0' }}>
-                <th style={{ padding: '8px', border: '1px solid #ddd' }}>Operation</th>
-                <th style={{ padding: '8px', border: '1px solid #ddd' }}>Duration</th>
-                <th style={{ padding: '8px', border: '1px solid #ddd' }}>
-                  Avg (if batched)
-                </th>
-                <th style={{ padding: '8px', border: '1px solid #ddd' }}>Memory Delta</th>
+                <th style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'left' }}>Metric</th>
+                <th style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'right' }}>Value</th>
+                <th style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'left' }}>Notes</th>
               </tr>
             </thead>
             <tbody>
-              {results.map((result, i) => (
-                <tr key={i}>
-                  <td style={{ padding: '8px', border: '1px solid #ddd' }}>
-                    {result.name}
-                  </td>
-                  <td style={{ padding: '8px', border: '1px solid #ddd' }}>
-                    {PerformanceMetrics.formatDuration(result.duration)}
-                  </td>
-                  <td style={{ padding: '8px', border: '1px solid #ddd' }}>
-                    {result.avgDuration
-                      ? PerformanceMetrics.formatDuration(result.avgDuration)
-                      : '-'}
-                  </td>
-                  <td style={{ padding: '8px', border: '1px solid #ddd' }}>
-                    {result.memoryDelta
-                      ? PerformanceMetrics.formatBytes(result.memoryDelta)
-                      : 'N/A'}
-                  </td>
-                </tr>
-              ))}
+              {results.map((result, i) => {
+                const isRenderMetric = result.name.includes('Re-renders');
+                const actual = result.iterations || 0;
+                const expected = results.find(r => r.name === 'Expected Re-renders')?.iterations || 0;
+                const isActualRow = result.name === 'Total Component Re-renders';
+                const renderEfficiency = isActualRow && expected > 0
+                  ? ((actual / expected) * 100).toFixed(1)
+                  : null;
+
+                return (
+                  <tr key={i}>
+                    <td style={{ padding: '8px', border: '1px solid #ddd' }}>
+                      {result.name}
+                    </td>
+                    <td style={{ padding: '8px', border: '1px solid #ddd', textAlign: 'right', fontFamily: 'monospace' }}>
+                      {isRenderMetric
+                        ? actual.toLocaleString()
+                        : PerformanceMetrics.formatDuration(result.duration)}
+                    </td>
+                    <td style={{ padding: '8px', border: '1px solid #ddd', fontSize: '12px', color: '#666' }}>
+                      {isActualRow && renderEfficiency && (
+                        <span style={{ color: actual === expected ? '#4caf50' : '#ff9800' }}>
+                          {actual === expected ? '✓ Exact match' : `${renderEfficiency}% of expected`}
+                        </span>
+                      )}
+                      {result.name.includes('Expected') && (
+                        <span>Theoretical maximum with React batching</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
+
+          <div style={{ marginTop: '15px', padding: '12px', background: '#fff9e6', borderRadius: '4px', fontSize: '13px' }}>
+            <strong>💡 Interpretation:</strong>
+            <div style={{ marginTop: '5px', lineHeight: '1.6' }}>
+              {useIsolated ? (
+                <>
+                  <div>• Isolated mode: Each component manages its own state independently</div>
+                  <div>• Total work: {componentCount} × 100 = {componentCount * 100} state updates</div>
+                  <div>• Each update only re-renders the specific component that changed</div>
+                </>
+              ) : (
+                <>
+                  <div>• Shared mode: All components subscribe to the same state</div>
+                  <div>• Total work: 100 state updates to 1 shared cubit</div>
+                  <div>• Each update potentially triggers {componentCount} component re-renders</div>
+                  <div>• React batching may reduce actual re-renders from theoretical {componentCount * 100}</div>
+                </>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

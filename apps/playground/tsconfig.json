@@ -21,6 +21,9 @@
       "@/*": ["./src/*"],
       "@blac/core": ["../../packages/blac/src/index.ts"],
       "@blac/react": ["../../packages/blac-react/src/index.ts"],
+      "@blac/devtools-connect": ["../../packages/devtools-connect/src/index.ts"],
+      "@blac/plugin-graph": ["../../packages/plugins/system/graph/src/index.ts"],
+      "@blac/plugin-graph-react": ["../../packages/plugins/system/graph-react/src/index.ts"],
       "@blac/plugin-persistence": ["../../packages/plugins/bloc/persistence/src/index.ts"],
       "@blac/plugin-render-logging": ["../../packages/plugins/system/render-logging/src/index.ts"]
     }

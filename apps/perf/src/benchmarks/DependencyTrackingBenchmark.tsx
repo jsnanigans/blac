@@ -1,356 +1,738 @@
 import { Cubit, Blac } from '@blac/core';
 import { useBloc } from '@blac/react';
-import React, { useState } from 'react';
-import { PerformanceMetrics, BenchmarkResult } from '../utils/PerformanceMetrics';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  PerformanceMetrics,
+  BenchmarkResult,
+} from '../utils/PerformanceMetrics';
 
 /**
  * Test proxy-based dependency tracking performance
- * Compares performance with and without dependency tracking
  */
 
-interface ComplexState {
+interface FlatState {
   counter: number;
-  user: {
-    name: string;
-    email: string;
-    preferences: {
-      theme: string;
-      notifications: boolean;
-    };
-  };
-  items: Array<{ id: number; name: string; value: number }>;
-  metadata: {
-    lastUpdated: number;
-    version: number;
-  };
+  userName: string;
+  userEmail: string;
+  theme: string;
+  itemName: string;
+  metadataVersion: number;
 }
 
-class ComplexStateCubit extends Cubit<ComplexState> {
+class FlatStateCubit extends Cubit<FlatState> {
   constructor() {
     super({
       counter: 0,
-      user: {
-        name: 'John Doe',
-        email: 'john@example.com',
-        preferences: {
-          theme: 'light',
-          notifications: true,
-        },
-      },
-      items: Array.from({ length: 100 }, (_, i) => ({
-        id: i,
-        name: `Item ${i}`,
-        value: Math.random() * 100,
-      })),
-      metadata: {
-        lastUpdated: Date.now(),
-        version: 1,
-      },
+      userName: 'John Doe',
+      userEmail: 'john@example.com',
+      theme: 'light',
+      itemName: 'Item 0',
+      metadataVersion: 1,
     });
   }
 
+  // Each method updates ONLY ONE top-level property
   incrementCounter = () => {
     this.patch({
       counter: this.state.counter + 1,
-      metadata: {
-        ...this.state.metadata,
-        lastUpdated: Date.now(),
-      },
     });
   };
 
   updateUserName = (name: string) => {
     this.patch({
-      user: {
-        ...this.state.user,
-        name,
-      },
-      metadata: {
-        ...this.state.metadata,
-        lastUpdated: Date.now(),
-      },
+      userName: name,
+    });
+  };
+
+  updateEmail = (email: string) => {
+    this.patch({
+      userEmail: email,
     });
   };
 
   toggleTheme = () => {
     this.patch({
-      user: {
-        ...this.state.user,
-        preferences: {
-          ...this.state.user.preferences,
-          theme: this.state.user.preferences.theme === 'light' ? 'dark' : 'light',
-        },
-      },
-      metadata: {
-        ...this.state.metadata,
-        lastUpdated: Date.now(),
-      },
+      theme: this.state.theme === 'light' ? 'dark' : 'light',
     });
   };
 
-  updateItemValue = (id: number) => {
+  updateItemName = (name: string) => {
     this.patch({
-      items: this.state.items.map((item) =>
-        item.id === id ? { ...item, value: Math.random() * 100 } : item
-      ),
-      metadata: {
-        ...this.state.metadata,
-        lastUpdated: Date.now(),
-      },
+      itemName: name,
+    });
+  };
+
+  updateMetadata = () => {
+    this.patch({
+      metadataVersion: this.state.metadataVersion + 1,
+    });
+  };
+
+  reset = () => {
+    this.emit({
+      counter: 0,
+      userName: 'John Doe',
+      userEmail: 'john@example.com',
+      theme: 'light',
+      itemName: 'Item 0',
+      metadataVersion: 1,
     });
   };
 }
 
-// Component that only reads counter (should not re-render on other changes with proxy tracking)
-const CounterDisplay: React.FC<{ renderCount: React.MutableRefObject<number> }> = ({
-  renderCount,
-}) => {
-  const [state] = useBloc(ComplexStateCubit);
-  renderCount.current++;
+interface ComponentProps {
+  label: string;
+  onRender: () => void;
+}
 
-  return (
-    <div style={{ padding: '10px', border: '1px solid blue', margin: '5px' }}>
-      <div>Counter: {state.counter}</div>
-      <div style={{ fontSize: '12px', color: '#666' }}>
-        Renders: {renderCount.current}
+// Component that only reads counter (TOP-LEVEL property)
+const CounterDisplay: React.FC<ComponentProps> = React.memo(
+  ({ label, onRender }) => {
+    const [state] = useBloc(FlatStateCubit);
+    const renderCount = useRef(0);
+    renderCount.current++;
+
+    useEffect(() => {
+      onRender();
+    });
+
+    return (
+      <div
+        style={{
+          padding: '12px',
+          border: `2px solid #ccc`,
+          margin: '5px',
+          borderRadius: '4px',
+          background: 'white',
+          transition: 'all 0.3s ease',
+        }}
+      >
+        <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{label}</div>
+        <div>Counter: {state.counter}</div>
+        <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
+          Renders: {renderCount.current}
+        </div>
       </div>
-    </div>
-  );
-};
+    );
+  },
+);
 
-// Component that only reads user name (should not re-render on counter changes with proxy tracking)
-const UserNameDisplay: React.FC<{ renderCount: React.MutableRefObject<number> }> = ({
-  renderCount,
-}) => {
-  const [state] = useBloc(ComplexStateCubit);
-  renderCount.current++;
+// Component that reads userName (TOP-LEVEL property)
+const UserNameDisplay: React.FC<ComponentProps> = React.memo(
+  ({ label, onRender }) => {
+    const [state] = useBloc(FlatStateCubit);
+    const renderCount = useRef(0);
+    renderCount.current++;
 
-  return (
-    <div style={{ padding: '10px', border: '1px solid green', margin: '5px' }}>
-      <div>User: {state.user.name}</div>
-      <div style={{ fontSize: '12px', color: '#666' }}>
-        Renders: {renderCount.current}
+    useEffect(() => {
+      onRender();
+    });
+
+    return (
+      <div
+        style={{
+          padding: '12px',
+          border: `2px solid #ccc`,
+          margin: '5px',
+          borderRadius: '4px',
+          background: 'white',
+          transition: 'all 0.3s ease',
+        }}
+      >
+        <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{label}</div>
+        <div>User: {state.userName}</div>
+        <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
+          Renders: {renderCount.current}
+        </div>
       </div>
-    </div>
-  );
-};
+    );
+  },
+);
 
-// Component that only reads theme (should not re-render on counter/name changes with proxy tracking)
-const ThemeDisplay: React.FC<{ renderCount: React.MutableRefObject<number> }> = ({
-  renderCount,
-}) => {
-  const [state] = useBloc(ComplexStateCubit);
-  renderCount.current++;
+// Component that reads userEmail (TOP-LEVEL property)
+const EmailDisplay: React.FC<ComponentProps> = React.memo(
+  ({ label, onRender }) => {
+    const [state] = useBloc(FlatStateCubit);
+    const renderCount = useRef(0);
+    renderCount.current++;
 
-  return (
-    <div style={{ padding: '10px', border: '1px solid purple', margin: '5px' }}>
-      <div>Theme: {state.user.preferences.theme}</div>
-      <div style={{ fontSize: '12px', color: '#666' }}>
-        Renders: {renderCount.current}
+    useEffect(() => {
+      onRender();
+    });
+
+    return (
+      <div
+        style={{
+          padding: '12px',
+          border: `2px solid #ccc`,
+          margin: '5px',
+          borderRadius: '4px',
+          background: 'white',
+          transition: 'all 0.3s ease',
+        }}
+      >
+        <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{label}</div>
+        <div style={{ fontSize: '12px' }}>Email: {state.userEmail}</div>
+        <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
+          Renders: {renderCount.current}
+        </div>
       </div>
-    </div>
-  );
-};
+    );
+  },
+);
+
+// Component that reads theme (TOP-LEVEL property)
+const ThemeDisplay: React.FC<ComponentProps> = React.memo(
+  ({ label, onRender }) => {
+    const [state] = useBloc(FlatStateCubit);
+    const renderCount = useRef(0);
+    renderCount.current++;
+
+    useEffect(() => {
+      onRender();
+    });
+
+    return (
+      <div
+        style={{
+          padding: '12px',
+          border: `2px solid #ccc`,
+          margin: '5px',
+          borderRadius: '4px',
+          background: 'white',
+          transition: 'all 0.3s ease',
+        }}
+      >
+        <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{label}</div>
+        <div>Theme: {state.theme}</div>
+        <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
+          Renders: {renderCount.current}
+        </div>
+      </div>
+    );
+  },
+);
+
+// Component that reads itemName (TOP-LEVEL property)
+const ItemDisplay: React.FC<ComponentProps> = React.memo(
+  ({ label, onRender }) => {
+    const [state] = useBloc(FlatStateCubit);
+    const renderCount = useRef(0);
+    renderCount.current++;
+
+    useEffect(() => {
+      onRender();
+    });
+
+    return (
+      <div
+        style={{
+          padding: '12px',
+          border: `2px solid #ccc`,
+          margin: '5px',
+          borderRadius: '4px',
+          background: 'white',
+          transition: 'all 0.3s ease',
+        }}
+      >
+        <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{label}</div>
+        <div style={{ fontSize: '12px' }}>Item: {state.itemName}</div>
+        <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
+          Renders: {renderCount.current}
+        </div>
+      </div>
+    );
+  },
+);
+
+type TestScenario =
+  | 'counter'
+  | 'userName'
+  | 'email'
+  | 'theme'
+  | 'item'
+  | 'metadata';
+
+interface ScenarioResult {
+  name: string;
+  action: string;
+  expectedWithProxy: string[];
+  expectedWithoutProxy: string[];
+  actualRenders: string[];
+  passed: boolean;
+}
 
 export const DependencyTrackingBenchmark: React.FC = () => {
-  const [proxyEnabled, setProxyEnabled] = useState(
-    Blac.getConfig().proxyDependencyTracking
-  );
-  const [results, setResults] = useState<BenchmarkResult[]>([]);
+  const [proxyEnabled] = useState(Blac.config.proxyDependencyTracking);
+  const [componentKey, setComponentKey] = useState(0);
+  const [scenarioResults, setScenarioResults] = useState<ScenarioResult[]>([]);
+  const [isRunning, setIsRunning] = useState(false);
 
-  const counterRenderCount = React.useRef(0);
-  const userNameRenderCount = React.useRef(0);
-  const themeRenderCount = React.useRef(0);
+  const renderTracker = useRef<Map<string, number>>(new Map());
 
-  const [, { incrementCounter, updateUserName, toggleTheme, updateItemValue }] =
-    useBloc(ComplexStateCubit);
+  const cubit = Blac.getBloc(FlatStateCubit);
 
-  const toggleProxy = () => {
-    const newValue = !proxyEnabled;
-    Blac.setConfig({ proxyDependencyTracking: newValue });
-    setProxyEnabled(newValue);
-    // Force re-mount to apply new config
-    window.location.reload();
+  const trackRender = useCallback((componentName: string) => {
+    const current = renderTracker.current.get(componentName) || 0;
+    renderTracker.current.set(componentName, current + 1);
+  }, []);
+
+  const resetTracking = () => {
+    renderTracker.current.clear();
+    setComponentKey((k) => k + 1);
+    setScenarioResults([]);
   };
 
-  const resetRenderCounts = () => {
-    counterRenderCount.current = 0;
-    userNameRenderCount.current = 0;
-    themeRenderCount.current = 0;
+  const getRenderCounts = () => {
+    const components = ['Counter', 'UserName', 'Email', 'Theme', 'Item'];
+    return components.map((name) => ({
+      name,
+      count: renderTracker.current.get(name) || 0,
+    }));
   };
 
-  const runBenchmark = () => {
-    resetRenderCounts();
-    PerformanceMetrics.clearResults();
+  const runScenario = async (scenario: TestScenario) => {
+    // Clear previous renders for this test
+    const beforeCounts = getRenderCounts();
 
-    // Benchmark counter updates
-    const counterResult = PerformanceMetrics.benchmark(
-      'Counter Updates (100x)',
-      () => {
-        incrementCounter();
-      },
-      100
-    );
+    // Perform the action
+    switch (scenario) {
+      case 'counter':
+        cubit.incrementCounter();
+        break;
+      case 'userName':
+        cubit.updateUserName(`User ${Date.now()}`);
+        break;
+      case 'email':
+        cubit.updateEmail(`user${Date.now()}@example.com`);
+        break;
+      case 'theme':
+        cubit.toggleTheme();
+        break;
+      case 'item':
+        cubit.updateItemName(`Item ${Date.now()}`);
+        break;
+      case 'metadata':
+        cubit.updateMetadata();
+        break;
+    }
 
-    setTimeout(() => {
-      const currentResults = [
-        counterResult,
-        {
-          name: 'Counter Component Renders',
-          duration: 0,
-          timestamp: Date.now(),
-          iterations: counterRenderCount.current,
-        } as BenchmarkResult,
-        {
-          name: 'UserName Component Renders',
-          duration: 0,
-          timestamp: Date.now(),
-          iterations: userNameRenderCount.current,
-        } as BenchmarkResult,
-        {
-          name: 'Theme Component Renders',
-          duration: 0,
-          timestamp: Date.now(),
-          iterations: themeRenderCount.current,
-        } as BenchmarkResult,
-      ];
+    // Wait for re-renders
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
-      setResults(currentResults);
-    }, 500);
+    // Calculate which components rendered
+    const afterCounts = getRenderCounts();
+    const rendered = afterCounts
+      .filter((after, i) => after.count > beforeCounts[i].count)
+      .map((c) => c.name);
+
+    // Determine expected behavior
+    // With proxy: only the component reading the changed top-level property should re-render
+    const expectedWithProxy: Record<TestScenario, string[]> = {
+      counter: ['Counter'],
+      userName: ['UserName'],
+      email: ['Email'],
+      theme: ['Theme'],
+      item: ['Item'],
+      metadata: [], // No component reads metadataVersion
+    };
+
+    // Without proxy: ALL components re-render on ANY state change
+    const expectedWithoutProxy: Record<TestScenario, string[]> = {
+      counter: ['Counter', 'UserName', 'Email', 'Theme', 'Item'],
+      userName: ['Counter', 'UserName', 'Email', 'Theme', 'Item'],
+      email: ['Counter', 'UserName', 'Email', 'Theme', 'Item'],
+      theme: ['Counter', 'UserName', 'Email', 'Theme', 'Item'],
+      item: ['Counter', 'UserName', 'Email', 'Theme', 'Item'],
+      metadata: ['Counter', 'UserName', 'Email', 'Theme', 'Item'],
+    };
+
+    const expected = proxyEnabled
+      ? expectedWithProxy[scenario]
+      : expectedWithoutProxy[scenario];
+
+    const passed =
+      expected.length === rendered.length &&
+      expected.every((name) => rendered.includes(name));
+
+    const scenarioNames: Record<TestScenario, string> = {
+      counter: 'Update counter',
+      userName: 'Update userName',
+      email: 'Update userEmail',
+      theme: 'Update theme',
+      item: 'Update itemName',
+      metadata: 'Update metadataVersion',
+    };
+
+    return {
+      name: scenarioNames[scenario],
+      action: scenario,
+      expectedWithProxy: expectedWithProxy[scenario],
+      expectedWithoutProxy: expectedWithoutProxy[scenario],
+      actualRenders: rendered,
+      passed,
+    };
   };
+
+  const runAllTests = async () => {
+    setIsRunning(true);
+    resetTracking();
+    cubit.reset();
+
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    const scenarios: TestScenario[] = [
+      'counter',
+      'userName',
+      'email',
+      'theme',
+      'item',
+      'metadata',
+    ];
+    const results: ScenarioResult[] = [];
+
+    for (const scenario of scenarios) {
+      const result = await runScenario(scenario);
+      results.push(result);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    }
+
+    setScenarioResults(results);
+    setIsRunning(false);
+  };
+
+  const passedTests = scenarioResults.filter((r) => r.passed).length;
+  const totalTests = scenarioResults.length;
 
   return (
     <div style={{ padding: '20px' }}>
       <h2>Dependency Tracking Performance</h2>
       <p>
-        Tests the proxy-based dependency tracking. With tracking enabled, components should
-        only re-render when their accessed properties change.
+        Tests proxy-based dependency tracking. Components should only re-render
+        when their accessed properties change.
       </p>
 
-      <div style={{ marginBottom: '20px', padding: '10px', background: '#f5f5f5' }}>
-        <h3>Configuration</h3>
-        <label>
-          <input
-            type="checkbox"
-            checked={proxyEnabled}
-            onChange={toggleProxy}
-            style={{ marginRight: '10px' }}
-          />
-          Proxy Dependency Tracking Enabled
-        </label>
-        <div style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
-          Note: Toggling this will reload the page
+      <div
+        style={{
+          marginBottom: '20px',
+          padding: '15px',
+          background: '#fff3cd',
+          borderLeft: '4px solid #ffc107',
+          borderRadius: '4px',
+        }}
+      >
+        <div
+          style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px' }}
+        >
+          ⚠️ Important: Top-Level Tracking Only
+        </div>
+        <div style={{ fontSize: '13px', lineHeight: '1.6' }}>
+          <div>
+            • BlaC's proxy tracking only works at the <strong>top level</strong>{' '}
+            of state objects
+          </div>
+          <div>
+            • Accessing <code>state.user.name</code> tracks{' '}
+            <code>state.user</code> (the whole object)
+          </div>
+          <div>
+            • This benchmark uses a <strong>flat state structure</strong> for
+            accurate testing
+          </div>
+          <div>
+            • Each component reads a different top-level property (counter,
+            userName, userEmail, etc.)
+          </div>
+        </div>
+      </div>
+
+      <div
+        style={{
+          marginBottom: '20px',
+          padding: '15px',
+          background: proxyEnabled ? '#d4edda' : '#f8d7da',
+          borderLeft: `4px solid ${proxyEnabled ? '#28a745' : '#dc3545'}`,
+          borderRadius: '4px',
+        }}
+      >
+        <div
+          style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '8px' }}
+        >
+          Proxy Tracking: {proxyEnabled ? '✓ ENABLED' : '✗ DISABLED'}
+        </div>
+        <div style={{ fontSize: '14px', lineHeight: '1.6' }}>
+          {proxyEnabled ? (
+            <>
+              <div>
+                • Components only re-render when their accessed top-level
+                properties change
+              </div>
+              <div>
+                • Optimal for large flat state objects with many subscribers
+              </div>
+              <div>• Slight overhead from proxy wrapping</div>
+            </>
+          ) : (
+            <>
+              <div>• All components re-render on ANY state change</div>
+              <div>• Simple but potentially inefficient</div>
+              <div>• No proxy overhead</div>
+            </>
+          )}
         </div>
       </div>
 
       <div style={{ marginBottom: '20px' }}>
         <button
-          onClick={runBenchmark}
-          style={{ marginRight: '10px', padding: '10px 20px' }}
+          onClick={runAllTests}
+          disabled={isRunning}
+          style={{
+            marginRight: '10px',
+            padding: '12px 24px',
+            background: isRunning ? '#ccc' : '#2196f3',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: isRunning ? 'not-allowed' : 'pointer',
+            fontSize: '14px',
+            fontWeight: 'bold',
+          }}
         >
-          Run Benchmark
+          {isRunning ? 'Running Tests...' : 'Run All Tests'}
         </button>
-        <button onClick={resetRenderCounts} style={{ padding: '10px 20px' }}>
-          Reset Render Counts
+        <button
+          onClick={resetTracking}
+          disabled={isRunning}
+          style={{
+            padding: '12px 24px',
+            background: '#ff9800',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: isRunning ? 'not-allowed' : 'pointer',
+            fontSize: '14px',
+          }}
+        >
+          Reset
         </button>
       </div>
 
       <div style={{ marginBottom: '20px' }}>
-        <h3>Test Components</h3>
-        <div style={{ fontSize: '12px', color: '#666', marginBottom: '10px' }}>
-          Each component reads different parts of the state. With proxy tracking, they should
-          only re-render when their specific data changes.
-        </div>
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <CounterDisplay renderCount={counterRenderCount} />
-          <UserNameDisplay renderCount={userNameRenderCount} />
-          <ThemeDisplay renderCount={themeRenderCount} />
+        <h3>Live Component Views</h3>
+        <div
+          style={{ fontSize: '12px', color: '#666', marginBottom: '10px' }}
+        ></div>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            gap: '10px',
+          }}
+        >
+          <CounterDisplay
+            key={`counter-${componentKey}`}
+            label="Counter (state.counter)"
+            onRender={() => trackRender('Counter')}
+          />
+          <UserNameDisplay
+            key={`username-${componentKey}`}
+            label="User Name (state.userName)"
+            onRender={() => trackRender('UserName')}
+          />
+          <EmailDisplay
+            key={`email-${componentKey}`}
+            label="Email (state.userEmail)"
+            onRender={() => trackRender('Email')}
+          />
+          <ThemeDisplay
+            key={`theme-${componentKey}`}
+            label="Theme (state.theme)"
+            onRender={() => trackRender('Theme')}
+          />
+          <ItemDisplay
+            key={`item-${componentKey}`}
+            label="Item (state.itemName)"
+            onRender={() => trackRender('Item')}
+          />
         </div>
       </div>
 
-      <div style={{ marginBottom: '20px' }}>
-        <h3>Manual Tests</h3>
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <button onClick={incrementCounter} style={{ padding: '8px 16px' }}>
-            Increment Counter (should only update Counter component)
-          </button>
-          <button
-            onClick={() => updateUserName('Jane Doe')}
-            style={{ padding: '8px 16px' }}
-          >
-            Update User Name (should only update UserName component)
-          </button>
-          <button onClick={toggleTheme} style={{ padding: '8px 16px' }}>
-            Toggle Theme (should only update Theme component)
-          </button>
-        </div>
-      </div>
-
-      {results.length > 0 && (
+      {scenarioResults.length > 0 && (
         <div>
-          <h3>Benchmark Results</h3>
+          <h3>Test Results</h3>
           <div
             style={{
-              marginBottom: '10px',
-              padding: '10px',
-              background: proxyEnabled ? '#d4edda' : '#f8d7da',
+              marginBottom: '15px',
+              padding: '12px',
+              background: passedTests === totalTests ? '#d4edda' : '#fff3cd',
+              borderRadius: '4px',
             }}
           >
-            <strong>Proxy Tracking: {proxyEnabled ? 'ENABLED' : 'DISABLED'}</strong>
-            {proxyEnabled ? (
-              <div style={{ fontSize: '12px', marginTop: '5px' }}>
-                ✓ Components should only re-render when their accessed properties change
-              </div>
-            ) : (
-              <div style={{ fontSize: '12px', marginTop: '5px' }}>
-                ✗ All components will re-render on any state change
-              </div>
-            )}
+            <strong>
+              {passedTests === totalTests ? '✓' : '⚠'} Passed {passedTests} /{' '}
+              {totalTests} tests
+            </strong>
           </div>
 
-          <table
-            style={{
-              width: '100%',
-              borderCollapse: 'collapse',
-              border: '1px solid #ddd',
-            }}
-          >
-            <thead>
-              <tr style={{ background: '#f0f0f0' }}>
-                <th style={{ padding: '8px', border: '1px solid #ddd' }}>Metric</th>
-                <th style={{ padding: '8px', border: '1px solid #ddd' }}>Value</th>
-                <th style={{ padding: '8px', border: '1px solid #ddd' }}>Expected</th>
-              </tr>
-            </thead>
-            <tbody>
-              {results.map((result, i) => {
-                let expected = '';
-                if (result.name.includes('Counter Component')) {
-                  expected = proxyEnabled ? '~100' : '~100';
-                } else if (result.name.includes('UserName Component')) {
-                  expected = proxyEnabled ? '0' : '~100';
-                } else if (result.name.includes('Theme Component')) {
-                  expected = proxyEnabled ? '0' : '~100';
-                }
-
-                return (
+          <div style={{ overflowX: 'auto' }}>
+            <table
+              style={{
+                width: '100%',
+                borderCollapse: 'collapse',
+                border: '1px solid #ddd',
+                fontSize: '13px',
+              }}
+            >
+              <thead>
+                <tr style={{ background: '#f0f0f0' }}>
+                  <th
+                    style={{
+                      padding: '10px',
+                      border: '1px solid #ddd',
+                      textAlign: 'left',
+                    }}
+                  >
+                    Test
+                  </th>
+                  <th
+                    style={{
+                      padding: '10px',
+                      border: '1px solid #ddd',
+                      textAlign: 'left',
+                    }}
+                  >
+                    Expected (Proxy ON)
+                  </th>
+                  <th
+                    style={{
+                      padding: '10px',
+                      border: '1px solid #ddd',
+                      textAlign: 'left',
+                    }}
+                  >
+                    Expected (Proxy OFF)
+                  </th>
+                  <th
+                    style={{
+                      padding: '10px',
+                      border: '1px solid #ddd',
+                      textAlign: 'left',
+                    }}
+                  >
+                    Actual Renders
+                  </th>
+                  <th
+                    style={{
+                      padding: '10px',
+                      border: '1px solid #ddd',
+                      textAlign: 'center',
+                    }}
+                  >
+                    Status
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {scenarioResults.map((result, i) => (
                   <tr key={i}>
-                    <td style={{ padding: '8px', border: '1px solid #ddd' }}>
-                      {result.name}
+                    <td style={{ padding: '10px', border: '1px solid #ddd' }}>
+                      <strong>{result.name}</strong>
                     </td>
-                    <td style={{ padding: '8px', border: '1px solid #ddd' }}>
-                      {result.duration > 0
-                        ? PerformanceMetrics.formatDuration(result.avgDuration || 0)
-                        : result.iterations || 0}
+                    <td style={{ padding: '10px', border: '1px solid #ddd' }}>
+                      {result.expectedWithProxy.length > 0
+                        ? result.expectedWithProxy.join(', ')
+                        : 'None'}
                     </td>
-                    <td style={{ padding: '8px', border: '1px solid #ddd' }}>
-                      {expected}
+                    <td style={{ padding: '10px', border: '1px solid #ddd' }}>
+                      {result.expectedWithoutProxy.join(', ')}
+                    </td>
+                    <td
+                      style={{
+                        padding: '10px',
+                        border: '1px solid #ddd',
+                        fontFamily: 'monospace',
+                        background: result.passed ? '#e8f5e9' : '#ffebee',
+                      }}
+                    >
+                      {result.actualRenders.length > 0
+                        ? result.actualRenders.join(', ')
+                        : 'None'}
+                    </td>
+                    <td
+                      style={{
+                        padding: '10px',
+                        border: '1px solid #ddd',
+                        textAlign: 'center',
+                        fontSize: '18px',
+                      }}
+                    >
+                      {result.passed ? '✓' : '✗'}
                     </td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div
+            style={{
+              marginTop: '15px',
+              padding: '12px',
+              background: '#f0f7ff',
+              borderRadius: '4px',
+              fontSize: '13px',
+            }}
+          >
+            <strong>💡 Understanding the Results:</strong>
+            <div style={{ marginTop: '8px', lineHeight: '1.6' }}>
+              {proxyEnabled ? (
+                <>
+                  <div>
+                    • <strong>With Proxy Tracking Enabled:</strong> Each test
+                    should only trigger re-renders in components that access the
+                    changed top-level property
+                  </div>
+                  <div>
+                    • Example: Updating <code>counter</code> should only
+                    re-render the Counter component
+                  </div>
+                  <div>
+                    • The <code>metadataVersion</code> test updates a property
+                    that NO component reads, so nothing should re-render
+                  </div>
+                  <div
+                    style={{
+                      marginTop: '8px',
+                      padding: '8px',
+                      background: '#fff3cd',
+                      borderRadius: '4px',
+                    }}
+                  >
+                    <strong>Note:</strong> If you had nested state like{' '}
+                    <code>state.user.name</code>, updating ANY property in{' '}
+                    <code>user</code> would re-render ALL components that access
+                    ANY part of <code>user</code>. This is why flat state works
+                    better with proxy tracking.
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    • <strong>With Proxy Tracking Disabled:</strong> ANY state
+                    change triggers ALL components to re-render
+                  </div>
+                  <div>
+                    • This is less efficient but simpler and has no proxy
+                    overhead
+                  </div>
+                  <div>
+                    • All tests should show all 5 components re-rendering
+                    (except initial mount)
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

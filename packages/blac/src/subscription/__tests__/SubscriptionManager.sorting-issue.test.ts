@@ -50,15 +50,16 @@ describe('Issue #7: Subscription Sorting Performance Issue (BEFORE FIX)', () => 
     // Mock notify to count sort calls
     manager.notify = function(newState: any, oldState: any, action?: any) {
       // In the current implementation, this creates array and sorts every time
-      const sortedSubscriptions = Array.from(this.subscriptions.values()).sort(
+      const sortedSubscriptions = Array.from((this as any).subscriptions.values()).sort(
         (a: any, b: any) => (b.priority ?? 0) - (a.priority ?? 0),
       );
       sortCallCount++;
 
       // Continue with rest of notify
       for (const subscription of sortedSubscriptions) {
-        if (subscription.weakRef && !subscription.weakRef.deref()) {
-          this.scheduleWeakRefCleanup();
+        const sub = subscription as any;
+        if (sub.weakRef && !sub.weakRef.deref()) {
+          (this as any).scheduleWeakRefCleanup();
           continue;
         }
         // ... rest would continue but we're just demonstrating the sort
@@ -222,7 +223,7 @@ describe('Issue #7: Subscription Sorting Performance Issue (BEFORE FIX)', () => 
 
       for (let i = 0; i < iterations; i++) {
         // This is what happens inside notify()
-        const sorted = Array.from(testManager.subscriptions.values()).sort(
+        const sorted = Array.from((testManager as any).subscriptions.values()).sort(
           (a: any, b: any) => (b.priority ?? 0) - (a.priority ?? 0),
         );
         // Consume array to prevent optimization
@@ -268,7 +269,7 @@ describe('Issue #7: Subscription Sorting Performance Issue (BEFORE FIX)', () => 
     // Measure Array.from() overhead
     const start = performance.now();
     for (let i = 0; i < iterations; i++) {
-      const arr = Array.from(manager.subscriptions.values());
+      const arr = Array.from((manager as any).subscriptions.values());
       arr.length; // Consume to prevent optimization
     }
     const arrayFromTime = performance.now() - start;
@@ -276,7 +277,7 @@ describe('Issue #7: Subscription Sorting Performance Issue (BEFORE FIX)', () => 
     // Measure Map iteration (what we could do instead)
     const start2 = performance.now();
     for (let i = 0; i < iterations; i++) {
-      for (const sub of manager.subscriptions.values()) {
+      for (const sub of (manager as any).subscriptions.values()) {
         sub; // Consume
       }
     }

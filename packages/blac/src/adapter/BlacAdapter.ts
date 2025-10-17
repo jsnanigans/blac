@@ -7,10 +7,80 @@ import { ProxyFactory } from './ProxyFactory';
 
 export interface AdapterOptions<B extends BlocBase<any>> {
   instanceId?: string;
-  dependencies?: (bloc: B) => unknown[];
+  dependencies?: (bloc: B) => unknown[] | Generator<unknown, void, unknown>;
   staticProps?: any;
   onMount?: (bloc: B) => void;
   onUnmount?: (bloc: B) => void;
+}
+
+/**
+ * Helper function to check if a value is a generator
+ */
+function isGenerator(value: unknown): value is Generator<unknown, void, unknown> {
+  return value != null &&
+         typeof value === 'object' &&
+         Symbol.iterator in value &&
+         typeof (value as any).next === 'function';
+}
+
+/**
+ * Helper function to normalize dependencies (convert generators to arrays)
+ */
+function normalizeDependencies(result: unknown[] | Generator<unknown, void, unknown>): unknown[] {
+  if (isGenerator(result)) {
+    return Array.from(result);
+  }
+  return result as unknown[];
+}
+
+/**
+ * Efficiently compare dependencies with early exit for generators
+ * Returns true if values have changed, false if they're the same
+ */
+function compareDependencies(
+  oldValues: unknown[] | undefined,
+  newResult: unknown[] | Generator<unknown, void, unknown>,
+): boolean {
+  // If no old values, it's a change
+  if (!oldValues) return true;
+
+  // If new result is a generator, compare item-by-item with early exit
+  if (isGenerator(newResult)) {
+    let index = 0;
+    for (const newValue of newResult) {
+      // If we've exhausted old values but generator has more, it's a change
+      if (index >= oldValues.length) {
+        return true;
+      }
+
+      // If values don't match, it's a change (early exit!)
+      if (!Object.is(oldValues[index], newValue)) {
+        return true;
+      }
+
+      index++;
+    }
+
+    // If old values had more items than generator, it's a change
+    if (index < oldValues.length) {
+      return true;
+    }
+
+    // All items matched
+    return false;
+  }
+
+  // Array comparison (existing logic)
+  const newValues = newResult as unknown[];
+  if (oldValues.length !== newValues.length) return true;
+
+  for (let i = 0; i < oldValues.length; i++) {
+    if (!Object.is(oldValues[i], newValues[i])) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 /**
@@ -36,6 +106,9 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
   private trackedPaths = new Set<string>();
   private pendingTrackedPaths = new Set<string>(); // Paths tracked before subscription exists
 
+  // State snapshot for dependencies mode - only updates when dependencies change
+  private stateSnapshot?: BlocState<InstanceType<B>>;
+
   // V2: Two-phase tracking for atomic dependency updates
   private pendingDependencies = new Set<string>(); // Collected during render
   private isTrackingActive = false; // Controls when tracking is enabled
@@ -59,7 +132,7 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
 
   constructor(
     instanceProps: { componentRef: { current: object & { __blocInstanceId?: string } }; blocConstructor: B },
-    options?: typeof this.options,
+    options?: AdapterOptions<InstanceType<B>>,
   ) {
     this.options = options;
     this.blocConstructor = instanceProps.blocConstructor;
@@ -75,7 +148,10 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
 
     // Initialize dependency values if using dependencies
     if (this.isUsingDependencies && options?.dependencies) {
-      this.dependencyValues = options.dependencies(this.blocInstance);
+      const result = options.dependencies(this.blocInstance);
+      this.dependencyValues = normalizeDependencies(result);
+      // Take initial snapshot of state
+      this.stateSnapshot = this.blocInstance.state;
     }
 
     // Notify plugins
@@ -137,17 +213,34 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
     // If using manual dependencies, create a selector-based subscription
     if (this.isUsingDependencies && this.options?.dependencies) {
       const result = this.blocInstance.subscribeWithSelector(
-        (_state) => this.options!.dependencies!(this.blocInstance),
-        (newValues) => {
-          const hasChanged = this.hasDependencyValuesChanged(
-            this.dependencyValues,
-            newValues as unknown[],
-          );
+        (_state) => {
+          // Call the dependencies function - returns generator or array
+          // NOTE: This selector is called on EVERY state change by subscribeWithSelector
+          const depResult = this.options!.dependencies!(this.blocInstance);
 
-          if (hasChanged) {
-            this.dependencyValues = newValues as unknown[];
-            options.onChange();
+          // Use early-exit comparison for generators
+          // If no change detected, return old dependencyValues to prevent re-render
+          // Otherwise, normalize and cache the new values
+          if (compareDependencies(this.dependencyValues, depResult)) {
+            // Changed - normalize and cache
+            const normalized = normalizeDependencies(depResult);
+            this.dependencyValues = normalized;
+            // Update state snapshot when dependencies change
+            this.stateSnapshot = this.blocInstance.state;
+            return normalized;
           }
+
+          // No change - return cached values (state snapshot stays the same)
+          return this.dependencyValues!;
+        },
+        (newValues) => {
+          // Only called if selector returned different value
+          options.onChange();
+        },
+        // Use custom equality function - check object identity first (fast path)
+        (oldValues, newValues) => {
+          // If they're the same object reference, they're equal (no change)
+          return oldValues === newValues;
         },
       );
       this.unsubscribe = result.unsubscribe;
@@ -266,7 +359,8 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
 
     // Refresh dependencies if using manual tracking
     if (this.isUsingDependencies && this.options?.dependencies) {
-      this.dependencyValues = this.options.dependencies(this.blocInstance);
+      const result = this.options.dependencies(this.blocInstance);
+      this.dependencyValues = normalizeDependencies(result);
     }
 
     // Notify plugins
@@ -369,7 +463,8 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
     // Update dependency values if using manual tracking
     if (this.isUsingDependencies && this.options?.dependencies) {
       this.lastDependencyValues = this.dependencyValues;
-      this.dependencyValues = this.options.dependencies(this.blocInstance);
+      const result = this.options.dependencies(this.blocInstance);
+      this.dependencyValues = normalizeDependencies(result);
     }
 
     const metadata = this.getAdapterMetadata();
@@ -394,5 +489,10 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
   getLastRerenderReason(): any {
     // This method is deprecated - render reason is now handled by the RenderLoggingPlugin
     return undefined;
+  }
+
+  // Check if any dependencies have been tracked
+  hasDependencies(): boolean {
+    return this.pendingDependencies.size > 0;
   }
 }

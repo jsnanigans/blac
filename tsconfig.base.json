@@ -17,17 +17,6 @@
     "noImplicitAny": true,
     "noImplicitThis": true,
     "strictNullChecks": true,
-    "useDefineForClassFields": false,
-    "paths": {
-      "src": ["./src"],
-      "src/*": ["./src/*"],
-      "components/*": ["./src/ui/components/*"],
-      "molecule/*": ["../../packages/shared/src/molecule/*"],
-      "atom/*": ["../../packages/shared/src/atom/*"],
-      "constants/*": ["../../packages/shared/src/constants/*"],
-      "lib/*": ["../../packages/shared/src/lib/*"],
-      "@blac/core": ["../packages/blac/src"],
-      "@blac/react": ["../packages/blac-react/src"]
-    }
+    "useDefineForClassFields": false
   }
 }

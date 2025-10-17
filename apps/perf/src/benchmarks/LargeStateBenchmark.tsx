@@ -75,9 +75,19 @@ function findNode(node: TreeNode, targetId: string): TreeNode | null {
   return null;
 }
 
+interface TreeStateCubitProps {
+  depth: number;
+  breadth: number;
+}
+
 class TreeStateCubit extends Cubit<TreeNode> {
-  constructor(depth: number, breadth: number) {
-    super(generateTree(depth, breadth));
+  private depth: number;
+  private breadth: number;
+
+  constructor(props: TreeStateCubitProps) {
+    super(generateTree(props.depth, props.breadth));
+    this.depth = props.depth;
+    this.breadth = props.breadth;
   }
 
   updateNode = (id: string, value: number) => {
@@ -151,11 +161,11 @@ export const LargeStateBenchmark: React.FC = () => {
   const [breadth, setBreadth] = useState(3);
   const [results, setResults] = useState<BenchmarkResult[]>([]);
 
-  const [tree, { updateNode, regenerate }] = useBloc(
-    TreeStateCubit,
-    {},
-    [depth, breadth]
-  );
+  const [tree, cubit] = useBloc(TreeStateCubit, {
+    staticProps: { depth, breadth },
+  });
+
+  const { updateNode, regenerate } = cubit;
 
   const nodeCount = countNodes(tree);
 

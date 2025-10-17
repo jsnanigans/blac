@@ -156,7 +156,7 @@ async function test() {
   // 3. Create a CounterCubit
   console.log('\n3. Creating CounterCubit...');
   const counter = blac.getBloc(CounterCubit);
-  const counterSub = counter.subscribe((state) => {
+  const counterResult = counter.subscribe((state) => {
     console.log(`   Counter state: ${state}`);
   });
 
@@ -173,7 +173,7 @@ async function test() {
   // 5. Create a UserCubit
   console.log('\n5. Creating UserCubit...');
   const user = blac.getBloc(UserCubit);
-  const userSub = user.subscribe((state) => {
+  const userResult = user.subscribe((state) => {
     console.log(`   User state:`, state);
   });
 
@@ -190,7 +190,7 @@ async function test() {
   // 7. Create a CounterBloc (event-driven)
   console.log('\n7. Creating CounterBloc...');
   const blocCounter = blac.getBloc(CounterBloc);
-  const blocSub = blocCounter.subscribe((state) => {
+  const blocResult = blocCounter.subscribe((state) => {
     console.log(`   Bloc counter state: ${state}`);
   });
 
@@ -215,9 +215,9 @@ async function test() {
 
   // 10. Cleanup
   console.log('\n10. Cleaning up...');
-  counterSub();
-  userSub();
-  blocSub();
+  counterResult.unsubscribe();
+  userResult.unsubscribe();
+  blocResult.unsubscribe();
   unsubscribe();
 
   await new Promise((resolve) => setTimeout(resolve, 100));
