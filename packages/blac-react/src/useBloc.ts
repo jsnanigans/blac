@@ -28,32 +28,12 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
     onUnmount?: (bloc: InstanceType<B>) => void;
   },
 ): HookTypes<B> {
-  // Create a unique identifier for this hook instance
-  // const renderCount = useRef(0);
-  // renderCount.current++;
-
-  // Create component ref - this persists across React strict mode remounts
-  // because the object itself stays in memory even when the component unmounts
+  // Persists across React strict mode remounts
   const componentRef = useRef<object & { __blocInstanceId?: string }>({});
 
-  // Component name for debugging - DISABLED for now (may be re-enabled for devtools)
-  // TODO: Re-enable when implementing devtools
-  // const componentName = useRef<string>('');
-  // if (!componentName.current) {
-  //   const blocName = blocConstructor.name;
-  //   if (blocName && blocName !== 'Object') {
-  //     // Remove 'Cubit' or 'Bloc' suffix to derive component name
-  //     componentName.current =
-  //       blocName.replace(/(Cubit|Bloc)$/, '') || 'Component';
-  //   } else {
-  //     componentName.current = 'Component';
-  //   }
-  // }
-
-  // Pass through options
   const normalizedOptions = options;
 
-  // Generate instance id from static props if needed
+  // Generate instance key from props or instanceId
   const instanceKey = useMemo(() => {
     if (normalizedOptions?.instanceId) {
       return normalizedOptions.instanceId;
@@ -64,7 +44,7 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
     return null;
   }, [normalizedOptions?.instanceId, normalizedOptions?.staticProps]);
 
-  // Create a stable instance ID for isolated blocs that persists across strict mode remounts
+  // Generate stable ID for isolated blocs
   const base = blocConstructor as unknown as { isolated?: boolean };
   if (base.isolated && !normalizedOptions?.instanceId && !componentRef.current.__blocInstanceId) {
     componentRef.current.__blocInstanceId = `component-${Math.random().toString(36).slice(2, 11)}`;
@@ -86,25 +66,16 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
       },
     );
 
-    // Set component name for rerender logging - DISABLED (may be re-enabled for devtools)
-    // TODO: Re-enable when implementing devtools
-    // if (componentName.current) {
-    //   newAdapter.setComponentName(componentName.current);
-    // }
     return newAdapter;
-  }, [blocConstructor, instanceKey]); // Recreate adapter when instance key changes
+  }, [blocConstructor, instanceKey]);
 
-  // Reset tracking at the start of each render to ensure we only track
-  // properties accessed during the current render
+  // Reset tracking for current render
   adapter.resetTracking();
 
-  // Notify plugins about render
   adapter.notifyRender();
 
-  // Update adapter options when they change (except instanceId/staticProps which recreate the adapter)
-  // const optionsChangeCount = useRef(0);
+  // Update adapter options on change
   useEffect(() => {
-    // optionsChangeCount.current++;
     adapter.options = {
       instanceId: normalizedOptions?.instanceId,
       dependencies: normalizedOptions?.dependencies,
@@ -119,10 +90,8 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
     normalizedOptions?.onUnmount,
   ]);
 
-  // Register as consumer and handle lifecycle
-  // const mountEffectCount = useRef(0);
+  // Mount/unmount lifecycle
   useEffect(() => {
-    // mountEffectCount.current++;
     adapter.mount();
 
     return () => {
@@ -130,14 +99,9 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
     };
   }, [adapter]);
 
-  // Subscribe to state changes using useSyncExternalStore
-  // const subscribeMemoCount = useRef(0);
+  // Subscribe to state changes
   const subscribe = useMemo(() => {
-    // subscribeMemoCount.current++;
-    // let _subscriptionCount = 0;
-
     return (onStoreChange: () => void) => {
-      // _subscriptionCount++;
       const unsubscribe = adapter.createSubscription({
         onChange: () => {
           onStoreChange();
@@ -150,49 +114,35 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
     };
   }, [adapter]);
 
-  // const snapshotCount = useRef(0);
-  // const serverSnapshotCount = useRef(0);
-
   const rawState: BlocState<InstanceType<B>> = useSyncExternalStore(
     subscribe,
-    // Get snapshot
     () => {
-      // snapshotCount.current++;
       const bloc = adapter.blocInstance;
       const state = bloc.state;
       return state;
     },
-    // Get server snapshot (same as client for now)
     () => {
       const bloc = adapter.blocInstance;
-      // serverSnapshotCount.current++;
       const state = bloc.state;
       return state;
     },
   );
 
-  // Create proxies for fine-grained tracking (if enabled)
-  // const stateMemoCount = useRef(0);
   const finalState = useMemo(() => {
-    // stateMemoCount.current++;
-    // Always return the proxy - it will handle whether to actually proxy or not
     const proxyState = adapter.getStateProxy();
     return proxyState;
   }, [rawState, adapter]);
 
-  // const blocMemoCount = useRef(0);
   const finalBloc = useMemo(() => {
-    // blocMemoCount.current++;
     const proxyBloc = adapter.getBlocProxy();
     return proxyBloc;
   }, [adapter]);
 
-  // V2: Commit tracked dependencies after render completes
+  // Commit tracked dependencies after render
   useEffect(() => {
     adapter.commitTracking();
   });
 
-  // Log final hook return
   return [finalState, finalBloc];
 }
 

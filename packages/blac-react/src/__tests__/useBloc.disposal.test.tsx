@@ -13,37 +13,17 @@ class SharedTestCubit extends Cubit<TestState> {
   // Not isolated - should be shared across components
   constructor() {
     super({ counter: 0, text: 'initial' });
-    console.log('[SharedTestCubit] Created');
   }
 
   increment = () => {
-    console.log(
-      '[SharedTestCubit] increment called, current state:',
-      this.state,
-    );
-    console.log(
-      '[SharedTestCubit] disposal state on increment:',
-      (this as any)._disposalState,
-    );
     this.emit({ ...this.state, counter: this.state.counter + 1 });
   };
 
   updateText = (text: string) => {
-    console.log(
-      '[SharedTestCubit] updateText called with:',
-      text,
-      'current state:',
-      this.state,
-    );
-    console.log(
-      '[SharedTestCubit] disposal state:',
-      (this as any)._disposalState,
-    );
     this.emit({ ...this.state, text });
   };
 
   async dispose() {
-    console.log('[SharedTestCubit] Disposing');
     await super.dispose();
   }
 }
@@ -155,15 +135,11 @@ describe('useBloc disposal issues', () => {
     // Check the actual text value
     const textElement = screen.getByTestId('component-b-text');
     const actualText = textElement.textContent;
-    console.log('Text after update attempt:', actualText);
 
     // Should successfully update without disposal errors
     expect(actualText).toBe('updated');
 
     // Check if any disposal errors were logged
-    if (disposalErrors.length > 0) {
-      console.log('Disposal errors found:', disposalErrors);
-    }
     expect(disposalErrors).toHaveLength(0);
 
     // Switch back to Component A

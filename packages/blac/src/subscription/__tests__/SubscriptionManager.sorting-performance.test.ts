@@ -63,10 +63,6 @@ describe('SubscriptionManager - Sorting Performance', () => {
           maxAvgTime = 0.60; // 33% improvement target
         }
 
-        console.log(
-          `[No Priority] ${count} subscriptions: ${avgPerNotify.toFixed(4)}ms per notify (target: <${maxAvgTime}ms)`,
-        );
-
         // Verify performance meets target
         expect(avgPerNotify).toBeLessThan(maxAvgTime);
       });
@@ -99,10 +95,6 @@ describe('SubscriptionManager - Sorting Performance', () => {
         times.reduce((sum, time) => sum + Math.pow(time - avg, 2), 0) /
         times.length;
       const stdDev = Math.sqrt(variance);
-
-      console.log(
-        `[Fast Path Consistency] Avg: ${avg.toFixed(4)}ms, StdDev: ${stdDev.toFixed(4)}ms, CV: ${((stdDev / avg) * 100).toFixed(1)}%`,
-      );
 
       // Should be consistently fast
       expect(avg).toBeLessThan(0.6);
@@ -151,9 +143,6 @@ describe('SubscriptionManager - Sorting Performance', () => {
         if ((manager as any).cachedSortedSubscriptions === null) {
           // If cache is still null after first notify, it means fast path was used
           // or subscriptions weren't notified. Skip cache verification for this case.
-          console.log(
-            `Note: Cache not created after first notify (possible selector/dependency filtering)`,
-          );
         }
 
         // Benchmark (cache hits)
@@ -175,10 +164,6 @@ describe('SubscriptionManager - Sorting Performance', () => {
         } else {
           maxAvgTime = 0.70; // Cache amortizes cost
         }
-
-        console.log(
-          `[With Priority] ${count} subscriptions (${prioritySubscriptionCount} priority): ${avgPerNotify.toFixed(4)}ms per notify (target: <${maxAvgTime}ms)`,
-        );
 
         // Verify performance meets target
         expect(avgPerNotify).toBeLessThan(maxAvgTime);
@@ -215,10 +200,6 @@ describe('SubscriptionManager - Sorting Performance', () => {
 
       const avgCacheHitTime =
         cacheHitTimes.reduce((a, b) => a + b, 0) / cacheHitTimes.length;
-
-      console.log(
-        `[Cache Effectiveness] Cache miss: ${cacheMissTime.toFixed(4)}ms, Avg cache hit: ${avgCacheHitTime.toFixed(4)}ms`,
-      );
 
       // Cache hits should be faster or similar to cache miss
       // (First notify includes sorting, but subsequent ones use cache)
@@ -265,10 +246,6 @@ describe('SubscriptionManager - Sorting Performance', () => {
 
       const avgRecreationTime = times.reduce((a, b) => a + b, 0) / times.length;
 
-      console.log(
-        `[Cache Recreation] Avg time: ${avgRecreationTime.toFixed(4)}ms`,
-      );
-
       // Cache recreation should be reasonably fast
       expect(avgRecreationTime).toBeLessThan(1.0);
     });
@@ -282,13 +259,6 @@ describe('SubscriptionManager - Sorting Performance', () => {
 
       const counts = [10, 50, 100];
       const improvements = [7, 23, 33]; // Expected % improvements
-
-      console.log('\n=== Expected Performance Improvements ===');
-      counts.forEach((count, i) => {
-        console.log(
-          `${count} subscriptions: ${improvements[i]}% improvement expected`,
-        );
-      });
 
       // This test always passes - it's for documentation
       expect(true).toBe(true);
@@ -320,13 +290,6 @@ describe('SubscriptionManager - Sorting Performance', () => {
 
       const avgPerChange = (end - start) / sampleSize;
       const estimatedHourlyTime = (avgPerChange * stateChangesPerHour) / 1000; // Convert to seconds
-
-      console.log(
-        `\n=== Real-World Impact ===\nAvg per state change: ${avgPerChange.toFixed(4)}ms`,
-      );
-      console.log(
-        `Estimated time for 1 hour of typical usage: ${estimatedHourlyTime.toFixed(2)}s`,
-      );
 
       // With optimization, should save significant time
       // Target: < 5 seconds per hour for notify cycles

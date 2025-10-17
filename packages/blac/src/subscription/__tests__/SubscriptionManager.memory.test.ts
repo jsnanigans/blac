@@ -51,7 +51,7 @@ describe('SubscriptionManager Memory Safety', () => {
     // After all cycles, all dead refs should be cleaned up
     expect(manager.size).toBe(0);
 
-    console.log(`Memory test completed: ${cycles} cycles × ${subscriptionsPerCycle} subs each = ${cycles * subscriptionsPerCycle} total subscriptions cleaned`);
+    // Memory test completed: cycles × subscriptions cleaned
   });
 
   // Skipped: GC behavior is unreliable in test environments
@@ -137,7 +137,7 @@ describe('SubscriptionManager Memory Safety', () => {
     // After long-running simulation, only the original 20 subscriptions should remain
     expect(manager.size).toBe(20);
 
-    console.log('Long-running app simulation completed: 1000 state changes with periodic subscriptions');
+    // Long-running app simulation completed: 1000 state changes with periodic subscriptions
   });
 
   // Skipped: GC behavior is unreliable in test environments
@@ -175,7 +175,7 @@ describe('SubscriptionManager Memory Safety', () => {
     // All measurements should be 0 (no accumulation)
     expect(measurements.every(m => m === 0)).toBe(true);
 
-    console.log('Dead ref accumulation test: All cycles cleaned promptly');
+    // Dead ref accumulation test: All cycles cleaned promptly
   });
 
   // Skipped: GC behavior is unreliable in test environments

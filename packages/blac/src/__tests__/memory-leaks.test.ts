@@ -526,7 +526,7 @@ describe('Memory Leak Tests', () => {
       // Should be less than 1ms per instance (1000ms total for 1000 instances)
       expect(duration).toBeLessThan(1000);
 
-      console.log(`Created and disposed ${iterations} instances in ${duration.toFixed(2)}ms (${(duration/iterations).toFixed(3)}ms per instance)`);
+      // Performance metric: Created and disposed 1000 instances
     });
 
     it('should handle rapid state changes efficiently', () => {
@@ -543,7 +543,7 @@ describe('Memory Leak Tests', () => {
       // Should be very fast - less than 0.1ms per state change
       expect(duration).toBeLessThan(iterations * 0.1);
 
-      console.log(`Processed ${iterations} state changes in ${duration.toFixed(2)}ms (${(duration/iterations).toFixed(4)}ms per change)`);
+      // Performance metric: Processed 10000 state changes
 
       cubit.dispose();
     });
@@ -568,7 +568,7 @@ describe('Memory Leak Tests', () => {
       // Should handle 1000 subscriptions in reasonable time
       expect(duration).toBeLessThan(100);
 
-      console.log(`Handled ${subscriptionCount} subscriptions in ${duration.toFixed(2)}ms`);
+      // Performance metric: Handled 1000 subscriptions
 
       // Clean up
       unsubscribes.forEach(unsub => unsub());

@@ -75,11 +75,6 @@ describe('Circular Dependency Impact - Type Safety', () => {
       'Blac.ts:774 - (bloc as any)._disposalState',
     ];
 
-    console.log('\n=== Unsafe Type Assertions ===');
-    assertionLocations.forEach(location => {
-      console.log(`  - ${location}`);
-    });
-
     // EXPECTED: 0 unsafe type assertions
     // ACTUAL (ISSUE): 5+ unsafe type assertions!
     expect(assertionLocations.length).toBeGreaterThan(0);
@@ -131,11 +126,6 @@ describe('Circular Dependency - Module Loading', () => {
       '3. Circular dependency created!',
     ];
 
-    console.log('\n=== Circular Import Chain ===');
-    circularChain.forEach(step => {
-      console.log(`  ${step}`);
-    });
-
     // EXPECTED: Acyclic dependency graph
     // ACTUAL (ISSUE): Circular dependency
     expect(circularChain).toHaveLength(3);
@@ -151,11 +141,6 @@ describe('Circular Dependency - Module Loading', () => {
       '4. Blac injects itself as context to BlocBase',
       '5. Result: One-way dependency (Blac → BlocBase)',
     ];
-
-    console.log('\n=== Recommended Solution ===');
-    solutionSteps.forEach(step => {
-      console.log(`  ${step}`);
-    });
 
     // Benefits:
     // - No circular dependency
@@ -177,11 +162,6 @@ describe('Circular Dependency - Build System Impact', () => {
       withoutCircularDep: 'Faster (acyclic graph)',
       improvement: 'Variable (10-30% faster for large codebases)',
     };
-
-    console.log('\n=== Compilation Impact ===');
-    console.log(`  With circular dep: ${compilationInfo.withCircularDep}`);
-    console.log(`  Without circular dep: ${compilationInfo.withoutCircularDep}`);
-    console.log(`  Expected improvement: ${compilationInfo.improvement}`);
 
     expect(compilationInfo).toBeDefined();
   });
@@ -207,10 +187,8 @@ describe('Circular Dependency - Performance Analysis', () => {
 
     const duration = performance.now() - start;
 
-    console.log(`\n1000 bloc creations: ${duration.toFixed(2)}ms`);
-
     // Performance is not affected by circular dependency
     // The issue is purely architectural/maintainability
-    expect(duration).toBeLessThan(1000);  // Should be fast
+    expect(duration).toBeLessThan(1000);
   });
 });

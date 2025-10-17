@@ -34,7 +34,6 @@ describe('Performance Benchmarks - Dependency Tracking V2', () => {
       const totalTime = (end - start) * 1000; // Convert to microseconds
       const avgTime = totalTime / iterations;
 
-      console.log(`Average proxy creation time: ${avgTime.toFixed(3)}μs`);
       expect(avgTime).toBeLessThan(1); // Relaxed from 0.5μs to be more realistic
     });
 
@@ -66,7 +65,6 @@ describe('Performance Benchmarks - Dependency Tracking V2', () => {
       const totalTime = (end - start) * 1000; // microseconds
       const avgTime = totalTime / iterations;
 
-      console.log(`Average bloc proxy creation time: ${avgTime.toFixed(3)}μs`);
       expect(avgTime).toBeLessThan(2);
     });
   });
@@ -114,9 +112,6 @@ describe('Performance Benchmarks - Dependency Tracking V2', () => {
       // Get stats
       const stats = ProxyFactory.getStats();
 
-      console.log('Proxies created:', stats.totalProxiesCreated);
-      console.log('State proxies:', stats.stateProxiesCreated);
-
       // V2: Should only create ONE proxy (root level)
       expect(stats.totalProxiesCreated).toBe(1);
       expect(stats.stateProxiesCreated).toBe(1);
@@ -156,7 +151,6 @@ describe('Performance Benchmarks - Dependency Tracking V2', () => {
 
       const time = (end - start) * 1000; // microseconds
 
-      console.log(`State update time (1000 properties): ${time.toFixed(3)}μs`);
       expect(time).toBeLessThan(5000); // 5ms is still very fast for 1000 properties
       expect(notificationCount).toBe(1);
 
@@ -175,8 +169,6 @@ describe('Performance Benchmarks - Dependency Tracking V2', () => {
 
         const time = (end - start) * 1000; // microseconds
         times.push({ size, time });
-
-        console.log(`Update time (${size} properties): ${time.toFixed(3)}μs`);
       }
 
       // Time should scale linearly or better
@@ -223,7 +215,6 @@ describe('Performance Benchmarks - Dependency Tracking V2', () => {
       const totalTime = (end - start) * 1000; // microseconds
       const avgTime = totalTime / iterations;
 
-      console.log(`Average getter execution time: ${avgTime.toFixed(3)}μs`);
       expect(avgTime).toBeLessThan(10);
     });
   });
@@ -321,7 +312,6 @@ describe('Performance Benchmarks - Dependency Tracking V2', () => {
 
       const time = end - start;
 
-      console.log(`Notification time (100 subscriptions): ${time.toFixed(3)}ms`);
       expect(time).toBeLessThan(50);
 
       // Verify all subscriptions were notified
@@ -354,7 +344,6 @@ describe('Performance Benchmarks - Dependency Tracking V2', () => {
 
       const time = end - start;
 
-      console.log(`Notification time (1000 subscriptions): ${time.toFixed(3)}ms`);
       expect(time).toBeLessThan(200); // Still fast with 1000 subscriptions
 
       // Verify all subscriptions were notified
@@ -447,8 +436,6 @@ describe('Performance Benchmarks - Dependency Tracking V2', () => {
 
       const time = (end - start) * 1000; // microseconds
 
-      console.log(`Complete update cycle: ${time.toFixed(3)}μs`);
-
       // Should be very fast
       expect(time).toBeLessThan(1000); // <1ms
       expect(notifyCount).toBe(1);
@@ -474,7 +461,6 @@ describe('Performance Benchmarks - Dependency Tracking V2', () => {
 
       const time = end - start;
 
-      console.log(`Complex state update (50 subs): ${time.toFixed(3)}ms`);
       expect(time).toBeLessThan(50);
 
       // Cleanup

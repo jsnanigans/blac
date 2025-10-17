@@ -68,17 +68,14 @@ describe('useBloc with isolated blocs in React Strict Mode', () => {
 
     // Check isolatedBlocMap - should have exactly 3 instances
     const isolatedBlocs = blacInstance.isolatedBlocMap.get(IsolatedCounterCubit);
-    console.log('isolatedBlocMap size:', isolatedBlocs?.length);
     expect(isolatedBlocs?.length).toBe(3);
 
     // Check isolatedBlocIndex - should have exactly 3 entries
     const isolatedIndexSize = blacInstance.isolatedBlocIndex.size;
-    console.log('isolatedBlocIndex size:', isolatedIndexSize);
     expect(isolatedIndexSize).toBe(3);
 
     // Check uidRegistry - should have exactly 3 entries
     const uidRegistrySize = (blacInstance as any).uidRegistry?.size || 0;
-    console.log('uidRegistry size:', uidRegistrySize);
     expect(uidRegistrySize).toBe(3);
 
     // Verify all counters work independently
@@ -152,18 +149,9 @@ describe('useBloc with isolated blocs in React Strict Mode', () => {
 
     // Manually trigger disposal for testing (blocs should auto-dispose but let's verify)
     const blocs = blacInstance.isolatedBlocMap.get(IsolatedCounterCubit) || [];
-    console.log('Blocs before manual disposal:', blocs.length);
-    for (const bloc of blocs) {
-      console.log(`Bloc ${bloc.uid}: state=${(bloc as any)._lifecycleManager?.currentState}, subs=${bloc.subscriptionCount}`);
-    }
 
     // Check bloc states before expecting disposal
     const isolatedBlocsAfter = blacInstance.isolatedBlocMap.get(IsolatedCounterCubit);
-    console.log('isolatedBlocMap after unmount:', isolatedBlocsAfter?.length);
-    console.log('Lifecycle states:', isolatedBlocsAfter?.map(b =>
-      (b as any)._lifecycleManager?.currentState
-    ));
-    console.log('Subscription counts:', isolatedBlocsAfter?.map(b => b.subscriptionCount));
 
     // The map should either be empty or deleted entirely
     if (isolatedBlocsAfter) {
@@ -175,12 +163,10 @@ describe('useBloc with isolated blocs in React Strict Mode', () => {
     }
 
     // isolatedBlocIndex should be empty
-    console.log('isolatedBlocIndex after unmount:', blacInstance.isolatedBlocIndex.size);
     expect(blacInstance.isolatedBlocIndex.size).toBe(0);
 
     // uidRegistry should be empty (or have only disposed entries)
     const uidRegistrySize = (blacInstance as any).uidRegistry?.size || 0;
-    console.log('uidRegistry after unmount:', uidRegistrySize);
     expect(uidRegistrySize).toBe(0);
   });
 

@@ -57,7 +57,6 @@ describe('Issue #8: Stack Trace Parsing Performance - RESOLVED', () => {
     // The component name handling should now be negligible (<1ms)
     // If it were still parsing stack traces, average time would be 10-15ms higher
     // Note: This is a behavioral test, not a direct spy test
-    console.log(`✅ Component name handling is fast: ${avgTime.toFixed(2)}ms avg per hook (includes all overhead)`);
 
     // The test passes if we get here without hanging or taking too long
     expect(avgTime).toBeLessThan(5); // Should be much faster than the old 10-15ms overhead
@@ -97,13 +96,6 @@ describe('Issue #8: Stack Trace Parsing Performance - RESOLVED', () => {
     // Hook instantiation should be reasonably fast
     // Note: This includes ALL overhead (React, rendering, bloc creation, etc.)
     // not just component name handling which should now be negligible
-    console.log(`
-✅ HOOK INSTANTIATION PERFORMANCE (${iterations} iterations):
-   - Average: ${avgTime.toFixed(2)}ms per hook
-   - Component name overhead: <0.01ms (simple string operation)
-   - No Error objects created
-   - No regex matching required
-    `);
   });
 
   it('VERIFIED: Multiple bloc types work correctly', () => {
@@ -124,35 +116,33 @@ describe('Issue #8: Stack Trace Parsing Performance - RESOLVED', () => {
   });
 
   it('COMPARISON: Before vs After', () => {
-    console.log(`
-╔════════════════════════════════════════════════════════════════╗
-║ ISSUE #8: Stack Trace Parsing Performance - RESOLVED           ║
-╠════════════════════════════════════════════════════════════════╣
-║ BEFORE:                                                         ║
-║   • new Error() on every hook instantiation (~2-5ms)           ║
-║   • String split on stack trace (~1-2ms)                       ║
-║   • Up to 45 regex matches per component (~5-10ms)            ║
-║   • Total: 10-15ms per component                               ║
-║   • Happened in BOTH development AND production                ║
-║                                                                 ║
-║ AFTER:                                                          ║
-║   ✅ Simple bloc constructor name lookup (<0.01ms)             ║
-║   ✅ No Error objects created                                   ║
-║   ✅ No regex matching required                                 ║
-║   ✅ Works in all environments                                  ║
-║                                                                 ║
-║ IMPROVEMENT:                                                    ║
-║   • ~99.9% faster component name handling                      ║
-║   • For 20 components: ~300ms saved                            ║
-║   • For 100 components: ~1500ms saved                          ║
-║   • Zero GC pressure from Error objects                        ║
-║                                                                 ║
-║ TRADE-OFF:                                                      ║
-║   • Component names are now derived from bloc constructor      ║
-║     (e.g., "CounterCubit" → "Counter")                         ║
-║   • Less precise than stack trace parsing in some cases        ║
-║   • Still perfectly useful for debugging/logging               ║
-╚════════════════════════════════════════════════════════════════╝
-    `);
+    // ISSUE #8: Stack Trace Parsing Performance - RESOLVED
+    // BEFORE:
+    //   • new Error() on every hook instantiation (~2-5ms)
+    //   • String split on stack trace (~1-2ms)
+    //   • Up to 45 regex matches per component (~5-10ms)
+    //   • Total: 10-15ms per component
+    //   • Happened in BOTH development AND production
+    //
+    // AFTER:
+    //   ✅ Simple bloc constructor name lookup (<0.01ms)
+    //   ✅ No Error objects created
+    //   ✅ No regex matching required
+    //   ✅ Works in all environments
+    //
+    // IMPROVEMENT:
+    //   • ~99.9% faster component name handling
+    //   • For 20 components: ~300ms saved
+    //   • For 100 components: ~1500ms saved
+    //   • Zero GC pressure from Error objects
+    //
+    // TRADE-OFF:
+    //   • Component names are now derived from bloc constructor
+    //     (e.g., "CounterCubit" → "Counter")
+    //   • Less precise than stack trace parsing in some cases
+    //   • Still perfectly useful for debugging/logging
+
+    // Test passes to document the resolution
+    expect(true).toBe(true);
   });
 });

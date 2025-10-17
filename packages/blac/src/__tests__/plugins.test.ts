@@ -168,10 +168,10 @@ class TestValidationPlugin<T> implements BlocPlugin<T> {
     if (result === true) {
       return nextState;
     } else if (result === false) {
-      console.warn('State change rejected by validation plugin');
+      // State change rejected by validation plugin
       return previousState;
     } else {
-      console.error(`State validation failed: ${result}`);
+      // State validation failed
       return previousState;
     }
   }

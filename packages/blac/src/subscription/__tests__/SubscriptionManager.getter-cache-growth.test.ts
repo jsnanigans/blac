@@ -82,8 +82,6 @@ describe('SubscriptionManager - Getter Cache Unbounded Growth (ISSUE)', () => {
     // Check cache size
     const cacheSize = subscription!.getterCache?.size || 0;
 
-    console.log(`Getter cache size: ${cacheSize} entries`);
-
     // ISSUE: Cache grows unbounded!
     // EXPECTED: Limited to reasonable size (e.g., 100 entries max)
     // ACTUAL: Grows to match number of unique getters accessed
@@ -118,11 +116,6 @@ describe('SubscriptionManager - Getter Cache Unbounded Growth (ISSUE)', () => {
     }
 
     const cacheSize = subscription!.getterCache?.size || 0;
-
-    console.log(`\n=== Memory Consumption ===`);
-    console.log(`Getters accessed: ${getterCount}`);
-    console.log(`Cache entries: ${cacheSize}`);
-    console.log(`Estimated memory: ~${cacheSize * 100} bytes`);
 
     // ISSUE: Memory grows unbounded
     // Each entry: ~100 bytes (key + value + Map overhead)
@@ -165,12 +158,6 @@ describe('SubscriptionManager - Getter Cache Unbounded Growth (ISSUE)', () => {
     const finalCacheSize = subscription!.getterCache?.size || 0;
     const growth = finalCacheSize - initialCacheSize;
 
-    console.log(`\n=== Long-Lived Subscription Memory Leak ===`);
-    console.log(`Initial cache size: ${initialCacheSize}`);
-    console.log(`Final cache size: ${finalCacheSize}`);
-    console.log(`Growth: ${growth} entries`);
-    console.log(`Memory leaked: ~${growth * 100} bytes`);
-
     // EXPECTED: Bounded cache (no growth after reaching limit)
     // ACTUAL (ISSUE): Unbounded growth!
     expect(growth).toBeGreaterThan(0);
@@ -203,11 +190,6 @@ describe('SubscriptionManager - Getter Cache Unbounded Growth (ISSUE)', () => {
     }
 
     const cacheSize = subscription!.getterCache?.size || 0;
-
-    console.log(`\n=== DoS Attack Simulation ===`);
-    console.log(`Attack getters accessed: ${attackGetterCount}`);
-    console.log(`Cache size: ${cacheSize}`);
-    console.log(`Memory consumed: ~${cacheSize * 100} bytes = ${(cacheSize * 100 / 1024).toFixed(2)} KB`);
 
     // ISSUE: No protection against unbounded growth!
     // With LRU cache (limit 100), this would be bounded to ~10 KB
@@ -253,11 +235,6 @@ describe('Getter Cache - Performance Impact', () => {
     const duration = performance.now() - start;
     const avgLookup = duration / iterations;
 
-    console.log(`\n=== Cache Lookup Performance ===`);
-    console.log(`Cache size: 500 entries`);
-    console.log(`Lookups: ${iterations}`);
-    console.log(`Average: ${avgLookup.toFixed(4)}ms per lookup`);
-
     // Map lookups are O(1), so this should be fast
     // But memory consumption is still an issue
     expect(avgLookup).toBeLessThan(0.1);
@@ -281,17 +258,6 @@ describe('Getter Cache - Comparison with LRU', () => {
       evictionPolicy: 'None',
       protectsAgainstDoS: false,
     };
-
-    console.log(`\n=== Current vs LRU Comparison ===`);
-    console.log('\nCurrent (Unbounded Map):');
-    Object.entries(currentBehavior).forEach(([key, value]) => {
-      console.log(`  ${key}: ${value}`);
-    });
-
-    console.log('\nRecommended (LRU Cache):');
-    Object.entries(lruBehavior).forEach(([key, value]) => {
-      console.log(`  ${key}: ${value}`);
-    });
 
     // LRU provides bounded memory with minimal impact on cache effectiveness
     expect(lruBehavior.protectsAgainstDoS).toBe(true);
@@ -336,12 +302,6 @@ describe('Getter Cache - Comparison with LRU', () => {
     }
 
     const hitRate = hits / (hits + misses);
-
-    console.log(`\n=== Cache Hit Rate (Typical Pattern) ===`);
-    console.log(`Hot getters: ${hotGetters.length}`);
-    console.log(`Hits: ${hits}`);
-    console.log(`Misses: ${misses}`);
-    console.log(`Hit rate: ${(hitRate * 100).toFixed(1)}%`);
 
     // Even with LRU cache (limit 100), hit rate would be >90%
     // for typical patterns where same getters are accessed repeatedly

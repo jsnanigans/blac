@@ -18,16 +18,10 @@ class KeepAliveCounterCubit extends Cubit<CounterState> {
   constructor() {
     instanceCounter++;
     super({ count: 0, instanceId: instanceCounter });
-    console.log(
-      `KeepAliveCounterCubit instance ${this.state.instanceId} CONSTRUCTED.`,
-    );
   }
 
   increment = () => {
     const newCount = this.state.count + 1;
-    console.log(
-      `KeepAliveCounterCubit instance ${this.state.instanceId} incrementing from ${this.state.count} to ${newCount}`,
-    );
     this.patch({ count: newCount });
   };
 
@@ -41,13 +35,9 @@ const KeepAliveCounter: React.FC<{ id: string }> = ({ id }) => {
   const [state, cubit] = useBloc(KeepAliveCounterCubit);
 
   React.useEffect(() => {
-    console.log(
-      `KeepAlive Counter (${id}) MOUNTED. Instance: ${state.instanceId}, Count: ${state.count}`,
-    );
+    // Component mounted with state
     return () => {
-      console.log(
-        `KeepAlive Counter (${id}) UNMOUNTED. Instance: ${state.instanceId}, Count: ${state.count}`,
-      );
+      // Component unmounted
     };
   }, [id, state.instanceId, state.count]);
 
@@ -100,19 +90,16 @@ describe('KeepAlive Hook Bug Reproduction', () => {
     Blac.resetInstance();
     Blac.enableLog = false;
     instanceCounter = 0;
-    console.log('\n=== Starting Test ===\n');
   });
 
   afterEach(() => {
     Blac.resetInstance();
-    console.log('\n=== Test Complete ===\n');
   });
 
   it('should reproduce the exact bug scenario with React components', async () => {
     render(<TestApp />);
 
     // Step 1: Show Counter 1
-    console.log('Step 1: Show Counter 1');
     fireEvent.click(screen.getByTestId('toggle-1'));
 
     await waitFor(() => {
@@ -124,23 +111,15 @@ describe('KeepAlive Hook Bug Reproduction', () => {
     expect(screen.getByTestId('instance-1')).toHaveTextContent(
       'Instance ID: 1',
     );
-    console.log(
-      `  Counter 1 shows: ${screen.getByTestId('count-1').textContent}`,
-    );
 
     // Step 2: Increment Counter 1
-    console.log('\nStep 2: Increment Counter 1');
     fireEvent.click(screen.getByTestId('increment-1'));
 
     await waitFor(() => {
       expect(screen.getByTestId('count-1')).toHaveTextContent('1');
     });
-    console.log(
-      `  Counter 1 shows: ${screen.getByTestId('count-1').textContent}`,
-    );
 
     // Step 3: Show Counter 2
-    console.log('\nStep 3: Show Counter 2');
     fireEvent.click(screen.getByTestId('toggle-2'));
 
     await waitFor(() => {
@@ -152,15 +131,8 @@ describe('KeepAlive Hook Bug Reproduction', () => {
     expect(screen.getByTestId('instance-2')).toHaveTextContent(
       'Instance ID: 1',
     );
-    console.log(
-      `  Counter 1 shows: ${screen.getByTestId('count-1').textContent}`,
-    );
-    console.log(
-      `  Counter 2 shows: ${screen.getByTestId('count-2').textContent}`,
-    );
 
     // Step 4: Increment Counter 2
-    console.log('\nStep 4: Increment Counter 2');
     fireEvent.click(screen.getByTestId('increment-2'));
 
     await waitFor(() => {
@@ -170,15 +142,8 @@ describe('KeepAlive Hook Bug Reproduction', () => {
     // Both should show 2
     expect(screen.getByTestId('count-1')).toHaveTextContent('2');
     expect(screen.getByTestId('count-2')).toHaveTextContent('2');
-    console.log(
-      `  Counter 1 shows: ${screen.getByTestId('count-1').textContent}`,
-    );
-    console.log(
-      `  Counter 2 shows: ${screen.getByTestId('count-2').textContent}`,
-    );
 
     // Step 5: Hide Counter 2
-    console.log('\nStep 5: Hide Counter 2');
     fireEvent.click(screen.getByTestId('toggle-2'));
 
     await waitFor(() => {
@@ -186,18 +151,13 @@ describe('KeepAlive Hook Bug Reproduction', () => {
     });
 
     // Step 6: Increment Counter 1
-    console.log('\nStep 6: Increment Counter 1 (Counter 2 hidden)');
     fireEvent.click(screen.getByTestId('increment-1'));
 
     await waitFor(() => {
       expect(screen.getByTestId('count-1')).toHaveTextContent('3');
     });
-    console.log(
-      `  Counter 1 shows: ${screen.getByTestId('count-1').textContent}`,
-    );
 
     // Step 7: Show Counter 2 again
-    console.log('\nStep 7: Show Counter 2 again');
     fireEvent.click(screen.getByTestId('toggle-2'));
 
     await waitFor(() => {
@@ -206,12 +166,8 @@ describe('KeepAlive Hook Bug Reproduction', () => {
 
     // Counter 2 should show the current state (3)
     expect(screen.getByTestId('count-2')).toHaveTextContent('3');
-    console.log(
-      `  Counter 2 shows: ${screen.getByTestId('count-2').textContent}`,
-    );
 
     // Step 8: Final increment from Counter 1
-    console.log('\nStep 8: Final increment from Counter 1');
     fireEvent.click(screen.getByTestId('increment-1'));
 
     await waitFor(() => {
@@ -221,12 +177,6 @@ describe('KeepAlive Hook Bug Reproduction', () => {
     // Both should show 4
     expect(screen.getByTestId('count-1')).toHaveTextContent('4');
     expect(screen.getByTestId('count-2')).toHaveTextContent('4');
-    console.log(
-      `  Counter 1 shows: ${screen.getByTestId('count-1').textContent}`,
-    );
-    console.log(
-      `  Counter 2 shows: ${screen.getByTestId('count-2').textContent}`,
-    );
   });
 
   it('should test rapid show/hide/increment scenarios', async () => {
@@ -282,44 +232,38 @@ describe('KeepAlive Hook Bug Reproduction', () => {
   it('should handle the specific bug scenario step by step', async () => {
     render(<TestApp />);
 
-    console.log('\n=== Exact Bug Reproduction ===\n');
-
     // "render KeepAlive Pattern"
-    console.log('User: render KeepAlive Pattern');
+    // User: render KeepAlive Pattern
 
     // Show Counter 1
-    console.log('User: Show Counter 1');
+    // User: Show Counter 1
     fireEvent.click(screen.getByTestId('toggle-1'));
     await waitFor(() =>
       expect(screen.getByTestId('counter-1')).toBeInTheDocument(),
     );
 
     const initialCount1 = screen.getByTestId('count-1').textContent;
-    console.log(`  Counter 1 displays: ${initialCount1}`);
     expect(initialCount1).toBe('0');
 
     // "KeepAlive Counter (1) : INCREMENT"
-    console.log('\nUser: Click INCREMENT on Counter 1');
     fireEvent.click(screen.getByTestId('increment-1'));
 
     // Wait for update
     await waitFor(() => {
       const newCount = screen.getByTestId('count-1').textContent;
-      console.log(`  Counter 1 displays: ${newCount}`);
       return newCount === '1';
     });
 
     // Bug check: "i still see 0"
     const afterIncrementCount1 = screen.getByTestId('count-1').textContent;
     if (afterIncrementCount1 === '0') {
-      console.log('  BUG REPRODUCED: Counter 1 still shows 0 after increment!');
+      // BUG REPRODUCED: Counter 1 still shows 0 after increment!
     } else {
-      console.log(`  Counter 1 correctly shows: ${afterIncrementCount1}`);
+      // Counter 1 correctly shows the updated value
     }
     expect(afterIncrementCount1).toBe('1');
 
     // "show counter 2"
-    console.log('\nUser: Show Counter 2');
     fireEvent.click(screen.getByTestId('toggle-2'));
     await waitFor(() =>
       expect(screen.getByTestId('counter-2')).toBeInTheDocument(),
@@ -328,14 +272,11 @@ describe('KeepAlive Hook Bug Reproduction', () => {
     // "now i see 1 on both of them"
     const count1Now = screen.getByTestId('count-1').textContent;
     const count2Now = screen.getByTestId('count-2').textContent;
-    console.log(`  Counter 1 displays: ${count1Now}`);
-    console.log(`  Counter 2 displays: ${count2Now}`);
 
     expect(count1Now).toBe('1');
     expect(count2Now).toBe('1');
 
     // "increment in KeepAlive Counter (2)"
-    console.log('\nUser: Click INCREMENT on Counter 2');
     fireEvent.click(screen.getByTestId('increment-2'));
 
     await waitFor(() => {
@@ -346,21 +287,17 @@ describe('KeepAlive Hook Bug Reproduction', () => {
     // "the count on KeepAlive Counter (1) increases"
     const count1After = screen.getByTestId('count-1').textContent;
     const count2After = screen.getByTestId('count-2').textContent;
-    console.log(`  Counter 1 displays: ${count1After}`);
-    console.log(`  Counter 2 displays: ${count2After}`);
 
     expect(count1After).toBe('2');
     expect(count2After).toBe('2');
 
     // "hide 2"
-    console.log('\nUser: Hide Counter 2');
     fireEvent.click(screen.getByTestId('toggle-2'));
     await waitFor(() =>
       expect(screen.queryByTestId('counter-2')).not.toBeInTheDocument(),
     );
 
     // "show 2"
-    console.log('\nUser: Show Counter 2 again');
     fireEvent.click(screen.getByTestId('toggle-2'));
     await waitFor(() =>
       expect(screen.getByTestId('counter-2')).toBeInTheDocument(),
@@ -368,9 +305,6 @@ describe('KeepAlive Hook Bug Reproduction', () => {
 
     // "now 2 also shows correct count"
     const finalCount2 = screen.getByTestId('count-2').textContent;
-    console.log(`  Counter 2 displays: ${finalCount2}`);
     expect(finalCount2).toBe('2');
-
-    console.log('\n=== Bug Reproduction Complete ===\n');
   });
 });
