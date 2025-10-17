@@ -9,6 +9,7 @@ import {
 import { SystemPluginRegistry } from './plugins/SystemPluginRegistry';
 import { BlacError, ErrorCategory, ErrorSeverity } from './errors/BlacError';
 import { ErrorManager } from './errors/ErrorManager';
+import { BlacContext } from './types/BlacContext';
 
 /**
  * Configuration options for the Blac instance
@@ -99,7 +100,7 @@ export function setBlacInstanceManager(manager: BlacInstanceManager): void {
  * - Handling isolated and non-isolated blocs
  * - Providing logging and debugging capabilities
  */
-export class Blac {
+export class Blac implements BlacContext {
   static get instance(): Blac {
     return instanceManager.getInstance();
   }
@@ -267,10 +268,9 @@ export class Blac {
     // Dispose non-keepAlive blocs from the current instance
     // Use disposeBloc method to ensure proper cleanup
     oldBlocInstanceMap.forEach((bloc) => {
-      // TODO: Type assertion for private property access (see explanation above)
       if (
         !bloc._keepAlive &&
-        (bloc as any)._disposalState === BlocLifecycleState.ACTIVE
+        bloc.disposalState === BlocLifecycleState.ACTIVE
       ) {
         this.disposeBloc(bloc);
       }
@@ -278,10 +278,9 @@ export class Blac {
 
     oldIsolatedBlocMap.forEach((blocArray) => {
       blocArray.forEach((bloc) => {
-        // TODO: Type assertion for private property access (see explanation above)
         if (
           !bloc._keepAlive &&
-          (bloc as any)._disposalState === BlocLifecycleState.ACTIVE
+          bloc.disposalState === BlocLifecycleState.ACTIVE
         ) {
           this.disposeBloc(bloc);
         }
@@ -308,11 +307,7 @@ export class Blac {
    */
   disposeBloc = (bloc: BlocBase<unknown>): void => {
     // Check if bloc is already disposed to prevent double disposal
-    // TODO: Type assertion needed to access private _disposalState property from external class.
-    // This is safe because we know BlocBase has this property, but TypeScript can't verify
-    // private property access across class boundaries. Alternative would be to make
-    // _disposalState protected, but that would expose internal implementation details.
-    const currentState = (bloc as any)._disposalState;
+    const currentState = bloc.disposalState;
 
     // Allow cleanup for DISPOSING state (called from disposal handler)
     // Skip if already DISPOSED
@@ -633,7 +628,7 @@ export class Blac {
   ): InstanceType<B> {
     const { constructorParams, instanceRef } = options;
     const newBloc = new blocClass(constructorParams) as InstanceType<B>;
-    newBloc.blacInstance = this;
+    newBloc.blacContext = this;
     newBloc._instanceRef = instanceRef;
     newBloc._id = id;
 
@@ -656,7 +651,7 @@ export class Blac {
 
   activateBloc = (bloc: BlocBase<unknown>): void => {
     // Don't activate disposed blocs
-    if ((bloc as any)._disposalState !== BlocLifecycleState.ACTIVE) {
+    if (bloc.disposalState !== BlocLifecycleState.ACTIVE) {
       this.log(
         `[${bloc._name}:${String(bloc._id)}] activateBloc called on disposed bloc. Ignoring.`,
       );
@@ -866,20 +861,18 @@ export class Blac {
   validateConsumers = (): void => {
     for (const bloc of this.uidRegistry.values()) {
       // Check if bloc should be disposed after validation
-      // TODO: Type assertion for private property access (see explanation above)
       if (
         bloc.subscriptionCount === 0 &&
         !bloc._keepAlive &&
-        (bloc as any)._disposalState === BlocLifecycleState.ACTIVE
+        bloc.disposalState === BlocLifecycleState.ACTIVE
       ) {
         // Schedule disposal for blocs with no subscriptions
         setTimeout(() => {
           // Double-check conditions before disposal
-          // TODO: Type assertion for private property access (see explanation above)
           if (
             bloc.subscriptionCount === 0 &&
             !bloc._keepAlive &&
-            (bloc as any)._disposalState === BlocLifecycleState.ACTIVE
+            bloc.disposalState === BlocLifecycleState.ACTIVE
           ) {
             this.disposeBloc(bloc);
           }

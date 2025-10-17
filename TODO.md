@@ -80,7 +80,7 @@ This document tracks the implementation progress of issues identified in the com
 ---
 
 ### [ ] 7. Circular Dependency
-**Status:** 🔵 **NOT STARTED**
+**Status:** IMPLEMENTED
 **Location:** Multiple files (Blac.ts ↔ BlocBase.ts)
 **Spec:** [`spec/2025-10-16-circular-dependency/`](./spec/2025-10-16-circular-dependency/)
 **Impact:** Testing difficulty, tight coupling

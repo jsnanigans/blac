@@ -24,29 +24,26 @@ class TestCubit extends Cubit<number> {
 
 describe('Circular Dependency Issue - Import Analysis', () => {
   it('should demonstrate that BlocBase imports Blac', () => {
-    // This test verifies the circular dependency exists by checking
-    // that BlocBase uses Blac for logging
+    // FIXED: BlocBase now uses BlacContext interface instead of Blac
+    // This breaks the circular dependency
 
     const cubit = new TestCubit();
 
-    // BlocBase uses Blac.log() internally
-    // This creates a hard dependency on Blac
-    expect((cubit as any).blacInstance).toBeDefined();
+    // BlocBase now uses blacContext (interface) instead of blacInstance (class)
+    // blacContext is optional and undefined until injected
+    expect((cubit as any).blacContext).toBeUndefined();
   });
 
   it('should demonstrate unsafe type assertions in Blac', () => {
-    // Blac uses unsafe type assertions to access _disposalState
-    // because it's not part of the public API
+    // FIXED: BlocBase now exposes disposalState publicly
+    // Blac no longer needs unsafe type assertions
 
     const blac = new Blac({ __unsafe_ignore_singleton: true });
     const cubit = blac.getBloc(TestCubit);
 
-    // Verify the unsafe access pattern exists
-    // In Blac.ts, there are multiple instances of:
-    // (bloc as any)._disposalState
-
-    // This is necessary because BlocBase doesn't expose disposalState publicly
-    expect((cubit as any)._disposalState).toBeDefined();
+    // disposalState is now a public getter
+    // No more (bloc as any)._disposalState needed!
+    expect(cubit.disposalState).toBeDefined();
   });
 
   it('should demonstrate that BlocBase cannot be tested in isolation', () => {

@@ -9,7 +9,7 @@ import {
   StateTransitionResult,
 } from './lifecycle/BlocLifecycle';
 import { BatchingManager } from './utils/BatchingManager';
-import { Blac } from './Blac';
+import { BlacContext } from './types/BlacContext';
 
 export type BlocInstanceId = string | number | undefined;
 
@@ -24,7 +24,7 @@ interface BlocStaticProperties {
  */
 export abstract class BlocBase<S> {
   public uid = generateUUID();
-  blacInstance?: Blac;
+  blacContext?: BlacContext;
 
   static isolated = false;
   get isIsolated() {
@@ -232,7 +232,7 @@ export abstract class BlocBase<S> {
 
     // Only allow emissions on ACTIVE blocs
     if (currentState !== BlocLifecycleState.ACTIVE) {
-      this.blacInstance?.error(
+      this.blacContext?.error(
         `[${this._name}:${this._id}] Cannot emit state on ${currentState} bloc. ` +
           `State update ignored. ` +
           `If this bloc uses setInterval/setTimeout, clean up in onDisposalScheduled hook.`,
@@ -257,7 +257,7 @@ export abstract class BlocBase<S> {
     this._plugins.notifyStateChange(oldState, transformedState);
 
     // Notify system plugins of state change
-    this.blacInstance?.plugins.notifyStateChanged(
+    this.blacContext?.plugins.notifyStateChanged(
       this as any,
       oldState,
       transformedState,
@@ -326,6 +326,14 @@ export abstract class BlocBase<S> {
   }
 
   /**
+   * Get current disposal lifecycle state.
+   * Used by Blac for disposal management.
+   */
+  get disposalState(): BlocLifecycleState {
+    return this._lifecycleManager.currentState;
+  }
+
+  /**
    * Atomic state transition for disposal
    */
   _atomicStateTransition(
@@ -371,7 +379,7 @@ export abstract class BlocBase<S> {
           this.onDispose();
         } catch (error) {
           // Log error but don't crash - disposal must complete
-          this.blacInstance?.error(
+          this.blacContext?.error(
             `[${this._name}:${this._id}] Error in onDispose hook:`,
             error,
           );
@@ -390,10 +398,10 @@ export abstract class BlocBase<S> {
         }
       }
 
-      // Notify system-level plugins (via Blac instance)
-      if (this.blacInstance) {
+      // Notify system-level plugins (via Blac context)
+      if (this.blacContext) {
         try {
-          this.blacInstance.plugins.notifyBlocDisposed(this);
+          this.blacContext.plugins.notifyBlocDisposed(this);
         } catch (error) {
           console.error('System plugin disposal notification error:', error);
         }
@@ -430,7 +438,7 @@ export abstract class BlocBase<S> {
         this.onDisposalScheduled();
       } catch (error) {
         // Log error but don't crash - disposal must proceed
-        this.blacInstance?.error(
+        this.blacContext?.error(
           `[${this._name}:${this._id}] Error in onDisposalScheduled hook:`,
           error,
         );
@@ -438,7 +446,7 @@ export abstract class BlocBase<S> {
       }
     }
 
-    this.blacInstance?.log(
+    this.blacContext?.log(
       `[${this._name}:${this._id}] Scheduling disposal on next microtask`,
     );
 
@@ -476,7 +484,7 @@ export abstract class BlocBase<S> {
   _cancelDisposalIfRequested(): void {
     const currentState = this._lifecycleManager.currentState;
 
-    this.blacInstance?.log(
+    this.blacContext?.log(
       `[${this._name}:${this._id}] Attempting to cancel disposal. Current state: ${currentState}`,
     );
 
@@ -486,7 +494,7 @@ export abstract class BlocBase<S> {
         currentState === BlocLifecycleState.DISPOSING ||
         currentState === BlocLifecycleState.DISPOSED
       ) {
-        this.blacInstance?.warn(
+        this.blacContext?.warn(
           `[${this._name}:${this._id}] Cannot cancel disposal - ` +
             `already ${currentState}. This typically happens when trying to resubscribe ` +
             `after disposal has already started.`,
@@ -498,11 +506,11 @@ export abstract class BlocBase<S> {
     const success = this._lifecycleManager.cancelDisposal();
 
     if (success) {
-      this.blacInstance?.log(
+      this.blacContext?.log(
         `[${this._name}:${this._id}] Successfully cancelled disposal`,
       );
     } else {
-      this.blacInstance?.error(
+      this.blacContext?.error(
         `[${this._name}:${this._id}] Failed to cancel disposal ` +
           `despite being in DISPOSAL_REQUESTED state`,
       );
