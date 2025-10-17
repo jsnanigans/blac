@@ -73,10 +73,20 @@ function SharedCounterCard({ label }: { label: string }) {
       </div>
 
       <div className="relative flex gap-2">
-        <Button onClick={cubit.decrement} variant="outline" size="sm" className="flex-1">
+        <Button
+          onClick={cubit.decrement}
+          variant="outline"
+          size="sm"
+          className="flex-1"
+        >
           -
         </Button>
-        <Button onClick={cubit.increment} variant="primary" size="sm" className="flex-1">
+        <Button
+          onClick={cubit.increment}
+          variant="primary"
+          size="sm"
+          className="flex-1"
+        >
           +
         </Button>
         <Button onClick={cubit.reset} variant="ghost" size="sm">
@@ -110,10 +120,20 @@ function IsolatedCounterCard({ label }: { label: string }) {
       </div>
 
       <div className="relative flex gap-2">
-        <Button onClick={cubit.decrement} variant="outline" size="sm" className="flex-1">
+        <Button
+          onClick={cubit.decrement}
+          variant="outline"
+          size="sm"
+          className="flex-1"
+        >
           -
         </Button>
-        <Button onClick={cubit.increment} variant="primary" size="sm" className="flex-1">
+        <Button
+          onClick={cubit.increment}
+          variant="primary"
+          size="sm"
+          className="flex-1"
+        >
           +
         </Button>
         <Button onClick={cubit.reset} variant="ghost" size="sm">
@@ -136,7 +156,8 @@ export function InstanceManagementInteractive() {
             <h4 className="font-semibold text-lg">Shared Counters</h4>
           </div>
           <p className="text-sm text-muted-foreground mb-4">
-            All three counters share the same state. Changing one updates all of them.
+            All three counters share the same state. Changing one updates all of
+            them.
           </p>
           <div className="space-y-3">
             <SharedCounterCard label="Counter A" />
@@ -160,14 +181,6 @@ export function InstanceManagementInteractive() {
             <IsolatedCounterCard label="Counter C" />
           </div>
         </div>
-      </div>
-
-      <div className="my-8">
-        <StateViewer bloc={SharedCounterCubit} title="Shared Counter State" />
-        <p className="text-xs text-muted-foreground mt-2">
-          Note: Isolated counters can't be viewed in a single StateViewer because each has its own
-          separate instance.
-        </p>
       </div>
     </div>
   );

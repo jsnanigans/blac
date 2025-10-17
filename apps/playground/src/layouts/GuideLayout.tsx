@@ -146,27 +146,12 @@ export function GuideLayout({
                 )
               }
             >
-              {demo && (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  <MetaBlock label="Section">
-                    <span className="text-sm font-semibold text-foreground">
-                      {section?.title ?? 'Learning Path'}
-                    </span>
-                  </MetaBlock>
-                  <MetaBlock label="Concept Tags">
-                    <MetaChips items={demo.tags} emptyLabel="No tags available" />
-                  </MetaBlock>
-                  <MetaBlock label="Key Concepts">
-                    <MetaChips items={demo.concepts} emptyLabel="No concepts listed" />
-                  </MetaBlock>
-                </div>
-              )}
             </PageHeader>
           </div>
 
           <main id="guide-layout-content" className="flex-1">
-            <div id="guide-article-container" className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-8 lg:py-12">
-              <div id="guide-article-content" className="min-w-0 space-y-12">{children}</div>
+            <div id="guide-article-container" className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-4 lg:py-12 lg:pt-0">
+              <div id="guide-article-content" className="min-w-0 space-y-12 max-w-2xl">{children}</div>
               {showNavigation && navigation && (
                 <GuideNavigation id="guide-page-navigation" navigation={navigation} className="mt-12" />
               )}

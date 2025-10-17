@@ -17,29 +17,27 @@ In this guide, you'll learn how to organize multiple components that work togeth
 
 ## Shared State Across Components
 
-The simplest way to coordinate multiple components is to have them all use the same Cubit. You've already seen this—`useBloc(MyCubit)` gives every component access to the same shared instance.
+The simplest way to coordinate multiple components is to have them all use the same Cubit. You've already seen this, `useBloc(MyCubit)` gives every component access to the same shared instance.
 
 ```tsx
 interface ShoppingCartState {
-  items: Array<{ id: string; name: string; price: number }>;
-  total: number;
+  items: { id: string; name: string; price: number }[];
+  discount: number;
 }
 
 class ShoppingCartCubit extends Cubit<ShoppingCartState> {
   constructor() {
-    super({ items: [], total: 0 });
+    super({ items: [], discount: 0 });
   }
 
   addItem = (item: { id: string; name: string; price: number }) => {
     const items = [...this.state.items, item];
-    const total = items.reduce((sum, i) => sum + i.price, 0);
-    this.patch({ items, total });
+    this.patch({ items });
   };
 
   removeItem = (id: string) => {
     const items = this.state.items.filter(i => i.id !== id);
-    const total = items.reduce((sum, i) => sum + i.price, 0);
-    this.patch({ items, total });
+    this.patch({ items });
   };
 }
 ```
@@ -61,10 +59,11 @@ function CartBadge() {
 // Shows the cart total
 function CartTotal() {
   const [state] = useBloc(ShoppingCartCubit);
+  const total = state.items.reduce((sum, i) => sum + i.price, 0);
 
   return (
     <div>
-      ${state.total.toFixed(2)}
+      ${total.toFixed(2)}
     </div>
   );
 }
@@ -106,7 +105,7 @@ function ProductCard({ product }: { product: Product }) {
 All four components work together seamlessly. When `ProductCard` adds an item, `CartBadge`, `CartTotal`, and `CartItems` all update automatically.
 
 <GuideArticleNote title="Component Independence">
-Notice how each component is **completely independent**. They don't know about each other. They don't pass props. They don't call each other's methods.
+Notice how each component is **completely independent**. They don't know about each other. They don't pass props. They don't call each other's methods. There is no Provider required.
 
 They only share a Cubit. This makes components:
 - **Easy to move** - Drop them anywhere in your tree
@@ -118,97 +117,7 @@ They only share a Cubit. This makes components:
 
 Sometimes you need parent components to coordinate child components. There are several patterns for this:
 
-### Pattern 1: Parent Controls, Children Display
-
-The parent owns the Cubit and orchestrates behavior. Children are "dumb" display components.
-
-```tsx
-interface FormState {
-  username: string;
-  email: string;
-  isValid: boolean;
-}
-
-class FormCubit extends Cubit<FormState> {
-  constructor() {
-    super({ username: '', email: '', isValid: false });
-  }
-
-  updateUsername = (username: string) => {
-    this.patch({
-      username,
-      isValid: this.validateForm(username, this.state.email),
-    });
-  };
-
-  updateEmail = (email: string) => {
-    this.patch({
-      email,
-      isValid: this.validateForm(this.state.username, email),
-    });
-  };
-
-  private validateForm = (username: string, email: string) => {
-    return username.length >= 3 && email.includes('@');
-  };
-}
-
-// Parent orchestrates the form
-function UserForm() {
-  const [state, form] = useBloc(FormCubit);
-
-  const handleSubmit = () => {
-    if (state.isValid) {
-      console.log('Submitting:', state);
-    }
-  };
-
-  return (
-    <div>
-      <UsernameInput />
-      <EmailInput />
-      <SubmitButton />
-    </div>
-  );
-}
-
-// Children are simple display components
-function UsernameInput() {
-  const [state, form] = useBloc(FormCubit);
-
-  return (
-    <input
-      value={state.username}
-      onChange={(e) => form.updateUsername(e.target.value)}
-      placeholder="Username"
-    />
-  );
-}
-
-function EmailInput() {
-  const [state, form] = useBloc(FormCubit);
-
-  return (
-    <input
-      value={state.email}
-      onChange={(e) => form.updateEmail(e.target.value)}
-      placeholder="Email"
-    />
-  );
-}
-
-function SubmitButton() {
-  const [state] = useBloc(FormCubit);
-
-  return (
-    <button disabled={!state.isValid}>
-      Submit
-    </button>
-  );
-}
-```
-
-### Pattern 2: Siblings Coordinate Through Shared State
+### Pattern: Siblings Coordinate Through Shared State
 
 Components at the same level coordinate by reading/writing shared state:
 
@@ -247,6 +156,21 @@ class FilterCubit extends Cubit<FilterState> {
       priceRange: [0, 1000],
     });
   };
+
+  // Filter products based on filter state
+  get filteredProducts() {
+    return this.state.products.filter(product => {
+      const matchesSearch = product.name
+        .toLowerCase()
+        .includes(filters.searchTerm.toLowerCase());
+      const matchesCategory = !filters.category ||
+        product.category === filters.category;
+      const matchesPrice = product.price >= filters.priceRange[0] &&
+        product.price <= filters.priceRange[1];
+
+      return matchesSearch && matchesCategory && matchesPrice;
+    });
+  }
 }
 
 // Sibling components that coordinate
@@ -290,20 +214,7 @@ function CategoryDropdown() {
 }
 
 function ProductList() {
-  const [filters] = useBloc(FilterCubit);
-
-  // Filter products based on filter state
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name
-      .toLowerCase()
-      .includes(filters.searchTerm.toLowerCase());
-    const matchesCategory = !filters.category ||
-      product.category === filters.category;
-    const matchesPrice = product.price >= filters.priceRange[0] &&
-      product.price <= filters.priceRange[1];
-
-    return matchesSearch && matchesCategory && matchesPrice;
-  });
+  const [, { filteredProducts }] = useBloc(FilterCubit);
 
   return (
     <div>
@@ -328,7 +239,7 @@ If components don't need to coordinate, give them separate Cubits or make them `
 
 ## Composition Patterns
 
-### Pattern 3: Layout Components with Smart Children
+### Pattern: Layout Components with Smart Children
 
 Layout components don't need state—they just arrange children:
 
@@ -363,7 +274,7 @@ function Notifications() {
 
 The layout doesn't care what the children do. Each child has its own Cubit.
 
-### Pattern 4: Conditional Rendering Based on State
+### Pattern: Conditional Rendering Based on State
 
 Components can mount/unmount based on shared state:
 
@@ -498,182 +409,32 @@ function Sidebar() {
 }
 
 function ThemeToggle() {
-  const [state, theme] = useBloc(ThemeCubit);
+  const [, { toggleTheme }] = useBloc(ThemeCubit);
 
   return (
-    <button onClick={theme.toggleTheme}>
+    <button onClick={toggleTheme}>
       Toggle Theme
     </button>
   );
 }
 
 function Nav() {
-  const [state] = useBloc(ThemeCubit);
+  const [{ theme }] = useBloc(ThemeCubit);
 
-  return <nav className={state.theme}>{/* nav items */}</nav>;
+  return <nav className={theme}>{/* nav items */}</nav>;
 }
 ```
 
 Only components that need the theme access it. No props drilling through intermediate components.
-
-## Real-World Example: Todo App
-
-Here's how multiple components work together in a real Todo application:
-
-```typescript
-interface TodoState {
-  todos: Array<{ id: string; text: string; completed: boolean }>;
-  filter: 'all' | 'active' | 'completed';
-}
-
-class TodoCubit extends Cubit<TodoState> {
-  constructor() {
-    super({ todos: [], filter: 'all' });
-  }
-
-  addTodo = (text: string) => {
-    const todo = {
-      id: Math.random().toString(),
-      text,
-      completed: false,
-    };
-    this.patch({ todos: [...this.state.todos, todo] });
-  };
-
-  toggleTodo = (id: string) => {
-    this.patch({
-      todos: this.state.todos.map(todo =>
-        todo.id === id ? { ...todo, completed: !todo.completed } : todo
-      ),
-    });
-  };
-
-  deleteTodo = (id: string) => {
-    this.patch({
-      todos: this.state.todos.filter(t => t.id !== id),
-    });
-  };
-
-  setFilter = (filter: 'all' | 'active' | 'completed') => {
-    this.patch({ filter });
-  };
-
-  clearCompleted = () => {
-    this.patch({
-      todos: this.state.todos.filter(t => !t.completed),
-    });
-  };
-}
-
-// Parent component
-function TodoApp() {
-  return (
-    <div>
-      <TodoInput />
-      <TodoList />
-      <TodoFooter />
-    </div>
-  );
-}
-
-// Input component
-function TodoInput() {
-  const [, todos] = useBloc(TodoCubit);
-  const [text, setText] = useState('');
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (text.trim()) {
-      todos.addTodo(text);
-      setText('');
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <input
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        placeholder="What needs to be done?"
-      />
-    </form>
-  );
-}
-
-// List component
-function TodoList() {
-  const [state] = useBloc(TodoCubit);
-
-  const filteredTodos = state.todos.filter(todo => {
-    if (state.filter === 'active') return !todo.completed;
-    if (state.filter === 'completed') return todo.completed;
-    return true;
-  });
-
-  return (
-    <ul>
-      {filteredTodos.map(todo => (
-        <TodoItem key={todo.id} todo={todo} />
-      ))}
-    </ul>
-  );
-}
-
-// Individual todo item
-function TodoItem({ todo }: { todo: Todo }) {
-  const [, todos] = useBloc(TodoCubit);
-
-  return (
-    <li>
-      <input
-        type="checkbox"
-        checked={todo.completed}
-        onChange={() => todos.toggleTodo(todo.id)}
-      />
-      <span}>
-        {todo.text}
-      </span>
-      <button onClick={() => todos.deleteTodo(todo.id)}>Delete</button>
-    </li>
-  );
-}
-
-// Footer with filters and stats
-function TodoFooter() {
-  const [state, todos] = useBloc(TodoCubit);
-
-  const activeCount = state.todos.filter(t => !t.completed).length;
-  const completedCount = state.todos.filter(t => t.completed).length;
-
-  return (
-    <footer>
-      <span>{activeCount} items left</span>
-      <div>
-        <button onClick={() => todos.setFilter('all')}>All</button>
-        <button onClick={() => todos.setFilter('active')}>Active</button>
-        <button onClick={() => todos.setFilter('completed')}>Completed</button>
-      </div>
-      {completedCount > 0 && (
-        <button onClick={todos.clearCompleted}>
-          Clear completed
-        </button>
-      )}
-    </footer>
-  );
-}
-```
-
-Five components working together, all coordinating through one `TodoCubit`. No props passing, no callbacks, no complexity.
 
 ## Key Takeaways
 
 - **Components share Cubits naturally** - Just use `useBloc` wherever you need the state
 - **No prop drilling required** - Components access state directly
 - **Components stay independent** - They don't need to know about each other
-- **Parent-child relationships are simple** - Share a Cubit or use separate ones
 - **Composition is easy** - Build complex UIs from simple, focused components
 - **Each component has one job** - Display state, update state, or orchestrate children
-- **Testing is easier** - Test each component in isolation
+- **Testing is easier** - Simple unit tests for your logic code in the Cubit
 
 ---
 

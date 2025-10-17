@@ -3,11 +3,12 @@ export const sectionId = 'getting-started';
 
 ## Introduction
 
-Now that you've seen a basic Cubit, let's make it interactive! In this guide, you'll build a counter that responds to user actions—the "Hello World" of state management.
+Now that you've seen a basic Cubit, let's make it interactive! In this guide, you'll build a counter that responds to user actions, the "Hello World" of state management.
 
 You'll learn how to:
+- Define the business logic inside of the Cubit
 - Update state in response to user interactions
-- Use both `patch()` and `emit()` for state updates
+- Use `emit()` for state updates
 - Call Cubit methods from React components
 
 ## The Counter State
@@ -59,7 +60,8 @@ increment = () => {
 
 // ❌ Wrong - Regular method loses 'this' in React
 increment() {
-  this.patch({ count: this.state.count + 1 }); // Error: 'this' is undefined!
+  // will throw: Uncaught TypeError: undefined is not a function
+  this.patch({ count: this.state.count + 1 });
 }
 ```
 </GuideArticleNote>
@@ -144,6 +146,7 @@ As you type `state.`, your IDE instantly shows all available properties:
 - `state.count` ✅ (autocompletes)
 - Shows type information: `count: number`
 - Inline documentation if you add JSDoc comments
+- IDE can fully trace all methods and state
 
 This makes development faster and reduces the need to constantly reference documentation.
 
@@ -164,12 +167,12 @@ TypeScript infers types automatically, reducing verbosity:
 const [state, cubit] = useBloc(CounterBloc);
 // TypeScript knows:
 //   state: CounterState
-//   cubit: CounterBloc
+//   cubit: CounterBloc instance
 // No manual type annotations needed!
 ```
 
 <GuideArticleNote title="Why TypeScript Matters">
-In a real application with dozens of Cubits and complex state shapes, TypeScript prevents entire categories of bugs. A typo that would cause a runtime crash in JavaScript becomes a compile-time error you fix in seconds.
+In a real application with dozens of Cubits and complex state shapes, TypeScript prevents entire categories of bugs. A typo that would cause a runtime crash in JavaScript becomes a compile-time error.
 </GuideArticleNote>
 
 ## Shared State by Default
@@ -191,7 +194,6 @@ function App() {
 ## Key Takeaways
 
 - **Arrow functions are required** for Cubit methods
-- **patch()** for partial updates, **emit()** for complete replacement
 - **useBloc returns [state, instance]** - use both!
 - **Call methods directly** from event handlers
 - **State is shared** across components by default

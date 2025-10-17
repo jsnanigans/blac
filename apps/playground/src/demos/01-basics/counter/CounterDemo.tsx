@@ -2,7 +2,10 @@ import { useBloc } from '@blac/react';
 import { Cubit } from '@blac/core';
 import { Button } from '@/ui/Button';
 import { DemoArticle } from '@/components/demo-article/DemoArticle';
-import { ArticleSection, SectionHeader } from '@/components/demo-article/ArticleSection';
+import {
+  ArticleSection,
+  SectionHeader,
+} from '@/components/demo-article/ArticleSection';
 import { Prose } from '@/components/demo-article/Prose';
 import { CodePanel } from '@/components/demo-article/CodePanel';
 import { StateViewer } from '@/components/shared/StateViewer';
@@ -78,7 +81,8 @@ function InteractiveCounter() {
       </div>
       {state.count % 10 !== 0 && state.count > 0 && (
         <p className="relative text-sm text-muted-foreground">
-          {10 - (state.count % 10)} more to reach {Math.floor(state.count / 10 + 1) * 10}! 🎉
+          {10 - (state.count % 10)} more to reach{' '}
+          {Math.floor(state.count / 10 + 1) * 10}! 🎉
         </p>
       )}
     </div>
@@ -120,18 +124,24 @@ const demoMetadata = {
 // Demo component
 export function CounterDemo() {
   return (
-    <DemoArticle metadata={demoMetadata} showBlocGraph={true} hideNavigation={true}>
+    <DemoArticle
+      metadata={demoMetadata}
+      showBlocGraph={true}
+      hideNavigation={true}
+    >
       {/* Introduction */}
       <ArticleSection theme="cubit" id="introduction">
         <Prose>
           <h2>Welcome to BlaC!</h2>
           <p>
-            Let's start with the simplest possible state management example: a counter. This demo
-            will teach you the fundamental concepts of BlaC through hands-on interaction.
+            Let's start with the simplest possible state management example: a
+            counter. This demo will teach you the fundamental concepts of BlaC
+            through hands-on interaction.
           </p>
           <p>
-            A <strong>Cubit</strong> is the simplest form of state management in BlaC. It holds
-            state and provides methods to update that state. That's it!
+            A <strong>Cubit</strong> is the simplest form of state management in
+            BlaC. It holds state and provides methods to update that state.
+            That's it!
           </p>
         </Prose>
       </ArticleSection>
@@ -141,8 +151,9 @@ export function CounterDemo() {
         <SectionHeader>Try It Yourself</SectionHeader>
         <Prose>
           <p>
-            Click the buttons below to see state management in action. The counter updates
-            immediately, and you'll see the state visualized in real-time below the demo.
+            Click the buttons below to see state management in action. The
+            counter updates immediately, and you'll see the state visualized in
+            real-time below the demo.
           </p>
           <p className="text-sm text-muted-foreground italic">
             💡 Tip: Try reaching a multiple of 10 for a surprise!
@@ -163,8 +174,8 @@ export function CounterDemo() {
         <SectionHeader>How It Works</SectionHeader>
         <Prose>
           <p>
-            Let's look at the code behind this counter. First, we define our state interface and
-            create a Cubit class:
+            Let's look at the code behind this counter. First, we define our
+            state interface and create a Cubit class:
           </p>
         </Prose>
 
@@ -207,14 +218,16 @@ class CounterCubit extends Cubit<CounterState> {
           <h3>Key Concepts</h3>
           <ul>
             <li>
-              <strong>State Interface</strong>: Define the shape of your state with TypeScript
+              <strong>State Interface</strong>: Define the shape of your state
+              with TypeScript
             </li>
             <li>
-              <strong>Constructor</strong>: Initialize your Cubit with a default state
+              <strong>Constructor</strong>: Initialize your Cubit with a default
+              state
             </li>
             <li>
-              <strong>Arrow Functions</strong>: Use arrow functions for methods (required for
-              React)
+              <strong>Arrow Functions</strong>: Use arrow functions for methods
+              (required for React)
             </li>
             <li>
               <strong>patch()</strong>: Update part of the state (shallow merge)
@@ -231,8 +244,8 @@ class CounterCubit extends Cubit<CounterState> {
         <SectionHeader>Using in React</SectionHeader>
         <Prose>
           <p>
-            Connecting your Cubit to a React component is simple with the <code>useBloc</code>{' '}
-            hook:
+            Connecting your Cubit to a React component is simple with the{' '}
+            <code>useBloc</code> hook:
           </p>
         </Prose>
 
@@ -266,10 +279,12 @@ class CounterCubit extends Cubit<CounterState> {
           </p>
           <ol>
             <li>
-              Creates or retrieves an instance of your Cubit (by default, instances are shared
-              across components)
+              Creates or retrieves an instance of your Cubit (by default,
+              instances are shared across components)
             </li>
-            <li>Subscribes to state changes and re-renders when state updates</li>
+            <li>
+              Subscribes to state changes and re-renders when state updates
+            </li>
           </ol>
         </Prose>
       </ArticleSection>
@@ -280,21 +295,24 @@ class CounterCubit extends Cubit<CounterState> {
         <Prose>
           <ul>
             <li>
-              <strong>Cubits are simple</strong>: Just a class that holds state and provides
-              methods to update it
+              <strong>Cubits are simple</strong>: Just a class that holds state
+              and provides methods to update it
             </li>
             <li>
-              <strong>Type-safe</strong>: Define your state shape with TypeScript interfaces
+              <strong>Type-safe</strong>: Define your state shape with
+              TypeScript interfaces
             </li>
             <li>
-              <strong>React integration is easy</strong>: Use the <code>useBloc</code> hook
+              <strong>React integration is easy</strong>: Use the{' '}
+              <code>useBloc</code> hook
             </li>
             <li>
-              <strong>Immediate updates</strong>: State changes trigger re-renders automatically
+              <strong>Immediate updates</strong>: State changes trigger
+              re-renders automatically
             </li>
             <li>
-              <strong>Shared by default</strong>: One instance is shared across all components
-              (you'll learn about isolated instances later)
+              <strong>Shared by default</strong>: One instance is shared across
+              all components (you'll learn about isolated instances later)
             </li>
           </ul>
         </Prose>
@@ -304,10 +322,14 @@ class CounterCubit extends Cubit<CounterState> {
       <ArticleSection theme="info" id="next-steps">
         <SectionHeader>Next Steps</SectionHeader>
         <Prose>
-          <p>Now that you understand the basics of Cubits, you're ready to learn more!</p>
           <p>
-            In the next demo, you'll learn how multiple components can read and display the same
-            state, demonstrating BlaC's powerful state sharing capabilities.
+            Now that you understand the basics of Cubits, you're ready to learn
+            more!
+          </p>
+          <p>
+            In the next demo, you'll learn how multiple components can read and
+            display the same state, demonstrating BlaC's powerful state sharing
+            capabilities.
           </p>
         </Prose>
       </ArticleSection>
