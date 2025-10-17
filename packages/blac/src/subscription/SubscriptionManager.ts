@@ -206,9 +206,13 @@ export class SubscriptionManager<S = unknown> {
           }
         } else {
           // No tracked dependencies
-          // If proxy tracking is enabled, component didn't access state - don't notify
-          // If proxy tracking is disabled, always notify (traditional behavior)
-          shouldNotify = !Blac.config.proxyDependencyTracking;
+          // Observer subscriptions (basic subscribe()) always notify
+          // Consumer subscriptions with no dependencies only notify if proxy tracking is disabled
+          if (subscription.type === 'observer') {
+            shouldNotify = true;
+          } else {
+            shouldNotify = !Blac.config.proxyDependencyTracking;
+          }
         }
         newValue = newState;
         oldValue = oldState;

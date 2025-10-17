@@ -73,6 +73,9 @@ export default function useExternalBlocStore<
     });
   }, [blocConstructor, options?.id]);
 
+  // Update instance ref BEFORE creating external store
+  instanceRef.current = bloc;
+
   // Create external store interface
   const externalStore = useMemo<ExternalStore<BlocState<InstanceType<B>>>>(
     () => ({
@@ -81,6 +84,7 @@ export default function useExternalBlocStore<
         return currentInstance ? currentInstance.state : undefined;
       },
       subscribe: (listener: () => void) => {
+        // Get instance at subscribe time, not at creation time
         const currentInstance = instanceRef.current;
         if (!currentInstance) {
           // Return no-op unsubscribe if no instance
@@ -97,9 +101,10 @@ export default function useExternalBlocStore<
             usedKeysRef.current.clear();
             usedClassPropKeysRef.current.clear();
 
-            // Call selector if provided
-            if (options.selector && currentInstance) {
-              options.selector(newState, oldState, currentInstance);
+            // Call selector if provided - get fresh instance reference
+            const instance = instanceRef.current;
+            if (options.selector && instance) {
+              options.selector(newState, oldState, instance);
             }
 
             // Call listener with state if it expects it
@@ -129,11 +134,8 @@ export default function useExternalBlocStore<
         return currentInstance ? currentInstance.state : undefined;
       },
     }),
-    [],
+    [bloc],
   );
-
-  // Update instance ref
-  instanceRef.current = bloc;
 
   return {
     externalStore,

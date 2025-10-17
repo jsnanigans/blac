@@ -5,7 +5,13 @@ import {
   BlocState,
   generateInstanceIdFromProps,
 } from '@blac/core';
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 
 /**
  * Type definition for the return type of the useBloc hook
@@ -23,7 +29,9 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
   options?: {
     staticProps?: ConstructorParameters<B>[0];
     instanceId?: string;
-    dependencies?: (bloc: InstanceType<B>) => unknown[] | Generator<unknown, void, unknown>;
+    dependencies?: (
+      bloc: InstanceType<B>,
+    ) => unknown[] | Generator<unknown, void, unknown>;
     onMount?: (bloc: InstanceType<B>) => void;
     onUnmount?: (bloc: InstanceType<B>) => void;
   },
@@ -46,7 +54,11 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
 
   // Generate stable ID for isolated blocs
   const base = blocConstructor as unknown as { isolated?: boolean };
-  if (base.isolated && !normalizedOptions?.instanceId && !componentRef.current.__blocInstanceId) {
+  if (
+    base.isolated &&
+    !normalizedOptions?.instanceId &&
+    !componentRef.current.__blocInstanceId
+  ) {
     componentRef.current.__blocInstanceId = `component-${Math.random().toString(36).slice(2, 11)}`;
   }
 
@@ -123,30 +135,23 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
         return (adapter as any).stateSnapshot ?? adapter.blocInstance.state;
       }
       // Normal mode: always return latest state
-      const bloc = adapter.blocInstance;
-      const state = bloc.state;
-      return state;
+      return adapter.blocInstance.state;
     },
     () => {
       // Server-side rendering snapshot
       if (adapter.options?.dependencies) {
         return (adapter as any).stateSnapshot ?? adapter.blocInstance.state;
       }
-      const bloc = adapter.blocInstance;
-      const state = bloc.state;
-      return state;
+      return adapter.blocInstance.state;
     },
   );
 
-  const finalState = useMemo(() => {
-    const proxyState = adapter.getStateProxy();
-    return proxyState;
-  }, [rawState, adapter]);
+  const finalState = useMemo(
+    () => adapter.getStateProxy(),
+    [rawState, adapter],
+  );
 
-  const finalBloc = useMemo(() => {
-    const proxyBloc = adapter.getBlocProxy();
-    return proxyBloc;
-  }, [adapter]);
+  const finalBloc = useMemo(() => adapter.getBlocProxy(), [adapter]);
 
   // Commit tracked dependencies after render
   useEffect(() => {
