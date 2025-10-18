@@ -417,8 +417,45 @@ export class SubscriptionManager<S = unknown> {
   }
 
   /**
+   * Invalidate getter cache entries when state paths change
+   * Fix #8: Path-based cache invalidation to prevent stale getter values
+   *
+   * Strategy: Clear getter cache when any non-getter path changes, as getters
+   * typically access state properties and should be re-evaluated.
+   *
+   * @param subscriptionId The subscription whose getter cache to invalidate
+   * @param changedPaths Set of paths that changed in the state
+   */
+  private invalidateGetterCache(
+    subscriptionId: string,
+    changedPaths: Set<string>,
+  ): void {
+    const subscription = this.subscriptions.get(subscriptionId);
+    if (!subscription || !subscription.getterCache || subscription.getterCache.size === 0) {
+      return;
+    }
+
+    // Check if any non-getter paths changed
+    // If so, invalidate all getter cache entries since they may access those paths
+    const hasStatePathChanges = Array.from(changedPaths).some(
+      (path) => !path.startsWith('_class.')
+    );
+
+    if (hasStatePathChanges) {
+      // Clear all getter cache entries
+      // This is conservative but safe: getters typically access state properties
+      subscription.getterCache.clear();
+
+      Blac.log(
+        `[${this.bloc._name}:${this.bloc._id}] Getter cache invalidated for subscription ${subscriptionId} due to state changes`
+      );
+    }
+  }
+
+  /**
    * Check if a subscription should be notified based on changed paths
    * V3: Deep path tracking with parent-child relationship matching
+   * V4: Invalidates getter cache when state paths change (Fix #8)
    */
   shouldNotifyForPaths(
     subscriptionId: string,
@@ -433,6 +470,10 @@ export class SubscriptionManager<S = unknown> {
 
     // Handle '*' special case - entire state changed
     if (changedPaths.has('*')) return true;
+
+    // Fix #8: Invalidate getter cache when state paths change
+    // This prevents stale getter values from being used
+    this.invalidateGetterCache(subscriptionId, changedPaths);
 
     // Performance: Build PathIndex once for all paths
     // This enables O(1) parent-child lookups instead of O(n×m) string operations

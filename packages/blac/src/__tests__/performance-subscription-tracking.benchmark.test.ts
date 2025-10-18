@@ -688,3 +688,256 @@ describe('Performance Regression Detection', () => {
     expect(duration).toBeLessThan(0.1);
   });
 });
+
+// ============================================================================
+// Test Suite: Getter Cache Memory Benchmarks (Fix #8)
+// ============================================================================
+
+describe('Getter Cache Memory Benchmarks (Fix #8)', () => {
+  beforeEach(() => {
+    Blac.resetInstance();
+  });
+
+  afterEach(() => {
+    Blac.resetInstance();
+  });
+
+  it('should prevent unbounded cache growth with invalidation', () => {
+    interface TestState {
+      counter: number;
+      data: string;
+    }
+
+    class TestCubit extends Cubit<TestState> {
+      constructor() {
+        super({ counter: 0, data: 'initial' });
+      }
+
+      get expensiveGetter(): string {
+        return `${this.state.data}_${this.state.counter}`;
+      }
+
+      increment = () => {
+        this.emit({ ...this.state, counter: this.state.counter + 1 });
+      };
+    }
+
+    const cubit = new TestCubit();
+    const manager = (cubit as any)._subscriptionManager;
+
+    const { id: subscriptionId } = manager.subscribe({
+      type: 'observer' as const,
+      notify: () => {},
+    });
+
+    const subscription = manager.subscriptions.get(subscriptionId);
+    if (!subscription) return;
+
+    // Setup dependencies
+    subscription.dependencies = new Set(['counter', '_class.expensiveGetter']);
+
+    // Simulate cache with many entries
+    if (!subscription.getterCache) {
+      subscription.getterCache = new Map();
+    }
+
+    // Add 1000 cached getters (simulating heavy usage)
+    for (let i = 0; i < 1000; i++) {
+      subscription.getterCache.set(`_class.getter${i}`, {
+        value: `cached_value_${i}`,
+        error: undefined,
+      });
+    }
+
+    expect(subscription.getterCache.size).toBe(1000);
+
+    const start = performance.now();
+
+    // Single state change should clear all cached getters
+    const oldState = cubit.state;
+    const newState = { ...cubit.state, counter: cubit.state.counter + 1 };
+    manager.notify(newState, oldState);
+
+    const duration = performance.now() - start;
+
+    // Cache should be cleared - preventing memory leak
+    expect(subscription.getterCache.size).toBe(0);
+
+    // Clearing large cache should still be fast (<5ms)
+    expect(duration).toBeLessThan(5);
+
+    manager.unsubscribe(subscriptionId);
+  });
+
+  it('should handle repeated invalidation cycles efficiently', () => {
+    interface CounterState {
+      count: number;
+    }
+
+    class CounterCubit extends Cubit<CounterState> {
+      constructor() {
+        super({ count: 0 });
+      }
+
+      get doubled(): number {
+        return this.state.count * 2;
+      }
+
+      increment = () => {
+        this.emit({ count: this.state.count + 1 });
+      };
+    }
+
+    const cubit = new CounterCubit();
+    const manager = (cubit as any)._subscriptionManager;
+
+    const { id: subscriptionId } = manager.subscribe({
+      type: 'observer' as const,
+      notify: () => {},
+    });
+
+    const subscription = manager.subscriptions.get(subscriptionId);
+    if (!subscription) return;
+
+    // Track both state path and getter to test invalidation
+    subscription.dependencies = new Set(['count', '_class.doubled']);
+
+    const iterations = 100;
+    const start = performance.now();
+
+    for (let i = 0; i < iterations; i++) {
+      // Simulate getter cache entry
+      if (!subscription.getterCache) {
+        subscription.getterCache = new Map();
+      }
+      subscription.getterCache.set('_class.doubled', {
+        value: cubit.state.count * 2,
+        error: undefined,
+      });
+
+      // Emit state change (will invalidate cache because 'count' changed)
+      cubit.increment();
+    }
+
+    const duration = performance.now() - start;
+    const avgPerCycle = duration / iterations;
+
+    // Average per invalidation cycle should be fast
+    expect(avgPerCycle).toBeLessThan(0.5);
+
+    // Final cache should be empty (after last state change)
+    expect(subscription.getterCache.size).toBe(0);
+
+    manager.unsubscribe(subscriptionId);
+  });
+
+  it('should not impact performance when cache is empty', () => {
+    class SimpleCubit extends Cubit<number> {
+      constructor() {
+        super(0);
+      }
+      increment = () => this.emit(this.state + 1);
+    }
+
+    const cubit = new SimpleCubit();
+    const manager = (cubit as any)._subscriptionManager;
+
+    const { id: subscriptionId } = manager.subscribe({
+      type: 'observer' as const,
+      notify: () => {},
+    });
+
+    const subscription = manager.subscriptions.get(subscriptionId);
+    if (!subscription) return;
+
+    subscription.dependencies = new Set(['value']);
+    // No getter cache initialized
+
+    const iterations = 1000;
+    const start = performance.now();
+
+    for (let i = 0; i < iterations; i++) {
+      const oldState = cubit.state;
+      const newState = cubit.state + 1;
+      manager.notify(newState, oldState);
+    }
+
+    const duration = performance.now() - start;
+    const avgPerNotify = duration / iterations;
+
+    // Should be fast even with many notifications
+    expect(avgPerNotify).toBeLessThan(0.1);
+
+    manager.unsubscribe(subscriptionId);
+  });
+
+  it('should maintain performance with multiple subscriptions', () => {
+    class DataCubit extends Cubit<{ value: number }> {
+      constructor() {
+        super({ value: 0 });
+      }
+
+      get computed(): number {
+        return this.state.value * 100;
+      }
+
+      update = (value: number) => {
+        this.emit({ value });
+      };
+    }
+
+    const cubit = new DataCubit();
+    const manager = (cubit as any)._subscriptionManager;
+
+    // Create 50 subscriptions
+    const subscriptionIds: string[] = [];
+    for (let i = 0; i < 50; i++) {
+      const { id } = manager.subscribe({
+        type: 'observer' as const,
+        notify: () => {},
+      });
+      subscriptionIds.push(id);
+
+      const sub = manager.subscriptions.get(id);
+      if (sub) {
+        sub.dependencies = new Set(['value', '_class.computed']);
+
+        // Add some cached getters
+        if (!sub.getterCache) {
+          sub.getterCache = new Map();
+        }
+        for (let j = 0; j < 10; j++) {
+          sub.getterCache.set(`_class.getter${j}`, {
+            value: `value${j}`,
+            error: undefined,
+          });
+        }
+      }
+    }
+
+    const start = performance.now();
+
+    // Single state change should invalidate all subscription caches
+    const oldState = cubit.state;
+    const newState = { value: 42 };
+    manager.notify(newState, oldState);
+
+    const duration = performance.now() - start;
+
+    // Should complete in reasonable time even with 50 subscriptions
+    expect(duration).toBeLessThan(10);
+
+    // All caches should be cleared
+    for (const id of subscriptionIds) {
+      const sub = manager.subscriptions.get(id);
+      if (sub && sub.getterCache) {
+        expect(sub.getterCache.size).toBe(0);
+      }
+    }
+
+    // Cleanup
+    for (const id of subscriptionIds) {
+      manager.unsubscribe(id);
+    }
+  });
+});
