@@ -8,6 +8,7 @@ describe('Blac.config', () => {
     // Reset to default config before each test
     Blac.setConfig({
       proxyDependencyTracking: true,
+      proxyMaxDepth: 3,
     });
   });
 
@@ -20,6 +21,7 @@ describe('Blac.config', () => {
     it('should have default configuration', () => {
       expect(Blac.config).toEqual({
         proxyDependencyTracking: true,
+        proxyMaxDepth: 3,
       });
     });
 
@@ -28,6 +30,7 @@ describe('Blac.config', () => {
 
       expect(Blac.config).toEqual({
         proxyDependencyTracking: false,
+        proxyMaxDepth: 3,
       });
     });
 
@@ -40,6 +43,7 @@ describe('Blac.config', () => {
 
       expect(Blac.config).toEqual({
         proxyDependencyTracking: false,
+        proxyMaxDepth: 3,
       });
     });
 
@@ -47,6 +51,35 @@ describe('Blac.config', () => {
       expect(() => {
         Blac.setConfig({ proxyDependencyTracking: 'true' as any });
       }).toThrow('BlacConfig.proxyDependencyTracking must be a boolean');
+    });
+
+    it('should throw error for invalid proxyMaxDepth type', () => {
+      expect(() => {
+        Blac.setConfig({ proxyMaxDepth: 'fifty' as any });
+      }).toThrow('BlacConfig.proxyMaxDepth must be a number');
+    });
+
+    it('should throw error for proxyMaxDepth less than 1', () => {
+      expect(() => {
+        Blac.setConfig({ proxyMaxDepth: 0 });
+      }).toThrow('BlacConfig.proxyMaxDepth must be at least 1');
+    });
+
+    it('should throw error for non-integer proxyMaxDepth', () => {
+      expect(() => {
+        Blac.setConfig({ proxyMaxDepth: 3.5 });
+      }).toThrow('BlacConfig.proxyMaxDepth must be an integer');
+    });
+
+    it('should accept valid proxyMaxDepth values', () => {
+      Blac.setConfig({ proxyMaxDepth: 10 });
+      expect(Blac.config.proxyMaxDepth).toBe(10);
+
+      Blac.setConfig({ proxyMaxDepth: 1 });
+      expect(Blac.config.proxyMaxDepth).toBe(1);
+
+      Blac.setConfig({ proxyMaxDepth: 100 });
+      expect(Blac.config.proxyMaxDepth).toBe(100);
     });
 
     it('should return a copy of config, not the original', () => {

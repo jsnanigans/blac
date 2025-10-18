@@ -681,4 +681,216 @@ describe('ProxyFactory', () => {
       ]);
     });
   });
+
+  describe('Proxy Depth Limiting', () => {
+    beforeEach(() => {
+      ProxyFactory.resetStats();
+    });
+
+    it('should create proxies up to the specified maxDepth', () => {
+      const deeplyNestedObject = {
+        level0: {
+          level1: {
+            level2: {
+              level3: {
+                level4: {
+                  value: 'deep value',
+                },
+              },
+            },
+          },
+        },
+      };
+
+      const maxDepth = 3;
+      const proxy = ProxyFactory.createStateProxy({
+        target: deeplyNestedObject,
+        consumerRef,
+        consumerTracker: tracker,
+        maxDepth,
+      });
+
+      // Access nested properties up to maxDepth
+      const level0 = proxy.level0;
+      expect(level0).toBeDefined();
+
+      const level1 = level0.level1;
+      expect(level1).toBeDefined();
+
+      const level2 = level1.level2;
+      expect(level2).toBeDefined();
+
+      // At maxDepth, should return raw object (not a proxy)
+      const level3 = level2.level3;
+      expect(level3).toBeDefined();
+
+      // Verify that deeper levels are raw objects (not proxied)
+      const level4 = level3.level4;
+      expect(level4.value).toBe('deep value');
+
+      // Check that all levels were tracked
+      expect(tracker.trackAccess).toHaveBeenCalledWith(
+        consumerRef,
+        'state',
+        'level0',
+        undefined,
+      );
+      expect(tracker.trackAccess).toHaveBeenCalledWith(
+        consumerRef,
+        'state',
+        'level0.level1',
+        undefined,
+      );
+      expect(tracker.trackAccess).toHaveBeenCalledWith(
+        consumerRef,
+        'state',
+        'level0.level1.level2',
+        undefined,
+      );
+      expect(tracker.trackAccess).toHaveBeenCalledWith(
+        consumerRef,
+        'state',
+        'level0.level1.level2.level3',
+        undefined,
+      );
+    });
+
+    it('should use default maxDepth of 3 when not specified', () => {
+      const deepObject = {
+        level0: { level1: { level2: { value: 'test' } } },
+      };
+
+      const proxy = ProxyFactory.createStateProxy({
+        target: deepObject,
+        consumerRef,
+        consumerTracker: tracker,
+        // No maxDepth specified, should default to 3
+      });
+
+      // Should create proxies for reasonable depth
+      const result = proxy.level0.level1.level2.value;
+      expect(result).toBe('test');
+    });
+
+    it('should stop creating proxies at maxDepth = 1', () => {
+      const nestedObj = {
+        first: {
+          second: {
+            third: 'value',
+          },
+        },
+      };
+
+      const proxy = ProxyFactory.createStateProxy({
+        target: nestedObj,
+        consumerRef,
+        consumerTracker: tracker,
+        maxDepth: 1,
+      });
+
+      // First level should be proxied
+      const first = proxy.first;
+      expect(first).toBeDefined();
+
+      // Second level should be raw (at maxDepth)
+      const second = first.second;
+      expect(second).toBeDefined();
+      expect(second.third).toBe('value');
+
+      // Verify tracking
+      expect(tracker.trackAccess).toHaveBeenCalledWith(
+        consumerRef,
+        'state',
+        'first',
+        undefined,
+      );
+      expect(tracker.trackAccess).toHaveBeenCalledWith(
+        consumerRef,
+        'state',
+        'first.second',
+        undefined,
+      );
+    });
+
+    it('should handle arrays within depth limit', () => {
+      const objWithArrays = {
+        users: [
+          { name: 'John', details: { age: 30 } },
+          { name: 'Jane', details: { age: 25 } },
+        ],
+      };
+
+      const proxy = ProxyFactory.createStateProxy({
+        target: objWithArrays,
+        consumerRef,
+        consumerTracker: tracker,
+        maxDepth: 2,
+      });
+
+      // Access array and its contents
+      const users = proxy.users;
+      expect(users).toBeDefined();
+      expect(Array.isArray(users)).toBe(true);
+
+      const firstUser = users[0];
+      expect(firstUser.name).toBe('John');
+
+      // At depth limit, details should be raw
+      const details = firstUser.details;
+      expect(details.age).toBe(30);
+    });
+
+    it('should handle currentDepth parameter correctly', () => {
+      const obj = {
+        nested: {
+          value: 'test',
+        },
+      };
+
+      // Create proxy with currentDepth = 2, maxDepth = 3
+      const proxy = ProxyFactory.createStateProxy({
+        target: obj,
+        consumerRef,
+        consumerTracker: tracker,
+        currentDepth: 2,
+        maxDepth: 3,
+      });
+
+      // Should only allow one more level of proxying
+      const nested = proxy.nested;
+      expect(nested).toBeDefined();
+
+      // Next level should be raw
+      expect(nested.value).toBe('test');
+    });
+
+    it('should return raw object when currentDepth >= maxDepth', () => {
+      const obj = {
+        nested: {
+          value: 'test',
+        },
+      };
+
+      // Create proxy where currentDepth equals maxDepth
+      const proxy = ProxyFactory.createStateProxy({
+        target: obj,
+        consumerRef,
+        consumerTracker: tracker,
+        currentDepth: 5,
+        maxDepth: 5,
+      });
+
+      // Should track access but return raw nested objects
+      const nested = proxy.nested;
+      expect(nested).toBeDefined();
+      expect(nested.value).toBe('test');
+
+      expect(tracker.trackAccess).toHaveBeenCalledWith(
+        consumerRef,
+        'state',
+        'nested',
+        undefined,
+      );
+    });
+  });
 });

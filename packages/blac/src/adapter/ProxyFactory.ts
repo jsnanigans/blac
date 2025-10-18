@@ -42,6 +42,8 @@ const stats = {
  * @param consumerRef - Reference to the consuming component
  * @param consumerTracker - Tracker for recording access
  * @param path - Current path (used for nested proxies)
+ * @param currentDepth - Current depth in the proxy tree (default: 0)
+ * @param maxDepth - Maximum depth for proxy creation (default: 3)
  * @returns Proxied object with dependency tracking
  */
 export const createStateProxy = <T extends object>(
@@ -49,6 +51,8 @@ export const createStateProxy = <T extends object>(
   consumerRef: object,
   consumerTracker: ConsumerTracker,
   path = '',
+  currentDepth = 0,
+  maxDepth = 3,
 ): T => {
   // Validation
   if (
@@ -108,8 +112,21 @@ export const createStateProxy = <T extends object>(
         const isArray = Array.isArray(value);
 
         if (isPlainObject || isArray) {
-          // Recursive call with full path
-          return createStateProxy(value, consumerRef, consumerTracker, fullPath);
+          // Check depth limit before creating nested proxy
+          if (currentDepth >= maxDepth) {
+            // Return raw value when depth limit is reached
+            return value;
+          }
+
+          // Recursive call with full path and incremented depth
+          return createStateProxy(
+            value,
+            consumerRef,
+            consumerTracker,
+            fullPath,
+            currentDepth + 1,
+            maxDepth,
+          );
         }
       }
 
@@ -223,12 +240,16 @@ export const ProxyFactory = {
     consumerRef: object;
     consumerTracker: ConsumerTracker;
     path?: string;
+    currentDepth?: number;
+    maxDepth?: number;
   }) =>
     createStateProxy(
       options.target,
       options.consumerRef,
       options.consumerTracker,
       options.path,
+      options.currentDepth,
+      options.maxDepth,
     ),
 
   createClassProxy: (options: {
@@ -246,11 +267,16 @@ export const ProxyFactory = {
     state: any;
     consumerRef: object;
     consumerTracker: ConsumerTracker;
+    currentDepth?: number;
+    maxDepth?: number;
   }) =>
     createStateProxy(
       options.state,
       options.consumerRef,
       options.consumerTracker,
+      '',
+      options.currentDepth,
+      options.maxDepth,
     ),
 
   getProxyBlocInstance: <B extends BlocBase<any>>(options: {

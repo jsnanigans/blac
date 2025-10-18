@@ -21,6 +21,14 @@ export interface BlacConfig {
    * Default: true
    */
   proxyDependencyTracking?: boolean;
+
+  /**
+   * Maximum depth for proxy tracking when accessing nested state objects.
+   * When the depth limit is reached, the raw object is returned instead of a proxy.
+   * This helps prevent unbounded cache growth and performance issues with deeply nested objects.
+   * Default: 3
+   */
+  proxyMaxDepth?: number;
 }
 
 export interface GetBlocOptions<B extends BlocBase<unknown>> {
@@ -114,6 +122,7 @@ export class Blac implements BlacContext {
   /** Private static configuration */
   private static _config: BlacConfig = {
     proxyDependencyTracking: true,
+    proxyMaxDepth: 3,
   };
 
   /** Get current configuration */
@@ -127,6 +136,7 @@ export class Blac implements BlacContext {
   static resetConfig(): void {
     this._config = {
       proxyDependencyTracking: true,
+      proxyMaxDepth: 3,
     };
   }
 
@@ -147,6 +157,33 @@ export class Blac implements BlacContext {
         ErrorSeverity.FATAL,
       );
       this.instance.errorManager.handle(error);
+    }
+
+    if (config.proxyMaxDepth !== undefined) {
+      if (typeof config.proxyMaxDepth !== 'number') {
+        const error = new BlacError(
+          'BlacConfig.proxyMaxDepth must be a number',
+          ErrorCategory.VALIDATION,
+          ErrorSeverity.FATAL,
+        );
+        this.instance.errorManager.handle(error);
+      }
+      if (config.proxyMaxDepth < 1) {
+        const error = new BlacError(
+          'BlacConfig.proxyMaxDepth must be at least 1',
+          ErrorCategory.VALIDATION,
+          ErrorSeverity.FATAL,
+        );
+        this.instance.errorManager.handle(error);
+      }
+      if (!Number.isInteger(config.proxyMaxDepth)) {
+        const error = new BlacError(
+          'BlacConfig.proxyMaxDepth must be an integer',
+          ErrorCategory.VALIDATION,
+          ErrorSeverity.FATAL,
+        );
+        this.instance.errorManager.handle(error);
+      }
     }
 
     // Merge with existing config

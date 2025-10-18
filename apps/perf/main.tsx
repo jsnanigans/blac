@@ -4,6 +4,7 @@ import { BenchmarkDashboard } from './src/components/BenchmarkDashboard';
 import { JSFrameworkBenchmark } from './src/benchmarks/JSFrameworkBenchmark';
 import './bootstrap.css';
 import './main.css';
+import { Blac } from '@blac/core';
 
 type Page = 'home' | 'jsframework' | 'dashboard';
 

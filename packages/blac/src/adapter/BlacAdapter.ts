@@ -335,6 +335,7 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
       target: props.target,
       consumerRef: this.componentRef.current,
       consumerTracker: this as any,
+      maxDepth: Blac.config.proxyMaxDepth,
     });
   };
 
