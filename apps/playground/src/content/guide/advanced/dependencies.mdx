@@ -1,60 +1,53 @@
 import { GuideArticleNote } from '@/components/guide/GuideArticle';
+import { DependenciesInteractive } from '@/demos/03-advanced/dependencies/DependenciesInteractive';
 
 export const demoId = 'dependencies';
 export const sectionId = 'advanced';
 
-## Introduction
+## Dependency Tracking
 
-Dependency tracking is the foundation of **fine-grained reactivity** in BlaC. By specifying exactly which parts of the state your component depends on, you can dramatically reduce unnecessary re-renders and improve application performance.
+BlaC optimizes re-renders through **dependency tracking** - components only re-render when the specific state they care about changes. BlaC offers two strategies: automatic proxy-based tracking and manual explicit dependencies.
 
-While BlaC tracks state changes automatically, dependency tracking allows you to be **explicit** about which state properties trigger re-renders. This is especially powerful for large state objects where most components only care about a small subset of the data.
+## Two Tracking Modes
 
-### What You'll Learn
+### Automatic Tracking (Default)
 
-- How to use the `dependencies` option for fine-grained subscriptions
-- Tracking specific state properties and computed values
-- The difference between dependencies and selectors
-- Advanced patterns for complex state structures
-- Common pitfalls and how to avoid them
-- Performance optimization strategies
-
-## Understanding Dependency Tracking
-
-By default, when you use `useBloc` without dependencies, your component re-renders on **every** state change:
+Without specifying dependencies, BlaC uses **JavaScript Proxies** to automatically track which properties you access:
 
 ```typescript
-// No dependencies - re-renders on ANY state change
 const [state] = useBloc(UserCubit);
-// ❌ Component re-renders when ANY part of state changes
+return <div>{state.profile.name}</div>;
+// ✅ Auto-tracks profile.name
+// ✅ Only re-renders when profile.name changes
+// ✅ Ignores changes to profile.email, settings, etc.
 ```
 
-With dependencies, you specify exactly which values to track:
+**Tradeoffs:** Convenient and automatic, but adds Proxy overhead. Great for prototyping and simple components.
+
+### Manual Dependencies
+
+Explicit dependencies give you precise control and better performance:
 
 ```typescript
-// Single dependency - re-renders only when name changes
 const [state] = useBloc(UserCubit, {
   dependencies: (cubit) => [cubit.state.profile.name],
 });
-// ✅ Only re-renders when profile.name changes
+// ✅ Explicitly tracks profile.name
+// ✅ No proxy overhead - better performance
+// ✅ Clear intent and easier to debug
 ```
 
-<GuideArticleNote title="How It Works">
-BlaC compares the dependency array from the previous render with the current render using **shallow equality** (`Object.is`). If any value in the array has changed, the component re-renders.
+**Tradeoffs:** Requires manual specification, but offers the best performance and clarity. Ideal for production and performance-critical components.
+
+<GuideArticleNote title="How Comparison Works">
+  BlaC compares dependency values using **`Object.is()`**. If any value changed,
+  the component re-renders. Otherwise, it receives the same frozen state
+  snapshot.
 </GuideArticleNote>
 
-## Try It Out
+## Common Patterns
 
-Below are five components, each subscribed to different parts of a complex user state. Notice how only components with matching dependencies re-render when you modify the state:
-
-<DependenciesInteractive />
-
-## Dependencies vs Selectors
-
-BlaC provides two mechanisms for optimizing re-renders:
-
-### Dependencies
-
-Track specific state properties or computed values:
+### Single Property
 
 ```typescript
 const [state] = useBloc(UserCubit, {
@@ -62,49 +55,7 @@ const [state] = useBloc(UserCubit, {
 });
 ```
 
-**When to use:**
-- You need explicit, easy-to-read subscription logic
-- You're tracking primitive values (strings, numbers, booleans)
-- You're tracking computed properties from getters
-- You have large state objects with many properties
-
-### Selectors
-
-Derive new values from state with custom comparison:
-
-```typescript
-const [state] = useBloc(UserCubit, {
-  selector: (state) => ({
-    name: state.profile.name,
-    email: state.profile.email,
-  }),
-});
-```
-
-**When to use:**
-- You need to derive or transform state values
-- You want to compare complex objects by value
-- You need custom equality comparison logic
-- The derived value is expensive to compute
-
-**Both techniques complement each other.** Dependencies are simpler and more explicit, while selectors offer more flexibility for complex transformations.
-
-## Basic Dependency Patterns
-
-### Single Property Dependency
-
-Track one specific property:
-
-```typescript
-const [state] = useBloc(UserCubit, {
-  dependencies: (cubit) => [cubit.state.profile.name],
-});
-// ✅ Only re-renders when name changes
-```
-
-### Multiple Dependencies
-
-Track multiple properties:
+### Multiple Properties
 
 ```typescript
 const [state] = useBloc(UserCubit, {
@@ -113,376 +64,190 @@ const [state] = useBloc(UserCubit, {
     cubit.state.profile.email,
   ],
 });
-// ✅ Re-renders when name OR email changes
 ```
 
-### Computed Property Dependencies
-
-Track derived values:
+### Computed Values (Getters)
 
 ```typescript
 class UserCubit extends Cubit<UserState> {
-  // Computed property (getter)
   get fullName(): string {
     return `${this.state.firstName} ${this.state.lastName}`;
   }
 }
 
-// Track computed value
 const [, cubit] = useBloc(UserCubit, {
   dependencies: (cubit) => [cubit.fullName],
 });
-// ✅ Re-renders only when the RESULT of the computation changes
+// Only re-renders when fullName's RESULT changes
 ```
 
-**Smart optimization:** If `firstName` changes from "John" to "Jane" but `lastName` stays "Doe", and then `lastName` changes from "Doe" to "Smith", the component only re-renders when the final `fullName` string actually changes!
+**Why getters are powerful:** If `firstName` changes from `"John"` to `"Jane"` and back to `"John"`, only the first change triggers a re-render. The second change doesn't because `fullName` returns to the same value.
 
-## Advanced Patterns
+### Generator Dependencies (Advanced)
 
-### Deep Property Access
-
-Track nested properties:
+For components with many dependencies (5+), generators can short-circuit evaluation:
 
 ```typescript
 const [state] = useBloc(UserCubit, {
-  dependencies: (cubit) => [
-    cubit.state.settings.theme,
-    cubit.state.settings.notifications,
-  ],
-});
-// ✅ Only re-renders when theme or notifications change
-// ✅ Ignores changes to settings.language or other properties
-```
-
-### Conditional Dependencies (Advanced)
-
-Dynamically adjust dependencies based on conditions:
-
-```typescript
-const [state] = useBloc(UserCubit, {
-  dependencies: (cubit) => {
-    const deps = [cubit.state.profile.name];
-
-    // Add email to dependencies only if notifications enabled
-    if (cubit.state.settings.notifications) {
-      deps.push(cubit.state.profile.email);
-    }
-
-    return deps;
+  dependencies: function* (cubit) {
+    if (yield cubit.state.name) return; // Stop if name changed
+    yield cubit.state.email; // Only check if name didn't change
+    yield cubit.state.phone;
   },
 });
-// ⚠️ Advanced: dependency array changes dynamically
 ```
 
-<GuideArticleNote title="Warning">
-Dynamic dependency arrays can be confusing and hard to debug. Prefer static dependency arrays when possible. If you need conditional logic, consider using multiple components or selectors instead.
-</GuideArticleNote>
+## Real-World Usage
 
-### Array and Object Dependencies
+### Dashboard Widgets
 
 ```typescript
-// ❌ Common Mistake: Tracking entire objects
-const [state] = useBloc(UserCubit, {
-  dependencies: (cubit) => [cubit.state.profile],
-});
-// Problem: Entire profile object in dependency array
-// Re-renders on ANY profile property change (name, email, avatar)
-
-// ✅ Better: Track specific properties
-const [state] = useBloc(UserCubit, {
-  dependencies: (cubit) => [
-    cubit.state.profile.name,
-    cubit.state.profile.email,
-  ],
-});
-// Solution: Explicitly list properties you care about
-
-// ✅ Alternative: Use a selector for complex logic
-const [state] = useBloc(UserCubit, {
-  selector: (state) => ({
-    name: state.profile.name,
-    email: state.profile.email,
-  }),
-});
-// Selector returns new object, compared by shallow equality
-```
-
-## Real-World Examples
-
-### Example 1: Dashboard Widgets
-
-```typescript
-// Different widgets track different metrics
 function SalesWidget() {
   const [state] = useBloc(DashboardCubit, {
     dependencies: (cubit) => [cubit.state.sales, cubit.state.revenue],
   });
-
-  return (
-    <div>
-      <h3>Sales: {state.sales}</h3>
-      <h3>Revenue: ${state.revenue}</h3>
-    </div>
-  );
+  return <div>Sales: {state.sales} | Revenue: ${state.revenue}</div>;
 }
-
-function UsersWidget() {
-  const [state] = useBloc(DashboardCubit, {
-    dependencies: (cubit) => [
-      cubit.state.activeUsers,
-      cubit.state.totalUsers,
-    ],
-  });
-
-  return (
-    <div>
-      <h3>Active: {state.activeUsers}</h3>
-      <h3>Total: {state.totalUsers}</h3>
-    </div>
-  );
-}
+// Doesn't re-render when user counts or other metrics change
 ```
 
-### Example 2: User Profile Form
+### Form Sections
 
 ```typescript
-// Name section only re-renders on name changes
-function NameSection() {
-  const [state, cubit] = useBloc(ProfileCubit, {
-    dependencies: (cubit) => [
-      cubit.state.firstName,
-      cubit.state.lastName,
-    ],
-  });
-
-  return (
-    <div>
-      <input
-        value={state.firstName}
-        onChange={(e) => cubit.updateFirstName(e.target.value)}
-      />
-      <input
-        value={state.lastName}
-        onChange={(e) => cubit.updateLastName(e.target.value)}
-      />
-    </div>
-  );
-}
-
-// Email section only re-renders on email changes
 function EmailSection() {
   const [state, cubit] = useBloc(ProfileCubit, {
     dependencies: (cubit) => [cubit.state.email],
   });
-
-  return (
-    <input
-      value={state.email}
-      onChange={(e) => cubit.updateEmail(e.target.value)}
-    />
-  );
+  return <input value={state.email} onChange={(e) => cubit.updateEmail(e.target.value)} />;
 }
+// Doesn't re-render when firstName, lastName, etc. change
 ```
 
-### Example 3: Computed Engagement Metrics
+### Computed Metrics
 
 ```typescript
 class AnalyticsCubit extends Cubit<AnalyticsState> {
   get conversionRate(): number {
-    const { visitors, conversions } = this.state;
-    return visitors > 0 ? (conversions / visitors) * 100 : 0;
-  }
-
-  get averageSessionTime(): number {
-    const { totalSessionTime, sessionCount } = this.state;
-    return sessionCount > 0 ? totalSessionTime / sessionCount : 0;
+    return this.state.visitors > 0
+      ? (this.state.conversions / this.state.visitors) * 100
+      : 0;
   }
 }
 
-// Component only re-renders when computed metrics change
 function MetricsDisplay() {
   const [, cubit] = useBloc(AnalyticsCubit, {
-    dependencies: (cubit) => [
-      cubit.conversionRate,
-      cubit.averageSessionTime,
-    ],
+    dependencies: (cubit) => [cubit.conversionRate],
   });
-
-  return (
-    <div>
-      <p>Conversion: {cubit.conversionRate.toFixed(2)}%</p>
-      <p>Avg Session: {cubit.averageSessionTime.toFixed(0)}s</p>
-    </div>
-  );
+  return <p>Conversion: {cubit.conversionRate.toFixed(2)}%</p>;
 }
 ```
 
-## Performance Best Practices
+## Common Mistakes
 
-<GuideArticleNote title="Do">
-- ✅ Specify dependencies for fine-grained subscriptions
-- ✅ Track primitive values and computed properties
-- ✅ Use multiple dependencies when needed
-- ✅ Combine with selectors for complex cases
-- ✅ Test re-render behavior with render counters
-- ✅ Keep dependency arrays static (not dynamic)
-</GuideArticleNote>
-
-<GuideArticleNote title="Don't">
-- ❌ Track entire objects/arrays unless necessary
-- ❌ Create overly dynamic dependency arrays
-- ❌ Forget to specify dependencies (re-renders on all changes)
-- ❌ Assume dependencies work like React's `useEffect` deps
-- ❌ Mix dependencies and selectors in confusing ways
-- ❌ Use dependencies for component-local state
-</GuideArticleNote>
-
-### Rule of Thumb
-
-**Track primitives** (strings, numbers, booleans) and **computed values** in your dependency array. Avoid tracking entire objects or arrays unless you truly need to re-render on any change to that structure.
-
-## Common Anti-Patterns
-
-### ❌ Not Using Dependencies at All
+### ❌ Tracking Entire Objects
 
 ```typescript
-// BAD: No optimization
-function UserDisplay() {
-  const [state] = useBloc(AppCubit);
-  // Re-renders on EVERY state change in the entire app!
-
-  return <div>{state.user.name}</div>;
-}
-
-// GOOD: Specify dependencies
-function UserDisplay() {
-  const [state] = useBloc(AppCubit, {
-    dependencies: (cubit) => [cubit.state.user.name],
-  });
-
-  return <div>{state.user.name}</div>;
-}
-```
-
-### ❌ Tracking Too Much
-
-```typescript
-// BAD: Tracking entire state object
-function Component() {
-  const [state] = useBloc(AppCubit, {
-    dependencies: (cubit) => [cubit.state],
-  });
-  // Defeats the purpose - re-renders on any state change!
-}
+// BAD: Re-renders on ANY profile change
+dependencies: (cubit) => [cubit.state.profile];
 
 // GOOD: Track specific fields
-function Component() {
-  const [state] = useBloc(AppCubit, {
-    dependencies: (cubit) => [cubit.state.field1, cubit.state.field2],
-  });
-}
+dependencies: (cubit) => [cubit.state.profile.name, cubit.state.profile.email];
 ```
 
-### ❌ Confusing Dependencies with React Deps
+### ❌ Disabling Proxies Without Dependencies
 
 ```typescript
-// DON'T DO THIS - dependencies are NOT React dependency arrays!
-const [state] = useBloc(UserCubit, {
-  dependencies: (cubit) => [cubit.state.name], // ✅ Correct
-});
+// BAD: Disables automatic tracking but doesn't use manual dependencies
+Blac.setConfig({ proxyDependencyTracking: false });
+const [state] = useBloc(AppCubit); // Now re-renders on EVERY change!
 
-// React useEffect dependencies are different:
-useEffect(() => {
-  // Effect logic
-}, [state.name]); // Different purpose - controls effect execution
+// GOOD: Keep proxies enabled (default) OR use manual dependencies
+const [state] = useBloc(AppCubit, {
+  dependencies: (cubit) => [cubit.state.user.name],
+});
 ```
 
-BlaC dependencies control **when to re-render**, while React dependencies control **when to run effects**.
+### ❌ Conditional Dependency Arrays
+
+```typescript
+// BAD: Unstable dependency structure
+dependencies: (cubit) => {
+  const deps = [cubit.state.name];
+  if (someCondition) deps.push(cubit.state.email); // Inconsistent!
+  return deps;
+};
+
+// GOOD: Keep dependency arrays consistent
+dependencies: (cubit) => [cubit.state.name, cubit.state.email];
+```
+
+## Best Practices
+
+**Do:**
+
+- ✅ Use automatic tracking for prototyping and simple components
+- ✅ Use manual dependencies for production and performance-critical components
+- ✅ Track primitive values (strings, numbers, booleans) or computed getters
+- ✅ Keep dependency arrays simple and consistent
+- ✅ Test with render counters to verify optimization
+
+**Don't:**
+
+- ❌ Track entire objects when you only need specific properties
+- ❌ Disable proxy tracking globally without using manual dependencies
+- ❌ Create conditional or unstable dependency arrays
+- ❌ Perform expensive computations in the dependencies function itself
 
 ## Debugging Re-Renders
 
-Use a render counter to track re-renders:
+Verify your optimizations with a simple render counter:
 
 ```typescript
-function RenderCounter({ label }: { label: string }) {
-  const renderCount = useRef(0);
-  useEffect(() => {
-    renderCount.current++;
-  });
-
-  return (
-    <span>
-      {label}: {renderCount.current} renders
-    </span>
-  );
-}
-
 function MyComponent() {
+  const renderCount = useRef(0);
   const [state] = useBloc(UserCubit, {
     dependencies: (cubit) => [cubit.state.userName],
   });
 
+  useEffect(() => { renderCount.current++; });
+
   return (
     <div>
-      <RenderCounter label="Component" />
+      <span>Renders: {renderCount.current}</span>
       <p>{state.userName}</p>
     </div>
   );
 }
 ```
 
-## Testing with Dependencies
+Change untracked properties and verify the counter doesn't increment!
+
+## Configuration
+
+Proxy tracking is enabled by default. To disable globally:
 
 ```typescript
-import { describe, it, expect } from 'vitest';
-import { renderHook } from '@testing-library/react';
-import { useBloc } from '@blac/react';
+import { Blac } from '@blac/core';
 
-describe('Dependencies', () => {
-  it('only re-renders on dependency changes', () => {
-    const cubit = new UserCubit();
-    let renderCount = 0;
-
-    const { rerender } = renderHook(() => {
-      renderCount++;
-      return useBloc(UserCubit, {
-        dependencies: (c) => [c.state.name],
-      });
-    });
-
-    // Initial render
-    expect(renderCount).toBe(1);
-
-    // Change name - should re-render
-    cubit.updateName('New Name');
-    rerender();
-    expect(renderCount).toBe(2);
-
-    // Change email - should NOT re-render (not in dependencies)
-    cubit.updateEmail('new@email.com');
-    rerender();
-    expect(renderCount).toBe(2); // Still 2!
-  });
-});
+Blac.setConfig({ proxyDependencyTracking: false });
 ```
+
+When disabled, components without explicit `dependencies` re-render on every state change. Manual dependencies always work regardless of this setting.
 
 ## Key Takeaways
 
-- **Fine-Grained Subscriptions**: Dependencies enable precise control over re-renders
-- **Shallow Equality**: BlaC uses `Object.is` to compare dependency values
-- **Track Primitives**: Best results with strings, numbers, booleans, and computed values
-- **Avoid Objects**: Don't track entire objects unless you need all properties
-- **Static Arrays**: Prefer static dependency arrays over dynamic ones
-- **Combine Techniques**: Use dependencies with selectors for maximum optimization
-- **Test Behavior**: Use render counters to verify optimization
+- **Two Modes**: Automatic (Proxy-based) vs Manual (Explicit control)
+- **Automatic Works**: Even without dependencies, BlaC optimizes via Proxy tracking
+- **Manual Is Faster**: Explicit dependencies have better performance (no Proxy overhead)
+- **Value Comparison**: Uses `Object.is()` for reference equality, not deep equality
+- **Track Primitives**: Best results with strings, numbers, booleans, or computed getters
+- **Getters Are Powerful**: Track derived values that only trigger re-renders when results change
 
-## Next Steps
+<GuideArticleNote title="Production Strategy">
+**Prototyping:** Start with automatic tracking for speed and convenience.
 
-Now that you understand dependency tracking, explore:
-- **Custom Selectors** - Advanced selection and memoization techniques
-- **Bloc Composition** - Coordinate multiple Blocs with dependencies
-- **Custom Plugins** - Add performance monitoring to track re-renders
+**Production:** Add explicit dependencies to performance-critical components. Proxy overhead adds up in large applications with hundreds of components.
 
-<GuideArticleNote title="Pro Tip">
-Master dependency tracking to build highly performant React applications. Combined with selectors and proper state architecture, you can create applications that scale to thousands of components without performance degradation.
+**Best approach:** Mix both strategies - use automatic for simple components, manual for complex or high-frequency updates.
+
 </GuideArticleNote>

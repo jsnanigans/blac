@@ -1,6 +1,6 @@
 import { Cubit } from '@blac/core';
 import { useBloc } from '@blac/react';
-import React, { useEffect } from 'react';
+import React from 'react';
 
 /**
  * JS Framework Benchmark style test
@@ -10,7 +10,6 @@ import React, { useEffect } from 'react';
 interface DataItem {
   id: number;
   label: string;
-  isSelected?: boolean;
 }
 
 const A = [
@@ -87,24 +86,20 @@ function buildData(count: number): DataItem[] {
 
 class DemoBloc extends Cubit<{
   data: DataItem[];
+  selected: DataItem | null;
 }> {
   constructor() {
     super({
       data: [],
+      selected: null,
     });
-  }
-
-  // Generator function that yields IDs in order
-  *iterIds() {
-    for (const item of this.state.data) {
-      yield item.id;
-    }
   }
 
   run = (): void => {
     const data = buildData(1000);
     this.emit({
       data,
+      selected: null,
     });
   };
 
@@ -112,75 +107,52 @@ class DemoBloc extends Cubit<{
     const data = buildData(10000);
     this.emit({
       data,
+      selected: null,
     });
   };
 
   add = (): void => {
     const addData = buildData(1000);
-    // Optimize: concat is faster than spread for large arrays
-    const newData = this.state.data.concat(addData);
     this.patch({
-      data: newData,
+      data: [...this.state.data, ...addData],
     });
   };
 
   update = (): void => {
-    // Optimize: create new array and only spread changed items
-    const updatedData = this.state.data.slice();
-    for (let i = 0; i < updatedData.length; i += 10) {
-      updatedData[i] = {
-        ...updatedData[i],
-        label: updatedData[i].label + ' !!!',
-      };
-    }
-    this.patch({
-      data: updatedData,
-    });
-  };
-
-  select = (id: number): void => {
-    const updatedData = this.state.data.map((item) => {
-      if (item.id === id) {
-        return { ...item, isSelected: true };
-      }
-      if (item.isSelected) {
-        return { ...item, isSelected: false };
+    const updatedData = this.state.data.map((item, index) => {
+      if (index % 10 === 0) {
+        return { ...item, label: item.label + ' !!!' };
       }
       return item;
     });
-
     this.patch({
       data: updatedData,
     });
   };
 
-  remove = (id: number): void => {
-    // Optimize: find index then slice/splice avoids full array iteration
-    const index = this.state.data.findIndex((item) => item.id === id);
-    if (index !== -1) {
-      const newData = [
-        ...this.state.data.slice(0, index),
-        ...this.state.data.slice(index + 1),
-      ];
-      this.patch({
-        data: newData,
-      });
-    }
+  select = (item: DataItem): void => {
+    this.patch({
+      selected: item,
+    });
+  };
+
+  remove = (item: DataItem): void => {
+    this.patch({
+      data: this.state.data.filter((i) => i !== item),
+    });
   };
 
   clear = (): void => {
     this.emit({
       data: [],
+      selected: null,
     });
   };
 
   swapRows = (): void => {
-    // Optimize: single slice and swap in place
     if (this.state.data.length > 998) {
-      const newData = this.state.data.slice();
-      const tmp = newData[1];
-      newData[1] = newData[998];
-      newData[998] = tmp;
+      const newData = [...this.state.data];
+      [newData[1], newData[998]] = [newData[998], newData[1]];
       this.patch({ data: newData });
     }
   };
@@ -211,38 +183,35 @@ interface RowProps {
   item: DataItem;
 }
 
-const Row: React.FC<RowProps> = ({ item }) => {
-  // Dependency selector: only subscribe to this specific item and selection state
-  const [, { remove, select }] = useBloc(DemoBloc);
-  console.log(item);
-
-  // Track row renders
-  useEffect(() => {
-    trackRowRender();
+const Row: React.FC<RowProps> = React.memo(({ item }) => {
+  const [{ selected }, { remove, select }] = useBloc(DemoBloc, {
+    dependencies: (bloc) => [bloc.state.selected === item],
   });
 
+  // useEffect(() => {
+  //   trackRowRender();
+  // });
+
   return (
-    <tr className={item.isSelected ? 'danger' : ''}>
+    <tr className={item === selected ? 'danger' : ''}>
       <td className="col-md-1">{item.id}</td>
       <td className="col-md-4">
-        <a onClick={() => select(item.id)}>{item.label}</a>
+        <a onClick={() => select(item)}>{item.label}</a>
       </td>
       <td className="col-md-1">
-        <a onClick={() => remove(item.id)}>{GlyphIcon}</a>
+        <a onClick={() => remove(item)}>{GlyphIcon}</a>
       </td>
       <td className="col-md-6"></td>
     </tr>
   );
-};
+});
 
 const RowList: React.FC = () => {
-  const [{ data }, bloc] = useBloc(DemoBloc, {
-    dependencies: (bl) => bl.iterIds(),
-  });
+  const [{ data }] = useBloc(DemoBloc, {});
 
-  useEffect(() => {
-    console.log('[RowList] Rendered with', bloc.state.data.length, 'items');
-  });
+  // useEffect(() => {
+  //   console.log('[RowList] Rendered with');
+  // });
 
   return (
     <>
@@ -275,9 +244,9 @@ const Button: React.FC<ButtonProps> = ({ id, title, cb }) => (
 export const JSFrameworkBenchmark: React.FC = () => {
   const [, { run, runLots, add, update, clear, swapRows }] = useBloc(DemoBloc);
 
-  useEffect(() => {
-    console.log('[JSFrameworkBenchmark] Component rendered');
-  });
+  // useEffect(() => {
+  //   console.log('[JSFrameworkBenchmark] Component rendered');
+  // });
 
   return (
     <div className="container">
