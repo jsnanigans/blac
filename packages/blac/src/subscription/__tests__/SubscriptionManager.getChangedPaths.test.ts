@@ -29,9 +29,10 @@ describe('SubscriptionManager.getChangedPaths (V3 Deep Tracking)', () => {
 
     const changed = (manager as any).getChangedPaths(oldState, newState);
 
-    // V3: Should return full path "profile.name", not just "profile"
+    // V3: Should return both parent path "profile" AND child path "profile.name"
+    // This ensures components tracking "profile" or "profile.name" both get notified
     expect(changed).toContain('profile.name');
-    expect(changed.has('profile')).toBe(false);
+    expect(changed).toContain('profile');
     expect(changed.has('profile.age')).toBe(false);
   });
 
@@ -67,10 +68,12 @@ describe('SubscriptionManager.getChangedPaths (V3 Deep Tracking)', () => {
 
     const changed = (manager as any).getChangedPaths(oldState, newState);
 
-    // Should return the deepest changed path
+    // V3: Should return ALL parent paths plus the leaf path
     expect(changed).toContain('l1.l2.l3.l4.l5');
-    expect(changed.has('l1')).toBe(false);
-    expect(changed.has('l1.l2')).toBe(false);
+    expect(changed).toContain('l1.l2.l3.l4');
+    expect(changed).toContain('l1.l2.l3');
+    expect(changed).toContain('l1.l2');
+    expect(changed).toContain('l1');
   });
 
   it('should handle null/undefined transitions', () => {
@@ -79,9 +82,9 @@ describe('SubscriptionManager.getChangedPaths (V3 Deep Tracking)', () => {
 
     const changed = (manager as any).getChangedPaths(oldState, newState);
 
-    // Should detect the structural change at the profile level
+    // V3: Should detect the structural change and report parent path too
     expect(changed).toContain('user.profile');
-    expect(changed.has('user')).toBe(false);
+    expect(changed).toContain('user');
   });
 
   it('should handle added properties', () => {
@@ -260,9 +263,10 @@ describe('SubscriptionManager.shouldNotifyForPaths (V3 Deep Path Matching)', () 
     const changedPaths2 = new Set(['profile.address.country']);
     expect(manager.shouldNotifyForPaths(result.id, changedPaths2)).toBe(false);
 
-    // Test 3: Parent path change should NOT notify (V3 improvement!)
+    // Test 3: Parent path change SHOULD notify
+    // V3: If parent changes, children are affected
     const changedPaths3 = new Set(['profile']);
-    expect(manager.shouldNotifyForPaths(result.id, changedPaths3)).toBe(false);
+    expect(manager.shouldNotifyForPaths(result.id, changedPaths3)).toBe(true);
 
     // Test 4: Unrelated path should NOT notify
     const changedPaths4 = new Set(['settings.theme']);

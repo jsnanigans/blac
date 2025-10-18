@@ -187,7 +187,7 @@ export class SubscriptionManager<S = unknown> {
         if (subscription.dependencies && subscription.dependencies.size > 0) {
           // Check which paths changed between old and new state
           const changedPaths = this.getChangedPaths(oldState, newState);
-          // V2: Pass bloc instance for getter value comparison
+          // V3: Pass bloc instance for getter value comparison
           shouldNotify = this.shouldNotifyForPaths(
             subscription.id,
             changedPaths,
@@ -329,8 +329,15 @@ export class SubscriptionManager<S = unknown> {
       if (isOldValueObject && isNewValueObject) {
         // Both are objects - recurse to find nested changes
         const nestedChanges = this.getChangedPaths(oldValue, newValue, fullPath);
-        for (const nestedPath of nestedChanges) {
-          changedPaths.add(nestedPath);
+
+        // If there are nested changes, also mark the parent path as changed
+        // This ensures that tracking "values" will catch changes to "values.0"
+        // and that tracking "values.join" or "values.length" will match "values"
+        if (nestedChanges.size > 0) {
+          changedPaths.add(fullPath);
+          for (const nestedPath of nestedChanges) {
+            changedPaths.add(nestedPath);
+          }
         }
       } else {
         // Primitive change or structural change (object <-> primitive)
@@ -413,7 +420,7 @@ export class SubscriptionManager<S = unknown> {
 
   /**
    * Check if a subscription should be notified based on changed paths
-   * V2: Simplified for top-level tracking + value-based getter comparison
+   * V3: Deep path tracking with parent-child relationship matching
    */
   shouldNotifyForPaths(
     subscriptionId: string,
@@ -429,7 +436,7 @@ export class SubscriptionManager<S = unknown> {
     // Check if any tracked dependencies match changed paths
     for (const trackedPath of subscription.dependencies) {
       // Handle class getter dependencies (_class.propertyName)
-      // V2: Use value-based getter comparison instead of conservative approach
+      // Use value-based getter comparison
       if (trackedPath.startsWith('_class.')) {
         if (bloc && this.checkGetterChanged(subscriptionId, trackedPath, bloc)) {
           return true;
@@ -437,9 +444,51 @@ export class SubscriptionManager<S = unknown> {
         continue;
       }
 
-      // V2: Direct top-level property matching only
-      // No nested path matching since we only track top-level properties
+      // V3: Check for exact match or parent-child path relationships
+
+      // 1. Exact match: trackedPath === changedPath
       if (changedPaths.has(trackedPath)) return true;
+
+      // 2. Check if any changed path is a child of this tracked path
+      // Example: trackedPath="values" should match changedPath="values.0"
+      for (const changedPath of changedPaths) {
+        if (changedPath.startsWith(trackedPath + '.')) {
+          return true;
+        }
+      }
+
+      // 3. Check if tracked path is a child of any changed path
+      // Example: trackedPath="values.0.name" should match changedPath="values.0"
+      // But NOT if there's a sibling: tracked="user.profile.city" changed="user" when "user.age" also changed
+      for (const changedPath of changedPaths) {
+        if (trackedPath.startsWith(changedPath + '.')) {
+          // Extract immediate child from tracked path
+          // E.g., trackedPath="user.profile.city", changedPath="user" -> immediateChild="profile"
+          const remainder = trackedPath.substring(changedPath.length + 1);
+          const trackedImmediateChild = remainder.split('.')[0];
+
+          // Check for sibling paths in changed set
+          let hasSibling = false;
+          for (const cp of changedPaths) {
+            if (cp !== changedPath && cp.startsWith(changedPath + '.')) {
+              // Extract immediate child from this changed path
+              const cpRemainder = cp.substring(changedPath.length + 1);
+              const cpImmediateChild = cpRemainder.split('.')[0];
+
+              // If this is a different immediate child, it's a sibling
+              if (cpImmediateChild !== trackedImmediateChild) {
+                hasSibling = true;
+                break;
+              }
+            }
+          }
+
+          // Only match if no siblings found (change is in our branch or entire parent)
+          if (!hasSibling) {
+            return true;
+          }
+        }
+      }
     }
 
     return false;
