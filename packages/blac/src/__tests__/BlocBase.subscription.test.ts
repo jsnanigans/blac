@@ -39,6 +39,8 @@ describe('BlocBase Subscription Model', () => {
 
   beforeEach(() => {
     _blac = new Blac({ __unsafe_ignore_singleton: true });
+    // Disable proxy tracking for basic subscription tests
+    Blac.setConfig({ proxyDependencyTracking: false });
     vi.useFakeTimers();
   });
 

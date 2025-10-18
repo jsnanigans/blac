@@ -195,6 +195,11 @@ describe('BlacAdapter', () => {
   });
 
   describe('Dependency Tracking - Proxy-based (Automatic)', () => {
+    beforeEach(() => {
+      // Enable proxy tracking for these tests
+      Blac.setConfig({ proxyDependencyTracking: true });
+    });
+
     it('should track state access through proxy when no explicit dependencies', () => {
       const adapter = new BlacAdapter({
         componentRef,
@@ -363,6 +368,11 @@ describe('BlacAdapter', () => {
   });
 
   describe('Subscription Management', () => {
+    beforeEach(() => {
+      // Disable proxy tracking for basic subscription tests
+      Blac.setConfig({ proxyDependencyTracking: false });
+    });
+
     it('should create and cleanup subscriptions', () => {
       const adapter = new BlacAdapter({
         componentRef,
@@ -402,6 +412,11 @@ describe('BlacAdapter', () => {
   });
 
   describe('Proxy Creation and Management', () => {
+    beforeEach(() => {
+      // Enable proxy tracking for proxy management tests
+      Blac.setConfig({ proxyDependencyTracking: true });
+    });
+
     it('should return raw state when using explicit dependencies', () => {
       const adapter = new BlacAdapter(
         { componentRef, blocConstructor: UserCubit },
@@ -442,6 +457,11 @@ describe('BlacAdapter', () => {
   });
 
   describe('Consumer Tracking Integration', () => {
+    beforeEach(() => {
+      // Disable proxy tracking for consumer integration tests
+      Blac.setConfig({ proxyDependencyTracking: false });
+    });
+
     it('should properly handle subscription lifecycle', () => {
       const adapter = new BlacAdapter({
         componentRef,

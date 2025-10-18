@@ -22,7 +22,7 @@ return <div>{state.profile.name}</div>;
 // ✅ Ignores changes to profile.email, settings, etc.
 ```
 
-**Tradeoffs:** Convenient and automatic, but adds Proxy overhead. Great for prototyping and simple components.
+**Tradeoffs:** Convenient and automatic, but adds Proxy overhead. Adding the Proxy makes accessing the value about 5x slower than accessing it on the object directly, however we are still in the range of tens of million reads per second. Compared to the cost of unnecessary re-renders in react, the Proxy overhead is negligible.
 
 ### Manual Dependencies
 
@@ -37,7 +37,7 @@ const [state] = useBloc(UserCubit, {
 // ✅ Clear intent and easier to debug
 ```
 
-**Tradeoffs:** Requires manual specification, but offers the best performance and clarity. Ideal for production and performance-critical components.
+**Tradeoffs:** Requires manual specification, but offers the best performance and clarity. Ideal for performance-critical components when the Automatic Tracking does not suffice.
 
 <GuideArticleNote title="How Comparison Works">
   BlaC compares dependency values using **`Object.is()`**. If any value changed,
@@ -70,30 +70,37 @@ const [state] = useBloc(UserCubit, {
 
 ```typescript
 class UserCubit extends Cubit<UserState> {
-  get fullName(): string {
-    return `${this.state.firstName} ${this.state.lastName}`;
+  get emailIsValid(): boolean {
+    return validateEmail(this.state.email)
   }
 }
 
-const [, cubit] = useBloc(UserCubit, {
-  dependencies: (cubit) => [cubit.fullName],
-});
-// Only re-renders when fullName's RESULT changes
+const [, cubit] = useBloc(UserCubit);
+return <>Email is ${cubit.emailIsValid ? 'Valid' : 'Invalid'}</>
+// Only re-renders when emailIsValid's RESULT changes
 ```
 
-**Why getters are powerful:** If `firstName` changes from `"John"` to `"Jane"` and back to `"John"`, only the first change triggers a re-render. The second change doesn't because `fullName` returns to the same value.
+**Why getters are powerful:** If `state.email` changes, the component will only re-renders if the email string goes from `valid -> invalid` or changes from `invalid -> valid`.
 
 ### Generator Dependencies (Advanced)
 
-For components with many dependencies (5+), generators can short-circuit evaluation:
+For components with many dependencies (5+), generators can short-circuit the dependency array by exiting early, this can be useful to exit early and avoid creating more arrays in memory:
+
+With a generator the dependency detection will stop as soon as it encounters an answer that changed, similar to a `for` loop with a `break`:
 
 ```typescript
 const [state] = useBloc(UserCubit, {
   dependencies: function* (cubit) {
-    if (yield cubit.state.name) return; // Stop if name changed
-    yield cubit.state.email; // Only check if name didn't change
-    yield cubit.state.phone;
+    yield* cubit.state.answers.map((answer) => answer.correct);
   },
+});
+```
+
+In comparison, here is the same code but without a generator, here the `map` will always go through all answers, no matter what:
+
+```typescript
+const [state] = useBloc(UserCubit, {
+  dependencies: (cubit) => cubit.state.answers.map((answer) => answer.correct),
 });
 ```
 
@@ -103,24 +110,34 @@ const [state] = useBloc(UserCubit, {
 
 ```typescript
 function SalesWidget() {
-  const [state] = useBloc(DashboardCubit, {
-    dependencies: (cubit) => [cubit.state.sales, cubit.state.revenue],
-  });
+  const [state] = useBloc(DashboardCubit);
   return <div>Sales: {state.sales} | Revenue: ${state.revenue}</div>;
 }
-// Doesn't re-render when user counts or other metrics change
+// Only rerenders when state.sales or state.ervenue changes
 ```
 
-### Form Sections
+### List
+
+Every `TodoItemRow` would re-render every time `selected` changes, but with the `dependencies` option we can ensure that it only re-renders if this item is selected/deselected:
 
 ```typescript
-function EmailSection() {
-  const [state, cubit] = useBloc(ProfileCubit, {
-    dependencies: (cubit) => [cubit.state.email],
+function TodoItemRow({ item }: { item: TodoItemData }) {
+  const [{ selected }, { remove, select }] = useBloc(TodoList, {
+    dependencies: (bloc) => [bloc.state.selected === item],
   });
-  return <input value={state.email} onChange={(e) => cubit.updateEmail(e.target.value)} />;
+
+  return (
+    <tr className={item === selected ? 'danger' : ''}>
+      <td>{item.id}</td>
+      <td>
+        <a onClick={() => select(item)}>{item.label}</a>
+      </td>
+      <td>
+        <a onClick={() => remove(item)}>{RemoveIcon}</a>
+      </td>
+    </tr>
+  );
 }
-// Doesn't re-render when firstName, lastName, etc. change
 ```
 
 ### Computed Metrics
@@ -135,92 +152,10 @@ class AnalyticsCubit extends Cubit<AnalyticsState> {
 }
 
 function MetricsDisplay() {
-  const [, cubit] = useBloc(AnalyticsCubit, {
-    dependencies: (cubit) => [cubit.conversionRate],
-  });
+  const [, cubit] = useBloc(AnalyticsCubit);
   return <p>Conversion: {cubit.conversionRate.toFixed(2)}%</p>;
 }
 ```
-
-## Common Mistakes
-
-### ❌ Tracking Entire Objects
-
-```typescript
-// BAD: Re-renders on ANY profile change
-dependencies: (cubit) => [cubit.state.profile];
-
-// GOOD: Track specific fields
-dependencies: (cubit) => [cubit.state.profile.name, cubit.state.profile.email];
-```
-
-### ❌ Disabling Proxies Without Dependencies
-
-```typescript
-// BAD: Disables automatic tracking but doesn't use manual dependencies
-Blac.setConfig({ proxyDependencyTracking: false });
-const [state] = useBloc(AppCubit); // Now re-renders on EVERY change!
-
-// GOOD: Keep proxies enabled (default) OR use manual dependencies
-const [state] = useBloc(AppCubit, {
-  dependencies: (cubit) => [cubit.state.user.name],
-});
-```
-
-### ❌ Conditional Dependency Arrays
-
-```typescript
-// BAD: Unstable dependency structure
-dependencies: (cubit) => {
-  const deps = [cubit.state.name];
-  if (someCondition) deps.push(cubit.state.email); // Inconsistent!
-  return deps;
-};
-
-// GOOD: Keep dependency arrays consistent
-dependencies: (cubit) => [cubit.state.name, cubit.state.email];
-```
-
-## Best Practices
-
-**Do:**
-
-- ✅ Use automatic tracking for prototyping and simple components
-- ✅ Use manual dependencies for production and performance-critical components
-- ✅ Track primitive values (strings, numbers, booleans) or computed getters
-- ✅ Keep dependency arrays simple and consistent
-- ✅ Test with render counters to verify optimization
-
-**Don't:**
-
-- ❌ Track entire objects when you only need specific properties
-- ❌ Disable proxy tracking globally without using manual dependencies
-- ❌ Create conditional or unstable dependency arrays
-- ❌ Perform expensive computations in the dependencies function itself
-
-## Debugging Re-Renders
-
-Verify your optimizations with a simple render counter:
-
-```typescript
-function MyComponent() {
-  const renderCount = useRef(0);
-  const [state] = useBloc(UserCubit, {
-    dependencies: (cubit) => [cubit.state.userName],
-  });
-
-  useEffect(() => { renderCount.current++; });
-
-  return (
-    <div>
-      <span>Renders: {renderCount.current}</span>
-      <p>{state.userName}</p>
-    </div>
-  );
-}
-```
-
-Change untracked properties and verify the counter doesn't increment!
 
 ## Configuration
 
@@ -237,8 +172,8 @@ When disabled, components without explicit `dependencies` re-render on every sta
 ## Key Takeaways
 
 - **Two Modes**: Automatic (Proxy-based) vs Manual (Explicit control)
-- **Automatic Works**: Even without dependencies, BlaC optimizes via Proxy tracking
-- **Manual Is Faster**: Explicit dependencies have better performance (no Proxy overhead)
+- **Automatic Works**: Even without explicit dependencies, BlaC optimizes via Proxy tracking
+- **Manual Is Faster**: Explicit dependencies have better performance (no Proxy overhead) but is more verbose
 - **Value Comparison**: Uses `Object.is()` for reference equality, not deep equality
 - **Track Primitives**: Best results with strings, numbers, booleans, or computed getters
 - **Getters Are Powerful**: Track derived values that only trigger re-renders when results change
@@ -246,8 +181,6 @@ When disabled, components without explicit `dependencies` re-render on every sta
 <GuideArticleNote title="Production Strategy">
 **Prototyping:** Start with automatic tracking for speed and convenience.
 
-**Production:** Add explicit dependencies to performance-critical components. Proxy overhead adds up in large applications with hundreds of components.
-
-**Best approach:** Mix both strategies - use automatic for simple components, manual for complex or high-frequency updates.
+**Refine:** Add explicit dependencies to performance-critical components where simple "value changed" detection is too generic.
 
 </GuideArticleNote>

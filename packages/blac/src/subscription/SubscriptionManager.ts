@@ -207,11 +207,14 @@ export class SubscriptionManager<S = unknown> {
         } else {
           // No tracked dependencies
           // Observer subscriptions (basic subscribe()) always notify
-          // Consumer subscriptions with no dependencies only notify if proxy tracking is disabled
+          // Consumer subscriptions: notify if never rendered (initialization/Suspense/concurrent)
+          // or if proxy tracking is disabled (legacy behavior)
           if (subscription.type === 'observer') {
             shouldNotify = true;
           } else {
-            shouldNotify = !Blac.config.proxyDependencyTracking;
+            // For consumers: notify if never rendered OR proxy tracking disabled
+            const neverRendered = !subscription.metadata?.hasRendered;
+            shouldNotify = neverRendered || !Blac.config.proxyDependencyTracking;
           }
         }
         newValue = newState;
@@ -268,48 +271,70 @@ export class SubscriptionManager<S = unknown> {
 
   /**
    * Get the paths that changed between two states
-   * V2: Top-level tracking only - no recursive comparison
+   * V3: Recursive comparison with full dot-notation paths
+   *
+   * Recursively compares old and new state to find all changed paths.
+   * Returns full paths like "profile.address.city" instead of just "profile".
+   * Leverages immutability for early exit optimization (reference equality).
+   *
+   * @param oldState - Previous state value
+   * @param newState - New state value
+   * @param path - Current path being compared (for recursion)
+   * @returns Set of full paths that changed
    */
   private getChangedPaths(
     oldState: any,
     newState: any,
-    _path = '', // Ignored in v2 - kept for API compatibility
+    path = '',
   ): Set<string> {
     const changedPaths = new Set<string>();
 
-    // If states are identical, no changes
-    if (oldState === newState) return changedPaths;
-
-    // If entire state changed (primitive or null), use '*' to indicate all dependencies should update
-    if (
-      typeof oldState !== 'object' ||
-      typeof newState !== 'object' ||
-      oldState === null ||
-      newState === null
-    ) {
-      changedPaths.add('*');
+    // Optimization: Same reference = no changes (immutability ftw!)
+    if (oldState === newState) {
       return changedPaths;
     }
 
-    // V2: Only compare top-level properties using reference equality
-    // Get all keys from both objects
+    // Handle non-object types (primitives, null, undefined)
+    const isOldObject = typeof oldState === 'object' && oldState !== null;
+    const isNewObject = typeof newState === 'object' && newState !== null;
+
+    if (!isOldObject || !isNewObject) {
+      // Primitive change or one side is null/undefined
+      changedPaths.add(path || '*');
+      return changedPaths;
+    }
+
+    // Both are objects - compare all keys
     const allKeys = new Set([
       ...Object.keys(oldState),
       ...Object.keys(newState),
     ]);
 
-    // Check each top-level property
     for (const key of allKeys) {
       const oldValue = oldState[key];
       const newValue = newState[key];
+      const fullPath = path ? `${path}.${key}` : key;
 
-      // Reference inequality means the property changed
-      // This includes:
-      // - Primitive value changes
-      // - Object/array reference changes (even if nested content changed)
-      // - Added/removed properties (undefined !== value)
-      if (oldValue !== newValue) {
-        changedPaths.add(key);
+      // Optimization: Same reference = no change, skip recursion
+      if (oldValue === newValue) {
+        continue;
+      }
+
+      // Values differ - determine if we should recurse
+      const isOldValueObject =
+        typeof oldValue === 'object' && oldValue !== null;
+      const isNewValueObject =
+        typeof newValue === 'object' && newValue !== null;
+
+      if (isOldValueObject && isNewValueObject) {
+        // Both are objects - recurse to find nested changes
+        const nestedChanges = this.getChangedPaths(oldValue, newValue, fullPath);
+        for (const nestedPath of nestedChanges) {
+          changedPaths.add(nestedPath);
+        }
+      } else {
+        // Primitive change or structural change (object <-> primitive)
+        changedPaths.add(fullPath);
       }
     }
 

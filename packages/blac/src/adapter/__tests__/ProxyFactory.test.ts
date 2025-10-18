@@ -108,22 +108,64 @@ describe('ProxyFactory', () => {
       expect(email).toBe('john@example.com');
       expect(theme).toBe('dark');
 
-      // V2 change: Only top-level property 'user' is tracked
-      // Nested accesses (profile, email, settings, theme) are NOT tracked
-      // This is the key behavior change in dependency tracking v2
-      expect(tracker.trackAccess).toHaveBeenCalledTimes(2); // Only 'user' calls
-      expect(tracker.trackAccess).toHaveBeenCalledWith(
+      // V3 change: Full path tracking - should track ALL accessed paths
+      // First expression: proxy.user.profile.email
+      //   - Accesses 'user', 'user.profile', 'user.profile.email'
+      // Second expression: proxy.user.profile.settings.theme
+      //   - Accesses 'user' (again), 'user.profile' (again), 'user.profile.settings', 'user.profile.settings.theme'
+      // Total: 7 accesses (some paths accessed multiple times)
+      expect(tracker.trackAccess).toHaveBeenCalledTimes(7);
+
+      // Verify that all expected paths were tracked (order matters)
+      expect(tracker.trackAccess).toHaveBeenNthCalledWith(
+        1,
         consumerRef,
         'state',
         'user',
         undefined,
       );
-      // No tracking for nested paths - this is intentional
-      expect(tracker.trackAccess).not.toHaveBeenCalledWith(
+      expect(tracker.trackAccess).toHaveBeenNthCalledWith(
+        2,
         consumerRef,
         'state',
         'user.profile',
-        expect.anything(),
+        undefined,
+      );
+      expect(tracker.trackAccess).toHaveBeenNthCalledWith(
+        3,
+        consumerRef,
+        'state',
+        'user.profile.email',
+        undefined,
+      );
+      // Second expression starts
+      expect(tracker.trackAccess).toHaveBeenNthCalledWith(
+        4,
+        consumerRef,
+        'state',
+        'user',
+        undefined,
+      );
+      expect(tracker.trackAccess).toHaveBeenNthCalledWith(
+        5,
+        consumerRef,
+        'state',
+        'user.profile',
+        undefined,
+      );
+      expect(tracker.trackAccess).toHaveBeenNthCalledWith(
+        6,
+        consumerRef,
+        'state',
+        'user.profile.settings',
+        undefined,
+      );
+      expect(tracker.trackAccess).toHaveBeenNthCalledWith(
+        7,
+        consumerRef,
+        'state',
+        'user.profile.settings.theme',
+        undefined,
       );
     });
 

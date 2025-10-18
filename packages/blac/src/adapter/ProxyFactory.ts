@@ -9,21 +9,40 @@ interface ConsumerTracker {
   ) => void;
 }
 
-// Minimal cache for backward compatibility
-const proxyCache = new WeakMap<object, WeakMap<object, any>>();
+// V3: Three-level cache structure for path-based proxy caching
+// Level 1: target object -> Level 2: consumerRef -> Level 3: path -> proxy
+const proxyCache = new WeakMap<
+  object, // target object
+  WeakMap<
+    object, // consumerRef
+    Map<string, any> // path -> proxy
+  >
+>();
 
-// Minimal stats for backward compatibility
+// V3: Enhanced stats for tracking cache effectiveness and nested proxies
 const stats = {
   stateProxiesCreated: 0,
   classProxiesCreated: 0,
   cacheHits: 0,
   cacheMisses: 0,
   totalProxiesCreated: 0,
+  nestedProxiesCreated: 0,
 };
 
 /**
  * Creates a proxy for state objects that tracks property access
- * V2: Top-level tracking only - no nested proxies
+ * V3: Deep/nested dependency tracking with recursive proxy creation
+ *
+ * Creates nested proxies recursively when properties are accessed.
+ * Uses three-level cache (target → consumer → path → proxy) for efficiency.
+ * Tracks full paths: "profile.address.city" not just "profile".
+ * Lazy creation: Only creates proxies for accessed paths.
+ *
+ * @param target - The object to proxy
+ * @param consumerRef - Reference to the consuming component
+ * @param consumerTracker - Tracker for recording access
+ * @param path - Current path (used for nested proxies)
+ * @returns Proxied object with dependency tracking
  */
 export const createStateProxy = <T extends object>(
   target: T,
@@ -31,6 +50,7 @@ export const createStateProxy = <T extends object>(
   consumerTracker: ConsumerTracker,
   path = '',
 ): T => {
+  // Validation
   if (
     !consumerRef ||
     !consumerTracker ||
@@ -40,20 +60,22 @@ export const createStateProxy = <T extends object>(
     return target;
   }
 
-  // Only create proxies for root-level state (path is empty)
-  // This is a breaking change from v1 which created nested proxies
-  if (path !== '') {
-    return target;
-  }
-
-  // Check cache for root objects only
+  // Level 1: Get or create target cache
   let refCache = proxyCache.get(target);
   if (!refCache) {
     refCache = new WeakMap();
     proxyCache.set(target, refCache);
   }
 
-  const cached = refCache.get(consumerRef);
+  // Level 2: Get or create consumer cache
+  let pathCache = refCache.get(consumerRef);
+  if (!pathCache) {
+    pathCache = new Map();
+    refCache.set(consumerRef, pathCache);
+  }
+
+  // Level 3: Check path cache
+  const cached = pathCache.get(path);
   if (cached) {
     stats.cacheHits++;
     return cached;
@@ -67,19 +89,31 @@ export const createStateProxy = <T extends object>(
         return Reflect.get(obj, prop);
       }
 
+      // Build full path for nested tracking
+      const fullPath = path ? `${path}.${String(prop)}` : String(prop);
       const value = Reflect.get(obj, prop);
 
-      // Track only the top-level property name (no nested paths)
-      // Track all accesses regardless of value type
+      // Track access with FULL path (not just top-level)
       consumerTracker.trackAccess(
         consumerRef,
         'state',
-        String(prop), // Just the property name, no path concatenation
-        undefined, // No value tracking for state properties
+        fullPath,
+        undefined,
       );
 
-      // Return raw value - no nested proxy creation
-      // This means nested property access won't be tracked
+      // Recursively proxy nested objects and arrays
+      if (value && typeof value === 'object') {
+        const isPlainObject =
+          Object.getPrototypeOf(value) === Object.prototype;
+        const isArray = Array.isArray(value);
+
+        if (isPlainObject || isArray) {
+          // Recursive call with full path
+          return createStateProxy(value, consumerRef, consumerTracker, fullPath);
+        }
+      }
+
+      // Return primitive value
       return value;
     },
 
@@ -87,11 +121,13 @@ export const createStateProxy = <T extends object>(
     deleteProperty: () => false, // State properties should not be deleted
   });
 
-  // Cache root proxy
-  const proxyRefCache = proxyCache.get(target)!;
-  proxyRefCache.set(consumerRef, proxy);
+  // Cache the created proxy at the correct path
+  pathCache.set(path, proxy);
   stats.stateProxiesCreated++;
   stats.totalProxiesCreated++;
+  if (path !== '') {
+    stats.nestedProxiesCreated++;
+  }
 
   return proxy;
 };
@@ -108,14 +144,21 @@ export const createBlocProxy = <T extends object>(
     return target;
   }
 
-  // Check cache
+  // Check cache (2-level: target → consumer)
   let refCache = proxyCache.get(target);
   if (!refCache) {
     refCache = new WeakMap();
     proxyCache.set(target, refCache);
   }
 
-  const cached = refCache.get(consumerRef);
+  // For bloc proxies, use empty path '' as the cache key
+  let pathCache = refCache.get(consumerRef) as Map<string, any> | undefined;
+  if (!pathCache) {
+    pathCache = new Map();
+    refCache.set(consumerRef, pathCache);
+  }
+
+  const cached = pathCache.get('');
   if (cached) {
     stats.cacheHits++;
     return cached;
@@ -143,8 +186,8 @@ export const createBlocProxy = <T extends object>(
     },
   });
 
-  // Cache proxy
-  refCache.set(consumerRef, proxy);
+  // Cache proxy using empty string as path
+  pathCache.set('', proxy);
   stats.classProxiesCreated++;
   stats.totalProxiesCreated++;
 
@@ -221,11 +264,15 @@ export const ProxyFactory = {
       options.consumerTracker,
     ),
 
-  // Compatibility functions that return expected structure
+  // V3: Enhanced stats with cache hit rate calculation
   getStats: () => ({
     ...stats,
     propertyAccesses: 0,
-    nestedProxiesCreated: 0,
+    cacheHitRate:
+      stats.cacheHits + stats.cacheMisses > 0
+        ? `${((stats.cacheHits / (stats.cacheHits + stats.cacheMisses)) * 100).toFixed(1)}%`
+        : 'N/A',
+    // Legacy compatibility
     cacheEfficiency:
       stats.cacheHits + stats.cacheMisses > 0
         ? `${((stats.cacheHits / (stats.cacheHits + stats.cacheMisses)) * 100).toFixed(1)}%`
@@ -234,10 +281,13 @@ export const ProxyFactory = {
     proxiesPerSecond: 'N/A',
   }),
   resetStats: () => {
+    const oldStats = { ...stats };
     stats.stateProxiesCreated = 0;
     stats.classProxiesCreated = 0;
     stats.cacheHits = 0;
     stats.cacheMisses = 0;
     stats.totalProxiesCreated = 0;
+    stats.nestedProxiesCreated = 0;
+    return oldStats;
   },
 };

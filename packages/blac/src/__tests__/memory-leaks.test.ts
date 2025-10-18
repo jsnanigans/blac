@@ -55,6 +55,8 @@ describe('Memory Leak Tests', () => {
   beforeEach(() => {
     blac = Blac.getInstance();
     Blac.enableLog = false; // Disable logging for tests
+    // Disable proxy tracking for memory leak tests (testing basic subscriptions)
+    Blac.setConfig({ proxyDependencyTracking: false });
     vi.useFakeTimers();
   });
 

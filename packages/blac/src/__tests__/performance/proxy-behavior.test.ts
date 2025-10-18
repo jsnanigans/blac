@@ -9,7 +9,7 @@ describe('Proxy Behavior', () => {
     ProxyFactory.resetStats();
   });
 
-  describe('Top-level tracking - no nested proxies', () => {
+  describe('V3: Deep tracking with nested proxies', () => {
     interface NestedState {
       level1: {
         level2: {
@@ -34,7 +34,7 @@ describe('Proxy Behavior', () => {
       }
     }
 
-    it('should NOT create nested proxies (V2 improvement)', () => {
+    it('should create nested proxies with effective caching (V3)', () => {
       const cubit = new NestedStateCubit();
       const consumerTracker = {
         trackAccess: () => {},
@@ -46,16 +46,25 @@ describe('Proxy Behavior', () => {
       // Create root proxy
       const proxy = createStateProxy(cubit.state, consumerRef, consumerTracker);
 
-      // Access nested properties
-      const value = proxy.level1.level2.level3.value;
+      // First access: creates proxies for each level
+      const value1 = proxy.level1.level2.level3.value;
+      const stats1 = ProxyFactory.getStats();
 
-      // Get stats
-      const stats = ProxyFactory.getStats();
+      // V3: Should create nested proxies (one for each level accessed)
+      expect(stats1.totalProxiesCreated).toBeGreaterThan(1);
+      expect(stats1.stateProxiesCreated).toBeGreaterThan(1);
+      expect(value1).toBe(0);
 
-      // V2: Should only create ONE proxy (root level)
-      expect(stats.totalProxiesCreated).toBe(1);
-      expect(stats.stateProxiesCreated).toBe(1);
-      expect(value).toBe(0);
+      ProxyFactory.resetStats();
+
+      // Second access: uses cached proxies
+      const value2 = proxy.level1.level2.level3.value;
+      const stats2 = ProxyFactory.getStats();
+
+      // Cache should be effective - no new proxies created
+      expect(stats2.cacheHits).toBeGreaterThan(0);
+      expect(stats2.totalProxiesCreated).toBe(0);
+      expect(value2).toBe(0);
     });
   });
 

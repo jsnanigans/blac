@@ -9,6 +9,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Cubit } from '../../Cubit';
+import { Blac } from '../../Blac';
 
 class TestCubit extends Cubit<number> {
   constructor() {
@@ -25,6 +26,8 @@ describe('Issue #7: Subscription Sorting Performance Issue (BEFORE FIX)', () => 
   let manager: any;
 
   beforeEach(() => {
+    // Disable proxy tracking for sorting performance tests
+    Blac.setConfig({ proxyDependencyTracking: false });
     cubit = new TestCubit();
     manager = cubit['_subscriptionManager'];
   });
