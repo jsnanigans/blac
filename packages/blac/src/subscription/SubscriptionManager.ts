@@ -419,16 +419,14 @@ export class SubscriptionManager<S = unknown> {
   /**
    * Invalidate getter cache entries when state paths change
    *
-   * NOTE: This method is intentionally a no-op. The getter cache is used ONLY for
-   * value comparison, not to return cached values. checkGetterChanged() always
-   * re-evaluates the getter and compares the result with the cached value.
+   * Fix #8: Clear getter cache to prevent memory leaks and stale values.
    *
-   * Clearing the cache would defeat the value-based comparison and cause false
-   * positives (treating every check as "first access" = always changed).
+   * When state paths change, we need to clear the getter cache because:
+   * 1. Getters may depend on those state paths
+   * 2. Cached getter values would be stale
+   * 3. Keeping stale cache entries leads to memory leaks
    *
-   * Known limitation: Getters don't track their transitive state dependencies,
-   * so they are checked on every state change. However, value-based comparison
-   * ensures re-renders only occur when the getter result actually changes.
+   * We only clear when STATE paths change, not when only GETTER paths change.
    *
    * @param subscriptionId The subscription whose getter cache to invalidate
    * @param changedPaths Set of paths that changed in the state
@@ -437,8 +435,24 @@ export class SubscriptionManager<S = unknown> {
     subscriptionId: string,
     changedPaths: Set<string>,
   ): void {
-    // Intentionally a no-op - see method documentation above
-    return;
+    const subscription = this.subscriptions.get(subscriptionId);
+    if (!subscription || !subscription.getterCache) {
+      return;
+    }
+
+    // Check if any changed paths are state paths (not getter paths starting with '_class.')
+    let hasStatePath = false;
+    for (const path of changedPaths) {
+      if (!path.startsWith('_class.')) {
+        hasStatePath = true;
+        break;
+      }
+    }
+
+    // Only clear cache if state paths changed (not just getter paths)
+    if (hasStatePath) {
+      subscription.getterCache.clear();
+    }
   }
 
   /**
@@ -497,44 +511,43 @@ export class SubscriptionManager<S = unknown> {
       // Example: trackedPath="profile.address.city" should match changedPath="profile"
       // But NOT if a sibling actually changed: tracked="user.profile.city", changed=["user", "user.age"]
       // The presence of "user.age" indicates the actual change was in a sibling branch
-      // Performance: Use PathIndex.isChildOf for O(1) lookups
+
+      // First, check if there's any sibling change across ALL changed paths
+      // This prevents the issue where hasSiblingChange gets reset for each parent path
+      let hasSiblingChange = false;
+      const trackedSegments = trackedPath.split('.');
+
+      for (const otherPath of changedPaths) {
+        const otherSegments = otherPath.split('.');
+
+        // Find common ancestor length
+        let commonLength = 0;
+        while (
+          commonLength < otherSegments.length &&
+          commonLength < trackedSegments.length &&
+          otherSegments[commonLength] === trackedSegments[commonLength]
+        ) {
+          commonLength++;
+        }
+
+        // If they share a common ancestor and both diverge, they're siblings
+        if (commonLength > 0 &&
+            commonLength < otherSegments.length &&
+            commonLength < trackedSegments.length) {
+          hasSiblingChange = true;
+          break;
+        }
+      }
+
+      // Now check if tracked is a child of any changed path
+      // Only notify if it's a child AND there's no sibling change
       for (const changedPath of changedPaths) {
-        // Check if tracked is a child of this changed path
         if (this.pathIndex.isChildOf(trackedPath, changedPath)) {
-          // Before notifying, check if there's a more specific sibling path in changedPaths
-          // This handles cases where parent is marked as changed but actual change is in sibling
-          let hasSiblingChange = false;
-
-          for (const otherPath of changedPaths) {
-            if (otherPath === changedPath) continue;
-
-            const otherSegments = otherPath.split('.');
-            const trackedSegments = trackedPath.split('.');
-
-            // Find common ancestor length
-            let commonLength = 0;
-            while (
-              commonLength < otherSegments.length &&
-              commonLength < trackedSegments.length &&
-              otherSegments[commonLength] === trackedSegments[commonLength]
-            ) {
-              commonLength++;
-            }
-
-            // If they share a common ancestor and both diverge, they're siblings
-            // Example: 'user.age' and 'user.profile.city' share 'user' (length 1) and diverge
-            if (commonLength > 0 &&
-                commonLength < otherSegments.length &&
-                commonLength < trackedSegments.length) {
-              hasSiblingChange = true;
-              break;
-            }
-          }
-
-          // Only notify if no sibling changes detected
           if (!hasSiblingChange) {
             return true;
           }
+          // If there is a sibling change, don't notify for this changed path
+          // but continue checking other changed paths
         }
       }
     }

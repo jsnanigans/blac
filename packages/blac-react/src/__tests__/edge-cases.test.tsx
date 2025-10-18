@@ -402,6 +402,14 @@ describe('Edge Case Testing', () => {
   });
 
   describe('Very deep state nesting (10+ levels)', () => {
+    beforeEach(() => {
+      // Increase proxy depth to handle 10+ levels of nesting
+      Blac.setConfig({
+        proxyDependencyTracking: true,
+        proxyMaxDepth: 15
+      });
+    });
+
     interface DeepState {
       level1: {
         level2: {

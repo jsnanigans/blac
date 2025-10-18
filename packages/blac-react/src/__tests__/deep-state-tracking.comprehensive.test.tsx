@@ -118,6 +118,14 @@ describe('Deep State Tracking - Comprehensive Tests', () => {
   });
 
   describe('Selective Re-rendering', () => {
+    beforeEach(() => {
+      // Increase proxy depth to handle deep nesting tests (6+ levels)
+      Blac.setConfig({
+        proxyDependencyTracking: true,
+        proxyMaxDepth: 10
+      });
+    });
+
     it('should only re-render when tracked deep property changes', async () => {
       let cityRenderCount = 0;
       let themeRenderCount = 0;

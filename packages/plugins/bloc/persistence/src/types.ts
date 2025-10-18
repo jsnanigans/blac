@@ -1,3 +1,5 @@
+import type { StandardSchemaV1 } from '@blac/core';
+
 /**
  * Storage adapter interface for persistence
  */
@@ -39,10 +41,7 @@ export interface PersistenceOptions<T> extends SerializationOptions<T> {
   /**
    * Whether to migrate data from old keys
    */
-  migrations?: {
-    from: string;
-    transform?: (oldData: any) => T;
-  }[];
+  migrations?: PersistenceMigration<T>[];
 
   /**
    * Version for data schema
@@ -73,6 +72,51 @@ export interface PersistenceOptions<T> extends SerializationOptions<T> {
    * Used when select is provided
    */
   merge?: (persisted: Partial<T>, current: T) => T;
+
+  /**
+   * Schema for state validation
+   * - If provided: Use this schema (overrides bloc's schema)
+   * - If undefined: Use bloc's schema if available
+   * - If null: Disable validation even if bloc has schema
+   */
+  schema?: StandardSchemaV1<any, T> | null;
+
+  /**
+   * When to validate persisted state
+   */
+  validation?: {
+    /**
+     * Validate before saving state
+     * @default true (if schema exists)
+     */
+    onSave?: boolean;
+
+    /**
+     * Validate after restoring state
+     * @default true (if schema exists)
+     */
+    onRestore?: boolean;
+  };
+}
+
+/**
+ * Migration configuration
+ */
+export interface PersistenceMigration<T> {
+  /**
+   * Old storage key to migrate from
+   */
+  from: string;
+
+  /**
+   * Transform function to convert old data to new format
+   */
+  transform?: (oldData: any) => T;
+
+  /**
+   * Optional schema to validate migration output
+   */
+  schema?: StandardSchemaV1<any, T>;
 }
 
 /**

@@ -3,6 +3,7 @@ import {
   PluginCapabilities,
   ErrorContext,
   BlocBase,
+  StandardSchemaV1,
 } from '@blac/core';
 import { PersistenceOptions, StorageAdapter, StorageMetadata } from './types';
 import { getDefaultStorage } from './storage-adapters';
@@ -31,6 +32,10 @@ export class PersistencePlugin<TState> implements BlocPlugin<TState> {
   private isHydrating = false;
   private isSaving = false;
   private options: PersistenceOptions<TState>;
+  private schema?: StandardSchemaV1<any, TState> | null;
+  private validateOnSave: boolean;
+  private validateOnRestore: boolean;
+  private bloc?: BlocBase<TState>;
 
   constructor(options: PersistenceOptions<TState>) {
     this.options = options;
@@ -40,9 +45,14 @@ export class PersistencePlugin<TState> implements BlocPlugin<TState> {
     this.serialize = options.serialize || ((state) => JSON.stringify(state));
     this.deserialize = options.deserialize || ((data) => JSON.parse(data));
     this.debounceMs = options.debounceMs ?? 100;
+    this.schema = options.schema;
+    this.validateOnSave = options.validation?.onSave ?? true;
+    this.validateOnRestore = options.validation?.onRestore ?? true;
   }
 
   async onAttach(bloc: BlocBase<TState>): Promise<void> {
+    this.bloc = bloc;
+
     if (this.isHydrating) {
       return; // Prevent concurrent hydration
     }
@@ -73,6 +83,31 @@ export class PersistencePlugin<TState> implements BlocPlugin<TState> {
           state = this.deserialize(decrypted);
         } else {
           state = this.deserialize(storedData);
+        }
+
+        // Validate restored state
+        if (this.validateOnRestore) {
+          const schema = this.getSchema(bloc);
+          if (schema) {
+            const result = schema['~standard'].validate(state);
+
+            if (result instanceof Promise) {
+              throw new Error(
+                'Async validation not supported in persistence plugin',
+              );
+            }
+
+            if ('issues' in result) {
+              const error = new Error(
+                `Persisted state validation failed: ${result.issues?.length || 0} issue(s)`,
+              );
+              this.handleError(error, 'load');
+              return; // Don't restore invalid state
+            }
+
+            // Use validated state (may have coerced values)
+            state = result.value;
+          }
         }
 
         // Validate version if specified
@@ -140,6 +175,24 @@ export class PersistencePlugin<TState> implements BlocPlugin<TState> {
     console.error(`Persistence plugin error during ${context.phase}:`, error);
   }
 
+  /**
+   * Get effective schema (plugin schema or bloc schema)
+   */
+  private getSchema(bloc: BlocBase<TState>): StandardSchemaV1<any, TState> | undefined {
+    // If plugin explicitly sets schema to null, disable validation
+    if (this.schema === null) {
+      return undefined;
+    }
+
+    // If plugin provides schema, use it (override bloc's schema)
+    if (this.schema !== undefined) {
+      return this.schema;
+    }
+
+    // Otherwise, try to get bloc's schema
+    return bloc.schema as StandardSchemaV1<any, TState> | undefined;
+  }
+
   private async saveState(state: TState): Promise<void> {
     if (this.isSaving) {
       // Queue another save after current one completes
@@ -158,9 +211,34 @@ export class PersistencePlugin<TState> implements BlocPlugin<TState> {
       let dataToStore: string;
 
       // Handle selective persistence
-      const stateToSave = this.options.select
+      let stateToSave = this.options.select
         ? (this.options.select(state) ?? state)
         : state;
+
+      // Validate before saving
+      if (this.validateOnSave && this.bloc) {
+        const schema = this.getSchema(this.bloc);
+        if (schema) {
+          const result = schema['~standard'].validate(stateToSave);
+
+          if (result instanceof Promise) {
+            throw new Error(
+              'Async validation not supported in persistence plugin',
+            );
+          }
+
+          if ('issues' in result) {
+            const error = new Error(
+              `State validation failed before save: ${result.issues?.length || 0} issue(s)`,
+            );
+            this.handleError(error, 'save');
+            return; // Don't save invalid state
+          }
+
+          // Use validated state
+          stateToSave = result.value as TState;
+        }
+      }
 
       // Serialize state (ensure it's the full type, not partial)
       const serialized = this.serialize(stateToSave as TState);
@@ -201,9 +279,29 @@ export class PersistencePlugin<TState> implements BlocPlugin<TState> {
         );
         if (oldData) {
           const parsed = JSON.parse(oldData);
-          const migrated = migration.transform
+          let migrated = migration.transform
             ? migration.transform(parsed)
             : parsed;
+
+          // Validate migrated data if schema provided
+          if (migration.schema) {
+            const result = migration.schema['~standard'].validate(migrated);
+
+            if (result instanceof Promise) {
+              throw new Error(
+                'Async validation not supported in persistence migrations',
+              );
+            }
+
+            if ('issues' in result) {
+              throw new Error(
+                `Migration validation failed: ${result.issues?.length || 0} issue(s)`,
+              );
+            }
+
+            // Use validated migrated data
+            migrated = result.value;
+          }
 
           // Save migrated data to new key directly (bypass saveState to avoid timing issues)
           const serialized = this.serialize(migrated);

@@ -10,6 +10,11 @@ import {
 } from './lifecycle/BlocLifecycle';
 import { BatchingManager } from './utils/BatchingManager';
 import { BlacContext } from './types/BlacContext';
+import {
+  StandardSchemaV1,
+  isStandardSchema,
+  BlocValidationError,
+} from './validation';
 
 export type BlocInstanceId = string | number | undefined;
 
@@ -17,6 +22,7 @@ interface BlocStaticProperties {
   isolated: boolean;
   keepAlive: boolean;
   plugins?: BlocPlugin<any, any>[];
+  schema?: StandardSchemaV1<any>;
 }
 
 /**
@@ -54,6 +60,11 @@ export abstract class BlocBase<S> {
   public lastUpdate?: number;
 
   _plugins = new BlocPluginRegistry<S, any>();
+
+  /**
+   * Schema for state validation (optional)
+   */
+  protected _schema?: StandardSchemaV1<any, S>;
 
   /**
    * Called synchronously when disposal is scheduled (subscriptionCount === 0).
@@ -118,7 +129,6 @@ export abstract class BlocBase<S> {
    * Creates a new BlocBase instance with unified subscription management
    */
   constructor(initialState: S) {
-    this._state = initialState;
     this._id = this.constructor.name;
     this._name = this.constructor.name;
 
@@ -135,6 +145,32 @@ export abstract class BlocBase<S> {
         : false;
     this._isolated =
       typeof Constructor.isolated === 'boolean' ? Constructor.isolated : false;
+
+    // Initialize schema from static property
+    if (Constructor.schema) {
+      if (!isStandardSchema(Constructor.schema)) {
+        throw new TypeError(
+          `[${this._name}] Schema must implement StandardSchemaV1 interface`,
+        );
+      }
+      this._schema = Constructor.schema as StandardSchemaV1<any, S>;
+    }
+
+    // Validate initial state if schema defined
+    if (this._schema) {
+      try {
+        initialState = this._validateState(initialState);
+      } catch (error) {
+        // Constructor errors should throw immediately with clear message
+        const message =
+          error instanceof BlocValidationError
+            ? `Initial state validation failed: ${error.message}`
+            : `Initial state validation error: ${error}`;
+        throw new Error(`[${this._name}] ${message}`, { cause: error });
+      }
+    }
+
+    this._state = initialState;
 
     // Initialize plugin registry
     this._plugins = new BlocPluginRegistry<S, any>();
@@ -253,20 +289,42 @@ export abstract class BlocBase<S> {
     ) as S;
     this._state = transformedState;
 
+    // Validate state after plugin transforms
+    if (this._schema) {
+      try {
+        const validatedState = this._validateState(transformedState, oldState);
+        this._state = validatedState; // May differ due to coercion/defaults
+      } catch (error) {
+        // Log error through BlacContext
+        if (error instanceof BlocValidationError) {
+          this.blacContext?.error(
+            `[${this._name}] State validation failed: ${error.message}`,
+            { error, bloc: this, state: transformedState },
+          );
+        }
+
+        // Restore previous state (prevent corruption)
+        this._state = oldState;
+
+        // Re-throw error for caller to handle
+        throw error;
+      }
+    }
+
     // Notify plugins of state change
-    this._plugins.notifyStateChange(oldState, transformedState);
+    this._plugins.notifyStateChange(oldState, this._state);
 
     // Notify system plugins of state change
     this.blacContext?.plugins.notifyStateChanged(
       this as any,
       oldState,
-      transformedState,
+      this._state,
     );
 
     // Handle batching
     if (this._batchingManager.isCurrentlyBatching) {
       this._batchingManager.addUpdate({
-        newState: transformedState,
+        newState: this._state,
         oldState,
         action,
       });
@@ -274,7 +332,7 @@ export abstract class BlocBase<S> {
     }
 
     // Notify all subscriptions
-    this._subscriptionManager.notify(transformedState, oldState, action);
+    this._subscriptionManager.notify(this._state, oldState, action);
     this.lastUpdate = Date.now();
   }
 
@@ -316,6 +374,210 @@ export abstract class BlocBase<S> {
    */
   get plugins(): ReadonlyArray<BlocPlugin<S, any>> {
     return this._plugins.getAll();
+  }
+
+  /**
+   * Validate state against schema
+   * @internal
+   */
+  protected _validateState(state: S, currentState: S): S {
+    if (!this._schema) {
+      return state;
+    }
+
+    const result = this._schema['~standard'].validate(state);
+
+    // Check if validation is async (not supported)
+    if (result instanceof Promise) {
+      throw new Error(
+        `[${this._name}] Async schema validation not supported. ` +
+          `State validation must be synchronous. ` +
+          `Use async validation in event handlers before calling emit().`,
+      );
+    }
+
+    // Check if validation failed
+    if ('issues' in result) {
+      throw new BlocValidationError(
+        result.issues || [],
+        state,
+        currentState,
+        this._name,
+      );
+    }
+
+    // Return validated value (may differ due to coercion/defaults)
+    return result.value;
+  }
+
+  /**
+   * Validate a value against the bloc's schema without emitting
+   *
+   * @param value - Value to validate
+   * @returns Validation result object
+   * @throws {Error} If no schema is defined
+   *
+   * @example
+   * ```typescript
+   * const result = cubit.validate(someValue);
+   * if (result.success) {
+   *   console.log('Valid:', result.value);
+   * } else {
+   *   console.error('Invalid:', result.issues);
+   * }
+   * ```
+   */
+  validate(value: unknown): ValidationResult<S> {
+    if (!this._schema) {
+      throw new Error(
+        `[${this._name}] Cannot validate: No schema defined. ` +
+          `Define 'static schema' property to enable validation.`,
+      );
+    }
+
+    const result = this._schema['~standard'].validate(value);
+
+    if (result instanceof Promise) {
+      throw new Error(
+        `[${this._name}] Async validation not supported in validate() method`,
+      );
+    }
+
+    if ('issues' in result) {
+      return {
+        success: false,
+        issues: result.issues || [],
+      };
+    }
+
+    return {
+      success: true,
+      value: result.value,
+    };
+  }
+
+  /**
+   * Check if a value is valid according to the bloc's schema
+   *
+   * @param value - Value to check
+   * @returns true if valid or no schema defined, false if invalid
+   *
+   * @example
+   * ```typescript
+   * if (cubit.isValid(someValue)) {
+   *   cubit.emit(someValue);
+   * }
+   * ```
+   */
+  isValid(value: unknown): value is S {
+    if (!this._schema) {
+      return true; // No schema = always valid
+    }
+
+    const result = this._schema['~standard'].validate(value);
+
+    if (result instanceof Promise) {
+      return false; // Async validation considered invalid
+    }
+
+    return !('issues' in result);
+  }
+
+  /**
+   * Parse and validate a value, throwing on error
+   * Mirrors Zod's parse() / Valibot's parse()
+   *
+   * @param value - Value to parse
+   * @returns Validated value
+   * @throws {BlocValidationError} If validation fails
+   * @throws {Error} If no schema defined
+   *
+   * @example
+   * ```typescript
+   * try {
+   *   const validated = cubit.parse(userInput);
+   *   cubit.emit(validated);
+   * } catch (error) {
+   *   console.error('Validation failed:', error);
+   * }
+   * ```
+   */
+  parse(value: unknown): S {
+    const result = this.validate(value);
+
+    if (!result.success) {
+      throw new BlocValidationError(
+        result.issues,
+        value,
+        this._state,
+        this._name,
+      );
+    }
+
+    return result.value;
+  }
+
+  /**
+   * Parse and validate a value, returning result object
+   * Mirrors Zod's safeParse() / Valibot's safeParse()
+   *
+   * @param value - Value to parse
+   * @returns Result object with success flag
+   *
+   * @example
+   * ```typescript
+   * const result = cubit.safeParse(userInput);
+   * if (result.success) {
+   *   cubit.emit(result.value);
+   * } else {
+   *   console.error('Validation failed:', result.error);
+   * }
+   * ```
+   */
+  safeParse(value: unknown): SafeParseResult<S> {
+    try {
+      const result = this.validate(value);
+
+      if (!result.success) {
+        return {
+          success: false,
+          error: new BlocValidationError(
+            result.issues,
+            value,
+            this._state,
+            this._name,
+          ),
+        };
+      }
+
+      return {
+        success: true,
+        value: result.value,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error : new Error(String(error)),
+      };
+    }
+  }
+
+  /**
+   * Get the schema for this bloc (if defined)
+   *
+   * @returns Schema or undefined
+   *
+   * @example
+   * ```typescript
+   * const schema = cubit.schema;
+   * if (schema) {
+   *   // Use schema for external validation
+   *   const result = schema['~standard'].validate(data);
+   * }
+   * ```
+   */
+  get schema(): StandardSchemaV1<any, S> | undefined {
+    return this._schema;
   }
 
   /**
@@ -517,3 +779,17 @@ export abstract class BlocBase<S> {
     }
   }
 }
+
+/**
+ * Validation result type
+ */
+export type ValidationResult<T> =
+  | { success: true; value: T }
+  | { success: false; issues: readonly StandardSchemaV1.Issue[] };
+
+/**
+ * Safe parse result type
+ */
+export type SafeParseResult<T> =
+  | { success: true; value: T }
+  | { success: false; error: Error };

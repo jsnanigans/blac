@@ -45,15 +45,17 @@
     "prepublishOnly": "echo 'Skipping prepublishOnly - build should be done at root level'",
     "deploy": "pnpm publish --access public"
   },
-  "dependencies": {},
   "devDependencies": {
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/user-event": "catalog:",
     "@vitest/browser": "catalog:",
+    "arktype": "^2.1.23",
     "jsdom": "catalog:",
     "prettier": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "valibot": "^1.1.0",
+    "vitest": "catalog:",
+    "zod": "^4.1.12"
   }
 }

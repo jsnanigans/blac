@@ -354,7 +354,10 @@ importers:
         version: 14.6.1(@testing-library/dom@10.4.1)
       '@vitest/browser':
         specifier: 'catalog:'
-        version: 3.2.4(msw@2.7.3(@types/node@24.1.0)(typescript@5.9.2))(playwright@1.56.0)(vite@7.1.10(@types/node@24.1.0)(jiti@2.6.1)(lightningcss@1.30.1)(terser@5.39.0)(tsx@4.20.6)(yaml@2.7.0))(vitest@3.2.4)
+        version: 3.2.4(msw@2.7.3(@types/node@24.1.0)(typescript@5.9.2))(playwright@1.56.0)(vite@7.0.6(@types/node@24.1.0)(jiti@2.6.1)(lightningcss@1.30.1)(terser@5.39.0)(tsx@4.20.6)(yaml@2.7.0))(vitest@3.2.4)
+      arktype:
+        specifier: ^2.1.23
+        version: 2.1.23
       jsdom:
         specifier: 'catalog:'
         version: 26.1.0
@@ -367,9 +370,15 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.9.2
+      valibot:
+        specifier: ^1.1.0
+        version: 1.1.0(typescript@5.9.2)
       vitest:
         specifier: 'catalog:'
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.1.0)(@vitest/browser@3.2.4)(happy-dom@18.0.1)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.30.1)(msw@2.7.3(@types/node@24.1.0)(typescript@5.9.2))(terser@5.39.0)(tsx@4.20.6)(yaml@2.7.0)
+      zod:
+        specifier: ^4.1.12
+        version: 4.1.12
 
   packages/blac-react:
     devDependencies:
@@ -396,10 +405,10 @@ importers:
         version: 19.1.9
       '@vitejs/plugin-react':
         specifier: ^4.7.0
-        version: 4.7.0(vite@7.0.6(@types/node@24.1.0)(jiti@2.6.1)(lightningcss@1.30.1)(terser@5.39.0)(tsx@4.20.6)(yaml@2.7.0))
+        version: 4.7.0(vite@7.1.10(@types/node@24.1.0)(jiti@2.6.1)(lightningcss@1.30.1)(terser@5.39.0)(tsx@4.20.6)(yaml@2.7.0))
       '@vitest/browser':
         specifier: 'catalog:'
-        version: 3.2.4(msw@2.7.3(@types/node@24.1.0)(typescript@5.9.2))(playwright@1.56.0)(vite@7.0.6(@types/node@24.1.0)(jiti@2.6.1)(lightningcss@1.30.1)(terser@5.39.0)(tsx@4.20.6)(yaml@2.7.0))(vitest@3.2.4)
+        version: 3.2.4(msw@2.7.3(@types/node@24.1.0)(typescript@5.9.2))(playwright@1.56.0)(vite@7.1.10(@types/node@24.1.0)(jiti@2.6.1)(lightningcss@1.30.1)(terser@5.39.0)(tsx@4.20.6)(yaml@2.7.0))(vitest@3.2.4)
       '@vitest/coverage-v8':
         specifier: 'catalog:'
         version: 3.2.4(@vitest/browser@3.2.4)(vitest@3.2.4)
@@ -585,6 +594,15 @@ packages:
   '@ampproject/remapping@2.3.0':
     resolution: {integrity: sha512-30iZtAPgz+LTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw==}
     engines: {node: '>=6.0.0'}
+
+  '@ark/regex@0.0.0':
+    resolution: {integrity: sha512-p4vsWnd/LRGOdGQglbwOguIVhPmCAf5UzquvnDoxqhhPWTP84wWgi1INea8MgJ4SnI2gp37f13oA4Waz9vwNYg==}
+
+  '@ark/schema@0.50.0':
+    resolution: {integrity: sha512-hfmP82GltBZDadIOeR3argKNlYYyB2wyzHp0eeAqAOFBQguglMV/S7Ip2q007bRtKxIMLDqFY6tfPie1dtssaQ==}
+
+  '@ark/util@0.50.0':
+    resolution: {integrity: sha512-tIkgIMVRpkfXRQIEf0G2CJryZVtHVrqcWHMDa5QKo0OEEBu0tHkRSIMm4Ln8cd8Bn9TPZtvc/kE2Gma8RESPSg==}
 
   '@asamuzakjp/css-color@3.2.0':
     resolution: {integrity: sha512-K1A6z8tS3XsmCMM86xoWdn7Fkdn9m6RSVtocUrJYIwZnFVkng/PvkEoWtOWmP+Scc6saYWHWZYbndEEXxl24jw==}
@@ -2832,6 +2850,9 @@ packages:
 
   aria-query@5.3.0:
     resolution: {integrity: sha512-b0P0sZPKtyu8HkeRAfCq0IfURZK+SuwMjY1UXGBU27wpAiTwQAIlq56IbIO+ytk/JjS1fMR14ee5WBBfKi5J6A==}
+
+  arktype@2.1.23:
+    resolution: {integrity: sha512-tyxNWX6xJVMb2EPJJ3OjgQS1G/vIeQRrZuY4DeBNQmh8n7geS+czgbauQWB6Pr+RXiOO8ChEey44XdmxsqGmfQ==}
 
   array-buffer-byte-length@1.0.2:
     resolution: {integrity: sha512-LHE+8BuR7RYGDKvnrmcuSq3tDcKv9OFEXQt/HpbZhY7V6h0zlUXutnAD82GiFx9rdieCMjkvtcsPqBwgUl1Iiw==}
@@ -5625,6 +5646,14 @@ packages:
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
 
+  valibot@1.1.0:
+    resolution: {integrity: sha512-Nk8lX30Qhu+9txPYTwM0cFlWLdPFsFr6LblzqIySfbZph9+BFsAHsNvHOymEviUepeIW6KFHzpX8TKhbptBXXw==}
+    peerDependencies:
+      typescript: '>=5'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+
   vfile-message@4.0.2:
     resolution: {integrity: sha512-jRDZ1IMLttGj41KcZvlrYAaI3CfqpLpfpf+Mfig13viT6NKvRzWZ+lXz0Y5D60w6uJIBAOGq9mSHf0gktF0duw==}
 
@@ -5935,6 +5964,9 @@ packages:
   zod@3.25.76:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
+  zod@4.1.12:
+    resolution: {integrity: sha512-JInaHOamG8pt5+Ey8kGmdcAcg3OL9reK8ltczgHTAwNhMys/6ThXHityHxVV2p3fkw/c+MAvBHFVYHFZDmjMCQ==}
+
   zustand@4.5.7:
     resolution: {integrity: sha512-CHOUy7mu3lbD6o6LJLfllpjkzhHXSBlX8B9+qPddUsIfeF5S/UZ5q0kmCsnRqT1UHFQZchNFDDzMbQsuesHWlw==}
     engines: {node: '>=12.7.0'}
@@ -5963,6 +5995,16 @@ snapshots:
     dependencies:
       '@jridgewell/gen-mapping': 0.3.5
       '@jridgewell/trace-mapping': 0.3.25
+
+  '@ark/regex@0.0.0':
+    dependencies:
+      '@ark/util': 0.50.0
+
+  '@ark/schema@0.50.0':
+    dependencies:
+      '@ark/util': 0.50.0
+
+  '@ark/util@0.50.0': {}
 
   '@asamuzakjp/css-color@3.2.0':
     dependencies:
@@ -8056,6 +8098,18 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@vitejs/plugin-react@4.7.0(vite@7.1.10(@types/node@24.1.0)(jiti@2.6.1)(lightningcss@1.30.1)(terser@5.39.0)(tsx@4.20.6)(yaml@2.7.0))':
+    dependencies:
+      '@babel/core': 7.28.0
+      '@babel/plugin-transform-react-jsx-self': 7.27.1(@babel/core@7.28.0)
+      '@babel/plugin-transform-react-jsx-source': 7.27.1(@babel/core@7.28.0)
+      '@rolldown/pluginutils': 1.0.0-beta.27
+      '@types/babel__core': 7.20.5
+      react-refresh: 0.17.0
+      vite: 7.1.10(@types/node@24.1.0)(jiti@2.6.1)(lightningcss@1.30.1)(terser@5.39.0)(tsx@4.20.6)(yaml@2.7.0)
+    transitivePeerDependencies:
+      - supports-color
+
   '@vitest/browser@3.2.4(msw@2.7.3(@types/node@24.1.0)(typescript@5.9.2))(playwright@1.56.0)(vite@7.0.6(@types/node@24.1.0)(jiti@2.6.1)(lightningcss@1.30.1)(terser@5.39.0)(tsx@4.20.6)(yaml@2.7.0))(vitest@3.2.4)':
     dependencies:
       '@testing-library/dom': 10.4.1
@@ -8111,7 +8165,7 @@ snapshots:
       tinyrainbow: 2.0.0
       vitest: 3.2.4(@types/debug@4.1.12)(@types/node@24.1.0)(@vitest/browser@3.2.4)(happy-dom@18.0.1)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.30.1)(msw@2.7.3(@types/node@24.1.0)(typescript@5.9.2))(terser@5.39.0)(tsx@4.20.6)(yaml@2.7.0)
     optionalDependencies:
-      '@vitest/browser': 3.2.4(msw@2.7.3(@types/node@24.1.0)(typescript@5.9.2))(playwright@1.56.0)(vite@7.0.6(@types/node@24.1.0)(jiti@2.6.1)(lightningcss@1.30.1)(terser@5.39.0)(tsx@4.20.6)(yaml@2.7.0))(vitest@3.2.4)
+      '@vitest/browser': 3.2.4(msw@2.7.3(@types/node@24.1.0)(typescript@5.9.2))(playwright@1.56.0)(vite@7.1.10(@types/node@24.1.0)(jiti@2.6.1)(lightningcss@1.30.1)(terser@5.39.0)(tsx@4.20.6)(yaml@2.7.0))(vitest@3.2.4)
     transitivePeerDependencies:
       - supports-color
 
@@ -8300,6 +8354,12 @@ snapshots:
   aria-query@5.3.0:
     dependencies:
       dequal: 2.0.3
+
+  arktype@2.1.23:
+    dependencies:
+      '@ark/regex': 0.0.0
+      '@ark/schema': 0.50.0
+      '@ark/util': 0.50.0
 
   array-buffer-byte-length@1.0.2:
     dependencies:
@@ -11765,6 +11825,10 @@ snapshots:
 
   util-deprecate@1.0.2: {}
 
+  valibot@1.1.0(typescript@5.9.2):
+    optionalDependencies:
+      typescript: 5.9.2
+
   vfile-message@4.0.2:
     dependencies:
       '@types/unist': 3.0.3
@@ -11875,7 +11939,6 @@ snapshots:
       terser: 5.39.0
       tsx: 4.20.6
       yaml: 2.7.0
-    optional: true
 
   vitest@1.6.1(@types/node@20.19.9)(@vitest/ui@1.6.1)(happy-dom@18.0.1)(jsdom@26.1.0)(lightningcss@1.30.1)(terser@5.39.0):
     dependencies:
@@ -12090,6 +12153,8 @@ snapshots:
       zod: 3.25.76
 
   zod@3.25.76: {}
+
+  zod@4.1.12: {}
 
   zustand@4.5.7(@types/react@19.1.9)(react@19.1.1):
     dependencies:
