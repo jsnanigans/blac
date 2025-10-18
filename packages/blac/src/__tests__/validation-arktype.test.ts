@@ -28,6 +28,10 @@ describe('Schema Validation - ArkType Integration', () => {
       setValue = (value: number) => {
         this.emit(value);
       };
+
+      setValueValidated = (value: number) => {
+        this.emitValidated(value);
+      };
     }
 
     let cubit: CounterCubit;
@@ -52,28 +56,25 @@ describe('Schema Validation - ArkType Integration', () => {
       }).toThrow();
     });
 
-    it('should validate on emit (success)', () => {
+    it('should NOT validate on regular emit', () => {
       cubit.setValue(50);
       expect(cubit.state).toBe(50);
 
-      cubit.increment();
-      expect(cubit.state).toBe(51);
+      cubit.setValue(150); // Out of bounds, but no validation
+      expect(cubit.state).toBe(150);
+
+      cubit.setValue(0); // Below min, but no validation
+      expect(cubit.state).toBe(0);
     });
 
-    it('should validate on emit (failure - too high)', () => {
-      cubit.setValue(100);
-      try {
-        cubit.increment();
-        expect.fail('Should have thrown');
-      } catch (error) {
-        expect((error as any).name).toBe('BlocValidationError');
-        expect(cubit.state).toBe(100); // State unchanged
-      }
+    it('should validate on emitValidated (success)', () => {
+      cubit.setValueValidated(50);
+      expect(cubit.state).toBe(50);
     });
 
-    it('should validate on emit (failure - too low)', () => {
+    it('should validate on emitValidated (failure - too high)', () => {
       try {
-        cubit.setValue(0);
+        cubit.setValueValidated(101);
         expect.fail('Should have thrown');
       } catch (error) {
         expect((error as any).name).toBe('BlocValidationError');
@@ -81,9 +82,19 @@ describe('Schema Validation - ArkType Integration', () => {
       }
     });
 
-    it('should validate on emit (failure - non-integer)', () => {
+    it('should validate on emitValidated (failure - too low)', () => {
       try {
-        cubit.setValue(3.14);
+        cubit.setValueValidated(0);
+        expect.fail('Should have thrown');
+      } catch (error) {
+        expect((error as any).name).toBe('BlocValidationError');
+        expect(cubit.state).toBe(1); // State unchanged
+      }
+    });
+
+    it('should validate on emitValidated (failure - non-integer)', () => {
+      try {
+        cubit.setValueValidated(3.14);
         expect.fail('Should have thrown');
       } catch (error) {
         expect((error as any).name).toBe('BlocValidationError');
@@ -93,7 +104,7 @@ describe('Schema Validation - ArkType Integration', () => {
 
     it('should provide detailed error information', () => {
       try {
-        cubit.setValue(200);
+        cubit.setValueValidated(200);
         expect.fail('Should have thrown');
       } catch (error) {
         expect((error as any).name).toBe('BlocValidationError');
@@ -142,8 +153,16 @@ describe('Schema Validation - ArkType Integration', () => {
         this.emit({ ...this.state, email });
       };
 
+      updateEmailValidated = (email: string) => {
+        this.emitValidated({ ...this.state, email });
+      };
+
       updateAge = (age: number) => {
         this.emit({ ...this.state, age });
+      };
+
+      updateAgeValidated = (age: number) => {
+        this.emitValidated({ ...this.state, age });
       };
     }
 
@@ -158,17 +177,26 @@ describe('Schema Validation - ArkType Integration', () => {
       expect(cubit.state.email).toBe('alice@example.com');
     });
 
-    it('should validate nested field updates (success)', () => {
-      cubit.updateEmail('bob@example.com');
+    it('should NOT validate on regular emit', () => {
+      // Regular emit allows invalid values
+      cubit.updateEmail('invalid-email');
+      expect(cubit.state.email).toBe('invalid-email');
+
+      cubit.updateAge(-5);
+      expect(cubit.state.age).toBe(-5);
+    });
+
+    it('should validate with emitValidated (success)', () => {
+      cubit.updateEmailValidated('bob@example.com');
       expect(cubit.state.email).toBe('bob@example.com');
 
-      cubit.updateAge(25);
+      cubit.updateAgeValidated(25);
       expect(cubit.state.age).toBe(25);
     });
 
-    it('should validate nested field updates (failure - invalid email)', () => {
+    it('should validate with emitValidated (failure - invalid email)', () => {
       try {
-        cubit.updateEmail('invalid-email');
+        cubit.updateEmailValidated('invalid-email');
         expect.fail('Should have thrown');
       } catch (error) {
         expect((error as any).name).toBe('BlocValidationError');
@@ -176,9 +204,9 @@ describe('Schema Validation - ArkType Integration', () => {
       }
     });
 
-    it('should validate nested field updates (failure - invalid age)', () => {
+    it('should validate with emitValidated (failure - invalid age)', () => {
       try {
-        cubit.updateAge(-5);
+        cubit.updateAgeValidated(-5);
         expect.fail('Should have thrown');
       } catch (error) {
         expect((error as any).name).toBe('BlocValidationError');
@@ -343,47 +371,38 @@ describe('Schema Validation - ArkType Integration', () => {
       expect(bloc.state.label).toBe('Updated');
     });
 
-    it('should validate state on event (failure - negative count)', async () => {
-      // Event handlers are async and errors may be handled internally
-      try {
-        await bloc.add(new IncrementEvent(-10));
-      } catch (error) {
-        // Error might be thrown or handled internally
-      }
-      // State should be unchanged regardless
-      expect(bloc.state.count).toBe(0);
+    it('should emit state on event (no automatic validation)', async () => {
+      await bloc.add(new IncrementEvent(5));
+      expect(bloc.state.count).toBe(5);
+
+      await bloc.add(new SetLabelEvent('Updated'));
+      expect(bloc.state.label).toBe('Updated');
+
+      // Regular emit allows negative values
+      await bloc.add(new IncrementEvent(-10));
+      expect(bloc.state.count).toBe(-5); // 5 + (-10) = -5
     });
 
-    it('should validate state on event (failure - non-integer)', () => {
-      // ArkType's narrow() validation with integer check
-      // Save original state
-      const originalState = { ...bloc.state };
+    it('should NOT validate on regular emit', () => {
+      // Regular emit doesn't validate
+      (bloc as any).emit({ count: 3.14, label: 'Test' });
+      expect(bloc.state.count).toBe(3.14);
 
-      try {
-        (bloc as any).emit({ count: 3.14, label: 'Test' });
-      } catch (error) {
-        // Validation error expected
-        expect((error as any).name).toBe('BlocValidationError');
-      }
-
-      // State should be unchanged
-      expect(bloc.state.count).toBe(originalState.count);
+      (bloc as any).emit({ count: -5, label: 'Test' });
+      expect(bloc.state.count).toBe(-5);
     });
 
-    it('should preserve state on validation failure', async () => {
-      await bloc.add(new IncrementEvent(10));
-      expect(bloc.state.count).toBe(10);
-
-      // Try to set invalid state
+    it('should validate with emitValidated', () => {
+      // Can call emitValidated directly
       try {
-        (bloc as any).emit({ count: -5, label: 'Test' });
+        (bloc as any).emitValidated({ count: -5, label: 'Test' });
         expect.fail('Should have thrown');
       } catch (error) {
         expect((error as any).name).toBe('BlocValidationError');
       }
 
       // State should be unchanged
-      expect(bloc.state.count).toBe(10);
+      expect(bloc.state.count).toBe(0);
       expect(bloc.state.label).toBe('Counter');
     });
   });
@@ -403,19 +422,31 @@ describe('Schema Validation - ArkType Integration', () => {
       setValue = (value: string | number) => {
         this.emit(value as string);
       };
+
+      setValueValidated = (value: string | number) => {
+        this.emitValidated(value as string);
+      };
     }
 
-    it('should handle schema coercion', () => {
+    it('should handle schema coercion with emitValidated', () => {
       const cubit = new CoercionCubit();
 
-      // Number should be coerced to string
-      cubit.setValue(42);
+      // Number should be coerced to string with validation
+      cubit.setValueValidated(42);
       expect(cubit.state).toBe('42');
       expect(typeof cubit.state).toBe('string');
 
       // String should pass through
-      cubit.setValue('100');
+      cubit.setValueValidated('100');
       expect(cubit.state).toBe('100');
+    });
+
+    it('should NOT coerce on regular emit', () => {
+      const cubit = new CoercionCubit();
+
+      // Regular emit doesn't transform
+      cubit.setValue(42);
+      expect(cubit.state).toBe(42 as any); // Passed through as-is
     });
   });
 

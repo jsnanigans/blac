@@ -31,6 +31,9 @@ import { BlocCompositionInteractive } from '@/demos/03-advanced/bloc-composition
 import { DependenciesInteractive } from '@/demos/03-advanced/dependencies/DependenciesInteractive';
 import { AsyncOperationsInteractive } from '@/demos/03-advanced/async-operations/AsyncOperationsInteractive';
 import { CustomSelectorsInteractive } from '@/demos/03-advanced/custom-selectors/CustomSelectorsInteractive';
+import { SchemaValidationInteractive } from '@/demos/03-advanced/schema-validation/SchemaValidationInteractive';
+import { FormValidationSchemaDemo } from '@/demos/03-advanced/schema-validation/FormValidationSchemaDemo';
+import { CharacterStatsDemo } from '@/demos/03-advanced/schema-validation/CharacterStatsDemo';
 import { CustomPluginsInteractive } from '@/demos/04-plugins/custom-plugins/CustomPluginsInteractive';
 
 // Custom heading components with anchor support
@@ -241,5 +244,8 @@ export const mdxComponents = {
   DependenciesInteractive,
   AsyncOperationsInteractive,
   CustomSelectorsInteractive,
+  SchemaValidationInteractive,
+  FormValidationSchemaDemo,
+  CharacterStatsDemo,
   CustomPluginsInteractive,
 };

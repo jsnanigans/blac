@@ -36,6 +36,7 @@ import './02-patterns/event-design';
 // Removed redundant demos: simple-async, loading-states, form-cubit (superseded by NEW Phase 7 demos)
 
 // 03-advanced
+import './03-advanced/schema-validation';
 import './03-advanced/async';
 import './03-advanced/selectors';
 import './03-advanced/custom-selectors';

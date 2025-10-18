@@ -71,6 +71,7 @@ export const guideStructure: GuideStructure = {
       category: '03-advanced',
       color: 'text-orange-600 dark:text-orange-400',
       demos: [
+        'schema-validation',
         'async-operations',
         'custom-selectors',
         'stream',

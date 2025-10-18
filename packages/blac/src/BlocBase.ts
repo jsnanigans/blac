@@ -254,10 +254,45 @@ export abstract class BlocBase<S> {
   }
 
   /**
-   * Emit a new state
+   * Emit a new state (without validation)
+   *
+   * Use this for internal state transitions where data is already trusted.
+   * For external/untrusted data, use emitValidated() instead.
    */
   protected emit(newState: S, action?: unknown): void {
     this._pushState(newState, this._state, action);
+  }
+
+  /**
+   * Emit new state with schema validation.
+   * Use this when emitting external/untrusted data (API responses, user input, localStorage).
+   *
+   * @param state - The new state to validate and emit
+   * @throws {BlocValidationError} If validation fails
+   * @throws {Error} If no schema defined
+   *
+   * @example
+   * ```typescript
+   * // Validate data from API
+   * loadFromAPI = async () => {
+   *   const data = await fetch('/api/data').then(r => r.json());
+   *   this.emitValidated(data); // Validates before emitting
+   * };
+   * ```
+   */
+  protected emitValidated(state: S, action?: unknown): void {
+    if (!this._schema) {
+      throw new Error(
+        `[${this._name}] emitValidated() requires a schema. ` +
+        `Add 'static schema = YourSchema' to your class, or use emit() instead.`
+      );
+    }
+
+    // Validate the state
+    const validated = this._validateState(state, this._state);
+
+    // Emit the validated (possibly transformed) state
+    this._pushState(validated, this._state, action);
   }
 
   /**
@@ -288,28 +323,6 @@ export abstract class BlocBase<S> {
       newState,
     ) as S;
     this._state = transformedState;
-
-    // Validate state after plugin transforms
-    if (this._schema) {
-      try {
-        const validatedState = this._validateState(transformedState, oldState);
-        this._state = validatedState; // May differ due to coercion/defaults
-      } catch (error) {
-        // Log error through BlacContext
-        if (error instanceof BlocValidationError) {
-          this.blacContext?.error(
-            `[${this._name}] State validation failed: ${error.message}`,
-            { error, bloc: this, state: transformedState },
-          );
-        }
-
-        // Restore previous state (prevent corruption)
-        this._state = oldState;
-
-        // Re-throw error for caller to handle
-        throw error;
-      }
-    }
 
     // Notify plugins of state change
     this._plugins.notifyStateChange(oldState, this._state);
