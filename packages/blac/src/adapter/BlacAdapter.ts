@@ -495,4 +495,40 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
   hasDependencies(): boolean {
     return this.pendingDependencies.size > 0;
   }
+
+  // useSyncExternalStore integration methods
+  // These methods provide a clean interface for React's useSyncExternalStore hook
+
+  /**
+   * Returns a subscribe function compatible with useSyncExternalStore
+   * This encapsulates the subscription logic within the adapter
+   */
+  getSubscribe = () => {
+    return (onStoreChange: () => void) => {
+      return this.createSubscription({ onChange: onStoreChange });
+    };
+  };
+
+  /**
+   * Returns the current state snapshot for useSyncExternalStore
+   * When using dependencies, returns the cached snapshot that only updates when dependencies change
+   * Otherwise, returns the current state directly
+   */
+  getSnapshot = (): BlocState<InstanceType<B>> => {
+    if (this.options?.dependencies) {
+      return this.stateSnapshot ?? this.blocInstance.state;
+    }
+    return this.blocInstance.state;
+  };
+
+  /**
+   * Returns the server-side rendering snapshot for useSyncExternalStore
+   * Same behavior as getSnapshot for consistency
+   */
+  getServerSnapshot = (): BlocState<InstanceType<B>> => {
+    if (this.options?.dependencies) {
+      return this.stateSnapshot ?? this.blocInstance.state;
+    }
+    return this.blocInstance.state;
+  };
 }

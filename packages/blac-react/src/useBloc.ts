@@ -111,39 +111,16 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
     };
   }, [adapter]);
 
-  // Subscribe to state changes only when needed
-  const subscribe = useMemo(() => {
-    return (onStoreChange: () => void) => {
-      const unsubscribe = adapter.createSubscription({
-        onChange: () => {
-          onStoreChange();
-        },
-      });
-
-      return () => {
-        unsubscribe();
-      };
-    };
-  }, [adapter]);
+  // Subscribe to state changes using adapter's useSyncExternalStore integration
+  // Note: All functions must be memoized to avoid re-subscriptions on every render
+  const subscribe = useMemo(() => adapter.getSubscribe(), [adapter]);
+  // const getSnapshot = useMemo(() => () => adapter.getSnapshot(), [adapter]);
+  // const getServerSnapshot = useMemo(() => () => adapter.getServerSnapshot(), [adapter]);
 
   const rawState: BlocState<InstanceType<B>> = useSyncExternalStore(
     subscribe,
-    () => {
-      // When using dependencies, return snapshot (only updates when dependencies change)
-      // This prevents re-renders when state changes but dependencies haven't changed
-      if (adapter.options?.dependencies) {
-        return (adapter as any).stateSnapshot ?? adapter.blocInstance.state;
-      }
-      // Normal mode: always return latest state
-      return adapter.blocInstance.state;
-    },
-    () => {
-      // Server-side rendering snapshot
-      if (adapter.options?.dependencies) {
-        return (adapter as any).stateSnapshot ?? adapter.blocInstance.state;
-      }
-      return adapter.blocInstance.state;
-    },
+    adapter.getSnapshot,
+    adapter.getServerSnapshot,
   );
 
   const finalState = useMemo(
