@@ -1,6 +1,7 @@
 import { BlocBase } from '../BlocBase';
 import { Blac } from '../Blac';
 import { generateUUID } from '../utils/uuid';
+import { PathIndex } from '../utils/PathIndex';
 import {
   Subscription,
   SubscriptionOptions,
@@ -23,6 +24,9 @@ export class SubscriptionManager<S = unknown> {
   private hasNonZeroPriorities = false;
   // Cached sorted array: null when invalid/needs re-sorting
   private cachedSortedSubscriptions: Subscription<S>[] | null = null;
+
+  // Performance optimization: PathIndex for O(1) path relationship queries
+  private pathIndex = new PathIndex();
 
   constructor(private bloc: BlocBase<S>) {}
 
@@ -430,6 +434,10 @@ export class SubscriptionManager<S = unknown> {
     // Handle '*' special case - entire state changed
     if (changedPaths.has('*')) return true;
 
+    // Performance: Build PathIndex once for all paths
+    // This enables O(1) parent-child lookups instead of O(n×m) string operations
+    this.pathIndex.build(new Set([...subscription.dependencies, ...changedPaths]));
+
     // Check if any tracked dependencies match changed paths
     for (const trackedPath of subscription.dependencies) {
       // Handle class getter dependencies (_class.propertyName)
@@ -448,58 +456,55 @@ export class SubscriptionManager<S = unknown> {
 
       // 2. Check if any changed path is a child of this tracked path
       // Example: trackedPath="values" should match changedPath="values.0"
+      // Performance: Use PathIndex for O(1) lookups
       for (const changedPath of changedPaths) {
-        if (changedPath.startsWith(trackedPath + '.')) {
+        if (this.pathIndex.isChildOf(changedPath, trackedPath)) {
           return true;
         }
       }
 
       // 3. Check if tracked path is a child of any changed path
-      // Example: trackedPath="values.0.name" should match changedPath="values.0"
-      // But NOT if there's a sibling: tracked="user.profile.city" changed="user" when "user.age" also changed
-      // Strategy: Find the MOST SPECIFIC parent (longest matching path) to avoid false positives from distant ancestors
+      // Example: trackedPath="profile.address.city" should match changedPath="profile"
+      // But NOT if a sibling actually changed: tracked="user.profile.city", changed=["user", "user.age"]
+      // The presence of "user.age" indicates the actual change was in a sibling branch
+      // Performance: Use PathIndex.isChildOf for O(1) lookups
+      for (const changedPath of changedPaths) {
+        // Check if tracked is a child of this changed path
+        if (this.pathIndex.isChildOf(trackedPath, changedPath)) {
+          // Before notifying, check if there's a more specific sibling path in changedPaths
+          // This handles cases where parent is marked as changed but actual change is in sibling
+          let hasSiblingChange = false;
 
-      // First, find all leaf changed paths (paths with no children in the changed set)
-      const leafChangedPaths = new Set<string>();
-      for (const path of changedPaths) {
-        let hasChild = false;
-        for (const other of changedPaths) {
-          if (other !== path && other.startsWith(path + '.')) {
-            hasChild = true;
-            break;
+          for (const otherPath of changedPaths) {
+            if (otherPath === changedPath) continue;
+
+            const otherSegments = otherPath.split('.');
+            const trackedSegments = trackedPath.split('.');
+
+            // Find common ancestor length
+            let commonLength = 0;
+            while (
+              commonLength < otherSegments.length &&
+              commonLength < trackedSegments.length &&
+              otherSegments[commonLength] === trackedSegments[commonLength]
+            ) {
+              commonLength++;
+            }
+
+            // If they share a common ancestor and both diverge, they're siblings
+            // Example: 'user.age' and 'user.profile.city' share 'user' (length 1) and diverge
+            if (commonLength > 0 &&
+                commonLength < otherSegments.length &&
+                commonLength < trackedSegments.length) {
+              hasSiblingChange = true;
+              break;
+            }
           }
-        }
-        if (!hasChild) {
-          leafChangedPaths.add(path);
-        }
-      }
 
-      // Check if any leaf changed path is a sibling of the tracked path
-      for (const leafPath of leafChangedPaths) {
-        // Check if they share a common parent
-        const leafSegments = leafPath.split('.');
-        const trackedSegments = trackedPath.split('.');
-
-        // Find common ancestor length
-        let commonLength = 0;
-        while (
-          commonLength < leafSegments.length &&
-          commonLength < trackedSegments.length &&
-          leafSegments[commonLength] === trackedSegments[commonLength]
-        ) {
-          commonLength++;
-        }
-
-        // If they have a common ancestor and diverge at some point, they're siblings
-        if (commonLength > 0 && commonLength < leafSegments.length && commonLength < trackedSegments.length) {
-          // They diverge at commonLength - this means they're siblings at that level
-          // Don't notify
-          continue;
-        }
-
-        // If the leaf is a parent of the tracked path, notify
-        if (trackedPath.startsWith(leafPath + '.')) {
-          return true;
+          // Only notify if no sibling changes detected
+          if (!hasSiblingChange) {
+            return true;
+          }
         }
       }
     }

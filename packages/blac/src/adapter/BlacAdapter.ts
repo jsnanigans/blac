@@ -4,6 +4,8 @@ import { BlocConstructor, BlocState } from '../types';
 import { generateUUID } from '../utils/uuid';
 import { generateInstanceIdFromProps } from '../utils/generateInstanceId';
 import { ProxyFactory } from './ProxyFactory';
+import { setsEqual } from '../utils/setUtils';
+import { PathTrie } from '../utils/PathTrie';
 
 export interface AdapterOptions<B extends BlocBase<any>> {
   instanceId?: string;
@@ -396,6 +398,11 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
   // Reset tracking for next render
   // V2: Two-phase tracking - start collecting new dependencies without clearing active ones
   resetTracking(): void {
+    // Performance optimization: Skip if using manual dependencies
+    if (this.isUsingDependencies) {
+      return;
+    }
+
     // Clear pending dependencies to start fresh for this render
     this.pendingDependencies.clear();
     this.trackedPaths.clear();
@@ -409,8 +416,40 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
 
   // V2: Commit tracked dependencies after render completes
   commitTracking(): void {
+    // Performance optimization: Skip if using manual dependencies
+    if (this.isUsingDependencies) {
+      return;
+    }
+
     // Disable tracking until next render
     this.isTrackingActive = false;
+
+    // Performance optimization: Skip if no dependencies were tracked
+    // However, we still need to clear subscriptions if previously had dependencies
+    if (this.pendingDependencies.size === 0) {
+      // Clear dependencies if we had some before but not now
+      if (this.subscriptionId) {
+        const subscription = (
+          this.blocInstance._subscriptionManager as any
+        ).subscriptions.get(this.subscriptionId);
+        if (subscription && subscription.dependencies && subscription.dependencies.size > 0) {
+          // Clear old dependencies
+          for (const oldPath of subscription.dependencies) {
+            const subs = (this.blocInstance._subscriptionManager as any)
+              .pathToSubscriptions.get(oldPath);
+            if (subs) {
+              subs.delete(this.subscriptionId);
+              if (subs.size === 0) {
+                (this.blocInstance._subscriptionManager as any)
+                  .pathToSubscriptions.delete(oldPath);
+              }
+            }
+          }
+          subscription.dependencies = new Set();
+        }
+      }
+      return;
+    }
 
     // V3: Filter out intermediate paths, keep only leaf paths
     // This ensures precise tracking - only the deepest accessed paths are tracked
@@ -423,6 +462,13 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
       ).subscriptions.get(this.subscriptionId);
 
       if (subscription) {
+        // Performance optimization: Skip atomic swap if dependencies haven't changed
+        // This avoids unnecessary Map operations and Set allocations
+        if (subscription.dependencies && setsEqual(subscription.dependencies, leafPaths)) {
+          // Dependencies unchanged - skip the swap
+          return;
+        }
+
         // Remove old path-to-subscription mappings
         if (subscription.dependencies) {
           for (const oldPath of subscription.dependencies) {
@@ -461,6 +507,8 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
    * For example, if we tracked ['user', 'user.settings', 'user.settings.theme'],
    * we only keep ['user.settings.theme'].
    *
+   * Performance: O(n) using PathTrie instead of O(n²) nested loops
+   *
    * Special handling for array/object metadata:
    * - Array methods (map, filter, join, etc.) and properties (length) are replaced with parent path
    * - This ensures tracking 'items.map' becomes tracking 'items'
@@ -469,6 +517,9 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
    * the specific properties they access change, not when sibling properties change.
    */
   private filterLeafPaths(paths: Set<string>): Set<string> {
+    if (paths.size === 0) return new Set();
+    if (paths.size === 1) return paths; // Fast path for single path
+
     // Array/Object methods and properties that indicate the parent should be tracked
     const metaProperties = new Set([
       // Array methods
@@ -480,51 +531,32 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
       'toString', 'valueOf', 'hasOwnProperty', 'propertyIsEnumerable',
     ]);
 
-    const pathArray = Array.from(paths);
-    const normalizedPaths = new Set<string>();
-    const metaNormalizedPaths = new Set<string>(); // Track paths that came from meta-properties
+    const metaNormalizedPaths = new Set<string>();
 
-    // First pass: Normalize paths (replace meta-property paths with parent paths)
-    for (const path of pathArray) {
+    // Build PathTrie with normalized paths
+    const trie = new PathTrie();
+
+    for (const path of paths) {
       const lastDot = path.lastIndexOf('.');
       if (lastDot !== -1) {
         const lastSegment = path.substring(lastDot + 1);
         if (metaProperties.has(lastSegment)) {
           // This is a meta-property - track the parent instead
           const parentPath = path.substring(0, lastDot);
-          normalizedPaths.add(parentPath);
-          metaNormalizedPaths.add(parentPath); // Mark as coming from meta-property
+          trie.insert(parentPath);
+          metaNormalizedPaths.add(parentPath);
           continue;
         }
       }
-      normalizedPaths.add(path);
+      trie.insert(path);
     }
 
-    // Second pass: Filter out intermediate paths, but preserve meta-normalized paths
-    const normalizedArray = Array.from(normalizedPaths);
-    const leafPaths = new Set<string>();
+    // Get leaf paths using O(n) trie traversal
+    const leafPaths = trie.getLeafPaths();
 
-    for (const path of normalizedArray) {
-      // If this path came from a meta-property normalization, always keep it
-      if (metaNormalizedPaths.has(path)) {
-        leafPaths.add(path);
-        continue;
-      }
-
-      // Otherwise, check if any other path is a child of this path
-      let hasChild = false;
-      for (const otherPath of normalizedArray) {
-        if (otherPath !== path && otherPath.startsWith(path + '.')) {
-          // Another path is more specific (child of this path)
-          hasChild = true;
-          break;
-        }
-      }
-
-      // If no child found, this is a leaf path
-      if (!hasChild) {
-        leafPaths.add(path);
-      }
+    // Ensure meta-normalized paths are included (even if they have children)
+    for (const metaPath of metaNormalizedPaths) {
+      leafPaths.add(metaPath);
     }
 
     return leafPaths;
