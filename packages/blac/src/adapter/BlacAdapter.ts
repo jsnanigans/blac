@@ -115,6 +115,9 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
   private pendingDependencies = new Set<string>(); // Collected during render
   private isTrackingActive = false; // Controls when tracking is enabled
 
+  // Getter cache warming: temporary storage for values captured during tracking
+  private pendingGetterValues = new Map<string, unknown>();
+
   // Proxy caching
   private cachedStateProxy?: BlocState<InstanceType<B>>;
   private cachedBlocProxy?: InstanceType<B>;
@@ -177,6 +180,12 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
     // V2: Collect in pending dependencies during render
     this.pendingDependencies.add(fullPath);
     this.trackedPaths.add(fullPath);
+
+    // Cache warming: store getter values for transfer during commit
+    if (type === 'class' && value !== undefined) {
+      // Store with short path (will be converted to fullPath during transfer)
+      this.pendingGetterValues.set(path, value);
+    }
 
     if (!this.subscriptionId) {
       // No subscription ID yet - store for later
@@ -407,6 +416,9 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
     this.pendingDependencies.clear();
     this.trackedPaths.clear();
 
+    // Cache warming: clear temporary getter values
+    this.pendingGetterValues.clear();
+
     // Enable tracking for this render
     this.isTrackingActive = true;
 
@@ -462,6 +474,30 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
       ).subscriptions.get(this.subscriptionId);
 
       if (subscription) {
+        // Cache warming: transfer getter values to subscription cache
+        if (this.pendingGetterValues.size > 0) {
+          // Initialize getter cache if needed (consistent with lazy init pattern)
+          if (!subscription.getterCache) {
+            subscription.getterCache = new Map();
+          }
+
+          // Only cache getters that are in the final filtered dependencies
+          for (const [getterName, value] of this.pendingGetterValues) {
+            const getterPath = `_class.${getterName}`;
+
+            // Optimization: Only cache if this getter is actually tracked
+            if (leafPaths.has(getterPath)) {
+              // Optimization: Skip if cache already populated (defensive programming)
+              if (!subscription.getterCache.has(getterPath)) {
+                subscription.getterCache.set(getterPath, {
+                  value: value,
+                  error: undefined,
+                });
+              }
+            }
+          }
+        }
+
         // Performance optimization: Skip atomic swap if dependencies haven't changed
         // This avoids unnecessary Map operations and Set allocations
         if (subscription.dependencies && setsEqual(subscription.dependencies, leafPaths)) {

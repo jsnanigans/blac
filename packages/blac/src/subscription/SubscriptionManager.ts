@@ -418,10 +418,17 @@ export class SubscriptionManager<S = unknown> {
 
   /**
    * Invalidate getter cache entries when state paths change
-   * Fix #8: Path-based cache invalidation to prevent stale getter values
    *
-   * Strategy: Clear getter cache when any non-getter path changes, as getters
-   * typically access state properties and should be re-evaluated.
+   * NOTE: This method is intentionally a no-op. The getter cache is used ONLY for
+   * value comparison, not to return cached values. checkGetterChanged() always
+   * re-evaluates the getter and compares the result with the cached value.
+   *
+   * Clearing the cache would defeat the value-based comparison and cause false
+   * positives (treating every check as "first access" = always changed).
+   *
+   * Known limitation: Getters don't track their transitive state dependencies,
+   * so they are checked on every state change. However, value-based comparison
+   * ensures re-renders only occur when the getter result actually changes.
    *
    * @param subscriptionId The subscription whose getter cache to invalidate
    * @param changedPaths Set of paths that changed in the state
@@ -430,26 +437,8 @@ export class SubscriptionManager<S = unknown> {
     subscriptionId: string,
     changedPaths: Set<string>,
   ): void {
-    const subscription = this.subscriptions.get(subscriptionId);
-    if (!subscription || !subscription.getterCache || subscription.getterCache.size === 0) {
-      return;
-    }
-
-    // Check if any non-getter paths changed
-    // If so, invalidate all getter cache entries since they may access those paths
-    const hasStatePathChanges = Array.from(changedPaths).some(
-      (path) => !path.startsWith('_class.')
-    );
-
-    if (hasStatePathChanges) {
-      // Clear all getter cache entries
-      // This is conservative but safe: getters typically access state properties
-      subscription.getterCache.clear();
-
-      Blac.log(
-        `[${this.bloc._name}:${this.bloc._id}] Getter cache invalidated for subscription ${subscriptionId} due to state changes`
-      );
-    }
+    // Intentionally a no-op - see method documentation above
+    return;
   }
 
   /**
