@@ -193,28 +193,22 @@ export class SubscriptionManager<S = unknown> {
             changedPaths,
             this.bloc,
           );
-          if ((Blac.config as any).logLevel === 'debug') {
-            Blac.log(
-              `[SubscriptionManager] Subscription ${subscription.id} dependencies:`,
-              Array.from(subscription.dependencies),
-            );
-            Blac.log(
-              `[SubscriptionManager] Changed paths:`,
-              Array.from(changedPaths),
-            );
-            Blac.log(`[SubscriptionManager] Should notify:`, shouldNotify);
-          }
         } else {
           // No tracked dependencies
           // Observer subscriptions (basic subscribe()) always notify
-          // Consumer subscriptions: notify if never rendered (initialization/Suspense/concurrent)
-          // or if proxy tracking is disabled (legacy behavior)
           if (subscription.type === 'observer') {
             shouldNotify = true;
           } else {
-            // For consumers: notify if never rendered OR proxy tracking disabled
+            // For consumers:
+            // - If dependencies were tracked but are empty (primitive values), ALWAYS notify
+            // - If dependencies not tracked yet (undefined/null), notify on first render or if proxy disabled
+            const hasEmptyDependencies =
+              subscription.dependencies && subscription.dependencies.size === 0;
             const neverRendered = !subscription.metadata?.hasRendered;
-            shouldNotify = neverRendered || !Blac.config.proxyDependencyTracking;
+            shouldNotify =
+              hasEmptyDependencies ||
+              neverRendered ||
+              !Blac.config.proxyDependencyTracking;
           }
         }
         newValue = newState;
@@ -428,7 +422,10 @@ export class SubscriptionManager<S = unknown> {
     bloc?: any,
   ): boolean {
     const subscription = this.subscriptions.get(subscriptionId);
-    if (!subscription || !subscription.dependencies) return true;
+    // If no dependencies tracked (primitive values, first render), always notify
+    if (!subscription || !subscription.dependencies || subscription.dependencies.size === 0) {
+      return true;
+    }
 
     // Handle '*' special case - entire state changed
     if (changedPaths.has('*')) return true;
@@ -460,33 +457,49 @@ export class SubscriptionManager<S = unknown> {
       // 3. Check if tracked path is a child of any changed path
       // Example: trackedPath="values.0.name" should match changedPath="values.0"
       // But NOT if there's a sibling: tracked="user.profile.city" changed="user" when "user.age" also changed
-      for (const changedPath of changedPaths) {
-        if (trackedPath.startsWith(changedPath + '.')) {
-          // Extract immediate child from tracked path
-          // E.g., trackedPath="user.profile.city", changedPath="user" -> immediateChild="profile"
-          const remainder = trackedPath.substring(changedPath.length + 1);
-          const trackedImmediateChild = remainder.split('.')[0];
+      // Strategy: Find the MOST SPECIFIC parent (longest matching path) to avoid false positives from distant ancestors
 
-          // Check for sibling paths in changed set
-          let hasSibling = false;
-          for (const cp of changedPaths) {
-            if (cp !== changedPath && cp.startsWith(changedPath + '.')) {
-              // Extract immediate child from this changed path
-              const cpRemainder = cp.substring(changedPath.length + 1);
-              const cpImmediateChild = cpRemainder.split('.')[0];
-
-              // If this is a different immediate child, it's a sibling
-              if (cpImmediateChild !== trackedImmediateChild) {
-                hasSibling = true;
-                break;
-              }
-            }
+      // First, find all leaf changed paths (paths with no children in the changed set)
+      const leafChangedPaths = new Set<string>();
+      for (const path of changedPaths) {
+        let hasChild = false;
+        for (const other of changedPaths) {
+          if (other !== path && other.startsWith(path + '.')) {
+            hasChild = true;
+            break;
           }
+        }
+        if (!hasChild) {
+          leafChangedPaths.add(path);
+        }
+      }
 
-          // Only match if no siblings found (change is in our branch or entire parent)
-          if (!hasSibling) {
-            return true;
-          }
+      // Check if any leaf changed path is a sibling of the tracked path
+      for (const leafPath of leafChangedPaths) {
+        // Check if they share a common parent
+        const leafSegments = leafPath.split('.');
+        const trackedSegments = trackedPath.split('.');
+
+        // Find common ancestor length
+        let commonLength = 0;
+        while (
+          commonLength < leafSegments.length &&
+          commonLength < trackedSegments.length &&
+          leafSegments[commonLength] === trackedSegments[commonLength]
+        ) {
+          commonLength++;
+        }
+
+        // If they have a common ancestor and diverge at some point, they're siblings
+        if (commonLength > 0 && commonLength < leafSegments.length && commonLength < trackedSegments.length) {
+          // They diverge at commonLength - this means they're siblings at that level
+          // Don't notify
+          continue;
+        }
+
+        // If the leaf is a parent of the tracked path, notify
+        if (trackedPath.startsWith(leafPath + '.')) {
+          return true;
         }
       }
     }

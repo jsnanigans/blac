@@ -152,17 +152,17 @@ describe('Deep State Tracking - Comprehensive Tests', () => {
       });
 
       expect(cityRenderCount).toBe(2);
-      // Note: ThemeComponent also re-renders because it tracks 'user' (intermediate path)
-      // This is current expected behavior - both components track common parent 'user'
-      expect(themeRenderCount).toBe(2);
+      // V3 Leaf tracking: ThemeComponent should NOT re-render
+      // It only tracks 'user.settings.theme', not 'user.profile.address.city'
+      expect(themeRenderCount).toBe(1); // Should NOT re-render
 
-      // Update theme - should re-render both (they share 'user' parent)
+      // Update theme - should only re-render ThemeComponent
       await act(async () => {
         cubit.updateTheme('light');
       });
 
-      expect(cityRenderCount).toBe(3);
-      expect(themeRenderCount).toBe(3);
+      expect(cityRenderCount).toBe(2); // Should NOT re-render
+      expect(themeRenderCount).toBe(2);
     });
 
     it('should handle very deep nesting (6+ levels)', async () => {
@@ -272,15 +272,17 @@ describe('Deep State Tracking - Comprehensive Tests', () => {
       });
 
       expect(valueRenderCount).toBe(2);
-      // Both re-render because they share common parent paths (l1, l1.l2, etc.)
-      expect(siblingRenderCount).toBe(2);
+      // V3 Leaf tracking: Sibling should NOT re-render
+      // ValueComponent only tracks 'l1.l2.l3.l4.l5.l6.value'
+      // SiblingComponent only tracks 'l1.l2.l3.l4.l5.l6.sibling'
+      expect(siblingRenderCount).toBe(1); // Should NOT re-render
 
       await act(async () => {
         cubit.updateSibling('changed');
       });
 
-      expect(valueRenderCount).toBe(3);
-      expect(siblingRenderCount).toBe(3);
+      expect(valueRenderCount).toBe(2); // Should NOT re-render
+      expect(siblingRenderCount).toBe(2);
     });
   });
 
@@ -310,16 +312,16 @@ describe('Deep State Tracking - Comprehensive Tests', () => {
 
       const cubit = Blac.getBloc(NestedStateCubit);
 
-      // Update first item - should re-render Item1Component and Item2Component
-      // (because array reference changes)
+      // Update first item - should re-render ONLY Item1Component
+      // V3 Leaf tracking: Item2Component tracks items[1].name, which didn't change
       await act(async () => {
         cubit.updateItemName(1, 'Updated Item 1');
       });
 
       expect(screen.getByTestId('item1')).toHaveTextContent('Updated Item 1');
-      // Both should re-render because items array changed
+      // Only Item1 should re-render (precise tracking)
       expect(item1RenderCount).toBe(2);
-      expect(item2RenderCount).toBe(2);
+      expect(item2RenderCount).toBe(1); // Should NOT re-render (sibling isolation)
     });
 
     it('should handle array additions', async () => {

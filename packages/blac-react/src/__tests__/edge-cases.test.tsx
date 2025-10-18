@@ -539,11 +539,12 @@ describe('Edge Case Testing', () => {
       await waitFor(() => expect(screen.getByTestId('deep-value')).toHaveTextContent('42'));
       expect(renderSpy).toHaveBeenCalledTimes(1);
 
-      // Update deep label - WILL trigger rerender in V2 (top-level tracking of level1)
+      // Update deep label - should NOT trigger rerender in V3 (precise leaf tracking)
+      // Component only tracks 'level1.level2...level10.value', not the 'label' sibling
       renderSpy.mockClear();
       await user.click(screen.getByText('Update Label'));
       await new Promise(resolve => setTimeout(resolve, 100));
-      expect(renderSpy).toHaveBeenCalledTimes(1); // V2: top-level tracking
+      expect(renderSpy).toHaveBeenCalledTimes(0); // V3: precise leaf tracking (no re-render)
     });
   });
 

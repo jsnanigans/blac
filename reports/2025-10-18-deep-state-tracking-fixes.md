@@ -160,24 +160,48 @@ Added `/packages/blac-react/src/__tests__/deep-state-tracking.comprehensive.test
 
 ---
 
-## Known Limitations
+## Precise Leaf-Only Tracking
 
-### Intermediate Path Tracking
+### Implementation
 
-Components currently track ALL intermediate paths during property traversal:
+**UPDATE (2025-10-18)**: Implemented precise leaf-only tracking in BlacAdapter to eliminate intermediate path tracking.
+
+Components now track ONLY the most specific (leaf) paths they actually use:
 
 ```typescript
-// Accessing state.user.settings.theme tracks:
-// 1. 'user'
-// 2. 'user.settings'
-// 3. 'user.settings.theme'
+// Accessing state.user.settings.theme now tracks ONLY:
+// - 'user.settings.theme' (the leaf path)
+// Intermediate paths 'user' and 'user.settings' are filtered out!
 ```
 
-**Impact**: If `user.profile.city` changes (causing `'user'` to be in changed paths), components tracking `user.settings.theme` will also re-render because they both track the common parent `'user'`.
+**Key Features**:
+1. **Leaf Path Filtering**: `filterLeafPaths()` method removes intermediate paths
+2. **Array Method Preservation**: Paths from array methods (`.map()`, `.join()`, `.length`) are preserved even if they have children
+3. **Sibling Isolation**: Changes to `user.profile.city` do NOT re-render components tracking `user.settings.theme`
 
-**Workaround**: Use selectors or separate Cubits for truly independent state branches.
+**Example**:
+```typescript
+// Component accessing state.items.map(i => i.name).join(', ')
+// Tracks: ['items'] - the whole array, because .map() and .join() were used
+// NOT: ['items.0.name', 'items.1.name'] - individual indices
 
-**Future Enhancement**: Implement "leaf-only" tracking where intermediate traversals aren't tracked, only final value reads. This requires significant ProxyFactory refactoring.
+// Component accessing state.items[0].name
+// Tracks: ['items.0.name'] - only the specific index
+```
+
+### Advanced Sibling Detection
+
+Implemented leaf-based sibling detection in `shouldNotifyForPaths()`:
+
+1. **Find Leaf Changed Paths**: Identify paths with no children in the changed set
+2. **Common Ancestor Matching**: Compare tracked path with leaf changed paths by finding common ancestors
+3. **Sibling Detection**: If paths diverge at some level, they're siblings → don't notify
+
+**Example**:
+- Tracked: `user.profile.city`
+- Changed Leaf: `user.settings.theme`
+- Common Ancestor: `user` (length 1)
+- Divergence: `profile` vs `settings` → Siblings! → No re-render ✓
 
 ### Unrelated Test Failures (2)
 
@@ -186,7 +210,11 @@ Components currently track ALL intermediate paths during property traversal:
 - "should maintain reactivity during transitions"
 - "should handle transition interruption"
 
-**Status**: Pre-existing failures, unrelated to deep state tracking fix. These involve React Concurrent Mode features and may be flaky or require separate investigation.
+**Status**: Pre-existing failures, unrelated to deep state tracking fix. These involve React 18's Concurrent Mode features (`useTransition` + `useSyncExternalStore`).
+
+**Detailed Investigation**: See `/reports/2025-10-18-usetransition-test-failures.md` for full bug report.
+
+**Impact**: Low - Isolated to advanced React 18 concurrent rendering scenarios. Standard state updates work correctly (195/197 tests passing).
 
 ---
 
@@ -234,43 +262,78 @@ Public API remains identical - this is purely an implementation improvement.
 
 ## Files Modified
 
-1. `/packages/blac/src/subscription/SubscriptionManager.ts`
-   - Lines 313-348: getChangedPaths implementation
-   - Lines 425-495: shouldNotifyForPaths implementation
-   - Updated V2 comments to V3
+### Core Package (@blac/core)
 
-2. `/packages/blac/src/subscription/__tests__/SubscriptionManager.getChangedPaths.test.ts`
+1. `/packages/blac/src/subscription/SubscriptionManager.ts`
+   - Lines 313-348: `getChangedPaths()` - Reports both parent and child paths
+   - Lines 460-513: `shouldNotifyForPaths()` - Leaf-based sibling detection with common ancestor matching
+   - Removed intermediate path tracking limitations
+
+2. `/packages/blac/src/adapter/BlacAdapter.ts`
+   - Lines 410-456: `commitTracking()` - Added leaf path filtering
+   - Lines 470-530: `filterLeafPaths()` - New method to filter out intermediate paths
+   - Preserves paths from array methods (map, join, length, etc.)
+
+3. `/packages/blac/src/subscription/__tests__/SubscriptionManager.getChangedPaths.test.ts`
    - Updated 3 test expectations to reflect parent path reporting
 
-3. `/packages/blac/src/BlocBase.ts`
-   - Removed debug logging (temporary, for investigation)
+### React Package (@blac/react)
 
 4. `/packages/blac-react/src/__tests__/deep-state-tracking.comprehensive.test.tsx`
-   - Added: 9 new comprehensive tests
+   - Added: 9 new comprehensive tests for precise tracking
+   - Updated expectations for leaf-only tracking behavior
 
-5. `/reports/2025-10-18-test-failures-analysis.md`
+5. `/packages/blac-react/src/__tests__/dependency-tracking.test.tsx`
+   - Updated "should track nested property access correctly" test expectations
+   - Changed from expecting 1 re-render to 0 (sibling isolation)
+
+6. `/packages/blac-react/src/__tests__/edge-cases.test.tsx`
+   - Updated "should handle very deep nesting with top-level tracking" test expectations
+   - Changed from expecting 1 re-render to 0 (precise leaf tracking)
+
+### Documentation
+
+7. `/reports/2025-10-18-test-failures-analysis.md`
    - Initial analysis report
+
+8. `/reports/2025-10-18-deep-state-tracking-fixes.md`
+   - This comprehensive final report
+
+9. `/reports/2025-10-18-usetransition-test-failures.md`
+   - Bug report for pre-existing useTransition test failures
 
 ---
 
 ## Conclusion
 
-The deep state tracking feature (V3) is now **stable and production-ready**. The fix ensures that:
+The deep state tracking feature (V3) with **precise leaf-only tracking** is now **stable and production-ready**. The implementation ensures that:
 
 1. ✅ Components correctly re-render when tracked nested state changes
 2. ✅ Array content changes trigger appropriate re-renders
-3. ✅ Sibling properties don't cause false positive re-renders
-4. ✅ Deep nesting (6+ levels) works correctly
-5. ✅ Edge cases (null, undefined, empty arrays) are handled
+3. ✅ Array methods (map, join, length) track the entire collection correctly
+4. ✅ **Sibling properties don't cause false positive re-renders** (precise tracking)
+5. ✅ **Intermediate paths are filtered out** (only leaf paths tracked)
+6. ✅ Deep nesting (10+ levels) works correctly with full sibling isolation
+7. ✅ Edge cases (null, undefined, empty arrays) are handled
 
-The implementation strikes a balance between correctness and performance, with room for future optimizations (leaf-only tracking) if needed.
+### Test Results
+
+- **@blac/core**: 369/369 tests passing (100%)
+- **@blac/react**: 195/197 tests passing (99%)
+- **2 unrelated failures**: useTransition tests (pre-existing, not related to this feature)
+
+### Key Improvements Over V2
+
+1. **Eliminated Intermediate Path Tracking**: Components only track the specific paths they use, not parent paths
+2. **Advanced Sibling Detection**: Leaf-based matching prevents false positives from common ancestors
+3. **Array Method Intelligence**: Correctly distinguishes between collection operations and index-specific accesses
+4. **Better Performance**: Fewer unnecessary re-renders due to precise tracking
 
 ### Recommended Next Steps
 
-1. **Monitor Performance**: Track re-render counts in production
-2. **Consider Leaf-Only Tracking**: If intermediate path tracking causes issues, implement leaf-only mode
-3. **Fix useTransition Tests**: Investigate and fix the 2 unrelated test failures
-4. **Update Documentation**: Document the intermediate path tracking behavior for users
+1. **Monitor Performance**: Track re-render counts in production to validate improvements
+2. **Fix useTransition Tests**: Investigate and fix the 2 unrelated test failures
+3. **Document Behavior**: Update user documentation to explain precise tracking behavior
 
 ---
 

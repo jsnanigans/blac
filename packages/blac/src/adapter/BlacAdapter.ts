@@ -411,6 +411,10 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
     // Disable tracking until next render
     this.isTrackingActive = false;
 
+    // V3: Filter out intermediate paths, keep only leaf paths
+    // This ensures precise tracking - only the deepest accessed paths are tracked
+    const leafPaths = this.filterLeafPaths(this.pendingDependencies);
+
     // Atomically swap pending dependencies into subscription
     if (this.subscriptionId) {
       const subscription = (
@@ -433,11 +437,11 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
           }
         }
 
-        // Atomic swap: replace old dependencies with new ones
-        subscription.dependencies = new Set(this.pendingDependencies);
+        // Atomic swap: replace old dependencies with filtered leaf paths
+        subscription.dependencies = new Set(leafPaths);
 
         // Add new path-to-subscription mappings
-        for (const newPath of this.pendingDependencies) {
+        for (const newPath of leafPaths) {
           let subs = (this.blocInstance._subscriptionManager as any)
             .pathToSubscriptions.get(newPath);
           if (!subs) {
@@ -449,6 +453,80 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
         }
       }
     }
+  }
+
+  /**
+   * Filter out intermediate paths, keeping only the most specific (leaf) paths.
+   * For example, if we tracked ['user', 'user.settings', 'user.settings.theme'],
+   * we only keep ['user.settings.theme'].
+   *
+   * Special handling for array/object metadata:
+   * - Array methods (map, filter, join, etc.) and properties (length) are replaced with parent path
+   * - This ensures tracking 'items.map' becomes tracking 'items'
+   *
+   * This enables precise dependency tracking - components only re-render when
+   * the specific properties they access change, not when sibling properties change.
+   */
+  private filterLeafPaths(paths: Set<string>): Set<string> {
+    // Array/Object methods and properties that indicate the parent should be tracked
+    const metaProperties = new Set([
+      // Array methods
+      'map', 'filter', 'reduce', 'forEach', 'some', 'every', 'find', 'findIndex',
+      'includes', 'indexOf', 'lastIndexOf', 'join', 'slice', 'concat', 'flat', 'flatMap',
+      // Array properties
+      'length',
+      // Object methods that might be accessed
+      'toString', 'valueOf', 'hasOwnProperty', 'propertyIsEnumerable',
+    ]);
+
+    const pathArray = Array.from(paths);
+    const normalizedPaths = new Set<string>();
+    const metaNormalizedPaths = new Set<string>(); // Track paths that came from meta-properties
+
+    // First pass: Normalize paths (replace meta-property paths with parent paths)
+    for (const path of pathArray) {
+      const lastDot = path.lastIndexOf('.');
+      if (lastDot !== -1) {
+        const lastSegment = path.substring(lastDot + 1);
+        if (metaProperties.has(lastSegment)) {
+          // This is a meta-property - track the parent instead
+          const parentPath = path.substring(0, lastDot);
+          normalizedPaths.add(parentPath);
+          metaNormalizedPaths.add(parentPath); // Mark as coming from meta-property
+          continue;
+        }
+      }
+      normalizedPaths.add(path);
+    }
+
+    // Second pass: Filter out intermediate paths, but preserve meta-normalized paths
+    const normalizedArray = Array.from(normalizedPaths);
+    const leafPaths = new Set<string>();
+
+    for (const path of normalizedArray) {
+      // If this path came from a meta-property normalization, always keep it
+      if (metaNormalizedPaths.has(path)) {
+        leafPaths.add(path);
+        continue;
+      }
+
+      // Otherwise, check if any other path is a child of this path
+      let hasChild = false;
+      for (const otherPath of normalizedArray) {
+        if (otherPath !== path && otherPath.startsWith(path + '.')) {
+          // Another path is more specific (child of this path)
+          hasChild = true;
+          break;
+        }
+      }
+
+      // If no child found, this is a leaf path
+      if (!hasChild) {
+        leafPaths.add(path);
+      }
+    }
+
+    return leafPaths;
   }
 
   // Set component name for rerender logging

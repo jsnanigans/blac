@@ -141,18 +141,16 @@ describe('Dependency Tracking Tests', () => {
     await waitFor(() => expect(screen.getByTestId('nested-value')).toHaveTextContent('1'));
     expect(renderSpy).toHaveBeenCalledTimes(2);
 
-    // V3 Note: Currently this test fails because we track intermediate paths
-    // When accessing state.nested.value, we track both 'nested' AND 'nested.value'
-    // When nested.label changes, the subscription is notified because 'nested' changed
-    // This is a known limitation - we track all intermediate paths, not just leaf paths
-    // TODO: Consider filtering to only track leaf paths for optimal precision
+    // V3 Leaf Tracking: With precise leaf-only tracking, we now ONLY track 'nested.value'
+    // When accessing state.nested.value, we filter out intermediate paths like 'nested'
+    // When nested.label changes, the subscription is NOT notified (sibling isolation)
+    // This is the correct behavior for precise tracking
     renderSpy.mockClear();
     await user.click(screen.getByText('Update Nested Label'));
 
     await new Promise(resolve => setTimeout(resolve, 100));
-    // For now, accepting that this WILL re-render due to intermediate path tracking
-    // Future optimization: filter out parent paths when a deeper path is also tracked
-    expect(renderSpy).toHaveBeenCalledTimes(1); // Currently re-renders (tracked 'nested')
+    // With leaf-only tracking, should NOT re-render (sibling change)
+    expect(renderSpy).toHaveBeenCalledTimes(0); // Should NOT re-render
   });
 
   it('should track getter access correctly', async () => {
