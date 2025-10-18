@@ -338,9 +338,10 @@ describe('SubscriptionManager', () => {
       );
 
       const updatedStats = manager.getStats();
-      // V3: Consumer with no tracked dependencies won't be notified (when proxy tracking enabled)
-      // Only the 2 observer subscriptions are notified
-      expect(updatedStats.totalNotifications).toBe(2);
+      // V3: Consumer with no tracked dependencies gets notified on first update (never rendered)
+      // After first render with no dependencies, it won't be notified
+      // All 3 subscriptions are notified (2 observers + 1 consumer on first update)
+      expect(updatedStats.totalNotifications).toBe(3);
     });
   });
 
