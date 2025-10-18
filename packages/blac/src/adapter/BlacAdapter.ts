@@ -596,12 +596,6 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
     };
   }
 
-  // Get last rerender reason
-  getLastRerenderReason(): any {
-    // This method is deprecated - render reason is now handled by the RenderLoggingPlugin
-    return undefined;
-  }
-
   // Check if any dependencies have been tracked
   hasDependencies(): boolean {
     return this.pendingDependencies.size > 0;

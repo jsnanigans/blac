@@ -114,8 +114,6 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
   // Subscribe to state changes using adapter's useSyncExternalStore integration
   // Note: All functions must be memoized to avoid re-subscriptions on every render
   const subscribe = useMemo(() => adapter.getSubscribe(), [adapter]);
-  // const getSnapshot = useMemo(() => () => adapter.getSnapshot(), [adapter]);
-  // const getServerSnapshot = useMemo(() => () => adapter.getServerSnapshot(), [adapter]);
 
   const rawState: BlocState<InstanceType<B>> = useSyncExternalStore(
     subscribe,

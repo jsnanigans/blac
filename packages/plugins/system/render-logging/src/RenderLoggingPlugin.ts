@@ -29,7 +29,6 @@ export class RenderLoggingPlugin implements BlacPlugin {
 
   updateConfig(config: RenderLoggingConfig | boolean | 'minimal' | 'detailed'): void {
     this.config = this.normalizeConfig(config);
-    console.log('[RenderLoggingPlugin] Config updated:', this.config);
   }
 
   private normalizeConfig(config: RenderLoggingConfig | boolean | 'minimal' | 'detailed'): RenderLoggingConfig {
