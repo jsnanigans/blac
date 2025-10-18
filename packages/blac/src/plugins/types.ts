@@ -1,5 +1,5 @@
 import { BlocBase } from '../BlocBase';
-import { Bloc } from '../Bloc';
+import { Vertex } from '../Vertex';
 
 /**
  * Error context provided to error handlers
@@ -66,7 +66,7 @@ export interface BlacPlugin extends Plugin {
     previousState: any,
     currentState: any,
   ): void;
-  onEventAdded?(bloc: Bloc<any, any>, event: any): void;
+  onEventAdded?(bloc: Vertex<any, any>, event: any): void;
   onError?(error: Error, bloc: BlocBase<unknown>, context: ErrorContext): void;
 
   // Adapter lifecycle hooks

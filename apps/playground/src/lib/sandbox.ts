@@ -101,7 +101,7 @@ export class Sandbox {
         const React = window.React;
         const ReactDOM = window.ReactDOM;
         const { useState, useEffect, useRef, useCallback, useMemo, useReducer, useContext, useLayoutEffect } = React;
-        const { Bloc, Cubit, BlocBase, Blac } = window.BlacCore;
+        const { Vertex, Cubit, BlocBase, Blac } = window.BlacCore;
         const { useBloc, useExternalBlocStore } = window.BlacReact;
         
         // Performance tracking wrapper

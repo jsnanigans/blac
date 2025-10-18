@@ -245,7 +245,7 @@ export { IsolatedCounterDemo as App };`,
     title: 'Todo List',
     description: 'A todo list using Bloc pattern with events',
     code: `import React, { useState } from 'react';
-import { Bloc } from '@blac/core';
+import { Vertex } from '@blac/core';
 import { useBloc } from '@blac/react';
 
 // Todo model
@@ -280,7 +280,7 @@ class SetFilter {
 type TodoEvent = AddTodo | ToggleTodo | RemoveTodo | SetFilter;
 
 // Bloc
-class TodoBloc extends Bloc<TodoState, TodoEvent> {
+class TodoBloc extends Vertex<TodoState, TodoEvent> {
   constructor() {
     super({
       todos: [],

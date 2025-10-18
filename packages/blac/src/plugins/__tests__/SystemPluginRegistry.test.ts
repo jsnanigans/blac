@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SystemPluginRegistry } from '../SystemPluginRegistry';
 import { BlacPlugin } from '../types';
 import { BlocBase } from '../../BlocBase';
-import { Bloc } from '../../Bloc';
+import { Vertex } from '../../Vertex';
 
 // Mock bloc for testing
 class MockBloc extends BlocBase<number> {
@@ -12,7 +12,7 @@ class MockBloc extends BlocBase<number> {
 }
 
 // Mock event bloc
-class MockEventBloc extends Bloc<number, { type: string }> {
+class MockEventBloc extends Vertex<number, { type: string }> {
   constructor() {
     super(0);
   }

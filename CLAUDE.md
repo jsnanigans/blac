@@ -163,7 +163,7 @@ class IncrementEvent {
   constructor(public readonly amount: number = 1) {}
 }
 
-class CounterBloc extends Bloc<number, IncrementEvent> {
+class CounterBloc extends Vertex<number, IncrementEvent> {
   constructor() {
     super(0);
 
@@ -244,7 +244,7 @@ const [state, bloc] = useBloc(UserBloc, {
 
 ### Props-Based Blocs
 ```typescript
-class UserProfileBloc extends Bloc<UserState, UserEvents, {userId: string}> {
+class UserProfileBloc extends Vertex<UserState, UserEvents, {userId: string}> {
   constructor(props: {userId: string}) {
     super(initialState);
     this.userId = props.userId;

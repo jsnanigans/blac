@@ -7,7 +7,7 @@
  */
 
 import React, { useState } from 'react';
-import { Cubit, Bloc } from '@blac/core';
+import { Cubit, Vertex } from '@blac/core';
 import { useBloc } from '@blac/react';
 import { DemoLayout } from '../core/layouts/DemoLayout';
 
@@ -53,7 +53,7 @@ class ResetEvent {}
 
 type CounterEvents = IncrementEvent | DecrementEvent | ResetEvent;
 
-class CounterBloc extends Bloc<number, CounterEvents> {
+class CounterBloc extends Vertex<number, CounterEvents> {
   constructor() {
     super(0);
 

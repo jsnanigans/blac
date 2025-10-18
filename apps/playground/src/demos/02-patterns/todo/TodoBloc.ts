@@ -1,4 +1,4 @@
-import { Bloc } from '@blac/core';
+import { Vertex } from '@blac/core';
 import { EventRegistry } from '@blac/devtools-connect';
 
 export interface Todo {
@@ -70,7 +70,7 @@ export type TodoActions =
   | SetFilterAction
   | ClearCompletedAction;
 
-export class TodoBloc extends Bloc<TodoState, TodoActions> {
+export class TodoBloc extends Vertex<TodoState, TodoActions> {
   constructor() {
     super(initialState);
 

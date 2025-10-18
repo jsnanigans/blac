@@ -392,7 +392,7 @@ export function App() {
       },
       {
         name: 'TodoBloc.ts',
-        content: `import { Bloc } from '@blac/core';
+        content: `import { Vertex } from '@blac/core';
 import { Todo, TodoState } from './types';
 import {
   AddTodoEvent,
@@ -413,7 +413,7 @@ const initialState: TodoState = {
   nextId: 4
 };
 
-export class TodoBloc extends Bloc<TodoState, TodoEvents> {
+export class TodoBloc extends Vertex<TodoState, TodoEvents> {
   constructor() {
     super(initialState);
 

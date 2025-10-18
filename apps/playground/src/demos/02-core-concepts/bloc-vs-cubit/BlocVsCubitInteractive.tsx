@@ -1,5 +1,5 @@
 import { useBloc } from '@blac/react';
-import { Cubit, Bloc } from '@blac/core';
+import { Cubit, Vertex } from '@blac/core';
 import { Button } from '@/ui/Button';
 import { StateViewer } from '@/components/shared/StateViewer';
 import { motion } from 'framer-motion';
@@ -40,7 +40,7 @@ class DecrementEvent {
 
 class ResetEvent {}
 
-class CounterBloc extends Bloc<CounterState, IncrementEvent | DecrementEvent | ResetEvent> {
+class CounterBloc extends Vertex<CounterState, IncrementEvent | DecrementEvent | ResetEvent> {
   constructor() {
     super({ count: 0 });
 

@@ -23,7 +23,7 @@ export function processDemoForPlayground(demo: any): ProcessedDemo {
 
   // Standard imports
   parts.push(`import React from 'react';
-import { Cubit, Bloc, BlocBase } from '@blac/core';
+import { Cubit, Vertex, BlocBase } from '@blac/core';
 import { useBloc, useExternalBlocStore } from '@blac/react';
 `);
 

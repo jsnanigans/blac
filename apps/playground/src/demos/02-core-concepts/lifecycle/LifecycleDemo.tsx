@@ -1,5 +1,5 @@
 import { useBloc } from '@blac/react';
-import { Cubit, Bloc, Blac, type BlacPlugin } from '@blac/core';
+import { Cubit, Vertex, Blac, type BlacPlugin } from '@blac/core';
 import { Button } from '@/ui/Button';
 import { DemoArticle } from '@/components/demo-article/DemoArticle';
 import { ArticleSection, SectionHeader } from '@/components/demo-article/ArticleSection';

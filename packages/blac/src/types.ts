@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Bloc } from './Bloc';
+import { Vertex } from './Vertex';
 import { BlocBase } from './BlocBase';
 import { Cubit } from './Cubit';
 
@@ -10,9 +10,9 @@ import { Cubit } from './Cubit';
 export type BlocClassNoParams<B> = new (args: never[]) => B;
 
 /**
- * Represents the abstract base types for Bloc and Cubit
+ * Represents the abstract base types for Vertex and Cubit
  */
-export type BlocBaseAbstract = typeof Bloc<any, any> | typeof Cubit<any>;
+export type BlocBaseAbstract = typeof Vertex<any, any> | typeof Cubit<any>;
 
 /**
  * Represents a constructor type for a Bloc that can take any parameters

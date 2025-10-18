@@ -1,5 +1,5 @@
 import { useBloc } from '@blac/react';
-import { Bloc } from '@blac/core';
+import { Vertex } from '@blac/core';
 import { Card, CardContent } from '@/ui/Card';
 import { Button } from '@/ui/Button';
 import { useState } from 'react';
@@ -21,7 +21,7 @@ interface CounterState {
 }
 
 // ClickBloc - Event-driven counter
-class ClickBloc extends Bloc<CounterState, IncrementEvent | DecrementEvent | ResetEvent> {
+class ClickBloc extends Vertex<CounterState, IncrementEvent | DecrementEvent | ResetEvent> {
   constructor() {
     super({ count: 0 });
 
@@ -181,7 +181,7 @@ class DecrementEvent {
 class ResetEvent {}
 
 // Event-driven Bloc
-class ClickBloc extends Bloc<CounterState, IncrementEvent | DecrementEvent | ResetEvent> {
+class ClickBloc extends Vertex<CounterState, IncrementEvent | DecrementEvent | ResetEvent> {
   constructor() {
     super({ count: 0 });
 

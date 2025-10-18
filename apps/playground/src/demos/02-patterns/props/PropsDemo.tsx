@@ -520,7 +520,7 @@ function App() {
   pageSize?: number;
 }
 
-class TodoListBloc extends Bloc<TodoState, TodoEvent> {
+class TodoListBloc extends Vertex<TodoState, TodoEvent> {
   private props: Required<TodoListProps>;
 
   constructor(props: TodoListProps) {

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, act, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { Bloc, Cubit, Blac } from '@blac/core';
+import { Vertex, Cubit, Blac } from '@blac/core';
 import { useBloc } from '../index';
 
 // Event classes
@@ -29,7 +29,7 @@ interface CounterState {
   history: number[];
 }
 
-class CounterBloc extends Bloc<CounterState, CounterEvent> {
+class CounterBloc extends Vertex<CounterState, CounterEvent> {
   constructor() {
     super({ count: 0, loading: false, history: [] });
 
@@ -582,7 +582,7 @@ describe('useBloc - Events and State Updates', () => {
 
   describe('Error Handling in Events', () => {
     it('should handle synchronous errors in event handlers', async () => {
-      class ErrorBloc extends Bloc<{ value: string }, CounterEvent> {
+      class ErrorBloc extends Vertex<{ value: string }, CounterEvent> {
         constructor() {
           super({ value: 'initial' });
 
@@ -618,7 +618,7 @@ describe('useBloc - Events and State Updates', () => {
     });
 
     it('should handle async errors in event handlers', async () => {
-      class AsyncErrorBloc extends Bloc<{ value: string }, CounterEvent> {
+      class AsyncErrorBloc extends Vertex<{ value: string }, CounterEvent> {
         constructor() {
           super({ value: 'initial' });
 

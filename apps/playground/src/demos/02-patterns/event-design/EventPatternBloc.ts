@@ -1,4 +1,4 @@
-import { Bloc } from '@blac/core';
+import { Vertex } from '@blac/core';
 
 // Good Event Patterns - Follow these examples
 
@@ -114,7 +114,7 @@ export type BadEventTypes =
 export type EventPatternBlocEvents = GoodEventTypes | BadEventTypes;
 
 // The main Bloc implementation
-export class EventPatternBloc extends Bloc<EventDemoState, EventPatternBlocEvents> {
+export class EventPatternBloc extends Vertex<EventDemoState, EventPatternBlocEvents> {
   constructor() {
     super({
       count: 0,

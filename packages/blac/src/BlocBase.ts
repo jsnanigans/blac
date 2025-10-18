@@ -101,7 +101,7 @@ export abstract class BlocBase<S> {
    *
    * @example
    * ```typescript
-   * class DatabaseBloc extends Bloc<DbState, DbEvents> {
+   * class DatabaseBloc extends Vertex<DbState, DbEvents> {
    *   constructor(private connection: DbConnection) {
    *     super(initialState);
    *

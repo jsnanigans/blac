@@ -1,5 +1,5 @@
 import { useBloc } from '@blac/react';
-import { Bloc } from '@blac/core';
+import { Vertex } from '@blac/core';
 import { Button } from '@/ui/Button';
 import { DemoArticle } from '@/components/demo-article/DemoArticle';
 import { ArticleSection, SectionHeader } from '@/components/demo-article/ArticleSection';
@@ -28,7 +28,7 @@ interface CounterState {
   history: Array<{ event: string; timestamp: number }>;
 }
 
-class EventCounterBloc extends Bloc<CounterState, IncrementEvent | DecrementEvent | ResetEvent> {
+class EventCounterBloc extends Vertex<CounterState, IncrementEvent | DecrementEvent | ResetEvent> {
   constructor() {
     super({ count: 0, history: [] });
 
@@ -113,7 +113,7 @@ interface FormState {
   submitCount: number;
 }
 
-class FormValidationBloc extends Bloc<FormState, UpdateFieldEvent | ValidateFieldEvent | SubmitFormEvent | ResetFormEvent> {
+class FormValidationBloc extends Vertex<FormState, UpdateFieldEvent | ValidateFieldEvent | SubmitFormEvent | ResetFormEvent> {
   constructor() {
     const initialState: FormState = {
       fields: {
@@ -266,7 +266,7 @@ interface ApiState {
   fetchCount: number;
 }
 
-class AsyncEventBloc extends Bloc<ApiState, FetchDataEvent | RefreshDataEvent | CancelFetchEvent> {
+class AsyncEventBloc extends Vertex<ApiState, FetchDataEvent | RefreshDataEvent | CancelFetchEvent> {
   private abortController?: AbortController;
 
   constructor() {
@@ -390,7 +390,7 @@ interface SearchState {
   searchCount: number;
 }
 
-class SearchBloc extends Bloc<SearchState, SearchEvent | ClearSearchEvent> {
+class SearchBloc extends Vertex<SearchState, SearchEvent | ClearSearchEvent> {
   private searchTimeout?: NodeJS.Timeout;
 
   constructor() {
@@ -870,7 +870,7 @@ class DecrementEvent {
 class ResetEvent {}
 
 // Create event-driven Bloc
-class EventCounterBloc extends Bloc<CounterState, IncrementEvent | DecrementEvent | ResetEvent> {
+class EventCounterBloc extends Vertex<CounterState, IncrementEvent | DecrementEvent | ResetEvent> {
   constructor() {
     super({ count: 0, history: [] });
 
@@ -955,7 +955,7 @@ class ValidateFieldEvent {
 
 class SubmitFormEvent {}
 
-class FormValidationBloc extends Bloc<FormState, FormEvents> {
+class FormValidationBloc extends Vertex<FormState, FormEvents> {
   constructor() {
     super(initialState);
 
@@ -1038,7 +1038,7 @@ class FormValidationBloc extends Bloc<FormState, FormEvents> {
         </div>
 
         <CodePanel
-          code={`class AsyncEventBloc extends Bloc<ApiState, FetchDataEvent | RefreshDataEvent | CancelFetchEvent> {
+          code={`class AsyncEventBloc extends Vertex<ApiState, FetchDataEvent | RefreshDataEvent | CancelFetchEvent> {
   private abortController?: AbortController;
 
   constructor() {
@@ -1129,7 +1129,7 @@ class FormValidationBloc extends Bloc<FormState, FormEvents> {
         </div>
 
         <CodePanel
-          code={`class SearchBloc extends Bloc<SearchState, SearchEvent | ClearSearchEvent> {
+          code={`class SearchBloc extends Vertex<SearchState, SearchEvent | ClearSearchEvent> {
   private searchTimeout?: NodeJS.Timeout;
 
   constructor() {
@@ -1251,7 +1251,7 @@ describe('CounterBloc', () => {
 });
 
 // Event logging for debugging
-class DebugBloc extends Bloc<State, Events> {
+class DebugBloc extends Vertex<State, Events> {
   constructor() {
     super(initialState);
 

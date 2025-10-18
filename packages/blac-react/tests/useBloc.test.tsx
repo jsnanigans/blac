@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { render, renderHook, act, screen } from '@testing-library/react';
 import React from 'react';
-import { Cubit, Bloc, Blac } from '@blac/core';
+import { Cubit, Vertex, Blac } from '@blac/core';
 import { useBloc } from '../src';
 
 interface CounterState {
@@ -30,7 +30,7 @@ abstract class CounterEvent {}
 class Increment extends CounterEvent {}
 class Decrement extends CounterEvent {}
 
-class CounterBloc extends Bloc<CounterState, CounterEvent> {
+class CounterBloc extends Vertex<CounterState, CounterEvent> {
   constructor() {
     super({ count: 0, data: { value: 0 } });
 

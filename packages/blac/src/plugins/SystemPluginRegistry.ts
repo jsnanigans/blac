@@ -6,7 +6,7 @@ import {
   AdapterMetadata,
 } from './types';
 import { BlocBase } from '../BlocBase';
-import { Bloc } from '../Bloc';
+import { Vertex } from '../Vertex';
 
 /**
  * Registry for system-wide plugins
@@ -147,7 +147,7 @@ export class SystemPluginRegistry implements PluginRegistry<BlacPlugin> {
   /**
    * Notify plugins of event addition
    */
-  notifyEventAdded(bloc: Bloc<any, any>, event: any): void {
+  notifyEventAdded(bloc: Vertex<any, any>, event: any): void {
     this.executeHook('onEventAdded', [bloc, event]);
   }
 

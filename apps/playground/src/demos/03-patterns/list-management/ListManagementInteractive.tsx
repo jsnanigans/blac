@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useBloc } from '@blac/react';
-import { Cubit, Bloc } from '@blac/core';
+import { Cubit, Vertex } from '@blac/core';
 import { Button } from '@/ui/Button';
 import { StateViewer } from '@/components/shared/StateViewer';
 import { Plus, Trash2, Filter, CheckSquare, Square, Check } from 'lucide-react';
@@ -116,7 +116,7 @@ type TodoEvent =
   | SetPriorityFilterEvent
   | ClearCompletedEvent;
 
-class TodoBloc extends Bloc<TodoState, TodoEvent> {
+class TodoBloc extends Vertex<TodoState, TodoEvent> {
   constructor() {
     super({
       todos: [

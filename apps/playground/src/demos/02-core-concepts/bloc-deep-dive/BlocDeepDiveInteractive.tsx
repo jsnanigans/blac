@@ -1,5 +1,5 @@
 import { useBloc } from '@blac/react';
-import { Bloc } from '@blac/core';
+import { Vertex } from '@blac/core';
 import { Button } from '@/ui/Button';
 import { StateViewer } from '@/components/shared/StateViewer';
 import { motion } from 'framer-motion';
@@ -22,7 +22,7 @@ interface CounterState {
   history: Array<{ event: string; timestamp: number }>;
 }
 
-class EventCounterBloc extends Bloc<CounterState, IncrementEvent | DecrementEvent | ResetEvent> {
+class EventCounterBloc extends Vertex<CounterState, IncrementEvent | DecrementEvent | ResetEvent> {
   constructor() {
     super({ count: 0, history: [] });
 
@@ -106,7 +106,7 @@ interface FormState {
   submitCount: number;
 }
 
-class FormValidationBloc extends Bloc<FormState, UpdateFieldEvent | SubmitFormEvent | ResetFormEvent> {
+class FormValidationBloc extends Vertex<FormState, UpdateFieldEvent | SubmitFormEvent | ResetFormEvent> {
   constructor() {
     const initialState: FormState = {
       emailValue: '',
@@ -209,7 +209,7 @@ interface ApiState {
   fetchCount: number;
 }
 
-class AsyncEventBloc extends Bloc<ApiState, FetchDataEvent> {
+class AsyncEventBloc extends Vertex<ApiState, FetchDataEvent> {
   constructor() {
     super({
       data: null,

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Cubit, Bloc, Blac } from '@blac/core';
+import { Cubit, Vertex, Blac } from '@blac/core';
 import useBloc from '../useBloc';
 import React, { Suspense, useState, useEffect } from 'react';
 
@@ -676,7 +676,7 @@ describe('useBloc with Error Boundaries', () => {
     class SafeEvent {}
     class ErrorEvent {}
 
-    class EventBloc extends Bloc<{ value: number; error: boolean }, SafeEvent | ErrorEvent> {
+    class EventBloc extends Vertex<{ value: number; error: boolean }, SafeEvent | ErrorEvent> {
       constructor() {
         super({ value: 0, error: false });
 

@@ -3,7 +3,7 @@ import { BlocBase } from './BlocBase';
 import { BlocEventConstraint } from './types';
 import { BlocLifecycleState } from './lifecycle/BlocLifecycle';
 
-export abstract class Bloc<
+export abstract class Vertex<
   S, // State type
   A extends BlocEventConstraint = BlocEventConstraint, // Base Action/Event type with proper constraints
 > extends BlocBase<S> {
@@ -26,7 +26,7 @@ export abstract class Bloc<
 
   /**
    * Registers an event handler for a specific event type.
-   * This method is typically called in the constructor of a derived Bloc class.
+   * This method is typically called in the constructor of a derived Vertex class.
    * @param eventConstructor The constructor of the event to handle (e.g., LoadDataEvent).
    * @param handler A function that processes the event and can emit new states.
    *                The 'event' parameter in the handler will be typed to the specific eventConstructor.
@@ -50,7 +50,7 @@ export abstract class Bloc<
   }
 
   /**
-   * Dispatches an action/event to the Bloc.
+   * Dispatches an action/event to the Vertex.
    * Events are queued and processed sequentially to prevent race conditions.
    * @param action The action/event instance to be processed.
    */

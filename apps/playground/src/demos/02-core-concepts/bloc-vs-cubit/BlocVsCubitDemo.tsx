@@ -1,5 +1,5 @@
 import { useBloc } from '@blac/react';
-import { Cubit, Bloc } from '@blac/core';
+import { Cubit, Vertex } from '@blac/core';
 import { DemoArticle } from '@/components/demo-article/DemoArticle';
 import { ArticleSection, SectionHeader } from '@/components/demo-article/ArticleSection';
 import { Prose } from '@/components/demo-article/Prose';
@@ -49,7 +49,7 @@ class DecrementEvent {
 
 class ResetEvent {}
 
-class CounterBloc extends Bloc<CounterState, IncrementEvent | DecrementEvent | ResetEvent> {
+class CounterBloc extends Vertex<CounterState, IncrementEvent | DecrementEvent | ResetEvent> {
   constructor() {
     super({ count: 0 });
 
@@ -437,7 +437,7 @@ class DecrementEvent {
 }
 class ResetEvent {}
 
-class CounterBloc extends Bloc<CounterState, Events> {
+class CounterBloc extends Vertex<CounterState, Events> {
   constructor() {
     super({ count: 0 });
 
@@ -608,7 +608,7 @@ class IncrementEvent {
   constructor(public readonly amount: number = 1) {}
 }
 
-class CounterBloc extends Bloc<CounterState, IncrementEvent> {
+class CounterBloc extends Vertex<CounterState, IncrementEvent> {
   constructor() {
     super({ count: 0 });
 

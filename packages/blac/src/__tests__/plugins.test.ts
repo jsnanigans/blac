@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Blac } from '../Blac';
 import { Cubit } from '../Cubit';
-import { Bloc } from '../Bloc';
+import { Vertex } from '../Vertex';
 import { BlacPlugin, BlocPlugin, PluginCapabilities } from '../plugins';
 import { BlocBase } from '../BlocBase';
 
@@ -26,7 +26,7 @@ class SetValue extends CounterEvent {
   }
 }
 
-class CounterBloc extends Bloc<number, CounterEvent> {
+class CounterBloc extends Vertex<number, CounterEvent> {
   constructor() {
     super(0);
 

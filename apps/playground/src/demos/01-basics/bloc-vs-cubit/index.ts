@@ -65,7 +65,7 @@ cubit.increment(); // Direct method call
 \`\`\`typescript
 class IncrementEvent {}
 
-class CounterBloc extends Bloc<State> {
+class CounterBloc extends Vertex<State> {
   constructor() {
     super(initialState);
     this.on(IncrementEvent, (event, emit) => {
@@ -156,7 +156,7 @@ class IncrementEvent {}
 class DecrementEvent {}
 class ResetEvent {}
 
-class CounterBloc extends Bloc<{ count: number }> {
+class CounterBloc extends Vertex<{ count: number }> {
   constructor() {
     super({ count: 0 });
 

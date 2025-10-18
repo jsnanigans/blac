@@ -1,4 +1,4 @@
-import { Bloc } from './Bloc';
+import { Vertex } from './Vertex';
 import { BlocBase } from './BlocBase';
 import { BlocEventConstraint } from './types';
 
@@ -65,7 +65,7 @@ export async function waitForState<T extends BlocBase<S>, S>(
  * Waits for a bloc to emit a specific event
  */
 export async function waitForEvent<
-  T extends Bloc<any, E>,
+  T extends Vertex<any, E>,
   E extends BlocEventConstraint,
 >(bloc: T, eventType: new (...args: any[]) => E, timeout = 5000): Promise<E> {
   return new Promise<E>((resolve, reject) => {

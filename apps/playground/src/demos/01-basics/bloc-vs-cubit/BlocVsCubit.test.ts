@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { Cubit, Bloc } from '@blac/core';
+import { Cubit, Vertex } from '@blac/core';
 
 // ===== CUBIT IMPLEMENTATION =====
 interface CounterState {
@@ -35,7 +35,7 @@ class DecrementEvent {
 
 class ResetEvent {}
 
-class CounterBloc extends Bloc<CounterState, IncrementEvent | DecrementEvent | ResetEvent> {
+class CounterBloc extends Vertex<CounterState, IncrementEvent | DecrementEvent | ResetEvent> {
   constructor() {
     super({ count: 0 });
 

@@ -4,7 +4,7 @@
  */
 
 import { Blac } from '@blac/core';
-import { Cubit, Bloc } from '@blac/core';
+import { Cubit, Vertex } from '@blac/core';
 import { GraphPlugin } from '../GraphPlugin';
 
 // Simple Counter Cubit
@@ -56,7 +56,7 @@ class IncrementEvent {
 class ResetEvent {}
 
 // Counter Bloc (event-driven)
-class CounterBloc extends Bloc<number, IncrementEvent | ResetEvent> {
+class CounterBloc extends Vertex<number, IncrementEvent | ResetEvent> {
   constructor() {
     super(0);
 

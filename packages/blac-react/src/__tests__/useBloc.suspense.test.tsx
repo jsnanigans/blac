@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, waitFor, screen } from '@testing-library/react';
-import { Cubit, Bloc } from '@blac/core';
+import { Cubit, Vertex } from '@blac/core';
 import { Suspense, Component, ReactNode } from 'react';
 import useBloc from '../useBloc';
 import {

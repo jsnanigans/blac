@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Blac } from '../Blac';
 import { Cubit } from '../Cubit';
-import { Bloc } from '../Bloc';
+import { Vertex } from '../Vertex';
 import { BlacAdapter } from '../adapter/BlacAdapter';
 import { InstanceTracker } from './utils/InstanceTracker';
 
@@ -35,7 +35,7 @@ class IncrementEvent {
 }
 
 // Test Bloc
-class TestBloc extends Bloc<TestState, IncrementEvent> {
+class TestBloc extends Vertex<TestState, IncrementEvent> {
   constructor() {
     super(new TestState(0));
     this.on(IncrementEvent, this.handleIncrement);

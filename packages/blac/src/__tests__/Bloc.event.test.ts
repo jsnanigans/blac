@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Bloc } from '../Bloc';
+import { Vertex } from '../Vertex';
 import { Blac } from '../Blac';
 
 // Define test events
@@ -30,7 +30,7 @@ class CriticalErrorEvent extends Error {
 }
 
 // Test Bloc implementation
-class CounterBloc extends Bloc<
+class CounterBloc extends Vertex<
   number,
   IncrementEvent | AsyncIncrementEvent | DecrementEvent | ErrorEvent
 > {
@@ -58,7 +58,7 @@ class CounterBloc extends Bloc<
 }
 
 // Bloc with critical error handling
-class CriticalErrorBloc extends Bloc<string> {
+class CriticalErrorBloc extends Vertex<string> {
   constructor() {
     super('initial');
 
@@ -232,7 +232,7 @@ describe('Bloc Event Handling', () => {
       const capturedStates: number[] = [];
 
       // Custom bloc that captures state during handler
-      class StateCapturingBloc extends Bloc<number> {
+      class StateCapturingBloc extends Vertex<number> {
         constructor() {
           super(0);
 
@@ -266,7 +266,7 @@ describe('Bloc Event Handling', () => {
       bloc.subscribe(observer);
 
       // Custom bloc that adds more events during processing
-      class ChainReactionBloc extends Bloc<number> {
+      class ChainReactionBloc extends Vertex<number> {
         constructor() {
           super(0);
 
@@ -293,7 +293,7 @@ describe('Bloc Event Handling', () => {
     });
 
     it('should handle event handler that emits multiple times', async () => {
-      class MultiEmitBloc extends Bloc<number[]> {
+      class MultiEmitBloc extends Vertex<number[]> {
         constructor() {
           super([]);
 
@@ -320,7 +320,7 @@ describe('Bloc Event Handling', () => {
       // Event without explicit constructor
       class SimpleEvent {}
 
-      class SimpleBloc extends Bloc<string> {
+      class SimpleBloc extends Vertex<string> {
         constructor() {
           super('initial');
           this.on(SimpleEvent, (event, _emit) => {

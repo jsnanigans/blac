@@ -1,6 +1,6 @@
 import {
   Blac,
-  Bloc,
+  Vertex,
   BlocConstructorParams,
   Cubit,
   PropsUpdated,
@@ -20,7 +20,7 @@ interface SearchState {
   loading: boolean;
 }
 
-class SearchBloc extends Bloc<SearchState, PropsUpdated<SearchProps>> {
+class SearchBloc extends Vertex<SearchState, PropsUpdated<SearchProps>> {
   props: BlocConstructorParams<typeof SearchBloc>;
 
   constructor(props?: SearchProps) {

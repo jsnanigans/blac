@@ -1,5 +1,5 @@
 import { useBloc } from '@blac/react';
-import { Bloc } from '@blac/core';
+import { Vertex } from '@blac/core';
 import { Button } from '@/ui/Button';
 import { StateViewer } from '@/components/shared/StateViewer';
 import { Plus, Check, X, Trash2, Filter } from 'lucide-react';
@@ -77,7 +77,7 @@ type TodoEvent =
  * - CRUD operations with immutability
  * - Flat state for optimal dependency tracking
  */
-class TodoBloc extends Bloc<TodoState, TodoEvent> {
+class TodoBloc extends Vertex<TodoState, TodoEvent> {
   constructor() {
     super({
       todos: [

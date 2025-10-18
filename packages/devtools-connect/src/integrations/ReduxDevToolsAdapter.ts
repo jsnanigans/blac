@@ -1,4 +1,4 @@
-import type { BlacPlugin, BlocBase, Bloc } from '@blac/core';
+import type { BlacPlugin, BlocBase, Vertex } from '@blac/core';
 import { safeSerialize } from '../serialization/serialize';
 import { EventRegistry } from './EventRegistry';
 

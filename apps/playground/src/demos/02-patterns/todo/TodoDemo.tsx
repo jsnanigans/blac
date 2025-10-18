@@ -177,7 +177,7 @@ function TodoApp() {
     </div>
   );
 }`,
-  bloc: `import { Bloc } from '@blac/core';
+  bloc: `import { Vertex } from '@blac/core';
 
 // Define your state interface
 interface TodoState {
@@ -196,7 +196,7 @@ class ToggleTodoAction {
 }
 
 // Create your Bloc
-export class TodoBloc extends Bloc<TodoState, TodoActions> {
+export class TodoBloc extends Vertex<TodoState, TodoActions> {
   constructor() {
     super(initialState);
 

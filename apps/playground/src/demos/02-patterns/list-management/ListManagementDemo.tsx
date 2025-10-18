@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Cubit, Bloc } from '@blac/core';
+import { Cubit, Vertex } from '@blac/core';
 import { useBloc } from '@blac/react';
 import { Plus, Trash2, Check, X, Filter, CheckSquare, Square } from 'lucide-react';
 import { DemoArticle } from '@/components/demo-article/DemoArticle';
@@ -209,7 +209,7 @@ type TodoEvent =
   | SetPriorityFilterEvent
   | ClearCompletedEvent;
 
-class TodoBloc extends Bloc<TodoState, TodoEvent> {
+class TodoBloc extends Vertex<TodoState, TodoEvent> {
   constructor() {
     super({
       todos: [
@@ -843,7 +843,7 @@ class SetFilterEvent {
   constructor(public readonly filter: 'all' | 'active' | 'completed') {}
 }
 
-class TodoBloc extends Bloc<TodoState, TodoEvent> {
+class TodoBloc extends Vertex<TodoState, TodoEvent> {
   constructor() {
     super(initialState);
 
@@ -1076,7 +1076,7 @@ interface State {
 }
 
 // ✅ Good: Compute on-demand with getter
-class TodoBloc extends Bloc<State> {
+class TodoBloc extends Vertex<State> {
   get filteredTodos(): Todo[] {
     switch (this.state.filter) {
       case 'active':

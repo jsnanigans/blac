@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { Bloc } from '@blac/core';
+import { Vertex } from '@blac/core';
 
 // Event classes
 class IncrementEvent {
@@ -18,7 +18,7 @@ interface CounterState {
 }
 
 // ClickBloc - Event-driven counter
-class ClickBloc extends Bloc<CounterState, IncrementEvent | DecrementEvent | ResetEvent> {
+class ClickBloc extends Vertex<CounterState, IncrementEvent | DecrementEvent | ResetEvent> {
   constructor() {
     super({ count: 0 });
 

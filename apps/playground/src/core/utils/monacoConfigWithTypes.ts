@@ -10,7 +10,7 @@ declare module '@blac/core' {
   export type BlocEventConstraint = object;
   export type BlocConstructor<T extends BlocBase<any>> = new (...args: any[]) => T;
   export type StateType<T> = T extends BlocBase<infer S> ? S : never;
-  export type EventType<T> = T extends Bloc<any, infer E> ? E : never;
+  export type EventType<T> = T extends Vertex<any, infer E> ? E : never;
   
   export interface BlocConfig {
     proxyDependencyTracking?: boolean;
@@ -79,7 +79,7 @@ declare module '@blac/core' {
   }
   
   // From Bloc.d.ts
-  export abstract class Bloc<S, A extends BlocEventConstraint = BlocEventConstraint> extends BlocBase<S> {
+  export abstract class Vertex<S, A extends BlocEventConstraint = BlocEventConstraint> extends BlocBase<S> {
     readonly eventHandlers: Map<new (...args: any[]) => A, (event: A, emit: (newState: S) => void) => void | Promise<void>>;
     
     protected on<E extends A>(

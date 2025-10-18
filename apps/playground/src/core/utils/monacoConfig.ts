@@ -45,7 +45,7 @@ declare module '@blac/core' {
     get stream(): Stream<S>;
   }
 
-  export class Bloc<S = any, E extends BlocEventConstraint = BlocEventConstraint> extends BlocBase<S> {
+  export class Vertex<S = any, E extends BlocEventConstraint = BlocEventConstraint> extends BlocBase<S> {
     constructor(initialState: S);
     
     emit(newState: S): void;
@@ -75,7 +75,7 @@ declare module '@blac/core' {
 
 export const blacReactTypes = `
 declare module '@blac/react' {
-  import { BlocBase, Cubit, Bloc } from '@blac/core';
+  import { BlocBase, Cubit, Vertex } from '@blac/core';
   
   export interface UseBlocOptions<T extends BlocBase> {
     selector?: (currentState: any, previousState: any, instance: T) => any;

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { Cubit, Bloc } from '@blac/core';
+import { Cubit, Vertex } from '@blac/core';
 import { useTransition, startTransition } from 'react';
 import useBloc from '../useBloc';
 import { waitForTransition, flushMicrotasks } from './utils/react18-helpers';
@@ -250,7 +250,7 @@ describe('useBloc with useTransition', () => {
 
     type CounterEvent = IncrementEvent | DecrementEvent;
 
-    class CounterBloc extends Bloc<number, CounterEvent> {
+    class CounterBloc extends Vertex<number, CounterEvent> {
       static isolated = true;
 
       constructor() {

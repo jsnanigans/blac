@@ -1,5 +1,5 @@
 export * from './Blac';
-export * from './Bloc';
+export * from './Vertex';
 export * from './BlocBase';
 export * from './Cubit';
 export * from './types';
