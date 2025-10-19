@@ -9,11 +9,15 @@
     "demo": "1.0.0",
     "blac-docs": "1.0.0",
     "perf": "1.0.0",
-    "@blac/docs": "1.0.0",
-    "@blac/playground": "0.1.0"
+    "@blac/playground": "0.1.0",
+    "@blac/devtools-connect": "0.1.0",
+    "@blac/plugin-graph": "1.0.0",
+    "@blac/plugin-graph-react": "1.0.0"
   },
   "changesets": [
     "cyan-rats-vanish",
-    "evil-brooms-work"
+    "disposal-race-condition-fix",
+    "evil-brooms-work",
+    "schema-validation-explicit"
   ]
 }

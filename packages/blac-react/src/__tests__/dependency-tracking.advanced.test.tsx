@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { Cubit, Blac } from '@blac/core';
@@ -12,7 +12,16 @@ import React from 'react';
  * 1. Class getter dependency detection (automatic, no custom dependencies)
  * 2. Custom dependencies array function
  * 3. Generator function in dependencies array
+ *
+ * NOTE: This test suite uses the Unified Dependency Tracking system
  */
+
+beforeAll(() => {
+  // Enable unified tracking for these tests
+  Blac.setConfig({
+    useUnifiedTracking: true,
+  });
+});
 
 interface UserState {
   firstName: string;
@@ -606,7 +615,7 @@ describe('Advanced Dependency Tracking - Generator Function in Dependencies', ()
 
     function TestComponent() {
       const [state, cubit] = useBloc(UserCubit, {
-        dependencies: function* (instance) {
+        dependencies: function* (instance: UserCubit) {
           yield instance.state.firstName;
           yield instance.state.age;
         } as any, // Generator returns iterator, not array
@@ -664,7 +673,7 @@ describe('Advanced Dependency Tracking - Generator Function in Dependencies', ()
 
     function TestComponent() {
       const [state, cubit] = useBloc(UserCubit, {
-        dependencies: async function* (instance) {
+        dependencies: async function* (instance: UserCubit) {
           yield instance.state.firstName;
           yield instance.state.age;
         } as any, // Async generator

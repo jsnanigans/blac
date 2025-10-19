@@ -380,17 +380,19 @@ export class SubscriptionManager<S = unknown> {
       newError = error instanceof Error ? error : new Error(String(error));
     }
 
-    // First access - always return true and cache the result
+    // Compare with cached value/error (or treat as "no change" if no cache)
+    let hasChanged = false;
+
     if (!cachedEntry) {
+      // First access - cache the result and return false (no change)
+      // We return false because we can't determine if it changed without a previous value
+      // This prevents unnecessary re-renders when the cache is empty
       subscription.getterCache.set(getterPath, {
         value: newValue,
         error: newError,
       });
-      return true;
+      return false;
     }
-
-    // Compare with cached value/error
-    let hasChanged = false;
 
     // If error state changed
     if (!!cachedEntry.error !== !!newError) {
@@ -474,9 +476,12 @@ export class SubscriptionManager<S = unknown> {
     // Handle '*' special case - entire state changed
     if (changedPaths.has('*')) return true;
 
-    // Fix #8: Invalidate getter cache when state paths change
-    // This prevents stale getter values from being used
-    this.invalidateGetterCache(subscriptionId, changedPaths);
+    // Note: We DON'T invalidate the getter cache here anymore.
+    // The checkGetterChanged method already re-executes getters and compares values,
+    // so clearing the cache would only cause false positives (triggering re-renders
+    // when getter values haven't actually changed).
+    // The cache is only used to store the previous value for comparison.
+    // See: packages/blac-react/src/__tests__/dependency-tracking.advanced.test.tsx
 
     // Performance: Build PathIndex once for all paths
     // This enables O(1) parent-child lookups instead of O(n×m) string operations

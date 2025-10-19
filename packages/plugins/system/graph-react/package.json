@@ -1,6 +1,6 @@
 {
   "name": "@blac/plugin-graph-react",
-  "version": "1.0.0",
+  "version": "2.0.0-rc.2",
   "description": "React visualization components for @blac/plugin-graph",
   "main": "./dist/index.js",
   "module": "./dist/index.js",

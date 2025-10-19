@@ -10,6 +10,7 @@ import { SystemPluginRegistry } from './plugins/SystemPluginRegistry';
 import { BlacError, ErrorCategory, ErrorSeverity } from './errors/BlacError';
 import { ErrorManager } from './errors/ErrorManager';
 import { BlacContext } from './types/BlacContext';
+import { UnifiedDependencyTracker } from './tracking/UnifiedDependencyTracker';
 
 /**
  * Configuration options for the Blac instance
@@ -29,6 +30,18 @@ export interface BlacConfig {
    * Default: 3
    */
   proxyMaxDepth?: number;
+
+  /**
+   * Whether to use the new Unified Dependency Tracking system.
+   * When true, uses UnifiedDependencyTracker for all tracking (state, getters, custom).
+   * When false, uses legacy BlacAdapter + SubscriptionManager system.
+   *
+   * This is a feature flag for the architectural redesign.
+   * Default: false (will become true after validation)
+   *
+   * @experimental
+   */
+  useUnifiedTracking?: boolean;
 }
 
 export interface GetBlocOptions<B extends BlocBase<unknown>> {
@@ -197,6 +210,31 @@ export class Blac implements BlacContext {
       this.instance.log('Blac config updated:', this._config);
     }
   }
+
+  /**
+   * Get the UnifiedDependencyTracker singleton instance
+   *
+   * This is the new tracking system that replaces the split responsibilities
+   * of BlacAdapter + SubscriptionManager.
+   *
+   * @experimental Part of the Hybrid Unified System redesign
+   * @returns UnifiedDependencyTracker singleton
+   */
+  static getUnifiedTracker(): UnifiedDependencyTracker {
+    return UnifiedDependencyTracker.getInstance();
+  }
+
+  /**
+   * Get a bloc by its unique identifier (uid)
+   * Used by the unified tracker to retrieve blocs
+   * @param uid - The unique identifier of the bloc
+   * @returns The bloc instance or undefined if not found
+   */
+  static getBlocByUid(uid: string): BlocBase<any> | undefined {
+    const instance = this.getInstance();
+    return instance.uidRegistry.get(uid);
+  }
+
   /** Map storing all registered bloc instances by their class name and ID */
   blocInstanceMap: Map<string, BlocBase<unknown>> = new Map();
   /** Map storing isolated bloc instances grouped by their constructor */

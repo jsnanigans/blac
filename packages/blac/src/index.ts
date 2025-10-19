@@ -6,6 +6,7 @@ export * from './types';
 export * from './events';
 export * from './subscription';
 export * from './lifecycle';
+export * from './tracking';
 export type { BlacContext } from './types/BlacContext';
 
 // Utilities

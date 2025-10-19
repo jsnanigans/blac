@@ -222,7 +222,9 @@ describe('useBloc - Adapter Internal Behavior', () => {
 
         useEffect(() => {
           events.push('useEffect-mount');
-          return () => events.push('useEffect-unmount');
+          return () => {
+            events.push('useEffect-unmount');
+          };
         }, []);
 
         return <div>{state.count}</div>;

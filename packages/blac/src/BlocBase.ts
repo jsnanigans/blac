@@ -159,7 +159,7 @@ export abstract class BlocBase<S> {
     // Validate initial state if schema defined
     if (this._schema) {
       try {
-        initialState = this._validateState(initialState);
+        initialState = this._validateState(initialState, initialState);
       } catch (error) {
         // Constructor errors should throw immediately with clear message
         const message =
@@ -345,7 +345,17 @@ export abstract class BlocBase<S> {
     }
 
     // Notify all subscriptions
-    this._subscriptionManager.notify(this._state, oldState, action);
+    // Use unified tracker if feature flag enabled, otherwise use legacy system
+    if (this.blacContext && (this.blacContext.constructor as typeof import('./Blac').Blac).config.useUnifiedTracking) {
+      const tracker = (this.blacContext.constructor as typeof import('./Blac').Blac).getUnifiedTracker();
+      tracker.notifyChanges(this.uid, {
+        oldState,
+        newState: this._state,
+        action,
+      });
+    } else {
+      this._subscriptionManager.notify(this._state, oldState, action);
+    }
     this.lastUpdate = Date.now();
   }
 

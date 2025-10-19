@@ -71,7 +71,7 @@ export class PathIndex {
         parent.children.add(node);
 
         // Build ancestor set
-        let ancestor = parent;
+        let ancestor: PathNode | null = parent;
         while (ancestor) {
           node.ancestors.add(ancestor.path);
           ancestor = ancestor.parent;

@@ -221,7 +221,7 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
     this.recordStateSnapshot(action);
   }
 
-  onEventAdded(bloc: Bloc<any, any>, event: any): void {
+  onEventAdded(bloc: Vertex<any, any>, event: any): void {
     if (!this.devTools) return;
 
     // Skip Redux DevTools updates during time-travel
@@ -827,7 +827,7 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
     );
 
     // Dispatch the event
-    (bloc as Bloc<any, any>).add(event);
+    (bloc as Vertex<any, any>).add(event);
 
     // Dispatch custom event for user notification
     window.dispatchEvent(

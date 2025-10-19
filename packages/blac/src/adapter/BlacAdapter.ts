@@ -481,20 +481,17 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
             subscription.getterCache = new Map();
           }
 
-          // Only cache getters that are in the final filtered dependencies
+          // Always update cache for any getters that were accessed during render
+          // The filtering of leaf paths is for state dependencies, not getter dependencies
           for (const [getterName, value] of this.pendingGetterValues) {
             const getterPath = `_class.${getterName}`;
 
-            // Optimization: Only cache if this getter is actually tracked
-            if (leafPaths.has(getterPath)) {
-              // Optimization: Skip if cache already populated (defensive programming)
-              if (!subscription.getterCache.has(getterPath)) {
-                subscription.getterCache.set(getterPath, {
-                  value: value,
-                  error: undefined,
-                });
-              }
-            }
+            // Always update the cache to reflect the current getter value
+            // This ensures the cache stays in sync across re-renders
+            subscription.getterCache.set(getterPath, {
+              value: value,
+              error: undefined,
+            });
           }
         }
 

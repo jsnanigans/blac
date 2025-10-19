@@ -1,4 +1,5 @@
 import {
+  Blac,
   BlacAdapter,
   BlocBase,
   BlocConstructor,
@@ -12,6 +13,7 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react';
+import { useBloc_Unified } from './useBloc_Unified';
 
 /**
  * Type definition for the return type of the useBloc hook
@@ -22,9 +24,12 @@ type HookTypes<B extends BlocConstructor<BlocBase<any>>> = [
 ];
 
 /**
- * React hook for integrating with Blac state management
+ * React hook for integrating with Blac state management (Legacy)
+ *
+ * This is the legacy implementation using BlacAdapter.
+ * When useUnifiedTracking feature flag is enabled, this delegates to useBloc_Unified.
  */
-function useBloc<B extends BlocConstructor<BlocBase<any>>>(
+function useBloc_Legacy<B extends BlocConstructor<BlocBase<any>>>(
   blocConstructor: B,
   options?: {
     staticProps?: ConstructorParameters<B>[0];
@@ -134,6 +139,71 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
   });
 
   return [finalState, finalBloc];
+}
+
+/**
+ * React hook for integrating with Blac state management
+ *
+ * This is the main entry point that switches between legacy and unified implementations
+ * based on the useUnifiedTracking feature flag.
+ *
+ * @param blocConstructor - The Bloc class to instantiate
+ * @param options - Configuration options
+ * @returns Tuple of [state, bloc] with automatic dependency tracking
+ *
+ * @example
+ * ```typescript
+ * function Counter() {
+ *   const [state, bloc] = useBloc(CounterBloc);
+ *   return <div onClick={bloc.increment}>{state.count}</div>;
+ * }
+ * ```
+ */
+function useBloc<B extends BlocConstructor<BlocBase<any>>>(
+  blocConstructor: B,
+  options?: {
+    staticProps?: ConstructorParameters<B>[0];
+    instanceId?: string;
+    dependencies?: (
+      bloc: InstanceType<B>,
+    ) => unknown[] | Generator<unknown, void, unknown>;
+    onMount?: (bloc: InstanceType<B>) => void;
+    onUnmount?: (bloc: InstanceType<B>) => void;
+  },
+): HookTypes<B> {
+  // Check feature flag to determine which implementation to use
+  const useUnified = Blac.config.useUnifiedTracking ?? false;
+
+  if (useUnified) {
+    // New unified tracking system
+    // Note: Generator-style dependencies converted to arrays
+    if (options?.dependencies) {
+      const legacyDeps = options.dependencies;
+      const unifiedOptions = {
+        ...options,
+        dependencies: (bloc: InstanceType<B>) => {
+          const result = legacyDeps(bloc);
+          // If it's a generator, consume it to an array
+          if (result && typeof result === 'object' && 'next' in result) {
+            return Array.from(result as Generator<unknown, void, unknown>);
+          }
+          return result as unknown[];
+        },
+      };
+      return useBloc_Unified(blocConstructor, unifiedOptions);
+    }
+    // No dependencies - pass options with proper type
+    const unifiedOptions = options ? {
+      staticProps: options.staticProps,
+      instanceId: options.instanceId,
+      onMount: options.onMount,
+      onUnmount: options.onUnmount,
+    } : undefined;
+    return useBloc_Unified(blocConstructor, unifiedOptions);
+  } else {
+    // Legacy BlacAdapter system
+    return useBloc_Legacy(blocConstructor, options);
+  }
 }
 
 export default useBloc;

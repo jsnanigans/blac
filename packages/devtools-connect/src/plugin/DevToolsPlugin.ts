@@ -61,7 +61,7 @@ export class DevToolsPlugin implements BlacPlugin {
     });
   }
 
-  onEventAdded(bloc: Bloc<any, any>, event: any): void {
+  onEventAdded(bloc: Vertex<any, any>, event: any): void {
     if (!this.enabled) return;
 
     const eventResult = safeSerialize(event);
