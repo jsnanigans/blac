@@ -80,7 +80,7 @@ function useConcurrentContext() {
 
   return {
     isTransition: isPending,
-    renderMode: isPending ? 'concurrent' as const : 'sync' as const,
+    renderMode: (isPending ? 'concurrent' : 'sync') as 'concurrent' | 'sync',
   };
 }
 
@@ -126,7 +126,7 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
   const concurrentContext = useConcurrentContext();
 
   // Generate stable render context that only changes for concurrent features
-  const renderContextRef = useRef<string>();
+  const renderContextRef = useRef<string>(generateRenderContextId(subscriptionId, 'sync'));
   if (concurrentContext.renderMode === 'concurrent') {
     // New context for each concurrent render
     renderContextRef.current = generateRenderContextId(subscriptionId, 'concurrent');
@@ -277,7 +277,8 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
       console.log(`[useBloc] Removing subscription ${subscriptionId}`);
       tracker.removeSubscription(subscriptionId);
       subscriptionCreatedRef.current = false;
-      renderContextRef.current = undefined;
+      // Reset to sync context for potential remount
+      renderContextRef.current = generateRenderContextId(subscriptionId, 'sync');
 
       // Handle isolated bloc cleanup
       const base = blocConstructor as unknown as { isolated?: boolean };
@@ -285,11 +286,11 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
         const blacInstance = Blac.getInstance();
         const isolatedBloc = blacInstance.isolatedBlocIndex.get(finalInstanceId);
 
-        if (isolatedBloc && isolatedBloc.getConsumerCount() === 0) {
+        if (isolatedBloc && isolatedBloc.subscriptionCount === 0) {
           // Schedule disposal to handle any async cleanup
           setTimeout(() => {
             const bloc = blacInstance.isolatedBlocIndex.get(finalInstanceId);
-            if (bloc && bloc.getConsumerCount() === 0) {
+            if (bloc && bloc.subscriptionCount === 0) {
               bloc.dispose();
               blacInstance.isolatedBlocIndex.delete(finalInstanceId);
             }

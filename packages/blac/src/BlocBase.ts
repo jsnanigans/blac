@@ -545,11 +545,11 @@ export abstract class BlocBase<S> {
         newState: this._state,
         action,
       });
-    } else {
-      // Fallback to legacy subscription manager for blocs without context
-      // or when context doesn't support unified tracker (e.g., mock contexts)
-      this._subscriptionManager.notify(this._state, oldState, action);
     }
+
+    // ALWAYS notify subscription manager as well for backwards compatibility
+    // This ensures adapters and other direct SubscriptionManager subscribers are notified
+    this._subscriptionManager.notify(this._state, oldState, action);
     this.lastUpdate = Date.now();
   }
 
