@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, act, screen } from '@testing-library/react';
 import React, { useEffect } from 'react';
 import { Cubit, Blac } from '@blac/core';
@@ -41,6 +41,10 @@ describe('useBloc - Adapter Internal Behavior', () => {
   beforeEach(() => {
     Blac.resetInstance();
     Blac.setConfig({ proxyDependencyTracking: true });
+  });
+
+  afterEach(() => {
+    Blac.resetInstance();
   });
 
   describe('Adapter State Consistency', () => {

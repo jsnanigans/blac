@@ -38,10 +38,8 @@ export interface BlacConfig {
    * When true, uses UnifiedDependencyTracker for all tracking (state, getters, custom).
    * When false, uses legacy BlacAdapter + SubscriptionManager system.
    *
-   * This is a feature flag for the architectural redesign.
-   * Default: false (will become true after validation)
-   *
-   * @experimental
+   * This is now the default and recommended tracking system.
+   * Default: true
    */
   useUnifiedTracking?: boolean;
 
@@ -109,6 +107,11 @@ class SingletonBlacManager implements BlacInstanceManager {
       __unsafe_ignore_singleton: true,
     });
 
+    // CRITICAL: Reset the unified dependency tracker singleton
+    // This clears all subscriptions and dependencies from the old Blac instance
+    // Without this, old subscriptions won't match new bloc UIDs, breaking notifications
+    UnifiedDependencyTracker.resetInstance();
+
     // Transfer any keep-alive blocs to the new instance
     if (oldInstance) {
       for (const bloc of oldInstance.keepAliveBlocs) {
@@ -156,6 +159,7 @@ export class Blac implements BlacContext {
   private static _config: BlacConfig = {
     proxyDependencyTracking: true,
     proxyMaxDepth: 3,
+    useUnifiedTracking: true,
   };
 
   /** Get current configuration */
@@ -170,6 +174,7 @@ export class Blac implements BlacContext {
     this._config = {
       proxyDependencyTracking: true,
       proxyMaxDepth: 3,
+      useUnifiedTracking: true,
     };
   }
 

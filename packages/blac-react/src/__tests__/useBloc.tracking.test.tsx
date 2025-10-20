@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { Cubit } from '@blac/core';
+import { Cubit, Blac } from '@blac/core';
 import useBloc from '../useBloc';
 
 interface TestState {
@@ -30,6 +30,10 @@ class TestCubit extends Cubit<TestState> {
 }
 
 describe('useBloc dependency tracking', () => {
+  afterEach(() => {
+    Blac.resetInstance();
+  });
+
   it('should only track properties accessed during current render', () => {
     let renderCount = 0;
     let accessedProperties: string[] = [];

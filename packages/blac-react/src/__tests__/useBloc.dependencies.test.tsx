@@ -1,6 +1,6 @@
-import { Cubit } from '@blac/core';
+import { Cubit, Blac } from '@blac/core';
 import { render, screen, waitFor } from '@testing-library/react';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import React from 'react';
 import useBloc from '../useBloc';
 
@@ -47,6 +47,10 @@ describe('useBloc dependencies option', () => {
   beforeEach(() => {
     // Clear any existing instances
     (AppCubit as any).isolated = false;
+  });
+
+  afterEach(() => {
+    Blac.resetInstance();
   });
 
   it('should only re-render when dependency values change', async () => {

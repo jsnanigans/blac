@@ -8,9 +8,9 @@
  * Current behavior: Simple string operation using bloc constructor name (<0.01ms overhead)
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
-import { Cubit } from '@blac/core';
+import { Cubit, Blac } from '@blac/core';
 import useBloc from '../useBloc';
 
 class CounterCubit extends Cubit<number> {
@@ -32,6 +32,10 @@ class UserProfileCubit extends Cubit<{ name: string }> {
 describe('Issue #8: Stack Trace Parsing Performance - RESOLVED', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    Blac.resetInstance();
   });
 
   it('FIXED: No Error objects created for stack trace parsing', () => {

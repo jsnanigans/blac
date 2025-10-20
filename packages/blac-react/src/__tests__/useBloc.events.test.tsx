@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, act, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { Vertex, Cubit, Blac } from '@blac/core';
@@ -84,6 +84,10 @@ class OrderedCubit extends Cubit<{ values: number[] }> {
 
 describe('useBloc - Events and State Updates', () => {
   beforeEach(() => {
+    Blac.resetInstance();
+  });
+
+  afterEach(() => {
     Blac.resetInstance();
   });
 

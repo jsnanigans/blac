@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
-import { BlocConstructorParams, Cubit } from '@blac/core';
+import { describe, expect, it, vi, afterEach } from 'vitest';
+import { BlocConstructorParams, Cubit, Blac } from '@blac/core';
 import useBloc from '../useBloc';
 
 interface CounterProps {
@@ -23,6 +23,10 @@ class CounterCubit extends Cubit<number> {
 }
 
 describe('useBloc instance changes', () => {
+  afterEach(() => {
+    Blac.resetInstance();
+  });
+
   describe('when instanceId changes', () => {
     it('should use a different bloc instance', async () => {
       const { result, rerender } = renderHook(

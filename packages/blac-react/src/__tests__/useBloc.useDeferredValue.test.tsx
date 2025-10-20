@@ -1,6 +1,6 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { Cubit } from '@blac/core';
+import { Cubit, Blac } from '@blac/core';
 import { useDeferredValue, useEffect, useState } from 'react';
 import useBloc from '../useBloc';
 import { flushMicrotasks, rapidStateUpdates } from './utils/react18-helpers';
@@ -71,6 +71,10 @@ class ComputationCubit extends Cubit<ComputationState> {
 }
 
 describe('useBloc with useDeferredValue', () => {
+  afterEach(() => {
+    Blac.resetInstance();
+  });
+
   it('should defer expensive state derivations', async () => {
     const { result } = renderHook(() => {
       const [state, cubit] = useBloc(LargeDataCubit);

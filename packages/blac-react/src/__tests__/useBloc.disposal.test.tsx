@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import { Cubit, Blac } from '@blac/core';
 import useBloc from '../useBloc';
@@ -30,11 +30,7 @@ class SharedTestCubit extends Cubit<TestState> {
 
 describe('useBloc disposal issues', () => {
   afterEach(() => {
-    // Clean up any existing blocs after each test
-    const existingBloc = Blac.getBloc(SharedTestCubit);
-    if (existingBloc) {
-      existingBloc.dispose();
-    }
+    Blac.resetInstance();
   });
 
   it('should not dispose shared bloc when switching between components', async () => {

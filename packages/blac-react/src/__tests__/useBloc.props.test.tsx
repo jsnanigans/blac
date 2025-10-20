@@ -6,7 +6,7 @@ import {
   PropsUpdated,
 } from '@blac/core';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import useBloc from '../useBloc';
 
 // Test components
@@ -75,6 +75,10 @@ class CounterCubit extends Cubit<CounterState> {
 
 describe('useBloc props integration', () => {
   beforeEach(() => {
+    Blac.resetInstance();
+  });
+
+  afterEach(() => {
     Blac.resetInstance();
   });
 

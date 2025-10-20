@@ -171,11 +171,11 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
     onUnmount?: (bloc: InstanceType<B>) => void;
   },
 ): HookTypes<B> {
-  // Check feature flag to determine which implementation to use
-  const useUnified = Blac.config.useUnifiedTracking ?? false;
+  // Use unified tracking system by default (now the standard)
+  const useUnified = true
 
   if (useUnified) {
-    // New unified tracking system
+    // Unified tracking system (default)
     // Note: Generator-style dependencies converted to arrays
     if (options?.dependencies) {
       const legacyDeps = options.dependencies;
@@ -201,7 +201,7 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
     } : undefined;
     return useBloc_Unified(blocConstructor, unifiedOptions);
   } else {
-    // Legacy BlacAdapter system
+    // Legacy BlacAdapter system (fallback only)
     return useBloc_Legacy(blocConstructor, options);
   }
 }

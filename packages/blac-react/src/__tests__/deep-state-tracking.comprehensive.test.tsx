@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render, act, screen } from '@testing-library/react';
 import React from 'react';
 import { Cubit, Blac } from '@blac/core';
@@ -114,6 +114,10 @@ class NestedStateCubit extends Cubit<NestedState> {
 
 describe('Deep State Tracking - Comprehensive Tests', () => {
   beforeEach(() => {
+    Blac.resetInstance();
+  });
+
+  afterEach(() => {
     Blac.resetInstance();
   });
 

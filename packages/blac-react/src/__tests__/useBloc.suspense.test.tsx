@@ -1,6 +1,6 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, waitFor, screen } from '@testing-library/react';
-import { Cubit, Vertex } from '@blac/core';
+import { Cubit, Vertex, Blac } from '@blac/core';
 import { Suspense, Component, ReactNode } from 'react';
 import useBloc from '../useBloc';
 import {
@@ -91,6 +91,10 @@ class ErrorBoundary extends Component<
 }
 
 describe('useBloc with Suspense', () => {
+  afterEach(() => {
+    Blac.resetInstance();
+  });
+
   it('should support async bloc initialization with Suspense', async () => {
     const AsyncCubit = createAsyncCubit({ value: 'test data' }, 50);
 

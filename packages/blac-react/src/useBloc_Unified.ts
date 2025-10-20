@@ -25,6 +25,7 @@ import {
 } from '@blac/core';
 import type { CustomDependency } from '@blac/core';
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -126,11 +127,22 @@ export function useBloc_Unified<B extends BlocConstructor<BlocBase<any>>>(
     forceUpdate({});
   });
 
+  // Create a stable wrapper function that delegates to the current notifyRef.
+  // This ensures that the subscription always calls the correct callback,
+  // even if state changes before useSyncExternalStore provides the final listener.
+  // The wrapper is stable (created with useCallback), so React won't think
+  // the subscribe function changed when we update notifyRef.current later.
+  const notifyWrapper = useCallback(() => {
+    notifyRef.current();
+  }, []);
+
   // Eagerly create subscription to avoid timing issues
   // The subscription must exist BEFORE tracking proxies are accessed
   const subscriptionCreatedRef = useRef(false);
   if (!subscriptionCreatedRef.current) {
-    tracker.createSubscription(subscriptionId, bloc.uid, notifyRef.current);
+    // Pass the stable wrapper function instead of the callback directly.
+    // This allows the wrapper to delegate to whatever notifyRef.current is at call time.
+    tracker.createSubscription(subscriptionId, bloc.uid, notifyWrapper);
     subscriptionCreatedRef.current = true;
 
     // Handle custom dependencies if provided
@@ -148,14 +160,10 @@ export function useBloc_Unified<B extends BlocConstructor<BlocBase<any>>>(
   // Subscribe function for useSyncExternalStore
   const subscribe = useMemo(() => {
     return (onStoreChange: () => void) => {
-      // Update notify callback to use the one from useSyncExternalStore
+      // Update the notify callback reference. The notifyWrapper function
+      // will delegate to this ref at call time, so no need to update the
+      // subscription's notify property directly.
       notifyRef.current = onStoreChange;
-
-      // Update the notify callback in the existing subscription
-      const sub = tracker.getSubscription(subscriptionId);
-      if (sub) {
-        sub.notify = onStoreChange;
-      }
 
       // Cleanup function - remove subscription
       return () => {
@@ -177,6 +185,22 @@ export function useBloc_Unified<B extends BlocConstructor<BlocBase<any>>>(
 
   // Subscribe to state changes using useSyncExternalStore
   const rawState = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+
+  // For primitive state, we need to register a dependency on the entire state
+  // because we can't track property access on primitives with a proxy
+  useMemo(() => {
+    if (!options?.dependencies && rawState != null && typeof rawState !== 'object') {
+      // Register a dependency on the entire primitive state.
+      // CRITICAL: Use bloc.state directly, not captured rawState from closure.
+      // If we captured rawState, the selector would return stale values when state changes.
+      const dependency: CustomDependency = {
+        type: 'custom',
+        key: 'primitive-state',
+        selector: (bloc: BlocBase<any>) => bloc.state,
+      };
+      tracker.track(subscriptionId, dependency);
+    }
+  }, [subscriptionId, options?.dependencies]);
 
   // Create tracking proxy for bloc (getters only)
   // Only getters are tracked, state inside getters uses raw unproxied state
@@ -201,7 +225,14 @@ export function useBloc_Unified<B extends BlocConstructor<BlocBase<any>>>(
     }
 
     // Automatic tracking - wrap state to track property accesses
-    return createStateTrackingProxy(rawState, subscriptionId);
+    // But only if state is an object (not a primitive like number, string, etc)
+    // Primitives cannot be proxied, so we return them as-is
+    if (rawState != null && typeof rawState === 'object') {
+      return createStateTrackingProxy(rawState, subscriptionId);
+    }
+
+    // For primitive state, return as-is (can't track primitive property access)
+    return rawState;
   }, [rawState, subscriptionId, options?.dependencies]);
 
   // Mount/unmount lifecycle

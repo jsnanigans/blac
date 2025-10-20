@@ -1,6 +1,6 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { Cubit, Vertex } from '@blac/core';
+import { Cubit, Vertex, Blac } from '@blac/core';
 import { useTransition, startTransition } from 'react';
 import useBloc from '../useBloc';
 import { waitForTransition, flushMicrotasks } from './utils/react18-helpers';
@@ -77,6 +77,10 @@ class ComplexCubit extends Cubit<ComplexState> {
 }
 
 describe('useBloc with useTransition', () => {
+  afterEach(() => {
+    Blac.resetInstance();
+  });
+
   it('should handle state updates within transition', async () => {
     const { result } = renderHook(() => {
       const [isPending, startTransition] = useTransition();

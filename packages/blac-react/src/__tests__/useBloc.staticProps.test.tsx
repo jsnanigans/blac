@@ -1,6 +1,6 @@
 import { Blac, Cubit } from '@blac/core';
 import { renderHook } from '@testing-library/react';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import useBloc from '../useBloc';
 
 // Test components
@@ -56,6 +56,10 @@ describe('useBloc staticProps integration', () => {
   beforeEach(() => {
     Blac.resetInstance();
     vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    Blac.resetInstance();
   });
 
   describe('staticProps with instanceId', () => {

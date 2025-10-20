@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { renderHook, act, waitFor, render } from '@testing-library/react';
-import { Cubit } from '@blac/core';
+import { Cubit, Blac } from '@blac/core';
 import { useState, useTransition, startTransition } from 'react';
 import useBloc from '../useBloc';
 import { flushMicrotasks } from './utils/react18-helpers';
@@ -98,6 +98,10 @@ class TearingTestCubit extends Cubit<TearingTestState> {
 }
 
 describe('useBloc in Concurrent Mode', () => {
+  afterEach(() => {
+    Blac.resetInstance();
+  });
+
   it('should handle rapid state changes without tearing', async () => {
     const stateSnapshots: TearingTestState[] = [];
 
