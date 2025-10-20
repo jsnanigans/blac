@@ -11,6 +11,8 @@ import { BlacError, ErrorCategory, ErrorSeverity } from './errors/BlacError';
 import { ErrorManager } from './errors/ErrorManager';
 import { BlacContext } from './types/BlacContext';
 import { UnifiedDependencyTracker } from './tracking/UnifiedDependencyTracker';
+import { logger } from './logging';
+import type { LogConfig, LogLevel, LogTopic } from './logging';
 
 /**
  * Configuration options for the Blac instance
@@ -42,6 +44,24 @@ export interface BlacConfig {
    * @experimental
    */
   useUnifiedTracking?: boolean;
+
+  /**
+   * Logging configuration
+   * Controls log levels, topics, and filtering for debugging and development
+   * Default: disabled (level: false)
+   *
+   * @example
+   * ```typescript
+   * Blac.setConfig({
+   *   logging: {
+   *     level: 'log',
+   *     topics: ['lifecycle', 'state'],
+   *     namespaces: 'Counter*',
+   *   }
+   * });
+   * ```
+   */
+  logging?: Partial<LogConfig>;
 }
 
 export interface GetBlocOptions<B extends BlocBase<unknown>> {
@@ -199,6 +219,11 @@ export class Blac implements BlacContext {
       }
     }
 
+    // Configure logging if provided
+    if (config.logging !== undefined) {
+      logger.configure(config.logging);
+    }
+
     // Merge with existing config
     this._config = {
       ...this._config,
@@ -234,6 +259,36 @@ export class Blac implements BlacContext {
     const instance = this.getInstance();
     return instance.uidRegistry.get(uid);
   }
+
+  /**
+   * Runtime logging API for dynamic configuration
+   * Provides methods to control logging behavior at runtime
+   *
+   * @example
+   * ```typescript
+   * // Enable logging
+   * Blac.logging.setLevel('log');
+   *
+   * // Enable specific topics
+   * Blac.logging.enableTopic('lifecycle');
+   * Blac.logging.enableTopic('state');
+   *
+   * // Filter by namespace
+   * Blac.logging.setNamespaces(['CounterBloc', 'UserBloc']);
+   *
+   * // Reset to defaults
+   * Blac.logging.reset();
+   * ```
+   */
+  static logging = {
+    setLevel: (level: LogLevel | false) => logger.setLevel(level),
+    getLevel: () => logger.getLevel(),
+    enableTopic: (topic: LogTopic) => logger.enableTopic(topic),
+    disableTopic: (topic: LogTopic) => logger.disableTopic(topic),
+    setNamespaces: (patterns: string | string[]) => logger.setNamespaces(patterns),
+    getConfig: () => logger.getConfig(),
+    reset: () => logger.reset(),
+  };
 
   /** Map storing all registered bloc instances by their class name and ID */
   blocInstanceMap: Map<string, BlocBase<unknown>> = new Map();
@@ -278,10 +333,56 @@ export class Blac implements BlacContext {
     this.plugins.bootstrap();
   }
 
-  /** Flag to enable/disable logging */
-  static enableLog = false;
+  /**
+   * Legacy flag to enable/disable logging
+   * @deprecated Use Blac.setConfig({ logging: { level: 'log' } }) or Blac.logging.setLevel('log') instead
+   */
+  private static _enableLog = false;
+
+  /**
+   * Get the legacy enableLog flag
+   * Maps to new logging system
+   */
+  static get enableLog(): boolean {
+    return this._enableLog;
+  }
+
+  /**
+   * Set the legacy enableLog flag
+   * Maps to new logging system: true → level: 'log', false → level: false
+   */
+  static set enableLog(value: boolean) {
+    this._enableLog = value;
+    logger.setLevel(value ? 'log' : false);
+  }
+
+  /**
+   * Legacy log level (kept for compatibility)
+   * @deprecated Use logging configuration instead
+   */
   static logLevel: 'warn' | 'log' = 'warn';
-  static logSpy: ((...args: unknown[]) => void) | null = null;
+
+  /**
+   * Log spy for testing
+   * Maintained for backwards compatibility with existing tests
+   */
+  private static _logSpy: ((...args: unknown[]) => void) | null = null;
+
+  /**
+   * Get the log spy
+   */
+  static get logSpy(): ((...args: unknown[]) => void) | null {
+    return this._logSpy;
+  }
+
+  /**
+   * Set the log spy (for testing)
+   * Also sets it on the logger for structured log entries
+   */
+  static set logSpy(spy: ((...args: unknown[]) => void) | null) {
+    this._logSpy = spy;
+    logger.setLogSpy(spy);
+  }
 
   /**
    * Logs messages to console when logging is enabled
@@ -340,6 +441,9 @@ export class Blac implements BlacContext {
     const oldBlocInstanceMap = new Map(this.blocInstanceMap);
     const oldIsolatedBlocMap = new Map(this.isolatedBlocMap);
 
+    // Count blocs to be disposed for logging
+    let disposedCount = 0;
+
     // Dispose non-keepAlive blocs from the current instance
     // Use disposeBloc method to ensure proper cleanup
     oldBlocInstanceMap.forEach((bloc) => {
@@ -348,6 +452,7 @@ export class Blac implements BlacContext {
         bloc.disposalState === BlocLifecycleState.ACTIVE
       ) {
         this.disposeBloc(bloc);
+        disposedCount++;
       }
     });
 
@@ -358,8 +463,19 @@ export class Blac implements BlacContext {
           bloc.disposalState === BlocLifecycleState.ACTIVE
         ) {
           this.disposeBloc(bloc);
+          disposedCount++;
         }
       });
+    });
+
+    logger.log({
+      level: 'log',
+      topic: 'lifecycle',
+      message: 'Blac instance reset',
+      context: {
+        disposedBlocs: disposedCount,
+        keepAliveBlocs: this.keepAliveBlocs.size,
+      },
     });
 
     // Clear registries (keep-alive blocs will be re-added by instance manager)
@@ -390,6 +506,14 @@ export class Blac implements BlacContext {
       this.log(
         `[${bloc._name}:${String(bloc._id)}] disposeBloc called on already disposed bloc`,
       );
+      logger.log({
+        level: 'warn',
+        topic: 'lifecycle',
+        message: 'Dispose called on already disposed bloc',
+        namespace: bloc._name,
+        blocId: String(bloc._id),
+        blocUid: bloc.uid,
+      });
       return;
     }
 
@@ -406,6 +530,21 @@ export class Blac implements BlacContext {
     this.log(
       `[${bloc._name}:${String(bloc._id)}] disposeBloc called. Isolated: ${String(base.isolated)}`,
     );
+
+    logger.log({
+      level: 'log',
+      topic: 'lifecycle',
+      message: needsDispose ? 'Disposing bloc' : 'Cleaning up bloc registries',
+      namespace: bloc._name,
+      blocId: String(bloc._id),
+      blocUid: bloc.uid,
+      context: {
+        disposalState: currentState,
+        isolated: base.isolated,
+        keepAlive: bloc._keepAlive,
+        needsDispose,
+      },
+    });
 
     // Clean up from registries
     if (base.isolated) {
@@ -720,6 +859,22 @@ export class Blac implements BlacContext {
 
     // Notify system plugins of bloc creation
     this.plugins.notifyBlocCreated(newBloc);
+
+    // Log bloc creation
+    logger.log({
+      level: 'log',
+      topic: 'lifecycle',
+      message: 'Bloc created',
+      namespace: blocClass.name,
+      blocId: String(id),
+      blocUid: newBloc.uid,
+      context: {
+        isolated: newBloc.isIsolated,
+        keepAlive: newBloc._keepAlive,
+        instanceRef,
+        hasParams: constructorParams !== undefined,
+      },
+    });
 
     return newBloc;
   }

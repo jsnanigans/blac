@@ -15,6 +15,7 @@ import {
   isStandardSchema,
   BlocValidationError,
 } from './validation';
+import { logger } from './logging';
 
 export type BlocInstanceId = string | number | undefined;
 
@@ -343,6 +344,22 @@ export abstract class BlocBase<S> {
       });
       return;
     }
+
+    // Log state change
+    logger.log({
+      level: 'log',
+      topic: 'state',
+      message: 'State emitted',
+      namespace: this._name,
+      blocId: String(this._id),
+      blocUid: this.uid,
+      context: {
+        previousState: oldState,
+        newState: this._state,
+        stateTransformed: transformedState !== newState,
+        action,
+      },
+    });
 
     // Notify all subscriptions
     // Use unified tracker if feature flag enabled, otherwise use legacy system

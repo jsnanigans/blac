@@ -8,6 +8,7 @@ import {
   SubscriptionManagerStats,
   SubscriptionResult,
 } from './types';
+import { logger } from '../logging';
 
 /**
  * Unified subscription manager that replaces the dual consumer/observer system.
@@ -80,6 +81,23 @@ export class SubscriptionManager<S = unknown> {
       `[${this.bloc._name}:${this.bloc._id}] Subscription added: ${id}. Total: ${this.subscriptions.size}`,
     );
 
+    // Log subscription addition
+    logger.log({
+      level: 'log',
+      topic: 'subscriptions',
+      message: 'Observer subscribed',
+      namespace: this.bloc._name,
+      blocId: String(this.bloc._id),
+      blocUid: this.bloc.uid,
+      context: {
+        subscriptionId: id,
+        type: options.type,
+        hasSelector: !!options.selector,
+        hasPriority: subscription.priority !== 0,
+        totalSubscriptions: this.subscriptions.size,
+      },
+    });
+
     // Cancel disposal if bloc is in disposal_requested state
     (this.bloc as any)._cancelDisposalIfRequested();
 
@@ -131,6 +149,20 @@ export class SubscriptionManager<S = unknown> {
       `[${this.bloc._name}:${this.bloc._id}] Subscription removed: ${id}. Remaining: ${this.subscriptions.size}`,
     );
 
+    // Log subscription removal
+    logger.log({
+      level: 'log',
+      topic: 'subscriptions',
+      message: 'Observer unsubscribed',
+      namespace: this.bloc._name,
+      blocId: String(this.bloc._id),
+      blocUid: this.bloc.uid,
+      context: {
+        subscriptionId: id,
+        remainingSubscriptions: this.subscriptions.size,
+      },
+    });
+
     // Check if bloc should be disposed
     this.bloc.checkDisposal();
   }
@@ -139,6 +171,10 @@ export class SubscriptionManager<S = unknown> {
    * Notify all subscriptions of state change
    */
   notify(newState: S, oldState: S, action?: unknown): void {
+    const startTime = performance.now();
+    let notifiedCount = 0;
+    let skippedCount = 0;
+
     // Hybrid optimization - fast path or cached sorted array
     let subscriptions: Iterable<Subscription<S>>;
 
@@ -223,6 +259,7 @@ export class SubscriptionManager<S = unknown> {
         try {
           subscription.notify(newValue, oldValue, action);
           this.totalNotifications++;
+          notifiedCount++;
 
           if (subscription.metadata) {
             subscription.metadata.lastNotified = Date.now();
@@ -234,8 +271,29 @@ export class SubscriptionManager<S = unknown> {
             error,
           );
         }
+      } else {
+        skippedCount++;
       }
     }
+
+    const duration = performance.now() - startTime;
+
+    // Log notification cycle summary
+    logger.log({
+      level: 'log',
+      topic: 'subscriptions',
+      message: 'Notification cycle completed',
+      namespace: this.bloc._name,
+      blocId: String(this.bloc._id),
+      blocUid: this.bloc.uid,
+      context: {
+        notifiedCount,
+        skippedCount,
+        totalSubscriptions: this.subscriptions.size,
+        duration: `${duration.toFixed(2)}ms`,
+        action,
+      },
+    });
   }
 
   /**

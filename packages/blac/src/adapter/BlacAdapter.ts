@@ -6,6 +6,7 @@ import { generateInstanceIdFromProps } from '../utils/generateInstanceId';
 import { ProxyFactory } from './ProxyFactory';
 import { setsEqual } from '../utils/setUtils';
 import { PathTrie } from '../utils/PathTrie';
+import { logger } from '../logging';
 
 export interface AdapterOptions<B extends BlocBase<any>> {
   instanceId?: string;
@@ -364,6 +365,22 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
     this.mountCount++;
     this.mountTime = Date.now();
 
+    // Log adapter mount
+    logger.log({
+      level: 'log',
+      topic: 'lifecycle',
+      message: 'Adapter mounted',
+      namespace: this.blocInstance._name,
+      blocId: String(this.blocInstance._id),
+      blocUid: this.blocInstance.uid,
+      context: {
+        adapterId: this.id,
+        mountCount: this.mountCount,
+        isUsingDependencies: this.isUsingDependencies,
+        hasOnMount: !!this.options?.onMount,
+      },
+    });
+
     // Call onMount hook
     if (this.options?.onMount) {
       this.options.onMount(this.blocInstance);
@@ -382,6 +399,23 @@ export class BlacAdapter<B extends BlocConstructor<BlocBase<any>>> {
 
   unmount = () => {
     this.unmountTime = Date.now();
+    const mountDuration = this.unmountTime - this.mountTime;
+
+    // Log adapter unmount
+    logger.log({
+      level: 'log',
+      topic: 'lifecycle',
+      message: 'Adapter unmounted',
+      namespace: this.blocInstance._name,
+      blocId: String(this.blocInstance._id),
+      blocUid: this.blocInstance.uid,
+      context: {
+        adapterId: this.id,
+        mountDuration: `${mountDuration}ms`,
+        hadSubscription: !!this.unsubscribe,
+        hasOnUnmount: !!this.options?.onUnmount,
+      },
+    });
 
     // Cancel subscription
     if (this.unsubscribe) {
