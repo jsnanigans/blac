@@ -18,9 +18,6 @@ export * from './utils/RerenderLogger';
 // Test utilities
 export * from './testing';
 
-// Adapter
-export * from './adapter';
-
 // Plugins
 export * from './plugins';
 

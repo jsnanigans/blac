@@ -21,7 +21,7 @@ import type { StateDependency, ComputedDependency } from './types';
  *
  * Wraps the state object and tracks all property accesses.
  * When a component accesses `state.count`, it automatically calls
- * `tracker.track(subscriptionId, { type: 'state', path: 'count' })`
+ * `tracker.track(subscriptionId, { type: 'state', path: 'count' }, renderId)`
  *
  * Handles nested objects by creating nested proxies with dot-notation paths.
  * Example: `state.user.profile.email` creates path "user.profile.email"
@@ -29,12 +29,14 @@ import type { StateDependency, ComputedDependency } from './types';
  * @param state - The state object to wrap
  * @param subscriptionId - The subscription tracking these accesses
  * @param basePath - Current path for nested tracking (e.g., "user.profile")
+ * @param renderId - Optional render ID for render-specific tracking
  * @returns Proxied state object that tracks all property access
  */
 export function createStateTrackingProxy<T extends object>(
   state: T,
   subscriptionId: string,
-  basePath = ''
+  basePath = '',
+  renderId?: string
 ): T {
   const tracker = UnifiedDependencyTracker.getInstance();
 
@@ -48,12 +50,13 @@ export function createStateTrackingProxy<T extends object>(
       // Build the full path for nested tracking
       const path = basePath ? `${basePath}.${String(prop)}` : String(prop);
 
-      // Track this dependency
+      // Track this dependency with render ID
       const dependency: StateDependency = {
         type: 'state',
         path,
       };
-      tracker.track(subscriptionId, dependency);
+      tracker.track(subscriptionId, dependency, renderId);
+      console.log(`[StateProxy] Tracked ${path} for subscription ${subscriptionId}, render: ${renderId}`);
 
       // Get the actual value
       const value = Reflect.get(target, prop, receiver);
@@ -61,7 +64,7 @@ export function createStateTrackingProxy<T extends object>(
       // If value is an object (but not array), wrap it in a proxy for nested tracking
       // Arrays are treated as leaf values to avoid excessive proxy overhead
       if (value != null && typeof value === 'object' && !Array.isArray(value)) {
-        return createStateTrackingProxy(value, subscriptionId, path);
+        return createStateTrackingProxy(value, subscriptionId, path, renderId);
       }
 
       return value;
@@ -74,17 +77,19 @@ export function createStateTrackingProxy<T extends object>(
  *
  * Wraps the Bloc instance and tracks all getter accesses.
  * When a component accesses `bloc.fullName`, it automatically calls
- * `tracker.track(subscriptionId, { type: 'computed', key: 'fullName', compute: () => bloc.fullName })`
+ * `tracker.track(subscriptionId, { type: 'computed', key: 'fullName', compute: () => bloc.fullName }, renderId)`
  *
  * Only tracks actual getters (properties with get descriptors), not methods or fields.
  *
  * @param bloc - The Bloc instance to wrap
  * @param subscriptionId - The subscription tracking these accesses
+ * @param renderId - Optional render ID for render-specific tracking
  * @returns Proxied Bloc instance that tracks getter access
  */
 export function createComputedTrackingProxy<T extends BlocBase<any>>(
   bloc: T,
-  subscriptionId: string
+  subscriptionId: string,
+  renderId?: string
 ): T {
   const tracker = UnifiedDependencyTracker.getInstance();
 
@@ -121,7 +126,7 @@ export function createComputedTrackingProxy<T extends BlocBase<any>>(
       const isGetter = descriptor && typeof descriptor.get === 'function';
 
       if (isGetter) {
-        // This is a getter - track it as a computed dependency
+        // This is a getter - track it as a computed dependency with render ID
         const dependency: ComputedDependency = {
           type: 'computed',
           key: String(prop),
@@ -129,7 +134,7 @@ export function createComputedTrackingProxy<T extends BlocBase<any>>(
           // This allows re-evaluation when checking for changes
           compute: () => Reflect.get(target, prop, receiver),
         };
-        tracker.track(subscriptionId, dependency);
+        tracker.track(subscriptionId, dependency, renderId);
       }
 
       // Return the actual value (whether it's a getter, method, or field)
@@ -152,23 +157,25 @@ export function createComputedTrackingProxy<T extends BlocBase<any>>(
  *
  * Usage in React:
  * ```typescript
- * const trackedBloc = createUnifiedTrackingProxy(bloc, subscriptionId);
+ * const trackedBloc = createUnifiedTrackingProxy(bloc, subscriptionId, renderId);
  * // Accessing trackedBloc.someGetter automatically tracks it
  * // Accessing trackedBloc.state returns raw untracked state
  * ```
  *
  * @param bloc - The Bloc instance to wrap
  * @param subscriptionId - The subscription ID for tracking
+ * @param renderId - Optional render ID for render-specific tracking
  * @returns Proxied Bloc that tracks getters but not state
  */
 export function createUnifiedTrackingProxy<T extends BlocBase<any>>(
   bloc: T,
-  subscriptionId: string
+  subscriptionId: string,
+  renderId?: string
 ): T {
   // Wrap the bloc for computed (getter) tracking only
   // We do NOT wrap state in a tracking proxy because:
   // 1. Getters should use real unproxied state
   // 2. We only care if a getter's RESULT changed, not what state it accesses
   // 3. This avoids false positives from indirect state dependencies
-  return createComputedTrackingProxy(bloc, subscriptionId);
+  return createComputedTrackingProxy(bloc, subscriptionId, renderId);
 }

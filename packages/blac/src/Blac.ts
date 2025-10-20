@@ -34,16 +34,6 @@ export interface BlacConfig {
   proxyMaxDepth?: number;
 
   /**
-   * Whether to use the new Unified Dependency Tracking system.
-   * When true, uses UnifiedDependencyTracker for all tracking (state, getters, custom).
-   * When false, uses legacy BlacAdapter + SubscriptionManager system.
-   *
-   * This is now the default and recommended tracking system.
-   * Default: true
-   */
-  useUnifiedTracking?: boolean;
-
-  /**
    * Logging configuration
    * Controls log levels, topics, and filtering for debugging and development
    * Default: disabled (level: false)
@@ -159,7 +149,6 @@ export class Blac implements BlacContext {
   private static _config: BlacConfig = {
     proxyDependencyTracking: true,
     proxyMaxDepth: 3,
-    useUnifiedTracking: true,
   };
 
   /** Get current configuration */
@@ -174,7 +163,6 @@ export class Blac implements BlacContext {
     this._config = {
       proxyDependencyTracking: true,
       proxyMaxDepth: 3,
-      useUnifiedTracking: true,
     };
   }
 

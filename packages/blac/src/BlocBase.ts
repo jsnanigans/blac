@@ -202,6 +202,38 @@ export abstract class BlocBase<S> {
    * @returns Object containing subscription ID and unsubscribe function
    */
   subscribe(callback: (state: S) => void): SubscriptionResult {
+    // Use unified tracker if blacContext exists
+    if (this.blacContext) {
+      const blacClass = this.blacContext.constructor as typeof import('./Blac').Blac;
+      const tracker = blacClass.getUnifiedTracker();
+
+      // Generate unique subscription ID
+      const subscriptionId = `subscribe-${this.uid}-${Math.random().toString(36).slice(2, 11)}`;
+
+      // Create subscription with wrapper that calls callback with state
+      tracker.createSubscription(subscriptionId, this.uid, () => {
+        callback(this.state);
+      });
+
+      // Track entire state as a custom dependency
+      const dependency: import('./tracking/types').CustomDependency = {
+        type: 'custom',
+        key: 'subscribe-all',
+        selector: (bloc: BlocBase<any>) => bloc.state,
+      };
+      tracker.track(subscriptionId, dependency);
+
+      return {
+        id: subscriptionId,
+        unsubscribe: () => {
+          tracker.removeSubscription(subscriptionId);
+          // Check if disposal should be triggered
+          this._checkAndScheduleDisposal();
+        },
+      };
+    }
+
+    // Fallback to legacy subscription manager for blocs without context
     return this._subscriptionManager.subscribe({
       type: 'observer',
       notify: (state) => callback(state as S),
@@ -217,6 +249,51 @@ export abstract class BlocBase<S> {
     callback: (value: T) => void,
     equalityFn?: (a: T, b: T) => boolean,
   ): SubscriptionResult {
+    // Use unified tracker if blacContext exists
+    if (this.blacContext) {
+      const blacClass = this.blacContext.constructor as typeof import('./Blac').Blac;
+      const tracker = blacClass.getUnifiedTracker();
+
+      // Generate unique subscription ID
+      const subscriptionId = `subscribe-selector-${this.uid}-${Math.random().toString(36).slice(2, 11)}`;
+
+      // Create subscription with wrapper that calls callback with selected value
+      let lastValue: T | undefined;
+      tracker.createSubscription(subscriptionId, this.uid, () => {
+        const newValue = selector(this.state);
+        // Apply custom equality check if provided
+        const hasChanged = lastValue === undefined ||
+          (equalityFn ? !equalityFn(lastValue, newValue) : lastValue !== newValue);
+
+        if (hasChanged) {
+          lastValue = newValue;
+          callback(newValue);
+        }
+      });
+
+      // Track selector as custom dependency
+      const dependency: import('./tracking/types').CustomDependency = {
+        type: 'custom',
+        key: 'subscribe-selector',
+        selector: (bloc: BlocBase<any>) => selector(bloc.state as S),
+      };
+      tracker.track(subscriptionId, dependency);
+
+      // Call callback immediately with initial value
+      lastValue = selector(this.state);
+      callback(lastValue);
+
+      return {
+        id: subscriptionId,
+        unsubscribe: () => {
+          tracker.removeSubscription(subscriptionId);
+          // Check if disposal should be triggered
+          this._checkAndScheduleDisposal();
+        },
+      };
+    }
+
+    // Fallback to legacy subscription manager
     return this._subscriptionManager.subscribe({
       type: 'consumer',
       selector: selector as any,
@@ -233,6 +310,45 @@ export abstract class BlocBase<S> {
     componentRef: WeakRef<object>,
     callback: () => void,
   ): SubscriptionResult {
+    // Use unified tracker if blacContext exists
+    if (this.blacContext) {
+      const blacClass = this.blacContext.constructor as typeof import('./Blac').Blac;
+      const tracker = blacClass.getUnifiedTracker();
+
+      // Generate unique subscription ID
+      const subscriptionId = `subscribe-component-${this.uid}-${Math.random().toString(36).slice(2, 11)}`;
+
+      // Create subscription with weakref check
+      tracker.createSubscription(subscriptionId, this.uid, () => {
+        // Check if component still exists
+        const component = componentRef.deref();
+        if (component) {
+          callback();
+        } else {
+          // Component was garbage collected, remove subscription
+          tracker.removeSubscription(subscriptionId);
+        }
+      });
+
+      // Track entire state as a custom dependency
+      const dependency: import('./tracking/types').CustomDependency = {
+        type: 'custom',
+        key: 'subscribe-component',
+        selector: (bloc: BlocBase<any>) => bloc.state,
+      };
+      tracker.track(subscriptionId, dependency);
+
+      return {
+        id: subscriptionId,
+        unsubscribe: () => {
+          tracker.removeSubscription(subscriptionId);
+          // Check if disposal should be triggered
+          this._checkAndScheduleDisposal();
+        },
+      };
+    }
+
+    // Fallback to legacy subscription manager
     return this._subscriptionManager.subscribe({
       type: 'consumer',
       weakRef: componentRef,
@@ -244,7 +360,23 @@ export abstract class BlocBase<S> {
    * Get current subscription count
    */
   get subscriptionCount(): number {
-    return this._subscriptionManager.size;
+    // Count subscriptions from both unified tracker and legacy manager
+    let count = this._subscriptionManager.size;
+
+    if (this.blacContext) {
+      const blacClass = this.blacContext.constructor as typeof import('./Blac').Blac;
+      const tracker = blacClass.getUnifiedTracker();
+
+      // Count subscriptions for this bloc in the unified tracker
+      // A subscription belongs to this bloc if its blocId matches this bloc's uid
+      for (const [_, subscription] of (tracker as any).subscriptions) {
+        if (subscription.blocId === this.uid) {
+          count++;
+        }
+      }
+    }
+
+    return count;
   }
 
   /**
@@ -252,6 +384,47 @@ export abstract class BlocBase<S> {
    */
   trackAccess(subscriptionId: string, path: string, value?: unknown): void {
     this._subscriptionManager.trackAccess(subscriptionId, path, value);
+  }
+
+  /**
+   * Check if bloc should be disposed and schedule disposal if needed
+   * @internal
+   */
+  _checkAndScheduleDisposal(): void {
+    // Only schedule disposal if:
+    // 1. Not already disposed or disposing
+    // 2. Subscription count is 0
+    // 3. Not a keepAlive bloc
+    if (
+      this._lifecycleManager.currentState === 'active' &&
+      this.subscriptionCount === 0 &&
+      !this._keepAlive
+    ) {
+      // Call onDisposalScheduled hook before scheduling
+      if (this.onDisposalScheduled) {
+        try {
+          this.onDisposalScheduled();
+        } catch (error) {
+          this.blacContext?.error(
+            `[${this._name}:${this._id}] Error in onDisposalScheduled hook:`,
+            error,
+          );
+        }
+      }
+
+      // Schedule disposal on next microtask
+      this._lifecycleManager.scheduleDisposal(
+        () => this.subscriptionCount === 0 && !this._keepAlive,
+        () => {
+          // Call dispose directly - context will handle cleanup in its disposeBloc if it exists
+          if (this.blacContext && 'disposeBloc' in this.blacContext) {
+            (this.blacContext as any).disposeBloc(this);
+          } else {
+            this.dispose();
+          }
+        },
+      );
+    }
   }
 
   /**
@@ -361,19 +534,20 @@ export abstract class BlocBase<S> {
       },
     });
 
-    // Notify all subscriptions
-    // Use unified tracker if feature flag enabled, otherwise use legacy system
+    // Notify all subscriptions using unified tracker
     const blacClass = this.blacContext?.constructor as typeof import('./Blac').Blac;
-    const useUnifiedTracking = blacClass?.config?.useUnifiedTracking ?? false;
 
-    if (this.blacContext && useUnifiedTracking) {
+    if (this.blacContext && blacClass?.getUnifiedTracker) {
       const tracker = blacClass.getUnifiedTracker();
+      this.blacContext?.log(`[BlocBase] Notifying changes for bloc ${this.uid} (${this._name})`);
       tracker.notifyChanges(this.uid, {
         oldState,
         newState: this._state,
         action,
       });
     } else {
+      // Fallback to legacy subscription manager for blocs without context
+      // or when context doesn't support unified tracker (e.g., mock contexts)
       this._subscriptionManager.notify(this._state, oldState, action);
     }
     this.lastUpdate = Date.now();

@@ -31,16 +31,40 @@ import {
 } from './types';
 
 /**
+ * Render-specific tracking data
+ */
+interface RenderTracking {
+  renderId: string;
+  dependencies: Dependency[];
+  timestamp: number;
+  committed: boolean;
+}
+
+/**
+ * Enhanced subscription state with render tracking
+ */
+interface EnhancedSubscriptionState extends SubscriptionState {
+  renderTracking: Map<string, RenderTracking>;
+  activeRenderId?: string;
+  lastCommittedRenderId?: string;
+}
+
+/**
  * Unified Dependency Tracker
  *
  * Manages all subscriptions and dependency tracking for the entire application.
  * Singleton pattern ensures consistent state across all blocs and components.
+ *
+ * Enhanced with render-specific tracking to support React 18 concurrent features.
  */
 export class UnifiedDependencyTracker {
   private static instance: UnifiedDependencyTracker;
 
   /** All active subscriptions, keyed by subscription ID */
-  private subscriptions = new Map<string, SubscriptionState>();
+  private subscriptions = new Map<string, EnhancedSubscriptionState>();
+
+  /** Cleanup timeouts for abandoned renders */
+  private cleanupTimeouts = new Map<string, NodeJS.Timeout>();
 
   /** Total notifications sent (for debugging/metrics) */
   private totalNotifications = 0;
@@ -64,6 +88,12 @@ export class UnifiedDependencyTracker {
    * @internal
    */
   static resetInstance(): void {
+    // Clear all cleanup timeouts
+    if (UnifiedDependencyTracker.instance) {
+      UnifiedDependencyTracker.instance.cleanupTimeouts.forEach(timeout => {
+        clearTimeout(timeout);
+      });
+    }
     UnifiedDependencyTracker.instance = new UnifiedDependencyTracker();
   }
 
@@ -83,16 +113,20 @@ export class UnifiedDependencyTracker {
     notify: () => void,
   ): void {
     if (this.subscriptions.has(id)) {
-      Blac.warn(`Subscription ${id} already exists, skipping creation`);
+      // Update the notify callback if subscription exists
+      const existing = this.subscriptions.get(id)!;
+      existing.notify = notify;
+      Blac.log(`[UnifiedTracker] Updated subscription ${id} callback`);
       return;
     }
 
-    const subscription: SubscriptionState = {
+    const subscription: EnhancedSubscriptionState = {
       id,
       blocId: blocUid, // Store the uid for bloc lookup
       dependencies: [],
       valueCache: new Map(),
       notify,
+      renderTracking: new Map(),
       metadata: {
         mountTime: Date.now(),
         renderCount: 0,
@@ -102,6 +136,50 @@ export class UnifiedDependencyTracker {
     this.subscriptions.set(id, subscription);
 
     Blac.log(`[UnifiedTracker] Created subscription ${id} for bloc ${blocUid}`);
+  }
+
+  /**
+   * Update the notify callback for a subscription
+   *
+   * Used to update the callback when useSyncExternalStore provides it.
+   * This allows us to create the subscription early but update the callback later.
+   *
+   * @param id - Subscription identifier
+   * @param notify - New notify callback
+   */
+  updateNotifyCallback(id: string, notify: () => void): void {
+    const subscription = this.subscriptions.get(id);
+    if (subscription) {
+      subscription.notify = notify;
+      Blac.log(`[UnifiedTracker] Updated notify callback for ${id}`);
+    } else {
+      Blac.warn(`[UnifiedTracker] Subscription ${id} not found when updating notify callback`);
+    }
+  }
+
+  /**
+   * Update the bloc ID for a subscription
+   *
+   * Used when the bloc instance changes (e.g., isolated blocs in React Strict Mode).
+   * This allows the subscription to track a different bloc instance.
+   *
+   * @param id - Subscription identifier
+   * @param newBlocId - New bloc UID to track
+   */
+  updateSubscriptionBlocId(id: string, newBlocId: string): void {
+    const subscription = this.subscriptions.get(id);
+    if (subscription) {
+      const oldBlocId = subscription.blocId;
+      subscription.blocId = newBlocId;
+      Blac.log(`[UnifiedTracker] Updated subscription ${id} bloc ID from ${oldBlocId} to ${newBlocId}`);
+
+      // Clear value cache as we're now tracking a different bloc
+      subscription.valueCache.clear();
+      // Clear dependencies to force re-tracking
+      subscription.dependencies = [];
+    } else {
+      Blac.warn(`[UnifiedTracker] Subscription ${id} not found when updating bloc ID`);
+    }
   }
 
   /**
@@ -119,13 +197,121 @@ export class UnifiedDependencyTracker {
       return;
     }
 
-    // Clear value cache to free memory
+    // Clear all cleanup timeouts for this subscription
+    subscription.renderTracking.forEach((_, renderId) => {
+      const timeoutKey = `${id}-${renderId}`;
+      const timeout = this.cleanupTimeouts.get(timeoutKey);
+      if (timeout) {
+        clearTimeout(timeout);
+        this.cleanupTimeouts.delete(timeoutKey);
+      }
+    });
+
+    // Clear value cache and render tracking to free memory
     subscription.valueCache.clear();
+    subscription.renderTracking.clear();
 
     // Remove from subscriptions map
     this.subscriptions.delete(id);
 
     Blac.log(`[UnifiedTracker] Removed subscription ${id}`);
+  }
+
+  /**
+   * Start tracking for a specific render attempt
+   *
+   * Called at the start of each render to begin collecting new dependencies.
+   * Each render gets a unique ID to isolate tracking and support concurrent renders.
+   *
+   * @param subscriptionId - Which subscription is rendering
+   * @param renderContext - Stable context for this render (changes only for concurrent features)
+   */
+  startRenderTracking(subscriptionId: string, renderContext: string): void {
+    const subscription = this.subscriptions.get(subscriptionId);
+    if (!subscription) {
+      Blac.warn(`Subscription ${subscriptionId} not found, cannot start tracking`);
+      return;
+    }
+
+    // Check if we already have tracking for this context
+    let renderTracking = subscription.renderTracking.get(renderContext);
+
+    if (!renderTracking) {
+      // Create new tracking for this render context
+      renderTracking = {
+        renderId: renderContext,
+        dependencies: [],
+        timestamp: Date.now(),
+        committed: false,
+      };
+      subscription.renderTracking.set(renderContext, renderTracking);
+
+      // Schedule cleanup for abandoned renders (10 seconds timeout)
+      // Only for new contexts, not re-renders in the same context
+      const timeoutKey = `${subscriptionId}-${renderContext}`;
+      this.cleanupTimeouts.set(
+        timeoutKey,
+        setTimeout(() => {
+          this.cleanupAbandonedRender(subscriptionId, renderContext);
+        }, 10000)
+      );
+    } else {
+      // Reset dependencies for new tracking pass in same context
+      renderTracking.dependencies = [];
+      renderTracking.timestamp = Date.now();
+    }
+
+    subscription.activeRenderId = renderContext;
+
+    Blac.log(`[UnifiedTracker] Started render tracking ${renderContext} for subscription ${subscriptionId}`);
+  }
+
+  /**
+   * Commit tracked dependencies from a specific render
+   *
+   * Called after render completes to atomically replace old dependencies
+   * with the new ones tracked during this specific render.
+   *
+   * @param subscriptionId - Which subscription is committing
+   * @param renderId - Unique identifier for the render being committed
+   */
+  commitRenderTracking(subscriptionId: string, renderId: string): void {
+    const subscription = this.subscriptions.get(subscriptionId);
+    if (!subscription) {
+      Blac.warn(`Subscription ${subscriptionId} not found, cannot commit tracking`);
+      return;
+    }
+
+    const renderTracking = subscription.renderTracking.get(renderId);
+    if (!renderTracking) {
+      Blac.warn(`Render ${renderId} not found for subscription ${subscriptionId}`);
+      return;
+    }
+
+    // Cancel cleanup timeout
+    const timeoutKey = `${subscriptionId}-${renderId}`;
+    const timeout = this.cleanupTimeouts.get(timeoutKey);
+    if (timeout) {
+      clearTimeout(timeout);
+      this.cleanupTimeouts.delete(timeoutKey);
+    }
+
+    // Commit the dependencies from this render
+    subscription.dependencies = renderTracking.dependencies;
+    renderTracking.committed = true;
+    subscription.lastCommittedRenderId = renderId;
+
+    // Clean up old uncommitted renders (keep last 3 for debugging)
+    const renders = Array.from(subscription.renderTracking.entries());
+    const uncommitted = renders.filter(([_, r]) => !r.committed);
+    if (uncommitted.length > 3) {
+      uncommitted
+        .sort((a, b) => a[1].timestamp - b[1].timestamp)
+        .slice(0, -3)
+        .forEach(([id]) => subscription.renderTracking.delete(id));
+    }
+
+    Blac.log(`[UnifiedTracker] Committed ${renderTracking.dependencies.length} dependencies from render ${renderId}`);
   }
 
   /**
@@ -139,11 +325,13 @@ export class UnifiedDependencyTracker {
    * - Synchronous: value is captured immediately, no async commit
    * - Works in React Strict Mode: duplicate tracking is ignored
    * - Always updates cache, even if dependency was already tracked
+   * - Supports render-specific tracking for concurrent renders
    *
    * @param subscriptionId - Which subscription is tracking this dependency
    * @param dependency - What dependency to track
+   * @param renderId - Optional render ID for render-specific tracking
    */
-  track(subscriptionId: string, dependency: Dependency): void {
+  track(subscriptionId: string, dependency: Dependency, renderId?: string): void {
     const subscription = this.subscriptions.get(subscriptionId);
     if (!subscription) {
       Blac.warn(`Subscription ${subscriptionId} not found, cannot track`);
@@ -152,35 +340,67 @@ export class UnifiedDependencyTracker {
 
     const depKey = this.getDependencyKey(dependency);
 
-    // Idempotency check: if already tracked, skip adding to dependencies array
-    // but always update the cached value (fixes stale cache on re-renders)
-    // This handles React Strict Mode double-render gracefully
-    const alreadyTracked = subscription.dependencies.some(
-      d => this.getDependencyKey(d) === depKey
-    );
+    // Use provided renderId or fall back to active render
+    const targetRenderId = renderId || subscription.activeRenderId;
 
-    // Get the bloc instance for evaluation
-    const bloc = Blac.getBlocByUid(subscription.blocId);
-    if (!bloc) {
-      Blac.error(`Bloc with uid ${subscription.blocId} not found for subscription ${subscriptionId}`);
-      return;
-    }
+    if (targetRenderId && subscription.renderTracking.has(targetRenderId)) {
+      // Render-specific tracking
+      const renderTracking = subscription.renderTracking.get(targetRenderId)!;
 
-    // CRITICAL: Always capture current value, even if already tracked
-    // This ensures the cache stays fresh across re-renders
-    // This is synchronous - no async boundary, no timing bugs
-    const currentValue = this.evaluate(dependency, bloc);
-    const oldValue = subscription.valueCache.get(depKey);
-    subscription.valueCache.set(depKey, currentValue);
+      const alreadyTracked = renderTracking.dependencies.some(
+        d => this.getDependencyKey(d) === depKey
+      );
 
-    if (!alreadyTracked) {
-      // Only add to dependency list if this is the first tracking
-      subscription.dependencies.push(dependency);
-      Blac.log(`[UnifiedTracker] Tracked ${depKey} for subscription ${subscriptionId}`);
+      if (!alreadyTracked) {
+        renderTracking.dependencies.push(dependency);
+      }
+
+      // Always update the value cache
+      const bloc = Blac.getBlocByUid(subscription.blocId);
+      if (bloc) {
+        const currentValue = this.evaluate(dependency, bloc);
+        subscription.valueCache.set(depKey, currentValue);
+      }
+
+      Blac.log(`[UnifiedTracker] Tracked ${depKey} for render ${targetRenderId}`);
     } else {
-      // Already tracking, just updated the cache
-      Blac.log(`[UnifiedTracker] Updated cache for ${depKey} for subscription ${subscriptionId}`);
+      // Fallback to direct tracking (for custom dependencies or non-render tracking)
+      const alreadyTracked = subscription.dependencies.some(
+        d => this.getDependencyKey(d) === depKey
+      );
+
+      if (!alreadyTracked) {
+        subscription.dependencies.push(dependency);
+      }
+
+      // Update value cache
+      const bloc = Blac.getBlocByUid(subscription.blocId);
+      if (bloc) {
+        const currentValue = this.evaluate(dependency, bloc);
+        subscription.valueCache.set(depKey, currentValue);
+      }
+
+      Blac.log(`[UnifiedTracker] Tracked ${depKey} for subscription ${subscriptionId} (direct)`);
     }
+  }
+
+  /**
+   * Clean up an abandoned render that was never committed
+   * @private
+   */
+  private cleanupAbandonedRender(subscriptionId: string, renderId: string): void {
+    const subscription = this.subscriptions.get(subscriptionId);
+    if (!subscription) return;
+
+    const renderTracking = subscription.renderTracking.get(renderId);
+    if (renderTracking && !renderTracking.committed) {
+      subscription.renderTracking.delete(renderId);
+      Blac.log(`[UnifiedTracker] Cleaned up abandoned render ${renderId}`);
+    }
+
+    // Clean up timeout reference
+    const timeoutKey = `${subscriptionId}-${renderId}`;
+    this.cleanupTimeouts.delete(timeoutKey);
   }
 
   /**
@@ -201,11 +421,16 @@ export class UnifiedDependencyTracker {
   notifyChanges(blocId: string, change: StateChange): Set<string> {
     const affected = new Set<string>();
 
+    Blac.log(`[UnifiedTracker] notifyChanges called for bloc ${blocId}, checking ${this.subscriptions.size} subscriptions`);
+
     // Find all subscriptions for this bloc
     for (const [subId, sub] of this.subscriptions) {
       if (sub.blocId !== blocId) {
+        Blac.log(`[UnifiedTracker] Skipping subscription ${subId} (blocId: ${sub.blocId} !== ${blocId})`);
         continue; // Skip subscriptions for other blocs
       }
+
+      Blac.log(`[UnifiedTracker] Found matching subscription ${subId} for bloc ${blocId}, deps: ${sub.dependencies.length}`);
 
       let shouldNotify = false;
       const bloc = Blac.getBlocByUid(blocId);
@@ -258,6 +483,7 @@ export class UnifiedDependencyTracker {
         affected.add(subId);
 
         // Trigger React re-render
+        Blac.log(`[UnifiedTracker] About to notify subscription ${subId}, notify is: ${typeof sub.notify}`);
         sub.notify();
 
         // Update metadata
@@ -369,6 +595,8 @@ export class UnifiedDependencyTracker {
         blocId: sub.blocId,
         dependencyCount: sub.dependencies.length,
         renderCount: sub.metadata.renderCount,
+        activeRenders: sub.renderTracking.size,
+        lastCommittedRenderId: sub.lastCommittedRenderId,
         componentName: sub.metadata.componentName,
       })),
     };
