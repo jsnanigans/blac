@@ -1,5 +1,8 @@
 # CLAUDE.md
 
+This project uses `jujutsu` instead of `git` for version control.
+use `jj` commands to interact with the repository.
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 # BlaC State Management Library

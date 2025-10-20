@@ -589,10 +589,10 @@ describe('Advanced Dependency Tracking - Custom Dependencies Array', () => {
     renderSpy.mockClear();
     await user.click(screen.getByText('Update Age to 29'));
     await new Promise((resolve) => setTimeout(resolve, 100));
-    // age > 30 changes from false (30) to false (29) - no change in comparison result
-    // State changed but dependency value (false) didn't change, so no re-render
+    // age > 30 stays false (30 > 30 is false, 29 > 30 is also false)
+    // Dependency value didn't change, so no re-render
     // Age should still show 30 because component didn't re-render
-    expect(screen.getByTestId('age')).toHaveTextContent('29');
+    expect(screen.getByTestId('age')).toHaveTextContent('30');
     expect(renderSpy).toHaveBeenCalledTimes(0);
 
     // Update age to 31 - should trigger re-render (age > 30 changes from false to true)

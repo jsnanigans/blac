@@ -138,6 +138,7 @@ export class UnifiedDependencyTracker {
    * - Idempotent: tracking same dependency twice is safe (no-op)
    * - Synchronous: value is captured immediately, no async commit
    * - Works in React Strict Mode: duplicate tracking is ignored
+   * - Always updates cache, even if dependency was already tracked
    *
    * @param subscriptionId - Which subscription is tracking this dependency
    * @param dependency - What dependency to track
@@ -149,35 +150,37 @@ export class UnifiedDependencyTracker {
       return;
     }
 
-    // Get dependency key for cache lookup
     const depKey = this.getDependencyKey(dependency);
 
-    // Idempotency check: if already tracked, skip
+    // Idempotency check: if already tracked, skip adding to dependencies array
+    // but always update the cached value (fixes stale cache on re-renders)
     // This handles React Strict Mode double-render gracefully
     const alreadyTracked = subscription.dependencies.some(
       d => this.getDependencyKey(d) === depKey
     );
 
-    if (alreadyTracked) {
-      // Already tracking this dependency, no need to add again
-      return;
-    }
-
-    // Add to dependency list
-    subscription.dependencies.push(dependency);
-
-    // CRITICAL: Immediately capture current value
-    // This is synchronous - no async boundary, no timing bugs
+    // Get the bloc instance for evaluation
     const bloc = Blac.getBlocByUid(subscription.blocId);
     if (!bloc) {
       Blac.error(`Bloc with uid ${subscription.blocId} not found for subscription ${subscriptionId}`);
       return;
     }
 
+    // CRITICAL: Always capture current value, even if already tracked
+    // This ensures the cache stays fresh across re-renders
+    // This is synchronous - no async boundary, no timing bugs
     const currentValue = this.evaluate(dependency, bloc);
+    const oldValue = subscription.valueCache.get(depKey);
     subscription.valueCache.set(depKey, currentValue);
 
-    Blac.log(`[UnifiedTracker] Tracked ${depKey} for subscription ${subscriptionId}`);
+    if (!alreadyTracked) {
+      // Only add to dependency list if this is the first tracking
+      subscription.dependencies.push(dependency);
+      Blac.log(`[UnifiedTracker] Tracked ${depKey} for subscription ${subscriptionId}`);
+    } else {
+      // Already tracking, just updated the cache
+      Blac.log(`[UnifiedTracker] Updated cache for ${depKey} for subscription ${subscriptionId}`);
+    }
   }
 
   /**
@@ -219,8 +222,27 @@ export class UnifiedDependencyTracker {
         // Re-evaluate the dependency with current state
         const newValue = this.evaluate(dep, bloc);
 
-        // Value comparison (works for primitives, objects, functions, etc.)
-        if (!Object.is(oldValue, newValue)) {
+        // Value comparison - handle arrays specially for deep comparison
+        let valueChanged = false;
+
+        if (Array.isArray(oldValue) && Array.isArray(newValue)) {
+          // Compare array contents instead of reference
+          if (oldValue.length !== newValue.length) {
+            valueChanged = true;
+          } else {
+            for (let i = 0; i < oldValue.length; i++) {
+              if (!Object.is(oldValue[i], newValue[i])) {
+                valueChanged = true;
+                break;
+              }
+            }
+          }
+        } else {
+          // For non-arrays, use Object.is (works for primitives, objects, functions, etc.)
+          valueChanged = !Object.is(oldValue, newValue);
+        }
+
+        if (valueChanged) {
           // Value changed - update cache
           sub.valueCache.set(depKey, newValue);
           shouldNotify = true;

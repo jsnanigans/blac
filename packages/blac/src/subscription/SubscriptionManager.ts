@@ -228,6 +228,7 @@ export class SubscriptionManager<S = unknown> {
           // Check which paths changed between old and new state
           const changedPaths = this.getChangedPaths(oldState, newState);
           // V3: Pass bloc instance for getter value comparison
+          // shouldNotifyForPaths also handles cache invalidation (Fix #8)
           shouldNotify = this.shouldNotifyForPaths(
             subscription.id,
             changedPaths,
@@ -526,6 +527,11 @@ export class SubscriptionManager<S = unknown> {
     bloc?: any,
   ): boolean {
     const subscription = this.subscriptions.get(subscriptionId);
+
+    // Fix #8: Always invalidate getter cache when state paths change
+    // This must happen before any early returns to ensure cache is cleared
+    this.invalidateGetterCache(subscriptionId, changedPaths);
+
     // If no dependencies tracked (primitive values, first render), always notify
     if (!subscription || !subscription.dependencies || subscription.dependencies.size === 0) {
       return true;

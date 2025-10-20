@@ -363,8 +363,11 @@ export abstract class BlocBase<S> {
 
     // Notify all subscriptions
     // Use unified tracker if feature flag enabled, otherwise use legacy system
-    if (this.blacContext && (this.blacContext.constructor as typeof import('./Blac').Blac).config.useUnifiedTracking) {
-      const tracker = (this.blacContext.constructor as typeof import('./Blac').Blac).getUnifiedTracker();
+    const blacClass = this.blacContext?.constructor as typeof import('./Blac').Blac;
+    const useUnifiedTracking = blacClass?.config?.useUnifiedTracking ?? false;
+
+    if (this.blacContext && useUnifiedTracking) {
+      const tracker = blacClass.getUnifiedTracker();
       tracker.notifyChanges(this.uid, {
         oldState,
         newState: this._state,

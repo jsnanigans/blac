@@ -142,36 +142,33 @@ export function createComputedTrackingProxy<T extends BlocBase<any>>(
  * Create a unified proxy that tracks both state and computed dependencies
  *
  * This is the main entry point for creating a fully-tracked Bloc proxy.
- * It combines state tracking and computed tracking into a single proxy.
+ * It only tracks computed dependencies (getters), NOT state properties.
+ *
+ * Key Design:
+ * - Only getters are tracked as computed dependencies
+ * - Getters are treated as atomic - we track if their RESULT changed, not their internals
+ * - State is returned as-is without tracking (getters access real unproxied state)
+ * - This avoids tracking indirect state dependencies accessed inside getters
  *
  * Usage in React:
  * ```typescript
  * const trackedBloc = createUnifiedTrackingProxy(bloc, subscriptionId);
- * // Now any access to trackedBloc.state.count or trackedBloc.someGetter is tracked
+ * // Accessing trackedBloc.someGetter automatically tracks it
+ * // Accessing trackedBloc.state returns raw untracked state
  * ```
  *
  * @param bloc - The Bloc instance to wrap
  * @param subscriptionId - The subscription ID for tracking
- * @returns Fully proxied Bloc with both state and computed tracking
+ * @returns Proxied Bloc that tracks getters but not state
  */
 export function createUnifiedTrackingProxy<T extends BlocBase<any>>(
   bloc: T,
   subscriptionId: string
 ): T {
-  // First, wrap the bloc itself for computed (getter) tracking
-  const computedProxy = createComputedTrackingProxy(bloc, subscriptionId);
-
-  // Then, intercept the 'state' property to wrap it with state tracking
-  return new Proxy(computedProxy, {
-    get(target, prop, receiver) {
-      if (prop === 'state') {
-        const state = Reflect.get(target, prop, receiver);
-        // Wrap the state object with state tracking proxy
-        return createStateTrackingProxy(state, subscriptionId);
-      }
-
-      // All other properties go through the computed proxy
-      return Reflect.get(target, prop, receiver);
-    },
-  });
+  // Wrap the bloc for computed (getter) tracking only
+  // We do NOT wrap state in a tracking proxy because:
+  // 1. Getters should use real unproxied state
+  // 2. We only care if a getter's RESULT changed, not what state it accesses
+  // 3. This avoids false positives from indirect state dependencies
+  return createComputedTrackingProxy(bloc, subscriptionId);
 }

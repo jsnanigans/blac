@@ -21,6 +21,7 @@ import {
   generateInstanceIdFromProps,
   UnifiedDependencyTracker,
   createUnifiedTrackingProxy,
+  createStateTrackingProxy,
 } from '@blac/core';
 import type { CustomDependency } from '@blac/core';
 import {
@@ -177,23 +178,8 @@ export function useBloc_Unified<B extends BlocConstructor<BlocBase<any>>>(
   // Subscribe to state changes using useSyncExternalStore
   const rawState = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
-  // Create tracking proxy for state
-  // This proxy intercepts property access and tracks dependencies
-  const trackedState = useMemo(() => {
-    // Only create tracking proxy if not using custom dependencies
-    if (options?.dependencies) {
-      // Custom dependencies - return raw state
-      return rawState;
-    }
-
-    // Automatic tracking - wrap state in tracking proxy
-    return createUnifiedTrackingProxy(
-      { state: rawState } as any,
-      subscriptionId
-    ).state;
-  }, [rawState, subscriptionId, options?.dependencies]);
-
-  // Create tracking proxy for bloc (getters)
+  // Create tracking proxy for bloc (getters only)
+  // Only getters are tracked, state inside getters uses raw unproxied state
   const trackedBloc = useMemo(() => {
     // Only create tracking proxy if not using custom dependencies
     if (options?.dependencies) {
@@ -201,9 +187,22 @@ export function useBloc_Unified<B extends BlocConstructor<BlocBase<any>>>(
       return bloc;
     }
 
-    // Automatic tracking - wrap bloc in tracking proxy
+    // Automatic tracking - wrap bloc to track getters only
     return createUnifiedTrackingProxy(bloc, subscriptionId);
   }, [bloc, subscriptionId, options?.dependencies]);
+
+  // Create tracking proxy for state
+  // This tracks direct state accesses by the component
+  const trackedState = useMemo(() => {
+    // Only create tracking proxy if not using custom dependencies
+    if (options?.dependencies) {
+      // Custom dependencies - return raw state
+      return rawState;
+    }
+
+    // Automatic tracking - wrap state to track property accesses
+    return createStateTrackingProxy(rawState, subscriptionId);
+  }, [rawState, subscriptionId, options?.dependencies]);
 
   // Mount/unmount lifecycle
   useEffect(() => {
@@ -220,5 +219,8 @@ export function useBloc_Unified<B extends BlocConstructor<BlocBase<any>>>(
     };
   }, [bloc.uid, options?.onMount, options?.onUnmount]);
 
+  // Return state proxy and bloc proxy
+  // State proxy tracks direct state accesses
+  // Bloc proxy tracks getter accesses (getters use raw state internally)
   return [trackedState, trackedBloc];
 }
