@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BenchmarkDashboard } from './src/components/BenchmarkDashboard';
 import { JSFrameworkBenchmark } from './src/benchmarks/JSFrameworkBenchmark';
+import { AdapterExamples } from './src/examples/AdapterExamples';
 import './bootstrap.css';
 import './main.css';
+import './src/examples/examples.css';
 import { Blac } from '@blac/core';
 
-type Page = 'home' | 'jsframework' | 'dashboard';
+type Page = 'home' | 'jsframework' | 'dashboard' | 'examples';
 
 const HomePage: React.FC<{ onNavigate: (page: Page) => void }> = ({ onNavigate }) => {
   return (
@@ -67,6 +69,57 @@ const HomePage: React.FC<{ onNavigate: (page: Page) => void }> = ({ onNavigate }
               }}
             >
               Launch Benchmark →
+            </div>
+          </div>
+
+          <div
+            style={{
+              background: 'white',
+              padding: '30px',
+              borderRadius: '8px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+            onClick={() => onNavigate('examples')}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-4px)';
+              e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+            }}
+          >
+            <h2 style={{ margin: '0 0 10px 0', color: '#28a745' }}>
+              useBlocAdapter Examples
+            </h2>
+            <p style={{ margin: 0, color: '#666', lineHeight: '1.6' }}>
+              Interactive examples demonstrating various patterns and use cases:
+            </p>
+            <ul
+              style={{
+                marginTop: '15px',
+                marginBottom: 0,
+                color: '#666',
+                lineHeight: '1.8',
+              }}
+            >
+              <li>Basic usage with counters and todo lists</li>
+              <li>Selectors for fine-grained subscriptions</li>
+              <li>React 18 features (Suspense, useTransition, useDeferredValue)</li>
+              <li>Lifecycle callbacks and custom comparisons</li>
+              <li>10+ complete working examples</li>
+            </ul>
+            <div
+              style={{
+                marginTop: '20px',
+                color: '#28a745',
+                fontWeight: '600',
+                fontSize: '14px',
+              }}
+            >
+              View Examples →
             </div>
           </div>
 
@@ -194,6 +247,40 @@ const App: React.FC = () => {
               </div>
             </div>
             <JSFrameworkBenchmark />
+          </div>
+        );
+      case 'examples':
+        return (
+          <div>
+            <div
+              style={{
+                background: '#28a745',
+                color: 'white',
+                padding: '15px 20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '15px',
+              }}
+            >
+              <button
+                onClick={() => setCurrentPage('home')}
+                style={{
+                  background: 'white',
+                  color: '#28a745',
+                  border: 'none',
+                  padding: '8px 16px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                }}
+              >
+                ← Back
+              </button>
+              <div style={{ fontSize: '18px', fontWeight: '600' }}>
+                useBlocAdapter Examples
+              </div>
+            </div>
+            <AdapterExamples />
           </div>
         );
       case 'dashboard':

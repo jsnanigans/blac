@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { JSFrameworkBenchmark } from '../benchmarks/JSFrameworkBenchmark';
 import { MemoryLeakBenchmark } from '../benchmarks/MemoryLeakBenchmark';
-import { DependencyTrackingBenchmark } from '../benchmarks/DependencyTrackingBenchmark';
-import { LargeStateBenchmark } from '../benchmarks/LargeStateBenchmark';
 import { ConcurrentUpdatesBenchmark } from '../benchmarks/ConcurrentUpdatesBenchmark';
 
 type BenchmarkTab =
@@ -32,18 +30,18 @@ const tabs: TabInfo[] = [
     description: 'Mount/unmount cycles to detect memory leaks',
     component: MemoryLeakBenchmark,
   },
-  {
-    id: 'dependency',
-    label: 'Dependency Tracking',
-    description: 'Proxy-based dependency tracking optimization',
-    component: DependencyTrackingBenchmark,
-  },
-  {
-    id: 'largestate',
-    label: 'Large State',
-    description: 'Deeply nested state tree performance',
-    component: LargeStateBenchmark,
-  },
+  // {
+  //   id: 'dependency',
+  //   label: 'Dependency Tracking',
+  //   description: 'Proxy-based dependency tracking optimization',
+  //   component: DependencyTrackingBenchmark,
+  // },
+  // {
+  //   id: 'largestate',
+  //   label: 'Large State',
+  //   description: 'Deeply nested state tree performance',
+  //   component: LargeStateBenchmark,
+  // },
   {
     id: 'concurrent',
     label: 'Concurrent Updates',

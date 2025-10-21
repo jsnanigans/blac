@@ -1,6 +1,6 @@
 import { Cubit } from '@blac/core';
 import { useBloc } from '@blac/react';
-import React from 'react';
+import React, { useEffect } from 'react';
 
 /**
  * JS Framework Benchmark style test
@@ -188,9 +188,9 @@ const Row: React.FC<RowProps> = React.memo(({ item }) => {
     dependencies: (bloc) => [bloc.state.selected === item],
   });
 
-  // useEffect(() => {
-  //   trackRowRender();
-  // });
+  useEffect(() => {
+    trackRowRender();
+  });
 
   return (
     <tr className={item === selected ? 'danger' : ''}>
@@ -209,9 +209,10 @@ const Row: React.FC<RowProps> = React.memo(({ item }) => {
 const RowList: React.FC = () => {
   const [{ data }] = useBloc(DemoBloc, {});
 
-  // useEffect(() => {
-  //   console.log('[RowList] Rendered with');
-  // });
+
+  useEffect(() => {
+    console.log('[RowList] Rendered with');
+  });
 
   return (
     <>
@@ -244,9 +245,9 @@ const Button: React.FC<ButtonProps> = ({ id, title, cb }) => (
 export const JSFrameworkBenchmark: React.FC = () => {
   const [, { run, runLots, add, update, clear, swapRows }] = useBloc(DemoBloc);
 
-  // useEffect(() => {
-  //   console.log('[JSFrameworkBenchmark] Component rendered');
-  // });
+  useEffect(() => {
+    console.log('[JSFrameworkBenchmark] Component rendered');
+  });
 
   return (
     <div className="container">

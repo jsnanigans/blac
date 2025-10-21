@@ -124,6 +124,9 @@ export class ReactBlocAdapter<S = any> {
   /** Cached snapshot of current state */
   private snapshot: StateSnapshot<S>;
 
+  /** Cache for selector results to ensure stable references */
+  private selectorCache = new Map<Selector<S, any>, any>();
+
   /** Subscription to bloc's state changes */
   private blocSubscription: (() => void) | null = null;
 
@@ -186,6 +189,9 @@ export class ReactBlocAdapter<S = any> {
    * @private
    */
   private notifySubscriptions(): void {
+    // Clear selector cache on state changes
+    this.selectorCache.clear();
+
     for (const subscription of this.subscriptions.values()) {
       // Skip if already notified for this version
       if (subscription.lastNotifiedVersion === this.version) {
@@ -285,12 +291,23 @@ export class ReactBlocAdapter<S = any> {
    * This method is designed to be used with useSyncExternalStore's getSnapshot callback.
    * Returns the cached snapshot for efficient access.
    *
+   * CRITICAL: This method MUST return stable references for the same state/selector combination
+   * to prevent infinite loops in React's useSyncExternalStore.
+   *
    * @param selector - Optional selector to apply to snapshot
    * @returns Current state or selector result
    */
   getSnapshot<R = S>(selector?: Selector<S, R>): R | S {
     if (selector) {
-      return selector(this.snapshot.state);
+      // Check if we have a cached result for this selector
+      if (this.selectorCache.has(selector)) {
+        return this.selectorCache.get(selector);
+      }
+
+      // Compute and cache the result
+      const result = selector(this.snapshot.state);
+      this.selectorCache.set(selector, result);
+      return result;
     }
     return this.snapshot.state;
   }
@@ -378,6 +395,9 @@ export class ReactBlocAdapter<S = any> {
     // Clear all subscriptions
     this.subscriptions.clear();
     this.subscriberCount = 0;
+
+    // Clear selector cache
+    this.selectorCache.clear();
   }
 
   /**
