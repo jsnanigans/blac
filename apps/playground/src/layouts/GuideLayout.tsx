@@ -35,9 +35,7 @@ function MetaChips({
 }) {
   if (!items || items.length === 0) {
     return (
-      <span className="text-sm text-muted-foreground/70">
-        {emptyLabel}
-      </span>
+      <span className="text-sm text-muted-foreground/70">{emptyLabel}</span>
     );
   }
 
@@ -76,7 +74,7 @@ export function GuideLayout({
   currentSection,
   currentDemo,
   showNavigation = true,
-  className
+  className,
 }: GuideLayoutProps) {
   const breadcrumbs = getBreadcrumbs(currentSection, currentDemo);
   const navigation =
@@ -104,25 +102,24 @@ export function GuideLayout({
     //scroll to top, if in browser
     document.scrollingElement?.scrollTo({
       top: 0,
-      behavior: 'instant'
-    })
-
-  }, [navigation?.current.path])
+      behavior: 'instant',
+    });
+  }, [navigation?.current.path]);
 
   return (
-    <div
-      id="guide-layout"
-      className={cn(
-        'relative bg-background',
-        className,
-      )}
-    >
+    <div id="guide-layout" className={cn('relative bg-background', className)}>
       <div id="guide-layout-shell" className="flex min-h-screen">
         <div id="guide-layout-sidebar" className="contents">
-          <GuideSidebar currentSection={currentSection} currentDemo={currentDemo} />
+          <GuideSidebar
+            currentSection={currentSection}
+            currentDemo={currentDemo}
+          />
         </div>
 
-        <div id="guide-layout-main" className="relative flex flex-1 flex-col min-w-0">
+        <div
+          id="guide-layout-main"
+          className="relative flex flex-1 flex-col min-w-0"
+        >
           <div
             id="guide-layout-header"
             className="border-b border-border/80 bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/80"
@@ -145,15 +142,26 @@ export function GuideLayout({
                   </span>
                 )
               }
-            >
-            </PageHeader>
+            ></PageHeader>
           </div>
 
           <main id="guide-layout-content" className="flex-1">
-            <div id="guide-article-container" className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-4 lg:py-12 lg:pt-0">
-              <div id="guide-article-content" className="min-w-0 space-y-12 max-w-2xl">{children}</div>
+            <div
+              id="guide-article-container"
+              className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-4 lg:py-12 lg:pt-0"
+            >
+              <div
+                id="guide-article-content"
+                className="min-w-0 space-y-12 max-w-2xl"
+              >
+                {children}
+              </div>
               {showNavigation && navigation && (
-                <GuideNavigation id="guide-page-navigation" navigation={navigation} className="mt-12" />
+                <GuideNavigation
+                  id="guide-page-navigation"
+                  navigation={navigation}
+                  className="mt-12"
+                />
               )}
             </div>
           </main>
@@ -176,16 +184,16 @@ export function GuideSimpleLayout({
   return (
     <div
       id="guide-simple-layout"
-      className={cn(
-        'min-h-[calc(100vh-3.5rem)] bg-background',
-        className,
-      )}
+      className={cn('min-h-[calc(100vh-3.5rem)] bg-background', className)}
     >
       <div
         id="guide-simple-layout-header"
         className="border-b border-border/80 bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/80"
       >
-        <div id="guide-simple-layout-header-inner" className="mx-auto w-full max-w-6xl px-4 py-6">
+        <div
+          id="guide-simple-layout-header-inner"
+          className="mx-auto w-full max-w-6xl px-4 py-6"
+        >
           <PageHeader
             id="guide-simple-page-header"
             title="BlaC Learning Guide"
@@ -201,7 +209,10 @@ export function GuideSimpleLayout({
         </div>
       </div>
 
-      <main id="guide-simple-layout-content" className="mx-auto w-full max-w-6xl px-4 py-8 lg:py-12">
+      <main
+        id="guide-simple-layout-content"
+        className="mx-auto w-full max-w-6xl px-4 py-8 lg:py-12"
+      >
         <div id="guide-simple-layout-body" className="space-y-10">
           {children}
         </div>

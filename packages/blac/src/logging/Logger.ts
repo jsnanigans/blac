@@ -1,5 +1,9 @@
 import type { LogEntry, LogConfig, LogLevel, LogTopic } from './types';
-import { defaultLogConfig, mergeLogConfig, matchesNamespaces } from './LogConfig';
+import {
+  defaultLogConfig,
+  mergeLogConfig,
+  matchesNamespaces,
+} from './LogConfig';
 import { isLevelEnabled } from './LogLevel';
 import { isTopicEnabled } from './LogTopic';
 import { outputLogEntry } from './LogFormatter';
@@ -158,7 +162,12 @@ export class Logger {
   disableTopic = (topic: LogTopic): void => {
     if (this.config.topics === 'all') {
       // Convert 'all' to explicit list and remove the topic
-      const allTopics: LogTopic[] = ['lifecycle', 'state', 'subscriptions', 'performance'];
+      const allTopics: LogTopic[] = [
+        'lifecycle',
+        'state',
+        'subscriptions',
+        'performance',
+      ];
       this.config.topics = allTopics.filter((t) => t !== topic);
     } else {
       this.config.topics = this.config.topics.filter((t) => t !== topic);

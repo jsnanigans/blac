@@ -12,7 +12,13 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import { Cubit, Blac } from '@blac/core';
 import useBlocAdapter from '../../useBlocAdapter';
-import React, { StrictMode, Suspense, useTransition, useDeferredValue, useState } from 'react';
+import React, {
+  StrictMode,
+  Suspense,
+  useTransition,
+  useDeferredValue,
+  useState,
+} from 'react';
 
 /**
  * Counter Cubit for batching tests
@@ -20,6 +26,7 @@ import React, { StrictMode, Suspense, useTransition, useDeferredValue, useState 
 class CounterCubit extends Cubit<number> {
   constructor() {
     super(0);
+    this.config = { proxyDependencyTracking: false };
   }
 
   increment = () => {
@@ -46,6 +53,7 @@ interface ListState {
 class ListCubit extends Cubit<ListState> {
   constructor() {
     super({ items: [], filter: '' });
+    this.config = { proxyDependencyTracking: false };
   }
 
   addItem = (item: string) => {
@@ -78,6 +86,7 @@ class AsyncDataCubit extends Cubit<{ data: string | null }> {
 
   constructor() {
     super({ data: null });
+    this.config = { proxyDependencyTracking: false };
   }
 
   get promise(): Promise<void> | null {
@@ -177,7 +186,7 @@ describe('React 18 Features', () => {
 
       await act(async () => {
         getByText('Add 2').click();
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
       });
 
       await waitFor(() => {
@@ -217,7 +226,7 @@ describe('React 18 Features', () => {
 
       await act(async () => {
         getByText('Add 2').click();
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
       });
 
       await waitFor(() => {
@@ -289,8 +298,8 @@ describe('React 18 Features', () => {
           });
         };
 
-        const filteredItems = state.items.filter(item =>
-          item.toLowerCase().includes(state.filter.toLowerCase())
+        const filteredItems = state.items.filter((item) =>
+          item.toLowerCase().includes(state.filter.toLowerCase()),
         );
 
         return (
@@ -335,8 +344,8 @@ describe('React 18 Features', () => {
         const [state, cubit] = useBlocAdapter(ListCubit);
         const deferredFilter = useDeferredValue(state.filter);
 
-        const filteredItems = state.items.filter(item =>
-          item.toLowerCase().includes(deferredFilter.toLowerCase())
+        const filteredItems = state.items.filter((item) =>
+          item.toLowerCase().includes(deferredFilter.toLowerCase()),
         );
 
         return (
@@ -466,7 +475,7 @@ describe('React 18 Features', () => {
         () => {
           expect(getByText('Data: Loaded data!')).toBeDefined();
         },
-        { timeout: 500 }
+        { timeout: 500 },
       );
     });
 
@@ -476,6 +485,7 @@ describe('React 18 Features', () => {
 
         constructor() {
           super({ name: null });
+          this.config = { proxyDependencyTracking: false };
         }
 
         get promise() {
@@ -546,7 +556,7 @@ describe('React 18 Features', () => {
           expect(getByText('User: John Doe')).toBeDefined();
           expect(getByText('Data: Loaded data!')).toBeDefined();
         },
-        { timeout: 500 }
+        { timeout: 500 },
       );
     });
 
@@ -591,7 +601,7 @@ describe('React 18 Features', () => {
       });
 
       // Wait for promise to resolve
-      await new Promise(resolve => setTimeout(resolve, 150));
+      await new Promise((resolve) => setTimeout(resolve, 150));
 
       // Should have fewer or no subscriptions (depending on React cleanup timing)
       // The key is it should not crash or leak memory
@@ -621,7 +631,7 @@ describe('React 18 Features', () => {
       const { getByText } = render(
         <StrictMode>
           <Counter />
-        </StrictMode>
+        </StrictMode>,
       );
 
       expect(getByText('Count: 0')).toBeDefined();
@@ -646,7 +656,7 @@ describe('React 18 Features', () => {
       const { unmount } = render(
         <StrictMode>
           <Counter />
-        </StrictMode>
+        </StrictMode>,
       );
 
       const cubit = Blac.getBloc(CounterCubit);
@@ -657,7 +667,7 @@ describe('React 18 Features', () => {
       unmount();
 
       // Wait for cleanup
-      await new Promise(resolve => queueMicrotask(resolve));
+      await new Promise((resolve) => queueMicrotask(resolve));
 
       // Should be cleaned up
       expect(cubit.subscriptionCount).toBe(0);
@@ -674,11 +684,11 @@ describe('React 18 Features', () => {
         const { unmount } = render(
           <StrictMode>
             <Counter />
-          </StrictMode>
+          </StrictMode>,
         );
 
         unmount();
-        await new Promise(resolve => queueMicrotask(resolve));
+        await new Promise((resolve) => queueMicrotask(resolve));
       }
 
       const cubit = Blac.getBloc(CounterCubit);
@@ -702,7 +712,7 @@ describe('React 18 Features', () => {
       const { getByText } = render(
         <StrictMode>
           <Counter />
-        </StrictMode>
+        </StrictMode>,
       );
 
       // Initial state should be consistent

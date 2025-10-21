@@ -11,9 +11,15 @@ import { useRef } from 'react';
 // ============= Schema Definition =============
 
 const RegistrationSchema = z.object({
-  username: z.string().min(3, 'Username must be at least 3 characters').max(20, 'Username too long'),
+  username: z
+    .string()
+    .min(3, 'Username must be at least 3 characters')
+    .max(20, 'Username too long'),
   email: z.string().email('Invalid email format'),
-  age: z.number().int('Age must be a whole number').min(13, 'Must be at least 13 years old'),
+  age: z
+    .number()
+    .int('Age must be a whole number')
+    .min(13, 'Must be at least 13 years old'),
   website: z
     .string()
     .transform((val) => (val === '' ? undefined : val))
@@ -50,7 +56,7 @@ class RegistrationFormCubit extends Cubit<FormState> {
 
     try {
       // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 800));
+      await new Promise((resolve) => setTimeout(resolve, 800));
 
       // Validate unknown form data
       const validated = RegistrationSchema.parse(formInput);
@@ -74,9 +80,8 @@ class RegistrationFormCubit extends Cubit<FormState> {
       confetti({
         particleCount: 100,
         spread: 70,
-        origin: { y: 0.6 }
+        origin: { y: 0.6 },
       });
-
     } catch (error) {
       if (error instanceof z.ZodError) {
         // Map all validation errors to field names
@@ -161,15 +166,25 @@ export function FormValidationSchemaDemo() {
       {/* Form */}
       <div className="rounded-lg border border-border bg-card">
         <div className="border-b border-border p-4">
-          <h3 className="text-sm font-semibold text-foreground">User Registration</h3>
+          <h3 className="text-sm font-semibold text-foreground">
+            User Registration
+          </h3>
           <p className="text-xs text-muted-foreground mt-1">
             Form data is validated with Zod before entering state
           </p>
         </div>
-        <form ref={formRef} onSubmit={handleSubmit} className="p-4 space-y-4" noValidate>
+        <form
+          ref={formRef}
+          onSubmit={handleSubmit}
+          className="p-4 space-y-4"
+          noValidate
+        >
           {/* Username */}
           <div className="space-y-1.5">
-            <label htmlFor="username" className="text-sm font-medium text-foreground">
+            <label
+              htmlFor="username"
+              className="text-sm font-medium text-foreground"
+            >
               Username *
             </label>
             <input
@@ -188,14 +203,19 @@ export function FormValidationSchemaDemo() {
               {state.fieldErrors?.username ? (
                 <FieldError key="error" message={state.fieldErrors.username} />
               ) : (
-                <p key="hint" className="text-xs text-muted-foreground">3-20 characters</p>
+                <p key="hint" className="text-xs text-muted-foreground">
+                  3-20 characters
+                </p>
               )}
             </AnimatePresence>
           </div>
 
           {/* Email */}
           <div className="space-y-1.5">
-            <label htmlFor="email" className="text-sm font-medium text-foreground">
+            <label
+              htmlFor="email"
+              className="text-sm font-medium text-foreground"
+            >
               Email *
             </label>
             <input
@@ -214,14 +234,19 @@ export function FormValidationSchemaDemo() {
               {state.fieldErrors?.email ? (
                 <FieldError key="error" message={state.fieldErrors.email} />
               ) : (
-                <p key="hint" className="text-xs text-muted-foreground">Valid email format required</p>
+                <p key="hint" className="text-xs text-muted-foreground">
+                  Valid email format required
+                </p>
               )}
             </AnimatePresence>
           </div>
 
           {/* Age */}
           <div className="space-y-1.5">
-            <label htmlFor="age" className="text-sm font-medium text-foreground">
+            <label
+              htmlFor="age"
+              className="text-sm font-medium text-foreground"
+            >
               Age *
             </label>
             <input
@@ -240,14 +265,19 @@ export function FormValidationSchemaDemo() {
               {state.fieldErrors?.age ? (
                 <FieldError key="error" message={state.fieldErrors.age} />
               ) : (
-                <p key="hint" className="text-xs text-muted-foreground">Must be 13 or older</p>
+                <p key="hint" className="text-xs text-muted-foreground">
+                  Must be 13 or older
+                </p>
               )}
             </AnimatePresence>
           </div>
 
           {/* Website */}
           <div className="space-y-1.5">
-            <label htmlFor="website" className="text-sm font-medium text-foreground">
+            <label
+              htmlFor="website"
+              className="text-sm font-medium text-foreground"
+            >
               Website <span className="text-muted-foreground">(optional)</span>
             </label>
             <input
@@ -266,7 +296,9 @@ export function FormValidationSchemaDemo() {
               {state.fieldErrors?.website ? (
                 <FieldError key="error" message={state.fieldErrors.website} />
               ) : (
-                <p key="hint" className="text-xs text-muted-foreground">Must be a valid URL if provided</p>
+                <p key="hint" className="text-xs text-muted-foreground">
+                  Must be a valid URL if provided
+                </p>
               )}
             </AnimatePresence>
           </div>
@@ -310,17 +342,24 @@ export function FormValidationSchemaDemo() {
                 <p className="text-sm font-semibold text-red-800 dark:text-red-300">
                   Validation Failed
                 </p>
-                {state.fieldErrors && Object.keys(state.fieldErrors).length > 1 ? (
+                {state.fieldErrors &&
+                Object.keys(state.fieldErrors).length > 1 ? (
                   <div className="mt-2 space-y-1">
                     <p className="text-xs text-red-700 dark:text-red-400">
-                      {Object.keys(state.fieldErrors).length} fields have errors:
+                      {Object.keys(state.fieldErrors).length} fields have
+                      errors:
                     </p>
                     <ul className="text-xs text-red-700 dark:text-red-400 list-disc list-inside space-y-0.5">
-                      {Object.entries(state.fieldErrors).map(([field, error]) => (
-                        <li key={field}>
-                          <span className="font-medium capitalize">{field}</span>: {error}
-                        </li>
-                      ))}
+                      {Object.entries(state.fieldErrors).map(
+                        ([field, error]) => (
+                          <li key={field}>
+                            <span className="font-medium capitalize">
+                              {field}
+                            </span>
+                            : {error}
+                          </li>
+                        ),
+                      )}
                     </ul>
                   </div>
                 ) : (
@@ -363,8 +402,13 @@ export function FormValidationSchemaDemo() {
       {state.data && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold text-foreground">Validated Data in State</h3>
-            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-400 dark:border-green-800">
+            <h3 className="text-sm font-semibold text-foreground">
+              Validated Data in State
+            </h3>
+            <Badge
+              variant="outline"
+              className="bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-400 dark:border-green-800"
+            >
               ✓ Schema Validated
             </Badge>
           </div>
@@ -383,12 +427,14 @@ export function FormValidationSchemaDemo() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => cubit.submitForm({
-              username: 'johndoe',
-              email: 'john@example.com',
-              age: 25,
-              website: 'https://johndoe.com',
-            })}
+            onClick={() =>
+              cubit.submitForm({
+                username: 'johndoe',
+                email: 'john@example.com',
+                age: 25,
+                website: 'https://johndoe.com',
+              })
+            }
             disabled={state.isSubmitting}
             className="justify-start text-xs border-green-300 hover:border-green-500 hover:bg-green-50 dark:border-green-800 dark:hover:bg-green-950/30"
           >
@@ -397,12 +443,14 @@ export function FormValidationSchemaDemo() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => cubit.submitForm({
-              username: 'ab',
-              email: 'john@example.com',
-              age: 25,
-              website: '',
-            })}
+            onClick={() =>
+              cubit.submitForm({
+                username: 'ab',
+                email: 'john@example.com',
+                age: 25,
+                website: '',
+              })
+            }
             disabled={state.isSubmitting}
             className="justify-start text-xs border-red-300 hover:border-red-500 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-950/30"
           >
@@ -411,12 +459,14 @@ export function FormValidationSchemaDemo() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => cubit.submitForm({
-              username: 'younguser',
-              email: 'young@example.com',
-              age: 12,
-              website: '',
-            })}
+            onClick={() =>
+              cubit.submitForm({
+                username: 'younguser',
+                email: 'young@example.com',
+                age: 12,
+                website: '',
+              })
+            }
             disabled={state.isSubmitting}
             className="justify-start text-xs border-red-300 hover:border-red-500 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-950/30"
           >
@@ -425,12 +475,14 @@ export function FormValidationSchemaDemo() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => cubit.submitForm({
-              username: 'testuser',
-              email: 'not-an-email',
-              age: 25,
-              website: '',
-            })}
+            onClick={() =>
+              cubit.submitForm({
+                username: 'testuser',
+                email: 'not-an-email',
+                age: 25,
+                website: '',
+              })
+            }
             disabled={state.isSubmitting}
             className="justify-start text-xs border-red-300 hover:border-red-500 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-950/30"
           >
@@ -439,12 +491,14 @@ export function FormValidationSchemaDemo() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => cubit.submitForm({
-              username: 'ab',
-              email: 'not-an-email',
-              age: 10,
-              website: 'not-a-url',
-            })}
+            onClick={() =>
+              cubit.submitForm({
+                username: 'ab',
+                email: 'not-an-email',
+                age: 10,
+                website: 'not-a-url',
+              })
+            }
             disabled={state.isSubmitting}
             className="justify-start text-xs border-red-300 hover:border-red-500 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-950/30"
           >
@@ -456,10 +510,12 @@ export function FormValidationSchemaDemo() {
       {/* Key Insight */}
       <div className="rounded-lg border border-brand/50 bg-brand/5 p-4">
         <p className="text-xs text-muted-foreground">
-          <strong className="text-foreground">Pattern:</strong> Zod validates untrusted form data before it enters state.
-          The Cubit rejects invalid data and provides field-level feedback. State is guaranteed to always
-          contain valid, type-safe data that matches your schema. This creates a validation boundary that
-          protects your business logic from malformed input.
+          <strong className="text-foreground">Pattern:</strong> Zod validates
+          untrusted form data before it enters state. The Cubit rejects invalid
+          data and provides field-level feedback. State is guaranteed to always
+          contain valid, type-safe data that matches your schema. This creates a
+          validation boundary that protects your business logic from malformed
+          input.
         </p>
       </div>
     </div>

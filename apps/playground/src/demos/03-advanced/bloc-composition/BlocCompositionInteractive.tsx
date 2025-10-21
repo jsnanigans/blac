@@ -316,8 +316,11 @@ export function BlocCompositionInteractive() {
             💡 Cross-Bloc Access
           </p>
           <p className="text-xs text-purple-800 dark:text-purple-200">
-            This Cubit uses <code className="bg-white/50 dark:bg-black/20 px-1 rounded">Blac.getBloc(AuthCubit)</code> to access
-            the shared authentication state when loading stats.
+            This Cubit uses{' '}
+            <code className="bg-white/50 dark:bg-black/20 px-1 rounded">
+              Blac.getBloc(AuthCubit)
+            </code>{' '}
+            to access the shared authentication state when loading stats.
           </p>
         </div>
       </motion.div>
@@ -382,8 +385,11 @@ export function BlocCompositionInteractive() {
             💡 Reactive Subscriptions
           </p>
           <p className="text-xs text-amber-800 dark:text-amber-200">
-            This Cubit uses <code className="bg-white/50 dark:bg-black/20 px-1 rounded">authCubit.subscribe()</code> to
-            automatically react to authentication events.
+            This Cubit uses{' '}
+            <code className="bg-white/50 dark:bg-black/20 px-1 rounded">
+              authCubit.subscribe()
+            </code>{' '}
+            to automatically react to authentication events.
           </p>
         </div>
       </motion.div>

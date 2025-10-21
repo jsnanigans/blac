@@ -26,7 +26,9 @@ describe('EventPatternBloc', () => {
       it('should reset state to initial values', async () => {
         // Arrange: Modify state first
         await bloc.add(new IncrementByEvent(10));
-        await bloc.add(new UpdateDataEvent({ value: 'modified', timestamp: Date.now() }));
+        await bloc.add(
+          new UpdateDataEvent({ value: 'modified', timestamp: Date.now() }),
+        );
         expect(bloc.state.count).toBe(10);
         expect(bloc.state.data).toBe('modified');
 
@@ -130,18 +132,22 @@ describe('EventPatternBloc', () => {
         expect(bloc.state.lastEvent).toBe('LoadDataEvent(test-id)');
 
         // Wait for async operation
-        await new Promise(resolve => setTimeout(resolve, 150));
+        await new Promise((resolve) => setTimeout(resolve, 150));
 
         expect(bloc.state.loadedData).toBeTruthy();
         expect(bloc.state.loadedData?.id).toBe('test-id');
-        expect(bloc.state.loadedData?.content).toBe('Loaded content for test-id');
+        expect(bloc.state.loadedData?.content).toBe(
+          'Loaded content for test-id',
+        );
       });
     });
 
     describe('UserLoggedInEvent', () => {
       it('should set user and clear errors', async () => {
         // Set an error first
-        await bloc.add(new ErrorOccurredEvent({ message: 'Some error', code: 'ERR_001' }));
+        await bloc.add(
+          new ErrorOccurredEvent({ message: 'Some error', code: 'ERR_001' }),
+        );
         expect(bloc.state.error).toBeTruthy();
 
         // Log in user
@@ -167,7 +173,9 @@ describe('EventPatternBloc', () => {
         await bloc.add(new ErrorOccurredEvent(error));
 
         expect(bloc.state.error).toEqual(error);
-        expect(bloc.state.lastEvent).toBe('ErrorOccurredEvent(Network failure)');
+        expect(bloc.state.lastEvent).toBe(
+          'ErrorOccurredEvent(Network failure)',
+        );
       });
 
       it('should set error without code', async () => {
@@ -181,8 +189,13 @@ describe('EventPatternBloc', () => {
       it('should work through public API method', async () => {
         await bloc.setError('Validation failed', 'VAL_001');
 
-        expect(bloc.state.error).toEqual({ message: 'Validation failed', code: 'VAL_001' });
-        expect(bloc.state.lastEvent).toBe('ErrorOccurredEvent(Validation failed)');
+        expect(bloc.state.error).toEqual({
+          message: 'Validation failed',
+          code: 'VAL_001',
+        });
+        expect(bloc.state.lastEvent).toBe(
+          'ErrorOccurredEvent(Validation failed)',
+        );
       });
     });
 
@@ -310,7 +323,7 @@ describe('EventPatternBloc', () => {
         'ErrorOccurredEvent',
       ];
 
-      goodEventNames.forEach(name => {
+      goodEventNames.forEach((name) => {
         // Check that name is a noun/noun phrase, not a verb
         expect(name).not.toMatch(/^(Do|Perform|Execute|Run|Make)/);
         expect(name).toMatch(/Event$/);
@@ -325,12 +338,12 @@ describe('EventPatternBloc', () => {
         'UpdateAndResetEvent',
       ];
 
-      badEventNames.forEach(name => {
+      badEventNames.forEach((name) => {
         const isBad =
-          name.startsWith('Do') ||           // Verb prefix
-          name === 'DataEvent' ||             // Too generic
-          name.includes('Mutable') ||         // Indicates mutability
-          name.includes('And');               // Multi-purpose
+          name.startsWith('Do') || // Verb prefix
+          name === 'DataEvent' || // Too generic
+          name.includes('Mutable') || // Indicates mutability
+          name.includes('And'); // Multi-purpose
 
         expect(isBad).toBe(true);
       });

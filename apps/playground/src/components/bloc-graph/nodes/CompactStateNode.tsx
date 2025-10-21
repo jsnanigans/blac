@@ -65,7 +65,9 @@ export function CompactStateNodeComponent({ data }: CompactStateNodeProps) {
         {/* Compact content */}
         <div className="px-2 py-1.5">
           <div className="flex items-center justify-between mb-0.5">
-            <span className="text-[9px] font-semibold opacity-90 uppercase">State</span>
+            <span className="text-[9px] font-semibold opacity-90 uppercase">
+              State
+            </span>
             <span className="text-[8px] opacity-75 uppercase px-1 py-0.5 bg-black/20 rounded">
               {data.valueType}
             </span>

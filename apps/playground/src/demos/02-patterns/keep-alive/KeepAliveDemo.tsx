@@ -193,11 +193,7 @@ const KeepAliveCounter: React.FC<{ id: string }> = React.memo(({ id }) => {
       </div>
 
       <div className="flex gap-2">
-        <Button
-          onClick={handleIncrement}
-          variant="primary"
-          className="flex-1"
-        >
+        <Button onClick={handleIncrement} variant="primary" className="flex-1">
           Increment
         </Button>
         <Button onClick={handleReset} variant="ghost">
@@ -285,11 +281,7 @@ const RegularCounter: React.FC<{ id: string }> = React.memo(({ id }) => {
       </div>
 
       <div className="flex gap-2">
-        <Button
-          onClick={handleIncrement}
-          variant="primary"
-          className="flex-1"
-        >
+        <Button onClick={handleIncrement} variant="primary" className="flex-1">
           Increment
         </Button>
         <Button onClick={handleReset} variant="ghost">
@@ -351,7 +343,8 @@ export const KeepAliveDemo: React.FC = () => {
           <p>
             By default, BlaC Cubits are disposed when their last consumer
             unmounts. This is efficient for memory management, but sometimes you
-            want state to persist even when no components are currently using it.
+            want state to persist even when no components are currently using
+            it.
           </p>
           <p>
             The <code>keepAlive</code> pattern solves this by telling BlaC to
@@ -397,7 +390,8 @@ export const KeepAliveDemo: React.FC = () => {
         <ConceptCallout type="tip" title="Open the Console">
           <p className="text-sm flex items-center gap-2">
             <Terminal className="w-4 h-4" />
-            Press <kbd className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-xs font-mono">
+            Press{' '}
+            <kbd className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-xs font-mono">
               F12
             </kbd>{' '}
             to open your browser console and see detailed lifecycle logs with
@@ -462,10 +456,14 @@ export const KeepAliveDemo: React.FC = () => {
 
               <div className="space-y-4 min-h-[300px]">
                 <AnimatePresence>
-                  {showKeepAlive1 && <KeepAliveCounter key="keepalive-1" id="1" />}
+                  {showKeepAlive1 && (
+                    <KeepAliveCounter key="keepalive-1" id="1" />
+                  )}
                 </AnimatePresence>
                 <AnimatePresence>
-                  {showKeepAlive2 && <KeepAliveCounter key="keepalive-2" id="2" />}
+                  {showKeepAlive2 && (
+                    <KeepAliveCounter key="keepalive-2" id="2" />
+                  )}
                 </AnimatePresence>
 
                 {!showKeepAlive1 && !showKeepAlive2 && (
@@ -560,9 +558,9 @@ export const KeepAliveDemo: React.FC = () => {
                       💨 State Disposed!
                     </p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      No Regular counters are mounted. The Cubit was disposed and
-                      state is lost. Toggle them back and notice the new instance
-                      ID.
+                      No Regular counters are mounted. The Cubit was disposed
+                      and state is lost. Toggle them back and notice the new
+                      instance ID.
                     </p>
                   </motion.div>
                 )}
@@ -839,7 +837,8 @@ function MyComponent() {
             KeepAlive Cubits stay in memory indefinitely, so use them wisely.
             Only use <code>keepAlive = true</code> for state that truly needs to
             persist across the entire app lifecycle. For temporary UI state or
-            feature-specific data, use regular Cubits that dispose automatically.
+            feature-specific data, use regular Cubits that dispose
+            automatically.
           </p>
         </ConceptCallout>
       </ArticleSection>
@@ -854,7 +853,8 @@ function MyComponent() {
           <ul className="space-y-2 text-sm">
             <li>
               <strong>KeepAlive Pattern:</strong> Add{' '}
-              <code>static keepAlive = true</code> to persist Cubits indefinitely
+              <code>static keepAlive = true</code> to persist Cubits
+              indefinitely
             </li>
             <li>
               <strong>Use Cases:</strong> Perfect for authentication, settings,
@@ -905,10 +905,10 @@ function MyComponent() {
 
         <Prose>
           <p className="text-lg font-medium text-slate-900 dark:text-slate-100 mt-6">
-            The KeepAlive pattern is essential for building stateful applications
-            with BlaC. By preserving state across component lifecycles, you can
-            create seamless user experiences where data persists exactly when and
-            where you need it to.
+            The KeepAlive pattern is essential for building stateful
+            applications with BlaC. By preserving state across component
+            lifecycles, you can create seamless user experiences where data
+            persists exactly when and where you need it to.
           </p>
         </Prose>
       </ArticleSection>

@@ -46,7 +46,7 @@ class SimpleListCubit extends Cubit<SimpleListState> {
   toggleTask = (id: number) => {
     this.patch({
       tasks: this.state.tasks.map((task) =>
-        task.id === id ? { ...task, completed: !task.completed } : task
+        task.id === id ? { ...task, completed: !task.completed } : task,
       ),
     });
   };
@@ -86,7 +86,7 @@ interface TodoState {
 class AddTodoEvent {
   constructor(
     public readonly text: string,
-    public readonly priority: 'low' | 'medium' | 'high' = 'medium'
+    public readonly priority: 'low' | 'medium' | 'high' = 'medium',
   ) {}
 }
 
@@ -120,8 +120,18 @@ class TodoBloc extends Vertex<TodoState, TodoEvent> {
   constructor() {
     super({
       todos: [
-        { id: 1, text: 'Review pull requests', completed: false, priority: 'high' },
-        { id: 2, text: 'Update documentation', completed: false, priority: 'medium' },
+        {
+          id: 1,
+          text: 'Review pull requests',
+          completed: false,
+          priority: 'high',
+        },
+        {
+          id: 2,
+          text: 'Update documentation',
+          completed: false,
+          priority: 'medium',
+        },
         { id: 3, text: 'Refactor old code', completed: true, priority: 'low' },
       ],
       filter: 'all',
@@ -137,7 +147,10 @@ class TodoBloc extends Vertex<TodoState, TodoEvent> {
     this.on(ClearCompletedEvent, this.handleClearCompleted);
   }
 
-  private handleAdd = (event: AddTodoEvent, emit: (state: TodoState) => void) => {
+  private handleAdd = (
+    event: AddTodoEvent,
+    emit: (state: TodoState) => void,
+  ) => {
     if (!event.text.trim()) return;
 
     emit({
@@ -155,23 +168,32 @@ class TodoBloc extends Vertex<TodoState, TodoEvent> {
     });
   };
 
-  private handleToggle = (event: ToggleTodoEvent, emit: (state: TodoState) => void) => {
+  private handleToggle = (
+    event: ToggleTodoEvent,
+    emit: (state: TodoState) => void,
+  ) => {
     emit({
       ...this.state,
       todos: this.state.todos.map((todo) =>
-        todo.id === event.id ? { ...todo, completed: !todo.completed } : todo
+        todo.id === event.id ? { ...todo, completed: !todo.completed } : todo,
       ),
     });
   };
 
-  private handleRemove = (event: RemoveTodoEvent, emit: (state: TodoState) => void) => {
+  private handleRemove = (
+    event: RemoveTodoEvent,
+    emit: (state: TodoState) => void,
+  ) => {
     emit({
       ...this.state,
       todos: this.state.todos.filter((todo) => todo.id !== event.id),
     });
   };
 
-  private handleSetFilter = (event: SetFilterEvent, emit: (state: TodoState) => void) => {
+  private handleSetFilter = (
+    event: SetFilterEvent,
+    emit: (state: TodoState) => void,
+  ) => {
     emit({
       ...this.state,
       filter: event.filter,
@@ -180,7 +202,7 @@ class TodoBloc extends Vertex<TodoState, TodoEvent> {
 
   private handleSetPriorityFilter = (
     event: SetPriorityFilterEvent,
-    emit: (state: TodoState) => void
+    emit: (state: TodoState) => void,
   ) => {
     emit({
       ...this.state,
@@ -190,7 +212,7 @@ class TodoBloc extends Vertex<TodoState, TodoEvent> {
 
   private handleClearCompleted = (
     _event: ClearCompletedEvent,
-    emit: (state: TodoState) => void
+    emit: (state: TodoState) => void,
   ) => {
     emit({
       ...this.state,
@@ -239,7 +261,9 @@ class TodoBloc extends Vertex<TodoState, TodoEvent> {
 
     // Apply priority filter
     if (this.state.priorityFilter !== 'all') {
-      filtered = filtered.filter((t) => t.priority === this.state.priorityFilter);
+      filtered = filtered.filter(
+        (t) => t.priority === this.state.priorityFilter,
+      );
     }
 
     return filtered;
@@ -298,7 +322,7 @@ class BulkOperationsCubit extends Cubit<BulkState> {
   toggleItem = (id: number) => {
     this.patch({
       items: this.state.items.map((item) =>
-        item.id === id ? { ...item, selected: !item.selected } : item
+        item.id === id ? { ...item, selected: !item.selected } : item,
       ),
     });
   };
@@ -326,7 +350,10 @@ class BulkOperationsCubit extends Cubit<BulkState> {
   }
 
   get allSelected(): boolean {
-    return this.state.items.length > 0 && this.state.items.every((item) => item.selected);
+    return (
+      this.state.items.length > 0 &&
+      this.state.items.every((item) => item.selected)
+    );
   }
 
   get noneSelected(): boolean {
@@ -339,19 +366,33 @@ class BulkOperationsCubit extends Cubit<BulkState> {
 // =================================================================
 
 export function ListManagementInteractive() {
-  const [activeDemo, setActiveDemo] = useState<'simple' | 'event-driven' | 'bulk'>('simple');
+  const [activeDemo, setActiveDemo] = useState<
+    'simple' | 'event-driven' | 'bulk'
+  >('simple');
 
   return (
     <div className="my-8 space-y-6">
       {/* Demo Switcher */}
       <div className="flex justify-center gap-3 flex-wrap">
-        <Button onClick={() => setActiveDemo('simple')} variant={activeDemo === 'simple' ? 'primary' : 'outline'} size="sm">
+        <Button
+          onClick={() => setActiveDemo('simple')}
+          variant={activeDemo === 'simple' ? 'primary' : 'outline'}
+          size="sm"
+        >
           Simple CRUD
         </Button>
-        <Button onClick={() => setActiveDemo('event-driven')} variant={activeDemo === 'event-driven' ? 'primary' : 'outline'} size="sm">
+        <Button
+          onClick={() => setActiveDemo('event-driven')}
+          variant={activeDemo === 'event-driven' ? 'primary' : 'outline'}
+          size="sm"
+        >
           Event-Driven + Filtering
         </Button>
-        <Button onClick={() => setActiveDemo('bulk')} variant={activeDemo === 'bulk' ? 'primary' : 'outline'} size="sm">
+        <Button
+          onClick={() => setActiveDemo('bulk')}
+          variant={activeDemo === 'bulk' ? 'primary' : 'outline'}
+          size="sm"
+        >
           Bulk Operations
         </Button>
       </div>
@@ -363,7 +404,8 @@ export function ListManagementInteractive() {
           <div className="relative space-y-4">
             <h3 className="text-lg font-semibold mb-4">
               {activeDemo === 'simple' && 'Simple CRUD with Cubit'}
-              {activeDemo === 'event-driven' && 'Event-Driven List with Filtering'}
+              {activeDemo === 'event-driven' &&
+                'Event-Driven List with Filtering'}
               {activeDemo === 'bulk' && 'Bulk Operations'}
             </h3>
 
@@ -454,9 +496,7 @@ function SimpleListDemo() {
                 />
                 <span
                   className={`flex-1 text-sm ${
-                    task.completed
-                      ? 'line-through text-muted-foreground'
-                      : ''
+                    task.completed ? 'line-through text-muted-foreground' : ''
                   }`}
                 >
                   {task.text}
@@ -476,7 +516,11 @@ function SimpleListDemo() {
               {completedCount} of {state.tasks.length} completed
             </span>
             {completedCount > 0 && (
-              <Button onClick={cubit.clearCompleted} variant="outline" size="sm">
+              <Button
+                onClick={cubit.clearCompleted}
+                variant="outline"
+                size="sm"
+              >
                 <Trash2 className="w-4 h-4 mr-2" />
                 Clear Completed
               </Button>
@@ -491,7 +535,9 @@ function SimpleListDemo() {
 function EventDrivenListDemo() {
   const [state, bloc] = useBloc(TodoBloc);
   const [inputValue, setInputValue] = useState('');
-  const [selectedPriority, setSelectedPriority] = useState<'low' | 'medium' | 'high'>('medium');
+  const [selectedPriority, setSelectedPriority] = useState<
+    'low' | 'medium' | 'high'
+  >('medium');
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
@@ -525,7 +571,12 @@ function EventDrivenListDemo() {
             placeholder="Add a new todo..."
             className="flex-1 px-3 py-2 border-2 border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand bg-background"
           />
-          <Button type="submit" disabled={!inputValue.trim()} variant="primary" size="sm">
+          <Button
+            type="submit"
+            disabled={!inputValue.trim()}
+            variant="primary"
+            size="sm"
+          >
             <Plus className="w-4 h-4 mr-2" />
             Add
           </Button>
@@ -574,7 +625,9 @@ function EventDrivenListDemo() {
             <Button
               key={priority}
               onClick={() => bloc.setPriorityFilter(priority)}
-              variant={state.priorityFilter === priority ? 'primary' : 'outline'}
+              variant={
+                state.priorityFilter === priority ? 'primary' : 'outline'
+              }
               size="sm"
               className="text-xs px-2 py-1"
             >
@@ -606,14 +659,14 @@ function EventDrivenListDemo() {
               />
               <span
                 className={`flex-1 text-xs ${
-                  todo.completed
-                    ? 'line-through text-muted-foreground'
-                    : ''
+                  todo.completed ? 'line-through text-muted-foreground' : ''
                 }`}
               >
                 {todo.text}
               </span>
-              <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${getPriorityColor(todo.priority)}`}>
+              <span
+                className={`px-1.5 py-0.5 rounded text-xs font-medium ${getPriorityColor(todo.priority)}`}
+              >
                 {todo.priority}
               </span>
               <button
@@ -633,7 +686,12 @@ function EventDrivenListDemo() {
           {bloc.activeCount} active, {bloc.completedCount} completed
         </span>
         {bloc.completedCount > 0 && (
-          <Button onClick={bloc.clearCompleted} variant="outline" size="sm" className="text-xs px-2 py-1">
+          <Button
+            onClick={bloc.clearCompleted}
+            variant="outline"
+            size="sm"
+            className="text-xs px-2 py-1"
+          >
             Clear Completed
           </Button>
         )}

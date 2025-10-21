@@ -35,7 +35,10 @@ class DecrementEvent {
 
 class ResetEvent {}
 
-class CounterBloc extends Vertex<CounterState, IncrementEvent | DecrementEvent | ResetEvent> {
+class CounterBloc extends Vertex<
+  CounterState,
+  IncrementEvent | DecrementEvent | ResetEvent
+> {
   constructor() {
     super({ count: 0 });
 

@@ -54,7 +54,8 @@ export const BenchmarkDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<BenchmarkTab>('jsframework');
 
   const activeTabInfo = tabs.find((t) => t.id === activeTab);
-  const ActiveComponent = activeTabInfo?.component || (() => <div>Not found</div>);
+  const ActiveComponent =
+    activeTabInfo?.component || (() => <div>Not found</div>);
 
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5' }}>
@@ -72,7 +73,8 @@ export const BenchmarkDashboard: React.FC = () => {
             BlaC Performance Benchmarks
           </h1>
           <p style={{ margin: '10px 0 0 0', fontSize: '16px', opacity: 0.9 }}>
-            Comprehensive browser-based performance testing for BlaC state management
+            Comprehensive browser-based performance testing for BlaC state
+            management
           </p>
         </div>
       </div>
@@ -107,7 +109,9 @@ export const BenchmarkDashboard: React.FC = () => {
                 fontSize: '14px',
                 fontWeight: activeTab === tab.id ? '600' : '400',
                 borderBottom:
-                  activeTab === tab.id ? '3px solid #667eea' : '3px solid transparent',
+                  activeTab === tab.id
+                    ? '3px solid #667eea'
+                    : '3px solid transparent',
                 transition: 'all 0.2s ease',
                 whiteSpace: 'nowrap',
               }}

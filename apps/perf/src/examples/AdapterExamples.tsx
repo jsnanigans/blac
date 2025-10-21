@@ -1863,6 +1863,7 @@ export function AdapterExamples() {
   const renderDebug = () => (
     <>
       <DebugComponent />
+      <DebugComponent />
     </>
   );
 

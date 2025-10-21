@@ -10,7 +10,8 @@ export function useScrollProgress(): number {
       const scrollTop = window.scrollY;
 
       const totalScroll = documentHeight - windowHeight;
-      const currentProgress = totalScroll > 0 ? (scrollTop / totalScroll) * 100 : 0;
+      const currentProgress =
+        totalScroll > 0 ? (scrollTop / totalScroll) * 100 : 0;
 
       setProgress(Math.min(100, Math.max(0, currentProgress)));
     };

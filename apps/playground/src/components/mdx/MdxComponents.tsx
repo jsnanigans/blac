@@ -2,7 +2,11 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 
 // Custom heading components
-export function H1({ children, className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
+export function H1({
+  children,
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLHeadingElement>) {
   return (
     <h1
       className={cn(
@@ -16,7 +20,11 @@ export function H1({ children, className, ...props }: React.HTMLAttributes<HTMLH
   );
 }
 
-export function H2({ children, className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
+export function H2({
+  children,
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLHeadingElement>) {
   return (
     <h2
       className={cn(
@@ -30,7 +38,11 @@ export function H2({ children, className, ...props }: React.HTMLAttributes<HTMLH
   );
 }
 
-export function H3({ children, className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
+export function H3({
+  children,
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLHeadingElement>) {
   return (
     <h3
       className={cn(
@@ -44,7 +56,11 @@ export function H3({ children, className, ...props }: React.HTMLAttributes<HTMLH
   );
 }
 
-export function H4({ children, className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
+export function H4({
+  children,
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLHeadingElement>) {
   return (
     <h4
       className={cn(
@@ -59,10 +75,17 @@ export function H4({ children, className, ...props }: React.HTMLAttributes<HTMLH
 }
 
 // Paragraph
-export function P({ children, className, ...props }: React.HTMLAttributes<HTMLParagraphElement>) {
+export function P({
+  children,
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLParagraphElement>) {
   return (
     <p
-      className={cn('mb-4 leading-7 text-muted-foreground [&:not(:first-child)]:mt-4', className)}
+      className={cn(
+        'mb-4 leading-7 text-muted-foreground [&:not(:first-child)]:mt-4',
+        className,
+      )}
       {...props}
     >
       {children}
@@ -71,7 +94,11 @@ export function P({ children, className, ...props }: React.HTMLAttributes<HTMLPa
 }
 
 // Lists
-export function Ul({ children, className, ...props }: React.HTMLAttributes<HTMLUListElement>) {
+export function Ul({
+  children,
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLUListElement>) {
   return (
     <ul className={cn('my-4 ml-6 list-disc [&>li]:mt-2', className)} {...props}>
       {children}
@@ -79,15 +106,26 @@ export function Ul({ children, className, ...props }: React.HTMLAttributes<HTMLU
   );
 }
 
-export function Ol({ children, className, ...props }: React.HTMLAttributes<HTMLOListElement>) {
+export function Ol({
+  children,
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLOListElement>) {
   return (
-    <ol className={cn('my-4 ml-6 list-decimal [&>li]:mt-2', className)} {...props}>
+    <ol
+      className={cn('my-4 ml-6 list-decimal [&>li]:mt-2', className)}
+      {...props}
+    >
       {children}
     </ol>
   );
 }
 
-export function Li({ children, className, ...props }: React.HTMLAttributes<HTMLLIElement>) {
+export function Li({
+  children,
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLLIElement>) {
   return (
     <li className={cn('text-muted-foreground', className)} {...props}>
       {children}
@@ -115,7 +153,11 @@ export function InlineCode({
 }
 
 // Code block
-export function Pre({ children, className, ...props }: React.HTMLAttributes<HTMLPreElement>) {
+export function Pre({
+  children,
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLPreElement>) {
   return (
     <pre
       className={cn(
@@ -129,10 +171,17 @@ export function Pre({ children, className, ...props }: React.HTMLAttributes<HTML
   );
 }
 
-export function CodeBlock({ children, className, ...props }: React.HTMLAttributes<HTMLElement>) {
+export function CodeBlock({
+  children,
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLElement>) {
   return (
     <code
-      className={cn('relative rounded font-mono text-sm text-foreground', className)}
+      className={cn(
+        'relative rounded font-mono text-sm text-foreground',
+        className,
+      )}
       {...props}
     >
       {children}
@@ -160,7 +209,10 @@ export function Blockquote({
 }
 
 // Horizontal rule
-export function Hr({ className, ...props }: React.HTMLAttributes<HTMLHRElement>) {
+export function Hr({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLHRElement>) {
   return <hr className={cn('my-8 border-border', className)} {...props} />;
 }
 
@@ -190,7 +242,10 @@ export function Strong({
   ...props
 }: React.HTMLAttributes<HTMLElement>) {
   return (
-    <strong className={cn('font-semibold text-foreground', className)} {...props}>
+    <strong
+      className={cn('font-semibold text-foreground', className)}
+      {...props}
+    >
       {children}
     </strong>
   );
@@ -204,7 +259,10 @@ export function Table({
 }: React.TableHTMLAttributes<HTMLTableElement>) {
   return (
     <div className="my-4 w-full overflow-x-auto">
-      <table className={cn('w-full border-collapse text-sm', className)} {...props}>
+      <table
+        className={cn('w-full border-collapse text-sm', className)}
+        {...props}
+      >
         {children}
       </table>
     </div>
@@ -228,7 +286,11 @@ export function Tbody({
   className,
   ...props
 }: React.HTMLAttributes<HTMLTableSectionElement>) {
-  return <tbody className={cn(className)} {...props}>{children}</tbody>;
+  return (
+    <tbody className={cn(className)} {...props}>
+      {children}
+    </tbody>
+  );
 }
 
 export function Tr({

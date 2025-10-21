@@ -1,7 +1,10 @@
 import { Cubit } from '@blac/core';
 import { useBloc } from '@blac/react';
 import React, { useState } from 'react';
-import { PerformanceMetrics, BenchmarkResult } from '../utils/PerformanceMetrics';
+import {
+  PerformanceMetrics,
+  BenchmarkResult,
+} from '../utils/PerformanceMetrics';
 
 /**
  * Test memory leaks with mount/unmount cycles
@@ -117,17 +120,25 @@ export const MemoryLeakBenchmark: React.FC = () => {
     <div style={{ padding: '20px' }}>
       <h2>Memory Leak Detection</h2>
       <p>
-        Tests mount/unmount cycles to detect memory leaks in BlaC subscriptions and
-        React integration.
+        Tests mount/unmount cycles to detect memory leaks in BlaC subscriptions
+        and React integration.
       </p>
 
-      <div style={{ marginBottom: '20px', padding: '10px', background: '#f5f5f5' }}>
+      <div
+        style={{ marginBottom: '20px', padding: '10px', background: '#f5f5f5' }}
+      >
         <h3>Current Memory Usage</h3>
         {memory ? (
           <div>
-            <div>Used: {PerformanceMetrics.formatBytes(memory.usedJSHeapSize)}</div>
-            <div>Total: {PerformanceMetrics.formatBytes(memory.totalJSHeapSize)}</div>
-            <div>Limit: {PerformanceMetrics.formatBytes(memory.jsHeapSizeLimit)}</div>
+            <div>
+              Used: {PerformanceMetrics.formatBytes(memory.usedJSHeapSize)}
+            </div>
+            <div>
+              Total: {PerformanceMetrics.formatBytes(memory.totalJSHeapSize)}
+            </div>
+            <div>
+              Limit: {PerformanceMetrics.formatBytes(memory.jsHeapSizeLimit)}
+            </div>
           </div>
         ) : (
           <div>Memory API not available (Chrome/Edge only)</div>
@@ -200,9 +211,15 @@ export const MemoryLeakBenchmark: React.FC = () => {
           >
             <thead>
               <tr style={{ background: '#f0f0f0' }}>
-                <th style={{ padding: '8px', border: '1px solid #ddd' }}>Operation</th>
-                <th style={{ padding: '8px', border: '1px solid #ddd' }}>Duration</th>
-                <th style={{ padding: '8px', border: '1px solid #ddd' }}>Memory Delta</th>
+                <th style={{ padding: '8px', border: '1px solid #ddd' }}>
+                  Operation
+                </th>
+                <th style={{ padding: '8px', border: '1px solid #ddd' }}>
+                  Duration
+                </th>
+                <th style={{ padding: '8px', border: '1px solid #ddd' }}>
+                  Memory Delta
+                </th>
               </tr>
             </thead>
             <tbody>

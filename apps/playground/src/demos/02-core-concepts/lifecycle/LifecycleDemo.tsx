@@ -2,11 +2,19 @@ import { useBloc } from '@blac/react';
 import { Cubit, Vertex, Blac, type BlacPlugin } from '@blac/core';
 import { Button } from '@/ui/Button';
 import { DemoArticle } from '@/components/demo-article/DemoArticle';
-import { ArticleSection, SectionHeader } from '@/components/demo-article/ArticleSection';
+import {
+  ArticleSection,
+  SectionHeader,
+} from '@/components/demo-article/ArticleSection';
 import { Prose } from '@/components/demo-article/Prose';
 import { CodePanel } from '@/components/demo-article/CodePanel';
 import { StateViewer } from '@/components/shared/StateViewer';
-import { ConceptCallout, TipCallout, WarningCallout, InfoCallout } from '@/components/shared/ConceptCallout';
+import {
+  ConceptCallout,
+  TipCallout,
+  WarningCallout,
+  InfoCallout,
+} from '@/components/shared/ConceptCallout';
 import confetti from 'canvas-confetti';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect, useRef } from 'react';
@@ -208,7 +216,18 @@ function MountUnmountDemo() {
           <p>Created: {new Date(state.createdAt).toLocaleTimeString()}</p>
           <p>Updates: {state.updateCount}</p>
           <p>Last Update: {new Date(state.lastUpdate).toLocaleTimeString()}</p>
-          <p>Status: <span className={state.status === 'active' ? 'text-semantic-success' : 'text-muted-foreground'}>{state.status}</span></p>
+          <p>
+            Status:{' '}
+            <span
+              className={
+                state.status === 'active'
+                  ? 'text-semantic-success'
+                  : 'text-muted-foreground'
+              }
+            >
+              {state.status}
+            </span>
+          </p>
         </div>
       </motion.div>
     );
@@ -260,8 +279,12 @@ function SharedInstanceDemo() {
         <div className="flex items-center gap-3">
           <span className="text-2xl font-bold text-concept-cubit">{state}</span>
           <div className="flex gap-2">
-            <Button onClick={cubit.decrement} variant="outline" size="sm">-</Button>
-            <Button onClick={cubit.increment} variant="outline" size="sm">+</Button>
+            <Button onClick={cubit.decrement} variant="outline" size="sm">
+              -
+            </Button>
+            <Button onClick={cubit.increment} variant="outline" size="sm">
+              +
+            </Button>
           </div>
         </div>
       </motion.div>
@@ -282,8 +305,12 @@ function SharedInstanceDemo() {
         <div className="flex items-center gap-3">
           <span className="text-2xl font-bold text-concept-cubit">{state}</span>
           <div className="flex gap-2">
-            <Button onClick={cubit.decrement} variant="outline" size="sm">-</Button>
-            <Button onClick={cubit.increment} variant="outline" size="sm">+</Button>
+            <Button onClick={cubit.decrement} variant="outline" size="sm">
+              -
+            </Button>
+            <Button onClick={cubit.increment} variant="outline" size="sm">
+              +
+            </Button>
           </div>
         </div>
       </motion.div>
@@ -310,13 +337,18 @@ function SharedInstanceDemo() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <AnimatePresence>{showComponentA && <ComponentA key="comp-a" />}</AnimatePresence>
-        <AnimatePresence>{showComponentB && <ComponentB key="comp-b" />}</AnimatePresence>
+        <AnimatePresence>
+          {showComponentA && <ComponentA key="comp-a" />}
+        </AnimatePresence>
+        <AnimatePresence>
+          {showComponentB && <ComponentB key="comp-b" />}
+        </AnimatePresence>
       </div>
 
       <p className="text-sm text-muted-foreground">
-        Both components share the <strong>same instance</strong> of SharedCounterCubit.
-        Changes in one affect the other. The instance survives until <strong>all</strong> components unmount.
+        Both components share the <strong>same instance</strong> of
+        SharedCounterCubit. Changes in one affect the other. The instance
+        survives until <strong>all</strong> components unmount.
       </p>
     </div>
   );
@@ -340,8 +372,12 @@ function IsolatedInstanceDemo() {
         <div className="flex items-center gap-3">
           <span className="text-2xl font-bold text-concept-bloc">{state}</span>
           <div className="flex gap-2">
-            <Button onClick={cubit.decrement} variant="outline" size="sm">-</Button>
-            <Button onClick={cubit.increment} variant="outline" size="sm">+</Button>
+            <Button onClick={cubit.decrement} variant="outline" size="sm">
+              -
+            </Button>
+            <Button onClick={cubit.increment} variant="outline" size="sm">
+              +
+            </Button>
           </div>
         </div>
       </motion.div>
@@ -362,8 +398,12 @@ function IsolatedInstanceDemo() {
         <div className="flex items-center gap-3">
           <span className="text-2xl font-bold text-concept-bloc">{state}</span>
           <div className="flex gap-2">
-            <Button onClick={cubit.decrement} variant="outline" size="sm">-</Button>
-            <Button onClick={cubit.increment} variant="outline" size="sm">+</Button>
+            <Button onClick={cubit.decrement} variant="outline" size="sm">
+              -
+            </Button>
+            <Button onClick={cubit.increment} variant="outline" size="sm">
+              +
+            </Button>
           </div>
         </div>
       </motion.div>
@@ -390,13 +430,18 @@ function IsolatedInstanceDemo() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <AnimatePresence>{showComponentA && <ComponentA key="iso-a" />}</AnimatePresence>
-        <AnimatePresence>{showComponentB && <ComponentB key="iso-b" />}</AnimatePresence>
+        <AnimatePresence>
+          {showComponentA && <ComponentA key="iso-a" />}
+        </AnimatePresence>
+        <AnimatePresence>
+          {showComponentB && <ComponentB key="iso-b" />}
+        </AnimatePresence>
       </div>
 
       <p className="text-sm text-muted-foreground">
-        Each component has its <strong>own isolated instance</strong> of IsolatedCounterCubit.
-        Changes in one do not affect the other. Each instance is disposed when its component unmounts.
+        Each component has its <strong>own isolated instance</strong> of
+        IsolatedCounterCubit. Changes in one do not affect the other. Each
+        instance is disposed when its component unmounts.
       </p>
     </div>
   );
@@ -416,7 +461,9 @@ function KeepAliveDemo() {
         exit={{ opacity: 0, scale: 0.9 }}
         className="p-6 rounded-xl bg-gradient-to-br from-semantic-success-light/20 to-semantic-success-light/10 border-2 border-semantic-success/30"
       >
-        <h4 className="font-semibold mb-3">Persistent Counter (Mount #{mountCount})</h4>
+        <h4 className="font-semibold mb-3">
+          Persistent Counter (Mount #{mountCount})
+        </h4>
         <div className="flex items-center gap-4">
           <motion.span
             key={state}
@@ -427,9 +474,15 @@ function KeepAliveDemo() {
             {state}
           </motion.span>
           <div className="flex gap-2">
-            <Button onClick={cubit.decrement} variant="outline" size="sm">-</Button>
-            <Button onClick={cubit.increment} variant="primary" size="sm">+</Button>
-            <Button onClick={cubit.reset} variant="ghost" size="sm">Reset</Button>
+            <Button onClick={cubit.decrement} variant="outline" size="sm">
+              -
+            </Button>
+            <Button onClick={cubit.increment} variant="primary" size="sm">
+              +
+            </Button>
+            <Button onClick={cubit.reset} variant="ghost" size="sm">
+              Reset
+            </Button>
           </div>
         </div>
         <p className="text-sm text-muted-foreground mt-2">
@@ -443,7 +496,7 @@ function KeepAliveDemo() {
     if (showComponent) {
       setShowComponent(false);
     } else {
-      setMountCount(prev => prev + 1);
+      setMountCount((prev) => prev + 1);
       setShowComponent(true);
     }
   };
@@ -506,11 +559,16 @@ function LifecycleEventLog() {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h4 className="font-semibold">Lifecycle Event Log</h4>
-        <Button onClick={clearLogs} variant="outline" size="sm">Clear Log</Button>
+        <Button onClick={clearLogs} variant="outline" size="sm">
+          Clear Log
+        </Button>
       </div>
       <div className="bg-muted/30 rounded-lg p-3 max-h-60 overflow-y-auto font-mono text-xs">
         {logs.length === 0 ? (
-          <p className="text-muted-foreground">No events yet. Interact with the demos above to see lifecycle events.</p>
+          <p className="text-muted-foreground">
+            No events yet. Interact with the demos above to see lifecycle
+            events.
+          </p>
         ) : (
           <AnimatePresence>
             {logs.map((log, index) => (
@@ -534,7 +592,8 @@ function LifecycleEventLog() {
 const demoMetadata = {
   id: 'lifecycle',
   title: 'Bloc Lifecycle Management',
-  description: 'Understand the lifecycle of Blocs and Cubits: initialization, state updates, instance management, and disposal.',
+  description:
+    'Understand the lifecycle of Blocs and Cubits: initialization, state updates, instance management, and disposal.',
   category: '02-core-concepts',
   difficulty: 'intermediate' as const,
   tags: ['bloc', 'cubit', 'lifecycle', 'instances', 'disposal', 'memory'],
@@ -553,18 +612,26 @@ const demoMetadata = {
 // ============= Main Demo Component =============
 export function LifecycleDemo() {
   return (
-    <DemoArticle metadata={demoMetadata} showBlocGraph={true} hideNavigation={true}>
+    <DemoArticle
+      metadata={demoMetadata}
+      showBlocGraph={true}
+      hideNavigation={true}
+    >
       {/* Introduction */}
       <ArticleSection theme="bloc" id="introduction">
         <Prose>
           <h2>Understanding Bloc Lifecycle</h2>
           <p>
-            Every Bloc and Cubit in your application has a <strong>lifecycle</strong> - from creation
-            to disposal. Understanding this lifecycle is crucial for building efficient, memory-safe applications.
+            Every Bloc and Cubit in your application has a{' '}
+            <strong>lifecycle</strong> - from creation to disposal.
+            Understanding this lifecycle is crucial for building efficient,
+            memory-safe applications.
           </p>
           <p>
-            In this demo, you'll learn how BlaC manages instances, when they're created and destroyed,
-            and how to control their behavior using <strong>instance patterns</strong> and <strong>lifecycle hooks</strong>.
+            In this demo, you'll learn how BlaC manages instances, when they're
+            created and destroyed, and how to control their behavior using{' '}
+            <strong>instance patterns</strong> and{' '}
+            <strong>lifecycle hooks</strong>.
           </p>
         </Prose>
       </ArticleSection>
@@ -574,8 +641,9 @@ export function LifecycleDemo() {
         <SectionHeader>Initialization & Constructor</SectionHeader>
         <Prose>
           <p>
-            When a Bloc or Cubit is created, its constructor runs once. This is where you set up
-            initial state, configure listeners, or perform any one-time setup.
+            When a Bloc or Cubit is created, its constructor runs once. This is
+            where you set up initial state, configure listeners, or perform any
+            one-time setup.
           </p>
         </Prose>
 
@@ -623,8 +691,8 @@ export function LifecycleDemo() {
         <SectionHeader>Component Lifecycle</SectionHeader>
         <Prose>
           <p>
-            See how Bloc instances are created when components mount and disposed when they unmount.
-            Watch the lifecycle in action!
+            See how Bloc instances are created when components mount and
+            disposed when they unmount. Watch the lifecycle in action!
           </p>
         </Prose>
 
@@ -634,8 +702,9 @@ export function LifecycleDemo() {
 
         <InfoCallout title="Instance Creation Timing">
           <p>
-            By default, a Bloc/Cubit instance is created the first time <code>useBloc</code> is called.
-            The instance lives until all components using it unmount.
+            By default, a Bloc/Cubit instance is created the first time{' '}
+            <code>useBloc</code> is called. The instance lives until all
+            components using it unmount.
           </p>
         </InfoCallout>
       </ArticleSection>
@@ -645,8 +714,9 @@ export function LifecycleDemo() {
         <SectionHeader>Shared Instances (Default)</SectionHeader>
         <Prose>
           <p>
-            By default, all components using the same Bloc class share a <strong>single instance</strong>.
-            This is perfect for global state that should be synchronized across your app.
+            By default, all components using the same Bloc class share a{' '}
+            <strong>single instance</strong>. This is perfect for global state
+            that should be synchronized across your app.
           </p>
         </Prose>
 
@@ -692,8 +762,9 @@ function ComponentB() {
         <SectionHeader>Isolated Instances</SectionHeader>
         <Prose>
           <p>
-            Sometimes you need each component to have its <strong>own isolated instance</strong>.
-            Use the <code>static isolated = true</code> flag to enable this pattern.
+            Sometimes you need each component to have its{' '}
+            <strong>own isolated instance</strong>. Use the{' '}
+            <code>static isolated = true</code> flag to enable this pattern.
           </p>
         </Prose>
 
@@ -736,8 +807,9 @@ function ComponentB() {
 
         <TipCallout title="When to Use Isolated Instances">
           <p>
-            Use isolated instances for component-specific state like forms, modals, or any state
-            that should be independent between component instances.
+            Use isolated instances for component-specific state like forms,
+            modals, or any state that should be independent between component
+            instances.
           </p>
         </TipCallout>
       </ArticleSection>
@@ -747,8 +819,9 @@ function ComponentB() {
         <SectionHeader>Keep Alive Pattern</SectionHeader>
         <Prose>
           <p>
-            The <strong>keep alive pattern</strong> creates instances that persist even when all
-            components unmount. Perfect for caching, user sessions, or background tasks.
+            The <strong>keep alive pattern</strong> creates instances that
+            persist even when all components unmount. Perfect for caching, user
+            sessions, or background tasks.
           </p>
         </Prose>
 
@@ -795,8 +868,8 @@ function MyComponent() {
 
         <WarningCallout title="Memory Management">
           <p>
-            Keep-alive instances stay in memory until manually disposed. Use them sparingly
-            for truly persistent state, not as a default pattern.
+            Keep-alive instances stay in memory until manually disposed. Use
+            them sparingly for truly persistent state, not as a default pattern.
           </p>
         </WarningCallout>
       </ArticleSection>
@@ -806,8 +879,9 @@ function MyComponent() {
         <SectionHeader>Disposal & Cleanup</SectionHeader>
         <Prose>
           <p>
-            Proper cleanup is essential for preventing memory leaks. BlaC automatically manages
-            disposal, but you can hook into the process with <code>onDispose</code>.
+            Proper cleanup is essential for preventing memory leaks. BlaC
+            automatically manages disposal, but you can hook into the process
+            with <code>onDispose</code>.
           </p>
         </Prose>
 
@@ -864,8 +938,9 @@ function MyComponent() {
         <SectionHeader>Lifecycle Events</SectionHeader>
         <Prose>
           <p>
-            BlaC emits lifecycle events that plugins can listen to. This is useful for debugging,
-            analytics, or building developer tools. Try interacting with the demos above!
+            BlaC emits lifecycle events that plugins can listen to. This is
+            useful for debugging, analytics, or building developer tools. Try
+            interacting with the demos above!
           </p>
         </Prose>
 
@@ -925,19 +1000,25 @@ Blac.instance.plugins.add(new LifecycleLoggerPlugin());`}
           <h3>Choose the Right Instance Pattern</h3>
           <ul>
             <li>
-              <strong>Shared (default)</strong>: Use for app-wide state like user auth, theme, settings
+              <strong>Shared (default)</strong>: Use for app-wide state like
+              user auth, theme, settings
             </li>
             <li>
-              <strong>Isolated</strong>: Use for component-specific state like forms, modals, local UI state
+              <strong>Isolated</strong>: Use for component-specific state like
+              forms, modals, local UI state
             </li>
             <li>
-              <strong>Keep Alive</strong>: Use sparingly for truly persistent state like cache or background tasks
+              <strong>Keep Alive</strong>: Use sparingly for truly persistent
+              state like cache or background tasks
             </li>
           </ul>
 
           <h3>Memory Management Tips</h3>
           <ul>
-            <li>Always implement <code>onDispose</code> when using external resources</li>
+            <li>
+              Always implement <code>onDispose</code> when using external
+              resources
+            </li>
             <li>Clear timers, subscriptions, and network connections</li>
             <li>Avoid keeping references to disposed Blocs</li>
             <li>Use WeakMap/WeakRef for caching when appropriate</li>
@@ -948,7 +1029,9 @@ Blac.instance.plugins.add(new LifecycleLoggerPlugin());`}
             <li>Use lifecycle plugins to track instance creation/disposal</li>
             <li>Check React DevTools for unexpected remounts</li>
             <li>Monitor memory usage in Chrome DevTools</li>
-            <li>Add console logs in constructor and onDispose during development</li>
+            <li>
+              Add console logs in constructor and onDispose during development
+            </li>
           </ul>
         </Prose>
       </ArticleSection>
@@ -962,19 +1045,24 @@ Blac.instance.plugins.add(new LifecycleLoggerPlugin());`}
               <strong>Lifecycle stages</strong>: Creation → Active → Disposal
             </li>
             <li>
-              <strong>Instance patterns</strong>: Shared (default), Isolated, and Keep Alive
+              <strong>Instance patterns</strong>: Shared (default), Isolated,
+              and Keep Alive
             </li>
             <li>
-              <strong>Automatic management</strong>: BlaC handles instance creation and disposal
+              <strong>Automatic management</strong>: BlaC handles instance
+              creation and disposal
             </li>
             <li>
-              <strong>Clean up resources</strong>: Use onDispose for timers, subscriptions, connections
+              <strong>Clean up resources</strong>: Use onDispose for timers,
+              subscriptions, connections
             </li>
             <li>
-              <strong>Memory efficiency</strong>: Instances are disposed when no longer needed (except keep-alive)
+              <strong>Memory efficiency</strong>: Instances are disposed when no
+              longer needed (except keep-alive)
             </li>
             <li>
-              <strong>Lifecycle events</strong>: Plugins can monitor all lifecycle transitions
+              <strong>Lifecycle events</strong>: Plugins can monitor all
+              lifecycle transitions
             </li>
           </ul>
         </Prose>
@@ -985,12 +1073,14 @@ Blac.instance.plugins.add(new LifecycleLoggerPlugin());`}
         <SectionHeader>Next Steps</SectionHeader>
         <Prose>
           <p>
-            Excellent work! You now understand how BlaC manages the lifecycle of your state containers.
-            You've learned about instance patterns, disposal, and memory management.
+            Excellent work! You now understand how BlaC manages the lifecycle of
+            your state containers. You've learned about instance patterns,
+            disposal, and memory management.
           </p>
           <p>
-            Next, you'll explore <strong>Async Operations</strong> - learn how to handle
-            asynchronous data fetching, loading states, and error handling with Blocs and Cubits.
+            Next, you'll explore <strong>Async Operations</strong> - learn how
+            to handle asynchronous data fetching, loading states, and error
+            handling with Blocs and Cubits.
           </p>
         </Prose>
       </ArticleSection>

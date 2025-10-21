@@ -13,16 +13,21 @@ const levelStyles: Record<LogLevel, string> = {
  * Console color styles for different topics (browser only)
  */
 const topicStyles: Record<string, string> = {
-  lifecycle: 'background: #22c55e; color: white; padding: 2px 6px; border-radius: 3px',
-  state: 'background: #3b82f6; color: white; padding: 2px 6px; border-radius: 3px',
-  subscriptions: 'background: #a855f7; color: white; padding: 2px 6px; border-radius: 3px',
-  performance: 'background: #f59e0b; color: white; padding: 2px 6px; border-radius: 3px',
+  lifecycle:
+    'background: #22c55e; color: white; padding: 2px 6px; border-radius: 3px',
+  state:
+    'background: #3b82f6; color: white; padding: 2px 6px; border-radius: 3px',
+  subscriptions:
+    'background: #a855f7; color: white; padding: 2px 6px; border-radius: 3px',
+  performance:
+    'background: #f59e0b; color: white; padding: 2px 6px; border-radius: 3px',
 };
 
 /**
  * Detect if we're running in a browser environment
  */
-const isBrowser = typeof window !== 'undefined' && typeof window.document !== 'undefined';
+const isBrowser =
+  typeof window !== 'undefined' && typeof window.document !== 'undefined';
 
 /**
  * Format a log entry for console output

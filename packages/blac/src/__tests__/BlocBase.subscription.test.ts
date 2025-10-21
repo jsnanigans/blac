@@ -168,7 +168,7 @@ describe('BlocBase Subscription Model', () => {
       let component: any = { id: 'test-component' };
       const weakRef = new WeakRef(component);
 
-      const { unsubscribe } = bloc.subscribeComponent(weakRef, callback);
+      const { unsubscribe } = bloc.subscribeConsumer(weakRef, callback);
 
       bloc.increment();
       expect(callback).toHaveBeenCalled();

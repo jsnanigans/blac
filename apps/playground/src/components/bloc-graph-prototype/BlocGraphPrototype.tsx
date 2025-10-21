@@ -188,7 +188,7 @@ function applyGridLayout(nodes: Node[]): Node[] {
       acc[pattern].push(node);
       return acc;
     },
-    {} as Record<string, Node[]>
+    {} as Record<string, Node[]>,
   );
 
   let yOffset = 0;
@@ -250,11 +250,11 @@ export function BlocGraphPrototype() {
   // Initialize nodes and edges
   const initialNodes = useMemo(
     () => applyGridLayout(generateMockNodes(nodeCount)),
-    [nodeCount]
+    [nodeCount],
   );
   const initialEdges = useMemo(
     () => generateMockEdges(initialNodes),
-    [initialNodes]
+    [initialNodes],
   );
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
@@ -298,7 +298,7 @@ export function BlocGraphPrototype() {
               timestamp: Date.now(),
             },
           },
-        }))
+        })),
       );
     }, 1000 / updateRate);
 
@@ -403,7 +403,10 @@ export function BlocGraphPrototype() {
             }}
             nodeStrokeWidth={3}
           />
-          <Panel position="top-right" className="bg-white p-3 rounded shadow-lg">
+          <Panel
+            position="top-right"
+            className="bg-white p-3 rounded shadow-lg"
+          >
             <div className="text-xs space-y-1">
               <div className="font-bold mb-2">Performance Test</div>
               <div>Target: 60fps (desktop)</div>

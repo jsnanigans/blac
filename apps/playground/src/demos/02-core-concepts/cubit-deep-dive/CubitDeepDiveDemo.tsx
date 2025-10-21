@@ -2,11 +2,19 @@ import { useBloc } from '@blac/react';
 import { Cubit } from '@blac/core';
 import { Button } from '@/ui/Button';
 import { DemoArticle } from '@/components/demo-article/DemoArticle';
-import { ArticleSection, SectionHeader } from '@/components/demo-article/ArticleSection';
+import {
+  ArticleSection,
+  SectionHeader,
+} from '@/components/demo-article/ArticleSection';
 import { Prose } from '@/components/demo-article/Prose';
 import { CodePanel } from '@/components/demo-article/CodePanel';
 import { StateViewer } from '@/components/shared/StateViewer';
-import { ConceptCallout, TipCallout, WarningCallout, InfoCallout } from '@/components/shared/ConceptCallout';
+import {
+  ConceptCallout,
+  TipCallout,
+  WarningCallout,
+  InfoCallout,
+} from '@/components/shared/ConceptCallout';
 import confetti from 'canvas-confetti';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
@@ -25,14 +33,14 @@ class BasicCounterCubit extends Cubit<CounterState> {
   increment = () => {
     this.patch({
       count: this.state.count + 1,
-      lastAction: 'incremented'
+      lastAction: 'incremented',
     });
   };
 
   decrement = () => {
     this.patch({
       count: this.state.count - 1,
-      lastAction: 'decremented'
+      lastAction: 'decremented',
     });
   };
 
@@ -43,7 +51,7 @@ class BasicCounterCubit extends Cubit<CounterState> {
   setCount = (value: number) => {
     this.patch({
       count: value,
-      lastAction: `set to ${value}`
+      lastAction: `set to ${value}`,
     });
   };
 }
@@ -134,8 +142,18 @@ class TodoCubit extends Cubit<TodoState> {
     super({
       todos: [
         { id: '1', text: 'Learn BlaC', completed: true, createdAt: new Date() },
-        { id: '2', text: 'Build an app', completed: false, createdAt: new Date() },
-        { id: '3', text: 'Deploy to production', completed: false, createdAt: new Date() },
+        {
+          id: '2',
+          text: 'Build an app',
+          completed: false,
+          createdAt: new Date(),
+        },
+        {
+          id: '3',
+          text: 'Deploy to production',
+          completed: false,
+          createdAt: new Date(),
+        },
       ],
       filter: 'all',
     });
@@ -144,17 +162,17 @@ class TodoCubit extends Cubit<TodoState> {
   // Computed properties (getters)
   get filteredTodos(): Todo[] {
     const { todos, filter } = this.state;
-    if (filter === 'active') return todos.filter(t => !t.completed);
-    if (filter === 'completed') return todos.filter(t => t.completed);
+    if (filter === 'active') return todos.filter((t) => !t.completed);
+    if (filter === 'completed') return todos.filter((t) => t.completed);
     return todos;
   }
 
   get completedCount(): number {
-    return this.state.todos.filter(t => t.completed).length;
+    return this.state.todos.filter((t) => t.completed).length;
   }
 
   get activeCount(): number {
-    return this.state.todos.filter(t => !t.completed).length;
+    return this.state.todos.filter((t) => !t.completed).length;
   }
 
   get progress(): number {
@@ -177,8 +195,8 @@ class TodoCubit extends Cubit<TodoState> {
 
   toggleTodo = (id: string) => {
     this.patch({
-      todos: this.state.todos.map(todo =>
-        todo.id === id ? { ...todo, completed: !todo.completed } : todo
+      todos: this.state.todos.map((todo) =>
+        todo.id === id ? { ...todo, completed: !todo.completed } : todo,
       ),
     });
   };
@@ -235,7 +253,7 @@ class UserApiCubit extends ApiCubit<User[]> {
   fetchUsers = () => {
     return this.fetch(async () => {
       // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
       // Randomly fail sometimes for demo
       if (Math.random() > 0.7) {
@@ -266,7 +284,8 @@ function BasicCounterDemo() {
 
   const handleIncrement = () => {
     cubit.increment();
-    if (state.count === 9) { // Will be 10 after increment
+    if (state.count === 9) {
+      // Will be 10 after increment
       celebrate();
     }
   };
@@ -319,11 +338,22 @@ function NestedStateDemo() {
       <div className="space-y-2">
         <h4 className="font-semibold">User Profile</h4>
         <div className="text-sm space-y-1">
-          <p>Name: <strong>{state.name}</strong></p>
-          <p>Email: <strong>{state.email}</strong></p>
-          <p>Theme: <strong>{state.preferences.theme}</strong></p>
-          <p>Notifications: <strong>{state.preferences.notifications ? 'On' : 'Off'}</strong></p>
-          <p>Posts: <strong>{state.stats.postsCount}</strong></p>
+          <p>
+            Name: <strong>{state.name}</strong>
+          </p>
+          <p>
+            Email: <strong>{state.email}</strong>
+          </p>
+          <p>
+            Theme: <strong>{state.preferences.theme}</strong>
+          </p>
+          <p>
+            Notifications:{' '}
+            <strong>{state.preferences.notifications ? 'On' : 'Off'}</strong>
+          </p>
+          <p>
+            Posts: <strong>{state.stats.postsCount}</strong>
+          </p>
         </div>
       </div>
 
@@ -331,14 +361,22 @@ function NestedStateDemo() {
         <Button onClick={cubit.toggleTheme} variant="outline" size="sm">
           Toggle Theme
         </Button>
-        <Button onClick={() => cubit.updateName('Jane Doe')} variant="outline" size="sm">
+        <Button
+          onClick={() => cubit.updateName('Jane Doe')}
+          variant="outline"
+          size="sm"
+        >
           Change Name
         </Button>
         <Button onClick={cubit.incrementPostsCount} variant="outline" size="sm">
           New Post
         </Button>
         <Button
-          onClick={() => cubit.updatePreferences({ notifications: !state.preferences.notifications })}
+          onClick={() =>
+            cubit.updatePreferences({
+              notifications: !state.preferences.notifications,
+            })
+          }
           variant="outline"
           size="sm"
         >
@@ -368,7 +406,8 @@ function ComputedPropertiesDemo() {
       <div className="flex items-center justify-between">
         <h4 className="font-semibold">Todo List</h4>
         <div className="text-sm text-muted-foreground">
-          Progress: {cubit.progress}% ({cubit.completedCount}/{state.todos.length})
+          Progress: {cubit.progress}% ({cubit.completedCount}/
+          {state.todos.length})
         </div>
       </div>
 
@@ -397,7 +436,7 @@ function ComputedPropertiesDemo() {
       </div>
 
       <div className="space-y-2">
-        {cubit.filteredTodos.map(todo => (
+        {cubit.filteredTodos.map((todo) => (
           <motion.div
             key={todo.id}
             initial={{ opacity: 0, x: -20 }}
@@ -410,7 +449,11 @@ function ComputedPropertiesDemo() {
               onChange={() => cubit.toggleTodo(todo.id)}
               className="w-4 h-4"
             />
-            <span className={todo.completed ? 'line-through text-muted-foreground' : ''}>
+            <span
+              className={
+                todo.completed ? 'line-through text-muted-foreground' : ''
+              }
+            >
               {todo.text}
             </span>
           </motion.div>
@@ -470,7 +513,7 @@ function AsyncOperationsDemo() {
 
       {state.data && (
         <div className="space-y-2">
-          {state.data.map(user => (
+          {state.data.map((user) => (
             <div key={user.id} className="p-3 rounded bg-background/50">
               <p className="font-medium">{user.name}</p>
               <p className="text-sm text-muted-foreground">{user.email}</p>
@@ -492,7 +535,8 @@ function AsyncOperationsDemo() {
 const demoMetadata = {
   id: 'cubit-deep-dive',
   title: 'Cubit Deep Dive',
-  description: 'Master advanced Cubit patterns including nested state, computed properties, async operations, and performance optimization.',
+  description:
+    'Master advanced Cubit patterns including nested state, computed properties, async operations, and performance optimization.',
   category: '02-core-concepts',
   difficulty: 'intermediate' as const,
   tags: ['cubit', 'advanced', 'patterns', 'computed', 'async'],
@@ -511,19 +555,26 @@ const demoMetadata = {
 // ============= Main Demo Component =============
 export function CubitDeepDiveDemo() {
   return (
-    <DemoArticle metadata={demoMetadata} showBlocGraph={true} hideNavigation={true}>
+    <DemoArticle
+      metadata={demoMetadata}
+      showBlocGraph={true}
+      hideNavigation={true}
+    >
       {/* Introduction */}
       <ArticleSection theme="cubit" id="introduction">
         <Prose>
           <h2>Mastering Cubits</h2>
           <p>
-            You've learned the basics of Cubits, but there's so much more! In this deep dive,
-            we'll explore advanced patterns that will make you a <strong>Cubit expert</strong>.
+            You've learned the basics of Cubits, but there's so much more! In
+            this deep dive, we'll explore advanced patterns that will make you a{' '}
+            <strong>Cubit expert</strong>.
           </p>
           <p>
-            We'll cover <strong>nested state management</strong>, <strong>computed properties</strong>,
-            <strong>async operations</strong>, and <strong>performance optimizations</strong>.
-            Each pattern builds on the fundamentals, showing you how to handle real-world scenarios.
+            We'll cover <strong>nested state management</strong>,{' '}
+            <strong>computed properties</strong>,
+            <strong>async operations</strong>, and{' '}
+            <strong>performance optimizations</strong>. Each pattern builds on
+            the fundamentals, showing you how to handle real-world scenarios.
           </p>
         </Prose>
       </ArticleSection>
@@ -533,8 +584,9 @@ export function CubitDeepDiveDemo() {
         <SectionHeader>Quick Review: Basic Patterns</SectionHeader>
         <Prose>
           <p>
-            Let's start with a quick review of basic Cubit patterns. This enhanced counter
-            demonstrates <code>patch()</code> vs <code>emit()</code>, and custom state setters.
+            Let's start with a quick review of basic Cubit patterns. This
+            enhanced counter demonstrates <code>patch()</code> vs{' '}
+            <code>emit()</code>, and custom state setters.
           </p>
         </Prose>
 
@@ -590,8 +642,9 @@ export function CubitDeepDiveDemo() {
         <SectionHeader>Nested State Management</SectionHeader>
         <Prose>
           <p>
-            Real applications often have <strong>complex, nested state structures</strong>.
-            Managing these properly is crucial for maintainability and performance.
+            Real applications often have{' '}
+            <strong>complex, nested state structures</strong>. Managing these
+            properly is crucial for maintainability and performance.
           </p>
         </Prose>
 
@@ -600,7 +653,11 @@ export function CubitDeepDiveDemo() {
         </div>
 
         <div className="my-8">
-          <StateViewer bloc={UserProfileCubit} title="User Profile State" maxDepth={3} />
+          <StateViewer
+            bloc={UserProfileCubit}
+            title="User Profile State"
+            maxDepth={3}
+          />
         </div>
 
         <CodePanel
@@ -656,8 +713,9 @@ class UserProfileCubit extends Cubit<UserProfile> {
 
         <TipCallout title="Pro Tip: Immutability is Key">
           <p>
-            Always create new objects when updating nested state. Direct mutations won't
-            trigger React re-renders because the object reference remains the same.
+            Always create new objects when updating nested state. Direct
+            mutations won't trigger React re-renders because the object
+            reference remains the same.
           </p>
         </TipCallout>
       </ArticleSection>
@@ -667,8 +725,9 @@ class UserProfileCubit extends Cubit<UserProfile> {
         <SectionHeader>Computed Properties with Getters</SectionHeader>
         <Prose>
           <p>
-            Cubits can have <strong>computed properties</strong> using TypeScript getters.
-            These derive values from state without storing redundant data.
+            Cubits can have <strong>computed properties</strong> using
+            TypeScript getters. These derive values from state without storing
+            redundant data.
           </p>
         </Prose>
 
@@ -727,8 +786,9 @@ function TodoList() {
 
         <InfoCallout title="Performance Note">
           <p>
-            Getters are recalculated on every access. For expensive computations,
-            consider memoization or storing calculated values in state during updates.
+            Getters are recalculated on every access. For expensive
+            computations, consider memoization or storing calculated values in
+            state during updates.
           </p>
         </InfoCallout>
       </ArticleSection>
@@ -738,8 +798,9 @@ function TodoList() {
         <SectionHeader>Async Operations Pattern</SectionHeader>
         <Prose>
           <p>
-            Handling <strong>asynchronous operations</strong> is a common requirement.
-            Here's a reusable pattern for managing loading states, errors, and data.
+            Handling <strong>asynchronous operations</strong> is a common
+            requirement. Here's a reusable pattern for managing loading states,
+            errors, and data.
           </p>
         </Prose>
 
@@ -807,8 +868,8 @@ class UserApiCubit extends ApiCubit<User[]> {
 
         <WarningCallout title="Remember: Cleanup">
           <p>
-            For long-running operations, consider implementing cancellation logic
-            to prevent state updates after component unmounts.
+            For long-running operations, consider implementing cancellation
+            logic to prevent state updates after component unmounts.
           </p>
         </WarningCallout>
       </ArticleSection>
@@ -819,22 +880,28 @@ class UserApiCubit extends ApiCubit<User[]> {
         <Prose>
           <ul>
             <li>
-              <strong>Always maintain immutability</strong>: Create new objects for nested state updates
+              <strong>Always maintain immutability</strong>: Create new objects
+              for nested state updates
             </li>
             <li>
-              <strong>Use patch() vs emit() appropriately</strong>: patch() for partial updates, emit() for complete replacement
+              <strong>Use patch() vs emit() appropriately</strong>: patch() for
+              partial updates, emit() for complete replacement
             </li>
             <li>
-              <strong>Leverage getters for computed values</strong>: Derive data instead of storing redundant state
+              <strong>Leverage getters for computed values</strong>: Derive data
+              instead of storing redundant state
             </li>
             <li>
-              <strong>Standardize async patterns</strong>: Use consistent loading/error/data states
+              <strong>Standardize async patterns</strong>: Use consistent
+              loading/error/data states
             </li>
             <li>
-              <strong>Create reusable base classes</strong>: Extract common patterns like ApiCubit
+              <strong>Create reusable base classes</strong>: Extract common
+              patterns like ApiCubit
             </li>
             <li>
-              <strong>Type everything</strong>: TypeScript ensures type safety throughout your state management
+              <strong>Type everything</strong>: TypeScript ensures type safety
+              throughout your state management
             </li>
           </ul>
         </Prose>
@@ -845,12 +912,14 @@ class UserApiCubit extends ApiCubit<User[]> {
         <SectionHeader>Next Steps</SectionHeader>
         <Prose>
           <p>
-            You've mastered advanced Cubit patterns! You now understand how to handle
-            complex state structures, computed properties, and async operations.
+            You've mastered advanced Cubit patterns! You now understand how to
+            handle complex state structures, computed properties, and async
+            operations.
           </p>
           <p>
-            Next, you'll learn about <strong>Blocs</strong> - the event-driven cousin of Cubits
-            that provides even more structure for complex business logic.
+            Next, you'll learn about <strong>Blocs</strong> - the event-driven
+            cousin of Cubits that provides even more structure for complex
+            business logic.
           </p>
         </Prose>
       </ArticleSection>

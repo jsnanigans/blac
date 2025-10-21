@@ -16,7 +16,7 @@ export class UpdateDataEvent {
     public readonly data: {
       value: string;
       timestamp: number;
-    }
+    },
   ) {}
 }
 
@@ -32,7 +32,7 @@ export class DataLoadedEvent {
       id: string;
       content: string;
       loadedAt: number;
-    }
+    },
   ) {}
 }
 
@@ -42,7 +42,7 @@ export class UserLoggedInEvent {
     public readonly user: {
       id: string;
       name: string;
-    }
+    },
   ) {}
 }
 
@@ -52,7 +52,7 @@ export class ErrorOccurredEvent {
     public readonly error: {
       message: string;
       code?: string;
-    }
+    },
   ) {}
 }
 
@@ -78,7 +78,7 @@ export class MutableStateEvent {
 export class UpdateAndResetEvent {
   constructor(
     public readonly newValue?: string,
-    public readonly shouldReset?: boolean
+    public readonly shouldReset?: boolean,
   ) {}
 }
 
@@ -114,7 +114,10 @@ export type BadEventTypes =
 export type EventPatternBlocEvents = GoodEventTypes | BadEventTypes;
 
 // The main Bloc implementation
-export class EventPatternBloc extends Vertex<EventDemoState, EventPatternBlocEvents> {
+export class EventPatternBloc extends Vertex<
+  EventDemoState,
+  EventPatternBlocEvents
+> {
   constructor() {
     super({
       count: 0,
@@ -144,7 +147,10 @@ export class EventPatternBloc extends Vertex<EventDemoState, EventPatternBlocEve
 
   // Good pattern handlers
 
-  private handleReset = (event: ResetStateEvent, emit: (state: EventDemoState) => void) => {
+  private handleReset = (
+    event: ResetStateEvent,
+    emit: (state: EventDemoState) => void,
+  ) => {
     emit({
       count: 0,
       data: 'initial',
@@ -156,7 +162,10 @@ export class EventPatternBloc extends Vertex<EventDemoState, EventPatternBlocEve
     });
   };
 
-  private handleIncrementBy = (event: IncrementByEvent, emit: (state: EventDemoState) => void) => {
+  private handleIncrementBy = (
+    event: IncrementByEvent,
+    emit: (state: EventDemoState) => void,
+  ) => {
     emit({
       ...this.state,
       count: this.state.count + event.amount,
@@ -165,7 +174,10 @@ export class EventPatternBloc extends Vertex<EventDemoState, EventPatternBlocEve
     });
   };
 
-  private handleUpdateData = (event: UpdateDataEvent, emit: (state: EventDemoState) => void) => {
+  private handleUpdateData = (
+    event: UpdateDataEvent,
+    emit: (state: EventDemoState) => void,
+  ) => {
     emit({
       ...this.state,
       data: event.data.value,
@@ -174,7 +186,10 @@ export class EventPatternBloc extends Vertex<EventDemoState, EventPatternBlocEve
     });
   };
 
-  private handleLoadData = (event: LoadDataEvent, emit: (state: EventDemoState) => void) => {
+  private handleLoadData = (
+    event: LoadDataEvent,
+    emit: (state: EventDemoState) => void,
+  ) => {
     // Simulate async loading
     emit({
       ...this.state,
@@ -188,12 +203,15 @@ export class EventPatternBloc extends Vertex<EventDemoState, EventPatternBlocEve
           id: event.id,
           content: `Loaded content for ${event.id}`,
           loadedAt: Date.now(),
-        })
+        }),
       );
     }, 100);
   };
 
-  private handleDataLoaded = (event: DataLoadedEvent, emit: (state: EventDemoState) => void) => {
+  private handleDataLoaded = (
+    event: DataLoadedEvent,
+    emit: (state: EventDemoState) => void,
+  ) => {
     emit({
       ...this.state,
       loadedData: event.data,
@@ -203,7 +221,7 @@ export class EventPatternBloc extends Vertex<EventDemoState, EventPatternBlocEve
 
   private handleUserLoggedIn = (
     event: UserLoggedInEvent,
-    emit: (state: EventDemoState) => void
+    emit: (state: EventDemoState) => void,
   ) => {
     emit({
       ...this.state,
@@ -213,7 +231,10 @@ export class EventPatternBloc extends Vertex<EventDemoState, EventPatternBlocEve
     });
   };
 
-  private handleError = (event: ErrorOccurredEvent, emit: (state: EventDemoState) => void) => {
+  private handleError = (
+    event: ErrorOccurredEvent,
+    emit: (state: EventDemoState) => void,
+  ) => {
     emit({
       ...this.state,
       error: event.error,
@@ -223,7 +244,10 @@ export class EventPatternBloc extends Vertex<EventDemoState, EventPatternBlocEve
 
   // Bad pattern handlers (for demonstration purposes)
 
-  private handleBadIncrement = (event: DoIncrementEvent, emit: (state: EventDemoState) => void) => {
+  private handleBadIncrement = (
+    event: DoIncrementEvent,
+    emit: (state: EventDemoState) => void,
+  ) => {
     emit({
       ...this.state,
       count: this.state.count + event.value,
@@ -231,7 +255,10 @@ export class EventPatternBloc extends Vertex<EventDemoState, EventPatternBlocEve
     });
   };
 
-  private handleBadData = (event: DataEvent, emit: (state: EventDemoState) => void) => {
+  private handleBadData = (
+    event: DataEvent,
+    emit: (state: EventDemoState) => void,
+  ) => {
     emit({
       ...this.state,
       data: String(event.data),
@@ -239,7 +266,10 @@ export class EventPatternBloc extends Vertex<EventDemoState, EventPatternBlocEve
     });
   };
 
-  private handleMutableState = (event: MutableStateEvent, emit: (state: EventDemoState) => void) => {
+  private handleMutableState = (
+    event: MutableStateEvent,
+    emit: (state: EventDemoState) => void,
+  ) => {
     // This is bad because the event's state is mutable
     const newCount = event.state.count;
     event.state.count = 999; // Mutation! This is bad!
@@ -253,7 +283,7 @@ export class EventPatternBloc extends Vertex<EventDemoState, EventPatternBlocEve
 
   private handleUpdateAndReset = (
     event: UpdateAndResetEvent,
-    emit: (state: EventDemoState) => void
+    emit: (state: EventDemoState) => void,
   ) => {
     // This is bad because the event tries to do multiple things
     if (event.shouldReset) {
@@ -290,7 +320,7 @@ export class EventPatternBloc extends Vertex<EventDemoState, EventPatternBlocEve
       new UpdateDataEvent({
         value,
         timestamp: Date.now(),
-      })
+      }),
     );
   };
 

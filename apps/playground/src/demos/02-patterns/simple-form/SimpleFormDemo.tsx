@@ -1,7 +1,10 @@
 import { useBloc } from '@blac/react';
 import { Cubit } from '@blac/core';
 import { DemoArticle } from '@/components/demo-article/DemoArticle';
-import { ArticleSection, SectionHeader } from '@/components/demo-article/ArticleSection';
+import {
+  ArticleSection,
+  SectionHeader,
+} from '@/components/demo-article/ArticleSection';
 import { Prose } from '@/components/demo-article/Prose';
 import { CodePanel } from '@/components/demo-article/CodePanel';
 import { StateViewer } from '@/components/shared/StateViewer';
@@ -101,7 +104,10 @@ class SimpleFormCubit extends Cubit<FormState> {
       // Handle errors
       this.patch({
         isSubmitting: false,
-        submitError: error instanceof Error ? error.message : 'An unexpected error occurred',
+        submitError:
+          error instanceof Error
+            ? error.message
+            : 'An unexpected error occurred',
       });
     }
   };
@@ -138,8 +144,10 @@ function InteractiveForm() {
   const handleNameBlur = () => setTouched((t) => ({ ...t, name: true }));
   const handleEmailBlur = () => setTouched((t) => ({ ...t, email: true }));
 
-  const showNameError = touched.name && !formCubit.isNameValid && state.name.length > 0;
-  const showEmailError = touched.email && !formCubit.isEmailValid && state.email.length > 0;
+  const showNameError =
+    touched.name && !formCubit.isNameValid && state.name.length > 0;
+  const showEmailError =
+    touched.email && !formCubit.isEmailValid && state.email.length > 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -240,21 +248,35 @@ function InteractiveForm() {
             <div className="font-semibold mb-3">Form Validation Status:</div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                Name: {' '}
-                <span className={formCubit.isNameValid ? 'text-green-600' : 'text-gray-400'}>
+                Name:{' '}
+                <span
+                  className={
+                    formCubit.isNameValid ? 'text-green-600' : 'text-gray-400'
+                  }
+                >
                   {formCubit.isNameValid ? '✓' : '○'}
                 </span>
               </div>
               <div>
-                Email: {' '}
-                <span className={formCubit.isEmailValid ? 'text-green-600' : 'text-gray-400'}>
+                Email:{' '}
+                <span
+                  className={
+                    formCubit.isEmailValid ? 'text-green-600' : 'text-gray-400'
+                  }
+                >
                   {formCubit.isEmailValid ? '✓' : '○'}
                 </span>
               </div>
             </div>
             <div className="pt-3 border-t border-gray-300 dark:border-gray-600">
-              <strong>Form Status:</strong> {' '}
-              <span className={formCubit.isFormValid ? 'text-green-600 font-semibold' : 'text-gray-500'}>
+              <strong>Form Status:</strong>{' '}
+              <span
+                className={
+                  formCubit.isFormValid
+                    ? 'text-green-600 font-semibold'
+                    : 'text-gray-500'
+                }
+              >
                 {formCubit.isFormValid ? '✓ Ready to submit' : '○ Not ready'}
               </span>
             </div>
@@ -313,7 +335,9 @@ function InteractiveForm() {
               <p className="text-red-800 dark:text-red-200 font-semibold">
                 ✗ Error submitting form
               </p>
-              <p className="text-red-700 dark:text-red-300 text-sm mt-1">{state.submitError}</p>
+              <p className="text-red-700 dark:text-red-300 text-sm mt-1">
+                {state.submitError}
+              </p>
               <Button
                 onClick={formCubit.submit}
                 variant="outline"
@@ -334,7 +358,8 @@ function InteractiveForm() {
 const demoMetadata = {
   id: 'simple-form',
   title: 'Simple Form Handling',
-  description: 'Learn how to manage form state, validation, and submission with BlaC Cubits.',
+  description:
+    'Learn how to manage form state, validation, and submission with BlaC Cubits.',
   category: '02-patterns' as const,
   difficulty: 'beginner' as const,
   tags: ['cubit', 'forms', 'validation', 'async'],
@@ -360,18 +385,19 @@ export function SimpleFormDemo() {
         <SectionHeader>Form State Management Made Simple</SectionHeader>
         <Prose>
           <p>
-            Forms are everywhere in web applications. Whether it's a login screen, a search box, or a
-            complex multi-step wizard, you need to manage <strong>field values</strong>,
-            <strong>validation</strong>, and <strong>submission states</strong>.
+            Forms are everywhere in web applications. Whether it's a login
+            screen, a search box, or a complex multi-step wizard, you need to
+            manage <strong>field values</strong>,<strong>validation</strong>,
+            and <strong>submission states</strong>.
           </p>
           <p>
-            BlaC Cubits provide a clean, predictable way to handle form state. Instead of juggling
-            multiple <code>useState</code> hooks and prop drilling, you centralize all form logic
-            in a single, testable class.
+            BlaC Cubits provide a clean, predictable way to handle form state.
+            Instead of juggling multiple <code>useState</code> hooks and prop
+            drilling, you centralize all form logic in a single, testable class.
           </p>
           <p>
-            In this demo, you'll learn how to build a registration form with real-time validation
-            and async submission handling.
+            In this demo, you'll learn how to build a registration form with
+            real-time validation and async submission handling.
           </p>
         </Prose>
       </ArticleSection>
@@ -381,9 +407,10 @@ export function SimpleFormDemo() {
         <SectionHeader>Try It Yourself</SectionHeader>
         <Prose>
           <p>
-            Fill out the form below. Notice how validation happens in real-time, and the submit
-            button only enables when all fields are valid. Try submitting the form (it has a 90%
-            success rate to demonstrate error handling).
+            Fill out the form below. Notice how validation happens in real-time,
+            and the submit button only enables when all fields are valid. Try
+            submitting the form (it has a 90% success rate to demonstrate error
+            handling).
           </p>
         </Prose>
 
@@ -404,36 +431,39 @@ export function SimpleFormDemo() {
           <p>A well-structured form Cubit has three main responsibilities:</p>
           <ul>
             <li>
-              <strong>Field Updates</strong>: Methods to update individual fields (<code>setName</code>,
-              <code>setEmail</code>) using <code>patch()</code> for partial updates
+              <strong>Field Updates</strong>: Methods to update individual
+              fields (<code>setName</code>,<code>setEmail</code>) using{' '}
+              <code>patch()</code> for partial updates
             </li>
             <li>
-              <strong>Validation</strong>: Computed properties (getters) that validate fields without
-              triggering unnecessary re-renders
+              <strong>Validation</strong>: Computed properties (getters) that
+              validate fields without triggering unnecessary re-renders
             </li>
             <li>
-              <strong>Submission</strong>: Async handler that manages loading states, success, and
-              error handling
+              <strong>Submission</strong>: Async handler that manages loading
+              states, success, and error handling
             </li>
           </ul>
 
           <h3>Why Use patch() vs emit()?</h3>
           <p>
-            When a user types in a field, you only want to update <em>that specific field</em> and
-            maybe clear error messages. Using <code>patch()</code> lets you update just those
-            properties without recreating the entire state object.
+            When a user types in a field, you only want to update{' '}
+            <em>that specific field</em> and maybe clear error messages. Using{' '}
+            <code>patch()</code> lets you update just those properties without
+            recreating the entire state object.
           </p>
           <p>
-            Use <code>emit()</code> when you want to completely replace the state, like when
-            resetting the form.
+            Use <code>emit()</code> when you want to completely replace the
+            state, like when resetting the form.
           </p>
         </Prose>
 
         <ConceptCallout type="tip" title="Pro Tip: Validation Getters">
           <p>
-            Validation logic lives in <strong>getters</strong> (<code>get isNameValid()</code>)
-            rather than in state. This keeps your validation logic in one place and prevents stale
-            validation state from getting out of sync with field values.
+            Validation logic lives in <strong>getters</strong> (
+            <code>get isNameValid()</code>) rather than in state. This keeps
+            your validation logic in one place and prevents stale validation
+            state from getting out of sync with field values.
           </p>
         </ConceptCallout>
       </ArticleSection>
@@ -520,7 +550,10 @@ class SimpleFormCubit extends Cubit<FormState> {
 }`}
           language="typescript"
           title="SimpleFormCubit.ts"
-          highlightLines={[20, 23, 24, 25, 29, 30, 31, 32, 38, 39, 40, 45, 49, 53, 54, 56, 57, 61, 62]}
+          highlightLines={[
+            20, 23, 24, 25, 29, 30, 31, 32, 38, 39, 40, 45, 49, 53, 54, 56, 57,
+            61, 62,
+          ]}
           lineLabels={{
             20: 'Use patch() to update specific fields',
             23: 'Clear errors when user starts typing',
@@ -538,22 +571,25 @@ class SimpleFormCubit extends Cubit<FormState> {
           <h3>Key Concepts</h3>
           <ul>
             <li>
-              <strong>Arrow functions</strong>: All methods use arrow function syntax for proper
+              <strong>Arrow functions</strong>: All methods use arrow function
+              syntax for proper
               <code>this</code> binding in React
             </li>
             <li>
-              <strong>Partial updates</strong>: <code>patch()</code> merges changes into existing
-              state efficiently
+              <strong>Partial updates</strong>: <code>patch()</code> merges
+              changes into existing state efficiently
             </li>
             <li>
-              <strong>Computed properties</strong>: Getters derive values from state without
-              storing them
+              <strong>Computed properties</strong>: Getters derive values from
+              state without storing them
             </li>
             <li>
-              <strong>Async handling</strong>: Loading states provide feedback during API calls
+              <strong>Async handling</strong>: Loading states provide feedback
+              during API calls
             </li>
             <li>
-              <strong>Error clearing</strong>: Errors automatically clear when users modify fields
+              <strong>Error clearing</strong>: Errors automatically clear when
+              users modify fields
             </li>
           </ul>
         </Prose>
@@ -564,7 +600,8 @@ class SimpleFormCubit extends Cubit<FormState> {
         <SectionHeader>Using in React</SectionHeader>
         <Prose>
           <p>
-            Integrating the form Cubit in React is straightforward with the <code>useBloc</code> hook:
+            Integrating the form Cubit in React is straightforward with the{' '}
+            <code>useBloc</code> hook:
           </p>
         </Prose>
 
@@ -616,16 +653,18 @@ class SimpleFormCubit extends Cubit<FormState> {
 
         <Prose>
           <p>
-            Notice how the component stays clean and focused on <em>rendering</em>, while all the
-            business logic lives in the Cubit. This separation makes both easier to test and maintain.
+            Notice how the component stays clean and focused on{' '}
+            <em>rendering</em>, while all the business logic lives in the Cubit.
+            This separation makes both easier to test and maintain.
           </p>
         </Prose>
 
         <ConceptCallout type="info" title="Validation Timing">
           <p>
-            We track which fields have been "touched" in component state (<code>touched</code>) to
-            avoid showing errors immediately. This provides a better user experience—errors only
-            appear after the user has interacted with a field.
+            We track which fields have been "touched" in component state (
+            <code>touched</code>) to avoid showing errors immediately. This
+            provides a better user experience—errors only appear after the user
+            has interacted with a field.
           </p>
         </ConceptCallout>
       </ArticleSection>
@@ -636,12 +675,18 @@ class SimpleFormCubit extends Cubit<FormState> {
         <Prose>
           <h3>DO ✓</h3>
           <ul>
-            <li>Use <code>patch()</code> for field updates (partial state changes)</li>
+            <li>
+              Use <code>patch()</code> for field updates (partial state changes)
+            </li>
             <li>Put validation logic in getters so it's always in sync</li>
             <li>Clear errors when users modify fields</li>
-            <li>Set <code>isSubmitting: true</code> before async operations</li>
+            <li>
+              Set <code>isSubmitting: true</code> before async operations
+            </li>
             <li>Handle both success and error cases explicitly</li>
-            <li>Use <code>emit()</code> for full state resets</li>
+            <li>
+              Use <code>emit()</code> for full state resets
+            </li>
           </ul>
 
           <h3>DON'T ✗</h3>
@@ -650,7 +695,10 @@ class SimpleFormCubit extends Cubit<FormState> {
             <li>Forget to set loading states during async operations</li>
             <li>Leave error messages visible after user fixes the issue</li>
             <li>Allow submission when form is invalid</li>
-            <li>Use regular functions (use arrow functions for proper <code>this</code> binding)</li>
+            <li>
+              Use regular functions (use arrow functions for proper{' '}
+              <code>this</code> binding)
+            </li>
           </ul>
         </Prose>
       </ArticleSection>
@@ -661,23 +709,24 @@ class SimpleFormCubit extends Cubit<FormState> {
         <Prose>
           <ul>
             <li>
-              <strong>Centralized form logic</strong>: All form state, validation, and submission
-              logic lives in one testable Cubit
+              <strong>Centralized form logic</strong>: All form state,
+              validation, and submission logic lives in one testable Cubit
             </li>
             <li>
-              <strong>patch() for updates</strong>: Use <code>patch()</code> to update individual
-              fields efficiently
+              <strong>patch() for updates</strong>: Use <code>patch()</code> to
+              update individual fields efficiently
             </li>
             <li>
-              <strong>Getters for validation</strong>: Computed properties keep validation in sync
-              without storing derived state
+              <strong>Getters for validation</strong>: Computed properties keep
+              validation in sync without storing derived state
             </li>
             <li>
-              <strong>Loading states</strong>: Always manage <code>isSubmitting</code> for better UX
+              <strong>Loading states</strong>: Always manage{' '}
+              <code>isSubmitting</code> for better UX
             </li>
             <li>
-              <strong>Error handling</strong>: Handle both success and failure cases with clear
-              user feedback
+              <strong>Error handling</strong>: Handle both success and failure
+              cases with clear user feedback
             </li>
           </ul>
         </Prose>
@@ -688,8 +737,9 @@ class SimpleFormCubit extends Cubit<FormState> {
         <SectionHeader>Next Steps</SectionHeader>
         <Prose>
           <p>
-            You've learned the basics of form handling with BlaC. Ready to level up? The next demo
-            covers <strong>advanced form validation</strong>, including:
+            You've learned the basics of form handling with BlaC. Ready to level
+            up? The next demo covers <strong>advanced form validation</strong>,
+            including:
           </p>
           <ul>
             <li>Field-level vs form-level validation</li>
@@ -698,7 +748,8 @@ class SimpleFormCubit extends Cubit<FormState> {
             <li>Custom error messages and validation strategies</li>
           </ul>
           <p>
-            Continue to the <strong>Form Validation</strong> demo to explore these advanced patterns!
+            Continue to the <strong>Form Validation</strong> demo to explore
+            these advanced patterns!
           </p>
         </Prose>
       </ArticleSection>

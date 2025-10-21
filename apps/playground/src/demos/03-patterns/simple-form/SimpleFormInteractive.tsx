@@ -32,10 +32,12 @@ class ContactFormCubit extends Cubit<ContactFormState> {
   }
 
   get canSubmit(): boolean {
-    return this.state.name.length > 0 &&
-           this.state.email.length > 0 &&
-           this.state.message.length > 0 &&
-           !this.state.isSubmitting;
+    return (
+      this.state.name.length > 0 &&
+      this.state.email.length > 0 &&
+      this.state.message.length > 0 &&
+      !this.state.isSubmitting
+    );
   }
 
   // State update methods
@@ -57,7 +59,7 @@ class ContactFormCubit extends Cubit<ContactFormState> {
     this.patch({ isSubmitting: true });
 
     // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise((resolve) => setTimeout(resolve, 1500));
 
     this.patch({
       isSubmitting: false,
@@ -99,9 +101,11 @@ class NewsletterCubit extends Cubit<NewsletterState> {
   }
 
   get canSubmit(): boolean {
-    return this.state.email.includes('@') &&
-           this.state.agreeToTerms &&
-           !this.state.isSubmitting;
+    return (
+      this.state.email.includes('@') &&
+      this.state.agreeToTerms &&
+      !this.state.isSubmitting
+    );
   }
 
   updateEmail = (email: string) => {
@@ -114,7 +118,7 @@ class NewsletterCubit extends Cubit<NewsletterState> {
 
   toggleInterest = (interest: string) => {
     const interests = this.state.interests.includes(interest)
-      ? this.state.interests.filter(i => i !== interest)
+      ? this.state.interests.filter((i) => i !== interest)
       : [...this.state.interests, interest];
     this.patch({ interests });
   };
@@ -127,7 +131,7 @@ class NewsletterCubit extends Cubit<NewsletterState> {
     if (!this.canSubmit) return;
 
     this.patch({ isSubmitting: true });
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise((resolve) => setTimeout(resolve, 1500));
 
     this.patch({
       isSubmitting: false,
@@ -200,11 +204,7 @@ function ContactFormDemo() {
         </div>
 
         <div className="flex gap-3">
-          <Button
-            type="submit"
-            variant="primary"
-            disabled={!cubit.canSubmit}
-          >
+          <Button type="submit" variant="primary" disabled={!cubit.canSubmit}>
             {state.isSubmitting ? 'Submitting...' : 'Submit'}
           </Button>
           <Button
@@ -259,7 +259,10 @@ function NewsletterFormDemo() {
           <label className="block text-sm font-medium mb-2">Frequency</label>
           <div className="flex gap-3">
             {(['daily', 'weekly', 'monthly'] as const).map((freq) => (
-              <label key={freq} className="flex items-center gap-2 cursor-pointer">
+              <label
+                key={freq}
+                className="flex items-center gap-2 cursor-pointer"
+              >
                 <input
                   type="radio"
                   name="frequency"
@@ -312,18 +315,10 @@ function NewsletterFormDemo() {
         </div>
 
         <div className="flex gap-3">
-          <Button
-            type="submit"
-            variant="primary"
-            disabled={!cubit.canSubmit}
-          >
+          <Button type="submit" variant="primary" disabled={!cubit.canSubmit}>
             {state.isSubmitting ? 'Subscribing...' : 'Subscribe'}
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => cubit.reset()}
-          >
+          <Button type="button" variant="outline" onClick={() => cubit.reset()}>
             Reset
           </Button>
         </div>
@@ -344,7 +339,9 @@ function NewsletterFormDemo() {
 
 // ============= Main Interactive Component for MDX =============
 export function SimpleFormInteractive() {
-  const [activeDemo, setActiveDemo] = useState<'contact' | 'newsletter'>('contact');
+  const [activeDemo, setActiveDemo] = useState<'contact' | 'newsletter'>(
+    'contact',
+  );
 
   return (
     <div className="my-8 space-y-6">
@@ -374,7 +371,11 @@ export function SimpleFormInteractive() {
             <h3 className="text-lg font-semibold mb-4">
               {activeDemo === 'contact' ? 'Contact Form' : 'Newsletter Signup'}
             </h3>
-            {activeDemo === 'contact' ? <ContactFormDemo /> : <NewsletterFormDemo />}
+            {activeDemo === 'contact' ? (
+              <ContactFormDemo />
+            ) : (
+              <NewsletterFormDemo />
+            )}
           </div>
         </div>
 

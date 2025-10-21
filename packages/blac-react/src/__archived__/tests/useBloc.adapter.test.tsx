@@ -14,6 +14,7 @@ interface CounterState {
 class CounterCubit extends Cubit<CounterState> {
   constructor() {
     super({ count: 0, nested: { value: 0 } });
+    this.config = { proxyDependencyTracking: false };
   }
 
   increment = () => {
@@ -30,6 +31,7 @@ class IsolatedCubit extends Cubit<{ id: string; value: number }> {
 
   constructor() {
     super({ id: Math.random().toString(36).slice(2), value: 0 });
+    this.config = { proxyDependencyTracking: false };
   }
 
   setValue = (value: number) => {
@@ -303,7 +305,9 @@ describe('useBloc - Adapter Internal Behavior', () => {
     });
 
     it('should handle onMount errors gracefully', () => {
-      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
 
       const Component = () => {
         const [state] = useBloc(CounterCubit, {
@@ -322,7 +326,9 @@ describe('useBloc - Adapter Internal Behavior', () => {
     });
 
     it('should handle onUnmount errors gracefully', () => {
-      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
 
       const Component = () => {
         const [state] = useBloc(CounterCubit, {
@@ -376,7 +382,8 @@ describe('useBloc - Adapter Internal Behavior', () => {
 
       // Get reference to bloc to check subscription count
       const bloc = Blac.getBloc(CounterCubit);
-      const initialSubCount = (bloc as any)._subscriptionManager.subscriptions.size;
+      const initialSubCount = (bloc as any)._subscriptionManager.subscriptions
+        .size;
 
       unmount();
 
@@ -385,7 +392,8 @@ describe('useBloc - Adapter Internal Behavior', () => {
         await Promise.resolve();
       });
 
-      const finalSubCount = (bloc as any)._subscriptionManager.subscriptions.size;
+      const finalSubCount = (bloc as any)._subscriptionManager.subscriptions
+        .size;
 
       // Subscription should be cleaned up
       expect(finalSubCount).toBeLessThanOrEqual(initialSubCount);
@@ -611,7 +619,7 @@ describe('useBloc - Adapter Internal Behavior', () => {
       render(
         <React.StrictMode>
           <Component />
-        </React.StrictMode>
+        </React.StrictMode>,
       );
 
       // Strict mode will cause multiple renders
@@ -635,7 +643,7 @@ describe('useBloc - Adapter Internal Behavior', () => {
       render(
         <React.StrictMode>
           <Component />
-        </React.StrictMode>
+        </React.StrictMode>,
       );
 
       const id1 = screen.getByTestId('id1').textContent;
@@ -660,7 +668,7 @@ describe('useBloc - Adapter Internal Behavior', () => {
       const { unmount } = render(
         <React.StrictMode>
           <Component />
-        </React.StrictMode>
+        </React.StrictMode>,
       );
 
       // Increment
@@ -681,7 +689,7 @@ describe('useBloc - Adapter Internal Behavior', () => {
       render(
         <React.StrictMode>
           <Component />
-        </React.StrictMode>
+        </React.StrictMode>,
       );
 
       expect(screen.getByTestId('count')).toHaveTextContent('0');

@@ -209,7 +209,6 @@ const Row: React.FC<RowProps> = React.memo(({ item }) => {
 const RowList: React.FC = () => {
   const [{ data }] = useBloc(DemoBloc, {});
 
-
   useEffect(() => {
     console.log('[RowList] Rendered with');
   });

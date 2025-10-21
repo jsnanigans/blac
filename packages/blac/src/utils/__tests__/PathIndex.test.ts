@@ -39,14 +39,16 @@ describe('PathIndex', () => {
 
   describe('isChildOf', () => {
     beforeEach(() => {
-      index.build(new Set([
-        'user',
-        'user.profile',
-        'user.profile.name',
-        'user.profile.email',
-        'user.settings',
-        'user.settings.theme',
-      ]));
+      index.build(
+        new Set([
+          'user',
+          'user.profile',
+          'user.profile.name',
+          'user.profile.email',
+          'user.settings',
+          'user.settings.theme',
+        ]),
+      );
     });
 
     it('should return true for direct child', () => {
@@ -116,16 +118,21 @@ describe('PathIndex', () => {
 
   describe('getAncestors', () => {
     beforeEach(() => {
-      index.build(new Set(['user', 'user.profile', 'user.profile.address', 'user.profile.address.city']));
+      index.build(
+        new Set([
+          'user',
+          'user.profile',
+          'user.profile.address',
+          'user.profile.address.city',
+        ]),
+      );
     });
 
     it('should return all ancestors', () => {
       const ancestors = index.getAncestors('user.profile.address.city');
-      expect(ancestors).toEqual(new Set([
-        'user',
-        'user.profile',
-        'user.profile.address',
-      ]));
+      expect(ancestors).toEqual(
+        new Set(['user', 'user.profile', 'user.profile.address']),
+      );
     });
 
     it('should return empty set for root path', () => {
@@ -139,14 +146,16 @@ describe('PathIndex', () => {
 
   describe('getLeafPaths', () => {
     beforeEach(() => {
-      index.build(new Set([
-        'user',
-        'user.profile',
-        'user.profile.name',
-        'user.profile.email',
-        'user.settings',
-        'user.settings.theme',
-      ]));
+      index.build(
+        new Set([
+          'user',
+          'user.profile',
+          'user.profile.name',
+          'user.profile.email',
+          'user.settings',
+          'user.settings.theme',
+        ]),
+      );
     });
 
     it('should return only leaf paths', () => {
@@ -158,11 +167,13 @@ describe('PathIndex', () => {
         'user.settings.theme',
       ]);
       const leafs = index.getLeafPaths(allPaths);
-      expect(leafs).toEqual(new Set([
-        'user.profile.name',
-        'user.profile.email',
-        'user.settings.theme',
-      ]));
+      expect(leafs).toEqual(
+        new Set([
+          'user.profile.name',
+          'user.profile.email',
+          'user.settings.theme',
+        ]),
+      );
     });
 
     it('should handle single leaf', () => {
@@ -316,7 +327,13 @@ describe('PathIndex', () => {
       const paths = new Set(['user.name', 'user.age', 'profile.email']);
       index.build(paths);
       // getAllPaths returns all paths including intermediates
-      const expectedPaths = new Set(['user', 'user.name', 'user.age', 'profile', 'profile.email']);
+      const expectedPaths = new Set([
+        'user',
+        'user.name',
+        'user.age',
+        'profile',
+        'profile.email',
+      ]);
       expect(index.getAllPaths()).toEqual(expectedPaths);
     });
   });
@@ -416,12 +433,9 @@ describe('PathIndex', () => {
     });
 
     it('should handle paths with shared prefixes', () => {
-      index.build(new Set([
-        'user',
-        'userData',
-        'user.profile',
-        'userSettings',
-      ]));
+      index.build(
+        new Set(['user', 'userData', 'user.profile', 'userSettings']),
+      );
 
       expect(index.isChildOf('user.profile', 'user')).toBe(true);
       expect(index.isChildOf('userData', 'user')).toBe(false);

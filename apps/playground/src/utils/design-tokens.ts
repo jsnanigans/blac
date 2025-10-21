@@ -53,7 +53,7 @@ export type ColorIntensity = 'light' | 'default' | 'dark';
  */
 export const getConceptColor = (
   concept: ConceptType,
-  intensity: ColorIntensity = 'default'
+  intensity: ColorIntensity = 'default',
 ): string => {
   const intensitySuffix = intensity === 'default' ? '' : `-${intensity}`;
   return `concept-${concept}${intensitySuffix}`;
@@ -64,7 +64,7 @@ export const getConceptColor = (
  */
 export const getConceptBg = (
   concept: ConceptType,
-  intensity: ColorIntensity = 'default'
+  intensity: ColorIntensity = 'default',
 ): string => {
   return `bg-${getConceptColor(concept, intensity)}`;
 };
@@ -74,7 +74,7 @@ export const getConceptBg = (
  */
 export const getConceptText = (
   concept: ConceptType,
-  intensity: ColorIntensity = 'default'
+  intensity: ColorIntensity = 'default',
 ): string => {
   return `text-${getConceptColor(concept, intensity)}`;
 };
@@ -84,7 +84,7 @@ export const getConceptText = (
  */
 export const getConceptBorder = (
   concept: ConceptType,
-  intensity: ColorIntensity = 'default'
+  intensity: ColorIntensity = 'default',
 ): string => {
   return `border-${getConceptColor(concept, intensity)}`;
 };
@@ -111,7 +111,7 @@ const normalizeLifecycleState = (state: LifecycleState): string => {
  */
 export const getLifecycleColor = (
   state: LifecycleState,
-  intensity: ColorIntensity = 'default'
+  intensity: ColorIntensity = 'default',
 ): string => {
   const normalized = normalizeLifecycleState(state);
   const intensitySuffix = intensity === 'default' ? '' : `-${intensity}`;
@@ -123,7 +123,7 @@ export const getLifecycleColor = (
  */
 export const getLifecycleBg = (
   state: LifecycleState,
-  intensity: ColorIntensity = 'default'
+  intensity: ColorIntensity = 'default',
 ): string => {
   return `bg-${getLifecycleColor(state, intensity)}`;
 };
@@ -133,7 +133,7 @@ export const getLifecycleBg = (
  */
 export const getLifecycleText = (
   state: LifecycleState,
-  intensity: ColorIntensity = 'default'
+  intensity: ColorIntensity = 'default',
 ): string => {
   return `text-${getLifecycleColor(state, intensity)}`;
 };
@@ -143,7 +143,7 @@ export const getLifecycleText = (
  */
 export const getLifecycleBorder = (
   state: LifecycleState,
-  intensity: ColorIntensity = 'default'
+  intensity: ColorIntensity = 'default',
 ): string => {
   return `border-${getLifecycleColor(state, intensity)}`;
 };
@@ -153,7 +153,7 @@ export const getLifecycleBorder = (
  */
 export const getInstanceColor = (
   pattern: InstancePattern,
-  intensity: ColorIntensity = 'default'
+  intensity: ColorIntensity = 'default',
 ): string => {
   const intensitySuffix = intensity === 'default' ? '' : `-${intensity}`;
   return `instance-${pattern}${intensitySuffix}`;
@@ -164,7 +164,7 @@ export const getInstanceColor = (
  */
 export const getInstanceBg = (
   pattern: InstancePattern,
-  intensity: ColorIntensity = 'default'
+  intensity: ColorIntensity = 'default',
 ): string => {
   return `bg-${getInstanceColor(pattern, intensity)}`;
 };
@@ -174,7 +174,7 @@ export const getInstanceBg = (
  */
 export const getInstanceText = (
   pattern: InstancePattern,
-  intensity: ColorIntensity = 'default'
+  intensity: ColorIntensity = 'default',
 ): string => {
   return `text-${getInstanceColor(pattern, intensity)}`;
 };
@@ -184,7 +184,7 @@ export const getInstanceText = (
  */
 export const getInstanceBorder = (
   pattern: InstancePattern,
-  intensity: ColorIntensity = 'default'
+  intensity: ColorIntensity = 'default',
 ): string => {
   return `border-${getInstanceColor(pattern, intensity)}`;
 };
@@ -205,7 +205,7 @@ const getValueType = (value: unknown): ValueType => {
  */
 export const getTypeColor = (
   value: unknown,
-  intensity: ColorIntensity = 'default'
+  intensity: ColorIntensity = 'default',
 ): string => {
   const type = getValueType(value);
   const intensitySuffix = intensity === 'default' ? '' : `-${intensity}`;
@@ -217,7 +217,7 @@ export const getTypeColor = (
  */
 export const getTypeText = (
   value: unknown,
-  intensity: ColorIntensity = 'default'
+  intensity: ColorIntensity = 'default',
 ): string => {
   return `text-${getTypeColor(value, intensity)}`;
 };
@@ -227,7 +227,7 @@ export const getTypeText = (
  */
 export const getTypeBg = (
   value: unknown,
-  intensity: ColorIntensity = 'default'
+  intensity: ColorIntensity = 'default',
 ): string => {
   return `bg-${getTypeColor(value, intensity)}`;
 };
@@ -237,7 +237,7 @@ export const getTypeBg = (
  */
 export const getSemanticColor = (
   type: SemanticType,
-  intensity: ColorIntensity = 'default'
+  intensity: ColorIntensity = 'default',
 ): string => {
   const intensitySuffix = intensity === 'default' ? '' : `-${intensity}`;
   return `semantic-${type}${intensitySuffix}`;
@@ -248,7 +248,7 @@ export const getSemanticColor = (
  */
 export const getSemanticBg = (
   type: SemanticType,
-  intensity: ColorIntensity = 'default'
+  intensity: ColorIntensity = 'default',
 ): string => {
   return `bg-${getSemanticColor(type, intensity)}`;
 };
@@ -258,7 +258,7 @@ export const getSemanticBg = (
  */
 export const getSemanticText = (
   type: SemanticType,
-  intensity: ColorIntensity = 'default'
+  intensity: ColorIntensity = 'default',
 ): string => {
   return `text-${getSemanticColor(type, intensity)}`;
 };
@@ -268,7 +268,7 @@ export const getSemanticText = (
  */
 export const getSemanticBorder = (
   type: SemanticType,
-  intensity: ColorIntensity = 'default'
+  intensity: ColorIntensity = 'default',
 ): string => {
   return `border-${getSemanticColor(type, intensity)}`;
 };
@@ -314,7 +314,9 @@ export const breakpoints = {
 /**
  * Check if current screen width matches a breakpoint
  */
-export const matchesBreakpoint = (breakpoint: keyof typeof breakpoints): boolean => {
+export const matchesBreakpoint = (
+  breakpoint: keyof typeof breakpoints,
+): boolean => {
   if (typeof window === 'undefined') return false;
   return window.matchMedia(`(min-width: ${breakpoints[breakpoint]})`).matches;
 };

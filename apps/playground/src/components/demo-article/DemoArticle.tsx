@@ -51,7 +51,9 @@ const DemoArticleContext = createContext<DemoArticleContextValue | null>(null);
 export const useDemoArticle = () => {
   const context = useContext(DemoArticleContext);
   if (!context) {
-    throw new Error('useDemoArticle must be used within a DemoArticle component');
+    throw new Error(
+      'useDemoArticle must be used within a DemoArticle component',
+    );
   }
   return context;
 };
@@ -90,14 +92,20 @@ export const DemoArticle: React.FC<DemoArticleProps> = ({
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               {metadata.learningPath.previous ? (
                 <div className="text-sm text-muted-foreground">
-                  Previous: <span className="font-medium text-foreground">{formatSlug(metadata.learningPath.previous)}</span>
+                  Previous:{' '}
+                  <span className="font-medium text-foreground">
+                    {formatSlug(metadata.learningPath.previous)}
+                  </span>
                 </div>
               ) : (
                 <div />
               )}
               {metadata.learningPath.next ? (
                 <div className="text-sm text-muted-foreground text-right">
-                  Next: <span className="font-medium text-foreground">{formatSlug(metadata.learningPath.next)}</span>
+                  Next:{' '}
+                  <span className="font-medium text-foreground">
+                    {formatSlug(metadata.learningPath.next)}
+                  </span>
                 </div>
               ) : (
                 <div />

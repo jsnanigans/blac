@@ -2,7 +2,14 @@ import { Button } from '@/ui/Button';
 import { Cubit } from '@blac/core';
 import { useBloc } from '@blac/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Radio, StopCircle, Trash2, RotateCcw, Users, Waves } from 'lucide-react';
+import {
+  Radio,
+  StopCircle,
+  Trash2,
+  RotateCcw,
+  Users,
+  Waves,
+} from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 
 // ============================================================================
@@ -285,9 +292,10 @@ export function StreamInteractive() {
             💡 Real-Time Synchronization
           </p>
           <p className="text-sm text-muted-foreground">
-            Notice how all subscribers receive messages at exactly the same time!
-            This is because they're all subscribing to the same Cubit instance, and
-            BlaC automatically notifies all subscribers when state changes.
+            Notice how all subscribers receive messages at exactly the same
+            time! This is because they're all subscribing to the same Cubit
+            instance, and BlaC automatically notifies all subscribers when state
+            changes.
           </p>
         </div>
       </div>

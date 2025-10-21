@@ -36,10 +36,10 @@ import { Blac } from '@blac/core';
 // Method 1: Via configuration
 Blac.setConfig({
   logging: {
-    level: 'log',                    // 'error' | 'warn' | 'log' | false
-    topics: ['lifecycle', 'state'],  // or 'all'
-    namespaces: '*',                 // All blocs
-  }
+    level: 'log', // 'error' | 'warn' | 'log' | false
+    topics: ['lifecycle', 'state'], // or 'all'
+    namespaces: '*', // All blocs
+  },
 });
 
 // Method 2: Runtime API
@@ -73,7 +73,7 @@ Blac.setConfig({
     // Or: topics: 'all'
 
     // Namespace filter: string pattern or array
-    namespaces: 'Counter*',  // Wildcard: matches CounterBloc, CounterCubit, etc.
+    namespaces: 'Counter*', // Wildcard: matches CounterBloc, CounterCubit, etc.
     // Or: namespaces: ['UserBloc', 'AuthBloc']  // Exact matches
     // Or: namespaces: '*'  // All blocs (default)
 
@@ -85,7 +85,7 @@ Blac.setConfig({
 
     // Include bloc identity [name:id:uid] (default: true)
     blocIdentity: true,
-  }
+  },
 });
 ```
 
@@ -96,7 +96,7 @@ For dynamic control without reconfiguration:
 ```typescript
 // Change log level
 Blac.logging.setLevel('log');
-Blac.logging.setLevel(false);  // Disable
+Blac.logging.setLevel(false); // Disable
 
 // Enable/disable specific topics
 Blac.logging.enableTopic('lifecycle');
@@ -180,6 +180,7 @@ Logs subscription operations and notification cycles:
 ### performance
 
 Reserved for future use. Will include:
+
 - Execution timing
 - Memory stats
 - Cache statistics
@@ -192,17 +193,17 @@ Reserved for future use. Will include:
 ```typescript
 // Only lifecycle events
 Blac.setConfig({
-  logging: { level: 'log', topics: ['lifecycle'] }
+  logging: { level: 'log', topics: ['lifecycle'] },
 });
 
 // Lifecycle + state
 Blac.setConfig({
-  logging: { level: 'log', topics: ['lifecycle', 'state'] }
+  logging: { level: 'log', topics: ['lifecycle', 'state'] },
 });
 
 // Everything
 Blac.setConfig({
-  logging: { level: 'log', topics: 'all' }
+  logging: { level: 'log', topics: 'all' },
 });
 ```
 
@@ -212,19 +213,19 @@ Namespace filtering uses pattern matching:
 
 ```typescript
 // Exact match
-namespaces: 'CounterBloc'  // Only CounterBloc
+namespaces: 'CounterBloc'; // Only CounterBloc
 
 // Wildcard at end
-namespaces: 'Counter*'  // CounterBloc, CounterCubit, etc.
+namespaces: 'Counter*'; // CounterBloc, CounterCubit, etc.
 
 // Wildcard at start
-namespaces: '*Bloc'  // UserBloc, AuthBloc, CounterBloc, etc.
+namespaces: '*Bloc'; // UserBloc, AuthBloc, CounterBloc, etc.
 
 // Multiple patterns
-namespaces: ['CounterBloc', 'User*', '*Manager']
+namespaces: ['CounterBloc', 'User*', '*Manager'];
 
 // All (default)
-namespaces: '*'
+namespaces: '*';
 ```
 
 ### By Level
@@ -250,6 +251,7 @@ Blac.logging.setLevel(false);
 Configure logging via main Blac configuration.
 
 **Parameters**:
+
 - `level`: `'error' | 'warn' | 'log' | false` - Minimum log level
 - `topics`: `LogTopic[] | 'all'` - Topics to enable
 - `namespaces`: `string | string[]` - Bloc name patterns
@@ -262,24 +264,31 @@ Configure logging via main Blac configuration.
 Runtime logging control API:
 
 #### `setLevel(level: LogLevel | false): void`
+
 Set the minimum log level or disable logging.
 
 #### `getLevel(): LogLevel | false`
+
 Get the current log level.
 
 #### `enableTopic(topic: LogTopic): void`
+
 Enable a specific topic.
 
 #### `disableTopic(topic: LogTopic): void`
+
 Disable a specific topic.
 
 #### `setNamespaces(patterns: string | string[]): void`
+
 Set namespace filter pattern(s).
 
 #### `getConfig(): Readonly<LogConfig>`
+
 Get current logging configuration.
 
 #### `reset(): void`
+
 Reset to default configuration (disabled).
 
 ### Types
@@ -315,11 +324,13 @@ interface LogEntry {
 ### Runtime Overhead
 
 When logging is **enabled**:
+
 - Fast O(1) boolean checks before logging
 - Minimal overhead: ~1-2% in development
 - Lazy evaluation prevents unnecessary work
 
 When logging is **disabled** (level: false):
+
 - Near-zero overhead (~1-2ns per check)
 - Lightweight boolean guards
 
@@ -337,11 +348,12 @@ new webpack.DefinePlugin({
 export default {
   define: {
     __BLAC_LOGGING__: JSON.stringify(process.env.NODE_ENV !== 'production'),
-  }
+  },
 };
 ```
 
 Then wrap logging calls:
+
 ```typescript
 if (__BLAC_LOGGING__) {
   logger.log({ ... });
@@ -360,7 +372,7 @@ Blac.setConfig({
   logging: {
     level: 'log',
     topics: ['lifecycle'],
-  }
+  },
 });
 
 // Create and dispose blocs
@@ -381,11 +393,11 @@ Blac.setConfig({
     level: 'log',
     topics: ['state'],
     namespaces: 'CounterBloc',
-  }
+  },
 });
 
 const counter = Blac.getBloc(CounterBloc);
-counter.increment();  // Logs: [state] State emitted { previousState: 0, newState: 1 }
+counter.increment(); // Logs: [state] State emitted { previousState: 0, newState: 1 }
 ```
 
 ### Example 3: Debug Subscription Issues
@@ -396,7 +408,7 @@ Blac.setConfig({
   logging: {
     level: 'log',
     topics: ['subscriptions'],
-  }
+  },
 });
 
 const bloc = Blac.getBloc(MyBloc);
@@ -418,7 +430,7 @@ Blac.setConfig({
   logging: {
     level: 'log',
     topics: 'all',
-  }
+  },
 });
 
 // Perform operations
@@ -437,7 +449,7 @@ Blac.setConfig({
   logging: {
     level: 'error',
     topics: 'all',
-  }
+  },
 });
 
 // Normal operations: no logs
@@ -452,14 +464,16 @@ bloc.increment();
 ### From `Blac.enableLog`
 
 **Old**:
+
 ```typescript
 Blac.enableLog = true;
 ```
 
 **New**:
+
 ```typescript
 Blac.setConfig({
-  logging: { level: 'log', topics: 'all' }
+  logging: { level: 'log', topics: 'all' },
 });
 
 // Or use runtime API:
@@ -467,19 +481,22 @@ Blac.logging.setLevel('log');
 ```
 
 **Backwards Compatibility**: `Blac.enableLog` still works and maps to the new system:
+
 ```typescript
-Blac.enableLog = true;   // → logger.setLevel('log')
-Blac.enableLog = false;  // → logger.setLevel(false)
+Blac.enableLog = true; // → logger.setLevel('log')
+Blac.enableLog = false; // → logger.setLevel(false)
 ```
 
 ### From `Blac.log()`
 
 **Old**:
+
 ```typescript
 Blac.log('My message', data);
 ```
 
 **New** (internal use):
+
 ```typescript
 import { logger } from '@blac/core';
 
@@ -513,11 +530,13 @@ expect(Blac.logSpy).toHaveBeenCalled();
 ### No logs appearing
 
 1. Check logging is enabled:
+
    ```typescript
    console.log(Blac.logging.getConfig());
    ```
 
 2. Verify topics are enabled:
+
    ```typescript
    Blac.logging.enableTopic('lifecycle');
    Blac.logging.enableTopic('state');
@@ -525,39 +544,43 @@ expect(Blac.logSpy).toHaveBeenCalled();
 
 3. Check namespace filter:
    ```typescript
-   Blac.logging.setNamespaces('*');  // Allow all
+   Blac.logging.setNamespaces('*'); // Allow all
    ```
 
 ### Too many logs
 
 1. Filter by topic:
+
    ```typescript
    Blac.setConfig({
-     logging: { level: 'log', topics: ['lifecycle'] }  // Only lifecycle
+     logging: { level: 'log', topics: ['lifecycle'] }, // Only lifecycle
    });
    ```
 
 2. Filter by namespace:
+
    ```typescript
-   Blac.logging.setNamespaces('MyBloc');  // Only MyBloc
+   Blac.logging.setNamespaces('MyBloc'); // Only MyBloc
    ```
 
 3. Increase level threshold:
    ```typescript
-   Blac.logging.setLevel('warn');  // Only warnings and errors
+   Blac.logging.setLevel('warn'); // Only warnings and errors
    ```
 
 ### Performance issues
 
 1. Disable logging:
+
    ```typescript
    Blac.logging.setLevel(false);
    ```
 
 2. Filter to specific topics:
+
    ```typescript
    Blac.setConfig({
-     logging: { level: 'log', topics: ['lifecycle'] }  // Avoid hot paths
+     logging: { level: 'log', topics: ['lifecycle'] }, // Avoid hot paths
    });
    ```
 
@@ -566,34 +589,38 @@ expect(Blac.logSpy).toHaveBeenCalled();
 ## Best Practices
 
 1. **Development**: Enable all logging
+
    ```typescript
    Blac.setConfig({
-     logging: { level: 'log', topics: 'all' }
+     logging: { level: 'log', topics: 'all' },
    });
    ```
 
 2. **Production**: Only errors
+
    ```typescript
    Blac.setConfig({
-     logging: { level: 'error', topics: 'all' }
+     logging: { level: 'error', topics: 'all' },
    });
    ```
 
 3. **Debugging specific issues**: Filter by topic and namespace
+
    ```typescript
    Blac.setConfig({
      logging: {
        level: 'log',
        topics: ['subscriptions'],
        namespaces: 'MyProblematicBloc',
-     }
+     },
    });
    ```
 
 4. **Performance profiling**: Use performance topic (when available)
+
    ```typescript
    Blac.setConfig({
-     logging: { level: 'log', topics: ['performance'] }
+     logging: { level: 'log', topics: ['performance'] },
    });
    ```
 
@@ -608,6 +635,7 @@ expect(Blac.logSpy).toHaveBeenCalled();
 ## Future Enhancements
 
 Planned features (not yet implemented):
+
 - Custom log handlers/transports
 - Structured JSON output
 - Per-instance logging configuration
@@ -618,6 +646,7 @@ Planned features (not yet implemented):
 ---
 
 **See Also**:
+
 - [BlaC Documentation](../README.md)
 - [Configuration Guide](./configuration.md)
 - [Debugging Guide](./debugging.md)

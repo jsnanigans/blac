@@ -119,7 +119,9 @@ describe('useBloc in Concurrent Mode', () => {
           <div data-testid="value1">Value1: {state.value1}</div>
           <div data-testid="value2">Value2: {state.value2}</div>
           <div data-testid="sum">Sum: {state.computedSum}</div>
-          <div data-testid="consistent">{isConsistent ? 'Consistent' : 'TEARING!'}</div>
+          <div data-testid="consistent">
+            {isConsistent ? 'Consistent' : 'TEARING!'}
+          </div>
           <button onClick={() => cubit.incrementBoth()}>Increment</button>
         </div>
       );
@@ -138,7 +140,7 @@ describe('useBloc in Concurrent Mode', () => {
 
     // Check all snapshots for consistency
     const allConsistent = stateSnapshots.every(
-      snapshot => snapshot.computedSum === snapshot.value1 + snapshot.value2
+      (snapshot) => snapshot.computedSum === snapshot.value1 + snapshot.value2,
     );
 
     expect(allConsistent).toBe(true);
@@ -161,7 +163,10 @@ describe('useBloc in Concurrent Mode', () => {
     });
 
     // Track state consistency
-    const stateHistory: Array<{ blocState: ConcurrentState; localState: number }> = [];
+    const stateHistory: Array<{
+      blocState: ConcurrentState;
+      localState: number;
+    }> = [];
 
     // Perform interleaved updates
     await act(async () => {
@@ -169,7 +174,7 @@ describe('useBloc in Concurrent Mode', () => {
       result.current.cubit.incrementUrgent();
 
       // Local state update
-      result.current.setLocalState(prev => prev + 1);
+      result.current.setLocalState((prev) => prev + 1);
 
       // Capture state
       stateHistory.push({
@@ -183,7 +188,7 @@ describe('useBloc in Concurrent Mode', () => {
       });
 
       // Another local state update
-      result.current.setLocalState(prev => prev + 1);
+      result.current.setLocalState((prev) => prev + 1);
 
       // Capture state again
       stateHistory.push({
@@ -322,7 +327,7 @@ describe('useBloc in Concurrent Mode', () => {
         getByTestId('update-btn').click();
       });
       // Small delay to allow for potential interruption
-      await new Promise(resolve => setTimeout(resolve, 5));
+      await new Promise((resolve) => setTimeout(resolve, 5));
     }
 
     await flushMicrotasks();

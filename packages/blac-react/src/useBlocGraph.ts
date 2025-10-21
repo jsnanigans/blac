@@ -63,8 +63,8 @@ export function useBlocGraph(): GraphSnapshot {
     if (!plugin) {
       console.warn(
         '[useBlocGraph] GraphPlugin not registered. ' +
-        'Install @blac/plugin-graph and register it: ' +
-        'Blac.instance.plugins.add(new GraphPlugin())'
+          'Install @blac/plugin-graph and register it: ' +
+          'Blac.instance.plugins.add(new GraphPlugin())',
       );
       return EMPTY_SNAPSHOT;
     }
@@ -77,16 +77,18 @@ export function useBlocGraph(): GraphSnapshot {
     if (!plugin) {
       console.warn(
         '[useBlocGraph] GraphPlugin not registered. ' +
-        'Install @blac/plugin-graph and register it: ' +
-        'Blac.instance.plugins.add(new GraphPlugin())'
+          'Install @blac/plugin-graph and register it: ' +
+          'Blac.instance.plugins.add(new GraphPlugin())',
       );
       return;
     }
 
     // Subscribe to graph updates via plugin
-    const unsubscribe = plugin.subscribeToGraph?.((newSnapshot: GraphSnapshot) => {
-      setSnapshot(newSnapshot);
-    });
+    const unsubscribe = plugin.subscribeToGraph?.(
+      (newSnapshot: GraphSnapshot) => {
+        setSnapshot(newSnapshot);
+      },
+    );
 
     // Cleanup on unmount
     return () => {
@@ -114,7 +116,7 @@ export function useBlocGraph(): GraphSnapshot {
  * ```
  */
 export function useBlocGraphFiltered(
-  filter?: (snapshot: GraphSnapshot) => GraphSnapshot
+  filter?: (snapshot: GraphSnapshot) => GraphSnapshot,
 ): GraphSnapshot {
   const fullSnapshot = useBlocGraph();
 

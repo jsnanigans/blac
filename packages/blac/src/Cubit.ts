@@ -53,7 +53,6 @@ export abstract class Cubit<S> extends BlocBase<S> {
     super.emitValidated(state);
   }
 
-
   /**
    * Partially updates the current state by merging it with the provided state patch.
    * This method is only applicable when the state is an object type.

@@ -60,7 +60,7 @@ export class AutoTrackDebugger {
 
     console.log(`${this.logPrefix} 🔍 Accessed: ${path}`, {
       type: typeof value,
-      value: this.formatValue(value)
+      value: this.formatValue(value),
     });
   }
 
@@ -70,7 +70,9 @@ export class AutoTrackDebugger {
   logDependenciesTracked(subscriptionId: string, deps: Set<string>): void {
     if (!this.enabled) return;
 
-    console.groupCollapsed(`${this.logPrefix} 📋 Dependencies for ${subscriptionId}`);
+    console.groupCollapsed(
+      `${this.logPrefix} 📋 Dependencies for ${subscriptionId}`,
+    );
     console.log('Count:', deps.size);
     console.log('Paths:', Array.from(deps).sort());
     console.groupEnd();
@@ -83,7 +85,7 @@ export class AutoTrackDebugger {
     subscriptionId: string,
     willRerender: boolean,
     reason: string,
-    changedDependencies?: string[]
+    changedDependencies?: string[],
   ): void {
     if (!this.enabled) return;
 
@@ -95,21 +97,23 @@ export class AutoTrackDebugger {
       willRerender,
       reason,
       changedDependencies,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
     this.rerenderHistory.push(info);
     this.trimHistory(this.rerenderHistory);
 
     if (willRerender && changedDependencies && changedDependencies.length > 0) {
-      console.groupCollapsed(`${this.logPrefix} ${emoji} ${subscriptionId}: ${action} re-render`);
+      console.groupCollapsed(
+        `${this.logPrefix} ${emoji} ${subscriptionId}: ${action} re-render`,
+      );
       console.log('Reason:', reason);
       console.log('Changed paths:', changedDependencies);
       console.groupEnd();
     } else {
       console.log(
         `${this.logPrefix} ${emoji} ${subscriptionId}: ${action} re-render`,
-        reason
+        reason,
       );
     }
   }
@@ -124,7 +128,7 @@ export class AutoTrackDebugger {
       path,
       oldValue,
       newValue,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
     this.changeHistory.push(change);
@@ -132,21 +136,32 @@ export class AutoTrackDebugger {
 
     console.log(`${this.logPrefix} 🔀 Changed: ${path}`, {
       old: this.formatValue(oldValue),
-      new: this.formatValue(newValue)
+      new: this.formatValue(newValue),
     });
   }
 
   /**
    * Log performance metrics for tracking operations
    */
-  logPerformanceMetrics(subscriptionId: string, metrics: PerformanceMetrics): void {
+  logPerformanceMetrics(
+    subscriptionId: string,
+    metrics: PerformanceMetrics,
+  ): void {
     if (!this.enabled) return;
 
     this.performanceMetrics.set(subscriptionId, metrics);
 
-    console.groupCollapsed(`${this.logPrefix} ⏱️ Performance: ${subscriptionId}`);
-    console.log('Tracking duration:', `${metrics.trackingDuration.toFixed(2)}ms`);
-    console.log('Comparison duration:', `${metrics.comparisonDuration.toFixed(2)}ms`);
+    console.groupCollapsed(
+      `${this.logPrefix} ⏱️ Performance: ${subscriptionId}`,
+    );
+    console.log(
+      'Tracking duration:',
+      `${metrics.trackingDuration.toFixed(2)}ms`,
+    );
+    console.log(
+      'Comparison duration:',
+      `${metrics.comparisonDuration.toFixed(2)}ms`,
+    );
     console.log('Proxy creations:', metrics.proxyCreationCount);
     console.log('Dependencies tracked:', metrics.dependencyCount);
     console.groupEnd();
@@ -158,7 +173,10 @@ export class AutoTrackDebugger {
   logPerformanceWarning(message: string, details?: any): void {
     if (!this.enabled) return;
 
-    console.warn(`${this.logPrefix} ⚠️ Performance Warning: ${message}`, details || '');
+    console.warn(
+      `${this.logPrefix} ⚠️ Performance Warning: ${message}`,
+      details || '',
+    );
   }
 
   /**
@@ -187,7 +205,9 @@ export class AutoTrackDebugger {
   /**
    * Get performance metrics for a specific subscription
    */
-  getPerformanceMetrics(subscriptionId: string): PerformanceMetrics | undefined {
+  getPerformanceMetrics(
+    subscriptionId: string,
+  ): PerformanceMetrics | undefined {
     return this.performanceMetrics.get(subscriptionId);
   }
 
@@ -204,9 +224,9 @@ export class AutoTrackDebugger {
     const sum = (arr: number[]) => arr.reduce((a, b) => a + b, 0);
     const avg = (arr: number[]) => sum(arr) / arr.length;
 
-    const trackingDurations = metrics.map(m => m.trackingDuration);
-    const comparisonDurations = metrics.map(m => m.comparisonDuration);
-    const dependencyCounts = metrics.map(m => m.dependencyCount);
+    const trackingDurations = metrics.map((m) => m.trackingDuration);
+    const comparisonDurations = metrics.map((m) => m.comparisonDuration);
+    const dependencyCounts = metrics.map((m) => m.dependencyCount);
 
     return {
       subscriptionCount: metrics.length,
@@ -217,8 +237,9 @@ export class AutoTrackDebugger {
       avgDependencyCount: avg(dependencyCounts),
       maxDependencyCount: Math.max(...dependencyCounts),
       totalChanges: this.changeHistory.length,
-      totalRerenders: this.rerenderHistory.filter(r => r.willRerender).length,
-      totalSkippedRerenders: this.rerenderHistory.filter(r => !r.willRerender).length
+      totalRerenders: this.rerenderHistory.filter((r) => r.willRerender).length,
+      totalSkippedRerenders: this.rerenderHistory.filter((r) => !r.willRerender)
+        .length,
     };
   }
 
@@ -237,18 +258,33 @@ export class AutoTrackDebugger {
 
     console.group(`${this.logPrefix} 📊 Auto-Tracking Summary`);
     console.log('Total subscriptions:', stats.subscriptionCount);
-    console.log('Average dependencies per subscription:', stats.avgDependencyCount.toFixed(1));
+    console.log(
+      'Average dependencies per subscription:',
+      stats.avgDependencyCount.toFixed(1),
+    );
     console.log('Max dependencies:', stats.maxDependencyCount);
     console.log('');
     console.log('Performance:');
-    console.log('  Avg tracking time:', `${stats.avgTrackingDuration.toFixed(2)}ms`);
-    console.log('  Max tracking time:', `${stats.maxTrackingDuration.toFixed(2)}ms`);
-    console.log('  Avg comparison time:', `${stats.avgComparisonDuration.toFixed(2)}ms`);
+    console.log(
+      '  Avg tracking time:',
+      `${stats.avgTrackingDuration.toFixed(2)}ms`,
+    );
+    console.log(
+      '  Max tracking time:',
+      `${stats.maxTrackingDuration.toFixed(2)}ms`,
+    );
+    console.log(
+      '  Avg comparison time:',
+      `${stats.avgComparisonDuration.toFixed(2)}ms`,
+    );
     console.log('');
     console.log('Re-renders:');
     console.log('  Total triggered:', stats.totalRerenders);
     console.log('  Total skipped:', stats.totalSkippedRerenders);
-    console.log('  Skip rate:', `${((stats.totalSkippedRerenders / (stats.totalRerenders + stats.totalSkippedRerenders)) * 100).toFixed(1)}%`);
+    console.log(
+      '  Skip rate:',
+      `${((stats.totalSkippedRerenders / (stats.totalRerenders + stats.totalSkippedRerenders)) * 100).toFixed(1)}%`,
+    );
     console.groupEnd();
   }
 

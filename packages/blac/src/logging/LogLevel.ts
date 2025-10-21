@@ -38,7 +38,11 @@ export const parseLogLevel = (value: string | boolean): LogLevel | false => {
     return normalized as LogLevel;
   }
 
-  if (normalized === 'false' || normalized === 'off' || normalized === 'disabled') {
+  if (
+    normalized === 'false' ||
+    normalized === 'off' ||
+    normalized === 'disabled'
+  ) {
     return false;
   }
 

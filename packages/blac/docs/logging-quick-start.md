@@ -10,7 +10,7 @@ Blac.setConfig({
   logging: {
     level: 'log',
     topics: ['lifecycle', 'state'],
-  }
+  },
 });
 ```
 
@@ -31,8 +31,8 @@ Blac.setConfig({
   logging: {
     level: 'log',
     topics: 'all',
-    namespaces: 'Counter*',  // Wildcard matching
-  }
+    namespaces: 'Counter*', // Wildcard matching
+  },
 });
 ```
 
@@ -57,8 +57,8 @@ Blac.logging.setNamespaces(['UserBloc', 'AuthBloc']);
 
 ```typescript
 // Old API still works
-Blac.enableLog = true;  // → sets level: 'log'
-Blac.logSpy = vi.fn();  // → still captures logs
+Blac.enableLog = true; // → sets level: 'log'
+Blac.logSpy = vi.fn(); // → still captures logs
 
 // New API recommended
 Blac.setConfig({ logging: { level: 'log', topics: 'all' } });

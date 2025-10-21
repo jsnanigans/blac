@@ -51,11 +51,7 @@ export interface BlacContext {
      * @param oldState - Previous state
      * @param newState - New state
      */
-    notifyStateChanged(
-      bloc: any,
-      oldState: unknown,
-      newState: unknown,
-    ): void;
+    notifyStateChanged(bloc: any, oldState: unknown, newState: unknown): void;
 
     /**
      * Notify system plugins that a bloc has been disposed.

@@ -24,7 +24,9 @@ export const WorkspaceToolbar = React.forwardRef<
       {leading}
       {children}
     </div>
-    {trailing && <div className="flex shrink-0 items-center gap-2">{trailing}</div>}
+    {trailing && (
+      <div className="flex shrink-0 items-center gap-2">{trailing}</div>
+    )}
   </div>
 ));
 WorkspaceToolbar.displayName = 'WorkspaceToolbar';

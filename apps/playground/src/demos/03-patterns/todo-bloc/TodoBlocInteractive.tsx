@@ -26,7 +26,7 @@ interface TodoState {
 class AddTodoEvent {
   constructor(
     public readonly text: string,
-    public readonly priority: 'low' | 'medium' | 'high'
+    public readonly priority: 'low' | 'medium' | 'high',
   ) {}
 }
 
@@ -41,7 +41,7 @@ class DeleteTodoEvent {
 class UpdateTodoTextEvent {
   constructor(
     public readonly id: number,
-    public readonly text: string
+    public readonly text: string,
   ) {}
 }
 
@@ -81,9 +81,27 @@ class TodoBloc extends Vertex<TodoState, TodoEvent> {
   constructor() {
     super({
       todos: [
-        { id: 1, text: 'Learn BlaC fundamentals', completed: true, priority: 'high', createdAt: Date.now() - 3600000 },
-        { id: 2, text: 'Build a Todo app with Bloc pattern', completed: false, priority: 'high', createdAt: Date.now() - 1800000 },
-        { id: 3, text: 'Read event design best practices', completed: false, priority: 'medium', createdAt: Date.now() - 900000 },
+        {
+          id: 1,
+          text: 'Learn BlaC fundamentals',
+          completed: true,
+          priority: 'high',
+          createdAt: Date.now() - 3600000,
+        },
+        {
+          id: 2,
+          text: 'Build a Todo app with Bloc pattern',
+          completed: false,
+          priority: 'high',
+          createdAt: Date.now() - 1800000,
+        },
+        {
+          id: 3,
+          text: 'Read event design best practices',
+          completed: false,
+          priority: 'medium',
+          createdAt: Date.now() - 900000,
+        },
       ],
       filter: 'all',
       sortBy: 'createdAt',
@@ -103,7 +121,10 @@ class TodoBloc extends Vertex<TodoState, TodoEvent> {
 
   // Event handlers (private, arrow functions for proper `this` binding)
 
-  private handleAddTodo = (event: AddTodoEvent, emit: (state: TodoState) => void) => {
+  private handleAddTodo = (
+    event: AddTodoEvent,
+    emit: (state: TodoState) => void,
+  ) => {
     if (!event.text.trim()) return; // Validation
 
     emit({
@@ -122,55 +143,76 @@ class TodoBloc extends Vertex<TodoState, TodoEvent> {
     });
   };
 
-  private handleToggleTodo = (event: ToggleTodoEvent, emit: (state: TodoState) => void) => {
+  private handleToggleTodo = (
+    event: ToggleTodoEvent,
+    emit: (state: TodoState) => void,
+  ) => {
     emit({
       ...this.state,
       todos: this.state.todos.map((todo) =>
-        todo.id === event.id ? { ...todo, completed: !todo.completed } : todo
+        todo.id === event.id ? { ...todo, completed: !todo.completed } : todo,
       ),
     });
   };
 
-  private handleDeleteTodo = (event: DeleteTodoEvent, emit: (state: TodoState) => void) => {
+  private handleDeleteTodo = (
+    event: DeleteTodoEvent,
+    emit: (state: TodoState) => void,
+  ) => {
     emit({
       ...this.state,
       todos: this.state.todos.filter((todo) => todo.id !== event.id),
     });
   };
 
-  private handleUpdateTodoText = (event: UpdateTodoTextEvent, emit: (state: TodoState) => void) => {
+  private handleUpdateTodoText = (
+    event: UpdateTodoTextEvent,
+    emit: (state: TodoState) => void,
+  ) => {
     if (!event.text.trim()) return;
 
     emit({
       ...this.state,
       todos: this.state.todos.map((todo) =>
-        todo.id === event.id ? { ...todo, text: event.text.trim() } : todo
+        todo.id === event.id ? { ...todo, text: event.text.trim() } : todo,
       ),
     });
   };
 
-  private handleSetFilter = (event: SetFilterEvent, emit: (state: TodoState) => void) => {
+  private handleSetFilter = (
+    event: SetFilterEvent,
+    emit: (state: TodoState) => void,
+  ) => {
     emit({
       ...this.state,
       filter: event.filter,
     });
   };
 
-  private handleSetSortBy = (event: SetSortByEvent, emit: (state: TodoState) => void) => {
+  private handleSetSortBy = (
+    event: SetSortByEvent,
+    emit: (state: TodoState) => void,
+  ) => {
     emit({
       ...this.state,
       sortBy: event.sortBy,
     });
   };
 
-  private handleClearCompleted = (event: ClearCompletedEvent, emit: (state: TodoState) => void) => {
+  private handleClearCompleted = (
+    event: ClearCompletedEvent,
+    emit: (state: TodoState) => void,
+  ) => {
     emit({
       ...this.state,
       todos: this.state.todos.filter((todo) => !todo.completed),
     });
   };
 
-  private handleToggleAll = (event: ToggleAllEvent, emit: (state: TodoState) => void) => {
+  private handleToggleAll = (
+    event: ToggleAllEvent,
+    emit: (state: TodoState) => void,
+  ) => {
     const allCompleted = this.state.todos.every((todo) => todo.completed);
 
     emit({
@@ -257,7 +299,9 @@ class TodoBloc extends Vertex<TodoState, TodoEvent> {
 export function TodoBlocInteractive() {
   const [state, todoBloc] = useBloc(TodoBloc);
   const [newTodoText, setNewTodoText] = useState('');
-  const [newTodoPriority, setNewTodoPriority] = useState<'low' | 'medium' | 'high'>('medium');
+  const [newTodoPriority, setNewTodoPriority] = useState<
+    'low' | 'medium' | 'high'
+  >('medium');
 
   const handleAddTodo = (e: React.FormEvent) => {
     e.preventDefault();
@@ -302,7 +346,11 @@ export function TodoBlocInteractive() {
               <div className="flex gap-2">
                 <select
                   value={newTodoPriority}
-                  onChange={(e) => setNewTodoPriority(e.target.value as 'low' | 'medium' | 'high')}
+                  onChange={(e) =>
+                    setNewTodoPriority(
+                      e.target.value as 'low' | 'medium' | 'high',
+                    )
+                  }
                   className="flex-1 px-3 py-2 border-2 border-border rounded-lg bg-background text-sm"
                 >
                   <option value="low">Low Priority</option>
@@ -335,7 +383,11 @@ export function TodoBlocInteractive() {
               <div className="ml-auto">
                 <select
                   value={state.sortBy}
-                  onChange={(e) => todoBloc.setSortBy(e.target.value as 'createdAt' | 'priority')}
+                  onChange={(e) =>
+                    todoBloc.setSortBy(
+                      e.target.value as 'createdAt' | 'priority',
+                    )
+                  }
                   className="px-2 py-1 border-2 border-border rounded-lg bg-background text-xs"
                 >
                   <option value="createdAt">Sort by Date</option>
@@ -355,7 +407,9 @@ export function TodoBlocInteractive() {
             {todoBloc.filteredAndSortedTodos.length === 0 ? (
               <div className="flex items-center justify-center h-[200px] border-2 border-dashed border-border rounded-lg">
                 <p className="text-muted-foreground text-sm">
-                  {state.filter === 'all' ? 'No todos yet. Add one above!' : `No ${state.filter} todos`}
+                  {state.filter === 'all'
+                    ? 'No todos yet. Add one above!'
+                    : `No ${state.filter} todos`}
                 </p>
               </div>
             ) : (
@@ -373,7 +427,9 @@ export function TodoBlocInteractive() {
                           : 'border-border hover:border-brand'
                       }`}
                     >
-                      {todo.completed && <Check className="h-3 w-3 text-white" />}
+                      {todo.completed && (
+                        <Check className="h-3 w-3 text-white" />
+                      )}
                     </button>
 
                     <div className="flex-1 min-w-0">
@@ -390,7 +446,7 @@ export function TodoBlocInteractive() {
 
                     <span
                       className={`px-2 py-0.5 text-xs rounded font-medium ${getPriorityColor(
-                        todo.priority
+                        todo.priority,
                       )}`}
                     >
                       {todo.priority}
@@ -416,7 +472,9 @@ export function TodoBlocInteractive() {
                   size="sm"
                   className="text-xs"
                 >
-                  {state.todos.every((t) => t.completed) ? 'Uncheck All' : 'Check All'}
+                  {state.todos.every((t) => t.completed)
+                    ? 'Uncheck All'
+                    : 'Check All'}
                 </Button>
                 {todoBloc.stats.completed > 0 && (
                   <Button

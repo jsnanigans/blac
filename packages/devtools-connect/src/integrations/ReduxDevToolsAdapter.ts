@@ -404,8 +404,11 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
       instanceRef: bloc._instanceRef,
       isolated: bloc._isolated,
       keepAlive: bloc._keepAlive,
-      createdAt: this.instanceMetadata.get(this.getInstanceKey(bloc))?.createdAt || Date.now(),
-      lifecycleState: (bloc as any)._lifecycleManager?.currentState || 'unknown',
+      createdAt:
+        this.instanceMetadata.get(this.getInstanceKey(bloc))?.createdAt ||
+        Date.now(),
+      lifecycleState:
+        (bloc as any)._lifecycleManager?.currentState || 'unknown',
       subscriberCount: stats.activeSubscriptions,
     };
   }
@@ -627,7 +630,10 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
       }
 
       // Remove emoji prefix if present (🔒, 🔗, 📌, ⚡, 📨, 🗑️)
-      const cleanedType = action.type.replace(/^[\u{1F300}-\u{1F9FF}]+\s*/u, '');
+      const cleanedType = action.type.replace(
+        /^[\u{1F300}-\u{1F9FF}]+\s*/u,
+        '',
+      );
 
       // Parse action type: "[BlocName] ActionName" or "[BlocName:instanceId] ActionName"
       const match = cleanedType.match(/^\[(.*?)\]\s+(.+)$/);
@@ -647,7 +653,8 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
 
       // Try to find by exact display name match
       for (const [key, registeredBloc] of this.blocRegistry.entries()) {
-        const registeredDisplayName = this.getInstanceDisplayName(registeredBloc);
+        const registeredDisplayName =
+          this.getInstanceDisplayName(registeredBloc);
         if (registeredDisplayName === displayName) {
           bloc = registeredBloc;
           blocKey = key;
@@ -667,8 +674,9 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
       }
 
       if (!bloc || !blocKey) {
-        const availableBlocs = Array.from(this.blocRegistry.values())
-          .map(b => this.getInstanceDisplayName(b));
+        const availableBlocs = Array.from(this.blocRegistry.values()).map((b) =>
+          this.getInstanceDisplayName(b),
+        );
         console.error(
           `[ReduxDevToolsAdapter] Bloc/Cubit "${displayName}" not found. Available: ${availableBlocs.join(', ')}`,
         );
@@ -890,8 +898,9 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
       }
 
       if (!bloc || !blocKey) {
-        const availableKeys = Array.from(this.blocRegistry.values())
-          .map(b => this.getStateKey(b));
+        const availableKeys = Array.from(this.blocRegistry.values()).map((b) =>
+          this.getStateKey(b),
+        );
         console.error(
           `[ReduxDevToolsAdapter] Bloc "${stateKey}" not found. Available: ${availableKeys.join(', ') || 'none'}`,
         );

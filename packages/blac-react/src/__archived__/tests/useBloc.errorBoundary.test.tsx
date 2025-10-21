@@ -55,7 +55,10 @@ describe('useBloc with Error Boundaries', () => {
   });
 
   it('should catch errors thrown during render', () => {
-    class RenderErrorCubit extends Cubit<{ shouldError: boolean; value: number }> {
+    class RenderErrorCubit extends Cubit<{
+      shouldError: boolean;
+      value: number;
+    }> {
       constructor() {
         super({ shouldError: false, value: 0 });
       }
@@ -105,7 +108,10 @@ describe('useBloc with Error Boundaries', () => {
   });
 
   it('should catch errors in useEffect hooks', async () => {
-    class EffectErrorCubit extends Cubit<{ triggerEffect: boolean; value: number }> {
+    class EffectErrorCubit extends Cubit<{
+      triggerEffect: boolean;
+      value: number;
+    }> {
       constructor() {
         super({ triggerEffect: false, value: 0 });
       }
@@ -188,7 +194,10 @@ describe('useBloc with Error Boundaries', () => {
   });
 
   it('should allow bloc recovery after errors', async () => {
-    class RecoverableCubit extends Cubit<{ value: number; shouldError: boolean }> {
+    class RecoverableCubit extends Cubit<{
+      value: number;
+      shouldError: boolean;
+    }> {
       constructor() {
         super({ value: 0, shouldError: false });
       }
@@ -235,7 +244,7 @@ describe('useBloc with Error Boundaries', () => {
                     cubit.emit({ value: 0, shouldError: false });
                   }
                   // Reset error boundary
-                  setErrorKey(k => k + 1);
+                  setErrorKey((k) => k + 1);
                 }}
               >
                 Reset Error
@@ -263,7 +272,9 @@ describe('useBloc with Error Boundaries', () => {
     await userEvent.click(screen.getByText('Trigger Error'));
 
     await waitFor(() => {
-      expect(screen.getByTestId('error-message')).toHaveTextContent('Component error');
+      expect(screen.getByTestId('error-message')).toHaveTextContent(
+        'Component error',
+      );
     });
 
     // Recover - this will reset the bloc state and error boundary
@@ -360,14 +371,19 @@ describe('useBloc with Error Boundaries', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByTestId('inner-error')).toHaveTextContent('Inner error');
+      expect(screen.getByTestId('inner-error')).toHaveTextContent(
+        'Inner error',
+      );
       // Outer component should still be rendered
       expect(screen.getByTestId('outer-state')).toHaveTextContent('outer');
     });
   });
 
   it('should handle component errors based on state', () => {
-    class StateDependentCubit extends Cubit<{ value: number; shouldError: boolean }> {
+    class StateDependentCubit extends Cubit<{
+      value: number;
+      shouldError: boolean;
+    }> {
       constructor() {
         super({ value: 0, shouldError: false });
       }
@@ -433,7 +449,11 @@ describe('useBloc with Error Boundaries', () => {
       await new Promise((resolve) => setTimeout(resolve, 50));
 
       return {
-        default: function LazyBlocComponent({ shouldError }: { shouldError?: boolean }) {
+        default: function LazyBlocComponent({
+          shouldError,
+        }: {
+          shouldError?: boolean;
+        }) {
           class SuspenseCubit extends Cubit<number> {
             constructor() {
               super(0);
@@ -502,7 +522,11 @@ describe('useBloc with Error Boundaries', () => {
   });
 
   it('should handle async errors with error boundaries', async () => {
-    class AsyncCubit extends Cubit<{ loading: boolean; data: string | null; error: boolean }> {
+    class AsyncCubit extends Cubit<{
+      loading: boolean;
+      data: string | null;
+      error: boolean;
+    }> {
       constructor() {
         super({ loading: false, data: null, error: false });
       }
@@ -543,7 +567,9 @@ describe('useBloc with Error Boundaries', () => {
         <div>
           <div data-testid="loading">{state.loading ? 'Loading' : 'Idle'}</div>
           <div data-testid="data">{state.data || 'No data'}</div>
-          <button onClick={() => cubit.loadDataWithError()}>Load with Error</button>
+          <button onClick={() => cubit.loadDataWithError()}>
+            Load with Error
+          </button>
           <button onClick={() => cubit.loadDataSuccess()}>Load Success</button>
         </div>
       );
@@ -576,7 +602,10 @@ describe('useBloc with Error Boundaries', () => {
   });
 
   it('should handle error recovery with state reset', async () => {
-    class ResettableCubit extends Cubit<{ count: number; maxReached: boolean }> {
+    class ResettableCubit extends Cubit<{
+      count: number;
+      maxReached: boolean;
+    }> {
       constructor() {
         super({ count: 0, maxReached: false });
       }
@@ -628,7 +657,7 @@ describe('useBloc with Error Boundaries', () => {
                     cubit.reset();
                   }
                   // Reset error boundary with new key
-                  setErrorKey(k => k + 1);
+                  setErrorKey((k) => k + 1);
                 }}
               >
                 Reset All
@@ -676,7 +705,10 @@ describe('useBloc with Error Boundaries', () => {
     class SafeEvent {}
     class ErrorEvent {}
 
-    class EventBloc extends Vertex<{ value: number; error: boolean }, SafeEvent | ErrorEvent> {
+    class EventBloc extends Vertex<
+      { value: number; error: boolean },
+      SafeEvent | ErrorEvent
+    > {
       constructor() {
         super({ value: 0, error: false });
 

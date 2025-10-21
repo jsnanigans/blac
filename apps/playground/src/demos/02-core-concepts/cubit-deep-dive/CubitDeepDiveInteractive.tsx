@@ -131,7 +131,7 @@ class TodoCubit extends Cubit<TodoState> {
   toggleTodo = (id: string) => {
     this.patch({
       todos: this.state.todos.map((todo) =>
-        todo.id === id ? { ...todo, completed: !todo.completed } : todo
+        todo.id === id ? { ...todo, completed: !todo.completed } : todo,
       ),
     });
   };
@@ -240,7 +240,11 @@ function NestedStateDemo() {
           <Button onClick={cubit.incrementPosts} variant="outline" size="sm">
             New Post
           </Button>
-          <Button onClick={cubit.toggleNotifications} variant="outline" size="sm">
+          <Button
+            onClick={cubit.toggleNotifications}
+            variant="outline"
+            size="sm"
+          >
             Toggle Notifications
           </Button>
         </div>
@@ -269,7 +273,8 @@ function ComputedPropertiesDemo() {
             Todo List (Computed Properties)
           </h4>
           <div className="text-xs text-muted-foreground">
-            Progress: {cubit.progress}% ({cubit.completedCount}/{state.todos.length})
+            Progress: {cubit.progress}% ({cubit.completedCount}/
+            {state.todos.length})
           </div>
         </div>
 
@@ -312,7 +317,9 @@ function ComputedPropertiesDemo() {
                 className="h-4 w-4"
               />
               <span
-                className={todo.completed ? 'text-muted-foreground line-through' : ''}
+                className={
+                  todo.completed ? 'text-muted-foreground line-through' : ''
+                }
               >
                 {todo.text}
               </span>
@@ -404,7 +411,11 @@ export function CubitDeepDiveInteractive() {
       <div className="space-y-4">
         <h3 className="text-lg font-semibold">Nested State Management</h3>
         <NestedStateDemo />
-        <StateViewer bloc={UserProfileCubit} title="User Profile State" maxDepth={3} />
+        <StateViewer
+          bloc={UserProfileCubit}
+          title="User Profile State"
+          maxDepth={3}
+        />
       </div>
 
       <div className="space-y-4">

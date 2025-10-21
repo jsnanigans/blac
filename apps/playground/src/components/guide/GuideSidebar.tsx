@@ -14,10 +14,14 @@ interface GuideSidebarProps {
   className?: string;
 }
 
-export function GuideSidebar({ currentSection, currentDemo, className }: GuideSidebarProps) {
+export function GuideSidebar({
+  currentSection,
+  currentDemo,
+  className,
+}: GuideSidebarProps) {
   const { isHeaderVisible } = useHeaderVisibility();
   const [expandedSections, setExpandedSections] = React.useState<Set<string>>(
-    new Set(guideStructure.sections.map(s => s.id))
+    new Set(guideStructure.sections.map((s) => s.id)),
   );
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
@@ -27,12 +31,12 @@ export function GuideSidebar({ currentSection, currentDemo, className }: GuideSi
   // Auto-expand current section on mount
   React.useEffect(() => {
     if (currentSection) {
-      setExpandedSections(prev => new Set([...prev, currentSection]));
+      setExpandedSections((prev) => new Set([...prev, currentSection]));
     }
   }, [currentSection]);
 
   const toggleSection = (sectionId: string) => {
-    setExpandedSections(prev => {
+    setExpandedSections((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(sectionId)) {
         newSet.delete(sectionId);
@@ -68,7 +72,11 @@ export function GuideSidebar({ currentSection, currentDemo, className }: GuideSi
         className="lg:hidden fixed left-4 top-24 z-40 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-surface text-foreground shadow-subtle"
         aria-label="Toggle navigation menu"
       >
-        {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        {isMobileMenuOpen ? (
+          <X className="h-5 w-5" />
+        ) : (
+          <Menu className="h-5 w-5" />
+        )}
       </button>
 
       {/* Desktop Sidebar */}
@@ -155,7 +163,7 @@ function SidebarSection({
   onToggle,
   currentSection,
   currentDemo,
-  onDemoClick
+  onDemoClick,
 }: SidebarSectionProps) {
   const Icon = section.icon;
   const isCurrentSection = section.id === currentSection;
@@ -166,7 +174,8 @@ function SidebarSection({
         onClick={onToggle}
         className={cn(
           'w-full rounded-2xl border border-border bg-surface px-4 py-3 text-left hover:shadow-subtle',
-          isCurrentSection && 'border-brand/60 bg-brand/10 shadow-subtle text-brand',
+          isCurrentSection &&
+            'border-brand/60 bg-brand/10 shadow-subtle text-brand',
         )}
       >
         <div className="flex items-center justify-between gap-2">
@@ -211,8 +220,7 @@ function SidebarSection({
                 if (!demo) return null;
 
                 const isActive =
-                  section.id === currentSection &&
-                  demoId === currentDemo;
+                  section.id === currentSection && demoId === currentDemo;
 
                 return (
                   <Link

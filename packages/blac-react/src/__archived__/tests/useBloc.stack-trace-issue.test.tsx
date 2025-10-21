@@ -102,8 +102,12 @@ describe('Issue #8: Stack Trace Parsing Performance - RESOLVED', () => {
 
   it('VERIFIED: Multiple bloc types work correctly', () => {
     // Verify that different bloc types derive correct names without expensive parsing
-    const { result: result1, unmount: unmount1 } = renderHook(() => useBloc(CounterCubit));
-    const { result: result2, unmount: unmount2 } = renderHook(() => useBloc(UserProfileCubit));
+    const { result: result1, unmount: unmount1 } = renderHook(() =>
+      useBloc(CounterCubit),
+    );
+    const { result: result2, unmount: unmount2 } = renderHook(() =>
+      useBloc(UserProfileCubit),
+    );
 
     // Both hooks should work correctly
     expect(result1.current[0]).toBe(0);

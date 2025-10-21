@@ -78,8 +78,16 @@ class NestedStateCubit extends Cubit<NestedState> {
         },
       },
       items: [
-        { id: 1, name: 'Item 1', metadata: { created: '2024-01-01', updated: '2024-01-01' } },
-        { id: 2, name: 'Item 2', metadata: { created: '2024-01-02', updated: '2024-01-02' } },
+        {
+          id: 1,
+          name: 'Item 1',
+          metadata: { created: '2024-01-01', updated: '2024-01-01' },
+        },
+        {
+          id: 2,
+          name: 'Item 2',
+          metadata: { created: '2024-01-02', updated: '2024-01-02' },
+        },
       ],
       deep: {
         level1: {
@@ -170,10 +178,7 @@ class NestedStateCubit extends Cubit<NestedState> {
   // Array element update - items[0].name
   updateFirstItemName = (name: string) => {
     this.patch({
-      items: [
-        { ...this.state.items[0], name },
-        ...this.state.items.slice(1),
-      ],
+      items: [{ ...this.state.items[0], name }, ...this.state.items.slice(1)],
     });
   };
 
@@ -229,8 +234,16 @@ class NestedStateCubit extends Cubit<NestedState> {
         },
       },
       items: [
-        { id: 1, name: 'Item 1', metadata: { created: '2024-01-01', updated: '2024-01-01' } },
-        { id: 2, name: 'Item 2', metadata: { created: '2024-01-02', updated: '2024-01-02' } },
+        {
+          id: 1,
+          name: 'Item 1',
+          metadata: { created: '2024-01-01', updated: '2024-01-01' },
+        },
+        {
+          id: 2,
+          name: 'Item 2',
+          metadata: { created: '2024-01-02', updated: '2024-01-02' },
+        },
       ],
       deep: {
         level1: {
@@ -252,164 +265,324 @@ interface ComponentProps {
 }
 
 // Component reading shallow property
-const CounterDisplay: React.FC<ComponentProps> = React.memo(({ label, accessPath, onRender }) => {
-  const [state] = useBloc(NestedStateCubit);
-  const renderCount = useRef(0);
-  renderCount.current++;
+const CounterDisplay: React.FC<ComponentProps> = React.memo(
+  ({ label, accessPath, onRender }) => {
+    const [state] = useBloc(NestedStateCubit);
+    const renderCount = useRef(0);
+    renderCount.current++;
 
-  useEffect(() => {
-    onRender();
-  });
+    useEffect(() => {
+      onRender();
+    });
 
-  return (
-    <div style={{ padding: '12px', border: '2px solid #4CAF50', margin: '5px', borderRadius: '4px', background: 'white' }}>
-      <div style={{ fontWeight: 'bold', marginBottom: '4px', fontSize: '12px' }}>{label}</div>
-      <div style={{ fontSize: '14px', color: '#2196F3' }}>{state.counter}</div>
-      <div style={{ fontSize: '10px', color: '#999', marginTop: '4px' }}>Accesses: <code>{accessPath}</code></div>
-      <div style={{ fontSize: '11px', color: '#666' }}>Renders: {renderCount.current}</div>
-    </div>
-  );
-});
+    return (
+      <div
+        style={{
+          padding: '12px',
+          border: '2px solid #4CAF50',
+          margin: '5px',
+          borderRadius: '4px',
+          background: 'white',
+        }}
+      >
+        <div
+          style={{ fontWeight: 'bold', marginBottom: '4px', fontSize: '12px' }}
+        >
+          {label}
+        </div>
+        <div style={{ fontSize: '14px', color: '#2196F3' }}>
+          {state.counter}
+        </div>
+        <div style={{ fontSize: '10px', color: '#999', marginTop: '4px' }}>
+          Accesses: <code>{accessPath}</code>
+        </div>
+        <div style={{ fontSize: '11px', color: '#666' }}>
+          Renders: {renderCount.current}
+        </div>
+      </div>
+    );
+  },
+);
 
 // Component reading user.name (nested level 1)
-const UserNameDisplay: React.FC<ComponentProps> = React.memo(({ label, accessPath, onRender }) => {
-  const [state] = useBloc(NestedStateCubit);
-  const renderCount = useRef(0);
-  renderCount.current++;
+const UserNameDisplay: React.FC<ComponentProps> = React.memo(
+  ({ label, accessPath, onRender }) => {
+    const [state] = useBloc(NestedStateCubit);
+    const renderCount = useRef(0);
+    renderCount.current++;
 
-  useEffect(() => {
-    onRender();
-  });
+    useEffect(() => {
+      onRender();
+    });
 
-  return (
-    <div style={{ padding: '12px', border: '2px solid #2196F3', margin: '5px', borderRadius: '4px', background: 'white' }}>
-      <div style={{ fontWeight: 'bold', marginBottom: '4px', fontSize: '12px' }}>{label}</div>
-      <div style={{ fontSize: '14px', color: '#2196F3' }}>{state.user.name}</div>
-      <div style={{ fontSize: '10px', color: '#999', marginTop: '4px' }}>Accesses: <code>{accessPath}</code></div>
-      <div style={{ fontSize: '11px', color: '#666' }}>Renders: {renderCount.current}</div>
-    </div>
-  );
-});
+    return (
+      <div
+        style={{
+          padding: '12px',
+          border: '2px solid #2196F3',
+          margin: '5px',
+          borderRadius: '4px',
+          background: 'white',
+        }}
+      >
+        <div
+          style={{ fontWeight: 'bold', marginBottom: '4px', fontSize: '12px' }}
+        >
+          {label}
+        </div>
+        <div style={{ fontSize: '14px', color: '#2196F3' }}>
+          {state.user.name}
+        </div>
+        <div style={{ fontSize: '10px', color: '#999', marginTop: '4px' }}>
+          Accesses: <code>{accessPath}</code>
+        </div>
+        <div style={{ fontSize: '11px', color: '#666' }}>
+          Renders: {renderCount.current}
+        </div>
+      </div>
+    );
+  },
+);
 
 // Component reading user.email (nested level 1)
-const UserEmailDisplay: React.FC<ComponentProps> = React.memo(({ label, accessPath, onRender }) => {
-  const [state] = useBloc(NestedStateCubit);
-  const renderCount = useRef(0);
-  renderCount.current++;
+const UserEmailDisplay: React.FC<ComponentProps> = React.memo(
+  ({ label, accessPath, onRender }) => {
+    const [state] = useBloc(NestedStateCubit);
+    const renderCount = useRef(0);
+    renderCount.current++;
 
-  useEffect(() => {
-    onRender();
-  });
+    useEffect(() => {
+      onRender();
+    });
 
-  return (
-    <div style={{ padding: '12px', border: '2px solid #2196F3', margin: '5px', borderRadius: '4px', background: 'white' }}>
-      <div style={{ fontWeight: 'bold', marginBottom: '4px', fontSize: '12px' }}>{label}</div>
-      <div style={{ fontSize: '14px', color: '#2196F3' }}>{state.user.email}</div>
-      <div style={{ fontSize: '10px', color: '#999', marginTop: '4px' }}>Accesses: <code>{accessPath}</code></div>
-      <div style={{ fontSize: '11px', color: '#666' }}>Renders: {renderCount.current}</div>
-    </div>
-  );
-});
+    return (
+      <div
+        style={{
+          padding: '12px',
+          border: '2px solid #2196F3',
+          margin: '5px',
+          borderRadius: '4px',
+          background: 'white',
+        }}
+      >
+        <div
+          style={{ fontWeight: 'bold', marginBottom: '4px', fontSize: '12px' }}
+        >
+          {label}
+        </div>
+        <div style={{ fontSize: '14px', color: '#2196F3' }}>
+          {state.user.email}
+        </div>
+        <div style={{ fontSize: '10px', color: '#999', marginTop: '4px' }}>
+          Accesses: <code>{accessPath}</code>
+        </div>
+        <div style={{ fontSize: '11px', color: '#666' }}>
+          Renders: {renderCount.current}
+        </div>
+      </div>
+    );
+  },
+);
 
 // Component reading user.profile.address.city (nested level 3)
-const CityDisplay: React.FC<ComponentProps> = React.memo(({ label, accessPath, onRender }) => {
-  const [state] = useBloc(NestedStateCubit);
-  const renderCount = useRef(0);
-  renderCount.current++;
+const CityDisplay: React.FC<ComponentProps> = React.memo(
+  ({ label, accessPath, onRender }) => {
+    const [state] = useBloc(NestedStateCubit);
+    const renderCount = useRef(0);
+    renderCount.current++;
 
-  useEffect(() => {
-    onRender();
-  });
+    useEffect(() => {
+      onRender();
+    });
 
-  return (
-    <div style={{ padding: '12px', border: '2px solid #FF9800', margin: '5px', borderRadius: '4px', background: 'white' }}>
-      <div style={{ fontWeight: 'bold', marginBottom: '4px', fontSize: '12px' }}>{label}</div>
-      <div style={{ fontSize: '14px', color: '#FF9800' }}>{state.user.profile.address.city}</div>
-      <div style={{ fontSize: '10px', color: '#999', marginTop: '4px' }}>Accesses: <code>{accessPath}</code></div>
-      <div style={{ fontSize: '11px', color: '#666' }}>Renders: {renderCount.current}</div>
-    </div>
-  );
-});
+    return (
+      <div
+        style={{
+          padding: '12px',
+          border: '2px solid #FF9800',
+          margin: '5px',
+          borderRadius: '4px',
+          background: 'white',
+        }}
+      >
+        <div
+          style={{ fontWeight: 'bold', marginBottom: '4px', fontSize: '12px' }}
+        >
+          {label}
+        </div>
+        <div style={{ fontSize: '14px', color: '#FF9800' }}>
+          {state.user.profile.address.city}
+        </div>
+        <div style={{ fontSize: '10px', color: '#999', marginTop: '4px' }}>
+          Accesses: <code>{accessPath}</code>
+        </div>
+        <div style={{ fontSize: '11px', color: '#666' }}>
+          Renders: {renderCount.current}
+        </div>
+      </div>
+    );
+  },
+);
 
 // Component reading user.profile.address.country (nested level 3)
-const CountryDisplay: React.FC<ComponentProps> = React.memo(({ label, accessPath, onRender }) => {
-  const [state] = useBloc(NestedStateCubit);
-  const renderCount = useRef(0);
-  renderCount.current++;
+const CountryDisplay: React.FC<ComponentProps> = React.memo(
+  ({ label, accessPath, onRender }) => {
+    const [state] = useBloc(NestedStateCubit);
+    const renderCount = useRef(0);
+    renderCount.current++;
 
-  useEffect(() => {
-    onRender();
-  });
+    useEffect(() => {
+      onRender();
+    });
 
-  return (
-    <div style={{ padding: '12px', border: '2px solid #FF9800', margin: '5px', borderRadius: '4px', background: 'white' }}>
-      <div style={{ fontWeight: 'bold', marginBottom: '4px', fontSize: '12px' }}>{label}</div>
-      <div style={{ fontSize: '14px', color: '#FF9800' }}>{state.user.profile.address.country}</div>
-      <div style={{ fontSize: '10px', color: '#999', marginTop: '4px' }}>Accesses: <code>{accessPath}</code></div>
-      <div style={{ fontSize: '11px', color: '#666' }}>Renders: {renderCount.current}</div>
-    </div>
-  );
-});
+    return (
+      <div
+        style={{
+          padding: '12px',
+          border: '2px solid #FF9800',
+          margin: '5px',
+          borderRadius: '4px',
+          background: 'white',
+        }}
+      >
+        <div
+          style={{ fontWeight: 'bold', marginBottom: '4px', fontSize: '12px' }}
+        >
+          {label}
+        </div>
+        <div style={{ fontSize: '14px', color: '#FF9800' }}>
+          {state.user.profile.address.country}
+        </div>
+        <div style={{ fontSize: '10px', color: '#999', marginTop: '4px' }}>
+          Accesses: <code>{accessPath}</code>
+        </div>
+        <div style={{ fontSize: '11px', color: '#666' }}>
+          Renders: {renderCount.current}
+        </div>
+      </div>
+    );
+  },
+);
 
 // Component reading items[0].name (array access)
-const FirstItemDisplay: React.FC<ComponentProps> = React.memo(({ label, accessPath, onRender }) => {
-  const [state] = useBloc(NestedStateCubit);
-  const renderCount = useRef(0);
-  renderCount.current++;
+const FirstItemDisplay: React.FC<ComponentProps> = React.memo(
+  ({ label, accessPath, onRender }) => {
+    const [state] = useBloc(NestedStateCubit);
+    const renderCount = useRef(0);
+    renderCount.current++;
 
-  useEffect(() => {
-    onRender();
-  });
+    useEffect(() => {
+      onRender();
+    });
 
-  return (
-    <div style={{ padding: '12px', border: '2px solid #9C27B0', margin: '5px', borderRadius: '4px', background: 'white' }}>
-      <div style={{ fontWeight: 'bold', marginBottom: '4px', fontSize: '12px' }}>{label}</div>
-      <div style={{ fontSize: '14px', color: '#9C27B0' }}>{state.items[0].name}</div>
-      <div style={{ fontSize: '10px', color: '#999', marginTop: '4px' }}>Accesses: <code>{accessPath}</code></div>
-      <div style={{ fontSize: '11px', color: '#666' }}>Renders: {renderCount.current}</div>
-    </div>
-  );
-});
+    return (
+      <div
+        style={{
+          padding: '12px',
+          border: '2px solid #9C27B0',
+          margin: '5px',
+          borderRadius: '4px',
+          background: 'white',
+        }}
+      >
+        <div
+          style={{ fontWeight: 'bold', marginBottom: '4px', fontSize: '12px' }}
+        >
+          {label}
+        </div>
+        <div style={{ fontSize: '14px', color: '#9C27B0' }}>
+          {state.items[0].name}
+        </div>
+        <div style={{ fontSize: '10px', color: '#999', marginTop: '4px' }}>
+          Accesses: <code>{accessPath}</code>
+        </div>
+        <div style={{ fontSize: '11px', color: '#666' }}>
+          Renders: {renderCount.current}
+        </div>
+      </div>
+    );
+  },
+);
 
 // Component reading items[1].metadata.updated (deep array access)
-const SecondItemMetadataDisplay: React.FC<ComponentProps> = React.memo(({ label, accessPath, onRender }) => {
-  const [state] = useBloc(NestedStateCubit);
-  const renderCount = useRef(0);
-  renderCount.current++;
+const SecondItemMetadataDisplay: React.FC<ComponentProps> = React.memo(
+  ({ label, accessPath, onRender }) => {
+    const [state] = useBloc(NestedStateCubit);
+    const renderCount = useRef(0);
+    renderCount.current++;
 
-  useEffect(() => {
-    onRender();
-  });
+    useEffect(() => {
+      onRender();
+    });
 
-  return (
-    <div style={{ padding: '12px', border: '2px solid #9C27B0', margin: '5px', borderRadius: '4px', background: 'white' }}>
-      <div style={{ fontWeight: 'bold', marginBottom: '4px', fontSize: '12px' }}>{label}</div>
-      <div style={{ fontSize: '14px', color: '#9C27B0' }}>{state.items[1].metadata.updated}</div>
-      <div style={{ fontSize: '10px', color: '#999', marginTop: '4px' }}>Accesses: <code>{accessPath}</code></div>
-      <div style={{ fontSize: '11px', color: '#666' }}>Renders: {renderCount.current}</div>
-    </div>
-  );
-});
+    return (
+      <div
+        style={{
+          padding: '12px',
+          border: '2px solid #9C27B0',
+          margin: '5px',
+          borderRadius: '4px',
+          background: 'white',
+        }}
+      >
+        <div
+          style={{ fontWeight: 'bold', marginBottom: '4px', fontSize: '12px' }}
+        >
+          {label}
+        </div>
+        <div style={{ fontSize: '14px', color: '#9C27B0' }}>
+          {state.items[1].metadata.updated}
+        </div>
+        <div style={{ fontSize: '10px', color: '#999', marginTop: '4px' }}>
+          Accesses: <code>{accessPath}</code>
+        </div>
+        <div style={{ fontSize: '11px', color: '#666' }}>
+          Renders: {renderCount.current}
+        </div>
+      </div>
+    );
+  },
+);
 
 // Component reading deep.level1.level2.level3.value (very deep nesting)
-const DeepValueDisplay: React.FC<ComponentProps> = React.memo(({ label, accessPath, onRender }) => {
-  const [state] = useBloc(NestedStateCubit);
-  const renderCount = useRef(0);
-  renderCount.current++;
+const DeepValueDisplay: React.FC<ComponentProps> = React.memo(
+  ({ label, accessPath, onRender }) => {
+    const [state] = useBloc(NestedStateCubit);
+    const renderCount = useRef(0);
+    renderCount.current++;
 
-  useEffect(() => {
-    onRender();
-  });
+    useEffect(() => {
+      onRender();
+    });
 
-  return (
-    <div style={{ padding: '12px', border: '2px solid #F44336', margin: '5px', borderRadius: '4px', background: 'white' }}>
-      <div style={{ fontWeight: 'bold', marginBottom: '4px', fontSize: '12px' }}>{label}</div>
-      <div style={{ fontSize: '14px', color: '#F44336' }}>{state.deep.level1.level2.level3.value}</div>
-      <div style={{ fontSize: '10px', color: '#999', marginTop: '4px' }}>Accesses: <code>{accessPath}</code></div>
-      <div style={{ fontSize: '11px', color: '#666' }}>Renders: {renderCount.current}</div>
-    </div>
-  );
-});
+    return (
+      <div
+        style={{
+          padding: '12px',
+          border: '2px solid #F44336',
+          margin: '5px',
+          borderRadius: '4px',
+          background: 'white',
+        }}
+      >
+        <div
+          style={{ fontWeight: 'bold', marginBottom: '4px', fontSize: '12px' }}
+        >
+          {label}
+        </div>
+        <div style={{ fontSize: '14px', color: '#F44336' }}>
+          {state.deep.level1.level2.level3.value}
+        </div>
+        <div style={{ fontSize: '10px', color: '#999', marginTop: '4px' }}>
+          Accesses: <code>{accessPath}</code>
+        </div>
+        <div style={{ fontSize: '11px', color: '#666' }}>
+          Renders: {renderCount.current}
+        </div>
+      </div>
+    );
+  },
+);
 
 type TestScenario =
   | 'counter'
@@ -536,16 +709,106 @@ export const DependencyTrackingBenchmark: React.FC = () => {
 
     // Without proxy: ALL components re-render
     const expectedWithoutProxy: Record<TestScenario, string[]> = {
-      counter: ['Counter', 'UserName', 'UserEmail', 'City', 'Country', 'FirstItem', 'SecondItemMeta', 'DeepValue'],
-      theme: ['Counter', 'UserName', 'UserEmail', 'City', 'Country', 'FirstItem', 'SecondItemMeta', 'DeepValue'],
-      userName: ['Counter', 'UserName', 'UserEmail', 'City', 'Country', 'FirstItem', 'SecondItemMeta', 'DeepValue'],
-      userEmail: ['Counter', 'UserName', 'UserEmail', 'City', 'Country', 'FirstItem', 'SecondItemMeta', 'DeepValue'],
-      city: ['Counter', 'UserName', 'UserEmail', 'City', 'Country', 'FirstItem', 'SecondItemMeta', 'DeepValue'],
-      country: ['Counter', 'UserName', 'UserEmail', 'City', 'Country', 'FirstItem', 'SecondItemMeta', 'DeepValue'],
-      bio: ['Counter', 'UserName', 'UserEmail', 'City', 'Country', 'FirstItem', 'SecondItemMeta', 'DeepValue'],
-      firstItem: ['Counter', 'UserName', 'UserEmail', 'City', 'Country', 'FirstItem', 'SecondItemMeta', 'DeepValue'],
-      secondItemMeta: ['Counter', 'UserName', 'UserEmail', 'City', 'Country', 'FirstItem', 'SecondItemMeta', 'DeepValue'],
-      deepValue: ['Counter', 'UserName', 'UserEmail', 'City', 'Country', 'FirstItem', 'SecondItemMeta', 'DeepValue'],
+      counter: [
+        'Counter',
+        'UserName',
+        'UserEmail',
+        'City',
+        'Country',
+        'FirstItem',
+        'SecondItemMeta',
+        'DeepValue',
+      ],
+      theme: [
+        'Counter',
+        'UserName',
+        'UserEmail',
+        'City',
+        'Country',
+        'FirstItem',
+        'SecondItemMeta',
+        'DeepValue',
+      ],
+      userName: [
+        'Counter',
+        'UserName',
+        'UserEmail',
+        'City',
+        'Country',
+        'FirstItem',
+        'SecondItemMeta',
+        'DeepValue',
+      ],
+      userEmail: [
+        'Counter',
+        'UserName',
+        'UserEmail',
+        'City',
+        'Country',
+        'FirstItem',
+        'SecondItemMeta',
+        'DeepValue',
+      ],
+      city: [
+        'Counter',
+        'UserName',
+        'UserEmail',
+        'City',
+        'Country',
+        'FirstItem',
+        'SecondItemMeta',
+        'DeepValue',
+      ],
+      country: [
+        'Counter',
+        'UserName',
+        'UserEmail',
+        'City',
+        'Country',
+        'FirstItem',
+        'SecondItemMeta',
+        'DeepValue',
+      ],
+      bio: [
+        'Counter',
+        'UserName',
+        'UserEmail',
+        'City',
+        'Country',
+        'FirstItem',
+        'SecondItemMeta',
+        'DeepValue',
+      ],
+      firstItem: [
+        'Counter',
+        'UserName',
+        'UserEmail',
+        'City',
+        'Country',
+        'FirstItem',
+        'SecondItemMeta',
+        'DeepValue',
+      ],
+      secondItemMeta: [
+        'Counter',
+        'UserName',
+        'UserEmail',
+        'City',
+        'Country',
+        'FirstItem',
+        'SecondItemMeta',
+        'DeepValue',
+      ],
+      deepValue: [
+        'Counter',
+        'UserName',
+        'UserEmail',
+        'City',
+        'Country',
+        'FirstItem',
+        'SecondItemMeta',
+        'DeepValue',
+      ],
     };
 
     const expected = proxyEnabled
@@ -562,11 +825,20 @@ export const DependencyTrackingBenchmark: React.FC = () => {
       userName: { name: 'Update user.name', path: 'state.user.name' },
       userEmail: { name: 'Update user.email', path: 'state.user.email' },
       city: { name: 'Update city', path: 'state.user.profile.address.city' },
-      country: { name: 'Update country', path: 'state.user.profile.address.country' },
+      country: {
+        name: 'Update country',
+        path: 'state.user.profile.address.country',
+      },
       bio: { name: 'Update bio', path: 'state.user.profile.bio' },
       firstItem: { name: 'Update items[0].name', path: 'state.items[0].name' },
-      secondItemMeta: { name: 'Update items[1].metadata', path: 'state.items[1].metadata.updated' },
-      deepValue: { name: 'Update deep value', path: 'state.deep.level1.level2.level3.value' },
+      secondItemMeta: {
+        name: 'Update items[1].metadata',
+        path: 'state.items[1].metadata.updated',
+      },
+      deepValue: {
+        name: 'Update deep value',
+        path: 'state.deep.level1.level2.level3.value',
+      },
     };
 
     const info = scenarioInfo[scenario];
@@ -624,7 +896,8 @@ export const DependencyTrackingBenchmark: React.FC = () => {
     <div style={{ padding: '20px', maxWidth: '1400px', margin: '0 auto' }}>
       <h2>V3 Deep Dependency Tracking Performance</h2>
       <p style={{ fontSize: '14px', color: '#666', marginBottom: '20px' }}>
-        Tests V3's nested proxy-based dependency tracking. Components only re-render when their specific nested paths change.
+        Tests V3's nested proxy-based dependency tracking. Components only
+        re-render when their specific nested paths change.
       </p>
 
       <div
@@ -636,22 +909,40 @@ export const DependencyTrackingBenchmark: React.FC = () => {
           borderRadius: '4px',
         }}
       >
-        <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '8px' }}>
+        <div
+          style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '8px' }}
+        >
           V3 Proxy Tracking: {proxyEnabled ? '✓ ENABLED' : '✗ DISABLED'}
         </div>
         <div style={{ fontSize: '14px', lineHeight: '1.6' }}>
           {proxyEnabled ? (
             <>
-              <div>✨ <strong>V3 Deep Tracking Features:</strong></div>
-              <div>• Tracks FULL paths: <code>user.profile.address.city</code> not just <code>user</code></div>
-              <div>• Changing <code>city</code> doesn't re-render components reading <code>country</code></div>
-              <div>• Array elements tracked individually: <code>items[0].name</code> vs <code>items[1].name</code></div>
+              <div>
+                ✨ <strong>V3 Deep Tracking Features:</strong>
+              </div>
+              <div>
+                • Tracks FULL paths: <code>user.profile.address.city</code> not
+                just <code>user</code>
+              </div>
+              <div>
+                • Changing <code>city</code> doesn't re-render components
+                reading <code>country</code>
+              </div>
+              <div>
+                • Array elements tracked individually:{' '}
+                <code>items[0].name</code> vs <code>items[1].name</code>
+              </div>
               <div>• Works with arbitrary nesting depth (5+ levels tested)</div>
-              <div>• 3-level cache (target → consumer → path) for optimal performance</div>
+              <div>
+                • 3-level cache (target → consumer → path) for optimal
+                performance
+              </div>
             </>
           ) : (
             <>
-              <div>⚠️ <strong>Without Proxy Tracking:</strong></div>
+              <div>
+                ⚠️ <strong>Without Proxy Tracking:</strong>
+              </div>
               <div>• All components re-render on ANY state change</div>
               <div>• Simple but inefficient for complex nested state</div>
               <div>• No tracking overhead</div>
@@ -767,8 +1058,17 @@ export const DependencyTrackingBenchmark: React.FC = () => {
             borderLeft: '4px solid #2196F3',
           }}
         >
-          <h3 style={{ marginTop: 0, marginBottom: '10px' }}>Proxy Cache Performance</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px', fontSize: '13px' }}>
+          <h3 style={{ marginTop: 0, marginBottom: '10px' }}>
+            Proxy Cache Performance
+          </h3>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+              gap: '10px',
+              fontSize: '13px',
+            }}
+          >
             <div>
               <strong>Total Proxies:</strong> {proxyStats.totalProxiesCreated}
             </div>
@@ -782,7 +1082,8 @@ export const DependencyTrackingBenchmark: React.FC = () => {
               <strong>Cache Misses:</strong> {proxyStats.cacheMisses}
             </div>
             <div>
-              <strong>Hit Rate:</strong> {proxyStats.cacheHitRate || proxyStats.cacheEfficiency}
+              <strong>Hit Rate:</strong>{' '}
+              {proxyStats.cacheHitRate || proxyStats.cacheEfficiency}
             </div>
           </div>
         </div>
@@ -801,39 +1102,115 @@ export const DependencyTrackingBenchmark: React.FC = () => {
               fontWeight: 'bold',
             }}
           >
-            {passedTests === totalTests ? '✓' : '⚠'} Passed {passedTests} / {totalTests} tests
+            {passedTests === totalTests ? '✓' : '⚠'} Passed {passedTests} /{' '}
+            {totalTests} tests
             {proxyEnabled && passedTests === totalTests && (
-              <div style={{ fontSize: '14px', fontWeight: 'normal', marginTop: '5px', color: '#155724' }}>
+              <div
+                style={{
+                  fontSize: '14px',
+                  fontWeight: 'normal',
+                  marginTop: '5px',
+                  color: '#155724',
+                }}
+              >
                 🎉 V3 deep tracking working perfectly!
               </div>
             )}
           </div>
 
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+            <table
+              style={{
+                width: '100%',
+                borderCollapse: 'collapse',
+                fontSize: '13px',
+              }}
+            >
               <thead>
                 <tr style={{ background: '#f0f0f0' }}>
-                  <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'left' }}>Test</th>
-                  <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'left' }}>Changed Path</th>
-                  <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'left' }}>Expected Renders</th>
-                  <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'left' }}>Actual Renders</th>
+                  <th
+                    style={{
+                      padding: '10px',
+                      border: '1px solid #ddd',
+                      textAlign: 'left',
+                    }}
+                  >
+                    Test
+                  </th>
+                  <th
+                    style={{
+                      padding: '10px',
+                      border: '1px solid #ddd',
+                      textAlign: 'left',
+                    }}
+                  >
+                    Changed Path
+                  </th>
+                  <th
+                    style={{
+                      padding: '10px',
+                      border: '1px solid #ddd',
+                      textAlign: 'left',
+                    }}
+                  >
+                    Expected Renders
+                  </th>
+                  <th
+                    style={{
+                      padding: '10px',
+                      border: '1px solid #ddd',
+                      textAlign: 'left',
+                    }}
+                  >
+                    Actual Renders
+                  </th>
                   {proxyEnabled && (
-                    <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'left' }}>Improvement</th>
+                    <th
+                      style={{
+                        padding: '10px',
+                        border: '1px solid #ddd',
+                        textAlign: 'left',
+                      }}
+                    >
+                      Improvement
+                    </th>
                   )}
-                  <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center' }}>Status</th>
+                  <th
+                    style={{
+                      padding: '10px',
+                      border: '1px solid #ddd',
+                      textAlign: 'center',
+                    }}
+                  >
+                    Status
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {scenarioResults.map((result, i) => (
-                  <tr key={i} style={{ background: result.passed ? '#f8fff8' : '#fff8f8' }}>
+                  <tr
+                    key={i}
+                    style={{
+                      background: result.passed ? '#f8fff8' : '#fff8f8',
+                    }}
+                  >
                     <td style={{ padding: '10px', border: '1px solid #ddd' }}>
                       <strong>{result.name}</strong>
                     </td>
-                    <td style={{ padding: '10px', border: '1px solid #ddd', fontFamily: 'monospace', fontSize: '12px' }}>
+                    <td
+                      style={{
+                        padding: '10px',
+                        border: '1px solid #ddd',
+                        fontFamily: 'monospace',
+                        fontSize: '12px',
+                      }}
+                    >
                       {result.targetPath}
                     </td>
                     <td style={{ padding: '10px', border: '1px solid #ddd' }}>
-                      {result.expectedRenders.length > 0 ? result.expectedRenders.join(', ') : 'None'}
+                      {result.expectedRenders.length > 0
+                        ? result.expectedRenders.join(', ')
+                        : 'None'}
                     </td>
                     <td
                       style={{
@@ -843,14 +1220,30 @@ export const DependencyTrackingBenchmark: React.FC = () => {
                         background: result.passed ? '#e8f5e9' : '#ffebee',
                       }}
                     >
-                      {result.actualRenders.length > 0 ? result.actualRenders.join(', ') : 'None'}
+                      {result.actualRenders.length > 0
+                        ? result.actualRenders.join(', ')
+                        : 'None'}
                     </td>
                     {proxyEnabled && (
-                      <td style={{ padding: '10px', border: '1px solid #ddd', color: '#2e7d32', fontWeight: 'bold' }}>
+                      <td
+                        style={{
+                          padding: '10px',
+                          border: '1px solid #ddd',
+                          color: '#2e7d32',
+                          fontWeight: 'bold',
+                        }}
+                      >
                         {result.improvement || '-'}
                       </td>
                     )}
-                    <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center', fontSize: '18px' }}>
+                    <td
+                      style={{
+                        padding: '10px',
+                        border: '1px solid #ddd',
+                        textAlign: 'center',
+                        fontSize: '18px',
+                      }}
+                    >
                       {result.passed ? '✓' : '✗'}
                     </td>
                   </tr>
@@ -874,27 +1267,44 @@ export const DependencyTrackingBenchmark: React.FC = () => {
               {proxyEnabled ? (
                 <>
                   <div>
-                    <strong>✨ Precise Tracking:</strong> Changing <code>city</code> doesn't re-render components reading <code>country</code>
+                    <strong>✨ Precise Tracking:</strong> Changing{' '}
+                    <code>city</code> doesn't re-render components reading{' '}
+                    <code>country</code>
                   </div>
                   <div>
-                    <strong>📊 Array Precision:</strong> Updating <code>items[0]</code> doesn't affect components reading <code>items[1]</code>
+                    <strong>📊 Array Precision:</strong> Updating{' '}
+                    <code>items[0]</code> doesn't affect components reading{' '}
+                    <code>items[1]</code>
                   </div>
                   <div>
-                    <strong>🎯 Deep Nesting:</strong> Works with any depth - tested up to 5 levels deep
+                    <strong>🎯 Deep Nesting:</strong> Works with any depth -
+                    tested up to 5 levels deep
                   </div>
                   <div>
-                    <strong>⚡ Smart Caching:</strong> 3-level cache minimizes proxy creation overhead
+                    <strong>⚡ Smart Caching:</strong> 3-level cache minimizes
+                    proxy creation overhead
                   </div>
-                  <div style={{ marginTop: '8px', padding: '8px', background: '#fff3cd', borderRadius: '4px' }}>
-                    <strong>Note:</strong> Due to intermediate path tracking, changing <code>city</code> may still re-render
-                    components that access parent paths like <code>user.profile.address</code>. This is a known limitation
-                    documented in the V3 plan.
+                  <div
+                    style={{
+                      marginTop: '8px',
+                      padding: '8px',
+                      background: '#fff3cd',
+                      borderRadius: '4px',
+                    }}
+                  >
+                    <strong>Note:</strong> Due to intermediate path tracking,
+                    changing <code>city</code> may still re-render components
+                    that access parent paths like{' '}
+                    <code>user.profile.address</code>. This is a known
+                    limitation documented in the V3 plan.
                   </div>
                 </>
               ) : (
                 <div>
-                  Without proxy tracking, ALL {getRenderCounts().length} components re-render on EVERY state change,
-                  regardless of which property changed. This is simple but inefficient for complex nested state.
+                  Without proxy tracking, ALL {getRenderCounts().length}{' '}
+                  components re-render on EVERY state change, regardless of
+                  which property changed. This is simple but inefficient for
+                  complex nested state.
                 </div>
               )}
             </div>

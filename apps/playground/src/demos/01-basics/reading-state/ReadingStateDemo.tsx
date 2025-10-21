@@ -2,7 +2,10 @@ import { useBloc } from '@blac/react';
 import { Cubit } from '@blac/core';
 import { Button } from '@/ui/Button';
 import { DemoArticle } from '@/components/demo-article/DemoArticle';
-import { ArticleSection, SectionHeader } from '@/components/demo-article/ArticleSection';
+import {
+  ArticleSection,
+  SectionHeader,
+} from '@/components/demo-article/ArticleSection';
 import { Prose } from '@/components/demo-article/Prose';
 import { CodePanel } from '@/components/demo-article/CodePanel';
 import { StateViewer } from '@/components/shared/StateViewer';
@@ -129,7 +132,9 @@ function MessageControl() {
         <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-brand/10 text-brand">
           <Users className="h-5 w-5" />
         </span>
-        <p className="text-sm font-semibold text-foreground">Update shared state</p>
+        <p className="text-sm font-semibold text-foreground">
+          Update shared state
+        </p>
       </div>
       <div className="relative grid grid-cols-2 gap-2">
         {messages.map((msg) => (
@@ -172,27 +177,33 @@ const demoMetadata = {
 // Main demo component
 export function ReadingStateDemo() {
   return (
-    <DemoArticle metadata={demoMetadata} showBlocGraph={true} hideNavigation={true}>
+    <DemoArticle
+      metadata={demoMetadata}
+      showBlocGraph={true}
+      hideNavigation={true}
+    >
       {/* Introduction */}
       <ArticleSection theme="cubit" id="introduction">
         <Prose>
           <h2>One State, Many Observers</h2>
           <p>
-            One of BlaC's superpowers is <strong>shared state</strong>. Multiple components can
-            read from the same state, and they all stay perfectly synchronized. No prop drilling,
-            no context complexity—just simple, direct access.
+            One of BlaC's superpowers is <strong>shared state</strong>. Multiple
+            components can read from the same state, and they all stay perfectly
+            synchronized. No prop drilling, no context complexity—just simple,
+            direct access.
           </p>
           <p>
-            In this demo, you'll see three different components (Header, Sidebar, Footer) all
-            displaying the same message. When you update the state, all three update instantly!
+            In this demo, you'll see three different components (Header,
+            Sidebar, Footer) all displaying the same message. When you update
+            the state, all three update instantly!
           </p>
         </Prose>
 
         <TipCallout title="The Magic of Shared State">
           <p>
-            By default, BlaC creates <strong>one instance</strong> of your Cubit that's shared
-            across all components. This makes state management incredibly simple—no additional
-            setup required!
+            By default, BlaC creates <strong>one instance</strong> of your Cubit
+            that's shared across all components. This makes state management
+            incredibly simple—no additional setup required!
           </p>
         </TipCallout>
       </ArticleSection>
@@ -202,8 +213,8 @@ export function ReadingStateDemo() {
         <SectionHeader>Try It Yourself</SectionHeader>
         <Prose>
           <p>
-            Click the buttons below to update the message. Watch how all three components update
-            together, even though they're completely separate!
+            Click the buttons below to update the message. Watch how all three
+            components update together, even though they're completely separate!
           </p>
         </Prose>
 
@@ -221,8 +232,9 @@ export function ReadingStateDemo() {
         <InfoCallout title="What You're Seeing">
           <p>
             All three components (Header, Sidebar, Footer) are reading from the{' '}
-            <strong>same MessageCubit instance</strong>. When the state updates, BlaC notifies all
-            subscribers, and React re-renders each component automatically.
+            <strong>same MessageCubit instance</strong>. When the state updates,
+            BlaC notifies all subscribers, and React re-renders each component
+            automatically.
           </p>
         </InfoCallout>
       </ArticleSection>
@@ -326,8 +338,9 @@ class MessageCubit extends Cubit<MessageState> {
 
         <Prose>
           <p>
-            Notice how we use <code>emit()</code> to replace the entire state object. When we do
-            this, BlaC notifies all subscribed components, triggering their re-renders.
+            Notice how we use <code>emit()</code> to replace the entire state
+            object. When we do this, BlaC notifies all subscribed components,
+            triggering their re-renders.
           </p>
         </Prose>
       </ArticleSection>
@@ -338,24 +351,24 @@ class MessageCubit extends Cubit<MessageState> {
         <Prose>
           <ul>
             <li>
-              <strong>Shared by default</strong>: One Cubit instance is shared across all
-              components
+              <strong>Shared by default</strong>: One Cubit instance is shared
+              across all components
             </li>
             <li>
-              <strong>Automatic synchronization</strong>: All components update together when state
-              changes
+              <strong>Automatic synchronization</strong>: All components update
+              together when state changes
             </li>
             <li>
-              <strong>No prop drilling</strong>: Components can access state directly without
-              passing props through layers
+              <strong>No prop drilling</strong>: Components can access state
+              directly without passing props through layers
             </li>
             <li>
-              <strong>Clean separation</strong>: State logic lives in the Cubit, UI logic in
-              components
+              <strong>Clean separation</strong>: State logic lives in the Cubit,
+              UI logic in components
             </li>
             <li>
-              <strong>Type-safe</strong>: TypeScript ensures you're accessing the right state
-              properties
+              <strong>Type-safe</strong>: TypeScript ensures you're accessing
+              the right state properties
             </li>
           </ul>
         </Prose>
@@ -366,12 +379,13 @@ class MessageCubit extends Cubit<MessageState> {
         <SectionHeader>What's Next?</SectionHeader>
         <Prose>
           <p>
-            You've seen how multiple components can <strong>read</strong> state. But what about
-            updating it from different places?
+            You've seen how multiple components can <strong>read</strong> state.
+            But what about updating it from different places?
           </p>
           <p>
-            In the next demo, you'll learn about <code>emit()</code> and <code>patch()</code>—the
-            two ways to update state in BlaC, and when to use each one.
+            In the next demo, you'll learn about <code>emit()</code> and{' '}
+            <code>patch()</code>—the two ways to update state in BlaC, and when
+            to use each one.
           </p>
         </Prose>
       </ArticleSection>

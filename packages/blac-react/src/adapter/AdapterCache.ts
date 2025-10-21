@@ -51,10 +51,10 @@ const stats: AdapterCacheStats = {
  */
 export function getOrCreateAdapter<S>(
   bloc: BlocBase<S>,
-  subsriptionIdRef: { current: string },
+  subscriptionIdRef: { current: string },
 ): ReactBlocAdapter<S> {
   // Check cache first
-  let adapter = adapterCache.get(subsriptionIdRef);
+  let adapter = adapterCache.get(subscriptionIdRef);
 
   if (adapter) {
     stats.lastCacheHit = Date.now();
@@ -62,12 +62,12 @@ export function getOrCreateAdapter<S>(
   }
 
   // Create new adapter
-  adapter = new ReactBlocAdapter(bloc, subsriptionIdRef);
+  adapter = new ReactBlocAdapter(bloc, subscriptionIdRef);
   console.log(
     `[AdapterCache] Created new adapter for Bloc: ${bloc.constructor.name}`,
-    { subscriptionId: subsriptionIdRef },
+    { subscriptionId: subscriptionIdRef },
   );
-  adapterCache.set(subsriptionIdRef, adapter);
+  adapterCache.set(subscriptionIdRef, adapter);
 
   // Update stats
   stats.totalCreated++;
@@ -82,8 +82,8 @@ export function getOrCreateAdapter<S>(
  * @param bloc - The Bloc instance
  * @returns True if adapter exists in cache
  */
-export function hasAdapter(subsriptionIdRef: { current: string }): boolean {
-  return adapterCache.has(subsriptionIdRef);
+export function hasAdapter(subscriptionIdRef: { current: string }): boolean {
+  return adapterCache.has(subscriptionIdRef);
 }
 
 /**
@@ -96,11 +96,11 @@ export function hasAdapter(subsriptionIdRef: { current: string }): boolean {
  * @param bloc - The Bloc instance
  * @returns True if adapter was found and removed
  */
-export function removeAdapter(subsriptionIdRef: { current: string }): boolean {
-  const adapter = adapterCache.get(subsriptionIdRef);
+export function removeAdapter(subscriptionIdRef: { current: string }): boolean {
+  const adapter = adapterCache.get(subscriptionIdRef);
   if (adapter) {
     adapter.dispose();
-    return adapterCache.delete(subsriptionIdRef);
+    return adapterCache.delete(subscriptionIdRef);
   }
   return false;
 }

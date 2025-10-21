@@ -10,9 +10,17 @@ import { Blac } from '@blac/core';
 
 type Page = 'home' | 'jsframework' | 'dashboard' | 'examples';
 
-const HomePage: React.FC<{ onNavigate: (page: Page) => void }> = ({ onNavigate }) => {
+const HomePage: React.FC<{ onNavigate: (page: Page) => void }> = ({
+  onNavigate,
+}) => {
   return (
-    <div style={{ minHeight: '100vh', background: '#f5f5f5', padding: '40px 20px' }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        background: '#f5f5f5',
+        padding: '40px 20px',
+      }}
+    >
       <div style={{ maxWidth: '800px', margin: '0 auto' }}>
         <div
           style={{
@@ -57,8 +65,9 @@ const HomePage: React.FC<{ onNavigate: (page: Page) => void }> = ({ onNavigate }
               JS Framework Benchmark
             </h2>
             <p style={{ margin: 0, color: '#666', lineHeight: '1.6' }}>
-              Classic framework benchmark based on js-framework-benchmark. Tests list
-              operations like create, update, swap, and delete with 1,000 and 10,000 rows.
+              Classic framework benchmark based on js-framework-benchmark. Tests
+              list operations like create, update, swap, and delete with 1,000
+              and 10,000 rows.
             </p>
             <div
               style={{
@@ -107,7 +116,9 @@ const HomePage: React.FC<{ onNavigate: (page: Page) => void }> = ({ onNavigate }
             >
               <li>Basic usage with counters and todo lists</li>
               <li>Selectors for fine-grained subscriptions</li>
-              <li>React 18 features (Suspense, useTransition, useDeferredValue)</li>
+              <li>
+                React 18 features (Suspense, useTransition, useDeferredValue)
+              </li>
               <li>Lifecycle callbacks and custom comparisons</li>
               <li>10+ complete working examples</li>
             </ul>
@@ -146,7 +157,8 @@ const HomePage: React.FC<{ onNavigate: (page: Page) => void }> = ({ onNavigate }
               Comprehensive Benchmark Suite
             </h2>
             <p style={{ margin: 0, color: '#666', lineHeight: '1.6' }}>
-              Complete performance testing dashboard with multiple benchmark categories:
+              Complete performance testing dashboard with multiple benchmark
+              categories:
             </p>
             <ul
               style={{
@@ -184,9 +196,13 @@ const HomePage: React.FC<{ onNavigate: (page: Page) => void }> = ({ onNavigate }
             boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
           }}
         >
-          <h3 style={{ margin: '0 0 15px 0', fontSize: '18px' }}>Tips for Best Results</h3>
+          <h3 style={{ margin: '0 0 15px 0', fontSize: '18px' }}>
+            Tips for Best Results
+          </h3>
           <ul style={{ margin: 0, color: '#666', lineHeight: '1.8' }}>
-            <li>Run benchmarks in Chrome or Edge for full memory profiling support</li>
+            <li>
+              Run benchmarks in Chrome or Edge for full memory profiling support
+            </li>
             <li>Open DevTools Performance tab before running benchmarks</li>
             <li>Close other tabs and applications for more accurate results</li>
             <li>

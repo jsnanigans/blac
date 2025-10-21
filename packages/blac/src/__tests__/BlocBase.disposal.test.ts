@@ -26,7 +26,9 @@ describe('BlocBase Microtask Disposal', () => {
 
     // Not disposed yet (microtask hasn't run)
     expect(cubit.isDisposed).toBe(false);
-    expect((cubit as any)._lifecycleManager.currentState).toBe('disposal_requested');
+    expect((cubit as any)._lifecycleManager.currentState).toBe(
+      'disposal_requested',
+    );
 
     // Flush microtask queue
     await Promise.resolve();
@@ -41,7 +43,9 @@ describe('BlocBase Microtask Disposal', () => {
     unsub1();
 
     // Should be in DISPOSAL_REQUESTED state
-    expect((cubit as any)._lifecycleManager.currentState).toBe('disposal_requested');
+    expect((cubit as any)._lifecycleManager.currentState).toBe(
+      'disposal_requested',
+    );
 
     // Resubscribe before microtask runs
     const { unsubscribe: unsub2 } = cubit.subscribe(() => {});
@@ -109,7 +113,9 @@ describe('BlocBase Microtask Disposal', () => {
     unsubscribe();
 
     // Should be in DISPOSAL_REQUESTED state
-    expect((cubit as any)._lifecycleManager.currentState).toBe('disposal_requested');
+    expect((cubit as any)._lifecycleManager.currentState).toBe(
+      'disposal_requested',
+    );
 
     // Emit should be blocked
     const oldState = cubit.state;
@@ -120,7 +126,7 @@ describe('BlocBase Microtask Disposal', () => {
 
     // Error should be logged
     expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Cannot emit state on disposal_requested bloc')
+      expect.stringContaining('Cannot emit state on disposal_requested bloc'),
     );
 
     Blac.enableLog = false;
@@ -215,7 +221,9 @@ describe('BlocBase Microtask Disposal', () => {
     unsubscribe();
 
     // Cubit should schedule disposal (calls onDisposalScheduled)
-    expect((cubit as any)._lifecycleManager.currentState).toBe('disposal_requested');
+    expect((cubit as any)._lifecycleManager.currentState).toBe(
+      'disposal_requested',
+    );
 
     // Flush microtask to trigger disposal
     await Promise.resolve();
@@ -256,7 +264,7 @@ describe('BlocBase Microtask Disposal', () => {
     // Error should be logged
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining('Error in onDisposalScheduled hook'),
-      expect.any(Error)
+      expect.any(Error),
     );
 
     // Disposal should still proceed
@@ -277,7 +285,8 @@ describe('BlocBase Microtask Disposal', () => {
         this.onDisposalScheduled = () => {
           hookCalled = true;
           // Check if we're still in ACTIVE state (hook runs before transition)
-          hookCalledBeforeDisposal = (this as any)._lifecycleManager.currentState === 'active';
+          hookCalledBeforeDisposal =
+            (this as any)._lifecycleManager.currentState === 'active';
         };
       }
     }
@@ -306,7 +315,9 @@ describe('BlocBase Microtask Disposal', () => {
     unsub2();
 
     // Should only schedule disposal once
-    expect((cubit as any)._lifecycleManager.currentState).toBe('disposal_requested');
+    expect((cubit as any)._lifecycleManager.currentState).toBe(
+      'disposal_requested',
+    );
 
     await Promise.resolve();
     expect(cubit.isDisposed).toBe(true);
@@ -321,7 +332,9 @@ describe('BlocBase Microtask Disposal', () => {
 
     // Unsubscribe -> DISPOSAL_REQUESTED
     unsubscribe();
-    expect((cubit as any)._lifecycleManager.currentState).toBe('disposal_requested');
+    expect((cubit as any)._lifecycleManager.currentState).toBe(
+      'disposal_requested',
+    );
 
     // Microtask runs -> DISPOSING -> DISPOSED
     await Promise.resolve();

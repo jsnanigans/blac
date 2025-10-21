@@ -17,7 +17,8 @@ DemoRegistry.register({
     'domain events',
     'anti-patterns to avoid',
   ],
-  description: 'Learn best practices for designing events in BlaC Blocs, including naming, immutability, and common anti-patterns to avoid',
+  description:
+    'Learn best practices for designing events in BlaC Blocs, including naming, immutability, and common anti-patterns to avoid',
   component: EventDesignDemo,
   code: {
     demo: '', // Code will be provided by demoCodeExports.ts

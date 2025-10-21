@@ -14,12 +14,10 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Cubit } from '@blac/core';
 import { ReactBlocAdapter } from '../ReactBlocAdapter';
 
-/**
- * Test Cubit for basic counter functionality
- */
-class CounterCubit extends Cubit<number> {
+class CounterCubitWithoutDepTracking extends Cubit<number> {
   constructor() {
     super(0);
+    this.config = { proxyDependencyTracking: false };
   }
 
   increment = () => {
@@ -93,7 +91,7 @@ class UserCubit extends Cubit<UserState> {
 describe('ReactBlocAdapter', () => {
   describe('Basic Functionality', () => {
     it('should create an adapter with initial snapshot', () => {
-      const cubit = new CounterCubit();
+      const cubit = new CounterCubitWithoutDepTracking();
       const adapter = new ReactBlocAdapter(cubit);
 
       expect(adapter.getSnapshot()).toBe(0);
@@ -102,7 +100,7 @@ describe('ReactBlocAdapter', () => {
     });
 
     it('should update snapshot when state changes', () => {
-      const cubit = new CounterCubit();
+      const cubit = new CounterCubitWithoutDepTracking();
       const adapter = new ReactBlocAdapter(cubit);
 
       cubit.increment();
@@ -115,7 +113,7 @@ describe('ReactBlocAdapter', () => {
     });
 
     it('should dispose cleanly', () => {
-      const cubit = new CounterCubit();
+      const cubit = new CounterCubitWithoutDepTracking();
       const adapter = new ReactBlocAdapter(cubit);
 
       const notify = vi.fn();
@@ -134,7 +132,7 @@ describe('ReactBlocAdapter', () => {
 
   describe('Subscription Management', () => {
     it('should notify subscribers on state change', () => {
-      const cubit = new CounterCubit();
+      const cubit = new CounterCubitWithoutDepTracking();
       const adapter = new ReactBlocAdapter(cubit);
 
       const notify = vi.fn();
@@ -148,7 +146,7 @@ describe('ReactBlocAdapter', () => {
     });
 
     it('should track subscriber count correctly', () => {
-      const cubit = new CounterCubit();
+      const cubit = new CounterCubitWithoutDepTracking();
       const adapter = new ReactBlocAdapter(cubit);
 
       expect(adapter.getSubscriberCount()).toBe(0);
@@ -167,7 +165,7 @@ describe('ReactBlocAdapter', () => {
     });
 
     it('should not notify after unsubscribe', () => {
-      const cubit = new CounterCubit();
+      const cubit = new CounterCubitWithoutDepTracking();
       const adapter = new ReactBlocAdapter(cubit);
 
       const notify = vi.fn();
@@ -183,7 +181,7 @@ describe('ReactBlocAdapter', () => {
     });
 
     it('should handle multiple subscribers independently', () => {
-      const cubit = new CounterCubit();
+      const cubit = new CounterCubitWithoutDepTracking();
       const adapter = new ReactBlocAdapter(cubit);
 
       const notify1 = vi.fn();
@@ -281,7 +279,7 @@ describe('ReactBlocAdapter', () => {
 
   describe('Version Tracking', () => {
     it('should increment version on state change', () => {
-      const cubit = new CounterCubit();
+      const cubit = new CounterCubitWithoutDepTracking();
       const adapter = new ReactBlocAdapter(cubit);
 
       expect(adapter.getVersion()).toBe(0);
@@ -297,7 +295,7 @@ describe('ReactBlocAdapter', () => {
     });
 
     it('should not notify same subscription twice for same version', async () => {
-      const cubit = new CounterCubit();
+      const cubit = new CounterCubitWithoutDepTracking();
       const adapter = new ReactBlocAdapter(cubit);
 
       const notify = vi.fn();
@@ -309,7 +307,7 @@ describe('ReactBlocAdapter', () => {
       // Force another notification cycle without state change
       // This simulates what might happen with multiple rapid subscriptions
       // The adapter should not notify again for the same version
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(notify).toHaveBeenCalledTimes(1); // Still 1
     });
@@ -317,7 +315,7 @@ describe('ReactBlocAdapter', () => {
 
   describe('Cleanup and Memory Management', () => {
     it('should schedule cleanup when subscriber count reaches zero', async () => {
-      const cubit = new CounterCubit();
+      const cubit = new CounterCubitWithoutDepTracking();
       const adapter = new ReactBlocAdapter(cubit);
 
       const disposeSpy = vi.spyOn(adapter, 'dispose');
@@ -329,13 +327,13 @@ describe('ReactBlocAdapter', () => {
       expect(adapter.getSubscriberCount()).toBe(0);
 
       // Wait for microtask queue to flush
-      await new Promise<void>(resolve => queueMicrotask(resolve));
+      await new Promise<void>((resolve) => queueMicrotask(resolve));
 
       expect(disposeSpy).toHaveBeenCalled();
     });
 
     it('should cancel cleanup if new subscriber added', async () => {
-      const cubit = new CounterCubit();
+      const cubit = new CounterCubitWithoutDepTracking();
       const adapter = new ReactBlocAdapter(cubit);
 
       const disposeSpy = vi.spyOn(adapter, 'dispose');
@@ -348,7 +346,7 @@ describe('ReactBlocAdapter', () => {
       expect(adapter.getSubscriberCount()).toBe(1);
 
       // Wait for potential cleanup
-      await new Promise<void>(resolve => queueMicrotask(() => resolve()));
+      await new Promise<void>((resolve) => queueMicrotask(() => resolve()));
 
       // Should NOT have disposed
       expect(disposeSpy).not.toHaveBeenCalled();
@@ -359,7 +357,7 @@ describe('ReactBlocAdapter', () => {
 
   describe('React Strict Mode Compatibility', () => {
     it('should handle double subscribe/unsubscribe', () => {
-      const cubit = new CounterCubit();
+      const cubit = new CounterCubitWithoutDepTracking();
       const adapter = new ReactBlocAdapter(cubit);
 
       const notify = vi.fn();
@@ -377,7 +375,7 @@ describe('ReactBlocAdapter', () => {
     });
 
     it('should maintain correct subscriber count in Strict Mode', () => {
-      const cubit = new CounterCubit();
+      const cubit = new CounterCubitWithoutDepTracking();
       const adapter = new ReactBlocAdapter(cubit);
 
       // First mount
@@ -400,7 +398,7 @@ describe('ReactBlocAdapter', () => {
 
   describe('Debug Information', () => {
     it('should provide debug info', () => {
-      const cubit = new CounterCubit();
+      const cubit = new CounterCubitWithoutDepTracking();
       const adapter = new ReactBlocAdapter(cubit);
 
       const notify = vi.fn();
@@ -409,7 +407,10 @@ describe('ReactBlocAdapter', () => {
       const debugInfo = adapter.getDebugInfo();
 
       expect(debugInfo).toHaveProperty('blocUid', cubit.uid);
-      expect(debugInfo).toHaveProperty('blocName', 'CounterCubit');
+      expect(debugInfo).toHaveProperty(
+        'blocName',
+        'CounterCubitWithoutDepTracking',
+      );
       expect(debugInfo).toHaveProperty('version', 0);
       expect(debugInfo).toHaveProperty('subscriberCount', 1);
       expect(debugInfo).toHaveProperty('subscriptions');
@@ -417,7 +418,7 @@ describe('ReactBlocAdapter', () => {
     });
 
     it('should update debug info on state changes', () => {
-      const cubit = new CounterCubit();
+      const cubit = new CounterCubitWithoutDepTracking();
       const adapter = new ReactBlocAdapter(cubit);
 
       adapter.subscribe(undefined, () => {});
@@ -432,7 +433,7 @@ describe('ReactBlocAdapter', () => {
 
   describe('Edge Cases', () => {
     it('should handle rapid state changes', () => {
-      const cubit = new CounterCubit();
+      const cubit = new CounterCubitWithoutDepTracking();
       const adapter = new ReactBlocAdapter(cubit);
 
       const notify = vi.fn();
@@ -463,7 +464,7 @@ describe('ReactBlocAdapter', () => {
     });
 
     it('should handle unsubscribe called multiple times', () => {
-      const cubit = new CounterCubit();
+      const cubit = new CounterCubitWithoutDepTracking();
       const adapter = new ReactBlocAdapter(cubit);
 
       const unsubscribe = adapter.subscribe(undefined, () => {});

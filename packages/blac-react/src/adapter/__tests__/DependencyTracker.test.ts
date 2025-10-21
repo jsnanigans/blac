@@ -17,7 +17,7 @@ describe('DependencyTracker', () => {
       const state = { name: 'John', age: 30 };
 
       tracker.startTracking();
-      const proxy = tracker.createTrackedProxy(state);
+      const proxy = tracker.createTrackedProxy(state, [], 'root');
 
       // Access property
       const name = proxy.name;
@@ -33,7 +33,7 @@ describe('DependencyTracker', () => {
       const state = { name: 'John', age: 30, city: 'NYC' };
 
       tracker.startTracking();
-      const proxy = tracker.createTrackedProxy(state);
+      const proxy = tracker.createTrackedProxy(state, [], 'root');
 
       // Access multiple properties
       const _ = proxy.name;
@@ -50,7 +50,7 @@ describe('DependencyTracker', () => {
       const state = { name: 'John' };
 
       tracker.startTracking();
-      const proxy = tracker.createTrackedProxy(state);
+      const proxy = tracker.createTrackedProxy(state, [], 'root');
       tracker.stopTracking(); // Stop tracking
 
       // Access after stopping
@@ -72,7 +72,7 @@ describe('DependencyTracker', () => {
       };
 
       tracker.startTracking();
-      const proxy = tracker.createTrackedProxy(state);
+      const proxy = tracker.createTrackedProxy(state, [], 'root');
 
       // Access nested property
       const name = proxy.user.profile.name;
@@ -81,13 +81,13 @@ describe('DependencyTracker', () => {
 
       // With depth limit of 2, it stops at 'user.profile'
       // user.profile.name exceeds depth limit, so it tracks up to user.profile
-      expect(deps.has('user')).toBe(true);
+      expect(deps.has('user')).toBe(false);
       expect(deps.has('user.profile')).toBe(true);
-      expect(deps.size).toBe(2);
+      expect(deps.size).toBe(1);
       expect(name).toBe('John');
     });
 
-    it('should track multiple nested properties', () => {
+    it('should track multiple nested properties, only save leaf nodes', () => {
       const state = {
         user: {
           name: 'John',
@@ -99,18 +99,18 @@ describe('DependencyTracker', () => {
       };
 
       tracker.startTracking();
-      const proxy = tracker.createTrackedProxy(state);
+      const proxy = tracker.createTrackedProxy(state, [], 'root');
 
       const _ = proxy.user.name;
       const __ = proxy.settings.theme;
 
       const deps = tracker.stopTracking();
 
-      expect(deps.has('user')).toBe(true);
+      expect(deps.has('user')).toBe(false);
       expect(deps.has('user.name')).toBe(true);
-      expect(deps.has('settings')).toBe(true);
+      expect(deps.has('settings')).toBe(false);
       expect(deps.has('settings.theme')).toBe(true);
-      expect(deps.size).toBe(4);
+      expect(deps.size).toBe(2);
     });
   });
 
@@ -128,7 +128,7 @@ describe('DependencyTracker', () => {
       };
 
       tracker.startTracking();
-      const proxy = tracker.createTrackedProxy(state);
+      const proxy = tracker.createTrackedProxy(state, [], 'root');
 
       // Try to access deep property
       const value = proxy.a.b.c.d;
@@ -155,7 +155,7 @@ describe('DependencyTracker', () => {
       };
 
       tracker.startTracking();
-      const proxy = tracker.createTrackedProxy(state);
+      const proxy = tracker.createTrackedProxy(state, [], 'root');
 
       const value = proxy.a.b.c.d;
 
@@ -175,7 +175,11 @@ describe('DependencyTracker', () => {
 
       const deps = new Set(['count']);
 
-      const hasChanged = tracker.haveDependenciesChanged(deps, newState, oldState);
+      const hasChanged = tracker.haveDependenciesChanged(
+        deps,
+        newState,
+        oldState,
+      );
 
       expect(hasChanged).toBe(true);
     });
@@ -186,7 +190,11 @@ describe('DependencyTracker', () => {
 
       const deps = new Set(['count']);
 
-      const hasChanged = tracker.haveDependenciesChanged(deps, newState, oldState);
+      const hasChanged = tracker.haveDependenciesChanged(
+        deps,
+        newState,
+        oldState,
+      );
 
       expect(hasChanged).toBe(false);
     });
@@ -197,7 +205,11 @@ describe('DependencyTracker', () => {
 
       const deps = new Set(['user.name']);
 
-      const hasChanged = tracker.haveDependenciesChanged(deps, newState, oldState);
+      const hasChanged = tracker.haveDependenciesChanged(
+        deps,
+        newState,
+        oldState,
+      );
 
       expect(hasChanged).toBe(true);
     });
@@ -208,7 +220,11 @@ describe('DependencyTracker', () => {
 
       const deps = new Set(['count', 'name', 'active']);
 
-      const hasChanged = tracker.haveDependenciesChanged(deps, newState, oldState);
+      const hasChanged = tracker.haveDependenciesChanged(
+        deps,
+        newState,
+        oldState,
+      );
 
       expect(hasChanged).toBe(true); // active changed
     });
@@ -218,8 +234,8 @@ describe('DependencyTracker', () => {
     it('should cache proxies for same object', () => {
       const state = { name: 'John' };
 
-      const proxy1 = tracker.createTrackedProxy(state);
-      const proxy2 = tracker.createTrackedProxy(state);
+      const proxy1 = tracker.createTrackedProxy(state, [], 'root');
+      const proxy2 = tracker.createTrackedProxy(state, [], 'root');
 
       expect(proxy1).toBe(proxy2); // Same proxy returned
     });
@@ -227,9 +243,9 @@ describe('DependencyTracker', () => {
     it('should clear cache when requested', () => {
       const state = { name: 'John' };
 
-      const proxy1 = tracker.createTrackedProxy(state);
+      const proxy1 = tracker.createTrackedProxy(state, [], 'root');
       tracker.clearCache();
-      const proxy2 = tracker.createTrackedProxy(state);
+      const proxy2 = tracker.createTrackedProxy(state, [], 'root');
 
       expect(proxy1).not.toBe(proxy2); // Different proxies after cache clear
     });
@@ -240,7 +256,7 @@ describe('DependencyTracker', () => {
       const state = { name: 'John' };
 
       tracker.startTracking();
-      const proxy = tracker.createTrackedProxy(state);
+      const proxy = tracker.createTrackedProxy(state, [], 'root');
 
       expect(() => {
         (proxy as any).name = 'Jane';
@@ -251,7 +267,7 @@ describe('DependencyTracker', () => {
       const state = { name: 'John' };
 
       tracker.startTracking();
-      const proxy = tracker.createTrackedProxy(state);
+      const proxy = tracker.createTrackedProxy(state, [], 'root');
 
       expect(() => {
         delete (proxy as any).name;
@@ -266,10 +282,10 @@ describe('DependencyTracker', () => {
       const bool = true;
       const nullVal = null;
 
-      expect(tracker.createTrackedProxy(num)).toBe(num);
-      expect(tracker.createTrackedProxy(str)).toBe(str);
-      expect(tracker.createTrackedProxy(bool)).toBe(bool);
-      expect(tracker.createTrackedProxy(nullVal)).toBe(nullVal);
+      expect(tracker.createTrackedProxy(num, [], 'root')).toBe(num);
+      expect(tracker.createTrackedProxy(str, [], 'root')).toBe(str);
+      expect(tracker.createTrackedProxy(bool, [], 'root')).toBe(bool);
+      expect(tracker.createTrackedProxy(nullVal, [], 'root')).toBe(nullVal);
     });
   });
 
@@ -277,7 +293,7 @@ describe('DependencyTracker', () => {
     it('should provide debug info', () => {
       tracker.startTracking();
       const state = { name: 'John' };
-      const proxy = tracker.createTrackedProxy(state);
+      const proxy = tracker.createTrackedProxy(state, [], 'root');
 
       const _ = proxy.name;
 

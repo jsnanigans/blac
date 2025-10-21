@@ -22,7 +22,10 @@ interface CounterState {
   history: Array<{ event: string; timestamp: number }>;
 }
 
-class EventCounterBloc extends Vertex<CounterState, IncrementEvent | DecrementEvent | ResetEvent> {
+class EventCounterBloc extends Vertex<
+  CounterState,
+  IncrementEvent | DecrementEvent | ResetEvent
+> {
   constructor() {
     super({ count: 0, history: [] });
 
@@ -80,7 +83,7 @@ class EventCounterBloc extends Vertex<CounterState, IncrementEvent | DecrementEv
 class UpdateFieldEvent {
   constructor(
     public readonly field: string,
-    public readonly value: string
+    public readonly value: string,
   ) {}
 }
 
@@ -106,7 +109,10 @@ interface FormState {
   submitCount: number;
 }
 
-class FormValidationBloc extends Vertex<FormState, UpdateFieldEvent | SubmitFormEvent | ResetFormEvent> {
+class FormValidationBloc extends Vertex<
+  FormState,
+  UpdateFieldEvent | SubmitFormEvent | ResetFormEvent
+> {
   constructor() {
     const initialState: FormState = {
       emailValue: '',
@@ -135,8 +141,11 @@ class FormValidationBloc extends Vertex<FormState, UpdateFieldEvent | SubmitForm
         newState.passwordError = this.validatePassword(event.value);
       }
 
-      newState.isValid = !newState.emailError && !newState.passwordError &&
-                         newState.emailValue.length > 0 && newState.passwordValue.length > 0;
+      newState.isValid =
+        !newState.emailError &&
+        !newState.passwordError &&
+        newState.emailValue.length > 0 &&
+        newState.passwordValue.length > 0;
 
       emit(newState);
     });
@@ -144,7 +153,7 @@ class FormValidationBloc extends Vertex<FormState, UpdateFieldEvent | SubmitForm
     this.on(SubmitFormEvent, async (event, emit) => {
       emit({ ...this.state, isSubmitting: true });
 
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
       emit({
         ...this.state,
@@ -226,16 +235,28 @@ class AsyncEventBloc extends Vertex<ApiState, FetchDataEvent> {
       });
 
       try {
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        await new Promise((resolve) => setTimeout(resolve, 1500));
 
         if (Math.random() > 0.7) {
           throw new Error('Network error: Failed to fetch posts');
         }
 
         const mockData: Post[] = [
-          { id: 1, title: 'Understanding Blocs', body: 'Event-driven state management' },
-          { id: 2, title: 'Async Operations', body: 'Handling async events with Blocs' },
-          { id: 3, title: 'Best Practices', body: 'Tips for using Blocs effectively' },
+          {
+            id: 1,
+            title: 'Understanding Blocs',
+            body: 'Event-driven state management',
+          },
+          {
+            id: 2,
+            title: 'Async Operations',
+            body: 'Handling async events with Blocs',
+          },
+          {
+            id: 3,
+            title: 'Best Practices',
+            body: 'Tips for using Blocs effectively',
+          },
         ];
 
         emit({
@@ -329,7 +350,9 @@ function BasicEventDemo() {
 
         {state.history.length > 0 && (
           <div className="mt-4">
-            <h5 className="text-xs font-semibold mb-2 text-muted-foreground">Event History</h5>
+            <h5 className="text-xs font-semibold mb-2 text-muted-foreground">
+              Event History
+            </h5>
             <div className="space-y-1 text-xs font-mono">
               {state.history.slice(0, 5).map((item, idx) => (
                 <motion.div
@@ -423,7 +446,12 @@ function FormValidationDemo() {
             >
               {state.isSubmitting ? 'Submitting...' : 'Submit'}
             </Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => bloc.reset()}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => bloc.reset()}
+            >
               Reset
             </Button>
           </div>
@@ -508,13 +536,21 @@ export function BlocDeepDiveInteractive() {
       <div className="space-y-4">
         <h3 className="text-lg font-semibold">Basic Event Pattern</h3>
         <BasicEventDemo />
-        <StateViewer bloc={EventCounterBloc} title="Event Counter State" maxDepth={2} />
+        <StateViewer
+          bloc={EventCounterBloc}
+          title="Event Counter State"
+          maxDepth={2}
+        />
       </div>
 
       <div className="space-y-4">
         <h3 className="text-lg font-semibold">Form Validation</h3>
         <FormValidationDemo />
-        <StateViewer bloc={FormValidationBloc} title="Form State" maxDepth={1} />
+        <StateViewer
+          bloc={FormValidationBloc}
+          title="Form State"
+          maxDepth={1}
+        />
       </div>
 
       <div className="space-y-4">

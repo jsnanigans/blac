@@ -26,7 +26,9 @@ describe('Cubit emit on DISPOSAL_REQUESTED', () => {
 
     // Unsubscribe to trigger DISPOSAL_REQUESTED
     unsubscribe();
-    expect((cubit as any)._lifecycleManager.currentState).toBe('disposal_requested');
+    expect((cubit as any)._lifecycleManager.currentState).toBe(
+      'disposal_requested',
+    );
 
     // Emit should be blocked (not update state)
     const stateBefore = { ...cubit.state };
@@ -38,11 +40,13 @@ describe('Cubit emit on DISPOSAL_REQUESTED', () => {
     expect(stateAfter.shouldError).toBe(stateBefore.shouldError);
 
     // Should still be in DISPOSAL_REQUESTED state
-    expect((cubit as any)._lifecycleManager.currentState).toBe('disposal_requested');
+    expect((cubit as any)._lifecycleManager.currentState).toBe(
+      'disposal_requested',
+    );
 
     // Error should be logged
     expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Cannot emit state on disposal_requested bloc')
+      expect.stringContaining('Cannot emit state on disposal_requested bloc'),
     );
 
     // Disposal should still proceed

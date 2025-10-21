@@ -42,7 +42,9 @@ describe('SubscriptionManager WeakRef Cleanup', () => {
   it('should not schedule cleanup when no dead refs detected', async () => {
     // Spy on scheduleWeakRefCleanup
     let cleanupScheduled = false;
-    const originalSchedule = (manager as any).scheduleWeakRefCleanup.bind(manager);
+    const originalSchedule = (manager as any).scheduleWeakRefCleanup.bind(
+      manager,
+    );
     (manager as any).scheduleWeakRefCleanup = () => {
       cleanupScheduled = true;
       originalSchedule();

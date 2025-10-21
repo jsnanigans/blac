@@ -87,9 +87,7 @@ describe('useBloc dependencies option', () => {
           <button onClick={() => bloc.updateUserName(2, 'Charlie')}>
             Update User 2
           </button>
-          <button onClick={() => bloc.incrementCount()}>
-            Increment Count
-          </button>
+          <button onClick={() => bloc.incrementCount()}>Increment Count</button>
         </div>
       );
     }
@@ -197,9 +195,7 @@ describe('useBloc dependencies option', () => {
       return (
         <div>
           <UserRow userId={1} />
-          <button onClick={() => bloc.incrementCount()}>
-            Increment Count
-          </button>
+          <button onClick={() => bloc.incrementCount()}>Increment Count</button>
         </div>
       );
     }

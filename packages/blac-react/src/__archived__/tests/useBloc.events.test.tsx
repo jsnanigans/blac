@@ -99,7 +99,9 @@ describe('useBloc - Events and State Updates', () => {
         return (
           <div>
             <span data-testid="count">{state.count}</span>
-            <button onClick={() => bloc.add(new IncrementEvent(1))}>Increment</button>
+            <button onClick={() => bloc.add(new IncrementEvent(1))}>
+              Increment
+            </button>
           </div>
         );
       };
@@ -122,8 +124,12 @@ describe('useBloc - Events and State Updates', () => {
         return (
           <div>
             <span data-testid="count">{state.count}</span>
-            <button onClick={() => bloc.add(new IncrementEvent(1))}>Increment</button>
-            <button onClick={() => bloc.add(new DecrementEvent(1))}>Decrement</button>
+            <button onClick={() => bloc.add(new IncrementEvent(1))}>
+              Increment
+            </button>
+            <button onClick={() => bloc.add(new DecrementEvent(1))}>
+              Decrement
+            </button>
           </div>
         );
       };
@@ -154,7 +160,9 @@ describe('useBloc - Events and State Updates', () => {
           <div>
             <span data-testid="count">{state.count}</span>
             <button onClick={() => bloc.add(new IncrementEvent(5))}>+5</button>
-            <button onClick={() => bloc.add(new IncrementEvent(10))}>+10</button>
+            <button onClick={() => bloc.add(new IncrementEvent(10))}>
+              +10
+            </button>
             <button onClick={() => bloc.add(new DecrementEvent(3))}>-3</button>
           </div>
         );
@@ -185,7 +193,9 @@ describe('useBloc - Events and State Updates', () => {
         return (
           <div>
             <span data-testid="count">{state.count}</span>
-            <span data-testid="loading">{state.loading ? 'loading' : 'ready'}</span>
+            <span data-testid="loading">
+              {state.loading ? 'loading' : 'ready'}
+            </span>
             <button onClick={() => bloc.add(new AsyncIncrementEvent(5))}>
               Async +5
             </button>
@@ -214,7 +224,7 @@ describe('useBloc - Events and State Updates', () => {
           expect(screen.getByTestId('count')).toHaveTextContent('5');
           expect(screen.getByTestId('loading')).toHaveTextContent('ready');
         },
-        { timeout: 100 }
+        { timeout: 100 },
       );
     });
 
@@ -458,7 +468,7 @@ describe('useBloc - Events and State Updates', () => {
         <>
           <Component1 />
           <Component2 />
-        </>
+        </>,
       );
 
       // Both start empty
@@ -516,7 +526,7 @@ describe('useBloc - Events and State Updates', () => {
         <>
           <Component1 />
           <Component2 />
-        </>
+        </>,
       );
 
       // Both should render initially
@@ -528,8 +538,12 @@ describe('useBloc - Events and State Updates', () => {
       });
 
       // Both should have re-rendered
-      expect(renders.filter((r) => r.component === 'C1' && r.count === 1)).toHaveLength(1);
-      expect(renders.filter((r) => r.component === 'C2' && r.count === 1)).toHaveLength(1);
+      expect(
+        renders.filter((r) => r.component === 'C1' && r.count === 1),
+      ).toHaveLength(1);
+      expect(
+        renders.filter((r) => r.component === 'C2' && r.count === 1),
+      ).toHaveLength(1);
     });
 
     it('should not notify components that have unmounted', async () => {
@@ -596,7 +610,9 @@ describe('useBloc - Events and State Updates', () => {
         }
       }
 
-      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
 
       const Component = () => {
         const [state, bloc] = useBloc(ErrorBloc);
@@ -604,7 +620,9 @@ describe('useBloc - Events and State Updates', () => {
         return (
           <div>
             <span data-testid="value">{state.value}</span>
-            <button onClick={() => bloc.add(new IncrementEvent())}>Trigger Error</button>
+            <button onClick={() => bloc.add(new IncrementEvent())}>
+              Trigger Error
+            </button>
           </div>
         );
       };
@@ -633,7 +651,9 @@ describe('useBloc - Events and State Updates', () => {
         }
       }
 
-      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
 
       const Component = () => {
         const [state, bloc] = useBloc(AsyncErrorBloc);

@@ -1,7 +1,10 @@
 import { useBloc } from '@blac/react';
 import { Cubit } from '@blac/core';
 import { DemoArticle } from '@/components/demo-article/DemoArticle';
-import { ArticleSection, SectionHeader } from '@/components/demo-article/ArticleSection';
+import {
+  ArticleSection,
+  SectionHeader,
+} from '@/components/demo-article/ArticleSection';
 import { Prose } from '@/components/demo-article/Prose';
 import { CodePanel } from '@/components/demo-article/CodePanel';
 import { StateViewer } from '@/components/shared/StateViewer';
@@ -64,7 +67,7 @@ const demoMetadata = {
   id: 'hello-world',
   title: 'Hello World',
   description:
-    'The absolute simplest BlaC application. Start here if you\'re completely new to BlaC!',
+    "The absolute simplest BlaC application. Start here if you're completely new to BlaC!",
   category: '01-basics',
   difficulty: 'beginner' as const,
   tags: ['cubit', 'basics', 'getting-started', 'beginner'],
@@ -82,25 +85,30 @@ const demoMetadata = {
 // Main demo component
 export function HelloWorldDemo() {
   return (
-    <DemoArticle metadata={demoMetadata} showBlocGraph={true} hideNavigation={true}>
+    <DemoArticle
+      metadata={demoMetadata}
+      showBlocGraph={true}
+      hideNavigation={true}
+    >
       {/* Introduction */}
       <ArticleSection theme="cubit" id="introduction">
         <Prose>
           <h2>Your First BlaC Application</h2>
           <p>
-            Welcome to BlaC! This is the simplest possible state management example. If you can
-            understand this, you can build anything with BlaC.
+            Welcome to BlaC! This is the simplest possible state management
+            example. If you can understand this, you can build anything with
+            BlaC.
           </p>
           <p>
-            We're going to create a greeting message and display it. That's it. No complex setup,
-            no configuration, just pure state management.
+            We're going to create a greeting message and display it. That's it.
+            No complex setup, no configuration, just pure state management.
           </p>
         </Prose>
 
         <TipCallout title="New to State Management?">
           <p>
-            State management is just a fancy way of saying "keeping track of data that can
-            change." In this demo, our data is a greeting message.
+            State management is just a fancy way of saying "keeping track of
+            data that can change." In this demo, our data is a greeting message.
           </p>
         </TipCallout>
       </ArticleSection>
@@ -110,7 +118,8 @@ export function HelloWorldDemo() {
         <SectionHeader>See It In Action</SectionHeader>
         <Prose>
           <p>
-            Below is your greeting, stored and displayed using BlaC. Update the Cubit and watch the UI respond instantly.
+            Below is your greeting, stored and displayed using BlaC. Update the
+            Cubit and watch the UI respond instantly.
           </p>
         </Prose>
 
@@ -128,7 +137,8 @@ export function HelloWorldDemo() {
         <SectionHeader>The Complete Code</SectionHeader>
         <Prose>
           <p>
-            Here's all the code you need. It's just <strong>10 lines</strong> of actual code!
+            Here's all the code you need. It's just <strong>10 lines</strong> of
+            actual code!
           </p>
         </Prose>
 
@@ -165,22 +175,27 @@ function MyComponent() {
           <h3>Let's Break It Down</h3>
           <ol>
             <li>
-              <strong>Create a Cubit class</strong>: This holds your state (the greeting message)
+              <strong>Create a Cubit class</strong>: This holds your state (the
+              greeting message)
             </li>
             <li>
               <strong>Set initial state</strong>: In the constructor, pass{' '}
               <code>'Hello, World!'</code> to <code>super()</code>
             </li>
             <li>
-              <strong>Use in React</strong>: Call <code>useBloc(GreetingCubit)</code> to get the
-              state
+              <strong>Use in React</strong>: Call{' '}
+              <code>useBloc(GreetingCubit)</code> to get the state
             </li>
             <li>
-              <strong>Display it</strong>: Use the state value like any React variable
+              <strong>Display it</strong>: Use the state value like any React
+              variable
             </li>
           </ol>
 
-          <p>That's the entire pattern. Everything else in BlaC builds on this foundation.</p>
+          <p>
+            That's the entire pattern. Everything else in BlaC builds on this
+            foundation.
+          </p>
         </Prose>
       </ArticleSection>
 
@@ -191,7 +206,8 @@ function MyComponent() {
           <p>When you call useBloc:</p>
           <ol>
             <li>
-              <strong>BlaC creates an instance</strong> of your Cubit (or reuses existing one)
+              <strong>BlaC creates an instance</strong> of your Cubit (or reuses
+              existing one)
             </li>
             <li>
               <strong>Your component subscribes</strong> to state changes
@@ -207,8 +223,9 @@ function MyComponent() {
 
         <TipCallout title="One Instance, Many Components">
           <p>
-            By default, BlaC shares one instance of your Cubit across all components. This means
-            multiple components can display the same greeting, and they'll all update together.
+            By default, BlaC shares one instance of your Cubit across all
+            components. This means multiple components can display the same
+            greeting, and they'll all update together.
           </p>
         </TipCallout>
       </ArticleSection>
@@ -219,16 +236,20 @@ function MyComponent() {
         <Prose>
           <ul>
             <li>
-              <strong>Cubit</strong>: A simple state container that holds a single value
+              <strong>Cubit</strong>: A simple state container that holds a
+              single value
             </li>
             <li>
-              <strong>State</strong>: The data you want to keep track of (our greeting message)
+              <strong>State</strong>: The data you want to keep track of (our
+              greeting message)
             </li>
             <li>
-              <strong>useBloc hook</strong>: Connects your React component to the Cubit
+              <strong>useBloc hook</strong>: Connects your React component to
+              the Cubit
             </li>
             <li>
-              <strong>Automatic updates</strong>: React re-renders when state changes
+              <strong>Automatic updates</strong>: React re-renders when state
+              changes
             </li>
           </ul>
         </Prose>
@@ -240,9 +261,10 @@ function MyComponent() {
         <Prose>
           <p>Now that you understand the basics, let's make it interactive!</p>
           <p>
-            In the next demo, you'll learn how to <strong>change the state</strong> by adding
-            buttons and user interactions. You'll build a simple counter and see how easy it is to
-            update state in BlaC.
+            In the next demo, you'll learn how to{' '}
+            <strong>change the state</strong> by adding buttons and user
+            interactions. You'll build a simple counter and see how easy it is
+            to update state in BlaC.
           </p>
         </Prose>
       </ArticleSection>

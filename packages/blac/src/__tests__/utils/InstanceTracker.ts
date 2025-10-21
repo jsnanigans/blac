@@ -23,7 +23,7 @@ export class InstanceTracker {
   activeCount(): number {
     // Clean up dead references
     const alive = Array.from(this.instances).filter(
-      ref => ref.deref() !== undefined
+      (ref) => ref.deref() !== undefined,
     );
 
     this.instances = new Set(alive);

@@ -2,12 +2,24 @@ import { useBloc } from '@blac/react';
 import { Cubit } from '@blac/core';
 import { Button } from '@/ui/Button';
 import { DemoArticle } from '@/components/demo-article/DemoArticle';
-import { ArticleSection, SectionHeader } from '@/components/demo-article/ArticleSection';
+import {
+  ArticleSection,
+  SectionHeader,
+} from '@/components/demo-article/ArticleSection';
 import { Prose } from '@/components/demo-article/Prose';
 import { CodePanel } from '@/components/demo-article/CodePanel';
 import { StateViewer } from '@/components/shared/StateViewer';
-import { ConceptCallout, TipCallout, WarningCallout, InfoCallout } from '@/components/shared/ConceptCallout';
-import { InteractionFeedback, useInteractionFeedback, celebrations } from '@/components/shared/InteractionFeedback';
+import {
+  ConceptCallout,
+  TipCallout,
+  WarningCallout,
+  InfoCallout,
+} from '@/components/shared/ConceptCallout';
+import {
+  InteractionFeedback,
+  useInteractionFeedback,
+  celebrations,
+} from '@/components/shared/InteractionFeedback';
 import { motion } from 'framer-motion';
 
 // ============= Shopping Cart State & Cubit =============
@@ -28,9 +40,27 @@ class ShoppingCartCubit extends Cubit<ShoppingCartState> {
   constructor() {
     super({
       items: [
-        { id: '1', name: 'MacBook Pro', price: 2499.99, quantity: 1, category: 'Electronics' },
-        { id: '2', name: 'Magic Mouse', price: 79.99, quantity: 2, category: 'Electronics' },
-        { id: '3', name: 'TypeScript Book', price: 39.99, quantity: 1, category: 'Books' },
+        {
+          id: '1',
+          name: 'MacBook Pro',
+          price: 2499.99,
+          quantity: 1,
+          category: 'Electronics',
+        },
+        {
+          id: '2',
+          name: 'Magic Mouse',
+          price: 79.99,
+          quantity: 2,
+          category: 'Electronics',
+        },
+        {
+          id: '3',
+          name: 'TypeScript Book',
+          price: 39.99,
+          quantity: 1,
+          category: 'Books',
+        },
       ],
       taxRate: 0.08, // 8%
       discountPercent: 10, // 10% off
@@ -94,7 +124,12 @@ class ShoppingCartCubit extends Cubit<ShoppingCartState> {
 
   // Total (uses multiple getters)
   get total(): number {
-    return this.subtotal - this.discountAmount + this.taxAmount + this.calculatedShipping;
+    return (
+      this.subtotal -
+      this.discountAmount +
+      this.taxAmount +
+      this.calculatedShipping
+    );
   }
 
   // Formatted total
@@ -104,7 +139,9 @@ class ShoppingCartCubit extends Cubit<ShoppingCartState> {
 
   // Savings amount
   get totalSavings(): number {
-    return this.discountAmount + (this.hasFreeShipping ? this.state.shippingCost : 0);
+    return (
+      this.discountAmount + (this.hasFreeShipping ? this.state.shippingCost : 0)
+    );
   }
 
   // ========== Statistics Getters ==========
@@ -118,25 +155,31 @@ class ShoppingCartCubit extends Cubit<ShoppingCartState> {
   // Average item price
   get averageItemPrice(): number {
     if (this.isEmpty) return 0;
-    const totalValue = this.state.items.reduce((sum, item) => sum + item.price, 0);
+    const totalValue = this.state.items.reduce(
+      (sum, item) => sum + item.price,
+      0,
+    );
     return totalValue / this.state.items.length;
   }
 
   // Categories in cart
   get categories(): string[] {
-    return [...new Set(this.state.items.map(item => item.category))];
+    return [...new Set(this.state.items.map((item) => item.category))];
   }
 
   // Cart breakdown by category
   get categoryBreakdown(): Record<string, { count: number; total: number }> {
-    return this.state.items.reduce((acc, item) => {
-      if (!acc[item.category]) {
-        acc[item.category] = { count: 0, total: 0 };
-      }
-      acc[item.category].count += item.quantity;
-      acc[item.category].total += item.price * item.quantity;
-      return acc;
-    }, {} as Record<string, { count: number; total: number }>);
+    return this.state.items.reduce(
+      (acc, item) => {
+        if (!acc[item.category]) {
+          acc[item.category] = { count: 0, total: 0 };
+        }
+        acc[item.category].count += item.quantity;
+        acc[item.category].total += item.price * item.quantity;
+        return acc;
+      },
+      {} as Record<string, { count: number; total: number }>,
+    );
   }
 
   // ========== State Update Methods ==========
@@ -270,7 +313,12 @@ function InteractiveShoppingCart() {
               <Button onClick={handleAddItem} variant="primary" size="sm">
                 Add Random Item
               </Button>
-              <Button onClick={handleClearCart} variant="outline" size="sm" disabled={cubit.isEmpty}>
+              <Button
+                onClick={handleClearCart}
+                variant="outline"
+                size="sm"
+                disabled={cubit.isEmpty}
+              >
                 Clear Cart
               </Button>
             </div>
@@ -282,7 +330,8 @@ function InteractiveShoppingCart() {
             ))}
             {cubit.isEmpty && (
               <div className="text-center py-8 text-muted-foreground">
-                Your cart is empty. Add some items to see computed properties in action!
+                Your cart is empty. Add some items to see computed properties in
+                action!
               </div>
             )}
           </div>
@@ -312,7 +361,9 @@ function InteractiveShoppingCart() {
                 max="20"
                 step="0.5"
                 value={state.taxRate * 100}
-                onChange={(e) => cubit.updateTaxRate(Number(e.target.value) / 100)}
+                onChange={(e) =>
+                  cubit.updateTaxRate(Number(e.target.value) / 100)
+                }
                 className="w-full mt-1"
               />
             </div>
@@ -327,7 +378,9 @@ function InteractiveShoppingCart() {
                 max="50"
                 step="5"
                 value={state.shippingCost}
-                onChange={(e) => cubit.updateShippingCost(Number(e.target.value))}
+                onChange={(e) =>
+                  cubit.updateShippingCost(Number(e.target.value))
+                }
                 className="w-full mt-1"
               />
             </div>
@@ -439,7 +492,8 @@ function InteractiveShoppingCart() {
 const demoMetadata = {
   id: 'computed-properties',
   title: 'Computed Properties with Getters',
-  description: 'Learn how to use TypeScript getters to create computed properties that derive values from state automatically.',
+  description:
+    'Learn how to use TypeScript getters to create computed properties that derive values from state automatically.',
   category: '02-core-concepts',
   difficulty: 'beginner' as const,
   tags: ['cubit', 'getters', 'computed', 'derived-state'],
@@ -458,20 +512,27 @@ const demoMetadata = {
 // ============= Main Demo Component =============
 export function ComputedPropertiesDemo() {
   return (
-    <DemoArticle metadata={demoMetadata} showBlocGraph={true} hideNavigation={true}>
+    <DemoArticle
+      metadata={demoMetadata}
+      showBlocGraph={true}
+      hideNavigation={true}
+    >
       {/* Introduction */}
       <ArticleSection theme="cubit" id="introduction">
         <Prose>
           <h2>What Are Computed Properties?</h2>
           <p>
-            Have you ever needed to calculate values based on your state? Maybe a shopping cart total,
-            a filtered list, or a formatted display string? <strong>Computed properties</strong> using
-            TypeScript getters are the perfect solution!
+            Have you ever needed to calculate values based on your state? Maybe
+            a shopping cart total, a filtered list, or a formatted display
+            string? <strong>Computed properties</strong> using TypeScript
+            getters are the perfect solution!
           </p>
           <p>
-            Instead of storing redundant calculated values in your state, getters let you
-            <strong> derive values on-the-fly</strong>. They automatically update whenever the
-            underlying state changes, keeping your state minimal and your calculations always correct.
+            Instead of storing redundant calculated values in your state,
+            getters let you
+            <strong> derive values on-the-fly</strong>. They automatically
+            update whenever the underlying state changes, keeping your state
+            minimal and your calculations always correct.
           </p>
         </Prose>
       </ArticleSection>
@@ -481,9 +542,10 @@ export function ComputedPropertiesDemo() {
         <SectionHeader>Interactive Shopping Cart</SectionHeader>
         <Prose>
           <p>
-            Explore a real-world shopping cart that uses computed properties for everything from
-            subtotals to shipping calculations. Try adding items, adjusting discounts, and watch
-            how all values update automatically!
+            Explore a real-world shopping cart that uses computed properties for
+            everything from subtotals to shipping calculations. Try adding
+            items, adjusting discounts, and watch how all values update
+            automatically!
           </p>
         </Prose>
 
@@ -492,7 +554,11 @@ export function ComputedPropertiesDemo() {
         </div>
 
         <div className="my-8">
-          <StateViewer bloc={ShoppingCartCubit} title="Shopping Cart State (Raw)" maxDepth={2} />
+          <StateViewer
+            bloc={ShoppingCartCubit}
+            title="Shopping Cart State (Raw)"
+            maxDepth={2}
+          />
         </div>
       </ArticleSection>
 
@@ -501,8 +567,9 @@ export function ComputedPropertiesDemo() {
         <SectionHeader>How Getters Work</SectionHeader>
         <Prose>
           <p>
-            TypeScript getters are special methods that act like properties. They're called
-            automatically when you access them, calculating their value based on the current state.
+            TypeScript getters are special methods that act like properties.
+            They're called automatically when you access them, calculating their
+            value based on the current state.
           </p>
         </Prose>
 
@@ -554,9 +621,9 @@ console.log(cubit.total);    // 43.2`}
 
         <ConceptCallout type="info" title="Key Insight">
           <p>
-            Getters are <strong>computed on every access</strong>. They don't store values—they
-            calculate them fresh each time. This ensures they're always up-to-date with the
-            current state!
+            Getters are <strong>computed on every access</strong>. They don't
+            store values—they calculate them fresh each time. This ensures
+            they're always up-to-date with the current state!
           </p>
         </ConceptCallout>
       </ArticleSection>
@@ -566,8 +633,8 @@ console.log(cubit.total);    // 43.2`}
         <SectionHeader>Types of Getters</SectionHeader>
         <Prose>
           <p>
-            Getters can return any type of value. Here are the most common patterns you'll use
-            in your Cubits and Blocs:
+            Getters can return any type of value. Here are the most common
+            patterns you'll use in your Cubits and Blocs:
           </p>
         </Prose>
 
@@ -646,8 +713,9 @@ console.log(cubit.total);    // 43.2`}
 
         <TipCallout title="Best Practice">
           <p>
-            Keep getters <strong>pure and side-effect free</strong>. They should only read state
-            and return values, never modify state or trigger external actions.
+            Keep getters <strong>pure and side-effect free</strong>. They should
+            only read state and return values, never modify state or trigger
+            external actions.
           </p>
         </TipCallout>
       </ArticleSection>
@@ -657,8 +725,9 @@ console.log(cubit.total);    // 43.2`}
         <SectionHeader>Performance Considerations</SectionHeader>
         <Prose>
           <p>
-            While getters are powerful, it's important to understand their performance characteristics.
-            Since they recalculate on every access, expensive operations can impact performance.
+            While getters are powerful, it's important to understand their
+            performance characteristics. Since they recalculate on every access,
+            expensive operations can impact performance.
           </p>
         </Prose>
 
@@ -718,10 +787,21 @@ console.log(cubit.total);    // 43.2`}
 
         <WarningCallout title="Performance Tips">
           <ul>
-            <li>Use getters for <strong>simple calculations</strong> that run quickly</li>
-            <li>For expensive operations, calculate during state updates and store the result</li>
-            <li>Profile your app if you notice performance issues with complex getters</li>
-            <li>Consider memoization libraries if you need cached computed values</li>
+            <li>
+              Use getters for <strong>simple calculations</strong> that run
+              quickly
+            </li>
+            <li>
+              For expensive operations, calculate during state updates and store
+              the result
+            </li>
+            <li>
+              Profile your app if you notice performance issues with complex
+              getters
+            </li>
+            <li>
+              Consider memoization libraries if you need cached computed values
+            </li>
           </ul>
         </WarningCallout>
       </ArticleSection>
@@ -731,9 +811,10 @@ console.log(cubit.total);    // 43.2`}
         <SectionHeader>Using Getters in Selectors</SectionHeader>
         <Prose>
           <p>
-            One of the most powerful features of BlaC is using getters with selectors for
-            <strong> optimized re-renders</strong>. Components only update when the specific
-            computed values they depend on change.
+            One of the most powerful features of BlaC is using getters with
+            selectors for
+            <strong> optimized re-renders</strong>. Components only update when
+            the specific computed values they depend on change.
           </p>
         </Prose>
 
@@ -814,8 +895,9 @@ function TodoSummary() {
         <InfoCallout title="Pro Tip">
           <p>
             When using getters in selectors, you're essentially creating a
-            <strong> computed dependency graph</strong>. React components only re-render when
-            their specific computed values change, not on every state update!
+            <strong> computed dependency graph</strong>. React components only
+            re-render when their specific computed values change, not on every
+            state update!
           </p>
         </InfoCallout>
       </ArticleSection>
@@ -826,22 +908,28 @@ function TodoSummary() {
         <Prose>
           <ul>
             <li>
-              <strong>Getters derive values from state</strong> without storing redundant data
+              <strong>Getters derive values from state</strong> without storing
+              redundant data
             </li>
             <li>
-              <strong>Access getters like properties</strong>, not methods (no parentheses)
+              <strong>Access getters like properties</strong>, not methods (no
+              parentheses)
             </li>
             <li>
-              <strong>Getters can use other getters</strong> to build complex calculations
+              <strong>Getters can use other getters</strong> to build complex
+              calculations
             </li>
             <li>
-              <strong>Keep getters pure</strong>—no side effects or state modifications
+              <strong>Keep getters pure</strong>—no side effects or state
+              modifications
             </li>
             <li>
-              <strong>Use getters in selectors</strong> for optimized React re-renders
+              <strong>Use getters in selectors</strong> for optimized React
+              re-renders
             </li>
             <li>
-              <strong>Consider performance</strong>—expensive calculations might need caching
+              <strong>Consider performance</strong>—expensive calculations might
+              need caching
             </li>
           </ul>
         </Prose>
@@ -852,12 +940,14 @@ function TodoSummary() {
         <SectionHeader>Next Steps</SectionHeader>
         <Prose>
           <p>
-            Excellent work! You've mastered computed properties with getters, a fundamental
-            pattern for keeping your state lean and your calculations automatic.
+            Excellent work! You've mastered computed properties with getters, a
+            fundamental pattern for keeping your state lean and your
+            calculations automatic.
           </p>
           <p>
-            Next, you'll explore the <strong>Bloc lifecycle</strong>—understanding how Blocs
-            and Cubits are created, maintained, and disposed of in your application.
+            Next, you'll explore the <strong>Bloc lifecycle</strong>
+            —understanding how Blocs and Cubits are created, maintained, and
+            disposed of in your application.
           </p>
         </Prose>
       </ArticleSection>

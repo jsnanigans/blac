@@ -217,7 +217,8 @@ describe('KeepAlive', () => {
 
       // Show counter 1 again
       const counter1Again = Blac.getBloc(KeepAliveCounterCubit);
-      const { unsubscribe: unsubscribe1Again } = counter1Again.subscribe(listener1);
+      const { unsubscribe: unsubscribe1Again } =
+        counter1Again.subscribe(listener1);
 
       // Should have the persisted state
       expect(counter1Again.state.count).toBe(3);
@@ -285,7 +286,9 @@ describe('KeepAlive', () => {
       expect(listeners.consumer3).toHaveBeenCalledTimes(2);
 
       // Resubscribe consumer2
-      const { unsubscribe: unsub2Again } = consumer2.subscribe(listeners.consumer2);
+      const { unsubscribe: unsub2Again } = consumer2.subscribe(
+        listeners.consumer2,
+      );
 
       // Reset from consumer2
       consumer2.reset();
@@ -588,7 +591,9 @@ describe('KeepAlive', () => {
       expect(counter1.listener).toHaveBeenCalledTimes(3);
 
       // Step 7: Remount Counter 2
-      const counter2Again = new SimulatedComponent('Counter2-Remounted').mount();
+      const counter2Again = new SimulatedComponent(
+        'Counter2-Remounted',
+      ).mount();
       expect(counter2Again.getCurrentValue()).toBe(3); // Should see current state
 
       // Step 8: Final increment from remounted Counter 2
@@ -674,8 +679,8 @@ describe('KeepAlive', () => {
       const listeners = Array.from({ length: 10 }, () => vi.fn());
 
       // Rapidly subscribe and unsubscribe
-      const unsubscribes = listeners.map((listener) =>
-        consumer.subscribe(listener).unsubscribe,
+      const unsubscribes = listeners.map(
+        (listener) => consumer.subscribe(listener).unsubscribe,
       );
 
       // Increment once

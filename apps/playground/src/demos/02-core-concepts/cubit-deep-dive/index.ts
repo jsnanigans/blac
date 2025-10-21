@@ -9,7 +9,13 @@ DemoRegistry.register({
     'Master advanced Cubit patterns including nested state, computed properties, async operations, and performance optimization.',
   difficulty: 'intermediate',
   tags: ['cubit', 'advanced', 'patterns', 'computed', 'async'],
-  concepts: ['nested state', 'computed properties', 'async operations', 'getters', 'immutability'],
+  concepts: [
+    'nested state',
+    'computed properties',
+    'async operations',
+    'getters',
+    'immutability',
+  ],
   component: CubitDeepDiveDemo,
   code: {
     demo: '', // Code will be provided by demoCodeExports.ts
@@ -23,12 +29,14 @@ DemoRegistry.register({
     {
       name: 'Computed properties work',
       run: () => true,
-      description: 'Verifies that getter-based computed properties calculate correctly',
+      description:
+        'Verifies that getter-based computed properties calculate correctly',
     },
     {
       name: 'Async operations handle loading states',
       run: () => true,
-      description: 'Verifies async patterns handle loading, error, and success states',
+      description:
+        'Verifies async patterns handle loading, error, and success states',
     },
   ],
   relatedDemos: ['simple-counter', 'bloc-deep-dive', 'async-operations'],

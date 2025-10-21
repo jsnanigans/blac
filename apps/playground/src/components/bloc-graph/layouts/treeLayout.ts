@@ -95,7 +95,7 @@ function buildHierarchy(nodes: Node[]): Node | null {
  */
 export function applyTreeLayout(
   nodes: Node[],
-  options: TreeLayoutOptions = {}
+  options: TreeLayoutOptions = {},
 ): Node[] {
   const opts = { ...DEFAULT_OPTIONS, ...options };
 

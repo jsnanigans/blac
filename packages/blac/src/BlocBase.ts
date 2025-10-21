@@ -16,6 +16,7 @@ import {
   BlocValidationError,
 } from './validation';
 import { logger } from './logging';
+import { CustomDependency } from './tracking';
 
 export type BlocInstanceId = string | number | undefined;
 
@@ -28,6 +29,7 @@ interface BlocStaticProperties {
 
 export interface BlocConfig {
   proxyMaxDepth?: number;
+  proxyDependencyTracking?: boolean;
 }
 
 /**
@@ -319,11 +321,11 @@ export abstract class BlocBase<S> {
   }
 
   /**
-   * Subscribe with React component reference for automatic cleanup
+   * Subscribe with reference for automatic cleanup
    * @returns Object containing subscription ID and unsubscribe function
    */
-  subscribeComponent(
-    componentRef: WeakRef<object>,
+  subscribeConsumer(
+    subRef: WeakRef<object>,
     callback: () => void,
   ): SubscriptionResult {
     // Use unified tracker if blacContext exists
@@ -333,22 +335,22 @@ export abstract class BlocBase<S> {
       const tracker = blacClass.getUnifiedTracker();
 
       // Generate unique subscription ID
-      const subscriptionId = `subscribe-component-${this.uid}-${Math.random().toString(36).slice(2, 11)}`;
+      const subscriptionId = `subscribe-${this.uid}-${generateUUID}`;
 
       // Create subscription with weakref check
       tracker.createSubscription(subscriptionId, this.uid, () => {
-        // Check if component still exists
-        const component = componentRef.deref();
-        if (component) {
+        // Check if consumer still exists
+        const consumer = subRef.deref();
+        if (consumer) {
           callback();
         } else {
-          // Component was garbage collected, remove subscription
+          // consumer was garbage collected, remove subscription
           tracker.removeSubscription(subscriptionId);
         }
       });
 
       // Track entire state as a custom dependency
-      const dependency: import('./tracking/types').CustomDependency = {
+      const dependency: CustomDependency = {
         type: 'custom',
         key: 'subscribe-component',
         selector: (bloc: BlocBase<any>) => bloc.state,
@@ -368,7 +370,7 @@ export abstract class BlocBase<S> {
     // Fallback to legacy subscription manager
     return this._subscriptionManager.subscribe({
       type: 'consumer',
-      weakRef: componentRef,
+      weakRef: subRef,
       notify: callback,
     });
   }

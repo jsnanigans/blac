@@ -7,7 +7,14 @@ import { Button } from '@/ui/Button';
 import { Cubit } from '@blac/core';
 import { useBloc } from '@blac/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Radio, StopCircle, Trash2, RotateCcw, Users, Waves } from 'lucide-react';
+import {
+  Radio,
+  StopCircle,
+  Trash2,
+  RotateCcw,
+  Users,
+  Waves,
+} from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 
 // ============================================================================
@@ -183,9 +190,9 @@ export const StreamDemo: React.FC = () => {
 
         <ConceptCallout type="info" title="Observable Pattern">
           <p className="text-sm">
-            An observable is a data source that emits values over time. Observers
-            (subscribers) listen for these emissions and react accordingly. In
-            BlaC, every Cubit/Bloc is an observable, and every{' '}
+            An observable is a data source that emits values over time.
+            Observers (subscribers) listen for these emissions and react
+            accordingly. In BlaC, every Cubit/Bloc is an observable, and every{' '}
             <code>useBloc</code> call creates a subscription.
           </p>
         </ConceptCallout>
@@ -340,9 +347,10 @@ export const StreamDemo: React.FC = () => {
 
         <ConceptCallout type="success" title="Real-Time Synchronization">
           <p className="text-sm">
-            Notice how all subscribers receive messages at exactly the same time!
-            This is because they're all subscribing to the same Cubit instance,
-            and BlaC automatically notifies all subscribers when state changes.
+            Notice how all subscribers receive messages at exactly the same
+            time! This is because they're all subscribing to the same Cubit
+            instance, and BlaC automatically notifies all subscribers when state
+            changes.
           </p>
         </ConceptCallout>
       </ArticleSection>
@@ -489,8 +497,8 @@ function StatusIndicator() {
             </h3>
             <Prose>
               <p>
-                For high-frequency streams, manage memory by limiting the message
-                buffer size.
+                For high-frequency streams, manage memory by limiting the
+                message buffer size.
               </p>
             </Prose>
             <CodePanel
@@ -533,9 +541,9 @@ function StatusIndicator() {
 
         <ConceptCallout type="warning" title="Memory Management">
           <p className="text-sm">
-            Always limit buffer sizes for long-running streams! Unlimited message
-            accumulation can lead to memory leaks and performance degradation.
-            Use either size-based limits or time-based expiration.
+            Always limit buffer sizes for long-running streams! Unlimited
+            message accumulation can lead to memory leaks and performance
+            degradation. Use either size-based limits or time-based expiration.
           </p>
         </ConceptCallout>
       </ArticleSection>
@@ -627,20 +635,20 @@ function StatusIndicator() {
         <ConceptCallout type="success" title="What You've Learned">
           <ul className="space-y-2 text-sm">
             <li>
-              <strong>Observable Pattern:</strong> BlaC Cubits naturally implement
-              the observable pattern for streaming data
+              <strong>Observable Pattern:</strong> BlaC Cubits naturally
+              implement the observable pattern for streaming data
             </li>
             <li>
               <strong>Multiple Subscribers:</strong> All components using{' '}
               <code>useBloc</code> automatically receive stream updates
             </li>
             <li>
-              <strong>Automatic Synchronization:</strong> State changes propagate
-              to all subscribers simultaneously
+              <strong>Automatic Synchronization:</strong> State changes
+              propagate to all subscribers simultaneously
             </li>
             <li>
-              <strong>Memory Management:</strong> Limit buffer sizes and clean up
-              resources in <code>onDispose</code>
+              <strong>Memory Management:</strong> Limit buffer sizes and clean
+              up resources in <code>onDispose</code>
             </li>
             <li>
               <strong>Real-World Applications:</strong> Perfect for WebSockets,

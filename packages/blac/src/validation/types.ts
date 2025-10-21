@@ -156,12 +156,8 @@ export namespace StandardSchemaV1 {
  * type UserInput = InferInput<typeof UserSchema>; // { name: string }
  * ```
  */
-export type InferInput<TSchema> = TSchema extends StandardSchemaV1<
-  infer Input,
-  any
->
-  ? Input
-  : never;
+export type InferInput<TSchema> =
+  TSchema extends StandardSchemaV1<infer Input, any> ? Input : never;
 
 /**
  * Extract output type from a Standard Schema
@@ -179,12 +175,8 @@ export type InferInput<TSchema> = TSchema extends StandardSchemaV1<
  * // { name: string; createdAt: Date }
  * ```
  */
-export type InferOutput<TSchema> = TSchema extends StandardSchemaV1<
-  any,
-  infer Output
->
-  ? Output
-  : never;
+export type InferOutput<TSchema> =
+  TSchema extends StandardSchemaV1<any, infer Output> ? Output : never;
 
 /**
  * Type helper to validate that a schema matches a state type

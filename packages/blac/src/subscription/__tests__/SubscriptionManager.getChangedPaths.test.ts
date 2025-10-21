@@ -293,30 +293,18 @@ describe('SubscriptionManager.shouldNotifyForPaths (V3 Deep Path Matching)', () 
 
     // Should notify if ANY dependency matches
     expect(
-      manager.shouldNotifyForPaths(
-        result.id,
-        new Set(['user.profile.name']),
-      ),
+      manager.shouldNotifyForPaths(result.id, new Set(['user.profile.name'])),
     ).toBe(true);
     expect(
-      manager.shouldNotifyForPaths(
-        result.id,
-        new Set(['user.settings.theme']),
-      ),
+      manager.shouldNotifyForPaths(result.id, new Set(['user.settings.theme'])),
     ).toBe(true);
     expect(
-      manager.shouldNotifyForPaths(
-        result.id,
-        new Set(['data.items.0.value']),
-      ),
+      manager.shouldNotifyForPaths(result.id, new Set(['data.items.0.value'])),
     ).toBe(true);
 
     // Should NOT notify for unrelated changes
     expect(
-      manager.shouldNotifyForPaths(
-        result.id,
-        new Set(['user.profile.age']),
-      ),
+      manager.shouldNotifyForPaths(result.id, new Set(['user.profile.age'])),
     ).toBe(false);
 
     result.unsubscribe();

@@ -10,13 +10,16 @@ This directory contains the old unified tracking implementation of BlaC React in
 ### Archived Components
 
 #### `/unified-tracking/`
+
 - `useBloc.old.ts` - The old useBloc hook using UnifiedDependencyTracker
   - Used proxy-based automatic dependency tracking
   - Had complex subscription management with UnifiedDependencyTracker
   - Required synchronization between render tracking and subscription updates
 
 #### `/tests/`
+
 All tests for the unified tracking system:
+
 - `useBloc.*.test.tsx` - Various useBloc feature tests
 - `dependency-tracking*.test.tsx` - Dependency tracking tests
 - `deep-state-tracking*.test.tsx` - Deep state tracking tests
@@ -39,6 +42,7 @@ The new Adapter Pattern provides:
 The new `useBloc` is now a re-export of `useBlocAdapter`. The API is similar but uses selectors instead of automatic proxy tracking:
 
 ### Old (Unified Tracking)
+
 ```typescript
 function Counter() {
   const [state, bloc] = useBloc(CounterBloc);
@@ -48,6 +52,7 @@ function Counter() {
 ```
 
 ### New (Adapter Pattern)
+
 ```typescript
 function Counter() {
   // Option 1: Full state (similar to old behavior)
@@ -79,6 +84,7 @@ Some tests may be portable to the new system with modifications, but many test t
 ## Related Specifications
 
 See `/spec/2025-10-20-optimized-react-integration/` for:
+
 - Implementation plan and rationale
 - Migration documentation
 - Performance comparisons

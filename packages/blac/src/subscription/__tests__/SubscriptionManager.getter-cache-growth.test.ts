@@ -13,33 +13,73 @@ import { Cubit } from '../../Cubit';
 import { Blac } from '../../Blac';
 
 class TestCubit extends Cubit<{ count: number }> {
-  static keepAlive = true;  // Long-lived subscription
+  static keepAlive = true; // Long-lived subscription
 
   constructor() {
     super({ count: 0 });
   }
 
   // Simulate 100 different getters
-  get getter0() { return this.state.count * 0; }
-  get getter1() { return this.state.count * 1; }
-  get getter2() { return this.state.count * 2; }
-  get getter3() { return this.state.count * 3; }
-  get getter4() { return this.state.count * 4; }
-  get getter5() { return this.state.count * 5; }
-  get getter6() { return this.state.count * 6; }
-  get getter7() { return this.state.count * 7; }
-  get getter8() { return this.state.count * 8; }
-  get getter9() { return this.state.count * 9; }
-  get getter10() { return this.state.count * 10; }
-  get getter11() { return this.state.count * 11; }
-  get getter12() { return this.state.count * 12; }
-  get getter13() { return this.state.count * 13; }
-  get getter14() { return this.state.count * 14; }
-  get getter15() { return this.state.count * 15; }
-  get getter16() { return this.state.count * 16; }
-  get getter17() { return this.state.count * 17; }
-  get getter18() { return this.state.count * 18; }
-  get getter19() { return this.state.count * 19; }
+  get getter0() {
+    return this.state.count * 0;
+  }
+  get getter1() {
+    return this.state.count * 1;
+  }
+  get getter2() {
+    return this.state.count * 2;
+  }
+  get getter3() {
+    return this.state.count * 3;
+  }
+  get getter4() {
+    return this.state.count * 4;
+  }
+  get getter5() {
+    return this.state.count * 5;
+  }
+  get getter6() {
+    return this.state.count * 6;
+  }
+  get getter7() {
+    return this.state.count * 7;
+  }
+  get getter8() {
+    return this.state.count * 8;
+  }
+  get getter9() {
+    return this.state.count * 9;
+  }
+  get getter10() {
+    return this.state.count * 10;
+  }
+  get getter11() {
+    return this.state.count * 11;
+  }
+  get getter12() {
+    return this.state.count * 12;
+  }
+  get getter13() {
+    return this.state.count * 13;
+  }
+  get getter14() {
+    return this.state.count * 14;
+  }
+  get getter15() {
+    return this.state.count * 15;
+  }
+  get getter16() {
+    return this.state.count * 16;
+  }
+  get getter17() {
+    return this.state.count * 17;
+  }
+  get getter18() {
+    return this.state.count * 18;
+  }
+  get getter19() {
+    return this.state.count * 19;
+  }
   // ... and so on up to getter99
 
   increment = () => {
@@ -64,7 +104,9 @@ describe('SubscriptionManager - Getter Cache Unbounded Growth (ISSUE)', () => {
     });
 
     // Get subscription
-    const subscriptionId = (result as any).id || Array.from((manager as any).subscriptions.keys())[0];
+    const subscriptionId =
+      (result as any).id ||
+      Array.from((manager as any).subscriptions.keys())[0];
     const subscription = manager.getSubscription(subscriptionId);
 
     expect(subscription).toBeDefined();
@@ -73,7 +115,11 @@ describe('SubscriptionManager - Getter Cache Unbounded Growth (ISSUE)', () => {
     for (let i = 0; i < 20; i++) {
       const getterName = `getter${i}`;
       try {
-        (manager as any).checkGetterChanged(subscriptionId, `_class.${getterName}`, cubit);
+        (manager as any).checkGetterChanged(
+          subscriptionId,
+          `_class.${getterName}`,
+          cubit,
+        );
       } catch (error) {
         // Some getters don't exist, that's ok
       }
@@ -85,7 +131,7 @@ describe('SubscriptionManager - Getter Cache Unbounded Growth (ISSUE)', () => {
     // ISSUE: Cache grows unbounded!
     // EXPECTED: Limited to reasonable size (e.g., 100 entries max)
     // ACTUAL: Grows to match number of unique getters accessed
-    expect(cacheSize).toBe(20);  // This demonstrates the issue
+    expect(cacheSize).toBe(20); // This demonstrates the issue
 
     // In a real app, this could be 100+ entries over time
   });
@@ -99,7 +145,9 @@ describe('SubscriptionManager - Getter Cache Unbounded Growth (ISSUE)', () => {
       notify: () => {},
     });
 
-    const subscriptionId = (result as any).id || Array.from((manager as any).subscriptions.keys())[0];
+    const subscriptionId =
+      (result as any).id ||
+      Array.from((manager as any).subscriptions.keys())[0];
     const subscription = manager.getSubscription(subscriptionId);
 
     // Access many getters to simulate long app lifetime
@@ -109,7 +157,11 @@ describe('SubscriptionManager - Getter Cache Unbounded Growth (ISSUE)', () => {
       // Simulate accessing different getters
       const getterName = `getter${i}`;
       try {
-        (manager as any).checkGetterChanged(subscriptionId, `_class.${getterName}`, cubit);
+        (manager as any).checkGetterChanged(
+          subscriptionId,
+          `_class.${getterName}`,
+          cubit,
+        );
       } catch (error) {
         // Getter doesn't exist, cache still grows
       }
@@ -138,7 +190,9 @@ describe('SubscriptionManager - Getter Cache Unbounded Growth (ISSUE)', () => {
       notify: () => {},
     });
 
-    const subscriptionId = (result as any).id || Array.from((manager as any).subscriptions.keys())[0];
+    const subscriptionId =
+      (result as any).id ||
+      Array.from((manager as any).subscriptions.keys())[0];
     const subscription = manager.getSubscription(subscriptionId);
 
     const initialCacheSize = subscription!.getterCache?.size || 0;
@@ -148,7 +202,11 @@ describe('SubscriptionManager - Getter Cache Unbounded Growth (ISSUE)', () => {
       for (let i = 0; i < 10; i++) {
         const getterName = `getter${cycle * 10 + i}`;
         try {
-          (manager as any).checkGetterChanged(subscriptionId, `_class.${getterName}`, cubit);
+          (manager as any).checkGetterChanged(
+            subscriptionId,
+            `_class.${getterName}`,
+            cubit,
+          );
         } catch (error) {
           // Ignore
         }
@@ -174,7 +232,9 @@ describe('SubscriptionManager - Getter Cache Unbounded Growth (ISSUE)', () => {
       notify: () => {},
     });
 
-    const subscriptionId = (result as any).id || Array.from((manager as any).subscriptions.keys())[0];
+    const subscriptionId =
+      (result as any).id ||
+      Array.from((manager as any).subscriptions.keys())[0];
     const subscription = manager.getSubscription(subscriptionId);
 
     // Simulate attack: access 1000 unique getters
@@ -183,7 +243,11 @@ describe('SubscriptionManager - Getter Cache Unbounded Growth (ISSUE)', () => {
     for (let i = 0; i < attackGetterCount; i++) {
       const maliciousGetterName = `getter${i}`;
       try {
-        (manager as any).checkGetterChanged(subscriptionId, `_class.${maliciousGetterName}`, cubit);
+        (manager as any).checkGetterChanged(
+          subscriptionId,
+          `_class.${maliciousGetterName}`,
+          cubit,
+        );
       } catch (error) {
         // Doesn't matter if getter exists, cache still grows
       }
@@ -195,7 +259,7 @@ describe('SubscriptionManager - Getter Cache Unbounded Growth (ISSUE)', () => {
     // With LRU cache (limit 100), this would be bounded to ~10 KB
     // Without limit: 1000 entries = ~100 KB per subscription!
 
-    expect(cacheSize).toBeGreaterThan(100);  // Demonstrates the issue
+    expect(cacheSize).toBeGreaterThan(100); // Demonstrates the issue
   });
 });
 
@@ -209,12 +273,18 @@ describe('Getter Cache - Performance Impact', () => {
       notify: () => {},
     });
 
-    const subscriptionId = (result as any).id || Array.from((manager as any).subscriptions.keys())[0];
+    const subscriptionId =
+      (result as any).id ||
+      Array.from((manager as any).subscriptions.keys())[0];
 
     // Fill cache with 500 entries
     for (let i = 0; i < 500; i++) {
       try {
-        (manager as any).checkGetterChanged(subscriptionId, `_class.getter${i}`, cubit);
+        (manager as any).checkGetterChanged(
+          subscriptionId,
+          `_class.getter${i}`,
+          cubit,
+        );
       } catch (error) {
         // Ignore
       }
@@ -226,7 +296,11 @@ describe('Getter Cache - Performance Impact', () => {
 
     for (let i = 0; i < iterations; i++) {
       try {
-        (manager as any).checkGetterChanged(subscriptionId, `_class.getter0`, cubit);
+        (manager as any).checkGetterChanged(
+          subscriptionId,
+          `_class.getter0`,
+          cubit,
+        );
       } catch (error) {
         // Ignore
       }
@@ -275,7 +349,9 @@ describe('Getter Cache - Comparison with LRU', () => {
       notify: () => {},
     });
 
-    const subscriptionId = (result as any).id || Array.from((manager as any).subscriptions.keys())[0];
+    const subscriptionId =
+      (result as any).id ||
+      Array.from((manager as any).subscriptions.keys())[0];
 
     // Simulate typical pattern: access 5 hot getters repeatedly
     const hotGetters = ['getter0', 'getter1', 'getter2', 'getter3', 'getter4'];
@@ -295,7 +371,11 @@ describe('Getter Cache - Comparison with LRU', () => {
       }
 
       try {
-        (manager as any).checkGetterChanged(subscriptionId, `_class.${getterName}`, cubit);
+        (manager as any).checkGetterChanged(
+          subscriptionId,
+          `_class.${getterName}`,
+          cubit,
+        );
       } catch (error) {
         // Ignore
       }

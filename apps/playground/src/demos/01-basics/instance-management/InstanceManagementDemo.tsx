@@ -2,11 +2,19 @@ import { useBloc } from '@blac/react';
 import { Cubit } from '@blac/core';
 import { Button } from '@/ui/Button';
 import { DemoArticle } from '@/components/demo-article/DemoArticle';
-import { ArticleSection, SectionHeader } from '@/components/demo-article/ArticleSection';
+import {
+  ArticleSection,
+  SectionHeader,
+} from '@/components/demo-article/ArticleSection';
 import { Prose } from '@/components/demo-article/Prose';
 import { CodePanel } from '@/components/demo-article/CodePanel';
 import { StateViewer } from '@/components/shared/StateViewer';
-import { TipCallout, InfoCallout, WarningCallout, ComparisonPanel } from '@/components/shared';
+import {
+  TipCallout,
+  InfoCallout,
+  WarningCallout,
+  ComparisonPanel,
+} from '@/components/shared';
 import { motion } from 'framer-motion';
 import { Users, User, Share2, Lock } from 'lucide-react';
 
@@ -73,7 +81,12 @@ function SharedCounterCard({ label }: { label: string }) {
       <div className="text-3xl font-bold text-center my-4">{state.count}</div>
 
       <div className="flex gap-2">
-        <Button onClick={cubit.decrement} variant="outline" size="sm" className="flex-1">
+        <Button
+          onClick={cubit.decrement}
+          variant="outline"
+          size="sm"
+          className="flex-1"
+        >
           -
         </Button>
         <Button onClick={cubit.increment} size="sm" className="flex-1">
@@ -105,7 +118,12 @@ function IsolatedCounterCard({ label }: { label: string }) {
       <div className="text-3xl font-bold text-center my-4">{state.count}</div>
 
       <div className="flex gap-2">
-        <Button onClick={cubit.decrement} variant="outline" size="sm" className="flex-1">
+        <Button
+          onClick={cubit.decrement}
+          variant="outline"
+          size="sm"
+          className="flex-1"
+        >
           -
         </Button>
         <Button onClick={cubit.increment} size="sm" className="flex-1">
@@ -143,27 +161,34 @@ const demoMetadata = {
 // Main demo component
 export function InstanceManagementDemo() {
   return (
-    <DemoArticle metadata={demoMetadata} showBlocGraph={true} hideNavigation={true}>
+    <DemoArticle
+      metadata={demoMetadata}
+      showBlocGraph={true}
+      hideNavigation={true}
+    >
       {/* Introduction */}
       <ArticleSection theme="cubit" id="introduction">
         <Prose>
           <h2>Shared vs Isolated Instances</h2>
           <p>
-            So far, you've seen how multiple components can share the same state. But sometimes
-            you want <strong>multiple independent instances</strong> of the same Cubit—each with
-            its own isolated state.
+            So far, you've seen how multiple components can share the same
+            state. But sometimes you want{' '}
+            <strong>multiple independent instances</strong> of the same
+            Cubit—each with its own isolated state.
           </p>
           <p>
-            BlaC gives you complete control over instance management with a simple pattern: the{' '}
-            <code>static isolated</code> property.
+            BlaC gives you complete control over instance management with a
+            simple pattern: the <code>static isolated</code> property.
           </p>
         </Prose>
 
         <TipCallout title="Two Instance Patterns">
           <p>
-            <strong>Shared (default):</strong> One instance shared across all components
+            <strong>Shared (default):</strong> One instance shared across all
+            components
             <br />
-            <strong>Isolated:</strong> Each component gets its own independent instance
+            <strong>Isolated:</strong> Each component gets its own independent
+            instance
           </p>
         </TipCallout>
       </ArticleSection>
@@ -173,9 +198,10 @@ export function InstanceManagementDemo() {
         <SectionHeader>See the Difference</SectionHeader>
         <Prose>
           <p>
-            Try clicking the buttons below. The <strong>shared counters</strong> all stay in sync
-            (they share one instance), while the <strong>isolated counters</strong> are completely
-            independent (each has its own instance).
+            Try clicking the buttons below. The <strong>shared counters</strong>{' '}
+            all stay in sync (they share one instance), while the{' '}
+            <strong>isolated counters</strong> are completely independent (each
+            has its own instance).
           </p>
         </Prose>
 
@@ -193,8 +219,9 @@ export function InstanceManagementDemo() {
                 <p className="text-sm font-semibold">How it works</p>
               </div>
               <p className="text-xs text-muted-foreground">
-                All three components call <code>useBloc(SharedCounterCubit)</code>. BlaC returns
-                the same instance to all of them. When one changes, they all update.
+                All three components call{' '}
+                <code>useBloc(SharedCounterCubit)</code>. BlaC returns the same
+                instance to all of them. When one changes, they all update.
               </p>
             </div>
           </ComparisonPanel.Left>
@@ -212,8 +239,9 @@ export function InstanceManagementDemo() {
                 <p className="text-sm font-semibold">How it works</p>
               </div>
               <p className="text-xs text-muted-foreground">
-                Each component calls <code>useBloc(IsolatedCounterCubit)</code>. BlaC creates a
-                new instance for each. They're completely independent.
+                Each component calls <code>useBloc(IsolatedCounterCubit)</code>.
+                BlaC creates a new instance for each. They're completely
+                independent.
               </p>
             </div>
           </ComparisonPanel.Right>
@@ -224,17 +252,17 @@ export function InstanceManagementDemo() {
           <div className="p-4 rounded-lg bg-muted/20 border border-border">
             <p className="text-sm font-semibold mb-2">Isolated Counter State</p>
             <p className="text-xs text-muted-foreground">
-              Each isolated counter has its own state that can't be viewed in a single StateViewer.
-              They're truly independent!
+              Each isolated counter has its own state that can't be viewed in a
+              single StateViewer. They're truly independent!
             </p>
           </div>
         </div>
 
         <InfoCallout title="What's Happening?">
           <p>
-            The <code>static isolated = true</code> property tells BlaC to create a separate
-            instance for each component that uses it. Without this property, all components share
-            the same instance.
+            The <code>static isolated = true</code> property tells BlaC to
+            create a separate instance for each component that uses it. Without
+            this property, all components share the same instance.
           </p>
         </InfoCallout>
       </ArticleSection>
@@ -244,7 +272,8 @@ export function InstanceManagementDemo() {
         <SectionHeader>How to Create Isolated Instances</SectionHeader>
         <Prose>
           <p>
-            The difference between shared and isolated is just <strong>one line of code</strong>:
+            The difference between shared and isolated is just{' '}
+            <strong>one line of code</strong>:
           </p>
         </Prose>
 
@@ -303,7 +332,9 @@ function MyComponent() {
           <div className="p-6 rounded-lg bg-concept-cubit/5 border-2 border-concept-cubit/30">
             <div className="flex items-center gap-2 mb-4">
               <Share2 className="w-5 h-5 text-concept-cubit" />
-              <h3 className="font-semibold text-lg text-concept-cubit">Shared Instances</h3>
+              <h3 className="font-semibold text-lg text-concept-cubit">
+                Shared Instances
+              </h3>
             </div>
 
             <Prose>
@@ -311,7 +342,9 @@ function MyComponent() {
               <ul className="text-sm space-y-2">
                 <li>You want global or app-wide state</li>
                 <li>Multiple components need to stay synchronized</li>
-                <li>You have a single source of truth (user auth, theme, etc.)</li>
+                <li>
+                  You have a single source of truth (user auth, theme, etc.)
+                </li>
                 <li>You want centralized control</li>
               </ul>
 
@@ -328,7 +361,9 @@ function MyComponent() {
           <div className="p-6 rounded-lg bg-concept-bloc/5 border-2 border-concept-bloc/30">
             <div className="flex items-center gap-2 mb-4">
               <Lock className="w-5 h-5 text-concept-bloc" />
-              <h3 className="font-semibold text-lg text-concept-bloc">Isolated Instances</h3>
+              <h3 className="font-semibold text-lg text-concept-bloc">
+                Isolated Instances
+              </h3>
             </div>
 
             <Prose>
@@ -353,8 +388,9 @@ function MyComponent() {
 
         <WarningCallout title="Memory Management">
           <p>
-            Isolated instances are automatically cleaned up when their components unmount. Shared
-            instances persist until you manually dispose of them or the app closes.
+            Isolated instances are automatically cleaned up when their
+            components unmount. Shared instances persist until you manually
+            dispose of them or the app closes.
           </p>
         </WarningCallout>
       </ArticleSection>
@@ -364,8 +400,8 @@ function MyComponent() {
         <SectionHeader>Advanced: Instance IDs</SectionHeader>
         <Prose>
           <p>
-            You can also create isolated instances of shared Cubits by passing an{' '}
-            <code>id</code> option:
+            You can also create isolated instances of shared Cubits by passing
+            an <code>id</code> option:
           </p>
         </Prose>
 
@@ -403,8 +439,9 @@ function SignupForm() {
 
         <Prose>
           <p>
-            This pattern is useful when you want <strong>dynamic isolation</strong>—creating
-            instances based on props, routes, or user actions.
+            This pattern is useful when you want{' '}
+            <strong>dynamic isolation</strong>—creating instances based on
+            props, routes, or user actions.
           </p>
         </Prose>
       </ArticleSection>
@@ -415,22 +452,28 @@ function SignupForm() {
         <Prose>
           <ul>
             <li>
-              <strong>Shared instances (default)</strong>: All components use the same state
+              <strong>Shared instances (default)</strong>: All components use
+              the same state
             </li>
             <li>
-              <strong>Isolated instances</strong>: Each component gets its own independent state
+              <strong>Isolated instances</strong>: Each component gets its own
+              independent state
             </li>
             <li>
-              <strong>One line difference</strong>: <code>static isolated = true</code>
+              <strong>One line difference</strong>:{' '}
+              <code>static isolated = true</code>
             </li>
             <li>
-              <strong>Choose based on need</strong>: Global state vs. component-local state
+              <strong>Choose based on need</strong>: Global state vs.
+              component-local state
             </li>
             <li>
-              <strong>Custom IDs</strong>: Create dynamic isolated instances when needed
+              <strong>Custom IDs</strong>: Create dynamic isolated instances
+              when needed
             </li>
             <li>
-              <strong>Automatic cleanup</strong>: Isolated instances dispose when components unmount
+              <strong>Automatic cleanup</strong>: Isolated instances dispose
+              when components unmount
             </li>
           </ul>
         </Prose>
@@ -441,12 +484,14 @@ function SignupForm() {
         <SectionHeader>What's Next?</SectionHeader>
         <Prose>
           <p>
-            You now understand the fundamentals of BlaC: state, updates, sharing, and instance
-            management. You're ready to move beyond Cubits!
+            You now understand the fundamentals of BlaC: state, updates,
+            sharing, and instance management. You're ready to move beyond
+            Cubits!
           </p>
           <p>
-            In the next section, you'll learn about <strong>Blocs</strong>—event-driven state
-            containers that give you even more power for complex state logic.
+            In the next section, you'll learn about <strong>Blocs</strong>
+            —event-driven state containers that give you even more power for
+            complex state logic.
           </p>
         </Prose>
       </ArticleSection>

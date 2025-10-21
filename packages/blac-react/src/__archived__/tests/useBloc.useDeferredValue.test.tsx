@@ -80,8 +80,8 @@ describe('useBloc with useDeferredValue', () => {
       const [state, cubit] = useBloc(LargeDataCubit);
 
       // Simulate expensive computation on state
-      const expensiveComputation = state.items.filter(item =>
-        item.name.toLowerCase().includes(state.searchQuery.toLowerCase())
+      const expensiveComputation = state.items.filter((item) =>
+        item.name.toLowerCase().includes(state.searchQuery.toLowerCase()),
       );
 
       const deferredResults = useDeferredValue(expensiveComputation);
@@ -90,7 +90,7 @@ describe('useBloc with useDeferredValue', () => {
         state,
         cubit,
         immediateResults: expensiveComputation,
-        deferredResults
+        deferredResults,
       };
     });
 
@@ -138,7 +138,7 @@ describe('useBloc with useDeferredValue', () => {
         cubit,
         computedValue,
         deferredValue,
-        renderCount: renderCount
+        renderCount: renderCount,
       };
     });
 
@@ -178,8 +178,8 @@ describe('useBloc with useDeferredValue', () => {
       const [state, cubit] = useBloc(LargeDataCubit);
 
       // Heavy filtering operation
-      const filteredItems = state.items.filter(item =>
-        item.name.includes(state.searchQuery)
+      const filteredItems = state.items.filter((item) =>
+        item.name.includes(state.searchQuery),
       );
 
       const deferredItems = useDeferredValue(filteredItems);
@@ -188,7 +188,7 @@ describe('useBloc with useDeferredValue', () => {
         state,
         cubit,
         filteredItems,
-        deferredItems
+        deferredItems,
       };
     });
 
@@ -200,20 +200,29 @@ describe('useBloc with useDeferredValue', () => {
         result.current.cubit.updateSearchQuery(query);
       });
       // Small delay to simulate typing speed
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
     }
 
     // After rapid updates, immediate value should be current
     expect(result.current.state.searchQuery).toBe('Item 10');
 
     // Deferred value should eventually catch up
-    await waitFor(() => {
-      expect(result.current.deferredItems).toEqual(result.current.filteredItems);
-    }, { timeout: 2000 });
+    await waitFor(
+      () => {
+        expect(result.current.deferredItems).toEqual(
+          result.current.filteredItems,
+        );
+      },
+      { timeout: 2000 },
+    );
 
     // Should find items containing "Item 10"
-    expect(result.current.deferredItems.some(item => item.name === 'Item 10')).toBe(true);
-    expect(result.current.deferredItems.some(item => item.name === 'Item 100')).toBe(true);
+    expect(
+      result.current.deferredItems.some((item) => item.name === 'Item 10'),
+    ).toBe(true);
+    expect(
+      result.current.deferredItems.some((item) => item.name === 'Item 100'),
+    ).toBe(true);
   });
 
   it('should optimize performance with large state objects', async () => {
@@ -226,10 +235,12 @@ describe('useBloc with useDeferredValue', () => {
 
       // Very expensive operation
       const processedData = {
-        items: state.items.map(item => ({
+        items: state.items.map((item) => ({
           ...item,
           processed: true,
-          searchMatch: item.name.toLowerCase().includes(state.searchQuery.toLowerCase()),
+          searchMatch: item.name
+            .toLowerCase()
+            .includes(state.searchQuery.toLowerCase()),
         })),
         stats: {
           total: state.items.length,
@@ -247,7 +258,7 @@ describe('useBloc with useDeferredValue', () => {
         cubit,
         processedData,
         deferredData,
-        renderTimes
+        renderTimes,
       };
     });
 
@@ -270,10 +281,14 @@ describe('useBloc with useDeferredValue', () => {
 
     // Verify final consistency
     await waitFor(() => {
-      expect(result.current.deferredData.stats.query).toBe(`test${updates - 1}`);
+      expect(result.current.deferredData.stats.query).toBe(
+        `test${updates - 1}`,
+      );
     });
 
     // All items in deferred data should be processed
-    expect(result.current.deferredData.items.every(item => item.processed)).toBe(true);
+    expect(
+      result.current.deferredData.items.every((item) => item.processed),
+    ).toBe(true);
   });
 });

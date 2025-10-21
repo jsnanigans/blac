@@ -6,9 +6,9 @@ import { BlocValidationError } from '../validation/BlocValidationError';
 
 describe('Schema Validation - ArkType Integration', () => {
   describe('Cubit with Simple Schema', () => {
-    const CounterSchema = type('number>=1').atMost(100).narrow(
-      (n) => Number.isInteger(n)
-    );
+    const CounterSchema = type('number>=1')
+      .atMost(100)
+      .narrow((n) => Number.isInteger(n));
 
     class CounterCubit extends Cubit<number> {
       static schema = CounterSchema;
@@ -123,7 +123,9 @@ describe('Schema Validation - ArkType Integration', () => {
       id: 'string',
       name: 'string>0',
       email: type('string').narrow((s) => emailPattern.test(s)),
-      age: type('number>=0').atMost(150).narrow((n) => Number.isInteger(n)),
+      age: type('number>=0')
+        .atMost(150)
+        .narrow((n) => Number.isInteger(n)),
       tags: 'string[]',
       'metadata?': {
         createdAt: 'string',

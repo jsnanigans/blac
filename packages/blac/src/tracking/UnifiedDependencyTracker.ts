@@ -90,7 +90,7 @@ export class UnifiedDependencyTracker {
   static resetInstance(): void {
     // Clear all cleanup timeouts
     if (UnifiedDependencyTracker.instance) {
-      UnifiedDependencyTracker.instance.cleanupTimeouts.forEach(timeout => {
+      UnifiedDependencyTracker.instance.cleanupTimeouts.forEach((timeout) => {
         clearTimeout(timeout);
       });
     }
@@ -107,11 +107,7 @@ export class UnifiedDependencyTracker {
    * @param blocUid - Unique ID (uid) of the Bloc being subscribed to
    * @param notify - Callback to trigger React re-render
    */
-  createSubscription(
-    id: string,
-    blocUid: string,
-    notify: () => void,
-  ): void {
+  createSubscription(id: string, blocUid: string, notify: () => void): void {
     if (this.subscriptions.has(id)) {
       // Update the notify callback if subscription exists
       const existing = this.subscriptions.get(id)!;
@@ -153,7 +149,9 @@ export class UnifiedDependencyTracker {
       subscription.notify = notify;
       Blac.log(`[UnifiedTracker] Updated notify callback for ${id}`);
     } else {
-      Blac.warn(`[UnifiedTracker] Subscription ${id} not found when updating notify callback`);
+      Blac.warn(
+        `[UnifiedTracker] Subscription ${id} not found when updating notify callback`,
+      );
     }
   }
 
@@ -171,14 +169,18 @@ export class UnifiedDependencyTracker {
     if (subscription) {
       const oldBlocId = subscription.blocId;
       subscription.blocId = newBlocId;
-      Blac.log(`[UnifiedTracker] Updated subscription ${id} bloc ID from ${oldBlocId} to ${newBlocId}`);
+      Blac.log(
+        `[UnifiedTracker] Updated subscription ${id} bloc ID from ${oldBlocId} to ${newBlocId}`,
+      );
 
       // Clear value cache as we're now tracking a different bloc
       subscription.valueCache.clear();
       // Clear dependencies to force re-tracking
       subscription.dependencies = [];
     } else {
-      Blac.warn(`[UnifiedTracker] Subscription ${id} not found when updating bloc ID`);
+      Blac.warn(
+        `[UnifiedTracker] Subscription ${id} not found when updating bloc ID`,
+      );
     }
   }
 
@@ -229,7 +231,9 @@ export class UnifiedDependencyTracker {
   startRenderTracking(subscriptionId: string, renderContext: string): void {
     const subscription = this.subscriptions.get(subscriptionId);
     if (!subscription) {
-      Blac.warn(`Subscription ${subscriptionId} not found, cannot start tracking`);
+      Blac.warn(
+        `Subscription ${subscriptionId} not found, cannot start tracking`,
+      );
       return;
     }
 
@@ -253,7 +257,7 @@ export class UnifiedDependencyTracker {
         timeoutKey,
         setTimeout(() => {
           this.cleanupAbandonedRender(subscriptionId, renderContext);
-        }, 10000)
+        }, 10000),
       );
     } else {
       // Reset dependencies for new tracking pass in same context
@@ -263,7 +267,9 @@ export class UnifiedDependencyTracker {
 
     subscription.activeRenderId = renderContext;
 
-    Blac.log(`[UnifiedTracker] Started render tracking ${renderContext} for subscription ${subscriptionId}`);
+    Blac.log(
+      `[UnifiedTracker] Started render tracking ${renderContext} for subscription ${subscriptionId}`,
+    );
   }
 
   /**
@@ -278,13 +284,17 @@ export class UnifiedDependencyTracker {
   commitRenderTracking(subscriptionId: string, renderId: string): void {
     const subscription = this.subscriptions.get(subscriptionId);
     if (!subscription) {
-      Blac.warn(`Subscription ${subscriptionId} not found, cannot commit tracking`);
+      Blac.warn(
+        `Subscription ${subscriptionId} not found, cannot commit tracking`,
+      );
       return;
     }
 
     const renderTracking = subscription.renderTracking.get(renderId);
     if (!renderTracking) {
-      Blac.warn(`Render ${renderId} not found for subscription ${subscriptionId}`);
+      Blac.warn(
+        `Render ${renderId} not found for subscription ${subscriptionId}`,
+      );
       return;
     }
 
@@ -311,7 +321,9 @@ export class UnifiedDependencyTracker {
         .forEach(([id]) => subscription.renderTracking.delete(id));
     }
 
-    Blac.log(`[UnifiedTracker] Committed ${renderTracking.dependencies.length} dependencies from render ${renderId}`);
+    Blac.log(
+      `[UnifiedTracker] Committed ${renderTracking.dependencies.length} dependencies from render ${renderId}`,
+    );
   }
 
   /**
@@ -331,7 +343,11 @@ export class UnifiedDependencyTracker {
    * @param dependency - What dependency to track
    * @param renderId - Optional render ID for render-specific tracking
    */
-  track(subscriptionId: string, dependency: Dependency, renderId?: string): void {
+  track(
+    subscriptionId: string,
+    dependency: Dependency,
+    renderId?: string,
+  ): void {
     const subscription = this.subscriptions.get(subscriptionId);
     if (!subscription) {
       Blac.warn(`Subscription ${subscriptionId} not found, cannot track`);
@@ -348,7 +364,7 @@ export class UnifiedDependencyTracker {
       const renderTracking = subscription.renderTracking.get(targetRenderId)!;
 
       const alreadyTracked = renderTracking.dependencies.some(
-        d => this.getDependencyKey(d) === depKey
+        (d) => this.getDependencyKey(d) === depKey,
       );
 
       if (!alreadyTracked) {
@@ -362,11 +378,13 @@ export class UnifiedDependencyTracker {
         subscription.valueCache.set(depKey, currentValue);
       }
 
-      Blac.log(`[UnifiedTracker] Tracked ${depKey} for render ${targetRenderId}`);
+      Blac.log(
+        `[UnifiedTracker] Tracked ${depKey} for render ${targetRenderId}`,
+      );
     } else {
       // Fallback to direct tracking (for custom dependencies or non-render tracking)
       const alreadyTracked = subscription.dependencies.some(
-        d => this.getDependencyKey(d) === depKey
+        (d) => this.getDependencyKey(d) === depKey,
       );
 
       if (!alreadyTracked) {
@@ -380,7 +398,9 @@ export class UnifiedDependencyTracker {
         subscription.valueCache.set(depKey, currentValue);
       }
 
-      Blac.log(`[UnifiedTracker] Tracked ${depKey} for subscription ${subscriptionId} (direct)`);
+      Blac.log(
+        `[UnifiedTracker] Tracked ${depKey} for subscription ${subscriptionId} (direct)`,
+      );
     }
   }
 
@@ -388,7 +408,10 @@ export class UnifiedDependencyTracker {
    * Clean up an abandoned render that was never committed
    * @private
    */
-  private cleanupAbandonedRender(subscriptionId: string, renderId: string): void {
+  private cleanupAbandonedRender(
+    subscriptionId: string,
+    renderId: string,
+  ): void {
     const subscription = this.subscriptions.get(subscriptionId);
     if (!subscription) return;
 
@@ -421,16 +444,22 @@ export class UnifiedDependencyTracker {
   notifyChanges(blocId: string, change: StateChange): Set<string> {
     const affected = new Set<string>();
 
-    Blac.log(`[UnifiedTracker] notifyChanges called for bloc ${blocId}, checking ${this.subscriptions.size} subscriptions`);
+    Blac.log(
+      `[UnifiedTracker] notifyChanges called for bloc ${blocId}, checking ${this.subscriptions.size} subscriptions`,
+    );
 
     // Find all subscriptions for this bloc
     for (const [subId, sub] of this.subscriptions) {
       if (sub.blocId !== blocId) {
-        Blac.log(`[UnifiedTracker] Skipping subscription ${subId} (blocId: ${sub.blocId} !== ${blocId})`);
+        Blac.log(
+          `[UnifiedTracker] Skipping subscription ${subId} (blocId: ${sub.blocId} !== ${blocId})`,
+        );
         continue; // Skip subscriptions for other blocs
       }
 
-      Blac.log(`[UnifiedTracker] Found matching subscription ${subId} for bloc ${blocId}, deps: ${sub.dependencies.length}`);
+      Blac.log(
+        `[UnifiedTracker] Found matching subscription ${subId} for bloc ${blocId}, deps: ${sub.dependencies.length}`,
+      );
 
       let shouldNotify = false;
       const bloc = Blac.getBlocByUid(blocId);
@@ -472,7 +501,9 @@ export class UnifiedDependencyTracker {
           sub.valueCache.set(depKey, newValue);
           shouldNotify = true;
 
-          Blac.log(`[UnifiedTracker] Dependency ${depKey} changed for subscription ${subId}`);
+          Blac.log(
+            `[UnifiedTracker] Dependency ${depKey} changed for subscription ${subId}`,
+          );
 
           // Early exit - one changed dependency is enough
           break;
@@ -483,7 +514,9 @@ export class UnifiedDependencyTracker {
         affected.add(subId);
 
         // Trigger React re-render
-        Blac.log(`[UnifiedTracker] About to notify subscription ${subId}, notify is: ${typeof sub.notify}`);
+        Blac.log(
+          `[UnifiedTracker] About to notify subscription ${subId}, notify is: ${typeof sub.notify}`,
+        );
         sub.notify();
 
         // Update metadata
@@ -492,7 +525,9 @@ export class UnifiedDependencyTracker {
 
         this.totalNotifications++;
 
-        Blac.log(`[UnifiedTracker] Notified subscription ${subId} (render #${sub.metadata.renderCount})`);
+        Blac.log(
+          `[UnifiedTracker] Notified subscription ${subId} (render #${sub.metadata.renderCount})`,
+        );
       }
     }
 
@@ -541,7 +576,10 @@ export class UnifiedDependencyTracker {
         return dep.selector(bloc);
       }
     } catch (error) {
-      Blac.error(`Error evaluating dependency ${this.getDependencyKey(dep)}:`, error);
+      Blac.error(
+        `Error evaluating dependency ${this.getDependencyKey(dep)}:`,
+        error,
+      );
       return undefined;
     }
   }
@@ -590,7 +628,7 @@ export class UnifiedDependencyTracker {
     return {
       totalSubscriptions: this.subscriptions.size,
       totalNotifications: this.totalNotifications,
-      subscriptions: Array.from(this.subscriptions.values()).map(sub => ({
+      subscriptions: Array.from(this.subscriptions.values()).map((sub) => ({
         id: sub.id,
         blocId: sub.blocId,
         dependencyCount: sub.dependencies.length,

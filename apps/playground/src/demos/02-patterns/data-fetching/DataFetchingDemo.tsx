@@ -1,9 +1,19 @@
 import React, { useEffect } from 'react';
 import { Cubit } from '@blac/core';
 import { useBloc } from '@blac/react';
-import { Loader2, RefreshCw, Database, Clock, Zap, AlertCircle } from 'lucide-react';
+import {
+  Loader2,
+  RefreshCw,
+  Database,
+  Clock,
+  Zap,
+  AlertCircle,
+} from 'lucide-react';
 import { DemoArticle } from '@/components/demo-article/DemoArticle';
-import { ArticleSection, SectionHeader } from '@/components/demo-article/ArticleSection';
+import {
+  ArticleSection,
+  SectionHeader,
+} from '@/components/demo-article/ArticleSection';
 import { Prose } from '@/components/demo-article/Prose';
 import { CodePanel } from '@/components/demo-article/CodePanel';
 import { ConceptCallout } from '@/components/shared/ConceptCallout';
@@ -54,9 +64,19 @@ class SimpleCacheCubit extends Cubit<CachedState<User[]>> {
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
       const users: User[] = [
-        { id: 1, name: 'Alice Johnson', email: 'alice@example.com', role: 'Admin' },
+        {
+          id: 1,
+          name: 'Alice Johnson',
+          email: 'alice@example.com',
+          role: 'Admin',
+        },
         { id: 2, name: 'Bob Smith', email: 'bob@example.com', role: 'User' },
-        { id: 3, name: 'Charlie Brown', email: 'charlie@example.com', role: 'User' },
+        {
+          id: 3,
+          name: 'Charlie Brown',
+          email: 'charlie@example.com',
+          role: 'User',
+        },
       ];
 
       this.patch({
@@ -94,7 +114,11 @@ function SimpleCacheDemo() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3 flex-wrap">
-        <Button onClick={cubit.fetchUsers} disabled={state.loading} variant="primary">
+        <Button
+          onClick={cubit.fetchUsers}
+          disabled={state.loading}
+          variant="primary"
+        >
           {state.loading ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin mr-2" />
@@ -108,7 +132,11 @@ function SimpleCacheDemo() {
           )}
         </Button>
 
-        <Button onClick={cubit.invalidateCache} variant="outline" disabled={!state.cachedAt}>
+        <Button
+          onClick={cubit.invalidateCache}
+          variant="outline"
+          disabled={!state.cachedAt}
+        >
           <RefreshCw className="w-4 h-4 mr-2" />
           Invalidate Cache
         </Button>
@@ -118,7 +146,9 @@ function SimpleCacheDemo() {
             <Clock className="w-4 h-4" />
             <span>Cached {cubit.cacheAge}s ago</span>
             {cubit.cacheAge > 5 && (
-              <span className="text-orange-600 dark:text-orange-400">(stale)</span>
+              <span className="text-orange-600 dark:text-orange-400">
+                (stale)
+              </span>
             )}
           </div>
         )}
@@ -145,15 +175,22 @@ function SimpleCacheDemo() {
             </thead>
             <tbody>
               {state.data.map((user) => (
-                <tr key={user.id} className="border-t border-gray-200 dark:border-gray-700">
+                <tr
+                  key={user.id}
+                  className="border-t border-gray-200 dark:border-gray-700"
+                >
                   <td className="py-3 px-4">{user.name}</td>
-                  <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{user.email}</td>
+                  <td className="py-3 px-4 text-gray-600 dark:text-gray-400">
+                    {user.email}
+                  </td>
                   <td className="py-3 px-4">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      user.role === 'Admin'
-                        ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
-                    }`}>
+                    <span
+                      className={`px-2 py-1 rounded text-xs font-medium ${
+                        user.role === 'Admin'
+                          ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                      }`}
+                    >
                       {user.role}
                     </span>
                   </td>
@@ -253,7 +290,8 @@ class SWRCubit extends Cubit<SWRState> {
       this.patch({
         loading: false,
         revalidating: false,
-        error: error instanceof Error ? error.message : 'Failed to fetch articles',
+        error:
+          error instanceof Error ? error.message : 'Failed to fetch articles',
       });
     }
   };
@@ -318,7 +356,10 @@ function SWRDemo() {
           )}
         </Button>
 
-        <Button onClick={toggleAutoRefresh} variant={autoRefreshEnabled ? 'primary' : 'outline'}>
+        <Button
+          onClick={toggleAutoRefresh}
+          variant={autoRefreshEnabled ? 'primary' : 'outline'}
+        >
           <Zap className="w-4 h-4 mr-2" />
           Auto-Refresh: {autoRefreshEnabled ? 'ON' : 'OFF'}
         </Button>
@@ -415,7 +456,9 @@ class PaginationCubit extends Cubit<PaginatedState> {
       id: i + 1,
       name: `Product ${i + 1}`,
       price: Math.floor(Math.random() * 100) + 10,
-      category: ['Electronics', 'Clothing', 'Books', 'Home'][Math.floor(Math.random() * 4)],
+      category: ['Electronics', 'Clothing', 'Books', 'Home'][
+        Math.floor(Math.random() * 4)
+      ],
     }));
   }
 
@@ -500,7 +543,9 @@ function PaginationDemo() {
               <div className="flex items-start justify-between">
                 <div>
                   <h3 className="font-semibold mb-1">{product.name}</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{product.category}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {product.category}
+                  </p>
                 </div>
                 <div className="text-right">
                   <p className="text-lg font-bold text-green-600 dark:text-green-400">
@@ -524,20 +569,22 @@ function PaginationDemo() {
           </Button>
 
           <div className="flex items-center gap-2">
-            {Array.from({ length: state.totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => cubit.goToPage(page)}
-                disabled={state.loading}
-                className={`w-8 h-8 rounded ${
-                  page === state.currentPage
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'
-                } disabled:opacity-50 transition-all`}
-              >
-                {page}
-              </button>
-            ))}
+            {Array.from({ length: state.totalPages }, (_, i) => i + 1).map(
+              (page) => (
+                <button
+                  key={page}
+                  onClick={() => cubit.goToPage(page)}
+                  disabled={state.loading}
+                  className={`w-8 h-8 rounded ${
+                    page === state.currentPage
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  } disabled:opacity-50 transition-all`}
+                >
+                  {page}
+                </button>
+              ),
+            )}
           </div>
 
           <Button
@@ -560,7 +607,8 @@ function PaginationDemo() {
 const demoMetadata = {
   id: 'data-fetching',
   title: 'Data Fetching & Caching',
-  description: 'Learn professional data fetching patterns including caching, stale-while-revalidate, and pagination.',
+  description:
+    'Learn professional data fetching patterns including caching, stale-while-revalidate, and pagination.',
   category: '02-patterns' as const,
   difficulty: 'intermediate' as const,
   tags: ['cubit', 'async', 'caching', 'api', 'pagination', 'swr'],
@@ -588,21 +636,23 @@ export function DataFetchingDemo() {
         <SectionHeader>Professional Data Fetching</SectionHeader>
         <Prose>
           <p>
-            Fetching data from APIs is one of the most common tasks in web development. But there's
-            a huge difference between a <strong>naive implementation</strong> and a{' '}
+            Fetching data from APIs is one of the most common tasks in web
+            development. But there's a huge difference between a{' '}
+            <strong>naive implementation</strong> and a{' '}
             <strong>production-ready</strong> one.
           </p>
           <p>
-            In this guide, you'll learn three battle-tested patterns used by companies like Vercel,
-            Airbnb, and Facebook:
+            In this guide, you'll learn three battle-tested patterns used by
+            companies like Vercel, Airbnb, and Facebook:
           </p>
           <ul>
             <li>
-              <strong>Simple caching</strong>: Avoid redundant API calls with time-based cache
+              <strong>Simple caching</strong>: Avoid redundant API calls with
+              time-based cache
             </li>
             <li>
-              <strong>Stale-While-Revalidate (SWR)</strong>: Show cached data instantly while
-              updating in background
+              <strong>Stale-While-Revalidate (SWR)</strong>: Show cached data
+              instantly while updating in background
             </li>
             <li>
               <strong>Pagination</strong>: Handle large datasets efficiently
@@ -616,12 +666,12 @@ export function DataFetchingDemo() {
         <SectionHeader>Simple Time-Based Cache</SectionHeader>
         <Prose>
           <p>
-            The simplest caching strategy: if we fetched data recently (within 5 seconds), reuse
-            it. Otherwise, fetch fresh data.
+            The simplest caching strategy: if we fetched data recently (within 5
+            seconds), reuse it. Otherwise, fetch fresh data.
           </p>
           <p>
-            This pattern is perfect for data that doesn't change frequently, like user profiles or
-            configuration settings.
+            This pattern is perfect for data that doesn't change frequently,
+            like user profiles or configuration settings.
           </p>
         </Prose>
 
@@ -673,8 +723,9 @@ class SimpleCacheCubit extends Cubit<CachedState<User[]>> {
 
         <Prose>
           <p>
-            Notice the <code>isCacheFresh()</code> check at the start of <code>fetchUsers()</code>.
-            This prevents unnecessary API calls and improves perceived performance.
+            Notice the <code>isCacheFresh()</code> check at the start of{' '}
+            <code>fetchUsers()</code>. This prevents unnecessary API calls and
+            improves perceived performance.
           </p>
         </Prose>
 
@@ -683,9 +734,7 @@ class SimpleCacheCubit extends Cubit<CachedState<User[]>> {
         </div>
 
         <ConceptCallout type="tip" title="When to Use Simple Caching">
-          <p>
-            Simple caching works best for:
-          </p>
+          <p>Simple caching works best for:</p>
           <ul>
             <li>Data that doesn't change often (user profiles, settings)</li>
             <li>Non-critical data where slight staleness is acceptable</li>
@@ -713,8 +762,8 @@ class SimpleCacheCubit extends Cubit<CachedState<User[]>> {
             </li>
           </ol>
           <p>
-            This pattern gives users <strong>instant feedback</strong> with cached data, while
-            ensuring they see fresh data moments later.
+            This pattern gives users <strong>instant feedback</strong> with
+            cached data, while ensuring they see fresh data moments later.
           </p>
         </Prose>
 
@@ -769,8 +818,8 @@ class SWRCubit extends Cubit<SWRState> {
 
         <ConceptCallout type="tip" title="SWR in Production">
           <p>
-            Libraries like <code>swr</code> and <code>react-query</code> implement this pattern
-            with additional features:
+            Libraries like <code>swr</code> and <code>react-query</code>{' '}
+            implement this pattern with additional features:
           </p>
           <ul>
             <li>Focus revalidation (refetch when tab gains focus)</li>
@@ -786,12 +835,14 @@ class SWRCubit extends Cubit<SWRState> {
         <SectionHeader>Pagination Pattern</SectionHeader>
         <Prose>
           <p>
-            When dealing with large datasets (hundreds or thousands of items), loading everything
-            at once is slow and wasteful. Pagination solves this by loading data in chunks.
+            When dealing with large datasets (hundreds or thousands of items),
+            loading everything at once is slow and wasteful. Pagination solves
+            this by loading data in chunks.
           </p>
           <p>
-            The key insight: <strong>page number</strong> and <strong>page size</strong> become
-            part of your state, and you fetch data based on these values.
+            The key insight: <strong>page number</strong> and{' '}
+            <strong>page size</strong> become part of your state, and you fetch
+            data based on these values.
           </p>
         </Prose>
 
@@ -858,7 +909,9 @@ class PaginationCubit extends Cubit<PaginatedState> {
             <strong>Pagination</strong> is better when:
           </p>
           <ul>
-            <li>Users need to reference specific items (e.g., search results)</li>
+            <li>
+              Users need to reference specific items (e.g., search results)
+            </li>
             <li>You want to reduce server load (user controls loading)</li>
             <li>Items have a clear ranking or order</li>
           </ul>
@@ -866,7 +919,9 @@ class PaginationCubit extends Cubit<PaginatedState> {
             <strong>Infinite scroll</strong> is better when:
           </p>
           <ul>
-            <li>Content is consumed continuously (social feeds, image galleries)</li>
+            <li>
+              Content is consumed continuously (social feeds, image galleries)
+            </li>
             <li>Users rarely jump to specific items</li>
             <li>The goal is engagement and discovery</li>
           </ul>
@@ -891,19 +946,25 @@ class PaginationCubit extends Cubit<PaginatedState> {
                 <td className="py-3 px-4 font-medium">Simple Cache</td>
                 <td className="py-3 px-4">Static or slow-changing data</td>
                 <td className="py-3 px-4">Fast on repeated visits</td>
-                <td className="py-3 px-4 text-green-600 dark:text-green-400">Low</td>
+                <td className="py-3 px-4 text-green-600 dark:text-green-400">
+                  Low
+                </td>
               </tr>
               <tr className="border-b border-gray-200 dark:border-gray-800">
                 <td className="py-3 px-4 font-medium">SWR</td>
                 <td className="py-3 px-4">Frequently updated data</td>
                 <td className="py-3 px-4">Instant + Fresh</td>
-                <td className="py-3 px-4 text-yellow-600 dark:text-yellow-400">Medium</td>
+                <td className="py-3 px-4 text-yellow-600 dark:text-yellow-400">
+                  Medium
+                </td>
               </tr>
               <tr>
                 <td className="py-3 px-4 font-medium">Pagination</td>
                 <td className="py-3 px-4">Large datasets</td>
                 <td className="py-3 px-4">Controlled, predictable</td>
-                <td className="py-3 px-4 text-green-600 dark:text-green-400">Low</td>
+                <td className="py-3 px-4 text-green-600 dark:text-green-400">
+                  Low
+                </td>
               </tr>
             </tbody>
           </table>
@@ -986,35 +1047,37 @@ onUserLogout = () => {
           <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-950/20 border-2 border-blue-200 dark:border-blue-800">
             <h4 className="font-semibold mb-2">Simple Cache</h4>
             <p className="text-sm">
-              Time-based caching to avoid redundant API calls. Perfect for static or slow-changing
-              data where freshness isn't critical.
+              Time-based caching to avoid redundant API calls. Perfect for
+              static or slow-changing data where freshness isn't critical.
             </p>
           </div>
 
           <div className="p-4 rounded-lg bg-cyan-50 dark:bg-cyan-950/20 border-2 border-cyan-200 dark:border-cyan-800">
             <h4 className="font-semibold mb-2">Stale-While-Revalidate</h4>
             <p className="text-sm">
-              Show cached data instantly while fetching fresh data in the background. The gold
-              standard for responsive, up-to-date UIs.
+              Show cached data instantly while fetching fresh data in the
+              background. The gold standard for responsive, up-to-date UIs.
             </p>
           </div>
 
           <div className="p-4 rounded-lg bg-green-50 dark:bg-green-950/20 border-2 border-green-200 dark:border-green-800">
             <h4 className="font-semibold mb-2">Pagination</h4>
             <p className="text-sm">
-              Load large datasets in chunks for better performance and UX. Essential for search
-              results, product catalogs, and data tables.
+              Load large datasets in chunks for better performance and UX.
+              Essential for search results, product catalogs, and data tables.
             </p>
           </div>
         </div>
 
         <ConceptCallout type="tip" title="Next Steps">
           <p>
-            These patterns are the foundation of professional data fetching. Consider exploring:
+            These patterns are the foundation of professional data fetching.
+            Consider exploring:
           </p>
           <ul>
             <li>
-              <strong>Optimistic updates</strong>: Update UI immediately, sync with server later
+              <strong>Optimistic updates</strong>: Update UI immediately, sync
+              with server later
             </li>
             <li>
               <strong>Infinite scroll</strong>: Load more data as user scrolls
@@ -1023,7 +1086,8 @@ onUserLogout = () => {
               <strong>Prefetching</strong>: Load data before user needs it
             </li>
             <li>
-              <strong>Request deduplication</strong>: Prevent duplicate simultaneous requests
+              <strong>Request deduplication</strong>: Prevent duplicate
+              simultaneous requests
             </li>
           </ul>
         </ConceptCallout>

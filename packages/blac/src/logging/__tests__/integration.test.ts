@@ -41,7 +41,9 @@ describe('Logging Integration', () => {
 
     // Find the "Bloc created" log entry
     const creationLog = (logSpy.mock.calls as any[]).find((call) =>
-      call[0]?.some?.((arg: any) => typeof arg === 'string' && arg.includes('Bloc created')),
+      call[0]?.some?.(
+        (arg: any) => typeof arg === 'string' && arg.includes('Bloc created'),
+      ),
     );
 
     expect(creationLog).toBeDefined();
@@ -72,8 +74,8 @@ describe('Logging Integration', () => {
     expect(logSpy).toHaveBeenCalled();
 
     const stateLog = (logSpy.mock.calls as any[]).find((call) =>
-      call[0]?.some?.((arg: any) =>
-        typeof arg === 'string' && arg.includes('State emitted'),
+      call[0]?.some?.(
+        (arg: any) => typeof arg === 'string' && arg.includes('State emitted'),
       ),
     );
 
@@ -123,8 +125,8 @@ describe('Logging Integration', () => {
     const bloc = Blac.getBloc(Counter);
 
     const lifecycleLogs = (logSpy.mock.calls as any[]).filter((call) =>
-      call[0]?.some?.((arg: any) =>
-        typeof arg === 'string' && arg.includes('Bloc created'),
+      call[0]?.some?.(
+        (arg: any) => typeof arg === 'string' && arg.includes('Bloc created'),
       ),
     );
 
@@ -135,8 +137,8 @@ describe('Logging Integration', () => {
 
     // State topic should be filtered out
     const stateLogs = (logSpy.mock.calls as any[]).filter((call) =>
-      call[0]?.some?.((arg: any) =>
-        typeof arg === 'string' && arg.includes('State emitted'),
+      call[0]?.some?.(
+        (arg: any) => typeof arg === 'string' && arg.includes('State emitted'),
       ),
     );
 
@@ -170,18 +172,20 @@ describe('Logging Integration', () => {
 
     // Check for structured "Bloc created" logs specifically
     const counterCreationLogs = (logSpy.mock.calls as any[]).filter((call) =>
-      call[0]?.some?.((arg: any) =>
-        typeof arg === 'string' &&
-        arg.includes('Bloc created') &&
-        arg.includes('CounterBloc'),
+      call[0]?.some?.(
+        (arg: any) =>
+          typeof arg === 'string' &&
+          arg.includes('Bloc created') &&
+          arg.includes('CounterBloc'),
       ),
     );
 
     const userCreationLogs = (logSpy.mock.calls as any[]).filter((call) =>
-      call[0]?.some?.((arg: any) =>
-        typeof arg === 'string' &&
-        arg.includes('Bloc created') &&
-        arg.includes('UserBloc'),
+      call[0]?.some?.(
+        (arg: any) =>
+          typeof arg === 'string' &&
+          arg.includes('Bloc created') &&
+          arg.includes('UserBloc'),
       ),
     );
 
@@ -258,12 +262,12 @@ describe('Logging Integration', () => {
 
     // Verify subscription was logged (unified tracker or legacy)
     const subscribeLogs = (logSpy.mock.calls as any[]).filter((call) =>
-      call[0]?.some?.((arg: any) =>
-        typeof arg === 'string' && (
-          arg.includes('Observer subscribed') ||
-          arg.includes('Created subscription') ||
-          arg.includes('Subscription added')
-        ),
+      call[0]?.some?.(
+        (arg: any) =>
+          typeof arg === 'string' &&
+          (arg.includes('Observer subscribed') ||
+            arg.includes('Created subscription') ||
+            arg.includes('Subscription added')),
       ),
     );
 
@@ -277,12 +281,12 @@ describe('Logging Integration', () => {
     subscription.unsubscribe();
 
     const unsubscribeLogs = (logSpy.mock.calls as any[]).filter((call) =>
-      call[0]?.some?.((arg: any) =>
-        typeof arg === 'string' && (
-          arg.includes('Observer unsubscribed') ||
-          arg.includes('Removed subscription') ||
-          arg.includes('Subscription removed')
-        ),
+      call[0]?.some?.(
+        (arg: any) =>
+          typeof arg === 'string' &&
+          (arg.includes('Observer unsubscribed') ||
+            arg.includes('Removed subscription') ||
+            arg.includes('Subscription removed')),
       ),
     );
 

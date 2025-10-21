@@ -21,7 +21,10 @@ interface CounterState {
 }
 
 // ClickBloc - Event-driven counter
-class ClickBloc extends Vertex<CounterState, IncrementEvent | DecrementEvent | ResetEvent> {
+class ClickBloc extends Vertex<
+  CounterState,
+  IncrementEvent | DecrementEvent | ResetEvent
+> {
   constructor() {
     super({ count: 0 });
 
@@ -56,10 +59,14 @@ class ClickBloc extends Vertex<CounterState, IncrementEvent | DecrementEvent | R
 // Demo component
 export function BasicBlocDemo() {
   const [state, bloc] = useBloc(ClickBloc);
-  const [eventLog, setEventLog] = useState<Array<{ event: string; timestamp: number }>>([]);
+  const [eventLog, setEventLog] = useState<
+    Array<{ event: string; timestamp: number }>
+  >([]);
 
   const logEvent = (eventName: string) => {
-    setEventLog((prev) => [{ event: eventName, timestamp: Date.now() }, ...prev].slice(0, 10));
+    setEventLog((prev) =>
+      [{ event: eventName, timestamp: Date.now() }, ...prev].slice(0, 10),
+    );
   };
 
   const handleIncrement = () => {
@@ -119,7 +126,9 @@ export function BasicBlocDemo() {
                     key={idx}
                     className="flex items-center justify-between text-sm font-mono bg-background p-2 rounded"
                   >
-                    <span className="text-primary font-medium">{log.event}</span>
+                    <span className="text-primary font-medium">
+                      {log.event}
+                    </span>
                     <span className="text-muted-foreground text-xs">
                       {new Date(log.timestamp).toLocaleTimeString()}
                     </span>
@@ -140,24 +149,32 @@ export function BasicBlocDemo() {
           </h3>
           <div className="space-y-3 text-sm">
             <div>
-              <strong className="text-blue-700 dark:text-blue-300">Event Traceability:</strong>
+              <strong className="text-blue-700 dark:text-blue-300">
+                Event Traceability:
+              </strong>
               <p className="text-muted-foreground mt-1">
-                Every state change is triggered by a named event class, making it easy to track
-                what caused each change. Perfect for debugging and logging!
+                Every state change is triggered by a named event class, making
+                it easy to track what caused each change. Perfect for debugging
+                and logging!
               </p>
             </div>
             <div>
-              <strong className="text-blue-700 dark:text-blue-300">Testability:</strong>
+              <strong className="text-blue-700 dark:text-blue-300">
+                Testability:
+              </strong>
               <p className="text-muted-foreground mt-1">
-                You can test event handlers independently and verify that specific events produce
-                expected state changes.
+                You can test event handlers independently and verify that
+                specific events produce expected state changes.
               </p>
             </div>
             <div>
-              <strong className="text-blue-700 dark:text-blue-300">When to use Bloc:</strong>
+              <strong className="text-blue-700 dark:text-blue-300">
+                When to use Bloc:
+              </strong>
               <p className="text-muted-foreground mt-1">
-                Use Bloc when you need event tracking, time-travel debugging, or complex business
-                logic. For simple state updates, a Cubit might be sufficient.
+                Use Bloc when you need event tracking, time-travel debugging, or
+                complex business logic. For simple state updates, a Cubit might
+                be sufficient.
               </p>
             </div>
           </div>

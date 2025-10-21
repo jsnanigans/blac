@@ -41,7 +41,10 @@ class DecrementEvent {
 
 class ResetEvent {}
 
-class CounterBloc extends Vertex<CounterState, IncrementEvent | DecrementEvent | ResetEvent> {
+class CounterBloc extends Vertex<
+  CounterState,
+  IncrementEvent | DecrementEvent | ResetEvent
+> {
   constructor() {
     super({ count: 0 });
 
@@ -110,7 +113,11 @@ export function BlocVsCubitDemo() {
       {/* Side-by-Side Comparison */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Cubit Side */}
-        <Card className={activeImpl === 'cubit' ? 'ring-2 ring-primary' : 'opacity-50'}>
+        <Card
+          className={
+            activeImpl === 'cubit' ? 'ring-2 ring-primary' : 'opacity-50'
+          }
+        >
           <CardContent>
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
@@ -119,7 +126,9 @@ export function BlocVsCubitDemo() {
                   Simple
                 </span>
               </div>
-              <p className="text-sm text-muted-foreground">Direct method calls</p>
+              <p className="text-sm text-muted-foreground">
+                Direct method calls
+              </p>
             </div>
 
             <div className="text-center mb-6">
@@ -127,13 +136,25 @@ export function BlocVsCubitDemo() {
             </div>
 
             <div className="flex justify-center gap-2 mb-4">
-              <Button onClick={cubit.decrement} variant="outline" disabled={activeImpl !== 'cubit'}>
+              <Button
+                onClick={cubit.decrement}
+                variant="outline"
+                disabled={activeImpl !== 'cubit'}
+              >
                 -
               </Button>
-              <Button onClick={cubit.reset} variant="ghost" disabled={activeImpl !== 'cubit'}>
+              <Button
+                onClick={cubit.reset}
+                variant="ghost"
+                disabled={activeImpl !== 'cubit'}
+              >
                 Reset
               </Button>
-              <Button onClick={cubit.increment} variant="primary" disabled={activeImpl !== 'cubit'}>
+              <Button
+                onClick={cubit.increment}
+                variant="primary"
+                disabled={activeImpl !== 'cubit'}
+              >
                 +
               </Button>
             </div>
@@ -148,7 +169,11 @@ export function BlocVsCubitDemo() {
         </Card>
 
         {/* Bloc Side */}
-        <Card className={activeImpl === 'bloc' ? 'ring-2 ring-primary' : 'opacity-50'}>
+        <Card
+          className={
+            activeImpl === 'bloc' ? 'ring-2 ring-primary' : 'opacity-50'
+          }
+        >
           <CardContent>
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
@@ -157,7 +182,9 @@ export function BlocVsCubitDemo() {
                   Event-Driven
                 </span>
               </div>
-              <p className="text-sm text-muted-foreground">Events trigger state changes</p>
+              <p className="text-sm text-muted-foreground">
+                Events trigger state changes
+              </p>
             </div>
 
             <div className="text-center mb-6">
@@ -165,13 +192,25 @@ export function BlocVsCubitDemo() {
             </div>
 
             <div className="flex justify-center gap-2 mb-4">
-              <Button onClick={() => bloc.decrement()} variant="outline" disabled={activeImpl !== 'bloc'}>
+              <Button
+                onClick={() => bloc.decrement()}
+                variant="outline"
+                disabled={activeImpl !== 'bloc'}
+              >
                 -
               </Button>
-              <Button onClick={() => bloc.reset()} variant="ghost" disabled={activeImpl !== 'bloc'}>
+              <Button
+                onClick={() => bloc.reset()}
+                variant="ghost"
+                disabled={activeImpl !== 'bloc'}
+              >
                 Reset
               </Button>
-              <Button onClick={() => bloc.increment()} variant="primary" disabled={activeImpl !== 'bloc'}>
+              <Button
+                onClick={() => bloc.increment()}
+                variant="primary"
+                disabled={activeImpl !== 'bloc'}
+              >
                 +
               </Button>
             </div>
@@ -243,7 +282,9 @@ export function BlocVsCubitDemo() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Cubit Code */}
             <div>
-              <h4 className="font-semibold mb-2 text-sm">Cubit Implementation</h4>
+              <h4 className="font-semibold mb-2 text-sm">
+                Cubit Implementation
+              </h4>
               <div className="bg-muted/50 rounded p-3 text-xs font-mono overflow-x-auto">
                 <pre>{`class CounterCubit extends Cubit<State> {
   constructor() {
@@ -275,7 +316,9 @@ cubit.increment(); // Direct call`}</pre>
 
             {/* Bloc Code */}
             <div>
-              <h4 className="font-semibold mb-2 text-sm">Bloc Implementation</h4>
+              <h4 className="font-semibold mb-2 text-sm">
+                Bloc Implementation
+              </h4>
               <div className="bg-muted/50 rounded p-3 text-xs font-mono overflow-x-auto">
                 <pre>{`// Event classes
 class IncrementEvent {}
@@ -342,9 +385,9 @@ bloc.add(new IncrementEvent());`}</pre>
               </ul>
             </div>
             <div className="mt-4 p-3 bg-background rounded border">
-              <strong>💡 Pro Tip:</strong> Start with Cubit for simplicity. Migrate to Bloc when you
-              need event tracking or complex logic. They share the same API, so migration is
-              straightforward!
+              <strong>💡 Pro Tip:</strong> Start with Cubit for simplicity.
+              Migrate to Bloc when you need event tracking or complex logic.
+              They share the same API, so migration is straightforward!
             </div>
           </div>
         </CardContent>

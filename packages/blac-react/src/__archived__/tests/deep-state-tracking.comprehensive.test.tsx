@@ -126,7 +126,7 @@ describe('Deep State Tracking - Comprehensive Tests', () => {
       // Increase proxy depth to handle deep nesting tests (6+ levels)
       Blac.setConfig({
         proxyDependencyTracking: true,
-        proxyMaxDepth: 10
+        proxyMaxDepth: 10,
       });
     });
 
@@ -367,7 +367,9 @@ describe('Deep State Tracking - Comprehensive Tests', () => {
         renderCount++;
         return (
           <div>
-            <div data-testid="names">{state.items.map((i) => i.name).join(', ')}</div>
+            <div data-testid="names">
+              {state.items.map((i) => i.name).join(', ')}
+            </div>
             <div data-testid="count">{state.items.length}</div>
           </div>
         );
@@ -384,7 +386,9 @@ describe('Deep State Tracking - Comprehensive Tests', () => {
         cubit.addItem({ id: 3, name: 'Item 3', tags: [] });
       });
 
-      expect(screen.getByTestId('names')).toHaveTextContent('Item 1, Item 2, Item 3');
+      expect(screen.getByTestId('names')).toHaveTextContent(
+        'Item 1, Item 2, Item 3',
+      );
       expect(renderCount).toBe(2);
     });
   });

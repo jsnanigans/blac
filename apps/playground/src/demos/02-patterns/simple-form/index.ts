@@ -9,7 +9,12 @@ DemoRegistry.register({
     'Learn how to manage form state, validation, and submission with BlaC Cubits. Covers field updates, real-time validation, and async submission handling.',
   difficulty: 'beginner',
   tags: ['cubit', 'forms', 'validation', 'async', 'patch'],
-  concepts: ['form state management', 'validation getters', 'async handlers', 'loading states'],
+  concepts: [
+    'form state management',
+    'validation getters',
+    'async handlers',
+    'loading states',
+  ],
   component: SimpleFormDemo,
   code: {
     demo: '', // Code will be provided by demoCodeExports.ts

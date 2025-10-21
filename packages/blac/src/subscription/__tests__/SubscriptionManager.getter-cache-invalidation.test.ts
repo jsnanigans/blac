@@ -100,7 +100,11 @@ describe('SubscriptionManager - Getter Cache Invalidation (Fix #8)', () => {
     // Manually add getter to dependencies and cache
     const subscription = manager.subscriptions.get(subscriptionId);
     if (subscription) {
-      subscription.dependencies = new Set(['name', 'age', '_class.displayName']);
+      subscription.dependencies = new Set([
+        'name',
+        'age',
+        '_class.displayName',
+      ]);
 
       // Simulate getter cache entry
       if (!subscription.getterCache) {
@@ -196,11 +200,7 @@ describe('SubscriptionManager - Getter Cache Invalidation (Fix #8)', () => {
       expect(subscription.getterCache.size).toBe(2);
 
       // Change a state path
-      manager.shouldNotifyForPaths(
-        subscriptionId,
-        new Set(['name']),
-        cubit,
-      );
+      manager.shouldNotifyForPaths(subscriptionId, new Set(['name']), cubit);
 
       // All getter cache entries should be cleared
       expect(subscription.getterCache.size).toBe(0);
@@ -268,11 +268,7 @@ describe('SubscriptionManager - Getter Cache Invalidation (Fix #8)', () => {
 
       // Should not throw
       expect(() => {
-        manager.shouldNotifyForPaths(
-          subscriptionId,
-          new Set(['name']),
-          cubit,
-        );
+        manager.shouldNotifyForPaths(subscriptionId, new Set(['name']), cubit);
       }).not.toThrow();
     }
 
@@ -295,11 +291,7 @@ describe('SubscriptionManager - Getter Cache Invalidation (Fix #8)', () => {
 
       // Should not throw
       expect(() => {
-        manager.shouldNotifyForPaths(
-          subscriptionId,
-          new Set(['name']),
-          cubit,
-        );
+        manager.shouldNotifyForPaths(subscriptionId, new Set(['name']), cubit);
       }).not.toThrow();
     }
 
@@ -335,11 +327,7 @@ describe('SubscriptionManager - Getter Cache Invalidation (Fix #8)', () => {
       expect(subscription.getterCache.size).toBe(100);
 
       // Change state - should clear all cached getters
-      manager.shouldNotifyForPaths(
-        subscriptionId,
-        new Set(['name']),
-        cubit,
-      );
+      manager.shouldNotifyForPaths(subscriptionId, new Set(['name']), cubit);
 
       // All entries cleared - memory freed
       expect(subscription.getterCache.size).toBe(0);
@@ -399,14 +387,20 @@ describe('SubscriptionManager - Getter Cache Invalidation (Fix #8)', () => {
     let notificationCount = 0;
     const { id: subscriptionId } = manager.subscribe({
       type: 'observer' as const,
-      notify: () => { notificationCount++; },
+      notify: () => {
+        notificationCount++;
+      },
     });
 
     const subscription = manager.subscriptions.get(subscriptionId);
 
     if (subscription) {
       // Setup dependencies - must have dependencies for shouldNotifyForPaths to be called
-      subscription.dependencies = new Set(['name', 'age', '_class.displayName']);
+      subscription.dependencies = new Set([
+        'name',
+        'age',
+        '_class.displayName',
+      ]);
 
       // Initialize getter cache
       if (!subscription.getterCache) {

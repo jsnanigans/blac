@@ -1,9 +1,20 @@
 import React, { useState } from 'react';
 import { Cubit, Vertex } from '@blac/core';
 import { useBloc } from '@blac/react';
-import { Plus, Trash2, Check, X, Filter, CheckSquare, Square } from 'lucide-react';
+import {
+  Plus,
+  Trash2,
+  Check,
+  X,
+  Filter,
+  CheckSquare,
+  Square,
+} from 'lucide-react';
 import { DemoArticle } from '@/components/demo-article/DemoArticle';
-import { ArticleSection, SectionHeader } from '@/components/demo-article/ArticleSection';
+import {
+  ArticleSection,
+  SectionHeader,
+} from '@/components/demo-article/ArticleSection';
 import { Prose } from '@/components/demo-article/Prose';
 import { CodePanel } from '@/components/demo-article/CodePanel';
 import { ConceptCallout } from '@/components/shared/ConceptCallout';
@@ -51,7 +62,7 @@ class SimpleListCubit extends Cubit<SimpleListState> {
   toggleTask = (id: number) => {
     this.patch({
       tasks: this.state.tasks.map((task) =>
-        task.id === id ? { ...task, completed: !task.completed } : task
+        task.id === id ? { ...task, completed: !task.completed } : task,
       ),
     });
   };
@@ -143,7 +154,11 @@ function SimpleListDemo() {
               {completedCount} of {state.tasks.length} completed
             </span>
             {completedCount > 0 && (
-              <Button onClick={cubit.clearCompleted} variant="outline" size="sm">
+              <Button
+                onClick={cubit.clearCompleted}
+                variant="outline"
+                size="sm"
+              >
                 <Trash2 className="w-4 h-4 mr-2" />
                 Clear Completed
               </Button>
@@ -179,7 +194,7 @@ interface TodoState {
 class AddTodoEvent {
   constructor(
     public readonly text: string,
-    public readonly priority: 'low' | 'medium' | 'high' = 'medium'
+    public readonly priority: 'low' | 'medium' | 'high' = 'medium',
   ) {}
 }
 
@@ -213,8 +228,18 @@ class TodoBloc extends Vertex<TodoState, TodoEvent> {
   constructor() {
     super({
       todos: [
-        { id: 1, text: 'Review pull requests', completed: false, priority: 'high' },
-        { id: 2, text: 'Update documentation', completed: false, priority: 'medium' },
+        {
+          id: 1,
+          text: 'Review pull requests',
+          completed: false,
+          priority: 'high',
+        },
+        {
+          id: 2,
+          text: 'Update documentation',
+          completed: false,
+          priority: 'medium',
+        },
         { id: 3, text: 'Refactor old code', completed: true, priority: 'low' },
       ],
       filter: 'all',
@@ -230,7 +255,10 @@ class TodoBloc extends Vertex<TodoState, TodoEvent> {
     this.on(ClearCompletedEvent, this.handleClearCompleted);
   }
 
-  private handleAdd = (event: AddTodoEvent, emit: (state: TodoState) => void) => {
+  private handleAdd = (
+    event: AddTodoEvent,
+    emit: (state: TodoState) => void,
+  ) => {
     if (!event.text.trim()) return;
 
     emit({
@@ -248,23 +276,32 @@ class TodoBloc extends Vertex<TodoState, TodoEvent> {
     });
   };
 
-  private handleToggle = (event: ToggleTodoEvent, emit: (state: TodoState) => void) => {
+  private handleToggle = (
+    event: ToggleTodoEvent,
+    emit: (state: TodoState) => void,
+  ) => {
     emit({
       ...this.state,
       todos: this.state.todos.map((todo) =>
-        todo.id === event.id ? { ...todo, completed: !todo.completed } : todo
+        todo.id === event.id ? { ...todo, completed: !todo.completed } : todo,
       ),
     });
   };
 
-  private handleRemove = (event: RemoveTodoEvent, emit: (state: TodoState) => void) => {
+  private handleRemove = (
+    event: RemoveTodoEvent,
+    emit: (state: TodoState) => void,
+  ) => {
     emit({
       ...this.state,
       todos: this.state.todos.filter((todo) => todo.id !== event.id),
     });
   };
 
-  private handleSetFilter = (event: SetFilterEvent, emit: (state: TodoState) => void) => {
+  private handleSetFilter = (
+    event: SetFilterEvent,
+    emit: (state: TodoState) => void,
+  ) => {
     emit({
       ...this.state,
       filter: event.filter,
@@ -273,7 +310,7 @@ class TodoBloc extends Vertex<TodoState, TodoEvent> {
 
   private handleSetPriorityFilter = (
     event: SetPriorityFilterEvent,
-    emit: (state: TodoState) => void
+    emit: (state: TodoState) => void,
   ) => {
     emit({
       ...this.state,
@@ -283,7 +320,7 @@ class TodoBloc extends Vertex<TodoState, TodoEvent> {
 
   private handleClearCompleted = (
     _event: ClearCompletedEvent,
-    emit: (state: TodoState) => void
+    emit: (state: TodoState) => void,
   ) => {
     emit({
       ...this.state,
@@ -332,7 +369,9 @@ class TodoBloc extends Vertex<TodoState, TodoEvent> {
 
     // Apply priority filter
     if (this.state.priorityFilter !== 'all') {
-      filtered = filtered.filter((t) => t.priority === this.state.priorityFilter);
+      filtered = filtered.filter(
+        (t) => t.priority === this.state.priorityFilter,
+      );
     }
 
     return filtered;
@@ -350,7 +389,9 @@ class TodoBloc extends Vertex<TodoState, TodoEvent> {
 function EventDrivenListDemo() {
   const [state, bloc] = useBloc(TodoBloc);
   const [inputValue, setInputValue] = useState('');
-  const [selectedPriority, setSelectedPriority] = useState<'low' | 'medium' | 'high'>('medium');
+  const [selectedPriority, setSelectedPriority] = useState<
+    'low' | 'medium' | 'high'
+  >('medium');
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
@@ -432,7 +473,9 @@ function EventDrivenListDemo() {
             <Button
               key={priority}
               onClick={() => bloc.setPriorityFilter(priority)}
-              variant={state.priorityFilter === priority ? 'primary' : 'outline'}
+              variant={
+                state.priorityFilter === priority ? 'primary' : 'outline'
+              }
               size="sm"
             >
               {priority.charAt(0).toUpperCase() + priority.slice(1)}
@@ -470,7 +513,9 @@ function EventDrivenListDemo() {
               >
                 {todo.text}
               </span>
-              <span className={`px-2 py-1 rounded text-xs font-medium ${getPriorityColor(todo.priority)}`}>
+              <span
+                className={`px-2 py-1 rounded text-xs font-medium ${getPriorityColor(todo.priority)}`}
+              >
                 {todo.priority}
               </span>
               <button
@@ -545,7 +590,7 @@ class BulkOperationsCubit extends Cubit<BulkState> {
   toggleItem = (id: number) => {
     this.patch({
       items: this.state.items.map((item) =>
-        item.id === id ? { ...item, selected: !item.selected } : item
+        item.id === id ? { ...item, selected: !item.selected } : item,
       ),
     });
   };
@@ -573,7 +618,10 @@ class BulkOperationsCubit extends Cubit<BulkState> {
   }
 
   get allSelected(): boolean {
-    return this.state.items.length > 0 && this.state.items.every((item) => item.selected);
+    return (
+      this.state.items.length > 0 &&
+      this.state.items.every((item) => item.selected)
+    );
   }
 
   get noneSelected(): boolean {
@@ -684,7 +732,8 @@ function BulkOperationsDemo() {
 const demoMetadata = {
   id: 'list-management',
   title: 'List Management & CRUD',
-  description: 'Master list operations with CRUD patterns, filtering, computed properties, and bulk operations.',
+  description:
+    'Master list operations with CRUD patterns, filtering, computed properties, and bulk operations.',
   category: '02-patterns' as const,
   difficulty: 'beginner' as const,
   tags: ['cubit', 'bloc', 'crud', 'lists', 'filtering', 'bulk-operations'],
@@ -712,22 +761,25 @@ export function ListManagementDemo() {
         <SectionHeader>List Management Fundamentals</SectionHeader>
         <Prose>
           <p>
-            Lists are everywhere: todo lists, shopping carts, user tables, comment threads. Managing
-            lists well is a fundamental skill in front-end development.
+            Lists are everywhere: todo lists, shopping carts, user tables,
+            comment threads. Managing lists well is a fundamental skill in
+            front-end development.
           </p>
           <p>
             In this guide, you'll learn three progressively advanced patterns:
           </p>
           <ul>
             <li>
-              <strong>Simple CRUD with Cubit</strong>: Create, Read, Update, Delete operations
+              <strong>Simple CRUD with Cubit</strong>: Create, Read, Update,
+              Delete operations
             </li>
             <li>
-              <strong>Event-Driven Lists with Bloc</strong>: Complex filtering and computed
-              properties
+              <strong>Event-Driven Lists with Bloc</strong>: Complex filtering
+              and computed properties
             </li>
             <li>
-              <strong>Bulk Operations</strong>: Select all, delete selected, mass updates
+              <strong>Bulk Operations</strong>: Select all, delete selected,
+              mass updates
             </li>
           </ul>
         </Prose>
@@ -738,8 +790,8 @@ export function ListManagementDemo() {
         <SectionHeader>Simple CRUD with Cubit</SectionHeader>
         <Prose>
           <p>
-            The simplest way to manage a list: direct state mutations using a Cubit. Perfect for
-            basic lists without complex business logic.
+            The simplest way to manage a list: direct state mutations using a
+            Cubit. Perfect for basic lists without complex business logic.
           </p>
         </Prose>
 
@@ -802,9 +854,10 @@ class SimpleListCubit extends Cubit<SimpleListState> {
 
         <ConceptCallout type="tip" title="Immutability is Key">
           <p>
-            Notice how we <strong>never mutate</strong> the original array. Instead, we create new
-            arrays using spread operators (<code>...</code>), <code>map()</code>, and{' '}
-            <code>filter()</code>. This is critical for React's change detection.
+            Notice how we <strong>never mutate</strong> the original array.
+            Instead, we create new arrays using spread operators (
+            <code>...</code>), <code>map()</code>, and <code>filter()</code>.
+            This is critical for React's change detection.
           </p>
         </ConceptCallout>
       </ArticleSection>
@@ -814,12 +867,11 @@ class SimpleListCubit extends Cubit<SimpleListState> {
         <SectionHeader>Event-Driven Lists with Bloc</SectionHeader>
         <Prose>
           <p>
-            For complex lists with business rules, filtering, or auditing requirements, use the{' '}
-            <strong>Bloc pattern</strong>. Events make state changes explicit and testable.
+            For complex lists with business rules, filtering, or auditing
+            requirements, use the <strong>Bloc pattern</strong>. Events make
+            state changes explicit and testable.
           </p>
-          <p>
-            This pattern shines when you need:
-          </p>
+          <p>This pattern shines when you need:</p>
           <ul>
             <li>Complex filtering logic (multiple filter types)</li>
             <li>Computed properties derived from list state</li>
@@ -904,9 +956,9 @@ class TodoBloc extends Vertex<TodoState, TodoEvent> {
 
         <ConceptCallout type="tip" title="Computed Properties">
           <p>
-            Getters like <code>filteredTodos</code> and <code>activeCount</code> are{' '}
-            <strong>computed on-demand</strong>. They're not stored in state, which prevents
-            duplication and keeps your state minimal.
+            Getters like <code>filteredTodos</code> and <code>activeCount</code>{' '}
+            are <strong>computed on-demand</strong>. They're not stored in
+            state, which prevents duplication and keeps your state minimal.
           </p>
         </ConceptCallout>
       </ArticleSection>
@@ -983,7 +1035,8 @@ class BulkOperationsCubit extends Cubit<{ items: Item[] }> {
 
         <ConceptCallout type="warning" title="Performance Consideration">
           <p>
-            Bulk operations on large lists (10,000+ items) can be slow. Consider:
+            Bulk operations on large lists (10,000+ items) can be slow.
+            Consider:
           </p>
           <ul>
             <li>
@@ -993,10 +1046,12 @@ class BulkOperationsCubit extends Cubit<{ items: Item[] }> {
               <strong>Pagination</strong>: Operate on current page only
             </li>
             <li>
-              <strong>Background processing</strong>: Use Web Workers for heavy operations
+              <strong>Background processing</strong>: Use Web Workers for heavy
+              operations
             </li>
             <li>
-              <strong>Optimistic updates</strong>: Update UI immediately, sync with server later
+              <strong>Optimistic updates</strong>: Update UI immediately, sync
+              with server later
             </li>
           </ul>
         </ConceptCallout>
@@ -1122,44 +1177,48 @@ markAllComplete = () => {
           <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-950/20 border-2 border-blue-200 dark:border-blue-800">
             <h4 className="font-semibold mb-2">Simple CRUD with Cubit</h4>
             <p className="text-sm">
-              Direct state mutations for straightforward lists. Fast to implement, easy to
-              understand. Perfect for basic CRUD operations.
+              Direct state mutations for straightforward lists. Fast to
+              implement, easy to understand. Perfect for basic CRUD operations.
             </p>
           </div>
 
           <div className="p-4 rounded-lg bg-purple-50 dark:bg-purple-950/20 border-2 border-purple-200 dark:border-purple-800">
             <h4 className="font-semibold mb-2">Event-Driven Lists with Bloc</h4>
             <p className="text-sm">
-              Explicit events for complex business logic, filtering, and computed properties.
-              Testable, auditable, and scalable for production apps.
+              Explicit events for complex business logic, filtering, and
+              computed properties. Testable, auditable, and scalable for
+              production apps.
             </p>
           </div>
 
           <div className="p-4 rounded-lg bg-green-50 dark:bg-green-950/20 border-2 border-green-200 dark:border-green-800">
             <h4 className="font-semibold mb-2">Bulk Operations</h4>
             <p className="text-sm">
-              Select all, delete selected, and mass updates for power users. Essential for
-              data-heavy applications like admin panels and dashboards.
+              Select all, delete selected, and mass updates for power users.
+              Essential for data-heavy applications like admin panels and
+              dashboards.
             </p>
           </div>
         </div>
 
         <ConceptCallout type="tip" title="Next Steps">
-          <p>
-            Now that you understand list management, explore:
-          </p>
+          <p>Now that you understand list management, explore:</p>
           <ul>
             <li>
-              <strong>Filtering & Sorting</strong>: Advanced search and sort patterns
+              <strong>Filtering & Sorting</strong>: Advanced search and sort
+              patterns
             </li>
             <li>
-              <strong>Persistence</strong>: Save list state to localStorage or database
+              <strong>Persistence</strong>: Save list state to localStorage or
+              database
             </li>
             <li>
-              <strong>Undo/Redo</strong>: Time-travel debugging with event history
+              <strong>Undo/Redo</strong>: Time-travel debugging with event
+              history
             </li>
             <li>
-              <strong>Optimistic Updates</strong>: Instant UI updates with server sync
+              <strong>Optimistic Updates</strong>: Instant UI updates with
+              server sync
             </li>
           </ul>
         </ConceptCallout>

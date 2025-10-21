@@ -124,7 +124,9 @@ function MessageControl() {
         <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-brand/10 text-brand">
           <Users className="h-5 w-5" />
         </span>
-        <p className="text-sm font-semibold text-foreground">Update shared state</p>
+        <p className="text-sm font-semibold text-foreground">
+          Update shared state
+        </p>
       </div>
       <div className="relative grid grid-cols-2 gap-2">
         {messages.map((msg) => (

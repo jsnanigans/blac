@@ -191,7 +191,18 @@ function MountUnmountDemo() {
           <p>Created: {new Date(state.createdAt).toLocaleTimeString()}</p>
           <p>Updates: {state.updateCount}</p>
           <p>Last Update: {new Date(state.lastUpdate).toLocaleTimeString()}</p>
-          <p>Status: <span className={state.status === 'active' ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}>{state.status}</span></p>
+          <p>
+            Status:{' '}
+            <span
+              className={
+                state.status === 'active'
+                  ? 'text-green-600 dark:text-green-400'
+                  : 'text-muted-foreground'
+              }
+            >
+              {state.status}
+            </span>
+          </p>
         </div>
       </motion.div>
     );
@@ -243,8 +254,12 @@ function SharedInstanceDemo() {
         <div className="flex items-center gap-3">
           <span className="text-2xl font-bold text-brand">{state}</span>
           <div className="flex gap-2">
-            <Button onClick={cubit.decrement} variant="outline" size="sm">-</Button>
-            <Button onClick={cubit.increment} variant="outline" size="sm">+</Button>
+            <Button onClick={cubit.decrement} variant="outline" size="sm">
+              -
+            </Button>
+            <Button onClick={cubit.increment} variant="outline" size="sm">
+              +
+            </Button>
           </div>
         </div>
       </motion.div>
@@ -265,8 +280,12 @@ function SharedInstanceDemo() {
         <div className="flex items-center gap-3">
           <span className="text-2xl font-bold text-brand">{state}</span>
           <div className="flex gap-2">
-            <Button onClick={cubit.decrement} variant="outline" size="sm">-</Button>
-            <Button onClick={cubit.increment} variant="outline" size="sm">+</Button>
+            <Button onClick={cubit.decrement} variant="outline" size="sm">
+              -
+            </Button>
+            <Button onClick={cubit.increment} variant="outline" size="sm">
+              +
+            </Button>
           </div>
         </div>
       </motion.div>
@@ -293,13 +312,18 @@ function SharedInstanceDemo() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <AnimatePresence>{showComponentA && <ComponentA key="comp-a" />}</AnimatePresence>
-        <AnimatePresence>{showComponentB && <ComponentB key="comp-b" />}</AnimatePresence>
+        <AnimatePresence>
+          {showComponentA && <ComponentA key="comp-a" />}
+        </AnimatePresence>
+        <AnimatePresence>
+          {showComponentB && <ComponentB key="comp-b" />}
+        </AnimatePresence>
       </div>
 
       <p className="text-sm text-muted-foreground">
-        Both components share the <strong>same instance</strong> of SharedCounterCubit.
-        Changes in one affect the other. The instance survives until <strong>all</strong> components unmount.
+        Both components share the <strong>same instance</strong> of
+        SharedCounterCubit. Changes in one affect the other. The instance
+        survives until <strong>all</strong> components unmount.
       </p>
     </div>
   );
@@ -321,10 +345,16 @@ function IsolatedInstanceDemo() {
       >
         <h5 className="font-medium mb-2">Component A (Isolated)</h5>
         <div className="flex items-center gap-3">
-          <span className="text-2xl font-bold text-purple-600 dark:text-purple-400">{state}</span>
+          <span className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+            {state}
+          </span>
           <div className="flex gap-2">
-            <Button onClick={cubit.decrement} variant="outline" size="sm">-</Button>
-            <Button onClick={cubit.increment} variant="outline" size="sm">+</Button>
+            <Button onClick={cubit.decrement} variant="outline" size="sm">
+              -
+            </Button>
+            <Button onClick={cubit.increment} variant="outline" size="sm">
+              +
+            </Button>
           </div>
         </div>
       </motion.div>
@@ -343,10 +373,16 @@ function IsolatedInstanceDemo() {
       >
         <h5 className="font-medium mb-2">Component B (Isolated)</h5>
         <div className="flex items-center gap-3">
-          <span className="text-2xl font-bold text-purple-600 dark:text-purple-400">{state}</span>
+          <span className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+            {state}
+          </span>
           <div className="flex gap-2">
-            <Button onClick={cubit.decrement} variant="outline" size="sm">-</Button>
-            <Button onClick={cubit.increment} variant="outline" size="sm">+</Button>
+            <Button onClick={cubit.decrement} variant="outline" size="sm">
+              -
+            </Button>
+            <Button onClick={cubit.increment} variant="outline" size="sm">
+              +
+            </Button>
           </div>
         </div>
       </motion.div>
@@ -373,13 +409,18 @@ function IsolatedInstanceDemo() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <AnimatePresence>{showComponentA && <ComponentA key="iso-a" />}</AnimatePresence>
-        <AnimatePresence>{showComponentB && <ComponentB key="iso-b" />}</AnimatePresence>
+        <AnimatePresence>
+          {showComponentA && <ComponentA key="iso-a" />}
+        </AnimatePresence>
+        <AnimatePresence>
+          {showComponentB && <ComponentB key="iso-b" />}
+        </AnimatePresence>
       </div>
 
       <p className="text-sm text-muted-foreground">
-        Each component has its <strong>own isolated instance</strong> of IsolatedCounterCubit.
-        Changes in one do not affect the other. Each instance is disposed when its component unmounts.
+        Each component has its <strong>own isolated instance</strong> of
+        IsolatedCounterCubit. Changes in one do not affect the other. Each
+        instance is disposed when its component unmounts.
       </p>
     </div>
   );
@@ -399,7 +440,9 @@ function KeepAliveDemo() {
         exit={{ opacity: 0, scale: 0.9 }}
         className="p-6 rounded-xl bg-gradient-to-br from-green-500/20 to-green-500/10 border-2 border-green-500/30"
       >
-        <h4 className="font-semibold mb-3">Persistent Counter (Mount #{mountCount})</h4>
+        <h4 className="font-semibold mb-3">
+          Persistent Counter (Mount #{mountCount})
+        </h4>
         <div className="flex items-center gap-4">
           <motion.span
             key={state}
@@ -410,9 +453,15 @@ function KeepAliveDemo() {
             {state}
           </motion.span>
           <div className="flex gap-2">
-            <Button onClick={cubit.decrement} variant="outline" size="sm">-</Button>
-            <Button onClick={cubit.increment} variant="primary" size="sm">+</Button>
-            <Button onClick={cubit.reset} variant="ghost" size="sm">Reset</Button>
+            <Button onClick={cubit.decrement} variant="outline" size="sm">
+              -
+            </Button>
+            <Button onClick={cubit.increment} variant="primary" size="sm">
+              +
+            </Button>
+            <Button onClick={cubit.reset} variant="ghost" size="sm">
+              Reset
+            </Button>
           </div>
         </div>
         <p className="text-sm text-muted-foreground mt-2">
@@ -426,7 +475,7 @@ function KeepAliveDemo() {
     if (showComponent) {
       setShowComponent(false);
     } else {
-      setMountCount(prev => prev + 1);
+      setMountCount((prev) => prev + 1);
       setShowComponent(true);
     }
   };
@@ -488,11 +537,16 @@ function LifecycleEventLog() {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h4 className="font-semibold">Lifecycle Event Log</h4>
-        <Button onClick={clearLogs} variant="outline" size="sm">Clear Log</Button>
+        <Button onClick={clearLogs} variant="outline" size="sm">
+          Clear Log
+        </Button>
       </div>
       <div className="bg-muted/30 rounded-lg p-3 max-h-60 overflow-y-auto font-mono text-xs">
         {logs.length === 0 ? (
-          <p className="text-muted-foreground">No events yet. Interact with the demos above to see lifecycle events.</p>
+          <p className="text-muted-foreground">
+            No events yet. Interact with the demos above to see lifecycle
+            events.
+          </p>
         ) : (
           <AnimatePresence>
             {logs.map((log, index) => (

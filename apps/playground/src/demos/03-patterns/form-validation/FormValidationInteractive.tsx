@@ -140,7 +140,9 @@ class FormValidationCubit extends Cubit<FormState> {
       errors.push('Username must be 20 characters or less');
     }
     if (username.length > 0 && !/^[a-zA-Z0-9_]+$/.test(username)) {
-      errors.push('Username can only contain letters, numbers, and underscores');
+      errors.push(
+        'Username can only contain letters, numbers, and underscores',
+      );
     }
 
     return errors;
@@ -324,7 +326,8 @@ class FormValidationCubit extends Cubit<FormState> {
     } catch (error) {
       this.patch({
         isSubmitting: false,
-        submitError: error instanceof Error ? error.message : 'An error occurred',
+        submitError:
+          error instanceof Error ? error.message : 'An error occurred',
       });
     }
   };
@@ -357,7 +360,11 @@ class FormValidationCubit extends Cubit<FormState> {
 
 // ===== HELPER COMPONENTS =====
 
-function PasswordStrengthIndicator({ strength }: { strength: 'weak' | 'medium' | 'strong' | null }) {
+function PasswordStrengthIndicator({
+  strength,
+}: {
+  strength: 'weak' | 'medium' | 'strong' | null;
+}) {
   if (!strength) return null;
 
   const colors = {
@@ -382,7 +389,9 @@ function PasswordStrengthIndicator({ strength }: { strength: 'weak' | 'medium' |
     <div className="mt-2">
       <div className="flex items-center justify-between mb-1">
         <span className="text-xs font-medium">Password Strength:</span>
-        <span className={`text-xs font-semibold ${strength === 'weak' ? 'text-red-600' : strength === 'medium' ? 'text-yellow-600' : 'text-green-600'}`}>
+        <span
+          className={`text-xs font-semibold ${strength === 'weak' ? 'text-red-600' : strength === 'medium' ? 'text-yellow-600' : 'text-green-600'}`}
+        >
           {labels[strength]}
         </span>
       </div>
@@ -476,7 +485,10 @@ function ValidationForm() {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Username Field with Async Validation */}
         <div>
-          <label htmlFor="username" className="block text-sm font-semibold mb-2">
+          <label
+            htmlFor="username"
+            className="block text-sm font-semibold mb-2"
+          >
             Username <span className="text-red-500">*</span>
           </label>
           <div className="relative">
@@ -490,7 +502,9 @@ function ValidationForm() {
               className={`w-full px-4 py-3 pr-12 rounded-lg border-2 focus:outline-none focus:ring-2 transition-colors bg-background ${
                 touched.username && formCubit.usernameErrors.length > 0
                   ? 'border-red-500 focus:ring-red-500'
-                  : touched.username && formCubit.isUsernameValid && state.usernameAvailable === true
+                  : touched.username &&
+                      formCubit.isUsernameValid &&
+                      state.usernameAvailable === true
                     ? 'border-green-500 focus:ring-green-500'
                     : 'border-border focus:ring-brand'
               }`}
@@ -503,12 +517,16 @@ function ValidationForm() {
             )}
           </div>
           {touched.username && <FieldError errors={formCubit.usernameErrors} />}
-          {touched.username && formCubit.isUsernameValid && state.usernameAvailable === true && (
-            <FieldSuccess message="Username is available!" />
-          )}
-          {touched.username && formCubit.isUsernameValid && state.usernameAvailable === false && (
-            <FieldError errors={['Username is already taken']} />
-          )}
+          {touched.username &&
+            formCubit.isUsernameValid &&
+            state.usernameAvailable === true && (
+              <FieldSuccess message="Username is available!" />
+            )}
+          {touched.username &&
+            formCubit.isUsernameValid &&
+            state.usernameAvailable === false && (
+              <FieldError errors={['Username is already taken']} />
+            )}
         </div>
 
         {/* Email Field */}
@@ -540,7 +558,10 @@ function ValidationForm() {
 
         {/* Password Field with Strength Indicator */}
         <div>
-          <label htmlFor="password" className="block text-sm font-semibold mb-2">
+          <label
+            htmlFor="password"
+            className="block text-sm font-semibold mb-2"
+          >
             Password <span className="text-red-500">*</span>
           </label>
           <input
@@ -567,7 +588,10 @@ function ValidationForm() {
 
         {/* Confirm Password Field (Cross-field validation) */}
         <div>
-          <label htmlFor="confirmPassword" className="block text-sm font-semibold mb-2">
+          <label
+            htmlFor="confirmPassword"
+            className="block text-sm font-semibold mb-2"
+          >
             Confirm Password <span className="text-red-500">*</span>
           </label>
           <input
@@ -578,7 +602,8 @@ function ValidationForm() {
             onBlur={() => markTouched('confirmPassword')}
             disabled={state.isSubmitting}
             className={`w-full px-4 py-3 rounded-lg border-2 focus:outline-none focus:ring-2 transition-colors bg-background ${
-              touched.confirmPassword && formCubit.confirmPasswordErrors.length > 0
+              touched.confirmPassword &&
+              formCubit.confirmPasswordErrors.length > 0
                 ? 'border-red-500 focus:ring-red-500'
                 : touched.confirmPassword && formCubit.isConfirmPasswordValid
                   ? 'border-green-500 focus:ring-green-500'
@@ -586,7 +611,9 @@ function ValidationForm() {
             }`}
             placeholder="Confirm your password"
           />
-          {touched.confirmPassword && <FieldError errors={formCubit.confirmPasswordErrors} />}
+          {touched.confirmPassword && (
+            <FieldError errors={formCubit.confirmPasswordErrors} />
+          )}
           {touched.confirmPassword && formCubit.isConfirmPasswordValid && (
             <FieldSuccess message="Passwords match" />
           )}
@@ -631,7 +658,8 @@ function ValidationForm() {
             className="mt-1 w-4 h-4 rounded border-gray-300 focus:ring-brand cursor-pointer"
           />
           <label htmlFor="terms" className="text-sm cursor-pointer">
-            I accept the <span className="text-brand underline">terms and conditions</span>{' '}
+            I accept the{' '}
+            <span className="text-brand underline">terms and conditions</span>{' '}
             <span className="text-red-500">*</span>
           </label>
         </div>
@@ -640,16 +668,29 @@ function ValidationForm() {
         <div className="bg-muted rounded-lg p-4 border border-border">
           <div className="text-sm font-semibold mb-3">Validation Summary:</div>
           <div className="grid grid-cols-2 gap-2 text-xs">
-            <div>Username: {formCubit.isUsernameValid && state.usernameAvailable === true ? '✓' : '○'}</div>
+            <div>
+              Username:{' '}
+              {formCubit.isUsernameValid && state.usernameAvailable === true
+                ? '✓'
+                : '○'}
+            </div>
             <div>Email: {formCubit.isEmailValid ? '✓' : '○'}</div>
             <div>Password: {formCubit.isPasswordValid ? '✓' : '○'}</div>
-            <div>Confirmation: {formCubit.isConfirmPasswordValid ? '✓' : '○'}</div>
+            <div>
+              Confirmation: {formCubit.isConfirmPasswordValid ? '✓' : '○'}
+            </div>
             <div>Age: {formCubit.isAgeValid ? '✓' : '○'}</div>
             <div>Terms: {formCubit.isTermsAccepted ? '✓' : '○'}</div>
           </div>
           <div className="pt-3 mt-3 border-t border-border">
-            <strong>Form Status:</strong> {' '}
-            <span className={formCubit.isFormValid ? 'text-green-600 font-semibold' : 'text-muted-foreground'}>
+            <strong>Form Status:</strong>{' '}
+            <span
+              className={
+                formCubit.isFormValid
+                  ? 'text-green-600 font-semibold'
+                  : 'text-muted-foreground'
+              }
+            >
               {formCubit.isFormValid ? '✓ Ready to submit' : '○ Not ready'}
             </span>
           </div>
@@ -698,8 +739,12 @@ function ValidationForm() {
             animate={{ opacity: 1, scale: 1 }}
             className="bg-red-50 dark:bg-red-950 border-2 border-red-500 rounded-lg p-4"
           >
-            <p className="text-red-800 dark:text-red-200 font-semibold">✗ Error</p>
-            <p className="text-red-700 dark:text-red-300 text-sm mt-1">{state.submitError}</p>
+            <p className="text-red-800 dark:text-red-200 font-semibold">
+              ✗ Error
+            </p>
+            <p className="text-red-700 dark:text-red-300 text-sm mt-1">
+              {state.submitError}
+            </p>
           </motion.div>
         )}
       </form>

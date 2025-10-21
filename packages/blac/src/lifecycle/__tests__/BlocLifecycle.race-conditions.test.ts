@@ -9,10 +9,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import {
-  BlocLifecycleManager,
-  BlocLifecycleState,
-} from '../BlocLifecycle.js';
+import { BlocLifecycleManager, BlocLifecycleState } from '../BlocLifecycle.js';
 
 describe('BlocLifecycleManager - Disposal Race Conditions (FIXED)', () => {
   let manager: BlocLifecycleManager;
@@ -29,7 +26,7 @@ describe('BlocLifecycleManager - Disposal Race Conditions (FIXED)', () => {
       () => true,
       () => {
         disposeCount++;
-      }
+      },
     );
 
     // Cancel immediately (before microtask runs)
@@ -39,7 +36,7 @@ describe('BlocLifecycleManager - Disposal Race Conditions (FIXED)', () => {
     expect(manager.currentState).toBe(BlocLifecycleState.ACTIVE);
 
     // Wait for microtask to execute
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise((resolve) => setTimeout(resolve, 10));
 
     // EXPECTED: disposeCount should be 0 (disposal was cancelled)
     // FIXED: Generation counter prevents stale microtask from executing
@@ -54,14 +51,14 @@ describe('BlocLifecycleManager - Disposal Race Conditions (FIXED)', () => {
       () => true,
       () => {
         disposeCount++;
-      }
+      },
     );
 
     // Remount immediately (before microtask runs)
     manager.cancelDisposal();
 
     // Wait for microtask
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise((resolve) => setTimeout(resolve, 10));
 
     // EXPECTED: disposeCount should be 0 (disposal was cancelled on remount)
     // FIXED: Generation counter prevents stale microtask from executing
@@ -72,10 +69,10 @@ describe('BlocLifecycleManager - Disposal Race Conditions (FIXED)', () => {
       () => true,
       () => {
         disposeCount++;
-      }
+      },
     );
 
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise((resolve) => setTimeout(resolve, 10));
 
     // This disposal should execute
     expect(disposeCount).toBe(1);
@@ -90,13 +87,13 @@ describe('BlocLifecycleManager - Disposal Race Conditions (FIXED)', () => {
         () => true,
         () => {
           disposeCount++;
-        }
+        },
       );
       manager.cancelDisposal();
     }
 
     // Wait for all microtasks to execute
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
     // EXPECTED: disposeCount should be 0 (all disposals were cancelled)
     // FIXED: Generation counter prevents all stale microtasks from executing
@@ -111,11 +108,11 @@ describe('BlocLifecycleManager - Disposal Race Conditions (FIXED)', () => {
       () => canDispose,
       () => {
         disposeCount++;
-      }
+      },
     );
 
     // Wait for microtask
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise((resolve) => setTimeout(resolve, 10));
 
     // Should not dispose when canDispose is false
     expect(disposeCount).toBe(0);
@@ -129,11 +126,11 @@ describe('BlocLifecycleManager - Disposal Race Conditions (FIXED)', () => {
       () => true,
       () => {
         disposeCount++;
-      }
+      },
     );
 
     // Wait for microtask
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise((resolve) => setTimeout(resolve, 10));
 
     // Should dispose
     expect(disposeCount).toBe(1);
@@ -149,7 +146,7 @@ describe('BlocLifecycleManager - Disposal Race Conditions (FIXED)', () => {
       () => {
         timeline.push('dispose executed');
         disposeCount++;
-      }
+      },
     );
 
     timeline.push('disposal scheduled');
@@ -161,7 +158,7 @@ describe('BlocLifecycleManager - Disposal Race Conditions (FIXED)', () => {
     // This is the race condition window!
     // The microtask is still queued even though we cancelled
 
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise((resolve) => setTimeout(resolve, 10));
     timeline.push('microtask executed');
 
     // Expected timeline:
@@ -186,7 +183,7 @@ describe('BlocLifecycleManager - Performance Impact (FIXED)', () => {
         () => {
           // Track leaked disposal
           leakedDisposals.push(i);
-        }
+        },
       );
 
       // Cancel immediately
@@ -196,7 +193,7 @@ describe('BlocLifecycleManager - Performance Impact (FIXED)', () => {
     }
 
     // Wait for all microtasks
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
     // EXPECTED: 0 leaked disposals
     // FIXED: Generation counter prevents all leaked disposals

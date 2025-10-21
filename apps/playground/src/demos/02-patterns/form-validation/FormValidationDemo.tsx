@@ -1,7 +1,10 @@
 import { useBloc } from '@blac/react';
 import { Cubit } from '@blac/core';
 import { DemoArticle } from '@/components/demo-article/DemoArticle';
-import { ArticleSection, SectionHeader } from '@/components/demo-article/ArticleSection';
+import {
+  ArticleSection,
+  SectionHeader,
+} from '@/components/demo-article/ArticleSection';
 import { Prose } from '@/components/demo-article/Prose';
 import { CodePanel } from '@/components/demo-article/CodePanel';
 import { StateViewer } from '@/components/shared/StateViewer';
@@ -145,7 +148,9 @@ class FormValidationCubit extends Cubit<FormState> {
       errors.push('Username must be 20 characters or less');
     }
     if (username.length > 0 && !/^[a-zA-Z0-9_]+$/.test(username)) {
-      errors.push('Username can only contain letters, numbers, and underscores');
+      errors.push(
+        'Username can only contain letters, numbers, and underscores',
+      );
     }
 
     return errors;
@@ -330,7 +335,11 @@ class FormValidationCubit extends Cubit<FormState> {
 
     // Confirm password errors
     this.confirmPasswordErrors.forEach((msg) => {
-      errors.push({ field: 'confirmPassword', message: msg, type: 'cross-field' });
+      errors.push({
+        field: 'confirmPassword',
+        message: msg,
+        type: 'cross-field',
+      });
     });
 
     // Age errors
@@ -377,7 +386,8 @@ class FormValidationCubit extends Cubit<FormState> {
     } catch (error) {
       this.patch({
         isSubmitting: false,
-        submitError: error instanceof Error ? error.message : 'An error occurred',
+        submitError:
+          error instanceof Error ? error.message : 'An error occurred',
       });
     }
   };
@@ -402,7 +412,11 @@ class FormValidationCubit extends Cubit<FormState> {
 
 // ===== HELPER COMPONENTS =====
 
-function PasswordStrengthIndicator({ strength }: { strength: 'weak' | 'medium' | 'strong' | null }) {
+function PasswordStrengthIndicator({
+  strength,
+}: {
+  strength: 'weak' | 'medium' | 'strong' | null;
+}) {
   if (!strength) return null;
 
   const colors = {
@@ -427,7 +441,9 @@ function PasswordStrengthIndicator({ strength }: { strength: 'weak' | 'medium' |
     <div className="mt-2">
       <div className="flex items-center justify-between mb-1">
         <span className="text-xs font-medium">Password Strength:</span>
-        <span className={`text-xs font-semibold ${strength === 'weak' ? 'text-red-600' : strength === 'medium' ? 'text-yellow-600' : 'text-green-600'}`}>
+        <span
+          className={`text-xs font-semibold ${strength === 'weak' ? 'text-red-600' : strength === 'medium' ? 'text-yellow-600' : 'text-green-600'}`}
+        >
           {labels[strength]}
         </span>
       </div>
@@ -522,7 +538,10 @@ function ValidationForm() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Username Field with Async Validation */}
           <div>
-            <label htmlFor="username" className="block text-sm font-semibold mb-2">
+            <label
+              htmlFor="username"
+              className="block text-sm font-semibold mb-2"
+            >
               Username <span className="text-red-500">*</span>
             </label>
             <div className="relative">
@@ -536,7 +555,9 @@ function ValidationForm() {
                 className={`w-full px-4 py-3 pr-12 rounded-lg border-2 focus:outline-none focus:ring-2 transition-colors ${
                   touched.username && formCubit.usernameErrors.length > 0
                     ? 'border-red-500 focus:ring-red-500'
-                    : touched.username && formCubit.isUsernameValid && state.usernameAvailable === true
+                    : touched.username &&
+                        formCubit.isUsernameValid &&
+                        state.usernameAvailable === true
                       ? 'border-green-500 focus:ring-green-500'
                       : 'border-gray-300 dark:border-gray-600 focus:ring-concept-cubit'
                 }`}
@@ -548,13 +569,19 @@ function ValidationForm() {
                 </div>
               )}
             </div>
-            {touched.username && <FieldError errors={formCubit.usernameErrors} />}
-            {touched.username && formCubit.isUsernameValid && state.usernameAvailable === true && (
-              <FieldSuccess message="Username is available!" />
+            {touched.username && (
+              <FieldError errors={formCubit.usernameErrors} />
             )}
-            {touched.username && formCubit.isUsernameValid && state.usernameAvailable === false && (
-              <FieldError errors={['Username is already taken']} />
-            )}
+            {touched.username &&
+              formCubit.isUsernameValid &&
+              state.usernameAvailable === true && (
+                <FieldSuccess message="Username is available!" />
+              )}
+            {touched.username &&
+              formCubit.isUsernameValid &&
+              state.usernameAvailable === false && (
+                <FieldError errors={['Username is already taken']} />
+              )}
           </div>
 
           {/* Email Field */}
@@ -586,7 +613,10 @@ function ValidationForm() {
 
           {/* Password Field with Strength Indicator */}
           <div>
-            <label htmlFor="password" className="block text-sm font-semibold mb-2">
+            <label
+              htmlFor="password"
+              className="block text-sm font-semibold mb-2"
+            >
               Password <span className="text-red-500">*</span>
             </label>
             <input
@@ -606,14 +636,21 @@ function ValidationForm() {
               placeholder="Create a strong password"
             />
             {state.password.length > 0 && (
-              <PasswordStrengthIndicator strength={formCubit.passwordStrength} />
+              <PasswordStrengthIndicator
+                strength={formCubit.passwordStrength}
+              />
             )}
-            {touched.password && <FieldError errors={formCubit.passwordErrors} />}
+            {touched.password && (
+              <FieldError errors={formCubit.passwordErrors} />
+            )}
           </div>
 
           {/* Confirm Password Field (Cross-field validation) */}
           <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-semibold mb-2">
+            <label
+              htmlFor="confirmPassword"
+              className="block text-sm font-semibold mb-2"
+            >
               Confirm Password <span className="text-red-500">*</span>
             </label>
             <input
@@ -624,7 +661,8 @@ function ValidationForm() {
               onBlur={() => markTouched('confirmPassword')}
               disabled={state.isSubmitting}
               className={`w-full px-4 py-3 rounded-lg border-2 focus:outline-none focus:ring-2 transition-colors ${
-                touched.confirmPassword && formCubit.confirmPasswordErrors.length > 0
+                touched.confirmPassword &&
+                formCubit.confirmPasswordErrors.length > 0
                   ? 'border-red-500 focus:ring-red-500'
                   : touched.confirmPassword && formCubit.isConfirmPasswordValid
                     ? 'border-green-500 focus:ring-green-500'
@@ -632,7 +670,9 @@ function ValidationForm() {
               }`}
               placeholder="Confirm your password"
             />
-            {touched.confirmPassword && <FieldError errors={formCubit.confirmPasswordErrors} />}
+            {touched.confirmPassword && (
+              <FieldError errors={formCubit.confirmPasswordErrors} />
+            )}
             {touched.confirmPassword && formCubit.isConfirmPasswordValid && (
               <FieldSuccess message="Passwords match" />
             )}
@@ -677,25 +717,43 @@ function ValidationForm() {
               className="mt-1 w-4 h-4 rounded border-gray-300 focus:ring-concept-cubit"
             />
             <label htmlFor="terms" className="text-sm">
-              I accept the <a href="#" className="text-concept-cubit underline">terms and conditions</a>{' '}
+              I accept the{' '}
+              <a href="#" className="text-concept-cubit underline">
+                terms and conditions
+              </a>{' '}
               <span className="text-red-500">*</span>
             </label>
           </div>
 
           {/* Form Summary */}
           <div className="bg-white/50 dark:bg-gray-800/50 rounded-lg p-4">
-            <div className="text-sm font-semibold mb-3">Validation Summary:</div>
+            <div className="text-sm font-semibold mb-3">
+              Validation Summary:
+            </div>
             <div className="grid grid-cols-2 gap-2 text-xs">
-              <div>Username: {formCubit.isUsernameValid && state.usernameAvailable === true ? '✓' : '○'}</div>
+              <div>
+                Username:{' '}
+                {formCubit.isUsernameValid && state.usernameAvailable === true
+                  ? '✓'
+                  : '○'}
+              </div>
               <div>Email: {formCubit.isEmailValid ? '✓' : '○'}</div>
               <div>Password: {formCubit.isPasswordValid ? '✓' : '○'}</div>
-              <div>Confirmation: {formCubit.isConfirmPasswordValid ? '✓' : '○'}</div>
+              <div>
+                Confirmation: {formCubit.isConfirmPasswordValid ? '✓' : '○'}
+              </div>
               <div>Age: {formCubit.isAgeValid ? '✓' : '○'}</div>
               <div>Terms: {formCubit.isTermsAccepted ? '✓' : '○'}</div>
             </div>
             <div className="pt-3 mt-3 border-t border-gray-300 dark:border-gray-600">
-              <strong>Form Status:</strong> {' '}
-              <span className={formCubit.isFormValid ? 'text-green-600 font-semibold' : 'text-gray-500'}>
+              <strong>Form Status:</strong>{' '}
+              <span
+                className={
+                  formCubit.isFormValid
+                    ? 'text-green-600 font-semibold'
+                    : 'text-gray-500'
+                }
+              >
                 {formCubit.isFormValid ? '✓ Ready to submit' : '○ Not ready'}
               </span>
             </div>
@@ -744,8 +802,12 @@ function ValidationForm() {
               animate={{ opacity: 1, scale: 1 }}
               className="bg-red-50 dark:bg-red-950 border-2 border-red-500 rounded-lg p-4"
             >
-              <p className="text-red-800 dark:text-red-200 font-semibold">✗ Error</p>
-              <p className="text-red-700 dark:text-red-300 text-sm mt-1">{state.submitError}</p>
+              <p className="text-red-800 dark:text-red-200 font-semibold">
+                ✗ Error
+              </p>
+              <p className="text-red-700 dark:text-red-300 text-sm mt-1">
+                {state.submitError}
+              </p>
             </motion.div>
           )}
         </form>
@@ -759,7 +821,8 @@ function ValidationForm() {
 const demoMetadata = {
   id: 'form-validation',
   title: 'Advanced Form Validation',
-  description: 'Master complex validation patterns including field-level, cross-field, and async validation strategies.',
+  description:
+    'Master complex validation patterns including field-level, cross-field, and async validation strategies.',
   category: '02-patterns' as const,
   difficulty: 'intermediate' as const,
   tags: ['cubit', 'forms', 'validation', 'async', 'advanced'],
@@ -785,20 +848,36 @@ export function FormValidationDemo() {
         <SectionHeader>Advanced Validation Strategies</SectionHeader>
         <Prose>
           <p>
-            Form validation isn't just about checking if fields are filled out. <strong>Real-world forms</strong> need
-            complex validation rules, async checks (like username availability), cross-field validation (like password
-            confirmation), and clear user feedback at every step.
+            Form validation isn't just about checking if fields are filled out.{' '}
+            <strong>Real-world forms</strong> need complex validation rules,
+            async checks (like username availability), cross-field validation
+            (like password confirmation), and clear user feedback at every step.
           </p>
           <p>
-            In this demo, you'll learn how to build a <strong>production-ready validation system</strong> with BlaC
-            Cubits that handles:
+            In this demo, you'll learn how to build a{' '}
+            <strong>production-ready validation system</strong> with BlaC Cubits
+            that handles:
           </p>
           <ul>
-            <li><strong>Field-level validation</strong>: Each field has its own validation rules</li>
-            <li><strong>Async validation</strong>: Check username availability with simulated API calls</li>
-            <li><strong>Cross-field validation</strong>: Ensure passwords match</li>
-            <li><strong>Password strength</strong>: Visual feedback on password quality</li>
-            <li><strong>Smart error display</strong>: Only show errors after users interact with fields</li>
+            <li>
+              <strong>Field-level validation</strong>: Each field has its own
+              validation rules
+            </li>
+            <li>
+              <strong>Async validation</strong>: Check username availability
+              with simulated API calls
+            </li>
+            <li>
+              <strong>Cross-field validation</strong>: Ensure passwords match
+            </li>
+            <li>
+              <strong>Password strength</strong>: Visual feedback on password
+              quality
+            </li>
+            <li>
+              <strong>Smart error display</strong>: Only show errors after users
+              interact with fields
+            </li>
           </ul>
         </Prose>
       </ArticleSection>
@@ -808,13 +887,19 @@ export function FormValidationDemo() {
         <SectionHeader>Try It Yourself</SectionHeader>
         <Prose>
           <p>
-            Fill out the registration form below. Notice how different validation strategies work together:
+            Fill out the registration form below. Notice how different
+            validation strategies work together:
           </p>
           <ul>
             <li>Try usernames like "admin" or "test" (they're taken!)</li>
             <li>Watch the password strength indicator change as you type</li>
-            <li>See how the confirm password field validates against your password</li>
-            <li>All validation happens in real-time, but errors only show after you've touched a field</li>
+            <li>
+              See how the confirm password field validates against your password
+            </li>
+            <li>
+              All validation happens in real-time, but errors only show after
+              you've touched a field
+            </li>
           </ul>
         </Prose>
 
@@ -823,7 +908,11 @@ export function FormValidationDemo() {
         </div>
 
         <div className="my-8">
-          <StateViewer bloc={FormValidationCubit} title="Live Form State" maxDepth={2} />
+          <StateViewer
+            bloc={FormValidationCubit}
+            title="Live Form State"
+            maxDepth={2}
+          />
         </div>
       </ArticleSection>
 
@@ -840,8 +929,9 @@ export function FormValidationDemo() {
               1. Synchronous Field Validation
             </h3>
             <p className="text-sm text-blue-800 dark:text-blue-200">
-              Instant validation rules that run locally (email format, password strength, age range).
-              These are computed properties (getters) that derive validation state from field values.
+              Instant validation rules that run locally (email format, password
+              strength, age range). These are computed properties (getters) that
+              derive validation state from field values.
             </p>
           </div>
 
@@ -850,8 +940,9 @@ export function FormValidationDemo() {
               2. Asynchronous Validation
             </h3>
             <p className="text-sm text-purple-800 dark:text-purple-200">
-              Validation that requires server checks (username availability). Uses debouncing to avoid
-              excessive API calls, and shows loading indicators while checking.
+              Validation that requires server checks (username availability).
+              Uses debouncing to avoid excessive API calls, and shows loading
+              indicators while checking.
             </p>
           </div>
 
@@ -860,8 +951,9 @@ export function FormValidationDemo() {
               3. Cross-Field Validation
             </h3>
             <p className="text-sm text-orange-800 dark:text-orange-200">
-              Validation that depends on multiple fields (password confirmation). These getters compare
-              values across different fields to ensure consistency.
+              Validation that depends on multiple fields (password
+              confirmation). These getters compare values across different
+              fields to ensure consistency.
             </p>
           </div>
         </div>
@@ -968,7 +1060,10 @@ export function FormValidationDemo() {
 }`}
           language="typescript"
           title="FormValidationCubit.ts"
-          highlightLines={[2, 3, 4, 5, 6, 13, 14, 15, 28, 34, 36, 50, 51, 52, 59, 60, 61, 62, 63, 72, 73, 74, 82, 83, 84, 85, 86, 87]}
+          highlightLines={[
+            2, 3, 4, 5, 6, 13, 14, 15, 28, 34, 36, 50, 51, 52, 59, 60, 61, 62,
+            63, 72, 73, 74, 82, 83, 84, 85, 86, 87,
+          ]}
           lineLabels={{
             2: 'Boolean getter for valid/invalid',
             13: 'Collect specific error messages',
@@ -985,20 +1080,24 @@ export function FormValidationDemo() {
           <h3>Key Patterns</h3>
           <ul>
             <li>
-              <strong>Error arrays vs booleans</strong>: Use <code>usernameErrors: string[]</code> to provide
-              specific feedback, and <code>isUsernameValid: boolean</code> for overall status
+              <strong>Error arrays vs booleans</strong>: Use{' '}
+              <code>usernameErrors: string[]</code> to provide specific
+              feedback, and <code>isUsernameValid: boolean</code> for overall
+              status
             </li>
             <li>
-              <strong>Debouncing</strong>: Async validation waits 500ms after the user stops typing to avoid
-              excessive API calls
+              <strong>Debouncing</strong>: Async validation waits 500ms after
+              the user stops typing to avoid excessive API calls
             </li>
             <li>
-              <strong>Loading states</strong>: Track <code>usernameValidating</code> to show spinners during
-              async checks
+              <strong>Loading states</strong>: Track{' '}
+              <code>usernameValidating</code> to show spinners during async
+              checks
             </li>
             <li>
-              <strong>Nullable results</strong>: Use <code>usernameAvailable: boolean | null</code> to
-              distinguish "not checked yet" from "checked and available/unavailable"
+              <strong>Nullable results</strong>: Use{' '}
+              <code>usernameAvailable: boolean | null</code> to distinguish "not
+              checked yet" from "checked and available/unavailable"
             </li>
           </ul>
         </Prose>
@@ -1024,7 +1123,8 @@ export function FormValidationDemo() {
                 <li>✓ Less frustrating for users</li>
               </ul>
               <div className="mt-4 p-3 bg-blue-100 dark:bg-blue-900/30 rounded text-xs">
-                <strong>When to use:</strong> Most forms, especially long registration forms
+                <strong>When to use:</strong> Most forms, especially long
+                registration forms
               </div>
             </Prose>
           </div>
@@ -1044,7 +1144,8 @@ export function FormValidationDemo() {
                 <li>✓ Useful for password strength</li>
               </ul>
               <div className="mt-4 p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded text-xs">
-                <strong>When to use:</strong> Password fields, search inputs, or when immediate feedback is critical
+                <strong>When to use:</strong> Password fields, search inputs, or
+                when immediate feedback is critical
               </div>
             </Prose>
           </div>
@@ -1068,19 +1169,25 @@ export function FormValidationDemo() {
 
           <h3>DON'T ✗</h3>
           <ul>
-            <li>Store validation results in state (derive them from data instead)</li>
+            <li>
+              Store validation results in state (derive them from data instead)
+            </li>
             <li>Validate on every keystroke without debouncing</li>
             <li>Show all errors immediately (wait for blur/submit)</li>
             <li>Use vague error messages like "Invalid input"</li>
-            <li>Forget to validate on the backend too (never trust client-side validation alone)</li>
+            <li>
+              Forget to validate on the backend too (never trust client-side
+              validation alone)
+            </li>
             <li>Make users submit to see cross-field validation errors</li>
           </ul>
         </Prose>
 
         <ConceptCallout type="warning" title="Security Note">
           <p>
-            Client-side validation is for <strong>user experience</strong>, not security. Always validate
-            and sanitize data on the server. Malicious users can bypass client-side checks.
+            Client-side validation is for <strong>user experience</strong>, not
+            security. Always validate and sanitize data on the server. Malicious
+            users can bypass client-side checks.
           </p>
         </ConceptCallout>
       </ArticleSection>
@@ -1091,8 +1198,9 @@ export function FormValidationDemo() {
         <Prose>
           <h3>Conditional Validation</h3>
           <p>
-            Sometimes fields are only required based on other fields. For example, if a user selects
-            "Other" as their country, you might require a text input for the country name.
+            Sometimes fields are only required based on other fields. For
+            example, if a user selects "Other" as their country, you might
+            require a text input for the country name.
           </p>
         </Prose>
 
@@ -1126,8 +1234,9 @@ get isFormValid(): boolean {
         <Prose>
           <h3>Dependent Validation</h3>
           <p>
-            Use cross-field validation when one field depends on another. Password confirmation is a classic
-            example, but you might also validate that a "end date" is after a "start date", or that a
+            Use cross-field validation when one field depends on another.
+            Password confirmation is a classic example, but you might also
+            validate that a "end date" is after a "start date", or that a
             "discount amount" doesn't exceed the "original price".
           </p>
         </Prose>
@@ -1139,25 +1248,29 @@ get isFormValid(): boolean {
         <Prose>
           <ul>
             <li>
-              <strong>Three validation types</strong>: Synchronous (instant), asynchronous (API calls), and
-              cross-field (multiple field dependencies)
+              <strong>Three validation types</strong>: Synchronous (instant),
+              asynchronous (API calls), and cross-field (multiple field
+              dependencies)
             </li>
             <li>
-              <strong>Getters for validation</strong>: Derive validation state from field values using getters
-              to keep logic in one place
+              <strong>Getters for validation</strong>: Derive validation state
+              from field values using getters to keep logic in one place
             </li>
             <li>
-              <strong>Debounce async validation</strong>: Wait for users to stop typing before making API calls
+              <strong>Debounce async validation</strong>: Wait for users to stop
+              typing before making API calls
             </li>
             <li>
-              <strong>Error arrays</strong>: Return arrays of specific error messages instead of just booleans
+              <strong>Error arrays</strong>: Return arrays of specific error
+              messages instead of just booleans
             </li>
             <li>
-              <strong>Optimistic error display</strong>: Only show errors after users interact with fields
+              <strong>Optimistic error display</strong>: Only show errors after
+              users interact with fields
             </li>
             <li>
-              <strong>Visual feedback</strong>: Use colors, icons, and loading indicators to communicate
-              validation status
+              <strong>Visual feedback</strong>: Use colors, icons, and loading
+              indicators to communicate validation status
             </li>
           </ul>
         </Prose>
@@ -1168,7 +1281,8 @@ get isFormValid(): boolean {
         <SectionHeader>Next Steps</SectionHeader>
         <Prose>
           <p>
-            You've mastered complex form validation! Ready for more patterns? The next demo covers{' '}
+            You've mastered complex form validation! Ready for more patterns?
+            The next demo covers{' '}
             <strong>async loading states and error handling</strong>, including:
           </p>
           <ul>
@@ -1178,7 +1292,8 @@ get isFormValid(): boolean {
             <li>Error boundaries and graceful degradation</li>
           </ul>
           <p>
-            Continue to the <strong>Async Loading States</strong> demo to learn these patterns!
+            Continue to the <strong>Async Loading States</strong> demo to learn
+            these patterns!
           </p>
         </Prose>
       </ArticleSection>

@@ -50,7 +50,7 @@ class ComplexCubit extends Cubit<ComplexState> {
     // Simulate heavy computation
     this.emit({ ...this.state, isProcessing: true });
 
-    const processedItems = this.state.items.map(item => ({
+    const processedItems = this.state.items.map((item) => ({
       ...item,
       processed: true,
     }));
@@ -208,7 +208,9 @@ describe('useBloc with useTransition', () => {
       // The urgent update (processItems) should take precedence
       expect(result.current.state.isProcessing).toBe(false);
       // Items should be processed
-      expect(result.current.state.items.every(item => item.processed)).toBe(true);
+      expect(result.current.state.items.every((item) => item.processed)).toBe(
+        true,
+      );
     });
   });
 

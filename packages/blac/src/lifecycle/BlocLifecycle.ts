@@ -87,10 +87,7 @@ export class BlocLifecycleManager {
   /**
    * Schedule disposal on next microtask
    */
-  scheduleDisposal(
-    canDispose: () => boolean,
-    onDispose: () => void,
-  ): void {
+  scheduleDisposal(canDispose: () => boolean, onDispose: () => void): void {
     // Prevent duplicate scheduling
     if (this.disposalMicrotaskScheduled) {
       return;

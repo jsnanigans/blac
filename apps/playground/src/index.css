@@ -44,9 +44,15 @@
     --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.08);
     --shadow-md: 0 8px 24px -12px rgba(15, 23, 42, 0.2);
     --shadow-lg: 0 24px 48px -24px rgba(15, 23, 42, 0.35);
-    --font-sans: "Inter", "Inter var", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    --font-display: "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    --font-mono: "JetBrains Mono", "Fira Code", "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    --font-sans:
+      'Inter', 'Inter var', ui-sans-serif, system-ui, -apple-system,
+      BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-display:
+      'Plus Jakarta Sans', 'Inter', ui-sans-serif, system-ui, -apple-system,
+      BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono:
+      'JetBrains Mono', 'Fira Code', 'SFMono-Regular', Menlo, Monaco, Consolas,
+      'Liberation Mono', 'Courier New', monospace;
   }
 
   .dark {
@@ -167,7 +173,8 @@ kbd {
 }
 
 @keyframes node-pulse {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
   }
   50% {
@@ -208,7 +215,8 @@ kbd {
 
 .react-flow__edge.edge-draw-in path {
   stroke-dasharray: 1000;
-  animation: drawEdge var(--edge-animation-duration, 300ms) cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: drawEdge var(--edge-animation-duration, 300ms)
+    cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 /* Fade out animation for edges */

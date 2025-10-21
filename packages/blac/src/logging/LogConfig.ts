@@ -55,7 +55,10 @@ export const validateLogConfig = (config: Partial<LogConfig>): void => {
 
   // Validate namespaces
   if (config.namespaces !== undefined) {
-    if (typeof config.namespaces !== 'string' && !Array.isArray(config.namespaces)) {
+    if (
+      typeof config.namespaces !== 'string' &&
+      !Array.isArray(config.namespaces)
+    ) {
       throw new BlacError(
         `Invalid namespaces configuration. Must be a string or array of strings`,
         ErrorCategory.VALIDATION,
@@ -63,7 +66,9 @@ export const validateLogConfig = (config: Partial<LogConfig>): void => {
       );
     }
 
-    const patterns = Array.isArray(config.namespaces) ? config.namespaces : [config.namespaces];
+    const patterns = Array.isArray(config.namespaces)
+      ? config.namespaces
+      : [config.namespaces];
     for (const pattern of patterns) {
       if (typeof pattern !== 'string') {
         throw new BlacError(
@@ -84,7 +89,10 @@ export const validateLogConfig = (config: Partial<LogConfig>): void => {
     );
   }
 
-  if (config.stackTrace !== undefined && typeof config.stackTrace !== 'boolean') {
+  if (
+    config.stackTrace !== undefined &&
+    typeof config.stackTrace !== 'boolean'
+  ) {
     throw new BlacError(
       `LogConfig.stackTrace must be a boolean`,
       ErrorCategory.VALIDATION,
@@ -92,7 +100,10 @@ export const validateLogConfig = (config: Partial<LogConfig>): void => {
     );
   }
 
-  if (config.blocIdentity !== undefined && typeof config.blocIdentity !== 'boolean') {
+  if (
+    config.blocIdentity !== undefined &&
+    typeof config.blocIdentity !== 'boolean'
+  ) {
     throw new BlacError(
       `LogConfig.blocIdentity must be a boolean`,
       ErrorCategory.VALIDATION,
@@ -122,7 +133,10 @@ export const mergeLogConfig = (partial: Partial<LogConfig>): LogConfig => {
  * @param pattern - The pattern to match against
  * @returns true if the bloc name matches the pattern
  */
-export const matchesNamespace = (blocName: string, pattern: string): boolean => {
+export const matchesNamespace = (
+  blocName: string,
+  pattern: string,
+): boolean => {
   // Match all
   if (pattern === '*') return true;
 

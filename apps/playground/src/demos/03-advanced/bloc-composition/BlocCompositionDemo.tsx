@@ -232,9 +232,7 @@ export const BlocCompositionDemo: React.FC = () => {
             demo shows the patterns for composing Blocs and enabling them to
             communicate.
           </p>
-          <p>
-            BlaC supports three key patterns for Bloc composition:
-          </p>
+          <p>BlaC supports three key patterns for Bloc composition:</p>
           <ul>
             <li>
               <strong>Shared State:</strong> Multiple components access the same
@@ -645,8 +643,8 @@ function Component2() {
             <ConceptCallout type="warning" title="Memory Leak Warning">
               <p className="text-sm">
                 Always unsubscribe in <code>onDispose()</code> to prevent memory
-                leaks! The subscription callback is called <code>subscribe()</code>{' '}
-                returns an unsubscribe function.
+                leaks! The subscription callback is called{' '}
+                <code>subscribe()</code> returns an unsubscribe function.
               </p>
             </ConceptCallout>
           </div>

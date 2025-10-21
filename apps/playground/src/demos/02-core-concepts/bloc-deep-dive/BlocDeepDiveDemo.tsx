@@ -2,11 +2,19 @@ import { useBloc } from '@blac/react';
 import { Vertex } from '@blac/core';
 import { Button } from '@/ui/Button';
 import { DemoArticle } from '@/components/demo-article/DemoArticle';
-import { ArticleSection, SectionHeader } from '@/components/demo-article/ArticleSection';
+import {
+  ArticleSection,
+  SectionHeader,
+} from '@/components/demo-article/ArticleSection';
 import { Prose } from '@/components/demo-article/Prose';
 import { CodePanel } from '@/components/demo-article/CodePanel';
 import { StateViewer } from '@/components/shared/StateViewer';
-import { ConceptCallout, TipCallout, WarningCallout, InfoCallout } from '@/components/shared/ConceptCallout';
+import {
+  ConceptCallout,
+  TipCallout,
+  WarningCallout,
+  InfoCallout,
+} from '@/components/shared/ConceptCallout';
 import confetti from 'canvas-confetti';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
@@ -28,7 +36,10 @@ interface CounterState {
   history: Array<{ event: string; timestamp: number }>;
 }
 
-class EventCounterBloc extends Vertex<CounterState, IncrementEvent | DecrementEvent | ResetEvent> {
+class EventCounterBloc extends Vertex<
+  CounterState,
+  IncrementEvent | DecrementEvent | ResetEvent
+> {
   constructor() {
     super({ count: 0, history: [] });
 
@@ -88,7 +99,7 @@ class EventCounterBloc extends Vertex<CounterState, IncrementEvent | DecrementEv
 class UpdateFieldEvent {
   constructor(
     public readonly field: string,
-    public readonly value: string
+    public readonly value: string,
   ) {}
 }
 
@@ -113,7 +124,10 @@ interface FormState {
   submitCount: number;
 }
 
-class FormValidationBloc extends Vertex<FormState, UpdateFieldEvent | ValidateFieldEvent | SubmitFormEvent | ResetFormEvent> {
+class FormValidationBloc extends Vertex<
+  FormState,
+  UpdateFieldEvent | ValidateFieldEvent | SubmitFormEvent | ResetFormEvent
+> {
   constructor() {
     const initialState: FormState = {
       fields: {
@@ -152,7 +166,11 @@ class FormValidationBloc extends Vertex<FormState, UpdateFieldEvent | ValidateFi
 
     // Validate specific field
     this.on(ValidateFieldEvent, (event, emit) => {
-      const error = this.validateField(event.field, this.state.fields[event.field].value, this.state.fields);
+      const error = this.validateField(
+        event.field,
+        this.state.fields[event.field].value,
+        this.state.fields,
+      );
 
       emit({
         ...this.state,
@@ -173,7 +191,7 @@ class FormValidationBloc extends Vertex<FormState, UpdateFieldEvent | ValidateFi
       emit({ ...this.state, isSubmitting: true });
 
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
       // Success!
       emit({
@@ -198,7 +216,11 @@ class FormValidationBloc extends Vertex<FormState, UpdateFieldEvent | ValidateFi
     });
   }
 
-  private validateField(field: string, value: string, allFields: Record<string, FormField>): string | null {
+  private validateField(
+    field: string,
+    value: string,
+    allFields: Record<string, FormField>,
+  ): string | null {
     switch (field) {
       case 'email':
         if (!value) return 'Email is required';
@@ -221,9 +243,7 @@ class FormValidationBloc extends Vertex<FormState, UpdateFieldEvent | ValidateFi
   }
 
   private isFormValid(fields: Record<string, FormField>): boolean {
-    return Object.values(fields).every(field =>
-      field.value && !field.error
-    );
+    return Object.values(fields).every((field) => field.value && !field.error);
   }
 
   // Helper methods
@@ -266,7 +286,10 @@ interface ApiState {
   fetchCount: number;
 }
 
-class AsyncEventBloc extends Vertex<ApiState, FetchDataEvent | RefreshDataEvent | CancelFetchEvent> {
+class AsyncEventBloc extends Vertex<
+  ApiState,
+  FetchDataEvent | RefreshDataEvent | CancelFetchEvent
+> {
   private abortController?: AbortController;
 
   constructor() {
@@ -306,9 +329,21 @@ class AsyncEventBloc extends Vertex<ApiState, FetchDataEvent | RefreshDataEvent 
         }
 
         const mockData: Post[] = [
-          { id: 1, title: 'First Post', body: 'This is the first post content' },
-          { id: 2, title: 'Second Post', body: 'This is the second post content' },
-          { id: 3, title: 'Third Post', body: 'This is the third post content' },
+          {
+            id: 1,
+            title: 'First Post',
+            body: 'This is the first post content',
+          },
+          {
+            id: 2,
+            title: 'Second Post',
+            body: 'This is the second post content',
+          },
+          {
+            id: 3,
+            title: 'Third Post',
+            body: 'This is the third post content',
+          },
         ];
 
         emit({
@@ -433,26 +468,29 @@ class SearchBloc extends Vertex<SearchState, SearchEvent | ClearSearchEvent> {
       });
 
       // Simulate search
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise((resolve) => setTimeout(resolve, 300));
 
       // Generate mock results
-      const mockResults: SearchResult[] = event.query.length > 0 ? [
-        {
-          id: 1,
-          title: `Result for "${event.query}"`,
-          match: `Found "${event.query}" in document 1`,
-        },
-        {
-          id: 2,
-          title: `Another match for "${event.query}"`,
-          match: `The term "${event.query}" appears here`,
-        },
-        {
-          id: 3,
-          title: `Best match: ${event.query}`,
-          match: `Highly relevant to "${event.query}"`,
-        },
-      ] : [];
+      const mockResults: SearchResult[] =
+        event.query.length > 0
+          ? [
+              {
+                id: 1,
+                title: `Result for "${event.query}"`,
+                match: `Found "${event.query}" in document 1`,
+              },
+              {
+                id: 2,
+                title: `Another match for "${event.query}"`,
+                match: `The term "${event.query}" appears here`,
+              },
+              {
+                id: 3,
+                title: `Best match: ${event.query}`,
+                match: `Highly relevant to "${event.query}"`,
+              },
+            ]
+          : [];
 
       emit({
         query: event.query,
@@ -607,7 +645,9 @@ function FormValidationDemo() {
             placeholder="user@example.com"
           />
           {state.fields.email.error && state.fields.email.touched && (
-            <p className="mt-1 text-sm text-semantic-danger">{state.fields.email.error}</p>
+            <p className="mt-1 text-sm text-semantic-danger">
+              {state.fields.email.error}
+            </p>
           )}
         </div>
 
@@ -626,27 +666,37 @@ function FormValidationDemo() {
             placeholder="Min 8 characters"
           />
           {state.fields.password.error && state.fields.password.touched && (
-            <p className="mt-1 text-sm text-semantic-danger">{state.fields.password.error}</p>
+            <p className="mt-1 text-sm text-semantic-danger">
+              {state.fields.password.error}
+            </p>
           )}
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Confirm Password</label>
+          <label className="block text-sm font-medium mb-1">
+            Confirm Password
+          </label>
           <input
             type="password"
             value={state.fields.confirmPassword.value}
-            onChange={(e) => bloc.updateField('confirmPassword', e.target.value)}
+            onChange={(e) =>
+              bloc.updateField('confirmPassword', e.target.value)
+            }
             onBlur={() => bloc.validateSingleField('confirmPassword')}
             className={`w-full px-3 py-2 border rounded-md bg-background ${
-              state.fields.confirmPassword.error && state.fields.confirmPassword.touched
+              state.fields.confirmPassword.error &&
+              state.fields.confirmPassword.touched
                 ? 'border-semantic-danger'
                 : 'border-border'
             }`}
             placeholder="Re-enter password"
           />
-          {state.fields.confirmPassword.error && state.fields.confirmPassword.touched && (
-            <p className="mt-1 text-sm text-semantic-danger">{state.fields.confirmPassword.error}</p>
-          )}
+          {state.fields.confirmPassword.error &&
+            state.fields.confirmPassword.touched && (
+              <p className="mt-1 text-sm text-semantic-danger">
+                {state.fields.confirmPassword.error}
+              </p>
+            )}
         </div>
 
         <div className="flex gap-3 pt-2">
@@ -725,7 +775,7 @@ function AsyncEventDemo() {
           animate={{ opacity: state.refreshing ? 0.5 : 1 }}
           className="space-y-2"
         >
-          {state.data.map(post => (
+          {state.data.map((post) => (
             <div key={post.id} className="p-3 rounded bg-background/50">
               <h5 className="font-medium">{post.title}</h5>
               <p className="text-sm text-muted-foreground">{post.body}</p>
@@ -752,7 +802,9 @@ function SearchDemo() {
   return (
     <div className="p-6 rounded-xl bg-gradient-to-br from-concept-bloc/10 to-concept-bloc/5 border-2 border-concept-bloc/20">
       <div className="mb-4">
-        <label className="block text-sm font-medium mb-2">Search (with debounce)</label>
+        <label className="block text-sm font-medium mb-2">
+          Search (with debounce)
+        </label>
         <div className="flex gap-2">
           <input
             type="text"
@@ -803,7 +855,8 @@ function SearchDemo() {
 const demoMetadata = {
   id: 'bloc-deep-dive',
   title: 'Bloc Deep Dive',
-  description: 'Master event-driven state management with Blocs: event handling, async operations, transformations, and testing patterns.',
+  description:
+    'Master event-driven state management with Blocs: event handling, async operations, transformations, and testing patterns.',
   category: '02-core-concepts',
   difficulty: 'intermediate' as const,
   tags: ['bloc', 'events', 'async', 'patterns', 'testing'],
@@ -822,19 +875,28 @@ const demoMetadata = {
 // ============= Main Demo Component =============
 export function BlocDeepDiveDemo() {
   return (
-    <DemoArticle metadata={demoMetadata} showBlocGraph={true} hideNavigation={true}>
+    <DemoArticle
+      metadata={demoMetadata}
+      showBlocGraph={true}
+      hideNavigation={true}
+    >
       {/* Introduction */}
       <ArticleSection theme="bloc" id="introduction">
         <Prose>
           <h2>Event-Driven State Management</h2>
           <p>
-            While Cubits provide <strong>simple, direct state updates</strong>, Blocs take a different approach:
-            <strong> every state change is triggered by an event</strong>. This event-driven architecture brings
-            powerful benefits for complex applications.
+            While Cubits provide <strong>simple, direct state updates</strong>,
+            Blocs take a different approach:
+            <strong> every state change is triggered by an event</strong>. This
+            event-driven architecture brings powerful benefits for complex
+            applications.
           </p>
           <p>
-            In this deep dive, you'll master <strong>event handling patterns</strong>, <strong>async operations</strong>,
-            <strong>event transformations</strong>, and learn when Blocs are the right choice for your state management needs.
+            In this deep dive, you'll master{' '}
+            <strong>event handling patterns</strong>,{' '}
+            <strong>async operations</strong>,
+            <strong>event transformations</strong>, and learn when Blocs are the
+            right choice for your state management needs.
           </p>
         </Prose>
       </ArticleSection>
@@ -844,8 +906,9 @@ export function BlocDeepDiveDemo() {
         <SectionHeader>Basic Event Pattern</SectionHeader>
         <Prose>
           <p>
-            In Bloc, <strong>events are classes</strong> that represent user actions or system triggers.
-            Each event can carry data, and every state change is traceable to a specific event.
+            In Bloc, <strong>events are classes</strong> that represent user
+            actions or system triggers. Each event can carry data, and every
+            state change is traceable to a specific event.
           </p>
         </Prose>
 
@@ -916,8 +979,9 @@ class EventCounterBloc extends Vertex<CounterState, IncrementEvent | DecrementEv
 
         <TipCallout title="Why Events?">
           <p>
-            Events provide a <strong>clear audit trail</strong> of what caused each state change.
-            This is invaluable for debugging, testing, and implementing features like undo/redo or time-travel debugging.
+            Events provide a <strong>clear audit trail</strong> of what caused
+            each state change. This is invaluable for debugging, testing, and
+            implementing features like undo/redo or time-travel debugging.
           </p>
         </TipCallout>
       </ArticleSection>
@@ -927,8 +991,9 @@ class EventCounterBloc extends Vertex<CounterState, IncrementEvent | DecrementEv
         <SectionHeader>Complex Event Handling</SectionHeader>
         <Prose>
           <p>
-            Events excel at handling <strong>complex business logic</strong>. Here's a form validation
-            example that demonstrates field-level validation, error handling, and async submission.
+            Events excel at handling <strong>complex business logic</strong>.
+            Here's a form validation example that demonstrates field-level
+            validation, error handling, and async submission.
           </p>
         </Prose>
 
@@ -937,7 +1002,11 @@ class EventCounterBloc extends Vertex<CounterState, IncrementEvent | DecrementEv
         </div>
 
         <div className="my-8">
-          <StateViewer bloc={FormValidationBloc} title="Form State" maxDepth={3} />
+          <StateViewer
+            bloc={FormValidationBloc}
+            title="Form State"
+            maxDepth={3}
+          />
         </div>
 
         <CodePanel
@@ -1012,9 +1081,11 @@ class FormValidationBloc extends Vertex<FormState, FormEvents> {
 
         <InfoCallout title="Event Granularity">
           <p>
-            Create separate event classes for different actions, even if they seem similar.
-            <code>UpdateEmailEvent</code> and <code>UpdatePasswordEvent</code> are clearer than a generic <code>UpdateFieldEvent</code>,
-            though both approaches work.
+            Create separate event classes for different actions, even if they
+            seem similar.
+            <code>UpdateEmailEvent</code> and <code>UpdatePasswordEvent</code>{' '}
+            are clearer than a generic <code>UpdateFieldEvent</code>, though
+            both approaches work.
           </p>
         </InfoCallout>
       </ArticleSection>
@@ -1024,8 +1095,9 @@ class FormValidationBloc extends Vertex<FormState, FormEvents> {
         <SectionHeader>Async Event Processing</SectionHeader>
         <Prose>
           <p>
-            Blocs handle <strong>asynchronous operations elegantly</strong>. You can emit multiple states
-            during async processing, cancel operations, and handle errors gracefully.
+            Blocs handle <strong>asynchronous operations elegantly</strong>. You
+            can emit multiple states during async processing, cancel operations,
+            and handle errors gracefully.
           </p>
         </Prose>
 
@@ -1103,8 +1175,9 @@ class FormValidationBloc extends Vertex<FormState, FormEvents> {
 
         <WarningCallout title="Cleanup on Dispose">
           <p>
-            Always clean up async operations in the <code>dispose()</code> method.
-            Cancel timers, abort requests, and close streams to prevent memory leaks.
+            Always clean up async operations in the <code>dispose()</code>{' '}
+            method. Cancel timers, abort requests, and close streams to prevent
+            memory leaks.
           </p>
         </WarningCallout>
       </ArticleSection>
@@ -1114,8 +1187,10 @@ class FormValidationBloc extends Vertex<FormState, FormEvents> {
         <SectionHeader>Event Transformation Patterns</SectionHeader>
         <Prose>
           <p>
-            Transform events before processing them. Common patterns include <strong>debouncing</strong>
-            (delay processing), <strong>throttling</strong> (limit frequency), and <strong>switching</strong>
+            Transform events before processing them. Common patterns include{' '}
+            <strong>debouncing</strong>
+            (delay processing), <strong>throttling</strong> (limit frequency),
+            and <strong>switching</strong>
             (cancel previous, start new).
           </p>
         </Prose>
@@ -1187,8 +1262,9 @@ bloc.clear();              // Immediate`}
 
         <TipCallout title="Advanced Transformations">
           <p>
-            For complex transformations, consider using RxJS operators or similar libraries.
-            They provide operators like <code>debounceTime</code>, <code>throttleTime</code>,
+            For complex transformations, consider using RxJS operators or
+            similar libraries. They provide operators like{' '}
+            <code>debounceTime</code>, <code>throttleTime</code>,
             <code>switchMap</code>, and <code>exhaustMap</code> out of the box.
           </p>
         </TipCallout>
@@ -1199,8 +1275,9 @@ bloc.clear();              // Immediate`}
         <SectionHeader>Event Testing & Debugging</SectionHeader>
         <Prose>
           <p>
-            Events make testing straightforward. You can test event handlers in isolation,
-            verify state transitions, and even implement time-travel debugging.
+            Events make testing straightforward. You can test event handlers in
+            isolation, verify state transitions, and even implement time-travel
+            debugging.
           </p>
         </Prose>
 
@@ -1275,9 +1352,10 @@ class DebugBloc extends Vertex<State, Events> {
 
         <InfoCallout title="Time-Travel Debugging">
           <p>
-            Since every state change is triggered by an event, you can record all events
-            and replay them to reproduce any state. This enables powerful debugging tools
-            and even user-facing undo/redo functionality.
+            Since every state change is triggered by an event, you can record
+            all events and replay them to reproduce any state. This enables
+            powerful debugging tools and even user-facing undo/redo
+            functionality.
           </p>
         </InfoCallout>
       </ArticleSection>
@@ -1288,22 +1366,28 @@ class DebugBloc extends Vertex<State, Events> {
         <Prose>
           <ul>
             <li>
-              <strong>Events provide traceability</strong>: Every state change has a clear cause
+              <strong>Events provide traceability</strong>: Every state change
+              has a clear cause
             </li>
             <li>
-              <strong>Event classes carry data</strong>: Type-safe way to pass information to handlers
+              <strong>Event classes carry data</strong>: Type-safe way to pass
+              information to handlers
             </li>
             <li>
-              <strong>Async events are first-class</strong>: Emit multiple states during async operations
+              <strong>Async events are first-class</strong>: Emit multiple
+              states during async operations
             </li>
             <li>
-              <strong>Transform events as needed</strong>: Debounce, throttle, or cancel as required
+              <strong>Transform events as needed</strong>: Debounce, throttle,
+              or cancel as required
             </li>
             <li>
-              <strong>Testing is straightforward</strong>: Dispatch events, verify state changes
+              <strong>Testing is straightforward</strong>: Dispatch events,
+              verify state changes
             </li>
             <li>
-              <strong>Enable powerful debugging</strong>: Event logs, time-travel, and replay capabilities
+              <strong>Enable powerful debugging</strong>: Event logs,
+              time-travel, and replay capabilities
             </li>
           </ul>
 
@@ -1338,12 +1422,14 @@ class DebugBloc extends Vertex<State, Events> {
         <SectionHeader>Next Steps</SectionHeader>
         <Prose>
           <p>
-            You've mastered the event-driven architecture of Blocs! You understand how events
-            provide structure, traceability, and testability to your state management.
+            You've mastered the event-driven architecture of Blocs! You
+            understand how events provide structure, traceability, and
+            testability to your state management.
           </p>
           <p>
-            Next, we'll do a detailed comparison of <strong>Blocs vs Cubits</strong>, helping you
-            choose the right tool for each situation in your applications.
+            Next, we'll do a detailed comparison of{' '}
+            <strong>Blocs vs Cubits</strong>, helping you choose the right tool
+            for each situation in your applications.
           </p>
         </Prose>
       </ArticleSection>

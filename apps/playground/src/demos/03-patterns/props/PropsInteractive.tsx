@@ -182,11 +182,7 @@ function Timer({ config }: { config: TimerProps }) {
             <Square className="w-4 h-4 mr-1" />
             Stop
           </Button>
-          <Button
-            onClick={cubit.reset}
-            variant="outline"
-            size="sm"
-          >
+          <Button onClick={cubit.reset} variant="outline" size="sm">
             <RotateCcw className="w-4 h-4" />
           </Button>
         </div>
@@ -250,20 +246,24 @@ export function PropsInteractive() {
           <h4 className="font-semibold">How Props Work</h4>
           <div className="text-sm text-muted-foreground space-y-2">
             <p>
-              <strong className="text-foreground">Each timer</strong> is a separate instance
-              of <code className="text-xs">TimerCubit</code> created with different props.
+              <strong className="text-foreground">Each timer</strong> is a
+              separate instance of <code className="text-xs">TimerCubit</code>{' '}
+              created with different props.
             </p>
             <p>
-              <strong className="text-foreground">Props are passed</strong> using{' '}
-              <code className="text-xs">staticProps</code> in <code className="text-xs">useBloc</code>.
+              <strong className="text-foreground">Props are passed</strong>{' '}
+              using <code className="text-xs">staticProps</code> in{' '}
+              <code className="text-xs">useBloc</code>.
             </p>
             <p>
-              <strong className="text-foreground">Each instance</strong> has its own independent
-              state and configuration. They don't interfere with each other.
+              <strong className="text-foreground">Each instance</strong> has its
+              own independent state and configuration. They don't interfere with
+              each other.
             </p>
             <p>
               <strong className="text-foreground">Instance IDs</strong> like{' '}
-              <code className="text-xs">timer-Default Timer</code> ensure each timer is unique.
+              <code className="text-xs">timer-Default Timer</code> ensure each
+              timer is unique.
             </p>
           </div>
         </div>

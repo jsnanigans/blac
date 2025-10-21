@@ -9,7 +9,12 @@ DemoRegistry.register({
     'Master event-driven state management with Blocs: event handling, async operations, transformations, and testing patterns.',
   difficulty: 'intermediate',
   tags: ['bloc', 'events', 'async', 'patterns', 'testing'],
-  concepts: ['event-driven architecture', 'async handling', 'event transformation', 'testing'],
+  concepts: [
+    'event-driven architecture',
+    'async handling',
+    'event transformation',
+    'testing',
+  ],
   component: BlocDeepDiveDemo,
   code: {
     demo: '', // Code will be provided by demoCodeExports.ts

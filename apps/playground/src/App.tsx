@@ -37,7 +37,10 @@ function App() {
 
 // Helper component to redirect old demo routes to new guide routes
 function RedirectToGuide() {
-  const { category, demoId } = useParams<{ category: string; demoId: string }>();
+  const { category, demoId } = useParams<{
+    category: string;
+    demoId: string;
+  }>();
 
   // Map old category to new section
   const sectionMap: Record<string, string> = {
@@ -47,7 +50,7 @@ function RedirectToGuide() {
     '03-advanced': 'advanced',
     '04-plugins': 'plugins',
     '05-testing': 'testing',
-    '06-real-world': 'real-world'
+    '06-real-world': 'real-world',
   };
 
   const sectionId = category ? sectionMap[category] : null;
@@ -61,7 +64,7 @@ function RedirectToGuide() {
 // Helper component to redirect section-only paths to first demo
 function RedirectToFirstDemo() {
   const { sectionId } = useParams<{ sectionId: string }>();
-  const section = guideStructure.sections.find(s => s.id === sectionId);
+  const section = guideStructure.sections.find((s) => s.id === sectionId);
 
   if (section && section.demos.length > 0) {
     return <Navigate to={`/guide/${sectionId}/${section.demos[0]}`} replace />;

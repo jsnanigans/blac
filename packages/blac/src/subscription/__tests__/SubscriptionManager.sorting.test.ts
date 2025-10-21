@@ -113,11 +113,7 @@ describe('SubscriptionManager - Sorting Optimization', () => {
       cubit.emit(1);
 
       // Should be notified in priority order (descending)
-      expect(notifications).toEqual([
-        'priority-2',
-        'priority-1',
-        'priority-0',
-      ]);
+      expect(notifications).toEqual(['priority-2', 'priority-1', 'priority-0']);
     });
 
     it('should use cached sorted array on subsequent notifies', () => {

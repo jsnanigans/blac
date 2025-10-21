@@ -36,24 +36,28 @@ Based on [js-framework-benchmark](https://github.com/krausest/js-framework-bench
 A full suite of BlaC-specific performance tests:
 
 #### Memory Leak Detection
+
 - Mount/unmount cycle testing
 - Shared vs isolated bloc comparison
 - Memory usage tracking (Chrome/Edge only)
 - Subscription cleanup verification
 
 #### Dependency Tracking Performance
+
 - Tests proxy-based optimization
 - Compares performance with/without tracking
 - Validates selective re-rendering
 - Measures render counts per component
 
 #### Large State Tree Performance
+
 - Deeply nested state structures
 - Immutable update propagation
 - Configurable tree depth and breadth
 - Visual tree exploration
 
 #### Concurrent Updates
+
 - Multiple simultaneous state changes
 - Batching and re-render optimization
 - Auto-updating components
@@ -107,9 +111,13 @@ const { result, metrics } = PerformanceMetrics.measure('operation', () => {
 });
 
 // Run benchmark with statistics
-const stats = PerformanceMetrics.benchmark('operation', () => {
-  // ... do work ...
-}, 100); // Run 100 times
+const stats = PerformanceMetrics.benchmark(
+  'operation',
+  () => {
+    // ... do work ...
+  },
+  100,
+); // Run 100 times
 ```
 
 ## Best Practices for Accurate Results
@@ -117,6 +125,7 @@ const stats = PerformanceMetrics.benchmark('operation', () => {
 ### Chrome/Edge Setup (Recommended)
 
 1. **Enable memory profiling**:
+
    ```bash
    # Mac/Linux
    /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
@@ -203,6 +212,7 @@ The Memory API (`performance.memory`) is only available in Chrome/Edge. Safari a
 ### High Memory Usage
 
 If you see consistently high memory:
+
 1. Check the "Memory Leak" benchmark
 2. Run mount/unmount cycles and verify memory returns to baseline
 3. Take heap snapshots in DevTools to identify retained objects
@@ -233,6 +243,7 @@ pnpm build
 ## Future Enhancements
 
 Potential additions:
+
 - [ ] Export results to CSV/JSON
 - [ ] Historical comparison charts
 - [ ] Automated regression testing

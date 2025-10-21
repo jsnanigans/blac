@@ -176,7 +176,7 @@ export class ReactBlocAdapter<S = any> {
 
     // Check global config for auto-tracking
     const blacConfig = Blac.config;
-    this.autoTrackingEnabled = blacConfig.proxyDependencyTracking !== false;
+    this.autoTrackingEnabled = blacConfig.proxyDependencyTracking !== false && bloc.config.proxyDependencyTracking !== false;
 
     // Initialize dependency tracker if auto-tracking is enabled
     if (this.autoTrackingEnabled) {

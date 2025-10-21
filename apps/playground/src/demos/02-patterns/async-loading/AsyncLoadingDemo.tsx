@@ -1,9 +1,19 @@
 import React, { useState } from 'react';
 import { Cubit } from '@blac/core';
 import { useBloc } from '@blac/react';
-import { Loader2, CheckCircle2, XCircle, RefreshCw, Zap, AlertTriangle } from 'lucide-react';
+import {
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  RefreshCw,
+  Zap,
+  AlertTriangle,
+} from 'lucide-react';
 import { DemoArticle } from '@/components/demo-article/DemoArticle';
-import { ArticleSection, SectionHeader } from '@/components/demo-article/ArticleSection';
+import {
+  ArticleSection,
+  SectionHeader,
+} from '@/components/demo-article/ArticleSection';
 import { Prose } from '@/components/demo-article/Prose';
 import { CodePanel } from '@/components/demo-article/CodePanel';
 import { ConceptCallout } from '@/components/shared/ConceptCallout';
@@ -172,7 +182,9 @@ class RetryFetchCubit extends Cubit<RetryState> {
         retryCount: this.state.retryCount,
       });
     } catch (error) {
-      const newRetryCount = isRetry ? this.state.retryCount : this.state.retryCount + 1;
+      const newRetryCount = isRetry
+        ? this.state.retryCount
+        : this.state.retryCount + 1;
 
       if (newRetryCount >= this.maxRetries) {
         this.emit({
@@ -364,7 +376,7 @@ class OptimisticTodoCubit extends Cubit<TodoState> {
         items: this.state.items.map((item) =>
           item.id === optimisticId
             ? { ...item, id: realId, optimistic: false }
-            : item
+            : item,
         ),
         isAdding: false,
       });
@@ -372,7 +384,9 @@ class OptimisticTodoCubit extends Cubit<TodoState> {
       // Failure: mark as error (could also remove it)
       this.patch({
         items: this.state.items.map((item) =>
-          item.id === optimisticId ? { ...item, error: true, optimistic: false } : item
+          item.id === optimisticId
+            ? { ...item, error: true, optimistic: false }
+            : item,
         ),
         isAdding: false,
       });
@@ -392,7 +406,7 @@ class OptimisticTodoCubit extends Cubit<TodoState> {
     // Optimistic update
     this.patch({
       items: this.state.items.map((i) =>
-        i.id === id ? { ...i, completed: !i.completed, optimistic: true } : i
+        i.id === id ? { ...i, completed: !i.completed, optimistic: true } : i,
       ),
     });
 
@@ -406,14 +420,21 @@ class OptimisticTodoCubit extends Cubit<TodoState> {
       // Confirm success
       this.patch({
         items: this.state.items.map((i) =>
-          i.id === id ? { ...i, optimistic: false } : i
+          i.id === id ? { ...i, optimistic: false } : i,
         ),
       });
     } catch (error) {
       // Revert on failure
       this.patch({
         items: this.state.items.map((i) =>
-          i.id === id ? { ...i, completed: item.completed, optimistic: false, error: true } : i
+          i.id === id
+            ? {
+                ...i,
+                completed: item.completed,
+                optimistic: false,
+                error: true,
+              }
+            : i,
         ),
       });
     }
@@ -479,7 +500,9 @@ function OptimisticDemo() {
       <div className="space-y-2 min-h-[200px]">
         {state.items.length === 0 ? (
           <div className="flex items-center justify-center h-[200px] border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg">
-            <p className="text-gray-500 dark:text-gray-400">No todos yet. Add one above!</p>
+            <p className="text-gray-500 dark:text-gray-400">
+              No todos yet. Add one above!
+            </p>
           </div>
         ) : (
           state.items.map((item) => (
@@ -489,8 +512,8 @@ function OptimisticDemo() {
                 item.error
                   ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/20'
                   : item.optimistic
-                  ? 'border-yellow-300 dark:border-yellow-700 bg-yellow-50 dark:bg-yellow-950/20'
-                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
+                    ? 'border-yellow-300 dark:border-yellow-700 bg-yellow-50 dark:bg-yellow-950/20'
+                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
               }`}
             >
               <input
@@ -502,7 +525,9 @@ function OptimisticDemo() {
               />
               <span
                 className={`flex-1 ${
-                  item.completed ? 'line-through text-gray-500 dark:text-gray-400' : ''
+                  item.completed
+                    ? 'line-through text-gray-500 dark:text-gray-400'
+                    : ''
                 } ${item.error ? 'text-red-600 dark:text-red-400' : ''}`}
               >
                 {item.text}
@@ -535,7 +560,8 @@ function OptimisticDemo() {
 const demoMetadata = {
   id: 'async-loading',
   title: 'Async Loading States',
-  description: 'Master async operations with loading states, error handling, retry logic, and optimistic updates.',
+  description:
+    'Master async operations with loading states, error handling, retry logic, and optimistic updates.',
   category: '02-patterns' as const,
   difficulty: 'intermediate' as const,
   tags: ['cubit', 'async', 'loading', 'error-handling', 'retry', 'optimistic'],
@@ -563,18 +589,21 @@ export function AsyncLoadingDemo() {
         <SectionHeader>Mastering Async Operations</SectionHeader>
         <Prose>
           <p>
-            Async operations are everywhere in modern applications—API calls, database queries,
-            file uploads. Handling these operations gracefully is critical for good UX.
+            Async operations are everywhere in modern applications—API calls,
+            database queries, file uploads. Handling these operations gracefully
+            is critical for good UX.
           </p>
           <p>
-            In this guide, you'll learn three essential patterns for async operations:
+            In this guide, you'll learn three essential patterns for async
+            operations:
           </p>
           <ul>
             <li>
               <strong>State machine pattern</strong> for explicit loading states
             </li>
             <li>
-              <strong>Retry with exponential backoff</strong> for resilient error handling
+              <strong>Retry with exponential backoff</strong> for resilient
+              error handling
             </li>
             <li>
               <strong>Optimistic updates</strong> for instant feedback
@@ -589,16 +618,17 @@ export function AsyncLoadingDemo() {
         <Prose>
           <p>
             The most robust way to handle loading states is with a{' '}
-            <strong>discriminated union type</strong>. This creates a state machine where
-            each state is explicit and type-safe.
+            <strong>discriminated union type</strong>. This creates a state
+            machine where each state is explicit and type-safe.
           </p>
         </Prose>
 
         <ConceptCallout type="tip" title="Why Discriminated Unions?">
           <p>
-            With a discriminated union, TypeScript <strong>narrows the type</strong> based
-            on the status field. This prevents bugs like accessing <code>data</code> when
-            it doesn't exist.
+            With a discriminated union, TypeScript{' '}
+            <strong>narrows the type</strong> based on the status field. This
+            prevents bugs like accessing <code>data</code> when it doesn't
+            exist.
           </p>
         </ConceptCallout>
 
@@ -638,8 +668,10 @@ class DataFetchCubit extends Cubit<LoadingState> {
 
         <Prose>
           <p>
-            Notice how we <strong>guard against multiple simultaneous fetches</strong>. Without
-            this check, clicking the button rapidly could cause race conditions.
+            Notice how we{' '}
+            <strong>guard against multiple simultaneous fetches</strong>.
+            Without this check, clicking the button rapidly could cause race
+            conditions.
           </p>
         </Prose>
 
@@ -649,9 +681,9 @@ class DataFetchCubit extends Cubit<LoadingState> {
 
         <ConceptCallout type="warning" title="Common Mistake">
           <p>
-            Using separate boolean flags (<code>isLoading</code>, <code>hasError</code>)
-            leads to impossible states like "loading AND error." Discriminated unions make
-            impossible states unrepresentable.
+            Using separate boolean flags (<code>isLoading</code>,{' '}
+            <code>hasError</code>) leads to impossible states like "loading AND
+            error." Discriminated unions make impossible states unrepresentable.
           </p>
         </ConceptCallout>
       </ArticleSection>
@@ -661,8 +693,9 @@ class DataFetchCubit extends Cubit<LoadingState> {
         <SectionHeader>Retry with Exponential Backoff</SectionHeader>
         <Prose>
           <p>
-            Network requests fail. Sometimes they fail temporarily and succeed on retry.
-            Exponential backoff is the industry standard for retry logic:
+            Network requests fail. Sometimes they fail temporarily and succeed
+            on retry. Exponential backoff is the industry standard for retry
+            logic:
           </p>
 
           <ul>
@@ -678,8 +711,8 @@ class DataFetchCubit extends Cubit<LoadingState> {
           </ul>
 
           <p>
-            This prevents overwhelming a struggling server while still giving requests a
-            chance to succeed.
+            This prevents overwhelming a struggling server while still giving
+            requests a chance to succeed.
           </p>
         </Prose>
 
@@ -727,9 +760,7 @@ class RetryFetchCubit extends Cubit<RetryState> {
         </div>
 
         <ConceptCallout type="tip" title="Production Considerations">
-          <p>
-            In production, add:
-          </p>
+          <p>In production, add:</p>
           <ul>
             <li>
               <strong>Jitter:</strong> Add randomness to prevent thundering herd
@@ -749,9 +780,9 @@ class RetryFetchCubit extends Cubit<RetryState> {
         <SectionHeader>Optimistic Updates</SectionHeader>
         <Prose>
           <p>
-            Optimistic updates provide <strong>instant feedback</strong> by updating the UI
-            immediately, then confirming with the server. If the request fails, revert the
-            change.
+            Optimistic updates provide <strong>instant feedback</strong> by
+            updating the UI immediately, then confirming with the server. If the
+            request fails, revert the change.
           </p>
 
           <p>This pattern is perfect for:</p>
@@ -817,23 +848,28 @@ class OptimisticTodoCubit extends Cubit<TodoState> {
           <OptimisticDemo />
         </div>
 
-        <ConceptCallout type="warning" title="When NOT to Use Optimistic Updates">
-          <p>
-            Avoid optimistic updates for:
-          </p>
+        <ConceptCallout
+          type="warning"
+          title="When NOT to Use Optimistic Updates"
+        >
+          <p>Avoid optimistic updates for:</p>
           <ul>
             <li>
-              <strong>Critical operations:</strong> Financial transactions, deleting data
+              <strong>Critical operations:</strong> Financial transactions,
+              deleting data
             </li>
             <li>
-              <strong>Complex validation:</strong> Operations that might fail frequently
+              <strong>Complex validation:</strong> Operations that might fail
+              frequently
             </li>
             <li>
-              <strong>Non-reversible actions:</strong> Sending emails, publishing content
+              <strong>Non-reversible actions:</strong> Sending emails,
+              publishing content
             </li>
           </ul>
           <p>
-            For these cases, use explicit loading states and wait for server confirmation.
+            For these cases, use explicit loading states and wait for server
+            confirmation.
           </p>
         </ConceptCallout>
       </ArticleSection>
@@ -854,21 +890,33 @@ class OptimisticTodoCubit extends Cubit<TodoState> {
             <tbody>
               <tr className="border-b border-gray-200 dark:border-gray-800">
                 <td className="py-3 px-4 font-medium">State Machine</td>
-                <td className="py-3 px-4">Critical operations, explicit feedback</td>
+                <td className="py-3 px-4">
+                  Critical operations, explicit feedback
+                </td>
                 <td className="py-3 px-4">Clear, honest status</td>
-                <td className="py-3 px-4 text-green-600 dark:text-green-400">Low</td>
+                <td className="py-3 px-4 text-green-600 dark:text-green-400">
+                  Low
+                </td>
               </tr>
               <tr className="border-b border-gray-200 dark:border-gray-800">
                 <td className="py-3 px-4 font-medium">Retry + Backoff</td>
-                <td className="py-3 px-4">Unreliable networks, API rate limits</td>
+                <td className="py-3 px-4">
+                  Unreliable networks, API rate limits
+                </td>
                 <td className="py-3 px-4">Resilient to transient failures</td>
-                <td className="py-3 px-4 text-yellow-600 dark:text-yellow-400">Medium</td>
+                <td className="py-3 px-4 text-yellow-600 dark:text-yellow-400">
+                  Medium
+                </td>
               </tr>
               <tr>
                 <td className="py-3 px-4 font-medium">Optimistic Updates</td>
-                <td className="py-3 px-4">High-success operations, instant feedback</td>
+                <td className="py-3 px-4">
+                  High-success operations, instant feedback
+                </td>
                 <td className="py-3 px-4">Feels instant, responsive</td>
-                <td className="py-3 px-4 text-orange-600 dark:text-orange-400">High</td>
+                <td className="py-3 px-4 text-orange-600 dark:text-orange-400">
+                  High
+                </td>
               </tr>
             </tbody>
           </table>
@@ -903,9 +951,7 @@ class OptimisticTodoCubit extends Cubit<TodoState> {
 
         <Prose>
           <h3>3. Provide User Control</h3>
-          <p>
-            Always give users a way to:
-          </p>
+          <p>Always give users a way to:</p>
           <ul>
             <li>Cancel ongoing operations</li>
             <li>Retry failed operations</li>
@@ -942,32 +988,32 @@ class OptimisticTodoCubit extends Cubit<TodoState> {
           <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-950/20 border-2 border-blue-200 dark:border-blue-800">
             <h4 className="font-semibold mb-2">State Machine Pattern</h4>
             <p className="text-sm">
-              Use discriminated unions for type-safe, explicit loading states. Perfect
-              for critical operations where users need clear feedback.
+              Use discriminated unions for type-safe, explicit loading states.
+              Perfect for critical operations where users need clear feedback.
             </p>
           </div>
 
           <div className="p-4 rounded-lg bg-purple-50 dark:bg-purple-950/20 border-2 border-purple-200 dark:border-purple-800">
             <h4 className="font-semibold mb-2">Retry with Backoff</h4>
             <p className="text-sm">
-              Implement exponential backoff for resilient error handling. Essential for
-              production apps dealing with unreliable networks.
+              Implement exponential backoff for resilient error handling.
+              Essential for production apps dealing with unreliable networks.
             </p>
           </div>
 
           <div className="p-4 rounded-lg bg-green-50 dark:bg-green-950/20 border-2 border-green-200 dark:border-green-800">
             <h4 className="font-semibold mb-2">Optimistic Updates</h4>
             <p className="text-sm">
-              Provide instant feedback by updating UI immediately, then confirm with
-              server. Great for high-success operations.
+              Provide instant feedback by updating UI immediately, then confirm
+              with server. Great for high-success operations.
             </p>
           </div>
         </div>
 
         <ConceptCallout type="tip" title="Next Steps">
           <p>
-            Try combining these patterns! For example, use optimistic updates with
-            exponential backoff retry for the best of both worlds.
+            Try combining these patterns! For example, use optimistic updates
+            with exponential backoff retry for the best of both worlds.
           </p>
         </ConceptCallout>
       </ArticleSection>

@@ -9,7 +9,14 @@ DemoRegistry.register({
     'Understand the lifecycle of Blocs and Cubits: initialization, state updates, instance management, and disposal.',
   difficulty: 'intermediate',
   tags: ['bloc', 'cubit', 'lifecycle', 'instances', 'disposal', 'memory'],
-  concepts: ['constructor', 'disposal', 'shared instances', 'isolated instances', 'keep alive', 'memory management'],
+  concepts: [
+    'constructor',
+    'disposal',
+    'shared instances',
+    'isolated instances',
+    'keep alive',
+    'memory management',
+  ],
   component: LifecycleDemo,
   code: {
     demo: '', // Code will be provided by demoCodeExports.ts
@@ -28,7 +35,8 @@ DemoRegistry.register({
     {
       name: 'Keep alive persists state',
       run: () => true,
-      description: 'Verifies that keep-alive instances survive component unmounting',
+      description:
+        'Verifies that keep-alive instances survive component unmounting',
     },
   ],
   relatedDemos: ['instance-management', 'async-operations', 'bloc-deep-dive'],

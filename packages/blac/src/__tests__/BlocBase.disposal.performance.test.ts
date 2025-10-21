@@ -110,7 +110,7 @@ describe('Disposal Performance Benchmarks', () => {
     const start = performance.now();
 
     // Unsubscribe all at once
-    unsubscribers.forEach(unsub => unsub());
+    unsubscribers.forEach((unsub) => unsub());
 
     await Promise.resolve(); // Flush microtask
 

@@ -3,12 +3,19 @@ import { useBloc } from '@blac/react';
 import { Cubit } from '@blac/core';
 import { Button } from '@/ui/Button';
 import { DemoArticle } from '@/components/demo-article/DemoArticle';
-import { ArticleSection, SectionHeader } from '@/components/demo-article/ArticleSection';
+import {
+  ArticleSection,
+  SectionHeader,
+} from '@/components/demo-article/ArticleSection';
 import { Prose } from '@/components/demo-article/Prose';
 import { CodePanel } from '@/components/demo-article/CodePanel';
 import { StateViewer } from '@/components/shared/StateViewer';
 import { ComparisonPanel } from '@/components/shared/ComparisonPanel';
-import { WarningCallout, TipCallout, InfoCallout } from '@/components/shared/ConceptCallout';
+import {
+  WarningCallout,
+  TipCallout,
+  InfoCallout,
+} from '@/components/shared/ConceptCallout';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -104,7 +111,10 @@ function DiffDisplay({ before, after, operation }: DiffDisplayProps) {
     const removed = beforeVal !== undefined && afterVal === undefined;
 
     return (
-      <div key={key} className="flex items-center gap-3 py-1 text-xs sm:text-sm">
+      <div
+        key={key}
+        className="flex items-center gap-3 py-1 text-xs sm:text-sm"
+      >
         <span className="w-28 text-muted-foreground/80">{key}:</span>
         {removed && (
           <span className="font-mono text-rose-500 line-through">
@@ -122,7 +132,10 @@ function DiffDisplay({ before, after, operation }: DiffDisplayProps) {
               </>
             )}
             <span
-              className={cn('font-mono', changed && 'text-emerald-500 font-semibold')}
+              className={cn(
+                'font-mono',
+                changed && 'text-emerald-500 font-semibold',
+              )}
             >
               {JSON.stringify(afterVal)}
             </span>
@@ -133,16 +146,25 @@ function DiffDisplay({ before, after, operation }: DiffDisplayProps) {
   };
 
   const renderDiff = (obj1: any, obj2: any, path = '') => {
-    const keys = new Set([...Object.keys(obj1 || {}), ...Object.keys(obj2 || {})]);
+    const keys = new Set([
+      ...Object.keys(obj1 || {}),
+      ...Object.keys(obj2 || {}),
+    ]);
 
     return Array.from(keys).map((key) => {
       const val1 = obj1?.[key];
       const val2 = obj2?.[key];
 
-      if (typeof val1 === 'object' && typeof val2 === 'object' && !Array.isArray(val1)) {
+      if (
+        typeof val1 === 'object' &&
+        typeof val2 === 'object' &&
+        !Array.isArray(val1)
+      ) {
         return (
           <div key={key} className="ml-4 mt-2">
-            <div className="font-semibold text-sm text-foreground mb-1">{key}:</div>
+            <div className="font-semibold text-sm text-foreground mb-1">
+              {key}:
+            </div>
             {renderDiff(val1, val2, `${path}.${key}`)}
           </div>
         );
@@ -229,7 +251,9 @@ function InteractiveComparison() {
           </h4>
           <div className="space-y-2">
             <Button
-              onClick={() => executeOp(() => cubit.updateName('Charlie'), 'patch()')}
+              onClick={() =>
+                executeOp(() => cubit.updateName('Charlie'), 'patch()')
+              }
               variant="primary"
               size="sm"
               className="w-full"
@@ -244,14 +268,20 @@ function InteractiveComparison() {
             >
               Update Age (patch)
             </Button>
-            <p className="text-xs text-muted-foreground mt-2">Only updates specified fields</p>
+            <p className="text-xs text-muted-foreground mt-2">
+              Only updates specified fields
+            </p>
           </div>
         </div>
       </div>
 
       <AnimatePresence mode="wait">
         {beforeState && afterState && lastOp && (
-          <DiffDisplay before={beforeState} after={afterState} operation={lastOp} />
+          <DiffDisplay
+            before={beforeState}
+            after={afterState}
+            operation={lastOp}
+          />
         )}
       </AnimatePresence>
 
@@ -288,31 +318,37 @@ const demoMetadata = {
 // Main demo component
 export function UpdatingStateDemo() {
   return (
-    <DemoArticle metadata={demoMetadata} showBlocGraph={true} hideNavigation={true}>
+    <DemoArticle
+      metadata={demoMetadata}
+      showBlocGraph={true}
+      hideNavigation={true}
+    >
       {/* Introduction */}
       <ArticleSection theme="cubit" id="introduction">
         <Prose>
           <h2>Two Ways to Update State</h2>
           <p>
-            In BlaC, you have two methods to update state: <code>emit()</code> and{' '}
-            <code>patch()</code>. They look similar but behave very differently. Understanding
-            when to use each one is key to mastering BlaC.
+            In BlaC, you have two methods to update state: <code>emit()</code>{' '}
+            and <code>patch()</code>. They look similar but behave very
+            differently. Understanding when to use each one is key to mastering
+            BlaC.
           </p>
           <p>
-            Think of <code>emit()</code> as <strong>"replace everything"</strong> and{' '}
-            <code>patch()</code> as <strong>"update specific fields"</strong>.
+            Think of <code>emit()</code> as{' '}
+            <strong>"replace everything"</strong> and <code>patch()</code> as{' '}
+            <strong>"update specific fields"</strong>.
           </p>
         </Prose>
 
         <TipCallout title="Quick Summary">
           <ul>
             <li>
-              <strong>emit()</strong>: Replaces the entire state object. You must provide all
-              fields.
+              <strong>emit()</strong>: Replaces the entire state object. You
+              must provide all fields.
             </li>
             <li>
-              <strong>patch()</strong>: Merges new values with existing state. Only provide fields
-              you want to change.
+              <strong>patch()</strong>: Merges new values with existing state.
+              Only provide fields you want to change.
             </li>
           </ul>
         </TipCallout>
@@ -323,8 +359,8 @@ export function UpdatingStateDemo() {
         <SectionHeader>See The Difference</SectionHeader>
         <Prose>
           <p>
-            Try both operations below. Watch how <code>emit()</code> replaces everything while{' '}
-            <code>patch()</code> only updates specific fields.
+            Try both operations below. Watch how <code>emit()</code> replaces
+            everything while <code>patch()</code> only updates specific fields.
           </p>
         </Prose>
 
@@ -342,8 +378,9 @@ export function UpdatingStateDemo() {
         <SectionHeader>emit(): Complete Replacement</SectionHeader>
         <Prose>
           <p>
-            <code>emit()</code> replaces the <strong>entire state</strong> with a new object. You
-            must provide all fields, even if they haven't changed.
+            <code>emit()</code> replaces the <strong>entire state</strong> with
+            a new object. You must provide all fields, even if they haven't
+            changed.
           </p>
         </Prose>
 
@@ -379,13 +416,16 @@ export function UpdatingStateDemo() {
           <h3>When to use emit()</h3>
           <ul>
             <li>
-              <strong>Loading data from API</strong>: When you receive a complete new state object
+              <strong>Loading data from API</strong>: When you receive a
+              complete new state object
             </li>
             <li>
-              <strong>Resetting state</strong>: Return to initial or default values
+              <strong>Resetting state</strong>: Return to initial or default
+              values
             </li>
             <li>
-              <strong>Complete transformations</strong>: When you're rebuilding the entire state
+              <strong>Complete transformations</strong>: When you're rebuilding
+              the entire state
             </li>
           </ul>
         </Prose>
@@ -396,8 +436,9 @@ export function UpdatingStateDemo() {
         <SectionHeader>patch(): Partial Updates</SectionHeader>
         <Prose>
           <p>
-            <code>patch()</code> performs a <strong>shallow merge</strong>. It only updates the
-            fields you specify, leaving everything else unchanged.
+            <code>patch()</code> performs a <strong>shallow merge</strong>. It
+            only updates the fields you specify, leaving everything else
+            unchanged.
           </p>
         </Prose>
 
@@ -434,14 +475,16 @@ export function UpdatingStateDemo() {
           <h3>When to use patch()</h3>
           <ul>
             <li>
-              <strong>Form inputs</strong>: Update individual fields as user types
+              <strong>Form inputs</strong>: Update individual fields as user
+              types
             </li>
             <li>
-              <strong>Toggles and flags</strong>: Change single boolean or status values
+              <strong>Toggles and flags</strong>: Change single boolean or
+              status values
             </li>
             <li>
-              <strong>Incremental updates</strong>: Modify specific properties without touching
-              others
+              <strong>Incremental updates</strong>: Modify specific properties
+              without touching others
             </li>
           </ul>
         </Prose>
@@ -452,8 +495,9 @@ export function UpdatingStateDemo() {
         <SectionHeader>⚠️ Important: patch() is Shallow</SectionHeader>
         <Prose>
           <p>
-            This is the most common mistake with <code>patch()</code>: it only merges at the{' '}
-            <strong>top level</strong>. For nested objects, you need to use the spread operator.
+            This is the most common mistake with <code>patch()</code>: it only
+            merges at the <strong>top level</strong>. For nested objects, you
+            need to use the spread operator.
           </p>
         </Prose>
 
@@ -472,8 +516,8 @@ this.patch({
             />
             <WarningCallout title="Data Loss!">
               <p>
-                This replaces the entire <code>preferences</code> object, losing the{' '}
-                <code>notifications</code> field.
+                This replaces the entire <code>preferences</code> object, losing
+                the <code>notifications</code> field.
               </p>
             </WarningCallout>
           </ComparisonPanel.Left>
@@ -493,7 +537,8 @@ this.patch({
             />
             <TipCallout title="Always Spread">
               <p>
-                Use the spread operator <code>...</code> to keep existing nested fields intact.
+                Use the spread operator <code>...</code> to keep existing nested
+                fields intact.
               </p>
             </TipCallout>
           </ComparisonPanel.Right>
@@ -537,27 +582,33 @@ this.patch({
         <Prose>
           <ul>
             <li>
-              <strong>emit()</strong> replaces everything—great for resets and complete updates
+              <strong>emit()</strong> replaces everything—great for resets and
+              complete updates
             </li>
             <li>
-              <strong>patch()</strong> merges at top level—perfect for individual field updates
+              <strong>patch()</strong> merges at top level—perfect for
+              individual field updates
             </li>
             <li>
-              <strong>Nested objects need spreading</strong> with patch() to preserve other fields
+              <strong>Nested objects need spreading</strong> with patch() to
+              preserve other fields
             </li>
             <li>
-              <strong>Choose based on context</strong>: How much of the state are you changing?
+              <strong>Choose based on context</strong>: How much of the state
+              are you changing?
             </li>
             <li>
-              <strong>Both trigger re-renders</strong>: React components update automatically
+              <strong>Both trigger re-renders</strong>: React components update
+              automatically
             </li>
           </ul>
         </Prose>
 
         <InfoCallout title="Pro Tip">
           <p>
-            In practice, you'll use <code>patch()</code> much more often than <code>emit()</code>.
-            Most updates only change a few fields, not the entire state.
+            In practice, you'll use <code>patch()</code> much more often than{' '}
+            <code>emit()</code>. Most updates only change a few fields, not the
+            entire state.
           </p>
         </InfoCallout>
       </ArticleSection>
@@ -567,8 +618,9 @@ this.patch({
         <SectionHeader>What's Next?</SectionHeader>
         <Prose>
           <p>
-            Now you know how to update state! Next, you'll learn about sharing state across
-            multiple components in more complex scenarios, including parent-child relationships.
+            Now you know how to update state! Next, you'll learn about sharing
+            state across multiple components in more complex scenarios,
+            including parent-child relationships.
           </p>
         </Prose>
       </ArticleSection>

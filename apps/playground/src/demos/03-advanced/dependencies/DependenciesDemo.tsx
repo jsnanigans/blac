@@ -303,7 +303,7 @@ const ControlPanel: React.FC = () => {
             <button
               onClick={() =>
                 cubit.updateEmail(
-                  `user${Math.floor(Math.random() * 1000)}@example.com`
+                  `user${Math.floor(Math.random() * 1000)}@example.com`,
                 )
               }
               className="w-full px-3 py-2 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors"
@@ -683,7 +683,9 @@ const [state] = useBloc(UserCubit, {
             <ul className="text-sm space-y-2 list-disc list-inside">
               <li>Track entire objects/arrays unless necessary</li>
               <li>Create overly dynamic dependency arrays</li>
-              <li>Forget to specify dependencies (re-renders on all changes)</li>
+              <li>
+                Forget to specify dependencies (re-renders on all changes)
+              </li>
               <li>Assume dependencies work like React's useEffect deps</li>
               <li>Mix dependencies and selectors in confusing ways</li>
             </ul>
@@ -714,9 +716,9 @@ const [state] = useBloc(UserCubit, {
         <Prose>
           <p className="text-lg font-medium text-slate-900 mt-6">
             Master dependency tracking to build highly performant React
-            applications. Combined with selectors and proper state
-            architecture, you can create applications that scale to thousands
-            of components without performance degradation.
+            applications. Combined with selectors and proper state architecture,
+            you can create applications that scale to thousands of components
+            without performance degradation.
           </p>
         </Prose>
       </ArticleSection>

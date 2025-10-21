@@ -25,7 +25,8 @@ DemoRegistry.register({
     {
       name: 'All validation types work',
       run: () => true,
-      description: 'Verifies synchronous, asynchronous, and cross-field validation',
+      description:
+        'Verifies synchronous, asynchronous, and cross-field validation',
     },
     {
       name: 'Form submits when valid',

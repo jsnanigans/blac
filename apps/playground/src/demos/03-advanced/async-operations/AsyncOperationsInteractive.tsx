@@ -1,7 +1,15 @@
 import { Cubit } from '@blac/core';
 import { useBloc } from '@blac/react';
 import { motion } from 'framer-motion';
-import { Search, RefreshCw, Zap, AlertCircle, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import {
+  Search,
+  RefreshCw,
+  Zap,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+  Loader2,
+} from 'lucide-react';
 import React, { useState } from 'react';
 
 // ============================================================================
@@ -176,7 +184,7 @@ class RaceConditionCubit extends Cubit<RaceState> {
     this.patch({ currentRequest: thisRequestId, isLoading: true });
 
     // Simulate slow API (2 seconds)
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // Only update if this is still the latest request
     if (thisRequestId === this.requestId) {
@@ -194,7 +202,7 @@ class RaceConditionCubit extends Cubit<RaceState> {
     this.patch({ currentRequest: thisRequestId, isLoading: true });
 
     // Simulate fast API (500ms)
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
     // Only update if this is still the latest request
     if (thisRequestId === this.requestId) {
@@ -269,7 +277,8 @@ function RaceConditionDemo() {
       )}
 
       <p className="text-xs text-purple-600 dark:text-purple-400">
-        💡 Click "Slow" then quickly click "Fast" - only the latest request updates state
+        💡 Click "Slow" then quickly click "Fast" - only the latest request
+        updates state
       </p>
     </div>
   );
@@ -421,8 +430,8 @@ function RetryBackoffDemo() {
             state.status === 'success'
               ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200'
               : state.status === 'error'
-              ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'
-              : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200'
+                ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'
+                : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200'
           }`}
         >
           {state.status === 'success' ? (
@@ -468,7 +477,7 @@ class ParallelSequentialCubit extends Cubit<ParallelState> {
 
   // Simulate API call
   private fetchItem = async (id: number, delay: number): Promise<string> => {
-    await new Promise(resolve => setTimeout(resolve, delay));
+    await new Promise((resolve) => setTimeout(resolve, delay));
     return `Item ${id} (${delay}ms)`;
   };
 
@@ -533,9 +542,10 @@ class ParallelSequentialCubit extends Cubit<ParallelState> {
 function ParallelSequentialDemo() {
   const [state, cubit] = useBloc(ParallelSequentialCubit);
 
-  const duration = state.startTime && state.endTime
-    ? ((state.endTime - state.startTime) / 1000).toFixed(2)
-    : null;
+  const duration =
+    state.startTime && state.endTime
+      ? ((state.endTime - state.startTime) / 1000).toFixed(2)
+      : null;
 
   return (
     <div className="p-4 rounded-lg bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-2 border-green-200 dark:border-green-800">
@@ -598,7 +608,8 @@ function ParallelSequentialDemo() {
       )}
 
       <p className="text-xs text-green-600 dark:text-green-400">
-        💡 Parallel executes all requests simultaneously. Sequential waits for each to finish.
+        💡 Parallel executes all requests simultaneously. Sequential waits for
+        each to finish.
       </p>
     </div>
   );
@@ -622,10 +633,11 @@ export function AsyncOperationsInteractive() {
             💡 Async Operation Patterns
           </p>
           <p className="text-sm text-muted-foreground">
-            These four patterns cover the most common async challenges: preventing
-            excessive API calls (debouncing), ensuring correct ordering (race condition
-            handling), graceful failure recovery (retry with backoff), and optimizing
-            performance (parallel vs sequential execution).
+            These four patterns cover the most common async challenges:
+            preventing excessive API calls (debouncing), ensuring correct
+            ordering (race condition handling), graceful failure recovery (retry
+            with backoff), and optimizing performance (parallel vs sequential
+            execution).
           </p>
         </div>
       </div>

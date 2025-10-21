@@ -197,7 +197,8 @@ export const PersistenceDemo: React.FC = () => {
       metadata={{
         id: 'persistence',
         title: 'State Persistence',
-        description: 'Learn how to automatically save and restore Bloc state across browser sessions using the Persistence Plugin',
+        description:
+          'Learn how to automatically save and restore Bloc state across browser sessions using the Persistence Plugin',
         category: '02-patterns',
         difficulty: 'intermediate',
         tags: ['persistence', 'localStorage', 'plugins', 'cubit'],
@@ -208,20 +209,25 @@ export const PersistenceDemo: React.FC = () => {
         <Prose>
           <h2>Automatic State Persistence</h2>
           <p>
-            The <strong>Persistence Plugin</strong> makes it effortless to save and restore Bloc state across browser sessions.
-            Whether you're building user preferences, shopping carts, or form drafts, this plugin handles all the complexity
-            of localStorage integration for you.
+            The <strong>Persistence Plugin</strong> makes it effortless to save
+            and restore Bloc state across browser sessions. Whether you're
+            building user preferences, shopping carts, or form drafts, this
+            plugin handles all the complexity of localStorage integration for
+            you.
           </p>
           <p>
-            In this demo, you'll learn how to persist entire state objects automatically, selectively persist only certain
-            fields, and exclude sensitive data from storage.
+            In this demo, you'll learn how to persist entire state objects
+            automatically, selectively persist only certain fields, and exclude
+            sensitive data from storage.
           </p>
         </Prose>
 
         <ConceptCallout type="tip" title="Why Use the Persistence Plugin?">
           <p>
-            Instead of manually calling <code>localStorage.setItem()</code> and <code>getItem()</code> throughout your code,
-            the plugin handles everything automatically with debouncing, error handling, and version tracking built-in.
+            Instead of manually calling <code>localStorage.setItem()</code> and{' '}
+            <code>getItem()</code> throughout your code, the plugin handles
+            everything automatically with debouncing, error handling, and
+            version tracking built-in.
           </p>
         </ConceptCallout>
       </ArticleSection>
@@ -263,8 +269,9 @@ export const PersistenceDemo: React.FC = () => {
             <Prose>
               <h3>Basic Persistent Settings</h3>
               <p>
-                Try changing the settings below. Every change is automatically saved to <code>localStorage</code> and
-                will be restored when you reload the page or return later.
+                Try changing the settings below. Every change is automatically
+                saved to <code>localStorage</code> and will be restored when you
+                reload the page or return later.
               </p>
             </Prose>
 
@@ -302,7 +309,9 @@ export const PersistenceDemo: React.FC = () => {
                   <input
                     type="checkbox"
                     checked={settingsState.notificationsEnabled}
-                    onChange={(e) => settings.setNotifications(e.target.checked)}
+                    onChange={(e) =>
+                      settings.setNotifications(e.target.checked)
+                    }
                     className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 transition-all"
                   />
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
@@ -341,8 +350,9 @@ export const PersistenceDemo: React.FC = () => {
             <Prose>
               <h3>Selective Persistence</h3>
               <p>
-                Sometimes you want to persist only certain parts of your state. Session data, loading states, and
-                sensitive information like tokens should <strong>not</strong> be saved to localStorage.
+                Sometimes you want to persist only certain parts of your state.
+                Session data, loading states, and sensitive information like
+                tokens should <strong>not</strong> be saved to localStorage.
               </p>
             </Prose>
 
@@ -359,7 +369,11 @@ export const PersistenceDemo: React.FC = () => {
                       Theme:
                     </label>
                     <Button
-                      onClick={() => selective.setTheme(selectiveState.theme === 'dark' ? 'light' : 'dark')}
+                      onClick={() =>
+                        selective.setTheme(
+                          selectiveState.theme === 'dark' ? 'light' : 'dark',
+                        )
+                      }
                       variant="secondary"
                       className="bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700"
                     >
@@ -394,14 +408,18 @@ export const PersistenceDemo: React.FC = () => {
                       min="12"
                       max="24"
                       value={selectiveState.fontSize}
-                      onChange={(e) => selective.setFontSize(Number(e.target.value))}
+                      onChange={(e) =>
+                        selective.setFontSize(Number(e.target.value))
+                      }
                       className="w-full accent-green-600"
                     />
                   </div>
 
                   {selectiveState.user && (
                     <div className="p-3 bg-white dark:bg-gray-800 rounded border border-green-300 dark:border-green-600">
-                      <strong className="text-sm text-gray-700 dark:text-gray-300">User (partial):</strong>
+                      <strong className="text-sm text-gray-700 dark:text-gray-300">
+                        User (partial):
+                      </strong>
                       <div className="text-sm mt-1 text-gray-600 dark:text-gray-400">
                         ID: {selectiveState.user.id}
                         <br />
@@ -424,7 +442,9 @@ export const PersistenceDemo: React.FC = () => {
                       Loading State:
                     </label>
                     <Button
-                      onClick={() => selective.setLoading(!selectiveState.isLoading)}
+                      onClick={() =>
+                        selective.setLoading(!selectiveState.isLoading)
+                      }
                       variant="secondary"
                       className="bg-gradient-to-r from-red-500 to-orange-600 text-white hover:from-red-600 hover:to-orange-700"
                     >
@@ -451,7 +471,9 @@ export const PersistenceDemo: React.FC = () => {
 
                   <div>
                     <Button
-                      onClick={() => selective.showMessage('This message will disappear!')}
+                      onClick={() =>
+                        selective.showMessage('This message will disappear!')
+                      }
                       className="bg-gradient-to-r from-yellow-500 to-amber-600 text-white hover:from-yellow-600 hover:to-amber-700"
                     >
                       Show Temporary Message
@@ -470,7 +492,9 @@ export const PersistenceDemo: React.FC = () => {
 
                   {selectiveState.user && (
                     <div className="p-3 bg-white dark:bg-gray-800 rounded border border-red-300 dark:border-red-600">
-                      <strong className="text-sm text-gray-700 dark:text-gray-300">Sensitive User Data:</strong>
+                      <strong className="text-sm text-gray-700 dark:text-gray-300">
+                        Sensitive User Data:
+                      </strong>
                       <div className="text-sm mt-1 text-gray-600 dark:text-gray-400">
                         Token:{' '}
                         {selectiveState.user.token
@@ -478,7 +502,8 @@ export const PersistenceDemo: React.FC = () => {
                           : 'None'}
                         <br />
                         Last Seen:{' '}
-                        {selectiveState.user.lastSeen?.toLocaleTimeString() || 'Never'}
+                        {selectiveState.user.lastSeen?.toLocaleTimeString() ||
+                          'Never'}
                       </div>
                       <Button
                         onClick={selective.updateLastSeen}
@@ -497,7 +522,9 @@ export const PersistenceDemo: React.FC = () => {
             <div className="mt-6 flex justify-center">
               {!selectiveState.user ? (
                 <Button
-                  onClick={() => selective.login('user123', 'John Doe', 'secret-token-xyz')}
+                  onClick={() =>
+                    selective.login('user123', 'John Doe', 'secret-token-xyz')
+                  }
                   variant="primary"
                   className="bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700"
                 >
@@ -524,8 +551,10 @@ export const PersistenceDemo: React.FC = () => {
         <Prose>
           <h2>Implementation: Basic Persistence</h2>
           <p>
-            Adding persistence to a Cubit is as simple as attaching the <code>PersistencePlugin</code> to the
-            <code>static plugins</code> array. The plugin handles everything automatically.
+            Adding persistence to a Cubit is as simple as attaching the{' '}
+            <code>PersistencePlugin</code> to the
+            <code>static plugins</code> array. The plugin handles everything
+            automatically.
           </p>
         </Prose>
 
@@ -572,8 +601,9 @@ export const PersistenceDemo: React.FC = () => {
 
         <ConceptCallout type="tip" title="Debouncing Saves">
           <p>
-            The <code>debounceMs</code> option prevents excessive writes to localStorage during rapid state changes.
-            Set it to 200-500ms for optimal performance.
+            The <code>debounceMs</code> option prevents excessive writes to
+            localStorage during rapid state changes. Set it to 200-500ms for
+            optimal performance.
           </p>
         </ConceptCallout>
       </ArticleSection>
@@ -582,8 +612,8 @@ export const PersistenceDemo: React.FC = () => {
         <Prose>
           <h2>Implementation: Selective Persistence</h2>
           <p>
-            For more control, use the <code>select</code> and <code>merge</code> options to choose exactly what
-            gets saved and how it's restored.
+            For more control, use the <code>select</code> and <code>merge</code>{' '}
+            options to choose exactly what gets saved and how it's restored.
           </p>
         </Prose>
 
@@ -630,10 +660,14 @@ export const PersistenceDemo: React.FC = () => {
           }}
         />
 
-        <ConceptCallout type="warning" title="Security: Never Persist Sensitive Data">
+        <ConceptCallout
+          type="warning"
+          title="Security: Never Persist Sensitive Data"
+        >
           <p>
-            <strong>Never</strong> persist authentication tokens, passwords, API keys, or personal identification
-            information in localStorage. These should only exist in memory or secure cookies.
+            <strong>Never</strong> persist authentication tokens, passwords, API
+            keys, or personal identification information in localStorage. These
+            should only exist in memory or secure cookies.
           </p>
         </ConceptCallout>
       </ArticleSection>
@@ -646,33 +680,41 @@ export const PersistenceDemo: React.FC = () => {
         <ConceptCallout type="success" title="What You've Learned">
           <ul className="space-y-2 text-sm">
             <li>
-              <strong>Automatic Persistence:</strong> Attach <code>PersistencePlugin</code> to save state changes automatically
+              <strong>Automatic Persistence:</strong> Attach{' '}
+              <code>PersistencePlugin</code> to save state changes automatically
             </li>
             <li>
-              <strong>Debouncing:</strong> Use <code>debounceMs</code> to batch rapid saves for performance
+              <strong>Debouncing:</strong> Use <code>debounceMs</code> to batch
+              rapid saves for performance
             </li>
             <li>
-              <strong>Selective Persistence:</strong> Use <code>select</code> to choose what gets saved
+              <strong>Selective Persistence:</strong> Use <code>select</code> to
+              choose what gets saved
             </li>
             <li>
-              <strong>Custom Merging:</strong> Use <code>merge</code> to control how persisted data combines with defaults
+              <strong>Custom Merging:</strong> Use <code>merge</code> to control
+              how persisted data combines with defaults
             </li>
             <li>
-              <strong>Security:</strong> Never persist sensitive data like tokens or passwords
+              <strong>Security:</strong> Never persist sensitive data like
+              tokens or passwords
             </li>
             <li>
-              <strong>Version Tracking:</strong> Use <code>version</code> for data structure migrations
+              <strong>Version Tracking:</strong> Use <code>version</code> for
+              data structure migrations
             </li>
             <li>
-              <strong>Error Handling:</strong> Provide <code>onError</code> callback for graceful failures
+              <strong>Error Handling:</strong> Provide <code>onError</code>{' '}
+              callback for graceful failures
             </li>
           </ul>
         </ConceptCallout>
 
         <ConceptCallout type="info" title="Try This Challenge">
           <p>
-            Reload the page and notice how both tabs remember their state. Try clearing storage and see the state
-            reset to defaults. This is how real applications maintain user preferences across sessions!
+            Reload the page and notice how both tabs remember their state. Try
+            clearing storage and see the state reset to defaults. This is how
+            real applications maintain user preferences across sessions!
           </p>
         </ConceptCallout>
       </ArticleSection>

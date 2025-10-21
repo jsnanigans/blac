@@ -40,7 +40,8 @@ const quickStartSteps = [
   {
     step: '01',
     title: 'Explore the guide',
-    description: 'Start with "Hello Bloc" to understand how Cubits and Blocs work together.',
+    description:
+      'Start with "Hello Bloc" to understand how Cubits and Blocs work together.',
     href: '/guide/getting-started/hello-world',
     estimate: '10 min',
     badge: 'Beginner',
@@ -48,7 +49,8 @@ const quickStartSteps = [
   {
     step: '02',
     title: 'Open the playground',
-    description: 'Experiment with live code, share links with teammates, and tweak performance knobs.',
+    description:
+      'Experiment with live code, share links with teammates, and tweak performance knobs.',
     href: '/playground',
     estimate: '15 min',
     badge: 'Hands-on',
@@ -56,7 +58,8 @@ const quickStartSteps = [
   {
     step: '03',
     title: 'Dive into patterns',
-    description: 'Review advanced demos covering shared state, selectors, and plugin authoring.',
+    description:
+      'Review advanced demos covering shared state, selectors, and plugin authoring.',
     href: '/guide/patterns/todo-bloc',
     estimate: '20 min',
     badge: 'Intermediate',
@@ -66,19 +69,22 @@ const quickStartSteps = [
 const updates = [
   {
     title: 'Resizable SplitPane lands',
-    description: 'Rebuilt workspace layout with accessible split panes and contextual toolbars.',
+    description:
+      'Rebuilt workspace layout with accessible split panes and contextual toolbars.',
     icon: Command,
     href: '/playground',
   },
   {
     title: 'New Bloc graph explorer',
-    description: 'Visualize transitions and dependencies with a refreshed graph experience.',
+    description:
+      'Visualize transitions and dependencies with a refreshed graph experience.',
     icon: Puzzle,
     href: '/graph-test',
   },
   {
     title: 'Command palette everywhere',
-    description: 'Jump to guides, demos, or commands with ⌘K / Ctrl K across the Playground.',
+    description:
+      'Jump to guides, demos, or commands with ⌘K / Ctrl K across the Playground.',
     icon: Code,
     href: '/guide',
   },
@@ -210,7 +216,10 @@ export function HomePage() {
       >
         <div className="grid gap-3 sm:grid-cols-3">
           <PageHeaderStat value={`${demoCount}`} label="Interactive demos" />
-          <PageHeaderStat value={`${workspaceActionCount}`} label="Workspace actions" />
+          <PageHeaderStat
+            value={`${workspaceActionCount}`}
+            label="Workspace actions"
+          />
           <PageHeaderStat value="TS-first" label="Typed APIs" />
         </div>
       </PageHeader>
@@ -226,8 +235,9 @@ export function HomePage() {
               A workbench built for iteration
             </h2>
             <p className="text-base text-muted-foreground sm:text-lg leading-relaxed">
-              Configure files, preview UI, and review performance metrics from one screen.
-              The workspace stays lightweight while giving you the essentials for quick experiments.
+              Configure files, preview UI, and review performance metrics from
+              one screen. The workspace stays lightweight while giving you the
+              essentials for quick experiments.
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -236,7 +246,8 @@ export function HomePage() {
                 Monaco editor
               </div>
               <p className="mt-1 text-sm text-foreground">
-                TypeScript-aware Monaco with multi-file editing and synced file models.
+                TypeScript-aware Monaco with multi-file editing and synced file
+                models.
               </p>
             </div>
             <div className="rounded-xl border border-border bg-surface-muted p-4">
@@ -244,7 +255,8 @@ export function HomePage() {
                 Diagnostics
               </div>
               <p className="mt-1 text-sm text-foreground">
-                Console output and performance metrics are captured alongside each run.
+                Console output and performance metrics are captured alongside
+                each run.
               </p>
             </div>
           </div>
@@ -264,7 +276,8 @@ export function HomePage() {
             </div>
             <div className="flex flex-1 flex-col gap-0 bg-surface px-6 py-5">
               <div className="rounded-2xl border border-border bg-surface-muted p-4 font-mono text-xs leading-relaxed text-foreground shadow-subtle">
-                <pre className="whitespace-pre-wrap">{`import { bloc } from '@blac/core';
+                <pre className="whitespace-pre-wrap">
+                  {`import { bloc } from '@blac/core';
 
 const counter = bloc({
   state: { count: 0 },
@@ -284,7 +297,8 @@ export function Counter() {
       </button>
     </div>
   );
-}`}                </pre>
+}`}{' '}
+                </pre>
               </div>
             </div>
           </div>
@@ -299,7 +313,8 @@ export function Counter() {
               Why developers choose BlaC Playground
             </h2>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground sm:text-base">
-              Purpose-built for teams adopting Bloc patterns. Move from guided learning to real problem solving without switching tools.
+              Purpose-built for teams adopting Bloc patterns. Move from guided
+              learning to real problem solving without switching tools.
             </p>
           </div>
           <Link
@@ -332,7 +347,9 @@ export function Counter() {
                 Everything you need to iterate quickly
               </h3>
               <p className="mt-1 text-sm text-muted-foreground sm:text-base">
-                Toggle between preview and performance views, keep an eye on console output, and store your current files locally or in shareable links.
+                Toggle between preview and performance views, keep an eye on
+                console output, and store your current files locally or in
+                shareable links.
               </p>
             </div>
             <Link
@@ -377,7 +394,8 @@ export function Counter() {
               Choose your starting point
             </h3>
             <p className="text-sm text-muted-foreground sm:text-base">
-              Jump into the workflow that matches your goals—learning, building, or debugging.
+              Jump into the workflow that matches your goals—learning, building,
+              or debugging.
             </p>
           </div>
           <Link

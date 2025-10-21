@@ -82,7 +82,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({
   const [copied, setCopied] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
   const [isDarkMode, setIsDarkMode] = useState(() =>
-    document.documentElement.classList.contains('dark')
+    document.documentElement.classList.contains('dark'),
   );
 
   // Listen for theme changes
@@ -100,7 +100,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({
   }, []);
 
   // Handle copy to clipboard
-const handleCopy = async () => {
+  const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(code);
       setCopied(true);
@@ -115,7 +115,8 @@ const handleCopy = async () => {
     setIsCollapsed(!isCollapsed);
   };
 
-  const lightCodeTheme = (themes as Record<string, any>).nightOwlLight ?? themes.github;
+  const lightCodeTheme =
+    (themes as Record<string, any>).nightOwlLight ?? themes.github;
   const darkCodeTheme = themes.nightOwl;
 
   return (
@@ -139,7 +140,9 @@ const handleCopy = async () => {
 
           {/* Title */}
           {title && (
-            <span className="text-sm font-semibold text-foreground">{title}</span>
+            <span className="text-sm font-semibold text-foreground">
+              {title}
+            </span>
           )}
         </div>
 
@@ -149,12 +152,17 @@ const handleCopy = async () => {
             onClick={handleCopy}
             className={cn(
               'inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-surface text-muted-foreground transition-colors',
-              copied && 'border-emerald-300/70 bg-emerald-100 text-emerald-700 dark:border-emerald-700/60 dark:bg-emerald-900/30 dark:text-emerald-300',
+              copied &&
+                'border-emerald-300/70 bg-emerald-100 text-emerald-700 dark:border-emerald-700/60 dark:bg-emerald-900/30 dark:text-emerald-300',
               !copied && 'hover:text-foreground',
             )}
             aria-label="Copy code"
           >
-            {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            {copied ? (
+              <Check className="w-4 h-4" />
+            ) : (
+              <Copy className="w-4 h-4" />
+            )}
           </button>
 
           {/* Collapse button */}
@@ -188,7 +196,13 @@ const handleCopy = async () => {
               code={code.trim()}
               language={language}
             >
-              {({ className: highlightClassName, style, tokens, getLineProps, getTokenProps }) => (
+              {({
+                className: highlightClassName,
+                style,
+                tokens,
+                getLineProps,
+                getTokenProps,
+              }) => (
                 <pre
                   className={cn(
                     highlightClassName,

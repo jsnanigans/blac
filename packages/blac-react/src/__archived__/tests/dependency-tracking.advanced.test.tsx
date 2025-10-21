@@ -1,4 +1,12 @@
-import { describe, it, expect, vi, beforeEach, beforeAll, afterEach } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeEach,
+  beforeAll,
+  afterEach,
+} from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { Cubit, Blac } from '@blac/core';
@@ -137,9 +145,9 @@ class UserCubit extends Cubit<UserState> {
   };
 }
 
-beforeEach(()=>{
-  Blac.resetInstance()
-})
+beforeEach(() => {
+  Blac.resetInstance();
+});
 
 describe('Advanced Dependency Tracking - Class Getters (Automatic)', () => {
   afterEach(() => {
@@ -185,7 +193,7 @@ describe('Advanced Dependency Tracking - Class Getters (Automatic)', () => {
       () => {
         expect(renderSpy).toHaveBeenCalledTimes(0);
       },
-      { timeout: 500 }
+      { timeout: 500 },
     );
   });
 
@@ -248,7 +256,9 @@ describe('Advanced Dependency Tracking - Class Getters (Automatic)', () => {
           <button onClick={() => cubit.updateEmail('jane@example.com')}>
             Update Email
           </button>
-          <button onClick={() => cubit.updateTheme('dark')}>Update Theme</button>
+          <button onClick={() => cubit.updateTheme('dark')}>
+            Update Theme
+          </button>
         </div>
       );
     }
@@ -286,7 +296,7 @@ describe('Advanced Dependency Tracking - Class Getters (Automatic)', () => {
       () => {
         expect(renderSpy).toHaveBeenCalledTimes(0);
       },
-      { timeout: 500 }
+      { timeout: 500 },
     );
   });
 
@@ -307,7 +317,9 @@ describe('Advanced Dependency Tracking - Class Getters (Automatic)', () => {
           <button onClick={() => cubit.updateCountry('Canada')}>
             Update Country
           </button>
-          <button onClick={() => cubit.updateTheme('dark')}>Update Theme</button>
+          <button onClick={() => cubit.updateTheme('dark')}>
+            Update Theme
+          </button>
         </div>
       );
     }
@@ -343,7 +355,7 @@ describe('Advanced Dependency Tracking - Class Getters (Automatic)', () => {
       () => {
         expect(renderSpy).toHaveBeenCalledTimes(0);
       },
-      { timeout: 500 }
+      { timeout: 500 },
     );
   });
 
@@ -363,7 +375,9 @@ describe('Advanced Dependency Tracking - Class Getters (Automatic)', () => {
           <button onClick={() => cubit.updateFirstName('Jane')}>
             Update First Name
           </button>
-          <button onClick={() => cubit.updateTheme('dark')}>Update Theme</button>
+          <button onClick={() => cubit.updateTheme('dark')}>
+            Update Theme
+          </button>
         </div>
       );
     }
@@ -376,7 +390,9 @@ describe('Advanced Dependency Tracking - Class Getters (Automatic)', () => {
 
     // Update age - should trigger re-render (state.age is accessed)
     await user.click(screen.getByText('Update Age'));
-    await waitFor(() => expect(screen.getByTestId('age')).toHaveTextContent('35'));
+    await waitFor(() =>
+      expect(screen.getByTestId('age')).toHaveTextContent('35'),
+    );
     expect(renderSpy).toHaveBeenCalledTimes(2);
 
     // Update firstName - should trigger re-render (fullName getter is accessed)
@@ -394,13 +410,12 @@ describe('Advanced Dependency Tracking - Class Getters (Automatic)', () => {
       () => {
         expect(renderSpy).toHaveBeenCalledTimes(0);
       },
-      { timeout: 500 }
+      { timeout: 500 },
     );
   });
 });
 
 describe('Advanced Dependency Tracking - Custom Dependencies Array', () => {
-
   it('should respect custom dependencies array function', async () => {
     const user = userEvent.setup();
     const renderSpy = vi.fn();
@@ -426,7 +441,9 @@ describe('Advanced Dependency Tracking - Custom Dependencies Array', () => {
             Update Last Name
           </button>
           <button onClick={() => cubit.updateAge(16)}>Update Age</button>
-          <button onClick={() => cubit.updateTheme('dark')}>Update Theme</button>
+          <button onClick={() => cubit.updateTheme('dark')}>
+            Update Theme
+          </button>
         </div>
       );
     }
@@ -458,7 +475,7 @@ describe('Advanced Dependency Tracking - Custom Dependencies Array', () => {
       () => {
         expect(renderSpy).toHaveBeenCalledTimes(0);
       },
-      { timeout: 500 }
+      { timeout: 500 },
     );
 
     // Update age to change isAdult - should trigger re-render (isAdult in dependencies)
@@ -476,7 +493,7 @@ describe('Advanced Dependency Tracking - Custom Dependencies Array', () => {
       () => {
         expect(renderSpy).toHaveBeenCalledTimes(0);
       },
-      { timeout: 500 }
+      { timeout: 500 },
     );
   });
 
@@ -511,7 +528,7 @@ describe('Advanced Dependency Tracking - Custom Dependencies Array', () => {
       () => {
         expect(renderSpy).toHaveBeenCalledTimes(1); // Still just initial render
       },
-      { timeout: 500 }
+      { timeout: 500 },
     );
   });
 
@@ -565,7 +582,7 @@ describe('Advanced Dependency Tracking - Custom Dependencies Array', () => {
       () => {
         expect(renderSpy).toHaveBeenCalledTimes(0);
       },
-      { timeout: 500 }
+      { timeout: 500 },
     );
 
     // Update email - should trigger re-render
@@ -628,12 +645,14 @@ describe('Advanced Dependency Tracking - Custom Dependencies Array', () => {
         expect(screen.getByTestId('age')).toHaveTextContent('30');
         expect(renderSpy).toHaveBeenCalledTimes(0);
       },
-      { timeout: 500 }
+      { timeout: 500 },
     );
 
     // Update age to 31 - should trigger re-render (age > 30 changes from false to true)
     await user.click(screen.getByText('Update Age to 31'));
-    await waitFor(() => expect(screen.getByTestId('age')).toHaveTextContent('31'));
+    await waitFor(() =>
+      expect(screen.getByTestId('age')).toHaveTextContent('31'),
+    );
     expect(renderSpy).toHaveBeenCalledTimes(1);
 
     // Update age to 32 - should NOT trigger re-render (age > 30 stays true)
@@ -643,7 +662,7 @@ describe('Advanced Dependency Tracking - Custom Dependencies Array', () => {
       () => {
         expect(renderSpy).toHaveBeenCalledTimes(0);
       },
-      { timeout: 500 }
+      { timeout: 500 },
     );
   });
 
@@ -678,9 +697,11 @@ describe('Advanced Dependency Tracking - Focused Single Scenarios', () => {
       expect(renderSpy).toHaveBeenCalledTimes(1);
 
       // Changing firstName should trigger re-render
-      await user.click(screen.getByRole('button', { name: /Update First Name/i }));
+      await user.click(
+        screen.getByRole('button', { name: /Update First Name/i }),
+      );
       await waitFor(() =>
-        expect(screen.getByTestId('full-name')).toHaveTextContent('Jane Doe')
+        expect(screen.getByTestId('full-name')).toHaveTextContent('Jane Doe'),
       );
       expect(renderSpy).toHaveBeenCalledTimes(2);
     });
@@ -710,7 +731,7 @@ describe('Advanced Dependency Tracking - Focused Single Scenarios', () => {
         () => {
           expect(renderSpy).toHaveBeenCalledTimes(0);
         },
-        { timeout: 500 }
+        { timeout: 500 },
       );
     });
   });
@@ -739,9 +760,11 @@ describe('Advanced Dependency Tracking - Focused Single Scenarios', () => {
       renderSpy.mockClear();
 
       // firstName is in dependencies - should re-render
-      await user.click(screen.getByRole('button', { name: /Update First Name/i }));
+      await user.click(
+        screen.getByRole('button', { name: /Update First Name/i }),
+      );
       await waitFor(() =>
-        expect(screen.getByTestId('first-name')).toHaveTextContent('Jane')
+        expect(screen.getByTestId('first-name')).toHaveTextContent('Jane'),
       );
       expect(renderSpy).toHaveBeenCalledTimes(1);
     });
@@ -769,12 +792,14 @@ describe('Advanced Dependency Tracking - Focused Single Scenarios', () => {
       renderSpy.mockClear();
 
       // lastName is NOT in dependencies - should NOT re-render
-      await user.click(screen.getByRole('button', { name: /Update Last Name/i }));
+      await user.click(
+        screen.getByRole('button', { name: /Update Last Name/i }),
+      );
       await waitFor(
         () => {
           expect(renderSpy).toHaveBeenCalledTimes(0);
         },
-        { timeout: 500 }
+        { timeout: 500 },
       );
     });
   });
@@ -792,7 +817,9 @@ describe('Advanced Dependency Tracking - Focused Single Scenarios', () => {
         return (
           <div>
             <div data-testid="age">{state.age}</div>
-            <button onClick={() => cubit.updateAge(31)}>Update Age to 31</button>
+            <button onClick={() => cubit.updateAge(31)}>
+              Update Age to 31
+            </button>
           </div>
         );
       }
@@ -801,9 +828,11 @@ describe('Advanced Dependency Tracking - Focused Single Scenarios', () => {
       renderSpy.mockClear();
 
       // Age: 30 -> 31 changes (age > 30) from false to true
-      await user.click(screen.getByRole('button', { name: /Update Age to 31/i }));
+      await user.click(
+        screen.getByRole('button', { name: /Update Age to 31/i }),
+      );
       await waitFor(() =>
-        expect(screen.getByTestId('age')).toHaveTextContent('31')
+        expect(screen.getByTestId('age')).toHaveTextContent('31'),
       );
       expect(renderSpy).toHaveBeenCalledTimes(1);
     });
@@ -820,7 +849,9 @@ describe('Advanced Dependency Tracking - Focused Single Scenarios', () => {
         return (
           <div>
             <div data-testid="age">{state.age}</div>
-            <button onClick={() => cubit.updateAge(29)}>Update Age to 29</button>
+            <button onClick={() => cubit.updateAge(29)}>
+              Update Age to 29
+            </button>
           </div>
         );
       }
@@ -829,12 +860,14 @@ describe('Advanced Dependency Tracking - Focused Single Scenarios', () => {
       renderSpy.mockClear();
 
       // Age: 30 -> 29, but (age > 30) stays false
-      await user.click(screen.getByRole('button', { name: /Update Age to 29/i }));
+      await user.click(
+        screen.getByRole('button', { name: /Update Age to 29/i }),
+      );
       await waitFor(
         () => {
           expect(renderSpy).toHaveBeenCalledTimes(0);
         },
-        { timeout: 500 }
+        { timeout: 500 },
       );
     });
   });
@@ -846,9 +879,7 @@ describe('Advanced Dependency Tracking - Focused Single Scenarios', () => {
 
       function TestComponent() {
         const [state, cubit] = useBloc(UserCubit, {
-          dependencies: (instance) => [
-            instance.state.profile.address.city,
-          ],
+          dependencies: (instance) => [instance.state.profile.address.city],
         });
         renderSpy();
         return (
@@ -866,7 +897,7 @@ describe('Advanced Dependency Tracking - Focused Single Scenarios', () => {
 
       await user.click(screen.getByRole('button', { name: /Update City/i }));
       await waitFor(() =>
-        expect(screen.getByTestId('city')).toHaveTextContent('Los Angeles')
+        expect(screen.getByTestId('city')).toHaveTextContent('Los Angeles'),
       );
       expect(renderSpy).toHaveBeenCalledTimes(1);
     });
@@ -877,9 +908,7 @@ describe('Advanced Dependency Tracking - Focused Single Scenarios', () => {
 
       function TestComponent() {
         const [state, cubit] = useBloc(UserCubit, {
-          dependencies: (instance) => [
-            instance.state.profile.address.city,
-          ],
+          dependencies: (instance) => [instance.state.profile.address.city],
         });
         renderSpy();
         return (
@@ -901,14 +930,13 @@ describe('Advanced Dependency Tracking - Focused Single Scenarios', () => {
         () => {
           expect(renderSpy).toHaveBeenCalledTimes(0);
         },
-        { timeout: 500 }
+        { timeout: 500 },
       );
     });
   });
 });
 
 describe('Advanced Dependency Tracking - Error Handling', () => {
-
   it('should handle dependencies function that throws', async () => {
     const renderSpy = vi.fn();
     const consoleErrorSpy = vi
@@ -982,7 +1010,7 @@ describe('Advanced Dependency Tracking - Error Handling', () => {
 
     function TestComponent() {
       const [state] = useBloc(UserCubit, {
-        dependencies: () => ({ foo: 'bar' } as any),
+        dependencies: () => ({ foo: 'bar' }) as any,
       });
       renderSpy();
       return <div>{state.firstName}</div>;
@@ -998,7 +1026,6 @@ describe('Advanced Dependency Tracking - Error Handling', () => {
 });
 
 describe('Advanced Dependency Tracking - Edge Cases', () => {
-
   it('should handle state with undefined values in dependency path', async () => {
     const user = userEvent.setup();
     const renderSpy = vi.fn();
@@ -1026,7 +1053,7 @@ describe('Advanced Dependency Tracking - Edge Cases', () => {
     renderSpy.mockClear();
     await user.click(screen.getByRole('button', { name: /Update City/i }));
     await waitFor(() =>
-      expect(screen.getByTestId('city')).toHaveTextContent('Los Angeles')
+      expect(screen.getByTestId('city')).toHaveTextContent('Los Angeles'),
     );
     expect(renderSpy).toHaveBeenCalledTimes(1);
   });
@@ -1055,12 +1082,14 @@ describe('Advanced Dependency Tracking - Edge Cases', () => {
 
     // Any state change should NOT trigger re-render
     renderSpy.mockClear();
-    await user.click(screen.getByRole('button', { name: /Update First Name/i }));
+    await user.click(
+      screen.getByRole('button', { name: /Update First Name/i }),
+    );
     await waitFor(
       () => {
         expect(renderSpy).toHaveBeenCalledTimes(0);
       },
-      { timeout: 500 }
+      { timeout: 500 },
     );
   });
 
@@ -1102,9 +1131,11 @@ describe('Advanced Dependency Tracking - Edge Cases', () => {
     renderSpy.mockClear();
 
     // Changing one dependency should still trigger re-render
-    await user.click(screen.getByRole('button', { name: /Update First Name/i }));
+    await user.click(
+      screen.getByRole('button', { name: /Update First Name/i }),
+    );
     await waitFor(() =>
-      expect(screen.getByTestId('full-name')).toHaveTextContent('Jane Doe')
+      expect(screen.getByTestId('full-name')).toHaveTextContent('Jane Doe'),
     );
     expect(renderSpy).toHaveBeenCalledTimes(1);
   });
@@ -1176,16 +1207,13 @@ describe('Advanced Dependency Tracking - Edge Cases', () => {
     await user.click(screen.getByRole('button', { name: /Update Email/i }));
     // Should re-render because profile object reference changed
     await waitFor(() =>
-      expect(screen.getByTestId('email')).toHaveTextContent(
-        'jane@example.com'
-      )
+      expect(screen.getByTestId('email')).toHaveTextContent('jane@example.com'),
     );
     expect(renderSpy).toHaveBeenCalledTimes(1);
   });
 });
 
 describe('Advanced Dependency Tracking - React Lifecycle', () => {
-
   it('should handle component unmounting during dependency change', async () => {
     const user = userEvent.setup();
     const renderSpy = vi.fn();
@@ -1210,7 +1238,9 @@ describe('Advanced Dependency Tracking - React Lifecycle', () => {
     renderSpy.mockClear();
 
     // Unmount during state change (should not cause errors)
-    await user.click(screen.getByRole('button', { name: /Update First Name/i }));
+    await user.click(
+      screen.getByRole('button', { name: /Update First Name/i }),
+    );
     unmount();
 
     // Should not throw or cause memory leaks
@@ -1283,14 +1313,16 @@ describe('Advanced Dependency Tracking - React Lifecycle', () => {
       <>
         <Component1 />
         <Component2 />
-      </>
+      </>,
     );
 
     render1Spy.mockClear();
     render2Spy.mockClear();
 
     // Update firstName - only Component1 should re-render
-    await user.click(screen.getByRole('button', { name: /Update First Name/i }));
+    await user.click(
+      screen.getByRole('button', { name: /Update First Name/i }),
+    );
 
     await waitFor(() => {
       expect(screen.getByTestId('comp1')).toHaveTextContent('Jane');
@@ -1333,7 +1365,7 @@ describe('Advanced Dependency Tracking - React Lifecycle', () => {
     // Rapid updates should be batched and handled correctly
     await user.click(screen.getByRole('button', { name: /Rapid Updates/i }));
     await waitFor(() =>
-      expect(screen.getByTestId('first-name')).toHaveTextContent('John3')
+      expect(screen.getByTestId('first-name')).toHaveTextContent('John3'),
     );
 
     // Should have re-rendered (possibly multiple times, but not crash)
@@ -1342,7 +1374,6 @@ describe('Advanced Dependency Tracking - React Lifecycle', () => {
 });
 
 describe('Advanced Dependency Tracking - Memory & Cleanup', () => {
-
   it('should not leak memory on mount/unmount cycles', async () => {
     const renderSpy = vi.fn();
 

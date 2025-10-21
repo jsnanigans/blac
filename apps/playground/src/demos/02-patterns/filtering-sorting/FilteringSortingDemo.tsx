@@ -1,9 +1,18 @@
 import React, { useState } from 'react';
 import { Cubit } from '@blac/core';
 import { useBloc } from '@blac/react';
-import { Search, SlidersHorizontal, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import {
+  Search,
+  SlidersHorizontal,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+} from 'lucide-react';
 import { DemoArticle } from '@/components/demo-article/DemoArticle';
-import { ArticleSection, SectionHeader } from '@/components/demo-article/ArticleSection';
+import {
+  ArticleSection,
+  SectionHeader,
+} from '@/components/demo-article/ArticleSection';
 import { Prose } from '@/components/demo-article/Prose';
 import { CodePanel } from '@/components/demo-article/CodePanel';
 import { ConceptCallout } from '@/components/shared/ConceptCallout';
@@ -32,16 +41,86 @@ interface ProductState {
 
 // Mock product data
 const mockProducts: Product[] = [
-  { id: 1, name: 'Wireless Mouse', category: 'Electronics', price: 29.99, rating: 4.5, inStock: true },
-  { id: 2, name: 'Mechanical Keyboard', category: 'Electronics', price: 89.99, rating: 4.8, inStock: true },
-  { id: 3, name: 'USB-C Cable', category: 'Accessories', price: 12.99, rating: 4.2, inStock: false },
-  { id: 4, name: 'Laptop Stand', category: 'Accessories', price: 45.99, rating: 4.6, inStock: true },
-  { id: 5, name: 'Desk Lamp', category: 'Furniture', price: 34.99, rating: 4.3, inStock: true },
-  { id: 6, name: 'Office Chair', category: 'Furniture', price: 199.99, rating: 4.7, inStock: false },
-  { id: 7, name: 'Monitor', category: 'Electronics', price: 249.99, rating: 4.9, inStock: true },
-  { id: 8, name: 'Webcam', category: 'Electronics', price: 79.99, rating: 4.4, inStock: true },
-  { id: 9, name: 'Phone Charger', category: 'Accessories', price: 19.99, rating: 4.1, inStock: true },
-  { id: 10, name: 'Desk Organizer', category: 'Accessories', price: 24.99, rating: 4.0, inStock: false },
+  {
+    id: 1,
+    name: 'Wireless Mouse',
+    category: 'Electronics',
+    price: 29.99,
+    rating: 4.5,
+    inStock: true,
+  },
+  {
+    id: 2,
+    name: 'Mechanical Keyboard',
+    category: 'Electronics',
+    price: 89.99,
+    rating: 4.8,
+    inStock: true,
+  },
+  {
+    id: 3,
+    name: 'USB-C Cable',
+    category: 'Accessories',
+    price: 12.99,
+    rating: 4.2,
+    inStock: false,
+  },
+  {
+    id: 4,
+    name: 'Laptop Stand',
+    category: 'Accessories',
+    price: 45.99,
+    rating: 4.6,
+    inStock: true,
+  },
+  {
+    id: 5,
+    name: 'Desk Lamp',
+    category: 'Furniture',
+    price: 34.99,
+    rating: 4.3,
+    inStock: true,
+  },
+  {
+    id: 6,
+    name: 'Office Chair',
+    category: 'Furniture',
+    price: 199.99,
+    rating: 4.7,
+    inStock: false,
+  },
+  {
+    id: 7,
+    name: 'Monitor',
+    category: 'Electronics',
+    price: 249.99,
+    rating: 4.9,
+    inStock: true,
+  },
+  {
+    id: 8,
+    name: 'Webcam',
+    category: 'Electronics',
+    price: 79.99,
+    rating: 4.4,
+    inStock: true,
+  },
+  {
+    id: 9,
+    name: 'Phone Charger',
+    category: 'Accessories',
+    price: 19.99,
+    rating: 4.1,
+    inStock: true,
+  },
+  {
+    id: 10,
+    name: 'Desk Organizer',
+    category: 'Accessories',
+    price: 24.99,
+    rating: 4.0,
+    inStock: false,
+  },
 ];
 
 class ProductFilterCubit extends Cubit<ProductState> {
@@ -98,9 +177,10 @@ class ProductFilterCubit extends Cubit<ProductState> {
     // Apply search filter
     if (this.state.searchQuery) {
       const query = this.state.searchQuery.toLowerCase();
-      results = results.filter((p) =>
-        p.name.toLowerCase().includes(query) ||
-        p.category.toLowerCase().includes(query)
+      results = results.filter(
+        (p) =>
+          p.name.toLowerCase().includes(query) ||
+          p.category.toLowerCase().includes(query),
       );
     }
 
@@ -111,7 +191,9 @@ class ProductFilterCubit extends Cubit<ProductState> {
 
     // Apply price range filter
     results = results.filter(
-      (p) => p.price >= this.state.priceRange.min && p.price <= this.state.priceRange.max
+      (p) =>
+        p.price >= this.state.priceRange.min &&
+        p.price <= this.state.priceRange.max,
     );
 
     // Apply stock filter
@@ -202,7 +284,12 @@ function ProductCatalogDemo() {
               min={cubit.priceStats.min}
               max={cubit.priceStats.max}
               value={state.priceRange.min}
-              onChange={(e) => cubit.setPriceRange(Number(e.target.value), state.priceRange.max)}
+              onChange={(e) =>
+                cubit.setPriceRange(
+                  Number(e.target.value),
+                  state.priceRange.max,
+                )
+              }
               className="flex-1"
             />
             <input
@@ -210,7 +297,12 @@ function ProductCatalogDemo() {
               min={cubit.priceStats.min}
               max={cubit.priceStats.max}
               value={state.priceRange.max}
-              onChange={(e) => cubit.setPriceRange(state.priceRange.min, Number(e.target.value))}
+              onChange={(e) =>
+                cubit.setPriceRange(
+                  state.priceRange.min,
+                  Number(e.target.value),
+                )
+              }
               className="flex-1"
             />
           </div>
@@ -275,14 +367,14 @@ function ProductCatalogDemo() {
               className="p-4 rounded-lg border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
             >
               <h3 className="font-semibold mb-2">{product.name}</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{product.category}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                {product.category}
+              </p>
               <div className="flex items-center justify-between">
                 <span className="text-lg font-bold text-green-600 dark:text-green-400">
                   ${product.price.toFixed(2)}
                 </span>
-                <span className="text-sm">
-                  ⭐ {product.rating.toFixed(1)}
-                </span>
+                <span className="text-sm">⭐ {product.rating.toFixed(1)}</span>
               </div>
               {!product.inStock && (
                 <span className="inline-block mt-2 px-2 py-1 text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded">
@@ -294,7 +386,11 @@ function ProductCatalogDemo() {
         </div>
       )}
 
-      <StateViewer bloc={ProductFilterCubit} title="Current State" maxDepth={1} />
+      <StateViewer
+        bloc={ProductFilterCubit}
+        title="Current State"
+        maxDepth={1}
+      />
     </div>
   );
 }
@@ -303,7 +399,8 @@ function ProductCatalogDemo() {
 const demoMetadata = {
   id: 'filtering-sorting',
   title: 'Filtering & Sorting',
-  description: 'Master advanced filtering and sorting patterns for lists and catalogs with multiple criteria.',
+  description:
+    'Master advanced filtering and sorting patterns for lists and catalogs with multiple criteria.',
   category: '02-patterns' as const,
   difficulty: 'intermediate' as const,
   tags: ['cubit', 'filtering', 'sorting', 'search', 'computed'],
@@ -326,17 +423,24 @@ export function FilteringSortingDemo() {
         <SectionHeader>Advanced Filtering & Sorting</SectionHeader>
         <Prose>
           <p>
-            Search and filtering are essential for any data-heavy application. Users need to find
-            what they're looking for quickly and efficiently.
+            Search and filtering are essential for any data-heavy application.
+            Users need to find what they're looking for quickly and efficiently.
           </p>
-          <p>
-            In this guide, you'll learn how to implement:
-          </p>
+          <p>In this guide, you'll learn how to implement:</p>
           <ul>
-            <li><strong>Text search</strong> across multiple fields</li>
-            <li><strong>Multiple filter combinations</strong> (category, price, stock status)</li>
-            <li><strong>Dynamic sorting</strong> with ascending/descending order</li>
-            <li><strong>Computed properties</strong> for filtered results</li>
+            <li>
+              <strong>Text search</strong> across multiple fields
+            </li>
+            <li>
+              <strong>Multiple filter combinations</strong> (category, price,
+              stock status)
+            </li>
+            <li>
+              <strong>Dynamic sorting</strong> with ascending/descending order
+            </li>
+            <li>
+              <strong>Computed properties</strong> for filtered results
+            </li>
           </ul>
         </Prose>
       </ArticleSection>
@@ -345,8 +449,8 @@ export function FilteringSortingDemo() {
         <SectionHeader>Interactive Product Catalog</SectionHeader>
         <Prose>
           <p>
-            Try the filters below. Notice how all filters work together and the UI updates
-            instantly as you change criteria.
+            Try the filters below. Notice how all filters work together and the
+            UI updates instantly as you change criteria.
           </p>
         </Prose>
 
@@ -359,8 +463,10 @@ export function FilteringSortingDemo() {
         <SectionHeader>Implementation</SectionHeader>
         <Prose>
           <p>
-            The key insight: <strong>filtering and sorting are derived computations</strong>. We
-            store the filter criteria in state, then compute the filtered/sorted results in a getter.
+            The key insight:{' '}
+            <strong>filtering and sorting are derived computations</strong>. We
+            store the filter criteria in state, then compute the filtered/sorted
+            results in a getter.
           </p>
         </Prose>
 
@@ -432,8 +538,9 @@ class ProductFilterCubit extends Cubit<ProductState> {
 
         <ConceptCallout type="tip" title="Why Use a Getter?">
           <p>
-            Getters compute results <strong>on-demand</strong>. This prevents storing duplicate
-            data and ensures the filtered list is always in sync with the criteria.
+            Getters compute results <strong>on-demand</strong>. This prevents
+            storing duplicate data and ensures the filtered list is always in
+            sync with the criteria.
           </p>
         </ConceptCallout>
       </ArticleSection>
@@ -459,19 +566,23 @@ useEffect(() => {
 
         <Prose>
           <h3>2. Optimize Large Lists</h3>
-          <p>
-            For lists with 1000+ items, consider:
-          </p>
+          <p>For lists with 1000+ items, consider:</p>
           <ul>
-            <li><strong>Virtual scrolling</strong>: Only render visible items</li>
-            <li><strong>Web Workers</strong>: Move filtering to background thread</li>
-            <li><strong>Pagination</strong>: Limit results per page</li>
+            <li>
+              <strong>Virtual scrolling</strong>: Only render visible items
+            </li>
+            <li>
+              <strong>Web Workers</strong>: Move filtering to background thread
+            </li>
+            <li>
+              <strong>Pagination</strong>: Limit results per page
+            </li>
           </ul>
 
           <h3>3. Persist Filter State</h3>
           <p>
-            Save filter criteria to URL query params or localStorage so users can bookmark or share
-            filtered views.
+            Save filter criteria to URL query params or localStorage so users
+            can bookmark or share filtered views.
           </p>
         </Prose>
       </ArticleSection>
@@ -480,14 +591,27 @@ useEffect(() => {
         <SectionHeader>Summary</SectionHeader>
         <Prose>
           <p>
-            You've learned how to implement production-ready filtering and sorting:
+            You've learned how to implement production-ready filtering and
+            sorting:
           </p>
           <ul>
-            <li>Store filter <strong>criteria</strong> in state, not filtered results</li>
-            <li>Use <strong>computed properties</strong> (getters) for derived data</li>
-            <li>Combine multiple filters with <strong>logical AND</strong></li>
-            <li>Implement <strong>bi-directional sorting</strong> (asc/desc)</li>
-            <li>Provide <strong>reset functionality</strong> for user convenience</li>
+            <li>
+              Store filter <strong>criteria</strong> in state, not filtered
+              results
+            </li>
+            <li>
+              Use <strong>computed properties</strong> (getters) for derived
+              data
+            </li>
+            <li>
+              Combine multiple filters with <strong>logical AND</strong>
+            </li>
+            <li>
+              Implement <strong>bi-directional sorting</strong> (asc/desc)
+            </li>
+            <li>
+              Provide <strong>reset functionality</strong> for user convenience
+            </li>
           </ul>
         </Prose>
       </ArticleSection>

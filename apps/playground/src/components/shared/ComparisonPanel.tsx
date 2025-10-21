@@ -30,7 +30,13 @@
  * ```
  */
 
-import React, { createContext, useContext, useRef, useState, useEffect } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useRef,
+  useState,
+  useEffect,
+} from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '../../lib/utils';
 import { variants } from '../../utils/animations';
@@ -58,7 +64,8 @@ interface ComparisonPanelContextValue {
   onScroll?: (scrollTop: number, scrollLeft: number) => void;
 }
 
-const ComparisonPanelContext = createContext<ComparisonPanelContextValue | null>(null);
+const ComparisonPanelContext =
+  createContext<ComparisonPanelContextValue | null>(null);
 
 /**
  * Hook to access ComparisonPanel context
@@ -67,7 +74,7 @@ const useComparisonPanel = () => {
   const context = useContext(ComparisonPanelContext);
   if (!context) {
     throw new Error(
-      'ComparisonPanel compound components must be used within a ComparisonPanel'
+      'ComparisonPanel compound components must be used within a ComparisonPanel',
     );
   }
   return context;
@@ -110,7 +117,10 @@ export interface ComparisonSideProps {
 /**
  * Color theme classes
  */
-const colorClasses: Record<ComparisonColor, { border: string; bg: string; title: string }> = {
+const colorClasses: Record<
+  ComparisonColor,
+  { border: string; bg: string; title: string }
+> = {
   // Concept colors
   cubit: {
     border: 'border-concept-cubit',
@@ -224,7 +234,7 @@ const ComparisonSide: React.FC<ComparisonSideProps> = ({
         colors.border,
         colors.bg,
         'overflow-hidden',
-        className
+        className,
       )}
     >
       {/* Title */}
@@ -235,7 +245,11 @@ const ComparisonSide: React.FC<ComparisonSideProps> = ({
       )}
 
       {/* Content */}
-      <div ref={scrollRef} className="p-4 overflow-auto" onScroll={handleScroll}>
+      <div
+        ref={scrollRef}
+        className="p-4 overflow-auto"
+        onScroll={handleScroll}
+      >
         {children}
       </div>
     </motion.div>
@@ -248,8 +262,16 @@ const ComparisonSide: React.FC<ComparisonSideProps> = ({
 export const ComparisonPanel: React.FC<ComparisonPanelProps> & {
   Left: React.FC<ComparisonSideProps>;
   Right: React.FC<ComparisonSideProps>;
-} = ({ orientation = 'horizontal', syncScroll = false, children, className }) => {
-  const [scrollState, setScrollState] = useState({ scrollTop: 0, scrollLeft: 0 });
+} = ({
+  orientation = 'horizontal',
+  syncScroll = false,
+  children,
+  className,
+}) => {
+  const [scrollState, setScrollState] = useState({
+    scrollTop: 0,
+    scrollLeft: 0,
+  });
 
   const handleScroll = (scrollTop: number, scrollLeft: number) => {
     if (syncScroll) {
@@ -271,7 +293,7 @@ export const ComparisonPanel: React.FC<ComparisonPanelProps> & {
           'flex gap-4',
           orientation === 'horizontal' ? 'flex-col md:flex-row' : 'flex-col',
           'my-8',
-          className
+          className,
         )}
       >
         {children}

@@ -171,7 +171,7 @@ const celebrationConfigs = {
  */
 export const celebrate = (
   type: CelebrationType = 'interaction',
-  customOrigin?: { x?: number; y?: number }
+  customOrigin?: { x?: number; y?: number },
 ) => {
   // Respect reduced motion preference
   if (prefersReducedMotion()) return;
@@ -192,7 +192,7 @@ export const celebrate = (
  */
 export const celebrateFromElement = (
   element: HTMLElement,
-  type: CelebrationType = 'interaction'
+  type: CelebrationType = 'interaction',
 ) => {
   const rect = element.getBoundingClientRect();
   const x = (rect.left + rect.width / 2) / window.innerWidth;
@@ -282,7 +282,7 @@ export const withReducedMotion = <T>(animation: T): T | null => {
  */
 export const getTransitionDuration = (
   normalDuration: number,
-  reducedDuration: number = 0.01
+  reducedDuration: number = 0.01,
 ): number => {
   return prefersReducedMotion() ? reducedDuration : normalDuration;
 };

@@ -51,11 +51,11 @@ describe('Issue #7: Subscription Sorting Performance Issue (BEFORE FIX)', () => 
     let sortCallCount = 0;
 
     // Mock notify to count sort calls
-    manager.notify = function(newState: any, oldState: any, action?: any) {
+    manager.notify = function (newState: any, oldState: any, action?: any) {
       // In the current implementation, this creates array and sorts every time
-      const sortedSubscriptions = Array.from((this as any).subscriptions.values()).sort(
-        (a: any, b: any) => (b.priority ?? 0) - (a.priority ?? 0),
-      );
+      const sortedSubscriptions = Array.from(
+        (this as any).subscriptions.values(),
+      ).sort((a: any, b: any) => (b.priority ?? 0) - (a.priority ?? 0));
       sortCallCount++;
 
       // Continue with rest of notify
@@ -226,9 +226,9 @@ describe('Issue #7: Subscription Sorting Performance Issue (BEFORE FIX)', () => 
 
       for (let i = 0; i < iterations; i++) {
         // This is what happens inside notify()
-        const sorted = Array.from((testManager as any).subscriptions.values()).sort(
-          (a: any, b: any) => (b.priority ?? 0) - (a.priority ?? 0),
-        );
+        const sorted = Array.from(
+          (testManager as any).subscriptions.values(),
+        ).sort((a: any, b: any) => (b.priority ?? 0) - (a.priority ?? 0));
         // Consume array to prevent optimization
         sorted.length;
       }
@@ -244,7 +244,9 @@ describe('Issue #7: Subscription Sorting Performance Issue (BEFORE FIX)', () => 
     `);
 
     timings.forEach(({ size, time }) => {
-      console.log(`   ${size.toString().padStart(4)} subs: ${time.toFixed(3)}ms per sort`);
+      console.log(
+        `   ${size.toString().padStart(4)} subs: ${time.toFixed(3)}ms per sort`,
+      );
     });
 
     // Show that it scales as O(n log n)

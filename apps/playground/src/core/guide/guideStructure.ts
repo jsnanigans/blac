@@ -1,12 +1,10 @@
-import {
-  Rocket,
-  Target,
-  Layers,
-  Zap,
-  TestTube,
-  Building2
-} from 'lucide-react';
-import type { GuideStructure, GuideSection, NavigationItem, GuideNavigation } from '@/components/guide/types';
+import { Rocket, Target, Layers, Zap, TestTube, Building2 } from 'lucide-react';
+import type {
+  GuideStructure,
+  GuideSection,
+  NavigationItem,
+  GuideNavigation,
+} from '@/components/guide/types';
 import { DemoRegistry } from '@/core/utils/demoRegistry';
 
 export const guideStructure: GuideStructure = {
@@ -24,8 +22,8 @@ export const guideStructure: GuideStructure = {
         'reading-state',
         'updating-state',
         'multiple-components',
-        'instance-management'
-      ]
+        'instance-management',
+      ],
     },
     {
       id: 'core-concepts',
@@ -39,8 +37,8 @@ export const guideStructure: GuideStructure = {
         'bloc-deep-dive',
         'bloc-vs-cubit',
         'computed-properties',
-        'lifecycle'
-      ]
+        'lifecycle',
+      ],
     },
     {
       id: 'patterns',
@@ -60,8 +58,8 @@ export const guideStructure: GuideStructure = {
         'todo-bloc',
         'keep-alive',
         'props',
-        'persistence'
-      ]
+        'persistence',
+      ],
     },
     {
       id: 'advanced',
@@ -76,8 +74,8 @@ export const guideStructure: GuideStructure = {
         'custom-selectors',
         'stream',
         'bloc-composition',
-        'dependencies'
-      ]
+        'dependencies',
+      ],
     },
     {
       id: 'plugins',
@@ -86,19 +84,20 @@ export const guideStructure: GuideStructure = {
       icon: TestTube,
       category: '04-plugins',
       color: 'text-cyan-600 dark:text-cyan-400',
-      demos: [
-        'custom-plugins'
-      ]
-    }
-  ]
+      demos: ['custom-plugins'],
+    },
+  ],
 };
 
 // Helper function to get all demos in order
-export function getAllDemosInOrder(): Array<{ sectionId: string; demoId: string; }> {
-  const allDemos: Array<{ sectionId: string; demoId: string; }> = [];
+export function getAllDemosInOrder(): Array<{
+  sectionId: string;
+  demoId: string;
+}> {
+  const allDemos: Array<{ sectionId: string; demoId: string }> = [];
 
-  guideStructure.sections.forEach(section => {
-    section.demos.forEach(demoId => {
+  guideStructure.sections.forEach((section) => {
+    section.demos.forEach((demoId) => {
       allDemos.push({ sectionId: section.id, demoId });
     });
   });
@@ -108,21 +107,25 @@ export function getAllDemosInOrder(): Array<{ sectionId: string; demoId: string;
 
 // Helper function to get section by ID
 export function getSection(sectionId: string): GuideSection | undefined {
-  return guideStructure.sections.find(s => s.id === sectionId);
+  return guideStructure.sections.find((s) => s.id === sectionId);
 }
 
 // Helper function to get navigation info for a demo
-export function getNavigationForDemo(sectionId: string, demoId: string): GuideNavigation | null {
+export function getNavigationForDemo(
+  sectionId: string,
+  demoId: string,
+): GuideNavigation | null {
   const allDemos = getAllDemosInOrder();
   const currentIndex = allDemos.findIndex(
-    d => d.sectionId === sectionId && d.demoId === demoId
+    (d) => d.sectionId === sectionId && d.demoId === demoId,
   );
 
   if (currentIndex === -1) return null;
 
   const current = allDemos[currentIndex];
   const previous = currentIndex > 0 ? allDemos[currentIndex - 1] : undefined;
-  const next = currentIndex < allDemos.length - 1 ? allDemos[currentIndex + 1] : undefined;
+  const next =
+    currentIndex < allDemos.length - 1 ? allDemos[currentIndex + 1] : undefined;
 
   const currentSection = getSection(current.sectionId);
   const currentDemo = DemoRegistry.get(current.demoId);
@@ -134,8 +137,8 @@ export function getNavigationForDemo(sectionId: string, demoId: string): GuideNa
       sectionId: current.sectionId,
       demoId: current.demoId,
       title: currentDemo.title,
-      path: `/guide/${current.sectionId}/${current.demoId}`
-    }
+      path: `/guide/${current.sectionId}/${current.demoId}`,
+    },
   };
 
   if (previous) {
@@ -146,7 +149,7 @@ export function getNavigationForDemo(sectionId: string, demoId: string): GuideNa
         sectionId: previous.sectionId,
         demoId: previous.demoId,
         title: prevDemo.title,
-        path: `/guide/${previous.sectionId}/${previous.demoId}`
+        path: `/guide/${previous.sectionId}/${previous.demoId}`,
       };
     }
   }
@@ -159,7 +162,7 @@ export function getNavigationForDemo(sectionId: string, demoId: string): GuideNa
         sectionId: next.sectionId,
         demoId: next.demoId,
         title: nextDemo.title,
-        path: `/guide/${next.sectionId}/${next.demoId}`
+        path: `/guide/${next.sectionId}/${next.demoId}`,
       };
     }
   }
@@ -170,7 +173,7 @@ export function getNavigationForDemo(sectionId: string, demoId: string): GuideNa
 // Helper function to get breadcrumb items for a demo
 export function getBreadcrumbs(sectionId?: string, demoId?: string) {
   const breadcrumbs: Array<{ label: string; path?: string }> = [
-    { label: 'Guide', path: '/guide' }
+    { label: 'Guide', path: '/guide' },
   ];
 
   if (sectionId) {
@@ -178,14 +181,14 @@ export function getBreadcrumbs(sectionId?: string, demoId?: string) {
     if (section) {
       breadcrumbs.push({
         label: section.title,
-        path: `/guide/${sectionId}`
+        path: `/guide/${sectionId}`,
       });
 
       if (demoId) {
         const demo = DemoRegistry.get(demoId);
         if (demo) {
           breadcrumbs.push({
-            label: demo.title
+            label: demo.title,
             // No path for current page
           });
         }

@@ -10,7 +10,11 @@ interface GuideNavigationProps {
   id?: string;
 }
 
-export function GuideNavigation({ navigation, className, id }: GuideNavigationProps) {
+export function GuideNavigation({
+  navigation,
+  className,
+  id,
+}: GuideNavigationProps) {
   if (!navigation) return null;
 
   return (
@@ -72,7 +76,8 @@ function NavLink({ direction, title, to }: NavLinkProps) {
       <div
         className={cn(
           'flex h-9 w-9 items-center justify-center rounded-full bg-brand/10 text-brand transition-colors group-hover:bg-brand group-hover:text-brand-foreground',
-          isComplete && 'bg-brand text-brand-foreground group-hover:bg-brand group-hover:text-brand-foreground',
+          isComplete &&
+            'bg-brand text-brand-foreground group-hover:bg-brand group-hover:text-brand-foreground',
         )}
       >
         {isPrevious ? (
@@ -87,9 +92,7 @@ function NavLink({ direction, title, to }: NavLinkProps) {
         <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground group-hover:text-brand">
           {isComplete ? 'Finished' : isPrevious ? 'Previous demo' : 'Next demo'}
         </span>
-        <span className="text-sm font-semibold">
-          {title}
-        </span>
+        <span className="text-sm font-semibold">{title}</span>
       </div>
     </Link>
   );

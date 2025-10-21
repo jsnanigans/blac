@@ -72,11 +72,7 @@ ShellSidebar.displayName = 'ShellSidebar';
 
 export const ShellMain = React.forwardRef<HTMLDivElement, DivProps>(
   ({ className, ...props }, ref) => (
-    <main
-      ref={ref}
-      className={cn('flex-1 min-w-0', className)}
-      {...props}
-    />
+    <main ref={ref} className={cn('flex-1 min-w-0', className)} {...props} />
   ),
 );
 ShellMain.displayName = 'ShellMain';

@@ -40,7 +40,10 @@ class DecrementEvent {
 
 class ResetEvent {}
 
-class CounterBloc extends Vertex<CounterState, IncrementEvent | DecrementEvent | ResetEvent> {
+class CounterBloc extends Vertex<
+  CounterState,
+  IncrementEvent | DecrementEvent | ResetEvent
+> {
   constructor() {
     super({ count: 0 });
 
@@ -127,7 +130,9 @@ export function BlocVsCubitInteractive() {
                   Simple
                 </span>
               </div>
-              <p className="text-sm text-muted-foreground">Direct method calls</p>
+              <p className="text-sm text-muted-foreground">
+                Direct method calls
+              </p>
             </div>
 
             <div className="text-center mb-8">
@@ -143,16 +148,29 @@ export function BlocVsCubitInteractive() {
             </div>
 
             <div className="flex justify-center gap-3 mb-6">
-              <Button onClick={cubit.decrement} variant="outline" size="sm" disabled={activeImpl !== 'cubit'}>
+              <Button
+                onClick={cubit.decrement}
+                variant="outline"
+                size="sm"
+                disabled={activeImpl !== 'cubit'}
+              >
                 -
               </Button>
-              <Button onClick={cubit.reset} variant="outline" size="sm" disabled={activeImpl !== 'cubit'}>
+              <Button
+                onClick={cubit.reset}
+                variant="outline"
+                size="sm"
+                disabled={activeImpl !== 'cubit'}
+              >
                 Reset
               </Button>
               <Button
                 onClick={() => {
                   cubit.increment();
-                  if ((cubitState.count + 1) % 10 === 0 && cubitState.count + 1 > 0) {
+                  if (
+                    (cubitState.count + 1) % 10 === 0 &&
+                    cubitState.count + 1 > 0
+                  ) {
                     celebrate();
                   }
                 }}
@@ -190,7 +208,9 @@ export function BlocVsCubitInteractive() {
                   Event-Driven
                 </span>
               </div>
-              <p className="text-sm text-muted-foreground">Events trigger state changes</p>
+              <p className="text-sm text-muted-foreground">
+                Events trigger state changes
+              </p>
             </div>
 
             <div className="text-center mb-8">
@@ -206,16 +226,29 @@ export function BlocVsCubitInteractive() {
             </div>
 
             <div className="flex justify-center gap-3 mb-6">
-              <Button onClick={() => bloc.decrement()} variant="outline" size="sm" disabled={activeImpl !== 'bloc'}>
+              <Button
+                onClick={() => bloc.decrement()}
+                variant="outline"
+                size="sm"
+                disabled={activeImpl !== 'bloc'}
+              >
                 -
               </Button>
-              <Button onClick={() => bloc.reset()} variant="outline" size="sm" disabled={activeImpl !== 'bloc'}>
+              <Button
+                onClick={() => bloc.reset()}
+                variant="outline"
+                size="sm"
+                disabled={activeImpl !== 'bloc'}
+              >
                 Reset
               </Button>
               <Button
                 onClick={() => {
                   bloc.increment();
-                  if ((blocState.count + 1) % 10 === 0 && blocState.count + 1 > 0) {
+                  if (
+                    (blocState.count + 1) % 10 === 0 &&
+                    blocState.count + 1 > 0
+                  ) {
                     celebrate();
                   }
                 }}

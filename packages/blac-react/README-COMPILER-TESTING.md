@@ -32,6 +32,7 @@ The React Compiler automatically memoizes components and hooks. Key areas to wat
 ## 📖 Full Documentation
 
 See [`TESTING-REACT-COMPILER.md`](./TESTING-REACT-COMPILER.md) for:
+
 - Detailed testing strategy
 - Known considerations for BlaC's architecture
 - Debugging tips

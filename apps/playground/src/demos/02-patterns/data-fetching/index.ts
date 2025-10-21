@@ -8,7 +8,15 @@ DemoRegistry.register({
   description:
     'Learn professional data fetching patterns including time-based caching, stale-while-revalidate (SWR), and pagination strategies for scalable applications.',
   difficulty: 'intermediate',
-  tags: ['cubit', 'async', 'caching', 'api', 'pagination', 'swr', 'performance'],
+  tags: [
+    'cubit',
+    'async',
+    'caching',
+    'api',
+    'pagination',
+    'swr',
+    'performance',
+  ],
   concepts: [
     'time-based caching',
     'cache invalidation',

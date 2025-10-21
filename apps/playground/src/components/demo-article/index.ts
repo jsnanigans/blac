@@ -5,7 +5,11 @@
  */
 
 export { DemoArticle, useDemoArticle } from './DemoArticle';
-export type { DemoMetadata, DemoArticleProps, DemoDifficulty } from './DemoArticle';
+export type {
+  DemoMetadata,
+  DemoArticleProps,
+  DemoDifficulty,
+} from './DemoArticle';
 
 export { ArticleSection, SectionHeader } from './ArticleSection';
 export type { ArticleSectionProps, SectionTheme } from './ArticleSection';

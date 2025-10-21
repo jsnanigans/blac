@@ -8,7 +8,15 @@ DemoRegistry.register({
   description:
     'Master list operations with CRUD patterns, event-driven updates, filtering, computed properties, and bulk operations for managing collections.',
   difficulty: 'beginner',
-  tags: ['cubit', 'bloc', 'crud', 'lists', 'filtering', 'bulk-operations', 'computed'],
+  tags: [
+    'cubit',
+    'bloc',
+    'crud',
+    'lists',
+    'filtering',
+    'bulk-operations',
+    'computed',
+  ],
   concepts: [
     'CRUD operations',
     'list filtering',

@@ -138,7 +138,7 @@ describe('Adapter Performance', () => {
       const unsubscribes = Array.from({ length: 100 }, () =>
         adapter.subscribe(undefined, () => {
           // No-op listener
-        })
+        }),
       );
 
       // Emit 100 state changes
@@ -403,7 +403,7 @@ describe('Adapter Performance', () => {
         () => {
           // No-op listener
         },
-        undefined // Default comparison
+        undefined, // Default comparison
       );
 
       // Emit 1000 state changes
@@ -428,7 +428,7 @@ describe('Adapter Performance', () => {
         () => {
           // No-op listener
         },
-        customCompare
+        customCompare,
       );
 
       // Emit 1000 state changes

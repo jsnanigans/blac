@@ -11,7 +11,11 @@ const HeaderVisibilityContext = createContext<HeaderVisibilityContextType>({
   headerHeight: 64, // ShellTopBar (40px) + ShellHeader (56px) = 96px, but measured as 64px
 });
 
-export function HeaderVisibilityProvider({ children }: { children: React.ReactNode }) {
+export function HeaderVisibilityProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const scrollDirection = useScrollDirection({ threshold: 10 });
   const [scrollY, setScrollY] = useState(0);
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
@@ -28,7 +32,9 @@ export function HeaderVisibilityProvider({ children }: { children: React.ReactNo
   }, [scrollDirection, scrollY]);
 
   return (
-    <HeaderVisibilityContext.Provider value={{ isHeaderVisible, headerHeight: 64 }}>
+    <HeaderVisibilityContext.Provider
+      value={{ isHeaderVisible, headerHeight: 64 }}
+    >
       {children}
     </HeaderVisibilityContext.Provider>
   );

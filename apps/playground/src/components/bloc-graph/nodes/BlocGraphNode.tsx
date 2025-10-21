@@ -18,10 +18,11 @@ import {
 } from '../../../utils/design-tokens';
 
 export interface BlocGraphNodeProps extends NodeProps {
-  data: BlocGraphNodeData & Record<string, unknown> & {
-    expanded?: boolean;
-    onExpand?: (expanded: boolean) => void;
-  };
+  data: BlocGraphNodeData &
+    Record<string, unknown> & {
+      expanded?: boolean;
+      onExpand?: (expanded: boolean) => void;
+    };
 }
 
 /**
@@ -107,7 +108,10 @@ export function BlocGraphNodeComponent({ data }: BlocGraphNodeProps) {
 
         {/* Instance ID */}
         {data.instanceId && (
-          <div className="text-xs text-gray-500 mb-2 font-mono truncate" title={data.instanceId}>
+          <div
+            className="text-xs text-gray-500 mb-2 font-mono truncate"
+            title={data.instanceId}
+          >
             ID: {data.instanceId}
           </div>
         )}
@@ -117,10 +121,21 @@ export function BlocGraphNodeComponent({ data }: BlocGraphNodeProps) {
           <div className="mt-2 p-2 bg-gray-50 rounded text-xs">
             <div className="font-bold mb-1">Details:</div>
             <div className="space-y-1">
-              <div><span className="font-semibold">Type:</span> {data.type}</div>
-              <div><span className="font-semibold">Shared:</span> {data.isShared ? 'Yes' : 'No'}</div>
-              <div><span className="font-semibold">Isolated:</span> {data.isIsolated ? 'Yes' : 'No'}</div>
-              <div><span className="font-semibold">Keep Alive:</span> {data.keepAlive ? 'Yes' : 'No'}</div>
+              <div>
+                <span className="font-semibold">Type:</span> {data.type}
+              </div>
+              <div>
+                <span className="font-semibold">Shared:</span>{' '}
+                {data.isShared ? 'Yes' : 'No'}
+              </div>
+              <div>
+                <span className="font-semibold">Isolated:</span>{' '}
+                {data.isIsolated ? 'Yes' : 'No'}
+              </div>
+              <div>
+                <span className="font-semibold">Keep Alive:</span>{' '}
+                {data.keepAlive ? 'Yes' : 'No'}
+              </div>
             </div>
           </div>
         )}
@@ -128,4 +143,3 @@ export function BlocGraphNodeComponent({ data }: BlocGraphNodeProps) {
     </div>
   );
 }
-

@@ -11,7 +11,12 @@ import {
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
-export type ConceptCalloutType = 'tip' | 'warning' | 'success' | 'info' | 'danger';
+export type ConceptCalloutType =
+  | 'tip'
+  | 'warning'
+  | 'success'
+  | 'info'
+  | 'danger';
 
 export interface ConceptCalloutProps {
   type: ConceptCalloutType;
@@ -34,12 +39,16 @@ const typeConfig: Record<
   },
   warning: {
     border: 'border-amber-300',
-    icon: <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-300" />,
+    icon: (
+      <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-300" />
+    ),
     titleColor: 'text-amber-700 dark:text-amber-200',
   },
   success: {
     border: 'border-emerald-300',
-    icon: <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-300" />,
+    icon: (
+      <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-300" />
+    ),
     titleColor: 'text-emerald-700 dark:text-emerald-200',
   },
   info: {
@@ -90,7 +99,11 @@ export const ConceptCallout: React.FC<ConceptCalloutProps> = ({
     >
       <div className="flex items-start gap-3">
         <div className="mt-0.5">
-          {icon ? React.createElement(icon, { className: 'h-5 w-5 text-muted-foreground' }) : config.icon}
+          {icon
+            ? React.createElement(icon, {
+                className: 'h-5 w-5 text-muted-foreground',
+              })
+            : config.icon}
         </div>
         <div className="flex-1 space-y-2">
           <div className="flex items-center justify-between gap-3">
@@ -104,7 +117,11 @@ export const ConceptCallout: React.FC<ConceptCalloutProps> = ({
                 className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
               >
                 {collapsed ? 'Show' : 'Hide'}
-                {collapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
+                {collapsed ? (
+                  <ChevronDown className="h-3.5 w-3.5" />
+                ) : (
+                  <ChevronUp className="h-3.5 w-3.5" />
+                )}
               </button>
             )}
           </div>

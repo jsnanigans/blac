@@ -7,7 +7,13 @@ import { StateViewer } from '@/components/shared/StateViewer';
 import { Cubit } from '@blac/core';
 import { useBloc } from '@blac/react';
 import { motion } from 'framer-motion';
-import { Settings, Play, Square, RotateCcw, Timer as TimerIcon } from 'lucide-react';
+import {
+  Settings,
+  Play,
+  Square,
+  RotateCcw,
+  Timer as TimerIcon,
+} from 'lucide-react';
 import React, { useState } from 'react';
 
 // ============================================================================
@@ -222,10 +228,17 @@ export const PropsDemo: React.FC = () => {
       metadata={{
         id: 'props',
         title: 'Props-Based Blocs',
-        description: 'Learn how to create configurable, reusable Blocs and Cubits by passing props for initialization',
+        description:
+          'Learn how to create configurable, reusable Blocs and Cubits by passing props for initialization',
         category: '02-patterns',
         difficulty: 'intermediate',
-        tags: ['cubit', 'props', 'configuration', 'reusability', 'instance-management'],
+        tags: [
+          'cubit',
+          'props',
+          'configuration',
+          'reusability',
+          'instance-management',
+        ],
         estimatedTime: 10,
       }}
     >
@@ -233,21 +246,24 @@ export const PropsDemo: React.FC = () => {
         <Prose>
           <h2>Dynamic Configuration with Props</h2>
           <p>
-            One of the most powerful patterns in BlaC is creating <strong>props-based Blocs and Cubits</strong>.
-            Instead of hardcoding configuration, you can pass props during construction to create flexible,
-            reusable state containers with different behaviors.
+            One of the most powerful patterns in BlaC is creating{' '}
+            <strong>props-based Blocs and Cubits</strong>. Instead of hardcoding
+            configuration, you can pass props during construction to create
+            flexible, reusable state containers with different behaviors.
           </p>
           <p>
-            This pattern is essential for building reusable components where each instance needs its own
-            configuration, like timers with different intervals, forms with different validation rules,
-            or API clients pointing to different endpoints.
+            This pattern is essential for building reusable components where
+            each instance needs its own configuration, like timers with
+            different intervals, forms with different validation rules, or API
+            clients pointing to different endpoints.
           </p>
         </Prose>
 
         <ConceptCallout type="tip" title="When to Use Props-Based Blocs">
           <p>
-            Use this pattern when you need multiple instances of the same Bloc/Cubit with different configurations,
-            or when you want to make your state containers more reusable across different contexts.
+            Use this pattern when you need multiple instances of the same
+            Bloc/Cubit with different configurations, or when you want to make
+            your state containers more reusable across different contexts.
           </p>
         </ConceptCallout>
       </ArticleSection>
@@ -256,8 +272,9 @@ export const PropsDemo: React.FC = () => {
         <Prose>
           <h2>Interactive Demo: Configurable Timers</h2>
           <p>
-            Below are four timer instances, each created from the same <code>TimerCubit</code> class but with
-            different configurations. Each timer is a completely separate instance with its own state.
+            Below are four timer instances, each created from the same{' '}
+            <code>TimerCubit</code> class but with different configurations.
+            Each timer is a completely separate instance with its own state.
           </p>
         </Prose>
 
@@ -369,8 +386,9 @@ export const PropsDemo: React.FC = () => {
         <Prose>
           <h2>Implementation: Props-Based Cubit</h2>
           <p>
-            Creating a props-based Cubit involves three key steps: defining a props interface, accepting props
-            in the constructor, and using those props throughout the class.
+            Creating a props-based Cubit involves three key steps: defining a
+            props interface, accepting props in the constructor, and using those
+            props throughout the class.
           </p>
         </Prose>
 
@@ -442,8 +460,9 @@ class TimerCubit extends Cubit<TimerState> {
 
         <ConceptCallout type="tip" title="Always Provide Defaults">
           <p>
-            Always merge incoming props with sensible defaults using the spread operator. This makes all props
-            optional and ensures your Cubit can be instantiated without any configuration.
+            Always merge incoming props with sensible defaults using the spread
+            operator. This makes all props optional and ensures your Cubit can
+            be instantiated without any configuration.
           </p>
         </ConceptCallout>
       </ArticleSection>
@@ -452,8 +471,9 @@ class TimerCubit extends Cubit<TimerState> {
         <Prose>
           <h2>Usage: Passing Props in React</h2>
           <p>
-            To pass props to a Cubit in React, use the <code>staticProps</code> option in <code>useBloc</code>.
-            Combine this with <code>instanceId</code> to create multiple independent instances.
+            To pass props to a Cubit in React, use the <code>staticProps</code>{' '}
+            option in <code>useBloc</code>. Combine this with{' '}
+            <code>instanceId</code> to create multiple independent instances.
           </p>
         </Prose>
 
@@ -498,8 +518,9 @@ function App() {
 
         <ConceptCallout type="info" title="Instance Management">
           <p>
-            The <code>instanceId</code> is crucial when using props. Without it, all components would share
-            the same instance. With unique IDs, each component gets its own independent Cubit instance.
+            The <code>instanceId</code> is crucial when using props. Without it,
+            all components would share the same instance. With unique IDs, each
+            component gets its own independent Cubit instance.
           </p>
         </ConceptCallout>
       </ArticleSection>
@@ -508,8 +529,9 @@ function App() {
         <Prose>
           <h2>Advanced: Props with Blocs</h2>
           <p>
-            The props pattern works equally well with Blocs. This is especially useful for API clients,
-            data fetchers, or any Bloc that needs configuration at runtime.
+            The props pattern works equally well with Blocs. This is especially
+            useful for API clients, data fetchers, or any Bloc that needs
+            configuration at runtime.
           </p>
         </Prose>
 
@@ -567,8 +589,9 @@ function UserTodoList({ userId }: { userId: string }) {
 
         <ConceptCallout type="warning" title="Props Are Immutable">
           <p>
-            Props are set once during construction and should never change. If you need dynamic, changing
-            values, store them in <strong>state</strong> instead. Props are for configuration, not for
+            Props are set once during construction and should never change. If
+            you need dynamic, changing values, store them in{' '}
+            <strong>state</strong> instead. Props are for configuration, not for
             values that update over time.
           </p>
         </ConceptCallout>
@@ -582,34 +605,42 @@ function UserTodoList({ userId }: { userId: string }) {
         <ConceptCallout type="success" title="What You've Learned">
           <ul className="space-y-2 text-sm">
             <li>
-              <strong>Props Pattern:</strong> Pass configuration to Blocs/Cubits via constructor parameters
+              <strong>Props Pattern:</strong> Pass configuration to Blocs/Cubits
+              via constructor parameters
             </li>
             <li>
-              <strong>Defaults:</strong> Always merge incoming props with sensible defaults for flexibility
+              <strong>Defaults:</strong> Always merge incoming props with
+              sensible defaults for flexibility
             </li>
             <li>
-              <strong>React Integration:</strong> Use <code>staticProps</code> in <code>useBloc</code> to pass props
+              <strong>React Integration:</strong> Use <code>staticProps</code>{' '}
+              in <code>useBloc</code> to pass props
             </li>
             <li>
-              <strong>Instance IDs:</strong> Combine props with unique <code>instanceId</code> for multiple independent instances
+              <strong>Instance IDs:</strong> Combine props with unique{' '}
+              <code>instanceId</code> for multiple independent instances
             </li>
             <li>
-              <strong>Immutability:</strong> Props are set once and never change - use state for dynamic values
+              <strong>Immutability:</strong> Props are set once and never change
+              - use state for dynamic values
             </li>
             <li>
-              <strong>Reusability:</strong> Props make your Blocs/Cubits more flexible and reusable across contexts
+              <strong>Reusability:</strong> Props make your Blocs/Cubits more
+              flexible and reusable across contexts
             </li>
             <li>
-              <strong>Type Safety:</strong> TypeScript interfaces ensure props are used correctly
+              <strong>Type Safety:</strong> TypeScript interfaces ensure props
+              are used correctly
             </li>
           </ul>
         </ConceptCallout>
 
         <ConceptCallout type="info" title="Real-World Use Cases">
           <p>
-            Props-based Blocs are perfect for: API clients with different endpoints, forms with different
-            validation rules, timers with different intervals, paginated lists with different page sizes,
-            and any component that needs configurable behavior.
+            Props-based Blocs are perfect for: API clients with different
+            endpoints, forms with different validation rules, timers with
+            different intervals, paginated lists with different page sizes, and
+            any component that needs configurable behavior.
           </p>
         </ConceptCallout>
       </ArticleSection>

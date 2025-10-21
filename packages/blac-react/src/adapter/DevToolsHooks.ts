@@ -47,7 +47,9 @@ export interface DevToolsPerformanceEvent {
 class DevToolsRegistry {
   private adapters = new Map<string, any>();
   private rerenderListeners = new Set<(event: DevToolsRerenderEvent) => void>();
-  private performanceListeners = new Set<(event: DevToolsPerformanceEvent) => void>();
+  private performanceListeners = new Set<
+    (event: DevToolsPerformanceEvent) => void
+  >();
   private enabled = false;
 
   /**
@@ -149,7 +151,9 @@ class DevToolsRegistry {
   /**
    * Listen for performance events
    */
-  onPerformance(listener: (event: DevToolsPerformanceEvent) => void): () => void {
+  onPerformance(
+    listener: (event: DevToolsPerformanceEvent) => void,
+  ): () => void {
     if (!this.enabled) return () => {};
 
     this.performanceListeners.add(listener);
@@ -179,9 +183,14 @@ class DevToolsRegistry {
 
     const adapters = this.getAllAdapters();
 
-    const totalSubscriptions = adapters.reduce((sum, a) => sum + a.subscriptionCount, 0);
+    const totalSubscriptions = adapters.reduce(
+      (sum, a) => sum + a.subscriptionCount,
+      0,
+    );
     const totalDependencies = adapters.reduce((sum, a) => {
-      return sum + a.subscriptions.reduce((s, sub) => s + sub.dependencies.length, 0);
+      return (
+        sum + a.subscriptions.reduce((s, sub) => s + sub.dependencies.length, 0)
+      );
     }, 0);
 
     const avgDependenciesPerSubscription =
@@ -192,7 +201,8 @@ class DevToolsRegistry {
       totalSubscriptions,
       totalDependencies,
       avgDependenciesPerSubscription,
-      autoTrackingEnabledCount: adapters.filter(a => a.autoTrackingEnabled).length
+      autoTrackingEnabledCount: adapters.filter((a) => a.autoTrackingEnabled)
+        .length,
     };
   }
 
@@ -241,7 +251,7 @@ export function measurePerformance<T>(
   subscriptionId: string,
   blocName: string,
   fn: () => T,
-  metadata?: Record<string, any>
+  metadata?: Record<string, any>,
 ): T {
   if (!devToolsRegistry.isEnabled()) {
     return fn();
@@ -257,7 +267,7 @@ export function measurePerformance<T>(
     operation,
     duration,
     metadata,
-    timestamp: Date.now()
+    timestamp: Date.now(),
   });
 
   return result;
@@ -270,7 +280,7 @@ export function reportRerender(
   subscriptionId: string,
   blocName: string,
   version: number,
-  changedDependencies: string[]
+  changedDependencies: string[],
 ): void {
   if (!devToolsRegistry.isEnabled()) return;
 
@@ -279,6 +289,6 @@ export function reportRerender(
     blocName,
     version,
     changedDependencies,
-    timestamp: Date.now()
+    timestamp: Date.now(),
   });
 }

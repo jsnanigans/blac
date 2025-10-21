@@ -23,9 +23,27 @@ class ShoppingCartCubit extends Cubit<ShoppingCartState> {
   constructor() {
     super({
       items: [
-        { id: '1', name: 'MacBook Pro', price: 2499.99, quantity: 1, category: 'Electronics' },
-        { id: '2', name: 'Magic Mouse', price: 79.99, quantity: 2, category: 'Electronics' },
-        { id: '3', name: 'TypeScript Book', price: 39.99, quantity: 1, category: 'Books' },
+        {
+          id: '1',
+          name: 'MacBook Pro',
+          price: 2499.99,
+          quantity: 1,
+          category: 'Electronics',
+        },
+        {
+          id: '2',
+          name: 'Magic Mouse',
+          price: 79.99,
+          quantity: 2,
+          category: 'Electronics',
+        },
+        {
+          id: '3',
+          name: 'TypeScript Book',
+          price: 39.99,
+          quantity: 1,
+          category: 'Books',
+        },
       ],
       taxRate: 0.08, // 8%
       discountPercent: 10, // 10% off
@@ -79,7 +97,12 @@ class ShoppingCartCubit extends Cubit<ShoppingCartState> {
   }
 
   get total(): number {
-    return this.subtotal - this.discountAmount + this.taxAmount + this.calculatedShipping;
+    return (
+      this.subtotal -
+      this.discountAmount +
+      this.taxAmount +
+      this.calculatedShipping
+    );
   }
 
   get displayTotal(): string {
@@ -87,7 +110,9 @@ class ShoppingCartCubit extends Cubit<ShoppingCartState> {
   }
 
   get totalSavings(): number {
-    return this.discountAmount + (this.hasFreeShipping ? this.state.shippingCost : 0);
+    return (
+      this.discountAmount + (this.hasFreeShipping ? this.state.shippingCost : 0)
+    );
   }
 
   // ========== Statistics Getters ==========
@@ -99,12 +124,15 @@ class ShoppingCartCubit extends Cubit<ShoppingCartState> {
 
   get averageItemPrice(): number {
     if (this.isEmpty) return 0;
-    const totalValue = this.state.items.reduce((sum, item) => sum + item.price, 0);
+    const totalValue = this.state.items.reduce(
+      (sum, item) => sum + item.price,
+      0,
+    );
     return totalValue / this.state.items.length;
   }
 
   get categories(): string[] {
-    return [...new Set(this.state.items.map(item => item.category))];
+    return [...new Set(this.state.items.map((item) => item.category))];
   }
 
   // ========== State Update Methods ==========
@@ -231,7 +259,12 @@ export function ComputedPropertiesInteractive() {
               <Button onClick={handleAddItem} variant="primary" size="sm">
                 Add Item
               </Button>
-              <Button onClick={() => cubit.clearCart()} variant="outline" size="sm" disabled={cubit.isEmpty}>
+              <Button
+                onClick={() => cubit.clearCart()}
+                variant="outline"
+                size="sm"
+                disabled={cubit.isEmpty}
+              >
                 Clear
               </Button>
             </div>
@@ -243,7 +276,8 @@ export function ComputedPropertiesInteractive() {
             ))}
             {cubit.isEmpty && (
               <div className="text-center py-8 text-muted-foreground">
-                Your cart is empty. Add items to see computed properties in action!
+                Your cart is empty. Add items to see computed properties in
+                action!
               </div>
             )}
           </div>
@@ -274,7 +308,9 @@ export function ComputedPropertiesInteractive() {
                   max="20"
                   step="0.5"
                   value={state.taxRate * 100}
-                  onChange={(e) => cubit.updateTaxRate(Number(e.target.value) / 100)}
+                  onChange={(e) =>
+                    cubit.updateTaxRate(Number(e.target.value) / 100)
+                  }
                   className="w-full mt-1"
                 />
               </div>
@@ -289,7 +325,9 @@ export function ComputedPropertiesInteractive() {
                   max="50"
                   step="5"
                   value={state.shippingCost}
-                  onChange={(e) => cubit.updateShippingCost(Number(e.target.value))}
+                  onChange={(e) =>
+                    cubit.updateShippingCost(Number(e.target.value))
+                  }
                   className="w-full mt-1"
                 />
               </div>
@@ -379,7 +417,9 @@ export function ComputedPropertiesInteractive() {
                 </div>
                 <div className="flex justify-between">
                   <span>Most expensive:</span>
-                  <strong className="truncate ml-2">{cubit.mostExpensiveItem}</strong>
+                  <strong className="truncate ml-2">
+                    {cubit.mostExpensiveItem}
+                  </strong>
                 </div>
                 <div className="flex justify-between">
                   <span>Average price:</span>
@@ -387,10 +427,14 @@ export function ComputedPropertiesInteractive() {
                 </div>
                 <div className="flex justify-between">
                   <span>Categories:</span>
-                  <strong className="truncate ml-2">{cubit.categories.join(', ')}</strong>
+                  <strong className="truncate ml-2">
+                    {cubit.categories.join(', ')}
+                  </strong>
                 </div>
                 <div className="pt-2 border-t">
-                  <span className="text-xs text-muted-foreground">Summary:</span>
+                  <span className="text-xs text-muted-foreground">
+                    Summary:
+                  </span>
                   <div className="font-medium">{cubit.summary}</div>
                 </div>
               </div>
@@ -400,7 +444,12 @@ export function ComputedPropertiesInteractive() {
       </div>
 
       {/* State Viewer */}
-      <StateViewer bloc={ShoppingCartCubit} title="Shopping Cart State" defaultCollapsed={false} maxDepth={2} />
+      <StateViewer
+        bloc={ShoppingCartCubit}
+        title="Shopping Cart State"
+        defaultCollapsed={false}
+        maxDepth={2}
+      />
     </div>
   );
 }

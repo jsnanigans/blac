@@ -65,7 +65,10 @@ function generateSubscriptionId(prefix: string): string {
 /**
  * Generate a stable render context ID
  */
-function generateRenderContextId(subscriptionId: string, mode: 'sync' | 'concurrent'): string {
+function generateRenderContextId(
+  subscriptionId: string,
+  mode: 'sync' | 'concurrent',
+): string {
   return mode === 'concurrent'
     ? `${subscriptionId}-concurrent-${Date.now()}`
     : `${subscriptionId}-sync`;
@@ -126,10 +129,15 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
   const concurrentContext = useConcurrentContext();
 
   // Generate stable render context that only changes for concurrent features
-  const renderContextRef = useRef<string>(generateRenderContextId(subscriptionId, 'sync'));
+  const renderContextRef = useRef<string>(
+    generateRenderContextId(subscriptionId, 'sync'),
+  );
   if (concurrentContext.renderMode === 'concurrent') {
     // New context for each concurrent render
-    renderContextRef.current = generateRenderContextId(subscriptionId, 'concurrent');
+    renderContextRef.current = generateRenderContextId(
+      subscriptionId,
+      'concurrent',
+    );
   } else if (!renderContextRef.current) {
     // Stable context for sync renders (created once)
     renderContextRef.current = generateRenderContextId(subscriptionId, 'sync');
@@ -162,7 +170,9 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
   // Get or create bloc instance from Blac registry
   const bloc = useMemo(() => {
     const instance = Blac.getBloc(blocConstructor, {
-      constructorParams: options?.staticProps ? [options.staticProps] : undefined,
+      constructorParams: options?.staticProps
+        ? [options.staticProps]
+        : undefined,
       instanceRef: finalInstanceId,
     });
     return instance as InstanceType<B>;
@@ -201,8 +211,12 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
   const subscriptionExists = tracker.getSubscription(subscriptionId);
   if (!subscriptionExists) {
     // Create with empty notify callback initially
-    console.log(`[useBloc] Creating subscription ${subscriptionId} for bloc ${bloc.uid} (${bloc._name})`);
-    Blac.log(`[useBloc] Creating subscription ${subscriptionId} for bloc ${bloc.uid} (${bloc._name})`);
+    console.log(
+      `[useBloc] Creating subscription ${subscriptionId} for bloc ${bloc.uid} (${bloc._name})`,
+    );
+    Blac.log(
+      `[useBloc] Creating subscription ${subscriptionId} for bloc ${bloc.uid} (${bloc._name})`,
+    );
     tracker.createSubscription(subscriptionId, bloc.uid, () => {});
     subscriptionCreatedRef.current = true;
 
@@ -225,7 +239,9 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
       const subscription = tracker.getSubscription(subscriptionId);
       if (!subscription) {
         // Re-create subscription if it was removed (Strict Mode case)
-        console.log(`[useBloc] Re-creating subscription ${subscriptionId} in subscribe callback`);
+        console.log(
+          `[useBloc] Re-creating subscription ${subscriptionId} in subscribe callback`,
+        );
         tracker.createSubscription(subscriptionId, bloc.uid, onStoreChange);
         subscriptionCreatedRef.current = true;
 
@@ -257,7 +273,7 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
         }
       };
     },
-    [subscriptionId, tracker, bloc.uid, options?.dependencies, renderContext]
+    [subscriptionId, tracker, bloc.uid, options?.dependencies, renderContext],
   );
 
   // Update subscription if bloc instance changes (Strict Mode with isolated blocs)
@@ -265,7 +281,9 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
     const subscription = tracker.getSubscription(subscriptionId);
     if (subscription && subscription.blocId !== bloc.uid) {
       // Bloc instance changed (happens in Strict Mode with isolated blocs)
-      Blac.log(`[useBloc] Bloc instance changed for ${subscriptionId}, updating from ${subscription.blocId} to ${bloc.uid}`);
+      Blac.log(
+        `[useBloc] Bloc instance changed for ${subscriptionId}, updating from ${subscription.blocId} to ${bloc.uid}`,
+      );
       tracker.updateSubscriptionBlocId(subscriptionId, bloc.uid);
     }
   }, [bloc.uid, subscriptionId, tracker]);
@@ -278,13 +296,17 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
       tracker.removeSubscription(subscriptionId);
       subscriptionCreatedRef.current = false;
       // Reset to sync context for potential remount
-      renderContextRef.current = generateRenderContextId(subscriptionId, 'sync');
+      renderContextRef.current = generateRenderContextId(
+        subscriptionId,
+        'sync',
+      );
 
       // Handle isolated bloc cleanup
       const base = blocConstructor as unknown as { isolated?: boolean };
       if (base.isolated && finalInstanceId) {
         const blacInstance = Blac.getInstance();
-        const isolatedBloc = blacInstance.isolatedBlocIndex.get(finalInstanceId);
+        const isolatedBloc =
+          blacInstance.isolatedBlocIndex.get(finalInstanceId);
 
         if (isolatedBloc && isolatedBloc.subscriptionCount === 0) {
           // Schedule disposal to handle any async cleanup
@@ -305,14 +327,20 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
   const getServerSnapshot = useCallback(() => bloc.state, [bloc]);
 
   // Subscribe to state changes using useSyncExternalStore
-  const rawState = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const rawState = useSyncExternalStore(
+    subscribe,
+    getSnapshot,
+    getServerSnapshot,
+  );
 
   // Start and commit render tracking
   // Use useLayoutEffect for synchronous tracking to handle transitions
   // Start tracking before render
   if (!options?.dependencies && subscriptionExists) {
     tracker.startRenderTracking(subscriptionId, renderContext);
-    Blac.log(`[useBloc] Started tracking for ${subscriptionId}, context: ${renderContext}`);
+    Blac.log(
+      `[useBloc] Started tracking for ${subscriptionId}, context: ${renderContext}`,
+    );
   }
 
   // Commit tracking after render completes
@@ -321,13 +349,19 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
       // Commit the tracked dependencies immediately
       tracker.commitRenderTracking(subscriptionId, renderContext);
       const sub = tracker.getSubscription(subscriptionId);
-      Blac.log(`[useBloc] Committed tracking for ${subscriptionId}, deps: ${sub?.dependencies.length || 0}`);
+      Blac.log(
+        `[useBloc] Committed tracking for ${subscriptionId}, deps: ${sub?.dependencies.length || 0}`,
+      );
     }
   });
 
   // For primitive state, register a dependency on the entire state
   useMemo(() => {
-    if (!options?.dependencies && rawState != null && typeof rawState !== 'object') {
+    if (
+      !options?.dependencies &&
+      rawState != null &&
+      typeof rawState !== 'object'
+    ) {
       const dependency: CustomDependency = {
         type: 'custom',
         key: 'primitive-state',
@@ -355,7 +389,12 @@ function useBloc<B extends BlocConstructor<BlocBase<any>>>(
     }
     if (rawState != null && typeof rawState === 'object') {
       // Pass stable render context for tracking
-      return createStateTrackingProxy(rawState, subscriptionId, '', renderContext);
+      return createStateTrackingProxy(
+        rawState,
+        subscriptionId,
+        '',
+        renderContext,
+      );
     }
     return rawState;
   }, [rawState, subscriptionId, options?.dependencies, renderContext]);

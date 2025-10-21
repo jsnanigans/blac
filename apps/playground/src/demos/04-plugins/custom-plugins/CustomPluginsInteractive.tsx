@@ -545,7 +545,9 @@ export function CustomPluginsInteractive() {
             <li>
               Change the log level to "verbose" to see detailed state diffs
             </li>
-            <li>Notice how analytics and performance metrics update in real-time</li>
+            <li>
+              Notice how analytics and performance metrics update in real-time
+            </li>
           </ul>
         </div>
       </div>

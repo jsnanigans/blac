@@ -6,7 +6,12 @@ import { BlocValidationError } from '../validation/BlocValidationError';
 
 describe('Schema Validation - Valibot Integration', () => {
   describe('Cubit with Simple Schema', () => {
-    const CounterSchema = v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(100));
+    const CounterSchema = v.pipe(
+      v.number(),
+      v.integer(),
+      v.minValue(0),
+      v.maxValue(100),
+    );
 
     class CounterCubit extends Cubit<number> {
       static schema = CounterSchema;
@@ -126,7 +131,7 @@ describe('Schema Validation - Valibot Integration', () => {
         v.object({
           createdAt: v.pipe(v.string(), v.isoTimestamp()),
           updatedAt: v.optional(v.pipe(v.string(), v.isoTimestamp())),
-        })
+        }),
       ),
     });
 
@@ -410,7 +415,7 @@ describe('Schema Validation - Valibot Integration', () => {
     const CoercionSchema = v.pipe(
       v.union([v.number(), v.pipe(v.string(), v.transform(Number))]),
       v.number(),
-      v.minValue(0)
+      v.minValue(0),
     );
 
     class CoercionCubit extends Cubit<number> {

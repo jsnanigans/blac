@@ -44,9 +44,13 @@ export function DemoPreview({
         <div className="border-b border-border bg-surface-muted px-4 py-3">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
-              <h4 className="text-sm font-semibold text-foreground">{displayTitle}</h4>
+              <h4 className="text-sm font-semibold text-foreground">
+                {displayTitle}
+              </h4>
               {displayDescription && (
-                <p className="mt-1 text-xs text-muted-foreground">{displayDescription}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {displayDescription}
+                </p>
               )}
             </div>
             <div className="flex items-center gap-2">

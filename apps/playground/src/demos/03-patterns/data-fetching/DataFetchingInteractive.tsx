@@ -3,7 +3,14 @@ import { useBloc } from '@blac/react';
 import { Cubit } from '@blac/core';
 import { Button } from '@/ui/Button';
 import { StateViewer } from '@/components/shared/StateViewer';
-import { Loader2, RefreshCw, Database, Clock, Zap, AlertCircle } from 'lucide-react';
+import {
+  Loader2,
+  RefreshCw,
+  Database,
+  Clock,
+  Zap,
+  AlertCircle,
+} from 'lucide-react';
 
 // =================================================================
 // Simple Cache Pattern Demo
@@ -49,9 +56,19 @@ class SimpleCacheCubit extends Cubit<CachedState<User[]>> {
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
       const users: User[] = [
-        { id: 1, name: 'Alice Johnson', email: 'alice@example.com', role: 'Admin' },
+        {
+          id: 1,
+          name: 'Alice Johnson',
+          email: 'alice@example.com',
+          role: 'Admin',
+        },
         { id: 2, name: 'Bob Smith', email: 'bob@example.com', role: 'User' },
-        { id: 3, name: 'Charlie Brown', email: 'charlie@example.com', role: 'User' },
+        {
+          id: 3,
+          name: 'Charlie Brown',
+          email: 'charlie@example.com',
+          role: 'User',
+        },
       ];
 
       this.patch({
@@ -159,7 +176,8 @@ class SWRCubit extends Cubit<SWRState> {
       this.patch({
         loading: false,
         revalidating: false,
-        error: error instanceof Error ? error.message : 'Failed to fetch articles',
+        error:
+          error instanceof Error ? error.message : 'Failed to fetch articles',
       });
     }
   };
@@ -226,7 +244,9 @@ class PaginationCubit extends Cubit<PaginatedState> {
       id: i + 1,
       name: `Product ${i + 1}`,
       price: Math.floor(Math.random() * 100) + 10,
-      category: ['Electronics', 'Clothing', 'Books', 'Home'][Math.floor(Math.random() * 4)],
+      category: ['Electronics', 'Clothing', 'Books', 'Home'][
+        Math.floor(Math.random() * 4)
+      ],
     }));
   }
 
@@ -280,19 +300,33 @@ class PaginationCubit extends Cubit<PaginatedState> {
 // =================================================================
 
 export function DataFetchingInteractive() {
-  const [activeDemo, setActiveDemo] = useState<'cache' | 'swr' | 'pagination'>('cache');
+  const [activeDemo, setActiveDemo] = useState<'cache' | 'swr' | 'pagination'>(
+    'cache',
+  );
 
   return (
     <div className="my-8 space-y-6">
       {/* Demo Switcher */}
       <div className="flex justify-center gap-3 flex-wrap">
-        <Button onClick={() => setActiveDemo('cache')} variant={activeDemo === 'cache' ? 'primary' : 'outline'} size="sm">
+        <Button
+          onClick={() => setActiveDemo('cache')}
+          variant={activeDemo === 'cache' ? 'primary' : 'outline'}
+          size="sm"
+        >
           Simple Cache
         </Button>
-        <Button onClick={() => setActiveDemo('swr')} variant={activeDemo === 'swr' ? 'primary' : 'outline'} size="sm">
+        <Button
+          onClick={() => setActiveDemo('swr')}
+          variant={activeDemo === 'swr' ? 'primary' : 'outline'}
+          size="sm"
+        >
           Stale-While-Revalidate
         </Button>
-        <Button onClick={() => setActiveDemo('pagination')} variant={activeDemo === 'pagination' ? 'primary' : 'outline'} size="sm">
+        <Button
+          onClick={() => setActiveDemo('pagination')}
+          variant={activeDemo === 'pagination' ? 'primary' : 'outline'}
+          size="sm"
+        >
           Pagination
         </Button>
       </div>
@@ -348,7 +382,11 @@ function SimpleCacheDemo() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3 flex-wrap">
-        <Button onClick={cubit.fetchUsers} disabled={state.loading} variant="primary">
+        <Button
+          onClick={cubit.fetchUsers}
+          disabled={state.loading}
+          variant="primary"
+        >
           {state.loading ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin mr-2" />
@@ -362,7 +400,11 @@ function SimpleCacheDemo() {
           )}
         </Button>
 
-        <Button onClick={cubit.invalidateCache} variant="outline" disabled={!state.cachedAt}>
+        <Button
+          onClick={cubit.invalidateCache}
+          variant="outline"
+          disabled={!state.cachedAt}
+        >
           <RefreshCw className="w-4 h-4 mr-2" />
           Invalidate
         </Button>
@@ -372,7 +414,11 @@ function SimpleCacheDemo() {
             <Clock className="w-4 h-4" />
             <span>
               Cached {cubit.cacheAge}s ago
-              {cubit.cacheAge > 5 && <span className="text-orange-600 dark:text-orange-400 ml-1">(stale)</span>}
+              {cubit.cacheAge > 5 && (
+                <span className="text-orange-600 dark:text-orange-400 ml-1">
+                  (stale)
+                </span>
+              )}
             </span>
           </div>
         )}
@@ -401,9 +447,15 @@ function SimpleCacheDemo() {
               {state.data.map((user) => (
                 <tr key={user.id} className="border-t border-border">
                   <td className="py-2 px-3">{user.name}</td>
-                  <td className="py-2 px-3 text-muted-foreground text-xs">{user.email}</td>
+                  <td className="py-2 px-3 text-muted-foreground text-xs">
+                    {user.email}
+                  </td>
                   <td className="py-2 px-3">
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${user.role === 'Admin' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' : 'bg-surface-muted text-muted-foreground'}`}>{user.role}</span>
+                    <span
+                      className={`px-2 py-0.5 rounded text-xs font-medium ${user.role === 'Admin' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' : 'bg-surface-muted text-muted-foreground'}`}
+                    >
+                      {user.role}
+                    </span>
                   </td>
                 </tr>
               ))}
@@ -414,7 +466,9 @@ function SimpleCacheDemo() {
 
       {!state.data && !state.loading && !state.error && (
         <div className="flex items-center justify-center h-[180px] border-2 border-dashed border-border rounded-lg">
-          <p className="text-muted-foreground text-sm">Click "Fetch Users" to load data</p>
+          <p className="text-muted-foreground text-sm">
+            Click "Fetch Users" to load data
+          </p>
         </div>
       )}
     </div>
@@ -438,7 +492,11 @@ function SWRDemo() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3 flex-wrap">
-        <Button onClick={() => cubit.fetchArticles()} disabled={state.loading} variant="primary">
+        <Button
+          onClick={() => cubit.fetchArticles()}
+          disabled={state.loading}
+          variant="primary"
+        >
           {state.loading ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin mr-2" />
@@ -452,7 +510,11 @@ function SWRDemo() {
           )}
         </Button>
 
-        <Button onClick={toggleAutoRefresh} variant={autoRefreshEnabled ? 'primary' : 'outline'} size="sm">
+        <Button
+          onClick={toggleAutoRefresh}
+          variant={autoRefreshEnabled ? 'primary' : 'outline'}
+          size="sm"
+        >
           <Zap className="w-4 h-4 mr-2" />
           Auto: {autoRefreshEnabled ? 'ON' : 'OFF'}
         </Button>
@@ -484,7 +546,10 @@ function SWRDemo() {
       {state.data && (
         <div className="space-y-2">
           {state.data.map((article) => (
-            <div key={article.id} className="p-3 rounded-lg border-2 border-border bg-surface">
+            <div
+              key={article.id}
+              className="p-3 rounded-lg border-2 border-border bg-surface"
+            >
               <h4 className="font-semibold text-sm mb-1">{article.title}</h4>
               <div className="flex items-center gap-3 text-xs text-muted-foreground">
                 <span>By {article.author}</span>
@@ -498,7 +563,9 @@ function SWRDemo() {
 
       {!state.data && !state.loading && !state.error && (
         <div className="flex items-center justify-center h-[180px] border-2 border-dashed border-border rounded-lg">
-          <p className="text-muted-foreground text-sm">Click "Fetch Articles" to load data</p>
+          <p className="text-muted-foreground text-sm">
+            Click "Fetch Articles" to load data
+          </p>
         </div>
       )}
     </div>
@@ -534,13 +601,20 @@ function PaginationDemo() {
       ) : (
         <div className="grid grid-cols-1 gap-2">
           {state.data.map((product) => (
-            <div key={product.id} className="p-3 rounded-lg border-2 border-border bg-surface flex items-center justify-between">
+            <div
+              key={product.id}
+              className="p-3 rounded-lg border-2 border-border bg-surface flex items-center justify-between"
+            >
               <div>
                 <h4 className="font-semibold text-sm">{product.name}</h4>
-                <p className="text-xs text-muted-foreground">{product.category}</p>
+                <p className="text-xs text-muted-foreground">
+                  {product.category}
+                </p>
               </div>
               <div className="text-right">
-                <p className="text-base font-bold text-green-600 dark:text-green-400">${product.price}</p>
+                <p className="text-base font-bold text-green-600 dark:text-green-400">
+                  ${product.price}
+                </p>
               </div>
             </div>
           ))}
@@ -549,26 +623,40 @@ function PaginationDemo() {
 
       {state.totalPages > 0 && (
         <div className="flex items-center justify-between pt-3 border-t-2 border-border">
-          <Button onClick={cubit.prevPage} disabled={state.currentPage === 1 || state.loading} variant="outline" size="sm">
+          <Button
+            onClick={cubit.prevPage}
+            disabled={state.currentPage === 1 || state.loading}
+            variant="outline"
+            size="sm"
+          >
             Previous
           </Button>
 
           <div className="flex items-center gap-1">
-            {Array.from({ length: state.totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => cubit.goToPage(page)}
-                disabled={state.loading}
-                className={`w-7 h-7 rounded text-xs font-medium transition-all ${
-                  page === state.currentPage ? 'bg-brand text-white' : 'bg-surface-muted hover:bg-surface-muted/70'
-                } disabled:opacity-50`}
-              >
-                {page}
-              </button>
-            ))}
+            {Array.from({ length: state.totalPages }, (_, i) => i + 1).map(
+              (page) => (
+                <button
+                  key={page}
+                  onClick={() => cubit.goToPage(page)}
+                  disabled={state.loading}
+                  className={`w-7 h-7 rounded text-xs font-medium transition-all ${
+                    page === state.currentPage
+                      ? 'bg-brand text-white'
+                      : 'bg-surface-muted hover:bg-surface-muted/70'
+                  } disabled:opacity-50`}
+                >
+                  {page}
+                </button>
+              ),
+            )}
           </div>
 
-          <Button onClick={cubit.nextPage} disabled={state.currentPage === state.totalPages || state.loading} variant="outline" size="sm">
+          <Button
+            onClick={cubit.nextPage}
+            disabled={state.currentPage === state.totalPages || state.loading}
+            variant="outline"
+            size="sm"
+          >
             Next
           </Button>
         </div>

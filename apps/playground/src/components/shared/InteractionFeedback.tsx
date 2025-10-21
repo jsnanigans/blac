@@ -36,12 +36,21 @@ import { cn } from '../../lib/utils';
 /**
  * Animation type options
  */
-export type FeedbackType = 'confetti' | 'sparkles' | 'pulse' | 'bounce' | 'glow';
+export type FeedbackType =
+  | 'confetti'
+  | 'sparkles'
+  | 'pulse'
+  | 'bounce'
+  | 'glow';
 
 /**
  * Trigger condition options
  */
-export type FeedbackTrigger = 'completion' | 'interaction' | 'correct-action' | 'milestone';
+export type FeedbackTrigger =
+  | 'completion'
+  | 'interaction'
+  | 'correct-action'
+  | 'milestone';
 
 /**
  * InteractionFeedback props
@@ -114,7 +123,10 @@ export const celebrations = {
   /**
    * Trigger confetti animation
    */
-  confetti: (preset: FeedbackTrigger = 'interaction', customOptions?: confetti.Options) => {
+  confetti: (
+    preset: FeedbackTrigger = 'interaction',
+    customOptions?: confetti.Options,
+  ) => {
     if (prefersReducedMotion()) return;
 
     const options = { ...confettiPresets[preset], ...customOptions };
@@ -206,7 +218,9 @@ export const InteractionFeedback: React.FC<InteractionFeedbackProps> = ({
     switch (type) {
       case 'confetti':
         celebrations.confetti(trigger, {
-          particleCount: Math.floor(confettiPresets[trigger].particleCount! * intensity),
+          particleCount: Math.floor(
+            confettiPresets[trigger].particleCount! * intensity,
+          ),
         });
         break;
       case 'sparkles':
@@ -248,7 +262,8 @@ export const InteractionFeedback: React.FC<InteractionFeedbackProps> = ({
     <motion.div
       className={cn('interaction-feedback', className)}
       animate={
-        shouldAnimate && (type === 'pulse' || type === 'bounce' || type === 'glow')
+        shouldAnimate &&
+        (type === 'pulse' || type === 'bounce' || type === 'glow')
           ? motionVariants[type]
           : {}
       }
@@ -263,7 +278,10 @@ export const InteractionFeedback: React.FC<InteractionFeedbackProps> = ({
  */
 export const useInteractionFeedback = () => {
   const celebrate = useCallback(
-    (type: FeedbackType = 'confetti', trigger: FeedbackTrigger = 'interaction') => {
+    (
+      type: FeedbackType = 'confetti',
+      trigger: FeedbackTrigger = 'interaction',
+    ) => {
       if (prefersReducedMotion()) return;
 
       switch (type) {
@@ -277,7 +295,7 @@ export const useInteractionFeedback = () => {
           celebrations.confetti(trigger);
       }
     },
-    []
+    [],
   );
 
   return {

@@ -18,7 +18,10 @@ interface CounterState {
 }
 
 // ClickBloc - Event-driven counter
-class ClickBloc extends Vertex<CounterState, IncrementEvent | DecrementEvent | ResetEvent> {
+class ClickBloc extends Vertex<
+  CounterState,
+  IncrementEvent | DecrementEvent | ResetEvent
+> {
   constructor() {
     super({ count: 0 });
 

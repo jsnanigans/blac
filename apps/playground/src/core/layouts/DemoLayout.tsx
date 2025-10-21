@@ -16,7 +16,10 @@ export interface DemoLayoutProps {
  * - Graph: ~40% width, sticky, fits viewport
  */
 export function DemoLayout({ children, showGraph = true }: DemoLayoutProps) {
-  const [containerSize, setContainerSize] = React.useState({ width: 600, height: 800 });
+  const [containerSize, setContainerSize] = React.useState({
+    width: 600,
+    height: 800,
+  });
   const graphContainerRef = React.useRef<HTMLDivElement>(null);
 
   // Update graph dimensions based on container size
@@ -41,7 +44,10 @@ export function DemoLayout({ children, showGraph = true }: DemoLayoutProps) {
   return (
     <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
       {/* Demo Content - Scrollable */}
-      <div className="flex-1 overflow-y-auto px-6 py-4" style={{ flex: '0 0 60%' }}>
+      <div
+        className="flex-1 overflow-y-auto px-6 py-4"
+        style={{ flex: '0 0 60%' }}
+      >
         {children}
       </div>
 

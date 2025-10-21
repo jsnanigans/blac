@@ -241,14 +241,16 @@ export function PersistenceInteractive() {
                 Basic Persistent Settings
               </h4>
               <p className="text-sm text-muted-foreground">
-                Try changing the settings below. Every change is automatically saved to{' '}
-                <code className="text-xs">localStorage</code> and will be restored when you
-                reload the page.
+                Try changing the settings below. Every change is automatically
+                saved to <code className="text-xs">localStorage</code> and will
+                be restored when you reload the page.
               </p>
 
               {/* User Name Input */}
               <div>
-                <label className="block text-sm font-medium mb-2">User Name:</label>
+                <label className="block text-sm font-medium mb-2">
+                  User Name:
+                </label>
                 <input
                   type="text"
                   value={settingsState.userName}
@@ -292,20 +294,32 @@ export function PersistenceInteractive() {
                   <input
                     type="checkbox"
                     checked={settingsState.notificationsEnabled}
-                    onChange={(e) => settings.setNotifications(e.target.checked)}
+                    onChange={(e) =>
+                      settings.setNotifications(e.target.checked)
+                    }
                     className="w-4 h-4 rounded border-border text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="text-sm font-medium">Enable notifications</span>
+                  <span className="text-sm font-medium">
+                    Enable notifications
+                  </span>
                 </label>
               </div>
 
               {/* Action Buttons */}
               <div className="flex gap-3 pt-4 border-t border-border">
-                <Button onClick={settings.resetToDefaults} variant="outline" size="sm">
+                <Button
+                  onClick={settings.resetToDefaults}
+                  variant="outline"
+                  size="sm"
+                >
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Reset to Defaults
                 </Button>
-                <Button onClick={settings.clearPersistedData} variant="danger" size="sm">
+                <Button
+                  onClick={settings.clearPersistedData}
+                  variant="danger"
+                  size="sm"
+                >
                   <Trash2 className="w-4 h-4 mr-2" />
                   Clear Storage
                 </Button>
@@ -327,9 +341,9 @@ export function PersistenceInteractive() {
       {activeTab === 'selective' && (
         <div className="space-y-6">
           <p className="text-sm text-muted-foreground">
-            Sometimes you want to persist only certain parts of your state. Session data,
-            loading states, and sensitive information like tokens should{' '}
-            <strong>not</strong> be saved to localStorage.
+            Sometimes you want to persist only certain parts of your state.
+            Session data, loading states, and sensitive information like tokens
+            should <strong>not</strong> be saved to localStorage.
           </p>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -344,10 +358,14 @@ export function PersistenceInteractive() {
 
                 {/* Theme */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">Theme:</label>
+                  <label className="block text-sm font-medium mb-2">
+                    Theme:
+                  </label>
                   <Button
                     onClick={() =>
-                      selective.setTheme(selectiveState.theme === 'dark' ? 'light' : 'dark')
+                      selective.setTheme(
+                        selectiveState.theme === 'dark' ? 'light' : 'dark',
+                      )
                     }
                     variant="primary"
                     className="bg-gradient-to-r from-green-500 to-emerald-600"
@@ -358,7 +376,9 @@ export function PersistenceInteractive() {
 
                 {/* Language */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">Language:</label>
+                  <label className="block text-sm font-medium mb-2">
+                    Language:
+                  </label>
                   <select
                     value={selectiveState.language}
                     onChange={(e) => selective.setLanguage(e.target.value)}
@@ -397,9 +417,13 @@ export function PersistenceInteractive() {
 
                 {/* Loading State */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">Loading State:</label>
+                  <label className="block text-sm font-medium mb-2">
+                    Loading State:
+                  </label>
                   <Button
-                    onClick={() => selective.setLoading(!selectiveState.isLoading)}
+                    onClick={() =>
+                      selective.setLoading(!selectiveState.isLoading)
+                    }
                     variant="primary"
                     className="bg-gradient-to-r from-red-500 to-orange-600"
                   >
@@ -409,7 +433,9 @@ export function PersistenceInteractive() {
 
                 {/* Current Tab */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">Current Tab:</label>
+                  <label className="block text-sm font-medium mb-2">
+                    Current Tab:
+                  </label>
                   <select
                     value={selectiveState.currentTab}
                     onChange={(e) => selective.setCurrentTab(e.target.value)}
@@ -432,7 +458,8 @@ export function PersistenceInteractive() {
                         ? '***' + selective.userToken.slice(-4)
                         : 'None'}
                       <br />
-                      Last Seen: {selective.lastSeen?.toLocaleTimeString() || 'Never'}
+                      Last Seen:{' '}
+                      {selective.lastSeen?.toLocaleTimeString() || 'Never'}
                     </div>
                     <Button
                       onClick={selective.updateLastSeen}
@@ -484,33 +511,39 @@ export function PersistenceInteractive() {
           {activeTab === 'basic' ? (
             <>
               <p>
-                <strong className="text-foreground">Automatic saving:</strong> Every state
-                change is automatically saved to <code className="text-xs">localStorage</code>{' '}
-                after a 200ms debounce.
+                <strong className="text-foreground">Automatic saving:</strong>{' '}
+                Every state change is automatically saved to{' '}
+                <code className="text-xs">localStorage</code> after a 200ms
+                debounce.
               </p>
               <p>
-                <strong className="text-foreground">Automatic loading:</strong> When the Cubit
-                is created, it automatically loads saved state from localStorage.
+                <strong className="text-foreground">Automatic loading:</strong>{' '}
+                When the Cubit is created, it automatically loads saved state
+                from localStorage.
               </p>
               <p>
-                <strong className="text-foreground">Try it:</strong> Change some settings,
-                reload the page, and see them restored!
+                <strong className="text-foreground">Try it:</strong> Change some
+                settings, reload the page, and see them restored!
               </p>
             </>
           ) : (
             <>
               <p>
-                <strong className="text-foreground">Selective persistence:</strong> Only theme
-                and language are saved. User ID and name are saved, but token and lastSeen are
-                not.
+                <strong className="text-foreground">
+                  Selective persistence:
+                </strong>{' '}
+                Only theme and language are saved. User ID and name are saved,
+                but token and lastSeen are not.
               </p>
               <p>
-                <strong className="text-foreground">Security:</strong> Sensitive data like
-                tokens stay in memory only and are never written to localStorage.
+                <strong className="text-foreground">Security:</strong> Sensitive
+                data like tokens stay in memory only and are never written to
+                localStorage.
               </p>
               <p>
-                <strong className="text-foreground">Session data:</strong> Loading state and
-                current tab are not persisted because they're temporary UI state.
+                <strong className="text-foreground">Session data:</strong>{' '}
+                Loading state and current tab are not persisted because they're
+                temporary UI state.
               </p>
             </>
           )}

@@ -806,7 +806,11 @@ export function CharacterStatsDemo() {
                 variant="outline"
                 size="sm"
                 onClick={() =>
-                  tryAction(() => cubit.useManaValidated(10000), 'Mana Drain', '')
+                  tryAction(
+                    () => cubit.useManaValidated(10000),
+                    'Mana Drain',
+                    '',
+                  )
                 }
                 className="justify-between text-xs border-red-400 hover:border-red-600 hover:bg-red-50 dark:border-red-700 dark:hover:bg-red-950/40 text-red-700 dark:text-red-400 font-semibold"
               >
@@ -898,8 +902,10 @@ export function CharacterStatsDemo() {
               <code className="px-1.5 py-0.5 bg-muted rounded font-mono text-xs">
                 emitValidated()
               </code>{' '}
-              which <strong>rejects invalid state changes</strong> (negative health, stats exceeding limits).
-              State is <strong className="text-brand">always valid</strong> and type-safe!
+              which <strong>rejects invalid state changes</strong> (negative
+              health, stats exceeding limits). State is{' '}
+              <strong className="text-brand">always valid</strong> and
+              type-safe!
             </p>
           </div>
         </div>

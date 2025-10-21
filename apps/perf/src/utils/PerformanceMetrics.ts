@@ -85,7 +85,10 @@ export class PerformanceMetrics {
   /**
    * Measure a synchronous function
    */
-  static measure<T>(name: string, fn: () => T): { result: T; metrics: BenchmarkResult } {
+  static measure<T>(
+    name: string,
+    fn: () => T,
+  ): { result: T; metrics: BenchmarkResult } {
     const memoryBefore = this.getMemoryUsage();
 
     this.start(name);
@@ -107,7 +110,7 @@ export class PerformanceMetrics {
    */
   static async measureAsync<T>(
     name: string,
-    fn: () => Promise<T>
+    fn: () => Promise<T>,
   ): Promise<{ result: T; metrics: BenchmarkResult }> {
     const memoryBefore = this.getMemoryUsage();
 
@@ -128,7 +131,11 @@ export class PerformanceMetrics {
   /**
    * Run a benchmark multiple times and get statistics
    */
-  static benchmark(name: string, fn: () => void, iterations = 100): BenchmarkResult {
+  static benchmark(
+    name: string,
+    fn: () => void,
+    iterations = 100,
+  ): BenchmarkResult {
     const durations: number[] = [];
     let memoryBefore: PerformanceSnapshot | null = null;
     let memoryAfter: PerformanceSnapshot | null = null;
@@ -166,7 +173,8 @@ export class PerformanceMetrics {
     if (memoryBefore && memoryAfter) {
       result.memoryBefore = memoryBefore.usedJSHeapSize;
       result.memoryAfter = memoryAfter.usedJSHeapSize;
-      result.memoryDelta = memoryAfter.usedJSHeapSize - memoryBefore.usedJSHeapSize;
+      result.memoryDelta =
+        memoryAfter.usedJSHeapSize - memoryBefore.usedJSHeapSize;
     }
 
     this.results.push(result);

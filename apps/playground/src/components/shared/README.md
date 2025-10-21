@@ -13,6 +13,7 @@ These components provide interactive functionality that can be used across all d
 Displays live state from a Bloc/Cubit instance with color-coded values.
 
 **Features:**
+
 - Auto-subscribes to Bloc/Cubit state changes
 - Color-codes values by type (string=green, number=blue, boolean=purple, object=yellow)
 - Expandable/collapsible for nested objects
@@ -46,38 +47,36 @@ function Demo() {
   bloc={CounterCubit}
   title="Counter"
   render={(state) => (
-    <div className="text-4xl font-bold text-center">
-      {state.count}
-    </div>
+    <div className="text-4xl font-bold text-center">{state.count}</div>
   )}
 />
 ```
 
 **Props:**
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `bloc` | `BlocClass` | **required** | Bloc or Cubit class to subscribe to |
-| `title` | `string` | `'State'` | Display title |
-| `maxDepth` | `number` | `5` | Max depth for nested objects |
-| `render` | `(state) => ReactNode` | - | Custom render function |
-| `defaultCollapsed` | `boolean` | `false` | Start collapsed |
-| `showCopy` | `boolean` | `true` | Show copy button |
-| `className` | `string` | - | Additional CSS classes |
+| Prop               | Type                   | Default      | Description                         |
+| ------------------ | ---------------------- | ------------ | ----------------------------------- |
+| `bloc`             | `BlocClass`            | **required** | Bloc or Cubit class to subscribe to |
+| `title`            | `string`               | `'State'`    | Display title                       |
+| `maxDepth`         | `number`               | `5`          | Max depth for nested objects        |
+| `render`           | `(state) => ReactNode` | -            | Custom render function              |
+| `defaultCollapsed` | `boolean`              | `false`      | Start collapsed                     |
+| `showCopy`         | `boolean`              | `true`       | Show copy button                    |
+| `className`        | `string`               | -            | Additional CSS classes              |
 
 **Type Color Coding:**
 
 The StateViewer automatically color-codes values based on their JavaScript type:
 
-| Type | Color | Example |
-|------|-------|---------|
-| `string` | Green | `"hello"` |
-| `number` | Blue | `42` |
-| `boolean` | Purple | `true` |
-| `object` | Yellow | `{ ... }` |
-| `function` | Pink | `() => {}` |
-| `null` | Gray | `null` |
-| `undefined` | Gray | `undefined` |
+| Type        | Color  | Example     |
+| ----------- | ------ | ----------- |
+| `string`    | Green  | `"hello"`   |
+| `number`    | Blue   | `42`        |
+| `boolean`   | Purple | `true`      |
+| `object`    | Yellow | `{ ... }`   |
+| `function`  | Pink   | `() => {}`  |
+| `null`      | Gray   | `null`      |
+| `undefined` | Gray   | `undefined` |
 
 **Nested Object Handling:**
 
@@ -98,7 +97,7 @@ interface AppState {
 }
 
 // StateViewer will render with collapsible sections
-<StateViewer bloc={AppCubit} maxDepth={3} />
+<StateViewer bloc={AppCubit} maxDepth={3} />;
 ```
 
 Objects deeper than `maxDepth` will be displayed as `[Object]` or `[Array(n)]` without expansion.
@@ -128,10 +127,7 @@ Keep the state viewer visible while the user scrolls through content:
 
   {/* Sticky state viewer */}
   <div className="lg:sticky lg:top-24 lg:self-start">
-    <StateViewer
-      bloc={DemoCubit}
-      title="Live State"
-    />
+    <StateViewer bloc={DemoCubit} title="Live State" />
   </div>
 </div>
 ```
@@ -159,9 +155,7 @@ For simple state, use a custom render function:
   title="Current Count"
   render={(state) => (
     <div className="flex items-center justify-center">
-      <span className="text-6xl font-bold text-concept-cubit">
-        {state}
-      </span>
+      <span className="text-6xl font-bold text-concept-cubit">{state}</span>
     </div>
   )}
 />
@@ -173,14 +167,8 @@ Show multiple state viewers side by side:
 
 ```tsx
 <div className="grid md:grid-cols-2 gap-4">
-  <StateViewer
-    bloc={SharedCounterCubit}
-    title="Shared Instance"
-  />
-  <StateViewer
-    bloc={IsolatedCounterCubit}
-    title="Isolated Instance"
-  />
+  <StateViewer bloc={SharedCounterCubit} title="Shared Instance" />
+  <StateViewer bloc={IsolatedCounterCubit} title="Isolated Instance" />
 </div>
 ```
 
@@ -195,9 +183,7 @@ The StateViewer component automatically uses design tokens for consistent stylin
 import { getTypeText, getTypeBg } from '../../utils/design-tokens';
 
 // Example usage in component
-<span className={getTypeText('string')}>
-  "hello"
-</span>
+<span className={getTypeText('string')}>"hello"</span>;
 ```
 
 ---
@@ -244,11 +230,7 @@ For complex state with many nested objects, consider:
 
 ```tsx
 // Optimized for complex state
-<StateViewer
-  bloc={ComplexCubit}
-  maxDepth={2}
-  defaultCollapsed
-/>
+<StateViewer bloc={ComplexCubit} maxDepth={2} defaultCollapsed />
 ```
 
 ---
@@ -256,6 +238,7 @@ For complex state with many nested objects, consider:
 ## Common Mistakes
 
 ❌ **Don't** try to pass an instance - pass the class
+
 ```tsx
 // Wrong
 const cubit = new CounterCubit();
@@ -266,6 +249,7 @@ const cubit = new CounterCubit();
 ```
 
 ❌ **Don't** forget max depth for deeply nested state
+
 ```tsx
 // May cause performance issues
 <StateViewer bloc={DeepStateCubit} />
@@ -275,6 +259,7 @@ const cubit = new CounterCubit();
 ```
 
 ❌ **Don't** use custom render for complex state
+
 ```tsx
 // Loses expandable functionality
 <StateViewer
@@ -287,10 +272,11 @@ const cubit = new CounterCubit();
 ```
 
 ✅ **Do** use appropriate titles
+
 ```tsx
 <StateViewer
   bloc={UserCubit}
-  title="Current User"  // Clear, descriptive
+  title="Current User" // Clear, descriptive
 />
 ```
 
@@ -310,7 +296,7 @@ class CounterCubit extends Cubit<number> {
 }
 
 // In demo
-<StateViewer bloc={CounterCubit} title="Count" />
+<StateViewer bloc={CounterCubit} title="Count" />;
 ```
 
 ### Todo List
@@ -328,11 +314,7 @@ class TodoCubit extends Cubit<TodoState> {
 }
 
 // In demo
-<StateViewer
-  bloc={TodoCubit}
-  title="Todo State"
-  maxDepth={3}
-/>
+<StateViewer bloc={TodoCubit} title="Todo State" maxDepth={3} />;
 ```
 
 ### User Profile
@@ -363,7 +345,7 @@ interface User {
       </div>
     </div>
   )}
-/>
+/>;
 ```
 
 ---

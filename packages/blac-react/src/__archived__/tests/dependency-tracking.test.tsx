@@ -102,7 +102,9 @@ describe('Dependency Tracking Tests (Foundational)', () => {
 
     // Click increment - should trigger rerender because count is accessed
     await user.click(screen.getByText('Increment Count'));
-    await waitFor(() => expect(screen.getByTestId('count')).toHaveTextContent('1'));
+    await waitFor(() =>
+      expect(screen.getByTestId('count')).toHaveTextContent('1'),
+    );
     expect(renderSpy).toHaveBeenCalledTimes(2);
 
     // Update name - should NOT trigger rerender because name is not accessed
@@ -110,9 +112,12 @@ describe('Dependency Tracking Tests (Foundational)', () => {
     await user.click(screen.getByText('Update Name'));
 
     // Use waitFor for more reliable assertion
-    await waitFor(() => {
-      expect(renderSpy).toHaveBeenCalledTimes(0);
-    }, { timeout: 500 });
+    await waitFor(
+      () => {
+        expect(renderSpy).toHaveBeenCalledTimes(0);
+      },
+      { timeout: 500 },
+    );
   });
 
   it('should track nested property access correctly', async () => {
@@ -126,7 +131,9 @@ describe('Dependency Tracking Tests (Foundational)', () => {
       return (
         <div>
           <div data-testid="nested-value">{state.nested.value}</div>
-          <button onClick={() => cubit.updateNestedValue(state.nested.value + 1)}>
+          <button
+            onClick={() => cubit.updateNestedValue(state.nested.value + 1)}
+          >
             Increment Nested Value
           </button>
           <button onClick={() => cubit.updateNestedLabel('new label')}>
@@ -144,7 +151,9 @@ describe('Dependency Tracking Tests (Foundational)', () => {
 
     // Update nested.value - should trigger rerender
     await user.click(screen.getByText('Increment Nested Value'));
-    await waitFor(() => expect(screen.getByTestId('nested-value')).toHaveTextContent('1'));
+    await waitFor(() =>
+      expect(screen.getByTestId('nested-value')).toHaveTextContent('1'),
+    );
     expect(renderSpy).toHaveBeenCalledTimes(2);
 
     // Note: Unified tracking tracks at the parent object level
@@ -156,9 +165,12 @@ describe('Dependency Tracking Tests (Foundational)', () => {
 
     // With unified tracking, parent object changes trigger re-renders
     // even for sibling properties (acceptable trade-off for simpler implementation)
-    await waitFor(() => {
-      expect(renderSpy).toHaveBeenCalledTimes(1); // Re-render due to nested object change
-    }, { timeout: 500 });
+    await waitFor(
+      () => {
+        expect(renderSpy).toHaveBeenCalledTimes(1); // Re-render due to nested object change
+      },
+      { timeout: 500 },
+    );
   });
 
   it('should track getter access correctly', async () => {
@@ -188,15 +200,20 @@ describe('Dependency Tracking Tests (Foundational)', () => {
 
     // Increment count - should trigger rerender because getter depends on count
     await user.click(screen.getByText('Increment Count'));
-    await waitFor(() => expect(screen.getByTestId('double-count')).toHaveTextContent('2'));
+    await waitFor(() =>
+      expect(screen.getByTestId('double-count')).toHaveTextContent('2'),
+    );
     expect(renderSpy).toHaveBeenCalledTimes(2);
 
     // Update name - should NOT trigger rerender (getter doesn't depend on name)
     renderSpy.mockClear();
     await user.click(screen.getByText('Update Name'));
 
-    await waitFor(() => {
-      expect(renderSpy).toHaveBeenCalledTimes(0);
-    }, { timeout: 500 });
+    await waitFor(
+      () => {
+        expect(renderSpy).toHaveBeenCalledTimes(0);
+      },
+      { timeout: 500 },
+    );
   });
 });

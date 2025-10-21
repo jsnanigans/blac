@@ -9,7 +9,11 @@ DemoRegistry.register({
     'Learn how to share state across parent and child components without prop drilling. See component composition in action!',
   difficulty: 'beginner',
   tags: ['cubit', 'components', 'composition', 'shared-state', 'prop-drilling'],
-  concepts: ['component composition', 'no prop drilling', 'direct state access'],
+  concepts: [
+    'component composition',
+    'no prop drilling',
+    'direct state access',
+  ],
   component: MultipleComponentsDemo,
   code: {
     demo: '',

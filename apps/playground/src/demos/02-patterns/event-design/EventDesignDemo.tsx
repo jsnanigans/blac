@@ -1,11 +1,20 @@
 import React from 'react';
 import { useBloc } from '@blac/react';
 import { DemoArticle } from '@/components/demo-article/DemoArticle';
-import { ArticleSection, SectionHeader } from '@/components/demo-article/ArticleSection';
+import {
+  ArticleSection,
+  SectionHeader,
+} from '@/components/demo-article/ArticleSection';
 import { Prose } from '@/components/demo-article/Prose';
 import { CodePanel } from '@/components/demo-article/CodePanel';
 import { StateViewer } from '@/components/shared/StateViewer';
-import { ConceptCallout, TipCallout, WarningCallout, InfoCallout, SuccessCallout } from '@/components/shared/ConceptCallout';
+import {
+  ConceptCallout,
+  TipCallout,
+  WarningCallout,
+  InfoCallout,
+  SuccessCallout,
+} from '@/components/shared/ConceptCallout';
 import { useInteractionFeedback } from '@/components/shared/InteractionFeedback';
 import { Button } from '@/ui/Button';
 import { Card, CardContent } from '@/ui/Card';
@@ -24,7 +33,8 @@ import {
 const demoMetadata = {
   id: 'event-design',
   title: 'Event Design Patterns',
-  description: 'Learn best practices for designing events in BLoC architecture: naming conventions, payload design, and common anti-patterns to avoid.',
+  description:
+    'Learn best practices for designing events in BLoC architecture: naming conventions, payload design, and common anti-patterns to avoid.',
   category: '02-patterns',
   difficulty: 'intermediate' as const,
   tags: ['bloc', 'events', 'patterns', 'best-practices', 'architecture'],
@@ -51,18 +61,18 @@ export const EventDesignDemo: React.FC = () => {
         <SectionHeader>Why Event Design Matters</SectionHeader>
         <Prose>
           <p>
-            Events are the fundamental building blocks of Bloc-based state management.
-            Well-designed events clearly communicate <strong>what happened</strong> (not what should happen),
-            are immutable and thread-safe, easy to test and debug, make state transitions predictable,
-            and follow domain language and business concepts.
+            Events are the fundamental building blocks of Bloc-based state
+            management. Well-designed events clearly communicate{' '}
+            <strong>what happened</strong> (not what should happen), are
+            immutable and thread-safe, easy to test and debug, make state
+            transitions predictable, and follow domain language and business
+            concepts.
           </p>
         </Prose>
 
-        <InfoCallout
-          title="Key Principle"
-        >
-          Events represent facts about things that happened. They should be past-tense nouns
-          or noun phrases, never imperative commands.
+        <InfoCallout title="Key Principle">
+          Events represent facts about things that happened. They should be
+          past-tense nouns or noun phrases, never imperative commands.
         </InfoCallout>
 
         <StateViewer
@@ -77,8 +87,9 @@ export const EventDesignDemo: React.FC = () => {
         <SectionHeader>Good Event Patterns</SectionHeader>
         <Prose>
           <p>
-            These examples demonstrate best practices for event design in BLoC architecture.
-            Each pattern addresses a specific use case and follows established conventions.
+            These examples demonstrate best practices for event design in BLoC
+            architecture. Each pattern addresses a specific use case and follows
+            established conventions.
           </p>
         </Prose>
 
@@ -312,16 +323,14 @@ export const EventDesignDemo: React.FC = () => {
             </p>
           </Card>
         </div>
-
       </ArticleSection>
 
       {/* Anti-Patterns Section */}
       <ArticleSection id="anti-patterns">
         <SectionHeader>Anti-Patterns to Avoid</SectionHeader>
-        <WarningCallout
-          title="WARNING:"
-        >
-          These examples show common mistakes in event design. Don't use these patterns in production code!
+        <WarningCallout title="WARNING:">
+          These examples show common mistakes in event design. Don't use these
+          patterns in production code!
         </WarningCallout>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
@@ -472,11 +481,12 @@ class UpdateAndResetEvent {
       </ArticleSection>
 
       {/* Naming Conventions Section */}
-      <ArticleSection id="naming"><SectionHeader>Naming Conventions</SectionHeader>
+      <ArticleSection id="naming">
+        <SectionHeader>Naming Conventions</SectionHeader>
         <Prose>
           <p>
-            Consistent naming conventions make your event-driven code more maintainable
-            and easier to understand. Follow these guidelines:
+            Consistent naming conventions make your event-driven code more
+            maintainable and easier to understand. Follow these guidelines:
           </p>
         </Prose>
 
@@ -568,27 +578,25 @@ class UpdateAndResetEvent {
       </ArticleSection>
 
       {/* Payload Design Section */}
-      <ArticleSection id="payload"><SectionHeader>Payload Design</SectionHeader>
+      <ArticleSection id="payload">
+        <SectionHeader>Payload Design</SectionHeader>
         <Prose>
           <p>
-            Well-designed event payloads ensure type safety, immutability, and clarity.
-            Follow these best practices when designing event payloads:
+            Well-designed event payloads ensure type safety, immutability, and
+            clarity. Follow these best practices when designing event payloads:
           </p>
         </Prose>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-          <InfoCallout
-            title="Immutability First"
-          >
-            Always use <code>readonly</code> for all event properties. This prevents
-            accidental mutations and ensures events remain consistent throughout their lifecycle.
+          <InfoCallout title="Immutability First">
+            Always use <code>readonly</code> for all event properties. This
+            prevents accidental mutations and ensures events remain consistent
+            throughout their lifecycle.
           </InfoCallout>
 
-          <InfoCallout
-            title="Type Safety"
-          >
-            Use specific types instead of <code>any</code>. TypeScript's type system
-            helps catch errors at compile time rather than runtime.
+          <InfoCallout title="Type Safety">
+            Use specific types instead of <code>any</code>. TypeScript's type
+            system helps catch errors at compile time rather than runtime.
           </InfoCallout>
         </div>
 
@@ -620,11 +628,13 @@ class OrderEvent {
       </ArticleSection>
 
       {/* Event Categories Section */}
-      <ArticleSection id="categories"><SectionHeader>Event Categories</SectionHeader>
+      <ArticleSection id="categories">
+        <SectionHeader>Event Categories</SectionHeader>
         <Prose>
           <p>
-            Events can be categorized based on their purpose and origin. Understanding
-            these categories helps in designing a consistent event architecture:
+            Events can be categorized based on their purpose and origin.
+            Understanding these categories helps in designing a consistent event
+            architecture:
           </p>
         </Prose>
 
@@ -712,10 +722,12 @@ ModalClosedEvent`}
       </ArticleSection>
 
       {/* Quick Reference Section */}
-      <ArticleSection id="reference"><SectionHeader>Quick Reference</SectionHeader>
+      <ArticleSection id="reference">
+        <SectionHeader>Quick Reference</SectionHeader>
         <Prose>
           <p>
-            Side-by-side comparison of good patterns and anti-patterns for quick reference:
+            Side-by-side comparison of good patterns and anti-patterns for quick
+            reference:
           </p>
         </Prose>
 
@@ -822,11 +834,10 @@ class ErrorEvent {}   // What error?`}
       </ArticleSection>
 
       {/* Key Takeaways Section */}
-      <ArticleSection id="takeaways"><SectionHeader>Key Takeaways</SectionHeader>
+      <ArticleSection id="takeaways">
+        <SectionHeader>Key Takeaways</SectionHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <SuccessCallout
-            title="Event Design Checklist"
-          >
+          <SuccessCallout title="Event Design Checklist">
             <ul className="space-y-2 mt-3">
               <li>Does the name describe what happened (past tense/noun)?</li>
               <li>Are all properties marked readonly?</li>
@@ -837,9 +848,7 @@ class ErrorEvent {}   // What error?`}
             </ul>
           </SuccessCallout>
 
-          <InfoCallout
-            title="Remember"
-          >
+          <InfoCallout title="Remember">
             <ul className="space-y-2 mt-3">
               <li>Events are facts about things that happened</li>
               <li>Immutability prevents bugs and race conditions</li>
@@ -853,32 +862,37 @@ class ErrorEvent {}   // What error?`}
       </ArticleSection>
 
       {/* Next Steps Section */}
-      <ArticleSection id="next"><SectionHeader>Next Steps</SectionHeader>
+      <ArticleSection id="next">
+        <SectionHeader>Next Steps</SectionHeader>
         <Prose>
           <p>
-            Now that you understand event design patterns, explore these related topics:
+            Now that you understand event design patterns, explore these related
+            topics:
           </p>
           <ul>
             <li>
-              <strong>Computed Properties:</strong> Learn how to derive state from events
+              <strong>Computed Properties:</strong> Learn how to derive state
+              from events
             </li>
             <li>
-              <strong>Async Patterns:</strong> Handle asynchronous operations with events
+              <strong>Async Patterns:</strong> Handle asynchronous operations
+              with events
             </li>
             <li>
-              <strong>Testing Strategies:</strong> Write comprehensive tests for event-driven Blocs
+              <strong>Testing Strategies:</strong> Write comprehensive tests for
+              event-driven Blocs
             </li>
             <li>
-              <strong>Performance Optimization:</strong> Optimize event processing for large-scale applications
+              <strong>Performance Optimization:</strong> Optimize event
+              processing for large-scale applications
             </li>
           </ul>
         </Prose>
 
-        <TipCallout
-          title="Pro Tip"
-        >
-          Start by defining your domain events first. They form the foundation of your
-          application's state management and help clarify business requirements.
+        <TipCallout title="Pro Tip">
+          Start by defining your domain events first. They form the foundation
+          of your application's state management and help clarify business
+          requirements.
         </TipCallout>
       </ArticleSection>
     </DemoArticle>

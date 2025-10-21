@@ -1,7 +1,13 @@
 import React from 'react';
 import { CodeBlock } from './CodeBlock';
 import { DemoPreview } from './DemoPreview';
-import { GuideArticleNote, InfoNote, WarningNote, DangerNote, SuccessNote } from './GuideArticle';
+import {
+  GuideArticleNote,
+  InfoNote,
+  WarningNote,
+  DangerNote,
+  SuccessNote,
+} from './GuideArticle';
 import { cn } from '@/lib/utils';
 
 // Import interactive demo components
@@ -39,7 +45,10 @@ import { CustomPluginsInteractive } from '@/demos/04-plugins/custom-plugins/Cust
 // Custom heading components with anchor support
 function H2({ children, ...props }: React.HTMLProps<HTMLHeadingElement>) {
   return (
-    <h2 className="mt-10 mb-4 text-2xl font-semibold tracking-tight text-foreground" {...props}>
+    <h2
+      className="mt-10 mb-4 text-2xl font-semibold tracking-tight text-foreground"
+      {...props}
+    >
       {children}
     </h2>
   );
@@ -47,7 +56,10 @@ function H2({ children, ...props }: React.HTMLProps<HTMLHeadingElement>) {
 
 function H3({ children, ...props }: React.HTMLProps<HTMLHeadingElement>) {
   return (
-    <h3 className="mt-8 mb-3 text-xl font-semibold tracking-tight text-foreground" {...props}>
+    <h3
+      className="mt-8 mb-3 text-xl font-semibold tracking-tight text-foreground"
+      {...props}
+    >
       {children}
     </h3>
   );
@@ -55,7 +67,10 @@ function H3({ children, ...props }: React.HTMLProps<HTMLHeadingElement>) {
 
 function H4({ children, ...props }: React.HTMLProps<HTMLHeadingElement>) {
   return (
-    <h4 className="mt-6 mb-2 text-lg font-semibold tracking-tight text-foreground" {...props}>
+    <h4
+      className="mt-6 mb-2 text-lg font-semibold tracking-tight text-foreground"
+      {...props}
+    >
       {children}
     </h4>
   );
@@ -79,7 +94,10 @@ function Ul({ children, ...props }: React.HTMLProps<HTMLUListElement>) {
   );
 }
 
-function Ol({ children, ...props }: React.OlHTMLAttributes<HTMLOListElement> & { children?: React.ReactNode }) {
+function Ol({
+  children,
+  ...props
+}: React.OlHTMLAttributes<HTMLOListElement> & { children?: React.ReactNode }) {
   return (
     <ol className="my-4 ml-6 list-decimal space-y-1 text-foreground" {...props}>
       {children}
@@ -96,7 +114,10 @@ function Li({ children, ...props }: React.HTMLProps<HTMLLIElement>) {
 }
 
 // Custom code components
-function Pre({ children, ...props }: React.HTMLAttributes<HTMLDivElement> & { children?: React.ReactNode }) {
+function Pre({
+  children,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement> & { children?: React.ReactNode }) {
   return <div {...props}>{children}</div>;
 }
 
@@ -154,7 +175,10 @@ function Table({ children, ...props }: React.HTMLProps<HTMLTableElement>) {
   );
 }
 
-function Thead({ children, ...props }: React.HTMLProps<HTMLTableSectionElement>) {
+function Thead({
+  children,
+  ...props
+}: React.HTMLProps<HTMLTableSectionElement>) {
   return (
     <thead className="border-b-2 border-border bg-surface-muted" {...props}>
       {children}
@@ -162,7 +186,10 @@ function Thead({ children, ...props }: React.HTMLProps<HTMLTableSectionElement>)
   );
 }
 
-function Tbody({ children, ...props }: React.HTMLProps<HTMLTableSectionElement>) {
+function Tbody({
+  children,
+  ...props
+}: React.HTMLProps<HTMLTableSectionElement>) {
   return <tbody {...props}>{children}</tbody>;
 }
 
@@ -176,7 +203,10 @@ function Tr({ children, ...props }: React.HTMLProps<HTMLTableRowElement>) {
 
 function Th({ children, ...props }: React.HTMLProps<HTMLTableCellElement>) {
   return (
-    <th className="px-4 py-2 text-left font-semibold text-foreground" {...props}>
+    <th
+      className="px-4 py-2 text-left font-semibold text-foreground"
+      {...props}
+    >
       {children}
     </th>
   );

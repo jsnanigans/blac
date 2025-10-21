@@ -54,7 +54,10 @@ export interface CustomDependency {
  *
  * This is the core abstraction - everything is a "dependency with a value that can change"
  */
-export type Dependency = StateDependency | ComputedDependency | CustomDependency;
+export type Dependency =
+  | StateDependency
+  | ComputedDependency
+  | CustomDependency;
 
 /**
  * State of a single subscription
@@ -127,7 +130,9 @@ export function isStateDependency(dep: Dependency): dep is StateDependency {
 /**
  * Type guard: Check if dependency is a ComputedDependency
  */
-export function isComputedDependency(dep: Dependency): dep is ComputedDependency {
+export function isComputedDependency(
+  dep: Dependency,
+): dep is ComputedDependency {
   return dep.type === 'computed';
 }
 

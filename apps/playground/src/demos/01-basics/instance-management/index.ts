@@ -9,7 +9,12 @@ DemoRegistry.register({
     'Learn the difference between shared and isolated instances. Control whether your state is shared across all components or isolated to each one.',
   difficulty: 'beginner',
   tags: ['cubit', 'instances', 'shared', 'isolated', 'lifecycle'],
-  concepts: ['shared instances', 'isolated instances', 'static isolated', 'instance IDs'],
+  concepts: [
+    'shared instances',
+    'isolated instances',
+    'static isolated',
+    'instance IDs',
+  ],
   component: InstanceManagementDemo,
   code: {
     demo: '',

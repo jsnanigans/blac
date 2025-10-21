@@ -21,6 +21,7 @@ import React, { StrictMode, Suspense } from 'react';
 class CounterCubit extends Cubit<number> {
   constructor() {
     super(0);
+    this.config = { proxyDependencyTracking: false };
   }
 
   increment = () => {
@@ -58,15 +59,13 @@ class TodoCubit extends Cubit<TodoState> {
         email: 'john@example.com',
       },
     });
+    this.config = { proxyDependencyTracking: false };
   }
 
   addTodo = (text: string) => {
     this.emit({
       ...this.state,
-      todos: [
-        ...this.state.todos,
-        { id: Date.now(), text, completed: false },
-      ],
+      todos: [...this.state.todos, { id: Date.now(), text, completed: false }],
     });
   };
 
@@ -74,7 +73,7 @@ class TodoCubit extends Cubit<TodoState> {
     this.emit({
       ...this.state,
       todos: this.state.todos.map((todo) =>
-        todo.id === id ? { ...todo, completed: !todo.completed } : todo
+        todo.id === id ? { ...todo, completed: !todo.completed } : todo,
       ),
     });
   };
@@ -102,6 +101,7 @@ class AsyncDataCubit extends Cubit<{ data: string | null; loading: boolean }> {
 
   constructor() {
     super({ data: null, loading: false });
+    this.config = { proxyDependencyTracking: false };
   }
 
   get loadingPromise(): Promise<void> | null {
@@ -237,7 +237,9 @@ describe('useBlocAdapter Integration Tests', () => {
           <>
             <TodoCount />
             <button onClick={() => cubit.addTodo('Test')}>Add Todo</button>
-            <button onClick={() => cubit.setFilter('active')}>Set Filter</button>
+            <button onClick={() => cubit.setFilter('active')}>
+              Set Filter
+            </button>
           </>
         );
       }
@@ -267,8 +269,7 @@ describe('useBlocAdapter Integration Tests', () => {
     it('should support complex selectors', () => {
       function ActiveTodoCount() {
         const [count] = useBlocAdapter(TodoCubit, {
-          selector: (state) =>
-            state.todos.filter((t) => !t.completed).length,
+          selector: (state) => state.todos.filter((t) => !t.completed).length,
         });
         return <div>Active: {count}</div>;
       }
@@ -310,7 +311,7 @@ describe('useBlocAdapter Integration Tests', () => {
       const { getByText } = render(
         <StrictMode>
           <Counter />
-        </StrictMode>
+        </StrictMode>,
       );
 
       expect(getByText('Count: 0')).toBeDefined();
@@ -331,7 +332,7 @@ describe('useBlocAdapter Integration Tests', () => {
       render(
         <StrictMode>
           <Counter />
-        </StrictMode>
+        </StrictMode>,
       );
 
       // Get the cubit from Blac registry
@@ -415,7 +416,7 @@ describe('useBlocAdapter Integration Tests', () => {
         () => {
           expect(getByText('Data: Loaded data!')).toBeDefined();
         },
-        { timeout: 500 }
+        { timeout: 500 },
       );
     });
   });
@@ -437,7 +438,7 @@ describe('useBlocAdapter Integration Tests', () => {
       unmount();
 
       // Wait for microtask cleanup to complete
-      await new Promise(resolve => queueMicrotask(resolve));
+      await new Promise((resolve) => queueMicrotask(resolve));
 
       // After unmount and microtask, subscriptions should be cleaned up
       expect(cubit.subscriptionCount).toBe(0);

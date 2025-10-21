@@ -11,7 +11,8 @@ export function useScrollDirection({
   threshold = 10,
   initialDirection = null,
 }: UseScrollDirectionOptions = {}): ScrollDirection {
-  const [scrollDirection, setScrollDirection] = useState<ScrollDirection>(initialDirection);
+  const [scrollDirection, setScrollDirection] =
+    useState<ScrollDirection>(initialDirection);
   const [lastScrollY, setLastScrollY] = useState(0);
 
   useEffect(() => {

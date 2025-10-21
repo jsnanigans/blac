@@ -96,7 +96,9 @@ const ValueDisplay: React.FC<{
           ) : (
             <ChevronRight className="w-3 h-3" />
           )}
-          <span className={cn(getTypeBg('object'), 'px-1.5 py-0.5 rounded text-xs')}>
+          <span
+            className={cn(getTypeBg('object'), 'px-1.5 py-0.5 rounded text-xs')}
+          >
             Array({value.length})
           </span>
         </button>
@@ -105,7 +107,11 @@ const ValueDisplay: React.FC<{
             {value.map((item, index) => (
               <div key={index} className="flex gap-2">
                 <span className="text-slate-500 text-sm">{index}:</span>
-                <ValueDisplay value={item} depth={depth + 1} maxDepth={maxDepth} />
+                <ValueDisplay
+                  value={item}
+                  depth={depth + 1}
+                  maxDepth={maxDepth}
+                />
               </div>
             ))}
           </div>
@@ -133,7 +139,9 @@ const ValueDisplay: React.FC<{
           ) : (
             <ChevronRight className="w-3 h-3" />
           )}
-          <span className={cn(getTypeBg('object'), 'px-1.5 py-0.5 rounded text-xs')}>
+          <span
+            className={cn(getTypeBg('object'), 'px-1.5 py-0.5 rounded text-xs')}
+          >
             Object({entries.length})
           </span>
         </button>
@@ -142,7 +150,11 @@ const ValueDisplay: React.FC<{
             {entries.map(([key, val]) => (
               <div key={key} className="flex gap-2">
                 <span className="text-slate-400 text-sm font-mono">{key}:</span>
-                <ValueDisplay value={val} depth={depth + 1} maxDepth={maxDepth} />
+                <ValueDisplay
+                  value={val}
+                  depth={depth + 1}
+                  maxDepth={maxDepth}
+                />
               </div>
             ))}
           </div>
@@ -207,7 +219,7 @@ export const StateViewer = <TState = unknown,>({
         'rounded-lg border border-border',
         'bg-card shadow-lg',
         'overflow-hidden',
-        className
+        className,
       )}
     >
       {/* Header */}
@@ -233,11 +245,15 @@ export const StateViewer = <TState = unknown,>({
                 'p-1.5 rounded transition-colors',
                 copied
                   ? 'bg-semantic-success/20 text-semantic-success'
-                  : 'hover:bg-accent text-muted-foreground hover:text-foreground'
+                  : 'hover:bg-accent text-muted-foreground hover:text-foreground',
               )}
               aria-label="Copy state"
             >
-              {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+              {copied ? (
+                <Check className="w-3 h-3" />
+              ) : (
+                <Copy className="w-3 h-3" />
+              )}
             </button>
           )}
         </div>

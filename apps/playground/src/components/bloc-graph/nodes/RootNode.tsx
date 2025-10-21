@@ -46,12 +46,8 @@ export function RootNodeComponent({ data }: RootNodeProps) {
 
       {/* Header */}
       <div className="p-3 border-b border-white/20">
-        <div className="font-bold text-lg">
-          Blac Instance
-        </div>
-        <div className="text-xs opacity-80">
-          Global State Manager
-        </div>
+        <div className="font-bold text-lg">Blac Instance</div>
+        <div className="text-xs opacity-80">Global State Manager</div>
       </div>
 
       {/* Stats */}
@@ -77,7 +73,9 @@ export function RootNodeComponent({ data }: RootNodeProps) {
           <div className="text-xs opacity-75 mb-1">Memory:</div>
           <div className="grid grid-cols-3 gap-1 text-xs">
             <div className="text-center">
-              <div className="font-bold">{stats.memoryStats.registeredBlocs}</div>
+              <div className="font-bold">
+                {stats.memoryStats.registeredBlocs}
+              </div>
               <div className="opacity-75 text-[10px]">Registered</div>
             </div>
             <div className="text-center">
@@ -85,7 +83,9 @@ export function RootNodeComponent({ data }: RootNodeProps) {
               <div className="opacity-75 text-[10px]">Isolated</div>
             </div>
             <div className="text-center">
-              <div className="font-bold">{stats.memoryStats.keepAliveBlocs}</div>
+              <div className="font-bold">
+                {stats.memoryStats.keepAliveBlocs}
+              </div>
               <div className="opacity-75 text-[10px]">KeepAlive</div>
             </div>
           </div>

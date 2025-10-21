@@ -36,14 +36,18 @@ export function createStateTrackingProxy<T extends object>(
   state: T,
   subscriptionId: string,
   basePath = '',
-  renderId?: string
+  renderId?: string,
 ): T {
   const tracker = UnifiedDependencyTracker.getInstance();
 
   return new Proxy(state, {
     get(target, prop, receiver) {
       // Skip symbol and special properties
-      if (typeof prop === 'symbol' || prop === '__proto__' || prop === 'constructor') {
+      if (
+        typeof prop === 'symbol' ||
+        prop === '__proto__' ||
+        prop === 'constructor'
+      ) {
         return Reflect.get(target, prop, receiver);
       }
 
@@ -56,7 +60,9 @@ export function createStateTrackingProxy<T extends object>(
         path,
       };
       tracker.track(subscriptionId, dependency, renderId);
-      console.log(`[StateProxy] Tracked ${path} for subscription ${subscriptionId}, render: ${renderId}`);
+      console.log(
+        `[StateProxy] Tracked ${path} for subscription ${subscriptionId}, render: ${renderId}`,
+      );
 
       // Get the actual value
       const value = Reflect.get(target, prop, receiver);
@@ -89,7 +95,7 @@ export function createStateTrackingProxy<T extends object>(
 export function createComputedTrackingProxy<T extends BlocBase<any>>(
   bloc: T,
   subscriptionId: string,
-  renderId?: string
+  renderId?: string,
 ): T {
   const tracker = UnifiedDependencyTracker.getInstance();
 
@@ -170,7 +176,7 @@ export function createComputedTrackingProxy<T extends BlocBase<any>>(
 export function createUnifiedTrackingProxy<T extends BlocBase<any>>(
   bloc: T,
   subscriptionId: string,
-  renderId?: string
+  renderId?: string,
 ): T {
   // Wrap the bloc for computed (getter) tracking only
   // We do NOT wrap state in a tracking proxy because:

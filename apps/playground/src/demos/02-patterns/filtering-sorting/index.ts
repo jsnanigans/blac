@@ -8,7 +8,14 @@ DemoRegistry.register({
   description:
     'Master advanced filtering and sorting patterns for lists and catalogs with multiple search criteria, price ranges, and dynamic sorting.',
   difficulty: 'intermediate',
-  tags: ['cubit', 'filtering', 'sorting', 'search', 'computed', 'derived-state'],
+  tags: [
+    'cubit',
+    'filtering',
+    'sorting',
+    'search',
+    'computed',
+    'derived-state',
+  ],
   concepts: [
     'search filtering',
     'multi-criteria filtering',

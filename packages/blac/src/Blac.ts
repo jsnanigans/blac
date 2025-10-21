@@ -278,7 +278,8 @@ export class Blac implements BlacContext {
     getLevel: () => logger.getLevel(),
     enableTopic: (topic: LogTopic) => logger.enableTopic(topic),
     disableTopic: (topic: LogTopic) => logger.disableTopic(topic),
-    setNamespaces: (patterns: string | string[]) => logger.setNamespaces(patterns),
+    setNamespaces: (patterns: string | string[]) =>
+      logger.setNamespaces(patterns),
     getConfig: () => logger.getConfig(),
     reset: () => logger.reset(),
   };
@@ -796,7 +797,9 @@ export class Blac implements BlacContext {
     const key = this.createIdIndexKey(blocClass.name, id);
 
     // Try ID index first
-    let found = this.isolatedBlocIdIndex.get(key) as InstanceType<B> | undefined;
+    let found = this.isolatedBlocIdIndex.get(key) as
+      | InstanceType<B>
+      | undefined;
 
     // If not found in ID index, try instanceRef index
     if (!found) {

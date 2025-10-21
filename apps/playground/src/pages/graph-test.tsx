@@ -240,11 +240,10 @@ export default function GraphTest() {
     <DemoLayout>
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-2">
-          BlocGraphVisualizer Test
-        </h1>
+        <h1 className="text-2xl font-bold mb-2">BlocGraphVisualizer Test</h1>
         <p className="text-gray-600 dark:text-gray-400">
-          Create and interact with Bloc instances to see them visualized in real-time
+          Create and interact with Bloc instances to see them visualized in
+          real-time
         </p>
       </div>
 

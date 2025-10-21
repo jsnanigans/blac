@@ -3,7 +3,14 @@ import { useBloc } from '@blac/react';
 import { Cubit } from '@blac/core';
 import { Button } from '@/ui/Button';
 import { StateViewer } from '@/components/shared/StateViewer';
-import { Loader2, CheckCircle2, XCircle, RefreshCw, Zap, AlertTriangle } from 'lucide-react';
+import {
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  RefreshCw,
+  Zap,
+  AlertTriangle,
+} from 'lucide-react';
 
 // =================================================================
 // State Machine Pattern Demo
@@ -27,9 +34,15 @@ class DataFetchCubit extends Cubit<LoadingState> {
     try {
       await new Promise((resolve) => setTimeout(resolve, 1500));
       if (Math.random() < 0.3) throw new Error('Failed to fetch data');
-      this.emit({ status: 'success', data: `Loaded at ${new Date().toLocaleTimeString()}` });
+      this.emit({
+        status: 'success',
+        data: `Loaded at ${new Date().toLocaleTimeString()}`,
+      });
     } catch (error) {
-      this.emit({ status: 'error', error: error instanceof Error ? error.message : 'Unknown error' });
+      this.emit({
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
     }
   };
 
@@ -75,13 +88,24 @@ class RetryFetchCubit extends Cubit<RetryState> {
         retryCount: this.state.retryCount,
       });
     } catch (error) {
-      const newRetryCount = isRetry ? this.state.retryCount : this.state.retryCount + 1;
+      const newRetryCount = isRetry
+        ? this.state.retryCount
+        : this.state.retryCount + 1;
 
       if (newRetryCount >= this.maxRetries) {
-        this.emit({ status: 'error', error: `Failed after ${this.maxRetries} attempts`, retryCount: newRetryCount });
+        this.emit({
+          status: 'error',
+          error: `Failed after ${this.maxRetries} attempts`,
+          retryCount: newRetryCount,
+        });
       } else {
         const delaySeconds = Math.pow(2, newRetryCount);
-        this.emit({ status: 'error', error: error instanceof Error ? error.message : 'Unknown error', retryCount: newRetryCount, nextRetryIn: delaySeconds });
+        this.emit({
+          status: 'error',
+          error: error instanceof Error ? error.message : 'Unknown error',
+          retryCount: newRetryCount,
+          nextRetryIn: delaySeconds,
+        });
         this.scheduleRetry(delaySeconds);
       }
     }
@@ -101,7 +125,10 @@ class RetryFetchCubit extends Cubit<RetryState> {
       }
     }, 1000);
 
-    this.retryTimer = setTimeout(() => this.fetchData(true), delaySeconds * 1000);
+    this.retryTimer = setTimeout(
+      () => this.fetchData(true),
+      delaySeconds * 1000,
+    );
   };
 
   reset = () => {
@@ -141,16 +168,36 @@ class OptimisticTodoCubit extends Cubit<TodoState> {
   addTodo = async (text: string) => {
     const optimisticId = `temp-${Date.now()}`;
 
-    this.patch({ items: [...this.state.items, { id: optimisticId, text, completed: false, optimistic: true }], isAdding: true });
+    this.patch({
+      items: [
+        ...this.state.items,
+        { id: optimisticId, text, completed: false, optimistic: true },
+      ],
+      isAdding: true,
+    });
 
     try {
       await new Promise((resolve) => setTimeout(resolve, 1500));
       if (Math.random() < 0.3) throw new Error('Failed to add todo');
 
       const realId = `todo-${Date.now()}`;
-      this.patch({ items: this.state.items.map((item) => (item.id === optimisticId ? { ...item, id: realId, optimistic: false } : item)), isAdding: false });
+      this.patch({
+        items: this.state.items.map((item) =>
+          item.id === optimisticId
+            ? { ...item, id: realId, optimistic: false }
+            : item,
+        ),
+        isAdding: false,
+      });
     } catch (error) {
-      this.patch({ items: this.state.items.map((item) => (item.id === optimisticId ? { ...item, error: true, optimistic: false } : item)), isAdding: false });
+      this.patch({
+        items: this.state.items.map((item) =>
+          item.id === optimisticId
+            ? { ...item, error: true, optimistic: false }
+            : item,
+        ),
+        isAdding: false,
+      });
     }
   };
 
@@ -158,14 +205,33 @@ class OptimisticTodoCubit extends Cubit<TodoState> {
     const item = this.state.items.find((i) => i.id === id);
     if (!item) return;
 
-    this.patch({ items: this.state.items.map((i) => (i.id === id ? { ...i, completed: !i.completed, optimistic: true } : i)) });
+    this.patch({
+      items: this.state.items.map((i) =>
+        i.id === id ? { ...i, completed: !i.completed, optimistic: true } : i,
+      ),
+    });
 
     try {
       await new Promise((resolve) => setTimeout(resolve, 800));
       if (Math.random() < 0.2) throw new Error('Failed to toggle');
-      this.patch({ items: this.state.items.map((i) => (i.id === id ? { ...i, optimistic: false } : i)) });
+      this.patch({
+        items: this.state.items.map((i) =>
+          i.id === id ? { ...i, optimistic: false } : i,
+        ),
+      });
     } catch (error) {
-      this.patch({ items: this.state.items.map((i) => (i.id === id ? { ...i, completed: item.completed, optimistic: false, error: true } : i)) });
+      this.patch({
+        items: this.state.items.map((i) =>
+          i.id === id
+            ? {
+                ...i,
+                completed: item.completed,
+                optimistic: false,
+                error: true,
+              }
+            : i,
+        ),
+      });
     }
   };
 
@@ -183,19 +249,33 @@ class OptimisticTodoCubit extends Cubit<TodoState> {
 // =================================================================
 
 export function AsyncLoadingInteractive() {
-  const [activeDemo, setActiveDemo] = useState<'state-machine' | 'retry' | 'optimistic'>('state-machine');
+  const [activeDemo, setActiveDemo] = useState<
+    'state-machine' | 'retry' | 'optimistic'
+  >('state-machine');
 
   return (
     <div className="my-8 space-y-6">
       {/* Demo Switcher */}
       <div className="flex justify-center gap-3 flex-wrap">
-        <Button onClick={() => setActiveDemo('state-machine')} variant={activeDemo === 'state-machine' ? 'primary' : 'outline'} size="sm">
+        <Button
+          onClick={() => setActiveDemo('state-machine')}
+          variant={activeDemo === 'state-machine' ? 'primary' : 'outline'}
+          size="sm"
+        >
           State Machine
         </Button>
-        <Button onClick={() => setActiveDemo('retry')} variant={activeDemo === 'retry' ? 'primary' : 'outline'} size="sm">
+        <Button
+          onClick={() => setActiveDemo('retry')}
+          variant={activeDemo === 'retry' ? 'primary' : 'outline'}
+          size="sm"
+        >
           Retry + Backoff
         </Button>
-        <Button onClick={() => setActiveDemo('optimistic')} variant={activeDemo === 'optimistic' ? 'primary' : 'outline'} size="sm">
+        <Button
+          onClick={() => setActiveDemo('optimistic')}
+          variant={activeDemo === 'optimistic' ? 'primary' : 'outline'}
+          size="sm"
+        >
           Optimistic Updates
         </Button>
       </div>
@@ -251,7 +331,11 @@ function StateMachineDemo() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
-        <Button onClick={cubit.fetchData} disabled={state.status === 'loading'} variant="primary">
+        <Button
+          onClick={cubit.fetchData}
+          disabled={state.status === 'loading'}
+          variant="primary"
+        >
           {state.status === 'loading' ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin mr-2" />
@@ -272,7 +356,9 @@ function StateMachineDemo() {
       </div>
 
       <div className="min-h-[100px] flex items-center justify-center rounded-lg border-2 border-dashed border-border p-6">
-        {state.status === 'idle' && <p className="text-muted-foreground">Click "Fetch Data" to start</p>}
+        {state.status === 'idle' && (
+          <p className="text-muted-foreground">Click "Fetch Data" to start</p>
+        )}
         {state.status === 'loading' && (
           <div className="flex items-center gap-3 text-blue-600 dark:text-blue-400">
             <Loader2 className="w-6 h-6 animate-spin" />
@@ -302,7 +388,11 @@ function RetryDemo() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
-        <Button onClick={() => cubit.fetchData()} disabled={state.status === 'loading'} variant="primary">
+        <Button
+          onClick={() => cubit.fetchData()}
+          disabled={state.status === 'loading'}
+          variant="primary"
+        >
           {state.status === 'loading' ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin mr-2" />
@@ -324,11 +414,17 @@ function RetryDemo() {
       </div>
 
       <div className="min-h-[120px] flex items-center justify-center rounded-lg border-2 border-dashed border-border p-6">
-        {state.status === 'idle' && <p className="text-muted-foreground">Click "Start Fetch" (60% failure rate)</p>}
+        {state.status === 'idle' && (
+          <p className="text-muted-foreground">
+            Click "Start Fetch" (60% failure rate)
+          </p>
+        )}
         {state.status === 'loading' && (
           <div className="flex items-center gap-3 text-purple-600 dark:text-purple-400">
             <Loader2 className="w-6 h-6 animate-spin" />
-            <span className="font-medium">Attempting... (#{state.retryCount + 1})</span>
+            <span className="font-medium">
+              Attempting... (#{state.retryCount + 1})
+            </span>
           </div>
         )}
         {state.status === 'success' && (
@@ -381,7 +477,11 @@ function OptimisticDemo() {
           disabled={state.isAdding}
           className="flex-1 px-3 py-2 border-2 border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand bg-background disabled:opacity-50"
         />
-        <Button onClick={handleAdd} disabled={state.isAdding || !inputValue.trim()} variant="primary">
+        <Button
+          onClick={handleAdd}
+          disabled={state.isAdding || !inputValue.trim()}
+          variant="primary"
+        >
           Add
         </Button>
       </div>
@@ -392,7 +492,11 @@ function OptimisticDemo() {
             <AlertTriangle className="w-4 h-4" />
             <span>Some operations failed</span>
           </div>
-          <Button onClick={cubit.clearErrors} variant="outline" className="text-sm">
+          <Button
+            onClick={cubit.clearErrors}
+            variant="outline"
+            className="text-sm"
+          >
             Clear Errors
           </Button>
         </div>
@@ -401,21 +505,45 @@ function OptimisticDemo() {
       <div className="space-y-2 min-h-[200px]">
         {state.items.length === 0 ? (
           <div className="flex items-center justify-center h-[200px] border-2 border-dashed border-border rounded-lg">
-            <p className="text-muted-foreground">No todos yet. Add one above!</p>
+            <p className="text-muted-foreground">
+              No todos yet. Add one above!
+            </p>
           </div>
         ) : (
           state.items.map((item) => (
             <div
               key={item.id}
               className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${
-                item.error ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/20' : item.optimistic ? 'border-yellow-300 dark:border-yellow-700 bg-yellow-50 dark:bg-yellow-950/20' : 'border-border bg-background'
+                item.error
+                  ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/20'
+                  : item.optimistic
+                    ? 'border-yellow-300 dark:border-yellow-700 bg-yellow-50 dark:bg-yellow-950/20'
+                    : 'border-border bg-background'
               }`}
             >
-              <input type="checkbox" checked={item.completed} onChange={() => cubit.toggleTodo(item.id)} disabled={item.optimistic || item.error} className="w-4 h-4 cursor-pointer" />
-              <span className={`flex-1 ${item.completed ? 'line-through text-muted-foreground' : ''} ${item.error ? 'text-red-600 dark:text-red-400' : ''}`}>{item.text}</span>
-              {item.optimistic && <Loader2 className="w-4 h-4 animate-spin text-yellow-600 dark:text-yellow-400" />}
-              {item.error && <XCircle className="w-4 h-4 text-red-600 dark:text-red-400" />}
-              <Button onClick={() => cubit.removeTodo(item.id)} variant="outline" className="text-sm px-2 py-1">
+              <input
+                type="checkbox"
+                checked={item.completed}
+                onChange={() => cubit.toggleTodo(item.id)}
+                disabled={item.optimistic || item.error}
+                className="w-4 h-4 cursor-pointer"
+              />
+              <span
+                className={`flex-1 ${item.completed ? 'line-through text-muted-foreground' : ''} ${item.error ? 'text-red-600 dark:text-red-400' : ''}`}
+              >
+                {item.text}
+              </span>
+              {item.optimistic && (
+                <Loader2 className="w-4 h-4 animate-spin text-yellow-600 dark:text-yellow-400" />
+              )}
+              {item.error && (
+                <XCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
+              )}
+              <Button
+                onClick={() => cubit.removeTodo(item.id)}
+                variant="outline"
+                className="text-sm px-2 py-1"
+              >
                 Remove
               </Button>
             </div>

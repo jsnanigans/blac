@@ -112,7 +112,11 @@ function KeepAliveCounter() {
         </p>
 
         <div className="flex gap-2">
-          <Button onClick={cubit.increment} variant="primary" className="flex-1">
+          <Button
+            onClick={cubit.increment}
+            variant="primary"
+            className="flex-1"
+          >
             Increment
           </Button>
           <Button onClick={cubit.reset} variant="outline">
@@ -155,7 +159,11 @@ function RegularCounter() {
         </p>
 
         <div className="flex gap-2">
-          <Button onClick={cubit.increment} variant="primary" className="flex-1">
+          <Button
+            onClick={cubit.increment}
+            variant="primary"
+            className="flex-1"
+          >
             Increment
           </Button>
           <Button onClick={cubit.reset} variant="outline">
@@ -227,8 +235,9 @@ export function KeepAliveInteractive() {
 
           <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
             <p className="text-sm text-blue-700 dark:text-blue-300">
-              <strong>KeepAlive Behavior:</strong> The instance ID stays the same and state
-              is preserved even when hidden. Try hiding and showing multiple times!
+              <strong>KeepAlive Behavior:</strong> The instance ID stays the
+              same and state is preserved even when hidden. Try hiding and
+              showing multiple times!
             </p>
           </div>
         </div>
@@ -282,8 +291,9 @@ export function KeepAliveInteractive() {
 
           <div className="p-4 rounded-lg bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800">
             <p className="text-sm text-orange-700 dark:text-orange-300">
-              <strong>Regular Behavior:</strong> Each time you show it, a new instance is
-              created (watch the instance ID increment). State resets each time!
+              <strong>Regular Behavior:</strong> Each time you show it, a new
+              instance is created (watch the instance ID increment). State
+              resets each time!
             </p>
           </div>
         </div>

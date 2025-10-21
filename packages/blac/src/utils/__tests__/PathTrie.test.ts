@@ -65,7 +65,9 @@ describe('PathTrie', () => {
       trie.insert('user.profile.email');
 
       const leafs = trie.getLeafPaths();
-      expect(leafs).toEqual(new Set(['user.name', 'user.age', 'user.profile.email']));
+      expect(leafs).toEqual(
+        new Set(['user.name', 'user.age', 'user.profile.email']),
+      );
     });
 
     it('should handle array paths', () => {
@@ -74,7 +76,9 @@ describe('PathTrie', () => {
       trie.insert('items.map'); // Method access
 
       const leafs = trie.getLeafPaths();
-      expect(leafs).toEqual(new Set(['items.0.name', 'items.1.name', 'items.map']));
+      expect(leafs).toEqual(
+        new Set(['items.0.name', 'items.1.name', 'items.map']),
+      );
     });
 
     it('should handle very deep nesting (10+ levels)', () => {
@@ -94,7 +98,9 @@ describe('PathTrie', () => {
       trie.insert('settings.theme');
 
       const leafs = trie.getLeafPaths();
-      expect(leafs).toEqual(new Set(['user.name', 'profile.email', 'settings.theme']));
+      expect(leafs).toEqual(
+        new Set(['user.name', 'profile.email', 'settings.theme']),
+      );
     });
 
     it('should handle paths with shared prefixes', () => {
@@ -104,7 +110,11 @@ describe('PathTrie', () => {
 
       const leafs = trie.getLeafPaths();
       expect(leafs).toEqual(
-        new Set(['user.profile.address.city', 'user.profile.address.zip', 'user.settings.theme'])
+        new Set([
+          'user.profile.address.city',
+          'user.profile.address.zip',
+          'user.settings.theme',
+        ]),
       );
     });
 
@@ -125,7 +135,9 @@ describe('PathTrie', () => {
       trie.insert('g.h.i.j.k');
 
       const leafs = trie.getLeafPaths();
-      expect(leafs).toEqual(new Set(['a.b.c', 'a.b.d', 'a.e', 'f', 'g.h.i.j.k']));
+      expect(leafs).toEqual(
+        new Set(['a.b.c', 'a.b.d', 'a.e', 'f', 'g.h.i.j.k']),
+      );
     });
   });
 

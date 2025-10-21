@@ -5,7 +5,8 @@ import { ComputedPropertiesDemo } from './ComputedPropertiesDemo';
 DemoRegistry.register({
   id: 'computed-properties',
   title: 'Computed Properties with Getters',
-  description: 'Learn how to use TypeScript getters to create computed properties that derive values from state automatically.',
+  description:
+    'Learn how to use TypeScript getters to create computed properties that derive values from state automatically.',
   category: '02-core-concepts',
   component: ComputedPropertiesDemo,
   difficulty: 'beginner',

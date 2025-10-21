@@ -1,7 +1,10 @@
 import { Cubit } from '@blac/core';
 import { useBloc } from '@blac/react';
 import React, { useState } from 'react';
-import { PerformanceMetrics, BenchmarkResult } from '../utils/PerformanceMetrics';
+import {
+  PerformanceMetrics,
+  BenchmarkResult,
+} from '../utils/PerformanceMetrics';
 
 /**
  * Test performance with large, deeply nested state trees
@@ -31,7 +34,7 @@ function generateTree(depth: number, breadth: number, prefix = ''): TreeNode {
 
   if (depth > 0) {
     node.children = Array.from({ length: breadth }, (_, i) =>
-      generateTree(depth - 1, breadth, `${prefix}-${i}`)
+      generateTree(depth - 1, breadth, `${prefix}-${i}`),
     );
   }
 
@@ -43,7 +46,11 @@ function countNodes(node: TreeNode): number {
   return 1 + node.children.reduce((sum, child) => sum + countNodes(child), 0);
 }
 
-function updateNodeValue(node: TreeNode, targetId: string, newValue: number): TreeNode {
+function updateNodeValue(
+  node: TreeNode,
+  targetId: string,
+  newValue: number,
+): TreeNode {
   if (node.id === targetId) {
     return {
       ...node,
@@ -57,7 +64,9 @@ function updateNodeValue(node: TreeNode, targetId: string, newValue: number): Tr
   if (node.children) {
     return {
       ...node,
-      children: node.children.map((child) => updateNodeValue(child, targetId, newValue)),
+      children: node.children.map((child) =>
+        updateNodeValue(child, targetId, newValue),
+      ),
     };
   }
 
@@ -196,7 +205,7 @@ export const LargeStateBenchmark: React.FC = () => {
         () => {
           updateNode(leafId, Math.random() * 1000);
         },
-        100
+        100,
       );
       setResults([result]);
     }
@@ -210,7 +219,7 @@ export const LargeStateBenchmark: React.FC = () => {
       () => {
         regenerate(depth, breadth);
       },
-      10
+      10,
     );
     setResults([result]);
   };
@@ -219,11 +228,13 @@ export const LargeStateBenchmark: React.FC = () => {
     <div style={{ padding: '20px' }}>
       <h2>Large State Tree Performance</h2>
       <p>
-        Tests performance with large, deeply nested state trees. Measures state update
-        propagation and immutable update performance.
+        Tests performance with large, deeply nested state trees. Measures state
+        update propagation and immutable update performance.
       </p>
 
-      <div style={{ marginBottom: '20px', padding: '10px', background: '#f5f5f5' }}>
+      <div
+        style={{ marginBottom: '20px', padding: '10px', background: '#f5f5f5' }}
+      >
         <h3>Tree Configuration</h3>
         <div style={{ marginBottom: '10px' }}>
           <label style={{ marginRight: '20px' }}>
@@ -253,7 +264,8 @@ export const LargeStateBenchmark: React.FC = () => {
           <strong>Total Nodes: {nodeCount}</strong>
         </div>
         <div style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
-          Note: Large trees (depth &gt; 4, breadth &gt; 5) may impact performance
+          Note: Large trees (depth &gt; 4, breadth &gt; 5) may impact
+          performance
         </div>
       </div>
 
@@ -270,7 +282,10 @@ export const LargeStateBenchmark: React.FC = () => {
         >
           Benchmark Deep Update (100x)
         </button>
-        <button onClick={runFullRegenBenchmark} style={{ padding: '10px 20px' }}>
+        <button
+          onClick={runFullRegenBenchmark}
+          style={{ padding: '10px 20px' }}
+        >
           Benchmark Full Regen (10x)
         </button>
       </div>
@@ -301,12 +316,18 @@ export const LargeStateBenchmark: React.FC = () => {
           >
             <thead>
               <tr style={{ background: '#f0f0f0' }}>
-                <th style={{ padding: '8px', border: '1px solid #ddd' }}>Operation</th>
-                <th style={{ padding: '8px', border: '1px solid #ddd' }}>Duration</th>
+                <th style={{ padding: '8px', border: '1px solid #ddd' }}>
+                  Operation
+                </th>
+                <th style={{ padding: '8px', border: '1px solid #ddd' }}>
+                  Duration
+                </th>
                 <th style={{ padding: '8px', border: '1px solid #ddd' }}>
                   Avg (if batched)
                 </th>
-                <th style={{ padding: '8px', border: '1px solid #ddd' }}>Memory Delta</th>
+                <th style={{ padding: '8px', border: '1px solid #ddd' }}>
+                  Memory Delta
+                </th>
               </tr>
             </thead>
             <tbody>

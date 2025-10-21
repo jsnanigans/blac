@@ -37,7 +37,12 @@ export function EventDesignInteractive() {
               <code className="block text-xs bg-surface-muted p-2 rounded">
                 class ResetStateEvent &#123;&#125;
               </code>
-              <Button onClick={bloc.reset} variant="outline" size="sm" className="w-full">
+              <Button
+                onClick={bloc.reset}
+                variant="outline"
+                size="sm"
+                className="w-full"
+              >
                 Reset State
               </Button>
               <p className="text-xs text-muted-foreground">
@@ -55,7 +60,7 @@ export function EventDesignInteractive() {
                 2. Event with Primitive
               </h4>
               <code className="block text-xs bg-surface-muted p-2 rounded whitespace-pre">
-{`class IncrementByEvent {
+                {`class IncrementByEvent {
   constructor(readonly amount: number) {}
 }`}
               </code>
@@ -100,7 +105,7 @@ export function EventDesignInteractive() {
                 3. Event with Object Payload
               </h4>
               <code className="block text-xs bg-surface-muted p-2 rounded whitespace-pre">
-{`class UpdateDataEvent {
+                {`class UpdateDataEvent {
   constructor(readonly data: {
     value: string;
     timestamp: number;
@@ -140,7 +145,7 @@ export function EventDesignInteractive() {
                 4. Command Pattern
               </h4>
               <code className="block text-xs bg-surface-muted p-2 rounded whitespace-pre">
-{`class LoadDataEvent {
+                {`class LoadDataEvent {
   constructor(readonly id: string) {}
 }`}
               </code>
@@ -177,7 +182,7 @@ export function EventDesignInteractive() {
                 5. Domain Event
               </h4>
               <code className="block text-xs bg-surface-muted p-2 rounded whitespace-pre">
-{`class UserLoggedInEvent {
+                {`class UserLoggedInEvent {
   constructor(readonly user: {...}) {}
 }`}
               </code>
@@ -216,7 +221,7 @@ export function EventDesignInteractive() {
                 6. Error Event
               </h4>
               <code className="block text-xs bg-surface-muted p-2 rounded whitespace-pre">
-{`class ErrorOccurredEvent {
+                {`class ErrorOccurredEvent {
   constructor(readonly error: {...}) {}
 }`}
               </code>
@@ -257,7 +262,7 @@ export function EventDesignInteractive() {
                 BAD: Verb-based Naming
               </h4>
               <code className="block text-xs bg-surface-muted p-2 rounded whitespace-pre">
-{`// BAD:
+                {`// BAD:
 class DoIncrementEvent {...}
 
 // GOOD:
@@ -285,7 +290,7 @@ class IncrementedEvent {...}`}
                 BAD: Generic/Unclear Events
               </h4>
               <code className="block text-xs bg-surface-muted p-2 rounded whitespace-pre">
-{`// BAD:
+                {`// BAD:
 class DataEvent {
   constructor(data: any) {}
 }
@@ -315,7 +320,7 @@ class UserDataUpdatedEvent {...}`}
                 BAD: Mutable Payloads
               </h4>
               <code className="block text-xs bg-surface-muted p-2 rounded whitespace-pre">
-{`// BAD:
+                {`// BAD:
 class MutableStateEvent {
   constructor(state: {...}) {} // not readonly!
 }
@@ -347,7 +352,7 @@ class StateUpdatedEvent {
                 BAD: Multi-purpose Events
               </h4>
               <code className="block text-xs bg-surface-muted p-2 rounded whitespace-pre">
-{`// BAD:
+                {`// BAD:
 class UpdateAndResetEvent {
   constructor(
     newValue?: string,

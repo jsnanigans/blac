@@ -106,11 +106,7 @@ export function PageHeader({
           )}
         </div>
 
-        {children && (
-          <div className="mt-2 grid gap-4 sm:mt-4">
-            {children}
-          </div>
-        )}
+        {children && <div className="mt-2 grid gap-4 sm:mt-4">{children}</div>}
       </div>
     </section>
   );

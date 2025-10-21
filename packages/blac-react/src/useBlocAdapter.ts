@@ -340,7 +340,7 @@ function useBlocAdapter<B extends BlocConstructor<BlocBase<any>>, R = any>(
       snapshot: typeof snapshot === 'object' ? '{...}' : snapshot,
     });
     return snapshot;
-  }, [adapter]);
+  }, []);
 
   // Server snapshot for SSR
   const getServerSnapshot = useCallback(() => {
@@ -350,7 +350,7 @@ function useBlocAdapter<B extends BlocConstructor<BlocBase<any>>, R = any>(
       snapshot: typeof snapshot === 'object' ? '{...}' : snapshot,
     });
     return snapshot;
-  }, [adapter]);
+  }, []);
 
   // Subscribe to state changes using useSyncExternalStore
   console.log(`[useBlocAdapter] 🔗 Calling useSyncExternalStore...`);
@@ -373,7 +373,7 @@ function useBlocAdapter<B extends BlocConstructor<BlocBase<any>>, R = any>(
         autoTrackingEnabled: adapter.isAutoTrackingEnabled(),
       });
     }
-  }, [adapter, options?.selector, state]); // Re-run when state changes to track new dependencies
+  }, [options?.selector, state]); // Re-run when state changes to track new dependencies
 
   // Mount/unmount lifecycle
   useEffect(() => {
@@ -446,10 +446,7 @@ function useBlocAdapter<B extends BlocConstructor<BlocBase<any>>, R = any>(
     };
   }, [
     bloc.uid,
-    BlocClass,
-    finalInstanceId,
-    options?.onMount,
-    options?.onUnmount,
+    finalInstanceId
   ]);
 
   // Return state and bloc instance

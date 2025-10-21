@@ -61,13 +61,14 @@ describe('useBloc with isolated blocs in React Strict Mode', () => {
 
     // Wait for strict mode double-mount to complete
     await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
     });
 
     const blacInstance = Blac.getInstance();
 
     // Check isolatedBlocMap - should have exactly 3 instances
-    const isolatedBlocs = blacInstance.isolatedBlocMap.get(IsolatedCounterCubit);
+    const isolatedBlocs =
+      blacInstance.isolatedBlocMap.get(IsolatedCounterCubit);
     expect(isolatedBlocs?.length).toBe(3);
 
     // Check isolatedBlocIndex - should have exactly 3 entries
@@ -118,13 +119,15 @@ describe('useBloc with isolated blocs in React Strict Mode', () => {
 
     // Wait for strict mode double-mount to complete
     await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
     });
 
     const blacInstance = Blac.getInstance();
 
     // Verify 3 instances exist
-    expect(blacInstance.isolatedBlocMap.get(IsolatedCounterCubit)?.length).toBe(3);
+    expect(blacInstance.isolatedBlocMap.get(IsolatedCounterCubit)?.length).toBe(
+      3,
+    );
     expect(blacInstance.isolatedBlocIndex.size).toBe(3);
 
     // Unmount components
@@ -134,7 +137,7 @@ describe('useBloc with isolated blocs in React Strict Mode', () => {
 
     // Wait a bit for unmount to propagate
     await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
     });
 
     // Trigger garbage collection hint (if available)
@@ -144,20 +147,21 @@ describe('useBloc with isolated blocs in React Strict Mode', () => {
 
     // Wait for disposal timeout
     await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 150));
+      await new Promise((resolve) => setTimeout(resolve, 150));
     });
 
     // Manually trigger disposal for testing (blocs should auto-dispose but let's verify)
     const blocs = blacInstance.isolatedBlocMap.get(IsolatedCounterCubit) || [];
 
     // Check bloc states before expecting disposal
-    const isolatedBlocsAfter = blacInstance.isolatedBlocMap.get(IsolatedCounterCubit);
+    const isolatedBlocsAfter =
+      blacInstance.isolatedBlocMap.get(IsolatedCounterCubit);
 
     // The map should either be empty or deleted entirely
     if (isolatedBlocsAfter) {
       // All remaining blocs should be disposed
-      const disposedCount = isolatedBlocsAfter.filter(b =>
-        (b as any)._lifecycleManager?.currentState === 'DISPOSED'
+      const disposedCount = isolatedBlocsAfter.filter(
+        (b) => (b as any)._lifecycleManager?.currentState === 'DISPOSED',
       ).length;
       expect(disposedCount).toBe(isolatedBlocsAfter.length);
     }
@@ -177,7 +181,9 @@ describe('useBloc with isolated blocs in React Strict Mode', () => {
       return (
         <div>
           <span data-testid={`count-${label}`}>{state.count}</span>
-          <button onClick={cubit.increment} data-testid={`inc-${label}`}>+</button>
+          <button onClick={cubit.increment} data-testid={`inc-${label}`}>
+            +
+          </button>
         </div>
       );
     };
@@ -189,12 +195,12 @@ describe('useBloc with isolated blocs in React Strict Mode', () => {
           <IsolatedCounter label="B" />
           <IsolatedCounter label="C" />
         </div>
-      </React.StrictMode>
+      </React.StrictMode>,
     );
 
     // Wait for strict mode to settle
     await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
     });
 
     // Increment counter A
@@ -226,7 +232,9 @@ describe('useBloc with isolated blocs in React Strict Mode', () => {
       return (
         <div>
           <span data-testid={`count-${label}`}>{state.count}</span>
-          <button onClick={cubit.increment} data-testid={`inc-${label}`}>+</button>
+          <button onClick={cubit.increment} data-testid={`inc-${label}`}>
+            +
+          </button>
         </div>
       );
     };
@@ -251,13 +259,15 @@ describe('useBloc with isolated blocs in React Strict Mode', () => {
     render(<App />);
 
     await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
     });
 
     const blacInstance = Blac.getInstance();
 
     // Initial state: 2 instances
-    expect(blacInstance.isolatedBlocMap.get(IsolatedCounterCubit)?.length).toBe(2);
+    expect(blacInstance.isolatedBlocMap.get(IsolatedCounterCubit)?.length).toBe(
+      2,
+    );
 
     // Update state
     act(() => {
@@ -272,7 +282,7 @@ describe('useBloc with isolated blocs in React Strict Mode', () => {
 
     // Wait for disposal
     await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 150));
+      await new Promise((resolve) => setTimeout(resolve, 150));
     });
 
     // Should be cleaned up
@@ -284,7 +294,7 @@ describe('useBloc with isolated blocs in React Strict Mode', () => {
     });
 
     await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
     });
 
     // Should have fresh instances (state reset)
@@ -292,7 +302,9 @@ describe('useBloc with isolated blocs in React Strict Mode', () => {
     expect(screen.getByTestId('count-B')).toHaveTextContent('0');
 
     // Should still only have 2 instances (not accumulated)
-    expect(blacInstance.isolatedBlocMap.get(IsolatedCounterCubit)?.length).toBe(2);
+    expect(blacInstance.isolatedBlocMap.get(IsolatedCounterCubit)?.length).toBe(
+      2,
+    );
     expect(blacInstance.isolatedBlocIndex.size).toBe(2);
   });
 });

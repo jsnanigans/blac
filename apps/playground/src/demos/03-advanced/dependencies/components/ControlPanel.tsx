@@ -7,9 +7,7 @@ export function ControlPanel() {
 
   return (
     <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200">
-      <h3 className="text-lg font-bold mb-4 text-gray-800">
-        🎮 Control Panel
-      </h3>
+      <h3 className="text-lg font-bold mb-4 text-gray-800">🎮 Control Panel</h3>
 
       {/* User Properties */}
       <div className="mb-4">
@@ -20,7 +18,7 @@ export function ControlPanel() {
           <button
             onClick={() =>
               cubit.updateFirstName(
-                cubit.state.user.firstName === 'John' ? 'Jane' : 'John'
+                cubit.state.user.firstName === 'John' ? 'Jane' : 'John',
               )
             }
             className="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm font-medium transition-colors"
@@ -31,7 +29,7 @@ export function ControlPanel() {
           <button
             onClick={() =>
               cubit.updateLastName(
-                cubit.state.user.lastName === 'Doe' ? 'Smith' : 'Doe'
+                cubit.state.user.lastName === 'Doe' ? 'Smith' : 'Doe',
               )
             }
             className="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm font-medium transition-colors"
@@ -44,7 +42,7 @@ export function ControlPanel() {
               cubit.updateEmail(
                 cubit.state.user.email === 'john@example.com'
                   ? 'jane@example.com'
-                  : 'john@example.com'
+                  : 'john@example.com',
               )
             }
             className="px-3 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded text-sm font-medium transition-colors"

@@ -51,10 +51,15 @@ describe('Simple debug test', () => {
       return (
         <div>
           <span data-testid="count">{state}</span>
-          <button onClick={() => {
-            console.log('[Button] Clicked');
-            cubit.increment();
-          }} data-testid="inc">+</button>
+          <button
+            onClick={() => {
+              console.log('[Button] Clicked');
+              cubit.increment();
+            }}
+            data-testid="inc"
+          >
+            +
+          </button>
         </div>
       );
     };
@@ -83,10 +88,15 @@ describe('Simple debug test', () => {
       return (
         <div>
           <span data-testid="count">{state}</span>
-          <button onClick={() => {
-            console.log('[IsolatedButton] Clicked');
-            cubit.increment();
-          }} data-testid="inc">+</button>
+          <button
+            onClick={() => {
+              console.log('[IsolatedButton] Clicked');
+              cubit.increment();
+            }}
+            data-testid="inc"
+          >
+            +
+          </button>
         </div>
       );
     };
@@ -102,7 +112,10 @@ describe('Simple debug test', () => {
       screen.getByTestId('inc').click();
     });
 
-    console.log('After click isolated:', screen.getByTestId('count').textContent);
+    console.log(
+      'After click isolated:',
+      screen.getByTestId('count').textContent,
+    );
     expect(screen.getByTestId('count')).toHaveTextContent('1');
   });
 
@@ -110,15 +123,28 @@ describe('Simple debug test', () => {
     const Counter: React.FC = () => {
       console.log('[StrictIsolatedCounter] Rendering');
       const [state, cubit] = useBloc(IsolatedCounterCubit);
-      console.log('[StrictIsolatedCounter] State:', state, 'Bloc UID:', (cubit as any).uid);
+      console.log(
+        '[StrictIsolatedCounter] State:',
+        state,
+        'Bloc UID:',
+        (cubit as any).uid,
+      );
 
       return (
         <div>
           <span data-testid="count">{state}</span>
-          <button onClick={() => {
-            console.log('[StrictIsolatedButton] Clicked, Bloc UID:', (cubit as any).uid);
-            cubit.increment();
-          }} data-testid="inc">+</button>
+          <button
+            onClick={() => {
+              console.log(
+                '[StrictIsolatedButton] Clicked, Bloc UID:',
+                (cubit as any).uid,
+              );
+              cubit.increment();
+            }}
+            data-testid="inc"
+          >
+            +
+          </button>
         </div>
       );
     };
@@ -127,10 +153,13 @@ describe('Simple debug test', () => {
     render(
       <React.StrictMode>
         <Counter />
-      </React.StrictMode>
+      </React.StrictMode>,
     );
 
-    console.log('Initial strict isolated:', screen.getByTestId('count').textContent);
+    console.log(
+      'Initial strict isolated:',
+      screen.getByTestId('count').textContent,
+    );
     expect(screen.getByTestId('count')).toHaveTextContent('0');
 
     console.log('=== Clicking Strict Isolated ===');
@@ -138,7 +167,10 @@ describe('Simple debug test', () => {
       screen.getByTestId('inc').click();
     });
 
-    console.log('After click strict isolated:', screen.getByTestId('count').textContent);
+    console.log(
+      'After click strict isolated:',
+      screen.getByTestId('count').textContent,
+    );
     expect(screen.getByTestId('count')).toHaveTextContent('1');
   });
 });

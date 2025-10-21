@@ -7,7 +7,9 @@ import { getSection } from '@/core/guide/guideStructure';
 import { GuideArticle } from '@/components/guide/GuideArticle';
 import { mdxComponents } from '@/components/guide/MdxComponents';
 
-const guideArticles = import.meta.glob('../content/guide/**/*.mdx', { eager: true });
+const guideArticles = import.meta.glob('../content/guide/**/*.mdx', {
+  eager: true,
+});
 
 function getArticlePath(sectionId: string, demoId: string) {
   const direct = `../content/guide/${sectionId}/${demoId}.mdx`;
@@ -24,7 +26,10 @@ function getArticlePath(sectionId: string, demoId: string) {
 }
 
 export function GuideDemo() {
-  const { sectionId, demoId } = useParams<{ sectionId: string; demoId: string }>();
+  const { sectionId, demoId } = useParams<{
+    sectionId: string;
+    demoId: string;
+  }>();
 
   // Validate section and demo exist
   const section = sectionId ? getSection(sectionId) : null;
@@ -38,10 +43,11 @@ export function GuideDemo() {
     return <Navigate to="/guide" replace />;
   }
 
-  const articlePath = sectionId && demoId ? getArticlePath(sectionId, demoId) : null;
+  const articlePath =
+    sectionId && demoId ? getArticlePath(sectionId, demoId) : null;
 
   // Get the MDX module
-  const mdxModule = articlePath ? guideArticles[articlePath] as any : null;
+  const mdxModule = articlePath ? (guideArticles[articlePath] as any) : null;
   const MDXContent = mdxModule?.default;
   const mdxDemoId = mdxModule?.demoId;
   const mdxSectionId = mdxModule?.sectionId;
@@ -54,15 +60,21 @@ export function GuideDemo() {
     >
       {MDXContent ? (
         <MDXProvider components={mdxComponents}>
-          <GuideArticle demoId={mdxDemoId || demoId} sectionId={mdxSectionId || sectionId}>
+          <GuideArticle
+            demoId={mdxDemoId || demoId}
+            sectionId={mdxSectionId || sectionId}
+          >
             <MDXContent />
           </GuideArticle>
         </MDXProvider>
       ) : (
         <div className="rounded-lg border border-border bg-surface p-8 shadow-subtle">
-          <h2 className="text-lg font-semibold text-foreground">Guide article coming soon</h2>
+          <h2 className="text-lg font-semibold text-foreground">
+            Guide article coming soon
+          </h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            We don&apos;t have MDX content for this demo yet. In the meantime, open the playground demo to explore the code.
+            We don&apos;t have MDX content for this demo yet. In the meantime,
+            open the playground demo to explore the code.
           </p>
         </div>
       )}

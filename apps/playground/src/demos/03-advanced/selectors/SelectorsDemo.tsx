@@ -118,7 +118,10 @@ const EvenOddDisplay: React.FC = () => {
         </span>
       </div>
       <p className="text-lg mb-1">
-        Counter is: <strong className="text-purple-600 dark:text-purple-400">{cubit.isEven ? 'EVEN ✓' : 'ODD ✗'}</strong>
+        Counter is:{' '}
+        <strong className="text-purple-600 dark:text-purple-400">
+          {cubit.isEven ? 'EVEN ✓' : 'ODD ✗'}
+        </strong>
       </p>
       <p className="text-xs text-gray-600 dark:text-gray-400">
         <TrendingDown className="w-3 h-3 inline mr-1" />
@@ -155,7 +158,10 @@ const FirstLetterDisplay: React.FC = () => {
         </span>
       </div>
       <p className="text-lg mb-1">
-        First letter: <strong className="text-green-600 dark:text-green-400 text-2xl">{state.text[0] || '∅'}</strong>
+        First letter:{' '}
+        <strong className="text-green-600 dark:text-green-400 text-2xl">
+          {state.text[0] || '∅'}
+        </strong>
       </p>
       <p className="text-xs text-gray-600 dark:text-gray-400">
         <TrendingDown className="w-3 h-3 inline mr-1" />
@@ -192,8 +198,13 @@ const SettingsDisplay: React.FC = () => {
         </span>
       </div>
       <div className="space-y-1">
-        <p className="text-sm">Theme: <strong>{state.settings.theme}</strong></p>
-        <p className="text-sm">Notifications: <strong>{state.settings.notifications ? 'ON' : 'OFF'}</strong></p>
+        <p className="text-sm">
+          Theme: <strong>{state.settings.theme}</strong>
+        </p>
+        <p className="text-sm">
+          Notifications:{' '}
+          <strong>{state.settings.notifications ? 'ON' : 'OFF'}</strong>
+        </p>
       </div>
       <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
         <TrendingDown className="w-3 h-3 inline mr-1" />
@@ -253,10 +264,17 @@ export const SelectorsDemo: React.FC = () => {
       metadata={{
         id: 'selectors',
         title: 'Selectors & Performance',
-        description: 'Master fine-grained reactivity with custom selectors to dramatically reduce unnecessary re-renders',
+        description:
+          'Master fine-grained reactivity with custom selectors to dramatically reduce unnecessary re-renders',
         category: '03-advanced',
         difficulty: 'advanced',
-        tags: ['selectors', 'performance', 'optimization', 'dependencies', 'reactivity'],
+        tags: [
+          'selectors',
+          'performance',
+          'optimization',
+          'dependencies',
+          'reactivity',
+        ],
         estimatedTime: 15,
       }}
     >
@@ -264,22 +282,26 @@ export const SelectorsDemo: React.FC = () => {
         <Prose>
           <h2>Fine-Grained Reactivity with Selectors</h2>
           <p>
-            By default, React components using <code>useBloc</code> re-render on <strong>every state change</strong>.
-            This is simple and works well for small applications, but can become a performance bottleneck as your
-            app grows.
+            By default, React components using <code>useBloc</code> re-render on{' '}
+            <strong>every state change</strong>. This is simple and works well
+            for small applications, but can become a performance bottleneck as
+            your app grows.
           </p>
           <p>
-            <strong>Selectors</strong> (also called dependencies) let you tell React exactly which parts of state
-            a component cares about. The component will only re-render when those specific values change, not when
-            other unrelated state updates happen.
+            <strong>Selectors</strong> (also called dependencies) let you tell
+            React exactly which parts of state a component cares about. The
+            component will only re-render when those specific values change, not
+            when other unrelated state updates happen.
           </p>
         </Prose>
 
         <ConceptCallout type="info" title="The Re-Render Problem">
           <p>
-            Imagine you have a state with <code>counter</code>, <code>text</code>, and <code>settings</code>.
-            A component that only displays the counter still re-renders when text or settings change, wasting CPU cycles.
-            Selectors solve this by subscribing only to the data you need.
+            Imagine you have a state with <code>counter</code>,{' '}
+            <code>text</code>, and <code>settings</code>. A component that only
+            displays the counter still re-renders when text or settings change,
+            wasting CPU cycles. Selectors solve this by subscribing only to the
+            data you need.
           </p>
         </ConceptCallout>
       </ArticleSection>
@@ -288,8 +310,9 @@ export const SelectorsDemo: React.FC = () => {
         <Prose>
           <h2>Interactive Demo: Watch the Render Counts</h2>
           <p>
-            Below are four components subscribed to the same Cubit. Notice how their render counts differ based
-            on their selector configuration. Try the controls and watch which components re-render!
+            Below are four components subscribed to the same Cubit. Notice how
+            their render counts differ based on their selector configuration.
+            Try the controls and watch which components re-render!
           </p>
         </Prose>
 
@@ -301,18 +324,28 @@ export const SelectorsDemo: React.FC = () => {
         </div>
 
         <div className="bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-lg p-6 space-y-4">
-          <h4 className="font-semibold text-lg">Controls - Change State and Watch Renders</h4>
+          <h4 className="font-semibold text-lg">
+            Controls - Change State and Watch Renders
+          </h4>
 
           <div className="space-y-3">
             <div>
-              <label className="block text-sm font-medium mb-1">Counter: {state.counter}</label>
-              <Button onClick={cubit.incrementCounter} variant="primary" className="w-full">
+              <label className="block text-sm font-medium mb-1">
+                Counter: {state.counter}
+              </label>
+              <Button
+                onClick={cubit.incrementCounter}
+                variant="primary"
+                className="w-full"
+              >
                 Increment Counter
               </Button>
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">Text Input:</label>
+              <label className="block text-sm font-medium mb-1">
+                Text Input:
+              </label>
               <input
                 type="text"
                 value={state.text}
@@ -362,8 +395,9 @@ export const SelectorsDemo: React.FC = () => {
 
         <ConceptCallout type="success" title="Performance Win!">
           <p>
-            Notice how the <strong>Even/Odd</strong> component only re-renders when the counter crosses an even/odd
-            boundary (0→1, 1→2, etc.), not on every single increment. This is the power of selectors!
+            Notice how the <strong>Even/Odd</strong> component only re-renders
+            when the counter crosses an even/odd boundary (0→1, 1→2, etc.), not
+            on every single increment. This is the power of selectors!
           </p>
         </ConceptCallout>
       </ArticleSection>
@@ -372,8 +406,9 @@ export const SelectorsDemo: React.FC = () => {
         <Prose>
           <h2>Implementation: Basic Selector</h2>
           <p>
-            To use a selector, pass a <code>dependencies</code> function to <code>useBloc</code>. This function
-            receives the Cubit instance and returns an array of values to track.
+            To use a selector, pass a <code>dependencies</code> function to{' '}
+            <code>useBloc</code>. This function receives the Cubit instance and
+            returns an array of values to track.
           </p>
         </Prose>
 
@@ -428,8 +463,9 @@ function FirstLetterDisplay() {
         <Prose>
           <h2>Advanced: Multiple Dependencies</h2>
           <p>
-            You can track multiple values by including them all in the returned array. The component will
-            re-render if <strong>any</strong> of the tracked values change.
+            You can track multiple values by including them all in the returned
+            array. The component will re-render if <strong>any</strong> of the
+            tracked values change.
           </p>
         </Prose>
 
@@ -483,8 +519,9 @@ function Dashboard() {
 
         <ConceptCallout type="warning" title="Avoid Creating New Objects">
           <p>
-            Don't create new objects inside your selector function - this will cause re-renders on every state change!
-            Instead, return individual primitive values or stable object references.
+            Don't create new objects inside your selector function - this will
+            cause re-renders on every state change! Instead, return individual
+            primitive values or stable object references.
           </p>
           <CodePanel
             code={`// ❌ BAD: Creates new object every time
@@ -508,33 +545,38 @@ dependencies: (c) => [c.state.user]`}
         <ConceptCallout type="success" title="What You've Learned">
           <ul className="space-y-2 text-sm">
             <li>
-              <strong>Selectors optimize re-renders:</strong> Components only update when tracked values change
+              <strong>Selectors optimize re-renders:</strong> Components only
+              update when tracked values change
             </li>
             <li>
-              <strong>Use dependencies option:</strong> Pass a function that returns an array of values to track
+              <strong>Use dependencies option:</strong> Pass a function that
+              returns an array of values to track
             </li>
             <li>
-              <strong>Track multiple values:</strong> Include all values you need in the array
+              <strong>Track multiple values:</strong> Include all values you
+              need in the array
             </li>
             <li>
-              <strong>Use computed getters:</strong> Computed properties work great with selectors
+              <strong>Use computed getters:</strong> Computed properties work
+              great with selectors
             </li>
             <li>
-              <strong>Extract selectors:</strong> Create reusable selector functions for consistency
+              <strong>Extract selectors:</strong> Create reusable selector
+              functions for consistency
             </li>
             <li>
-              <strong>Avoid new objects:</strong> Return primitive values or stable references, not new objects
+              <strong>Avoid new objects:</strong> Return primitive values or
+              stable references, not new objects
             </li>
             <li>
-              <strong>Measure performance:</strong> Use render counts to verify your optimizations work
+              <strong>Measure performance:</strong> Use render counts to verify
+              your optimizations work
             </li>
           </ul>
         </ConceptCallout>
 
         <ConceptCallout type="info" title="When to Use Selectors">
-          <p>
-            Use selectors when:
-          </p>
+          <p>Use selectors when:</p>
           <ul className="text-sm space-y-1 mt-2">
             <li>• Your Cubit has multiple unrelated fields</li>
             <li>• Components only need specific slices of state</li>
@@ -542,7 +584,8 @@ dependencies: (c) => [c.state.user]`}
             <li>• You have many components subscribed to the same Cubit</li>
           </ul>
           <p className="mt-2">
-            For simple, small state objects, selectors may be overkill. Start without them and add when needed.
+            For simple, small state objects, selectors may be overkill. Start
+            without them and add when needed.
           </p>
         </ConceptCallout>
       </ArticleSection>

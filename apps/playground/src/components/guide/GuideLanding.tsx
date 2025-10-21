@@ -15,7 +15,9 @@ function StatCard({ label, value, description }: StatCardProps) {
     <div className="rounded-xl border border-border bg-surface p-5 shadow-subtle">
       <p className="text-sm font-medium text-muted-foreground">{label}</p>
       <p className="mt-2 text-2xl font-semibold text-foreground">{value}</p>
-      <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{description}</p>
+      <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+        {description}
+      </p>
     </div>
   );
 }
@@ -41,13 +43,18 @@ function FeaturedDemoCard({ sectionId, demoId, badge }: FeaturedDemoCardProps) {
         </span>
         <ArrowRight className="h-4 w-4 text-muted-foreground" />
       </div>
-      <h3 className="mt-3 text-lg font-semibold text-foreground">{demo.title}</h3>
+      <h3 className="mt-3 text-lg font-semibold text-foreground">
+        {demo.title}
+      </h3>
       <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
         {demo.description}
       </p>
       <div className="mt-auto flex flex-wrap gap-2 pt-4 text-xs text-muted-foreground">
         {demo.concepts.slice(0, 2).map((concept) => (
-          <span key={concept} className="rounded-full border border-border bg-surface px-2 py-1">
+          <span
+            key={concept}
+            className="rounded-full border border-border bg-surface px-2 py-1"
+          >
             {concept}
           </span>
         ))}
@@ -77,8 +84,9 @@ export function GuideLanding() {
               Master BlaC with a structured set of interactive guides
             </h1>
             <p className="text-base text-muted-foreground leading-relaxed">
-              Work through the core mental models behind Cubits and Blocs, explore practical patterns,
-              and reinforce each topic with runnable examples that mirror real projects.
+              Work through the core mental models behind Cubits and Blocs,
+              explore practical patterns, and reinforce each topic with runnable
+              examples that mirror real projects.
             </p>
             <div className="flex flex-wrap gap-3">
               {firstSection && firstDemoId && (
@@ -101,14 +109,17 @@ export function GuideLanding() {
             </div>
           </div>
           <div className="w-full max-w-sm space-y-3 rounded-lg border border-border bg-background p-5">
-            <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide">What you will find</h2>
+            <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+              What you will find
+            </h2>
             <ul className="space-y-3 text-sm text-muted-foreground">
               <li>• Concept articles paired with runnable demos</li>
               <li>• Practical patterns for forms, data, and async flows</li>
               <li>• Tooling guidance for playground and devtools</li>
             </ul>
             <p className="text-xs text-muted-foreground">
-              {totalDemos} demos · {sections.length} sections · Updated as the libraries evolve
+              {totalDemos} demos · {sections.length} sections · Updated as the
+              libraries evolve
             </p>
           </div>
         </div>
@@ -138,16 +149,26 @@ export function GuideLanding() {
       </section>
 
       <section className="space-y-6">
-        <h2 className="text-2xl font-semibold text-foreground sm:text-3xl">Curriculum overview</h2>
+        <h2 className="text-2xl font-semibold text-foreground sm:text-3xl">
+          Curriculum overview
+        </h2>
         <div className="space-y-4">
           {sections.map((section) => {
             const demos = section.demos
               .map((demoId) => DemoRegistry.get(demoId))
-              .filter((demo): demo is NonNullable<typeof demo> => Boolean(demo));
+              .filter((demo): demo is NonNullable<typeof demo> =>
+                Boolean(demo),
+              );
 
-            const beginnerCount = demos.filter((demo) => demo.difficulty === 'beginner').length;
-            const intermediateCount = demos.filter((demo) => demo.difficulty === 'intermediate').length;
-            const advancedCount = demos.filter((demo) => demo.difficulty === 'advanced').length;
+            const beginnerCount = demos.filter(
+              (demo) => demo.difficulty === 'beginner',
+            ).length;
+            const intermediateCount = demos.filter(
+              (demo) => demo.difficulty === 'intermediate',
+            ).length;
+            const advancedCount = demos.filter(
+              (demo) => demo.difficulty === 'advanced',
+            ).length;
 
             const primaryDemoId = section.demos[0];
 
@@ -159,7 +180,9 @@ export function GuideLanding() {
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-lg font-semibold text-foreground">{section.title}</h3>
+                    <h3 className="text-lg font-semibold text-foreground">
+                      {section.title}
+                    </h3>
                     <p className="text-sm text-muted-foreground leading-relaxed">
                       {section.description}
                     </p>
@@ -195,13 +218,31 @@ export function GuideLanding() {
       <section className="space-y-4">
         <div className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-brand" />
-          <h2 className="text-2xl font-semibold text-foreground sm:text-3xl">Featured demos</h2>
+          <h2 className="text-2xl font-semibold text-foreground sm:text-3xl">
+            Featured demos
+          </h2>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
-          <FeaturedDemoCard sectionId="getting-started" demoId="hello-world" badge="Start here" />
-          <FeaturedDemoCard sectionId="core-concepts" demoId="bloc-vs-cubit" badge="Core concept" />
-          <FeaturedDemoCard sectionId="patterns" demoId="todo-bloc" badge="Practical pattern" />
-          <FeaturedDemoCard sectionId="advanced" demoId="async-operations" badge="Advanced topic" />
+          <FeaturedDemoCard
+            sectionId="getting-started"
+            demoId="hello-world"
+            badge="Start here"
+          />
+          <FeaturedDemoCard
+            sectionId="core-concepts"
+            demoId="bloc-vs-cubit"
+            badge="Core concept"
+          />
+          <FeaturedDemoCard
+            sectionId="patterns"
+            demoId="todo-bloc"
+            badge="Practical pattern"
+          />
+          <FeaturedDemoCard
+            sectionId="advanced"
+            demoId="async-operations"
+            badge="Advanced topic"
+          />
         </div>
       </section>
     </div>

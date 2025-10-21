@@ -6,11 +6,26 @@ export default defineConfig({
     alias: {
       '@blac/core': path.resolve(__dirname, './src'),
       '@blac/react': path.resolve(__dirname, '../blac-react/src'),
-      '@blac/devtools-connect': path.resolve(__dirname, '../devtools-connect/src'),
-      '@blac/plugin-graph': path.resolve(__dirname, '../plugins/system/graph/src'),
-      '@blac/plugin-graph-react': path.resolve(__dirname, '../plugins/system/graph-react/src'),
-      '@blac/plugin-persistence': path.resolve(__dirname, '../plugins/bloc/persistence/src'),
-      '@blac/plugin-render-logging': path.resolve(__dirname, '../plugins/system/render-logging/src'),
+      '@blac/devtools-connect': path.resolve(
+        __dirname,
+        '../devtools-connect/src',
+      ),
+      '@blac/plugin-graph': path.resolve(
+        __dirname,
+        '../plugins/system/graph/src',
+      ),
+      '@blac/plugin-graph-react': path.resolve(
+        __dirname,
+        '../plugins/system/graph-react/src',
+      ),
+      '@blac/plugin-persistence': path.resolve(
+        __dirname,
+        '../plugins/bloc/persistence/src',
+      ),
+      '@blac/plugin-render-logging': path.resolve(
+        __dirname,
+        '../plugins/system/render-logging/src',
+      ),
     },
   },
   test: {

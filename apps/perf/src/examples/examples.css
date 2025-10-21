@@ -215,7 +215,7 @@ button:active {
   margin-bottom: 8px;
 }
 
-.todo-list li input[type="checkbox"] {
+.todo-list li input[type='checkbox'] {
   width: 20px;
   height: 20px;
   cursor: pointer;
@@ -275,8 +275,12 @@ button:active {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Result List */

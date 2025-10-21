@@ -385,7 +385,11 @@ export class SubscriptionManager<S = unknown> {
 
       if (isOldValueObject && isNewValueObject) {
         // Both are objects - recurse to find nested changes
-        const nestedChanges = this.getChangedPaths(oldValue, newValue, fullPath);
+        const nestedChanges = this.getChangedPaths(
+          oldValue,
+          newValue,
+          fullPath,
+        );
 
         // If there are nested changes, also mark the parent path as changed
         // This ensures that tracking "values" will catch changes to "values.0"
@@ -533,7 +537,11 @@ export class SubscriptionManager<S = unknown> {
     this.invalidateGetterCache(subscriptionId, changedPaths);
 
     // If no dependencies tracked (primitive values, first render), always notify
-    if (!subscription || !subscription.dependencies || subscription.dependencies.size === 0) {
+    if (
+      !subscription ||
+      !subscription.dependencies ||
+      subscription.dependencies.size === 0
+    ) {
       return true;
     }
 
@@ -549,14 +557,19 @@ export class SubscriptionManager<S = unknown> {
 
     // Performance: Build PathIndex once for all paths
     // This enables O(1) parent-child lookups instead of O(n×m) string operations
-    this.pathIndex.build(new Set([...subscription.dependencies, ...changedPaths]));
+    this.pathIndex.build(
+      new Set([...subscription.dependencies, ...changedPaths]),
+    );
 
     // Check if any tracked dependencies match changed paths
     for (const trackedPath of subscription.dependencies) {
       // Handle class getter dependencies (_class.propertyName)
       // Use value-based getter comparison
       if (trackedPath.startsWith('_class.')) {
-        if (bloc && this.checkGetterChanged(subscriptionId, trackedPath, bloc)) {
+        if (
+          bloc &&
+          this.checkGetterChanged(subscriptionId, trackedPath, bloc)
+        ) {
           return true;
         }
         continue;
@@ -600,9 +613,11 @@ export class SubscriptionManager<S = unknown> {
         }
 
         // If they share a common ancestor and both diverge, they're siblings
-        if (commonLength > 0 &&
-            commonLength < otherSegments.length &&
-            commonLength < trackedSegments.length) {
+        if (
+          commonLength > 0 &&
+          commonLength < otherSegments.length &&
+          commonLength < trackedSegments.length
+        ) {
           hasSiblingChange = true;
           break;
         }

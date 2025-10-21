@@ -26,16 +26,86 @@ interface ProductState {
 
 // Mock product data
 const mockProducts: Product[] = [
-  { id: 1, name: 'Wireless Mouse', category: 'Electronics', price: 29.99, rating: 4.5, inStock: true },
-  { id: 2, name: 'Mechanical Keyboard', category: 'Electronics', price: 89.99, rating: 4.8, inStock: true },
-  { id: 3, name: 'USB-C Cable', category: 'Accessories', price: 12.99, rating: 4.2, inStock: false },
-  { id: 4, name: 'Laptop Stand', category: 'Accessories', price: 45.99, rating: 4.6, inStock: true },
-  { id: 5, name: 'Desk Lamp', category: 'Furniture', price: 34.99, rating: 4.3, inStock: true },
-  { id: 6, name: 'Office Chair', category: 'Furniture', price: 199.99, rating: 4.7, inStock: false },
-  { id: 7, name: 'Monitor', category: 'Electronics', price: 249.99, rating: 4.9, inStock: true },
-  { id: 8, name: 'Webcam', category: 'Electronics', price: 79.99, rating: 4.4, inStock: true },
-  { id: 9, name: 'Phone Charger', category: 'Accessories', price: 19.99, rating: 4.1, inStock: true },
-  { id: 10, name: 'Desk Organizer', category: 'Accessories', price: 24.99, rating: 4.0, inStock: false },
+  {
+    id: 1,
+    name: 'Wireless Mouse',
+    category: 'Electronics',
+    price: 29.99,
+    rating: 4.5,
+    inStock: true,
+  },
+  {
+    id: 2,
+    name: 'Mechanical Keyboard',
+    category: 'Electronics',
+    price: 89.99,
+    rating: 4.8,
+    inStock: true,
+  },
+  {
+    id: 3,
+    name: 'USB-C Cable',
+    category: 'Accessories',
+    price: 12.99,
+    rating: 4.2,
+    inStock: false,
+  },
+  {
+    id: 4,
+    name: 'Laptop Stand',
+    category: 'Accessories',
+    price: 45.99,
+    rating: 4.6,
+    inStock: true,
+  },
+  {
+    id: 5,
+    name: 'Desk Lamp',
+    category: 'Furniture',
+    price: 34.99,
+    rating: 4.3,
+    inStock: true,
+  },
+  {
+    id: 6,
+    name: 'Office Chair',
+    category: 'Furniture',
+    price: 199.99,
+    rating: 4.7,
+    inStock: false,
+  },
+  {
+    id: 7,
+    name: 'Monitor',
+    category: 'Electronics',
+    price: 249.99,
+    rating: 4.9,
+    inStock: true,
+  },
+  {
+    id: 8,
+    name: 'Webcam',
+    category: 'Electronics',
+    price: 79.99,
+    rating: 4.4,
+    inStock: true,
+  },
+  {
+    id: 9,
+    name: 'Phone Charger',
+    category: 'Accessories',
+    price: 19.99,
+    rating: 4.1,
+    inStock: true,
+  },
+  {
+    id: 10,
+    name: 'Desk Organizer',
+    category: 'Accessories',
+    price: 24.99,
+    rating: 4.0,
+    inStock: false,
+  },
 ];
 
 class ProductFilterCubit extends Cubit<ProductState> {
@@ -92,9 +162,10 @@ class ProductFilterCubit extends Cubit<ProductState> {
     // Apply search filter
     if (this.state.searchQuery) {
       const query = this.state.searchQuery.toLowerCase();
-      results = results.filter((p) =>
-        p.name.toLowerCase().includes(query) ||
-        p.category.toLowerCase().includes(query)
+      results = results.filter(
+        (p) =>
+          p.name.toLowerCase().includes(query) ||
+          p.category.toLowerCase().includes(query),
       );
     }
 
@@ -105,7 +176,9 @@ class ProductFilterCubit extends Cubit<ProductState> {
 
     // Apply price range filter
     results = results.filter(
-      (p) => p.price >= this.state.priceRange.min && p.price <= this.state.priceRange.max
+      (p) =>
+        p.price >= this.state.priceRange.min &&
+        p.price <= this.state.priceRange.max,
     );
 
     // Apply stock filter
@@ -176,7 +249,9 @@ export function FilteringSortingInteractive() {
             <div className="space-y-3 p-3 bg-surface-muted rounded-lg">
               {/* Category Filter */}
               <div>
-                <label className="block text-xs font-medium mb-1">Category</label>
+                <label className="block text-xs font-medium mb-1">
+                  Category
+                </label>
                 <select
                   value={state.categoryFilter}
                   onChange={(e) => cubit.setCategoryFilter(e.target.value)}
@@ -202,7 +277,12 @@ export function FilteringSortingInteractive() {
                     min={cubit.priceStats.min}
                     max={cubit.priceStats.max}
                     value={state.priceRange.min}
-                    onChange={(e) => cubit.setPriceRange(Number(e.target.value), state.priceRange.max)}
+                    onChange={(e) =>
+                      cubit.setPriceRange(
+                        Number(e.target.value),
+                        state.priceRange.max,
+                      )
+                    }
                     className="flex-1"
                   />
                   <input
@@ -210,7 +290,12 @@ export function FilteringSortingInteractive() {
                     min={cubit.priceStats.min}
                     max={cubit.priceStats.max}
                     value={state.priceRange.max}
-                    onChange={(e) => cubit.setPriceRange(state.priceRange.min, Number(e.target.value))}
+                    onChange={(e) =>
+                      cubit.setPriceRange(
+                        state.priceRange.min,
+                        Number(e.target.value),
+                      )
+                    }
                     className="flex-1"
                   />
                 </div>
@@ -225,7 +310,10 @@ export function FilteringSortingInteractive() {
                   onChange={cubit.toggleInStockOnly}
                   className="w-3 h-3 cursor-pointer"
                 />
-                <label htmlFor="inStock" className="text-xs font-medium cursor-pointer">
+                <label
+                  htmlFor="inStock"
+                  className="text-xs font-medium cursor-pointer"
+                >
                   In Stock Only
                 </label>
               </div>
@@ -241,7 +329,12 @@ export function FilteringSortingInteractive() {
                   <option value="price">Sort by Price</option>
                   <option value="rating">Sort by Rating</option>
                 </select>
-                <Button onClick={cubit.toggleSortOrder} variant="outline" size="sm" className="px-2">
+                <Button
+                  onClick={cubit.toggleSortOrder}
+                  variant="outline"
+                  size="sm"
+                  className="px-2"
+                >
                   {state.sortOrder === 'asc' ? (
                     <ArrowUp className="w-3 h-3" />
                   ) : (
@@ -255,7 +348,12 @@ export function FilteringSortingInteractive() {
               <span className="text-muted-foreground">
                 {cubit.filteredAndSortedProducts.length} products
               </span>
-              <Button onClick={cubit.resetFilters} variant="outline" size="sm" className="text-xs px-2 py-1">
+              <Button
+                onClick={cubit.resetFilters}
+                variant="outline"
+                size="sm"
+                className="text-xs px-2 py-1"
+              >
                 Reset
               </Button>
             </div>
@@ -276,8 +374,12 @@ export function FilteringSortingInteractive() {
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h4 className="font-semibold text-sm">{product.name}</h4>
-                        <p className="text-xs text-muted-foreground">{product.category}</p>
+                        <h4 className="font-semibold text-sm">
+                          {product.name}
+                        </h4>
+                        <p className="text-xs text-muted-foreground">
+                          {product.category}
+                        </p>
                       </div>
                       <div className="text-right">
                         <span className="text-sm font-bold text-green-600 dark:text-green-400">

@@ -36,7 +36,11 @@ describe('ReduxDevToolsAdapter - State Editing', () => {
     };
   }
 
-  class UserCubit extends Cubit<{ name: string; age: number; profile: { bio: string } }> {
+  class UserCubit extends Cubit<{
+    name: string;
+    age: number;
+    profile: { bio: string };
+  }> {
     constructor() {
       super({
         name: 'Alice',
@@ -118,7 +122,9 @@ describe('ReduxDevToolsAdapter - State Editing', () => {
 
   describe('handleStateEdit - error handling', () => {
     it('should handle missing path', () => {
-      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
       const _adapter = new ReduxDevToolsAdapter({ enabled: true });
 
       const messageHandler = mockDevTools.subscribe.mock.calls[0][0];
@@ -139,7 +145,9 @@ describe('ReduxDevToolsAdapter - State Editing', () => {
     });
 
     it('should handle empty path', () => {
-      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
       const _adapter = new ReduxDevToolsAdapter({ enabled: true });
 
       const messageHandler = mockDevTools.subscribe.mock.calls[0][0];
@@ -161,7 +169,9 @@ describe('ReduxDevToolsAdapter - State Editing', () => {
     });
 
     it('should handle non-existent bloc', () => {
-      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
       const _adapter = new ReduxDevToolsAdapter({ enabled: true });
 
       const messageHandler = mockDevTools.subscribe.mock.calls[0][0];
@@ -183,7 +193,9 @@ describe('ReduxDevToolsAdapter - State Editing', () => {
     });
 
     it('should handle non-existent property in path', () => {
-      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
       const adapter = new ReduxDevToolsAdapter({ enabled: true });
       const cubit = new UserCubit();
 

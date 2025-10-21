@@ -121,7 +121,7 @@ class AppCubit extends Cubit<AppState> {
   get cartTotal(): number {
     return this.state.cart.items.reduce(
       (sum, item) => sum + item.price * item.quantity,
-      0
+      0,
     );
   }
 
@@ -203,14 +203,17 @@ function DerivedSelectorComponent() {
   const [state] = useBloc(AppCubit, {
     dependencies: (bloc) => [
       bloc.state.cart.items.length,
-      bloc.state.cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0),
+      bloc.state.cart.items.reduce(
+        (sum, item) => sum + item.price * item.quantity,
+        0,
+      ),
     ],
   });
 
   const itemCount = state.cart.items.length;
   const total = state.cart.items.reduce(
     (sum, item) => sum + item.price * item.quantity,
-    0
+    0,
   );
 
   return (
@@ -301,7 +304,9 @@ function ComputedSelectorComponent() {
       <div className="text-sm text-amber-800 dark:text-amber-200 space-y-1">
         <p>Subtotal: ${cubit.cartTotal.toFixed(2)}</p>
         <p>Discount: {cubit.state.cart.discount}%</p>
-        <p className="font-semibold">Final: ${cubit.cartTotalWithDiscount.toFixed(2)}</p>
+        <p className="font-semibold">
+          Final: ${cubit.cartTotalWithDiscount.toFixed(2)}
+        </p>
       </div>
       <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
         ✅ Tracks computed properties from getters
@@ -426,10 +431,11 @@ export function CustomSelectorsInteractive() {
             💡 Selector Performance Impact
           </p>
           <p className="text-sm text-muted-foreground">
-            Notice how the red "No Selector" component re-renders on <strong>every</strong>{' '}
-            action, while the others only re-render when their specific selected values
-            change. In large applications with hundreds of components, this optimization is
-            crucial for maintaining 60fps and responsive UIs.
+            Notice how the red "No Selector" component re-renders on{' '}
+            <strong>every</strong> action, while the others only re-render when
+            their specific selected values change. In large applications with
+            hundreds of components, this optimization is crucial for maintaining
+            60fps and responsive UIs.
           </p>
         </div>
       </div>

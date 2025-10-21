@@ -34,7 +34,7 @@ const DEFAULT_OPTIONS: Required<GridLayoutOptions> = {
  */
 export function applyGridLayout(
   nodes: Node[],
-  options: GridLayoutOptions = {}
+  options: GridLayoutOptions = {},
 ): Node[] {
   const opts = { ...DEFAULT_OPTIONS, ...options };
 
@@ -118,7 +118,7 @@ function groupNodesByPattern(nodes: Node[]): {
  */
 function applySimpleGrid(
   nodes: Node[],
-  opts: Required<GridLayoutOptions>
+  opts: Required<GridLayoutOptions>,
 ): Node[] {
   return nodes.map((node, idx) => {
     const col = idx % opts.columns;

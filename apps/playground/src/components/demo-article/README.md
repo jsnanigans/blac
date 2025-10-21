@@ -13,6 +13,7 @@ These components provide a flexible, component-based system for building demos t
 The required wrapper component that enforces consistent structure across all demos.
 
 **Features:**
+
 - Renders header with title, difficulty badge, and tags
 - Scroll progress indicator
 - Prev/next navigation
@@ -41,11 +42,7 @@ const metadata = {
 
 function SimpleCounterDemo() {
   return (
-    <DemoArticle
-      metadata={metadata}
-      showBlocGraph={true}
-      graphLayout="grid"
-    >
+    <DemoArticle metadata={metadata} showBlocGraph={true} graphLayout="grid">
       {/* Your demo content here */}
     </DemoArticle>
   );
@@ -54,14 +51,14 @@ function SimpleCounterDemo() {
 
 **Props:**
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `metadata` | `DemoMetadata` | **required** | Demo metadata (title, description, etc.) |
-| `showBlocGraph` | `boolean` | `false` | Enable Bloc graph visualization |
-| `graphLayout` | `'grid' \| 'force'` | `'grid'` | Graph layout algorithm |
-| `highlightLifecycle` | `boolean` | `true` | Highlight lifecycle states in graph |
-| `children` | `React.ReactNode` | **required** | Demo content |
-| `className` | `string` | - | Additional CSS classes |
+| Prop                 | Type                | Default      | Description                              |
+| -------------------- | ------------------- | ------------ | ---------------------------------------- |
+| `metadata`           | `DemoMetadata`      | **required** | Demo metadata (title, description, etc.) |
+| `showBlocGraph`      | `boolean`           | `false`      | Enable Bloc graph visualization          |
+| `graphLayout`        | `'grid' \| 'force'` | `'grid'`     | Graph layout algorithm                   |
+| `highlightLifecycle` | `boolean`           | `true`       | Highlight lifecycle states in graph      |
+| `children`           | `React.ReactNode`   | **required** | Demo content                             |
+| `className`          | `string`            | -            | Additional CSS classes                   |
 
 ---
 
@@ -70,6 +67,7 @@ function SimpleCounterDemo() {
 Content grouping component with theme colors for organizing demo content.
 
 **Features:**
+
 - Color-themed sections (cubit, bloc, event, tip, warning, etc.)
 - Smooth scroll anchor support
 - Entrance animations on scroll
@@ -85,20 +83,20 @@ import { ArticleSection, SectionHeader } from './components/demo-article';
   <Prose>
     <p>A Cubit is the simplest form of state management...</p>
   </Prose>
-</ArticleSection>
+</ArticleSection>;
 ```
 
 **Props:**
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `theme` | `SectionTheme` | `'neutral'` | Theme color (cubit, bloc, event, tip, warning, success, info, danger, neutral) |
-| `id` | `string` | - | HTML id for scroll anchoring |
-| `children` | `React.ReactNode` | **required** | Section content |
-| `showBorder` | `boolean` | `true` | Show left border |
-| `noAnimation` | `boolean` | `false` | Disable entrance animation |
-| `backgroundColor` | `string` | - | Custom background color (overrides theme) |
-| `className` | `string` | - | Additional CSS classes |
+| Prop              | Type              | Default      | Description                                                                    |
+| ----------------- | ----------------- | ------------ | ------------------------------------------------------------------------------ |
+| `theme`           | `SectionTheme`    | `'neutral'`  | Theme color (cubit, bloc, event, tip, warning, success, info, danger, neutral) |
+| `id`              | `string`          | -            | HTML id for scroll anchoring                                                   |
+| `children`        | `React.ReactNode` | **required** | Section content                                                                |
+| `showBorder`      | `boolean`         | `true`       | Show left border                                                               |
+| `noAnimation`     | `boolean`         | `false`      | Disable entrance animation                                                     |
+| `backgroundColor` | `string`          | -            | Custom background color (overrides theme)                                      |
+| `className`       | `string`          | -            | Additional CSS classes                                                         |
 
 ---
 
@@ -107,6 +105,7 @@ import { ArticleSection, SectionHeader } from './components/demo-article';
 Typography component with optimal readability for article-style content.
 
 **Features:**
+
 - Line length constraints (60-80 characters)
 - Proper heading hierarchy
 - Styled lists, code, blockquotes
@@ -120,7 +119,8 @@ import { Prose, InlineCode } from './components/demo-article';
 <Prose size="base" maxWidth="md">
   <h2>What is a Cubit?</h2>
   <p>
-    A <InlineCode>Cubit</InlineCode> is a class that extends <InlineCode>BlocBase</InlineCode>
+    A <InlineCode>Cubit</InlineCode> is a class that extends{' '}
+    <InlineCode>BlocBase</InlineCode>
     and manages state through direct emission.
   </p>
   <ul>
@@ -128,17 +128,17 @@ import { Prose, InlineCode } from './components/demo-article';
     <li>Direct state emission</li>
     <li>No events required</li>
   </ul>
-</Prose>
+</Prose>;
 ```
 
 **Props:**
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `children` | `React.ReactNode` | **required** | Content |
-| `size` | `'sm' \| 'base' \| 'lg'` | `'base'` | Typography size |
-| `maxWidth` | `'sm' \| 'md' \| 'lg' \| 'xl' \| 'full'` | `'md'` | Max width constraint |
-| `className` | `string` | - | Additional CSS classes |
+| Prop        | Type                                     | Default      | Description            |
+| ----------- | ---------------------------------------- | ------------ | ---------------------- |
+| `children`  | `React.ReactNode`                        | **required** | Content                |
+| `size`      | `'sm' \| 'base' \| 'lg'`                 | `'base'`     | Typography size        |
+| `maxWidth`  | `'sm' \| 'md' \| 'lg' \| 'xl' \| 'full'` | `'md'`       | Max width constraint   |
+| `className` | `string`                                 | -            | Additional CSS classes |
 
 ---
 
@@ -147,6 +147,7 @@ import { Prose, InlineCode } from './components/demo-article';
 Syntax-highlighted code display with interactive features.
 
 **Features:**
+
 - Syntax highlighting (Night Owl theme)
 - Copy to clipboard button
 - Line highlighting with labels
@@ -181,23 +182,23 @@ class CounterCubit extends Cubit<number> {
   }}
   showLineNumbers
   collapsible
-/>
+/>;
 ```
 
 **Props:**
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `code` | `string` | **required** | Source code to display |
-| `language` | `Language` | **required** | Programming language |
-| `title` | `string` | - | Title/filename |
-| `highlightLines` | `number[]` | `[]` | Lines to highlight |
-| `lineLabels` | `Record<number, string>` | `{}` | Labels for specific lines |
-| `showLineNumbers` | `boolean` | `true` | Show line numbers |
-| `collapsible` | `boolean` | `false` | Allow collapsing |
-| `defaultCollapsed` | `boolean` | `false` | Start collapsed |
-| `maxHeight` | `string` | `'500px'` | Max height before scrolling |
-| `className` | `string` | - | Additional CSS classes |
+| Prop               | Type                     | Default      | Description                 |
+| ------------------ | ------------------------ | ------------ | --------------------------- |
+| `code`             | `string`                 | **required** | Source code to display      |
+| `language`         | `Language`               | **required** | Programming language        |
+| `title`            | `string`                 | -            | Title/filename              |
+| `highlightLines`   | `number[]`               | `[]`         | Lines to highlight          |
+| `lineLabels`       | `Record<number, string>` | `{}`         | Labels for specific lines   |
+| `showLineNumbers`  | `boolean`                | `true`       | Show line numbers           |
+| `collapsible`      | `boolean`                | `false`      | Allow collapsing            |
+| `defaultCollapsed` | `boolean`                | `false`      | Start collapsed             |
+| `maxHeight`        | `string`                 | `'500px'`    | Max height before scrolling |
+| `className`        | `string`                 | -            | Additional CSS classes      |
 
 ---
 
@@ -286,11 +287,13 @@ class CounterCubit extends Cubit<number> {
 Components automatically use design tokens defined in Tailwind config:
 
 ### Concept Colors
+
 - **Cubit**: Blue (`concept-cubit`)
 - **Bloc**: Purple (`concept-bloc`)
 - **Event**: Orange (`concept-event`)
 
 ### Semantic Colors
+
 - **Tip**: Blue (`semantic-tip`)
 - **Warning**: Yellow (`semantic-warning`)
 - **Success**: Green (`semantic-success`)
@@ -351,6 +354,7 @@ Components use Framer Motion for smooth animations:
 ## Next Steps
 
 See `/components/shared/README.md` for additional shared components like:
+
 - `StateViewer` - Live state display
 - `BlocGraphVisualizer` - Instance graph visualization
 - `ConceptCallout` - Highlighted tips and warnings
@@ -359,5 +363,6 @@ See `/components/shared/README.md` for additional shared components like:
 ## Examples
 
 Complete example demos can be found in:
+
 - `/demos/01-fundamentals/simple-counter` - Basic demo structure
 - `/demos/02-core-concepts/bloc-vs-cubit` - Comparison pattern

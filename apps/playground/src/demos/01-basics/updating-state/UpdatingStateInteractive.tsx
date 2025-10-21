@@ -79,7 +79,10 @@ function DiffDisplay({ before, after, operation }: DiffDisplayProps) {
     const removed = beforeVal !== undefined && afterVal === undefined;
 
     return (
-      <div key={key} className="flex items-center gap-3 py-1 text-xs sm:text-sm">
+      <div
+        key={key}
+        className="flex items-center gap-3 py-1 text-xs sm:text-sm"
+      >
         <span className="w-28 text-muted-foreground/80">{key}:</span>
         {removed && (
           <span className="font-mono text-rose-500 line-through">
@@ -97,7 +100,10 @@ function DiffDisplay({ before, after, operation }: DiffDisplayProps) {
               </>
             )}
             <span
-              className={cn('font-mono', changed && 'text-emerald-500 font-semibold')}
+              className={cn(
+                'font-mono',
+                changed && 'text-emerald-500 font-semibold',
+              )}
             >
               {JSON.stringify(afterVal)}
             </span>
@@ -108,16 +114,25 @@ function DiffDisplay({ before, after, operation }: DiffDisplayProps) {
   };
 
   const renderDiff = (obj1: any, obj2: any, path = '') => {
-    const keys = new Set([...Object.keys(obj1 || {}), ...Object.keys(obj2 || {})]);
+    const keys = new Set([
+      ...Object.keys(obj1 || {}),
+      ...Object.keys(obj2 || {}),
+    ]);
 
     return Array.from(keys).map((key) => {
       const val1 = obj1?.[key];
       const val2 = obj2?.[key];
 
-      if (typeof val1 === 'object' && typeof val2 === 'object' && !Array.isArray(val1)) {
+      if (
+        typeof val1 === 'object' &&
+        typeof val2 === 'object' &&
+        !Array.isArray(val1)
+      ) {
         return (
           <div key={key} className="ml-4 mt-2">
-            <div className="font-semibold text-sm text-foreground mb-1">{key}:</div>
+            <div className="font-semibold text-sm text-foreground mb-1">
+              {key}:
+            </div>
             {renderDiff(val1, val2, `${path}.${key}`)}
           </div>
         );
@@ -204,7 +219,9 @@ export function UpdatingStateInteractive() {
           </h4>
           <div className="relative space-y-2">
             <Button
-              onClick={() => executeOp(() => cubit.updateName('Charlie'), 'patch()')}
+              onClick={() =>
+                executeOp(() => cubit.updateName('Charlie'), 'patch()')
+              }
               variant="primary"
               size="sm"
               className="w-full"
@@ -219,14 +236,20 @@ export function UpdatingStateInteractive() {
             >
               Update Age (patch)
             </Button>
-            <p className="text-xs text-muted-foreground mt-2">Only updates specified fields</p>
+            <p className="text-xs text-muted-foreground mt-2">
+              Only updates specified fields
+            </p>
           </div>
         </div>
       </div>
 
       <AnimatePresence mode="wait">
         {beforeState && afterState && lastOp && (
-          <DiffDisplay before={beforeState} after={afterState} operation={lastOp} />
+          <DiffDisplay
+            before={beforeState}
+            after={afterState}
+            operation={lastOp}
+          />
         )}
       </AnimatePresence>
 

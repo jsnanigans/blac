@@ -62,12 +62,12 @@ describe('useBloc in React Strict Mode', () => {
     render(
       <React.StrictMode>
         <Component />
-      </React.StrictMode>
+      </React.StrictMode>,
     );
 
     // Strict Mode causes double mount in development
     await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
     });
 
     // Should have mounted at least once
@@ -108,7 +108,7 @@ describe('useBloc in React Strict Mode', () => {
     render(
       <React.StrictMode>
         <App />
-      </React.StrictMode>
+      </React.StrictMode>,
     );
 
     // Increment counter
@@ -149,23 +149,29 @@ describe('useBloc in React Strict Mode', () => {
     render(
       <React.StrictMode>
         <App />
-      </React.StrictMode>
+      </React.StrictMode>,
     );
 
     // Rapid toggle multiple times
     for (let i = 0; i < 5; i++) {
-      act(() => { screen.getByText('Toggle').click(); });
+      act(() => {
+        screen.getByText('Toggle').click();
+      });
       await act(async () => {
-        await new Promise(resolve => setTimeout(resolve, 5));
+        await new Promise((resolve) => setTimeout(resolve, 5));
       });
     }
 
     // Should still be functional
-    act(() => { screen.getByText('Increment').click(); });
+    act(() => {
+      screen.getByText('Increment').click();
+    });
 
     // Toggle back on if needed
     if (!screen.queryByTestId('count')) {
-      act(() => { screen.getByText('Toggle').click(); });
+      act(() => {
+        screen.getByText('Toggle').click();
+      });
     }
 
     expect(screen.getByTestId('count')).toHaveTextContent('1');
@@ -185,7 +191,7 @@ describe('useBloc in React Strict Mode', () => {
     const { unmount } = render(
       <React.StrictMode>
         <Component />
-      </React.StrictMode>
+      </React.StrictMode>,
     );
 
     act(() => {
@@ -204,7 +210,7 @@ describe('useBloc in React Strict Mode', () => {
     render(
       <React.StrictMode>
         <Component />
-      </React.StrictMode>
+      </React.StrictMode>,
     );
 
     // State should be reset (new instance created)
@@ -225,7 +231,7 @@ describe('useBloc in React Strict Mode', () => {
     const { unmount } = render(
       <React.StrictMode>
         <Component />
-      </React.StrictMode>
+      </React.StrictMode>,
     );
 
     act(() => {
@@ -244,7 +250,7 @@ describe('useBloc in React Strict Mode', () => {
     render(
       <React.StrictMode>
         <Component />
-      </React.StrictMode>
+      </React.StrictMode>,
     );
 
     // State should be reset because bloc was disposed
@@ -273,7 +279,7 @@ describe('useBloc in React Strict Mode', () => {
           <Component1 />
           <Component2 />
         </div>
-      </React.StrictMode>
+      </React.StrictMode>,
     );
 
     expect(screen.getByTestId('count1')).toHaveTextContent('0');
@@ -345,7 +351,7 @@ describe('useBloc in React Strict Mode', () => {
         <ErrorBoundary>
           <Component />
         </ErrorBoundary>
-      </React.StrictMode>
+      </React.StrictMode>,
     );
 
     expect(screen.getByTestId('value')).toHaveTextContent('ok');
@@ -371,7 +377,7 @@ describe('useBloc in React Strict Mode', () => {
           <button
             onClick={() => {
               bloc.increment();
-              setLocalState(s => s + 1);
+              setLocalState((s) => s + 1);
             }}
           >
             Update Both
@@ -383,7 +389,7 @@ describe('useBloc in React Strict Mode', () => {
     render(
       <React.StrictMode>
         <Component />
-      </React.StrictMode>
+      </React.StrictMode>,
     );
 
     expect(screen.getByTestId('bloc-count')).toHaveTextContent('0');

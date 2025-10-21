@@ -178,7 +178,9 @@ export class PersistencePlugin<TState> implements BlocPlugin<TState> {
   /**
    * Get effective schema (plugin schema or bloc schema)
    */
-  private getSchema(bloc: BlocBase<TState>): StandardSchemaV1<any, TState> | undefined {
+  private getSchema(
+    bloc: BlocBase<TState>,
+  ): StandardSchemaV1<any, TState> | undefined {
     // If plugin explicitly sets schema to null, disable validation
     if (this.schema === null) {
       return undefined;
