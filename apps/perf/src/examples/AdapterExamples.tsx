@@ -1154,6 +1154,326 @@ function RenderCounterExample() {
 }
 
 // =============================================================================
+// Example 12: Automatic Dependency Tracking (No Selector Needed!)
+// =============================================================================
+
+interface AppState {
+  user: {
+    profile: {
+      name: string;
+      email: string;
+    };
+    settings: {
+      theme: 'light' | 'dark';
+      notifications: boolean;
+    };
+  };
+  counter: number;
+  showCounter: boolean;
+  lastUpdate: number;
+}
+
+class AutoTrackCubit extends Cubit<AppState> {
+  constructor() {
+    super({
+      user: {
+        profile: {
+          name: 'Alice',
+          email: 'alice@example.com',
+        },
+        settings: {
+          theme: 'light',
+          notifications: true,
+        },
+      },
+      counter: 0,
+      showCounter: true,
+      lastUpdate: Date.now(),
+    });
+  }
+
+  updateName = (name: string) => {
+    this.emit({
+      ...this.state,
+      user: {
+        ...this.state.user,
+        profile: { ...this.state.user.profile, name },
+      },
+      lastUpdate: Date.now(),
+    });
+  };
+
+  updateEmail = (email: string) => {
+    this.emit({
+      ...this.state,
+      user: {
+        ...this.state.user,
+        profile: { ...this.state.user.profile, email },
+      },
+      lastUpdate: Date.now(),
+    });
+  };
+
+  toggleTheme = () => {
+    this.emit({
+      ...this.state,
+      user: {
+        ...this.state.user,
+        settings: {
+          ...this.state.user.settings,
+          theme: this.state.user.settings.theme === 'light' ? 'dark' : 'light',
+        },
+      },
+      lastUpdate: Date.now(),
+    });
+  };
+
+  incrementCounter = () => {
+    this.emit({
+      ...this.state,
+      counter: this.state.counter + 1,
+      lastUpdate: Date.now(),
+    });
+  };
+
+  toggleShowCounter = () => {
+    this.emit({
+      ...this.state,
+      showCounter: !this.state.showCounter,
+      lastUpdate: Date.now(),
+    });
+  };
+}
+
+// Component that only accesses user.profile.name - auto-tracks only that path!
+const AutoTrackUserName = memo(() => {
+  const [state] = useBlocAdapter(AutoTrackCubit);
+  // No selector needed! Only re-renders when state.user.profile.name changes
+
+  return (
+    <div className="profile-card">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <div style={{ fontSize: '12px', color: '#64748b' }}>Name (Auto-tracked)</div>
+          <div style={{ fontWeight: 'bold' }}>{state.user.profile.name}</div>
+        </div>
+        {useRenderCount('AutoTrackUserName')}
+      </div>
+    </div>
+  );
+});
+AutoTrackUserName.displayName = 'AutoTrackUserName';
+
+// Component that only accesses user.profile.email
+const AutoTrackUserEmail = memo(() => {
+  const [state] = useBlocAdapter(AutoTrackCubit);
+
+  return (
+    <div className="profile-card">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <div style={{ fontSize: '12px', color: '#64748b' }}>Email (Auto-tracked)</div>
+          <div style={{ fontWeight: 'bold' }}>{state.user.profile.email}</div>
+        </div>
+        {useRenderCount('AutoTrackUserEmail')}
+      </div>
+    </div>
+  );
+});
+AutoTrackUserEmail.displayName = 'AutoTrackUserEmail';
+
+// Component that only accesses user.settings.theme
+const AutoTrackTheme = memo(() => {
+  const [state] = useBlocAdapter(AutoTrackCubit);
+
+  return (
+    <div className="profile-card">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <div style={{ fontSize: '12px', color: '#64748b' }}>Theme (Auto-tracked)</div>
+          <div style={{ fontWeight: 'bold' }}>
+            {state.user.settings.theme === 'light' ? '☀️ Light' : '🌙 Dark'}
+          </div>
+        </div>
+        {useRenderCount('AutoTrackTheme')}
+      </div>
+    </div>
+  );
+});
+AutoTrackTheme.displayName = 'AutoTrackTheme';
+
+// Component with conditional access - demonstrates dynamic dependency tracking
+const AutoTrackConditionalCounter = memo(() => {
+  const [state] = useBlocAdapter(AutoTrackCubit);
+
+  // When showCounter is true, tracks both showCounter AND counter
+  // When showCounter is false, only tracks showCounter
+  return (
+    <div className="profile-card">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ width: '100%' }}>
+          <div style={{ fontSize: '12px', color: '#64748b' }}>Conditional Counter (Auto-tracked)</div>
+          <div style={{ fontWeight: 'bold', marginTop: '4px' }}>
+            {state.showCounter ? (
+              <span>Count: {state.counter}</span>
+            ) : (
+              <span>Counter Hidden</span>
+            )}
+          </div>
+        </div>
+        {useRenderCount('AutoTrackConditionalCounter')}
+      </div>
+    </div>
+  );
+});
+AutoTrackConditionalCounter.displayName = 'AutoTrackConditionalCounter';
+
+function AutoTrackingExample() {
+  const [state, cubit] = useBlocAdapter(AutoTrackCubit);
+  const [nameInput, setNameInput] = useState('');
+  const [emailInput, setEmailInput] = useState('');
+
+  return (
+    <div className="example-card">
+      <h3>12. Automatic Dependency Tracking 🎯</h3>
+      <p className="example-description">
+        <strong>No selectors required!</strong> Components automatically track only the properties they access.
+      </p>
+
+      <div style={{
+        marginBottom: '20px',
+        padding: '15px',
+        background: '#ecfdf5',
+        borderRadius: '6px',
+        borderLeft: '4px solid #10b981',
+      }}>
+        <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#065f46' }}>
+          ✨ How it works
+        </div>
+        <div style={{ fontSize: '13px', lineHeight: '1.6', color: '#047857' }}>
+          Each component automatically tracks which properties it accesses during render.
+          When state changes, only components that accessed changed properties will re-render.
+          <strong> No manual selectors needed!</strong>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '20px' }}>
+        <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#64748b' }}>
+          Update Controls
+        </h4>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+          <div className="input-group">
+            <input
+              type="text"
+              placeholder="New name..."
+              value={nameInput}
+              onChange={(e) => setNameInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && nameInput.trim()) {
+                  cubit.updateName(nameInput);
+                  setNameInput('');
+                }
+              }}
+            />
+            <button
+              onClick={() => {
+                if (nameInput.trim()) {
+                  cubit.updateName(nameInput);
+                  setNameInput('');
+                }
+              }}
+            >
+              Update Name
+            </button>
+          </div>
+          <div className="input-group">
+            <input
+              type="email"
+              placeholder="New email..."
+              value={emailInput}
+              onChange={(e) => setEmailInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && emailInput.trim()) {
+                  cubit.updateEmail(emailInput);
+                  setEmailInput('');
+                }
+              }}
+            />
+            <button
+              onClick={() => {
+                if (emailInput.trim()) {
+                  cubit.updateEmail(emailInput);
+                  setEmailInput('');
+                }
+              }}
+            >
+              Update Email
+            </button>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
+          <button onClick={cubit.toggleTheme}>Toggle Theme</button>
+          <button onClick={cubit.incrementCounter}>Increment Counter</button>
+          <button onClick={cubit.toggleShowCounter}>
+            {state.showCounter ? 'Hide Counter' : 'Show Counter'}
+          </button>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '20px' }}>
+        <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#64748b' }}>
+          Auto-Tracked Components (No Selectors! 🎉)
+        </h4>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+          <AutoTrackUserName />
+          <AutoTrackUserEmail />
+          <AutoTrackTheme />
+        </div>
+        <div style={{ marginTop: '10px' }}>
+          <AutoTrackConditionalCounter />
+        </div>
+      </div>
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#f0f9ff',
+        borderRadius: '6px',
+        fontSize: '13px',
+      }}>
+        <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>💡 Try this:</div>
+        <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.6' }}>
+          <li>Update the <strong>name</strong> - only <code>AutoTrackUserName</code> re-renders</li>
+          <li>Update the <strong>email</strong> - only <code>AutoTrackUserEmail</code> re-renders</li>
+          <li>Toggle <strong>theme</strong> - only <code>AutoTrackTheme</code> re-renders</li>
+          <li>Increment <strong>counter</strong> - only <code>AutoTrackConditionalCounter</code> re-renders (if shown)</li>
+          <li>Toggle <strong>show counter</strong> - <code>AutoTrackConditionalCounter</code> re-renders and dependencies update!</li>
+        </ul>
+      </div>
+
+      <div style={{
+        marginTop: '15px',
+        padding: '15px',
+        background: '#fef3c7',
+        borderRadius: '6px',
+        fontSize: '12px',
+        borderLeft: '4px solid #f59e0b',
+      }}>
+        <div style={{ fontWeight: 'bold', marginBottom: '6px', color: '#92400e' }}>
+          ⚠️ Performance Note
+        </div>
+        <div style={{ color: '#78350f' }}>
+          Auto-tracking uses Proxies and has a small overhead. For deeply nested objects or
+          performance-critical paths, explicit selectors may still be faster. The system
+          automatically tracks up to 2 levels deep by default (configurable).
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
 // Main Examples Page
 // =============================================================================
 
@@ -1184,6 +1504,7 @@ export function AdapterExamples() {
 
   const renderPerformanceExamples = () => (
     <>
+      <AutoTrackingExample />
       <RenderCounterExample />
     </>
   );

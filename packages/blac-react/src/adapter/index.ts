@@ -15,3 +15,32 @@ export {
   clearAdapterCache,
   resetAdapterCacheStats,
 } from './AdapterCache';
+
+export { DependencyTracker } from './DependencyTracker';
+
+export {
+  AutoTrackDebugger,
+  getGlobalDebugger,
+  enableGlobalDebug,
+  disableGlobalDebug,
+} from './AutoTrackDebugger';
+export type {
+  DependencyChangeInfo,
+  RerenderInfo,
+  PerformanceMetrics,
+} from './AutoTrackDebugger';
+
+export {
+  devToolsRegistry,
+  enableDevTools,
+  disableDevTools,
+  isDevToolsEnabled,
+  measurePerformance,
+  reportRerender,
+} from './DevToolsHooks';
+export type {
+  DevToolsSubscriptionInfo,
+  DevToolsAdapterInfo,
+  DevToolsRerenderEvent,
+  DevToolsPerformanceEvent,
+} from './DevToolsHooks';

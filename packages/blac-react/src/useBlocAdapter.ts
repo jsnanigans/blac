@@ -146,10 +146,7 @@ function useBlocAdapter<
   const componentRef = useRef<object & { __blocInstanceId?: string }>({});
 
   // Stable subscription ID for auto-tracking
-  const subscriptionIdRef = useRef<string>();
-  if (!subscriptionIdRef.current) {
-    subscriptionIdRef.current = `comp-${Math.random().toString(36).slice(2, 11)}`;
-  }
+  const subscriptionIdRef = useRef<string>(`comp-${Math.random().toString(36).slice(2, 11)}`);
 
   // Determine instance ID for the bloc
   const instanceKey = useMemo(() => {
@@ -254,7 +251,7 @@ function useBlocAdapter<
     if (!options?.selector && adapter.isAutoTrackingEnabled()) {
       adapter.completeDependencyTracking(subscriptionIdRef.current!);
     }
-  });
+  }, [adapter, options?.selector, state]); // Re-run when state changes to track new dependencies
 
   // Mount/unmount lifecycle
   useEffect(() => {

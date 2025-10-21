@@ -671,6 +671,7 @@ describe('Edge Case Testing', () => {
 
       // Update untracked property - should NOT rerender
       renderSpy.mockClear();
+      expect(renderSpy).toHaveBeenCalledTimes(0);
       await user.click(screen.getByText('Update prop100'));
 
       // Verify state was updated but component did not re-render

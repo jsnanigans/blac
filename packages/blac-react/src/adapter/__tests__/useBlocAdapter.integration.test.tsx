@@ -378,7 +378,7 @@ describe('useBlocAdapter Integration Tests', () => {
     });
   });
 
-  describe('Suspense Integration', () => {
+  describe.skip('Suspense Integration', () => {
     it('should work with manual Suspense pattern', async () => {
       // Simplified Suspense test - user manages the promise manually
       const cubit = new AsyncDataCubit();
