@@ -373,7 +373,7 @@ function useBlocAdapter<B extends BlocConstructor<BlocBase<any>>, R = any>(
         autoTrackingEnabled: adapter.isAutoTrackingEnabled(),
       });
     }
-  }, [options?.selector, state]); // Re-run when state changes to track new dependencies
+  }, [options?.selector, adapter]); // Complete tracking once per mount, not on every state change
 
   // Mount/unmount lifecycle
   useEffect(() => {
@@ -444,10 +444,7 @@ function useBlocAdapter<B extends BlocConstructor<BlocBase<any>>, R = any>(
         }
       }
     };
-  }, [
-    bloc.uid,
-    finalInstanceId
-  ]);
+  }, [bloc.uid, finalInstanceId]);
 
   // Return state and bloc instance
   // Type is determined by overloads

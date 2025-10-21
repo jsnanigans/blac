@@ -176,7 +176,9 @@ export class ReactBlocAdapter<S = any> {
 
     // Check global config for auto-tracking
     const blacConfig = Blac.config;
-    this.autoTrackingEnabled = blacConfig.proxyDependencyTracking !== false && bloc.config.proxyDependencyTracking !== false;
+    this.autoTrackingEnabled =
+      blacConfig.proxyDependencyTracking !== false &&
+      bloc.config.proxyDependencyTracking !== false;
 
     // Initialize dependency tracker if auto-tracking is enabled
     if (this.autoTrackingEnabled) {
@@ -300,14 +302,16 @@ export class ReactBlocAdapter<S = any> {
       } else if (
         this.autoTrackingEnabled &&
         !subscription.selector &&
+        subscription.trackedDependencies &&
+        subscription.trackedDependencies.size === 0 &&
         this.previousSnapshot
       ) {
-        // Auto-tracking enabled but no dependencies tracked yet
-        // Don't notify - wait for dependencies to be established
+        // Auto-tracking enabled but dependencies were tracked and found to be empty
+        // Don't notify - component doesn't use any state
         shouldNotify = false;
         if (process.env.NODE_ENV === 'development') {
           console.log(
-            `[ReactBlocAdapter] Skipping ${subscription.id}: auto-tracking enabled but no dependencies tracked yet`,
+            `[ReactBlocAdapter] Skipping ${subscription.id}: auto-tracking enabled and no dependencies found`,
           );
         }
       } else {
