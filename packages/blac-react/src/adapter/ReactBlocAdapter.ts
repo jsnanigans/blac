@@ -16,6 +16,8 @@
  */
 
 import type { BlocBase } from '@blac/core';
+import { Blac } from '@blac/core';
+import { DependencyTracker } from './DependencyTracker';
 
 /**
  * Selector function type - extracts specific data from state
@@ -47,6 +49,12 @@ interface AdapterSubscription<R = any> {
   createdAt: number;
   /** Reference count (for batched subscriptions) */
   refCount: number;
+  /** Tracked dependencies for auto-tracking */
+  trackedDependencies?: Set<string>;
+  /** Render count for periodic re-tracking */
+  renderCount?: number;
+  /** Last version when dependencies were tracked */
+  lastTrackedVersion?: number;
 }
 
 /**
@@ -124,6 +132,9 @@ export class ReactBlocAdapter<S = any> {
   /** Cached snapshot of current state */
   private snapshot: StateSnapshot<S>;
 
+  /** Previous snapshot for dependency comparison */
+  private previousSnapshot: StateSnapshot<S> | null = null;
+
   /** Cache for selector results to ensure stable references */
   private selectorCache = new Map<Selector<S, any>, any>();
 
@@ -135,6 +146,15 @@ export class ReactBlocAdapter<S = any> {
 
   /** Generation counter for managing cleanup (similar to disposal pattern) */
   private generation = 0;
+
+  /** Dependency tracker for auto-tracking (null if disabled) */
+  private dependencyTracker: DependencyTracker | null = null;
+
+  /** Whether auto-tracking is enabled */
+  private autoTrackingEnabled = true;
+
+  /** Pending tracked states awaiting dependency extraction */
+  private pendingTrackedStates = new Map<string, any>();
 
   /**
    * Create a new adapter for a Bloc
@@ -151,6 +171,21 @@ export class ReactBlocAdapter<S = any> {
       timestamp: Date.now(),
     };
 
+    // Check global config for auto-tracking
+    const blacConfig = Blac.getInstance().config;
+    this.autoTrackingEnabled = blacConfig.proxyDependencyTracking !== false;
+
+    // Initialize dependency tracker if auto-tracking is enabled
+    if (this.autoTrackingEnabled) {
+      const maxDepth = blacConfig.proxyMaxDepth || 2;
+      this.dependencyTracker = new DependencyTracker(maxDepth);
+
+      // Enable debug mode in development
+      if (process.env.NODE_ENV === 'development') {
+        this.dependencyTracker.enableDebug(true);
+      }
+    }
+
     // Subscribe to bloc state changes
     this.subscribeToBloc();
   }
@@ -164,6 +199,9 @@ export class ReactBlocAdapter<S = any> {
     const result = this.bloc._subscriptionManager.subscribe({
       type: 'observer',
       notify: () => {
+        // Store previous snapshot for dependency comparison
+        this.previousSnapshot = this.snapshot;
+
         // State changed - increment version and update snapshot
         this.version++;
         this.snapshot = {
@@ -171,6 +209,11 @@ export class ReactBlocAdapter<S = any> {
           version: this.version,
           timestamp: Date.now(),
         };
+
+        // Clear proxy cache when state changes
+        if (this.dependencyTracker) {
+          this.dependencyTracker.clearCache();
+        }
 
         // Notify all subscriptions
         this.notifySubscriptions();
@@ -184,6 +227,7 @@ export class ReactBlocAdapter<S = any> {
    * Notify subscriptions of state changes
    *
    * Evaluates selectors and only notifies if results changed.
+   * For auto-tracked subscriptions, checks if tracked dependencies changed.
    * This is where the efficiency of the adapter pattern shines.
    *
    * @private
@@ -201,7 +245,7 @@ export class ReactBlocAdapter<S = any> {
       let shouldNotify = false;
 
       if (subscription.selector) {
-        // Evaluate selector with new state
+        // Selector path - evaluate selector with new state
         const result = subscription.selector(this.snapshot.state);
 
         // Compare with last result
@@ -212,8 +256,26 @@ export class ReactBlocAdapter<S = any> {
           subscription.lastResult = result;
           shouldNotify = true;
         }
+      } else if (
+        this.autoTrackingEnabled &&
+        subscription.trackedDependencies &&
+        subscription.trackedDependencies.size > 0 &&
+        this.previousSnapshot
+      ) {
+        // Auto-tracking path - check if tracked dependencies changed
+        shouldNotify = this.dependencyTracker!.haveDependenciesChanged(
+          subscription.trackedDependencies,
+          this.snapshot.state,
+          this.previousSnapshot.state
+        );
+
+        if (shouldNotify && process.env.NODE_ENV === 'development') {
+          console.log(
+            `[ReactBlocAdapter] Re-rendering ${subscription.id} due to dependency change`
+          );
+        }
       } else {
-        // No selector - always notify (will rely on proxy tracking or full state comparison)
+        // No selector and no tracked dependencies yet - always notify
         shouldNotify = true;
       }
 
@@ -253,6 +315,10 @@ export class ReactBlocAdapter<S = any> {
       lastNotifiedVersion: this.version,
       createdAt: Date.now(),
       refCount: 1,
+      // Initialize tracking fields
+      trackedDependencies: undefined,
+      renderCount: 0,
+      lastTrackedVersion: -1,
     };
 
     this.subscriptions.set(subscriptionId, subscription);
@@ -295,9 +361,11 @@ export class ReactBlocAdapter<S = any> {
    * to prevent infinite loops in React's useSyncExternalStore.
    *
    * @param selector - Optional selector to apply to snapshot
+   * @param subscriptionId - Optional subscription ID for auto-tracking
    * @returns Current state or selector result
    */
-  getSnapshot<R = S>(selector?: Selector<S, R>): R | S {
+  getSnapshot<R = S>(selector?: Selector<S, R>, subscriptionId?: string): R | S {
+    // If selector provided, use selector path (auto-tracking disabled for this subscription)
     if (selector) {
       // Check if we have a cached result for this selector
       if (this.selectorCache.has(selector)) {
@@ -309,7 +377,104 @@ export class ReactBlocAdapter<S = any> {
       this.selectorCache.set(selector, result);
       return result;
     }
+
+    // Auto-tracking path (no selector)
+    if (this.autoTrackingEnabled && this.dependencyTracker && subscriptionId) {
+      const subscription = this.subscriptions.get(subscriptionId);
+
+      if (subscription) {
+        // Increment render count
+        subscription.renderCount = (subscription.renderCount || 0) + 1;
+
+        // Check if we should re-track dependencies
+        const shouldReTrack = this.shouldReTrack(subscription);
+
+        if (shouldReTrack) {
+          // Start tracking for this render
+          this.dependencyTracker.startTracking();
+
+          // Create tracked proxy
+          const trackedState = this.dependencyTracker.createTrackedProxy(this.snapshot.state);
+
+          // Mark this subscription as pending tracking completion
+          this.pendingTrackedStates.set(subscriptionId, true);
+
+          return trackedState as S;
+        }
+      }
+
+      // Return tracked proxy (dependencies already established)
+      return this.dependencyTracker.createTrackedProxy(this.snapshot.state) as S;
+    }
+
+    // Fallback to regular state (no selector, no auto-tracking)
     return this.snapshot.state;
+  }
+
+  /**
+   * Check if a subscription should re-track dependencies
+   * @param subscription - The subscription to check
+   * @returns True if should re-track
+   */
+  private shouldReTrack(subscription: AdapterSubscription): boolean {
+    // Always track on first render
+    if (!subscription.trackedDependencies) {
+      return true;
+    }
+
+    // Re-track periodically to catch conditional dependency changes
+    // Every 10 renders or when version changed significantly
+    return (
+      subscription.renderCount! % 10 === 0 ||
+      subscription.lastTrackedVersion !== this.version
+    );
+  }
+
+  /**
+   * Complete dependency tracking for a subscription
+   * Should be called after render completes
+   * @param subscriptionId - The subscription ID
+   */
+  completeDependencyTracking(subscriptionId: string): void {
+    if (!this.autoTrackingEnabled || !this.dependencyTracker) {
+      return;
+    }
+
+    // Check if this subscription has pending tracking
+    if (!this.pendingTrackedStates.has(subscriptionId)) {
+      return;
+    }
+
+    const subscription = this.subscriptions.get(subscriptionId);
+    if (!subscription) {
+      this.pendingTrackedStates.delete(subscriptionId);
+      return;
+    }
+
+    // Stop tracking and get dependencies
+    const dependencies = this.dependencyTracker.stopTracking();
+
+    // Store dependencies on subscription
+    subscription.trackedDependencies = dependencies;
+    subscription.lastTrackedVersion = this.version;
+
+    // Clear pending flag
+    this.pendingTrackedStates.delete(subscriptionId);
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log(
+        `[ReactBlocAdapter] Tracked dependencies for ${subscriptionId}:`,
+        Array.from(dependencies)
+      );
+    }
+  }
+
+  /**
+   * Check if auto-tracking is enabled
+   * @returns True if auto-tracking is enabled
+   */
+  isAutoTrackingEnabled(): boolean {
+    return this.autoTrackingEnabled;
   }
 
   /**

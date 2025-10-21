@@ -145,6 +145,12 @@ function useBlocAdapter<
   // Component reference that persists across React Strict Mode remounts
   const componentRef = useRef<object & { __blocInstanceId?: string }>({});
 
+  // Stable subscription ID for auto-tracking
+  const subscriptionIdRef = useRef<string>();
+  if (!subscriptionIdRef.current) {
+    subscriptionIdRef.current = `comp-${Math.random().toString(36).slice(2, 11)}`;
+  }
+
   // Determine instance ID for the bloc
   const instanceKey = useMemo(() => {
     if (options?.instanceId) {
@@ -232,7 +238,7 @@ function useBlocAdapter<
 
   // Snapshot function for useSyncExternalStore
   const getSnapshot = useCallback(() => {
-    return adapter.getSnapshot(selectorRef.current);
+    return adapter.getSnapshot(selectorRef.current, subscriptionIdRef.current);
   }, [adapter]);
 
   // Server snapshot for SSR
@@ -242,6 +248,13 @@ function useBlocAdapter<
 
   // Subscribe to state changes using useSyncExternalStore
   const state = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+
+  // Complete dependency tracking after each render (for auto-tracking)
+  useEffect(() => {
+    if (!options?.selector && adapter.isAutoTrackingEnabled()) {
+      adapter.completeDependencyTracking(subscriptionIdRef.current!);
+    }
+  });
 
   // Mount/unmount lifecycle
   useEffect(() => {
