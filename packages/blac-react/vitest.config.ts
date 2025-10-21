@@ -22,6 +22,12 @@ export default defineConfig({
     maxWorkers: 2,
     environment: 'happy-dom',
     setupFiles: './vitest-setup.ts',
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/__archived__/**',
+      '**/.*/**',
+    ],
     onConsoleLog(log) {
       return true;
     },

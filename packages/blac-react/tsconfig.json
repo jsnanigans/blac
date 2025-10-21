@@ -27,5 +27,5 @@
     "vitest-setup.ts",
     "vitest.d.ts"
   ],
-  "exclude": ["publish.ts", "dev.ts"]
+  "exclude": ["publish.ts", "dev.ts", "src/__archived__/**/*"]
 }

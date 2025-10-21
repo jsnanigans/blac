@@ -1,7 +1,9 @@
 # CLAUDE.md
 
+This is an internal project with no external users, so we can do a clean changes and refactoring, without worrying about migrating from older versions or backwards compatibility.
+
 This project uses `jujutsu` instead of `git` for version control.
-use `jj` commands to interact with the repository.
+if you are instructed to do anything git related, use `jj` commands to interact with the repository.
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
@@ -13,17 +15,38 @@ A sophisticated TypeScript state management library implementing the BLoC (Busin
 
 BlaC is a monorepo containing:
 - **Core state management library** (`@blac/core`) with reactive Bloc/Cubit pattern
-- **React integration** (`@blac/react`) with optimized hooks and dependency tracking
+- **React integration** (`@blac/react`) with **Adapter Pattern** for optimal React 18 compatibility
 - **Plugin ecosystem** for persistence, logging, and extensibility
 - **Demo applications** showcasing patterns and usage
 - **Comprehensive documentation** and examples
+
+## ⚠️ Important: React Integration Migration (2025-10-21)
+
+The React integration has been **fully migrated** to the **Adapter Pattern**:
+
+- **Old Implementation** (Unified Tracking): Archived in `packages/blac-react/src/__archived__/`
+- **New Implementation** (Adapter Pattern): `useBloc` and `useBlocAdapter` now use the same implementation
+- **Key Change**: `useBloc` now uses selector-based subscriptions instead of automatic proxy tracking
+
+### What Changed
+- ✅ **Clean architecture** with adapter layer separating React and BlaC concerns
+- ✅ **Version-based change detection** instead of deep comparisons (better performance)
+- ✅ **React 18 compliance** via `useSyncExternalStore`
+- ✅ **Selector support** for fine-grained reactivity
+- ✅ **Proper lifecycle management** with reference counting
+
+### Migration Guide
+Old unified tracking tests are in `__archived__/tests/` but **not running**. The new adapter pattern is the only supported implementation.
+
+See `/spec/2025-10-20-optimized-react-integration/` for complete migration documentation.
 
 ## Architecture
 
 ### Core Concepts
 - **Blocs**: Event-driven state containers using class-based event handlers
 - **Cubits**: Simple state containers with direct state emission
-- **Proxy-based dependency tracking**: Automatic optimization of React re-renders
+- **Adapter Pattern**: Clean separation between React lifecycle and BlaC state management
+- **Selector-based reactivity**: Fine-grained subscriptions for optimal re-render control
 - **Plugin system**: Extensible architecture for custom functionality
 - **Instance management**: Shared, isolated, and persistent state patterns
 
@@ -181,17 +204,39 @@ class CounterBloc extends Vertex<number, IncrementEvent> {
 }
 ```
 
-### React Integration
+### React Integration (Adapter Pattern)
 ```typescript
+// Basic usage - full state
 function Counter() {
-  const [state, counterBloc] = useBloc(CounterBloc);
-
+  const [state, bloc] = useBloc(CounterBloc);
   return (
     <div>
       <p>Count: {state.count}</p>
-      <button onClick={counterBloc.increment}>+</button>
+      <button onClick={bloc.increment}>+</button>
     </div>
   );
+}
+
+// Optimized with selector - fine-grained reactivity
+function Counter() {
+  const [count, bloc] = useBloc(CounterBloc, {
+    selector: (state) => state.count
+  });
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={bloc.increment}>+</button>
+    </div>
+  );
+}
+
+// With lifecycle callbacks
+function DataLoader() {
+  const [data, bloc] = useBloc(DataBloc, {
+    onMount: (bloc) => bloc.loadData(),
+    onUnmount: (bloc) => bloc.cleanup(),
+  });
+  return <div>{data}</div>;
 }
 ```
 

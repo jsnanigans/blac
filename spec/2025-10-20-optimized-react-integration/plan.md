@@ -443,33 +443,119 @@ packages/blac-react/src/
 **Total**: ~2,000 lines of production code and tests
 **Core Change**: 3 critical lines in BlocBase.ts to fix dual notification
 
-### Implementation Status: ✅ COMPLETE
+### Implementation Status: ✅ COMPLETE - FULL MIGRATION
 
 **Completion Date**: 2025-10-21
-**Test Results**: 50 tests passing, 1 skipped (Suspense)
-**Status**: Production-ready for Phases 1-3
+**Migration Date**: 2025-10-21
+**Test Results**: 51 adapter tests (50 passing, 1 skipped for Suspense)
+**Status**: Production-ready - **Full migration complete**
 
-The implementation is complete and verified:
-1. ✅ All adapter tests passing (50/50, 1 Suspense test skipped for Phase 4)
-2. ✅ Critical BlocBase bug fixed (dual notification system)
-3. ✅ Integration tests passing with real React components
-4. ✅ Memory management verified (microtask-based cleanup)
-5. ✅ Backwards compatibility maintained (zero breaking changes)
-6. ✅ TypeScript types fully implemented with inference
-7. ✅ React Strict Mode compatibility verified
+## Full Migration Completed
+
+### What Changed
+1. ✅ **`useBloc` replaced**: Now re-exports `useBlocAdapter` (selector-based pattern)
+2. ✅ **Old implementation archived**: Unified tracking moved to `__archived__/unified-tracking/`
+3. ✅ **Old tests archived**: 23 test files moved to `__archived__/tests/`
+4. ✅ **Build configuration updated**: Vitest and TypeScript exclude archived directory
+5. ✅ **Documentation updated**: CLAUDE.md reflects new adapter-first architecture
+6. ✅ **Exports cleaned**: Primary hook is adapter-based, no legacy aliases
+
+### Architecture Change
+**Before (Unified Tracking)**:
+- Automatic proxy-based dependency tracking
+- Complex render phase tracking with UnifiedDependencyTracker
+- Subscription synchronization between render and commit phases
+
+**After (Adapter Pattern)**:
+- Clean adapter layer with `ReactBlocAdapter`
+- Explicit selector-based subscriptions
+- Version-based change detection (O(1))
+- Reference counting for lifecycle management
+- Built on `useSyncExternalStore` for React 18 compliance
+
+### Test Results
+- ✅ All 51 adapter tests passing (1 Suspense test skipped for Phase 4)
+- ✅ Critical BlocBase bug fixed (dual notification system)
+- ✅ Integration tests passing with real React components
+- ✅ Memory management verified (microtask-based cleanup)
+- ✅ TypeScript types fully implemented with inference
+- ✅ React Strict Mode compatibility verified
+- ⚠️ Old unified tracking tests archived (not running, preserved for reference)
+
+### Files Archived
+```
+packages/blac-react/src/__archived__/
+├── README.md                                      # Archive documentation
+├── unified-tracking/
+│   └── useBloc.old.ts                            # Old unified tracking hook
+└── tests/                                         # 23 test files
+    ├── useBloc.*.test.tsx                        # Various feature tests
+    ├── dependency-tracking*.test.tsx             # Dependency tracking tests
+    ├── deep-state-tracking*.test.tsx             # Deep state tests
+    └── ...                                       # Other legacy tests
+```
+
+### New Implementation
+```
+packages/blac-react/src/
+├── useBloc.ts                                     # Re-exports useBlocAdapter
+├── useBlocAdapter.ts                             # Primary implementation
+└── adapter/
+    ├── ReactBlocAdapter.ts                       # Adapter class
+    ├── AdapterCache.ts                           # WeakMap cache
+    └── __tests__/                                # 51 tests (50 passing)
+```
+
+### Breaking Changes
+**Note**: This is an internal project with no external users, so breaking changes are acceptable.
+
+1. **Proxy tracking removed**: Components must use selectors for fine-grained reactivity
+2. **`dependencies` option removed**: Use `selector` instead
+3. **UnifiedDependencyTracker not used**: Adapter uses SubscriptionManager directly
+4. **Render phase tracking removed**: No more render context IDs or commit phases
+
+### Migration Examples
+
+**Before (Unified Tracking)**:
+```typescript
+function Counter() {
+  const [state, bloc] = useBloc(CounterBloc);
+  // Proxy automatically tracks state.count access
+  return <div>{state.count}</div>;
+}
+```
+
+**After (Adapter Pattern)**:
+```typescript
+// Option 1: Full state (less optimal)
+function Counter() {
+  const [state, bloc] = useBloc(CounterBloc);
+  return <div>{state.count}</div>;
+}
+
+// Option 2: With selector (recommended)
+function Counter() {
+  const [count, bloc] = useBloc(CounterBloc, {
+    selector: (state) => state.count
+  });
+  return <div>{count}</div>;
+}
+```
+
+### Configuration Changes
+- **vitest.config.ts**: Excludes `__archived__/**` from test runs
+- **tsconfig.json**: Excludes `src/__archived__/**/*` from type checking
+- **index.ts**: Updated exports to reflect adapter-first architecture
 
 **Ready For**:
-- ✅ Production deployment
+- ✅ Production deployment (migration complete)
 - ✅ Real-world usage testing
-- ⏳ Migration guide development (Phase 8)
-- ⏳ Performance benchmarking (Phase 7)
+- ⏳ Performance benchmarking vs old implementation (Phase 7)
 - ⏳ Advanced React 18 features (Phase 4)
-
-**Known Issues**:
-- ~14 legacy `useBloc` tests failing (pre-existing, unrelated to adapter)
-- These should be cleaned up separately
+- ⏳ Documentation site updates with new examples
 
 **Documentation**:
 - See `COMPLETION_SUMMARY.md` for comprehensive implementation details
 - See `QUICK_START.md` for usage examples
-- See `USAGE_GUIDE.md` for migration patterns
+- See `USAGE_GUIDE.md` for API reference and patterns
+- See `__archived__/README.md` for information about archived code
