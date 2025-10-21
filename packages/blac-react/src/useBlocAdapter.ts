@@ -177,6 +177,9 @@ function useBlocAdapter<
     return instance as InstanceType<B>;
   }, [BlocClass, finalInstanceId, options?.staticProps]);
 
+  // Track if we've initiated async loading (for Suspense)
+  const hasInitiatedLoadRef = useRef(false);
+
   // Handle Suspense integration for async blocs
   if (options?.suspense) {
     // Check if bloc is loading
@@ -188,8 +191,9 @@ function useBlocAdapter<
       }
     }
 
-    // Start loading if needed
-    if (options.loadAsync && !options.isLoading?.(bloc)) {
+    // Start loading if needed (only once)
+    if (options.loadAsync && !options.isLoading?.(bloc) && !hasInitiatedLoadRef.current) {
+      hasInitiatedLoadRef.current = true;
       const loadPromise = options.loadAsync(bloc);
       if (loadPromise instanceof Promise) {
         // Throw to trigger Suspense
