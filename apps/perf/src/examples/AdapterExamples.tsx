@@ -5,9 +5,186 @@
  * including selectors, lifecycle callbacks, concurrent features, and more.
  */
 
-import React, { Suspense, useCallback, useTransition, useDeferredValue, useState, memo, useRef } from 'react';
+import React, {
+  Suspense,
+  useCallback,
+  useTransition,
+  useDeferredValue,
+  useState,
+  memo,
+  useRef,
+} from 'react';
 import { Cubit, Blac } from '@blac/core';
 import { useBlocAdapter } from '@blac/react';
+
+interface DeepState {
+  level1: {
+    value: number;
+    label: string;
+    level2: {
+      level3: {
+        level4: {
+          level5: {
+            level6: {
+              level7: {
+                level8: {
+                  level9: {
+                    level10: {
+                      value: number;
+                      label: string;
+                    };
+                  };
+                };
+              };
+            };
+          };
+        };
+      };
+    };
+  };
+}
+
+class DeepNestingCubit extends Cubit<DeepState> {
+  constructor() {
+    super({
+      level1: {
+        value: 0,
+        label: 'root',
+        level2: {
+          level3: {
+            level4: {
+              level5: {
+                level6: {
+                  level7: {
+                    level8: {
+                      level9: {
+                        level10: {
+                          value: 0,
+                          label: 'deep',
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  updateDeepValue = (value: number) => {
+    this.patch({
+      level1: {
+        ...this.state.level1,
+        level2: {
+          level3: {
+            level4: {
+              level5: {
+                level6: {
+                  level7: {
+                    level8: {
+                      level9: {
+                        level10: {
+                          value,
+                          label:
+                            this.state.level1.level2.level3.level4.level5.level6
+                              .level7.level8.level9.level10.label,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+  };
+
+  updateDeepLabel = (label: string) => {
+    this.patch({
+      level1: {
+        ...this.state.level1,
+        level2: {
+          level3: {
+            level4: {
+              level5: {
+                level6: {
+                  level7: {
+                    level8: {
+                      level9: {
+                        level10: {
+                          value:
+                            this.state.level1.level2.level3.level4.level5.level6
+                              .level7.level8.level9.level10.value,
+                          label,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+  };
+
+  updateRootValue = (value: number) => {
+    this.patch({
+      level1: {
+        value,
+        label: this.state.level1.label,
+        level2: this.state.level1.level2,
+      },
+    });
+  };
+
+  updateRootLabel = (label: string) => {
+    this.patch({
+      level1: {
+        value: this.state.level1.value,
+        label: label,
+        level2: this.state.level1.level2,
+      },
+    });
+  };
+}
+
+function DebugComponent() {
+  const [state, cubit] = useBlocAdapter(DeepNestingCubit);
+  useRenderCount('DebugComponent');
+  console.log('-----------------------------------');
+  console.log('DebugComponent render', { state });
+
+  const deepValue =
+    state.level1.level2.level3.level4.level5.level6.level7.level8.level9.level10
+      .value;
+  const rootValue = state.level1.value;
+  console.log('Selected values', { deepValue, rootValue });
+  console.log('-----------------------------------');
+
+  return (
+    <div>
+      <div data-testid="deep-value">{deepValue}</div>
+      <div data-testid="deep-value">{rootValue}</div>
+      <button onClick={() => cubit.updateDeepValue(42)}>Update Value</button>
+      <button onClick={() => cubit.updateDeepLabel('updated')}>
+        Update Label
+      </button>
+      <button onClick={() => cubit.updateRootValue(42)}>
+        Update Root Value
+      </button>
+      <button onClick={() => cubit.updateRootLabel('updated')}>
+        Update Root Label
+      </button>
+    </div>
+  );
+}
 
 // =============================================================================
 // Example 1: Basic Counter (Simple State)
@@ -37,7 +214,9 @@ function BasicCounter() {
   return (
     <div className="example-card">
       <h3>1. Basic Counter</h3>
-      <p className="example-description">Simple state subscription without selectors</p>
+      <p className="example-description">
+        Simple state subscription without selectors
+      </p>
       <div className="counter-display">Count: {count}</div>
       <div className="button-group">
         <button onClick={cubit.increment}>+</button>
@@ -78,10 +257,7 @@ class TodoCubit extends Cubit<TodoState> {
   addTodo = (text: string) => {
     this.emit({
       ...this.state,
-      todos: [
-        ...this.state.todos,
-        { id: Date.now(), text, completed: false },
-      ],
+      todos: [...this.state.todos, { id: Date.now(), text, completed: false }],
     });
   };
 
@@ -89,7 +265,7 @@ class TodoCubit extends Cubit<TodoState> {
     this.emit({
       ...this.state,
       todos: this.state.todos.map((todo) =>
-        todo.id === id ? { ...todo, completed: !todo.completed } : todo
+        todo.id === id ? { ...todo, completed: !todo.completed } : todo,
       ),
     });
   };
@@ -112,7 +288,8 @@ TodoCount.displayName = 'TodoCount';
 // Component using selector for active count
 const ActiveTodoCount = memo(() => {
   const [activeCount] = useBlocAdapter(TodoCubit, {
-    selector: (state: TodoState) => state.todos.filter((t) => !t.completed).length,
+    selector: (state: TodoState) =>
+      state.todos.filter((t) => !t.completed).length,
   });
 
   return <div className="stat-badge">Active: {activeCount}</div>;
@@ -207,7 +384,11 @@ function TodoExample() {
               checked={todo.completed}
               onChange={() => cubit.toggleTodo(todo.id)}
             />
-            <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
+            <span
+              style={{
+                textDecoration: todo.completed ? 'line-through' : 'none',
+              }}
+            >
               {todo.text}
             </span>
           </li>
@@ -235,14 +416,20 @@ class AnalyticsCubit extends Cubit<{ pageViews: number; events: string[] }> {
     this.emit({
       ...this.state,
       pageViews: this.state.pageViews + 1,
-      events: [...this.state.events, `Page view at ${new Date().toLocaleTimeString()}`],
+      events: [
+        ...this.state.events,
+        `Page view at ${new Date().toLocaleTimeString()}`,
+      ],
     });
   };
 
   trackEvent = (event: string) => {
     this.emit({
       ...this.state,
-      events: [...this.state.events, `${event} at ${new Date().toLocaleTimeString()}`],
+      events: [
+        ...this.state.events,
+        `${event} at ${new Date().toLocaleTimeString()}`,
+      ],
     });
   };
 }
@@ -267,7 +454,9 @@ function LifecycleExample() {
   return (
     <div className="example-card">
       <h3>3. Lifecycle Callbacks</h3>
-      <p className="example-description">onMount and onUnmount callbacks in action</p>
+      <p className="example-description">
+        onMount and onUnmount callbacks in action
+      </p>
 
       <div className="stat-badge">Page Views: {state.pageViews}</div>
 
@@ -306,7 +495,9 @@ class AsyncDataCubit extends Cubit<{ data: string | null }> {
 
     this._loadingPromise = new Promise<void>((resolve) => {
       setTimeout(() => {
-        this.emit({ data: `Data loaded at ${new Date().toLocaleTimeString()}` });
+        this.emit({
+          data: `Data loaded at ${new Date().toLocaleTimeString()}`,
+        });
         this._loadingPromise = null;
         resolve();
       }, 1500);
@@ -333,7 +524,9 @@ function AsyncComponent() {
   return (
     <div className="example-card">
       <h3>4. Async Data with Suspense</h3>
-      <p className="example-description">Manual Suspense pattern for async operations</p>
+      <p className="example-description">
+        Manual Suspense pattern for async operations
+      </p>
 
       <div className="data-display">{state.data || 'No data'}</div>
 
@@ -375,9 +568,12 @@ class SearchCubit extends Cubit<{ query: string; results: string[] }> {
 
   search = (query: string) => {
     // Simulate expensive search
-    const results = Array.from({ length: 50 }, (_, i) =>
-      `Result ${i + 1} for "${query}"`
-    ).filter((r) => query === '' || r.toLowerCase().includes(query.toLowerCase()));
+    const results = Array.from(
+      { length: 50 },
+      (_, i) => `Result ${i + 1} for "${query}"`,
+    ).filter(
+      (r) => query === '' || r.toLowerCase().includes(query.toLowerCase()),
+    );
 
     this.emit({ ...this.state, results });
   };
@@ -416,9 +612,7 @@ function TransitionExample() {
         {isPending && <span className="spinner">⏳</span>}
       </div>
 
-      <div className="stat-badge">
-        {state.results.length} results
-      </div>
+      <div className="stat-badge">{state.results.length} results</div>
 
       <div className="result-list">
         {state.results.slice(0, 10).map((result, i) => (
@@ -455,7 +649,7 @@ function DeferredExample() {
   // Expensive computation uses deferred value
   const filteredItems = React.useMemo(() => {
     return state.items.filter((item) =>
-      item.toLowerCase().includes(deferredFilter.toLowerCase())
+      item.toLowerCase().includes(deferredFilter.toLowerCase()),
     );
   }, [state.items, deferredFilter]);
 
@@ -522,9 +716,7 @@ class UserListCubit extends Cubit<{ users: User[]; lastUpdate: number }> {
 
   updateUserEmail = (id: number, email: string) => {
     this.emit({
-      users: this.state.users.map((u) =>
-        u.id === id ? { ...u, email } : u
-      ),
+      users: this.state.users.map((u) => (u.id === id ? { ...u, email } : u)),
       lastUpdate: Date.now(),
     });
   };
@@ -580,17 +772,23 @@ function CustomCompareExample() {
           onChange={(e) => setNewName(e.target.value)}
           placeholder="New user name..."
         />
-        <button onClick={() => {
-          if (newName.trim()) {
-            cubit.addUser(newName);
-            setNewName('');
-          }
-        }}>
+        <button
+          onClick={() => {
+            if (newName.trim()) {
+              cubit.addUser(newName);
+              setNewName('');
+            }
+          }}
+        >
           Add User
         </button>
       </div>
 
-      <button onClick={() => cubit.updateUserEmail(1, `alice+${Date.now()}@example.com`)}>
+      <button
+        onClick={() =>
+          cubit.updateUserEmail(1, `alice+${Date.now()}@example.com`)
+        }
+      >
         Update Alice's Email (Won't re-render list)
       </button>
 
@@ -634,7 +832,7 @@ function MemoizedSelectorExample() {
   const selector = useCallback(
     (state: { numbers: number[]; multiplier: number }) =>
       state.numbers.map((n) => n * multiplier),
-    [multiplier]
+    [multiplier],
   );
 
   const [multipliedNumbers, cubit] = useBlocAdapter(DataCubit, {
@@ -702,7 +900,8 @@ ValueDisplay.displayName = 'ValueDisplay';
 
 const TimeDisplay = memo(() => {
   const [time] = useBlocAdapter(SharedStateCubit, {
-    selector: (state: { value: number; lastUpdated: string }) => state.lastUpdated,
+    selector: (state: { value: number; lastUpdated: string }) =>
+      state.lastUpdated,
   });
 
   return <div className="stat-badge">Updated: {time}</div>;
@@ -788,8 +987,8 @@ function SharedVsIsolatedExample() {
       </div>
 
       <p className="note">
-        💡 Each counter is independent because IsolatedCounterCubit has
-        static isolated = true
+        💡 Each counter is independent because IsolatedCounterCubit has static
+        isolated = true
       </p>
     </div>
   );
@@ -913,7 +1112,13 @@ const UserNameDisplay = memo(() => {
 
   return (
     <div className="profile-card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
         <div>
           <div style={{ fontSize: '12px', color: '#64748b' }}>Name</div>
           <div style={{ fontWeight: 'bold' }}>{name}</div>
@@ -933,7 +1138,13 @@ const UserEmailDisplay = memo(() => {
 
   return (
     <div className="profile-card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
         <div>
           <div style={{ fontSize: '12px', color: '#64748b' }}>Email</div>
           <div style={{ fontWeight: 'bold' }}>{email}</div>
@@ -953,7 +1164,13 @@ const ThemeDisplay = memo(() => {
 
   return (
     <div className="profile-card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
         <div>
           <div style={{ fontSize: '12px', color: '#64748b' }}>Theme</div>
           <div style={{ fontWeight: 'bold' }}>
@@ -975,9 +1192,17 @@ const NotificationDisplay = memo(() => {
 
   return (
     <div className="profile-card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
         <div>
-          <div style={{ fontSize: '12px', color: '#64748b' }}>Notifications</div>
+          <div style={{ fontSize: '12px', color: '#64748b' }}>
+            Notifications
+          </div>
           <div style={{ fontWeight: 'bold' }}>
             {notifications ? '🔔 Enabled' : '🔕 Disabled'}
           </div>
@@ -997,15 +1222,25 @@ const StatsDisplay = memo(() => {
 
   return (
     <div className="profile-card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
         <div style={{ display: 'flex', gap: '20px' }}>
           <div>
             <div style={{ fontSize: '12px', color: '#64748b' }}>Views</div>
-            <div style={{ fontWeight: 'bold', fontSize: '18px' }}>{stats.views}</div>
+            <div style={{ fontWeight: 'bold', fontSize: '18px' }}>
+              {stats.views}
+            </div>
           </div>
           <div>
             <div style={{ fontSize: '12px', color: '#64748b' }}>Likes</div>
-            <div style={{ fontWeight: 'bold', fontSize: '18px' }}>{stats.likes}</div>
+            <div style={{ fontWeight: 'bold', fontSize: '18px' }}>
+              {stats.likes}
+            </div>
           </div>
         </div>
         {useRenderCount('StatsDisplay')}
@@ -1021,13 +1256,22 @@ const ProfileFullStateDisplay = memo(() => {
 
   return (
     <div className="profile-card" style={{ borderLeft: '3px solid #ef4444' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
         <div>
-          <div style={{ fontSize: '12px', color: '#ef4444', fontWeight: 'bold' }}>
+          <div
+            style={{ fontSize: '12px', color: '#ef4444', fontWeight: 'bold' }}
+          >
             ⚠️ Full State (Re-renders on ANY change)
           </div>
           <div style={{ fontSize: '11px', marginTop: '4px' }}>
-            {state.user.name} | {state.settings.theme} | {state.stats.views} views
+            {state.user.name} | {state.settings.theme} | {state.stats.views}{' '}
+            views
           </div>
         </div>
         {useRenderCount('ProfileFullStateDisplay')}
@@ -1050,10 +1294,18 @@ function RenderCounterExample() {
       </p>
 
       <div style={{ marginBottom: '20px' }}>
-        <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#64748b' }}>
+        <h4
+          style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#64748b' }}
+        >
           Update Controls
         </h4>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '10px',
+          }}
+        >
           <div className="input-group">
             <input
               type="text"
@@ -1104,19 +1356,36 @@ function RenderCounterExample() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: '10px',
+            marginTop: '10px',
+            flexWrap: 'wrap',
+          }}
+        >
           <button onClick={cubit.toggleTheme}>Toggle Theme</button>
-          <button onClick={cubit.toggleNotifications}>Toggle Notifications</button>
+          <button onClick={cubit.toggleNotifications}>
+            Toggle Notifications
+          </button>
           <button onClick={cubit.incrementViews}>Increment Views</button>
           <button onClick={cubit.incrementLikes}>Increment Likes</button>
         </div>
       </div>
 
       <div style={{ marginBottom: '20px' }}>
-        <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#64748b' }}>
+        <h4
+          style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#64748b' }}
+        >
           Optimized Components (Selector-based)
         </h4>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '10px',
+          }}
+        >
           <UserNameDisplay />
           <UserEmailDisplay />
           <ThemeDisplay />
@@ -1128,25 +1397,43 @@ function RenderCounterExample() {
       </div>
 
       <div>
-        <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#64748b' }}>
+        <h4
+          style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#64748b' }}
+        >
           Unoptimized Component (No Selector)
         </h4>
         <ProfileFullStateDisplay />
       </div>
 
-      <div style={{
-        marginTop: '20px',
-        padding: '15px',
-        background: '#f0f9ff',
-        borderRadius: '6px',
-        fontSize: '13px',
-      }}>
-        <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>💡 Try this:</div>
+      <div
+        style={{
+          marginTop: '20px',
+          padding: '15px',
+          background: '#f0f9ff',
+          borderRadius: '6px',
+          fontSize: '13px',
+        }}
+      >
+        <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>
+          💡 Try this:
+        </div>
         <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.6' }}>
-          <li>Update the <strong>name</strong> - only <code>UserNameDisplay</code> and <code>ProfileFullStateDisplay</code> re-render</li>
-          <li>Toggle <strong>theme</strong> - only <code>ThemeDisplay</code> and <code>ProfileFullStateDisplay</code> re-render</li>
-          <li>Increment <strong>views</strong> - only <code>StatsDisplay</code> and <code>ProfileFullStateDisplay</code> re-render</li>
-          <li>Notice: <code>ProfileFullStateDisplay</code> re-renders on <strong>every</strong> change (inefficient!)</li>
+          <li>
+            Update the <strong>name</strong> - only <code>UserNameDisplay</code>{' '}
+            and <code>ProfileFullStateDisplay</code> re-render
+          </li>
+          <li>
+            Toggle <strong>theme</strong> - only <code>ThemeDisplay</code> and{' '}
+            <code>ProfileFullStateDisplay</code> re-render
+          </li>
+          <li>
+            Increment <strong>views</strong> - only <code>StatsDisplay</code>{' '}
+            and <code>ProfileFullStateDisplay</code> re-render
+          </li>
+          <li>
+            Notice: <code>ProfileFullStateDisplay</code> re-renders on{' '}
+            <strong>every</strong> change (inefficient!)
+          </li>
         </ul>
       </div>
     </div>
@@ -1252,9 +1539,17 @@ const AutoTrackUserName = memo(() => {
 
   return (
     <div className="profile-card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
         <div>
-          <div style={{ fontSize: '12px', color: '#64748b' }}>Name (Auto-tracked)</div>
+          <div style={{ fontSize: '12px', color: '#64748b' }}>
+            Name (Auto-tracked)
+          </div>
           <div style={{ fontWeight: 'bold' }}>{state.user.profile.name}</div>
         </div>
         {useRenderCount('AutoTrackUserName')}
@@ -1270,9 +1565,17 @@ const AutoTrackUserEmail = memo(() => {
 
   return (
     <div className="profile-card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
         <div>
-          <div style={{ fontSize: '12px', color: '#64748b' }}>Email (Auto-tracked)</div>
+          <div style={{ fontSize: '12px', color: '#64748b' }}>
+            Email (Auto-tracked)
+          </div>
           <div style={{ fontWeight: 'bold' }}>{state.user.profile.email}</div>
         </div>
         {useRenderCount('AutoTrackUserEmail')}
@@ -1288,9 +1591,17 @@ const AutoTrackTheme = memo(() => {
 
   return (
     <div className="profile-card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
         <div>
-          <div style={{ fontSize: '12px', color: '#64748b' }}>Theme (Auto-tracked)</div>
+          <div style={{ fontSize: '12px', color: '#64748b' }}>
+            Theme (Auto-tracked)
+          </div>
           <div style={{ fontWeight: 'bold' }}>
             {state.user.settings.theme === 'light' ? '☀️ Light' : '🌙 Dark'}
           </div>
@@ -1310,9 +1621,17 @@ const AutoTrackConditionalCounter = memo(() => {
   // When showCounter is false, only tracks showCounter
   return (
     <div className="profile-card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
         <div style={{ width: '100%' }}>
-          <div style={{ fontSize: '12px', color: '#64748b' }}>Conditional Counter (Auto-tracked)</div>
+          <div style={{ fontSize: '12px', color: '#64748b' }}>
+            Conditional Counter (Auto-tracked)
+          </div>
           <div style={{ fontWeight: 'bold', marginTop: '4px' }}>
             {state.showCounter ? (
               <span>Count: {state.counter}</span>
@@ -1337,31 +1656,45 @@ function AutoTrackingExample() {
     <div className="example-card">
       <h3>12. Automatic Dependency Tracking 🎯</h3>
       <p className="example-description">
-        <strong>No selectors required!</strong> Components automatically track only the properties they access.
+        <strong>No selectors required!</strong> Components automatically track
+        only the properties they access.
       </p>
 
-      <div style={{
-        marginBottom: '20px',
-        padding: '15px',
-        background: '#ecfdf5',
-        borderRadius: '6px',
-        borderLeft: '4px solid #10b981',
-      }}>
-        <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#065f46' }}>
+      <div
+        style={{
+          marginBottom: '20px',
+          padding: '15px',
+          background: '#ecfdf5',
+          borderRadius: '6px',
+          borderLeft: '4px solid #10b981',
+        }}
+      >
+        <div
+          style={{ fontWeight: 'bold', marginBottom: '8px', color: '#065f46' }}
+        >
           ✨ How it works
         </div>
         <div style={{ fontSize: '13px', lineHeight: '1.6', color: '#047857' }}>
-          Each component automatically tracks which properties it accesses during render.
-          When state changes, only components that accessed changed properties will re-render.
+          Each component automatically tracks which properties it accesses
+          during render. When state changes, only components that accessed
+          changed properties will re-render.
           <strong> No manual selectors needed!</strong>
         </div>
       </div>
 
       <div style={{ marginBottom: '20px' }}>
-        <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#64748b' }}>
+        <h4
+          style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#64748b' }}
+        >
           Update Controls
         </h4>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '10px',
+          }}
+        >
           <div className="input-group">
             <input
               type="text"
@@ -1412,7 +1745,14 @@ function AutoTrackingExample() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: '10px',
+            marginTop: '10px',
+            flexWrap: 'wrap',
+          }}
+        >
           <button onClick={cubit.toggleTheme}>Toggle Theme</button>
           <button onClick={cubit.incrementCounter}>Increment Counter</button>
           <button onClick={cubit.toggleShowCounter}>
@@ -1422,10 +1762,18 @@ function AutoTrackingExample() {
       </div>
 
       <div style={{ marginBottom: '20px' }}>
-        <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#64748b' }}>
+        <h4
+          style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#64748b' }}
+        >
           Auto-Tracked Components (No Selectors! 🎉)
         </h4>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '10px',
+          }}
+        >
           <AutoTrackUserName />
           <AutoTrackUserEmail />
           <AutoTrackTheme />
@@ -1435,38 +1783,63 @@ function AutoTrackingExample() {
         </div>
       </div>
 
-      <div style={{
-        marginTop: '20px',
-        padding: '15px',
-        background: '#f0f9ff',
-        borderRadius: '6px',
-        fontSize: '13px',
-      }}>
-        <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>💡 Try this:</div>
+      <div
+        style={{
+          marginTop: '20px',
+          padding: '15px',
+          background: '#f0f9ff',
+          borderRadius: '6px',
+          fontSize: '13px',
+        }}
+      >
+        <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>
+          💡 Try this:
+        </div>
         <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.6' }}>
-          <li>Update the <strong>name</strong> - only <code>AutoTrackUserName</code> re-renders</li>
-          <li>Update the <strong>email</strong> - only <code>AutoTrackUserEmail</code> re-renders</li>
-          <li>Toggle <strong>theme</strong> - only <code>AutoTrackTheme</code> re-renders</li>
-          <li>Increment <strong>counter</strong> - only <code>AutoTrackConditionalCounter</code> re-renders (if shown)</li>
-          <li>Toggle <strong>show counter</strong> - <code>AutoTrackConditionalCounter</code> re-renders and dependencies update!</li>
+          <li>
+            Update the <strong>name</strong> - only{' '}
+            <code>AutoTrackUserName</code> re-renders
+          </li>
+          <li>
+            Update the <strong>email</strong> - only{' '}
+            <code>AutoTrackUserEmail</code> re-renders
+          </li>
+          <li>
+            Toggle <strong>theme</strong> - only <code>AutoTrackTheme</code>{' '}
+            re-renders
+          </li>
+          <li>
+            Increment <strong>counter</strong> - only{' '}
+            <code>AutoTrackConditionalCounter</code> re-renders (if shown)
+          </li>
+          <li>
+            Toggle <strong>show counter</strong> -{' '}
+            <code>AutoTrackConditionalCounter</code> re-renders and dependencies
+            update!
+          </li>
         </ul>
       </div>
 
-      <div style={{
-        marginTop: '15px',
-        padding: '15px',
-        background: '#fef3c7',
-        borderRadius: '6px',
-        fontSize: '12px',
-        borderLeft: '4px solid #f59e0b',
-      }}>
-        <div style={{ fontWeight: 'bold', marginBottom: '6px', color: '#92400e' }}>
+      <div
+        style={{
+          marginTop: '15px',
+          padding: '15px',
+          background: '#fef3c7',
+          borderRadius: '6px',
+          fontSize: '12px',
+          borderLeft: '4px solid #f59e0b',
+        }}
+      >
+        <div
+          style={{ fontWeight: 'bold', marginBottom: '6px', color: '#92400e' }}
+        >
           ⚠️ Performance Note
         </div>
         <div style={{ color: '#78350f' }}>
-          Auto-tracking uses Proxies and has a small overhead. For deeply nested objects or
-          performance-critical paths, explicit selectors may still be faster. The system
-          automatically tracks up to 2 levels deep by default (configurable).
+          Auto-tracking uses Proxies and has a small overhead. For deeply nested
+          objects or performance-critical paths, explicit selectors may still be
+          faster. The system automatically tracks up to 2 levels deep by default
+          (configurable).
         </div>
       </div>
     </div>
@@ -1478,12 +1851,20 @@ function AutoTrackingExample() {
 // =============================================================================
 
 export function AdapterExamples() {
-  const [activeTab, setActiveTab] = React.useState<'basic' | 'advanced' | 'performance' | 'react18'>('basic');
+  const [activeTab, setActiveTab] = React.useState<
+    'basic' | 'debug' | 'advanced' | 'performance' | 'react18'
+  >('debug');
 
   React.useEffect(() => {
     // Reset Blac instance when component mounts for clean state
     Blac.resetInstance();
   }, []);
+
+  const renderDebug = () => (
+    <>
+      <DebugComponent />
+    </>
+  );
 
   const renderBasicExamples = () => (
     <>
@@ -1519,13 +1900,15 @@ export function AdapterExamples() {
 
   return (
     <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        color: 'white',
-        padding: '40px',
-        borderRadius: '12px',
-        marginBottom: '30px',
-      }}>
+      <div
+        style={{
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          color: 'white',
+          padding: '40px',
+          borderRadius: '12px',
+          marginBottom: '30px',
+        }}
+      >
         <h1 style={{ margin: 0, fontSize: '36px' }}>useBlocAdapter Examples</h1>
         <p style={{ margin: '10px 0 0 0', fontSize: '18px', opacity: 0.9 }}>
           Comprehensive examples demonstrating various patterns and use cases
@@ -1557,6 +1940,12 @@ export function AdapterExamples() {
         >
           React 18 Features
         </button>
+        <button
+          className={activeTab === 'debug' ? 'tab active' : 'tab'}
+          onClick={() => setActiveTab('debug')}
+        >
+          DEBUG
+        </button>
       </div>
 
       <div className="examples-grid">
@@ -1564,23 +1953,44 @@ export function AdapterExamples() {
         {activeTab === 'advanced' && renderAdvancedExamples()}
         {activeTab === 'performance' && renderPerformanceExamples()}
         {activeTab === 'react18' && renderReact18Examples()}
+        {activeTab === 'debug' && renderDebug()}
       </div>
 
-      <div style={{
-        marginTop: '40px',
-        padding: '20px',
-        background: '#f8f9fa',
-        borderRadius: '8px',
-        borderLeft: '4px solid #667eea',
-      }}>
+      <div
+        style={{
+          marginTop: '40px',
+          padding: '20px',
+          background: '#f8f9fa',
+          borderRadius: '8px',
+          borderLeft: '4px solid #667eea',
+        }}
+      >
         <h3 style={{ marginTop: 0 }}>📚 Key Takeaways</h3>
         <ul style={{ margin: 0, lineHeight: '1.8' }}>
-          <li>Use <strong>selectors</strong> for fine-grained subscriptions and better performance</li>
-          <li>Add <strong>custom comparison</strong> functions to avoid unnecessary re-renders</li>
-          <li>Leverage <strong>lifecycle callbacks</strong> (onMount/onUnmount) for side effects</li>
-          <li>Use <strong>React.memo</strong> with selectors to prevent parent re-render cascades</li>
-          <li><strong>useTransition</strong> and <strong>useDeferredValue</strong> work seamlessly</li>
-          <li>Manual <strong>Suspense pattern</strong> gives you full control over async operations</li>
+          <li>
+            Use <strong>selectors</strong> for fine-grained subscriptions and
+            better performance
+          </li>
+          <li>
+            Add <strong>custom comparison</strong> functions to avoid
+            unnecessary re-renders
+          </li>
+          <li>
+            Leverage <strong>lifecycle callbacks</strong> (onMount/onUnmount)
+            for side effects
+          </li>
+          <li>
+            Use <strong>React.memo</strong> with selectors to prevent parent
+            re-render cascades
+          </li>
+          <li>
+            <strong>useTransition</strong> and <strong>useDeferredValue</strong>{' '}
+            work seamlessly
+          </li>
+          <li>
+            Manual <strong>Suspense pattern</strong> gives you full control over
+            async operations
+          </li>
         </ul>
       </div>
     </div>

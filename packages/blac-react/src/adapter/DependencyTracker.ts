@@ -65,10 +65,11 @@ export class DependencyTracker {
   startTracking(): void {
     if (this.debugMode) {
       this.trackingStartTime = performance.now();
-      console.log('[DependencyTracker] Starting dependency tracking');
+      console.trace('[DependencyTracker] Starting dependency tracking');
     }
 
     this.tracking = true;
+    this.getterIdLastAccessedPath.clear();
     this.dependencies.clear();
   }
 
@@ -82,14 +83,30 @@ export class DependencyTracker {
 
     if (this.debugMode) {
       const duration = performance.now() - this.trackingStartTime;
-      console.log('[DependencyTracker] Tracked dependencies:', Array.from(deps));
+      console.log(
+        '[DependencyTracker] Tracked dependencies:',
+        Array.from(deps),
+      );
       console.log(`[DependencyTracker] Tracking took ${duration.toFixed(2)}ms`);
 
       this.warnOnLargeDependencySet(deps);
     }
 
+    this.getterIdLastAccessedPath.clear();
     this.dependencies.clear();
     return deps;
+  }
+
+  getterIdLastAccessedPath: Map<string, string> = new Map();
+
+  addDependency(path: string, getterId: string): void {
+    const currentPath = this.getterIdLastAccessedPath.get(getterId);
+    if (currentPath && path.includes(currentPath)) {
+      this.dependencies.delete(currentPath);
+    }
+
+    this.getterIdLastAccessedPath.set(getterId, path);
+    this.dependencies.add(path);
   }
 
   /**
@@ -98,7 +115,7 @@ export class DependencyTracker {
    * @param path - Current path in the object tree
    * @returns Proxied object that tracks property access
    */
-  createTrackedProxy<T>(obj: T, path: string[] = []): T {
+  createTrackedProxy<T>(obj: T, path: string[], getterId: string): T {
     // Return primitives as-is
     if (obj === null || typeof obj !== 'object') {
       return obj;
@@ -113,7 +130,7 @@ export class DependencyTracker {
     if (Array.isArray(obj) || obj instanceof Set || obj instanceof Map) {
       if (this.debugMode && this.tracking) {
         console.warn(
-          `[DependencyTracker] Arrays/Sets/Maps are not tracked in v1. Path: ${path.join('.')}`
+          `[DependencyTracker] Arrays/Sets/Maps are not tracked in v1. Path: ${path.join('.')}`,
         );
       }
       return obj;
@@ -124,7 +141,7 @@ export class DependencyTracker {
       // Track at current level, don't go deeper
       if (this.tracking) {
         const pathStr = path.join('.');
-        this.dependencies.add(pathStr);
+        this.addDependency(pathStr, getterId);
         this.warnOnDepthLimit(path);
       }
       return obj;
@@ -137,24 +154,30 @@ export class DependencyTracker {
         if (typeof prop === 'symbol') {
           return Reflect.get(target, prop);
         }
+        console.log('DependencyTracker get:', { target, prop });
 
         const propPath = [...path, prop as string];
         const pathStr = propPath.join('.');
 
         // Track access if tracking is enabled
         if (this.tracking) {
-          this.dependencies.add(pathStr);
+          this.addDependency(pathStr, getterId);
 
           if (this.debugMode) {
             console.log(`[DependencyTracker] Accessed: ${pathStr}`);
           }
         }
 
+        console.log('DependencyTracker get - after tracking:', {
+          target,
+          prop,
+        });
+
         const value = Reflect.get(target, prop);
 
         // Recursively proxy nested objects
         if (value !== null && typeof value === 'object') {
-          return this.createTrackedProxy(value, propPath);
+          return this.createTrackedProxy(value, propPath, getterId);
         }
 
         return value;
@@ -163,16 +186,16 @@ export class DependencyTracker {
       set: () => {
         throw new Error(
           'State mutations are not allowed during render. ' +
-          'BlaC state should be updated via cubit methods (e.g., cubit.emit()).'
+            'BlaC state should be updated via cubit methods (e.g., cubit.emit()).',
         );
       },
 
       deleteProperty: () => {
         throw new Error(
           'State mutations are not allowed during render. ' +
-          'BlaC state should be updated via cubit methods.'
+            'BlaC state should be updated via cubit methods.',
         );
-      }
+      },
     });
 
     // Cache the proxy
@@ -187,18 +210,22 @@ export class DependencyTracker {
    * @param oldState - Old state to compare from
    * @returns True if any dependency changed
    */
-  haveDependenciesChanged(prevDeps: Set<string>, newState: any, oldState: any): boolean {
+  haveDependenciesChanged(
+    prevDeps: Set<string>,
+    newState: any,
+    oldState: any,
+  ): boolean {
     for (const dep of prevDeps) {
       const oldValue = this.getValueByPath(oldState, dep);
       const newValue = this.getValueByPath(newState, dep);
+      console.log('DependencyTracker - dependency checking:', {
+        dep,
+        oldValue,
+        newValue,
+        consoleCheck: Object.is(oldValue, newValue),
+      });
 
       if (!Object.is(oldValue, newValue)) {
-        if (this.debugMode) {
-          console.log(`[DependencyTracker] Changed: ${dep}`, {
-            oldValue,
-            newValue
-          });
-        }
         return true;
       }
     }
@@ -235,10 +262,13 @@ export class DependencyTracker {
   private warnOnDepthLimit(path: string[]): void {
     const pathStr = path.join('.');
 
-    if (process.env.NODE_ENV === 'development' && !this.depthWarnings.has(pathStr)) {
+    if (
+      process.env.NODE_ENV === 'development' &&
+      !this.depthWarnings.has(pathStr)
+    ) {
       console.warn(
         `[DependencyTracker] Reached depth limit (${this.maxDepth}) at path: ${pathStr}\n` +
-        `Consider increasing maxTrackingDepth or using an explicit selector for deep objects.`
+          `Consider increasing maxTrackingDepth or using an explicit selector for deep objects.`,
       );
       this.depthWarnings.add(pathStr);
     }
@@ -252,7 +282,7 @@ export class DependencyTracker {
     if (process.env.NODE_ENV === 'development' && deps.size > 20) {
       console.warn(
         `[DependencyTracker] Tracking ${deps.size} dependencies.\n` +
-        `Consider using an explicit selector for better performance.`
+          `Consider using an explicit selector for better performance.`,
       );
     }
   }

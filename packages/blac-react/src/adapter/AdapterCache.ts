@@ -22,7 +22,7 @@ import { ReactBlocAdapter } from './ReactBlocAdapter';
  * Uses WeakMap to allow garbage collection of adapters when Blocs are disposed.
  * The WeakMap key is the Bloc instance, ensuring automatic cleanup.
  */
-const adapterCache = new WeakMap<BlocBase<any>, ReactBlocAdapter<any>>();
+const adapterCache = new WeakMap<{ current: string }, ReactBlocAdapter<any>>();
 
 /**
  * Statistics for debugging and monitoring
@@ -49,9 +49,12 @@ const stats: AdapterCacheStats = {
  * @param bloc - The Bloc instance
  * @returns Adapter for the Bloc
  */
-export function getOrCreateAdapter<S>(bloc: BlocBase<S>): ReactBlocAdapter<S> {
+export function getOrCreateAdapter<S>(
+  bloc: BlocBase<S>,
+  subsriptionIdRef: { current: string },
+): ReactBlocAdapter<S> {
   // Check cache first
-  let adapter = adapterCache.get(bloc);
+  let adapter = adapterCache.get(subsriptionIdRef);
 
   if (adapter) {
     stats.lastCacheHit = Date.now();
@@ -59,8 +62,12 @@ export function getOrCreateAdapter<S>(bloc: BlocBase<S>): ReactBlocAdapter<S> {
   }
 
   // Create new adapter
-  adapter = new ReactBlocAdapter(bloc);
-  adapterCache.set(bloc, adapter);
+  adapter = new ReactBlocAdapter(bloc, subsriptionIdRef);
+  console.log(
+    `[AdapterCache] Created new adapter for Bloc: ${bloc.constructor.name}`,
+    { subscriptionId: subsriptionIdRef },
+  );
+  adapterCache.set(subsriptionIdRef, adapter);
 
   // Update stats
   stats.totalCreated++;
@@ -75,8 +82,8 @@ export function getOrCreateAdapter<S>(bloc: BlocBase<S>): ReactBlocAdapter<S> {
  * @param bloc - The Bloc instance
  * @returns True if adapter exists in cache
  */
-export function hasAdapter<S>(bloc: BlocBase<S>): boolean {
-  return adapterCache.has(bloc);
+export function hasAdapter(subsriptionIdRef: { current: string }): boolean {
+  return adapterCache.has(subsriptionIdRef);
 }
 
 /**
@@ -89,11 +96,11 @@ export function hasAdapter<S>(bloc: BlocBase<S>): boolean {
  * @param bloc - The Bloc instance
  * @returns True if adapter was found and removed
  */
-export function removeAdapter<S>(bloc: BlocBase<S>): boolean {
-  const adapter = adapterCache.get(bloc);
+export function removeAdapter(subsriptionIdRef: { current: string }): boolean {
+  const adapter = adapterCache.get(subsriptionIdRef);
   if (adapter) {
     adapter.dispose();
-    return adapterCache.delete(bloc);
+    return adapterCache.delete(subsriptionIdRef);
   }
   return false;
 }

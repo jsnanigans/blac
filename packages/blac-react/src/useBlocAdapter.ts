@@ -72,7 +72,7 @@ export interface UseBlocAdapterOptions<B extends BlocBase<any>, R = any> {
  */
 type UseBlocAdapterReturnWithoutSelector<B extends BlocBase<any>> = [
   BlocState<B>,
-  B
+  B,
 ];
 
 /**
@@ -120,42 +120,62 @@ type UseBlocAdapterReturnWithSelector<B extends BlocBase<any>, R> = [R, B];
  */
 function useBlocAdapter<B extends BlocConstructor<BlocBase<any>>>(
   BlocClass: B,
-  options?: UseBlocAdapterOptions<InstanceType<B>>
+  options?: UseBlocAdapterOptions<InstanceType<B>>,
 ): UseBlocAdapterReturnWithoutSelector<InstanceType<B>>;
 
-function useBlocAdapter<
-  B extends BlocConstructor<BlocBase<any>>,
-  R = any
->(
+function useBlocAdapter<B extends BlocConstructor<BlocBase<any>>, R = any>(
   BlocClass: B,
   options: UseBlocAdapterOptions<InstanceType<B>, R> & {
     selector: Selector<BlocState<InstanceType<B>>, R>;
-  }
+  },
 ): UseBlocAdapterReturnWithSelector<InstanceType<B>, R>;
 
-function useBlocAdapter<
-  B extends BlocConstructor<BlocBase<any>>,
-  R = any
->(
+function useBlocAdapter<B extends BlocConstructor<BlocBase<any>>, R = any>(
   BlocClass: B,
-  options?: UseBlocAdapterOptions<InstanceType<B>, R>
+  options?: UseBlocAdapterOptions<InstanceType<B>, R>,
 ):
   | UseBlocAdapterReturnWithoutSelector<InstanceType<B>>
   | UseBlocAdapterReturnWithSelector<InstanceType<B>, R> {
+  console.log(`[useBlocAdapter] 🔵 HOOK CALLED for ${BlocClass.name}`, {
+    hasOptions: !!options,
+    hasSelector: !!options?.selector,
+    hasInstanceId: !!options?.instanceId,
+    hasStaticProps: !!options?.staticProps,
+    suspense: options?.suspense,
+  });
+
   // Component reference that persists across React Strict Mode remounts
   const componentRef = useRef<object & { __blocInstanceId?: string }>({});
 
   // Stable subscription ID for auto-tracking
-  const subscriptionIdRef = useRef<string>(`comp-${Math.random().toString(36).slice(2, 11)}`);
+  const subscriptionIdRef = useRef<string>(
+    `comp-${BlocClass.name}-${Math.random().toString(36).slice(2, 11)}`,
+  );
+
+  console.log(
+    `[useBlocAdapter] 📌 Subscription ID: ${subscriptionIdRef.current}`,
+  );
 
   // Determine instance ID for the bloc
   const instanceKey = useMemo(() => {
+    console.log(`[useBlocAdapter] 🔑 Computing instanceKey...`);
     if (options?.instanceId) {
+      console.log(
+        `[useBlocAdapter] ✅ Using provided instanceId: ${options.instanceId}`,
+      );
       return options.instanceId;
     }
     if (options?.staticProps) {
-      return generateInstanceIdFromProps(options.staticProps) || null;
+      const generated =
+        generateInstanceIdFromProps(options.staticProps) || null;
+      console.log(
+        `[useBlocAdapter] ✅ Generated instanceId from props: ${generated}`,
+      );
+      return generated;
     }
+    console.log(
+      `[useBlocAdapter] ⚪ No instanceKey (will use isolated or default)`,
+    );
     return null;
   }, [options?.instanceId, options?.staticProps]);
 
@@ -166,16 +186,40 @@ function useBlocAdapter<
     !options?.instanceId &&
     !componentRef.current.__blocInstanceId
   ) {
-    componentRef.current.__blocInstanceId = `adapter-${Math.random().toString(36).slice(2, 11)}`;
+    const isolatedId = `adapter-${Math.random().toString(36).slice(2, 11)}`;
+    componentRef.current.__blocInstanceId = isolatedId;
+    console.log(
+      `[useBlocAdapter] 🔒 Generated isolated bloc ID: ${isolatedId}`,
+    );
   }
 
-  const finalInstanceId = instanceKey || componentRef.current.__blocInstanceId;
+  const finalInstanceId = instanceKey || BlocClass.name;
+  console.log(
+    `[useBlocAdapter] 🎯 Final instance ID: ${finalInstanceId || '(default shared)'}`,
+    {
+      isIsolated: base.isolated,
+      fromInstanceKey: !!instanceKey,
+      fromComponentRef: !!componentRef.current.__blocInstanceId,
+    },
+  );
 
   // Get or create bloc instance from Blac registry
   const bloc = useMemo(() => {
+    console.log(`[useBlocAdapter] 🏗️  Getting/creating bloc instance...`, {
+      BlocClass: BlocClass.name,
+      finalInstanceId,
+      hasStaticProps: !!options?.staticProps,
+    });
     const instance = Blac.getBloc(BlocClass, {
-      constructorParams: options?.staticProps ? [options.staticProps] : undefined,
+      constructorParams: options?.staticProps
+        ? [options.staticProps]
+        : undefined,
       instanceRef: finalInstanceId,
+    });
+    console.log(`[useBlocAdapter] ✅ Got bloc instance:`, {
+      uid: instance.uid,
+      name: instance._name,
+      state: instance.state,
     });
     return instance as InstanceType<B>;
   }, [BlocClass, finalInstanceId, options?.staticProps]);
@@ -185,20 +229,35 @@ function useBlocAdapter<
 
   // Handle Suspense integration for async blocs
   if (options?.suspense) {
+    console.log(`[useBlocAdapter] ⏳ Suspense mode enabled`);
     // Check if bloc is loading
     if (options.isLoading?.(bloc)) {
+      console.log(
+        `[useBlocAdapter] 🔄 Bloc is loading, checking for promise...`,
+      );
       const loadingPromise = options.getLoadingPromise?.(bloc);
       if (loadingPromise) {
+        console.log(
+          `[useBlocAdapter] 🚀 Throwing loading promise to trigger Suspense`,
+        );
         // Throw the promise to trigger Suspense boundary
         throw loadingPromise;
       }
     }
 
     // Start loading if needed (only once)
-    if (options.loadAsync && !options.isLoading?.(bloc) && !hasInitiatedLoadRef.current) {
+    if (
+      options.loadAsync &&
+      !options.isLoading?.(bloc) &&
+      !hasInitiatedLoadRef.current
+    ) {
+      console.log(`[useBlocAdapter] 🎬 Starting async load (first time)`);
       hasInitiatedLoadRef.current = true;
       const loadPromise = options.loadAsync(bloc);
       if (loadPromise instanceof Promise) {
+        console.log(
+          `[useBlocAdapter] 🚀 Throwing load promise to trigger Suspense`,
+        );
         // Throw to trigger Suspense
         throw loadPromise;
       }
@@ -206,63 +265,141 @@ function useBlocAdapter<
   }
 
   // Get or create adapter for this bloc
-  const adapter = useMemo(() => getOrCreateAdapter(bloc), [bloc]);
+  const adapter = useMemo(() => {
+    console.log(
+      `[useBlocAdapter] 🔌 Getting/creating adapter for bloc ${bloc.uid}`,
+    );
+    const adapter = getOrCreateAdapter(bloc, subscriptionIdRef);
+    console.log(`[useBlocAdapter] ✅ Got adapter`, {
+      version: adapter.getVersion(),
+      autoTrackingEnabled: adapter.isAutoTrackingEnabled(),
+    });
+    const e = adapter.trackDependencies(subscriptionIdRef.current); // Pre-warm snapshot cache
+    console.log(`[useBlocAdapter] ✅ Pre-warmed adapter snapshot cache`, {
+      snapshot: typeof e === 'object' ? '{...}' : e,
+    });
+    return adapter;
+  }, [bloc]);
 
   // Create stable selector reference
   const selectorRef = useRef(options?.selector);
   selectorRef.current = options?.selector;
+  if (selectorRef.current) {
+    console.log(`[useBlocAdapter] 🎯 Using selector function`);
+  }
 
   // Create stable compare function reference
   const compareRef = useRef(options?.compare);
   compareRef.current = options?.compare;
+  if (compareRef.current) {
+    console.log(`[useBlocAdapter] ⚖️  Using custom compare function`);
+  }
 
   // Subscribe function for useSyncExternalStore
   // This is stable and properly integrates with React's subscription model
   const subscribe = useCallback(
     (onStoreChange: () => void) => {
-      // Subscribe to adapter with current selector and compare function
+      console.log(`[useBlocAdapter] 📡 SUBSCRIBE called`, {
+        subscriptionId: subscriptionIdRef.current,
+        hasSelector: !!selectorRef.current,
+        hasCompare: !!compareRef.current,
+      });
+
+      // Subscribe to adapter with current selector, compare function, and subscription ID for auto-tracking
       const unsubscribe = adapter.subscribe(
         selectorRef.current,
         onStoreChange,
-        compareRef.current
+        compareRef.current,
+        subscriptionIdRef.current,
+      );
+
+      console.log(
+        `[useBlocAdapter] ✅ Subscription established for ${subscriptionIdRef.current}`,
       );
 
       // Return cleanup function
-      return unsubscribe;
+      return () => {
+        console.log(
+          `[useBlocAdapter] 🔌 UNSUBSCRIBE called for ${subscriptionIdRef.current}`,
+        );
+        unsubscribe();
+      };
     },
-    [adapter]
+    [adapter],
   );
 
   // Snapshot function for useSyncExternalStore
   const getSnapshot = useCallback(() => {
-    return adapter.getSnapshot(selectorRef.current, subscriptionIdRef.current);
+    const snapshot = adapter.getSnapshot(
+      selectorRef.current,
+      subscriptionIdRef.current,
+    );
+    console.log(`[useBlocAdapter] 📸 getSnapshot called`, {
+      subscriptionId: subscriptionIdRef.current,
+      hasSelector: !!selectorRef.current,
+      snapshot: typeof snapshot === 'object' ? '{...}' : snapshot,
+    });
+    return snapshot;
   }, [adapter]);
 
   // Server snapshot for SSR
   const getServerSnapshot = useCallback(() => {
-    return adapter.getServerSnapshot(selectorRef.current);
+    const snapshot = adapter.getServerSnapshot(selectorRef.current);
+    console.log(`[useBlocAdapter] 🖥️  getServerSnapshot called`, {
+      hasSelector: !!selectorRef.current,
+      snapshot: typeof snapshot === 'object' ? '{...}' : snapshot,
+    });
+    return snapshot;
   }, [adapter]);
 
   // Subscribe to state changes using useSyncExternalStore
+  console.log(`[useBlocAdapter] 🔗 Calling useSyncExternalStore...`);
   const state = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  console.log(`[useBlocAdapter] ✅ Got state from useSyncExternalStore`, {
+    state: typeof state === 'object' ? '{...}' : state,
+  });
 
   // Complete dependency tracking after each render (for auto-tracking)
   useEffect(() => {
     if (!options?.selector && adapter.isAutoTrackingEnabled()) {
+      console.log(
+        `[useBlocAdapter] 🎯 Completing dependency tracking for ${subscriptionIdRef.current}`,
+      );
       adapter.completeDependencyTracking(subscriptionIdRef.current!);
+      console.log(`[useBlocAdapter] ✅ Dependency tracking completed`);
+    } else {
+      console.log(`[useBlocAdapter] ⏭️  Skipping dependency tracking`, {
+        hasSelector: !!options?.selector,
+        autoTrackingEnabled: adapter.isAutoTrackingEnabled(),
+      });
     }
   }, [adapter, options?.selector, state]); // Re-run when state changes to track new dependencies
 
   // Mount/unmount lifecycle
   useEffect(() => {
+    console.log(`[useBlocAdapter] 🎬 MOUNT effect triggered for ${bloc.uid}`, {
+      subscriptionId: subscriptionIdRef.current,
+      finalInstanceId,
+    });
+
     // Call onMount callback if provided
     if (options?.onMount) {
+      console.log(`[useBlocAdapter] 📞 Calling onMount callback`);
       options.onMount(bloc);
     }
 
     return () => {
+      console.log(
+        `[useBlocAdapter] 🛑 UNMOUNT cleanup triggered for ${bloc.uid}`,
+        {
+          subscriptionId: subscriptionIdRef.current,
+          finalInstanceId,
+        },
+      );
+
       // Call onUnmount callback if provided
       if (options?.onUnmount) {
+        console.log(`[useBlocAdapter] 📞 Calling onUnmount callback`);
         options.onUnmount(bloc);
       }
 
@@ -270,24 +407,59 @@ function useBlocAdapter<
       const base = BlocClass as unknown as { isolated?: boolean };
       if (base.isolated && finalInstanceId) {
         const blacInstance = Blac.getInstance();
-        const isolatedBloc = blacInstance.isolatedBlocIndex.get(finalInstanceId);
+        const isolatedBloc =
+          blacInstance.isolatedBlocIndex.get(finalInstanceId);
+
+        console.log(`[useBlocAdapter] 🔒 Isolated bloc cleanup check`, {
+          finalInstanceId,
+          found: !!isolatedBloc,
+          subscriptionCount: isolatedBloc?.subscriptionCount,
+        });
 
         if (isolatedBloc && isolatedBloc.subscriptionCount === 0) {
+          console.log(
+            `[useBlocAdapter] ⏰ Scheduling isolated bloc disposal for ${finalInstanceId}`,
+          );
           // Schedule disposal to handle any async cleanup
           setTimeout(() => {
             const bloc = blacInstance.isolatedBlocIndex.get(finalInstanceId);
             if (bloc && bloc.subscriptionCount === 0) {
+              console.log(
+                `[useBlocAdapter] 🗑️  Disposing isolated bloc ${finalInstanceId}`,
+              );
               bloc.dispose();
               blacInstance.isolatedBlocIndex.delete(finalInstanceId);
+              console.log(
+                `[useBlocAdapter] ✅ Isolated bloc disposed and removed from index`,
+              );
+            } else {
+              console.log(
+                `[useBlocAdapter] ⏭️  Skipping disposal - subscription count changed`,
+                {
+                  subscriptionCount: bloc?.subscriptionCount,
+                },
+              );
             }
           }, 0);
         }
       }
     };
-  }, [bloc.uid, BlocClass, finalInstanceId, options?.onMount, options?.onUnmount]);
+  }, [
+    bloc.uid,
+    BlocClass,
+    finalInstanceId,
+    options?.onMount,
+    options?.onUnmount,
+  ]);
 
   // Return state and bloc instance
   // Type is determined by overloads
+  console.log(`[useBlocAdapter] 🎁 Returning [state, bloc]`, {
+    blocUid: bloc.uid,
+    blocName: bloc._name,
+    hasSelector: !!options?.selector,
+    stateType: typeof state,
+  });
   return [state, bloc] as any;
 }
 

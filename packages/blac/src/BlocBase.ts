@@ -26,6 +26,10 @@ interface BlocStaticProperties {
   schema?: StandardSchemaV1<any>;
 }
 
+export interface BlocConfig {
+  proxyMaxDepth?: number;
+}
+
 /**
  * Base class for both Blocs and Cubits using unified subscription model.
  */
@@ -43,11 +47,18 @@ export abstract class BlocBase<S> {
     return this._keepAlive;
   }
 
-
   public _isolated = false;
   public _id: BlocInstanceId;
   public _instanceRef?: string;
   public _name: string;
+
+  private _config: BlocConfig = {};
+  get config() {
+    return this._config;
+  }
+  set config(value: BlocConfig) {
+    this._config = value;
+  }
 
   /**
    * Unified subscription manager for all state notifications
@@ -204,7 +215,8 @@ export abstract class BlocBase<S> {
   subscribe(callback: (state: S) => void): SubscriptionResult {
     // Use unified tracker if blacContext exists
     if (this.blacContext) {
-      const blacClass = this.blacContext.constructor as typeof import('./Blac').Blac;
+      const blacClass = this.blacContext
+        .constructor as typeof import('./Blac').Blac;
       const tracker = blacClass.getUnifiedTracker();
 
       // Generate unique subscription ID
@@ -251,7 +263,8 @@ export abstract class BlocBase<S> {
   ): SubscriptionResult {
     // Use unified tracker if blacContext exists
     if (this.blacContext) {
-      const blacClass = this.blacContext.constructor as typeof import('./Blac').Blac;
+      const blacClass = this.blacContext
+        .constructor as typeof import('./Blac').Blac;
       const tracker = blacClass.getUnifiedTracker();
 
       // Generate unique subscription ID
@@ -262,8 +275,11 @@ export abstract class BlocBase<S> {
       tracker.createSubscription(subscriptionId, this.uid, () => {
         const newValue = selector(this.state);
         // Apply custom equality check if provided
-        const hasChanged = lastValue === undefined ||
-          (equalityFn ? !equalityFn(lastValue, newValue) : lastValue !== newValue);
+        const hasChanged =
+          lastValue === undefined ||
+          (equalityFn
+            ? !equalityFn(lastValue, newValue)
+            : lastValue !== newValue);
 
         if (hasChanged) {
           lastValue = newValue;
@@ -312,7 +328,8 @@ export abstract class BlocBase<S> {
   ): SubscriptionResult {
     // Use unified tracker if blacContext exists
     if (this.blacContext) {
-      const blacClass = this.blacContext.constructor as typeof import('./Blac').Blac;
+      const blacClass = this.blacContext
+        .constructor as typeof import('./Blac').Blac;
       const tracker = blacClass.getUnifiedTracker();
 
       // Generate unique subscription ID
@@ -364,7 +381,8 @@ export abstract class BlocBase<S> {
     let count = this._subscriptionManager.size;
 
     if (this.blacContext) {
-      const blacClass = this.blacContext.constructor as typeof import('./Blac').Blac;
+      const blacClass = this.blacContext
+        .constructor as typeof import('./Blac').Blac;
       const tracker = blacClass.getUnifiedTracker();
 
       // Count subscriptions for this bloc in the unified tracker
@@ -458,7 +476,7 @@ export abstract class BlocBase<S> {
     if (!this._schema) {
       throw new Error(
         `[${this._name}] emitValidated() requires a schema. ` +
-        `Add 'static schema = YourSchema' to your class, or use emit() instead.`
+          `Add 'static schema = YourSchema' to your class, or use emit() instead.`,
       );
     }
 
@@ -535,11 +553,14 @@ export abstract class BlocBase<S> {
     });
 
     // Notify all subscriptions using unified tracker
-    const blacClass = this.blacContext?.constructor as typeof import('./Blac').Blac;
+    const blacClass = this.blacContext
+      ?.constructor as typeof import('./Blac').Blac;
 
     if (this.blacContext && blacClass?.getUnifiedTracker) {
       const tracker = blacClass.getUnifiedTracker();
-      this.blacContext?.log(`[BlocBase] Notifying changes for bloc ${this.uid} (${this._name})`);
+      this.blacContext?.log(
+        `[BlocBase] Notifying changes for bloc ${this.uid} (${this._name})`,
+      );
       tracker.notifyChanges(this.uid, {
         oldState,
         newState: this._state,
@@ -898,7 +919,6 @@ export abstract class BlocBase<S> {
       );
     }
   }
-
 
   /**
    * Schedule disposal when no subscriptions remain

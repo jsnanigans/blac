@@ -1,0 +1,43 @@
+@@ -399,14 +399,41 @@
+         if (shouldReTrack) {
+           // Check if tracking is already in progress for this subscription
+           if (!this.pendingTrackedStates.has(subscriptionId)) {
+             // Start tracking for this render
+             this.dependencyTracker.startTracking();
+ 
+             // Mark this subscription as pending tracking completion
+             this.pendingTrackedStates.set(subscriptionId, true);
+           }
+           
+           // Create tracked proxy
+           const trackedState = this.dependencyTracker.createTrackedProxy(this.snapshot.state);
++          
++          // Wrap in a proxy that completes tracking after properties are accessed
++          let accessCount = 0;
++          const trackingProxy = new Proxy(trackedState, {
++            get: (target, prop) => {
++              const value = Reflect.get(target, prop);
++              accessCount++;
++              
++              // Complete tracking after first property access using a microtask
++              // This ensures all synchronous property accesses in the render are captured
++              if (accessCount === 1) {
++                queueMicrotask(() => {
++                  if (this.pendingTrackedStates.has(subscriptionId)) {
++                    const deps = this.dependencyTracker!.stopTracking();
++                    subscription.trackedDependencies = deps;
++                    subscription.lastTrackedVersion = this.version;
++                    this.pendingTrackedStates.delete(subscriptionId);
++                    
++                    if (process.env.NODE_ENV === 'development') {
++                      console.log(`[ReactBlocAdapter] Completed tracking for ${subscriptionId}:`, Array.from(deps));
++                    }
++                  }
++                });
++              }
++              
++              return value;
++            }
++          });
+ 
+-          return trackedState as S;

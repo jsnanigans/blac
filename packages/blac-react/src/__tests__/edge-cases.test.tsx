@@ -73,19 +73,25 @@ describe('Edge Case Testing', () => {
       // Change to above threshold
       renderSpy.mockClear();
       await user.click(screen.getByText('Set Above'));
-      await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('above'));
+      await waitFor(() =>
+        expect(screen.getByTestId('status')).toHaveTextContent('above'),
+      );
       expect(renderSpy).toHaveBeenCalledTimes(1);
 
       // Change to equal
       renderSpy.mockClear();
       await user.click(screen.getByText('Set Equal'));
-      await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('equal'));
+      await waitFor(() =>
+        expect(screen.getByTestId('status')).toHaveTextContent('equal'),
+      );
       expect(renderSpy).toHaveBeenCalledTimes(1);
 
       // Change back to below
       renderSpy.mockClear();
       await user.click(screen.getByText('Set Below'));
-      await waitFor(() => expect(screen.getByTestId('status')).toHaveTextContent('below'));
+      await waitFor(() =>
+        expect(screen.getByTestId('status')).toHaveTextContent('below'),
+      );
       expect(renderSpy).toHaveBeenCalledTimes(1);
     });
   });
@@ -146,18 +152,26 @@ describe('Edge Case Testing', () => {
 
       render(<TestComponent />);
 
-      expect(screen.getByTestId('greeting')).toHaveTextContent('Hello, John Doe!');
-      expect(screen.getByTestId('formal')).toHaveTextContent('Good day, John Doe');
+      expect(screen.getByTestId('greeting')).toHaveTextContent(
+        'Hello, John Doe!',
+      );
+      expect(screen.getByTestId('formal')).toHaveTextContent(
+        'Good day, John Doe',
+      );
 
       // Change first name - transitive getter should update
       await user.click(screen.getByText('Change First Name'));
       await waitFor(() => {
         expect(screen.getByTestId('first-name')).toHaveTextContent('Jane');
-        expect(screen.getByTestId('greeting')).toHaveTextContent('Hello, Jane Doe!');
+        expect(screen.getByTestId('greeting')).toHaveTextContent(
+          'Hello, Jane Doe!',
+        );
       });
 
       // Verify formal greeting also updated (both depend on fullName getter)
-      expect(screen.getByTestId('formal')).toHaveTextContent('Good day, Jane Doe');
+      expect(screen.getByTestId('formal')).toHaveTextContent(
+        'Good day, Jane Doe',
+      );
 
       // Change last name - verify state updates
       await user.click(screen.getByText('Change Last Name'));
@@ -214,7 +228,9 @@ describe('Edge Case Testing', () => {
       // Increment state - constant getter should not cause rerender
       renderSpy.mockClear();
       await user.click(screen.getByText('Increment'));
-      await waitFor(() => expect(screen.getByTestId('count')).toHaveTextContent('1'));
+      await waitFor(() =>
+        expect(screen.getByTestId('count')).toHaveTextContent('1'),
+      );
 
       // Should NOT rerender due to constant getter (value hasn't changed)
       expect(renderSpy).toHaveBeenCalledTimes(1);
@@ -334,11 +350,19 @@ describe('Edge Case Testing', () => {
             {!state.shouldThrow && (
               <div data-testid="result">{cubit.safeDivision}</div>
             )}
-            {state.shouldThrow && <div data-testid="result">Error condition set</div>}
-            <button onClick={() => cubit.setShouldThrow(true)} data-testid="trigger-throw">
+            {state.shouldThrow && (
+              <div data-testid="result">Error condition set</div>
+            )}
+            <button
+              onClick={() => cubit.setShouldThrow(true)}
+              data-testid="trigger-throw"
+            >
               Trigger Throw
             </button>
-            <button onClick={() => cubit.setShouldThrow(false)} data-testid="disable-throw">
+            <button
+              onClick={() => cubit.setShouldThrow(false)}
+              data-testid="disable-throw"
+            >
               Disable Throw
             </button>
           </div>
@@ -348,7 +372,7 @@ describe('Edge Case Testing', () => {
       render(
         <ErrorBoundary>
           <TestComponent />
-        </ErrorBoundary>
+        </ErrorBoundary>,
       );
 
       expect(screen.getByTestId('result')).toHaveTextContent('10');
@@ -357,7 +381,9 @@ describe('Edge Case Testing', () => {
       // but not accessed yet (component conditionally renders it)
       await user.click(screen.getByTestId('trigger-throw'));
       await waitFor(() => {
-        expect(screen.getByTestId('result')).toHaveTextContent('Error condition set');
+        expect(screen.getByTestId('result')).toHaveTextContent(
+          'Error condition set',
+        );
       });
 
       // Now disable throw and access the getter again - should work
@@ -423,13 +449,17 @@ describe('Edge Case Testing', () => {
 
       render(<TestComponent />);
 
-      expect(screen.getByTestId('metadata')).toHaveTextContent('ID: 1, Tags: 1');
+      expect(screen.getByTestId('metadata')).toHaveTextContent(
+        'ID: 1, Tags: 1',
+      );
       expect(screen.getByTestId('state-id')).toHaveTextContent('State ID: 1');
 
       // Add tag - both state and getter should update
       await user.click(screen.getByText('Add Tag'));
       await waitFor(() => {
-        expect(screen.getByTestId('state-tags')).toHaveTextContent('State tags: 2');
+        expect(screen.getByTestId('state-tags')).toHaveTextContent(
+          'State tags: 2',
+        );
         expect(screen.getByTestId('metadata')).toHaveTextContent('Tags: 2');
       });
 
@@ -447,7 +477,7 @@ describe('Edge Case Testing', () => {
       // Increase proxy depth to handle 10+ levels of nesting
       Blac.setConfig({
         proxyDependencyTracking: true,
-        proxyMaxDepth: 15
+        proxyMaxDepth: 15,
       });
     });
 
@@ -502,6 +532,7 @@ describe('Edge Case Testing', () => {
             },
           },
         });
+        this.config = { proxyMaxDepth: 15 };
       }
 
       updateDeepValue = (value: number) => {
@@ -517,7 +548,9 @@ describe('Edge Case Testing', () => {
                           level9: {
                             level10: {
                               value,
-                              label: this.state.level1.level2.level3.level4.level5.level6.level7.level8.level9.level10.label,
+                              label:
+                                this.state.level1.level2.level3.level4.level5
+                                  .level6.level7.level8.level9.level10.label,
                             },
                           },
                         },
@@ -543,7 +576,9 @@ describe('Edge Case Testing', () => {
                         level8: {
                           level9: {
                             level10: {
-                              value: this.state.level1.level2.level3.level4.level5.level6.level7.level8.level9.level10.value,
+                              value:
+                                this.state.level1.level2.level3.level4.level5
+                                  .level6.level7.level8.level9.level10.value,
                               label,
                             },
                           },
@@ -569,13 +604,19 @@ describe('Edge Case Testing', () => {
         cubicRef = cubit; // Capture reference for verification
         renderSpy();
 
-        const deepValue = state.level1.level2.level3.level4.level5.level6.level7.level8.level9.level10.value;
+        const deepValue =
+          state.level1.level2.level3.level4.level5.level6.level7.level8.level9
+            .level10.value;
 
         return (
           <div>
             <div data-testid="deep-value">{deepValue}</div>
-            <button onClick={() => cubit.updateDeepValue(42)}>Update Value</button>
-            <button onClick={() => cubit.updateDeepLabel('updated')}>Update Label</button>
+            <button onClick={() => cubit.updateDeepValue(42)}>
+              Update Value
+            </button>
+            <button onClick={() => cubit.updateDeepLabel('updated')}>
+              Update Label
+            </button>
           </div>
         );
       }
@@ -587,7 +628,9 @@ describe('Edge Case Testing', () => {
       // Update deep value - should trigger rerender
       renderSpy.mockClear();
       await user.click(screen.getByText('Update Value'));
-      await waitFor(() => expect(screen.getByTestId('deep-value')).toHaveTextContent('42'));
+      await waitFor(() =>
+        expect(screen.getByTestId('deep-value')).toHaveTextContent('42'),
+      );
       expect(renderSpy).toHaveBeenCalledTimes(1);
 
       // Update deep label - should NOT trigger rerender (precise leaf tracking)
@@ -599,13 +642,14 @@ describe('Edge Case Testing', () => {
       await waitFor(
         () => {
           // State should have been updated
-          expect(cubicRef?.state.level1.level2.level3.level4.level5.level6.level7.level8.level9.level10.label).toBe(
-            'updated'
-          );
+          expect(
+            cubicRef?.state.level1.level2.level3.level4.level5.level6.level7
+              .level8.level9.level10.label,
+          ).toBe('updated');
           // But component should NOT have re-rendered (precise tracking)
           expect(renderSpy).toHaveBeenCalledTimes(0);
         },
-        { timeout: 500 }
+        { timeout: 500 },
       );
     });
   });
@@ -646,7 +690,9 @@ describe('Edge Case Testing', () => {
             <div data-testid="prop0">{state.prop0}</div>
             <div data-testid="prop500">{state.prop500}</div>
             <div data-testid="prop999">{state.prop999}</div>
-            <button onClick={() => cubit.updateProperty('prop0', 1000)}>Update prop0</button>
+            <button onClick={() => cubit.updateProperty('prop0', 1000)}>
+              Update prop0
+            </button>
             <button onClick={() => cubit.updateProperty('prop500', 2000)}>
               Update prop500
             </button>
@@ -665,7 +711,9 @@ describe('Edge Case Testing', () => {
       // Update tracked property
       renderSpy.mockClear();
       await user.click(screen.getByText('Update prop0'));
-      await waitFor(() => expect(screen.getByTestId('prop0')).toHaveTextContent('1000'));
+      await waitFor(() =>
+        expect(screen.getByTestId('prop0')).toHaveTextContent('1000'),
+      );
 
       expect(renderSpy).toHaveBeenCalledTimes(1);
 
@@ -682,7 +730,7 @@ describe('Edge Case Testing', () => {
           // But component should NOT have re-rendered (not tracked)
           expect(renderSpy).toHaveBeenCalledTimes(0);
         },
-        { timeout: 500 }
+        { timeout: 500 },
       );
     });
   });
@@ -743,7 +791,9 @@ describe('Edge Case Testing', () => {
 
       // Update state
       await user.click(screen.getByTestId('increment'));
-      await waitFor(() => expect(screen.getByTestId('consumer-0')).toHaveTextContent('0: 1'));
+      await waitFor(() =>
+        expect(screen.getByTestId('consumer-0')).toHaveTextContent('0: 1'),
+      );
 
       // All 100 consumers should have rerendered
       expect(renderCounts.size).toBe(100);
@@ -799,7 +849,9 @@ describe('Edge Case Testing', () => {
       // Update state - all 100 should re-render
       renderCounts.clear();
       await user.click(screen.getByTestId('increment'));
-      await waitFor(() => expect(screen.getByTestId('consumer-0')).toHaveTextContent('1'));
+      await waitFor(() =>
+        expect(screen.getByTestId('consumer-0')).toHaveTextContent('1'),
+      );
       expect(renderCounts.size).toBe(100);
 
       // Remove 50 consumers
@@ -808,7 +860,9 @@ describe('Edge Case Testing', () => {
 
       // Update state again - only 50 should re-render
       await user.click(screen.getByTestId('increment'));
-      await waitFor(() => expect(screen.getByTestId('consumer-0')).toHaveTextContent('2'));
+      await waitFor(() =>
+        expect(screen.getByTestId('consumer-0')).toHaveTextContent('2'),
+      );
 
       // Only 50 consumers should have rendered
       expect(renderCounts.size).toBe(50);
@@ -872,7 +926,9 @@ describe('Edge Case Testing', () => {
 
       // Update should work even with shallow depth
       await user.click(screen.getByRole('button'));
-      await waitFor(() => expect(screen.getByTestId('value')).toHaveTextContent('42'));
+      await waitFor(() =>
+        expect(screen.getByTestId('value')).toHaveTextContent('42'),
+      );
 
       // Should have re-rendered (either auto-tracking fallback or partial proxy)
       expect(renderSpy).toHaveBeenCalled();
@@ -936,7 +992,9 @@ describe('Edge Case Testing', () => {
 
         return (
           <div>
-            <div data-testid="value">{state.level1.level2.level3.level4.value}</div>
+            <div data-testid="value">
+              {state.level1.level2.level3.level4.value}
+            </div>
             <button onClick={() => cubit.updateValue(42)}>Update</button>
           </div>
         );
@@ -947,7 +1005,9 @@ describe('Edge Case Testing', () => {
 
       // Update should work with deep depth
       await user.click(screen.getByRole('button'));
-      await waitFor(() => expect(screen.getByTestId('value')).toHaveTextContent('42'));
+      await waitFor(() =>
+        expect(screen.getByTestId('value')).toHaveTextContent('42'),
+      );
 
       expect(renderSpy).toHaveBeenCalledTimes(1);
     });
