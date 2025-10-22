@@ -271,6 +271,7 @@ export class SubscriptionSystem<T = unknown> {
     if (options.throttle) {
       const optimizationOptions: OptimizationOptions = {};
       optimizationOptions.throttle = { interval: options.throttle };
+      optimizationOptions.callback = options.callback; // Pass callback for deferred execution
       pipeline.addStage(new OptimizationStage(optimizationOptions));
     }
 

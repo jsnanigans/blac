@@ -57,7 +57,7 @@ export class FilterStage<T = unknown> extends PipelineStage {
 
     // Apply custom predicate
     if (this.options.predicate) {
-      const shouldNotify = this.options.predicate(current, previous, stateChange);
+      const shouldNotify = (this.options.predicate as FilterPredicate<unknown>)(current, previous, stateChange);
       if (!shouldNotify) {
         context.shouldContinue = false;
         context.skipNotification = true;
@@ -107,14 +107,17 @@ export class FilterStage<T = unknown> extends PipelineStage {
     if (a == null || b == null) return false;
     if (typeof a !== typeof b) return false;
 
-    if (typeof a === 'object') {
-      const keysA = Object.keys(a);
-      const keysB = Object.keys(b);
+    if (typeof a === 'object' && typeof b === 'object') {
+      const objA = a as Record<string, unknown>;
+      const objB = b as Record<string, unknown>;
+
+      const keysA = Object.keys(objA);
+      const keysB = Object.keys(objB);
 
       if (keysA.length !== keysB.length) return false;
 
       for (const key of keysA) {
-        if (!this.deepEqual(a[key], b[key])) return false;
+        if (!this.deepEqual(objA[key], objB[key])) return false;
       }
 
       return true;

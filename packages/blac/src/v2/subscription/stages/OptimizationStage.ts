@@ -27,6 +27,7 @@ export interface OptimizationOptions {
     ttl?: number;
     maxSize?: number;
   };
+  callback?: (value: any) => void; // For executing deferred notifications
 }
 
 interface BatchEntry<T> {
@@ -38,6 +39,7 @@ interface ThrottleState {
   lastCall: number;
   pendingContext?: PipelineContext;
   timer?: NodeJS.Timeout;
+  callback?: (value: any) => void;
 }
 
 interface DebounceState {
@@ -148,7 +150,7 @@ export class OptimizationStage extends PipelineStage {
     // This is a bit of a hack - in production, we'd need better integration
     process.nextTick(() => {
       const callback = flushedContext.metadata.get('notificationCallback');
-      if (callback) {
+      if (typeof callback === 'function') {
         const value = flushedContext.metadata.has('selectedValue')
           ? flushedContext.metadata.get('selectedValue')
           : flushedContext.stateChange.current;
@@ -185,15 +187,21 @@ export class OptimizationStage extends PipelineStage {
 
     // Store for potential trailing call
     if (trailing) {
-      this.throttleState.pendingContext = { ...context };
+      // Store the context for later execution
+      this.throttleState.pendingContext = {
+        ...context,
+        metadata: new Map(context.metadata)
+      };
 
       if (!this.throttleState.timer) {
         const remainingTime = interval - timeSinceLastCall;
         this.throttleState.timer = setTimeout(() => {
-          if (this.throttleState.pendingContext) {
-            this.throttleState.pendingContext.skipNotification = false;
-            this.throttleState.pendingContext.shouldContinue = true;
-            this.throttleState.pendingContext.metadata.set('throttleTrailing', true);
+          if (this.throttleState.pendingContext && this.options.callback) {
+            // Execute the callback with the latest state
+            const value = this.throttleState.pendingContext.metadata.has('selectedValue')
+              ? this.throttleState.pendingContext.metadata.get('selectedValue')
+              : this.throttleState.pendingContext.stateChange.current;
+            this.options.callback(value);
           }
           this.throttleState.lastCall = Date.now();
           this.throttleState.timer = undefined;
@@ -285,7 +293,9 @@ export class OptimizationStage extends PipelineStage {
     // Maintain cache size
     if (this.cache.size >= maxSize) {
       const firstKey = this.cache.keys().next().value;
-      this.cache.delete(firstKey);
+      if (firstKey !== undefined) {
+        this.cache.delete(firstKey);
+      }
     }
 
     this.cache.set(cacheKey, {

@@ -130,7 +130,7 @@ export class NotificationStage extends PipelineStage {
         }, Math.pow(2, retryCount) * 100);
       } else {
         this.options.errorHandler(error as Error);
-        context.metadata.set('notificationError', error);
+        context.metadata.set('notificationError', error as unknown);
       }
     }
   }

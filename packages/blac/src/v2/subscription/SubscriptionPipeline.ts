@@ -16,7 +16,7 @@ export type StageId = BrandedId<'Stage'>;
 /**
  * Metadata value type for pipeline context
  */
-export type MetadataValue = string | number | boolean | object | undefined | null;
+export type MetadataValue = string | number | boolean | object | undefined | null | unknown;
 
 /**
  * Context passed through the subscription pipeline
@@ -171,15 +171,14 @@ export class SubscriptionPipeline {
 
       const result: PipelineResult = {
         executed: true,
-        stagesProcessed
+        stagesProcessed,
+        ...(this.config.enableMetrics && {
+          performanceMetrics: {
+            totalDuration: performance.now() - startTime,
+            stageDurations
+          }
+        })
       };
-
-      if (this.config.enableMetrics) {
-        result.performanceMetrics = {
-          totalDuration: performance.now() - startTime,
-          stageDurations
-        };
-      }
 
       return result;
 

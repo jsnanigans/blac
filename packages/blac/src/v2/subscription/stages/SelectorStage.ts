@@ -48,19 +48,19 @@ export class SelectorStage<TState = unknown, TResult = unknown> extends Pipeline
 
     // Evaluate selector
     const selected = this.options.memoize
-      ? this.memoizedSelect(current)
-      : this.selector(current);
+      ? this.memoizedSelect(current as unknown as TState)
+      : this.selector(current as unknown as TState);
 
     // Check if selected value changed
-    const hasChanged = !this.options.equalityFn(selected, this.previousSelected);
+    const hasChanged = !this.options.equalityFn(selected, this.previousSelected as unknown as TResult);
 
     if (!hasChanged) {
       context.shouldContinue = false;
       context.skipNotification = true;
       context.metadata.set('selectorUnchanged', true);
     } else {
-      context.metadata.set('selectedValue', selected);
-      context.metadata.set('previousSelected', this.previousSelected);
+      context.metadata.set('selectedValue', selected as unknown);
+      context.metadata.set('previousSelected', this.previousSelected as unknown);
       this.previousSelected = selected;
     }
 
@@ -87,7 +87,9 @@ export class SelectorStage<TState = unknown, TResult = unknown> extends Pipeline
     // Maintain cache size
     if (this.cache.size > this.options.cacheSize) {
       const firstKey = this.cache.keys().next().value;
-      this.cache.delete(firstKey);
+      if (firstKey !== undefined) {
+        this.cache.delete(firstKey);
+      }
     }
 
     return result;
@@ -104,7 +106,7 @@ export class SelectorStage<TState = unknown, TResult = unknown> extends Pipeline
     }
   }
 
-  private isCacheValid(entry: CacheEntry): boolean {
+  private isCacheValid(entry: CacheEntry<TState, TResult>): boolean {
     // Cache entries are valid for 1 second
     return Date.now() - entry.timestamp < 1000;
   }

@@ -58,7 +58,7 @@ export interface RegistryStats {
  * Main subscription registry class
  */
 export class SubscriptionRegistry {
-  private subscriptions: Map<SubscriptionId, SubscriptionEntry<unknown>> = new Map();
+  private subscriptions: Map<SubscriptionId, SubscriptionEntry<unknown, unknown>> = new Map();
   private consumerIndex: Map<ConsumerId, Set<SubscriptionId>> = new Map();
   private containerIndex: Map<ContainerId, Set<SubscriptionId>> = new Map();
   private cleanupInterval?: NodeJS.Timeout;
@@ -100,7 +100,7 @@ export class SubscriptionRegistry {
       entry.weakRef = new WeakRef(config.callback);
     }
 
-    this.subscriptions.set(id, entry);
+    this.subscriptions.set(id, entry as SubscriptionEntry<unknown, unknown>);
     this.updateIndices(id, config, 'add');
 
     return id;

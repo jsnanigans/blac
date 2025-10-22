@@ -23,6 +23,7 @@ import {
 import {
   BaseEvent,
   StateChangeEvent,
+  StateChange,
 } from '../types/events';
 import { SubscriptionSystem, SubscriptionOptions, Subscription } from '../subscription/SubscriptionSystem';
 
