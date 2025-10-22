@@ -43,18 +43,21 @@ describe('V2 Design Validation', () => {
       expect(cubit.state).toBe(0);
     });
 
-    it('should handle subscriptions correctly', () => {
+    it('should handle subscriptions correctly', async () => {
       const listener = vi.fn();
       const unsubscribe = cubit.subscribe(listener);
 
       cubit.increment();
+      await new Promise(resolve => setTimeout(resolve, 10));
       expect(listener).toHaveBeenCalledWith(1);
 
       cubit.increment();
+      await new Promise(resolve => setTimeout(resolve, 10));
       expect(listener).toHaveBeenCalledWith(2);
 
       unsubscribe();
       cubit.increment();
+      await new Promise(resolve => setTimeout(resolve, 10));
       expect(listener).toHaveBeenCalledTimes(2); // No more calls
     });
 

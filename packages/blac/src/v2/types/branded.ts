@@ -9,8 +9,11 @@ declare const brand: unique symbol;
 /** Type branding utility */
 export type Brand<T, B> = T & { [brand]: B };
 
+/** Generic branded ID type */
+export type BrandedId<B> = Brand<string, B>;
+
 /** Branded subscription ID type */
-export type SubscriptionId = Brand<string, 'SubscriptionId'>;
+export type SubscriptionId = BrandedId<'SubscriptionId'>;
 
 /** Branded instance ID type */
 export type InstanceId = Brand<string, 'InstanceId'>;

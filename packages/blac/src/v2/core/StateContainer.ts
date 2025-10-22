@@ -24,6 +24,7 @@ import {
   BaseEvent,
   StateChangeEvent,
 } from '../types/events';
+import { SubscriptionSystem, SubscriptionOptions, Subscription } from '../subscription/SubscriptionSystem';
 
 /**
  * Configuration options for StateContainer
@@ -50,6 +51,7 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
   // State management
   protected readonly stateStream: StateStream<S>;
   protected readonly eventStream: EventStream<E>;
+  protected readonly subscriptionSystem: SubscriptionSystem<S>;
 
   // Lifecycle
   private readonly lifecycleManager: LifecycleManager;
@@ -92,6 +94,14 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
       debug: config.debug ?? false,
     };
 
+    // Initialize subscription system
+    this.subscriptionSystem = new SubscriptionSystem<S>(this._instanceId, {
+      enableMetrics: this.config.debug,
+      enableWeakRefs: true,
+      maxSubscriptions: 1000,
+      cleanupIntervalMs: 30000
+    });
+
     // Initialize lifecycle manager
     this.lifecycleManager = new LifecycleManager({
       instanceId: this._instanceId,
@@ -104,8 +114,8 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
     });
 
     // Set up state change forwarding
-    this.stateStream.subscribe((event) => {
-      this.onStateChange(event);
+    this.stateStream.subscribe(async (event) => {
+      await this.onStateChange(event);
     });
   }
 
@@ -281,6 +291,9 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
       // Call lifecycle hook
       await this.onDispose();
 
+      // Dispose subscription system
+      this.subscriptionSystem.dispose();
+
       // Clear references - WeakMap doesn't have clear(), but we can reset count
       // WeakMap will automatically garbage collect the entries
       this.consumerCount = 0;
@@ -316,6 +329,13 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
     return this._isDisposalRequested;
   }
 
+  /**
+   * Get current generation for race condition prevention
+   */
+  get generation(): Generation {
+    return this.disposalGeneration;
+  }
+
   // ============================================
   // Lifecycle Hooks (for subclasses)
   // ============================================
@@ -344,9 +364,16 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
   /**
    * Called when state changes
    */
-  protected onStateChange(event: StateChangeEvent<S>): void {
-    // Notify all consumers about state change
-    this.notifyConsumers();
+  protected async onStateChange(event: StateChangeEvent<S>): Promise<void> {
+    // Notify all subscribers through the subscription system
+    await this.subscriptionSystem.notify({
+      type: 'state-change',
+      current: event.current,
+      previous: event.previous,
+      version: event.version,
+      timestamp: event.timestamp,
+      metadata: event.metadata
+    } as StateChange<S>);
 
     // Emit state change event
     this.eventStream.emit(event as unknown as E);
@@ -418,23 +445,48 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
   // ============================================
 
   /**
-   * Subscribe to state changes
+   * Subscribe to state changes (legacy method for compatibility)
    */
   subscribe(handler: (state: S) => void): () => void {
     // Add as consumer
     const consumer = { handler }; // Create a unique object for this subscription
     this.addConsumer(consumer);
 
-    // Subscribe to state changes
-    const unsubscribe = this.stateStream.subscribe((event) => {
-      handler(event.current);
+    // Subscribe through the new subscription system
+    const subscription = this.subscriptionSystem.subscribe({
+      callback: handler,
+      weakRef: consumer
     });
 
     // Return unsubscribe function that also removes consumer
     return () => {
-      unsubscribe();
+      subscription.unsubscribe();
       this.removeConsumer(consumer);
     };
+  }
+
+  /**
+   * Subscribe with advanced options using the new subscription system
+   */
+  subscribeAdvanced<R = S>(options: SubscriptionOptions<S, R>): Subscription {
+    // Create a consumer object if weakRef not provided
+    const consumer = options.weakRef || { subscription: true };
+    this.addConsumer(consumer);
+
+    // Subscribe through the subscription system
+    const subscription = this.subscriptionSystem.subscribe({
+      ...options,
+      weakRef: consumer
+    });
+
+    // Wrap unsubscribe to also remove consumer
+    const originalUnsubscribe = subscription.unsubscribe;
+    subscription.unsubscribe = () => {
+      originalUnsubscribe.call(subscription);
+      this.removeConsumer(consumer);
+    };
+
+    return subscription;
   }
 
   /**
@@ -459,7 +511,10 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
    * Accept a visitor for internal access
    */
   accept<R>(visitor: StateContainerVisitor<S, R>): R {
-    return visitor.visit(this);
+    // The visitor pattern in internal.ts defines individual visit methods
+    // We need to call the appropriate visitor method
+    // For now, we'll just return the state as a simple implementation
+    return visitor.visitState(this.state);
   }
 
   /**

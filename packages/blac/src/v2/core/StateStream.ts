@@ -288,13 +288,15 @@ export class StateStream<S> {
       return a.every((val, idx) => this.deepEqual(val, b[idx]));
     }
 
-    // Handle objects
-    const keysA = Object.keys(a);
-    const keysB = Object.keys(b);
+    // Handle objects - cast to Record for index access
+    const objA = a as Record<string, unknown>;
+    const objB = b as Record<string, unknown>;
+    const keysA = Object.keys(objA);
+    const keysB = Object.keys(objB);
     if (keysA.length !== keysB.length) return false;
 
     return keysA.every(
-      (key) => keysB.includes(key) && this.deepEqual(a[key], b[key]),
+      (key) => keysB.includes(key) && this.deepEqual(objA[key], objB[key]),
     );
   }
 }

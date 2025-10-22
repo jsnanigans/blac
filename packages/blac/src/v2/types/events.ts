@@ -25,6 +25,11 @@ export interface StateChangeEvent<S> extends BaseEvent {
 }
 
 /**
+ * Type alias for StateChangeEvent (for simpler naming)
+ */
+export type StateChange<S> = StateChangeEvent<S>;
+
+/**
  * Metadata about a state change
  */
 export interface ChangeMetadata {
