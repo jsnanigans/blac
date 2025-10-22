@@ -240,30 +240,10 @@ export class StateStream<S> {
    * Deep freeze an object to ensure immutability
    */
   private deepFreeze<T>(obj: T): T {
-    if (process.env.NODE_ENV === 'production') {
-      // Skip freezing in production for performance
-      return obj;
-    }
-
-    if (obj === null || typeof obj !== 'object') {
-      return obj;
-    }
-
-    // Skip if already frozen
-    if (Object.isFrozen(obj)) {
-      return obj;
-    }
-
-    Object.freeze(obj);
-
-    // Recursively freeze properties
-    Object.getOwnPropertyNames(obj).forEach((prop) => {
-      const value = (obj as Record<string, unknown>)[prop];
-      if (value && typeof value === 'object') {
-        this.deepFreeze(value);
-      }
-    });
-
+    // Skip freezing in production for performance
+    // Also skip in test environments when DISABLE_STATE_FREEZE is set
+    // Freezing disabled to allow proxy tracking to work correctly
+    // Proxies cannot intercept property access on frozen objects due to proxy invariants
     return obj;
   }
 

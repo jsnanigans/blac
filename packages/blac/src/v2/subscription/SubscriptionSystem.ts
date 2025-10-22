@@ -13,6 +13,7 @@ import { StateChange } from '../types/events';
 // Import all stages
 import {
   PriorityStage,
+  ProxyTrackingStage,
   FilterStage,
   SelectorStage,
   NotificationStage,
@@ -65,6 +66,7 @@ export interface Subscription {
 export interface SubscriptionSystemConfig {
   enableMetrics?: boolean;
   enableWeakRefs?: boolean;
+  enableProxyTracking?: boolean;
   maxSubscriptions?: number;
   cleanupIntervalMs?: number;
   defaultPriority?: SubscriptionPriority;
@@ -89,6 +91,7 @@ export class SubscriptionSystem<T = unknown> {
     this.config = {
       enableMetrics: config.enableMetrics ?? false,
       enableWeakRefs: config.enableWeakRefs ?? true,
+      enableProxyTracking: config.enableProxyTracking ?? true,
       maxSubscriptions: config.maxSubscriptions ?? 1000,
       cleanupIntervalMs: config.cleanupIntervalMs ?? 30000,
       defaultPriority: config.defaultPriority ?? SubscriptionPriority.NORMAL
@@ -183,12 +186,17 @@ export class SubscriptionSystem<T = unknown> {
       const pipeline = this.pipelineCache.get(subscriptionId);
       if (!pipeline) continue;
 
+      const subscription = this.registry.get(subscriptionId);
+      if (!subscription) continue;
+
       const context: PipelineContext<T> = {
         subscriptionId,
         stateChange,
-        metadata: new Map(),
+        subscription,
+        metadata: new Map(Object.entries(subscription.metadata || {})),
         timestamp: Date.now(),
-        shouldContinue: true
+        shouldContinue: true,
+        skipNotification: false
       };
 
       promises.push(
@@ -254,20 +262,27 @@ export class SubscriptionSystem<T = unknown> {
       pipeline.addStage(new PriorityStage(0)); // Min priority threshold
     }
 
-    // 2. WeakRef stage
+    // 2. ProxyTracking stage (before filter to set up paths)
+    if (this.config.enableProxyTracking) {
+      pipeline.addStage(new ProxyTrackingStage({
+        enabled: true
+      }));
+    }
+
+    // 3. WeakRef stage
     if (this.config.enableWeakRefs) {
       pipeline.addStage(new WeakRefStage());
     }
 
-    // 3. Filter stage
-    if (options.paths || options.filter) {
+    // 4. Filter stage (always add when proxy tracking is enabled for automatic filtering)
+    if (options.paths || options.filter || this.config.enableProxyTracking) {
       pipeline.addStage(new FilterStage({
         paths: options.paths,
         predicate: options.filter
       }));
     }
 
-    // 4. Optimization stage (only for throttling and caching)
+    // 5. Optimization stage (only for throttling and caching)
     if (options.throttle) {
       const optimizationOptions: OptimizationOptions = {};
       optimizationOptions.throttle = { interval: options.throttle };
@@ -275,12 +290,12 @@ export class SubscriptionSystem<T = unknown> {
       pipeline.addStage(new OptimizationStage(optimizationOptions));
     }
 
-    // 5. Selector stage
+    // 6. Selector stage
     if (options.selector) {
       pipeline.addStage(new SelectorStage(options.selector));
     }
 
-    // 6. Notification stage (always last)
+    // 7. Notification stage (always last)
     // Handle batching and debouncing in the NotificationStage where it can properly defer callbacks
     pipeline.addStage(new NotificationStage({
       callback: options.callback,

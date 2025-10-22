@@ -3,6 +3,7 @@
  */
 
 export * from './PriorityStage';
+export * from './ProxyTrackingStage';
 export * from './FilterStage';
 export * from './SelectorStage';
 export * from './NotificationStage';

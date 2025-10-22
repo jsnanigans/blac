@@ -12,6 +12,9 @@ export * from './core/StateContainer';
 export * from './core/Cubit';
 export * from './core/Vertex';
 
+// Proxy Tracking
+export * from './proxy/ProxyTracker';
+
 // Subscription System
 export * from './subscription';
 

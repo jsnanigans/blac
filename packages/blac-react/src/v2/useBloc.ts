@@ -1,17 +1,17 @@
 /**
- * useBloc - Convenient hook for BlaC state management in React
+ * useBloc - Convenient hook for BlaC state management in React with automatic proxy tracking
  *
  * Modern ergonomics: pass the Bloc constructor, get type-safe state and instance.
- * No manual type annotations or string names needed - everything is inferred.
+ * No manual selectors needed - automatically tracks which properties you access!
  *
  * @example
  * ```tsx
- * // Basic usage - types are inferred automatically
+ * // Basic usage - automatic tracking of accessed properties
  * function Counter() {
  *   const [state, bloc] = useBloc(CounterBloc);
  *   return (
  *     <div>
- *       <p>Count: {state.count}</p>
+ *       <p>Count: {state.count}</p>  // Only re-renders when count changes
  *       <button onClick={bloc.increment}>+</button>
  *     </div>
  *   );
@@ -19,16 +19,18 @@
  *
  * // With static props (for blocs that need initialization)
  * function UserProfile({ userId }: { userId: string }) {
- *   const [user, bloc] = useBloc(UserBloc, {
+ *   const [state, bloc] = useBloc(UserBloc, {
  *     staticProps: { userId },
  *     onMount: (bloc) => bloc.loadUser(),
  *   });
- *   return <div>{user.name}</div>;
+ *   return <div>{state.name}</div>;  // Only re-renders when name changes
  * }
+ * ```
  */
 
-import { useMemo, useEffect, useRef, useCallback, useSyncExternalStore } from 'react';
+import { useMemo, useEffect, useRef, useSyncExternalStore } from 'react';
 import type { StateContainer } from '../../../blac/src/v2/core/StateContainer';
+import { ReactBridge } from './ReactBridge';
 
 /**
  * Extract state type from StateContainer
@@ -72,6 +74,7 @@ export interface UseBlocOptions<TBloc extends StateContainer<any, any>> {
 type UseBlocReturn<TBloc extends StateContainer<any, any>> = [
   ExtractState<TBloc>,
   TBloc,
+any,
 ];
 
 /**
@@ -138,7 +141,7 @@ export function clearAllBlocInstances(): void {
 }
 
 /**
- * useBloc Hook - Modern, type-safe BlaC state management
+ * useBloc Hook - Modern, type-safe BlaC state management with automatic proxy tracking
  *
  * @param BlocClass - The Bloc constructor (uninitiated class)
  * @param options - Optional configuration
@@ -149,7 +152,7 @@ function useBloc<TBloc extends StateContainer<any, any>>(
   options?: UseBlocOptions<TBloc>
 ): UseBlocReturn<TBloc> {
   // Component reference that persists across React Strict Mode remounts
-  const componentRef = useRef<object & { __blocInstanceId?: string }>({});
+  const componentRef = useRef<object & { __blocInstanceId?: string; __bridge?: ReactBridge<any> }>({});
 
   // Check if bloc is isolated
   const isIsolated = (BlocClass as { isolated?: boolean }).isolated === true;
@@ -173,59 +176,49 @@ function useBloc<TBloc extends StateContainer<any, any>>(
     return BlocClass.name;
   }, [BlocClass, options?.instanceId, isIsolated]);
 
-  // Get or create bloc instance
-  const bloc = useMemo(() => {
-    return getOrCreateBloc(BlocClass, instanceKey, options?.staticProps);
+  // Get or create bloc instance and bridge
+  const { bloc, bridge } = useMemo(() => {
+    const blocInstance = getOrCreateBloc(BlocClass, instanceKey, options?.staticProps);
+
+    // Create or reuse bridge
+    if (!componentRef.current.__bridge) {
+      componentRef.current.__bridge = new ReactBridge(blocInstance);
+    }
+
+    return {
+      bloc: blocInstance,
+      bridge: componentRef.current.__bridge
+    };
   }, [BlocClass, instanceKey, options?.staticProps]);
 
-  // Subscribe function for useSyncExternalStore
-  const subscribe = useCallback(
-    (onStoreChange: () => void) => {
-      // Subscribe to state changes - just notify React to check getSnapshot
-      const unsubscribe = bloc.subscribe(() => {
-        onStoreChange();
-      });
-
-      return unsubscribe;
-    },
-    [bloc]
+  // Subscribe to state changes using useSyncExternalStore with proxy tracking
+  const state = useSyncExternalStore(
+    bridge.subscribe,
+    bridge.getSnapshot,
+    bridge.getServerSnapshot
   );
-
-  // Snapshot function for useSyncExternalStore
-  // useSyncExternalStore will handle comparison using Object.is
-  const getSnapshot = useCallback(() => {
-    const state = bloc.state;
-    const selected = state;
-
-    // But useSyncExternalStore uses Object.is by default which is usually fine
-    return selected;
-  }, [bloc]);
-
-  // Server snapshot (same as client for now)
-  const getServerSnapshot = getSnapshot;
-
-  // Subscribe to state changes using useSyncExternalStore
-  const state = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   // Mount/unmount lifecycle
   useEffect(() => {
     // Call onMount callback if provided
-    if (options?.onMount) {
-      options.onMount(bloc);
-    }
+    bridge.onMount(options?.onMount);
 
     return () => {
       // Call onUnmount callback if provided
-      if (options?.onUnmount) {
-        options.onUnmount(bloc);
-      }
+      bridge.onUnmount(options?.onUnmount);
 
       // Release reference - isolated blocs always dispose when ref count hits zero
       releaseBloc(instanceKey, isIsolated);
-    };
-  }, [bloc, instanceKey, isIsolated]);
 
-  return [state, bloc] as UseBlocReturn<TBloc>
+      // Cleanup bridge if isolated
+      if (isIsolated) {
+        bridge.dispose();
+        componentRef.current.__bridge = undefined;
+      }
+    };
+  }, [bridge, instanceKey, isIsolated, options?.onMount, options?.onUnmount]);
+
+  return [state, bloc, componentRef] as UseBlocReturn<TBloc>
 }
 
 export default useBloc;

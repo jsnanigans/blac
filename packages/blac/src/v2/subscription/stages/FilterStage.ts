@@ -33,9 +33,14 @@ export class FilterStage<T = unknown> extends PipelineStage {
     const { stateChange } = context;
     const { current, previous } = stateChange;
 
+    // Get dynamic filter paths from metadata (set by ProxyTrackingStage)
+    // or use static paths from options
+    const dynamicFilterPaths = context.metadata.get('filterPaths') as string[] | undefined;
+    const pathsToCheck = dynamicFilterPaths || this.options.paths;
+
     // Apply path filtering
-    if (this.options.paths && this.options.paths.length > 0) {
-      const hasRelevantChange = this.checkPaths(current, previous, this.options.paths);
+    if (pathsToCheck && pathsToCheck.length > 0) {
+      const hasRelevantChange = this.checkPaths(current, previous, pathsToCheck);
       if (!hasRelevantChange) {
         context.shouldContinue = false;
         context.skipNotification = true;

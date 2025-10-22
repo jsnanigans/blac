@@ -31,7 +31,7 @@ export interface SubscriptionConfig<TState = unknown, TResult = TState> {
 /**
  * Subscription entry in the registry
  */
-interface SubscriptionEntry<TState = unknown, TResult = TState> {
+export interface SubscriptionEntry<TState = unknown, TResult = TState> {
   id: SubscriptionId;
   config: SubscriptionConfig<TState, TResult>;
   pipeline: SubscriptionPipeline;
@@ -210,6 +210,13 @@ export class SubscriptionRegistry {
   getContainerSubscriptions(containerId: ContainerId): SubscriptionId[] {
     const ids = this.containerIndex.get(containerId);
     return ids ? Array.from(ids) : [];
+  }
+
+  /**
+   * Get subscription entry by ID
+   */
+  get(id: SubscriptionId): SubscriptionEntry<unknown, unknown> | undefined {
+    return this.subscriptions.get(id);
   }
 
   /**
