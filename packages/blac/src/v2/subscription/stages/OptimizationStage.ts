@@ -27,7 +27,7 @@ export interface OptimizationOptions {
     ttl?: number;
     maxSize?: number;
   };
-  callback?: (value: any) => void; // For executing deferred notifications
+  callback?: <T>(value: T) => void; // For executing deferred notifications
 }
 
 interface BatchEntry<T> {
@@ -39,7 +39,7 @@ interface ThrottleState {
   lastCall: number;
   pendingContext?: PipelineContext;
   timer?: NodeJS.Timeout;
-  callback?: (value: any) => void;
+  callback?: <T>(value: T) => void;
 }
 
 interface DebounceState {

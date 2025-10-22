@@ -1,5 +1,5 @@
 /**
- * Tests for BlocRegistry
+ * Tests for BlocRegistry - Constructor Pattern
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
@@ -8,7 +8,19 @@ import { StateContainer } from '../core/StateContainer';
 
 // Test implementations
 class CounterBloc extends StateContainer<number> {
-  constructor(id: string) {
+  constructor() {
+    super(0);
+  }
+
+  increment = () => {
+    this.update(state => state + 1);
+  };
+}
+
+class IsolatedCounterBloc extends StateContainer<number> {
+  static isolated = true;
+
+  constructor() {
     super(0);
   }
 
@@ -18,8 +30,8 @@ class CounterBloc extends StateContainer<number> {
 }
 
 class UserBloc extends StateContainer<{ name: string; age: number }> {
-  constructor(id: string) {
-    super({ name: 'Unknown', age: 0 });
+  constructor(config?: { initialName?: string }) {
+    super({ name: config?.initialName || 'Unknown', age: 0 });
   }
 
   setName = (name: string) => {
@@ -35,258 +47,219 @@ describe('BlocRegistry', () => {
   });
 
   describe('Type Registration', () => {
-    it('should register a bloc type with factory', () => {
-      const factory = vi.fn((id) => new CounterBloc(id));
-
-      registry.register('Counter', { factory });
+    it('should register a bloc type with constructor', () => {
+      registry.register(CounterBloc);
 
       const stats = registry.getStats();
       expect(stats.registeredTypes).toBe(1);
       expect(stats.totalInstances).toBe(0);
     });
 
-    it('should throw if registering duplicate type name', () => {
-      registry.register('Counter', {
-        factory: (id) => new CounterBloc(id),
-      });
+    it('should throw if registering duplicate type', () => {
+      registry.register(CounterBloc);
 
       expect(() => {
-        registry.register('Counter', {
-          factory: (id) => new CounterBloc(id),
-        });
-      }).toThrow('Bloc type "Counter" is already registered');
+        registry.register(CounterBloc);
+      }).toThrow('Bloc type "CounterBloc" is already registered');
     });
 
     it('should allow registering multiple different types', () => {
-      registry.register('Counter', {
-        factory: (id) => new CounterBloc(id),
-      });
-      registry.register('User', {
-        factory: (id) => new UserBloc(id),
-      });
+      registry.register(CounterBloc);
+      registry.register(UserBloc);
 
       const stats = registry.getStats();
       expect(stats.registeredTypes).toBe(2);
     });
+
+    it('should auto-detect isolated from static property', () => {
+      registry.register(IsolatedCounterBloc);
+
+      expect(registry.isRegistered(IsolatedCounterBloc)).toBe(true);
+    });
+
+    it('should allow overriding isolated setting', () => {
+      registry.register(CounterBloc, { isolated: true });
+
+      expect(registry.isRegistered(CounterBloc)).toBe(true);
+    });
   });
 
   describe('Shared Instances (Default)', () => {
-    beforeEach(() => {
-      registry.register('Counter', {
-        factory: (id) => new CounterBloc(id),
-      });
-    });
-
-    it('should create instance on first get', () => {
-      const id = createInstanceId('counter-1');
-      const instance = registry.get<number, CounterBloc>('Counter', id);
+    it('should create instance on first get (auto-register)', () => {
+      const instance = registry.get(CounterBloc);
 
       expect(instance).toBeInstanceOf(CounterBloc);
-      expect(registry.has('Counter', id)).toBe(true);
+      expect(registry.isRegistered(CounterBloc)).toBe(true);
     });
 
-    it('should return same instance for same ID', () => {
-      const id = createInstanceId('counter-1');
-      const instance1 = registry.get<number, CounterBloc>('Counter', id);
-      const instance2 = registry.get<number, CounterBloc>('Counter', id);
+    it('should return same instance for default ID', () => {
+      const instance1 = registry.get(CounterBloc);
+      const instance2 = registry.get(CounterBloc);
 
       expect(instance1).toBe(instance2);
     });
 
     it('should create different instances for different IDs', () => {
-      const id1 = createInstanceId('counter-1');
-      const id2 = createInstanceId('counter-2');
-
-      const instance1 = registry.get<number, CounterBloc>('Counter', id1);
-      const instance2 = registry.get<number, CounterBloc>('Counter', id2);
+      const instance1 = registry.get(CounterBloc, { instanceId: 'counter-1' });
+      const instance2 = registry.get(CounterBloc, { instanceId: 'counter-2' });
 
       expect(instance1).not.toBe(instance2);
     });
 
-    it('should call factory only once per ID', () => {
-      const factory = vi.fn((id) => new CounterBloc(id));
-      registry.register('CounterTracked', { factory });
+    it('should return same instance for same custom ID', () => {
+      const instance1 = registry.get(CounterBloc, { instanceId: 'shared' });
+      const instance2 = registry.get(CounterBloc, { instanceId: 'shared' });
 
-      const id = createInstanceId('counter-1');
-      registry.get('CounterTracked', id);
-      registry.get('CounterTracked', id);
-      registry.get('CounterTracked', id);
+      expect(instance1).toBe(instance2);
+    });
 
-      expect(factory).toHaveBeenCalledTimes(1);
-      expect(factory).toHaveBeenCalledWith(id);
+    it('should create instance only once per ID', () => {
+      const instance1 = registry.get(CounterBloc);
+      const instance2 = registry.get(CounterBloc);
+      const instance3 = registry.get(CounterBloc);
+
+      expect(instance1).toBe(instance2);
+      expect(instance2).toBe(instance3);
     });
   });
 
   describe('Isolated Instances', () => {
-    beforeEach(() => {
-      registry.register('Counter', {
-        factory: (id) => new CounterBloc(id),
-        isolated: true,
-      });
-    });
-
-    it('should create new instance on each get', () => {
-      const id = createInstanceId('counter-1');
-      const instance1 = registry.get<number, CounterBloc>('Counter', id);
-      const instance2 = registry.get<number, CounterBloc>('Counter', id);
+    it('should create new instance on each get (static isolated)', () => {
+      const instance1 = registry.get(IsolatedCounterBloc);
+      const instance2 = registry.get(IsolatedCounterBloc);
 
       expect(instance1).not.toBe(instance2);
-      expect(instance1).toBeInstanceOf(CounterBloc);
-      expect(instance2).toBeInstanceOf(CounterBloc);
+      expect(instance1).toBeInstanceOf(IsolatedCounterBloc);
+      expect(instance2).toBeInstanceOf(IsolatedCounterBloc);
     });
 
-    it('should call factory on each get', () => {
-      const factory = vi.fn((id) => new CounterBloc(id));
-      registry.register('CounterIsolated', { factory, isolated: true });
+    it('should create new instance even with same ID', () => {
+      const instance1 = registry.get(IsolatedCounterBloc, { instanceId: 'same-id' });
+      const instance2 = registry.get(IsolatedCounterBloc, { instanceId: 'same-id' });
 
-      const id = createInstanceId('counter-1');
-      registry.get('CounterIsolated', id);
-      registry.get('CounterIsolated', id);
-      registry.get('CounterIsolated', id);
-
-      expect(factory).toHaveBeenCalledTimes(3);
+      expect(instance1).not.toBe(instance2);
     });
 
-    it('should still track all isolated instances', () => {
-      const id = createInstanceId('counter-1');
-      registry.get<number, CounterBloc>('Counter', id);
-      registry.get<number, CounterBloc>('Counter', id);
-      registry.get<number, CounterBloc>('Counter', id);
+    it('should track all isolated instances', () => {
+      registry.get(IsolatedCounterBloc);
+      registry.get(IsolatedCounterBloc);
+      registry.get(IsolatedCounterBloc);
 
-      const instances = registry.getAll<number, CounterBloc>('Counter');
+      const instances = registry.getAll(IsolatedCounterBloc);
       expect(instances).toHaveLength(3);
+    });
+
+    it('should respect isolated option even without static property', () => {
+      registry.register(CounterBloc, { isolated: true });
+
+      const instance1 = registry.get(CounterBloc);
+      const instance2 = registry.get(CounterBloc);
+
+      expect(instance1).not.toBe(instance2);
     });
   });
 
   describe('Instance Removal', () => {
-    beforeEach(() => {
-      registry.register('Counter', {
-        factory: (id) => new CounterBloc(id),
-      });
-    });
-
     it('should remove instance from registry', () => {
       const id = createInstanceId('counter-1');
-      registry.get<number, CounterBloc>('Counter', id);
+      registry.get(CounterBloc, { instanceId: 'counter-1' });
 
-      expect(registry.has('Counter', id)).toBe(true);
-      const removed = registry.remove('Counter', id);
+      expect(registry.has(CounterBloc, id)).toBe(true);
+      const removed = registry.remove(CounterBloc, id);
 
       expect(removed).toBe(true);
-      expect(registry.has('Counter', id)).toBe(false);
+      expect(registry.has(CounterBloc, id)).toBe(false);
     });
 
     it('should return false if instance does not exist', () => {
       const id = createInstanceId('counter-1');
-      const removed = registry.remove('Counter', id);
-
-      expect(removed).toBe(false);
-    });
-
-    it('should return false if type does not exist', () => {
-      const id = createInstanceId('counter-1');
-      const removed = registry.remove('NonExistent', id);
+      const removed = registry.remove(CounterBloc, id);
 
       expect(removed).toBe(false);
     });
 
     it('should allow recreating instance after removal', () => {
       const id = createInstanceId('counter-1');
-      const instance1 = registry.get<number, CounterBloc>('Counter', id);
-      registry.remove('Counter', id);
-      const instance2 = registry.get<number, CounterBloc>('Counter', id);
+      const instance1 = registry.get(CounterBloc, { instanceId: 'counter-1' });
+      registry.remove(CounterBloc, id);
+      const instance2 = registry.get(CounterBloc, { instanceId: 'counter-1' });
 
       expect(instance1).not.toBe(instance2);
     });
   });
 
   describe('Query Operations', () => {
-    beforeEach(() => {
-      registry.register('Counter', {
-        factory: (id) => new CounterBloc(id),
-      });
-      registry.register('User', {
-        factory: (id) => new UserBloc(id),
-      });
-    });
-
     it('should check instance existence', () => {
       const id = createInstanceId('counter-1');
 
-      expect(registry.has('Counter', id)).toBe(false);
-      registry.get<number, CounterBloc>('Counter', id);
-      expect(registry.has('Counter', id)).toBe(true);
+      expect(registry.has(CounterBloc, id)).toBe(false);
+      registry.get(CounterBloc, { instanceId: 'counter-1' });
+      expect(registry.has(CounterBloc, id)).toBe(true);
+    });
+
+    it('should check if type is registered', () => {
+      expect(registry.isRegistered(CounterBloc)).toBe(false);
+      registry.register(CounterBloc);
+      expect(registry.isRegistered(CounterBloc)).toBe(true);
     });
 
     it('should return all instances of a type', () => {
-      const id1 = createInstanceId('counter-1');
-      const id2 = createInstanceId('counter-2');
-      const id3 = createInstanceId('counter-3');
+      registry.get(CounterBloc, { instanceId: 'c1' });
+      registry.get(CounterBloc, { instanceId: 'c2' });
+      registry.get(CounterBloc, { instanceId: 'c3' });
 
-      registry.get<number, CounterBloc>('Counter', id1);
-      registry.get<number, CounterBloc>('Counter', id2);
-      registry.get<number, CounterBloc>('Counter', id3);
-
-      const instances = registry.getAll<number, CounterBloc>('Counter');
+      const instances = registry.getAll(CounterBloc);
       expect(instances).toHaveLength(3);
     });
 
     it('should return empty array for type with no instances', () => {
-      const instances = registry.getAll<number, CounterBloc>('Counter');
+      registry.register(CounterBloc);
+      const instances = registry.getAll(CounterBloc);
       expect(instances).toEqual([]);
     });
 
-    it('should return empty array for non-existent type', () => {
-      const instances = registry.getAll('NonExistent');
+    it('should return empty array for non-registered type', () => {
+      const instances = registry.getAll(CounterBloc);
       expect(instances).toEqual([]);
     });
 
     it('should get stats for all types', () => {
-      registry.get<number, CounterBloc>('Counter', createInstanceId('c1'));
-      registry.get<number, CounterBloc>('Counter', createInstanceId('c2'));
-      registry.get('User', createInstanceId('u1'));
+      registry.get(CounterBloc, { instanceId: 'c1' });
+      registry.get(CounterBloc, { instanceId: 'c2' });
+      registry.get(UserBloc, { instanceId: 'u1' });
 
       const stats = registry.getStats();
       expect(stats.registeredTypes).toBe(2);
       expect(stats.totalInstances).toBe(3);
       expect(stats.typeBreakdown).toEqual({
-        Counter: 2,
-        User: 1,
+        CounterBloc: 2,
+        UserBloc: 1,
       });
     });
   });
 
   describe('Clear Operations', () => {
-    beforeEach(() => {
-      registry.register('Counter', {
-        factory: (id) => new CounterBloc(id),
-      });
-      registry.register('User', {
-        factory: (id) => new UserBloc(id),
-      });
-    });
-
     it('should clear all instances of a type', () => {
-      registry.get<number, CounterBloc>('Counter', createInstanceId('c1'));
-      registry.get<number, CounterBloc>('Counter', createInstanceId('c2'));
-      registry.get('User', createInstanceId('u1'));
+      registry.get(CounterBloc, { instanceId: 'c1' });
+      registry.get(CounterBloc, { instanceId: 'c2' });
+      registry.get(UserBloc, { instanceId: 'u1' });
 
-      registry.clear('Counter');
+      registry.clear(CounterBloc);
 
-      expect(registry.getAll('Counter')).toHaveLength(0);
-      expect(registry.getAll('User')).toHaveLength(1);
+      expect(registry.getAll(CounterBloc)).toHaveLength(0);
+      expect(registry.getAll(UserBloc)).toHaveLength(1);
     });
 
-    it('should allow clearing non-existent type', () => {
+    it('should allow clearing non-registered type', () => {
       expect(() => {
-        registry.clear('NonExistent');
+        registry.clear(CounterBloc);
       }).not.toThrow();
     });
 
     it('should clear all instances from all types', () => {
-      registry.get<number, CounterBloc>('Counter', createInstanceId('c1'));
-      registry.get<number, CounterBloc>('Counter', createInstanceId('c2'));
-      registry.get('User', createInstanceId('u1'));
+      registry.get(CounterBloc, { instanceId: 'c1' });
+      registry.get(CounterBloc, { instanceId: 'c2' });
+      registry.get(UserBloc, { instanceId: 'u1' });
 
       registry.clearAll();
 
@@ -294,55 +267,63 @@ describe('BlocRegistry', () => {
       expect(stats.totalInstances).toBe(0);
       expect(stats.registeredTypes).toBe(2); // Types still registered
     });
+
+    it('should unregister a type', () => {
+      registry.get(CounterBloc, { instanceId: 'c1' });
+
+      expect(registry.isRegistered(CounterBloc)).toBe(true);
+      const removed = registry.unregister(CounterBloc);
+
+      expect(removed).toBe(true);
+      expect(registry.isRegistered(CounterBloc)).toBe(false);
+      expect(registry.getAll(CounterBloc)).toHaveLength(0);
+    });
   });
 
   describe('Error Handling', () => {
-    it('should throw if getting unregistered type', () => {
+    it('should auto-register on first get (no error for unregistered)', () => {
       expect(() => {
-        registry.get('NonExistent', createInstanceId('id'));
-      }).toThrow('Bloc type "NonExistent" is not registered');
+        registry.get(CounterBloc);
+      }).not.toThrow();
+
+      expect(registry.isRegistered(CounterBloc)).toBe(true);
     });
 
-    it('should handle errors in factory gracefully', () => {
-      const factory = vi.fn(() => {
-        throw new Error('Factory error');
-      });
-      registry.register('ErrorBloc', { factory });
+    it('should handle constructor errors gracefully', () => {
+      class ErrorBloc extends StateContainer<number> {
+        constructor() {
+          throw new Error('Constructor error');
+        }
+      }
 
       expect(() => {
-        registry.get('ErrorBloc', createInstanceId('id'));
-      }).toThrow('Factory error');
+        registry.get(ErrorBloc);
+      }).toThrow('Constructor error');
     });
   });
 
   describe('Type Safety', () => {
-    it('should enforce correct return types', () => {
-      registry.register('Counter', {
-        factory: (id) => new CounterBloc(id),
-      });
+    it('should infer correct return types', () => {
+      const instance = registry.get(CounterBloc);
 
-      const instance = registry.get<number, CounterBloc>(
-        'Counter',
-        createInstanceId('c1')
-      );
-
-      // TypeScript should enforce this is a CounterBloc
+      // TypeScript should infer this is a CounterBloc
       instance.increment();
       expect(instance.state).toBe(1);
     });
 
     it('should work with different state types', () => {
-      registry.register('User', {
-        factory: (id) => new UserBloc(id),
-      });
-
-      const instance = registry.get<{ name: string; age: number }, UserBloc>(
-        'User',
-        createInstanceId('u1')
-      );
+      const instance = registry.get(UserBloc);
 
       instance.setName('Alice');
       expect(instance.state.name).toBe('Alice');
+    });
+
+    it('should support constructor arguments', () => {
+      const instance = registry.get(UserBloc, {
+        constructorArgs: [{ initialName: 'Bob' }],
+      });
+
+      expect(instance.state.name).toBe('Bob');
     });
   });
 
@@ -351,12 +332,8 @@ describe('BlocRegistry', () => {
       const id = createInstanceId('test');
 
       // TypeScript should accept branded ID
-      registry.register('Counter', {
-        factory: (id) => new CounterBloc(id),
-      });
-
       expect(() => {
-        registry.get('Counter', id);
+        registry.get(CounterBloc, { instanceId: 'test' });
       }).not.toThrow();
     });
   });

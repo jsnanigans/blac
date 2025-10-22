@@ -2,7 +2,6 @@
  * useStateContainer - Simple React hook for v2 StateContainer
  *
  * Clean, minimal hook using React 18's useSyncExternalStore.
- * No selectors, no over-engineering, just what's needed.
  */
 
 import { useSyncExternalStore, useEffect, useMemo } from 'react';

@@ -7,7 +7,7 @@
 
 import { PipelineStage, PipelineContext } from '../SubscriptionPipeline';
 
-export type NotificationCallback<T = any> = (state: T) => void;
+export type NotificationCallback<T = unknown> = (state: T) => void;
 
 export interface NotificationOptions {
   callback: NotificationCallback;

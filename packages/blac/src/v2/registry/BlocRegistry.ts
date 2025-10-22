@@ -1,10 +1,13 @@
 /**
  * BlocRegistry - Simple instance management for v2 architecture
  *
+ * Constructor-based pattern only - pass the Bloc class, get automatic type inference.
+ * No string names, no factories - just clean, type-safe instance management.
+ *
  * Responsibilities:
- * - Store and retrieve bloc instances by type and ID
- * - Provide factory pattern for type-safe instance creation
+ * - Store and retrieve bloc instances by constructor
  * - Support shared (singleton) and isolated (per-consumer) patterns
+ * - Auto-register on first use for maximum convenience
  *
  * NOT responsible for:
  * - Lifecycle management (handled by StateContainer)
@@ -27,34 +30,44 @@ export function createInstanceId(id: string): InstanceId {
 }
 
 /**
- * Factory function type for creating bloc instances
+ * Bloc constructor type
  */
-export type BlocFactory<TState, TBloc extends StateContainer<TState>> = (
-  id: InstanceId
+export type BlocConstructor<TBloc extends StateContainer<unknown>> = new (
+  ...args: unknown[]
 ) => TBloc;
+
+/**
+ * Extract state type from StateContainer
+ */
+type ExtractState<T> = T extends StateContainer<infer S> ? S : never;
 
 /**
  * Configuration for a bloc type in the registry
  */
-export interface BlocTypeConfig<TState, TBloc extends StateContainer<TState>> {
+export interface BlocTypeConfig<TBloc extends StateContainer<unknown>> {
   /**
-   * Factory function to create new instances
+   * Bloc constructor
    */
-  factory: BlocFactory<TState, TBloc>;
+  constructor: BlocConstructor<TBloc>;
+
+  /**
+   * Constructor arguments (default args to use if not provided at get-time)
+   */
+  constructorArgs?: unknown[];
 
   /**
    * If true, each consumer gets its own instance (isolated)
    * If false, all consumers share the same instance (shared/singleton)
    * Default: false (shared)
    */
-  isolated?: boolean;
+  isolated: boolean;
 }
 
 /**
  * Registry entry for a bloc type
  */
-interface RegistryEntry<TState, TBloc extends StateContainer<TState>> {
-  config: BlocTypeConfig<TState, TBloc>;
+interface RegistryEntry<TBloc extends StateContainer<unknown>> {
+  config: BlocTypeConfig<TBloc>;
   /** Map for shared instances (keyed by ID) */
   instances: Map<InstanceId, TBloc>;
   /** Array for isolated instances (not keyed, just tracked) */
@@ -70,27 +83,54 @@ interface RegistryEntry<TState, TBloc extends StateContainer<TState>> {
 export class BlocRegistry {
   /**
    * Map of registered bloc types
-   * Key: Bloc type name (string)
+   * Key: Bloc class name (extracted from constructor)
    * Value: Registry entry with config and instances
    */
-  private readonly types = new Map<string, RegistryEntry<unknown, StateContainer<unknown>>>();
+  private readonly types = new Map<string, RegistryEntry<StateContainer<unknown>>>();
 
   /**
-   * Register a bloc type with its factory
+   * Register a bloc class
    *
-   * @param typeName - Unique name for this bloc type
-   * @param config - Configuration including factory function
+   * @param BlocClass - The Bloc constructor
+   * @param options - Optional configuration
+   *
+   * @example
+   * ```ts
+   * // Simple registration
+   * registry.register(CounterBloc);
+   *
+   * // With constructor args
+   * registry.register(UserBloc, {
+   *   constructorArgs: [{ apiUrl: 'https://api.example.com' }]
+   * });
+   *
+   * // Override isolation (default comes from static property)
+   * registry.register(FormBloc, { isolated: true });
+   * ```
    */
-  register<TState, TBloc extends StateContainer<TState>>(
-    typeName: string,
-    config: BlocTypeConfig<TState, TBloc>
+  register<TBloc extends StateContainer<unknown>>(
+    BlocClass: BlocConstructor<TBloc>,
+    options?: {
+      constructorArgs?: unknown[];
+      isolated?: boolean;
+    }
   ): void {
+    const typeName = BlocClass.name;
+
     if (this.types.has(typeName)) {
       throw new Error(`Bloc type "${typeName}" is already registered`);
     }
 
+    // Check if class has static isolated property
+    const classIsolated = (BlocClass as { isolated?: boolean }).isolated === true;
+    const isolated = options?.isolated ?? classIsolated ?? false;
+
     this.types.set(typeName, {
-      config: config as BlocTypeConfig<unknown, StateContainer<unknown>>,
+      config: {
+        constructor: BlocClass,
+        constructorArgs: options?.constructorArgs,
+        isolated,
+      },
       instances: new Map(),
       isolatedInstances: [],
     });
@@ -99,55 +139,94 @@ export class BlocRegistry {
   /**
    * Get or create a bloc instance
    *
-   * For shared blocs: Returns existing instance or creates new one
-   * For isolated blocs: Always creates new instance and adds to isolated list
+   * Auto-registers the bloc if not already registered.
    *
-   * @param typeName - The registered bloc type name
-   * @param id - Instance identifier
+   * @param BlocClass - The Bloc constructor
+   * @param options - Optional configuration
    * @returns The bloc instance
-   * @throws Error if type not registered
+   *
+   * @example
+   * ```ts
+   * // Basic usage - auto-registers
+   * const counter = registry.get(CounterBloc);
+   *
+   * // With custom instance ID (for shared blocs)
+   * const userProfile = registry.get(UserBloc, {
+   *   instanceId: 'user-123'
+   * });
+   *
+   * // With constructor args
+   * const form = registry.get(FormBloc, {
+   *   constructorArgs: [{ initialData: {...} }]
+   * });
+   * ```
    */
-  get<TState, TBloc extends StateContainer<TState>>(
-    typeName: string,
-    id: InstanceId
+  get<TBloc extends StateContainer<unknown>>(
+    BlocClass: BlocConstructor<TBloc>,
+    options?: {
+      instanceId?: string;
+      constructorArgs?: unknown[];
+    }
   ): TBloc {
-    const entry = this.types.get(typeName);
-    if (!entry) {
-      throw new Error(`Bloc type "${typeName}" is not registered`);
+    const typeName = BlocClass.name;
+
+    // Auto-register if not already registered
+    if (!this.types.has(typeName)) {
+      this.register(BlocClass, {
+        constructorArgs: options?.constructorArgs,
+      });
     }
 
+    // Determine instance ID
+    const instanceId = createInstanceId(options?.instanceId || typeName);
+
+    // Get entry
+    const entry = this.types.get(typeName)!;
+    const isIsolated = entry.config.isolated;
+
     // For shared blocs, return existing instance if available
-    if (!entry.config.isolated) {
-      const existing = entry.instances.get(id) as TBloc | undefined;
+    if (!isIsolated) {
+      const existing = entry.instances.get(instanceId) as TBloc | undefined;
       if (existing) {
         return existing;
       }
     }
 
     // Create new instance
-    const instance = entry.config.factory(id) as TBloc;
+    const args = options?.constructorArgs || entry.config.constructorArgs || [];
+    const instance = new BlocClass(...args);
 
     // Store differently based on isolation mode
-    if (entry.config.isolated) {
+    if (isIsolated) {
       // Isolated: Add to list for tracking/debugging
-      entry.isolatedInstances.push(instance as StateContainer<unknown>);
+      entry.isolatedInstances.push(instance);
     } else {
       // Shared: Store in map by ID
-      entry.instances.set(id, instance as StateContainer<unknown>);
+      entry.instances.set(instanceId, instance);
     }
 
     return instance;
   }
 
   /**
+   * Check if a type is registered
+   *
+   * @param BlocClass - The bloc constructor
+   * @returns True if type is registered
+   */
+  isRegistered(BlocClass: BlocConstructor<unknown>): boolean {
+    return this.types.has(BlocClass.name);
+  }
+
+  /**
    * Check if an instance exists (for testing/debugging)
    *
-   * @param typeName - The bloc type name
+   * @param BlocClass - The bloc constructor
    * @param id - Instance identifier
    * @returns True if instance exists
    */
-  has(typeName: string, id: InstanceId): boolean {
-    const entry = this.types.get(typeName);
+  has(BlocClass: BlocConstructor<unknown>, id: InstanceId): boolean {
+    const entry = this.types.get(BlocClass.name);
     return entry ? entry.instances.has(id) : false;
   }
 
@@ -155,23 +234,25 @@ export class BlocRegistry {
    * Remove an instance from the registry
    * NOTE: Does NOT dispose the instance - caller is responsible
    *
-   * @param typeName - The bloc type name
+   * @param BlocClass - The bloc constructor
    * @param id - Instance identifier
    * @returns True if instance was removed
    */
-  remove(typeName: string, id: InstanceId): boolean {
-    const entry = this.types.get(typeName);
+  remove(BlocClass: BlocConstructor<unknown>, id: InstanceId): boolean {
+    const entry = this.types.get(BlocClass.name);
     return entry ? entry.instances.delete(id) : false;
   }
 
   /**
    * Get all instances of a type (for debugging)
    *
-   * @param typeName - The bloc type name
+   * @param BlocClass - The bloc constructor
    * @returns Array of all instances (both shared and isolated)
    */
-  getAll<TState, TBloc extends StateContainer<TState>>(typeName: string): TBloc[] {
-    const entry = this.types.get(typeName);
+  getAll<TBloc extends StateContainer<unknown>>(
+    BlocClass: BlocConstructor<TBloc>
+  ): TBloc[] {
+    const entry = this.types.get(BlocClass.name);
     if (!entry) {
       return [];
     }
@@ -186,13 +267,13 @@ export class BlocRegistry {
    * Clear all instances of a type
    * NOTE: Does NOT dispose instances - caller is responsible
    *
-   * @param typeName - The bloc type name
+   * @param BlocClass - The bloc constructor
    */
-  clear(typeName: string): void {
-    const entry = this.types.get(typeName);
+  clear(BlocClass: BlocConstructor<unknown>): void {
+    const entry = this.types.get(BlocClass.name);
     if (entry) {
       entry.instances.clear();
-      entry.isolatedInstances.length = 0; // Clear array
+      entry.isolatedInstances.length = 0;
     }
   }
 
@@ -205,6 +286,23 @@ export class BlocRegistry {
       entry.instances.clear();
       entry.isolatedInstances.length = 0;
     }
+  }
+
+  /**
+   * Unregister a bloc type
+   * NOTE: Clears all instances but does NOT dispose them
+   *
+   * @param BlocClass - The bloc constructor
+   * @returns True if type was unregistered
+   */
+  unregister(BlocClass: BlocConstructor<unknown>): boolean {
+    const entry = this.types.get(BlocClass.name);
+    if (entry) {
+      entry.instances.clear();
+      entry.isolatedInstances.length = 0;
+      return this.types.delete(BlocClass.name);
+    }
+    return false;
   }
 
   /**

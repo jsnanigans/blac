@@ -6,7 +6,7 @@ import { expect } from 'vitest';
 
 // Add custom matchers if needed
 expect.extend({
-  toBeDisposed(received: any) {
+  toBeDisposed(received: { isDisposed?: boolean }) {
     const pass = received.isDisposed === true;
     return {
       pass,
@@ -17,7 +17,7 @@ expect.extend({
     };
   },
 
-  toHaveVersion(received: any, expected: number) {
+  toHaveVersion(received: { version?: number }, expected: number) {
     const pass = received.version === expected;
     return {
       pass,

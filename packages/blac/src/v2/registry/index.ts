@@ -1,13 +1,14 @@
 /**
  * BlocRegistry module
  *
- * Simple instance management for v2 architecture with clear responsibility boundaries.
+ * Constructor-based instance management for v2 architecture.
+ * Clean, type-safe, no string names or factories.
  */
 
 export {
   BlocRegistry,
   createInstanceId,
   type InstanceId,
-  type BlocFactory,
+  type BlocConstructor,
   type BlocTypeConfig,
 } from './BlocRegistry';

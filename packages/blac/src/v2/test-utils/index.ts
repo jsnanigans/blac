@@ -7,7 +7,7 @@ import { Version, version } from '../types/branded';
 /**
  * Create a test state object
  */
-export function createTestState<T extends Record<string, any>>(
+export function createTestState<T extends Record<string, unknown>>(
   overrides?: Partial<T>
 ): T {
   return {
@@ -41,9 +41,9 @@ export async function waitFor(
 /**
  * Create a mock subscription notify function
  */
-export function createMockNotify() {
-  const calls: any[] = [];
-  const fn = vi.fn((state: any) => {
+export function createMockNotify<T = unknown>() {
+  const calls: T[] = [];
+  const fn = vi.fn((state: T) => {
     calls.push(state);
   });
   return {
