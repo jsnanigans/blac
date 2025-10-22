@@ -7,6 +7,7 @@
 
 import { StateStream } from './StateStream';
 import { EventStream } from './EventStream';
+import { LifecycleManager, LifecycleState, LifecycleEvent as LMLifecycleEvent } from './LifecycleManager';
 import {
   Generation,
   InstanceId,
@@ -21,24 +22,8 @@ import {
 } from '../types/internal';
 import {
   BaseEvent,
-  LifecycleEvent,
   StateChangeEvent,
-  createLifecycleEvent,
 } from '../types/events';
-
-/**
- * Lifecycle states for a container
- */
-export enum LifecycleState {
-  CREATED = 'created',
-  MOUNTING = 'mounting',
-  ACTIVE = 'active',
-  UNMOUNTING = 'unmounting',
-  UNMOUNTED = 'unmounted',
-  DISPOSAL_REQUESTED = 'disposal-requested',
-  DISPOSING = 'disposing',
-  DISPOSED = 'disposed',
-}
 
 /**
  * Configuration options for StateContainer
@@ -67,9 +52,9 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
   protected readonly eventStream: EventStream<E>;
 
   // Lifecycle
-  private lifecycleState: LifecycleState = LifecycleState.CREATED;
-  private lifecycleGeneration: Generation = generation(0);
-  private readonly lifecycleEvents = new EventStream<LifecycleEvent>();
+  private readonly lifecycleManager: LifecycleManager;
+  private disposalGeneration: Generation = generation(0);
+  private _isDisposalRequested: boolean = false;
 
   // Identity
   protected readonly _instanceId: InstanceId;
@@ -107,6 +92,17 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
       debug: config.debug ?? false,
     };
 
+    // Initialize lifecycle manager
+    this.lifecycleManager = new LifecycleManager({
+      instanceId: this._instanceId,
+      debug: this.config.debug,
+      onStateTransition: (event) => {
+        if (this.config.debug) {
+          console.log(`[${this._name}] Lifecycle transition: ${event.fromState} -> ${event.toState}`);
+        }
+      }
+    });
+
     // Set up state change forwarding
     this.stateStream.subscribe((event) => {
       this.onStateChange(event);
@@ -139,6 +135,13 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
   }
 
   /**
+   * Get container name
+   */
+  get name(): string {
+    return this._name;
+  }
+
+  /**
    * Get class name
    */
   get className(): string {
@@ -146,55 +149,48 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
   }
 
   /**
-   * Get instance name
+   * Check if container is isolated
    */
-  get name(): string {
-    return this._name;
+  get isolated(): boolean {
+    return this.config.isolated;
   }
 
   /**
-   * Subscribe to state changes
-   * @param handler State change handler
-   * @returns Unsubscribe function
+   * Check if container should be kept alive
    */
-  subscribe(handler: (state: S) => void): () => void {
-    const unsubscribeState = this.stateStream.subscribe((event) => {
-      handler(event.current);
-    });
-
-    // Track consumer
-    this.addConsumer(handler);
-
-    return () => {
-      unsubscribeState();
-      this.removeConsumer(handler);
-    };
+  get keepAlive(): boolean {
+    return this.config.keepAlive;
   }
 
-  /**
-   * Subscribe to lifecycle events
-   * @param handler Event handler
-   * @returns Unsubscribe function
-   */
-  subscribeToLifecycle(handler: (event: LifecycleEvent) => void): () => void {
-    return this.lifecycleEvents.subscribe(handler);
-  }
+  // ============================================
+  // Lifecycle Management
+  // ============================================
 
   /**
    * Mount the container
    */
   async mount(): Promise<void> {
-    if (this.lifecycleState !== LifecycleState.CREATED) {
-      return;
+    if (this.lifecycleManager.isMounted) {
+      throw new Error(`Container ${this._name} is already mounted`);
     }
 
-    this.setLifecycleState(LifecycleState.MOUNTING);
+    if (this.lifecycleManager.isDisposed) {
+      throw new Error(`Container ${this._name} is disposed and cannot be mounted`);
+    }
+
+    // Transition to mounting
+    this.lifecycleManager.mount();
 
     try {
+      // Call lifecycle hook
       await this.onMount();
-      this.setLifecycleState(LifecycleState.ACTIVE);
+
+      if (this.config.debug) {
+        console.log(`[${this._name}] Mounted successfully`);
+      }
     } catch (error) {
-      this.setLifecycleState(LifecycleState.CREATED);
+      // If mount fails, unmount
+      this.lifecycleManager.unmount();
       throw error;
     }
   }
@@ -203,40 +199,66 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
    * Unmount the container
    */
   async unmount(): Promise<void> {
-    if (this.lifecycleState !== LifecycleState.ACTIVE) {
-      return;
+    if (!this.lifecycleManager.isMounted) {
+      throw new Error(`Container ${this._name} is not mounted`);
     }
 
-    this.setLifecycleState(LifecycleState.UNMOUNTING);
+    // Transition to unmounting
+    this.lifecycleManager.unmount();
 
     try {
+      // Call lifecycle hook
       await this.onUnmount();
-      this.setLifecycleState(LifecycleState.UNMOUNTED);
+
+      if (this.config.debug) {
+        console.log(`[${this._name}] Unmounted successfully`);
+      }
     } catch (error) {
-      this.setLifecycleState(LifecycleState.ACTIVE);
-      throw error;
+      console.error(`[${this._name}] Error during unmount:`, error);
+      // Continue with unmount even if there's an error
     }
   }
 
   /**
-   * Request disposal
+   * Request disposal of the container
+   * Uses generation pattern to prevent race conditions
    */
   requestDisposal(): void {
-    if (this.isDisposed || this.isDisposing) {
-      return;
+    if (this.lifecycleManager.isDisposed) {
+      return; // Already disposed
     }
 
-    this.setLifecycleState(LifecycleState.DISPOSAL_REQUESTED);
-    this.scheduleDisposal();
+    // Mark disposal as requested
+    this._isDisposalRequested = true;
+
+    // Increment generation to invalidate any pending disposal
+    this.disposalGeneration = incrementGeneration(this.disposalGeneration);
+    const currentGeneration = this.disposalGeneration;
+
+    if (this.config.debug) {
+      console.log(`[${this._name}] Disposal requested (generation: ${currentGeneration})`);
+    }
+
+    // Schedule disposal in next microtask
+    queueMicrotask(() => {
+      // Check if this disposal is still valid
+      if (currentGeneration === this.disposalGeneration && !this.lifecycleManager.isDisposed) {
+        this._isDisposalRequested = false;
+        this.dispose();
+      }
+    });
   }
 
   /**
-   * Cancel disposal if requested
+   * Cancel pending disposal
    */
   cancelDisposal(): void {
-    if (this.lifecycleState === LifecycleState.DISPOSAL_REQUESTED) {
-      this.lifecycleGeneration = incrementGeneration(this.lifecycleGeneration);
-      this.setLifecycleState(LifecycleState.ACTIVE);
+    // Increment generation to invalidate pending disposal
+    this.disposalGeneration = incrementGeneration(this.disposalGeneration);
+    this._isDisposalRequested = false;
+
+    if (this.config.debug) {
+      console.log(`[${this._name}] Disposal cancelled`);
     }
   }
 
@@ -244,218 +266,110 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
    * Dispose the container
    */
   async dispose(): Promise<void> {
-    if (this.isDisposed) {
-      return;
+    if (this.lifecycleManager.isDisposed) {
+      return; // Already disposed
     }
 
-    if (this.isDisposing) {
-      // Wait for ongoing disposal
-      await this.waitForDisposal();
-      return;
+    if (this.config.debug) {
+      console.log(`[${this._name}] Disposing...`);
     }
-
-    this.setLifecycleState(LifecycleState.DISPOSING);
 
     try {
+      // Transition to disposed
+      this.lifecycleManager.dispose();
+
+      // Call lifecycle hook
       await this.onDispose();
-      this.setLifecycleState(LifecycleState.DISPOSED);
-    } catch (error) {
-      // Disposal should not fail, but log error
+
+      // Clear references - WeakMap doesn't have clear(), but we can reset count
+      // WeakMap will automatically garbage collect the entries
+      this.consumerCount = 0;
+
       if (this.config.debug) {
-        console.error('Disposal error:', error);
+        console.log(`[${this._name}] Disposed successfully`);
       }
+    } catch (error) {
+      console.error(`[${this._name}] Error during disposal:`, error);
       // Still mark as disposed
-      this.setLifecycleState(LifecycleState.DISPOSED);
+      throw error;
     }
   }
-
-  /**
-   * Accept a visitor for internal state access
-   * @param visitor Visitor implementation
-   * @returns Visitor result
-   */
-  accept<R>(visitor: StateContainerVisitor<S, R>): R {
-    return visitor.visitState(this.state);
-  }
-
-  // ============================================
-  // Internal State Access (for framework use)
-  // ============================================
 
   /**
    * Check if disposed
    */
   get isDisposed(): boolean {
-    return this.lifecycleState === LifecycleState.DISPOSED;
+    return this.lifecycleManager.isDisposed;
   }
 
   /**
-   * Check if disposing
+   * Check if currently disposing
    */
   get isDisposing(): boolean {
-    return this.lifecycleState === LifecycleState.DISPOSING;
+    return this.lifecycleManager.getState() === LifecycleState.UNMOUNTING;
   }
 
   /**
-   * Check if disposal requested
+   * Check if disposal is requested
    */
   get isDisposalRequested(): boolean {
-    return this.lifecycleState === LifecycleState.DISPOSAL_REQUESTED;
-  }
-
-  /**
-   * Get lifecycle generation
-   */
-  get generation(): Generation {
-    return this.lifecycleGeneration;
-  }
-
-  /**
-   * Get consumer count
-   */
-  getConsumerCount(): number {
-    return this.consumerCount;
+    return this._isDisposalRequested;
   }
 
   // ============================================
-  // Protected Lifecycle Hooks (for subclasses)
+  // Lifecycle Hooks (for subclasses)
   // ============================================
 
   /**
    * Called when container is mounted
    */
   protected async onMount(): Promise<void> {
-    // Override in subclass
+    // Override in subclasses
   }
 
   /**
    * Called when container is unmounted
    */
   protected async onUnmount(): Promise<void> {
-    // Override in subclass
+    // Override in subclasses
   }
 
   /**
    * Called when container is disposed
    */
   protected async onDispose(): Promise<void> {
-    // Override in subclass
+    // Override in subclasses
   }
 
   /**
    * Called when state changes
    */
   protected onStateChange(event: StateChangeEvent<S>): void {
-    // Override in subclass for custom behavior
-  }
+    // Notify all consumers about state change
+    this.notifyConsumers();
 
-  /**
-   * Emit a new state
-   * @param state New state
-   */
-  protected emit(state: S): void {
-    this.stateStream.setState(state, {
-      source: this._name,
-    });
-  }
-
-  /**
-   * Update state with updater function
-   * @param updater State updater
-   */
-  protected update(updater: (current: S) => S): void {
-    this.stateStream.update(updater, {
-      source: this._name,
-    });
+    // Emit state change event
+    this.eventStream.emit(event as unknown as E);
   }
 
   // ============================================
-  // Private Implementation
+  // Consumer Management
   // ============================================
-
-  /**
-   * Generate unique ID
-   */
-  private generateId(): string {
-    return `${this._className}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  }
-
-  /**
-   * Set lifecycle state and emit event
-   */
-  private setLifecycleState(state: LifecycleState): void {
-    const previousState = this.lifecycleState;
-    this.lifecycleState = state;
-
-    // Map state to event type
-    let eventType: LifecycleEvent['type'] | null = null;
-    switch (state) {
-      case LifecycleState.ACTIVE:
-        eventType = 'mount';
-        break;
-      case LifecycleState.UNMOUNTED:
-        eventType = 'unmount';
-        break;
-      case LifecycleState.DISPOSAL_REQUESTED:
-        eventType = 'dispose-requested';
-        break;
-      case LifecycleState.DISPOSED:
-        eventType = 'disposed';
-        break;
-    }
-
-    if (eventType) {
-      this.lifecycleEvents.dispatch(
-        createLifecycleEvent(eventType, this._instanceId)
-      );
-    }
-
-    if (this.config.debug) {
-      console.log(`[${this._name}] Lifecycle: ${previousState} -> ${state}`);
-    }
-  }
-
-  /**
-   * Schedule disposal with generation check
-   */
-  private scheduleDisposal(): void {
-    const currentGeneration = this.lifecycleGeneration;
-
-    queueMicrotask(() => {
-      // Check if generation is still valid
-      if (this.lifecycleGeneration === currentGeneration &&
-          this.lifecycleState === LifecycleState.DISPOSAL_REQUESTED) {
-        this.dispose();
-      }
-    });
-  }
-
-  /**
-   * Wait for ongoing disposal to complete
-   */
-  private async waitForDisposal(): Promise<void> {
-    return new Promise((resolve) => {
-      const checkDisposed = () => {
-        if (this.isDisposed) {
-          resolve();
-        } else {
-          setTimeout(checkDisposed, 10);
-        }
-      };
-      checkDisposed();
-    });
-  }
 
   /**
    * Add a consumer
    */
-  private addConsumer(consumer: object): void {
+  addConsumer(consumer: object): void {
     const count = this.consumers.get(consumer) || 0;
     this.consumers.set(consumer, count + 1);
     this.consumerCount++;
 
-    // Cancel disposal if requested
-    if (this.isDisposalRequested) {
+    if (this.config.debug) {
+      console.log(`[${this._name}] Consumer added (total: ${this.consumerCount})`);
+    }
+
+    // Cancel any pending disposal
+    if (this.consumerCount === 1 && !this.config.keepAlive) {
       this.cancelDisposal();
     }
   }
@@ -463,7 +377,7 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
   /**
    * Remove a consumer
    */
-  private removeConsumer(consumer: object): void {
+  removeConsumer(consumer: object): void {
     const count = this.consumers.get(consumer) || 0;
     if (count > 1) {
       this.consumers.set(consumer, count - 1);
@@ -473,9 +387,141 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
 
     this.consumerCount = Math.max(0, this.consumerCount - 1);
 
+    if (this.config.debug) {
+      console.log(`[${this._name}] Consumer removed (total: ${this.consumerCount})`);
+    }
+
     // Request disposal if no consumers and not keep-alive
-    if (this.consumerCount === 0 && !this.config.keepAlive) {
+    // Disposal can be requested even if not mounted (for unmounted containers)
+    if (this.consumerCount === 0 && !this.config.keepAlive && !this.lifecycleManager.isDisposed) {
       this.requestDisposal();
     }
+  }
+
+  /**
+   * Get consumer count
+   */
+  getConsumerCount(): number {
+    return this.consumerCount;
+  }
+
+  /**
+   * Notify all consumers about state change
+   */
+  protected notifyConsumers(): void {
+    // This is a placeholder - actual notification happens through eventStream
+    // and external subscription management
+  }
+
+  // ============================================
+  // Event Management
+  // ============================================
+
+  /**
+   * Subscribe to state changes
+   */
+  subscribe(handler: (state: S) => void): () => void {
+    // Add as consumer
+    const consumer = { handler }; // Create a unique object for this subscription
+    this.addConsumer(consumer);
+
+    // Subscribe to state changes
+    const unsubscribe = this.stateStream.subscribe((event) => {
+      handler(event.current);
+    });
+
+    // Return unsubscribe function that also removes consumer
+    return () => {
+      unsubscribe();
+      this.removeConsumer(consumer);
+    };
+  }
+
+  /**
+   * Subscribe to events
+   */
+  subscribeToEvents(handler: (event: E) => void): () => void {
+    return this.eventStream.subscribe(handler);
+  }
+
+  /**
+   * Subscribe to lifecycle events
+   */
+  subscribeToLifecycle(handler: (event: LMLifecycleEvent) => void): () => void {
+    return this.lifecycleManager.subscribe(handler);
+  }
+
+  // ============================================
+  // Visitor Pattern Support
+  // ============================================
+
+  /**
+   * Accept a visitor for internal access
+   */
+  accept<R>(visitor: StateContainerVisitor<S, R>): R {
+    return visitor.visit(this);
+  }
+
+  /**
+   * Get internal state stream (for visitors)
+   */
+  getStateStream(): StateStream<S> {
+    return this.stateStream;
+  }
+
+  /**
+   * Get internal event stream (for visitors)
+   */
+  getEventStream(): EventStream<E> {
+    return this.eventStream;
+  }
+
+  // ============================================
+  // Protected Methods for Subclasses
+  // ============================================
+
+  /**
+   * Emit a new state
+   */
+  protected emit(newState: S): void {
+    if (this.lifecycleManager.isDisposed) {
+      throw new Error(`Cannot emit state from disposed container ${this._name}`);
+    }
+
+    // StateStream.update expects a function, so wrap the new state
+    this.stateStream.update(() => newState);
+  }
+
+  /**
+   * Update state using a function
+   */
+  protected update(updater: (current: S) => S): void {
+    if (this.lifecycleManager.isDisposed) {
+      throw new Error(`Cannot update state from disposed container ${this._name}`);
+    }
+
+    this.stateStream.update(updater);
+  }
+
+  /**
+   * Dispatch an event
+   */
+  protected dispatch(event: E): void {
+    if (this.lifecycleManager.isDisposed) {
+      throw new Error(`Cannot dispatch event from disposed container ${this._name}`);
+    }
+
+    this.eventStream.dispatch(event);
+  }
+
+  // ============================================
+  // Private Utilities
+  // ============================================
+
+  /**
+   * Generate a unique ID
+   */
+  private generateId(): string {
+    return `${this.constructor.name}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 }

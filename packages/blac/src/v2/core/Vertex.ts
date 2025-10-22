@@ -40,8 +40,8 @@ export abstract class Vertex<S, E extends BaseEvent = BaseEvent> extends StateCo
   constructor(initialState: S, config?: StateContainerConfig) {
     super(initialState, config);
 
-    // Subscribe to event stream
-    this.eventStream.subscribe(event => {
+    // Subscribe to events for processing
+    this.subscribeToEvents(event => {
       this.processEvent(event as E);
     });
   }

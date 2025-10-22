@@ -6,7 +6,11 @@
  */
 
 import { Version, version, incrementVersion } from '../types/branded';
-import { StateChangeEvent, createStateChangeEvent, ChangeMetadata } from '../types/events';
+import {
+  StateChangeEvent,
+  createStateChangeEvent,
+  ChangeMetadata,
+} from '../types/events';
 import { TypedEventEmitter } from '../types/events';
 
 /**
@@ -116,7 +120,7 @@ export class StateStream<S> {
         {
           source: options.source,
           ...options.metadata,
-        }
+        },
       );
       this.eventEmitter.emit(event);
     }
@@ -175,7 +179,7 @@ export class StateStream<S> {
       this.currentSnapshot.state, // previous is same as current for reset
       this.currentSnapshot.state,
       this.currentSnapshot.version,
-      { source: 'reset' }
+      { source: 'reset' },
     );
     this.eventEmitter.emit(event);
   }
@@ -205,11 +209,13 @@ export class StateStream<S> {
     }
 
     if (obj instanceof Array) {
-      return obj.map(item => this.cloneDeep(item)) as unknown as T;
+      return obj.map((item) => this.cloneDeep(item)) as unknown as T;
     }
 
     if (obj instanceof Set) {
-      return new Set(Array.from(obj).map(item => this.cloneDeep(item))) as unknown as T;
+      return new Set(
+        Array.from(obj).map((item) => this.cloneDeep(item)),
+      ) as unknown as T;
     }
 
     if (obj instanceof Map) {
@@ -251,7 +257,7 @@ export class StateStream<S> {
     Object.freeze(obj);
 
     // Recursively freeze properties
-    Object.getOwnPropertyNames(obj).forEach(prop => {
+    Object.getOwnPropertyNames(obj).forEach((prop) => {
       const value = (obj as any)[prop];
       if (value && typeof value === 'object') {
         this.deepFreeze(value);
@@ -287,8 +293,9 @@ export class StateStream<S> {
     const keysB = Object.keys(b);
     if (keysA.length !== keysB.length) return false;
 
-    return keysA.every(key =>
-      keysB.includes(key) && this.deepEqual(a[key], b[key])
+    return keysA.every(
+      (key) => keysB.includes(key) && this.deepEqual(a[key], b[key]),
     );
   }
 }
+

@@ -88,8 +88,16 @@ export class EventStream<E extends BaseEvent = BaseEvent> {
       this.enqueue(transformed);
       this.processQueue();
     } else {
-      this.emit(transformed);
+      this.emitInternal(transformed);
     }
+  }
+
+  /**
+   * Alias for dispatch for simpler API
+   * @param event The event to emit
+   */
+  emit(event: E): void {
+    this.dispatch(event);
   }
 
   /**
@@ -322,9 +330,9 @@ export class EventStream<E extends BaseEvent = BaseEvent> {
   }
 
   /**
-   * Emit event synchronously
+   * Emit event synchronously (internal)
    */
-  private emit(event: E): void {
+  private emitInternal(event: E): void {
     try {
       this.emitter.emit(event);
     } catch (error) {

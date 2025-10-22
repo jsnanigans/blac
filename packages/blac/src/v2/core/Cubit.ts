@@ -5,8 +5,7 @@
  * the simple Cubit pattern from the original BlaC.
  */
 
-import { StateContainer } from './StateContainer';
-import { StateContainerConfig } from './StateContainer';
+import { StateContainer, StateContainerConfig } from './StateContainer';
 
 /**
  * Cubit is a simple state container that allows direct state emission
@@ -82,42 +81,42 @@ export class TodoCubit extends Cubit<TodoState> {
         filter: 'all',
         isLoading: false,
       },
-      { name: 'TodoCubit', keepAlive: true }
+      { name: 'TodoCubit', keepAlive: true },
     );
   }
 
   addTodo = (text: string): void => {
-    this.updateState(state => ({
+    this.updateState((state) => ({
       ...state,
       todos: [
         ...state.todos,
-        { id: `todo-${Date.now()}-${this.nextId++}`, text, done: false }
+        { id: `todo-${Date.now()}-${this.nextId++}`, text, done: false },
       ],
     }));
   };
 
   toggleTodo = (id: string): void => {
-    this.updateState(state => ({
+    this.updateState((state) => ({
       ...state,
-      todos: state.todos.map(todo =>
-        todo.id === id ? { ...todo, done: !todo.done } : todo
+      todos: state.todos.map((todo) =>
+        todo.id === id ? { ...todo, done: !todo.done } : todo,
       ),
     }));
   };
 
   removeTodo = (id: string): void => {
-    this.updateState(state => ({
+    this.updateState((state) => ({
       ...state,
-      todos: state.todos.filter(todo => todo.id !== id),
+      todos: state.todos.filter((todo) => todo.id !== id),
     }));
   };
 
   setFilter = (filter: TodoState['filter']): void => {
-    this.updateState(state => ({ ...state, filter }));
+    this.updateState((state) => ({ ...state, filter }));
   };
 
   setLoading = (isLoading: boolean): void => {
-    this.updateState(state => ({ ...state, isLoading }));
+    this.updateState((state) => ({ ...state, isLoading }));
   };
 
   get visibleTodos() {
@@ -126,9 +125,9 @@ export class TodoCubit extends Cubit<TodoState> {
 
     switch (filter) {
       case 'active':
-        return todos.filter(t => !t.done);
+        return todos.filter((t) => !t.done);
       case 'completed':
-        return todos.filter(t => t.done);
+        return todos.filter((t) => t.done);
       case 'all':
       default:
         return todos;
@@ -136,6 +135,7 @@ export class TodoCubit extends Cubit<TodoState> {
   }
 
   get activeTodoCount() {
-    return this.state.todos.filter(t => !t.done).length;
+    return this.state.todos.filter((t) => !t.done).length;
   }
 }
+
