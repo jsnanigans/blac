@@ -1106,9 +1106,7 @@ function useRenderCount(componentName: string) {
 
 // Component subscribing only to user.name
 const UserNameDisplay = memo(() => {
-  const [name] = useBlocAdapter(ProfileCubit, {
-    selector: (state: ProfileState) => state.user.name,
-  });
+  const [state] = useBlocAdapter(ProfileCubit);
 
   return (
     <div className="profile-card">
@@ -1121,7 +1119,7 @@ const UserNameDisplay = memo(() => {
       >
         <div>
           <div style={{ fontSize: '12px', color: '#64748b' }}>Name</div>
-          <div style={{ fontWeight: 'bold' }}>{name}</div>
+          <div style={{ fontWeight: 'bold' }}>{state.user.name}</div>
         </div>
         {useRenderCount('UserNameDisplay')}
       </div>

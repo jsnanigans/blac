@@ -50,6 +50,7 @@
     "@testing-library/user-event": "catalog:",
     "@vitest/browser": "catalog:",
     "arktype": "^2.1.23",
+    "fast-check": "^4.3.0",
     "jsdom": "catalog:",
     "prettier": "catalog:",
     "tsdown": "catalog:",
