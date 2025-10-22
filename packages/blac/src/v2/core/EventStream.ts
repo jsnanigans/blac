@@ -42,7 +42,7 @@ export interface EventStreamOptions {
 export class EventStream<E extends BaseEvent = BaseEvent> {
   private emitter = new TypedEventEmitter<E>();
   private filters: EventFilter<E>[] = [];
-  private transformers: EventTransformer<E, any>[] = [];
+  private transformers: EventTransformer<E, BaseEvent>[] = [];
   private eventQueue: E[] = [];
   private processing = false;
   private options: Required<EventStreamOptions>;
@@ -270,11 +270,11 @@ export class EventStream<E extends BaseEvent = BaseEvent> {
    * Apply transformers to event
    */
   private applyTransformers(event: E): E | null {
-    let current: any = event;
+    let current: BaseEvent = event;
 
     for (const transformer of this.transformers) {
       try {
-        const result = transformer(current);
+        const result = transformer(current as E);
         if (result === null) {
           return null;
         }
@@ -285,7 +285,7 @@ export class EventStream<E extends BaseEvent = BaseEvent> {
       }
     }
 
-    return current;
+    return current as E;
   }
 
   /**

@@ -258,7 +258,7 @@ export class StateStream<S> {
 
     // Recursively freeze properties
     Object.getOwnPropertyNames(obj).forEach((prop) => {
-      const value = (obj as any)[prop];
+      const value = (obj as Record<string, unknown>)[prop];
       if (value && typeof value === 'object') {
         this.deepFreeze(value);
       }
@@ -268,9 +268,9 @@ export class StateStream<S> {
   }
 
   /**
-   * Deep equality check
+   * Deep equality check with better typing
    */
-  private deepEqual(a: any, b: any): boolean {
+  private deepEqual<T>(a: T, b: T): boolean {
     if (a === b) return true;
 
     if (a === null || b === null) return false;

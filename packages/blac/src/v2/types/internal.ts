@@ -9,7 +9,7 @@ import { Generation, InstanceId, Version } from './branded';
  * Internal state container interface
  * Exposes protected members for framework-internal access
  */
-export interface InternalStateContainer<S = any> {
+export interface InternalStateContainer<S = unknown> {
   /** Current state */
   readonly state: S;
 
@@ -37,7 +37,7 @@ export interface InternalStateContainer<S = any> {
 /**
  * Internal subscription manager interface
  */
-export interface InternalSubscriptionManager<S = any> {
+export interface InternalSubscriptionManager<S = unknown> {
   /** Get all active subscriptions */
   getActiveSubscriptions(): ReadonlyMap<string, InternalSubscription<S>>;
 
@@ -54,14 +54,14 @@ export interface InternalSubscriptionManager<S = any> {
 /**
  * Internal subscription details
  */
-export interface InternalSubscription<S = any> {
+export interface InternalSubscription<S = unknown> {
   readonly id: string;
   readonly type: 'observer' | 'consumer';
   readonly priority: number;
   readonly createdAt: number;
   readonly lastNotifiedVersion: Version;
   readonly dependencies?: Set<string>;
-  readonly weakRef?: WeakRef<any>;
+  readonly weakRef?: WeakRef<object>;
 }
 
 /**
@@ -79,7 +79,7 @@ export interface SubscriptionStats {
  * Visitor pattern for safe internal access
  * Allows controlled access to internal state without exposing it publicly
  */
-export interface StateContainerVisitor<S = any, R = void> {
+export interface StateContainerVisitor<S = unknown, R = void> {
   visitState(state: S): R;
   visitVersion(version: Version): R;
   visitDisposalState(isDisposed: boolean, isDisposing: boolean): R;
@@ -120,9 +120,9 @@ export interface RegistryStats {
 /**
  * Type guard for internal state container
  */
-export function isInternalStateContainer(obj: any): obj is InternalStateContainer {
+export function isInternalStateContainer(obj: unknown): obj is InternalStateContainer {
   return (
-    obj &&
+    obj !== null &&
     typeof obj === 'object' &&
     'state' in obj &&
     'version' in obj &&
@@ -134,11 +134,12 @@ export function isInternalStateContainer(obj: any): obj is InternalStateContaine
 /**
  * Type guard for internal subscription manager
  */
-export function isInternalSubscriptionManager(obj: any): obj is InternalSubscriptionManager {
+export function isInternalSubscriptionManager(obj: unknown): obj is InternalSubscriptionManager {
+  if (!obj || typeof obj !== 'object') return false;
+
+  const manager = obj as Record<string, unknown>;
   return (
-    obj &&
-    typeof obj === 'object' &&
-    typeof obj.getActiveSubscriptions === 'function' &&
-    typeof obj.notifyAll === 'function'
+    typeof manager.getActiveSubscriptions === 'function' &&
+    typeof manager.notifyAll === 'function'
   );
 }

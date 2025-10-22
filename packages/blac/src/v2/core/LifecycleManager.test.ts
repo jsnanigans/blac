@@ -47,7 +47,7 @@ describe('LifecycleManager', () => {
       });
 
       it('should emit mount event', () => {
-        const events: any[] = [];
+        const events: LMLifecycleEvent[] = [];
         manager.subscribe((event) => events.push(event));
 
         manager.mount();

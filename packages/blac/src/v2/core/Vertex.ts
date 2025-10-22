@@ -17,18 +17,23 @@ export type EventHandler<E extends BaseEvent, S> = (
 ) => void | Promise<void>;
 
 /**
+ * Type-safe event constructor
+ */
+export type EventConstructor<T extends BaseEvent = BaseEvent> = new (...args: never[]) => T;
+
+/**
  * Event handler registration
  */
-interface EventHandlerRegistration<S> {
-  eventClass: new (...args: any[]) => BaseEvent;
-  handler: EventHandler<any, S>;
+interface EventHandlerRegistration<E extends BaseEvent, S> {
+  eventClass: EventConstructor<E>;
+  handler: EventHandler<E, S>;
 }
 
 /**
  * Vertex is an event-driven state container (Bloc pattern)
  */
 export abstract class Vertex<S, E extends BaseEvent = BaseEvent> extends StateContainer<S, E> {
-  private eventHandlers = new Map<string, EventHandlerRegistration<S>[]>();
+  private eventHandlers = new Map<string, EventHandlerRegistration<E, S>[]>();
   private isProcessing = false;
   private eventQueue: E[] = [];
 
@@ -51,14 +56,14 @@ export abstract class Vertex<S, E extends BaseEvent = BaseEvent> extends StateCo
    * Arrow function to maintain correct 'this' binding
    */
   protected on = <T extends E>(
-    EventClass: new (...args: any[]) => T,
+    EventClass: EventConstructor<T>,
     handler: EventHandler<T, S>
   ): void => {
     const className = EventClass.name;
     const registrations = this.eventHandlers.get(className) || [];
     registrations.push({
-      eventClass: EventClass,
-      handler: handler as EventHandler<any, S>,
+      eventClass: EventClass as EventConstructor<E>,
+      handler: handler as EventHandler<E, S>,
     });
     this.eventHandlers.set(className, registrations);
   };
@@ -161,12 +166,12 @@ export class ResetEvent implements BaseEvent {
 
 /**
  * Example: Counter Vertex
+ * Demonstrates proper typing and event handling
  */
-export class CounterVertex extends Vertex<number, IncrementEvent | DecrementEvent | ResetEvent> {
+export class CounterVertex extends Vertex<number> {
   constructor() {
-    super(0, { name: 'CounterVertex' });
+    super(0);
 
-    // Register event handlers
     this.on(IncrementEvent, (event, emit) => {
       emit(this.state + event.amount);
     });
@@ -175,57 +180,39 @@ export class CounterVertex extends Vertex<number, IncrementEvent | DecrementEven
       emit(this.state - event.amount);
     });
 
-    this.on(ResetEvent, (event, emit) => {
+    this.on(ResetEvent, (_, emit) => {
       emit(0);
     });
   }
 
-  // Public API methods (arrow functions for React binding)
-  increment = (amount = 1): void => {
+  // Arrow functions for React compatibility
+  increment = (amount = 1) => {
     this.add(new IncrementEvent(amount));
   };
 
-  decrement = (amount = 1): void => {
+  decrement = (amount = 1) => {
     this.add(new DecrementEvent(amount));
   };
 
-  reset = (): void => {
+  reset = () => {
     this.add(new ResetEvent());
   };
 }
 
 /**
- * Example: Authentication Events and Vertex
+ * Auth State and Events for testing async handlers
  */
 export interface AuthState {
   isAuthenticated: boolean;
-  user: { id: string; name: string; email: string } | null;
   isLoading: boolean;
+  user: { id: string; name: string; email: string } | null;
   error: string | null;
 }
 
-export class LoginRequestEvent implements BaseEvent {
-  readonly type = 'login-request';
+export class LoginEvent implements BaseEvent {
+  readonly type = 'login';
   readonly timestamp = Date.now();
-
-  constructor(
-    public readonly email: string,
-    public readonly password: string
-  ) {}
-}
-
-export class LoginSuccessEvent implements BaseEvent {
-  readonly type = 'login-success';
-  readonly timestamp = Date.now();
-
-  constructor(public readonly user: NonNullable<AuthState['user']>) {}
-}
-
-export class LoginFailureEvent implements BaseEvent {
-  readonly type = 'login-failure';
-  readonly timestamp = Date.now();
-
-  constructor(public readonly error: string) {}
+  constructor(public readonly email: string, public readonly password: string) {}
 }
 
 export class LogoutEvent implements BaseEvent {
@@ -235,80 +222,54 @@ export class LogoutEvent implements BaseEvent {
 
 export class AuthVertex extends Vertex<AuthState> {
   constructor() {
-    super(
-      {
-        isAuthenticated: false,
-        user: null,
-        isLoading: false,
-        error: null,
-      },
-      { name: 'AuthVertex', keepAlive: true }
-    );
-
-    // Register event handlers
-    this.on(LoginRequestEvent, async (event, emit) => {
-      // Start loading
-      emit({
-        ...this.state,
-        isLoading: true,
-        error: null,
-      });
-
-      // Simulate API call
-      await this.simulateLogin(event.email, event.password);
+    super({
+      isAuthenticated: false,
+      isLoading: false,
+      user: null,
+      error: null,
     });
 
-    this.on(LoginSuccessEvent, (event, emit) => {
-      emit({
-        isAuthenticated: true,
-        user: event.user,
-        isLoading: false,
-        error: null,
-      });
+    // Async login handler
+    this.on(LoginEvent, async (event, emit) => {
+      // Set loading
+      emit({ ...this.state, isLoading: true, error: null });
+
+      // Simulate async auth
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Check credentials
+      if (event.email === 'user@example.com' && event.password === 'password') {
+        emit({
+          isAuthenticated: true,
+          isLoading: false,
+          user: { id: '123', name: 'Test User', email: 'user@example.com' },
+          error: null,
+        });
+      } else {
+        emit({
+          isAuthenticated: false,
+          isLoading: false,
+          user: null,
+          error: 'Invalid credentials',
+        });
+      }
     });
 
-    this.on(LoginFailureEvent, (event, emit) => {
+    this.on(LogoutEvent, (_, emit) => {
       emit({
         isAuthenticated: false,
-        user: null,
         isLoading: false,
-        error: event.error,
-      });
-    });
-
-    this.on(LogoutEvent, (event, emit) => {
-      emit({
-        isAuthenticated: false,
         user: null,
-        isLoading: false,
         error: null,
       });
     });
   }
 
-  // Public API
-  login = (email: string, password: string): void => {
-    this.add(new LoginRequestEvent(email, password));
+  login = (email: string, password: string) => {
+    this.add(new LoginEvent(email, password));
   };
 
-  logout = (): void => {
+  logout = () => {
     this.add(new LogoutEvent());
   };
-
-  // Private helper
-  private async simulateLogin(email: string, password: string): Promise<void> {
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Simple validation
-    if (email === 'user@example.com' && password === 'password') {
-      this.add(new LoginSuccessEvent({
-        id: '123',
-        name: 'Test User',
-        email: email,
-      }));
-    } else {
-      this.add(new LoginFailureEvent('Invalid credentials'));
-    }
-  }
 }
