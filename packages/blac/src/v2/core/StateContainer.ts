@@ -549,6 +549,11 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
       throw new Error(`Cannot emit state from disposed container ${this._name}`);
     }
 
+    BlacLogger.debug('StateContainer', 'emit', {
+      container: this._name,
+      version: this.version,
+    });
+
     // StateStream.update expects a function, so wrap the new state
     this.stateStream.update(() => newState);
   }
@@ -560,6 +565,11 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
     if (this.lifecycleManager.isDisposed) {
       throw new Error(`Cannot update state from disposed container ${this._name}`);
     }
+
+    BlacLogger.debug('StateContainer', 'update', {
+      container: this._name,
+      version: this.version,
+    });
 
     this.stateStream.update(updater);
   }

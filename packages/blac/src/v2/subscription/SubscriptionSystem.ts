@@ -180,20 +180,49 @@ export class SubscriptionSystem<T = unknown> {
     // Get all subscriptions for this container
     const subscriptionIds = this.registry.getContainerSubscriptions(this.containerId);
 
-    BlacLogger.debug('SubscriptionSystem', 'notify', {
+    BlacLogger.debug('SubscriptionSystem', '🔄 STATE CHANGED - Evaluating subscriptions', {
       containerId: this.containerId,
       subscriptionCount: subscriptionIds.length,
+      version: stateChange.version,
+      timestamp: stateChange.timestamp,
     });
+
+    if (subscriptionIds.length === 0) {
+      BlacLogger.debug('SubscriptionSystem', '⚠️  No subscriptions to notify', {
+        containerId: this.containerId,
+        reason: 'No components are currently subscribed to this state container',
+      });
+      return;
+    }
 
     // Process each subscription through its pipeline
     const promises: Promise<void>[] = [];
 
     for (const subscriptionId of subscriptionIds) {
       const pipeline = this.pipelineCache.get(subscriptionId);
-      if (!pipeline) continue;
+      if (!pipeline) {
+        BlacLogger.debug('SubscriptionSystem', '⚠️  No pipeline found', {
+          subscriptionId,
+          containerId: this.containerId,
+        });
+        continue;
+      }
 
       const subscription = this.registry.get(subscriptionId);
-      if (!subscription) continue;
+      if (!subscription) {
+        BlacLogger.debug('SubscriptionSystem', '⚠️  No subscription found in registry', {
+          subscriptionId,
+          containerId: this.containerId,
+        });
+        continue;
+      }
+
+      BlacLogger.debug('SubscriptionSystem', '➡️  Processing subscription through pipeline', {
+        subscriptionId,
+        containerId: this.containerId,
+        hasPaths: !!subscription.config.paths && subscription.config.paths.length > 0,
+        pathCount: subscription.config.paths?.length ?? 0,
+      });
 
       const context: PipelineContext<T> = {
         subscriptionId,
@@ -207,19 +236,30 @@ export class SubscriptionSystem<T = unknown> {
 
       promises.push(
         pipeline.execute(context)
-          .then(() => {
-            // Success
+          .then((result) => {
+            BlacLogger.debug('SubscriptionSystem', '✅ Subscription pipeline completed', {
+              subscriptionId,
+              executed: result.executed,
+              stagesProcessed: result.stagesProcessed.length,
+            });
           })
           .catch(error => {
-            BlacLogger.error('SubscriptionSystem', 'Subscription error', {
+            BlacLogger.error('SubscriptionSystem', '❌ Subscription pipeline error', {
               subscriptionId,
-              error: error instanceof Error ? error.message : String(error)
+              containerId: this.containerId,
+              error: error instanceof Error ? error.message : String(error),
+              stack: error instanceof Error ? error.stack : undefined,
             });
           })
       );
     }
 
     await Promise.all(promises);
+
+    BlacLogger.debug('SubscriptionSystem', '✅ All subscriptions processed', {
+      containerId: this.containerId,
+      count: subscriptionIds.length,
+    });
   }
 
   /**

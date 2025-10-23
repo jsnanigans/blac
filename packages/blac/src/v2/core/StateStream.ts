@@ -173,6 +173,10 @@ export class StateStream<S> {
    * @param initialState New initial state
    */
   reset(initialState: S): void {
+    BlacLogger.debug('StateStream', 'reset', {
+      version: version(0),
+    });
+
     this.currentSnapshot = {
       state: this.deepFreeze(this.cloneDeep(initialState)),
       version: version(0),

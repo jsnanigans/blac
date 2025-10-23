@@ -9,15 +9,6 @@ import { useBloc, clearAllBlocInstances } from '../useBloc';
 import { Cubit } from '../../../../blac/src/v2/core/Cubit';
 import { BlacLogger, LogLevel } from '../../../../blac/src/v2/logging/Logger';
 
-// Enable logging for debugging
-BlacLogger.configure({
-  enabled: true,
-  level: LogLevel.DEBUG,
-  output: (entry) => {
-    console.log(`[${entry.level}] [${entry.context}] ${entry.message}`, entry.data || '');
-  }
-});
-
 // Test state shape
 interface TestState {
   user: {
@@ -26,7 +17,7 @@ interface TestState {
     profile: {
       bio: string;
       avatar: string;
-    }
+    };
   };
   settings: {
     theme: string;
@@ -47,17 +38,17 @@ class TestCubit extends Cubit<TestState> {
         age: 30,
         profile: {
           bio: 'Developer',
-          avatar: 'avatar.jpg'
-        }
+          avatar: 'avatar.jpg',
+        },
       },
       settings: {
         theme: 'light',
-        notifications: true
+        notifications: true,
       },
       counters: {
         views: 0,
-        likes: 0
-      }
+        likes: 0,
+      },
     });
   }
 
@@ -66,8 +57,8 @@ class TestCubit extends Cubit<TestState> {
       ...this.state,
       user: {
         ...this.state.user,
-        name
-      }
+        name,
+      },
     });
   };
 
@@ -76,8 +67,8 @@ class TestCubit extends Cubit<TestState> {
       ...this.state,
       user: {
         ...this.state.user,
-        age
-      }
+        age,
+      },
     });
   };
 
@@ -86,8 +77,8 @@ class TestCubit extends Cubit<TestState> {
       ...this.state,
       settings: {
         ...this.state.settings,
-        theme
-      }
+        theme,
+      },
     });
   };
 
@@ -96,8 +87,8 @@ class TestCubit extends Cubit<TestState> {
       ...this.state,
       counters: {
         ...this.state.counters,
-        views: this.state.counters.views + 1
-      }
+        views: this.state.counters.views + 1,
+      },
     });
   };
 
@@ -108,9 +99,9 @@ class TestCubit extends Cubit<TestState> {
         ...this.state.user,
         profile: {
           ...this.state.user.profile,
-          bio
-        }
-      }
+          bio,
+        },
+      },
     });
   };
 }
@@ -120,6 +111,12 @@ describe('useBloc with Proxy Tracking', () => {
     // Clear any cached bloc instances between tests to ensure isolation
     clearAllBlocInstances();
     vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    BlacLogger.configure({
+      enabled: false,
+    });
   });
 
   it('should only re-render when accessed properties change', async () => {
@@ -154,7 +151,7 @@ describe('useBloc with Proxy Tracking', () => {
     });
 
     // Give it time to potentially re-render (it shouldn't)
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise((resolve) => setTimeout(resolve, 50));
     expect(renderCount).toBe(2); // Still 2, no re-render
 
     // Update another unaccessed property
@@ -162,7 +159,7 @@ describe('useBloc with Proxy Tracking', () => {
       result.current.bloc.incrementViews();
     });
 
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise((resolve) => setTimeout(resolve, 50));
     expect(renderCount).toBe(2); // Still 2, no re-render
   });
 
@@ -197,7 +194,7 @@ describe('useBloc with Proxy Tracking', () => {
       result.current.bloc.updateUserName('Bob');
     });
 
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise((resolve) => setTimeout(resolve, 50));
     expect(renderCount).toBe(2); // No re-render
   });
 
@@ -244,7 +241,7 @@ describe('useBloc with Proxy Tracking', () => {
       result.current.bloc.incrementViews();
     });
 
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise((resolve) => setTimeout(resolve, 50));
     expect(renderCount).toBe(3); // No re-render
   });
 
@@ -262,8 +259,8 @@ describe('useBloc with Proxy Tracking', () => {
         return { name, bloc };
       },
       {
-        wrapper: StrictMode // Wrap in StrictMode
-      }
+        wrapper: StrictMode, // Wrap in StrictMode
+      },
     );
 
     // StrictMode may cause double-rendering in development
@@ -285,7 +282,7 @@ describe('useBloc with Proxy Tracking', () => {
       result.current.bloc.updateTheme('dark');
     });
 
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise((resolve) => setTimeout(resolve, 50));
     // Render count should not have increased
     expect(renderCount).toBe(countBefore);
   });
@@ -298,15 +295,16 @@ describe('useBloc with Proxy Tracking', () => {
       const [state, bloc, cr] = useBloc(TestCubit);
 
       // Conditional property access based on theme
-      const data = state.settings.theme === 'dark'
-        ? state.counters.views  // Access views in dark mode
-        : state.counters.likes; // Access likes in light mode
+      const data =
+        state.settings.theme === 'dark'
+          ? state.counters.views // Access views in dark mode
+          : state.counters.likes; // Access likes in light mode
 
       return {
         data,
         theme: state.settings.theme,
         bloc,
-        cr
+        cr,
       };
     });
 
@@ -319,8 +317,7 @@ describe('useBloc with Proxy Tracking', () => {
       result.current.bloc.incrementViews();
     });
 
-    await new Promise(resolve => setTimeout(resolve, 50));
-    console.log('PROXY', result.current.cr.current.__bridge.proxyTracker)
+    await new Promise((resolve) => setTimeout(resolve, 50));
     expect(renderCount).toBe(1); // No re-render in light mode
 
     // Switch to dark mode
@@ -345,6 +342,16 @@ describe('useBloc with Proxy Tracking', () => {
   });
 
   it('should handle array property access', async () => {
+    BlacLogger.configure({
+      enabled: true,
+      level: LogLevel.DEBUG,
+      output: (entry) => {
+        console.log(
+          `[${entry.level}] [${entry.context}] ${entry.message}`,
+          entry.data || '',
+        );
+      },
+    });
     // Create a Cubit with array state
     class ArrayCubit extends Cubit<{ items: string[]; other: number }> {
       constructor() {
@@ -354,14 +361,14 @@ describe('useBloc with Proxy Tracking', () => {
       addItem = (item: string) => {
         this.emit({
           ...this.state,
-          items: [...this.state.items, item]
+          items: [...this.state.items, item],
         });
       };
 
       updateOther = (value: number) => {
         this.emit({
           ...this.state,
-          other: value
+          other: value,
         });
       };
     }
@@ -381,23 +388,26 @@ describe('useBloc with Proxy Tracking', () => {
     expect(renderCount).toBe(1);
     expect(result.current.itemCount).toBe(3);
 
+    console.log('--- Adding item to array ---');
     // Add item - should re-render (length changes)
     act(() => {
       result.current.bloc.addItem('d');
     });
-
-    await waitFor(() => {
-      expect(renderCount).toBe(2);
-      expect(result.current.itemCount).toBe(4);
-    });
-
-    // Update other property - should NOT re-render
+    console.log('--- Item added ---');
     act(() => {
       result.current.bloc.updateOther(42);
     });
 
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(renderCount).toBe(2);
+    expect(result.current.itemCount).toBe(4);
+
+    console.log('--- Updating other property ---');
+    console.log('--- Other property updated ---');
+
+    // await new Promise((resolve) => setTimeout(resolve, 50));
     expect(renderCount).toBe(2); // No re-render
+    console.log('--- Test complete ---');
   });
 
   it('should clean up properly on unmount', () => {

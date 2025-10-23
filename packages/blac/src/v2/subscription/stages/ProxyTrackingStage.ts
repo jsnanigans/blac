@@ -8,6 +8,7 @@
 
 import { PipelineStage, PipelineContext } from '../SubscriptionPipeline';
 import { ProxyTracker } from '../../proxy/ProxyTracker';
+import { BlacLogger } from '../../logging/Logger';
 
 export interface ProxyTrackingOptions {
   /**
@@ -51,12 +52,16 @@ export class ProxyTrackingStage extends PipelineStage {
   process<T>(context: PipelineContext<T>): PipelineContext<T> {
     // Skip if proxy tracking is disabled
     if (!this.options.enabled) {
+      BlacLogger.debug('ProxyTrackingStage', 'Proxy tracking disabled globally');
       return context;
     }
 
     // Check if this subscription uses proxy tracking
     const useProxyTracking = context.metadata.get('useProxyTracking');
     if (useProxyTracking === false) {
+      BlacLogger.debug('ProxyTrackingStage', 'Proxy tracking disabled for subscription', {
+        subscriptionId: context.subscriptionId
+      });
       return context;
     }
 
@@ -70,6 +75,10 @@ export class ProxyTrackingStage extends PipelineStage {
         tracker.setMaxDepth(this.options.maxDepth);
       }
       this.trackers.set(subscription, tracker);
+      BlacLogger.debug('ProxyTrackingStage', 'Created new ProxyTracker for subscription', {
+        subscriptionId: context.subscriptionId,
+        maxDepth: this.options.maxDepth
+      });
     }
 
     // Get tracked paths from metadata (can be array or Set)
@@ -99,11 +108,20 @@ export class ProxyTrackingStage extends PipelineStage {
       // Add forced paths
       if (this.options.forcePaths && this.options.forcePaths.length > 0) {
         filterPaths.push(...this.options.forcePaths);
+        BlacLogger.debug('ProxyTrackingStage', 'Added forced paths', {
+          forcedPaths: this.options.forcePaths
+        });
       }
 
       // Set paths for FilterStage to use
       context.subscription.config.paths = filterPaths;
       context.metadata.set('filterPaths', filterPaths);
+
+      BlacLogger.debug('ProxyTrackingStage', 'Applied tracked paths to filter', {
+        subscriptionId: context.subscriptionId,
+        pathCount: filterPaths.length,
+        paths: filterPaths
+      });
     }
 
     return context;
@@ -121,6 +139,7 @@ export class ProxyTrackingStage extends PipelineStage {
                         Array.from(paths).some(path => !previousPaths.has(path));
 
       if (!hasChanged) {
+        BlacLogger.debug('ProxyTrackingStage', 'Paths unchanged, skipping update');
         return; // No change needed
       }
     }
@@ -129,11 +148,12 @@ export class ProxyTrackingStage extends PipelineStage {
     const pathArray = Array.from(paths);
     context.subscription.config.paths = pathArray;
 
-    // Log tracking update if in debug mode
-    const debug = context.metadata.get('debug');
-    if (debug) {
-      console.log('[ProxyTrackingStage] Updated tracked paths:', pathArray);
-    }
+    BlacLogger.debug('ProxyTrackingStage', 'Updated tracked paths', {
+      subscriptionId: context.subscriptionId,
+      previousCount: previousPaths?.size ?? 0,
+      newCount: pathArray.length,
+      paths: pathArray
+    });
   }
 
   /**

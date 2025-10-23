@@ -5,6 +5,8 @@
  * which parts of the state a component depends on.
  */
 
+import { BlacLogger } from '../logging/Logger';
+
 /**
  * Check if a value is an object that can be proxied
  */
@@ -78,6 +80,10 @@ export class ProxyTracker<T> {
           // Don't track internal properties
           if (!prop.startsWith('_') && !prop.startsWith('$$')) {
             this.trackedPaths.add(fullPath);
+            BlacLogger.debug('ProxyTracker', 'Tracked property access', {
+              path: fullPath,
+              valueType: typeof value
+            });
           }
         }
 
@@ -89,6 +95,9 @@ export class ProxyTracker<T> {
         if (typeof prop === 'string' && this.isTracking) {
           const fullPath = path ? `${path}.${prop}` : prop;
           this.trackedPaths.add(fullPath);
+          BlacLogger.debug('ProxyTracker', 'Tracked "in" operator access', {
+            path: fullPath
+          });
         }
         return Reflect.has(obj, prop);
       },
@@ -98,6 +107,9 @@ export class ProxyTracker<T> {
         if (this.isTracking && path) {
           // Track that we're iterating over this object
           this.trackedPaths.add(path);
+          BlacLogger.debug('ProxyTracker', 'Tracked object keys iteration', {
+            path: path
+          });
         }
         return Reflect.ownKeys(obj);
       }
@@ -121,6 +133,10 @@ export class ProxyTracker<T> {
           if (['map', 'filter', 'forEach', 'find', 'some', 'every', 'reduce'].includes(String(prop))) {
             if (this.isTracking && path) {
               this.trackedPaths.add(path);
+              BlacLogger.debug('ProxyTracker', 'Tracked array method access', {
+                path: path,
+                method: String(prop)
+              });
             }
           }
           return value.bind(arr);
@@ -150,6 +166,10 @@ export class ProxyTracker<T> {
         // Track ONLY leaf properties (non-objects) and array length
         if (this.isTracking) {
           this.trackedPaths.add(fullPath);
+          BlacLogger.debug('ProxyTracker', 'Tracked array property access', {
+            path: fullPath,
+            valueType: typeof value
+          });
         }
 
         return value;
@@ -166,6 +186,7 @@ export class ProxyTracker<T> {
   startTracking(): void {
     this.isTracking = true;
     this.trackedPaths.clear();
+    BlacLogger.debug('ProxyTracker', 'Started tracking');
   }
 
   /**
@@ -173,6 +194,10 @@ export class ProxyTracker<T> {
    */
   stopTracking(): Set<string> {
     this.isTracking = false;
+    BlacLogger.debug('ProxyTracker', 'Stopped tracking', {
+      pathCount: this.trackedPaths.size,
+      paths: Array.from(this.trackedPaths)
+    });
     return new Set(this.trackedPaths);
   }
 
