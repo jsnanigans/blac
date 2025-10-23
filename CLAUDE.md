@@ -271,6 +271,44 @@ class LoggerPlugin implements BlacPlugin {
 Blac.addPlugin(new LoggerPlugin());
 ```
 
+### V2 Logging System
+
+BlaC v2 includes a unified logging system for debugging and development:
+
+```typescript
+import { BlacLogger, LogLevel } from '@blac/core';
+
+// Enable logging with desired level
+BlacLogger.configure({
+  enabled: true,
+  level: LogLevel.DEBUG  // ERROR, WARN, INFO, or DEBUG
+});
+```
+
+**Log Levels:**
+- `LogLevel.ERROR` - Critical errors only
+- `LogLevel.WARN` - Warnings and errors
+- `LogLevel.INFO` - Important informational messages
+- `LogLevel.DEBUG` - Detailed diagnostic information (default when enabled)
+
+**What's Logged:**
+- State changes in StateStream and StateContainer
+- Subscription lifecycle (register/unregister/cleanup)
+- ReactBridge operations (v2 only)
+- Error conditions in subscription pipelines
+
+**Custom Output:**
+```typescript
+BlacLogger.configure({
+  enabled: true,
+  level: LogLevel.DEBUG,
+  output: (entry) => {
+    // Custom logging (e.g., send to remote service)
+    console.log(JSON.stringify(entry));
+  }
+});
+```
+
 ## Performance Considerations
 
 - **Proxy overhead**: Automatic dependency tracking uses Proxies (can be disabled)

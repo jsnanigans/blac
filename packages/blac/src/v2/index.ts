@@ -25,3 +25,6 @@ export * from './registry';
 export * from './types/branded';
 export * from './types/events';
 export * from './types/internal';
+
+// Logging
+export { BlacLogger, LogLevel } from './logging/Logger';

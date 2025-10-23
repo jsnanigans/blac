@@ -8,6 +8,7 @@
 import { StateStream } from './StateStream';
 import { EventStream } from './EventStream';
 import { LifecycleManager, LifecycleState, LifecycleEvent as LMLifecycleEvent } from './LifecycleManager';
+import { BlacLogger } from '../logging/Logger';
 import {
   Generation,
   InstanceId,
@@ -366,6 +367,10 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
    * Called when state changes
    */
   protected async onStateChange(event: StateChangeEvent<S>): Promise<void> {
+    BlacLogger.debug('StateContainer', 'stateChange', {
+      version: event.version,
+    });
+
     // Notify all subscribers through the subscription system
     await this.subscriptionSystem.notify({
       type: 'state-change',

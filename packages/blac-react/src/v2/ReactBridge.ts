@@ -8,6 +8,7 @@
 import type { StateContainer } from '../../../blac/src/v2/core/StateContainer';
 import { ProxyTracker } from '../../../blac/src/v2/proxy/ProxyTracker';
 import type { Subscription } from '../../../blac/src/v2/subscription/SubscriptionSystem';
+import { BlacLogger } from '../../../blac/src/v2/logging/Logger';
 
 // Export type aliases for backward compatibility
 export type SubscribeCallback = () => void;
@@ -43,7 +44,7 @@ export class ReactBridge<S> {
 
     // Create subscription if not exists
     if (!this.subscription) {
-      console.log('[ReactBridge] Creating INITIAL subscription');
+      BlacLogger.debug('ReactBridge', 'Creating INITIAL subscription');
       const subscriptionId = Symbol('subscription');
       this.activeSubscriptionId = subscriptionId;
       // Subscribe without selector - we'll use proxy tracking instead
@@ -51,14 +52,14 @@ export class ReactBridge<S> {
         callback: (state: S) => {
           // Guard against stale callbacks from old subscriptions
           if (subscriptionId !== this.activeSubscriptionId) {
-            console.log('[ReactBridge] INITIAL subscription callback IGNORED (stale subscription)');
+            BlacLogger.debug('ReactBridge', 'INITIAL subscription callback IGNORED (stale subscription)');
             return;
           }
-          console.log('[ReactBridge] INITIAL subscription callback invoked');
+          BlacLogger.debug('ReactBridge', 'INITIAL subscription callback invoked');
           this.currentState = state;
           // Notify all React listeners
           this.listeners.forEach(listener => {
-            console.log('[ReactBridge] INITIAL Calling listener');
+            BlacLogger.debug('ReactBridge', 'INITIAL Calling listener');
             listener();
           });
         },
@@ -68,7 +69,7 @@ export class ReactBridge<S> {
           trackedPaths: Array.from(this.trackedPaths)
         }
       });
-      console.log('[ReactBridge] INITIAL subscription created');
+      BlacLogger.debug('ReactBridge', 'INITIAL subscription created');
     }
 
     // Return cleanup function
@@ -119,19 +120,19 @@ export class ReactBridge<S> {
    * Complete tracking and update subscription paths
    */
   private completeTracking(): void {
-    console.log('[ReactBridge] completeTracking called, isTracking:', this.isTracking);
+    BlacLogger.debug('ReactBridge', 'completeTracking called', { isTracking: this.isTracking });
     if (!this.isTracking) return;
 
     // Stop tracking and get paths
     const newPaths = this.proxyTracker.stopTracking();
     this.isTracking = false;
-    console.log('[ReactBridge] Tracked paths:', Array.from(newPaths));
+    BlacLogger.debug('ReactBridge', 'Tracked paths', { paths: Array.from(newPaths) });
 
     // IMPORTANT: Ignore empty path updates
     // This can happen when getSnapshot() is called but no properties are accessed
     // (e.g., during React's tearing detection checks or strict mode)
     if (newPaths.size === 0) {
-      console.log('[ReactBridge] Ignoring empty paths - likely a React internal check');
+      BlacLogger.debug('ReactBridge', 'Ignoring empty paths - likely a React internal check');
       return;
     }
 
@@ -139,7 +140,11 @@ export class ReactBridge<S> {
     const hasChanged = newPaths.size !== this.trackedPaths.size ||
                       Array.from(newPaths).some(path => !this.trackedPaths.has(path));
 
-    console.log('[ReactBridge] Paths changed:', hasChanged, 'Old:', Array.from(this.trackedPaths), 'New:', Array.from(newPaths));
+    BlacLogger.debug('ReactBridge', 'Paths changed', {
+      hasChanged,
+      old: Array.from(this.trackedPaths),
+      new: Array.from(newPaths)
+    });
 
     if (hasChanged) {
       this.trackedPaths = newPaths;
@@ -151,7 +156,7 @@ export class ReactBridge<S> {
         this.updateSubscriptionPaths();
       }
     }
-    console.log('[ReactBridge] completeTracking done');
+    BlacLogger.debug('ReactBridge', 'completeTracking done');
   }
 
   /**
@@ -160,12 +165,14 @@ export class ReactBridge<S> {
   private updateSubscriptionPaths(): void {
     // Re-subscribe with updated paths
     if (this.subscription) {
-      console.log('[ReactBridge] updateSubscriptionPaths - creating new subscription with paths:', Array.from(this.trackedPaths));
+      BlacLogger.debug('ReactBridge', 'updateSubscriptionPaths - creating new subscription', {
+        paths: Array.from(this.trackedPaths)
+      });
       const oldSub = this.subscription;
 
       // IMPORTANT: Unsubscribe old subscription BEFORE creating new one
       // to avoid race conditions where both subscriptions might process state changes
-      console.log('[ReactBridge] Unsubscribing old subscription FIRST');
+      BlacLogger.debug('ReactBridge', 'Unsubscribing old subscription FIRST');
       oldSub.unsubscribe();
 
       // Create new subscription with updated paths
@@ -175,13 +182,13 @@ export class ReactBridge<S> {
         callback: (state: S) => {
           // Guard against stale callbacks from old subscriptions
           if (subscriptionId !== this.activeSubscriptionId) {
-            console.log('[ReactBridge] NEW subscription callback IGNORED (stale subscription)');
+            BlacLogger.debug('ReactBridge', 'NEW subscription callback IGNORED (stale subscription)');
             return;
           }
-          console.log('[ReactBridge] NEW subscription callback invoked');
+          BlacLogger.debug('ReactBridge', 'NEW subscription callback invoked');
           this.currentState = state;
           this.listeners.forEach(listener => {
-            console.log('[ReactBridge] NEW Calling listener');
+            BlacLogger.debug('ReactBridge', 'NEW Calling listener');
             listener();
           });
         },
@@ -192,7 +199,7 @@ export class ReactBridge<S> {
         }
       });
 
-      console.log('[ReactBridge] updateSubscriptionPaths complete');
+      BlacLogger.debug('ReactBridge', 'updateSubscriptionPaths complete');
     }
   }
 

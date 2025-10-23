@@ -9,6 +9,7 @@ import { SubscriptionRegistry, SubscriptionConfig, ContainerId, ConsumerId, Meta
 import { SubscriptionPipeline, SubscriptionId, PipelineContext, PipelineStage } from './SubscriptionPipeline';
 import { SubscriptionBuilder } from './SubscriptionBuilder';
 import { StateChange } from '../types/events';
+import { BlacLogger } from '../logging/Logger';
 
 // Import all stages
 import {
@@ -179,6 +180,11 @@ export class SubscriptionSystem<T = unknown> {
     // Get all subscriptions for this container
     const subscriptionIds = this.registry.getContainerSubscriptions(this.containerId);
 
+    BlacLogger.debug('SubscriptionSystem', 'notify', {
+      containerId: this.containerId,
+      subscriptionCount: subscriptionIds.length,
+    });
+
     // Process each subscription through its pipeline
     const promises: Promise<void>[] = [];
 
@@ -205,7 +211,10 @@ export class SubscriptionSystem<T = unknown> {
             // Success
           })
           .catch(error => {
-            console.error(`Subscription ${subscriptionId} error:`, error);
+            BlacLogger.error('SubscriptionSystem', 'Subscription error', {
+              subscriptionId,
+              error: error instanceof Error ? error.message : String(error)
+            });
           })
       );
     }

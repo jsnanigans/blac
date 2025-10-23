@@ -12,6 +12,7 @@ import {
   ChangeMetadata,
 } from '../types/events';
 import { TypedEventEmitter } from '../types/events';
+import { BlacLogger } from '../logging/Logger';
 
 /**
  * State snapshot with version tracking
@@ -90,6 +91,11 @@ export class StateStream<S> {
    * @param options Update options
    */
   update(updater: StateUpdater<S>, options: UpdateOptions = {}): void {
+    BlacLogger.debug('StateStream', 'update', {
+      version: this.version,
+      source: options.source,
+    });
+
     const previousSnapshot = this.currentSnapshot;
     const nextState = updater(this.cloneDeep(previousSnapshot.state));
 

@@ -8,6 +8,7 @@
 
 import { BrandedId } from '../types/branded';
 import { StateChange } from '../types/events';
+import { BlacLogger } from '../logging/Logger';
 
 // Branded types for type safety
 export type SubscriptionId = BrandedId<'Subscription'>;
@@ -164,6 +165,11 @@ export class SubscriptionPipeline {
             stageDurations.set(stage.id, performance.now() - stageStart);
           }
         } catch (error) {
+          BlacLogger.error('SubscriptionPipeline', 'Stage execution error', {
+            stageId: stage.id,
+            stageName: stage.name,
+            error: error instanceof Error ? error.message : String(error)
+          });
           this.config.errorHandler(error as Error, stage);
           throw error;
         }
@@ -183,6 +189,10 @@ export class SubscriptionPipeline {
       return result;
 
     } catch (error) {
+      BlacLogger.error('SubscriptionPipeline', 'Pipeline execution error', {
+        stagesProcessed,
+        error: error instanceof Error ? error.message : String(error)
+      });
       return {
         executed: false,
         stagesProcessed,

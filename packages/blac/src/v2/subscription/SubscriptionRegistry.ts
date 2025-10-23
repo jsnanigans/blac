@@ -9,6 +9,7 @@ import { BrandedId } from '../types/branded';
 import { SubscriptionPipeline, SubscriptionId, PipelineContext, MetadataValue } from './SubscriptionPipeline';
 import { NotificationCallback } from './stages/NotificationStage';
 import { StateChange } from '../types/events';
+import { BlacLogger } from '../logging/Logger';
 
 export type ContainerId = BrandedId<'Container'>;
 export type ConsumerId = BrandedId<'Consumer'>;
@@ -103,6 +104,11 @@ export class SubscriptionRegistry {
     this.subscriptions.set(id, entry as SubscriptionEntry<unknown, unknown>);
     this.updateIndices(id, config, 'add');
 
+    BlacLogger.debug('SubscriptionRegistry', 'register', {
+      subscriptionId: id,
+      containerId: config.containerId,
+    });
+
     return id;
   }
 
@@ -112,6 +118,10 @@ export class SubscriptionRegistry {
   unregister(id: SubscriptionId): boolean {
     const entry = this.subscriptions.get(id);
     if (!entry) return false;
+
+    BlacLogger.debug('SubscriptionRegistry', 'unregister', {
+      subscriptionId: id,
+    });
 
     // Cleanup pipeline
     entry.pipeline.dispose();
@@ -188,7 +198,10 @@ export class SubscriptionRegistry {
         entry.pipeline.execute(context).then(() => {
           entry.lastAccessed = Date.now();
         }).catch(error => {
-          console.error(`Subscription ${id} processing error:`, error);
+          BlacLogger.error('SubscriptionRegistry', 'Subscription processing error', {
+            subscriptionId: id,
+            error: error instanceof Error ? error.message : String(error)
+          });
         })
       );
     }
@@ -333,16 +346,27 @@ export class SubscriptionRegistry {
   private performCleanup(): void {
     const now = Date.now();
     const maxAge = 60000; // 1 minute
+    const initialCount = this.subscriptions.size;
+    let cleanedCount = 0;
 
     for (const [id, entry] of this.subscriptions.entries()) {
       if (!entry.isActive && (now - entry.lastAccessed) > maxAge) {
         this.unregister(id);
+        cleanedCount++;
       }
 
       // Check weak references
       if (entry.weakRef && !entry.weakRef.deref()) {
         this.unregister(id);
+        cleanedCount++;
       }
+    }
+
+    if (cleanedCount > 0) {
+      BlacLogger.info('SubscriptionRegistry', 'cleanup', {
+        removed: cleanedCount,
+        remaining: this.subscriptions.size,
+      });
     }
   }
 
