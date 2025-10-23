@@ -1,22 +1,11 @@
-// Primary hook - Adapter Pattern implementation
-export { default as useBloc } from './useBloc';
-export type { UseBlocOptions } from './useBloc';
+/**
+ * v2 React Integration
+ *
+ * Simple, clean integration between React and v2 StateContainer architecture.
+ * Constructor-based API with automatic type inference.
+ * Uses React 18's useSyncExternalStore for optimal compatibility.
+ */
 
-// Direct adapter hook export (same implementation as useBloc)
-export { default as useBlocAdapter } from './useBlocAdapter';
-export type { UseBlocAdapterOptions } from './useBlocAdapter';
-
-// Other hooks
-export { default as useExternalBlocStore } from './useExternalBlocStore';
-export { useBlocGraph, useBlocGraphFiltered } from './useBlocGraph';
-
-// Adapter Pattern infrastructure
-export {
-  ReactBlocAdapter,
-  getOrCreateAdapter,
-  hasAdapter,
-  removeAdapter,
-  getAdapterCacheStats,
-  clearAdapterCache,
-} from './adapter';
-export type { Selector, CompareFn } from './adapter';
+export { ReactBridge, createReactBridge, type SubscribeCallback, type Unsubscribe } from './ReactBridge';
+export { useStateContainer, type UseStateContainerOptions } from './useStateContainer';
+export { useBloc, default as useBlocHook, clearAllBlocInstances, type UseBlocOptions } from './useBloc';

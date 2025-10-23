@@ -1,31 +1,35 @@
-export * from './Blac';
-export * from './Vertex';
-export * from './BlocBase';
-export * from './Cubit';
-export * from './types';
-export * from './events';
-export * from './subscription';
-export * from './lifecycle';
-export * from './tracking';
-export type { BlacContext } from './types/BlacContext';
+/**
+ * v2 Architecture Exports
+ *
+ * Clean, type-safe implementation with clear responsibility boundaries.
+ */
 
-// Utilities
-export * from './utils/uuid';
-export * from './utils/shallowEqual';
-export * from './utils/generateInstanceId';
-export * from './utils/RerenderLogger';
+// Core
+export * from './core/StateStream';
+export type { EventHandler as EventStreamHandler } from './core/EventStream';
+export { EventStream } from './core/EventStream';
+export type { LifecycleEvent } from './core/LifecycleManager';
+export { LifecycleManager, LifecycleState } from './core/LifecycleManager';
+export * from './core/StateContainer';
+export * from './core/Cubit';
+export * from './core/Vertex';
 
-// Test utilities
-export * from './testing';
+// Proxy Tracking
+export * from './proxy/ProxyTracker';
 
-// Plugins
-export * from './plugins';
+// Subscription System - selective exports to avoid conflicts
+export { SubscriptionSystem } from './subscription/SubscriptionSystem';
+export { SubscriptionBuilder } from './subscription/SubscriptionBuilder';
+export type { Subscription } from './subscription/SubscriptionSystem';
 
-// Error handling
-export * from './errors';
+// Registry - selective exports to avoid conflicts
+export { BlocRegistry } from './registry/BlocRegistry';
 
-// Validation
-export * from './validation';
+// Types - use branded types as canonical
+export type { InstanceId, SubscriptionId, BrandedId, Version, Generation } from './types/branded';
+export { instanceId, subscriptionId, version, generation, incrementVersion, incrementGeneration } from './types/branded';
+export * from './types/events';
+export * from './types/internal';
 
 // Logging
-export * from './logging';
+export { BlacLogger, LogLevel } from './logging/Logger';
