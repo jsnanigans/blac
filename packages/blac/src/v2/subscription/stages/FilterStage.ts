@@ -7,6 +7,7 @@
 
 import { PipelineStage, PipelineContext } from '../SubscriptionPipeline';
 import { StateChange } from '../../types/events';
+import { BlacLogger } from '../../logging/Logger';
 
 export type FilterPredicate<T> = (
   current: T,
@@ -38,13 +39,32 @@ export class FilterStage<T = unknown> extends PipelineStage {
     const dynamicFilterPaths = context.metadata.get('filterPaths') as string[] | undefined;
     const pathsToCheck = dynamicFilterPaths || this.options.paths;
 
+    BlacLogger.debug('FilterStage', 'process', {
+      dynamicFilterPaths,
+      staticPaths: this.options.paths,
+      pathsToCheck,
+    });
+
     // Apply path filtering
     if (pathsToCheck && pathsToCheck.length > 0) {
       const hasRelevantChange = this.checkPaths(current, previous, pathsToCheck);
+
+      BlacLogger.debug('FilterStage', 'path check result', {
+        pathsToCheck,
+        hasRelevantChange,
+        subscriptionId: context.subscriptionId,
+      });
+
       if (!hasRelevantChange) {
         context.shouldContinue = false;
         context.skipNotification = true;
         context.metadata.set('filteredReason', 'path_mismatch');
+
+        BlacLogger.debug('FilterStage', 'BLOCKING notification - no relevant changes', {
+          pathsToCheck,
+          subscriptionId: context.subscriptionId,
+        });
+
         return context;
       }
     }
@@ -88,11 +108,18 @@ export class FilterStage<T = unknown> extends PipelineStage {
     const currentValue = this.getValueAtPath(current, path);
     const previousValue = this.getValueAtPath(previous, path);
 
-    if (this.options.includeNested) {
-      return !this.deepEqual(currentValue, previousValue);
-    }
+    const changed = this.options.includeNested
+      ? !this.deepEqual(currentValue, previousValue)
+      : currentValue !== previousValue;
 
-    return currentValue !== previousValue;
+    BlacLogger.debug('FilterStage', 'hasPathChanged', {
+      path,
+      currentValue,
+      previousValue,
+      changed,
+    });
+
+    return changed;
   }
 
   private getValueAtPath<U>(obj: U, path: string): unknown {

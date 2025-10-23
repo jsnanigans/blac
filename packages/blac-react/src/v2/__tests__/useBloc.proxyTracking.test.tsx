@@ -7,6 +7,16 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { StrictMode } from 'react';
 import { useBloc, clearAllBlocInstances } from '../useBloc';
 import { Cubit } from '../../../../blac/src/v2/core/Cubit';
+import { BlacLogger, LogLevel } from '../../../../blac/src/v2/logging/Logger';
+
+// Enable logging for debugging
+BlacLogger.configure({
+  enabled: true,
+  level: LogLevel.DEBUG,
+  output: (entry) => {
+    console.log(`[${entry.level}] [${entry.context}] ${entry.message}`, entry.data || '');
+  }
+});
 
 // Test state shape
 interface TestState {
