@@ -274,10 +274,8 @@ function useBlocAdapter<B extends BlocConstructor<BlocBase<any>>, R = any>(
       version: adapter.getVersion(),
       autoTrackingEnabled: adapter.isAutoTrackingEnabled(),
     });
-    const e = adapter.trackDependencies(subscriptionIdRef.current); // Pre-warm snapshot cache
-    console.log(`[useBlocAdapter] ✅ Pre-warmed adapter snapshot cache`, {
-      snapshot: typeof e === 'object' ? '{...}' : e,
-    });
+    // NOTE: Removed pre-warming call - tracking now starts in getSnapshot (hybrid approach)
+    // This allows tracking to work correctly with early getSnapshot calls before subscribe
     return adapter;
   }, [bloc]);
 
@@ -322,6 +320,9 @@ function useBlocAdapter<B extends BlocConstructor<BlocBase<any>>, R = any>(
         console.log(
           `[useBlocAdapter] 🔌 UNSUBSCRIBE called for ${subscriptionIdRef.current}`,
         );
+
+        // Note: Tracking completion happens in the effect after each render
+        // Here we just clean up the subscription
         unsubscribe();
       };
     },
@@ -359,21 +360,16 @@ function useBlocAdapter<B extends BlocConstructor<BlocBase<any>>, R = any>(
     state: typeof state === 'object' ? '{...}' : state,
   });
 
-  // Complete dependency tracking after each render (for auto-tracking)
+  // Complete dependency tracking after each render
+  // This ensures dependencies are captured before the next state change
   useEffect(() => {
     if (!options?.selector && adapter.isAutoTrackingEnabled()) {
       console.log(
-        `[useBlocAdapter] 🎯 Completing dependency tracking for ${subscriptionIdRef.current}`,
+        `[useBlocAdapter] 🎯 Completing dependency tracking after render for ${subscriptionIdRef.current}`,
       );
-      adapter.completeDependencyTracking(subscriptionIdRef.current!);
-      console.log(`[useBlocAdapter] ✅ Dependency tracking completed`);
-    } else {
-      console.log(`[useBlocAdapter] ⏭️  Skipping dependency tracking`, {
-        hasSelector: !!options?.selector,
-        autoTrackingEnabled: adapter.isAutoTrackingEnabled(),
-      });
+      adapter.completeDependencyTracking(subscriptionIdRef.current);
     }
-  }, [options?.selector, adapter]); // Complete tracking once per mount, not on every state change
+  }); // No dependencies - runs after EVERY render
 
   // Mount/unmount lifecycle
   useEffect(() => {

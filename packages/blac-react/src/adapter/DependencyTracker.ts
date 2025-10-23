@@ -97,6 +97,14 @@ export class DependencyTracker {
     return deps;
   }
 
+  /**
+   * Check if tracking is currently active
+   * @returns True if tracking is active
+   */
+  isTracking(): boolean {
+    return this.tracking;
+  }
+
   getterIdLastAccessedPath: Map<string, string> = new Map();
 
   addDependency(path: string, getterId: string): void {

@@ -94,13 +94,9 @@ export class ReactBridge<S> {
       this.isInitialRender = true;
     }
 
-    // Complete any pending tracking synchronously to avoid race conditions
-    // This ensures the subscription has tracked paths BEFORE any state changes can occur
-    if (this.isTracking && this.isInitialRender) {
-      BlacLogger.debug('ReactBridge', 'Completing initial render tracking synchronously in subscribe()');
-      this.completeTracking();
-      this.isInitialRender = false;
-    }
+    // NOTE: Tracking completion moved to useEffect in useBloc
+    // This prevents premature completion and subscription replacement in Strict Mode
+    // See hybrid-tracking approach from adapter pattern fix
 
     // Return cleanup function
     return () => {
@@ -132,13 +128,8 @@ export class ReactBridge<S> {
         },
       );
 
-      // For initial render, tracking completion is handled synchronously in subscribe()
-      // For subsequent renders, use microtask (paths already configured, no race condition)
-      if (!this.isInitialRender) {
-        queueMicrotask(() => {
-          this.completeTracking();
-        });
-      }
+      // NOTE: Tracking completion moved to useEffect in useBloc
+      // This ensures it runs after render completes and handles Strict Mode correctly
     }
 
     // Increment render generation for tracking
@@ -162,12 +153,18 @@ export class ReactBridge<S> {
 
   /**
    * Complete tracking and update subscription paths
+   * Public method to be called from useBloc's useEffect
    */
-  private completeTracking(): void {
+  completeTracking(): void {
     BlacLogger.debug('ReactBridge', 'completeTracking called', {
       isTracking: this.isTracking,
     });
-    if (!this.isTracking) return;
+
+    // Guard: Don't complete if not currently tracking
+    if (!this.isTracking) {
+      BlacLogger.debug('ReactBridge', 'Skipping completion - not currently tracking');
+      return;
+    }
 
     // Stop tracking and get paths
     const newPaths = this.proxyTracker.stopTracking();

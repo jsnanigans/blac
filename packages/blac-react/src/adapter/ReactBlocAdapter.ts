@@ -389,7 +389,18 @@ export class ReactBlocAdapter<S = any> {
 
       sub.refCount--;
       if (sub.refCount <= 0) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log(
+            `[ReactBlocAdapter] 🧹 Cleaning up subscription ${finalSubscriptionId}`,
+          );
+        }
+
         this.subscriptions.delete(finalSubscriptionId);
+
+        // Clear pending tracked state when subscription is removed
+        // This ensures clean state for potential future re-subscriptions (e.g., Strict Mode remount)
+        this.pendingTrackedStates.delete(finalSubscriptionId);
+
         this.subscriberCount--;
 
         // If no more subscribers, schedule cleanup
@@ -408,6 +419,9 @@ export class ReactBlocAdapter<S = any> {
    *
    * CRITICAL: This method MUST return stable references for the same state/selector combination
    * to prevent infinite loops in React's useSyncExternalStore.
+   *
+   * HYBRID TRACKING: This method handles early getSnapshot calls (before subscribe) and
+   * regular getSnapshot calls (after subscribe). Tracking starts here, completes in unsubscribe.
    *
    * @param selector - Optional selector to apply to snapshot
    * @param subscriptionId - Optional subscription ID for auto-tracking
@@ -434,20 +448,53 @@ export class ReactBlocAdapter<S = any> {
     if (this.autoTrackingEnabled && this.dependencyTracker && subscriptionId) {
       const subscription = this.subscriptions.get(subscriptionId);
 
+      // Determine if we should start tracking
+      let shouldStartTracking = false;
+
       if (subscription) {
-        // Increment render count
+        // Subscription exists - use normal re-track logic
         subscription.renderCount = (subscription.renderCount || 0) + 1;
+        shouldStartTracking = this.shouldReTrack(subscription);
 
-        // Check if we should re-track dependencies
-        const shouldReTrack = this.shouldReTrack(subscription);
+        if (process.env.NODE_ENV === 'development') {
+          console.log(
+            `[ReactBlocAdapter] getSnapshot for ${subscriptionId}: subscription exists`,
+            {
+              shouldReTrack: shouldStartTracking,
+              hasDependencies: !!subscription.trackedDependencies,
+              renderCount: subscription.renderCount,
+            },
+          );
+        }
+      } else {
+        // No subscription yet (early getSnapshot call before subscribe)
+        // This happens on first render and after Strict Mode remount
+        shouldStartTracking = !this.pendingTrackedStates.has(subscriptionId);
 
-        if (shouldReTrack) {
-          const tracked = this.trackDependencies(subscriptionId) as S;
-          return tracked ?? this.snapshot.state;
+        if (process.env.NODE_ENV === 'development') {
+          console.log(
+            `[ReactBlocAdapter] getSnapshot for ${subscriptionId}: NO subscription yet (early call)`,
+            {
+              willStartTracking: shouldStartTracking,
+              hasPendingState: this.pendingTrackedStates.has(subscriptionId),
+            },
+          );
         }
       }
 
-      // Return tracked proxy (dependencies already established)
+      // Start tracking if needed (not already pending)
+      if (shouldStartTracking && !this.pendingTrackedStates.has(subscriptionId)) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log(
+            `[ReactBlocAdapter] 🎬 Starting tracking for ${subscriptionId}`,
+          );
+        }
+
+        this.dependencyTracker.startTracking();
+        this.pendingTrackedStates.set(subscriptionId, true);
+      }
+
+      // Return tracked proxy
       return this.dependencyTracker.createTrackedProxy(
         this.snapshot.state,
         [],
@@ -459,31 +506,8 @@ export class ReactBlocAdapter<S = any> {
     return this.snapshot.state;
   }
 
-  trackDependencies<S>(subscriptionId: string): S | undefined {
-    if (!this.autoTrackingEnabled || !this.dependencyTracker) {
-      return;
-    }
-
-    // Check if tracking is already in progress for this subscription
-    if (!this.pendingTrackedStates.has(subscriptionId)) {
-      // Start tracking for this render
-      this.dependencyTracker.startTracking();
-
-      // Mark this subscription as pending tracking completion
-      this.pendingTrackedStates.set(subscriptionId, true);
-    }
-
-    // Create tracked proxy
-    const trackedState = this.dependencyTracker.createTrackedProxy(
-      this.snapshot.state,
-      [],
-      `${Math.random()}-${subscriptionId}`,
-    );
-
-    // Return the tracked proxy directly
-    // The completeDependencyTracking will be called from the useEffect in useBlocAdapter
-    return trackedState as unknown as S;
-  }
+  // NOTE: trackDependencies method removed - tracking now happens directly in getSnapshot
+  // This is part of the hybrid solution for React Strict Mode compatibility
 
   /**
    * Check if a subscription should re-track dependencies
@@ -508,44 +532,73 @@ export class ReactBlocAdapter<S = any> {
    * Complete dependency tracking for a subscription
    * Should be called after render completes
    * @param subscriptionId - The subscription ID
+   * @param force - Force completion even if no dependencies tracked (for cleanup)
    */
-  completeDependencyTracking(subscriptionId: string): void {
+  completeDependencyTracking(subscriptionId: string, force = false): void {
     if (!this.autoTrackingEnabled || !this.dependencyTracker) {
       return;
     }
 
     // Check if this subscription has pending tracking
     if (!this.pendingTrackedStates.has(subscriptionId)) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log(
+          `[ReactBlocAdapter] ⏭️  No pending tracking for ${subscriptionId}`,
+        );
+      }
       return;
     }
 
     const subscription = this.subscriptions.get(subscriptionId);
     if (!subscription) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log(
+          `[ReactBlocAdapter] ⏭️  Subscription ${subscriptionId} not found, clearing pending state`,
+        );
+      }
       this.pendingTrackedStates.delete(subscriptionId);
       return;
+    }
+
+    // Check if tracking is actually active (has recorded any accesses)
+    const isTrackingActive = this.dependencyTracker.isTracking();
+
+    if (!isTrackingActive && !force) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log(
+          `[ReactBlocAdapter] ⏸️  Tracking not active yet for ${subscriptionId}, deferring completion`,
+        );
+      }
+      return; // Don't complete yet, wait for actual state access
     }
 
     // Stop tracking and get dependencies
     const dependencies = this.dependencyTracker.stopTracking();
 
     // Only store dependencies if we actually tracked something
-    // Empty dependencies mean tracking completed before any property access
+    // Empty dependencies mean tracking started but no property was accessed
     if (dependencies.size > 0) {
       subscription.trackedDependencies = dependencies;
       subscription.lastTrackedVersion = this.version;
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log(
+          `[ReactBlocAdapter] ✅ Tracked dependencies for ${subscriptionId}:`,
+          Array.from(dependencies),
+          'Total deps:',
+          dependencies.size,
+        );
+      }
+    } else {
+      if (process.env.NODE_ENV === 'development') {
+        console.log(
+          `[ReactBlocAdapter] ⚠️  No dependencies tracked for ${subscriptionId}`,
+        );
+      }
     }
 
     // Clear pending flag
     this.pendingTrackedStates.delete(subscriptionId);
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log(
-        `[ReactBlocAdapter] Tracked dependencies for ${subscriptionId}:`,
-        Array.from(dependencies),
-        'Total deps:',
-        dependencies.size,
-      );
-    }
   }
 
   /**

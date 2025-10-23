@@ -198,6 +198,13 @@ function useBloc<TBloc extends StateContainer<any, any>>(
     bridge.getServerSnapshot
   );
 
+  // Complete tracking after each render
+  // This effect runs after EVERY render (no dependencies) to ensure tracking
+  // is completed after component has accessed state properties
+  useEffect(() => {
+    bridge.completeTracking();
+  }); // No dependencies - runs after every render
+
   // Mount/unmount lifecycle
   useEffect(() => {
     // Call onMount callback if provided
