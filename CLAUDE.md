@@ -1,11 +1,42 @@
 # CLAUDE.md
 
-This is an internal project with no external users, so we can do a clean changes and refactoring, without worrying about migrating from older versions or backwards compatibility.
-
-This project uses `jujutsu` instead of `git` for version control.
-if you are instructed to do anything git related, use `jj` commands to interact with the repository.
-
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## ⚠️ Critical Context
+
+1. **Version Control:** This project uses **`jujutsu`** (`jj`), not `git`. Always use `jj` commands for version control operations.
+2. **Internal Project:** No external users or backwards compatibility concerns. Clean refactoring and breaking changes are acceptable.
+3. **Test Strategy:** NEVER run all tests at once in this monorepo. Always scope tests to specific packages or test files using workspace filters.
+
+## Quick Reference: Common Commands
+
+```bash
+# Testing (ALWAYS use --filter to scope to specific package)
+pnpm --filter @blac/core test              # Test core package
+pnpm --filter @blac/react test             # Test React package
+pnpm --filter @blac/core test BlocBase    # Test specific pattern
+
+# Development
+pnpm dev                                   # Start playground (port 3003)
+pnpm --filter @blac/core dev              # Watch build core package
+pnpm typecheck                            # Type check all packages
+
+# Code Quality
+pnpm lint                                  # Lint all packages
+pnpm lint:fix                             # Auto-fix linting issues
+pnpm format                               # Format with Prettier
+
+# Building & Publishing
+pnpm build                                # Build all packages (uses Turbo cache)
+pnpm changeset                            # Create version changeset
+pnpm release                              # Build, test, typecheck, and publish
+
+# Version Control (Jujutsu)
+jj status                                 # Check working directory status
+jj diff                                   # View changes
+jj log                                    # View commit history
+jj commit -m "message"                    # Create commit
+```
 
 # BlaC State Management Library
 
@@ -20,25 +51,35 @@ BlaC is a monorepo containing:
 - **Demo applications** showcasing patterns and usage
 - **Comprehensive documentation** and examples
 
-## ⚠️ Important: React Integration Migration (2025-10-21)
+## ⚠️ Important: V2 Architecture (2025-10)
 
-The React integration has been **fully migrated** to the **Adapter Pattern**:
+### Recent Major Changes
+
+**1. React Integration Migration (2025-10-21)**
+
+The React integration was **fully migrated** to the **Adapter Pattern**:
 
 - **Old Implementation** (Unified Tracking): Archived in `packages/blac-react/src/__archived__/`
-- **New Implementation** (Adapter Pattern): `useBloc` and `useBlocAdapter` now use the same implementation
-- **Key Change**: `useBloc` now uses selector-based subscriptions instead of automatic proxy tracking
+- **New Implementation** (Adapter Pattern): `useBloc` now uses `ReactBridge` for clean separation
+- **Key Change**: Selector-based subscriptions instead of automatic proxy tracking
+- **Benefits:**
+  - Clean architecture with adapter layer separating React and BlaC concerns
+  - Version-based change detection instead of deep comparisons (better performance)
+  - React 18 compliance via `useSyncExternalStore`
+  - Proper lifecycle management with reference counting
 
-### What Changed
-- ✅ **Clean architecture** with adapter layer separating React and BlaC concerns
-- ✅ **Version-based change detection** instead of deep comparisons (better performance)
-- ✅ **React 18 compliance** via `useSyncExternalStore`
-- ✅ **Selector support** for fine-grained reactivity
-- ✅ **Proper lifecycle management** with reference counting
+See `/spec/2025-10-20-optimized-react-integration/` for complete documentation.
 
-### Migration Guide
-Old unified tracking tests are in `__archived__/tests/` but **not running**. The new adapter pattern is the only supported implementation.
+**2. Disposal Race Condition Fix (2025-10-17)**
 
-See `/spec/2025-10-20-optimized-react-integration/` for complete migration documentation.
+Implemented **Generation Counter Pattern** to prevent memory leaks in React Strict Mode:
+
+- Each disposal request gets a unique generation number
+- Microtasks validate generation before executing
+- Cancellation increments generation, invalidating pending microtasks
+- **Result:** Zero memory leaks in all React Strict Mode scenarios
+
+See `/spec/2025-10-16-disposal-race-condition/` for implementation details.
 
 ## Architecture
 
@@ -80,21 +121,34 @@ pnpm install
 - **Release**: `pnpm release` - Build, test, typecheck, and publish packages
 
 ### Running Tests for Specific Packages
-```bash
-# Core package tests
-cd packages/blac
-pnpm test                    # Run all tests
-pnpm test:watch              # Watch mode
-pnpm coverage                # Generate coverage report
-pnpm test -- path/to/test.ts # Run specific test file
 
-# React package tests
+**IMPORTANT:** Always scope tests to specific packages or files. Running `pnpm test` at the root will run ALL tests across the entire monorepo, which is slow and unnecessary.
+
+```bash
+# Using pnpm workspace filters (recommended - run from root)
+pnpm --filter @blac/core test                    # All core tests
+pnpm --filter @blac/react test                   # All React tests
+pnpm --filter @blac/core test BlocBase          # Specific test pattern in core
+pnpm --filter @blac/react test useBloc          # Specific test pattern in React
+
+# From within package directory
+cd packages/blac
+pnpm test                                        # All tests in this package
+pnpm test:watch                                  # Watch mode
+pnpm coverage                                    # Generate coverage report
+pnpm test src/__tests__/specific.test.ts        # Specific test file
+
+# React package has two test configs
 cd packages/blac-react
-pnpm test                    # Uses happy-dom environment
-pnpm test:watch              # Watch mode
+pnpm test                                        # Standard tests (happy-dom)
+pnpm test:compiler                               # Tests with React Compiler enabled
+pnpm test:both                                   # Run both configurations
 
 # Run specific test by name pattern
 pnpm test -- -t "test name pattern"
+
+# Run single test file with environment variable
+NODE_ENV=test pnpm --filter @blac/react test src/__tests__/useBloc.test.tsx
 ```
 
 ### Development Workflow
@@ -113,17 +167,23 @@ pnpm clean
 ```
 /
 ├── packages/
-│   ├── blac/              # Core state management (@blac/core)
-│   ├── blac-react/        # React integration (@blac/react)
+│   ├── blac/              # Core state management (@blac/core) v2.0.0-rc.2
+│   ├── blac-react/        # React integration (@blac/react) v2.0.0-rc.2
+│   ├── devtools-connect/  # DevTools integration (@blac/devtools-connect)
 │   └── plugins/
 │       ├── bloc/
-│       │   └── persistence/    # Persistence plugin (@blac/plugin-persistence)
+│       │   └── persistence/        # State persistence plugin
 │       └── system/
-│           └── render-logging/ # Render logging plugin (@blac/plugin-render-logging)
+│           ├── graph/              # Graph-based state management
+│           ├── graph-react/        # React bindings for graph plugin
+│           └── render-logging/     # React render logging plugin
 ├── apps/
-│   ├── playground/        # Interactive playground with Monaco editor
-│   ├── docs/              # Documentation site
+│   ├── playground/        # Interactive playground with Monaco editor (port 3003)
 │   └── perf/              # Performance testing app
+├── spec/                  # Architecture Decision Records (ADRs) and feature specs
+│   ├── 2025-10-16-disposal-race-condition/    # Generation counter fix
+│   ├── 2025-10-20-optimized-react-integration/ # Adapter pattern migration
+│   └── [other specs]/     # Various feature specifications and research
 ├── turbo.json             # Turbo build configuration
 ├── pnpm-workspace.yaml    # Workspace configuration with catalog
 └── tsconfig.base.json     # Base TypeScript configuration
@@ -388,26 +448,54 @@ cd packages/blac-react && pnpm deploy
 ```
 
 ### Test Environments
-- **Core package** (`@blac/core`): Uses `jsdom` environment
-- **React package** (`@blac/react`): Uses `happy-dom` environment
-- Both use Vitest with different configurations
+- **Core package** (`@blac/core`):
+  - Uses `jsdom` environment
+  - Single Vitest configuration
+  - Focus: Pure state management logic, lifecycle, subscriptions
+- **React package** (`@blac/react`):
+  - Uses `happy-dom` environment (faster than jsdom)
+  - Two configurations:
+    - `vitest.config.ts`: Standard React tests
+    - `vitest.config.compiler.ts`: Tests with React Compiler enabled
+  - Use `pnpm test:both` to run both configurations
+  - Focus: React integration, hooks, component lifecycle
 
 ## Additional Resources
 
-- **Documentation**: `/apps/docs/` contains comprehensive guides
-- **Interactive Playground**: `/apps/playground/` - Monaco editor-based playground for experimentation
+### Applications
+- **Interactive Playground**: `/apps/playground/` - Monaco editor-based playground for experimentation (port 3003)
 - **Performance Testing**: `/apps/perf/` - Performance benchmarks and testing
-- **Architecture Review**: `/blac-improvements.md` - Detailed improvement proposals for subscription architecture
-- **Code Review**: `/review.md` - Comprehensive codebase analysis and observations
+
+### Specifications & Architecture Decisions
+- **Spec Directory**: `/spec/` - Architecture Decision Records (ADRs) for all major features and fixes
+  - Each spec follows structure: `research.md`, `discussion.md`, `recommendation.md`, `plan.md`
+  - Critical specs:
+    - `2025-10-16-disposal-race-condition/` - Generation counter implementation
+    - `2025-10-20-optimized-react-integration/` - Adapter pattern migration
+    - `2025-01-19-dependency-tracking-redesign/` - Proxy-based tracking design
+- **Architecture Review**: `/blac-improvements.md` - Improvement proposals for subscription architecture
+- **Code Review**: `/review.md` - Comprehensive codebase analysis
 
 ## Core Architecture Insights
 
 ### Subscription System
+
+**V2 Architecture (Current):**
+- **ReactBridge**: Clean adapter layer between BlaC and React
+  - Uses `useSyncExternalStore` for React 18 compatibility
+  - Selector-based subscriptions for fine-grained reactivity
+  - Version-based change detection (no deep comparisons)
+  - Reference counting for proper lifecycle management
+- **StateStream**: Core reactive state container
+- **StateContainer**: Simplified state management interface
+- **ProxyFactory**: Creates proxies for automatic dependency tracking (configurable, V1 legacy)
+
+**V1 Legacy (Archived):**
 - **Dual subscription model**: Consumers (WeakRef-based) and Observers (dependency-based)
-- **BlacAdapter**: Orchestrates connections between Blocs and React components
-- **ProxyFactory**: Creates proxies for automatic dependency tracking (configurable)
 - **SubscriptionManager**: Handles observer lifecycle and notifications
 - **ConsumerTracker**: Tracks component consumers with automatic cleanup
+
+Note: V1 unified tracking implementation is archived in `packages/blac-react/src/__archived__/`
 
 ### Lifecycle Management
 - States: `ACTIVE`, `DISPOSAL_REQUESTED`, `DISPOSING`, `DISPOSED`
@@ -427,26 +515,41 @@ cd packages/blac-react && pnpm deploy
 - **Blac**: Global registry and configuration manager
 - **BlacPlugin**: Extensible plugin interface (System and Bloc-level)
 
-## Contributing
+## Development Best Practices
 
-1. Follow arrow function convention for all Bloc/Cubit methods
-2. Write comprehensive tests for new features using Vitest
-3. Add changesets for version tracking: `pnpm changeset`
+### Code Standards
+1. **Arrow functions required**: All Bloc/Cubit methods MUST use arrow function syntax for proper `this` binding
+2. **Type safety**: Prefer explicit types over `any`, use proper generic constraints
+3. **State immutability**: Always emit new state objects, never mutate existing state
+4. **Event classes**: Use class-based events for Blocs, not plain objects
+
+### Testing Standards
+1. Write comprehensive tests using Vitest
+2. **Always scope tests** to specific packages using `pnpm --filter @blac/core test` or similar
+3. Test both standard and React Compiler modes for React package changes
+4. Ensure memory leak tests pass (especially after lifecycle changes)
+
+### Version Control & Release
+1. Use `jj` commands for all version control operations
+2. Add changesets for version tracking: `pnpm changeset`
+3. Follow semantic versioning: `patch` for fixes, `minor` for features, `major` for breaking changes
 4. Update documentation for public API changes
-5. Run full test suite before submitting PRs: `pnpm test && pnpm typecheck`
-6. Follow existing TypeScript strict mode conventions
-7. Use catalog references for dependencies in package.json
+5. Build and test before releasing: `pnpm release` (runs build, test, typecheck, publish)
+
+### Code Quality Checks
+```bash
+pnpm typecheck        # TypeScript type checking
+pnpm lint             # ESLint validation
+pnpm lint:fix         # Auto-fix linting issues
+pnpm format           # Format with Prettier
+```
+
+### Architectural Decisions
+- Document significant architectural decisions in `/spec/` directory
+- Follow existing spec structure: `research.md`, `discussion.md`, `recommendation.md`, `plan.md`
+- Reference existing specs when making related changes
 
 ---
 
-*This codebase implements advanced state management patterns with sophisticated dependency tracking. Pay special attention to the arrow function requirement and proxy-based optimizations when working with the code.*
-
----
-
-# Direct Integration with Clean Architecture
-
-The recommendation clearly states we're doing a Comprehensive Overhaul with:
-1. Parallel Development - Building new architecture alongside old
-2. No backward compatibility concerns - This is an internal project
-3. Clean slate opportunity - Fundamentally improve the architecture
+*This codebase implements advanced state management patterns with React 18+ integration. The V2 architecture uses a clean adapter pattern with selector-based subscriptions for optimal performance.*
 

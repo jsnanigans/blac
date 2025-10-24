@@ -18,11 +18,10 @@ export { MetadataValue } from './SubscriptionPipeline';
 /**
  * Subscription configuration
  */
-export interface SubscriptionConfig<TState = unknown, TResult = TState> {
+export interface SubscriptionConfig<TState = unknown> {
   containerId: ContainerId;
   consumerId: ConsumerId;
-  callback: NotificationCallback<TResult>;
-  selector?: (state: TState) => TResult;
+  callback: NotificationCallback<TState>;
   paths?: string[];
   priority?: number;
   keepAlive?: boolean;
@@ -32,9 +31,9 @@ export interface SubscriptionConfig<TState = unknown, TResult = TState> {
 /**
  * Subscription entry in the registry
  */
-export interface SubscriptionEntry<TState = unknown, TResult = TState> {
+export interface SubscriptionEntry<TState = unknown> {
   id: SubscriptionId;
-  config: SubscriptionConfig<TState, TResult>;
+  config: SubscriptionConfig<TState>;
   pipeline: SubscriptionPipeline;
   refCount: number;
   created: number;

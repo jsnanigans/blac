@@ -2,7 +2,7 @@
  * useBloc - Convenient hook for BlaC state management in React with automatic proxy tracking
  *
  * Modern ergonomics: pass the Bloc constructor, get type-safe state and instance.
- * No manual selectors needed - automatically tracks which properties you access!
+ * Automatically tracks which properties you access!
  *
  * @example
  * ```tsx

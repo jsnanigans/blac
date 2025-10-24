@@ -7,5 +7,4 @@
  */
 
 export { ReactBridge, createReactBridge, type SubscribeCallback, type Unsubscribe } from './ReactBridge';
-export { useStateContainer, type UseStateContainerOptions } from './useStateContainer';
 export { useBloc, default as useBlocHook, clearAllBlocInstances, type UseBlocOptions } from './useBloc';

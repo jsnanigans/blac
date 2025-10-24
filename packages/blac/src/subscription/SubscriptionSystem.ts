@@ -16,7 +16,6 @@ import {
   PriorityStage,
   ProxyTrackingStage,
   FilterStage,
-  SelectorStage,
   NotificationStage,
   WeakRefStage,
   OptimizationStage,
@@ -27,10 +26,9 @@ import {
 /**
  * Subscription options for high-level API
  */
-export interface SubscriptionOptions<T = unknown, R = T> {
+export interface SubscriptionOptions<T = unknown> {
   // Core options
-  callback: (state: R) => void;
-  selector?: (state: T) => R;
+  callback: (state: T) => void;
 
   // Filtering options
   paths?: string[];
@@ -108,16 +106,15 @@ export class SubscriptionSystem<T = unknown> {
   /**
    * Subscribe to state changes
    */
-  subscribe<R = T>(options: SubscriptionOptions<T, R>): Subscription {
+  subscribe(options: SubscriptionOptions<T>): Subscription {
     const consumerId = this.generateConsumerId();
     const pipeline = this.createPipeline(options);
 
     // Build configuration
-    const config: SubscriptionConfig<T, R> = {
+    const config: SubscriptionConfig<T> = {
       containerId: this.containerId,
       consumerId,
       callback: options.callback,
-      selector: options.selector,
       paths: options.paths,
       priority: options.priority ?? this.config.defaultPriority,
       keepAlive: options.keepAlive,
@@ -298,7 +295,7 @@ export class SubscriptionSystem<T = unknown> {
   /**
    * Create a pipeline for subscription options
    */
-  private createPipeline<R>(options: SubscriptionOptions<T, R>): SubscriptionPipeline {
+  private createPipeline(options: SubscriptionOptions<T>): SubscriptionPipeline {
     const pipeline = new SubscriptionPipeline({
       enableMetrics: this.config.enableMetrics,
       timeout: 100
@@ -339,12 +336,7 @@ export class SubscriptionSystem<T = unknown> {
       pipeline.addStage(new OptimizationStage(optimizationOptions));
     }
 
-    // 6. Selector stage
-    if (options.selector) {
-      pipeline.addStage(new SelectorStage(options.selector));
-    }
-
-    // 7. Notification stage (always last)
+    // 6. Notification stage (always last)
     // Handle batching and debouncing in the NotificationStage where it can properly defer callbacks
     pipeline.addStage(new NotificationStage({
       callback: options.callback,

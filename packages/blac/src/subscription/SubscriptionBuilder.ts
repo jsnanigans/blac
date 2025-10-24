@@ -7,7 +7,6 @@
 
 import { SubscriptionConfig, ContainerId, ConsumerId, MetadataValue } from './SubscriptionRegistry';
 import { NotificationCallback } from './stages/NotificationStage';
-import { Selector } from './stages/SelectorStage';
 import { FilterPredicate } from './stages/FilterStage';
 import { SubscriptionPriority } from './stages/PriorityStage';
 
@@ -19,11 +18,10 @@ export interface BuilderValidationError {
 /**
  * Fluent builder for subscription configuration
  */
-export class SubscriptionBuilder<T = unknown, R = T> {
-  private config: Partial<SubscriptionConfig<T, R>> = {
+export class SubscriptionBuilder<T = unknown> {
+  private config: Partial<SubscriptionConfig<T>> = {
     metadata: {}
   };
-  private selector?: Selector<T, R>;
   private filterPredicate?: FilterPredicate<T>;
   private validationErrors: BuilderValidationError[] = [];
 
@@ -46,20 +44,9 @@ export class SubscriptionBuilder<T = unknown, R = T> {
   /**
    * Set the notification callback
    */
-  notify(callback: NotificationCallback<R>): this {
+  notify(callback: NotificationCallback<T>): this {
     this.config.callback = callback;
     return this;
-  }
-
-  /**
-   * Add a selector function
-   */
-  select<S>(selector: Selector<T, S>): SubscriptionBuilder<T, S> {
-    const newBuilder = new SubscriptionBuilder<T, S>();
-    newBuilder.config = { ...this.config } as Partial<SubscriptionConfig<T, S>>;
-    newBuilder.selector = selector;
-    newBuilder.filterPredicate = this.filterPredicate;
-    return newBuilder;
   }
 
   /**
@@ -193,7 +180,7 @@ export class SubscriptionBuilder<T = unknown, R = T> {
   /**
    * Build the subscription configuration
    */
-  build(): SubscriptionConfig<T, R> {
+  build(): SubscriptionConfig<T> {
     const errors = this.validate();
 
     if (errors.length > 0) {
@@ -201,11 +188,7 @@ export class SubscriptionBuilder<T = unknown, R = T> {
       throw new Error(`Invalid subscription configuration: ${errorMessages}`);
     }
 
-    // Apply selector and filter to metadata
-    if (this.selector) {
-      this.config.selector = this.selector;
-    }
-
+    // Apply filter to metadata
     if (this.filterPredicate) {
       this.config.metadata = {
         ...this.config.metadata,
@@ -213,7 +196,7 @@ export class SubscriptionBuilder<T = unknown, R = T> {
       };
     }
 
-    return this.config as SubscriptionConfig<T, R>;
+    return this.config as SubscriptionConfig<T>;
   }
 
   /**
@@ -233,10 +216,9 @@ export class SubscriptionBuilder<T = unknown, R = T> {
   /**
    * Clone the builder
    */
-  clone(): SubscriptionBuilder<T, R> {
-    const newBuilder = new SubscriptionBuilder<T, R>();
+  clone(): SubscriptionBuilder<T> {
+    const newBuilder = new SubscriptionBuilder<T>();
     newBuilder.config = JSON.parse(JSON.stringify(this.config));
-    newBuilder.selector = this.selector;
     newBuilder.filterPredicate = this.filterPredicate;
     return newBuilder;
   }

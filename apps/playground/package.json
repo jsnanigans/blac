@@ -13,11 +13,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
-    "format": "prettier --write \"src/**/*.{ts,tsx,css,md}\"",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:ui": "vitest --ui",
-    "test:coverage": "vitest --coverage"
+    "format": "prettier --write \"src/**/*.{ts,tsx,css,md}\""
   },
   "dependencies": {
     "@blac/core": "workspace:*",

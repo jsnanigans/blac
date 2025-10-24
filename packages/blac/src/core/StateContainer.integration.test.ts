@@ -87,32 +87,6 @@ describe('StateContainer with Subscription System', () => {
   });
 
   describe('Advanced Subscriptions', () => {
-    it('should support selectors', async () => {
-      const handler = vi.fn();
-
-      const subscription = container.subscribeAdvanced({
-        callback: handler,
-        selector: state => state.count
-      });
-
-      container.increment();
-      await new Promise(resolve => setTimeout(resolve, 10));
-      expect(handler).toHaveBeenCalledWith(1);
-
-      // Change only message - should not trigger
-      container.setMessage('new message');
-      await new Promise(resolve => setTimeout(resolve, 10));
-      expect(handler).toHaveBeenCalledTimes(1);
-
-      // Change count - should trigger
-      container.increment();
-      await new Promise(resolve => setTimeout(resolve, 10));
-      expect(handler).toHaveBeenCalledTimes(2);
-      expect(handler).toHaveBeenLastCalledWith(2);
-
-      subscription.unsubscribe();
-    });
-
     it('should support path filtering', async () => {
       const handler = vi.fn();
 
@@ -326,56 +300,6 @@ describe('StateContainer with Subscription System', () => {
     });
   });
 
-  describe('Complex Selectors', () => {
-    it('should support computed values in selectors', async () => {
-      const handler = vi.fn();
-
-      const subscription = container.subscribeAdvanced({
-        callback: handler,
-        selector: state => ({
-          doubled: state.count * 2,
-          upper: state.message.toUpperCase()
-        })
-      });
-
-      container.increment();
-      await new Promise(resolve => setTimeout(resolve, 10));
-      expect(handler).toHaveBeenCalledWith({
-        doubled: 2,
-        upper: 'INITIAL'
-      });
-
-      container.setMessage('hello');
-      await new Promise(resolve => setTimeout(resolve, 10));
-      expect(handler).toHaveBeenCalledWith({
-        doubled: 2,
-        upper: 'HELLO'
-      });
-
-      subscription.unsubscribe();
-    });
-
-    it('should memoize selector results', async () => {
-      const selector = vi.fn(state => state.count * 2);
-
-      const subscription = container.subscribeAdvanced({
-        callback: () => {},
-        selector
-      });
-
-      // Same state multiple times
-      container.setCount(5);
-      await new Promise(resolve => setTimeout(resolve, 10));
-      container.setMessage('test'); // Different property
-      await new Promise(resolve => setTimeout(resolve, 10));
-
-      // Selector should use memoization for same input
-      // Exact call count depends on implementation details
-
-      subscription.unsubscribe();
-    });
-  });
-
   describe('Error Handling', () => {
     it('should handle errors in callbacks', async () => {
       const errorHandler = vi.fn();
@@ -385,28 +309,6 @@ describe('StateContainer with Subscription System', () => {
       const subscription = container.subscribeAdvanced({
         callback: () => {
           throw new Error('Callback error');
-        }
-      });
-
-      container.increment();
-      await new Promise(resolve => setTimeout(resolve, 10));
-
-      // Error should be logged but not crash
-      expect(errorHandler).toHaveBeenCalled();
-
-      console.error = originalError;
-      subscription.unsubscribe();
-    });
-
-    it('should handle errors in selectors', async () => {
-      const errorHandler = vi.fn();
-      const originalError = console.error;
-      console.error = errorHandler;
-
-      const subscription = container.subscribeAdvanced({
-        callback: () => {},
-        selector: () => {
-          throw new Error('Selector error');
         }
       });
 

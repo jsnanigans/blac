@@ -51,7 +51,7 @@ export class ReactBridge<S> {
       this.isInitialRender = true;
       const subscriptionId = Symbol('subscription');
       this.activeSubscriptionId = subscriptionId;
-      // Subscribe without selector - we'll use proxy tracking instead
+      // Subscribe with proxy tracking to detect accessed properties
       this.subscription = this.container.subscribeAdvanced({
         callback: (state: S) => {
           // Guard against stale callbacks from old subscriptions
@@ -321,7 +321,6 @@ export class ReactBridge<S> {
 
 /**
  * Factory function to create a ReactBridge
- * Provides a simple API for useStateContainer
  */
 export function createReactBridge<S>(
   container: StateContainer<S, any>,
