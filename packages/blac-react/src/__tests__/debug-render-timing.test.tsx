@@ -21,12 +21,12 @@ class TestCubit extends Cubit<TestState> {
   constructor() {
     super({
       settings: {
-        theme: 'light'
+        theme: 'light',
       },
       counters: {
         views: 0,
-        likes: 0
-      }
+        likes: 0,
+      },
     });
   }
 
@@ -37,8 +37,8 @@ class TestCubit extends Cubit<TestState> {
       ...this.state,
       counters: {
         ...this.state.counters,
-        views: this.state.counters.views + 1
-      }
+        views: this.state.counters.views + 1,
+      },
     });
     console.log(`[${timestamp}] [TestCubit] incrementViews emitted`);
   };
@@ -62,9 +62,8 @@ describe('Debug Render Timing', () => {
       const [state, bloc, cr] = useBloc(TestCubit);
 
       const theme = state.settings.theme;
-      const data = theme === 'dark'
-        ? state.counters.views
-        : state.counters.likes;
+      const data =
+        theme === 'dark' ? state.counters.views : state.counters.likes;
 
       console.log(`[${timestamp}] [Component] Render #${renderCount} END`);
 
@@ -72,14 +71,18 @@ describe('Debug Render Timing', () => {
         data,
         theme,
         bloc,
-        cr
+        cr,
       };
     });
 
-    console.log('=== INITIAL RENDER COMPLETE, renderCount:', renderCount, '===');
+    console.log(
+      '=== INITIAL RENDER COMPLETE, renderCount:',
+      renderCount,
+      '===',
+    );
 
     // Wait for microtasks
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise((resolve) => setTimeout(resolve, 10));
     console.log('=== AFTER MICROTASKS, renderCount:', renderCount, '===');
 
     expect(renderCount).toBe(1);
@@ -89,9 +92,13 @@ describe('Debug Render Timing', () => {
     act(() => {
       result.current.bloc.incrementViews();
     });
-    console.log('=== AFTER incrementViews act(), renderCount:', renderCount, '===');
+    console.log(
+      '=== AFTER incrementViews act(), renderCount:',
+      renderCount,
+      '===',
+    );
 
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise((resolve) => setTimeout(resolve, 50));
     console.log('=== AFTER 50ms WAIT, renderCount:', renderCount, '===');
 
     expect(renderCount).toBe(1); // Should still be 1

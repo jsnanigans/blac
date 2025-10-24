@@ -5,7 +5,12 @@
  * and validation.
  */
 
-import { SubscriptionConfig, ContainerId, ConsumerId, MetadataValue } from './SubscriptionRegistry';
+import {
+  SubscriptionConfig,
+  ContainerId,
+  ConsumerId,
+  MetadataValue,
+} from './SubscriptionRegistry';
 import { NotificationCallback } from './stages/NotificationStage';
 import { FilterPredicate } from './stages/FilterStage';
 import { SubscriptionPriority } from './stages/PriorityStage';
@@ -20,7 +25,7 @@ export interface BuilderValidationError {
  */
 export class SubscriptionBuilder<T = unknown> {
   private config: Partial<SubscriptionConfig<T>> = {
-    metadata: {}
+    metadata: {},
   };
   private filterPredicate?: FilterPredicate<T>;
   private validationErrors: BuilderValidationError[] = [];
@@ -136,29 +141,32 @@ export class SubscriptionBuilder<T = unknown> {
     if (!this.config.containerId) {
       errors.push({
         field: 'containerId',
-        message: 'Container ID is required'
+        message: 'Container ID is required',
       });
     }
 
     if (!this.config.consumerId) {
       errors.push({
         field: 'consumerId',
-        message: 'Consumer ID is required'
+        message: 'Consumer ID is required',
       });
     }
 
     if (!this.config.callback) {
       errors.push({
         field: 'callback',
-        message: 'Notification callback is required'
+        message: 'Notification callback is required',
       });
     }
 
     if (this.config.priority !== undefined) {
-      if (typeof this.config.priority !== 'number' || this.config.priority < 0) {
+      if (
+        typeof this.config.priority !== 'number' ||
+        this.config.priority < 0
+      ) {
         errors.push({
           field: 'priority',
-          message: 'Priority must be a non-negative number'
+          message: 'Priority must be a non-negative number',
         });
       }
     }
@@ -169,7 +177,7 @@ export class SubscriptionBuilder<T = unknown> {
     if (debounceMs !== undefined && throttleMs !== undefined) {
       errors.push({
         field: 'timing',
-        message: 'Cannot use both debounce and throttle'
+        message: 'Cannot use both debounce and throttle',
       });
     }
 
@@ -184,7 +192,9 @@ export class SubscriptionBuilder<T = unknown> {
     const errors = this.validate();
 
     if (errors.length > 0) {
-      const errorMessages = errors.map(e => `${e.field}: ${e.message}`).join(', ');
+      const errorMessages = errors
+        .map((e) => `${e.field}: ${e.message}`)
+        .join(', ');
       throw new Error(`Invalid subscription configuration: ${errorMessages}`);
     }
 
@@ -192,7 +202,7 @@ export class SubscriptionBuilder<T = unknown> {
     if (this.filterPredicate) {
       this.config.metadata = {
         ...this.config.metadata,
-        filterPredicate: this.filterPredicate as MetadataValue
+        filterPredicate: this.filterPredicate as MetadataValue,
       };
     }
 
@@ -226,7 +236,9 @@ export class SubscriptionBuilder<T = unknown> {
   /**
    * Create a builder from existing configuration
    */
-  static from<T = unknown>(config: Partial<SubscriptionConfig<T>>): SubscriptionBuilder<T> {
+  static from<T = unknown>(
+    config: Partial<SubscriptionConfig<T>>,
+  ): SubscriptionBuilder<T> {
     const builder = new SubscriptionBuilder<T>();
     builder.config = { ...config };
     return builder;

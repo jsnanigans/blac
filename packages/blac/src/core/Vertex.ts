@@ -13,13 +13,15 @@ import { BaseEvent } from '../types/events';
  */
 export type EventHandler<E extends BaseEvent, S> = (
   event: E,
-  emit: (state: S) => void
+  emit: (state: S) => void,
 ) => void | Promise<void>;
 
 /**
  * Type-safe event constructor
  */
-export type EventConstructor<T extends BaseEvent = BaseEvent> = new (...args: never[]) => T;
+export type EventConstructor<T extends BaseEvent = BaseEvent> = new (
+  ...args: never[]
+) => T;
 
 /**
  * Event handler registration
@@ -32,7 +34,10 @@ interface EventHandlerRegistration<E extends BaseEvent, S> {
 /**
  * Vertex is an event-driven state container (Bloc pattern)
  */
-export abstract class Vertex<S, E extends BaseEvent = BaseEvent> extends StateContainer<S, E> {
+export abstract class Vertex<
+  S,
+  E extends BaseEvent = BaseEvent,
+> extends StateContainer<S, E> {
   private eventHandlers = new Map<string, EventHandlerRegistration<E, S>[]>();
   private isProcessing = false;
   private eventQueue: E[] = [];
@@ -46,7 +51,7 @@ export abstract class Vertex<S, E extends BaseEvent = BaseEvent> extends StateCo
     super(initialState, config);
 
     // Subscribe to events for processing
-    this.subscribeToEvents(event => {
+    this.subscribeToEvents((event) => {
       this.processEvent(event as E);
     });
   }
@@ -57,7 +62,7 @@ export abstract class Vertex<S, E extends BaseEvent = BaseEvent> extends StateCo
    */
   protected on = <T extends E>(
     EventClass: EventConstructor<T>,
-    handler: EventHandler<T, S>
+    handler: EventHandler<T, S>,
   ): void => {
     const className = EventClass.name;
     const registrations = this.eventHandlers.get(className) || [];
@@ -212,7 +217,10 @@ export interface AuthState {
 export class LoginEvent implements BaseEvent {
   readonly type = 'login';
   readonly timestamp = Date.now();
-  constructor(public readonly email: string, public readonly password: string) {}
+  constructor(
+    public readonly email: string,
+    public readonly password: string,
+  ) {}
 }
 
 export class LogoutEvent implements BaseEvent {
@@ -235,7 +243,7 @@ export class AuthVertex extends Vertex<AuthState> {
       emit({ ...this.state, isLoading: true, error: null });
 
       // Simulate async auth
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Check credentials
       if (event.email === 'user@example.com' && event.password === 'password') {

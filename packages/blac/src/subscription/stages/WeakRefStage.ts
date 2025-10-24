@@ -143,7 +143,7 @@ export class WeakRefStage extends PipelineStage {
     return {
       totalRefs: this.weakRefs.size,
       aliveRefs: aliveCount,
-      deadRefs: deadCount
+      deadRefs: deadCount,
     };
   }
 

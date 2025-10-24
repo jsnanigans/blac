@@ -45,23 +45,30 @@ export class ProxyTrackingStage extends PipelineStage {
       enabled: options.enabled !== false,
       maxDepth: options.maxDepth ?? 10,
       excludePaths: options.excludePaths ?? [],
-      forcePaths: options.forcePaths ?? []
+      forcePaths: options.forcePaths ?? [],
     };
   }
 
   process<T>(context: PipelineContext<T>): PipelineContext<T> {
     // Skip if proxy tracking is disabled
     if (!this.options.enabled) {
-      BlacLogger.debug('ProxyTrackingStage', 'Proxy tracking disabled globally');
+      BlacLogger.debug(
+        'ProxyTrackingStage',
+        'Proxy tracking disabled globally',
+      );
       return context;
     }
 
     // Check if this subscription uses proxy tracking
     const useProxyTracking = context.metadata.get('useProxyTracking');
     if (useProxyTracking === false) {
-      BlacLogger.debug('ProxyTrackingStage', 'Proxy tracking disabled for subscription', {
-        subscriptionId: context.subscriptionId
-      });
+      BlacLogger.debug(
+        'ProxyTrackingStage',
+        'Proxy tracking disabled for subscription',
+        {
+          subscriptionId: context.subscriptionId,
+        },
+      );
       return context;
     }
 
@@ -75,20 +82,29 @@ export class ProxyTrackingStage extends PipelineStage {
         tracker.setMaxDepth(this.options.maxDepth);
       }
       this.trackers.set(subscription, tracker);
-      BlacLogger.debug('ProxyTrackingStage', 'Created new ProxyTracker for subscription', {
-        subscriptionId: context.subscriptionId,
-        maxDepth: this.options.maxDepth
-      });
+      BlacLogger.debug(
+        'ProxyTrackingStage',
+        'Created new ProxyTracker for subscription',
+        {
+          subscriptionId: context.subscriptionId,
+          maxDepth: this.options.maxDepth,
+        },
+      );
     }
 
     // Get tracked paths from metadata (can be array or Set)
     const trackedPathsRaw = context.metadata.get('trackedPaths');
-    const previousTrackedPaths = trackedPathsRaw instanceof Set
-      ? trackedPathsRaw as Set<string>
-      : trackedPathsRaw ? new Set(trackedPathsRaw as string[]) : undefined;
+    const previousTrackedPaths =
+      trackedPathsRaw instanceof Set
+        ? (trackedPathsRaw as Set<string>)
+        : trackedPathsRaw
+          ? new Set(trackedPathsRaw as string[])
+          : undefined;
 
     // Get current tracked paths from metadata (set by React during render)
-    const currentTrackedPaths = context.metadata.get('currentTrackedPaths') as Set<string> | undefined;
+    const currentTrackedPaths = context.metadata.get('currentTrackedPaths') as
+      | Set<string>
+      | undefined;
 
     if (currentTrackedPaths) {
       // Update the subscription's tracked paths
@@ -102,14 +118,15 @@ export class ProxyTrackingStage extends PipelineStage {
     // If we have tracked paths, update filter configuration
     if (previousTrackedPaths && previousTrackedPaths.size > 0) {
       // Convert tracked paths to filter paths
-      const filterPaths = Array.from(previousTrackedPaths)
-        .filter(path => !this.options.excludePaths?.includes(path));
+      const filterPaths = Array.from(previousTrackedPaths).filter(
+        (path) => !this.options.excludePaths?.includes(path),
+      );
 
       // Add forced paths
       if (this.options.forcePaths && this.options.forcePaths.length > 0) {
         filterPaths.push(...this.options.forcePaths);
         BlacLogger.debug('ProxyTrackingStage', 'Added forced paths', {
-          forcedPaths: this.options.forcePaths
+          forcedPaths: this.options.forcePaths,
         });
       }
 
@@ -117,11 +134,15 @@ export class ProxyTrackingStage extends PipelineStage {
       context.subscription.config.paths = filterPaths;
       context.metadata.set('filterPaths', filterPaths);
 
-      BlacLogger.debug('ProxyTrackingStage', 'Applied tracked paths to filter', {
-        subscriptionId: context.subscriptionId,
-        pathCount: filterPaths.length,
-        paths: filterPaths
-      });
+      BlacLogger.debug(
+        'ProxyTrackingStage',
+        'Applied tracked paths to filter',
+        {
+          subscriptionId: context.subscriptionId,
+          pathCount: filterPaths.length,
+          paths: filterPaths,
+        },
+      );
     }
 
     return context;
@@ -130,16 +151,25 @@ export class ProxyTrackingStage extends PipelineStage {
   /**
    * Update tracked paths for a subscription
    */
-  private updateTrackedPaths<T>(context: PipelineContext<T>, paths: Set<string>): void {
+  private updateTrackedPaths<T>(
+    context: PipelineContext<T>,
+    paths: Set<string>,
+  ): void {
     // Check if paths have actually changed
-    const previousPaths = context.metadata.get('trackedPaths') as Set<string> | undefined;
+    const previousPaths = context.metadata.get('trackedPaths') as
+      | Set<string>
+      | undefined;
 
     if (previousPaths) {
-      const hasChanged = paths.size !== previousPaths.size ||
-                        Array.from(paths).some(path => !previousPaths.has(path));
+      const hasChanged =
+        paths.size !== previousPaths.size ||
+        Array.from(paths).some((path) => !previousPaths.has(path));
 
       if (!hasChanged) {
-        BlacLogger.debug('ProxyTrackingStage', 'Paths unchanged, skipping update');
+        BlacLogger.debug(
+          'ProxyTrackingStage',
+          'Paths unchanged, skipping update',
+        );
         return; // No change needed
       }
     }
@@ -152,7 +182,7 @@ export class ProxyTrackingStage extends PipelineStage {
       subscriptionId: context.subscriptionId,
       previousCount: previousPaths?.size ?? 0,
       newCount: pathArray.length,
-      paths: pathArray
+      paths: pathArray,
     });
   }
 

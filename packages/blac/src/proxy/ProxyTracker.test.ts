@@ -63,9 +63,9 @@ describe('ProxyTracker', () => {
           name: 'John',
           address: {
             city: 'New York',
-            zip: '10001'
-          }
-        }
+            zip: '10001',
+          },
+        },
       };
 
       tracker.startTracking();
@@ -85,9 +85,9 @@ describe('ProxyTracker', () => {
           name: 'John',
           age: 30,
           profile: {
-            bio: 'Developer'
-          }
-        }
+            bio: 'Developer',
+          },
+        },
       };
 
       tracker.startTracking();
@@ -107,7 +107,7 @@ describe('ProxyTracker', () => {
   describe('Array tracking', () => {
     it('should track array index access', () => {
       const state = {
-        items: ['a', 'b', 'c']
+        items: ['a', 'b', 'c'],
       };
 
       tracker.startTracking();
@@ -124,7 +124,7 @@ describe('ProxyTracker', () => {
 
     it('should track array length access', () => {
       const state = {
-        items: [1, 2, 3]
+        items: [1, 2, 3],
       };
 
       tracker.startTracking();
@@ -140,14 +140,14 @@ describe('ProxyTracker', () => {
 
     it('should track array method usage', () => {
       const state = {
-        items: [1, 2, 3]
+        items: [1, 2, 3],
       };
 
       tracker.startTracking();
       const proxy = tracker.createProxy(state);
 
       // Use array method
-      const doubled = proxy.items.map(x => x * 2);
+      const doubled = proxy.items.map((x) => x * 2);
 
       const paths = tracker.stopTracking();
       expect(Array.from(paths)).toContain('items');
@@ -155,7 +155,10 @@ describe('ProxyTracker', () => {
 
     it('should track nested arrays', () => {
       const state = {
-        matrix: [[1, 2], [3, 4]]
+        matrix: [
+          [1, 2],
+          [3, 4],
+        ],
       };
 
       tracker.startTracking();
@@ -176,8 +179,8 @@ describe('ProxyTracker', () => {
         nullValue: null,
         undefinedValue: undefined,
         nested: {
-          value: null
-        }
+          value: null,
+        },
       };
 
       tracker.startTracking();
@@ -193,7 +196,7 @@ describe('ProxyTracker', () => {
       expect(Array.from(paths).sort()).toEqual([
         'nested.value',
         'nullValue',
-        'undefinedValue'
+        'undefinedValue',
       ]);
     });
 
@@ -201,7 +204,7 @@ describe('ProxyTracker', () => {
       const state = {
         num: 42,
         str: 'hello',
-        bool: true
+        bool: true,
       };
 
       tracker.startTracking();
@@ -232,7 +235,7 @@ describe('ProxyTracker', () => {
       const state = {
         public: 'value',
         _private: 'secret',
-        $$internal: 'hidden'
+        $$internal: 'hidden',
       };
 
       tracker.startTracking();
@@ -252,7 +255,7 @@ describe('ProxyTracker', () => {
         date: new Date(),
         regex: /test/g,
         map: new Map(),
-        set: new Set()
+        set: new Set(),
       };
 
       tracker.startTracking();
@@ -301,10 +304,10 @@ describe('ProxyTracker', () => {
         level1: {
           level2: {
             level3: {
-              level4: 'deep'
-            }
-          }
-        }
+              level4: 'deep',
+            },
+          },
+        },
       };
 
       tracker.startTracking();
@@ -325,11 +328,11 @@ describe('ProxyTracker', () => {
       const state = {
         user: {
           name: 'John',
-          age: 30
+          age: 30,
         },
         settings: {
-          theme: 'dark'
-        }
+          theme: 'dark',
+        },
       };
 
       const { result, trackedPaths } = trackAccess(state, (s) => {
@@ -340,7 +343,7 @@ describe('ProxyTracker', () => {
       // Only track leaf properties
       expect(Array.from(trackedPaths).sort()).toEqual([
         'settings.theme',
-        'user.name'
+        'user.name',
       ]);
     });
 
@@ -366,7 +369,7 @@ describe('ProxyTracker', () => {
       }
 
       const state = {
-        counter: new Counter()
+        counter: new Counter(),
       };
 
       tracker.startTracking();
@@ -387,7 +390,7 @@ describe('ProxyTracker', () => {
   describe('Object iteration tracking', () => {
     it('should track Object.keys usage', () => {
       const state = {
-        data: { a: 1, b: 2, c: 3 }
+        data: { a: 1, b: 2, c: 3 },
       };
 
       tracker.startTracking();
@@ -402,7 +405,7 @@ describe('ProxyTracker', () => {
 
     it('should track for...in loops', () => {
       const state = {
-        data: { a: 1, b: 2 }
+        data: { a: 1, b: 2 },
       };
 
       tracker.startTracking();
@@ -421,7 +424,7 @@ describe('ProxyTracker', () => {
 
     it('should track "in" operator', () => {
       const state = {
-        user: { name: 'John', age: 30 }
+        user: { name: 'John', age: 30 },
       };
 
       tracker.startTracking();

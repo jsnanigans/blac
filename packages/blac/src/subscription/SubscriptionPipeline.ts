@@ -17,7 +17,14 @@ export type StageId = BrandedId<'Stage'>;
 /**
  * Metadata value type for pipeline context
  */
-export type MetadataValue = string | number | boolean | object | undefined | null | unknown;
+export type MetadataValue =
+  | string
+  | number
+  | boolean
+  | object
+  | undefined
+  | null
+  | unknown;
 
 /**
  * Context passed through the subscription pipeline
@@ -59,7 +66,8 @@ export abstract class PipelineStage {
   readonly name: string;
 
   constructor(name: string, priority: number = 0) {
-    this.id = `stage_${name}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` as StageId;
+    this.id =
+      `stage_${name}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` as StageId;
     this.name = name;
     this.priority = priority;
   }
@@ -67,7 +75,9 @@ export abstract class PipelineStage {
   /**
    * Process the context through this stage
    */
-  abstract process<T>(context: PipelineContext<T>): Promise<PipelineContext<T>> | PipelineContext<T>;
+  abstract process<T>(
+    context: PipelineContext<T>,
+  ): Promise<PipelineContext<T>> | PipelineContext<T>;
 
   /**
    * Optional cleanup when stage is removed
@@ -103,9 +113,11 @@ export class SubscriptionPipeline {
       enableMetrics: config.enableMetrics ?? false,
       maxStages: config.maxStages ?? 20,
       timeout: config.timeout ?? 1000,
-      errorHandler: config.errorHandler ?? ((error, stage) => {
-        console.error(`Pipeline stage ${stage.name} error:`, error);
-      })
+      errorHandler:
+        config.errorHandler ??
+        ((error, stage) => {
+          console.error(`Pipeline stage ${stage.name} error:`, error);
+        }),
     };
   }
 
@@ -114,7 +126,9 @@ export class SubscriptionPipeline {
    */
   addStage(stage: PipelineStage): void {
     if (this.stages.size >= this.config.maxStages) {
-      throw new Error(`Maximum number of stages (${this.config.maxStages}) reached`);
+      throw new Error(
+        `Maximum number of stages (${this.config.maxStages}) reached`,
+      );
     }
 
     this.stages.set(stage.id, stage);
@@ -168,7 +182,7 @@ export class SubscriptionPipeline {
           BlacLogger.error('SubscriptionPipeline', 'Stage execution error', {
             stageId: stage.id,
             stageName: stage.name,
-            error: error instanceof Error ? error.message : String(error)
+            error: error instanceof Error ? error.message : String(error),
           });
           this.config.errorHandler(error as Error, stage);
           throw error;
@@ -181,22 +195,21 @@ export class SubscriptionPipeline {
         ...(this.config.enableMetrics && {
           performanceMetrics: {
             totalDuration: performance.now() - startTime,
-            stageDurations
-          }
-        })
+            stageDurations,
+          },
+        }),
       };
 
       return result;
-
     } catch (error) {
       BlacLogger.error('SubscriptionPipeline', 'Pipeline execution error', {
         stagesProcessed,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
       return {
         executed: false,
         stagesProcessed,
-        error: error as Error
+        error: error as Error,
       };
     }
   }
@@ -206,10 +219,13 @@ export class SubscriptionPipeline {
    */
   private async executeStage<T>(
     stage: PipelineStage,
-    context: PipelineContext<T>
+    context: PipelineContext<T>,
   ): Promise<PipelineContext<T>> {
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error(`Stage ${stage.name} timed out`)), this.config.timeout);
+      setTimeout(
+        () => reject(new Error(`Stage ${stage.name} timed out`)),
+        this.config.timeout,
+      );
     });
 
     const stagePromise = Promise.resolve(stage.process(context));
@@ -221,8 +237,9 @@ export class SubscriptionPipeline {
    * Rebuild sorted stages array after changes
    */
   private rebuildSortedStages(): void {
-    this.sortedStages = Array.from(this.stages.values())
-      .sort((a, b) => b.priority - a.priority);
+    this.sortedStages = Array.from(this.stages.values()).sort(
+      (a, b) => b.priority - a.priority,
+    );
   }
 
   /**
@@ -262,7 +279,7 @@ export class PipelineFactory {
     return new SubscriptionPipeline({
       enableMetrics: true,
       maxStages: 10,
-      timeout: 100
+      timeout: 100,
     });
   }
 
@@ -275,9 +292,12 @@ export class PipelineFactory {
       maxStages: 30,
       timeout: 5000,
       errorHandler: (error, stage) => {
-        console.error(`[DEBUG] Pipeline stage ${stage.name} (${stage.id}) failed:`, error);
+        console.error(
+          `[DEBUG] Pipeline stage ${stage.name} (${stage.id}) failed:`,
+          error,
+        );
         console.trace();
-      }
+      },
     });
   }
 
@@ -288,7 +308,7 @@ export class PipelineFactory {
     return new SubscriptionPipeline({
       enableMetrics: false,
       maxStages: 5,
-      timeout: 50
+      timeout: 50,
     });
   }
 }

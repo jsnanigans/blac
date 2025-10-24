@@ -1,5 +1,5 @@
 /**
- * Test utilities and fixtures for v2 testing
+ * Test utilities and fixtures
  */
 
 import { Version, version } from '../types/branded';
@@ -8,7 +8,7 @@ import { Version, version } from '../types/branded';
  * Create a test state object
  */
 export function createTestState<T extends Record<string, unknown>>(
-  overrides?: Partial<T>
+  overrides?: Partial<T>,
 ): T {
   return {
     count: 0,
@@ -27,14 +27,14 @@ export function createTestState<T extends Record<string, unknown>>(
 export async function waitFor(
   condition: () => boolean,
   timeout = 1000,
-  interval = 10
+  interval = 10,
 ): Promise<void> {
   const start = Date.now();
   while (!condition()) {
     if (Date.now() - start > timeout) {
       throw new Error('Timeout waiting for condition');
     }
-    await new Promise(resolve => setTimeout(resolve, interval));
+    await new Promise((resolve) => setTimeout(resolve, interval));
   }
 }
 
@@ -79,7 +79,7 @@ export class MemoryTracker {
   }
 
   getMB(): number {
-    return Math.round(this.getUsage() / 1024 / 1024 * 100) / 100;
+    return Math.round((this.getUsage() / 1024 / 1024) * 100) / 100;
   }
 }
 
@@ -119,7 +119,9 @@ export class PerfTimer {
 /**
  * Create a sequence of versions for testing
  */
-export function* versionSequence(start = 0): Generator<Version, never, unknown> {
+export function* versionSequence(
+  start = 0,
+): Generator<Version, never, unknown> {
   let current = start;
   while (true) {
     yield version(current++);

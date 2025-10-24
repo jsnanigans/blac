@@ -7,7 +7,7 @@ import {
   SubscriptionPipeline,
   PipelineStage,
   PipelineContext,
-  PipelineFactory
+  PipelineFactory,
 } from './SubscriptionPipeline';
 import { StateChange } from '../types/events';
 
@@ -31,13 +31,13 @@ class AsyncTestStage extends PipelineStage {
   constructor(
     name: string,
     private delay: number,
-    priority: number = 0
+    priority: number = 0,
   ) {
     super(name, priority);
   }
 
   async process<T>(context: PipelineContext<T>): Promise<PipelineContext<T>> {
-    await new Promise(resolve => setTimeout(resolve, this.delay));
+    await new Promise((resolve) => setTimeout(resolve, this.delay));
     context.metadata.set(this.name, true);
     return context;
   }
@@ -128,7 +128,7 @@ describe('SubscriptionPipeline', () => {
         stateChange: { current: 'new', previous: 'old' } as StateChange,
         metadata: new Map(),
         timestamp: Date.now(),
-        shouldContinue: true
+        shouldContinue: true,
       };
 
       const result = await pipeline.execute(context);
@@ -158,7 +158,7 @@ describe('SubscriptionPipeline', () => {
         stateChange: { current: 'new', previous: 'old' } as StateChange,
         metadata: new Map(),
         timestamp: Date.now(),
-        shouldContinue: true
+        shouldContinue: true,
       };
 
       const result = await pipeline.execute(context);
@@ -177,7 +177,7 @@ describe('SubscriptionPipeline', () => {
         stateChange: { current: 'new', previous: 'old' } as StateChange,
         metadata: new Map(),
         timestamp: Date.now(),
-        shouldContinue: true
+        shouldContinue: true,
       };
 
       const result = await pipeline.execute(context);
@@ -197,7 +197,7 @@ describe('SubscriptionPipeline', () => {
         stateChange: { current: 'new', previous: 'old' } as StateChange,
         metadata: new Map(),
         timestamp: Date.now(),
-        shouldContinue: true
+        shouldContinue: true,
       };
 
       const result = await errorPipeline.execute(context);
@@ -220,7 +220,7 @@ describe('SubscriptionPipeline', () => {
         stateChange: { current: 'new', previous: 'old' } as StateChange,
         metadata: new Map(),
         timestamp: Date.now(),
-        shouldContinue: true
+        shouldContinue: true,
       };
 
       const result = await timeoutPipeline.execute(context);
@@ -242,7 +242,7 @@ describe('SubscriptionPipeline', () => {
         stateChange: { current: 'new', previous: 'old' } as StateChange,
         metadata: new Map(),
         timestamp: Date.now(),
-        shouldContinue: true
+        shouldContinue: true,
       };
 
       await pipeline.execute(contextWithoutRequired);
@@ -253,7 +253,7 @@ describe('SubscriptionPipeline', () => {
         stateChange: { current: 'new', previous: 'old' } as StateChange,
         metadata: new Map([['required', true]]),
         timestamp: Date.now(),
-        shouldContinue: true
+        shouldContinue: true,
       };
 
       await pipeline.execute(contextWithRequired);
@@ -273,7 +273,7 @@ describe('SubscriptionPipeline', () => {
         stateChange: { current: 'new', previous: 'old' } as StateChange,
         metadata: new Map(),
         timestamp: Date.now(),
-        shouldContinue: true
+        shouldContinue: true,
       };
 
       const result = await metricsPipeline.execute(context);
@@ -294,7 +294,7 @@ describe('SubscriptionPipeline', () => {
         stateChange: { current: 'new', previous: 'old' } as StateChange,
         metadata: new Map(),
         timestamp: Date.now(),
-        shouldContinue: true
+        shouldContinue: true,
       };
 
       const result = await pipeline.execute(context);
@@ -350,7 +350,7 @@ describe('SubscriptionPipeline', () => {
 
       pipeline.dispose();
 
-      cleanupSpies.forEach(spy => {
+      cleanupSpies.forEach((spy) => {
         expect(spy).toHaveBeenCalled();
       });
 

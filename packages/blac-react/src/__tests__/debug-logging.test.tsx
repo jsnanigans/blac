@@ -13,8 +13,11 @@ BlacLogger.configure({
   enabled: true,
   level: LogLevel.DEBUG,
   output: (entry) => {
-    console.log(`[${entry.level}] [${entry.context}] ${entry.message}`, entry.data || '');
-  }
+    console.log(
+      `[${entry.level}] [${entry.context}] ${entry.message}`,
+      entry.data || '',
+    );
+  },
 });
 
 // Test state shape - same as failing test
@@ -25,7 +28,7 @@ interface TestState {
     profile: {
       bio: string;
       avatar: string;
-    }
+    };
   };
   settings: {
     theme: string;
@@ -46,17 +49,17 @@ class TestCubit extends Cubit<TestState> {
         age: 30,
         profile: {
           bio: 'Developer',
-          avatar: 'avatar.jpg'
-        }
+          avatar: 'avatar.jpg',
+        },
       },
       settings: {
         theme: 'light',
-        notifications: true
+        notifications: true,
       },
       counters: {
         views: 0,
-        likes: 0
-      }
+        likes: 0,
+      },
     });
   }
 
@@ -66,8 +69,8 @@ class TestCubit extends Cubit<TestState> {
       ...this.state,
       user: {
         ...this.state.user,
-        name
-      }
+        name,
+      },
     });
     console.log('[TestCubit] updateUserName completed');
   };
@@ -78,8 +81,8 @@ class TestCubit extends Cubit<TestState> {
       ...this.state,
       settings: {
         ...this.state.settings,
-        theme
-      }
+        theme,
+      },
     });
     console.log('[TestCubit] updateTheme completed');
   };
@@ -112,7 +115,7 @@ describe('Debug Logging Test', () => {
     expect(result.current.name).toBe('John');
 
     // Wait for proxy tracking to complete
-    await new Promise(resolve => setTimeout(resolve, 10));
+    await new Promise((resolve) => setTimeout(resolve, 10));
     console.log('=== AFTER MICROTASKS, renderCount:', renderCount);
 
     console.log('=== CALLING updateUserName ===');
@@ -122,10 +125,13 @@ describe('Debug Logging Test', () => {
     console.log('=== AFTER updateUserName act(), renderCount:', renderCount);
 
     // Wait for re-render
-    await waitFor(() => {
-      console.log('=== WAITFOR CHECK, renderCount:', renderCount);
-      expect(renderCount).toBe(2);
-    }, { timeout: 2000 });
+    await waitFor(
+      () => {
+        console.log('=== WAITFOR CHECK, renderCount:', renderCount);
+        expect(renderCount).toBe(2);
+      },
+      { timeout: 2000 },
+    );
 
     expect(result.current.name).toBe('Jane');
     console.log('=== TEST COMPLETE ===');

@@ -21,12 +21,12 @@ class TestCubit extends Cubit<TestState> {
   constructor() {
     super({
       settings: {
-        theme: 'light'
+        theme: 'light',
       },
       counters: {
         views: 0,
-        likes: 0
-      }
+        likes: 0,
+      },
     });
   }
 
@@ -36,8 +36,8 @@ class TestCubit extends Cubit<TestState> {
       ...this.state,
       counters: {
         ...this.state.counters,
-        views: this.state.counters.views + 1
-      }
+        views: this.state.counters.views + 1,
+      },
     });
     console.log('[TestCubit] incrementViews emitted');
   };
@@ -48,8 +48,8 @@ class TestCubit extends Cubit<TestState> {
       ...this.state,
       settings: {
         ...this.state.settings,
-        theme
-      }
+        theme,
+      },
     });
     console.log('[TestCubit] updateTheme emitted');
   };
@@ -76,9 +76,12 @@ describe('Debug Subscription Timing', () => {
       const theme = state.settings.theme;
 
       console.log(`[Component] Theme is: ${theme}`);
-      const data = theme === 'dark'
-        ? (console.log('[Component] Accessing state.counters.views'), state.counters.views)
-        : (console.log('[Component] Accessing state.counters.likes'), state.counters.likes);
+      const data =
+        theme === 'dark'
+          ? (console.log('[Component] Accessing state.counters.views'),
+            state.counters.views)
+          : (console.log('[Component] Accessing state.counters.likes'),
+            state.counters.likes);
 
       console.log(`[Component] Render #${renderCount} END, data=${data}`);
 
@@ -86,7 +89,7 @@ describe('Debug Subscription Timing', () => {
         data,
         theme,
         bloc,
-        cr
+        cr,
       };
     });
 
@@ -96,9 +99,12 @@ describe('Debug Subscription Timing', () => {
     console.log('Data:', result.current.data);
 
     // Wait for microtasks to complete
-    await new Promise(resolve => setTimeout(resolve, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
     console.log('=== AFTER MICROTASKS ===');
-    console.log('Tracked paths:', Array.from(result.current.cr.current.__bridge.getTrackedPaths()));
+    console.log(
+      'Tracked paths:',
+      Array.from(result.current.cr.current.__bridge.getTrackedPaths()),
+    );
 
     expect(renderCount).toBe(1);
 
@@ -109,10 +115,13 @@ describe('Debug Subscription Timing', () => {
     });
     console.log('=== AFTER incrementViews act() ===');
 
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise((resolve) => setTimeout(resolve, 50));
     console.log('=== AFTER 50ms WAIT ===');
     console.log('RenderCount:', renderCount);
-    console.log('Tracked paths:', Array.from(result.current.cr.current.__bridge.getTrackedPaths()));
+    console.log(
+      'Tracked paths:',
+      Array.from(result.current.cr.current.__bridge.getTrackedPaths()),
+    );
 
     expect(renderCount).toBe(1); // Should still be 1
   });

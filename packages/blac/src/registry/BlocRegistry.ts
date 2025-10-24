@@ -1,5 +1,5 @@
 /**
- * BlocRegistry - Simple instance management for v2 architecture
+ * BlocRegistry - Simple instance management
  *
  * Constructor-based pattern only - pass the Bloc class, get automatic type inference.
  * No string names, no factories - just clean, type-safe instance management.
@@ -35,11 +35,6 @@ export function createInstanceId(id: string): InstanceId {
 export type BlocConstructor<TBloc extends StateContainer<unknown>> = new (
   ...args: unknown[]
 ) => TBloc;
-
-/**
- * Extract state type from StateContainer
- */
-type ExtractState<T> = T extends StateContainer<infer S> ? S : never;
 
 /**
  * Configuration for a bloc type in the registry
@@ -86,7 +81,10 @@ export class BlocRegistry {
    * Key: Bloc class name (extracted from constructor)
    * Value: Registry entry with config and instances
    */
-  private readonly types = new Map<string, RegistryEntry<StateContainer<unknown>>>();
+  private readonly types = new Map<
+    string,
+    RegistryEntry<StateContainer<unknown>>
+  >();
 
   /**
    * Register a bloc class
@@ -113,7 +111,7 @@ export class BlocRegistry {
     options?: {
       constructorArgs?: unknown[];
       isolated?: boolean;
-    }
+    },
   ): void {
     const typeName = BlocClass.name;
 
@@ -122,7 +120,8 @@ export class BlocRegistry {
     }
 
     // Check if class has static isolated property
-    const classIsolated = (BlocClass as { isolated?: boolean }).isolated === true;
+    const classIsolated =
+      (BlocClass as { isolated?: boolean }).isolated === true;
     const isolated = options?.isolated ?? classIsolated ?? false;
 
     this.types.set(typeName, {
@@ -166,7 +165,7 @@ export class BlocRegistry {
     options?: {
       instanceId?: string;
       constructorArgs?: unknown[];
-    }
+    },
   ): TBloc {
     const typeName = BlocClass.name;
 
@@ -232,7 +231,6 @@ export class BlocRegistry {
 
   /**
    * Remove an instance from the registry
-   * NOTE: Does NOT dispose the instance - caller is responsible
    *
    * @param BlocClass - The bloc constructor
    * @param id - Instance identifier
@@ -250,7 +248,7 @@ export class BlocRegistry {
    * @returns Array of all instances (both shared and isolated)
    */
   getAll<TBloc extends StateContainer<unknown>>(
-    BlocClass: BlocConstructor<TBloc>
+    BlocClass: BlocConstructor<TBloc>,
   ): TBloc[] {
     const entry = this.types.get(BlocClass.name);
     if (!entry) {
@@ -265,7 +263,6 @@ export class BlocRegistry {
 
   /**
    * Clear all instances of a type
-   * NOTE: Does NOT dispose instances - caller is responsible
    *
    * @param BlocClass - The bloc constructor
    */
@@ -279,7 +276,6 @@ export class BlocRegistry {
 
   /**
    * Clear all instances from all types
-   * NOTE: Does NOT dispose instances - caller is responsible
    */
   clearAll(): void {
     for (const entry of this.types.values()) {
@@ -290,7 +286,6 @@ export class BlocRegistry {
 
   /**
    * Unregister a bloc type
-   * NOTE: Clears all instances but does NOT dispose them
    *
    * @param BlocClass - The bloc constructor
    * @returns True if type was unregistered

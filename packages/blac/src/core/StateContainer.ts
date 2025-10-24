@@ -7,7 +7,11 @@
 
 import { StateStream } from './StateStream';
 import { EventStream } from './EventStream';
-import { LifecycleManager, LifecycleState, LifecycleEvent as LMLifecycleEvent } from './LifecycleManager';
+import {
+  LifecycleManager,
+  LifecycleState,
+  LifecycleEvent as LMLifecycleEvent,
+} from './LifecycleManager';
 import { BlacLogger } from '../logging/Logger';
 import {
   Generation,
@@ -15,18 +19,18 @@ import {
   Version,
   generation,
   incrementGeneration,
-  instanceId as createInstanceId
+  instanceId as createInstanceId,
 } from '../types/branded';
 import {
   InternalStateContainer,
-  StateContainerVisitor
+  StateContainerVisitor,
 } from '../types/internal';
+import { BaseEvent, StateChangeEvent, StateChange } from '../types/events';
 import {
-  BaseEvent,
-  StateChangeEvent,
-  StateChange,
-} from '../types/events';
-import { SubscriptionSystem, SubscriptionOptions, Subscription } from '../subscription/SubscriptionSystem';
+  SubscriptionSystem,
+  SubscriptionOptions,
+  Subscription,
+} from '../subscription/SubscriptionSystem';
 
 /**
  * Configuration options for StateContainer
@@ -48,8 +52,8 @@ export interface StateContainerConfig {
  * Base abstract class for all state containers
  */
 export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
-  implements InternalStateContainer<S> {
-
+  implements InternalStateContainer<S>
+{
   // State management
   protected readonly stateStream: StateStream<S>;
   protected readonly eventStream: EventStream<E>;
@@ -101,7 +105,7 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
       enableMetrics: this.config.debug,
       enableWeakRefs: true,
       maxSubscriptions: 1000,
-      cleanupIntervalMs: 30000
+      cleanupIntervalMs: 30000,
     });
 
     // Initialize lifecycle manager
@@ -110,9 +114,11 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
       debug: this.config.debug,
       onStateTransition: (event) => {
         if (this.config.debug) {
-          console.log(`[${this._name}] Lifecycle transition: ${event.fromState} -> ${event.toState}`);
+          console.log(
+            `[${this._name}] Lifecycle transition: ${event.fromState} -> ${event.toState}`,
+          );
         }
-      }
+      },
     });
 
     // Set up state change forwarding
@@ -187,7 +193,9 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
     }
 
     if (this.lifecycleManager.isDisposed) {
-      throw new Error(`Container ${this._name} is disposed and cannot be mounted`);
+      throw new Error(
+        `Container ${this._name} is disposed and cannot be mounted`,
+      );
     }
 
     // Transition to mounting
@@ -248,13 +256,18 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
     const currentGeneration = this.disposalGeneration;
 
     if (this.config.debug) {
-      console.log(`[${this._name}] Disposal requested (generation: ${currentGeneration})`);
+      console.log(
+        `[${this._name}] Disposal requested (generation: ${currentGeneration})`,
+      );
     }
 
     // Schedule disposal in next microtask
     queueMicrotask(() => {
       // Check if this disposal is still valid
-      if (currentGeneration === this.disposalGeneration && !this.lifecycleManager.isDisposed) {
+      if (
+        currentGeneration === this.disposalGeneration &&
+        !this.lifecycleManager.isDisposed
+      ) {
         this._isDisposalRequested = false;
         this.dispose();
       }
@@ -378,7 +391,7 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
       previous: event.previous,
       version: event.version,
       timestamp: event.timestamp,
-      metadata: event.metadata
+      metadata: event.metadata,
     } as StateChange<S>);
 
     // Emit state change event
@@ -398,7 +411,9 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
     this.consumerCount++;
 
     if (this.config.debug) {
-      console.log(`[${this._name}] Consumer added (total: ${this.consumerCount})`);
+      console.log(
+        `[${this._name}] Consumer added (total: ${this.consumerCount})`,
+      );
     }
 
     // Cancel any pending disposal
@@ -421,12 +436,18 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
     this.consumerCount = Math.max(0, this.consumerCount - 1);
 
     if (this.config.debug) {
-      console.log(`[${this._name}] Consumer removed (total: ${this.consumerCount})`);
+      console.log(
+        `[${this._name}] Consumer removed (total: ${this.consumerCount})`,
+      );
     }
 
     // Request disposal if no consumers and not keep-alive
     // Disposal can be requested even if not mounted (for unmounted containers)
-    if (this.consumerCount === 0 && !this.config.keepAlive && !this.lifecycleManager.isDisposed) {
+    if (
+      this.consumerCount === 0 &&
+      !this.config.keepAlive &&
+      !this.lifecycleManager.isDisposed
+    ) {
       this.requestDisposal();
     }
   }
@@ -451,7 +472,7 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
   // ============================================
 
   /**
-   * Subscribe to state changes (legacy method for compatibility)
+   * Subscribe to state changes
    */
   subscribe(handler: (state: S) => void): () => void {
     // Add as consumer
@@ -461,7 +482,7 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
     // Subscribe through the new subscription system
     const subscription = this.subscriptionSystem.subscribe({
       callback: handler,
-      weakRef: consumer
+      weakRef: consumer,
     });
 
     // Return unsubscribe function that also removes consumer
@@ -482,7 +503,7 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
     // Subscribe through the subscription system
     const subscription = this.subscriptionSystem.subscribe({
       ...options,
-      weakRef: consumer
+      weakRef: consumer,
     });
 
     // Wrap unsubscribe to also remove consumer
@@ -546,7 +567,9 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
    */
   protected emit(newState: S): void {
     if (this.lifecycleManager.isDisposed) {
-      throw new Error(`Cannot emit state from disposed container ${this._name}`);
+      throw new Error(
+        `Cannot emit state from disposed container ${this._name}`,
+      );
     }
 
     BlacLogger.debug('StateContainer', 'emit', {
@@ -563,7 +586,9 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
    */
   protected update(updater: (current: S) => S): void {
     if (this.lifecycleManager.isDisposed) {
-      throw new Error(`Cannot update state from disposed container ${this._name}`);
+      throw new Error(
+        `Cannot update state from disposed container ${this._name}`,
+      );
     }
 
     BlacLogger.debug('StateContainer', 'update', {
@@ -579,7 +604,9 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
    */
   protected dispatch(event: E): void {
     if (this.lifecycleManager.isDisposed) {
-      throw new Error(`Cannot dispatch event from disposed container ${this._name}`);
+      throw new Error(
+        `Cannot dispatch event from disposed container ${this._name}`,
+      );
     }
 
     this.eventStream.dispatch(event);

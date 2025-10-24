@@ -13,7 +13,7 @@ export enum SubscriptionPriority {
   HIGH = 750,
   NORMAL = 500,
   LOW = 250,
-  DEFERRED = 0
+  DEFERRED = 0,
 }
 
 export class PriorityStage extends PipelineStage {
@@ -26,7 +26,10 @@ export class PriorityStage extends PipelineStage {
 
   process<T>(context: PipelineContext<T>): PipelineContext<T> {
     const priorityValue = context.metadata.get('priority');
-    const priority = typeof priorityValue === 'number' ? priorityValue : SubscriptionPriority.NORMAL;
+    const priority =
+      typeof priorityValue === 'number'
+        ? priorityValue
+        : SubscriptionPriority.NORMAL;
 
     if (priority < this.minPriority) {
       // Skip low-priority subscriptions during high-load

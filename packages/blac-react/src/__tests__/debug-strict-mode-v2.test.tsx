@@ -1,5 +1,5 @@
 /**
- * Debug test for v2 Strict Mode issue
+ * Debug test for Strict Mode issue
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -61,7 +61,7 @@ class TestCubit extends StateContainer<TestState, TestCubit> {
   };
 }
 
-describe('v2 Strict Mode Debug', () => {
+describe('Strict Mode Debug', () => {
   beforeEach(() => {
     clearAllBlocInstances();
   });
@@ -99,7 +99,9 @@ describe('v2 Strict Mode Debug', () => {
       result.current.bloc.updateUserName('StrictModeTest');
     });
 
-    console.log('\n🔵 ========== UPDATE COMPLETE, WAITING FOR RE-RENDER ==========\n');
+    console.log(
+      '\n🔵 ========== UPDATE COMPLETE, WAITING FOR RE-RENDER ==========\n',
+    );
 
     await waitFor(() => {
       console.log(`Current name in test: ${result.current.name}`);

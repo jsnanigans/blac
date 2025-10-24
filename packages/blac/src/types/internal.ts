@@ -120,7 +120,9 @@ export interface RegistryStats {
 /**
  * Type guard for internal state container
  */
-export function isInternalStateContainer(obj: unknown): obj is InternalStateContainer {
+export function isInternalStateContainer(
+  obj: unknown,
+): obj is InternalStateContainer {
   return (
     obj !== null &&
     typeof obj === 'object' &&
@@ -134,7 +136,9 @@ export function isInternalStateContainer(obj: unknown): obj is InternalStateCont
 /**
  * Type guard for internal subscription manager
  */
-export function isInternalSubscriptionManager(obj: unknown): obj is InternalSubscriptionManager {
+export function isInternalSubscriptionManager(
+  obj: unknown,
+): obj is InternalSubscriptionManager {
   if (!obj || typeof obj !== 'object') return false;
 
   const manager = obj as Record<string, unknown>;

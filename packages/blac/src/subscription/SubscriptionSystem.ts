@@ -5,8 +5,19 @@
  * to provide a clean, simple interface for state container integration.
  */
 
-import { SubscriptionRegistry, SubscriptionConfig, ContainerId, ConsumerId, MetadataValue } from './SubscriptionRegistry';
-import { SubscriptionPipeline, SubscriptionId, PipelineContext, PipelineStage } from './SubscriptionPipeline';
+import {
+  SubscriptionRegistry,
+  SubscriptionConfig,
+  ContainerId,
+  ConsumerId,
+  MetadataValue,
+} from './SubscriptionRegistry';
+import {
+  SubscriptionPipeline,
+  SubscriptionId,
+  PipelineContext,
+  PipelineStage,
+} from './SubscriptionPipeline';
 import { SubscriptionBuilder } from './SubscriptionBuilder';
 import { StateChange } from '../types/events';
 import { BlacLogger } from '../logging/Logger';
@@ -20,7 +31,7 @@ import {
   WeakRefStage,
   OptimizationStage,
   OptimizationOptions,
-  SubscriptionPriority
+  SubscriptionPriority,
 } from './stages';
 
 /**
@@ -81,10 +92,7 @@ export class SubscriptionSystem<T = unknown> {
   private containerId: ContainerId;
   private consumerCounter = 0;
 
-  constructor(
-    containerId: string,
-    config: SubscriptionSystemConfig = {}
-  ) {
+  constructor(containerId: string, config: SubscriptionSystemConfig = {}) {
     this.containerId = `container_${containerId}` as ContainerId;
 
     this.config = {
@@ -93,13 +101,13 @@ export class SubscriptionSystem<T = unknown> {
       enableProxyTracking: config.enableProxyTracking ?? true,
       maxSubscriptions: config.maxSubscriptions ?? 1000,
       cleanupIntervalMs: config.cleanupIntervalMs ?? 30000,
-      defaultPriority: config.defaultPriority ?? SubscriptionPriority.NORMAL
+      defaultPriority: config.defaultPriority ?? SubscriptionPriority.NORMAL,
     };
 
     this.registry = new SubscriptionRegistry({
       cleanupIntervalMs: this.config.cleanupIntervalMs,
       maxSubscriptions: this.config.maxSubscriptions,
-      enableWeakRefs: this.config.enableWeakRefs
+      enableWeakRefs: this.config.enableWeakRefs,
     });
   }
 
@@ -118,7 +126,7 @@ export class SubscriptionSystem<T = unknown> {
       paths: options.paths,
       priority: options.priority ?? this.config.defaultPriority,
       keepAlive: options.keepAlive,
-      metadata: options.metadata
+      metadata: options.metadata,
     };
 
     // Register subscription
@@ -149,7 +157,7 @@ export class SubscriptionSystem<T = unknown> {
       },
       resume: () => {
         // Implementation for resuming
-      }
+      },
     };
 
     return subscription;
@@ -175,19 +183,26 @@ export class SubscriptionSystem<T = unknown> {
    */
   async notify(stateChange: StateChange<T>): Promise<void> {
     // Get all subscriptions for this container
-    const subscriptionIds = this.registry.getContainerSubscriptions(this.containerId);
+    const subscriptionIds = this.registry.getContainerSubscriptions(
+      this.containerId,
+    );
 
-    BlacLogger.debug('SubscriptionSystem', '🔄 STATE CHANGED - Evaluating subscriptions', {
-      containerId: this.containerId,
-      subscriptionCount: subscriptionIds.length,
-      version: stateChange.version,
-      timestamp: stateChange.timestamp,
-    });
+    BlacLogger.debug(
+      'SubscriptionSystem',
+      '🔄 STATE CHANGED - Evaluating subscriptions',
+      {
+        containerId: this.containerId,
+        subscriptionCount: subscriptionIds.length,
+        version: stateChange.version,
+        timestamp: stateChange.timestamp,
+      },
+    );
 
     if (subscriptionIds.length === 0) {
       BlacLogger.debug('SubscriptionSystem', '⚠️  No subscriptions to notify', {
         containerId: this.containerId,
-        reason: 'No components are currently subscribed to this state container',
+        reason:
+          'No components are currently subscribed to this state container',
       });
       return;
     }
@@ -207,19 +222,28 @@ export class SubscriptionSystem<T = unknown> {
 
       const subscription = this.registry.get(subscriptionId);
       if (!subscription) {
-        BlacLogger.debug('SubscriptionSystem', '⚠️  No subscription found in registry', {
-          subscriptionId,
-          containerId: this.containerId,
-        });
+        BlacLogger.debug(
+          'SubscriptionSystem',
+          '⚠️  No subscription found in registry',
+          {
+            subscriptionId,
+            containerId: this.containerId,
+          },
+        );
         continue;
       }
 
-      BlacLogger.debug('SubscriptionSystem', '➡️  Processing subscription through pipeline', {
-        subscriptionId,
-        containerId: this.containerId,
-        hasPaths: !!subscription.config.paths && subscription.config.paths.length > 0,
-        pathCount: subscription.config.paths?.length ?? 0,
-      });
+      BlacLogger.debug(
+        'SubscriptionSystem',
+        '➡️  Processing subscription through pipeline',
+        {
+          subscriptionId,
+          containerId: this.containerId,
+          hasPaths:
+            !!subscription.config.paths && subscription.config.paths.length > 0,
+          pathCount: subscription.config.paths?.length ?? 0,
+        },
+      );
 
       const context: PipelineContext<T> = {
         subscriptionId,
@@ -228,26 +252,35 @@ export class SubscriptionSystem<T = unknown> {
         metadata: new Map(Object.entries(subscription.metadata || {})),
         timestamp: Date.now(),
         shouldContinue: true,
-        skipNotification: false
+        skipNotification: false,
       };
 
       promises.push(
-        pipeline.execute(context)
+        pipeline
+          .execute(context)
           .then((result) => {
-            BlacLogger.debug('SubscriptionSystem', '✅ Subscription pipeline completed', {
-              subscriptionId,
-              executed: result.executed,
-              stagesProcessed: result.stagesProcessed.length,
-            });
+            BlacLogger.debug(
+              'SubscriptionSystem',
+              '✅ Subscription pipeline completed',
+              {
+                subscriptionId,
+                executed: result.executed,
+                stagesProcessed: result.stagesProcessed.length,
+              },
+            );
           })
-          .catch(error => {
-            BlacLogger.error('SubscriptionSystem', '❌ Subscription pipeline error', {
-              subscriptionId,
-              containerId: this.containerId,
-              error: error instanceof Error ? error.message : String(error),
-              stack: error instanceof Error ? error.stack : undefined,
-            });
-          })
+          .catch((error) => {
+            BlacLogger.error(
+              'SubscriptionSystem',
+              '❌ Subscription pipeline error',
+              {
+                subscriptionId,
+                containerId: this.containerId,
+                error: error instanceof Error ? error.message : String(error),
+                stack: error instanceof Error ? error.stack : undefined,
+              },
+            );
+          }),
       );
     }
 
@@ -263,8 +296,7 @@ export class SubscriptionSystem<T = unknown> {
    * Create a subscription using the builder API
    */
   builder(): SubscriptionBuilder<T> {
-    return new SubscriptionBuilder<T>()
-      .forContainer(this.containerId);
+    return new SubscriptionBuilder<T>().forContainer(this.containerId);
   }
 
   /**
@@ -274,7 +306,7 @@ export class SubscriptionSystem<T = unknown> {
     return {
       registry: this.registry.getStats(),
       pipelineCount: this.pipelineCache.size,
-      config: this.config
+      config: this.config,
     };
   }
 
@@ -295,10 +327,12 @@ export class SubscriptionSystem<T = unknown> {
   /**
    * Create a pipeline for subscription options
    */
-  private createPipeline(options: SubscriptionOptions<T>): SubscriptionPipeline {
+  private createPipeline(
+    options: SubscriptionOptions<T>,
+  ): SubscriptionPipeline {
     const pipeline = new SubscriptionPipeline({
       enableMetrics: this.config.enableMetrics,
-      timeout: 100
+      timeout: 100,
     });
 
     // Add stages in priority order
@@ -310,9 +344,11 @@ export class SubscriptionSystem<T = unknown> {
 
     // 2. ProxyTracking stage (before filter to set up paths)
     if (this.config.enableProxyTracking) {
-      pipeline.addStage(new ProxyTrackingStage({
-        enabled: true
-      }));
+      pipeline.addStage(
+        new ProxyTrackingStage({
+          enabled: true,
+        }),
+      );
     }
 
     // 3. WeakRef stage
@@ -322,10 +358,12 @@ export class SubscriptionSystem<T = unknown> {
 
     // 4. Filter stage (always add when proxy tracking is enabled for automatic filtering)
     if (options.paths || options.filter || this.config.enableProxyTracking) {
-      pipeline.addStage(new FilterStage({
-        paths: options.paths,
-        predicate: options.filter
-      }));
+      pipeline.addStage(
+        new FilterStage({
+          paths: options.paths,
+          predicate: options.filter,
+        }),
+      );
     }
 
     // 5. Optimization stage (only for throttling and caching)
@@ -338,11 +376,13 @@ export class SubscriptionSystem<T = unknown> {
 
     // 6. Notification stage (always last)
     // Handle batching and debouncing in the NotificationStage where it can properly defer callbacks
-    pipeline.addStage(new NotificationStage({
-      callback: options.callback,
-      batch: options.batch ?? false,
-      debounceMs: options.debounce ?? 0
-    }));
+    pipeline.addStage(
+      new NotificationStage({
+        callback: options.callback,
+        batch: options.batch ?? false,
+        debounceMs: options.debounce ?? 0,
+      }),
+    );
 
     return pipeline;
   }
@@ -352,10 +392,10 @@ export class SubscriptionSystem<T = unknown> {
    */
   private findStage<S extends PipelineStage>(
     pipeline: SubscriptionPipeline,
-    StageClass: new (...args: unknown[]) => S
+    StageClass: new (...args: unknown[]) => S,
   ): S | undefined {
     const stages = pipeline.getStages();
-    return stages.find(stage => stage instanceof StageClass) as S | undefined;
+    return stages.find((stage) => stage instanceof StageClass) as S | undefined;
   }
 
   /**
@@ -381,7 +421,7 @@ export class SubscriptionSystemFactory {
       enableMetrics: false,
       enableWeakRefs: true,
       maxSubscriptions: 1000,
-      cleanupIntervalMs: 60000
+      cleanupIntervalMs: 60000,
     });
   }
 
@@ -393,7 +433,7 @@ export class SubscriptionSystemFactory {
       enableMetrics: true,
       enableWeakRefs: true,
       maxSubscriptions: 10000,
-      cleanupIntervalMs: 5000
+      cleanupIntervalMs: 5000,
     });
   }
 
@@ -405,7 +445,7 @@ export class SubscriptionSystemFactory {
       enableMetrics: false,
       enableWeakRefs: false,
       maxSubscriptions: 100,
-      cleanupIntervalMs: 120000
+      cleanupIntervalMs: 120000,
     });
   }
 }

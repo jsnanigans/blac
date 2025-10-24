@@ -32,15 +32,18 @@ export class NotificationStage extends PipelineStage {
       batch: options.batch ?? false,
       debounceMs: options.debounceMs ?? 0,
       throttleMs: options.throttleMs ?? 0,
-      errorHandler: options.errorHandler ?? ((error) => console.error('Notification error:', error)),
+      errorHandler:
+        options.errorHandler ??
+        ((error) => console.error('Notification error:', error)),
       maxRetries: options.maxRetries ?? 0,
-      callback: options.callback
+      callback: options.callback,
     };
   }
 
   process<T>(context: PipelineContext<T>): PipelineContext<T> {
     if (context.skipNotification) {
-      const filteredReason = context.metadata.get('filteredReason') || 'unknown';
+      const filteredReason =
+        context.metadata.get('filteredReason') || 'unknown';
       BlacLogger.debug('NotificationStage', '⏭️  NOTIFICATION SKIPPED', {
         reason: filteredReason,
         subscriptionId: context.subscriptionId,
@@ -117,12 +120,16 @@ export class NotificationStage extends PipelineStage {
       // Enough time has passed, allow the call
       this.lastThrottleTime = now;
 
-      BlacLogger.debug('NotificationStage', '⚡ Throttle allowed - sending notification', {
-        subscriptionId: context.subscriptionId,
-        timeSinceLastCall,
-        throttleMs: this.options.throttleMs,
-        explanation: `Enough time (${timeSinceLastCall}ms) passed since last notification`,
-      });
+      BlacLogger.debug(
+        'NotificationStage',
+        '⚡ Throttle allowed - sending notification',
+        {
+          subscriptionId: context.subscriptionId,
+          timeSinceLastCall,
+          throttleMs: this.options.throttleMs,
+          explanation: `Enough time (${timeSinceLastCall}ms) passed since last notification`,
+        },
+      );
 
       this.sendNotification(context);
 
@@ -137,26 +144,39 @@ export class NotificationStage extends PipelineStage {
       if (!this.throttleTimer) {
         const remainingTime = this.options.throttleMs - timeSinceLastCall;
 
-        BlacLogger.debug('NotificationStage', '⚡ Throttle blocked - scheduling trailing call', {
-          subscriptionId: context.subscriptionId,
-          timeSinceLastCall,
-          remainingTime,
-          explanation: `Within throttle window, notification will fire in ${remainingTime}ms`,
-        });
+        BlacLogger.debug(
+          'NotificationStage',
+          '⚡ Throttle blocked - scheduling trailing call',
+          {
+            subscriptionId: context.subscriptionId,
+            timeSinceLastCall,
+            remainingTime,
+            explanation: `Within throttle window, notification will fire in ${remainingTime}ms`,
+          },
+        );
 
         this.throttleTimer = setTimeout(() => {
           this.lastThrottleTime = Date.now();
-          BlacLogger.debug('NotificationStage', '⚡ Throttle trailing call firing', {
-            subscriptionId: context.subscriptionId,
-          });
+          BlacLogger.debug(
+            'NotificationStage',
+            '⚡ Throttle trailing call firing',
+            {
+              subscriptionId: context.subscriptionId,
+            },
+          );
           this.sendNotification(context);
           this.throttleTimer = undefined;
         }, remainingTime);
       } else {
-        BlacLogger.debug('NotificationStage', '⚡ Throttle blocked - trailing call already scheduled', {
-          subscriptionId: context.subscriptionId,
-          explanation: 'Within throttle window and a trailing call is already scheduled',
-        });
+        BlacLogger.debug(
+          'NotificationStage',
+          '⚡ Throttle blocked - trailing call already scheduled',
+          {
+            subscriptionId: context.subscriptionId,
+            explanation:
+              'Within throttle window and a trailing call is already scheduled',
+          },
+        );
       }
     }
   }
@@ -169,9 +189,10 @@ export class NotificationStage extends PipelineStage {
 
     BlacLogger.debug('NotificationStage', '📦 Processing batch', {
       batchSize: batch.length,
-      explanation: batch.length > 1
-        ? `Batch had ${batch.length} notifications, sending only the last one`
-        : 'Batch had 1 notification, sending it',
+      explanation:
+        batch.length > 1
+          ? `Batch had ${batch.length} notifications, sending only the last one`
+          : 'Batch had 1 notification, sending it',
     });
 
     // Send only the last notification from the batch
@@ -179,7 +200,10 @@ export class NotificationStage extends PipelineStage {
     this.sendNotification(lastContext);
   }
 
-  private sendNotification<T>(context: PipelineContext<T>, retryCount: number = 0): void {
+  private sendNotification<T>(
+    context: PipelineContext<T>,
+    retryCount: number = 0,
+  ): void {
     try {
       // Use selected value if available, otherwise use current state
       const value = context.metadata.has('selectedValue')
@@ -196,16 +220,24 @@ export class NotificationStage extends PipelineStage {
       this.options.callback(value);
       context.metadata.set('notificationSent', true);
 
-      BlacLogger.debug('NotificationStage', '✅ React render triggered successfully', {
-        subscriptionId: context.subscriptionId,
-      });
+      BlacLogger.debug(
+        'NotificationStage',
+        '✅ React render triggered successfully',
+        {
+          subscriptionId: context.subscriptionId,
+        },
+      );
     } catch (error) {
-      BlacLogger.debug('NotificationStage', '❌ Error triggering React render', {
-        subscriptionId: context.subscriptionId,
-        error: error instanceof Error ? error.message : String(error),
-        retryCount,
-        willRetry: retryCount < this.options.maxRetries,
-      });
+      BlacLogger.debug(
+        'NotificationStage',
+        '❌ Error triggering React render',
+        {
+          subscriptionId: context.subscriptionId,
+          error: error instanceof Error ? error.message : String(error),
+          retryCount,
+          willRetry: retryCount < this.options.maxRetries,
+        },
+      );
 
       if (retryCount < this.options.maxRetries) {
         const backoffMs = Math.pow(2, retryCount) * 100;

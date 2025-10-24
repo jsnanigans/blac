@@ -13,7 +13,7 @@ class CounterBloc extends StateContainer<number> {
   }
 
   increment = () => {
-    this.update(state => state + 1);
+    this.update((state) => state + 1);
   };
 }
 
@@ -25,7 +25,7 @@ class IsolatedCounterBloc extends StateContainer<number> {
   }
 
   increment = () => {
-    this.update(state => state + 1);
+    this.update((state) => state + 1);
   };
 }
 
@@ -35,7 +35,7 @@ class UserBloc extends StateContainer<{ name: string; age: number }> {
   }
 
   setName = (name: string) => {
-    this.update(state => ({ ...state, name }));
+    this.update((state) => ({ ...state, name }));
   };
 }
 
@@ -134,8 +134,12 @@ describe('BlocRegistry', () => {
     });
 
     it('should create new instance even with same ID', () => {
-      const instance1 = registry.get(IsolatedCounterBloc, { instanceId: 'same-id' });
-      const instance2 = registry.get(IsolatedCounterBloc, { instanceId: 'same-id' });
+      const instance1 = registry.get(IsolatedCounterBloc, {
+        instanceId: 'same-id',
+      });
+      const instance2 = registry.get(IsolatedCounterBloc, {
+        instanceId: 'same-id',
+      });
 
       expect(instance1).not.toBe(instance2);
     });

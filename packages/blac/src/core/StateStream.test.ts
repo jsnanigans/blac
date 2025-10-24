@@ -52,7 +52,7 @@ describe('StateStream', () => {
 
   describe('state updates', () => {
     it('should update state with updater function', () => {
-      stream.update(state => ({ ...state, count: 1 }));
+      stream.update((state) => ({ ...state, count: 1 }));
 
       expect(stream.state.count).toBe(1);
       expect(stream.state.name).toBe('test');
@@ -60,13 +60,13 @@ describe('StateStream', () => {
 
     it('should increment version on update', () => {
       const v0 = stream.version;
-      stream.update(state => ({ ...state, count: 1 }));
+      stream.update((state) => ({ ...state, count: 1 }));
       expect(stream.version).toBe(v0 + 1);
     });
 
     it('should not update if state is unchanged', () => {
       const v0 = stream.version;
-      stream.update(state => ({ ...state })); // Same values
+      stream.update((state) => ({ ...state })); // Same values
       expect(stream.version).toBe(v0); // Version unchanged
     });
 
@@ -74,7 +74,7 @@ describe('StateStream', () => {
       const handler = vi.fn();
       const unsubscribe = stream.subscribe(handler);
 
-      stream.update(state => ({ ...state, count: 1 }));
+      stream.update((state) => ({ ...state, count: 1 }));
 
       expect(handler).toHaveBeenCalledTimes(1);
       const event = handler.mock.calls[0][0];
@@ -90,7 +90,7 @@ describe('StateStream', () => {
       const handler = vi.fn();
       stream.subscribe(handler);
 
-      stream.update(state => ({ ...state, count: 1 }), { silent: true });
+      stream.update((state) => ({ ...state, count: 1 }), { silent: true });
 
       expect(handler).not.toHaveBeenCalled();
       expect(stream.state.count).toBe(1); // State still updated
@@ -100,10 +100,10 @@ describe('StateStream', () => {
       const handler = vi.fn();
       stream.subscribe(handler);
 
-      stream.update(
-        state => ({ ...state, count: 1 }),
-        { source: 'test-update', metadata: { context: { user: 'alice' } } }
-      );
+      stream.update((state) => ({ ...state, count: 1 }), {
+        source: 'test-update',
+        metadata: { context: { user: 'alice' } },
+      });
 
       const event = handler.mock.calls[0][0];
       expect(event.metadata.source).toBe('test-update');
@@ -125,10 +125,10 @@ describe('StateStream', () => {
     it('should maintain history up to max size', () => {
       const smallStream = new StateStream(initialState, 3);
 
-      smallStream.update(s => ({ ...s, count: 1 }));
-      smallStream.update(s => ({ ...s, count: 2 }));
-      smallStream.update(s => ({ ...s, count: 3 }));
-      smallStream.update(s => ({ ...s, count: 4 }));
+      smallStream.update((s) => ({ ...s, count: 1 }));
+      smallStream.update((s) => ({ ...s, count: 2 }));
+      smallStream.update((s) => ({ ...s, count: 3 }));
+      smallStream.update((s) => ({ ...s, count: 4 }));
 
       const history = smallStream.getHistory();
       expect(history).toHaveLength(3); // Max size enforced
@@ -137,8 +137,8 @@ describe('StateStream', () => {
     });
 
     it('should clear history on demand', () => {
-      stream.update(s => ({ ...s, count: 1 }));
-      stream.update(s => ({ ...s, count: 2 }));
+      stream.update((s) => ({ ...s, count: 1 }));
+      stream.update((s) => ({ ...s, count: 2 }));
 
       stream.clearHistory();
       const history = stream.getHistory();
@@ -148,9 +148,9 @@ describe('StateStream', () => {
     });
 
     it('should limit returned history', () => {
-      stream.update(s => ({ ...s, count: 1 }));
-      stream.update(s => ({ ...s, count: 2 }));
-      stream.update(s => ({ ...s, count: 3 }));
+      stream.update((s) => ({ ...s, count: 1 }));
+      stream.update((s) => ({ ...s, count: 2 }));
+      stream.update((s) => ({ ...s, count: 3 }));
 
       const limited = stream.getHistory(2);
       expect(limited).toHaveLength(2);
@@ -161,7 +161,7 @@ describe('StateStream', () => {
 
   describe('reset', () => {
     it('should reset to new initial state', () => {
-      stream.update(s => ({ ...s, count: 99 }));
+      stream.update((s) => ({ ...s, count: 99 }));
       expect(stream.version).toBe(1);
 
       const resetState: TestState = { count: 0, name: 'reset' };
@@ -191,7 +191,7 @@ describe('StateStream', () => {
           const s = new StateStream({ value: 0 });
           let expectedVersion = 0;
 
-          values.forEach(val => {
+          values.forEach((val) => {
             const prevVersion = s.version;
             const prevState = s.state.value;
             s.update(() => ({ value: val }));
@@ -205,7 +205,7 @@ describe('StateStream', () => {
           });
 
           return true;
-        })
+        }),
       );
     });
 
@@ -216,7 +216,7 @@ describe('StateStream', () => {
           (states) => {
             const s = new StateStream({ count: 0, name: '' });
 
-            states.forEach(state => {
+            states.forEach((state) => {
               s.setState(state);
               expect(s.state).toEqual(state);
             });
@@ -226,8 +226,8 @@ describe('StateStream', () => {
             }
 
             return true;
-          }
-        )
+          },
+        ),
       );
     });
   });

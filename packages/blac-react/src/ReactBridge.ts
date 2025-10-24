@@ -1,5 +1,5 @@
 /**
- * ReactBridge - Bridges BlaC v2 StateContainer with React using proxy tracking
+ * ReactBridge - Bridges StateContainer with React using proxy tracking
  *
  * This bridge integrates automatic dependency tracking through proxies,
  * ensuring components only re-render when accessed properties change.
@@ -10,7 +10,6 @@ import { ProxyTracker } from '@blac/core';
 import type { Subscription } from '@blac/core';
 import { BlacLogger } from '@blac/core';
 
-// Export type aliases for backward compatibility
 export type SubscribeCallback = () => void;
 export type Unsubscribe = () => void;
 
@@ -38,20 +37,15 @@ export class ReactBridge<S> {
    * Called by React to subscribe to state changes
    */
   subscribe = (onStoreChange: () => void): (() => void) => {
-    // Detect if this is a remount (first listener after cleanup)
     const wasEmpty = this.listeners.size === 0;
 
-    // Add React's listener
     this.listeners.add(onStoreChange);
 
-    // Create subscription if not exists
     if (!this.subscription) {
       BlacLogger.debug('ReactBridge', 'Creating INITIAL subscription');
-      // Reset initial render flag when creating a new subscription (e.g., after Strict Mode remount)
       this.isInitialRender = true;
       const subscriptionId = Symbol('subscription');
       this.activeSubscriptionId = subscriptionId;
-      // Subscribe with proxy tracking to detect accessed properties
       this.subscription = this.container.subscribeAdvanced({
         callback: (state: S) => {
           // Guard against stale callbacks from old subscriptions
@@ -67,20 +61,22 @@ export class ReactBridge<S> {
             '📥 INITIAL subscription callback invoked',
             {
               listenerCount: this.listeners.size,
-            }
+            },
           );
           this.currentState = state;
-          // Notify all React listeners
-          BlacLogger.debug('ReactBridge', '🔔 Notifying React listeners to trigger re-render', {
-            listenerCount: this.listeners.size,
-            reason: 'State changed and passed all filters',
-          });
+          BlacLogger.debug(
+            'ReactBridge',
+            '🔔 Notifying React listeners to trigger re-render',
+            {
+              listenerCount: this.listeners.size,
+              reason: 'State changed and passed all filters',
+            },
+          );
           this.listeners.forEach((listener) => {
             listener();
           });
           BlacLogger.debug('ReactBridge', '✅ All listeners notified');
         },
-        // Pass tracked paths as metadata for the subscription system
         metadata: {
           useProxyTracking: true,
           trackedPaths: Array.from(this.trackedPaths),
@@ -88,21 +84,16 @@ export class ReactBridge<S> {
       });
       BlacLogger.debug('ReactBridge', 'INITIAL subscription created');
     } else if (wasEmpty && this.listeners.size === 1) {
-      // Remount detected: subscription exists but this is first listener after cleanup
-      // Reset initial render flag to use synchronous tracking for this mount
-      BlacLogger.debug('ReactBridge', 'Remount detected - resetting isInitialRender flag');
+      BlacLogger.debug(
+        'ReactBridge',
+        'Remount detected - resetting isInitialRender flag',
+      );
       this.isInitialRender = true;
     }
 
-    // NOTE: Tracking completion moved to useEffect in useBloc
-    // This prevents premature completion and subscription replacement in Strict Mode
-    // See hybrid-tracking approach from adapter pattern fix
-
-    // Return cleanup function
     return () => {
       this.listeners.delete(onStoreChange);
 
-      // Cleanup subscription if no more listeners
       if (this.listeners.size === 0 && this.subscription) {
         this.subscription.unsubscribe();
         this.subscription = null;
@@ -115,7 +106,6 @@ export class ReactBridge<S> {
    * Returns proxied state that tracks property access
    */
   getSnapshot = (): S => {
-    // Start tracking if this is a new render cycle
     if (!this.isTracking) {
       this.isTracking = true;
       this.proxyTracker.startTracking();
@@ -127,19 +117,14 @@ export class ReactBridge<S> {
           isInitialRender: this.isInitialRender,
         },
       );
-
-      // NOTE: Tracking completion moved to useEffect in useBloc
-      // This ensures it runs after render completes and handles Strict Mode correctly
     }
 
-    // Increment render generation for tracking
     this.renderGeneration++;
 
     BlacLogger.debug('ReactBridge', 'Creating proxied state snapshot', {
       renderGeneration: this.renderGeneration,
     });
 
-    // Return proxied state that tracks access
     return this.proxyTracker.createProxy(this.currentState);
   };
 
@@ -160,13 +145,14 @@ export class ReactBridge<S> {
       isTracking: this.isTracking,
     });
 
-    // Guard: Don't complete if not currently tracking
     if (!this.isTracking) {
-      BlacLogger.debug('ReactBridge', 'Skipping completion - not currently tracking');
+      BlacLogger.debug(
+        'ReactBridge',
+        'Skipping completion - not currently tracking',
+      );
       return;
     }
 
-    // Stop tracking and get paths
     const newPaths = this.proxyTracker.stopTracking();
     this.isTracking = false;
     BlacLogger.debug('ReactBridge', 'Tracked paths', {
@@ -184,7 +170,6 @@ export class ReactBridge<S> {
       return;
     }
 
-    // Check if paths changed
     const hasChanged =
       newPaths.size !== this.trackedPaths.size ||
       Array.from(newPaths).some((path) => !this.trackedPaths.has(path));
@@ -198,10 +183,7 @@ export class ReactBridge<S> {
     if (hasChanged) {
       this.trackedPaths = newPaths;
 
-      // Update subscription with new tracked paths
       if (this.subscription) {
-        // We need to update the subscription's metadata
-        // This will be picked up by ProxyTrackingStage
         this.updateSubscriptionPaths();
       }
     }
@@ -212,7 +194,6 @@ export class ReactBridge<S> {
    * Update subscription with new tracked paths
    */
   private updateSubscriptionPaths(): void {
-    // Re-subscribe with updated paths
     if (this.subscription) {
       BlacLogger.debug(
         'ReactBridge',
@@ -223,7 +204,6 @@ export class ReactBridge<S> {
       );
       const oldSub = this.subscription;
 
-      // Create new subscription with updated paths FIRST
       const subscriptionId = Symbol('subscription');
       this.activeSubscriptionId = subscriptionId;
       this.subscription = this.container.subscribeAdvanced({
@@ -236,14 +216,22 @@ export class ReactBridge<S> {
             );
             return;
           }
-          BlacLogger.debug('ReactBridge', '📥 NEW subscription callback invoked', {
-            listenerCount: this.listeners.size,
-          });
+          BlacLogger.debug(
+            'ReactBridge',
+            '📥 NEW subscription callback invoked',
+            {
+              listenerCount: this.listeners.size,
+            },
+          );
           this.currentState = state;
-          BlacLogger.debug('ReactBridge', '🔔 Notifying React listeners to trigger re-render', {
-            listenerCount: this.listeners.size,
-            reason: 'State changed on tracked paths',
-          });
+          BlacLogger.debug(
+            'ReactBridge',
+            '🔔 Notifying React listeners to trigger re-render',
+            {
+              listenerCount: this.listeners.size,
+              reason: 'State changed on tracked paths',
+            },
+          );
           this.listeners.forEach((listener) => {
             listener();
           });
@@ -256,9 +244,6 @@ export class ReactBridge<S> {
         },
       });
 
-      // IMPORTANT: Unsubscribe old subscription AFTER creating new one
-      // This ensures in-flight notifications from the old subscription are delivered
-      // before we switch to the new one
       BlacLogger.debug(
         'ReactBridge',
         'Unsubscribing old subscription AFTER creating new',

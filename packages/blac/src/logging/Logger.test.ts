@@ -62,7 +62,7 @@ describe('BlacLogger', () => {
 
       expect(output).toHaveBeenCalledOnce();
       expect(output).toHaveBeenCalledWith(
-        expect.objectContaining({ level: 'ERROR' })
+        expect.objectContaining({ level: 'ERROR' }),
       );
     });
 
@@ -82,11 +82,11 @@ describe('BlacLogger', () => {
       expect(output).toHaveBeenCalledTimes(2);
       expect(output).toHaveBeenNthCalledWith(
         1,
-        expect.objectContaining({ level: 'ERROR' })
+        expect.objectContaining({ level: 'ERROR' }),
       );
       expect(output).toHaveBeenNthCalledWith(
         2,
-        expect.objectContaining({ level: 'WARN' })
+        expect.objectContaining({ level: 'WARN' }),
       );
     });
 
@@ -140,7 +140,7 @@ describe('BlacLogger', () => {
           context: 'TestContext',
           message: 'test message',
           timestamp: expect.any(Number),
-        })
+        }),
       );
     });
 
@@ -158,7 +158,7 @@ describe('BlacLogger', () => {
       expect(output).toHaveBeenCalledWith(
         expect.objectContaining({
           data: testData,
-        })
+        }),
       );
     });
 
@@ -191,7 +191,7 @@ describe('BlacLogger', () => {
       expect(output).toHaveBeenCalledWith(
         expect.objectContaining({
           data: { foo: 'bar' },
-        })
+        }),
       );
     });
 
@@ -215,7 +215,7 @@ describe('BlacLogger', () => {
       expect(output).toHaveBeenCalledWith(
         expect.objectContaining({
           data,
-        })
+        }),
       );
     });
 

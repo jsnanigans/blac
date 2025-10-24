@@ -12,7 +12,7 @@ import { BlacLogger } from '../../logging/Logger';
 export type FilterPredicate<T> = (
   current: T,
   previous: T,
-  change: StateChange<T>
+  change: StateChange<T>,
 ) => boolean;
 
 export interface FilterOptions<T = unknown> {
@@ -36,7 +36,9 @@ export class FilterStage<T = unknown> extends PipelineStage {
 
     // Get dynamic filter paths from metadata (set by ProxyTrackingStage)
     // or use static paths from options
-    const dynamicFilterPaths = context.metadata.get('filterPaths') as string[] | undefined;
+    const dynamicFilterPaths = context.metadata.get('filterPaths') as
+      | string[]
+      | undefined;
     const pathsToCheck = dynamicFilterPaths || this.options.paths;
 
     BlacLogger.debug('FilterStage', 'Evaluating render trigger', {
@@ -49,27 +51,39 @@ export class FilterStage<T = unknown> extends PipelineStage {
 
     // Apply path filtering
     if (pathsToCheck && pathsToCheck.length > 0) {
-      const hasRelevantChange = this.checkPaths(current, previous, pathsToCheck);
+      const hasRelevantChange = this.checkPaths(
+        current,
+        previous,
+        pathsToCheck,
+      );
 
       if (!hasRelevantChange) {
         context.shouldContinue = false;
         context.skipNotification = true;
         context.metadata.set('filteredReason', 'path_mismatch');
 
-        BlacLogger.debug('FilterStage', '❌ RENDER BLOCKED - No tracked properties changed', {
-          reason: 'None of the tracked paths have changed values',
-          trackedPaths: pathsToCheck,
-          subscriptionId: context.subscriptionId,
-        });
+        BlacLogger.debug(
+          'FilterStage',
+          '❌ RENDER BLOCKED - No tracked properties changed',
+          {
+            reason: 'None of the tracked paths have changed values',
+            trackedPaths: pathsToCheck,
+            subscriptionId: context.subscriptionId,
+          },
+        );
 
         return context;
       }
 
-      BlacLogger.debug('FilterStage', '✅ RENDER ALLOWED - Tracked properties changed', {
-        reason: 'At least one tracked path has changed',
-        trackedPaths: pathsToCheck,
-        subscriptionId: context.subscriptionId,
-      });
+      BlacLogger.debug(
+        'FilterStage',
+        '✅ RENDER ALLOWED - Tracked properties changed',
+        {
+          reason: 'At least one tracked path has changed',
+          trackedPaths: pathsToCheck,
+          subscriptionId: context.subscriptionId,
+        },
+      );
     } else {
       BlacLogger.debug('FilterStage', '✅ RENDER ALLOWED - No path filtering', {
         reason: 'No specific paths being tracked, all changes trigger render',
@@ -79,17 +93,26 @@ export class FilterStage<T = unknown> extends PipelineStage {
 
     // Apply exclusion paths
     if (this.options.excludePaths && this.options.excludePaths.length > 0) {
-      const hasExcludedChange = this.checkPaths(current, previous, this.options.excludePaths);
+      const hasExcludedChange = this.checkPaths(
+        current,
+        previous,
+        this.options.excludePaths,
+      );
       if (hasExcludedChange) {
         context.shouldContinue = false;
         context.skipNotification = true;
         context.metadata.set('filteredReason', 'excluded_path');
 
-        BlacLogger.debug('FilterStage', '❌ RENDER BLOCKED - Excluded path changed', {
-          reason: 'An excluded path changed (changes to these paths should not trigger renders)',
-          excludedPaths: this.options.excludePaths,
-          subscriptionId: context.subscriptionId,
-        });
+        BlacLogger.debug(
+          'FilterStage',
+          '❌ RENDER BLOCKED - Excluded path changed',
+          {
+            reason:
+              'An excluded path changed (changes to these paths should not trigger renders)',
+            excludedPaths: this.options.excludePaths,
+            subscriptionId: context.subscriptionId,
+          },
+        );
 
         return context;
       }
@@ -97,30 +120,48 @@ export class FilterStage<T = unknown> extends PipelineStage {
 
     // Apply custom predicate
     if (this.options.predicate) {
-      const shouldNotify = (this.options.predicate as FilterPredicate<unknown>)(current, previous, stateChange);
+      const shouldNotify = (this.options.predicate as FilterPredicate<unknown>)(
+        current,
+        previous,
+        stateChange,
+      );
       if (!shouldNotify) {
         context.shouldContinue = false;
         context.skipNotification = true;
         context.metadata.set('filteredReason', 'predicate_false');
 
-        BlacLogger.debug('FilterStage', '❌ RENDER BLOCKED - Custom predicate returned false', {
-          reason: 'Custom filter predicate determined that this change should not trigger a render',
-          subscriptionId: context.subscriptionId,
-        });
+        BlacLogger.debug(
+          'FilterStage',
+          '❌ RENDER BLOCKED - Custom predicate returned false',
+          {
+            reason:
+              'Custom filter predicate determined that this change should not trigger a render',
+            subscriptionId: context.subscriptionId,
+          },
+        );
 
         return context;
       }
 
-      BlacLogger.debug('FilterStage', '✅ RENDER ALLOWED - Custom predicate returned true', {
-        reason: 'Custom filter predicate determined this change should trigger a render',
-        subscriptionId: context.subscriptionId,
-      });
+      BlacLogger.debug(
+        'FilterStage',
+        '✅ RENDER ALLOWED - Custom predicate returned true',
+        {
+          reason:
+            'Custom filter predicate determined this change should trigger a render',
+          subscriptionId: context.subscriptionId,
+        },
+      );
     }
 
     context.metadata.set('filterPassed', true);
-    BlacLogger.debug('FilterStage', '✅ All filters passed - proceeding to notification', {
-      subscriptionId: context.subscriptionId,
-    });
+    BlacLogger.debug(
+      'FilterStage',
+      '✅ All filters passed - proceeding to notification',
+      {
+        subscriptionId: context.subscriptionId,
+      },
+    );
     return context;
   }
 

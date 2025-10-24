@@ -127,10 +127,12 @@ describe('EventStream', () => {
       const increments: IncrementEvent[] = [];
       const decrements: DecrementEvent[] = [];
 
-      stream.filter((e): e is IncrementEvent => e.type === 'increment')
+      stream
+        .filter((e): e is IncrementEvent => e.type === 'increment')
         .subscribe((event) => increments.push(event));
 
-      stream.filter((e): e is DecrementEvent => e.type === 'decrement')
+      stream
+        .filter((e): e is DecrementEvent => e.type === 'decrement')
         .subscribe((event) => decrements.push(event));
 
       stream.dispatch(new IncrementEvent(1));
@@ -192,8 +194,9 @@ describe('EventStream', () => {
     it('should chain map with filter', () => {
       const results: string[] = [];
 
-      const filteredStream = stream
-        .filter((e): e is IncrementEvent => e.type === 'increment');
+      const filteredStream = stream.filter(
+        (e): e is IncrementEvent => e.type === 'increment',
+      );
 
       // Subscribe to the filtered stream and track results
       filteredStream.subscribe((event) => {
@@ -236,7 +239,7 @@ describe('EventStream', () => {
       stream.dispatch(new IncrementEvent(3));
 
       // Wait for async processing
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       expect(events).toEqual([1, 2, 3]);
     });
@@ -246,7 +249,7 @@ describe('EventStream', () => {
     it('should respect max queue size', () => {
       const stream = new EventStream({
         async: true,
-        maxQueueSize: 3
+        maxQueueSize: 3,
       });
 
       // Pause to prevent processing
@@ -287,12 +290,12 @@ describe('EventStream', () => {
       stream.dispatch(new IncrementEvent(2));
 
       // No events processed while paused
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
       expect(events).toHaveLength(0);
 
       // Resume processing
       stream.resume();
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       expect(events).toHaveLength(2);
     });
@@ -362,7 +365,7 @@ describe('EventStream', () => {
       }
 
       // Unsubscribe all
-      unsubscribes.forEach(unsub => unsub());
+      unsubscribes.forEach((unsub) => unsub());
 
       // Add a test subscriber to verify stream still works
       const events: any[] = [];
@@ -379,7 +382,7 @@ describe('EventStream', () => {
     it('should preserve event types through transformations', () => {
       type IncrementOnly = IncrementEvent;
       const incrementStream = stream.filter(
-        (e): e is IncrementOnly => e.type === 'increment'
+        (e): e is IncrementOnly => e.type === 'increment',
       );
 
       const amounts: number[] = [];
@@ -400,10 +403,14 @@ describe('EventStream', () => {
         throw new Error('Filter error');
       });
 
-      expect(() => throwStream.dispatch(new IncrementEvent())).toThrow('Filter error');
+      expect(() => throwStream.dispatch(new IncrementEvent())).toThrow(
+        'Filter error',
+      );
 
       const logStream = new EventStream({ errorStrategy: 'log' });
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
       logStream.addFilter(() => {
         throw new Error('Filter error');
       });

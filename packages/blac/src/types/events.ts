@@ -80,13 +80,15 @@ export interface EventEmitter<T extends BaseEvent = BaseEvent> {
 /**
  * Typed event emitter for specific event types
  */
-export class TypedEventEmitter<T extends BaseEvent = BaseEvent> implements EventEmitter<T> {
+export class TypedEventEmitter<T extends BaseEvent = BaseEvent>
+  implements EventEmitter<T>
+{
   private handlers = new Set<(event: T) => void>();
   private onceHandlers = new Set<(event: T) => void>();
 
   emit(event: T): void {
     // Notify all regular handlers
-    this.handlers.forEach(handler => {
+    this.handlers.forEach((handler) => {
       try {
         handler(event);
       } catch (error) {
@@ -95,7 +97,7 @@ export class TypedEventEmitter<T extends BaseEvent = BaseEvent> implements Event
     });
 
     // Notify and remove once handlers
-    this.onceHandlers.forEach(handler => {
+    this.onceHandlers.forEach((handler) => {
       try {
         handler(event);
       } catch (error) {
@@ -137,7 +139,7 @@ export function createStateChangeEvent<S>(
   previous: S,
   current: S,
   version: Version,
-  metadata?: Partial<ChangeMetadata>
+  metadata?: Partial<ChangeMetadata>,
 ): StateChangeEvent<S> {
   return {
     type: 'state-change',
@@ -158,7 +160,7 @@ export function createStateChangeEvent<S>(
  */
 export function createLifecycleEvent(
   type: LifecycleEvent['type'],
-  instanceId: string
+  instanceId: string,
 ): LifecycleEvent {
   return {
     type,
@@ -172,7 +174,7 @@ export function createLifecycleEvent(
  */
 export function createErrorEvent(
   error: Error,
-  context?: Record<string, unknown>
+  context?: Record<string, unknown>,
 ): ErrorEvent {
   return {
     type: 'error',

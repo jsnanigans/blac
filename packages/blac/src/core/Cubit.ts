@@ -138,4 +138,3 @@ export class TodoCubit extends Cubit<TodoState> {
     return this.state.todos.filter((t) => !t.done).length;
   }
 }
-

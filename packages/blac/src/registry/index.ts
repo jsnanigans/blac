@@ -1,7 +1,7 @@
 /**
  * BlocRegistry module
  *
- * Constructor-based instance management for v2 architecture.
+ * Constructor-based instance management.
  * Clean, type-safe, no string names or factories.
  */
 

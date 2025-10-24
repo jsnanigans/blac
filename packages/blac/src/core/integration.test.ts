@@ -1,5 +1,5 @@
 /**
- * Integration tests to validate the complete v2 design
+ * Integration tests to validate the complete design
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -10,12 +10,12 @@ import {
   DecrementEvent,
   AuthVertex,
   AuthState,
-  Vertex
+  Vertex,
 } from './Vertex';
 import { BaseEvent } from '../types/events';
 import { waitFor } from '../test-utils';
 
-describe('V2 Design Validation', () => {
+describe('Design Validation', () => {
   describe('Cubit Integration', () => {
     let cubit: CounterCubit;
 
@@ -48,16 +48,16 @@ describe('V2 Design Validation', () => {
       const unsubscribe = cubit.subscribe(listener);
 
       cubit.increment();
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
       expect(listener).toHaveBeenCalledWith(1);
 
       cubit.increment();
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
       expect(listener).toHaveBeenCalledWith(2);
 
       unsubscribe();
       cubit.increment();
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
       expect(listener).toHaveBeenCalledTimes(2); // No more calls
     });
 
@@ -163,7 +163,7 @@ describe('V2 Design Validation', () => {
 
     it('should process events in order', async () => {
       const values: number[] = [];
-      vertex.subscribe(state => values.push(state));
+      vertex.subscribe((state) => values.push(state));
 
       // Add multiple events rapidly
       vertex.increment(1);
@@ -273,7 +273,7 @@ describe('V2 Design Validation', () => {
       expect(todoCubit.isDisposalRequested).toBe(false);
 
       // Wait to ensure no disposal happens
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
       expect(todoCubit.isDisposed).toBe(false);
 
       // Manual disposal should still work
@@ -295,7 +295,7 @@ describe('V2 Design Validation', () => {
       expect(cubit.isDisposalRequested).toBe(false);
 
       // Wait to ensure disposal was cancelled
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
       expect(cubit.isDisposed).toBe(false);
 
       unsub2();
@@ -372,7 +372,10 @@ describe('V2 Design Validation', () => {
       const cubit = new CounterCubit();
 
       // Simulate React component destructuring props
-      const Component = ({ increment, decrement }: {
+      const Component = ({
+        increment,
+        decrement,
+      }: {
         increment: () => void;
         decrement: () => void;
       }) => {
@@ -384,7 +387,7 @@ describe('V2 Design Validation', () => {
 
       Component({
         increment: cubit.increment,
-        decrement: cubit.decrement
+        decrement: cubit.decrement,
       });
 
       expect(cubit.state).toBe(1);
@@ -441,7 +444,7 @@ describe('V2 Design Validation', () => {
       expect(duration).toBeLessThan(50); // Should complete quickly
 
       // Clean up
-      listeners.forEach(unsub => unsub());
+      listeners.forEach((unsub) => unsub());
     });
   });
 });

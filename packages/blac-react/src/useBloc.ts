@@ -74,7 +74,7 @@ export interface UseBlocOptions<TBloc extends StateContainer<any, any>> {
 type UseBlocReturn<TBloc extends StateContainer<any, any>> = [
   ExtractState<TBloc>,
   TBloc,
-any,
+  any,
 ];
 
 /**
@@ -93,7 +93,7 @@ const blocInstances = new Map<string, BlocInstanceEntry>();
 function getOrCreateBloc<TBloc extends StateContainer<any, any>>(
   BlocClass: BlocConstructor<TBloc>,
   instanceKey: string,
-  staticProps?: any
+  staticProps?: any,
 ): TBloc {
   const existing = blocInstances.get(instanceKey);
   if (existing) {
@@ -101,10 +101,7 @@ function getOrCreateBloc<TBloc extends StateContainer<any, any>>(
     return existing.bloc as TBloc;
   }
 
-  // Create new instance
-  const instance = staticProps
-    ? new BlocClass(staticProps)
-    : new BlocClass();
+  const instance = staticProps ? new BlocClass(staticProps) : new BlocClass();
 
   blocInstances.set(instanceKey, {
     bloc: instance,
@@ -149,12 +146,13 @@ export function clearAllBlocInstances(): void {
  */
 function useBloc<TBloc extends StateContainer<any, any>>(
   BlocClass: BlocConstructor<TBloc>,
-  options?: UseBlocOptions<TBloc>
+  options?: UseBlocOptions<TBloc>,
 ): UseBlocReturn<TBloc> {
   // Component reference that persists across React Strict Mode remounts
-  const componentRef = useRef<object & { __blocInstanceId?: string; __bridge?: ReactBridge<any> }>({});
+  const componentRef = useRef<
+    object & { __blocInstanceId?: string; __bridge?: ReactBridge<any> }
+  >({});
 
-  // Check if bloc is isolated
   const isIsolated = (BlocClass as { isolated?: boolean }).isolated === true;
 
   // Generate stable instance key
@@ -176,18 +174,20 @@ function useBloc<TBloc extends StateContainer<any, any>>(
     return BlocClass.name;
   }, [BlocClass, options?.instanceId, isIsolated]);
 
-  // Get or create bloc instance and bridge
   const { bloc, bridge } = useMemo(() => {
-    const blocInstance = getOrCreateBloc(BlocClass, instanceKey, options?.staticProps);
+    const blocInstance = getOrCreateBloc(
+      BlocClass,
+      instanceKey,
+      options?.staticProps,
+    );
 
-    // Create or reuse bridge
     if (!componentRef.current.__bridge) {
       componentRef.current.__bridge = new ReactBridge(blocInstance);
     }
 
     return {
       bloc: blocInstance,
-      bridge: componentRef.current.__bridge
+      bridge: componentRef.current.__bridge,
     };
   }, [BlocClass, instanceKey, options?.staticProps]);
 
@@ -195,7 +195,7 @@ function useBloc<TBloc extends StateContainer<any, any>>(
   const state = useSyncExternalStore(
     bridge.subscribe,
     bridge.getSnapshot,
-    bridge.getServerSnapshot
+    bridge.getServerSnapshot,
   );
 
   // Complete tracking after each render
@@ -225,7 +225,7 @@ function useBloc<TBloc extends StateContainer<any, any>>(
     };
   }, [bridge, instanceKey, isIsolated, options?.onMount, options?.onUnmount]);
 
-  return [state, bloc, componentRef] as UseBlocReturn<TBloc>
+  return [state, bloc, componentRef] as UseBlocReturn<TBloc>;
 }
 
 export default useBloc;

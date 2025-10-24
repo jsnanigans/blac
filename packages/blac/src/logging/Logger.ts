@@ -52,7 +52,7 @@ class BlacLogger {
     level: string,
     context: string,
     message: string,
-    data?: any
+    data?: any,
   ): void {
     try {
       const entry: LogEntry = {

@@ -6,7 +6,12 @@
  */
 
 import { BrandedId } from '../types/branded';
-import { SubscriptionPipeline, SubscriptionId, PipelineContext, MetadataValue } from './SubscriptionPipeline';
+import {
+  SubscriptionPipeline,
+  SubscriptionId,
+  PipelineContext,
+  MetadataValue,
+} from './SubscriptionPipeline';
 import { NotificationCallback } from './stages/NotificationStage';
 import { StateChange } from '../types/events';
 import { BlacLogger } from '../logging/Logger';
@@ -58,7 +63,10 @@ export interface RegistryStats {
  * Main subscription registry class
  */
 export class SubscriptionRegistry {
-  private subscriptions: Map<SubscriptionId, SubscriptionEntry<unknown, unknown>> = new Map();
+  private subscriptions: Map<
+    SubscriptionId,
+    SubscriptionEntry<unknown, unknown>
+  > = new Map();
   private consumerIndex: Map<ConsumerId, Set<SubscriptionId>> = new Map();
   private containerIndex: Map<ContainerId, Set<SubscriptionId>> = new Map();
   private cleanupInterval?: NodeJS.Timeout;
@@ -69,7 +77,7 @@ export class SubscriptionRegistry {
       cleanupIntervalMs?: number;
       maxSubscriptions?: number;
       enableWeakRefs?: boolean;
-    } = {}
+    } = {},
   ) {
     this.startCleanupScheduler();
   }
@@ -77,9 +85,16 @@ export class SubscriptionRegistry {
   /**
    * Register a new subscription
    */
-  register<TState = unknown, TResult = TState>(config: SubscriptionConfig<TState, TResult>): SubscriptionId {
-    if (this.options.maxSubscriptions && this.subscriptions.size >= this.options.maxSubscriptions) {
-      throw new Error(`Maximum subscriptions (${this.options.maxSubscriptions}) reached`);
+  register<TState = unknown, TResult = TState>(
+    config: SubscriptionConfig<TState, TResult>,
+  ): SubscriptionId {
+    if (
+      this.options.maxSubscriptions &&
+      this.subscriptions.size >= this.options.maxSubscriptions
+    ) {
+      throw new Error(
+        `Maximum subscriptions (${this.options.maxSubscriptions}) reached`,
+      );
     }
 
     const id = this.generateId();
@@ -92,7 +107,7 @@ export class SubscriptionRegistry {
       refCount: 1,
       created: Date.now(),
       lastAccessed: Date.now(),
-      isActive: true
+      isActive: true,
     };
 
     // Add weak reference if enabled
@@ -165,7 +180,7 @@ export class SubscriptionRegistry {
    */
   async processStateChange<T>(
     containerId: ContainerId,
-    change: StateChange<T>
+    change: StateChange<T>,
   ): Promise<void> {
     const subscriptionIds = this.containerIndex.get(containerId);
     if (!subscriptionIds) return;
@@ -187,21 +202,28 @@ export class SubscriptionRegistry {
         stateChange: change,
         metadata: new Map([
           ['priority', entry.config.priority ?? 500],
-          ...Object.entries(entry.config.metadata ?? {})
+          ...Object.entries(entry.config.metadata ?? {}),
         ]),
         timestamp: Date.now(),
-        shouldContinue: true
+        shouldContinue: true,
       };
 
       promises.push(
-        entry.pipeline.execute(context).then(() => {
-          entry.lastAccessed = Date.now();
-        }).catch(error => {
-          BlacLogger.error('SubscriptionRegistry', 'Subscription processing error', {
-            subscriptionId: id,
-            error: error instanceof Error ? error.message : String(error)
-          });
-        })
+        entry.pipeline
+          .execute(context)
+          .then(() => {
+            entry.lastAccessed = Date.now();
+          })
+          .catch((error) => {
+            BlacLogger.error(
+              'SubscriptionRegistry',
+              'Subscription processing error',
+              {
+                subscriptionId: id,
+                error: error instanceof Error ? error.message : String(error),
+              },
+            );
+          }),
       );
     }
 
@@ -236,15 +258,17 @@ export class SubscriptionRegistry {
    */
   getStats(): RegistryStats {
     const entries = Array.from(this.subscriptions.values());
-    const active = entries.filter(e => e.isActive);
+    const active = entries.filter((e) => e.isActive);
 
     return {
       totalSubscriptions: entries.length,
       activeSubscriptions: active.length,
       inactiveSubscriptions: entries.length - active.length,
-      averageRefCount: entries.reduce((sum, e) => sum + e.refCount, 0) / entries.length || 0,
-      oldestSubscription: Math.min(...entries.map(e => e.created)) || Date.now(),
-      memoryEstimate: this.estimateMemoryUsage()
+      averageRefCount:
+        entries.reduce((sum, e) => sum + e.refCount, 0) / entries.length || 0,
+      oldestSubscription:
+        Math.min(...entries.map((e) => e.created)) || Date.now(),
+      memoryEstimate: this.estimateMemoryUsage(),
     };
   }
 
@@ -261,10 +285,12 @@ export class SubscriptionRegistry {
   /**
    * Create pipeline for subscription
    */
-  private createPipeline<TState = unknown, TResult = TState>(config: SubscriptionConfig<TState, TResult>): SubscriptionPipeline {
+  private createPipeline<TState = unknown, TResult = TState>(
+    config: SubscriptionConfig<TState, TResult>,
+  ): SubscriptionPipeline {
     const pipeline = new SubscriptionPipeline({
       enableMetrics: false,
-      timeout: 100
+      timeout: 100,
     });
 
     // Pipeline is created and configured by SubscriptionSystem,
@@ -279,7 +305,7 @@ export class SubscriptionRegistry {
   private updateIndices<TState = unknown, TResult = TState>(
     id: SubscriptionId,
     config: SubscriptionConfig<TState, TResult>,
-    operation: 'add' | 'remove'
+    operation: 'add' | 'remove',
   ): void {
     // Update consumer index
     if (!this.consumerIndex.has(config.consumerId)) {
@@ -349,7 +375,7 @@ export class SubscriptionRegistry {
     let cleanedCount = 0;
 
     for (const [id, entry] of this.subscriptions.entries()) {
-      if (!entry.isActive && (now - entry.lastAccessed) > maxAge) {
+      if (!entry.isActive && now - entry.lastAccessed > maxAge) {
         this.unregister(id);
         cleanedCount++;
       }

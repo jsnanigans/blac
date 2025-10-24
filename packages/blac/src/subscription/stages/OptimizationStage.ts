@@ -105,7 +105,7 @@ export class OptimizationStage extends PipelineStage {
 
     this.batch.push({
       context: { ...context },
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
 
     // Flush if batch is full
@@ -160,7 +160,11 @@ export class OptimizationStage extends PipelineStage {
   }
 
   private processThrottle<T>(context: PipelineContext<T>): PipelineContext<T> {
-    const { interval, leading = true, trailing = true } = this.options.throttle!;
+    const {
+      interval,
+      leading = true,
+      trailing = true,
+    } = this.options.throttle!;
     const now = Date.now();
     const timeSinceLastCall = now - this.throttleState.lastCall;
 
@@ -190,7 +194,7 @@ export class OptimizationStage extends PipelineStage {
       // Store the context for later execution
       this.throttleState.pendingContext = {
         ...context,
-        metadata: new Map(context.metadata)
+        metadata: new Map(context.metadata),
       };
 
       if (!this.throttleState.timer) {
@@ -198,7 +202,9 @@ export class OptimizationStage extends PipelineStage {
         this.throttleState.timer = setTimeout(() => {
           if (this.throttleState.pendingContext && this.options.callback) {
             // Execute the callback with the latest state
-            const value = this.throttleState.pendingContext.metadata.has('selectedValue')
+            const value = this.throttleState.pendingContext.metadata.has(
+              'selectedValue',
+            )
               ? this.throttleState.pendingContext.metadata.get('selectedValue')
               : this.throttleState.pendingContext.stateChange.current;
             this.options.callback(value);
@@ -300,7 +306,7 @@ export class OptimizationStage extends PipelineStage {
 
     this.cache.set(cacheKey, {
       value: context.stateChange.current,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
@@ -357,7 +363,7 @@ export class OptimizationStage extends PipelineStage {
       batchSize: this.batch.length,
       cacheSize: this.cache.size,
       hasPendingThrottle: !!this.throttleState.pendingContext,
-      hasPendingDebounce: !!this.debounceState.pendingContext
+      hasPendingDebounce: !!this.debounceState.pendingContext,
     };
   }
 }

@@ -15,7 +15,7 @@ class CounterBloc extends StateContainer<number> {
   }
 
   increment = () => {
-    this.update(state => state + 1);
+    this.update((state) => state + 1);
   };
 
   reset = () => {
@@ -31,7 +31,7 @@ class IsolatedBloc extends StateContainer<number> {
   }
 
   increment = () => {
-    this.update(state => state + 1);
+    this.update((state) => state + 1);
   };
 }
 
@@ -41,11 +41,11 @@ class UserBloc extends StateContainer<{ name: string; email: string }> {
   }
 
   setName = (name: string) => {
-    this.update(state => ({ ...state, name }));
+    this.update((state) => ({ ...state, name }));
   };
 
   setEmail = (email: string) => {
-    this.update(state => ({ ...state, email }));
+    this.update((state) => ({ ...state, email }));
   };
 }
 
@@ -146,10 +146,10 @@ describe('useBloc', () => {
   describe('Custom Instance IDs', () => {
     it('should use custom instance ID for shared blocs', () => {
       const { result: result1 } = renderHook(() =>
-        useBloc(CounterBloc, { instanceId: 'counter-1' })
+        useBloc(CounterBloc, { instanceId: 'counter-1' }),
       );
       const { result: result2 } = renderHook(() =>
-        useBloc(CounterBloc, { instanceId: 'counter-2' })
+        useBloc(CounterBloc, { instanceId: 'counter-2' }),
       );
 
       const [, bloc1] = result1.current;
@@ -161,10 +161,10 @@ describe('useBloc', () => {
 
     it('should share instance with same custom ID', () => {
       const { result: result1 } = renderHook(() =>
-        useBloc(CounterBloc, { instanceId: 'shared-counter' })
+        useBloc(CounterBloc, { instanceId: 'shared-counter' }),
       );
       const { result: result2 } = renderHook(() =>
-        useBloc(CounterBloc, { instanceId: 'shared-counter' })
+        useBloc(CounterBloc, { instanceId: 'shared-counter' }),
       );
 
       const [, bloc1] = result1.current;
@@ -187,9 +187,7 @@ describe('useBloc', () => {
     it('should call onUnmount callback', () => {
       const onUnmount = vi.fn();
 
-      const { unmount } = renderHook(() =>
-        useBloc(CounterBloc, { onUnmount })
-      );
+      const { unmount } = renderHook(() => useBloc(CounterBloc, { onUnmount }));
 
       expect(onUnmount).not.toHaveBeenCalled();
 
@@ -203,7 +201,7 @@ describe('useBloc', () => {
       const onUnmount = vi.fn();
 
       const { result, unmount } = renderHook(() =>
-        useBloc(CounterBloc, { onMount, onUnmount })
+        useBloc(CounterBloc, { onMount, onUnmount }),
       );
 
       const [, bloc] = result.current;
@@ -221,7 +219,7 @@ describe('useBloc', () => {
       const { result } = renderHook(() =>
         useBloc(UserBloc, {
           staticProps: { initialName: 'Bob' },
-        })
+        }),
       );
 
       const [state] = result.current;

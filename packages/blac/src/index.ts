@@ -1,5 +1,5 @@
 /**
- * v2 Architecture Exports
+ * Architecture Exports
  *
  * Clean, type-safe implementation with clear responsibility boundaries.
  */
@@ -26,8 +26,21 @@ export type { Subscription } from './subscription/SubscriptionSystem';
 export { BlocRegistry } from './registry/BlocRegistry';
 
 // Types - use branded types as canonical
-export type { InstanceId, SubscriptionId, BrandedId, Version, Generation } from './types/branded';
-export { instanceId, subscriptionId, version, generation, incrementVersion, incrementGeneration } from './types/branded';
+export type {
+  InstanceId,
+  SubscriptionId,
+  BrandedId,
+  Version,
+  Generation,
+} from './types/branded';
+export {
+  instanceId,
+  subscriptionId,
+  version,
+  generation,
+  incrementVersion,
+  incrementGeneration,
+} from './types/branded';
 export * from './types/events';
 export * from './types/internal';
 

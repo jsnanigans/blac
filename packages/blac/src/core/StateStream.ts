@@ -290,4 +290,3 @@ export class StateStream<S> {
     );
   }
 }
-

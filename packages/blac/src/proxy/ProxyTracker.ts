@@ -11,15 +11,17 @@ import { BlacLogger } from '../logging/Logger';
  * Check if a value is an object that can be proxied
  */
 function isProxyable(value: unknown): value is object {
-  return value !== null &&
-         typeof value === 'object' &&
-         !(value instanceof Date) &&
-         !(value instanceof RegExp) &&
-         !(value instanceof Map) &&
-         !(value instanceof Set) &&
-         !(value instanceof WeakMap) &&
-         !(value instanceof WeakSet) &&
-         !(value instanceof Promise);
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    !(value instanceof Date) &&
+    !(value instanceof RegExp) &&
+    !(value instanceof Map) &&
+    !(value instanceof Set) &&
+    !(value instanceof WeakMap) &&
+    !(value instanceof WeakSet) &&
+    !(value instanceof Promise)
+  );
 }
 
 /**
@@ -52,7 +54,11 @@ export class ProxyTracker<T> {
 
     // Handle arrays specially to track index access
     if (Array.isArray(target)) {
-      return this.createArrayProxy(target as unknown as any[], path, depth) as unknown as T;
+      return this.createArrayProxy(
+        target as unknown as any[],
+        path,
+        depth,
+      ) as unknown as T;
     }
 
     // Create object proxy for all objects
@@ -82,7 +88,7 @@ export class ProxyTracker<T> {
             this.trackedPaths.add(fullPath);
             BlacLogger.debug('ProxyTracker', 'Tracked property access', {
               path: fullPath,
-              valueType: typeof value
+              valueType: typeof value,
             });
           }
         }
@@ -96,7 +102,7 @@ export class ProxyTracker<T> {
           const fullPath = path ? `${path}.${prop}` : prop;
           this.trackedPaths.add(fullPath);
           BlacLogger.debug('ProxyTracker', 'Tracked "in" operator access', {
-            path: fullPath
+            path: fullPath,
           });
         }
         return Reflect.has(obj, prop);
@@ -108,11 +114,11 @@ export class ProxyTracker<T> {
           // Track that we're iterating over this object
           this.trackedPaths.add(path);
           BlacLogger.debug('ProxyTracker', 'Tracked object keys iteration', {
-            path: path
+            path: path,
           });
         }
         return Reflect.ownKeys(obj);
-      }
+      },
     });
 
     this.proxyCache.set(target, proxy);
@@ -122,7 +128,11 @@ export class ProxyTracker<T> {
   /**
    * Create a proxy for arrays with special handling
    */
-  private createArrayProxy<U>(target: U[], path: string, depth: number = 0): U[] {
+  private createArrayProxy<U>(
+    target: U[],
+    path: string,
+    depth: number = 0,
+  ): U[] {
     const proxy = new Proxy(target, {
       get: (arr, prop: string | symbol) => {
         const value = Reflect.get(arr, prop);
@@ -130,12 +140,22 @@ export class ProxyTracker<T> {
         // Handle array methods
         if (typeof value === 'function') {
           // For methods like map, filter, etc., track array access
-          if (['map', 'filter', 'forEach', 'find', 'some', 'every', 'reduce'].includes(String(prop))) {
+          if (
+            [
+              'map',
+              'filter',
+              'forEach',
+              'find',
+              'some',
+              'every',
+              'reduce',
+            ].includes(String(prop))
+          ) {
             if (this.isTracking && path) {
               this.trackedPaths.add(path);
               BlacLogger.debug('ProxyTracker', 'Tracked array method access', {
                 path: path,
-                method: String(prop)
+                method: String(prop),
               });
             }
           }
@@ -168,12 +188,12 @@ export class ProxyTracker<T> {
           this.trackedPaths.add(fullPath);
           BlacLogger.debug('ProxyTracker', 'Tracked array property access', {
             path: fullPath,
-            valueType: typeof value
+            valueType: typeof value,
           });
         }
 
         return value;
-      }
+      },
     });
 
     this.proxyCache.set(target, proxy);
@@ -196,7 +216,7 @@ export class ProxyTracker<T> {
     this.isTracking = false;
     BlacLogger.debug('ProxyTracker', 'Stopped tracking', {
       pathCount: this.trackedPaths.size,
-      paths: Array.from(this.trackedPaths)
+      paths: Array.from(this.trackedPaths),
     });
     return new Set(this.trackedPaths);
   }
@@ -261,7 +281,7 @@ export const globalProxyTracker = new ProxyTracker();
  */
 export function trackAccess<T, R>(
   state: T,
-  callback: (proxiedState: T) => R
+  callback: (proxiedState: T) => R,
 ): { result: R; trackedPaths: Set<string> } {
   const tracker = new ProxyTracker<T>();
 

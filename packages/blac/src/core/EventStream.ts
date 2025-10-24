@@ -16,13 +16,15 @@ export type EventFilter<E extends BaseEvent> = (event: E) => boolean;
  * Event transformer function type
  */
 export type EventTransformer<E extends BaseEvent, R extends BaseEvent> = (
-  event: E
+  event: E,
 ) => R | null;
 
 /**
  * Event handler function type
  */
-export type EventHandler<E extends BaseEvent> = (event: E) => void | Promise<void>;
+export type EventHandler<E extends BaseEvent> = (
+  event: E,
+) => void | Promise<void>;
 
 /**
  * Options for EventStream
@@ -139,7 +141,7 @@ export class EventStream<E extends BaseEvent = BaseEvent> {
    * @returns Remove function
    */
   addTransformer<R extends BaseEvent>(
-    transformer: EventTransformer<E, R>
+    transformer: EventTransformer<E, R>,
   ): () => void {
     this.transformers.push(transformer);
     return () => {

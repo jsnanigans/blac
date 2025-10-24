@@ -3,7 +3,13 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { LifecycleManager, LifecycleState, MountEvent, UnmountEvent, DisposeEvent } from './LifecycleManager';
+import {
+  LifecycleManager,
+  LifecycleState,
+  MountEvent,
+  UnmountEvent,
+  DisposeEvent,
+} from './LifecycleManager';
 import { instanceId } from '../types/branded';
 
 describe('LifecycleManager', () => {
@@ -53,7 +59,7 @@ describe('LifecycleManager', () => {
         manager.mount();
 
         // Should emit transition events and mount event
-        const mountEvent = events.find(e => e instanceof MountEvent);
+        const mountEvent = events.find((e) => e instanceof MountEvent);
         expect(mountEvent).toBeDefined();
         expect(mountEvent.instanceId).toBe(testInstanceId);
       });
@@ -84,7 +90,7 @@ describe('LifecycleManager', () => {
 
         manager.unmount();
 
-        const unmountEvent = events.find(e => e instanceof UnmountEvent);
+        const unmountEvent = events.find((e) => e instanceof UnmountEvent);
         expect(unmountEvent).toBeDefined();
         expect(unmountEvent.instanceId).toBe(testInstanceId);
       });
@@ -116,7 +122,7 @@ describe('LifecycleManager', () => {
 
         manager.dispose();
 
-        const disposeEvent = events.find(e => e instanceof DisposeEvent);
+        const disposeEvent = events.find((e) => e instanceof DisposeEvent);
         expect(disposeEvent).toBeDefined();
         expect(disposeEvent.instanceId).toBe(testInstanceId);
       });
@@ -158,8 +164,8 @@ describe('LifecycleManager', () => {
       manager.unmount();
 
       expect(events.length).toBeGreaterThan(0);
-      expect(events.some(e => e instanceof MountEvent)).toBe(true);
-      expect(events.some(e => e instanceof UnmountEvent)).toBe(true);
+      expect(events.some((e) => e instanceof MountEvent)).toBe(true);
+      expect(events.some((e) => e instanceof UnmountEvent)).toBe(true);
 
       unsubscribe();
     });
@@ -208,17 +214,23 @@ describe('LifecycleManager', () => {
 
       const debugManager = new LifecycleManager({
         instanceId: testInstanceId,
-        debug: true
+        debug: true,
       });
 
       debugManager.mount();
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Mounted'));
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Mounted'),
+      );
 
       debugManager.unmount();
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Unmounted'));
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Unmounted'),
+      );
 
       debugManager.dispose();
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Disposed'));
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Disposed'),
+      );
 
       consoleSpy.mockRestore();
     });
@@ -229,14 +241,14 @@ describe('LifecycleManager', () => {
       const transitions: any[] = [];
       const manager = new LifecycleManager({
         instanceId: testInstanceId,
-        onStateTransition: (event) => transitions.push(event)
+        onStateTransition: (event) => transitions.push(event),
       });
 
       manager.mount();
       manager.unmount();
 
       expect(transitions.length).toBeGreaterThan(0);
-      transitions.forEach(t => {
+      transitions.forEach((t) => {
         expect(t.instanceId).toBe(testInstanceId);
         expect(t.fromState).toBeDefined();
         expect(t.toState).toBeDefined();
@@ -277,7 +289,7 @@ describe('LifecycleManager', () => {
       }
 
       // Unsubscribe all
-      subscriptions.forEach(unsub => unsub());
+      subscriptions.forEach((unsub) => unsub());
 
       // The EventStream should have no listeners
       // (This is more of an integration test with EventStream)
