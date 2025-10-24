@@ -6,7 +6,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { StateContainer } from '@blac/core';
-import { useBloc, clearAllBlocInstances } from '../useBloc';
+import { useBloc } from '../useBloc';
 
 // Test implementations
 class CounterBloc extends StateContainer<number> {
@@ -52,7 +52,7 @@ class UserBloc extends StateContainer<{ name: string; email: string }> {
 describe('useBloc', () => {
   afterEach(() => {
     // Clear all bloc instances between tests
-    clearAllBlocInstances();
+    StateContainer.clearAllInstances();
   });
 
   describe('Basic Usage', () => {

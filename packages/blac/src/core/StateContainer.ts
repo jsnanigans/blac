@@ -49,11 +49,153 @@ export interface StateContainerConfig {
 }
 
 /**
+ * Instance entry for static instance registry
+ */
+interface StateContainerInstanceEntry {
+  instance: StateContainer<any, any>;
+  refCount: number;
+}
+
+/**
  * Base abstract class for all state containers
  */
 export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
   implements InternalStateContainer<S>
 {
+  // ============================================
+  // Static Instance Registry
+  // ============================================
+
+  /**
+   * Global registry of all StateContainer instances
+   * Key format: "ClassName:instanceKey"
+   */
+  private static readonly instances = new Map<
+    string,
+    StateContainerInstanceEntry
+  >();
+
+  /**
+   * Get or create a StateContainer instance with reference counting
+   *
+   * @example
+   * ```typescript
+   * // Get or create the default shared instance
+   * const counter = CounterBloc.getOrCreate();
+   *
+   * // Get or create a named instance
+   * const counter = CounterBloc.getOrCreate('main');
+   *
+   * // With constructor arguments
+   * const user = UserBloc.getOrCreate('user-123', { userId: '123' });
+   *
+   * // When done, release the reference
+   * CounterBloc.release(); // Release default instance
+   * CounterBloc.release('main'); // Release named instance
+   * ```
+   */
+  static getOrCreate<T extends StateContainer<any, any>>(
+    this: new (...args: any[]) => T,
+    instanceKey?: string,
+    ...constructorArgs: any[]
+  ): T {
+    const className = this.name;
+    const key = instanceKey ?? className;
+    const fullKey = `${className}:${key}`;
+
+    // Get existing instance
+    const existing = StateContainer.instances.get(fullKey);
+    if (existing) {
+      existing.refCount++;
+      return existing.instance as T;
+    }
+
+    // Create new instance
+    const instance = new this(...constructorArgs);
+
+    StateContainer.instances.set(fullKey, {
+      instance,
+      refCount: 1,
+    });
+
+    return instance;
+  }
+
+  /**
+   * Release a reference to a StateContainer instance
+   * Disposes the instance when reference count reaches zero
+   *
+   * @param instanceKey The instance key used in getOrCreate (defaults to className)
+   * @param forceDispose If true, dispose immediately regardless of ref count
+   */
+  static release<T extends StateContainer<any, any>>(
+    this: new (...args: any[]) => T,
+    instanceKey?: string,
+    forceDispose = false,
+  ): void {
+    const className = this.name;
+    const key = instanceKey ?? className;
+    const fullKey = `${className}:${key}`;
+
+    const entry = StateContainer.instances.get(fullKey);
+    if (!entry) return;
+
+    if (forceDispose) {
+      entry.instance.dispose();
+      StateContainer.instances.delete(fullKey);
+      return;
+    }
+
+    entry.refCount--;
+
+    // Only dispose if ref count reaches zero and not keepAlive
+    if (entry.refCount <= 0 && !entry.instance.keepAlive) {
+      entry.instance.dispose();
+      StateContainer.instances.delete(fullKey);
+    }
+  }
+
+  /**
+   * Get the current reference count for an instance
+   */
+  static getRefCount<T extends StateContainer<any, any>>(
+    this: new (...args: any[]) => T,
+    instanceKey?: string,
+  ): number {
+    const className = this.name;
+    const key = instanceKey ?? className;
+    const fullKey = `${className}:${key}`;
+    const entry = StateContainer.instances.get(fullKey);
+    return entry?.refCount ?? 0;
+  }
+
+  /**
+   * Check if an instance exists
+   */
+  static hasInstance<T extends StateContainer<any, any>>(
+    this: new (...args: any[]) => T,
+    instanceKey?: string,
+  ): boolean {
+    const className = this.name;
+    const key = instanceKey ?? className;
+    const fullKey = `${className}:${key}`;
+    return StateContainer.instances.has(fullKey);
+  }
+
+  /**
+   * Clear all instances (useful for testing)
+   */
+  static clearAllInstances(): void {
+    for (const entry of StateContainer.instances.values()) {
+      entry.instance.dispose();
+    }
+    StateContainer.instances.clear();
+  }
+
+  // ============================================
+  // Instance Properties
+  // ============================================
+
   // State management
   protected readonly stateStream: StateStream<S>;
   protected readonly eventStream: EventStream<E>;

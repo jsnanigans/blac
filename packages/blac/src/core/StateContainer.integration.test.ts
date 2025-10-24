@@ -4,7 +4,6 @@
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { StateContainer } from './StateContainer';
-import { SubscriptionPriority } from '../subscription/stages';
 
 // Test implementation of StateContainer
 class TestContainer extends StateContainer<{ count: number; message: string }> {
@@ -115,107 +114,6 @@ describe('StateContainer with Subscription System', () => {
       // Large value - should trigger
       container.setCount(6);
       expect(handler).toHaveBeenCalledWith({ count: 6, message: 'initial' });
-
-      subscription.unsubscribe();
-    });
-
-    it('should support priority subscriptions', () => {
-      const results: number[] = [];
-
-      const lowPriority = container.subscribeAdvanced({
-        callback: () => results.push(1),
-        priority: SubscriptionPriority.LOW,
-      });
-
-      const highPriority = container.subscribeAdvanced({
-        callback: () => results.push(2),
-        priority: SubscriptionPriority.HIGH,
-      });
-
-      const normalPriority = container.subscribeAdvanced({
-        callback: () => results.push(3),
-        priority: SubscriptionPriority.NORMAL,
-      });
-
-      container.increment();
-
-      // Synchronous execution - all callbacks fired
-      expect(results.length).toBe(3);
-
-      lowPriority.unsubscribe();
-      highPriority.unsubscribe();
-      normalPriority.unsubscribe();
-    });
-  });
-
-  describe('Performance Optimizations', () => {
-    it('should support debounced subscriptions', async () => {
-      const handler = vi.fn();
-
-      const subscription = container.subscribeAdvanced({
-        callback: handler,
-        debounce: 50,
-      });
-
-      // Rapid changes
-      container.increment();
-      container.increment();
-      container.increment();
-
-      // Debounce still works with timers
-      expect(handler).not.toHaveBeenCalled();
-
-      // After debounce period
-      await new Promise((resolve) => setTimeout(resolve, 60));
-      expect(handler).toHaveBeenCalledTimes(1);
-      expect(handler).toHaveBeenCalledWith({ count: 3, message: 'initial' });
-
-      subscription.unsubscribe();
-    });
-
-    it('should support throttled subscriptions', async () => {
-      const handler = vi.fn();
-
-      const subscription = container.subscribeAdvanced({
-        callback: handler,
-        throttle: 50,
-      });
-
-      // Rapid changes
-      container.setCount(1);
-      container.setCount(2);
-      container.setCount(3);
-
-      // First call happens immediately (throttle allows first call through)
-      expect(handler).toHaveBeenCalledTimes(1);
-
-      // After throttle period, next change should trigger
-      await new Promise((resolve) => setTimeout(resolve, 60));
-      container.setCount(4);
-      expect(handler).toHaveBeenCalledTimes(2);
-
-      subscription.unsubscribe();
-    });
-
-    it('should support batched subscriptions', async () => {
-      const handler = vi.fn();
-
-      const subscription = container.subscribeAdvanced({
-        callback: handler,
-        batch: true,
-      });
-
-      // Rapid synchronous changes
-      container.setCount(1);
-      container.setCount(2);
-      container.setCount(3);
-
-      // Batching uses microtask/setTimeout to defer
-      expect(handler).not.toHaveBeenCalled();
-
-      await new Promise((resolve) => setTimeout(resolve, 10));
-      expect(handler).toHaveBeenCalledTimes(1);
-      expect(handler).toHaveBeenCalledWith({ count: 3, message: 'initial' });
 
       subscription.unsubscribe();
     });

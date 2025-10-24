@@ -75,9 +75,7 @@ export abstract class PipelineStage {
   /**
    * Process the context through this stage
    */
-  abstract process<T>(
-    context: PipelineContext<T>,
-  ): PipelineContext<T>;
+  abstract process<T>(context: PipelineContext<T>): PipelineContext<T>;
 
   /**
    * Optional cleanup when stage is removed

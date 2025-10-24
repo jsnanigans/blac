@@ -4,8 +4,8 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { useBloc, clearAllBlocInstances } from '../useBloc';
-import { Cubit } from '@blac/core';
+import { useBloc } from '../useBloc';
+import { Cubit, StateContainer } from '@blac/core';
 import { BlacLogger, LogLevel } from '@blac/core';
 
 // Enable logging
@@ -90,7 +90,7 @@ class TestCubit extends Cubit<TestState> {
 
 describe('Debug Logging Test', () => {
   beforeEach(() => {
-    clearAllBlocInstances();
+    StateContainer.clearAllInstances();
   });
 
   it('should log subscription and re-render flow', async () => {

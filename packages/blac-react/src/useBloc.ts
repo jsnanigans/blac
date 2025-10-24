@@ -29,7 +29,7 @@
  */
 
 import { useMemo, useEffect, useRef, useSyncExternalStore } from 'react';
-import type { StateContainer } from '@blac/core';
+import { StateContainer } from '@blac/core';
 import { ReactBridge } from './ReactBridge';
 
 /**
@@ -60,12 +60,12 @@ export interface UseBlocOptions<TBloc extends StateContainer<any, any>> {
   /**
    * Callback when component mounts
    */
-  onMount?: (bloc: TBloc) => void;
+  onMount?: (bloc: TBloc | StateContainer<any, any>) => void;
 
   /**
    * Callback when component unmounts
    */
-  onUnmount?: (bloc: TBloc) => void;
+  onUnmount?: (bloc: TBloc | StateContainer<any, any>) => void;
 }
 
 /**
@@ -76,66 +76,6 @@ type UseBlocReturn<TBloc extends StateContainer<any, any>> = [
   TBloc,
   any,
 ];
-
-/**
- * Instance storage with reference counting
- */
-interface BlocInstanceEntry {
-  bloc: StateContainer<any, any>;
-  refCount: number;
-}
-
-const blocInstances = new Map<string, BlocInstanceEntry>();
-
-/**
- * Get or create a bloc instance
- */
-function getOrCreateBloc<TBloc extends StateContainer<any, any>>(
-  BlocClass: BlocConstructor<TBloc>,
-  instanceKey: string,
-  staticProps?: any,
-): TBloc {
-  const existing = blocInstances.get(instanceKey);
-  if (existing) {
-    existing.refCount++;
-    return existing.bloc as TBloc;
-  }
-
-  const instance = staticProps ? new BlocClass(staticProps) : new BlocClass();
-
-  blocInstances.set(instanceKey, {
-    bloc: instance,
-    refCount: 1,
-  });
-
-  return instance;
-}
-
-/**
- * Release a bloc instance reference
- */
-function releaseBloc(instanceKey: string, shouldDispose: boolean): void {
-  const entry = blocInstances.get(instanceKey);
-  if (!entry) return;
-
-  entry.refCount--;
-
-  // Only dispose if ref count is zero and we should dispose
-  if (entry.refCount <= 0 && shouldDispose) {
-    entry.bloc.dispose();
-    blocInstances.delete(instanceKey);
-  }
-}
-
-/**
- * Clear all bloc instances (for testing)
- */
-export function clearAllBlocInstances(): void {
-  for (const entry of blocInstances.values()) {
-    entry.bloc.dispose();
-  }
-  blocInstances.clear();
-}
 
 /**
  * useBloc Hook - Modern, type-safe BlaC state management with automatic proxy tracking
@@ -159,27 +99,26 @@ function useBloc<TBloc extends StateContainer<any, any>>(
   const instanceKey = useMemo(() => {
     // Custom instance ID takes precedence
     if (options?.instanceId) {
-      return `${BlocClass.name}:${options.instanceId}`;
+      return options.instanceId;
     }
 
     // For isolated blocs, generate unique ID per component
     if (isIsolated) {
       if (!componentRef.current.__blocInstanceId) {
-        componentRef.current.__blocInstanceId = `${BlocClass.name}:isolated-${Math.random().toString(36).slice(2, 11)}`;
+        componentRef.current.__blocInstanceId = `isolated-${Math.random().toString(36).slice(2, 11)}`;
       }
       return componentRef.current.__blocInstanceId;
     }
 
-    // For shared blocs, use class name as default
-    return BlocClass.name;
+    // For shared blocs, use default (undefined = className)
+    return undefined;
   }, [BlocClass, options?.instanceId, isIsolated]);
 
   const { bloc, bridge } = useMemo(() => {
-    const blocInstance = getOrCreateBloc(
-      BlocClass,
-      instanceKey,
-      options?.staticProps,
-    );
+    // Use StateContainer's static getOrCreate method
+    const blocInstance = options?.staticProps
+      ? BlocClass.getOrCreate(instanceKey, options.staticProps)
+      : BlocClass.getOrCreate(instanceKey);
 
     if (!componentRef.current.__bridge) {
       componentRef.current.__bridge = new ReactBridge(blocInstance);
@@ -214,8 +153,14 @@ function useBloc<TBloc extends StateContainer<any, any>>(
       // Call onUnmount callback if provided
       bridge.onUnmount(options?.onUnmount);
 
-      // Release reference - isolated blocs always dispose when ref count hits zero
-      releaseBloc(instanceKey, isIsolated);
+      // Release reference using StateContainer's static release method
+      // For isolated blocs, dispose when ref count hits zero
+      // For shared blocs, only dispose if keepAlive is false and ref count hits zero
+      if (isIsolated) {
+        BlocClass.release(instanceKey); // Will dispose when ref count hits zero
+      } else {
+        BlocClass.release(instanceKey); // Respects keepAlive setting
+      }
 
       // Cleanup bridge if isolated
       if (isIsolated) {
@@ -223,7 +168,14 @@ function useBloc<TBloc extends StateContainer<any, any>>(
         componentRef.current.__bridge = undefined;
       }
     };
-  }, [bridge, instanceKey, isIsolated, options?.onMount, options?.onUnmount]);
+  }, [
+    bridge,
+    instanceKey,
+    isIsolated,
+    BlocClass,
+    options?.onMount,
+    options?.onUnmount,
+  ]);
 
   return [state, bloc, componentRef] as UseBlocReturn<TBloc>;
 }

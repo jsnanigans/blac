@@ -4,8 +4,8 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useBloc, clearAllBlocInstances } from '../useBloc';
-import { Cubit } from '@blac/core';
+import { useBloc } from '../useBloc';
+import { Cubit, StateContainer } from '@blac/core';
 
 interface TestState {
   settings: {
@@ -46,7 +46,7 @@ class TestCubit extends Cubit<TestState> {
 
 describe('Debug Render Timing', () => {
   beforeEach(() => {
-    clearAllBlocInstances();
+    StateContainer.clearAllInstances();
   });
 
   it('should trace render timing with incrementViews', async () => {

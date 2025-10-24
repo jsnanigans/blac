@@ -28,7 +28,6 @@ export interface SubscriptionConfig<TState = unknown> {
   consumerId: ConsumerId;
   callback: NotificationCallback<TState>;
   paths?: string[];
-  priority?: number;
   keepAlive?: boolean;
   metadata?: Record<string, MetadataValue>;
 }
@@ -196,10 +195,7 @@ export class SubscriptionRegistry {
       const context: PipelineContext<T> = {
         subscriptionId: id,
         stateChange: change,
-        metadata: new Map([
-          ['priority', entry.config.priority ?? 500],
-          ...Object.entries(entry.config.metadata ?? {}),
-        ]),
+        metadata: new Map([...Object.entries(entry.config.metadata ?? {})]),
         timestamp: Date.now(),
         shouldContinue: true,
       };

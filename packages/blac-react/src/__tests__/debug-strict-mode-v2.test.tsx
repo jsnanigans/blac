@@ -6,7 +6,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { StrictMode } from 'react';
 import { StateContainer } from '@blac/core';
-import { useBloc, clearAllBlocInstances } from '../useBloc';
+import { useBloc } from '../useBloc';
 import { BlacLogger, LogLevel } from '@blac/core';
 
 // Enable logging
@@ -63,7 +63,7 @@ class TestCubit extends StateContainer<TestState, TestCubit> {
 
 describe('Strict Mode Debug', () => {
   beforeEach(() => {
-    clearAllBlocInstances();
+    StateContainer.clearAllInstances();
   });
 
   it('should work correctly in React Strict Mode', async () => {

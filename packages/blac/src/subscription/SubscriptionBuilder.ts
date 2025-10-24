@@ -13,7 +13,6 @@ import {
 } from './SubscriptionRegistry';
 import { NotificationCallback } from './stages/NotificationStage';
 import { FilterPredicate } from './stages/FilterStage';
-import { SubscriptionPriority } from './stages/PriorityStage';
 
 export interface BuilderValidationError {
   field: string;
@@ -71,14 +70,6 @@ export class SubscriptionBuilder<T = unknown> {
   }
 
   /**
-   * Set subscription priority
-   */
-  withPriority(priority: SubscriptionPriority | number): this {
-    this.config.priority = priority;
-    return this;
-  }
-
-  /**
    * Keep subscription alive even with no references
    */
   keepAlive(value: boolean = true): this {
@@ -95,27 +86,6 @@ export class SubscriptionBuilder<T = unknown> {
     }
     this.config.metadata[key] = value;
     return this;
-  }
-
-  /**
-   * Batch notifications
-   */
-  batch(): this {
-    return this.withMetadata('batch', true);
-  }
-
-  /**
-   * Debounce notifications
-   */
-  debounce(ms: number): this {
-    return this.withMetadata('debounceMs', ms);
-  }
-
-  /**
-   * Throttle notifications
-   */
-  throttle(ms: number): this {
-    return this.withMetadata('throttleMs', ms);
   }
 
   /**
@@ -156,28 +126,6 @@ export class SubscriptionBuilder<T = unknown> {
       errors.push({
         field: 'callback',
         message: 'Notification callback is required',
-      });
-    }
-
-    if (this.config.priority !== undefined) {
-      if (
-        typeof this.config.priority !== 'number' ||
-        this.config.priority < 0
-      ) {
-        errors.push({
-          field: 'priority',
-          message: 'Priority must be a non-negative number',
-        });
-      }
-    }
-
-    const debounceMs = this.config.metadata?.debounceMs;
-    const throttleMs = this.config.metadata?.throttleMs;
-
-    if (debounceMs !== undefined && throttleMs !== undefined) {
-      errors.push({
-        field: 'timing',
-        message: 'Cannot use both debounce and throttle',
       });
     }
 
@@ -250,49 +198,9 @@ export class SubscriptionBuilder<T = unknown> {
  */
 export class SubscriptionPatterns {
   /**
-   * Create a high-priority, real-time subscription
-   */
-  static realtime<T>(): SubscriptionBuilder<T> {
-    return new SubscriptionBuilder<T>()
-      .withPriority(SubscriptionPriority.CRITICAL)
-      .trackPerformance();
-  }
-
-  /**
-   * Create a low-priority, batched subscription
-   */
-  static background<T>(): SubscriptionBuilder<T> {
-    return new SubscriptionBuilder<T>()
-      .withPriority(SubscriptionPriority.LOW)
-      .batch();
-  }
-
-  /**
-   * Create a debounced UI subscription
-   */
-  static ui<T>(debounceMs: number = 16): SubscriptionBuilder<T> {
-    return new SubscriptionBuilder<T>()
-      .withPriority(SubscriptionPriority.HIGH)
-      .debounce(debounceMs);
-  }
-
-  /**
-   * Create a logging subscription
-   */
-  static logging<T>(): SubscriptionBuilder<T> {
-    return new SubscriptionBuilder<T>()
-      .withPriority(SubscriptionPriority.DEFERRED)
-      .batch()
-      .keepAlive(false);
-  }
-
-  /**
    * Create a persistent subscription
    */
   static persistent<T>(): SubscriptionBuilder<T> {
-    return new SubscriptionBuilder<T>()
-      .withPriority(SubscriptionPriority.NORMAL)
-      .keepAlive(true)
-      .maxRetries(3);
+    return new SubscriptionBuilder<T>().keepAlive(true).maxRetries(3);
   }
 }

@@ -24,14 +24,10 @@ import { BlacLogger } from '../logging/Logger';
 
 // Import all stages
 import {
-  PriorityStage,
   ProxyTrackingStage,
   FilterStage,
   NotificationStage,
   WeakRefStage,
-  OptimizationStage,
-  OptimizationOptions,
-  SubscriptionPriority,
 } from './stages';
 
 /**
@@ -44,12 +40,6 @@ export interface SubscriptionOptions<T = unknown> {
   // Filtering options
   paths?: string[];
   filter?: (current: T, previous: T) => boolean;
-
-  // Performance options
-  priority?: SubscriptionPriority | number;
-  debounce?: number;
-  throttle?: number;
-  batch?: boolean;
 
   // Lifecycle options
   keepAlive?: boolean;
@@ -79,7 +69,6 @@ export interface SubscriptionSystemConfig {
   enableProxyTracking?: boolean;
   maxSubscriptions?: number;
   cleanupIntervalMs?: number;
-  defaultPriority?: SubscriptionPriority;
 }
 
 /**
@@ -101,7 +90,6 @@ export class SubscriptionSystem<T = unknown> {
       enableProxyTracking: config.enableProxyTracking ?? true,
       maxSubscriptions: config.maxSubscriptions ?? 1000,
       cleanupIntervalMs: config.cleanupIntervalMs ?? 30000,
-      defaultPriority: config.defaultPriority ?? SubscriptionPriority.NORMAL,
     };
 
     this.registry = new SubscriptionRegistry({
@@ -124,7 +112,6 @@ export class SubscriptionSystem<T = unknown> {
       consumerId,
       callback: options.callback,
       paths: options.paths,
-      priority: options.priority ?? this.config.defaultPriority,
       keepAlive: options.keepAlive,
       metadata: options.metadata,
     };
@@ -328,12 +315,7 @@ export class SubscriptionSystem<T = unknown> {
 
     // Add stages in priority order
 
-    // 1. Priority stage
-    if (options.priority !== undefined) {
-      pipeline.addStage(new PriorityStage(0)); // Min priority threshold
-    }
-
-    // 2. ProxyTracking stage (before filter to set up paths)
+    // 1. ProxyTracking stage (before filter to set up paths)
     if (this.config.enableProxyTracking) {
       pipeline.addStage(
         new ProxyTrackingStage({
@@ -342,12 +324,12 @@ export class SubscriptionSystem<T = unknown> {
       );
     }
 
-    // 3. WeakRef stage
+    // 2. WeakRef stage
     if (this.config.enableWeakRefs) {
       pipeline.addStage(new WeakRefStage());
     }
 
-    // 4. Filter stage (always add when proxy tracking is enabled for automatic filtering)
+    // 3. Filter stage (always add when proxy tracking is enabled for automatic filtering)
     if (options.paths || options.filter || this.config.enableProxyTracking) {
       pipeline.addStage(
         new FilterStage({
@@ -357,21 +339,10 @@ export class SubscriptionSystem<T = unknown> {
       );
     }
 
-    // 5. Optimization stage (only for throttling and caching)
-    if (options.throttle) {
-      const optimizationOptions: OptimizationOptions = {};
-      optimizationOptions.throttle = { interval: options.throttle };
-      optimizationOptions.callback = options.callback; // Pass callback for deferred execution
-      pipeline.addStage(new OptimizationStage(optimizationOptions));
-    }
-
-    // 6. Notification stage (always last)
-    // Handle batching and debouncing in the NotificationStage where it can properly defer callbacks
+    // 4. Notification stage (always last)
     pipeline.addStage(
       new NotificationStage({
         callback: options.callback,
-        batch: options.batch ?? false,
-        debounceMs: options.debounce ?? 0,
       }),
     );
 

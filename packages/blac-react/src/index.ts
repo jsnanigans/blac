@@ -15,6 +15,5 @@ export {
 export {
   useBloc,
   default as useBlocHook,
-  clearAllBlocInstances,
   type UseBlocOptions,
 } from './useBloc';
