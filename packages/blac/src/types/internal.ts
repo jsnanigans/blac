@@ -31,7 +31,7 @@ export interface InternalStateContainer<S = unknown> {
   /** Internal lifecycle methods */
   requestDisposal(): void;
   cancelDisposal(): void;
-  dispose(): Promise<void>;
+  dispose(): void;
 }
 
 /**
@@ -100,7 +100,7 @@ export interface InternalRegistry {
   hasInstance(id: InstanceId): boolean;
 
   /** Dispose instance */
-  disposeInstance(id: InstanceId): Promise<void>;
+  disposeInstance(id: InstanceId): void;
 
   /** Get registry statistics */
   getStats(): RegistryStats;

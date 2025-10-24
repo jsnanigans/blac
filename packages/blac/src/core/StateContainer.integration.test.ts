@@ -32,8 +32,8 @@ describe('StateContainer with Subscription System', () => {
     container = new TestContainer(0);
   });
 
-  afterEach(async () => {
-    await container.dispose();
+  afterEach(() => {
+    container.dispose();
   });
 
   describe('Basic Subscriptions', () => {
@@ -43,15 +43,13 @@ describe('StateContainer with Subscription System', () => {
 
       container.increment();
 
-      // Wait for async notification
-      setTimeout(() => {
-        expect(handler).toHaveBeenCalledWith({ count: 1, message: 'initial' });
-      }, 0);
+      // Synchronous notification
+      expect(handler).toHaveBeenCalledWith({ count: 1, message: 'initial' });
 
       unsubscribe();
     });
 
-    it('should handle multiple subscribers', async () => {
+    it('should handle multiple subscribers', () => {
       const handler1 = vi.fn();
       const handler2 = vi.fn();
 
@@ -60,9 +58,7 @@ describe('StateContainer with Subscription System', () => {
 
       container.increment();
 
-      // Wait for async notifications
-      await new Promise((resolve) => setTimeout(resolve, 10));
-
+      // Synchronous notifications
       expect(handler1).toHaveBeenCalledWith({ count: 1, message: 'initial' });
       expect(handler2).toHaveBeenCalledWith({ count: 1, message: 'initial' });
 
@@ -70,24 +66,22 @@ describe('StateContainer with Subscription System', () => {
       unsub2();
     });
 
-    it('should stop notifications after unsubscribe', async () => {
+    it('should stop notifications after unsubscribe', () => {
       const handler = vi.fn();
       const unsubscribe = container.subscribe(handler);
 
       container.increment();
-      await new Promise((resolve) => setTimeout(resolve, 10));
       expect(handler).toHaveBeenCalledTimes(1);
 
       unsubscribe();
 
       container.increment();
-      await new Promise((resolve) => setTimeout(resolve, 10));
       expect(handler).toHaveBeenCalledTimes(1); // Still 1
     });
   });
 
   describe('Advanced Subscriptions', () => {
-    it('should support path filtering', async () => {
+    it('should support path filtering', () => {
       const handler = vi.fn();
 
       const subscription = container.subscribeAdvanced({
@@ -97,39 +91,35 @@ describe('StateContainer with Subscription System', () => {
 
       // Change count - should not trigger
       container.increment();
-      await new Promise((resolve) => setTimeout(resolve, 10));
       expect(handler).not.toHaveBeenCalled();
 
       // Change message - should trigger
       container.setMessage('updated');
-      await new Promise((resolve) => setTimeout(resolve, 10));
       expect(handler).toHaveBeenCalledWith({ count: 1, message: 'updated' });
 
       subscription.unsubscribe();
     });
 
-    it('should support custom filter predicates', async () => {
+    it('should support custom filter predicates', () => {
       const handler = vi.fn();
 
       const subscription = container.subscribeAdvanced({
         callback: handler,
-        filter: (current, previous) => current.count > 5,
+        filter: (current: any, previous: any) => current.count > 5,
       });
 
       // Small increments - should not trigger
       container.setCount(3);
-      await new Promise((resolve) => setTimeout(resolve, 10));
       expect(handler).not.toHaveBeenCalled();
 
       // Large value - should trigger
       container.setCount(6);
-      await new Promise((resolve) => setTimeout(resolve, 10));
       expect(handler).toHaveBeenCalledWith({ count: 6, message: 'initial' });
 
       subscription.unsubscribe();
     });
 
-    it('should support priority subscriptions', async () => {
+    it('should support priority subscriptions', () => {
       const results: number[] = [];
 
       const lowPriority = container.subscribeAdvanced({
@@ -148,10 +138,8 @@ describe('StateContainer with Subscription System', () => {
       });
 
       container.increment();
-      await new Promise((resolve) => setTimeout(resolve, 10));
 
-      // High priority should execute first
-      // Note: The order may depend on internal processing
+      // Synchronous execution - all callbacks fired
       expect(results.length).toBe(3);
 
       lowPriority.unsubscribe();
@@ -174,12 +162,11 @@ describe('StateContainer with Subscription System', () => {
       container.increment();
       container.increment();
 
-      // Should not have been called yet
-      await new Promise((resolve) => setTimeout(resolve, 25));
+      // Debounce still works with timers
       expect(handler).not.toHaveBeenCalled();
 
       // After debounce period
-      await new Promise((resolve) => setTimeout(resolve, 30));
+      await new Promise((resolve) => setTimeout(resolve, 60));
       expect(handler).toHaveBeenCalledTimes(1);
       expect(handler).toHaveBeenCalledWith({ count: 3, message: 'initial' });
 
@@ -196,18 +183,15 @@ describe('StateContainer with Subscription System', () => {
 
       // Rapid changes
       container.setCount(1);
-      await new Promise((resolve) => setTimeout(resolve, 10));
       container.setCount(2);
-      await new Promise((resolve) => setTimeout(resolve, 10));
       container.setCount(3);
 
-      // Should have been called only once due to throttle
+      // First call happens immediately (throttle allows first call through)
       expect(handler).toHaveBeenCalledTimes(1);
 
-      // After throttle period
-      await new Promise((resolve) => setTimeout(resolve, 40));
+      // After throttle period, next change should trigger
+      await new Promise((resolve) => setTimeout(resolve, 60));
       container.setCount(4);
-      await new Promise((resolve) => setTimeout(resolve, 10));
       expect(handler).toHaveBeenCalledTimes(2);
 
       subscription.unsubscribe();
@@ -226,7 +210,9 @@ describe('StateContainer with Subscription System', () => {
       container.setCount(2);
       container.setCount(3);
 
-      // Should batch and only notify with last value
+      // Batching uses microtask/setTimeout to defer
+      expect(handler).not.toHaveBeenCalled();
+
       await new Promise((resolve) => setTimeout(resolve, 10));
       expect(handler).toHaveBeenCalledTimes(1);
       expect(handler).toHaveBeenCalledWith({ count: 3, message: 'initial' });
@@ -236,18 +222,17 @@ describe('StateContainer with Subscription System', () => {
   });
 
   describe('Lifecycle Integration', () => {
-    it('should clean up subscriptions on disposal', async () => {
+    it('should clean up subscriptions on disposal', () => {
       const handler = vi.fn();
       const subscription = container.subscribeAdvanced({
         callback: handler,
       });
 
       container.increment();
-      await new Promise((resolve) => setTimeout(resolve, 10));
       expect(handler).toHaveBeenCalledTimes(1);
 
       // Dispose container
-      await container.dispose();
+      container.dispose();
 
       // Try to increment (should throw)
       expect(() => container.increment()).toThrow();
@@ -256,7 +241,7 @@ describe('StateContainer with Subscription System', () => {
       expect(handler).toHaveBeenCalledTimes(1);
     });
 
-    it('should support weak references for automatic cleanup', async () => {
+    it('should support weak references for automatic cleanup', () => {
       const handler = vi.fn();
       let consumer: any = { id: 'test-consumer' };
 
@@ -266,7 +251,6 @@ describe('StateContainer with Subscription System', () => {
       });
 
       container.increment();
-      await new Promise((resolve) => setTimeout(resolve, 10));
       expect(handler).toHaveBeenCalledTimes(1);
 
       // Clear consumer reference (simulating garbage collection)
@@ -301,7 +285,7 @@ describe('StateContainer with Subscription System', () => {
   });
 
   describe('Error Handling', () => {
-    it('should handle errors in callbacks', async () => {
+    it('should handle errors in callbacks', () => {
       const errorHandler = vi.fn();
       const originalError = console.error;
       console.error = errorHandler;
@@ -313,9 +297,8 @@ describe('StateContainer with Subscription System', () => {
       });
 
       container.increment();
-      await new Promise((resolve) => setTimeout(resolve, 10));
 
-      // Error should be logged but not crash
+      // Error should be logged but not crash (synchronously)
       expect(errorHandler).toHaveBeenCalled();
 
       console.error = originalError;

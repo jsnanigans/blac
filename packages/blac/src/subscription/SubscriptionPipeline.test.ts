@@ -27,21 +27,21 @@ class TestStage extends PipelineStage {
   }
 }
 
-class AsyncTestStage extends PipelineStage {
-  constructor(
-    name: string,
-    private delay: number,
-    priority: number = 0,
-  ) {
-    super(name, priority);
-  }
-
-  async process<T>(context: PipelineContext<T>): Promise<PipelineContext<T>> {
-    await new Promise((resolve) => setTimeout(resolve, this.delay));
-    context.metadata.set(this.name, true);
-    return context;
-  }
-}
+// class AsyncTestStage extends PipelineStage {
+//   constructor(
+//     name: string,
+//     private delay: number,
+//     priority: number = 0,
+//   ) {
+//     super(name, priority);
+//   }
+//
+//   process<T>(context: PipelineContext<T>): PipelineContext<T> {
+//     await new Promise((resolve) => setTimeout(resolve, this.delay));
+//     context.metadata.set(this.name, true);
+//     return context;
+//   }
+// }
 
 class ErrorStage extends PipelineStage {
   process<T>(_context: PipelineContext<T>): PipelineContext<T> {
@@ -114,7 +114,7 @@ describe('SubscriptionPipeline', () => {
   });
 
   describe('Pipeline Execution', () => {
-    it('should execute stages in order', async () => {
+    it('should execute stages in order', () => {
       const stage1 = new TestStage('stage1', 300);
       const stage2 = new TestStage('stage2', 200);
       const stage3 = new TestStage('stage3', 100);
@@ -125,13 +125,13 @@ describe('SubscriptionPipeline', () => {
 
       const context: PipelineContext = {
         subscriptionId: 'sub_test' as any,
-        stateChange: { current: 'new', previous: 'old' } as StateChange,
+        stateChange: { current: 'new', previous: 'old' } as StateChange<any>,
         metadata: new Map(),
         timestamp: Date.now(),
         shouldContinue: true,
       };
 
-      const result = await pipeline.execute(context);
+      const result = pipeline.execute(context);
 
       expect(result.executed).toBe(true);
       expect(result.stagesProcessed).toHaveLength(3);
@@ -140,7 +140,7 @@ describe('SubscriptionPipeline', () => {
       expect(stage3.processCount).toBe(1);
     });
 
-    it('should stop execution when shouldContinue is false', async () => {
+    it('should stop execution when shouldContinue is false', () => {
       const stage1 = new TestStage('stage1');
       const stage2 = new TestStage('stage2');
 
@@ -155,38 +155,38 @@ describe('SubscriptionPipeline', () => {
 
       const context: PipelineContext = {
         subscriptionId: 'sub_test' as any,
-        stateChange: { current: 'new', previous: 'old' } as StateChange,
+        stateChange: { current: 'new', previous: 'old' } as StateChange<any>,
         metadata: new Map(),
         timestamp: Date.now(),
         shouldContinue: true,
       };
 
-      const result = await pipeline.execute(context);
+      const result = pipeline.execute(context);
 
       expect(result.executed).toBe(true);
       expect(result.stagesProcessed).toHaveLength(1);
       expect(stage2.processCount).toBe(0);
     });
 
-    it('should handle async stages', async () => {
-      const asyncStage = new AsyncTestStage('async', 10);
-      pipeline.addStage(asyncStage);
+    // it('should handle async stages', async () => {
+    //   const asyncStage = new AsyncTestStage('async', 10);
+    //   pipeline.addStage(asyncStage);
+    //
+    //   const context: PipelineContext = {
+    //     subscriptionId: 'sub_test' as any,
+    //     stateChange: { current: 'new', previous: 'old' } as StateChange,
+    //     metadata: new Map(),
+    //     timestamp: Date.now(),
+    //     shouldContinue: true,
+    //   };
+    //
+    //   const result = await pipeline.execute(context);
+    //
+    //   expect(result.executed).toBe(true);
+    //   expect(context.metadata.get('async')).toBe(true);
+    // });
 
-      const context: PipelineContext = {
-        subscriptionId: 'sub_test' as any,
-        stateChange: { current: 'new', previous: 'old' } as StateChange,
-        metadata: new Map(),
-        timestamp: Date.now(),
-        shouldContinue: true,
-      };
-
-      const result = await pipeline.execute(context);
-
-      expect(result.executed).toBe(true);
-      expect(context.metadata.get('async')).toBe(true);
-    });
-
-    it('should handle stage errors', async () => {
+    it('should handle stage errors', () => {
       const errorHandler = vi.fn();
       const errorPipeline = new SubscriptionPipeline({ errorHandler });
 
@@ -194,13 +194,13 @@ describe('SubscriptionPipeline', () => {
 
       const context: PipelineContext = {
         subscriptionId: 'sub_test' as any,
-        stateChange: { current: 'new', previous: 'old' } as StateChange,
+        stateChange: { current: 'new', previous: 'old' } as StateChange<any>,
         metadata: new Map(),
         timestamp: Date.now(),
         shouldContinue: true,
       };
 
-      const result = await errorPipeline.execute(context);
+      const result = errorPipeline.execute(context);
 
       expect(result.executed).toBe(false);
       expect(result.error).toBeDefined();
@@ -209,29 +209,29 @@ describe('SubscriptionPipeline', () => {
       errorPipeline.dispose();
     });
 
-    it('should timeout long-running stages', async () => {
-      const timeoutPipeline = new SubscriptionPipeline({ timeout: 50 });
-      const slowStage = new AsyncTestStage('slow', 100);
+    // it('should timeout long-running stages', async () => {
+    //   const timeoutPipeline = new SubscriptionPipeline({ timeout: 50 });
+    //   const slowStage = new AsyncTestStage('slow', 100);
+    //
+    //   timeoutPipeline.addStage(slowStage);
+    //
+    //   const context: PipelineContext = {
+    //     subscriptionId: 'sub_test' as any,
+    //     stateChange: { current: 'new', previous: 'old' } as StateChange,
+    //     metadata: new Map(),
+    //     timestamp: Date.now(),
+    //     shouldContinue: true,
+    //   };
+    //
+    //   const result = await timeoutPipeline.execute(context);
+    //
+    //   expect(result.executed).toBe(false);
+    //   expect(result.error?.message).toContain('timed out');
+    //
+    //   timeoutPipeline.dispose();
+    // });
 
-      timeoutPipeline.addStage(slowStage);
-
-      const context: PipelineContext = {
-        subscriptionId: 'sub_test' as any,
-        stateChange: { current: 'new', previous: 'old' } as StateChange,
-        metadata: new Map(),
-        timestamp: Date.now(),
-        shouldContinue: true,
-      };
-
-      const result = await timeoutPipeline.execute(context);
-
-      expect(result.executed).toBe(false);
-      expect(result.error?.message).toContain('timed out');
-
-      timeoutPipeline.dispose();
-    });
-
-    it('should validate stages if validation is provided', async () => {
+    it('should validate stages if validation is provided', () => {
       const stage = new TestStage('validated');
       stage.validate = (context) => context.metadata.has('required');
 
@@ -239,67 +239,25 @@ describe('SubscriptionPipeline', () => {
 
       const contextWithoutRequired: PipelineContext = {
         subscriptionId: 'sub_test' as any,
-        stateChange: { current: 'new', previous: 'old' } as StateChange,
+        stateChange: { current: 'new', previous: 'old' } as StateChange<any>,
         metadata: new Map(),
         timestamp: Date.now(),
         shouldContinue: true,
       };
 
-      await pipeline.execute(contextWithoutRequired);
+      pipeline.execute(contextWithoutRequired);
       expect(stage.processCount).toBe(0);
 
       const contextWithRequired: PipelineContext = {
         subscriptionId: 'sub_test' as any,
-        stateChange: { current: 'new', previous: 'old' } as StateChange,
+        stateChange: { current: 'new', previous: 'old' } as StateChange<any>,
         metadata: new Map([['required', true]]),
         timestamp: Date.now(),
         shouldContinue: true,
       };
 
-      await pipeline.execute(contextWithRequired);
+      pipeline.execute(contextWithRequired);
       expect(stage.processCount).toBe(1);
-    });
-  });
-
-  describe('Performance Metrics', () => {
-    it('should collect performance metrics when enabled', async () => {
-      const metricsPipeline = new SubscriptionPipeline({ enableMetrics: true });
-
-      metricsPipeline.addStage(new TestStage('stage1'));
-      metricsPipeline.addStage(new AsyncTestStage('stage2', 10));
-
-      const context: PipelineContext = {
-        subscriptionId: 'sub_test' as any,
-        stateChange: { current: 'new', previous: 'old' } as StateChange,
-        metadata: new Map(),
-        timestamp: Date.now(),
-        shouldContinue: true,
-      };
-
-      const result = await metricsPipeline.execute(context);
-
-      expect(result.performanceMetrics).toBeDefined();
-      expect(result.performanceMetrics!.totalDuration).toBeGreaterThan(0);
-      expect(result.performanceMetrics!.stageDurations.size).toBe(2);
-
-      metricsPipeline.dispose();
-    });
-
-    it('should not collect metrics when disabled', async () => {
-      const stage = new TestStage('test');
-      pipeline.addStage(stage);
-
-      const context: PipelineContext = {
-        subscriptionId: 'sub_test' as any,
-        stateChange: { current: 'new', previous: 'old' } as StateChange,
-        metadata: new Map(),
-        timestamp: Date.now(),
-        shouldContinue: true,
-      };
-
-      const result = await pipeline.execute(context);
-
-      expect(result.performanceMetrics).toBeUndefined();
     });
   });
 

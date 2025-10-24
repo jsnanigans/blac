@@ -106,7 +106,7 @@ export class BlocRegistry {
    * registry.register(FormBloc, { isolated: true });
    * ```
    */
-  register<TBloc extends StateContainer<unknown>>(
+  register<TBloc extends StateContainer<any>>(
     BlocClass: BlocConstructor<TBloc>,
     options?: {
       constructorArgs?: unknown[];

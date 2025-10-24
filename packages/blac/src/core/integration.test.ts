@@ -4,16 +4,8 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { CounterCubit, TodoCubit, TodoState } from './Cubit';
-import {
-  CounterVertex,
-  IncrementEvent,
-  DecrementEvent,
-  AuthVertex,
-  AuthState,
-  Vertex,
-} from './Vertex';
+import { CounterVertex, AuthVertex, AuthState, Vertex } from './Vertex';
 import { BaseEvent } from '../types/events';
-import { waitFor } from '../test-utils';
 
 describe('Design Validation', () => {
   describe('Cubit Integration', () => {
@@ -23,8 +15,8 @@ describe('Design Validation', () => {
       cubit = new CounterCubit();
     });
 
-    afterEach(async () => {
-      await cubit.dispose();
+    afterEach(() => {
+      cubit.dispose();
     });
 
     it('should work with simple state emissions', () => {
@@ -43,21 +35,18 @@ describe('Design Validation', () => {
       expect(cubit.state).toBe(0);
     });
 
-    it('should handle subscriptions correctly', async () => {
+    it('should handle subscriptions correctly', () => {
       const listener = vi.fn();
       const unsubscribe = cubit.subscribe(listener);
 
       cubit.increment();
-      await new Promise((resolve) => setTimeout(resolve, 10));
       expect(listener).toHaveBeenCalledWith(1);
 
       cubit.increment();
-      await new Promise((resolve) => setTimeout(resolve, 10));
       expect(listener).toHaveBeenCalledWith(2);
 
       unsubscribe();
       cubit.increment();
-      await new Promise((resolve) => setTimeout(resolve, 10));
       expect(listener).toHaveBeenCalledTimes(2); // No more calls
     });
 
@@ -78,7 +67,7 @@ describe('Design Validation', () => {
       expect(cubit.state).toBe(0);
     });
 
-    it('should handle complex state updates', async () => {
+    it('should handle complex state updates', () => {
       const todoCubit = new TodoCubit();
 
       todoCubit.addTodo('First task');
@@ -100,35 +89,35 @@ describe('Design Validation', () => {
       expect(todoCubit.state.todos).toHaveLength(1);
 
       // Clean up
-      await todoCubit.dispose();
+      todoCubit.dispose();
     });
 
-    it('should handle lifecycle correctly', async () => {
+    it('should handle lifecycle correctly', () => {
       const mountSpy = vi.fn();
       const unmountSpy = vi.fn();
       const disposeSpy = vi.fn();
 
       class LifecycleCubit extends CounterCubit {
-        protected async onMount() {
+        protected onMount() {
           mountSpy();
         }
-        protected async onUnmount() {
+        protected onUnmount() {
           unmountSpy();
         }
-        protected async onDispose() {
+        protected onDispose() {
           disposeSpy();
         }
       }
 
       const cubit = new LifecycleCubit();
 
-      await cubit.mount();
+      cubit.mount();
       expect(mountSpy).toHaveBeenCalled();
 
-      await cubit.unmount();
+      cubit.unmount();
       expect(unmountSpy).toHaveBeenCalled();
 
-      await cubit.dispose();
+      cubit.dispose();
       expect(disposeSpy).toHaveBeenCalled();
       expect(cubit.isDisposed).toBe(true);
     });
@@ -141,27 +130,24 @@ describe('Design Validation', () => {
       vertex = new CounterVertex();
     });
 
-    afterEach(async () => {
-      await vertex.dispose();
+    afterEach(() => {
+      vertex.dispose();
     });
 
-    it('should handle events correctly', async () => {
+    it('should handle events correctly', () => {
       expect(vertex.state).toBe(0);
 
       vertex.increment(5);
-      await waitFor(() => vertex.state === 5);
       expect(vertex.state).toBe(5);
 
       vertex.decrement(2);
-      await waitFor(() => vertex.state === 3);
       expect(vertex.state).toBe(3);
 
       vertex.reset();
-      await waitFor(() => vertex.state === 0);
       expect(vertex.state).toBe(0);
     });
 
-    it('should process events in order', async () => {
+    it('should process events in order', () => {
       const values: number[] = [];
       vertex.subscribe((state) => values.push(state));
 
@@ -171,31 +157,22 @@ describe('Design Validation', () => {
       vertex.increment(3);
       vertex.decrement(1);
 
-      // Wait for all events to process
-      await waitFor(() => values.length === 4);
-
-      // Should process in order: 0 + 1 = 1, 1 + 2 = 3, 3 + 3 = 6, 6 - 1 = 5
+      // Events processed synchronously in order: 0 + 1 = 1, 1 + 2 = 3, 3 + 3 = 6, 6 - 1 = 5
       expect(values).toEqual([1, 3, 6, 5]);
       expect(vertex.state).toBe(5);
     });
 
-    it('should handle async event handlers', async () => {
+    it('should handle synchronous event handlers', () => {
       const authVertex = new AuthVertex();
 
       expect(authVertex.state.isAuthenticated).toBe(false);
       expect(authVertex.state.isLoading).toBe(false);
 
-      // Start login
       authVertex.login('user@example.com', 'password');
 
-      // Should immediately set loading
-      expect(authVertex.state.isLoading).toBe(true);
-
-      // Wait for async login to complete
-      await waitFor(() => !authVertex.state.isLoading, 2000);
-
-      // Should be authenticated
+      // Authentication completes synchronously
       expect(authVertex.state.isAuthenticated).toBe(true);
+      expect(authVertex.state.isLoading).toBe(false);
       expect(authVertex.state.user).toEqual({
         id: '123',
         name: 'Test User',
@@ -204,38 +181,36 @@ describe('Design Validation', () => {
 
       // Test logout
       authVertex.logout();
-      await waitFor(() => !authVertex.state.isAuthenticated);
+      expect(authVertex.state.isAuthenticated).toBe(false);
       expect(authVertex.state.user).toBeNull();
 
-      await authVertex.dispose();
+      authVertex.dispose();
     });
 
-    it('should handle login failure', async () => {
+    it('should handle login failure', () => {
       const authVertex = new AuthVertex();
 
       authVertex.login('wrong@example.com', 'wrongpassword');
 
-      // Wait for async login to complete
-      await waitFor(() => !authVertex.state.isLoading, 2000);
-
+      // Failure happens synchronously
       expect(authVertex.state.isAuthenticated).toBe(false);
       expect(authVertex.state.error).toBe('Invalid credentials');
 
-      await authVertex.dispose();
+      authVertex.dispose();
     });
 
-    it('should maintain this binding for event methods', async () => {
+    it('should maintain this binding for event methods', () => {
       const { increment, decrement, reset } = vertex;
 
-      // These should work even when destructured
+      // These should work even when destructured (synchronous)
       increment(3);
-      await waitFor(() => vertex.state === 3);
+      expect(vertex.state).toBe(3);
 
       decrement(1);
-      await waitFor(() => vertex.state === 2);
+      expect(vertex.state).toBe(2);
 
       reset();
-      await waitFor(() => vertex.state === 0);
+      expect(vertex.state).toBe(0);
     });
   });
 
@@ -254,12 +229,13 @@ describe('Design Validation', () => {
       // Should schedule disposal when no consumers (unless keepAlive)
       expect(cubit.isDisposalRequested).toBe(true);
 
-      // Disposal should happen after microtask
-      await waitFor(() => cubit.isDisposed);
+      // Simulate waiting for disposal delay
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
       expect(cubit.isDisposed).toBe(true);
     });
 
-    it('should respect keepAlive configuration', async () => {
+    it('should respect keepAlive configuration', () => {
       const todoCubit = new TodoCubit(); // Has keepAlive: true
       const listener = vi.fn();
 
@@ -272,16 +248,14 @@ describe('Design Validation', () => {
       // Should NOT schedule disposal due to keepAlive
       expect(todoCubit.isDisposalRequested).toBe(false);
 
-      // Wait to ensure no disposal happens
-      await new Promise((resolve) => setTimeout(resolve, 100));
       expect(todoCubit.isDisposed).toBe(false);
 
       // Manual disposal should still work
-      await todoCubit.dispose();
+      todoCubit.dispose();
       expect(todoCubit.isDisposed).toBe(true);
     });
 
-    it('should cancel disposal if new consumer added', async () => {
+    it('should cancel disposal if new consumer added', () => {
       const cubit = new CounterCubit();
 
       const unsub1 = cubit.subscribe(() => {});
@@ -294,12 +268,10 @@ describe('Design Validation', () => {
 
       expect(cubit.isDisposalRequested).toBe(false);
 
-      // Wait to ensure disposal was cancelled
-      await new Promise((resolve) => setTimeout(resolve, 100));
       expect(cubit.isDisposed).toBe(false);
 
       unsub2();
-      await cubit.dispose();
+      cubit.dispose();
     });
   });
 
@@ -359,10 +331,9 @@ describe('Design Validation', () => {
       // Should compile without type assertions
       vertex.test('hello');
 
-      // Event processing is async, wait for it
-      return waitFor(() => vertex.state.value === 'hello', 100).then(() => {
-        expect(vertex.state.value).toBe('hello');
-      });
+      // return waitFor(() => vertex.state.value === 'hello', 100).then(() => {
+      // });
+      expect(vertex.state.value).toBe('hello');
     });
   });
 

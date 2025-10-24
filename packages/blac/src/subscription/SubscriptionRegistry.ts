@@ -63,10 +63,8 @@ export interface RegistryStats {
  * Main subscription registry class
  */
 export class SubscriptionRegistry {
-  private subscriptions: Map<
-    SubscriptionId,
-    SubscriptionEntry<unknown, unknown>
-  > = new Map();
+  private subscriptions: Map<SubscriptionId, SubscriptionEntry<unknown>> =
+    new Map();
   private consumerIndex: Map<ConsumerId, Set<SubscriptionId>> = new Map();
   private containerIndex: Map<ContainerId, Set<SubscriptionId>> = new Map();
   private cleanupInterval?: NodeJS.Timeout;
@@ -85,8 +83,8 @@ export class SubscriptionRegistry {
   /**
    * Register a new subscription
    */
-  register<TState = unknown, TResult = TState>(
-    config: SubscriptionConfig<TState, TResult>,
+  register<TState = unknown>(
+    config: SubscriptionConfig<TState>,
   ): SubscriptionId {
     if (
       this.options.maxSubscriptions &&
@@ -100,7 +98,7 @@ export class SubscriptionRegistry {
     const id = this.generateId();
     const pipeline = this.createPipeline(config);
 
-    const entry: SubscriptionEntry<TState, TResult> = {
+    const entry: SubscriptionEntry<TState> = {
       id,
       config,
       pipeline,
@@ -115,7 +113,7 @@ export class SubscriptionRegistry {
       entry.weakRef = new WeakRef(config.callback);
     }
 
-    this.subscriptions.set(id, entry as SubscriptionEntry<unknown, unknown>);
+    this.subscriptions.set(id, entry as SubscriptionEntry<unknown>);
     this.updateIndices(id, config, 'add');
 
     BlacLogger.debug('SubscriptionRegistry', 'register', {
@@ -176,16 +174,14 @@ export class SubscriptionRegistry {
   }
 
   /**
-   * Process a state change through relevant subscriptions
+   * Process a state change through relevant subscriptions (synchronously)
    */
-  async processStateChange<T>(
+  processStateChange<T>(
     containerId: ContainerId,
     change: StateChange<T>,
-  ): Promise<void> {
+  ): void {
     const subscriptionIds = this.containerIndex.get(containerId);
     if (!subscriptionIds) return;
-
-    const promises: Promise<void>[] = [];
 
     for (const id of subscriptionIds) {
       const entry = this.subscriptions.get(id);
@@ -208,26 +204,20 @@ export class SubscriptionRegistry {
         shouldContinue: true,
       };
 
-      promises.push(
-        entry.pipeline
-          .execute(context)
-          .then(() => {
-            entry.lastAccessed = Date.now();
-          })
-          .catch((error) => {
-            BlacLogger.error(
-              'SubscriptionRegistry',
-              'Subscription processing error',
-              {
-                subscriptionId: id,
-                error: error instanceof Error ? error.message : String(error),
-              },
-            );
-          }),
-      );
+      try {
+        entry.pipeline.execute(context);
+        entry.lastAccessed = Date.now();
+      } catch (error) {
+        BlacLogger.error(
+          'SubscriptionRegistry',
+          'Subscription processing error',
+          {
+            subscriptionId: id,
+            error: error instanceof Error ? error.message : String(error),
+          },
+        );
+      }
     }
-
-    await Promise.all(promises);
   }
 
   /**
@@ -249,7 +239,7 @@ export class SubscriptionRegistry {
   /**
    * Get subscription entry by ID
    */
-  get(id: SubscriptionId): SubscriptionEntry<unknown, unknown> | undefined {
+  get(id: SubscriptionId): SubscriptionEntry<unknown> | undefined {
     return this.subscriptions.get(id);
   }
 
@@ -285,8 +275,8 @@ export class SubscriptionRegistry {
   /**
    * Create pipeline for subscription
    */
-  private createPipeline<TState = unknown, TResult = TState>(
-    config: SubscriptionConfig<TState, TResult>,
+  private createPipeline<TState = unknown>(
+    config: SubscriptionConfig<TState>,
   ): SubscriptionPipeline {
     const pipeline = new SubscriptionPipeline({
       enableMetrics: false,
@@ -302,9 +292,9 @@ export class SubscriptionRegistry {
   /**
    * Update indices when adding/removing subscriptions
    */
-  private updateIndices<TState = unknown, TResult = TState>(
+  private updateIndices<TState = unknown>(
     id: SubscriptionId,
-    config: SubscriptionConfig<TState, TResult>,
+    config: SubscriptionConfig<TState>,
     operation: 'add' | 'remove',
   ): void {
     // Update consumer index

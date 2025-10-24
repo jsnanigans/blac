@@ -181,7 +181,7 @@ export class SubscriptionSystem<T = unknown> {
   /**
    * Process a state change through all subscriptions
    */
-  async notify(stateChange: StateChange<T>): Promise<void> {
+  notify(stateChange: StateChange<T>): void {
     // Get all subscriptions for this container
     const subscriptionIds = this.registry.getContainerSubscriptions(
       this.containerId,
@@ -207,9 +207,7 @@ export class SubscriptionSystem<T = unknown> {
       return;
     }
 
-    // Process each subscription through its pipeline
-    const promises: Promise<void>[] = [];
-
+    // Process each subscription through its pipeline (synchronously)
     for (const subscriptionId of subscriptionIds) {
       const pipeline = this.pipelineCache.get(subscriptionId);
       if (!pipeline) {
@@ -248,43 +246,36 @@ export class SubscriptionSystem<T = unknown> {
       const context: PipelineContext<T> = {
         subscriptionId,
         stateChange,
-        subscription,
         metadata: new Map(Object.entries(subscription.metadata || {})),
         timestamp: Date.now(),
         shouldContinue: true,
         skipNotification: false,
       };
 
-      promises.push(
-        pipeline
-          .execute(context)
-          .then((result) => {
-            BlacLogger.debug(
-              'SubscriptionSystem',
-              '✅ Subscription pipeline completed',
-              {
-                subscriptionId,
-                executed: result.executed,
-                stagesProcessed: result.stagesProcessed.length,
-              },
-            );
-          })
-          .catch((error) => {
-            BlacLogger.error(
-              'SubscriptionSystem',
-              '❌ Subscription pipeline error',
-              {
-                subscriptionId,
-                containerId: this.containerId,
-                error: error instanceof Error ? error.message : String(error),
-                stack: error instanceof Error ? error.stack : undefined,
-              },
-            );
-          }),
-      );
+      try {
+        const result = pipeline.execute(context);
+        BlacLogger.debug(
+          'SubscriptionSystem',
+          '✅ Subscription pipeline completed',
+          {
+            subscriptionId,
+            executed: result.executed,
+            stagesProcessed: result.stagesProcessed.length,
+          },
+        );
+      } catch (error) {
+        BlacLogger.error(
+          'SubscriptionSystem',
+          '❌ Subscription pipeline error',
+          {
+            subscriptionId,
+            containerId: this.containerId,
+            error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+          },
+        );
+      }
     }
-
-    await Promise.all(promises);
 
     BlacLogger.debug('SubscriptionSystem', '✅ All subscriptions processed', {
       containerId: this.containerId,

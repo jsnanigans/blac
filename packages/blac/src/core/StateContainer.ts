@@ -104,6 +104,7 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
     this.subscriptionSystem = new SubscriptionSystem<S>(this._instanceId, {
       enableMetrics: this.config.debug,
       enableWeakRefs: true,
+      enableProxyTracking: false, // Disabled for synchronous performance
       maxSubscriptions: 1000,
       cleanupIntervalMs: 30000,
     });
@@ -122,8 +123,8 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
     });
 
     // Set up state change forwarding
-    this.stateStream.subscribe(async (event) => {
-      await this.onStateChange(event);
+    this.stateStream.subscribe((event) => {
+      this.onStateChange(event);
     });
   }
 
@@ -187,7 +188,7 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
   /**
    * Mount the container
    */
-  async mount(): Promise<void> {
+  mount(): void {
     if (this.lifecycleManager.isMounted) {
       throw new Error(`Container ${this._name} is already mounted`);
     }
@@ -203,7 +204,7 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
 
     try {
       // Call lifecycle hook
-      await this.onMount();
+      this.onMount();
 
       if (this.config.debug) {
         console.log(`[${this._name}] Mounted successfully`);
@@ -218,7 +219,7 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
   /**
    * Unmount the container
    */
-  async unmount(): Promise<void> {
+  unmount(): void {
     if (!this.lifecycleManager.isMounted) {
       throw new Error(`Container ${this._name} is not mounted`);
     }
@@ -228,7 +229,7 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
 
     try {
       // Call lifecycle hook
-      await this.onUnmount();
+      this.onUnmount();
 
       if (this.config.debug) {
         console.log(`[${this._name}] Unmounted successfully`);
@@ -290,7 +291,7 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
   /**
    * Dispose the container
    */
-  async dispose(): Promise<void> {
+  dispose(): void {
     if (this.lifecycleManager.isDisposed) {
       return; // Already disposed
     }
@@ -304,7 +305,7 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
       this.lifecycleManager.dispose();
 
       // Call lifecycle hook
-      await this.onDispose();
+      this.onDispose();
 
       // Dispose subscription system
       this.subscriptionSystem.dispose();
@@ -358,34 +359,34 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
   /**
    * Called when container is mounted
    */
-  protected async onMount(): Promise<void> {
+  protected onMount(): void {
     // Override in subclasses
   }
 
   /**
    * Called when container is unmounted
    */
-  protected async onUnmount(): Promise<void> {
+  protected onUnmount(): void {
     // Override in subclasses
   }
 
   /**
    * Called when container is disposed
    */
-  protected async onDispose(): Promise<void> {
+  protected onDispose(): void {
     // Override in subclasses
   }
 
   /**
    * Called when state changes
    */
-  protected async onStateChange(event: StateChangeEvent<S>): Promise<void> {
+  protected onStateChange(event: StateChangeEvent<S>): void {
     BlacLogger.debug('StateContainer', 'stateChange', {
       version: event.version,
     });
 
     // Notify all subscribers through the subscription system
-    await this.subscriptionSystem.notify({
+    this.subscriptionSystem.notify({
       type: 'state-change',
       current: event.current,
       previous: event.previous,
@@ -495,7 +496,7 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
   /**
    * Subscribe with advanced options using the new subscription system
    */
-  subscribeAdvanced<R = S>(options: SubscriptionOptions<S, R>): Subscription {
+  subscribeAdvanced(options: SubscriptionOptions): Subscription {
     // Create a consumer object if weakRef not provided
     const consumer = options.weakRef || { subscription: true };
     this.addConsumer(consumer);

@@ -77,7 +77,7 @@ export abstract class PipelineStage {
    */
   abstract process<T>(
     context: PipelineContext<T>,
-  ): Promise<PipelineContext<T>> | PipelineContext<T>;
+  ): PipelineContext<T>;
 
   /**
    * Optional cleanup when stage is removed
@@ -151,7 +151,7 @@ export class SubscriptionPipeline {
   /**
    * Execute the pipeline with given context
    */
-  async execute<T>(context: PipelineContext<T>): Promise<PipelineResult> {
+  execute<T>(context: PipelineContext<T>): PipelineResult {
     const startTime = performance.now();
     const stagesProcessed: StageId[] = [];
     const stageDurations = new Map<StageId, number>();
@@ -172,7 +172,7 @@ export class SubscriptionPipeline {
         const stageStart = performance.now();
 
         try {
-          currentContext = await this.executeStage(stage, currentContext);
+          currentContext = this.executeStage(stage, currentContext);
           stagesProcessed.push(stage.id);
 
           if (this.config.enableMetrics) {
@@ -217,20 +217,21 @@ export class SubscriptionPipeline {
   /**
    * Execute a single stage with timeout
    */
-  private async executeStage<T>(
+  private executeStage<T>(
     stage: PipelineStage,
     context: PipelineContext<T>,
-  ): Promise<PipelineContext<T>> {
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(
-        () => reject(new Error(`Stage ${stage.name} timed out`)),
-        this.config.timeout,
-      );
-    });
+  ): PipelineContext<T> {
+    // const timeoutPromise = new Promise<never>((_, reject) => {
+    //   setTimeout(
+    //     () => reject(new Error(`Stage ${stage.name} timed out`)),
+    //     this.config.timeout,
+    //   );
+    // });
 
-    const stagePromise = Promise.resolve(stage.process(context));
+    // const stagePromise = Promise.resolve(stage.process(context));
 
-    return Promise.race([stagePromise, timeoutPromise]);
+    return stage.process(context);
+    // return Promise.race([stagePromise, timeoutPromise]);
   }
 
   /**

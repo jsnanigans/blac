@@ -20,11 +20,9 @@ export type EventTransformer<E extends BaseEvent, R extends BaseEvent> = (
 ) => R | null;
 
 /**
- * Event handler function type
+ * Event handler function type (synchronous only)
  */
-export type EventHandler<E extends BaseEvent> = (
-  event: E,
-) => void | Promise<void>;
+export type EventHandler<E extends BaseEvent> = (event: E) => void;
 
 /**
  * Options for EventStream
@@ -32,8 +30,6 @@ export type EventHandler<E extends BaseEvent> = (
 export interface EventStreamOptions {
   /** Maximum queue size for buffered events (0 = unlimited) */
   maxQueueSize?: number;
-  /** Whether to process events asynchronously */
-  async?: boolean;
   /** Error handling strategy */
   errorStrategy?: 'throw' | 'log' | 'silent';
 }
@@ -60,13 +56,12 @@ export class EventStream<E extends BaseEvent = BaseEvent> {
   constructor(options: EventStreamOptions = {}) {
     this.options = {
       maxQueueSize: options.maxQueueSize ?? 1000,
-      async: options.async ?? false,
       errorStrategy: options.errorStrategy ?? 'log',
     };
   }
 
   /**
-   * Dispatch an event
+   * Dispatch an event (synchronously)
    * @param event The event to dispatch
    */
   dispatch(event: E): void {
@@ -85,13 +80,8 @@ export class EventStream<E extends BaseEvent = BaseEvent> {
       return;
     }
 
-    // Handle async mode with queueing
-    if (this.options.async) {
-      this.enqueue(transformed);
-      this.processQueue();
-    } else {
-      this.emitInternal(transformed);
-    }
+    // Emit synchronously
+    this.emitInternal(transformed);
   }
 
   /**
@@ -160,13 +150,10 @@ export class EventStream<E extends BaseEvent = BaseEvent> {
   }
 
   /**
-   * Resume event processing (for async mode)
+   * Resume event processing
    */
   resume(): void {
     this.paused = false;
-    if (this.options.async) {
-      this.processQueue();
-    }
   }
 
   /**
@@ -291,47 +278,6 @@ export class EventStream<E extends BaseEvent = BaseEvent> {
   }
 
   /**
-   * Enqueue event for async processing
-   */
-  private enqueue(event: E): void {
-    // Check queue size limit
-    if (
-      this.options.maxQueueSize > 0 &&
-      this.eventQueue.length >= this.options.maxQueueSize
-    ) {
-      // Drop oldest event
-      this.eventQueue.shift();
-    }
-
-    this.eventQueue.push(event);
-    this.metrics.queuedEvents = this.eventQueue.length;
-  }
-
-  /**
-   * Process queued events
-   */
-  private async processQueue(): Promise<void> {
-    if (this.processing || this.paused || this.eventQueue.length === 0) {
-      return;
-    }
-
-    this.processing = true;
-
-    while (this.eventQueue.length > 0 && !this.paused) {
-      const event = this.eventQueue.shift()!;
-      this.metrics.queuedEvents = this.eventQueue.length;
-
-      try {
-        await this.emitAsync(event);
-      } catch (error) {
-        this.handleError(error as Error, event);
-      }
-    }
-
-    this.processing = false;
-  }
-
-  /**
    * Emit event synchronously (internal)
    */
   private emitInternal(event: E): void {
@@ -340,24 +286,6 @@ export class EventStream<E extends BaseEvent = BaseEvent> {
     } catch (error) {
       this.handleError(error as Error, event);
     }
-  }
-
-  /**
-   * Emit event asynchronously
-   */
-  private async emitAsync(event: E): Promise<void> {
-    return new Promise((resolve) => {
-      // Use microtask for async emission
-      queueMicrotask(() => {
-        try {
-          this.emitter.emit(event);
-          resolve();
-        } catch (error) {
-          this.handleError(error as Error, event);
-          resolve();
-        }
-      });
-    });
   }
 
   /**

@@ -9,12 +9,12 @@ import { StateContainer, StateContainerConfig } from './StateContainer';
 import { BaseEvent } from '../types/events';
 
 /**
- * Event handler signature
+ * Event handler signature (synchronous only)
  */
 export type EventHandler<E extends BaseEvent, S> = (
   event: E,
   emit: (state: S) => void,
-) => void | Promise<void>;
+) => void;
 
 /**
  * Type-safe event constructor
@@ -82,9 +82,9 @@ export abstract class Vertex<
   };
 
   /**
-   * Process an event
+   * Process an event (synchronously)
    */
-  private async processEvent(event: E): Promise<void> {
+  private processEvent(event: E): void {
     // Queue event if already processing
     if (this.isProcessing) {
       this.eventQueue.push(event);
@@ -94,12 +94,12 @@ export abstract class Vertex<
     this.isProcessing = true;
 
     try {
-      await this.handleEvent(event);
+      this.handleEvent(event);
 
       // Process queued events
       while (this.eventQueue.length > 0) {
         const nextEvent = this.eventQueue.shift()!;
-        await this.handleEvent(nextEvent);
+        this.handleEvent(nextEvent);
       }
     } finally {
       this.isProcessing = false;
@@ -107,9 +107,9 @@ export abstract class Vertex<
   }
 
   /**
-   * Handle a single event
+   * Handle a single event (synchronously)
    */
-  private async handleEvent(event: E): Promise<void> {
+  private handleEvent(event: E): void {
     const className = event.constructor.name;
     const registrations = this.eventHandlers.get(className);
 
@@ -125,10 +125,10 @@ export abstract class Vertex<
       this.emit(state);
     };
 
-    // Execute all handlers for this event type
+    // Execute all handlers for this event type (synchronously)
     for (const registration of registrations) {
       try {
-        await registration.handler(event, emit);
+        registration.handler(event, emit);
       } catch (error) {
         if (this.config.debug) {
           console.error(`Error handling event ${className}:`, error);
@@ -237,14 +237,12 @@ export class AuthVertex extends Vertex<AuthState> {
       error: null,
     });
 
-    // Async login handler
-    this.on(LoginEvent, async (event, emit) => {
+    // Synchronous login handler (async operations should be done before calling this)
+    this.on(LoginEvent, (event, emit) => {
       // Set loading
       emit({ ...this.state, isLoading: true, error: null });
 
-      // Simulate async auth
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
+      // Simulate sync auth (in real app, async work would be done before dispatching event)
       // Check credentials
       if (event.email === 'user@example.com' && event.password === 'password') {
         emit({

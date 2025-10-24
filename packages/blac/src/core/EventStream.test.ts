@@ -224,13 +224,13 @@ describe('EventStream', () => {
       expect(events).toHaveLength(1000);
     });
 
-    it('should handle async mode with queueing', async () => {
-      const stream = new EventStream({ async: true });
+    it('should handle synchronous event dispatch', () => {
+      const stream = new EventStream();
       const events: number[] = [];
 
       stream.subscribe((event) => {
         if (event.type === 'increment') {
-          events.push(event.amount);
+          events.push((event as IncrementEvent).amount);
         }
       });
 
@@ -238,40 +238,34 @@ describe('EventStream', () => {
       stream.dispatch(new IncrementEvent(2));
       stream.dispatch(new IncrementEvent(3));
 
-      // Wait for async processing
-      await new Promise((resolve) => setTimeout(resolve, 50));
-
+      // Events are processed synchronously
       expect(events).toEqual([1, 2, 3]);
     });
   });
 
   describe('Queue Management', () => {
-    it('should respect max queue size', () => {
+    it('should track queue size (always 0 in sync mode)', () => {
       const stream = new EventStream({
-        async: true,
         maxQueueSize: 3,
       });
 
-      // Pause to prevent processing
-      stream.pause();
-
-      // Add more events than queue size
-      for (let i = 0; i < 5; i++) {
-        stream.dispatch(new IncrementEvent(i));
-      }
-
-      // Queue should not exceed max size
-      expect(stream.getQueueSize()).toBeLessThanOrEqual(3);
-    });
-
-    it('should clear queue on demand', () => {
-      const stream = new EventStream({ async: true });
-      stream.pause();
+      // In synchronous mode, queue is always 0
+      expect(stream.getQueueSize()).toBe(0);
 
       stream.dispatch(new IncrementEvent(1));
       stream.dispatch(new IncrementEvent(2));
 
-      expect(stream.getQueueSize()).toBeGreaterThan(0);
+      // Still 0 because events are processed immediately
+      expect(stream.getQueueSize()).toBe(0);
+    });
+
+    it('should allow clearing queue (no-op in sync mode)', () => {
+      const stream = new EventStream();
+
+      stream.dispatch(new IncrementEvent(1));
+      stream.dispatch(new IncrementEvent(2));
+
+      expect(stream.getQueueSize()).toBe(0);
 
       stream.clearQueue();
       expect(stream.getQueueSize()).toBe(0);
@@ -279,8 +273,8 @@ describe('EventStream', () => {
   });
 
   describe('Stream Control', () => {
-    it('should pause and resume processing', async () => {
-      const stream = new EventStream({ async: true });
+    it('should track pause state (pause/resume are no-ops in sync mode)', () => {
+      const stream = new EventStream();
       const events: any[] = [];
 
       stream.subscribe((event) => events.push(event));
@@ -289,19 +283,17 @@ describe('EventStream', () => {
       stream.dispatch(new IncrementEvent(1));
       stream.dispatch(new IncrementEvent(2));
 
-      // No events processed while paused
-      await new Promise((resolve) => setTimeout(resolve, 10));
-      expect(events).toHaveLength(0);
-
-      // Resume processing
-      stream.resume();
-      await new Promise((resolve) => setTimeout(resolve, 50));
-
+      // In sync mode, events are still processed immediately despite pause
       expect(events).toHaveLength(2);
+
+      stream.resume();
+      stream.dispatch(new IncrementEvent(3));
+
+      expect(events).toHaveLength(3);
     });
 
     it('should track processing state', () => {
-      const stream = new EventStream({ async: true });
+      const stream = new EventStream();
 
       expect(stream.isProcessing()).toBe(false);
       expect(stream.isPaused()).toBe(false);
