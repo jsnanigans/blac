@@ -11,6 +11,9 @@
     "lint:fix": "turbo run lint:fix",
     "typecheck": "turbo run typecheck",
     "format": "turbo run format",
+    "docs:dev": "pnpm --filter @blac/docs dev",
+    "docs:build": "pnpm --filter @blac/docs build",
+    "docs:preview": "pnpm --filter @blac/docs preview",
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "pnpm build && pnpm test && pnpm typecheck && changeset publish --no-git-tag"
