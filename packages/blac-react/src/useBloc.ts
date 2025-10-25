@@ -40,7 +40,7 @@ type ExtractState<T> = T extends StateContainer<infer S, any> ? S : never;
 /**
  * Bloc constructor type - more flexible to accept any StateContainer subclass
  */
-type BlocConstructor<TBloc = any> = new (...args: any[]) => TBloc;
+type BlocConstructor<TBloc extends StateContainer<any, any>> = new (...args: any[]) => TBloc;
 
 /**
  * Options for useBloc hook
@@ -56,6 +56,11 @@ export interface UseBlocOptions<TBloc extends StateContainer<any, any>> {
    * For isolated blocs, each useBloc call gets its own instance
    */
   instanceId?: string;
+
+  /**
+   * Dependencies array to control re-rendering
+   */
+  dependencies?: (state: ExtractState<TBloc>, bloc: TBloc) => any[];
 
   /**
    * Callback when component mounts
@@ -116,19 +121,21 @@ function useBloc<TBloc extends StateContainer<any, any>>(
 
   const { bloc, bridge } = useMemo(() => {
     // Use StateContainer's static getOrCreate method
-    const blocInstance = options?.staticProps
-      ? BlocClass.getOrCreate(instanceKey, options.staticProps)
-      : BlocClass.getOrCreate(instanceKey);
+    const blocInstance = BlocClass.getOrCreate(instanceKey, options?.staticProps);
 
     if (!componentRef.current.__bridge) {
-      componentRef.current.__bridge = new ReactBridge(blocInstance);
+      componentRef.current.__bridge = new ReactBridge(blocInstance, {
+        dependencies: options?.dependencies
+          ? (state) => options.dependencies!(state, blocInstance)
+          : undefined,
+      });
     }
 
     return {
       bloc: blocInstance,
       bridge: componentRef.current.__bridge,
     };
-  }, [BlocClass, instanceKey, options?.staticProps]);
+  }, [BlocClass, instanceKey, options?.staticProps, options?.dependencies]);
 
   // Subscribe to state changes using useSyncExternalStore with proxy tracking
   const state = useSyncExternalStore(

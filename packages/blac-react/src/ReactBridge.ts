@@ -14,7 +14,15 @@ export type SubscribeCallback = () => void;
 export type Unsubscribe = () => void;
 
 /**
- * Bridge between StateContainer and React with automatic proxy tracking
+ * Dependencies function type - returns array of values to track
+ */
+export type DependenciesFunction<S, TBloc> = (
+  state: S,
+  bloc: TBloc,
+) => any[];
+
+/**
+ * Bridge between StateContainer and React with automatic proxy tracking or dependencies mode
  */
 export class ReactBridge<S> {
   private subscription: Subscription | null = null;
@@ -27,9 +35,21 @@ export class ReactBridge<S> {
   private renderGeneration = 0;
   private isInitialRender = true;
 
-  constructor(private readonly container: StateContainer<S, any>) {
+  // Dependencies mode
+  private useDependencies: boolean;
+  private dependenciesFunction?: DependenciesFunction<S, any>;
+  private previousDependencies: any[] | null = null;
+
+  constructor(
+    private readonly container: StateContainer<S, any>,
+    options?: {
+      dependencies?: DependenciesFunction<S, any>;
+    },
+  ) {
     this.proxyTracker = new ProxyTracker<S>();
     this.currentState = container.state;
+    this.useDependencies = !!options?.dependencies;
+    this.dependenciesFunction = options?.dependencies;
   }
 
   /**
@@ -42,12 +62,15 @@ export class ReactBridge<S> {
     this.listeners.add(onStoreChange);
 
     if (!this.subscription) {
-      BlacLogger.debug('ReactBridge', 'Creating INITIAL subscription');
+      BlacLogger.debug('ReactBridge', 'Creating INITIAL subscription', {
+        mode: this.useDependencies ? 'dependencies' : 'proxy-tracking',
+      });
       this.isInitialRender = true;
       const subscriptionId = Symbol('subscription');
       this.activeSubscriptionId = subscriptionId;
       this.subscription = this.container.subscribeAdvanced({
-        callback: (state: S) => {
+        callback: (state: unknown) => {
+          const typedState = state as S;
           // Guard against stale callbacks from old subscriptions
           if (subscriptionId !== this.activeSubscriptionId) {
             BlacLogger.debug(
@@ -63,13 +86,27 @@ export class ReactBridge<S> {
               listenerCount: this.listeners.size,
             },
           );
-          this.currentState = state;
+          this.currentState = typedState;
+
+          // In dependencies mode, check if dependencies have changed
+          if (this.useDependencies && this.dependenciesFunction) {
+            if (!this.shouldNotifyDependenciesChanged()) {
+              BlacLogger.debug(
+                'ReactBridge',
+                '⏭️  Dependencies unchanged - skipping re-render',
+              );
+              return;
+            }
+          }
+
           BlacLogger.debug(
             'ReactBridge',
             '🔔 Notifying React listeners to trigger re-render',
             {
               listenerCount: this.listeners.size,
-              reason: 'State changed and passed all filters',
+              reason: this.useDependencies
+                ? 'Dependencies changed'
+                : 'State changed and passed all filters',
             },
           );
           this.listeners.forEach((listener) => {
@@ -78,8 +115,10 @@ export class ReactBridge<S> {
           BlacLogger.debug('ReactBridge', '✅ All listeners notified');
         },
         metadata: {
-          useProxyTracking: true,
-          trackedPaths: Array.from(this.trackedPaths),
+          useProxyTracking: !this.useDependencies,
+          trackedPaths: this.useDependencies
+            ? []
+            : Array.from(this.trackedPaths),
         },
       });
       BlacLogger.debug('ReactBridge', 'INITIAL subscription created');
@@ -103,9 +142,16 @@ export class ReactBridge<S> {
 
   /**
    * Get snapshot function for useSyncExternalStore
-   * Returns proxied state that tracks property access
+   * Returns proxied state that tracks property access (proxy mode)
+   * or raw state (dependencies mode)
    */
   getSnapshot = (): S => {
+    // In dependencies mode, return raw state - no proxy tracking needed
+    if (this.useDependencies) {
+      BlacLogger.debug('ReactBridge', 'Returning raw state (dependencies mode)');
+      return this.currentState;
+    }
+
     if (!this.isTracking) {
       this.isTracking = true;
       this.proxyTracker.startTracking();
@@ -139,8 +185,18 @@ export class ReactBridge<S> {
   /**
    * Complete tracking and update subscription paths
    * Public method to be called from useBloc's useEffect
+   * Skipped in dependencies mode
    */
   completeTracking(): void {
+    // Skip in dependencies mode
+    if (this.useDependencies) {
+      BlacLogger.debug(
+        'ReactBridge',
+        'Skipping completeTracking - dependencies mode active',
+      );
+      return;
+    }
+
     BlacLogger.debug('ReactBridge', 'completeTracking called', {
       isTracking: this.isTracking,
     });
@@ -207,7 +263,8 @@ export class ReactBridge<S> {
       const subscriptionId = Symbol('subscription');
       this.activeSubscriptionId = subscriptionId;
       this.subscription = this.container.subscribeAdvanced({
-        callback: (state: S) => {
+        callback: (state: unknown) => {
+          const typedState = state as S;
           // Guard against stale callbacks from old subscriptions
           if (subscriptionId !== this.activeSubscriptionId) {
             BlacLogger.debug(
@@ -223,13 +280,27 @@ export class ReactBridge<S> {
               listenerCount: this.listeners.size,
             },
           );
-          this.currentState = state;
+          this.currentState = typedState;
+
+          // In dependencies mode, check if dependencies have changed
+          if (this.useDependencies && this.dependenciesFunction) {
+            if (!this.shouldNotifyDependenciesChanged()) {
+              BlacLogger.debug(
+                'ReactBridge',
+                '⏭️  Dependencies unchanged - skipping re-render',
+              );
+              return;
+            }
+          }
+
           BlacLogger.debug(
             'ReactBridge',
             '🔔 Notifying React listeners to trigger re-render',
             {
               listenerCount: this.listeners.size,
-              reason: 'State changed on tracked paths',
+              reason: this.useDependencies
+                ? 'Dependencies changed'
+                : 'State changed on tracked paths',
             },
           );
           this.listeners.forEach((listener) => {
@@ -237,10 +308,12 @@ export class ReactBridge<S> {
           });
           BlacLogger.debug('ReactBridge', '✅ All listeners notified');
         },
-        paths: Array.from(this.trackedPaths),
+        paths: this.useDependencies ? [] : Array.from(this.trackedPaths),
         metadata: {
-          useProxyTracking: true,
-          trackedPaths: Array.from(this.trackedPaths),
+          useProxyTracking: !this.useDependencies,
+          trackedPaths: this.useDependencies
+            ? []
+            : Array.from(this.trackedPaths),
         },
       });
 
@@ -252,6 +325,58 @@ export class ReactBridge<S> {
 
       BlacLogger.debug('ReactBridge', 'updateSubscriptionPaths complete');
     }
+  }
+
+  /**
+   * Check if dependencies have changed
+   * Compares current dependencies with previous dependencies
+   * Returns true if changed (should notify), false if unchanged
+   */
+  private shouldNotifyDependenciesChanged(): boolean {
+    if (!this.dependenciesFunction) {
+      return true; // No dependencies function, always notify
+    }
+
+    const currentDeps = this.dependenciesFunction(
+      this.currentState,
+      this.container,
+    );
+
+    // First render or no previous dependencies - always notify
+    if (this.previousDependencies === null) {
+      this.previousDependencies = currentDeps;
+      BlacLogger.debug('ReactBridge', 'Initial dependencies set', {
+        dependencies: currentDeps,
+      });
+      return true;
+    }
+
+    // Check if length changed
+    if (currentDeps.length !== this.previousDependencies.length) {
+      BlacLogger.debug('ReactBridge', 'Dependencies length changed', {
+        oldLength: this.previousDependencies.length,
+        newLength: currentDeps.length,
+      });
+      this.previousDependencies = currentDeps;
+      return true;
+    }
+
+    // Check if any value changed (using Object.is for comparison)
+    for (let i = 0; i < currentDeps.length; i++) {
+      if (!Object.is(currentDeps[i], this.previousDependencies[i])) {
+        BlacLogger.debug('ReactBridge', 'Dependency changed at index', {
+          index: i,
+          oldValue: this.previousDependencies[i],
+          newValue: currentDeps[i],
+        });
+        this.previousDependencies = currentDeps;
+        return true;
+      }
+    }
+
+    // No changes detected
+    BlacLogger.debug('ReactBridge', 'All dependencies unchanged');
+    return false;
   }
 
   /**
