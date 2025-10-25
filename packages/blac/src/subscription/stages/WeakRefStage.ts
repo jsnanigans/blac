@@ -6,6 +6,7 @@
  */
 
 import { PipelineStage, PipelineContext } from '../SubscriptionPipeline';
+import { BLAC_DEFAULTS } from '../../constants';
 
 export interface WeakRefTarget {
   readonly id: string;
@@ -16,7 +17,7 @@ export class WeakRefStage extends PipelineStage {
   private weakRefs: Map<string, WeakRef<object>> = new Map();
   private cleanupRegistry?: FinalizationRegistry<string>;
   private lastCleanup: number = Date.now();
-  private readonly cleanupInterval = 10000; // 10 seconds
+  private readonly cleanupInterval = BLAC_DEFAULTS.WEAKREF_CLEANUP_INTERVAL_MS;
 
   constructor() {
     super('WeakRef', 950); // Runs early to check if consumer still exists

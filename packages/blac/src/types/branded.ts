@@ -3,6 +3,13 @@
  * These types ensure that IDs and versions can't be accidentally mixed up
  */
 
+/**
+ * Helper type for cases where any object type is acceptable
+ * Used sparingly only where type cannot be more specific
+ * eslint-disable-next-line @typescript-eslint/no-explicit-any
+ */
+export type AnyObject = any;
+
 /** Unique symbol for branding */
 declare const brand: unique symbol;
 

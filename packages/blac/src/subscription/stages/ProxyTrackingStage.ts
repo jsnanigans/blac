@@ -36,7 +36,7 @@ export interface ProxyTrackingOptions {
  * Manages proxy tracking for automatic dependency detection
  */
 export class ProxyTrackingStage extends PipelineStage {
-  private readonly trackers = new WeakMap<object, ProxyTracker<any>>();
+  private readonly trackers = new Map<string, ProxyTracker<any>>();
   private readonly options: ProxyTrackingOptions;
 
   constructor(options: ProxyTrackingOptions = {}) {
@@ -73,15 +73,15 @@ export class ProxyTrackingStage extends PipelineStage {
     }
 
     // Get or create tracker for this subscription
-    const subscription = context.subscription;
-    let tracker = this.trackers.get(subscription);
+    const subscriptionId = context.subscriptionId;
+    let tracker = this.trackers.get(subscriptionId);
 
     if (!tracker) {
       tracker = new ProxyTracker();
       if (this.options.maxDepth) {
         tracker.setMaxDepth(this.options.maxDepth);
       }
-      this.trackers.set(subscription, tracker);
+      this.trackers.set(subscriptionId, tracker);
       BlacLogger.debug(
         'ProxyTrackingStage',
         'Created new ProxyTracker for subscription',
@@ -130,8 +130,7 @@ export class ProxyTrackingStage extends PipelineStage {
         });
       }
 
-      // Set paths for FilterStage to use
-      context.subscription.config.paths = filterPaths;
+      // Set paths for FilterStage to use (via metadata)
       context.metadata.set('filterPaths', filterPaths);
 
       BlacLogger.debug(
@@ -174,9 +173,7 @@ export class ProxyTrackingStage extends PipelineStage {
       }
     }
 
-    // Update subscription configuration with new paths
     const pathArray = Array.from(paths);
-    context.subscription.config.paths = pathArray;
 
     BlacLogger.debug('ProxyTrackingStage', 'Updated tracked paths', {
       subscriptionId: context.subscriptionId,
@@ -189,15 +186,15 @@ export class ProxyTrackingStage extends PipelineStage {
   /**
    * Create a proxied state for tracking
    */
-  createProxiedState<T>(state: T, subscription: any): T {
-    let tracker = this.trackers.get(subscription);
+  createProxiedState<T>(state: T, subscriptionId: string): T {
+    let tracker = this.trackers.get(subscriptionId);
 
     if (!tracker) {
       tracker = new ProxyTracker<T>();
       if (this.options.maxDepth) {
         tracker.setMaxDepth(this.options.maxDepth);
       }
-      this.trackers.set(subscription, tracker);
+      this.trackers.set(subscriptionId, tracker);
     }
 
     return tracker.createProxy(state);
@@ -206,8 +203,8 @@ export class ProxyTrackingStage extends PipelineStage {
   /**
    * Start tracking for a subscription
    */
-  startTracking(subscription: any): void {
-    const tracker = this.trackers.get(subscription);
+  startTracking(subscriptionId: string): void {
+    const tracker = this.trackers.get(subscriptionId);
     if (tracker) {
       tracker.startTracking();
     }
@@ -216,8 +213,8 @@ export class ProxyTrackingStage extends PipelineStage {
   /**
    * Stop tracking and get tracked paths
    */
-  stopTracking(subscription: any): Set<string> {
-    const tracker = this.trackers.get(subscription);
+  stopTracking(subscriptionId: string): Set<string> {
+    const tracker = this.trackers.get(subscriptionId);
     if (tracker) {
       return tracker.stopTracking();
     }
@@ -226,19 +223,30 @@ export class ProxyTrackingStage extends PipelineStage {
 
   /**
    * Clean up tracker for a subscription
+   * Overrides base class cleanup to clean up all trackers
    */
-  cleanup(subscription: any): void {
-    const tracker = this.trackers.get(subscription);
+  cleanup(): void {
+    for (const tracker of this.trackers.values()) {
+      tracker.clearCache();
+    }
+    this.trackers.clear();
+  }
+
+  /**
+   * Clean up tracker for a specific subscription
+   */
+  cleanupSubscription(subscriptionId: string): void {
+    const tracker = this.trackers.get(subscriptionId);
     if (tracker) {
       tracker.clearCache();
-      this.trackers.delete(subscription);
+      this.trackers.delete(subscriptionId);
     }
   }
 
   /**
    * Check if a subscription has proxy tracking enabled
    */
-  isTrackingEnabled(subscription: any): boolean {
-    return this.options.enabled && this.trackers.has(subscription);
+  isTrackingEnabled(subscriptionId: string): boolean {
+    return !!this.options.enabled && this.trackers.has(subscriptionId);
   }
 }

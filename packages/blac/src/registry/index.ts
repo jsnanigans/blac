@@ -7,8 +7,14 @@
 
 export {
   BlocRegistry,
-  createInstanceId,
-  type InstanceId,
-  type BlocConstructor,
   type BlocTypeConfig,
 } from './BlocRegistry';
+
+// Re-export BlocConstructor from utilities (single source of truth)
+export { type BlocConstructor } from '../types/utilities';
+
+// Re-export branded types from centralized location
+export {
+  type InstanceId,
+  instanceId as createInstanceId,
+} from '../types/branded';

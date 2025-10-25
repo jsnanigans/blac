@@ -77,7 +77,7 @@ export class ProxyTracker<T> {
         // If the value is a nested object, recursively proxy it
         // DON'T track intermediate objects, only track when we access leaf values
         if (isProxyable(value)) {
-          const proxiedValue = this.createProxy(value, fullPath, depth + 1);
+          const proxiedValue = this.createProxy(value as T, fullPath, depth + 1);
           return proxiedValue;
         }
 
@@ -180,7 +180,7 @@ export class ProxyTracker<T> {
         // Recursively proxy nested objects in arrays
         // DON'T track intermediate objects, only track when we access leaf values
         if (isProxyable(value)) {
-          return this.createProxy(value, fullPath, depth + 1);
+          return this.createProxy(value as T, fullPath, depth + 1);
         }
 
         // Track ONLY leaf properties (non-objects) and array length

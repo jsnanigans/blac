@@ -53,6 +53,67 @@ export class ReactBridge<S> {
   }
 
   /**
+   * Creates a subscription callback that handles state changes
+   * @param subscriptionId - Symbol to guard against stale subscriptions
+   * @param context - Label for logging ('INITIAL' or 'NEW')
+   * @private
+   */
+  private createSubscriptionCallback(
+    subscriptionId: symbol,
+    context: 'INITIAL' | 'NEW',
+  ): (state: unknown) => void {
+    return (state: unknown) => {
+      const typedState = state as S;
+
+      // Guard against stale callbacks from old subscriptions
+      if (subscriptionId !== this.activeSubscriptionId) {
+        BlacLogger.debug(
+          'ReactBridge',
+          `${context} subscription callback IGNORED (stale subscription)`,
+        );
+        return;
+      }
+
+      BlacLogger.debug(
+        'ReactBridge',
+        `📥 ${context} subscription callback invoked`,
+        { listenerCount: this.listeners.size },
+      );
+
+      this.currentState = typedState;
+
+      // In dependencies mode, check if dependencies have changed
+      if (this.useDependencies && this.dependenciesFunction) {
+        if (!this.shouldNotifyDependenciesChanged()) {
+          BlacLogger.debug(
+            'ReactBridge',
+            '⏭️  Dependencies unchanged - skipping re-render',
+          );
+          return;
+        }
+      }
+
+      const reason = this.useDependencies
+        ? 'Dependencies changed'
+        : context === 'INITIAL'
+          ? 'State changed and passed all filters'
+          : 'State changed on tracked paths';
+
+      BlacLogger.debug(
+        'ReactBridge',
+        '🔔 Notifying React listeners to trigger re-render',
+        { listenerCount: this.listeners.size, reason },
+      );
+
+      this.listeners.forEach((listener) => {
+        listener();
+      });
+
+      BlacLogger.debug('ReactBridge', '✅ All listeners notified');
+    };
+  }
+
+  /**
    * Subscribe function for useSyncExternalStore
    * Called by React to subscribe to state changes
    */
@@ -69,51 +130,7 @@ export class ReactBridge<S> {
       const subscriptionId = Symbol('subscription');
       this.activeSubscriptionId = subscriptionId;
       this.subscription = this.container.subscribeAdvanced({
-        callback: (state: unknown) => {
-          const typedState = state as S;
-          // Guard against stale callbacks from old subscriptions
-          if (subscriptionId !== this.activeSubscriptionId) {
-            BlacLogger.debug(
-              'ReactBridge',
-              'INITIAL subscription callback IGNORED (stale subscription)',
-            );
-            return;
-          }
-          BlacLogger.debug(
-            'ReactBridge',
-            '📥 INITIAL subscription callback invoked',
-            {
-              listenerCount: this.listeners.size,
-            },
-          );
-          this.currentState = typedState;
-
-          // In dependencies mode, check if dependencies have changed
-          if (this.useDependencies && this.dependenciesFunction) {
-            if (!this.shouldNotifyDependenciesChanged()) {
-              BlacLogger.debug(
-                'ReactBridge',
-                '⏭️  Dependencies unchanged - skipping re-render',
-              );
-              return;
-            }
-          }
-
-          BlacLogger.debug(
-            'ReactBridge',
-            '🔔 Notifying React listeners to trigger re-render',
-            {
-              listenerCount: this.listeners.size,
-              reason: this.useDependencies
-                ? 'Dependencies changed'
-                : 'State changed and passed all filters',
-            },
-          );
-          this.listeners.forEach((listener) => {
-            listener();
-          });
-          BlacLogger.debug('ReactBridge', '✅ All listeners notified');
-        },
+        callback: this.createSubscriptionCallback(subscriptionId, 'INITIAL'),
         metadata: {
           useProxyTracking: !this.useDependencies,
           trackedPaths: this.useDependencies
@@ -263,51 +280,7 @@ export class ReactBridge<S> {
       const subscriptionId = Symbol('subscription');
       this.activeSubscriptionId = subscriptionId;
       this.subscription = this.container.subscribeAdvanced({
-        callback: (state: unknown) => {
-          const typedState = state as S;
-          // Guard against stale callbacks from old subscriptions
-          if (subscriptionId !== this.activeSubscriptionId) {
-            BlacLogger.debug(
-              'ReactBridge',
-              'NEW subscription callback IGNORED (stale subscription)',
-            );
-            return;
-          }
-          BlacLogger.debug(
-            'ReactBridge',
-            '📥 NEW subscription callback invoked',
-            {
-              listenerCount: this.listeners.size,
-            },
-          );
-          this.currentState = typedState;
-
-          // In dependencies mode, check if dependencies have changed
-          if (this.useDependencies && this.dependenciesFunction) {
-            if (!this.shouldNotifyDependenciesChanged()) {
-              BlacLogger.debug(
-                'ReactBridge',
-                '⏭️  Dependencies unchanged - skipping re-render',
-              );
-              return;
-            }
-          }
-
-          BlacLogger.debug(
-            'ReactBridge',
-            '🔔 Notifying React listeners to trigger re-render',
-            {
-              listenerCount: this.listeners.size,
-              reason: this.useDependencies
-                ? 'Dependencies changed'
-                : 'State changed on tracked paths',
-            },
-          );
-          this.listeners.forEach((listener) => {
-            listener();
-          });
-          BlacLogger.debug('ReactBridge', '✅ All listeners notified');
-        },
+        callback: this.createSubscriptionCallback(subscriptionId, 'NEW'),
         paths: this.useDependencies ? [] : Array.from(this.trackedPaths),
         metadata: {
           useProxyTracking: !this.useDependencies,

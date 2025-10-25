@@ -15,6 +15,8 @@ import {
 import { NotificationCallback } from './stages/NotificationStage';
 import { StateChange } from '../types/events';
 import { BlacLogger } from '../logging/Logger';
+import { BLAC_DEFAULTS } from '../constants';
+import { IdGenerator } from '../utils/idGenerator';
 
 export type ContainerId = BrandedId<'Container'>;
 export type ConsumerId = BrandedId<'Consumer'>;
@@ -67,7 +69,6 @@ export class SubscriptionRegistry {
   private consumerIndex: Map<ConsumerId, Set<SubscriptionId>> = new Map();
   private containerIndex: Map<ContainerId, Set<SubscriptionId>> = new Map();
   private cleanupInterval?: NodeJS.Timeout;
-  private idCounter = 0;
 
   constructor(
     private readonly options: {
@@ -262,10 +263,7 @@ export class SubscriptionRegistry {
    * Generate unique subscription ID
    */
   private generateId(): SubscriptionId {
-    const timestamp = Date.now();
-    const counter = ++this.idCounter;
-    const random = Math.random().toString(36).substr(2, 9);
-    return `sub_${timestamp}_${counter}_${random}` as SubscriptionId;
+    return IdGenerator.generate<SubscriptionId>('sub');
   }
 
   /**
@@ -339,7 +337,8 @@ export class SubscriptionRegistry {
    * Start cleanup scheduler
    */
   private startCleanupScheduler(): void {
-    const intervalMs = this.options.cleanupIntervalMs ?? 30000; // 30 seconds default
+    const intervalMs =
+      this.options.cleanupIntervalMs ?? BLAC_DEFAULTS.CLEANUP_INTERVAL_MS;
 
     this.cleanupInterval = setInterval(() => {
       this.performCleanup();

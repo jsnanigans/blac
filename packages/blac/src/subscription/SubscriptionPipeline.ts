@@ -9,6 +9,8 @@
 import { BrandedId } from '../types/branded';
 import { StateChange } from '../types/events';
 import { BlacLogger } from '../logging/Logger';
+import { BLAC_DEFAULTS } from '../constants';
+import { IdGenerator } from '../utils/idGenerator';
 
 // Branded types for type safety
 export type SubscriptionId = BrandedId<'Subscription'>;
@@ -66,8 +68,7 @@ export abstract class PipelineStage {
   readonly name: string;
 
   constructor(name: string, priority: number = 0) {
-    this.id =
-      `stage_${name}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` as StageId;
+    this.id = IdGenerator.generate<StageId>(`stage_${name}`);
     this.name = name;
     this.priority = priority;
   }
@@ -288,8 +289,8 @@ export class PipelineFactory {
   static createDebugPipeline(): SubscriptionPipeline {
     return new SubscriptionPipeline({
       enableMetrics: true,
-      maxStages: 30,
-      timeout: 5000,
+      maxStages: BLAC_DEFAULTS.MAX_PIPELINE_STAGES,
+      timeout: BLAC_DEFAULTS.PIPELINE_TIMEOUT_MS,
       errorHandler: (error, stage) => {
         console.error(
           `[DEBUG] Pipeline stage ${stage.name} (${stage.id}) failed:`,

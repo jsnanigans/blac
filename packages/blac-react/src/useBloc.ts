@@ -28,28 +28,24 @@
  * ```
  */
 
-import { useMemo, useEffect, useRef, useSyncExternalStore } from 'react';
-import { StateContainer } from '@blac/core';
+import { useMemo, useEffect, useRef, useSyncExternalStore, type MutableRefObject } from 'react';
+import {
+  StateContainer,
+  type AnyObject,
+  type ExtractState,
+  type BlocConstructor,
+} from '@blac/core';
 import { ReactBridge } from './ReactBridge';
-
-/**
- * Extract state type from StateContainer
- */
-type ExtractState<T> = T extends StateContainer<infer S, any> ? S : never;
-
-/**
- * Bloc constructor type - more flexible to accept any StateContainer subclass
- */
-type BlocConstructor<TBloc extends StateContainer<any, any>> = new (...args: any[]) => TBloc;
 
 /**
  * Options for useBloc hook
  */
-export interface UseBlocOptions<TBloc extends StateContainer<any, any>> {
+export interface UseBlocOptions<TBloc extends StateContainer<AnyObject, AnyObject>> {
   /**
    * Static props to pass to Bloc constructor
+   * Type should match the constructor's first parameter
    */
-  staticProps?: any;
+  staticProps?: AnyObject;
 
   /**
    * Custom instance ID for shared blocs
@@ -60,26 +56,44 @@ export interface UseBlocOptions<TBloc extends StateContainer<any, any>> {
   /**
    * Dependencies array to control re-rendering
    */
-  dependencies?: (state: ExtractState<TBloc>, bloc: TBloc) => any[];
+  dependencies?: (state: ExtractState<TBloc>, bloc: TBloc) => unknown[];
 
   /**
    * Callback when component mounts
    */
-  onMount?: (bloc: TBloc | StateContainer<any, any>) => void;
+  onMount?: (bloc: TBloc) => void;
 
   /**
    * Callback when component unmounts
    */
-  onUnmount?: (bloc: TBloc | StateContainer<any, any>) => void;
+  onUnmount?: (bloc: TBloc) => void;
 }
+
+/**
+ * Component reference object type for internal tracking
+ */
+type ComponentRef<TState> = {
+  __blocInstanceId?: string;
+  __bridge?: ReactBridge<TState>;
+};
+
+/**
+ * StateContainer constructor with required static methods
+ * All StateContainer subclasses have these methods, so we can safely require them
+ */
+type StateContainerConstructor<TBloc extends StateContainer<any, any>> =
+  BlocConstructor<TBloc> & {
+    getOrCreate(instanceKey?: string, ...args: any[]): TBloc;
+    release(instanceKey?: string): void;
+  };
 
 /**
  * Return type returns full state
  */
-type UseBlocReturn<TBloc extends StateContainer<any, any>> = [
+type UseBlocReturn<TBloc extends StateContainer<AnyObject, AnyObject>> = [
   ExtractState<TBloc>,
   TBloc,
-  any,
+  MutableRefObject<ComponentRef<ExtractState<TBloc>>>,
 ];
 
 /**
@@ -87,16 +101,14 @@ type UseBlocReturn<TBloc extends StateContainer<any, any>> = [
  *
  * @param BlocClass - The Bloc constructor (uninitiated class)
  * @param options - Optional configuration
- * @returns Tuple of [state, bloc]
+ * @returns Tuple of [state, bloc, componentRef]
  */
-function useBloc<TBloc extends StateContainer<any, any>>(
+function useBloc<TBloc extends StateContainer<AnyObject, AnyObject>>(
   BlocClass: BlocConstructor<TBloc>,
   options?: UseBlocOptions<TBloc>,
 ): UseBlocReturn<TBloc> {
   // Component reference that persists across React Strict Mode remounts
-  const componentRef = useRef<
-    object & { __blocInstanceId?: string; __bridge?: ReactBridge<any> }
-  >({});
+  const componentRef = useRef<ComponentRef<ExtractState<TBloc>>>({});
 
   const isIsolated = (BlocClass as { isolated?: boolean }).isolated === true;
 
@@ -120,13 +132,17 @@ function useBloc<TBloc extends StateContainer<any, any>>(
   }, [BlocClass, options?.instanceId, isIsolated]);
 
   const { bloc, bridge } = useMemo(() => {
+    // Type assertion: All StateContainer subclasses have these static methods
+    const Constructor = BlocClass as StateContainerConstructor<TBloc>;
+
     // Use StateContainer's static getOrCreate method
-    const blocInstance = BlocClass.getOrCreate(instanceKey, options?.staticProps);
+    const blocInstance = Constructor.getOrCreate(instanceKey, options?.staticProps);
 
     if (!componentRef.current.__bridge) {
+      const deps = options?.dependencies;
       componentRef.current.__bridge = new ReactBridge(blocInstance, {
-        dependencies: options?.dependencies
-          ? (state) => options.dependencies!(state, blocInstance)
+        dependencies: deps
+          ? (state) => deps(state, blocInstance)
           : undefined,
       });
     }
@@ -154,20 +170,19 @@ function useBloc<TBloc extends StateContainer<any, any>>(
   // Mount/unmount lifecycle
   useEffect(() => {
     // Call onMount callback if provided
-    bridge.onMount(options?.onMount);
+    // Type assertion: TBloc is compatible with StateContainer
+    bridge.onMount(options?.onMount as ((container: StateContainer<ExtractState<TBloc>, AnyObject>) => void) | undefined);
 
     return () => {
       // Call onUnmount callback if provided
-      bridge.onUnmount(options?.onUnmount);
+      // Type assertion: TBloc is compatible with StateContainer
+      bridge.onUnmount(options?.onUnmount as ((container: StateContainer<ExtractState<TBloc>, AnyObject>) => void) | undefined);
 
       // Release reference using StateContainer's static release method
-      // For isolated blocs, dispose when ref count hits zero
-      // For shared blocs, only dispose if keepAlive is false and ref count hits zero
-      if (isIsolated) {
-        BlocClass.release(instanceKey); // Will dispose when ref count hits zero
-      } else {
-        BlocClass.release(instanceKey); // Respects keepAlive setting
-      }
+      // For isolated blocs: disposes when ref count hits zero
+      // For shared blocs: only disposes if keepAlive is false and ref count hits zero
+      // Type assertion: All StateContainer subclasses have release
+      (BlocClass as StateContainerConstructor<TBloc>).release(instanceKey);
 
       // Cleanup bridge if isolated
       if (isIsolated) {

@@ -16,30 +16,16 @@
  */
 
 import type { StateContainer } from '../core/StateContainer';
-
-/**
- * Branded type for instance IDs to prevent mixing with other strings
- */
-export type InstanceId = string & { readonly __brand: 'InstanceId' };
-
-/**
- * Creates a branded InstanceId from a string
- */
-export function createInstanceId(id: string): InstanceId {
-  return id as InstanceId;
-}
-
-/**
- * Bloc constructor type
- */
-export type BlocConstructor<TBloc extends StateContainer<unknown>> = new (
-  ...args: unknown[]
-) => TBloc;
+import {
+  type InstanceId,
+  instanceId as createInstanceId,
+} from '../types/branded';
+import type { BlocConstructor } from '../types/utilities';
 
 /**
  * Configuration for a bloc type in the registry
  */
-export interface BlocTypeConfig<TBloc extends StateContainer<unknown>> {
+export interface BlocTypeConfig<TBloc extends StateContainer<any, any>> {
   /**
    * Bloc constructor
    */
@@ -48,7 +34,7 @@ export interface BlocTypeConfig<TBloc extends StateContainer<unknown>> {
   /**
    * Constructor arguments (default args to use if not provided at get-time)
    */
-  constructorArgs?: unknown[];
+  constructorArgs?: any[];
 
   /**
    * If true, each consumer gets its own instance (isolated)
@@ -61,7 +47,7 @@ export interface BlocTypeConfig<TBloc extends StateContainer<unknown>> {
 /**
  * Registry entry for a bloc type
  */
-interface RegistryEntry<TBloc extends StateContainer<unknown>> {
+interface RegistryEntry<TBloc extends StateContainer<any, any>> {
   config: BlocTypeConfig<TBloc>;
   /** Map for shared instances (keyed by ID) */
   instances: Map<InstanceId, TBloc>;
@@ -106,10 +92,10 @@ export class BlocRegistry {
    * registry.register(FormBloc, { isolated: true });
    * ```
    */
-  register<TBloc extends StateContainer<any>>(
+  register<TBloc extends StateContainer<any, any>>(
     BlocClass: BlocConstructor<TBloc>,
     options?: {
-      constructorArgs?: unknown[];
+      constructorArgs?: any[];
       isolated?: boolean;
     },
   ): void {
@@ -160,11 +146,11 @@ export class BlocRegistry {
    * });
    * ```
    */
-  get<TBloc extends StateContainer<unknown>>(
+  get<TBloc extends StateContainer<any, any>>(
     BlocClass: BlocConstructor<TBloc>,
     options?: {
       instanceId?: string;
-      constructorArgs?: unknown[];
+      constructorArgs?: any[];
     },
   ): TBloc {
     const typeName = BlocClass.name;
@@ -213,7 +199,7 @@ export class BlocRegistry {
    * @param BlocClass - The bloc constructor
    * @returns True if type is registered
    */
-  isRegistered(BlocClass: BlocConstructor<unknown>): boolean {
+  isRegistered(BlocClass: BlocConstructor<StateContainer<any, any>>): boolean {
     return this.types.has(BlocClass.name);
   }
 
@@ -224,7 +210,7 @@ export class BlocRegistry {
    * @param id - Instance identifier
    * @returns True if instance exists
    */
-  has(BlocClass: BlocConstructor<unknown>, id: InstanceId): boolean {
+  has(BlocClass: BlocConstructor<StateContainer<any, any>>, id: InstanceId): boolean {
     const entry = this.types.get(BlocClass.name);
     return entry ? entry.instances.has(id) : false;
   }
@@ -236,7 +222,7 @@ export class BlocRegistry {
    * @param id - Instance identifier
    * @returns True if instance was removed
    */
-  remove(BlocClass: BlocConstructor<unknown>, id: InstanceId): boolean {
+  remove(BlocClass: BlocConstructor<StateContainer<any, any>>, id: InstanceId): boolean {
     const entry = this.types.get(BlocClass.name);
     return entry ? entry.instances.delete(id) : false;
   }
@@ -247,7 +233,7 @@ export class BlocRegistry {
    * @param BlocClass - The bloc constructor
    * @returns Array of all instances (both shared and isolated)
    */
-  getAll<TBloc extends StateContainer<unknown>>(
+  getAll<TBloc extends StateContainer<any, any>>(
     BlocClass: BlocConstructor<TBloc>,
   ): TBloc[] {
     const entry = this.types.get(BlocClass.name);
@@ -266,7 +252,7 @@ export class BlocRegistry {
    *
    * @param BlocClass - The bloc constructor
    */
-  clear(BlocClass: BlocConstructor<unknown>): void {
+  clear(BlocClass: BlocConstructor<StateContainer<any, any>>): void {
     const entry = this.types.get(BlocClass.name);
     if (entry) {
       entry.instances.clear();
@@ -290,7 +276,7 @@ export class BlocRegistry {
    * @param BlocClass - The bloc constructor
    * @returns True if type was unregistered
    */
-  unregister(BlocClass: BlocConstructor<unknown>): boolean {
+  unregister(BlocClass: BlocConstructor<StateContainer<any, any>>): boolean {
     const entry = this.types.get(BlocClass.name);
     if (entry) {
       entry.instances.clear();

@@ -6,6 +6,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   LifecycleManager,
   LifecycleState,
+  LifecycleEvent,
   MountEvent,
   UnmountEvent,
   DisposeEvent,
@@ -53,7 +54,7 @@ describe('LifecycleManager', () => {
       });
 
       it('should emit mount event', () => {
-        const events: LMLifecycleEvent[] = [];
+        const events: LifecycleEvent[] = [];
         manager.subscribe((event) => events.push(event));
 
         manager.mount();
@@ -61,7 +62,10 @@ describe('LifecycleManager', () => {
         // Should emit transition events and mount event
         const mountEvent = events.find((e) => e instanceof MountEvent);
         expect(mountEvent).toBeDefined();
-        expect(mountEvent.instanceId).toBe(testInstanceId);
+        // Type guard ensures mountEvent is MountEvent after instanceof check
+        if (mountEvent instanceof MountEvent) {
+          expect(mountEvent.instanceId).toBe(testInstanceId);
+        }
       });
     });
 
@@ -92,7 +96,10 @@ describe('LifecycleManager', () => {
 
         const unmountEvent = events.find((e) => e instanceof UnmountEvent);
         expect(unmountEvent).toBeDefined();
-        expect(unmountEvent.instanceId).toBe(testInstanceId);
+        // Type guard ensures unmountEvent is UnmountEvent after instanceof check
+        if (unmountEvent instanceof UnmountEvent) {
+          expect(unmountEvent.instanceId).toBe(testInstanceId);
+        }
       });
     });
 
@@ -124,7 +131,10 @@ describe('LifecycleManager', () => {
 
         const disposeEvent = events.find((e) => e instanceof DisposeEvent);
         expect(disposeEvent).toBeDefined();
-        expect(disposeEvent.instanceId).toBe(testInstanceId);
+        // Type guard ensures disposeEvent is DisposeEvent after instanceof check
+        if (disposeEvent instanceof DisposeEvent) {
+          expect(disposeEvent.instanceId).toBe(testInstanceId);
+        }
       });
 
       it('should prevent any further transitions after disposal', () => {

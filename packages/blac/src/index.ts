@@ -27,6 +27,7 @@ export { BlocRegistry } from './registry/BlocRegistry';
 
 // Types - use branded types as canonical
 export type {
+  AnyObject,
   InstanceId,
   SubscriptionId,
   BrandedId,
@@ -43,6 +44,13 @@ export {
 } from './types/branded';
 export * from './types/events';
 export * from './types/internal';
+export * from './types/utilities';
 
 // Logging
 export { BlacLogger, LogLevel } from './logging/Logger';
+
+// Constants
+export { BLAC_DEFAULTS } from './constants';
+
+// Utilities
+export { IdGenerator } from './utils/idGenerator';

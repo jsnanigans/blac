@@ -26,6 +26,8 @@ import {
   StateContainerVisitor,
 } from '../types/internal';
 import { BaseEvent, StateChangeEvent, StateChange } from '../types/events';
+import { BLAC_DEFAULTS } from '../constants';
+import { IdGenerator } from '../utils/idGenerator';
 import {
   SubscriptionSystem,
   SubscriptionOptions,
@@ -247,8 +249,8 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
       enableMetrics: this.config.debug,
       enableWeakRefs: true,
       enableProxyTracking: false, // Disabled for synchronous performance
-      maxSubscriptions: 1000,
-      cleanupIntervalMs: 30000,
+      maxSubscriptions: BLAC_DEFAULTS.MAX_SUBSCRIPTIONS,
+      cleanupIntervalMs: BLAC_DEFAULTS.CLEANUP_INTERVAL_MS,
     });
 
     // Initialize lifecycle manager
@@ -763,6 +765,6 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
    * Generate a unique ID
    */
   private generateId(): string {
-    return `${this.constructor.name}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return IdGenerator.generateSimple(this.constructor.name);
   }
 }

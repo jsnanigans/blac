@@ -3,7 +3,8 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { BlocRegistry, createInstanceId } from './BlocRegistry';
+import { BlocRegistry } from './BlocRegistry';
+import { instanceId as createInstanceId } from '../types/branded';
 import { StateContainer } from '../core/StateContainer';
 
 // Test implementations
@@ -296,6 +297,7 @@ describe('BlocRegistry', () => {
     it('should handle constructor errors gracefully', () => {
       class ErrorBloc extends StateContainer<number> {
         constructor() {
+          super(0);
           throw new Error('Constructor error');
         }
       }

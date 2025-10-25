@@ -2,6 +2,7 @@
  * Test utilities and fixtures
  */
 
+import { vi } from 'vitest';
 import { Version, version } from '../types/branded';
 
 /**
@@ -18,7 +19,7 @@ export function createTestState<T extends Record<string, unknown>>(
       flag: false,
     },
     ...overrides,
-  } as T;
+  } as unknown as T;
 }
 
 /**

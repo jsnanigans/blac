@@ -204,18 +204,27 @@ export class EventStream<E extends BaseEvent = BaseEvent> {
   }
 
   /**
+   * Create a filtered stream with type predicate
+   * @param predicate Type predicate function
+   * @returns New filtered stream with narrowed type
+   */
+  filter<S extends E>(predicate: (event: E) => event is S): EventStream<S>;
+  /**
    * Create a filtered stream
    * @param filter Filter function
    * @returns New filtered stream
    */
-  filter(filter: EventFilter<E>): EventStream<E> {
+  filter(filter: EventFilter<E>): EventStream<E>;
+  filter<S extends E>(
+    filter: EventFilter<E> | ((event: E) => event is S),
+  ): EventStream<E> | EventStream<S> {
     const filtered = new EventStream<E>(this.options);
     this.subscribe((event) => {
       if (filter(event)) {
         filtered.dispatch(event);
       }
     });
-    return filtered;
+    return filtered as EventStream<E> | EventStream<S>;
   }
 
   /**

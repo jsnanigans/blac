@@ -5,7 +5,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { StrictMode } from 'react';
-import { StateContainer } from '@blac/core';
+import { StateContainer, Cubit } from '@blac/core';
 import { useBloc } from '../useBloc';
 import { BlacLogger, LogLevel } from '@blac/core';
 
@@ -25,7 +25,7 @@ interface TestState {
   };
 }
 
-class TestCubit extends StateContainer<TestState, TestCubit> {
+class TestCubit extends Cubit<TestState> {
   constructor() {
     super({
       user: {

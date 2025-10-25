@@ -147,7 +147,7 @@ describe('ProxyTracker', () => {
       const proxy = tracker.createProxy(state);
 
       // Use array method
-      const doubled = proxy.items.map((x) => x * 2);
+      const doubled = proxy.items.map((x: number) => x * 2);
 
       const paths = tracker.stopTracking();
       expect(Array.from(paths)).toContain('items');

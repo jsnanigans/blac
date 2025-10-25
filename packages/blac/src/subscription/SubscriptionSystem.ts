@@ -21,12 +21,15 @@ import {
 import { SubscriptionBuilder } from './SubscriptionBuilder';
 import { StateChange } from '../types/events';
 import { BlacLogger } from '../logging/Logger';
+import { BLAC_DEFAULTS } from '../constants';
+import { IdGenerator } from '../utils/idGenerator';
 
 // Import all stages
 import {
   ProxyTrackingStage,
   FilterStage,
   NotificationStage,
+  NotificationCallback,
   WeakRefStage,
 } from './stages';
 
@@ -79,7 +82,6 @@ export class SubscriptionSystem<T = unknown> {
   private readonly config: Required<SubscriptionSystemConfig>;
   private readonly pipelineCache: Map<string, SubscriptionPipeline> = new Map();
   private containerId: ContainerId;
-  private consumerCounter = 0;
 
   constructor(containerId: string, config: SubscriptionSystemConfig = {}) {
     this.containerId = `container_${containerId}` as ContainerId;
@@ -88,8 +90,8 @@ export class SubscriptionSystem<T = unknown> {
       enableMetrics: config.enableMetrics ?? false,
       enableWeakRefs: config.enableWeakRefs ?? true,
       enableProxyTracking: config.enableProxyTracking ?? true,
-      maxSubscriptions: config.maxSubscriptions ?? 1000,
-      cleanupIntervalMs: config.cleanupIntervalMs ?? 30000,
+      maxSubscriptions: config.maxSubscriptions ?? BLAC_DEFAULTS.MAX_SUBSCRIPTIONS,
+      cleanupIntervalMs: config.cleanupIntervalMs ?? BLAC_DEFAULTS.CLEANUP_INTERVAL_MS,
     };
 
     this.registry = new SubscriptionRegistry({
@@ -233,7 +235,7 @@ export class SubscriptionSystem<T = unknown> {
       const context: PipelineContext<T> = {
         subscriptionId,
         stateChange,
-        metadata: new Map(Object.entries(subscription.metadata || {})),
+        metadata: new Map(Object.entries(subscription.config.metadata || {})),
         timestamp: Date.now(),
         shouldContinue: true,
         skipNotification: false,
@@ -342,7 +344,7 @@ export class SubscriptionSystem<T = unknown> {
     // 4. Notification stage (always last)
     pipeline.addStage(
       new NotificationStage({
-        callback: options.callback,
+        callback: options.callback as NotificationCallback,
       }),
     );
 
@@ -364,10 +366,7 @@ export class SubscriptionSystem<T = unknown> {
    * Generate unique consumer ID
    */
   private generateConsumerId(): ConsumerId {
-    const timestamp = Date.now();
-    const counter = ++this.consumerCounter;
-    const random = Math.random().toString(36).substr(2, 9);
-    return `consumer_${timestamp}_${counter}_${random}` as ConsumerId;
+    return IdGenerator.generate<ConsumerId>('consumer');
   }
 }
 
@@ -394,8 +393,8 @@ export class SubscriptionSystemFactory {
     return new SubscriptionSystem<T>(containerId, {
       enableMetrics: true,
       enableWeakRefs: true,
-      maxSubscriptions: 10000,
-      cleanupIntervalMs: 5000,
+      maxSubscriptions: BLAC_DEFAULTS.MAX_SUBSCRIPTIONS_HIGH_PERF,
+      cleanupIntervalMs: BLAC_DEFAULTS.CLEANUP_INTERVAL_HIGH_PERF_MS,
     });
   }
 

@@ -103,7 +103,7 @@ describe('Debug Subscription Timing', () => {
     console.log('=== AFTER MICROTASKS ===');
     console.log(
       'Tracked paths:',
-      Array.from(result.current.cr.current.__bridge.getTrackedPaths()),
+      Array.from(result.current.cr.current.__bridge!.getTrackedPaths()),
     );
 
     expect(renderCount).toBe(1);
@@ -120,7 +120,7 @@ describe('Debug Subscription Timing', () => {
     console.log('RenderCount:', renderCount);
     console.log(
       'Tracked paths:',
-      Array.from(result.current.cr.current.__bridge.getTrackedPaths()),
+      Array.from(result.current.cr.current.__bridge!.getTrackedPaths()),
     );
 
     expect(renderCount).toBe(1); // Should still be 1
