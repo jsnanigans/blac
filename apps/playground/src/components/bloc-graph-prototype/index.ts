@@ -1,1 +1,0 @@
-export { BlocGraphPrototype } from './BlocGraphPrototype';
