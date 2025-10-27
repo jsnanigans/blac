@@ -97,7 +97,7 @@ class DemoBloc extends Cubit<{
 
   run = (): void => {
     const data = buildData(1000);
-    this.emit({
+    this.emitState({
       data,
       selected: null,
     });
@@ -105,7 +105,7 @@ class DemoBloc extends Cubit<{
 
   runLots = (): void => {
     const data = buildData(10000);
-    this.emit({
+    this.emitState({
       data,
       selected: null,
     });
@@ -113,37 +113,40 @@ class DemoBloc extends Cubit<{
 
   add = (): void => {
     const addData = buildData(1000);
-    this.patch({
-      data: [...this.state.data, ...addData],
-    });
+    this.updateState((state) => ({
+      ...state,
+      data: [...state.data, ...addData],
+    }));
   };
 
   update = (): void => {
-    const updatedData = this.state.data.map((item, index) => {
-      if (index % 10 === 0) {
-        return { ...item, label: item.label + ' !!!' };
-      }
-      return item;
-    });
-    this.patch({
-      data: updatedData,
-    });
+    this.updateState((state) => ({
+      ...state,
+      data: state.data.map((item, index) => {
+        if (index % 10 === 0) {
+          return { ...item, label: item.label + ' !!!' };
+        }
+        return item;
+      }),
+    }));
   };
 
   select = (item: DataItem): void => {
-    this.patch({
+    this.updateState((state) => ({
+      ...state,
       selected: item,
-    });
+    }));
   };
 
   remove = (item: DataItem): void => {
-    this.patch({
-      data: this.state.data.filter((i) => i !== item),
-    });
+    this.updateState((state) => ({
+      ...state,
+      data: state.data.filter((i) => i !== item),
+    }));
   };
 
   clear = (): void => {
-    this.emit({
+    this.emitState({
       data: [],
       selected: null,
     });
@@ -151,9 +154,11 @@ class DemoBloc extends Cubit<{
 
   swapRows = (): void => {
     if (this.state.data.length > 998) {
-      const newData = [...this.state.data];
-      [newData[1], newData[998]] = [newData[998], newData[1]];
-      this.patch({ data: newData });
+      this.updateState((state) => {
+        const newData = [...state.data];
+        [newData[1], newData[998]] = [newData[998], newData[1]];
+        return { ...state, data: newData };
+      });
     }
   };
 }
@@ -184,8 +189,8 @@ interface RowProps {
 }
 
 const Row: React.FC<RowProps> = React.memo(({ item }) => {
-  const [{ selected }, { remove, select }] = useBloc(DemoBloc, {
-    dependencies: (bloc) => [bloc.state.selected === item],
+  const [state, { remove, select }] = useBloc(DemoBloc, {
+    dependencies: (state) => [state.selected === item],
   });
 
   useEffect(() => {
@@ -193,7 +198,7 @@ const Row: React.FC<RowProps> = React.memo(({ item }) => {
   });
 
   return (
-    <tr className={item === selected ? 'danger' : ''}>
+    <tr className={item === state.selected ? 'danger' : ''}>
       <td className="col-md-1">{item.id}</td>
       <td className="col-md-4">
         <a onClick={() => select(item)}>{item.label}</a>
@@ -207,7 +212,9 @@ const Row: React.FC<RowProps> = React.memo(({ item }) => {
 });
 
 const RowList: React.FC = () => {
-  const [{ data }] = useBloc(DemoBloc, {});
+  const [state] = useBloc(DemoBloc, {
+    dependencies: (state) => [state.data],
+  });
 
   useEffect(() => {
     console.log('[RowList] Rendered with');
@@ -215,7 +222,7 @@ const RowList: React.FC = () => {
 
   return (
     <>
-      {data.map((item) => (
+      {state.data.map((item) => (
         <Row key={item.id} item={item} />
       ))}
     </>
