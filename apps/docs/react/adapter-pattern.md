@@ -1,11 +1,13 @@
 # Adapter Pattern
 
-_Documentation coming soon._
+## Overview
 
-This section will cover:
+<!-- TODO: Describe adapter pattern -->
 
-- Overview of adapter-pattern
-- Usage examples
-- Best practices
+## Usage Examples
 
-Please check back later or contribute to the documentation.
+<!-- TODO: Add examples -->
+
+## Best Practices
+
+<!-- TODO: List best practices -->

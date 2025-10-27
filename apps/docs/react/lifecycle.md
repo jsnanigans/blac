@@ -1,11 +1,13 @@
 # Lifecycle
 
-_Documentation coming soon._
+## Overview
 
-This section will cover:
+<!-- TODO: Describe React lifecycle integration -->
 
-- Overview of lifecycle
-- Usage examples
-- Best practices
+## Usage Examples
 
-Please check back later or contribute to the documentation.
+<!-- TODO: Add lifecycle examples -->
+
+## Best Practices
+
+<!-- TODO: List best practices -->

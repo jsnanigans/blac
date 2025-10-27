@@ -1,12 +1,21 @@
-# Use Bloc API Reference
+# useBloc API Reference
 
-_API documentation coming soon._
+## Function Signature
 
-This section will cover:
+<!-- TODO: Add function signature -->
 
-- Class/Function signature
-- Parameters and options
-- Return values
-- Examples
+## Parameters
 
-Please check back later or contribute to the documentation.
+<!-- TODO: Add parameters -->
+
+## Options
+
+<!-- TODO: Add options -->
+
+## Return Value
+
+<!-- TODO: Add return value -->
+
+## Examples
+
+<!-- TODO: Add examples -->

@@ -1,12 +1,17 @@
 # Blac API Reference
 
-_API documentation coming soon._
+## Class Signature
 
-This section will cover:
+<!-- TODO: Add class signature -->
 
-- Class/Function signature
-- Parameters and options
-- Return values
-- Examples
+## Static Methods
 
-Please check back later or contribute to the documentation.
+<!-- TODO: Add static methods -->
+
+## Configuration
+
+<!-- TODO: Add configuration methods -->
+
+## Examples
+
+<!-- TODO: Add examples -->

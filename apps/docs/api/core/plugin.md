@@ -1,12 +1,17 @@
 # Plugin API Reference
 
-_API documentation coming soon._
+## Interface Signature
 
-This section will cover:
+<!-- TODO: Add interface signature -->
 
-- Class/Function signature
-- Parameters and options
-- Return values
-- Examples
+## Properties
 
-Please check back later or contribute to the documentation.
+<!-- TODO: Add properties -->
+
+## Methods
+
+<!-- TODO: Add methods -->
+
+## Examples
+
+<!-- TODO: Add examples -->

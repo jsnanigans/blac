@@ -1,12 +1,17 @@
 # Types API Reference
 
-_API documentation coming soon._
+## Type Definitions
 
-This section will cover:
+<!-- TODO: Add type definitions -->
 
-- Class/Function signature
-- Parameters and options
-- Return values
-- Examples
+## Interfaces
 
-Please check back later or contribute to the documentation.
+<!-- TODO: Add interfaces -->
+
+## Type Parameters
+
+<!-- TODO: Add type parameters -->
+
+## Examples
+
+<!-- TODO: Add examples -->
