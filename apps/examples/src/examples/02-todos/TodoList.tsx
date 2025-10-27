@@ -16,10 +16,10 @@ interface TodoListProps {
  */
 export function TodoList({ instanceKey }: TodoListProps) {
   const [state, todoBloc] = useBloc(TodoBloc, { instanceId: instanceKey });
+  const { todos, filter } = state;
 
   // Compute filtered todos - this ensures proper dependency tracking
   const filteredTodos = useMemo(() => {
-    const { todos, filter } = state;
     switch (filter) {
       case 'active':
         return todos.filter((todo) => !todo.completed);
@@ -28,52 +28,34 @@ export function TodoList({ instanceKey }: TodoListProps) {
       default:
         return todos;
     }
-  }, [state.todos, state.filter]);
+  }, [todos, filter]);
 
   console.log(
-    `[TodoList] Rendering - ${filteredTodos.length} todos (filter: ${state.filter})`
+    `[TodoList] Rendering - ${filteredTodos.length} todos (filter: ${filter})`
   );
 
   if (filteredTodos.length === 0) {
     return (
-      <div className="text-center text-muted" style={{ padding: '2rem' }}>
-        No todos to display
-      </div>
+      <div className="empty-panel text-center">No todos to display</div>
     );
   }
 
   return (
-    <div>
+    <div className="todo-list">
       {filteredTodos.map((todo) => (
         <div
           key={todo.id}
-          className="card"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '1rem',
-            padding: '1rem',
-          }}
+          className={`todo-item${todo.completed ? ' completed' : ''}`}
         >
           <input
             type="checkbox"
             checked={todo.completed}
             onChange={() => todoBloc.toggleTodo(todo.id)}
-            style={{ width: '20px', height: '20px' }}
           />
-          <span
-            style={{
-              flex: 1,
-              textDecoration: todo.completed ? 'line-through' : 'none',
-              color: todo.completed ? 'var(--gray-600)' : 'inherit',
-            }}
-          >
-            {todo.text}
-          </span>
+          <span className="todo-item-text">{todo.text}</span>
           <button
             onClick={() => todoBloc.deleteTodo(todo.id)}
-            className="danger"
-            style={{ padding: '0.5rem 1rem' }}
+            className="danger button-compact"
           >
             Delete
           </button>

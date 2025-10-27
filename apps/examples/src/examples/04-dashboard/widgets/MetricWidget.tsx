@@ -27,53 +27,21 @@ export function MetricWidget({
   console.log(`  ↳ [${componentName}] Rendered (${renderCount.current} times)`);
 
   return (
-    <div className="card" style={{ position: 'relative', overflow: 'visible' }}>
-      {/* Render counter badge */}
-      <div
-        style={{
-          position: 'absolute',
-          top: '-8px',
-          right: '-8px',
-          background: 'var(--secondary)',
-          color: 'white',
-          borderRadius: '50%',
-          width: '28px',
-          height: '28px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '0.75rem',
-          fontWeight: 'bold',
-          boxShadow: 'var(--shadow)',
-        }}
-        title={`Rendered ${renderCount.current} times`}
-      >
+    <article className="card metric-card">
+      <div className="render-badge" title={`Rendered ${renderCount.current} times`}>
         {renderCount.current}
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        <div style={{ fontSize: '2.5rem' }}>{icon}</div>
-        <div style={{ flex: 1 }}>
-          <div className="text-small text-muted" style={{ marginBottom: '0.25rem' }}>
-            {title}
-          </div>
-          <div
-            style={{
-              fontSize: '2rem',
-              fontWeight: 'bold',
-              color: color,
-              lineHeight: 1,
-            }}
-          >
+      <div className="metric-body">
+        <div className="metric-icon">{icon}</div>
+        <div className="metric-info">
+          <span className="widget-subtitle">{title}</span>
+          <span className="metric-value" style={{ color }}>
             {value}
-          </div>
-          {subtitle && (
-            <div className="text-small text-muted" style={{ marginTop: '0.25rem' }}>
-              {subtitle}
-            </div>
-          )}
+          </span>
+          {subtitle && <span className="metric-subtitle">{subtitle}</span>}
         </div>
       </div>
-    </div>
+    </article>
   );
 }

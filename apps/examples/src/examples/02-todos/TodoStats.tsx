@@ -29,34 +29,24 @@ export function TodoStats({ instanceKey }: TodoStatsProps) {
   console.log('[TodoStats] Rendering -', counts);
 
   return (
-    <div className="card" style={{ background: 'var(--gray-50)' }}>
-      <div className="flex gap-3" style={{ justifyContent: 'space-around' }}>
-        <div className="text-center">
-          <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
-            {counts.total}
-          </div>
-          <div className="text-small text-muted">Total</div>
+    <div className="card card-subtle">
+      <div className="stats-grid">
+        <div className="stat-block">
+          <span className="stat-value">{counts.total}</span>
+          <span className="stat-label">Total</span>
         </div>
-        <div className="text-center">
-          <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--primary)' }}>
-            {counts.active}
-          </div>
-          <div className="text-small text-muted">Active</div>
+        <div className="stat-block">
+          <span className="stat-value highlight">{counts.active}</span>
+          <span className="stat-label">Active</span>
         </div>
-        <div className="text-center">
-          <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--secondary)' }}>
-            {counts.completed}
-          </div>
-          <div className="text-small text-muted">Completed</div>
+        <div className="stat-block">
+          <span className="stat-value">{counts.completed}</span>
+          <span className="stat-label">Completed</span>
         </div>
       </div>
       {counts.completed > 0 && (
         <div className="mt-2 text-center">
-          <button
-            onClick={() => todoBloc.clearCompleted()}
-            className="danger"
-            style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}
-          >
+          <button onClick={() => todoBloc.clearCompleted()} className="danger button-block">
             Clear Completed
           </button>
         </div>

@@ -38,58 +38,58 @@ export function DashboardDemo() {
         'Zero manual optimization - no React.memo, useMemo, or useCallback needed!',
       ]}
     >
-      <section className="mb-3">
-        <div style={{ display: 'grid', gridTemplateColumns: '3fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+      <section className="stack-lg">
+        <div className="dashboard-top-grid">
           <ControlPanel />
           <StatusWidget />
         </div>
       </section>
 
-      <section className="mb-3">
-        <h2 style={{ marginBottom: '1rem' }}>
-          👥 User Metrics
-          <span className="text-small text-muted" style={{ marginLeft: '1rem', fontWeight: 'normal' }}>
-            (Only re-renders when user data changes)
+      <section className="stack-lg">
+        <div className="section-heading">
+          <h2>👥 User Metrics</h2>
+          <span className="section-subtitle">
+            Only re-renders when user data changes
           </span>
-        </h2>
+        </div>
         <UserMetricsWidget />
       </section>
 
-      <section className="mb-3">
-        <h2 style={{ marginBottom: '1rem' }}>
-          📦 Order Metrics
-          <span className="text-small text-muted" style={{ marginLeft: '1rem', fontWeight: 'normal' }}>
-            (Only re-renders when order data changes)
+      <section className="stack-lg">
+        <div className="section-heading">
+          <h2>📦 Order Metrics</h2>
+          <span className="section-subtitle">
+            Only re-renders when order data changes
           </span>
-        </h2>
+        </div>
         <OrderMetricsWidget />
       </section>
 
-      <section className="mb-3">
-        <h2 style={{ marginBottom: '1rem' }}>
-          💰 Revenue Metrics
-          <span className="text-small text-muted" style={{ marginLeft: '1rem', fontWeight: 'normal' }}>
-            (Only re-renders when revenue data changes)
+      <section className="stack-lg">
+        <div className="section-heading">
+          <h2>💰 Revenue Metrics</h2>
+          <span className="section-subtitle">
+            Only re-renders when revenue data changes
           </span>
-        </h2>
+        </div>
         <RevenueMetricsWidget />
       </section>
 
-      <section className="mb-3">
-        <h2 style={{ marginBottom: '1rem' }}>
-          ⚙️ System Metrics
-          <span className="text-small text-muted" style={{ marginLeft: '1rem', fontWeight: 'normal' }}>
-            (Only re-renders when system data changes)
+      <section className="stack-lg">
+        <div className="section-heading">
+          <h2>⚙️ System Metrics</h2>
+          <span className="section-subtitle">
+            Only re-renders when system data changes
           </span>
-        </h2>
+        </div>
         <SystemMetricsWidget />
       </section>
 
-      <section>
+      <section className="stack-lg">
         <h2>The Magic Explained</h2>
-        <div className="card" style={{ background: 'var(--gray-50)' }}>
+        <div className="card card-subtle narrative-card">
           <h3>How Traditional React Works:</h3>
-          <ul style={{ marginLeft: '1.5rem', marginBottom: '1.5rem' }}>
+          <ul className="features-list">
             <li>State updates → ALL connected components re-render</li>
             <li>Need React.memo() on every widget to prevent re-renders</li>
             <li>Need useMemo() for every derived value</li>
@@ -101,7 +101,7 @@ export function DashboardDemo() {
           </ul>
 
           <h3>How Blac Works:</h3>
-          <ul style={{ marginLeft: '1.5rem', marginBottom: '1.5rem' }}>
+          <ul className="features-list">
             <li>State updates → Blac tracks which properties each component accessed</li>
             <li>Only components that accessed changed properties re-render</li>
             <li>No manual optimization needed</li>
@@ -112,7 +112,7 @@ export function DashboardDemo() {
           </ul>
 
           <h3>See It In Action:</h3>
-          <ol style={{ marginLeft: '1.5rem' }}>
+          <ol className="sequence-list">
             <li>
               <strong>Open browser console</strong> to see component render logs
             </li>
@@ -130,16 +130,7 @@ export function DashboardDemo() {
             </li>
           </ol>
 
-          <div
-            style={{
-              marginTop: '1rem',
-              padding: '1rem',
-              background: 'var(--primary)',
-              color: 'white',
-              borderRadius: 'var(--radius)',
-              fontWeight: 'bold',
-            }}
-          >
+          <div className="callout-banner">
             🎯 This is the power of Blac: Optimal performance by default, with zero manual
             optimization. Your components automatically become perfectly optimized.
           </div>

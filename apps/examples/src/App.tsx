@@ -19,7 +19,7 @@ export function App() {
       <nav className="nav">
         <div className="nav-content">
           <Link to="/" className="nav-brand">
-            Blac
+            Blac // Control
           </Link>
           <ul className="nav-links">
             <li>
@@ -41,21 +41,25 @@ export function App() {
         </div>
       </nav>
 
-      <Route path="/">
-        <Home />
-      </Route>
-      <Route path="/counter">
-        <CounterDemo />
-      </Route>
-      <Route path="/todos">
-        <TodoDemo />
-      </Route>
-      <Route path="/shopping">
-        <ShoppingDemo />
-      </Route>
-      <Route path="/dashboard">
-        <DashboardDemo />
-      </Route>
+      <main className="view-wrapper">
+        <div className="view-stack">
+          <Route path="/">
+            <Home />
+          </Route>
+          <Route path="/counter">
+            <CounterDemo />
+          </Route>
+          <Route path="/todos">
+            <TodoDemo />
+          </Route>
+          <Route path="/shopping">
+            <ShoppingDemo />
+          </Route>
+          <Route path="/dashboard">
+            <DashboardDemo />
+          </Route>
+        </div>
+      </main>
     </div>
   );
 }

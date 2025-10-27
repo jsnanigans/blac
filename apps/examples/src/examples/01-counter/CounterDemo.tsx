@@ -23,41 +23,39 @@ export function CounterDemo() {
         'Lifecycle hooks - see console for mount/unmount logs',
       ]}
     >
-      <section className="mb-3">
+      <section className="stack-lg">
         <h2>Shared Instance</h2>
-        <p className="text-muted mb-2">
+        <p className="text-muted">
           Both components below use the same counter instance. Changes in one are
           reflected in the other.
         </p>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+        <div className="panel-grid panel-grid--two">
           <CounterView label="Counter A" />
           <CounterView label="Counter B" />
         </div>
-        <div className="mt-2">
-          <CounterStats />
-        </div>
+        <CounterStats />
       </section>
 
-      <section className="mb-3">
+      <section className="stack-lg">
         <h2>Isolated Instances</h2>
-        <p className="text-muted mb-2">
+        <p className="text-muted">
           Each counter below has its own independent state using instanceKey.
         </p>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-          <div>
+        <div className="panel-grid panel-grid--two">
+          <div className="stack-md">
             <CounterView label="Counter 1" instanceKey="counter-1" />
             <CounterStats instanceKey="counter-1" />
           </div>
-          <div>
+          <div className="stack-md">
             <CounterView label="Counter 2" instanceKey="counter-2" />
             <CounterStats instanceKey="counter-2" />
           </div>
         </div>
       </section>
 
-      <section>
+      <section className="stack-md">
         <h2>Key Takeaways</h2>
-        <ul style={{ marginLeft: '1.5rem' }}>
+        <ul className="features-list">
           <li>
             <strong>Automatic tracking:</strong> CounterView only re-renders when
             <code>count</code> changes, CounterStats only when

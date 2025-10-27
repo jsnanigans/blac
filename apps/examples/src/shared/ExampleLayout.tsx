@@ -18,11 +18,14 @@ export function ExampleLayout({
   return (
     <div className="example-layout">
       <header className="example-header">
-        <h1>{title}</h1>
-        <p className="description">{description}</p>
-        <div className="features">
-          <strong>Showcases:</strong>
-          <ul>
+        <div className="stack-sm">
+          <span className="text-small">Interactive Module</span>
+          <h1>{title}</h1>
+        </div>
+        <p className="example-description">{description}</p>
+        <div className="example-features">
+          <strong>Showcases</strong>
+          <ul className="example-feature-list">
             {features.map((feature, i) => (
               <li key={i}>{feature}</li>
             ))}

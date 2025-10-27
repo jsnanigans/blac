@@ -28,7 +28,13 @@
  * ```
  */
 
-import { useMemo, useEffect, useRef, useSyncExternalStore, type MutableRefObject } from 'react';
+import {
+  useMemo,
+  useEffect,
+  useRef,
+  useSyncExternalStore,
+  type MutableRefObject,
+} from 'react';
 import {
   StateContainer,
   type AnyObject,
@@ -40,7 +46,9 @@ import { ReactBridge } from './ReactBridge';
 /**
  * Options for useBloc hook
  */
-export interface UseBlocOptions<TBloc extends StateContainer<AnyObject, AnyObject>> {
+export interface UseBlocOptions<
+  TBloc extends StateContainer<AnyObject, AnyObject>,
+> {
   /**
    * Static props to pass to Bloc constructor
    * Type should match the constructor's first parameter
@@ -107,6 +115,7 @@ function useBloc<TBloc extends StateContainer<AnyObject, AnyObject>>(
   BlocClass: BlocConstructor<TBloc>,
   options?: UseBlocOptions<TBloc>,
 ): UseBlocReturn<TBloc> {
+  console.log(`[useBloc] ROOT bloc: ${BlocClass.name}`);
   // Component reference that persists across React Strict Mode remounts
   const componentRef = useRef<ComponentRef<ExtractState<TBloc>>>({});
 
@@ -114,6 +123,9 @@ function useBloc<TBloc extends StateContainer<AnyObject, AnyObject>>(
 
   // Generate stable instance key
   const instanceKey = useMemo(() => {
+    console.log(
+      `[useBloc] Generating instance key for bloc: ${BlocClass.name}`,
+    );
     // Custom instance ID takes precedence
     if (options?.instanceId) {
       return options.instanceId;
@@ -136,16 +148,20 @@ function useBloc<TBloc extends StateContainer<AnyObject, AnyObject>>(
     const Constructor = BlocClass as StateContainerConstructor<TBloc>;
 
     // Use StateContainer's static getOrCreate method
-    const blocInstance = Constructor.getOrCreate(instanceKey, options?.staticProps);
+    const blocInstance = Constructor.getOrCreate(
+      instanceKey,
+      options?.staticProps,
+    );
 
     if (!componentRef.current.__bridge) {
       const deps = options?.dependencies;
       componentRef.current.__bridge = new ReactBridge(blocInstance, {
-        dependencies: deps
-          ? (state) => deps(state, blocInstance)
-          : undefined,
+        dependencies: deps ? (state) => deps(state, blocInstance) : undefined,
       });
     }
+    console.log(
+      `[useBloc] Obtained bloc instance: ${BlocClass.name} (key: ${instanceKey})`,
+    );
 
     return {
       bloc: blocInstance,
@@ -165,18 +181,32 @@ function useBloc<TBloc extends StateContainer<AnyObject, AnyObject>>(
   // is completed after component has accessed state properties
   useEffect(() => {
     bridge.completeTracking();
+    console.log(`[useBloc] Completed tracking for bloc: ${BlocClass.name}`);
   }); // No dependencies - runs after every render
 
   // Mount/unmount lifecycle
   useEffect(() => {
+    console.log(
+      `[useBloc] Mounting bloc: ${BlocClass.name} (key: ${instanceKey})`,
+    );
     // Call onMount callback if provided
     // Type assertion: TBloc is compatible with StateContainer
-    bridge.onMount(options?.onMount as ((container: StateContainer<ExtractState<TBloc>, AnyObject>) => void) | undefined);
+    bridge.onMount(
+      options?.onMount as
+        | ((container: StateContainer<ExtractState<TBloc>, AnyObject>) => void)
+        | undefined,
+    );
 
     return () => {
       // Call onUnmount callback if provided
       // Type assertion: TBloc is compatible with StateContainer
-      bridge.onUnmount(options?.onUnmount as ((container: StateContainer<ExtractState<TBloc>, AnyObject>) => void) | undefined);
+      bridge.onUnmount(
+        options?.onUnmount as
+          | ((
+              container: StateContainer<ExtractState<TBloc>, AnyObject>,
+            ) => void)
+          | undefined,
+      );
 
       // Release reference using StateContainer's static release method
       // For isolated blocs: disposes when ref count hits zero

@@ -25,25 +25,25 @@ export function ShoppingDemo() {
         'Error handling - demonstrates error state management',
       ]}
     >
-      <section className="mb-3">
+      <section className="stack-lg">
         <h2>Event-Driven Architecture</h2>
-        <p className="text-muted mb-2">
+        <p className="text-muted">
           This example uses Vertex, which processes events through registered handlers.
           All cart actions (AddToCart, RemoveFromCart, UpdateQuantity, Checkout) are
           dispatched as events. Open the console to see event processing logs.
         </p>
       </section>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
+      <div className="panel-grid panel-grid--split">
         <ProductGrid />
-        <div style={{ position: 'sticky', top: '5rem' }}>
+        <div className="sticky-panel">
           <CartView />
         </div>
       </div>
 
-      <section className="mt-3">
+      <section className="stack-lg">
         <h2>Key Takeaways</h2>
-        <ul style={{ marginLeft: '1.5rem' }}>
+        <ul className="features-list">
           <li>
             <strong>Event-driven:</strong> All state changes go through typed events
             (AddToCartEvent, CheckoutEvent, etc.)

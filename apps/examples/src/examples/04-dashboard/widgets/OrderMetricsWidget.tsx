@@ -11,7 +11,7 @@ export function OrderMetricsWidget() {
   const [state] = useBloc(DashboardBloc);
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+    <div className="metric-grid">
       <MetricWidget
         title="Orders Today"
         value={state.ordersToday.toLocaleString()}

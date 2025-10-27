@@ -10,57 +10,30 @@ export function ControlPanel() {
   const [state, dashboard] = useBloc(DashboardBloc);
 
   return (
-    <div className="card" style={{ background: 'var(--gray-50)' }}>
-      <h3 style={{ marginBottom: '1rem' }}>Control Panel</h3>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-          gap: '0.75rem',
-        }}
-      >
-        <button
-          onClick={dashboard.updateUserMetrics}
-          style={{ padding: '0.75rem' }}
-        >
+    <div className="card card-subtle control-panel-card">
+      <h3>Control Panel</h3>
+      <div className="control-panel-grid">
+        <button onClick={dashboard.updateUserMetrics}>
           👥 Update Users
         </button>
-        <button
-          onClick={dashboard.updateOrderMetrics}
-          style={{ padding: '0.75rem' }}
-        >
+        <button onClick={dashboard.updateOrderMetrics}>
           📦 Update Orders
         </button>
-        <button
-          onClick={dashboard.updateRevenueMetrics}
-          style={{ padding: '0.75rem' }}
-        >
+        <button onClick={dashboard.updateRevenueMetrics}>
           💰 Update Revenue
         </button>
-        <button
-          onClick={dashboard.updateSystemMetrics}
-          style={{ padding: '0.75rem' }}
-        >
+        <button onClick={dashboard.updateSystemMetrics}>
           ⚙️ Update System
         </button>
         <button
           onClick={dashboard.toggleAutoUpdate}
-          className={state.isAutoUpdating ? 'danger' : 'success'}
-          style={{ padding: '0.75rem', gridColumn: 'span 2' }}
+          className={`${state.isAutoUpdating ? 'danger' : 'success'} control-panel-toggle`}
         >
           {state.isAutoUpdating ? '⏸️ Stop Auto-Update' : '▶️ Start Auto-Update'}
         </button>
       </div>
 
-      <div
-        style={{
-          marginTop: '1rem',
-          padding: '1rem',
-          background: 'white',
-          borderRadius: 'var(--radius)',
-          fontSize: '0.875rem',
-        }}
-      >
+      <div className="info-note">
         <strong>💡 Pro Tip:</strong> Open your browser console and click the buttons above.
         Notice how ONLY the widgets that access the changed metrics re-render!
         <br />

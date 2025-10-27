@@ -26,50 +26,44 @@ export function TodoDemo() {
         'Named instances for multiple independent lists',
       ]}
     >
-      <section className="mb-3">
+      <section className="stack-lg">
         <h2>Main Todo List</h2>
-        <p className="text-muted mb-2">
+        <p className="text-muted">
           Watch the console to see which components re-render as you interact.
           Notice how filtering doesn't cause TodoStats to re-render!
         </p>
         <TodoInput />
         <TodoFilters />
         <TodoStats />
-        <div className="mt-2">
-          <TodoList />
-        </div>
+        <TodoList />
       </section>
 
-      <section className="mb-3">
+      <section className="stack-lg">
         <h2>Independent Lists</h2>
-        <p className="text-muted mb-2">
+        <p className="text-muted">
           Each list below has its own state using named instances. Try using both!
         </p>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-          <div>
+        <div className="panel-grid panel-grid--two">
+          <div className="stack-md">
             <h3>Work Tasks</h3>
             <TodoInput instanceKey="work" />
             <TodoFilters instanceKey="work" />
             <TodoStats instanceKey="work" />
-            <div className="mt-2">
-              <TodoList instanceKey="work" />
-            </div>
+            <TodoList instanceKey="work" />
           </div>
-          <div>
+          <div className="stack-md">
             <h3>Personal Tasks</h3>
             <TodoInput instanceKey="personal" />
             <TodoFilters instanceKey="personal" />
             <TodoStats instanceKey="personal" />
-            <div className="mt-2">
-              <TodoList instanceKey="personal" />
-            </div>
+            <TodoList instanceKey="personal" />
           </div>
         </div>
       </section>
 
-      <section>
+      <section className="stack-md">
         <h2>Key Takeaways</h2>
-        <ul style={{ marginLeft: '1.5rem' }}>
+        <ul className="features-list">
           <li>
             <strong>Granular tracking:</strong> TodoList re-renders when todos or filter
             change, TodoFilters only when filter changes, TodoStats only when todos

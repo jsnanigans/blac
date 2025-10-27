@@ -26,62 +26,48 @@ export function CartView() {
 
   if (state.items.length === 0) {
     return (
-      <div className="card" style={{ background: 'var(--gray-50)' }}>
+      <aside className="card card-subtle cart-card">
         <h2>Shopping Cart</h2>
-        <p className="text-muted text-center" style={{ padding: '2rem' }}>
-          Your cart is empty
-        </p>
-      </div>
+        <div className="empty-panel text-center">Your cart is empty</div>
+      </aside>
     );
   }
 
   return (
-    <div className="card">
-      <h2 style={{ marginBottom: '1rem' }}>Shopping Cart ({itemCount} items)</h2>
+    <aside className="card cart-card">
+      <h2>Shopping Cart ({itemCount} items)</h2>
 
-      <div style={{ marginBottom: '1rem' }}>
+      <div className="cart-items">
         {state.items.map((item) => (
-          <div
-            key={item.product.id}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '1rem',
-              padding: '1rem',
-              borderBottom: '1px solid var(--gray-200)',
-            }}
-          >
-            <div style={{ fontSize: '2rem' }}>{item.product.image}</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 500 }}>{item.product.name}</div>
+          <div key={item.product.id} className="cart-item">
+            <div className="cart-item-icon">{item.product.image}</div>
+            <div className="cart-item-info">
+              <div className="cart-item-title">{item.product.name}</div>
               <div className="text-small text-muted">
                 ${item.product.price.toFixed(2)} each
               </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div className="cart-quantity">
               <button
                 onClick={() => cart.updateQuantity(item.product.id, item.quantity - 1)}
-                style={{ padding: '0.25rem 0.75rem' }}
+                className="button-compact"
               >
-                -
+                −
               </button>
-              <span style={{ minWidth: '2rem', textAlign: 'center' }}>
-                {item.quantity}
-              </span>
+              <span>{item.quantity}</span>
               <button
                 onClick={() => cart.updateQuantity(item.product.id, item.quantity + 1)}
-                style={{ padding: '0.25rem 0.75rem' }}
+                className="button-compact"
               >
                 +
               </button>
             </div>
-            <div style={{ fontWeight: 'bold', minWidth: '80px', textAlign: 'right' }}>
+            <div className="price-tag">
               ${(item.product.price * item.quantity).toFixed(2)}
             </div>
             <button
               onClick={() => cart.removeFromCart(item.product.id)}
-              className="danger"
-              style={{ padding: '0.5rem 1rem' }}
+              className="danger button-compact"
             >
               Remove
             </button>
@@ -89,35 +75,21 @@ export function CartView() {
         ))}
       </div>
 
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '1rem',
-          background: 'var(--gray-50)',
-          borderRadius: 'var(--radius)',
-        }}
-      >
-        <div>
-          <div style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>Total</div>
-          <button
-            onClick={cart.clearCart}
-            className="secondary"
-            style={{ marginTop: '0.5rem', padding: '0.5rem 1rem' }}
-          >
+      <div className="cart-summary">
+        <div className="stack-sm">
+          <span className="stat-label">Total items</span>
+          <span className="stat-value">{itemCount}</span>
+          <button onClick={cart.clearCart} className="button-ghost button-compact">
             Clear Cart
           </button>
         </div>
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--primary)' }}>
-            ${total.toFixed(2)}
-          </div>
+        <div className="stack-sm text-right">
+          <span className="stat-label">Order total</span>
+          <span className="stat-value highlight">${total.toFixed(2)}</span>
           <button
             onClick={cart.checkout}
             disabled={state.isCheckingOut}
-            className="success"
-            style={{ marginTop: '0.5rem' }}
+            className="success button-block"
           >
             {state.isCheckingOut ? 'Processing...' : 'Checkout'}
           </button>
@@ -125,33 +97,14 @@ export function CartView() {
       </div>
 
       {state.error && (
-        <div
-          style={{
-            marginTop: '1rem',
-            padding: '1rem',
-            background: 'var(--danger)',
-            color: 'white',
-            borderRadius: 'var(--radius)',
-          }}
-        >
-          {state.error}
-        </div>
+        <div className="status-banner status-banner--error">{state.error}</div>
       )}
 
       {state.checkoutComplete && (
-        <div
-          style={{
-            marginTop: '1rem',
-            padding: '1rem',
-            background: 'var(--secondary)',
-            color: 'white',
-            borderRadius: 'var(--radius)',
-            textAlign: 'center',
-          }}
-        >
+        <div className="status-banner status-banner--success text-center">
           ✓ Order placed successfully! Thank you for your purchase.
         </div>
       )}
-    </div>
+    </aside>
   );
 }

@@ -15,15 +15,9 @@ export function ProductGrid() {
   console.log('[ProductGrid] Rendering - does NOT re-render on cart changes');
 
   return (
-    <div>
-      <h2 style={{ marginBottom: '1rem' }}>Products</h2>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-          gap: '1rem',
-        }}
-      >
+    <section className="stack-md">
+      <h2>Products</h2>
+      <div className="product-grid">
         {PRODUCTS.map((product) => (
           <ProductCard
             key={product.id}
@@ -32,6 +26,6 @@ export function ProductGrid() {
           />
         ))}
       </div>
-    </div>
+    </section>
   );
 }

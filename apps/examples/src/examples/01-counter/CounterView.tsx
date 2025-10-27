@@ -22,27 +22,26 @@ export function CounterView({ label, instanceKey }: CounterViewProps) {
   console.log(`[CounterView ${label}] Rendering with count:`, state.count);
 
   return (
-    <div className="card">
-      <h3>{label}</h3>
-      <div className="flex gap-2 mb-2" style={{ alignItems: 'center' }}>
-        <button onClick={counter.decrement}>-</button>
-        <div
-          style={{
-            fontSize: '2rem',
-            fontWeight: 'bold',
-            color: 'var(--primary)',
-            minWidth: '60px',
-            textAlign: 'center',
-          }}
-        >
-          {state.count}
-        </div>
-        <button onClick={counter.increment}>+</button>
-        <button onClick={counter.reset} className="secondary">
+    <div className="card counter-card">
+      <div className="flex-between">
+        <h3>{label}</h3>
+        <span className="badge badge-outline">
+          {instanceKey ? 'Isolated' : 'Shared'}
+        </span>
+      </div>
+      <div className="counter-controls">
+        <button onClick={counter.decrement} className="button-square">
+          −
+        </button>
+        <div className="counter-value">{state.count}</div>
+        <button onClick={counter.increment} className="button-square">
+          +
+        </button>
+        <button onClick={counter.reset} className="button-ghost">
           Reset
         </button>
       </div>
-      <p className="text-small text-muted">
+      <p className="meta-line">
         Instance: {instanceKey || 'default (shared)'}
       </p>
     </div>

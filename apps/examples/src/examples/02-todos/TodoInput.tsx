@@ -24,14 +24,14 @@ export function TodoInput({ instanceKey }: TodoInputProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="mb-2">
-      <div className="flex gap-2">
+    <form onSubmit={handleSubmit} className="stack-sm">
+      <div className="input-group">
         <input
           type="text"
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="What needs to be done?"
-          style={{ flex: 1 }}
+          aria-label="Add todo"
         />
         <button type="submit">Add</button>
       </div>

@@ -24,12 +24,12 @@ export function TodoFilters({ instanceKey }: TodoFiltersProps) {
   ];
 
   return (
-    <div className="flex gap-2 mb-2">
+    <div className="filter-row">
       {filters.map(({ label, value }) => (
         <button
           key={value}
           onClick={() => todoBloc.setFilter(value)}
-          className={state.filter === value ? '' : 'secondary'}
+          className={state.filter === value ? 'button-active' : 'button-ghost'}
         >
           {label}
         </button>
