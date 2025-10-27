@@ -21,20 +21,25 @@ export abstract class Cubit<S> extends StateContainer<S> {
   }
 
   /**
-   * Emit a new state (public API for Cubit)
+   * Patch state with partial updates (shallow merge)
+   * Only available when state is an object type
    * Arrow function to maintain correct 'this' binding in React
+   *
+   * @example
+   * ```typescript
+   * // Update single field
+   * this.patch({ count: 5 });
+   *
+   * // Update multiple fields
+   * this.patch({ count: 5, name: 'Updated' });
+   * ```
    */
-  protected emitState = (state: S): void => {
-    this.emit(state);
-  };
-
-  /**
-   * Update state with an updater function (public API for Cubit)
-   * Arrow function to maintain correct 'this' binding in React
-   */
-  protected updateState = (updater: (current: S) => S): void => {
-    this.update(updater);
-  };
+  protected patch = ((partial: S extends object ? Partial<S> : never): void => {
+    if (typeof this.state !== 'object' || this.state === null) {
+      throw new Error('patch() is only available for object state types');
+    }
+    super.update((current) => ({ ...current, ...partial } as S));
+  }) as S extends object ? (partial: Partial<S>) => void : never;
 }
 
 /**
@@ -46,19 +51,19 @@ export class CounterCubit extends Cubit<number> {
   }
 
   increment = (): void => {
-    this.emitState(this.state + 1);
+    this.emit(this.state + 1);
   };
 
   decrement = (): void => {
-    this.emitState(this.state - 1);
+    this.emit(this.state - 1);
   };
 
   reset = (): void => {
-    this.emitState(0);
+    this.emit(0);
   };
 
   addAmount = (amount: number): void => {
-    this.emitState(this.state + amount);
+    this.emit(this.state + amount);
   };
 }
 
@@ -86,7 +91,7 @@ export class TodoCubit extends Cubit<TodoState> {
   }
 
   addTodo = (text: string): void => {
-    this.updateState((state) => ({
+    this.update((state) => ({
       ...state,
       todos: [
         ...state.todos,
@@ -96,7 +101,7 @@ export class TodoCubit extends Cubit<TodoState> {
   };
 
   toggleTodo = (id: string): void => {
-    this.updateState((state) => ({
+    this.update((state) => ({
       ...state,
       todos: state.todos.map((todo) =>
         todo.id === id ? { ...todo, done: !todo.done } : todo,
@@ -105,18 +110,18 @@ export class TodoCubit extends Cubit<TodoState> {
   };
 
   removeTodo = (id: string): void => {
-    this.updateState((state) => ({
+    this.update((state) => ({
       ...state,
       todos: state.todos.filter((todo) => todo.id !== id),
     }));
   };
 
   setFilter = (filter: TodoState['filter']): void => {
-    this.updateState((state) => ({ ...state, filter }));
+    this.patch({ filter }); // Using patch() for simple field update
   };
 
   setLoading = (isLoading: boolean): void => {
-    this.updateState((state) => ({ ...state, isLoading }));
+    this.patch({ isLoading }); // Using patch() for simple field update
   };
 
   get visibleTodos() {
