@@ -1,0 +1,37 @@
+{
+  "name": "examples",
+  "version": "1.0.0",
+  "private": true,
+  "publishConfig": {
+    "access": "restricted"
+  },
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "format": "prettier --write \".\"",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "typecheck": "tsc --noEmit",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "Blac examples app showcasing state management features",
+  "dependencies": {
+    "@blac/core": "workspace:*",
+    "@blac/react": "workspace:*",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "vite": "^7.0.6"
+  },
+  "devDependencies": {
+    "prettier": "catalog:",
+    "@vitejs/plugin-react": "^4.7.0",
+    "typescript": "catalog:",
+    "@types/react": "^19.1.9",
+    "@types/react-dom": "^19.1.7"
+  }
+}

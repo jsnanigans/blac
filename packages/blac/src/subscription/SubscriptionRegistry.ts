@@ -20,7 +20,7 @@ import { IdGenerator } from '../utils/idGenerator';
 
 export type ContainerId = BrandedId<'Container'>;
 export type ConsumerId = BrandedId<'Consumer'>;
-export { MetadataValue } from './SubscriptionPipeline';
+export type { MetadataValue } from './SubscriptionPipeline';
 
 /**
  * Subscription configuration
