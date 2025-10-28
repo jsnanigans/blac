@@ -11,7 +11,7 @@ export {
   createReactBridge,
   type SubscribeCallback,
   type Unsubscribe,
-} from './ReactBridge';
+} from './ReactBridge.optimized';
 export {
   useBloc,
   default as useBlocHook,

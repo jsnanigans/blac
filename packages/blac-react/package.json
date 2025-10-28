@@ -42,6 +42,8 @@
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
     "test": "vitest run --config vitest.config.ts",
     "test:watch": "vitest --watch --config vitest.config.ts",
+    "test:memory": "NODE_OPTIONS='--expose-gc' vitest run --config vitest.config.performance.ts",
+    "test:performance": "vitest run --config vitest.config.performance.ts",
     "test:compiler": "vitest run --config vitest.config.compiler.ts",
     "test:watch:compiler": "vitest --watch --config vitest.config.compiler.ts",
     "test:both": "pnpm test && echo '\n\n=== Running tests WITH React Compiler ===\n' && pnpm test:compiler",

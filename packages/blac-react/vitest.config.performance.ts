@@ -1,8 +1,9 @@
 import { defineConfig } from 'vite';
 import path from 'path';
 
-// Vitest config WITHOUT React Compiler (default)
-// Use vitest.config.compiler.ts to test with React 19 compiler enabled
+// Vitest config for PERFORMANCE TESTING
+// This config ensures tests run in isolation without concurrency
+// for accurate performance measurements and memory profiling
 // https://vitejs.dev/config/
 export default defineConfig({
   resolve: {
@@ -33,11 +34,19 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    maxConcurrency: 2,
-    maxWorkers: 2,
+    // CRITICAL: Disable concurrency for accurate performance measurements
+    maxConcurrency: 1,
+    maxWorkers: 1,
+    pool: 'forks', // Use forks instead of threads for better isolation
+    poolOptions: {
+      forks: {
+        singleFork: true, // Run all tests in a single fork for consistent memory measurements
+      },
+    },
     environment: 'happy-dom',
     setupFiles: './vitest-setup.ts',
-    hookTimeout: 30000, // 30 seconds for hooks (afterEach cleanup)
+    hookTimeout: 60000, // 60 seconds for performance tests
+    testTimeout: 120000, // 120 seconds for long-running performance tests
     exclude: [
       '**/node_modules/**',
       '**/dist/**',
@@ -45,7 +54,13 @@ export default defineConfig({
       '**/.*/**',
     ],
     onConsoleLog(log) {
-      return true;
+      return true; // Show console logs for performance metrics
     },
+    // Disable coverage for performance tests
+    coverage: {
+      enabled: false,
+    },
+    // Disable parallelism at file level too
+    fileParallelism: false,
   },
 });

@@ -37,13 +37,10 @@
 
 import type { StateContainer, AnyObject, BlocConstructor } from '@blac/core';
 import { useBlocConcurrent } from './useBlocConcurrent';
-import { BlocConfig } from './BlocConfig';
 import type { UseBlocOptions, UseBlocReturn } from './types';
 
 /**
  * useBloc Hook - Modern, type-safe BlaC state management with automatic proxy tracking
- *
- * Delegates to useBlocConcurrent by default. Simple mode has been removed.
  *
  * @param BlocClass - The Bloc constructor (uninitiated class)
  * @param options - Optional configuration
@@ -53,7 +50,6 @@ function useBloc<TBloc extends StateContainer<AnyObject, AnyObject>>(
   BlocClass: BlocConstructor<TBloc>,
   options?: UseBlocOptions<TBloc>,
 ): UseBlocReturn<TBloc> {
-  // Always use concurrent mode (simple mode removed)
   return useBlocConcurrent(BlocClass, options);
 }
 

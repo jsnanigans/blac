@@ -29,6 +29,14 @@ export interface UseBlocOptions<
   dependencies?: (state: ExtractState<TBloc>, bloc: TBloc) => unknown[];
 
   /**
+   * Control automatic dependency tracking (default: true)
+   * - true: Automatically track accessed properties via Proxy
+   * - false: Disable automatic tracking, all state changes trigger re-render
+   * - Ignored when dependencies option is provided
+   */
+  autoTrack?: boolean;
+
+  /**
    * Callback when component mounts
    */
   onMount?: (bloc: TBloc) => void;
