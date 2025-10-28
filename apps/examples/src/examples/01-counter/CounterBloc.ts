@@ -43,8 +43,7 @@ export class CounterBloc extends Cubit<CounterState> {
    * Arrow function ensures correct 'this' binding in React.
    */
   increment = () => {
-    this.emit({
-      ...this.state,
+    this.patch({
       count: this.state.count + 1,
       incrementCount: this.state.incrementCount + 1,
       lastAction: 'increment',
@@ -55,8 +54,7 @@ export class CounterBloc extends Cubit<CounterState> {
    * Decrement the counter
    */
   decrement = () => {
-    this.emit({
-      ...this.state,
+    this.patch({
       count: this.state.count - 1,
       decrementCount: this.state.decrementCount + 1,
       lastAction: 'decrement',
@@ -79,8 +77,7 @@ export class CounterBloc extends Cubit<CounterState> {
    * Set the counter to a specific value
    */
   setValue = (value: number) => {
-    this.emit({
-      ...this.state,
+    this.patch({
       count: value,
       lastAction: `set to ${value}`,
     });

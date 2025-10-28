@@ -97,7 +97,7 @@ class DemoBloc extends Cubit<{
 
   run = (): void => {
     const data = buildData(1000);
-    this.emitState({
+    this.emit({
       data,
       selected: null,
     });
@@ -105,7 +105,7 @@ class DemoBloc extends Cubit<{
 
   runLots = (): void => {
     const data = buildData(10000);
-    this.emitState({
+    this.emit({
       data,
       selected: null,
     });
@@ -113,14 +113,14 @@ class DemoBloc extends Cubit<{
 
   add = (): void => {
     const addData = buildData(1000);
-    this.updateState((state) => ({
+    this.update((state) => ({
       ...state,
       data: [...state.data, ...addData],
     }));
   };
 
   update = (): void => {
-    this.updateState((state) => ({
+    this.update((state) => ({
       ...state,
       data: state.data.map((item, index) => {
         if (index % 10 === 0) {
@@ -132,21 +132,21 @@ class DemoBloc extends Cubit<{
   };
 
   select = (item: DataItem): void => {
-    this.updateState((state) => ({
+    this.update((state) => ({
       ...state,
       selected: item,
     }));
   };
 
   remove = (item: DataItem): void => {
-    this.updateState((state) => ({
+    this.update((state) => ({
       ...state,
       data: state.data.filter((i) => i !== item),
     }));
   };
 
   clear = (): void => {
-    this.emitState({
+    this.emit({
       data: [],
       selected: null,
     });
@@ -154,7 +154,7 @@ class DemoBloc extends Cubit<{
 
   swapRows = (): void => {
     if (this.state.data.length > 998) {
-      this.updateState((state) => {
+      this.update((state) => {
         const newData = [...state.data];
         [newData[1], newData[998]] = [newData[998], newData[1]];
         return { ...state, data: newData };
@@ -189,7 +189,7 @@ interface RowProps {
 }
 
 const Row: React.FC<RowProps> = React.memo(({ item }) => {
-  const [state, { remove, select }] = useBloc(DemoBloc, {
+  const [state, bloc] = useBloc(DemoBloc, {
     dependencies: (state) => [state.selected === item],
   });
 
@@ -201,10 +201,10 @@ const Row: React.FC<RowProps> = React.memo(({ item }) => {
     <tr className={item === state.selected ? 'danger' : ''}>
       <td className="col-md-1">{item.id}</td>
       <td className="col-md-4">
-        <a onClick={() => select(item)}>{item.label}</a>
+        <a onClick={() => bloc.select(item)}>{item.label}</a>
       </td>
       <td className="col-md-1">
-        <a onClick={() => remove(item)}>{GlyphIcon}</a>
+        <a onClick={() => bloc.remove(item)}>{GlyphIcon}</a>
       </td>
       <td className="col-md-6"></td>
     </tr>
@@ -221,11 +221,11 @@ const RowList: React.FC = () => {
   });
 
   return (
-    <>
+    <div>
       {state.data.map((item) => (
         <Row key={item.id} item={item} />
       ))}
-    </>
+    </div>
   );
 };
 
@@ -249,7 +249,7 @@ const Button: React.FC<ButtonProps> = ({ id, title, cb }) => (
 );
 
 export const JSFrameworkBenchmark: React.FC = () => {
-  const [, { run, runLots, add, update, clear, swapRows }] = useBloc(DemoBloc);
+  const [, bloc] = useBloc(DemoBloc);
 
   useEffect(() => {
     console.log('[JSFrameworkBenchmark] Component rendered');
@@ -264,12 +264,20 @@ export const JSFrameworkBenchmark: React.FC = () => {
           </div>
           <div className="col-md-6">
             <div className="row">
-              <Button id="run" title="Create 1,000 rows" cb={run} />
-              <Button id="runlots" title="Create 10,000 rows" cb={runLots} />
-              <Button id="add" title="Append 1,000 rows" cb={add} />
-              <Button id="update" title="Update every 10th row" cb={update} />
-              <Button id="clear" title="Clear" cb={clear} />
-              <Button id="swaprows" title="Swap Rows" cb={swapRows} />
+              <Button id="run" title="Create 1,000 rows" cb={bloc.run} />
+              <Button
+                id="runlots"
+                title="Create 10,000 rows"
+                cb={bloc.runLots}
+              />
+              <Button id="add" title="Append 1,000 rows" cb={bloc.add} />
+              <Button
+                id="update"
+                title="Update every 10th row"
+                cb={bloc.update}
+              />
+              <Button id="clear" title="Clear" cb={bloc.clear} />
+              <Button id="swaprows" title="Swap Rows" cb={bloc.swapRows} />
             </div>
           </div>
         </div>

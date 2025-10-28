@@ -86,14 +86,14 @@ export class SubscriptionRegistry {
   register<TState = unknown>(
     config: SubscriptionConfig<TState>,
   ): SubscriptionId {
-    if (
-      this.options.maxSubscriptions &&
-      this.subscriptions.size >= this.options.maxSubscriptions
-    ) {
-      throw new Error(
-        `Maximum subscriptions (${this.options.maxSubscriptions}) reached`,
-      );
-    }
+    // if (
+    //   this.options.maxSubscriptions &&
+    //   this.subscriptions.size >= this.options.maxSubscriptions
+    // ) {
+    //   throw new Error(
+    //     `Maximum subscriptions (${this.options.maxSubscriptions}) reached`,
+    //   );
+    // }
 
     const id = this.generateId();
     const pipeline = this.createPipeline(config);

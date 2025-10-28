@@ -4,6 +4,15 @@ import { CounterDemo } from './examples/01-counter/CounterDemo';
 import { TodoDemo } from './examples/02-todos/TodoDemo';
 import { ShoppingDemo } from './examples/03-shopping-cart/ShoppingDemo';
 import { DashboardDemo } from './examples/04-dashboard/DashboardDemo';
+import { useEffect, useState } from 'react';
+
+const Logo = () => {
+  const [x, e] = useState(0);
+  useEffect(() => {
+    console.log('Logo rendered');
+  }, [x]);
+  return <div>Blac // Control</div>;
+};
 
 /**
  * Main app component with custom Blac-based routing.
@@ -18,9 +27,7 @@ export function App() {
     <div className="app-container">
       <nav className="nav">
         <div className="nav-content">
-          <Link to="/" className="nav-brand">
-            Blac // Control
-          </Link>
+          <Logo />
           <ul className="nav-links">
             <li>
               <Link to="/">Home</Link>

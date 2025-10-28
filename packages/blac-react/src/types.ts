@@ -1,0 +1,62 @@
+/**
+ * Shared type definitions for useBloc implementations
+ */
+
+import type { StateContainer, AnyObject, ExtractState } from '@blac/core';
+import type { MutableRefObject } from 'react';
+
+/**
+ * Options for useBloc hook
+ */
+export interface UseBlocOptions<
+  TBloc extends StateContainer<AnyObject, AnyObject>,
+> {
+  /**
+   * Static props to pass to Bloc constructor
+   * Type should match the constructor's first parameter
+   */
+  staticProps?: AnyObject;
+
+  /**
+   * Custom instance ID for shared blocs
+   * For isolated blocs, each useBloc call gets its own instance
+   */
+  instanceId?: string;
+
+  /**
+   * Dependencies array to control re-rendering
+   */
+  dependencies?: (state: ExtractState<TBloc>, bloc: TBloc) => unknown[];
+
+  /**
+   * Callback when component mounts
+   */
+  onMount?: (bloc: TBloc) => void;
+
+  /**
+   * Callback when component unmounts
+   */
+  onUnmount?: (bloc: TBloc) => void;
+
+  /**
+   * Override default mode for this hook call
+   * - true: Use concurrent mode (useSyncExternalStore)
+   * - false: Use simple mode (useState + useEffect)
+   * - undefined: Use global default from BlocConfig
+   */
+  concurrent?: boolean;
+}
+
+/**
+ * Component reference object type for internal tracking
+ */
+export type ComponentRef<TState> = {
+  __blocInstanceId?: string;
+  __bridge?: any; // Bridge type varies by implementation
+};
+
+/**
+ * Return type returns full state
+ */
+export type UseBlocReturn<TBloc extends StateContainer<AnyObject, AnyObject>> =
+  [ExtractState<TBloc>, TBloc, MutableRefObject<ComponentRef<ExtractState<TBloc>>>];

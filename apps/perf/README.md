@@ -16,9 +16,29 @@ The app will be available at http://localhost:3001/
 
 ## Overview
 
-This performance suite includes two main testing approaches:
+This performance suite includes multiple testing approaches:
 
-### 1. JS Framework Benchmark
+### 1. Hybrid Mode Benchmark ⭐ NEW
+
+**Real browser-based performance comparison between Simple and Concurrent modes.**
+
+Use this with **React DevTools Profiler** to see actual render and reconciliation behavior:
+
+- Side-by-side comparison of Simple vs Concurrent mode
+- Live profiler metrics (render count, duration, mounts/updates)
+- Interactive buttons to test proxy tracking
+- Auto-test feature for automated clicking
+- Visual comparison of reconciliation overhead
+
+**Key Features:**
+- Click "Increment" → Should trigger re-render (count is accessed)
+- Click "Change Name" → Should NOT re-render (name not accessed - proxy tracking works!)
+- Compare reconciliation phases in DevTools Profiler
+- See the 3-4x reconciliation overhead in Concurrent mode
+
+**Best for**: Understanding the performance differences between Simple and Concurrent modes
+
+### 2. JS Framework Benchmark
 
 Based on [js-framework-benchmark](https://github.com/krausest/js-framework-benchmark), this test measures standard framework operations:
 
@@ -67,12 +87,14 @@ A full suite of BlaC-specific performance tests:
 
 ```
 apps/perf/
-├── main.tsx                          # Entry point with navigation
+├── main.tsx                          # Entry point
 ├── index.html                        # HTML template
 ├── src/
+│   ├── App.tsx                       # Main app with navigation
 │   ├── components/
 │   │   └── BenchmarkDashboard.tsx   # Main dashboard UI
 │   ├── benchmarks/
+│   │   ├── HybridModeBenchmark.tsx  # ⭐ NEW: Simple vs Concurrent comparison
 │   │   ├── JSFrameworkBenchmark.tsx # Classic framework test
 │   │   ├── MemoryLeakBenchmark.tsx  # Memory leak detection
 │   │   ├── DependencyTrackingBenchmark.tsx
