@@ -1,12 +1,10 @@
 /**
- * Performance Comparison: useBlocNext vs useBlocConcurrent
+ * Performance Comparison: useBlocNext vs useBlocConcurrent vs useBlocMinimal
  *
- * This test compares the ultimate useBlocNext implementation against useBlocConcurrent
- * to validate the performance improvements from using useSyncExternalStore with
- * direct subscriptions and minimal overhead.
- *
- * Uses multiple test runs with statistical analysis (mean, median, stdDev, 95% CI)
- * to ensure reliable and reproducible results.
+ * Simplified performance comparison focusing on:
+ * - Mount/unmount performance
+ * - State update performance
+ * - Multi-component scenarios
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -14,361 +12,69 @@ import { renderHook, act } from '@testing-library/react';
 import { Cubit } from '@blac/core';
 import { useBlocConcurrent } from '../useBlocConcurrent';
 import { useBlocNext } from '../useBlocNext';
+import { useBlocMinimal } from '../useBlocMinimal';
 
 // ============================================================================
-// Statistical Utilities - Enhanced for Stability
+// Simple Statistics
 // ============================================================================
 
-interface Statistics {
+interface Stats {
   mean: number;
   median: number;
   stdDev: number;
   min: number;
   max: number;
-  confidenceInterval: [number, number]; // 95% CI
-  trimmedMean: number; // Mean after removing outliers
-  iqr: number; // Interquartile range
-  cv: number; // Coefficient of variation (stdDev/mean)
-  outliers: number[]; // Indices of outlier values
-  isStable: boolean; // Whether results are stable enough
 }
 
-function calculateStats(values: number[]): Statistics {
+function calculateStats(values: number[]): Stats {
   if (values.length === 0) {
     throw new Error('Cannot calculate statistics on empty array');
   }
 
-  // Sort for median and quartile calculations
   const sorted = [...values].sort((a, b) => a - b);
   const n = values.length;
 
-  // Quartiles for IQR and outlier detection
-  const q1Index = Math.floor(n * 0.25);
-  const q3Index = Math.floor(n * 0.75);
-  const q1 = sorted[q1Index];
-  const q3 = sorted[q3Index];
-  const iqr = q3 - q1;
-
-  // Outlier detection using IQR method
-  const lowerBound = q1 - 1.5 * iqr;
-  const upperBound = q3 + 1.5 * iqr;
-  const outlierIndices: number[] = [];
-  const nonOutliers: number[] = [];
-
-  values.forEach((val, idx) => {
-    if (val < lowerBound || val > upperBound) {
-      outlierIndices.push(idx);
-    } else {
-      nonOutliers.push(val);
-    }
-  });
-
-  // Mean
   const mean = values.reduce((sum, val) => sum + val, 0) / n;
-
-  // Trimmed mean (using non-outliers or 10% trim if no outliers)
-  let trimmedMean: number;
-  if (nonOutliers.length > 0 && nonOutliers.length < n) {
-    trimmedMean = nonOutliers.reduce((sum, val) => sum + val, 0) / nonOutliers.length;
-  } else {
-    // 10% trimmed mean as fallback
-    const trimCount = Math.floor(n * 0.1);
-    const trimmedValues = sorted.slice(trimCount, n - trimCount);
-    trimmedMean = trimmedValues.reduce((sum, val) => sum + val, 0) / trimmedValues.length;
-  }
-
-  // Median
-  const mid = Math.floor(n / 2);
   const median = n % 2 === 0
-    ? (sorted[mid - 1] + sorted[mid]) / 2
-    : sorted[mid];
+    ? (sorted[Math.floor(n / 2) - 1] + sorted[Math.floor(n / 2)]) / 2
+    : sorted[Math.floor(n / 2)];
 
-  // Standard deviation
   const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / n;
   const stdDev = Math.sqrt(variance);
 
-  // Coefficient of variation (relative standard deviation)
-  const cv = mean > 0 ? stdDev / mean : 0;
-
-  // 95% Confidence interval (using t-distribution approximation)
-  const tValue = n > 30 ? 1.96 : getTValue(n);
-  const marginOfError = tValue * (stdDev / Math.sqrt(n));
-  const confidenceInterval: [number, number] = [
-    mean - marginOfError,
-    mean + marginOfError
-  ];
-
-  // Stability check: CV < 0.3 (30% variation) and outliers < 10%
-  const isStable = cv < 0.3 && (outlierIndices.length / n) < 0.1;
-
-  return {
-    mean,
-    median,
-    stdDev,
-    min: sorted[0],
-    max: sorted[n - 1],
-    confidenceInterval,
-    trimmedMean,
-    iqr,
-    cv,
-    outliers: outlierIndices,
-    isStable
-  };
+  return { mean, median, stdDev, min: sorted[0], max: sorted[n - 1] };
 }
 
-// Simplified t-distribution values for 95% CI
-function getTValue(n: number): number {
-  const tValues: Record<number, number> = {
-    3: 4.303, 5: 2.776, 10: 2.262, 15: 2.145, 20: 2.093, 30: 2.042
-  };
-
-  for (const [sample, tVal] of Object.entries(tValues)) {
-    if (n <= parseInt(sample)) return tVal;
-  }
-  return 1.96; // For n > 30
+function formatStats(stats: Stats, unit: string = 'ms'): string {
+  return `Mean: ${stats.mean.toFixed(3)}${unit} ± ${stats.stdDev.toFixed(3)}${unit} | Median: ${stats.median.toFixed(3)}${unit} | Range: [${stats.min.toFixed(3)}-${stats.max.toFixed(3)}]${unit}`;
 }
 
-function formatStats(stats: Statistics, unit: string = 'ms'): string {
-  const lines = [
-    `Mean: ${stats.mean.toFixed(3)}${unit} (±${stats.stdDev.toFixed(3)}${unit})`,
-    `Trimmed Mean: ${stats.trimmedMean.toFixed(3)}${unit} (outliers removed)`,
-    `Median: ${stats.median.toFixed(3)}${unit}`,
-    `Range: [${stats.min.toFixed(3)} - ${stats.max.toFixed(3)}]${unit}`,
-    `IQR: ${stats.iqr.toFixed(3)}${unit}`,
-    `CV: ${(stats.cv * 100).toFixed(1)}% (variation)`,
-    `95% CI: [${stats.confidenceInterval[0].toFixed(3)} - ${stats.confidenceInterval[1].toFixed(3)}]${unit}`,
-  ];
+// ============================================================================
+// Benchmark Runner
+// ============================================================================
 
-  if (stats.outliers.length > 0) {
-    lines.push(`Outliers: ${stats.outliers.length} detected`);
-  }
+async function runBenchmark(fn: () => void, iterations: number = 20): Promise<Stats> {
+  const times: number[] = [];
 
-  if (!stats.isStable) {
-    lines.push(`⚠️  WARNING: High variance detected - results may be unreliable`);
-  }
-
-  return lines.join('\n    ');
-}
-
-interface BenchmarkResult {
-  stats: Statistics;
-  runs: number[];
-}
-
-/**
- * Generate ASCII histogram for visualizing distribution
- */
-function generateHistogram(values: number[], bins: number = 10): string {
-  if (values.length === 0) return 'No data';
-
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = max - min;
-  const binWidth = range / bins;
-
-  // Create bins
-  const histogram: number[] = new Array(bins).fill(0);
-  values.forEach(val => {
-    const binIndex = Math.min(Math.floor((val - min) / binWidth), bins - 1);
-    histogram[binIndex]++;
-  });
-
-  // Find max count for scaling
-  const maxCount = Math.max(...histogram);
-  const barWidth = 40;
-
-  const lines: string[] = [];
-  lines.push('    Distribution:');
-
-  for (let i = 0; i < bins; i++) {
-    const binStart = min + i * binWidth;
-    const binEnd = binStart + binWidth;
-    const count = histogram[i];
-    const barLength = Math.round((count / maxCount) * barWidth);
-    const bar = '█'.repeat(barLength) + '░'.repeat(barWidth - barLength);
-    const label = `    ${binStart.toFixed(2)}-${binEnd.toFixed(2)}ms`;
-    const countStr = `[${count}]`;
-    lines.push(`    ${label.padEnd(20)} ${bar} ${countStr}`);
-  }
-
-  return lines.join('\n');
-}
-
-/**
- * Sleep for the specified duration
- */
-function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-/**
- * Detect system noise by running empty benchmarks
- */
-async function detectSystemNoise(): Promise<{ noiseLevel: number; isHighNoise: boolean }> {
-  const noiseRuns: number[] = [];
-
-  // Run 20 empty measurements
-  for (let i = 0; i < 20; i++) {
-    const start = performance.now();
-    // Empty operation
-    const duration = performance.now() - start;
-    noiseRuns.push(duration);
-  }
-
-  const noiseStats = calculateStats(noiseRuns);
-  const noiseLevel = noiseStats.mean;
-  const isHighNoise = noiseLevel > 0.01 || noiseStats.cv > 0.5; // >0.01ms or >50% CV
-
-  return { noiseLevel, isHighNoise };
-}
-
-/**
- * Run benchmark with multiple batches and delays between batches
- * This reduces variance from system conditions and provides more reliable results
- */
-async function runBenchmark(fn: () => void, warmupRuns: number = 5): Promise<BenchmarkResult> {
-  // Warmup runs to reduce JIT compilation variance
-  for (let i = 0; i < warmupRuns; i++) {
+  // Warmup
+  for (let i = 0; i < 3; i++) {
     fn();
   }
 
-  const runs: number[] = [];
-
-  // Batch 1: 20 runs
-  for (let i = 0; i < 20; i++) {
-    const start = performance.now();
-    fn();
-    const duration = performance.now() - start;
-    runs.push(duration);
-  }
-
-  // Wait 1 second
-  await sleep(1000);
-
-  // Batch 2: 20 runs
-  for (let i = 0; i < 20; i++) {
-    const start = performance.now();
-    fn();
-    const duration = performance.now() - start;
-    runs.push(duration);
-  }
-
-  // Wait 1 second
-  await sleep(1000);
-
-  // Batch 3: 100 runs
-  for (let i = 0; i < 100; i++) {
-    const start = performance.now();
-    fn();
-    const duration = performance.now() - start;
-    runs.push(duration);
-  }
-
-  return {
-    stats: calculateStats(runs),
-    runs
-  };
-}
-
-/**
- * Run interleaved benchmark - alternates between two implementations
- * This eliminates bias from system state changes over time
- */
-async function runInterleavedBenchmark(
-  fnA: () => void,
-  fnB: () => void,
-  iterations: number = 100,
-  warmupRuns: number = 5
-): Promise<{ resultA: BenchmarkResult; resultB: BenchmarkResult }> {
-  // Warmup both implementations
-  for (let i = 0; i < warmupRuns; i++) {
-    fnA();
-    fnB();
-  }
-
-  const runsA: number[] = [];
-  const runsB: number[] = [];
-
-  // Interleaved execution
+  // Measure
   for (let i = 0; i < iterations; i++) {
-    // Alternate which goes first to eliminate ordering bias
-    if (i % 2 === 0) {
-      const startA = performance.now();
-      fnA();
-      runsA.push(performance.now() - startA);
-
-      const startB = performance.now();
-      fnB();
-      runsB.push(performance.now() - startB);
-    } else {
-      const startB = performance.now();
-      fnB();
-      runsB.push(performance.now() - startB);
-
-      const startA = performance.now();
-      fnA();
-      runsA.push(performance.now() - startA);
-    }
-
-    // Small pause every 20 iterations
-    if (i % 20 === 19) {
-      await sleep(100);
-    }
+    const start = performance.now();
+    fn();
+    times.push(performance.now() - start);
   }
 
-  return {
-    resultA: { stats: calculateStats(runsA), runs: runsA },
-    resultB: { stats: calculateStats(runsB), runs: runsB }
-  };
+  return calculateStats(times);
 }
 
-/**
- * Run benchmark with fewer iterations for memory-intensive tests
- * Uses 3 + 10 + 10 + 20 = 40 total runs (plus warmup)
- */
-async function runMemoryIntensiveBenchmark(fn: () => void, warmupRuns: number = 3): Promise<BenchmarkResult> {
-  // Warmup runs
-  for (let i = 0; i < warmupRuns; i++) {
-    fn();
-  }
+// ============================================================================
+// Test Blocs
+// ============================================================================
 
-  const runs: number[] = [];
-
-  // Batch 1: 10 runs
-  for (let i = 0; i < 10; i++) {
-    const start = performance.now();
-    fn();
-    const duration = performance.now() - start;
-    runs.push(duration);
-  }
-
-  await sleep(1000);
-
-  // Batch 2: 10 runs
-  for (let i = 0; i < 10; i++) {
-    const start = performance.now();
-    fn();
-    const duration = performance.now() - start;
-    runs.push(duration);
-  }
-
-  await sleep(1000);
-
-  // Batch 3: 20 runs
-  for (let i = 0; i < 20; i++) {
-    const start = performance.now();
-    fn();
-    const duration = performance.now() - start;
-    runs.push(duration);
-  }
-
-  return {
-    stats: calculateStats(runs),
-    runs
-  };
-}
-
-// Test Bloc
 class TestCounterBloc extends Cubit<number> {
   static isolated = true;
 
@@ -381,7 +87,6 @@ class TestCounterBloc extends Cubit<number> {
   };
 }
 
-// Shared counter for non-isolated tests
 class SharedCounterBloc extends Cubit<number> {
   constructor() {
     super(0);
@@ -392,310 +97,222 @@ class SharedCounterBloc extends Cubit<number> {
   };
 }
 
-describe('Performance Comparison: Next vs Concurrent', () => {
+// ============================================================================
+// Results Collection
+// ============================================================================
+
+interface TestResult {
+  minimal: number;
+  concurrent: number;
+  next: number;
+  winner: string;
+  unit?: string;
+}
+
+const allResults: Record<string, TestResult> = {};
+
+// ============================================================================
+// Tests
+// ============================================================================
+
+describe('Performance Comparison: Next vs Concurrent vs Minimal', () => {
   beforeEach(() => {
     TestCounterBloc.release();
     SharedCounterBloc.release();
   });
 
-  // Set timeout to 60 seconds for all tests in this suite (140 iterations + pauses)
-  const testTimeout = 60000;
+  it('should compare mount/unmount performance', async () => {
+    console.log('\n🔬 Mount/Unmount Performance\n');
 
-  it('should measure relative performance ratios', { timeout: 30000 }, async () => {
-    console.log('\n🔬 TEST: Relative Performance Ratios (Most Stable)\n');
+    const MOUNTS_PER_RUN = 20;
+    const ITERATIONS = 20;
 
-    // This test measures relative performance, which is more stable across different systems
-    const scenarios = [
-      { name: 'Single mount', mounts: 1, updates: 0 },
-      { name: '10 mounts', mounts: 10, updates: 0 },
-      { name: '100 mounts', mounts: 100, updates: 0 },
-      { name: '10 updates', mounts: 1, updates: 10 },
-      { name: '100 updates', mounts: 1, updates: 100 },
-      { name: 'Mixed (10m/100u)', mounts: 10, updates: 100 },
-    ];
+    const minimalStats = await runBenchmark(() => {
+      for (let i = 0; i < MOUNTS_PER_RUN; i++) {
+        const { unmount } = renderHook(() => useBlocMinimal(TestCounterBloc));
+        unmount();
+      }
+    }, ITERATIONS);
 
-    console.log('Running comparative benchmarks across scenarios...\n');
+    const concurrentStats = await runBenchmark(() => {
+      for (let i = 0; i < MOUNTS_PER_RUN; i++) {
+        const { unmount } = renderHook(() => useBlocConcurrent(TestCounterBloc));
+        unmount();
+      }
+    }, ITERATIONS);
 
-    const results: Array<{
-      scenario: string;
-      ratio: number;
-      concurrentTime: number;
-      nextTime: number;
-      isStable: boolean;
-    }> = [];
+    const nextStats = await runBenchmark(() => {
+      for (let i = 0; i < MOUNTS_PER_RUN; i++) {
+        const { unmount } = renderHook(() => useBlocNext(TestCounterBloc));
+        unmount();
+      }
+    }, ITERATIONS);
 
-    for (const scenario of scenarios) {
-      const { resultA: concurrentResult, resultB: nextResult } = await runInterleavedBenchmark(
-        () => {
-          const hooks: any[] = [];
-          for (let i = 0; i < scenario.mounts; i++) {
-            hooks.push(renderHook(() => useBlocConcurrent(SharedCounterBloc)));
-          }
+    console.log(`Minimal:    ${formatStats(minimalStats)} | Per mount: ${(minimalStats.mean / MOUNTS_PER_RUN).toFixed(4)}ms`);
+    console.log(`Concurrent: ${formatStats(concurrentStats)} | Per mount: ${(concurrentStats.mean / MOUNTS_PER_RUN).toFixed(4)}ms`);
+    console.log(`Next:       ${formatStats(nextStats)} | Per mount: ${(nextStats.mean / MOUNTS_PER_RUN).toFixed(4)}ms`);
 
-          if (scenario.updates > 0) {
-            const bloc = SharedCounterBloc.getOrCreate();
-            for (let j = 0; j < scenario.updates; j++) {
-              act(() => bloc.increment());
-            }
-          }
+    const winner = [
+      { name: 'Minimal', time: minimalStats.mean },
+      { name: 'Concurrent', time: concurrentStats.mean },
+      { name: 'Next', time: nextStats.mean }
+    ].reduce((prev, curr) => prev.time < curr.time ? prev : curr);
 
-          hooks.forEach(h => h.unmount());
-          SharedCounterBloc.release();
-        },
-        () => {
-          const hooks: any[] = [];
-          for (let i = 0; i < scenario.mounts; i++) {
-            hooks.push(renderHook(() => useBlocNext(SharedCounterBloc)));
-          }
+    console.log(`\n🏆 Winner: ${winner.name}`);
 
-          if (scenario.updates > 0) {
-            const bloc = SharedCounterBloc.getOrCreate();
-            for (let j = 0; j < scenario.updates; j++) {
-              act(() => bloc.increment());
-            }
-          }
+    // Store results
+    allResults['Mount (per mount)'] = {
+      minimal: minimalStats.mean / MOUNTS_PER_RUN,
+      concurrent: concurrentStats.mean / MOUNTS_PER_RUN,
+      next: nextStats.mean / MOUNTS_PER_RUN,
+      winner: winner.name,
+      unit: 'ms'
+    };
 
-          hooks.forEach(h => h.unmount());
-          SharedCounterBloc.release();
-        },
-        50, // Fewer iterations for quick comparison
-        3   // Less warmup
-      );
-
-      const ratio = nextResult.stats.trimmedMean / concurrentResult.stats.trimmedMean;
-      const isStable = concurrentResult.stats.isStable && nextResult.stats.isStable;
-
-      results.push({
-        scenario: scenario.name,
-        ratio,
-        concurrentTime: concurrentResult.stats.trimmedMean,
-        nextTime: nextResult.stats.trimmedMean,
-        isStable
-      });
-    }
-
-    console.log('=== Relative Performance Summary ===\n');
-    console.log('Scenario               | Concurrent | Next      | Ratio  | Winner     | Stable');
-    console.log('-----------------------|------------|-----------|--------|------------|-------');
-
-    results.forEach(r => {
-      const winner = r.ratio < 1 ? 'Next' : r.ratio > 1 ? 'Concurrent' : 'Tie';
-      const winnerStr = winner === 'Next'
-        ? `Next +${((1/r.ratio - 1) * 100).toFixed(0)}%`
-        : winner === 'Concurrent'
-        ? `Conc +${((r.ratio - 1) * 100).toFixed(0)}%`
-        : 'Tie';
-
-      console.log(
-        `${r.scenario.padEnd(22)} | ${r.concurrentTime.toFixed(3).padStart(10)}ms | ${r.nextTime.toFixed(3).padStart(9)}ms | ${r.ratio.toFixed(3).padStart(6)} | ${winnerStr.padEnd(10)} | ${r.isStable ? '✓' : '⚠️'}`
-      );
-    });
-
-    console.log('\nInterpretation:');
-    console.log('  Ratio < 1.0: Next is faster');
-    console.log('  Ratio > 1.0: Concurrent is faster');
-    console.log('  Ratio ≈ 1.0: Similar performance\n');
-
-    // Calculate overall trend
-    const avgRatio = results.reduce((sum, r) => sum + r.ratio, 0) / results.length;
-    const stableCount = results.filter(r => r.isStable).length;
-
-    if (avgRatio < 0.95) {
-      console.log(`📊 Overall: Next is ${((1/avgRatio - 1) * 100).toFixed(1)}% faster on average`);
-    } else if (avgRatio > 1.05) {
-      console.log(`📊 Overall: Concurrent is ${((avgRatio - 1) * 100).toFixed(1)}% faster on average`);
-    } else {
-      console.log('📊 Overall: Performance is equivalent (within 5%)');
-    }
-
-    if (stableCount < results.length) {
-      console.log(`\n⚠️  Warning: ${results.length - stableCount} of ${results.length} scenarios showed unstable results`);
-    }
-
-    expect(avgRatio).toBeGreaterThan(0);
+    expect(minimalStats.mean).toBeGreaterThan(0);
+    expect(concurrentStats.mean).toBeGreaterThan(0);
+    expect(nextStats.mean).toBeGreaterThan(0);
   });
 
-  it('should compare mount performance', { timeout: testTimeout }, async () => {
-    console.log('\n🔬 TEST: Mount Performance Comparison\n');
+  it('should compare update performance', async () => {
+    console.log('\n🔬 Update Performance\n');
 
-    // Check system noise first
-    const { noiseLevel, isHighNoise } = await detectSystemNoise();
-    console.log(`System noise level: ${noiseLevel.toFixed(4)}ms ${isHighNoise ? '⚠️  HIGH' : '✓ Normal'}\n`);
+    const UPDATES_PER_RUN = 100;
+    const ITERATIONS = 20;
 
-    if (isHighNoise) {
-      console.log('⚠️  WARNING: High system noise detected. Results may be less reliable.\n');
-    }
+    const minimalStats = await runBenchmark(() => {
+      const hook = renderHook(() => useBlocMinimal(SharedCounterBloc));
+      const bloc = SharedCounterBloc.getOrCreate();
 
-    const MOUNTS_PER_ITERATION = 50; // Mounts per test run
+      for (let i = 0; i < UPDATES_PER_RUN; i++) {
+        act(() => bloc.increment());
+      }
 
-    console.log(`Running interleaved test with 100 iterations × ${MOUNTS_PER_ITERATION} mounts/unmounts per iteration...\n`);
+      hook.unmount();
+      SharedCounterBloc.release();
+    }, ITERATIONS);
 
-    // Use interleaved benchmarking for fair comparison
-    const { resultA: concurrentResult, resultB: nextResult } = await runInterleavedBenchmark(
-      () => {
-        for (let i = 0; i < MOUNTS_PER_ITERATION; i++) {
-          const { unmount } = renderHook(() => useBlocConcurrent(TestCounterBloc));
-          unmount();
-        }
-      },
-      () => {
-        for (let i = 0; i < MOUNTS_PER_ITERATION; i++) {
-          const { unmount } = renderHook(() => useBlocNext(TestCounterBloc));
-          unmount();
-        }
-      },
-      100, // iterations
-      5    // warmup
-    );
-
-    console.log('=== Mount/Unmount Performance ===\n');
-
-    console.log('Concurrent Mode:');
-    console.log(`    ${formatStats(concurrentResult.stats)}`);
-    console.log(`    Per mount: ${(concurrentResult.stats.trimmedMean / MOUNTS_PER_ITERATION).toFixed(4)}ms`);
-    if (concurrentResult.stats.cv > 0.2) {
-      console.log(generateHistogram(concurrentResult.runs, 8));
-    }
-    console.log();
-
-    console.log('Next Mode:');
-    console.log(`    ${formatStats(nextResult.stats)}`);
-    console.log(`    Per mount: ${(nextResult.stats.trimmedMean / MOUNTS_PER_ITERATION).toFixed(4)}ms`);
-    if (nextResult.stats.cv > 0.2) {
-      console.log(generateHistogram(nextResult.runs, 8));
-    }
-    console.log();
-
-    // Statistical comparison using trimmed means for robustness
-    const improvement = ((concurrentResult.stats.trimmedMean / nextResult.stats.trimmedMean - 1) * 100);
-    const winner = nextResult.stats.trimmedMean < concurrentResult.stats.trimmedMean ? 'Next' : 'Concurrent';
-
-    console.log(`🏆 Winner: ${winner} Mode\n`);
-
-    console.log('Performance Analysis:');
-    if (Math.abs(improvement) < 5) {
-      console.log(`  Equivalent performance (within 5%)`);
-    } else if (improvement > 0) {
-      console.log(`  Next is ${improvement.toFixed(1)}% faster than Concurrent`);
-    } else {
-      console.log(`  Concurrent is ${Math.abs(improvement).toFixed(1)}% faster than Next`);
-    }
-
-    // Check if confidence intervals overlap (indicates no significant difference)
-    const [concurrentLow, concurrentHigh] = concurrentResult.stats.confidenceInterval;
-    const [nextLow, nextHigh] = nextResult.stats.confidenceInterval;
-    const overlaps = !(concurrentHigh < nextLow || nextHigh < concurrentLow);
-
-    if (overlaps) {
-      console.log('  ⚠️  Confidence intervals overlap - difference may not be statistically significant');
-    } else {
-      console.log('  ✓ Confidence intervals do not overlap - difference is statistically significant');
-    }
-
-    // Stability check
-    if (!concurrentResult.stats.isStable || !nextResult.stats.isStable) {
-      console.log('\n⚠️  One or both tests showed unstable results. Consider re-running.');
-    }
-
-    expect(nextResult.stats.mean).toBeGreaterThan(0);
-    expect(concurrentResult.stats.mean).toBeGreaterThan(0);
-  });
-
-  it('should compare update performance', { timeout: testTimeout }, async () => {
-    console.log('\n🔬 TEST: Update Performance Comparison\n');
-
-    const UPDATES_PER_ITERATION = 500; // State updates per test run
-
-    console.log(`Running 3-5 warmup + 20 + 20 + 100 iterations (140 total) × ${UPDATES_PER_ITERATION} updates per iteration...\n`);
-
-    // Test Concurrent Mode
-    const concurrentResult = await runBenchmark(() => {
+    const concurrentStats = await runBenchmark(() => {
       const hook = renderHook(() => useBlocConcurrent(SharedCounterBloc));
       const bloc = SharedCounterBloc.getOrCreate();
 
-      for (let i = 0; i < UPDATES_PER_ITERATION; i++) {
+      for (let i = 0; i < UPDATES_PER_RUN; i++) {
         act(() => bloc.increment());
       }
 
       hook.unmount();
       SharedCounterBloc.release();
-    }, 5);
+    }, ITERATIONS);
 
-    // Test Next Mode (Ultimate Implementation)
-    const nextResult = await runBenchmark(() => {
+    const nextStats = await runBenchmark(() => {
       const hook = renderHook(() => useBlocNext(SharedCounterBloc));
       const bloc = SharedCounterBloc.getOrCreate();
 
-      for (let i = 0; i < UPDATES_PER_ITERATION; i++) {
+      for (let i = 0; i < UPDATES_PER_RUN; i++) {
         act(() => bloc.increment());
       }
 
       hook.unmount();
       SharedCounterBloc.release();
-    }, 5);
+    }, ITERATIONS);
 
-    console.log('=== State Update Performance ===\n');
+    console.log(`Minimal:    ${formatStats(minimalStats)} | Per update: ${(minimalStats.mean / UPDATES_PER_RUN).toFixed(4)}ms`);
+    console.log(`Concurrent: ${formatStats(concurrentStats)} | Per update: ${(concurrentStats.mean / UPDATES_PER_RUN).toFixed(4)}ms`);
+    console.log(`Next:       ${formatStats(nextStats)} | Per update: ${(nextStats.mean / UPDATES_PER_RUN).toFixed(4)}ms`);
 
-    console.log('Concurrent Mode:');
-    console.log(`    ${formatStats(concurrentResult.stats)}`);
-    console.log(`    Per update: ${(concurrentResult.stats.mean / UPDATES_PER_ITERATION).toFixed(4)}ms\n`);
+    const winner = [
+      { name: 'Minimal', time: minimalStats.mean },
+      { name: 'Concurrent', time: concurrentStats.mean },
+      { name: 'Next', time: nextStats.mean }
+    ].reduce((prev, curr) => prev.time < curr.time ? prev : curr);
 
-    console.log('Next Mode:');
-    console.log(`    ${formatStats(nextResult.stats)}`);
-    console.log(`    Per update: ${(nextResult.stats.mean / UPDATES_PER_ITERATION).toFixed(4)}ms\n`);
+    console.log(`\n🏆 Winner: ${winner.name}`);
 
-    // Statistical comparison
-    const improvement = ((concurrentResult.stats.mean / nextResult.stats.mean - 1) * 100);
-    const winner = nextResult.stats.mean < concurrentResult.stats.mean ? 'Next' : 'Concurrent';
+    // Store results
+    allResults['Update (per update)'] = {
+      minimal: minimalStats.mean / UPDATES_PER_RUN,
+      concurrent: concurrentStats.mean / UPDATES_PER_RUN,
+      next: nextStats.mean / UPDATES_PER_RUN,
+      winner: winner.name,
+      unit: 'ms'
+    };
 
-    console.log(`🏆 Winner: ${winner} Mode\n`);
-
-    console.log('Performance Analysis:');
-    if (Math.abs(improvement) < 5) {
-      console.log(`  Equivalent performance (within 5%)`);
-    } else if (improvement > 0) {
-      console.log(`  Next is ${improvement.toFixed(1)}% faster than Concurrent`);
-    } else {
-      console.log(`  Concurrent is ${Math.abs(improvement).toFixed(1)}% faster than Next`);
-    }
-
-    // Check if confidence intervals overlap
-    const [concurrentLow, concurrentHigh] = concurrentResult.stats.confidenceInterval;
-    const [nextLow, nextHigh] = nextResult.stats.confidenceInterval;
-    const overlaps = !(concurrentHigh < nextLow || nextHigh < concurrentLow);
-
-    if (overlaps) {
-      console.log('  ⚠️  Confidence intervals overlap - difference may not be statistically significant');
-    } else {
-      console.log('  ✓ Confidence intervals do not overlap - difference is statistically significant');
-    }
-
-    expect(nextResult.stats.mean).toBeGreaterThan(0);
-    expect(concurrentResult.stats.mean).toBeGreaterThan(0);
+    expect(minimalStats.mean).toBeGreaterThan(0);
+    expect(concurrentStats.mean).toBeGreaterThan(0);
+    expect(nextStats.mean).toBeGreaterThan(0);
   });
 
-  it('should compare performance with many components', { timeout: testTimeout }, async () => {
-    console.log('\n🔬 TEST: Mass Component Performance\n');
+  it('should compare multi-component performance', async () => {
+    console.log('\n🔬 Multi-Component Performance\n');
 
-    const NUM_COMPONENTS = 200; // Components per test run
-    const NUM_UPDATES = 10; // State updates per test run
+    const NUM_COMPONENTS = 50;
+    const NUM_UPDATES = 10;
+    const ITERATIONS = 15;
 
-    console.log(`Running 3 warmup + 10 + 10 + 20 iterations (40 total) with ${NUM_COMPONENTS} components each...\n`);
-    console.log('(Using fewer iterations for memory-intensive test)\n');
+    console.log('Mount Phase:\n');
 
-    // Test Concurrent Mode - Mount Phase
-    console.log('Testing Concurrent Mode mount performance...');
-    const concurrentMountResult = await runMemoryIntensiveBenchmark(() => {
+    const minimalMountStats = await runBenchmark(() => {
+      const hooks = Array.from({ length: NUM_COMPONENTS }, () =>
+        renderHook(() => useBlocMinimal(SharedCounterBloc))
+      );
+      hooks.forEach(h => h.unmount());
+      SharedCounterBloc.release();
+    }, ITERATIONS);
+
+    const concurrentMountStats = await runBenchmark(() => {
       const hooks = Array.from({ length: NUM_COMPONENTS }, () =>
         renderHook(() => useBlocConcurrent(SharedCounterBloc))
       );
       hooks.forEach(h => h.unmount());
       SharedCounterBloc.release();
-    }, 3);
+    }, ITERATIONS);
 
-    // Test Concurrent Mode - Update Phase
-    console.log('Testing Concurrent Mode update performance...');
-    const concurrentUpdateResult = await runMemoryIntensiveBenchmark(() => {
+    const nextMountStats = await runBenchmark(() => {
+      const hooks = Array.from({ length: NUM_COMPONENTS }, () =>
+        renderHook(() => useBlocNext(SharedCounterBloc))
+      );
+      hooks.forEach(h => h.unmount());
+      SharedCounterBloc.release();
+    }, ITERATIONS);
+
+    console.log(`Minimal:    ${formatStats(minimalMountStats)} | Per component: ${(minimalMountStats.mean / NUM_COMPONENTS).toFixed(4)}ms`);
+    console.log(`Concurrent: ${formatStats(concurrentMountStats)} | Per component: ${(concurrentMountStats.mean / NUM_COMPONENTS).toFixed(4)}ms`);
+    console.log(`Next:       ${formatStats(nextMountStats)} | Per component: ${(nextMountStats.mean / NUM_COMPONENTS).toFixed(4)}ms`);
+
+    const mountWinner = [
+      { name: 'Minimal', time: minimalMountStats.mean },
+      { name: 'Concurrent', time: concurrentMountStats.mean },
+      { name: 'Next', time: nextMountStats.mean }
+    ].reduce((prev, curr) => prev.time < curr.time ? prev : curr);
+
+    console.log(`🏆 Mount Winner: ${mountWinner.name}\n`);
+
+    // Store mount results
+    allResults['Multi-mount (per component)'] = {
+      minimal: minimalMountStats.mean / NUM_COMPONENTS,
+      concurrent: concurrentMountStats.mean / NUM_COMPONENTS,
+      next: nextMountStats.mean / NUM_COMPONENTS,
+      winner: mountWinner.name,
+      unit: 'ms'
+    };
+
+    console.log('Update Phase:\n');
+
+    const minimalUpdateStats = await runBenchmark(() => {
+      const hooks = Array.from({ length: NUM_COMPONENTS }, () =>
+        renderHook(() => useBlocMinimal(SharedCounterBloc))
+      );
+      const bloc = SharedCounterBloc.getOrCreate();
+
+      for (let i = 0; i < NUM_UPDATES; i++) {
+        act(() => bloc.increment());
+      }
+
+      hooks.forEach(h => h.unmount());
+      SharedCounterBloc.release();
+    }, ITERATIONS);
+
+    const concurrentUpdateStats = await runBenchmark(() => {
       const hooks = Array.from({ length: NUM_COMPONENTS }, () =>
         renderHook(() => useBlocConcurrent(SharedCounterBloc))
       );
@@ -707,21 +324,9 @@ describe('Performance Comparison: Next vs Concurrent', () => {
 
       hooks.forEach(h => h.unmount());
       SharedCounterBloc.release();
-    }, 3);
+    }, ITERATIONS);
 
-    // Test Next Mode - Mount Phase
-    console.log('Testing Next Mode mount performance...');
-    const nextMountResult = await runMemoryIntensiveBenchmark(() => {
-      const hooks = Array.from({ length: NUM_COMPONENTS }, () =>
-        renderHook(() => useBlocNext(SharedCounterBloc))
-      );
-      hooks.forEach(h => h.unmount());
-      SharedCounterBloc.release();
-    }, 3);
-
-    // Test Next Mode - Update Phase
-    console.log('Testing Next Mode update performance...');
-    const nextUpdateResult = await runMemoryIntensiveBenchmark(() => {
+    const nextUpdateStats = await runBenchmark(() => {
       const hooks = Array.from({ length: NUM_COMPONENTS }, () =>
         renderHook(() => useBlocNext(SharedCounterBloc))
       );
@@ -733,96 +338,122 @@ describe('Performance Comparison: Next vs Concurrent', () => {
 
       hooks.forEach(h => h.unmount());
       SharedCounterBloc.release();
-    }, 3);
+    }, ITERATIONS);
 
-    console.log(`\n=== ${NUM_COMPONENTS} Components Results ===\n`);
+    console.log(`Minimal:    ${formatStats(minimalUpdateStats)} | Per update: ${(minimalUpdateStats.mean / NUM_UPDATES).toFixed(4)}ms`);
+    console.log(`Concurrent: ${formatStats(concurrentUpdateStats)} | Per update: ${(concurrentUpdateStats.mean / NUM_UPDATES).toFixed(4)}ms`);
+    console.log(`Next:       ${formatStats(nextUpdateStats)} | Per update: ${(nextUpdateStats.mean / NUM_UPDATES).toFixed(4)}ms`);
 
-    // Mount performance
-    console.log('MOUNT PERFORMANCE:\n');
-    console.log('Concurrent Mode:');
-    console.log(`    ${formatStats(concurrentMountResult.stats)}`);
-    console.log(`    Per component: ${(concurrentMountResult.stats.mean / NUM_COMPONENTS).toFixed(4)}ms\n`);
+    const updateWinner = [
+      { name: 'Minimal', time: minimalUpdateStats.mean },
+      { name: 'Concurrent', time: concurrentUpdateStats.mean },
+      { name: 'Next', time: nextUpdateStats.mean }
+    ].reduce((prev, curr) => prev.time < curr.time ? prev : curr);
 
-    console.log('Next Mode:');
-    console.log(`    ${formatStats(nextMountResult.stats)}`);
-    console.log(`    Per component: ${(nextMountResult.stats.mean / NUM_COMPONENTS).toFixed(4)}ms\n`);
+    console.log(`🏆 Update Winner: ${updateWinner.name}`);
 
-    const mountImprovement = ((concurrentMountResult.stats.mean / nextMountResult.stats.mean - 1) * 100);
-    const mountWinner = nextMountResult.stats.mean < concurrentMountResult.stats.mean ? 'Next' : 'Concurrent';
+    // Store update results
+    allResults['Multi-update (per update)'] = {
+      minimal: minimalUpdateStats.mean / NUM_UPDATES,
+      concurrent: concurrentUpdateStats.mean / NUM_UPDATES,
+      next: nextUpdateStats.mean / NUM_UPDATES,
+      winner: updateWinner.name,
+      unit: 'ms'
+    };
 
-    console.log(`🏆 Mount Winner: ${mountWinner}`);
-    if (Math.abs(mountImprovement) < 5) {
-      console.log(`  Equivalent performance (within 5%)\n`);
-    } else if (mountImprovement > 0) {
-      console.log(`  Next is ${mountImprovement.toFixed(1)}% faster\n`);
-    } else {
-      console.log(`  Concurrent is ${Math.abs(mountImprovement).toFixed(1)}% faster\n`);
-    }
-
-    // Check CI overlap for mount
-    const [concurrentMountLow, concurrentMountHigh] = concurrentMountResult.stats.confidenceInterval;
-    const [nextMountLow, nextMountHigh] = nextMountResult.stats.confidenceInterval;
-    const mountOverlaps = !(concurrentMountHigh < nextMountLow || nextMountHigh < concurrentMountLow);
-
-    if (mountOverlaps) {
-      console.log('  ⚠️  Confidence intervals overlap - difference may not be statistically significant\n');
-    } else {
-      console.log('  ✓ Confidence intervals do not overlap - difference is statistically significant\n');
-    }
-
-    // Update performance
-    console.log('UPDATE PERFORMANCE:\n');
-    console.log('Concurrent Mode:');
-    console.log(`    ${formatStats(concurrentUpdateResult.stats)}`);
-    console.log(`    Per update: ${(concurrentUpdateResult.stats.mean / NUM_UPDATES).toFixed(3)}ms\n`);
-
-    console.log('Next Mode:');
-    console.log(`    ${formatStats(nextUpdateResult.stats)}`);
-    console.log(`    Per update: ${(nextUpdateResult.stats.mean / NUM_UPDATES).toFixed(3)}ms\n`);
-
-    const updateImprovement = ((concurrentUpdateResult.stats.mean / nextUpdateResult.stats.mean - 1) * 100);
-    const updateWinner = nextUpdateResult.stats.mean < concurrentUpdateResult.stats.mean ? 'Next' : 'Concurrent';
-
-    console.log(`🏆 Update Winner: ${updateWinner}`);
-    if (Math.abs(updateImprovement) < 5) {
-      console.log(`  Equivalent performance (within 5%)\n`);
-    } else if (updateImprovement > 0) {
-      console.log(`  Next is ${updateImprovement.toFixed(1)}% faster\n`);
-    } else {
-      console.log(`  Concurrent is ${Math.abs(updateImprovement).toFixed(1)}% faster\n`);
-    }
-
-    // Check CI overlap for update
-    const [concurrentUpdateLow, concurrentUpdateHigh] = concurrentUpdateResult.stats.confidenceInterval;
-    const [nextUpdateLow, nextUpdateHigh] = nextUpdateResult.stats.confidenceInterval;
-    const updateOverlaps = !(concurrentUpdateHigh < nextUpdateLow || nextUpdateHigh < concurrentUpdateLow);
-
-    if (updateOverlaps) {
-      console.log('  ⚠️  Confidence intervals overlap - difference may not be statistically significant\n');
-    } else {
-      console.log('  ✓ Confidence intervals do not overlap - difference is statistically significant\n');
-    }
-
-    // Assertions
-    expect(nextMountResult.stats.mean).toBeGreaterThan(0);
-    expect(nextUpdateResult.stats.mean).toBeGreaterThan(0);
-    expect(concurrentMountResult.stats.mean).toBeGreaterThan(0);
-    expect(concurrentUpdateResult.stats.mean).toBeGreaterThan(0);
+    expect(minimalMountStats.mean).toBeGreaterThan(0);
+    expect(concurrentMountStats.mean).toBeGreaterThan(0);
+    expect(nextMountStats.mean).toBeGreaterThan(0);
+    expect(minimalUpdateStats.mean).toBeGreaterThan(0);
+    expect(concurrentUpdateStats.mean).toBeGreaterThan(0);
+    expect(nextUpdateStats.mean).toBeGreaterThan(0);
   });
 
-  it('should measure memory overhead', () => {
-    console.log('\n🔬 TEST: Memory Overhead Comparison\n');
+  it('should show relative performance across scenarios', async () => {
+    console.log('\n🔬 Relative Performance Summary\n');
 
-    const NUM_ITERATIONS = 10; // Number of independent memory measurements
-    const NUM_COMPONENTS = 200; // Components per measurement
+    const scenarios = [
+      { name: 'Few mounts', mounts: 5, updates: 0 },
+      { name: 'Many mounts', mounts: 50, updates: 0 },
+      { name: 'Few updates', mounts: 1, updates: 20 },
+      { name: 'Many updates', mounts: 1, updates: 100 },
+      { name: 'Mixed load', mounts: 10, updates: 50 },
+    ];
 
-    // Helper to measure heap usage (works in Node.js)
+    console.log('Scenario      | Minimal   | Concurrent | Next      | Fastest');
+    console.log('--------------|-----------|------------|-----------|----------');
+
+    for (const scenario of scenarios) {
+      const minimalStats = await runBenchmark(() => {
+        const hooks: any[] = [];
+        for (let i = 0; i < scenario.mounts; i++) {
+          hooks.push(renderHook(() => useBlocMinimal(SharedCounterBloc)));
+        }
+        if (scenario.updates > 0) {
+          const bloc = SharedCounterBloc.getOrCreate();
+          for (let j = 0; j < scenario.updates; j++) {
+            act(() => bloc.increment());
+          }
+        }
+        hooks.forEach(h => h.unmount());
+        SharedCounterBloc.release();
+      }, 10);
+
+      const concurrentStats = await runBenchmark(() => {
+        const hooks: any[] = [];
+        for (let i = 0; i < scenario.mounts; i++) {
+          hooks.push(renderHook(() => useBlocConcurrent(SharedCounterBloc)));
+        }
+        if (scenario.updates > 0) {
+          const bloc = SharedCounterBloc.getOrCreate();
+          for (let j = 0; j < scenario.updates; j++) {
+            act(() => bloc.increment());
+          }
+        }
+        hooks.forEach(h => h.unmount());
+        SharedCounterBloc.release();
+      }, 10);
+
+      const nextStats = await runBenchmark(() => {
+        const hooks: any[] = [];
+        for (let i = 0; i < scenario.mounts; i++) {
+          hooks.push(renderHook(() => useBlocNext(SharedCounterBloc)));
+        }
+        if (scenario.updates > 0) {
+          const bloc = SharedCounterBloc.getOrCreate();
+          for (let j = 0; j < scenario.updates; j++) {
+            act(() => bloc.increment());
+          }
+        }
+        hooks.forEach(h => h.unmount());
+        SharedCounterBloc.release();
+      }, 10);
+
+      const winner = [
+        { name: 'Min', time: minimalStats.mean },
+        { name: 'Con', time: concurrentStats.mean },
+        { name: 'Nxt', time: nextStats.mean }
+      ].reduce((prev, curr) => prev.time < curr.time ? prev : curr);
+
+      console.log(
+        `${scenario.name.padEnd(13)} | ${minimalStats.mean.toFixed(2).padStart(9)}ms | ${concurrentStats.mean.toFixed(2).padStart(10)}ms | ${nextStats.mean.toFixed(2).padStart(9)}ms | ${winner.name}`
+      );
+    }
+
+    expect(true).toBe(true);
+  });
+
+  it('should measure memory overhead', { timeout: 30000 }, () => {
+    console.log('\n🔬 Memory Overhead\n');
+
+    const NUM_ITERATIONS = 10;
+    const NUM_COMPONENTS = 100;
+
+    // Helper to measure heap usage
     const measureHeap = () => {
-      // Try Node.js process.memoryUsage() first
       if (typeof process !== 'undefined' && process.memoryUsage) {
         return process.memoryUsage().heapUsed;
       }
-      // Fall back to Chrome's performance.memory (browser only)
       if (typeof window !== 'undefined' && (window as any).performance?.memory) {
         return (window as any).performance.memory.usedJSHeapSize;
       }
@@ -846,78 +477,127 @@ describe('Performance Comparison: Next vs Concurrent', () => {
     }
 
     if (!hasGC) {
-      console.log('⚠️  Garbage collection not available - run with --expose-gc flag for accurate memory profiling\n');
+      console.log('⚠️  GC not available - run with NODE_OPTIONS="--expose-gc" for accurate memory profiling\n');
       expect(true).toBe(true);
       return;
     }
 
-    console.log(`Running ${NUM_ITERATIONS} memory measurements with ${NUM_COMPONENTS} components each...\n`);
+    console.log(`Measuring memory with ${NUM_ITERATIONS} iterations × ${NUM_COMPONENTS} components...\n`);
 
-    const concurrentMemoryReadings: number[] = [];
-    const nextMemoryReadings: number[] = [];
+    const minimalMemory: number[] = [];
+    const concurrentMemory: number[] = [];
+    const nextMemory: number[] = [];
 
-    // Collect multiple memory measurements for Concurrent Mode
+    // Measure Minimal
     for (let i = 0; i < NUM_ITERATIONS; i++) {
       gc();
-      const heapBefore = measureHeap();
+      const before = measureHeap();
+      const hooks = Array.from({ length: NUM_COMPONENTS }, () =>
+        renderHook(() => useBlocMinimal(TestCounterBloc))
+      );
+      const after = measureHeap();
+      minimalMemory.push(after - before);
+      hooks.forEach(h => h.unmount());
+    }
+
+    // Measure Concurrent
+    for (let i = 0; i < NUM_ITERATIONS; i++) {
+      gc();
+      const before = measureHeap();
       const hooks = Array.from({ length: NUM_COMPONENTS }, () =>
         renderHook(() => useBlocConcurrent(TestCounterBloc))
       );
-      const heapAfter = measureHeap();
-      const memoryUsed = heapAfter - heapBefore;
-      concurrentMemoryReadings.push(memoryUsed);
+      const after = measureHeap();
+      concurrentMemory.push(after - before);
       hooks.forEach(h => h.unmount());
     }
 
-    // Collect multiple memory measurements for Next Mode
+    // Measure Next
     for (let i = 0; i < NUM_ITERATIONS; i++) {
       gc();
-      const heapBefore = measureHeap();
+      const before = measureHeap();
       const hooks = Array.from({ length: NUM_COMPONENTS }, () =>
         renderHook(() => useBlocNext(TestCounterBloc))
       );
-      const heapAfter = measureHeap();
-      const memoryUsed = heapAfter - heapBefore;
-      nextMemoryReadings.push(memoryUsed);
+      const after = measureHeap();
+      nextMemory.push(after - before);
       hooks.forEach(h => h.unmount());
     }
 
-    const concurrentStats = calculateStats(concurrentMemoryReadings);
-    const nextStats = calculateStats(nextMemoryReadings);
+    const minimalStats = calculateStats(minimalMemory);
+    const concurrentStats = calculateStats(concurrentMemory);
+    const nextStats = calculateStats(nextMemory);
 
-    console.log('=== Memory Usage ===\n');
+    console.log(`Minimal:    ${formatStats(minimalStats, ' bytes')} | Per component: ${(minimalStats.mean / NUM_COMPONENTS).toFixed(0)} bytes`);
+    console.log(`Concurrent: ${formatStats(concurrentStats, ' bytes')} | Per component: ${(concurrentStats.mean / NUM_COMPONENTS).toFixed(0)} bytes`);
+    console.log(`Next:       ${formatStats(nextStats, ' bytes')} | Per component: ${(nextStats.mean / NUM_COMPONENTS).toFixed(0)} bytes`);
 
-    console.log('Concurrent Mode:');
-    console.log(`    ${formatStats(concurrentStats, ' bytes')}`);
-    console.log(`    Per component: ${(concurrentStats.mean / NUM_COMPONENTS).toFixed(0)} bytes\n`);
+    const winner = [
+      { name: 'Minimal', usage: minimalStats.mean },
+      { name: 'Concurrent', usage: concurrentStats.mean },
+      { name: 'Next', usage: nextStats.mean }
+    ].reduce((prev, curr) => prev.usage < curr.usage ? prev : curr);
 
-    console.log('Next Mode:');
-    console.log(`    ${formatStats(nextStats, ' bytes')}`);
-    console.log(`    Per component: ${(nextStats.mean / NUM_COMPONENTS).toFixed(0)} bytes\n`);
+    console.log(`\n🏆 Winner: ${winner.name} (lowest memory)`);
 
-    // Comparison
-    const memoryDiff = ((nextStats.mean - concurrentStats.mean) / concurrentStats.mean * 100);
+    // Store results
+    allResults['Memory (per component)'] = {
+      minimal: minimalStats.mean / NUM_COMPONENTS,
+      concurrent: concurrentStats.mean / NUM_COMPONENTS,
+      next: nextStats.mean / NUM_COMPONENTS,
+      winner: winner.name,
+      unit: 'bytes'
+    };
 
-    if (Math.abs(memoryDiff) < 5) {
-      console.log('✅ Equivalent memory usage (within 5%)\n');
-    } else if (memoryDiff < 0) {
-      console.log(`🏆 Next Mode uses ${Math.abs(memoryDiff).toFixed(1)}% less memory!\n`);
-    } else {
-      console.log(`⚠️  Next Mode uses ${memoryDiff.toFixed(1)}% more memory\n`);
-    }
-
-    // Check CI overlap
-    const [concurrentLow, concurrentHigh] = concurrentStats.confidenceInterval;
-    const [nextLow, nextHigh] = nextStats.confidenceInterval;
-    const overlaps = !(concurrentHigh < nextLow || nextHigh < concurrentLow);
-
-    if (overlaps) {
-      console.log('⚠️  Confidence intervals overlap - difference may not be statistically significant');
-    } else {
-      console.log('✓ Confidence intervals do not overlap - difference is statistically significant');
-    }
-
+    expect(minimalStats.mean).toBeGreaterThan(0);
     expect(concurrentStats.mean).toBeGreaterThan(0);
     expect(nextStats.mean).toBeGreaterThan(0);
+  });
+
+  it('should display summary table', () => {
+    console.log('\n\n' + '='.repeat(80));
+    console.log('📊 PERFORMANCE SUMMARY');
+    console.log('='.repeat(80) + '\n');
+
+    console.log('Test Case                 | Minimal      | Concurrent   | Next         | Winner');
+    console.log('--------------------------|--------------|--------------|--------------|----------');
+
+    Object.entries(allResults).forEach(([testName, result]) => {
+      const minVal = result.unit === 'bytes'
+        ? result.minimal.toFixed(0).padStart(8)
+        : result.minimal.toFixed(4).padStart(8);
+      const conVal = result.unit === 'bytes'
+        ? result.concurrent.toFixed(0).padStart(8)
+        : result.concurrent.toFixed(4).padStart(8);
+      const nextVal = result.unit === 'bytes'
+        ? result.next.toFixed(0).padStart(8)
+        : result.next.toFixed(4).padStart(8);
+      const unit = result.unit === 'bytes' ? ' bytes' : 'ms';
+
+      console.log(
+        `${testName.padEnd(25)} | ${minVal}${unit.padEnd(4)} | ${conVal}${unit.padEnd(4)} | ${nextVal}${unit.padEnd(4)} | ${result.winner}`
+      );
+    });
+
+    console.log('\n' + '='.repeat(80));
+
+    // Count wins
+    const wins = { Minimal: 0, Concurrent: 0, Next: 0 };
+    Object.values(allResults).forEach(result => {
+      if (result.winner in wins) {
+        wins[result.winner as keyof typeof wins]++;
+      }
+    });
+
+    console.log('\n🏆 Overall Winner Count:');
+    console.log(`   Minimal:    ${wins.Minimal} wins`);
+    console.log(`   Concurrent: ${wins.Concurrent} wins`);
+    console.log(`   Next:       ${wins.Next} wins`);
+
+    const overallWinner = Object.entries(wins).reduce((a, b) => a[1] > b[1] ? a : b)[0];
+    console.log(`\n🎉 Overall Champion: ${overallWinner}\n`);
+    console.log('='.repeat(80) + '\n');
+
+    expect(Object.keys(allResults).length).toBeGreaterThan(0);
   });
 });
