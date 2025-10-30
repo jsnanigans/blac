@@ -13,6 +13,7 @@ import { Cubit } from '@blac/core';
 import { useBlocConcurrent } from '../useBlocConcurrent';
 import { useBlocNext } from '../useBlocNext';
 import { useBlocMinimal } from '../useBlocMinimal';
+import { useBlocFunctional } from '../useBlocFunctional';
 
 // ============================================================================
 // Simple Statistics
@@ -108,19 +109,40 @@ class SharedCounterBloc extends Cubit<number> {
 
 interface TestResult {
   minimal: number;
+  functional: number;
   concurrent: number;
   next: number;
   winner: string;
+  points: {
+    minimal: number;
+    functional: number;
+    concurrent: number;
+    next: number;
+  };
   unit?: string;
 }
 
 const allResults: Record<string, TestResult> = {};
 
+// Scoring helper: assigns points based on ranking (lower time/memory = more points)
+function calculatePoints(results: Array<{ name: string; value: number }>): Record<string, number> {
+  // Sort by value (ascending - lower is better)
+  const sorted = [...results].sort((a, b) => a.value - b.value);
+
+  // Assign points: 4 for 1st, 3 for 2nd, 2 for 3rd, 1 for 4th
+  const points: Record<string, number> = {};
+  sorted.forEach((result, index) => {
+    points[result.name] = 4 - index;
+  });
+
+  return points;
+}
+
 // ============================================================================
 // Tests
 // ============================================================================
 
-describe('Performance Comparison: Next vs Concurrent vs Minimal', () => {
+describe('Performance Comparison: Next vs Concurrent vs Minimal vs Functional', () => {
   beforeEach(() => {
     TestCounterBloc.release();
     SharedCounterBloc.release();
@@ -141,6 +163,14 @@ describe('Performance Comparison: Next vs Concurrent vs Minimal', () => {
       }
     }, ITERATIONS, WARMUP);
 
+    console.log('Testing Functional...');
+    const functionalStats = await runBenchmark(() => {
+      for (let i = 0; i < MOUNTS_PER_RUN; i++) {
+        const { unmount } = renderHook(() => useBlocFunctional(TestCounterBloc));
+        unmount();
+      }
+    }, ITERATIONS, WARMUP);
+
     console.log('Testing Concurrent...');
     const concurrentStats = await runBenchmark(() => {
       for (let i = 0; i < MOUNTS_PER_RUN; i++) {
@@ -157,28 +187,53 @@ describe('Performance Comparison: Next vs Concurrent vs Minimal', () => {
       }
     }, ITERATIONS, WARMUP);
 
-    console.log(`Minimal:    ${formatStats(minimalStats)} | Per mount: ${(minimalStats.mean / MOUNTS_PER_RUN).toFixed(4)}ms`);
-    console.log(`Concurrent: ${formatStats(concurrentStats)} | Per mount: ${(concurrentStats.mean / MOUNTS_PER_RUN).toFixed(4)}ms`);
-    console.log(`Next:       ${formatStats(nextStats)} | Per mount: ${(nextStats.mean / MOUNTS_PER_RUN).toFixed(4)}ms`);
+    const perMount = {
+      minimal: minimalStats.mean / MOUNTS_PER_RUN,
+      functional: functionalStats.mean / MOUNTS_PER_RUN,
+      concurrent: concurrentStats.mean / MOUNTS_PER_RUN,
+      next: nextStats.mean / MOUNTS_PER_RUN
+    };
+
+    console.log(`Minimal:    ${formatStats(minimalStats)} | Per mount: ${perMount.minimal.toFixed(4)}ms`);
+    console.log(`Functional: ${formatStats(functionalStats)} | Per mount: ${perMount.functional.toFixed(4)}ms`);
+    console.log(`Concurrent: ${formatStats(concurrentStats)} | Per mount: ${perMount.concurrent.toFixed(4)}ms`);
+    console.log(`Next:       ${formatStats(nextStats)} | Per mount: ${perMount.next.toFixed(4)}ms`);
 
     const winner = [
-      { name: 'Minimal', time: minimalStats.mean },
-      { name: 'Concurrent', time: concurrentStats.mean },
-      { name: 'Next', time: nextStats.mean }
+      { name: 'Minimal', time: perMount.minimal },
+      { name: 'Functional', time: perMount.functional },
+      { name: 'Concurrent', time: perMount.concurrent },
+      { name: 'Next', time: perMount.next }
     ].reduce((prev, curr) => prev.time < curr.time ? prev : curr);
 
+    const points = calculatePoints([
+      { name: 'minimal', value: perMount.minimal },
+      { name: 'functional', value: perMount.functional },
+      { name: 'concurrent', value: perMount.concurrent },
+      { name: 'next', value: perMount.next }
+    ]);
+
     console.log(`\n🏆 Winner: ${winner.name}`);
+    console.log(`Points - Minimal: ${points.minimal}, Functional: ${points.functional}, Concurrent: ${points.concurrent}, Next: ${points.next}`);
 
     // Store results
     allResults['Mount (per mount)'] = {
-      minimal: minimalStats.mean / MOUNTS_PER_RUN,
-      concurrent: concurrentStats.mean / MOUNTS_PER_RUN,
-      next: nextStats.mean / MOUNTS_PER_RUN,
+      minimal: perMount.minimal,
+      functional: perMount.functional,
+      concurrent: perMount.concurrent,
+      next: perMount.next,
       winner: winner.name,
+      points: {
+        minimal: points.minimal,
+        functional: points.functional,
+        concurrent: points.concurrent,
+        next: points.next
+      },
       unit: 'ms'
     };
 
     expect(minimalStats.mean).toBeGreaterThan(0);
+    expect(functionalStats.mean).toBeGreaterThan(0);
     expect(concurrentStats.mean).toBeGreaterThan(0);
     expect(nextStats.mean).toBeGreaterThan(0);
   });
@@ -193,6 +248,19 @@ describe('Performance Comparison: Next vs Concurrent vs Minimal', () => {
     console.log('Testing Minimal...');
     const minimalStats = await runBenchmark(() => {
       const hook = renderHook(() => useBlocMinimal(SharedCounterBloc));
+      const bloc = SharedCounterBloc.getOrCreate();
+
+      for (let i = 0; i < UPDATES_PER_RUN; i++) {
+        act(() => bloc.increment());
+      }
+
+      hook.unmount();
+      SharedCounterBloc.release();
+    }, ITERATIONS, WARMUP);
+
+    console.log('Testing Functional...');
+    const functionalStats = await runBenchmark(() => {
+      const hook = renderHook(() => useBlocFunctional(SharedCounterBloc));
       const bloc = SharedCounterBloc.getOrCreate();
 
       for (let i = 0; i < UPDATES_PER_RUN; i++) {
@@ -229,28 +297,53 @@ describe('Performance Comparison: Next vs Concurrent vs Minimal', () => {
       SharedCounterBloc.release();
     }, ITERATIONS, WARMUP);
 
-    console.log(`Minimal:    ${formatStats(minimalStats)} | Per update: ${(minimalStats.mean / UPDATES_PER_RUN).toFixed(4)}ms`);
-    console.log(`Concurrent: ${formatStats(concurrentStats)} | Per update: ${(concurrentStats.mean / UPDATES_PER_RUN).toFixed(4)}ms`);
-    console.log(`Next:       ${formatStats(nextStats)} | Per update: ${(nextStats.mean / UPDATES_PER_RUN).toFixed(4)}ms`);
+    const perUpdate = {
+      minimal: minimalStats.mean / UPDATES_PER_RUN,
+      functional: functionalStats.mean / UPDATES_PER_RUN,
+      concurrent: concurrentStats.mean / UPDATES_PER_RUN,
+      next: nextStats.mean / UPDATES_PER_RUN
+    };
+
+    console.log(`Minimal:    ${formatStats(minimalStats)} | Per update: ${perUpdate.minimal.toFixed(4)}ms`);
+    console.log(`Functional: ${formatStats(functionalStats)} | Per update: ${perUpdate.functional.toFixed(4)}ms`);
+    console.log(`Concurrent: ${formatStats(concurrentStats)} | Per update: ${perUpdate.concurrent.toFixed(4)}ms`);
+    console.log(`Next:       ${formatStats(nextStats)} | Per update: ${perUpdate.next.toFixed(4)}ms`);
 
     const winner = [
-      { name: 'Minimal', time: minimalStats.mean },
-      { name: 'Concurrent', time: concurrentStats.mean },
-      { name: 'Next', time: nextStats.mean }
+      { name: 'Minimal', time: perUpdate.minimal },
+      { name: 'Functional', time: perUpdate.functional },
+      { name: 'Concurrent', time: perUpdate.concurrent },
+      { name: 'Next', time: perUpdate.next }
     ].reduce((prev, curr) => prev.time < curr.time ? prev : curr);
 
+    const points = calculatePoints([
+      { name: 'minimal', value: perUpdate.minimal },
+      { name: 'functional', value: perUpdate.functional },
+      { name: 'concurrent', value: perUpdate.concurrent },
+      { name: 'next', value: perUpdate.next }
+    ]);
+
     console.log(`\n🏆 Winner: ${winner.name}`);
+    console.log(`Points - Minimal: ${points.minimal}, Functional: ${points.functional}, Concurrent: ${points.concurrent}, Next: ${points.next}`);
 
     // Store results
     allResults['Update (per update)'] = {
-      minimal: minimalStats.mean / UPDATES_PER_RUN,
-      concurrent: concurrentStats.mean / UPDATES_PER_RUN,
-      next: nextStats.mean / UPDATES_PER_RUN,
+      minimal: perUpdate.minimal,
+      functional: perUpdate.functional,
+      concurrent: perUpdate.concurrent,
+      next: perUpdate.next,
       winner: winner.name,
+      points: {
+        minimal: points.minimal,
+        functional: points.functional,
+        concurrent: points.concurrent,
+        next: points.next
+      },
       unit: 'ms'
     };
 
     expect(minimalStats.mean).toBeGreaterThan(0);
+    expect(functionalStats.mean).toBeGreaterThan(0);
     expect(concurrentStats.mean).toBeGreaterThan(0);
     expect(nextStats.mean).toBeGreaterThan(0);
   });
@@ -274,6 +367,15 @@ describe('Performance Comparison: Next vs Concurrent vs Minimal', () => {
       SharedCounterBloc.release();
     }, ITERATIONS, WARMUP);
 
+    console.log('Testing Functional...');
+    const functionalMountStats = await runBenchmark(() => {
+      const hooks = Array.from({ length: NUM_COMPONENTS }, () =>
+        renderHook(() => useBlocFunctional(SharedCounterBloc))
+      );
+      hooks.forEach(h => h.unmount());
+      SharedCounterBloc.release();
+    }, ITERATIONS, WARMUP);
+
     console.log('Testing Concurrent...');
     const concurrentMountStats = await runBenchmark(() => {
       const hooks = Array.from({ length: NUM_COMPONENTS }, () =>
@@ -292,24 +394,48 @@ describe('Performance Comparison: Next vs Concurrent vs Minimal', () => {
       SharedCounterBloc.release();
     }, ITERATIONS, WARMUP);
 
-    console.log(`Minimal:    ${formatStats(minimalMountStats)} | Per component: ${(minimalMountStats.mean / NUM_COMPONENTS).toFixed(4)}ms`);
-    console.log(`Concurrent: ${formatStats(concurrentMountStats)} | Per component: ${(concurrentMountStats.mean / NUM_COMPONENTS).toFixed(4)}ms`);
-    console.log(`Next:       ${formatStats(nextMountStats)} | Per component: ${(nextMountStats.mean / NUM_COMPONENTS).toFixed(4)}ms`);
+    const perComponentMount = {
+      minimal: minimalMountStats.mean / NUM_COMPONENTS,
+      functional: functionalMountStats.mean / NUM_COMPONENTS,
+      concurrent: concurrentMountStats.mean / NUM_COMPONENTS,
+      next: nextMountStats.mean / NUM_COMPONENTS
+    };
+
+    console.log(`Minimal:    ${formatStats(minimalMountStats)} | Per component: ${perComponentMount.minimal.toFixed(4)}ms`);
+    console.log(`Functional: ${formatStats(functionalMountStats)} | Per component: ${perComponentMount.functional.toFixed(4)}ms`);
+    console.log(`Concurrent: ${formatStats(concurrentMountStats)} | Per component: ${perComponentMount.concurrent.toFixed(4)}ms`);
+    console.log(`Next:       ${formatStats(nextMountStats)} | Per component: ${perComponentMount.next.toFixed(4)}ms`);
 
     const mountWinner = [
-      { name: 'Minimal', time: minimalMountStats.mean },
-      { name: 'Concurrent', time: concurrentMountStats.mean },
-      { name: 'Next', time: nextMountStats.mean }
+      { name: 'Minimal', time: perComponentMount.minimal },
+      { name: 'Functional', time: perComponentMount.functional },
+      { name: 'Concurrent', time: perComponentMount.concurrent },
+      { name: 'Next', time: perComponentMount.next }
     ].reduce((prev, curr) => prev.time < curr.time ? prev : curr);
 
-    console.log(`🏆 Mount Winner: ${mountWinner.name}\n`);
+    const mountPoints = calculatePoints([
+      { name: 'minimal', value: perComponentMount.minimal },
+      { name: 'functional', value: perComponentMount.functional },
+      { name: 'concurrent', value: perComponentMount.concurrent },
+      { name: 'next', value: perComponentMount.next }
+    ]);
+
+    console.log(`🏆 Mount Winner: ${mountWinner.name}`);
+    console.log(`Points - Minimal: ${mountPoints.minimal}, Functional: ${mountPoints.functional}, Concurrent: ${mountPoints.concurrent}, Next: ${mountPoints.next}\n`);
 
     // Store mount results
     allResults['Multi-mount (per component)'] = {
-      minimal: minimalMountStats.mean / NUM_COMPONENTS,
-      concurrent: concurrentMountStats.mean / NUM_COMPONENTS,
-      next: nextMountStats.mean / NUM_COMPONENTS,
+      minimal: perComponentMount.minimal,
+      functional: perComponentMount.functional,
+      concurrent: perComponentMount.concurrent,
+      next: perComponentMount.next,
       winner: mountWinner.name,
+      points: {
+        minimal: mountPoints.minimal,
+        functional: mountPoints.functional,
+        concurrent: mountPoints.concurrent,
+        next: mountPoints.next
+      },
       unit: 'ms'
     };
 
@@ -319,6 +445,21 @@ describe('Performance Comparison: Next vs Concurrent vs Minimal', () => {
     const minimalUpdateStats = await runBenchmark(() => {
       const hooks = Array.from({ length: NUM_COMPONENTS }, () =>
         renderHook(() => useBlocMinimal(SharedCounterBloc))
+      );
+      const bloc = SharedCounterBloc.getOrCreate();
+
+      for (let i = 0; i < NUM_UPDATES; i++) {
+        act(() => bloc.increment());
+      }
+
+      hooks.forEach(h => h.unmount());
+      SharedCounterBloc.release();
+    }, ITERATIONS, WARMUP);
+
+    console.log('Testing Functional...');
+    const functionalUpdateStats = await runBenchmark(() => {
+      const hooks = Array.from({ length: NUM_COMPONENTS }, () =>
+        renderHook(() => useBlocFunctional(SharedCounterBloc))
       );
       const bloc = SharedCounterBloc.getOrCreate();
 
@@ -360,31 +501,57 @@ describe('Performance Comparison: Next vs Concurrent vs Minimal', () => {
       SharedCounterBloc.release();
     }, ITERATIONS, WARMUP);
 
-    console.log(`Minimal:    ${formatStats(minimalUpdateStats)} | Per update: ${(minimalUpdateStats.mean / NUM_UPDATES).toFixed(4)}ms`);
-    console.log(`Concurrent: ${formatStats(concurrentUpdateStats)} | Per update: ${(concurrentUpdateStats.mean / NUM_UPDATES).toFixed(4)}ms`);
-    console.log(`Next:       ${formatStats(nextUpdateStats)} | Per update: ${(nextUpdateStats.mean / NUM_UPDATES).toFixed(4)}ms`);
+    const perUpdateMulti = {
+      minimal: minimalUpdateStats.mean / NUM_UPDATES,
+      functional: functionalUpdateStats.mean / NUM_UPDATES,
+      concurrent: concurrentUpdateStats.mean / NUM_UPDATES,
+      next: nextUpdateStats.mean / NUM_UPDATES
+    };
+
+    console.log(`Minimal:    ${formatStats(minimalUpdateStats)} | Per update: ${perUpdateMulti.minimal.toFixed(4)}ms`);
+    console.log(`Functional: ${formatStats(functionalUpdateStats)} | Per update: ${perUpdateMulti.functional.toFixed(4)}ms`);
+    console.log(`Concurrent: ${formatStats(concurrentUpdateStats)} | Per update: ${perUpdateMulti.concurrent.toFixed(4)}ms`);
+    console.log(`Next:       ${formatStats(nextUpdateStats)} | Per update: ${perUpdateMulti.next.toFixed(4)}ms`);
 
     const updateWinner = [
-      { name: 'Minimal', time: minimalUpdateStats.mean },
-      { name: 'Concurrent', time: concurrentUpdateStats.mean },
-      { name: 'Next', time: nextUpdateStats.mean }
+      { name: 'Minimal', time: perUpdateMulti.minimal },
+      { name: 'Functional', time: perUpdateMulti.functional },
+      { name: 'Concurrent', time: perUpdateMulti.concurrent },
+      { name: 'Next', time: perUpdateMulti.next }
     ].reduce((prev, curr) => prev.time < curr.time ? prev : curr);
 
+    const updatePoints = calculatePoints([
+      { name: 'minimal', value: perUpdateMulti.minimal },
+      { name: 'functional', value: perUpdateMulti.functional },
+      { name: 'concurrent', value: perUpdateMulti.concurrent },
+      { name: 'next', value: perUpdateMulti.next }
+    ]);
+
     console.log(`🏆 Update Winner: ${updateWinner.name}`);
+    console.log(`Points - Minimal: ${updatePoints.minimal}, Functional: ${updatePoints.functional}, Concurrent: ${updatePoints.concurrent}, Next: ${updatePoints.next}`);
 
     // Store update results
     allResults['Multi-update (per update)'] = {
-      minimal: minimalUpdateStats.mean / NUM_UPDATES,
-      concurrent: concurrentUpdateStats.mean / NUM_UPDATES,
-      next: nextUpdateStats.mean / NUM_UPDATES,
+      minimal: perUpdateMulti.minimal,
+      functional: perUpdateMulti.functional,
+      concurrent: perUpdateMulti.concurrent,
+      next: perUpdateMulti.next,
       winner: updateWinner.name,
+      points: {
+        minimal: updatePoints.minimal,
+        functional: updatePoints.functional,
+        concurrent: updatePoints.concurrent,
+        next: updatePoints.next
+      },
       unit: 'ms'
     };
 
     expect(minimalMountStats.mean).toBeGreaterThan(0);
+    expect(functionalMountStats.mean).toBeGreaterThan(0);
     expect(concurrentMountStats.mean).toBeGreaterThan(0);
     expect(nextMountStats.mean).toBeGreaterThan(0);
     expect(minimalUpdateStats.mean).toBeGreaterThan(0);
+    expect(functionalUpdateStats.mean).toBeGreaterThan(0);
     expect(concurrentUpdateStats.mean).toBeGreaterThan(0);
     expect(nextUpdateStats.mean).toBeGreaterThan(0);
   });
@@ -400,14 +567,29 @@ describe('Performance Comparison: Next vs Concurrent vs Minimal', () => {
       { name: 'Mixed load', mounts: 10, updates: 50 },
     ];
 
-    console.log('Scenario      | Minimal   | Concurrent | Next      | Fastest');
-    console.log('--------------|-----------|------------|-----------|----------');
+    console.log('Scenario      | Minimal   | Functional | Concurrent | Next      | Fastest');
+    console.log('--------------|-----------|------------|------------|-----------|----------');
 
     for (const scenario of scenarios) {
       const minimalStats = await runBenchmark(() => {
         const hooks: any[] = [];
         for (let i = 0; i < scenario.mounts; i++) {
           hooks.push(renderHook(() => useBlocMinimal(SharedCounterBloc)));
+        }
+        if (scenario.updates > 0) {
+          const bloc = SharedCounterBloc.getOrCreate();
+          for (let j = 0; j < scenario.updates; j++) {
+            act(() => bloc.increment());
+          }
+        }
+        hooks.forEach(h => h.unmount());
+        SharedCounterBloc.release();
+      }, 10);
+
+      const functionalStats = await runBenchmark(() => {
+        const hooks: any[] = [];
+        for (let i = 0; i < scenario.mounts; i++) {
+          hooks.push(renderHook(() => useBlocFunctional(SharedCounterBloc)));
         }
         if (scenario.updates > 0) {
           const bloc = SharedCounterBloc.getOrCreate();
@@ -451,12 +633,13 @@ describe('Performance Comparison: Next vs Concurrent vs Minimal', () => {
 
       const winner = [
         { name: 'Min', time: minimalStats.mean },
+        { name: 'Fun', time: functionalStats.mean },
         { name: 'Con', time: concurrentStats.mean },
         { name: 'Nxt', time: nextStats.mean }
       ].reduce((prev, curr) => prev.time < curr.time ? prev : curr);
 
       console.log(
-        `${scenario.name.padEnd(13)} | ${minimalStats.mean.toFixed(2).padStart(9)}ms | ${concurrentStats.mean.toFixed(2).padStart(10)}ms | ${nextStats.mean.toFixed(2).padStart(9)}ms | ${winner.name}`
+        `${scenario.name.padEnd(13)} | ${minimalStats.mean.toFixed(2).padStart(9)}ms | ${functionalStats.mean.toFixed(2).padStart(10)}ms | ${concurrentStats.mean.toFixed(2).padStart(10)}ms | ${nextStats.mean.toFixed(2).padStart(9)}ms | ${winner.name}`
       );
     }
 
@@ -505,6 +688,7 @@ describe('Performance Comparison: Next vs Concurrent vs Minimal', () => {
     console.log(`Measuring memory with ${NUM_ITERATIONS} iterations × ${NUM_COMPONENTS} components...\n`);
 
     const minimalMemory: number[] = [];
+    const functionalMemory: number[] = [];
     const concurrentMemory: number[] = [];
     const nextMemory: number[] = [];
 
@@ -517,6 +701,18 @@ describe('Performance Comparison: Next vs Concurrent vs Minimal', () => {
       );
       const after = measureHeap();
       minimalMemory.push(after - before);
+      hooks.forEach(h => h.unmount());
+    }
+
+    // Measure Functional
+    for (let i = 0; i < NUM_ITERATIONS; i++) {
+      gc();
+      const before = measureHeap();
+      const hooks = Array.from({ length: NUM_COMPONENTS }, () =>
+        renderHook(() => useBlocFunctional(TestCounterBloc))
+      );
+      const after = measureHeap();
+      functionalMemory.push(after - before);
       hooks.forEach(h => h.unmount());
     }
 
@@ -545,31 +741,57 @@ describe('Performance Comparison: Next vs Concurrent vs Minimal', () => {
     }
 
     const minimalStats = calculateStats(minimalMemory);
+    const functionalStats = calculateStats(functionalMemory);
     const concurrentStats = calculateStats(concurrentMemory);
     const nextStats = calculateStats(nextMemory);
 
-    console.log(`Minimal:    ${formatStats(minimalStats, ' bytes')} | Per component: ${(minimalStats.mean / NUM_COMPONENTS).toFixed(0)} bytes`);
-    console.log(`Concurrent: ${formatStats(concurrentStats, ' bytes')} | Per component: ${(concurrentStats.mean / NUM_COMPONENTS).toFixed(0)} bytes`);
-    console.log(`Next:       ${formatStats(nextStats, ' bytes')} | Per component: ${(nextStats.mean / NUM_COMPONENTS).toFixed(0)} bytes`);
+    const perComponentMemory = {
+      minimal: minimalStats.mean / NUM_COMPONENTS,
+      functional: functionalStats.mean / NUM_COMPONENTS,
+      concurrent: concurrentStats.mean / NUM_COMPONENTS,
+      next: nextStats.mean / NUM_COMPONENTS
+    };
+
+    console.log(`Minimal:    ${formatStats(minimalStats, ' bytes')} | Per component: ${perComponentMemory.minimal.toFixed(0)} bytes`);
+    console.log(`Functional: ${formatStats(functionalStats, ' bytes')} | Per component: ${perComponentMemory.functional.toFixed(0)} bytes`);
+    console.log(`Concurrent: ${formatStats(concurrentStats, ' bytes')} | Per component: ${perComponentMemory.concurrent.toFixed(0)} bytes`);
+    console.log(`Next:       ${formatStats(nextStats, ' bytes')} | Per component: ${perComponentMemory.next.toFixed(0)} bytes`);
 
     const winner = [
-      { name: 'Minimal', usage: minimalStats.mean },
-      { name: 'Concurrent', usage: concurrentStats.mean },
-      { name: 'Next', usage: nextStats.mean }
+      { name: 'Minimal', usage: perComponentMemory.minimal },
+      { name: 'Functional', usage: perComponentMemory.functional },
+      { name: 'Concurrent', usage: perComponentMemory.concurrent },
+      { name: 'Next', usage: perComponentMemory.next }
     ].reduce((prev, curr) => prev.usage < curr.usage ? prev : curr);
 
+    const memoryPoints = calculatePoints([
+      { name: 'minimal', value: perComponentMemory.minimal },
+      { name: 'functional', value: perComponentMemory.functional },
+      { name: 'concurrent', value: perComponentMemory.concurrent },
+      { name: 'next', value: perComponentMemory.next }
+    ]);
+
     console.log(`\n🏆 Winner: ${winner.name} (lowest memory)`);
+    console.log(`Points - Minimal: ${memoryPoints.minimal}, Functional: ${memoryPoints.functional}, Concurrent: ${memoryPoints.concurrent}, Next: ${memoryPoints.next}`);
 
     // Store results
     allResults['Memory (per component)'] = {
-      minimal: minimalStats.mean / NUM_COMPONENTS,
-      concurrent: concurrentStats.mean / NUM_COMPONENTS,
-      next: nextStats.mean / NUM_COMPONENTS,
+      minimal: perComponentMemory.minimal,
+      functional: perComponentMemory.functional,
+      concurrent: perComponentMemory.concurrent,
+      next: perComponentMemory.next,
       winner: winner.name,
+      points: {
+        minimal: memoryPoints.minimal,
+        functional: memoryPoints.functional,
+        concurrent: memoryPoints.concurrent,
+        next: memoryPoints.next
+      },
       unit: 'bytes'
     };
 
     expect(minimalStats.mean).toBeGreaterThan(0);
+    expect(functionalStats.mean).toBeGreaterThan(0);
     expect(concurrentStats.mean).toBeGreaterThan(0);
     expect(nextStats.mean).toBeGreaterThan(0);
   });
@@ -579,13 +801,16 @@ describe('Performance Comparison: Next vs Concurrent vs Minimal', () => {
     console.log('📊 PERFORMANCE SUMMARY');
     console.log('='.repeat(80) + '\n');
 
-    console.log('Test Case                 | Minimal      | Concurrent   | Next         | Winner');
-    console.log('--------------------------|--------------|--------------|--------------|----------');
+    console.log('Test Case                   | Minimal      | Functional   | Concurrent   | Next         | Winner');
+    console.log('----------------------------|--------------|--------------|--------------|--------------|------------');
 
     Object.entries(allResults).forEach(([testName, result]) => {
       const minVal = result.unit === 'bytes'
         ? result.minimal.toFixed(0).padStart(8)
         : result.minimal.toFixed(4).padStart(8);
+      const funVal = result.unit === 'bytes'
+        ? result.functional.toFixed(0).padStart(8)
+        : result.functional.toFixed(4).padStart(8);
       const conVal = result.unit === 'bytes'
         ? result.concurrent.toFixed(0).padStart(8)
         : result.concurrent.toFixed(4).padStart(8);
@@ -595,27 +820,106 @@ describe('Performance Comparison: Next vs Concurrent vs Minimal', () => {
       const unit = result.unit === 'bytes' ? ' bytes' : 'ms';
 
       console.log(
-        `${testName.padEnd(25)} | ${minVal}${unit.padEnd(4)} | ${conVal}${unit.padEnd(4)} | ${nextVal}${unit.padEnd(4)} | ${result.winner}`
+        `${testName.padEnd(27)} | ${minVal}${unit.padEnd(4)} | ${funVal}${unit.padEnd(4)} | ${conVal}${unit.padEnd(4)} | ${nextVal}${unit.padEnd(4)} | ${result.winner.padEnd(10)}`
       );
     });
 
     console.log('\n' + '='.repeat(80));
+    console.log('📈 POINTS PER TEST');
+    console.log('='.repeat(80) + '\n');
 
-    // Count wins
-    const wins = { Minimal: 0, Concurrent: 0, Next: 0 };
+    console.log('Test Case                   | Minimal | Functional | Concurrent | Next');
+    console.log('----------------------------|---------|------------|------------|------');
+
+    Object.entries(allResults).forEach(([testName, result]) => {
+      console.log(
+        `${testName.padEnd(27)} | ${result.points.minimal.toString().padStart(7)} | ${result.points.functional.toString().padStart(10)} | ${result.points.concurrent.toString().padStart(10)} | ${result.points.next.toString().padStart(4)}`
+      );
+    });
+
+    console.log('\n' + '='.repeat(80));
+    console.log('🏆 TOTAL POINTS & NORMALIZED SCORES');
+    console.log('='.repeat(80) + '\n');
+
+    // Calculate total points
+    const totalPoints = {
+      minimal: 0,
+      functional: 0,
+      concurrent: 0,
+      next: 0
+    };
+
+    Object.values(allResults).forEach(result => {
+      totalPoints.minimal += result.points.minimal;
+      totalPoints.functional += result.points.functional;
+      totalPoints.concurrent += result.points.concurrent;
+      totalPoints.next += result.points.next;
+    });
+
+    const maxPoints = Math.max(totalPoints.minimal, totalPoints.functional, totalPoints.concurrent, totalPoints.next);
+
+    // Calculate normalized scores (0-100)
+    const normalizedScores = {
+      minimal: (totalPoints.minimal / maxPoints) * 100,
+      functional: (totalPoints.functional / maxPoints) * 100,
+      concurrent: (totalPoints.concurrent / maxPoints) * 100,
+      next: (totalPoints.next / maxPoints) * 100
+    };
+
+    console.log('Implementation | Total Points | Normalized Score | Performance Grade');
+    console.log('---------------|--------------|------------------|-------------------');
+
+    const getGrade = (score: number): string => {
+      if (score >= 95) return 'A+';
+      if (score >= 90) return 'A';
+      if (score >= 85) return 'A-';
+      if (score >= 80) return 'B+';
+      if (score >= 75) return 'B';
+      if (score >= 70) return 'B-';
+      if (score >= 65) return 'C+';
+      if (score >= 60) return 'C';
+      return 'C-';
+    };
+
+    const implementations = [
+      { name: 'Minimal', points: totalPoints.minimal, score: normalizedScores.minimal },
+      { name: 'Functional', points: totalPoints.functional, score: normalizedScores.functional },
+      { name: 'Concurrent', points: totalPoints.concurrent, score: normalizedScores.concurrent },
+      { name: 'Next', points: totalPoints.next, score: normalizedScores.next }
+    ].sort((a, b) => b.points - a.points);
+
+    implementations.forEach(impl => {
+      console.log(
+        `${impl.name.padEnd(14)} | ${impl.points.toString().padStart(12)} | ${impl.score.toFixed(1).padStart(16)}% | ${getGrade(impl.score).padStart(17)}`
+      );
+    });
+
+    console.log('\n' + '='.repeat(80));
+    console.log('🎉 FINAL RANKINGS\n');
+
+    implementations.forEach((impl, index) => {
+      const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '  ';
+      const pointDiff = index > 0 ? ` (-${implementations[0].points - impl.points} pts)` : '';
+      console.log(`${medal} ${(index + 1).toString()}. ${impl.name.padEnd(12)} | ${impl.points} points (${impl.score.toFixed(1)}%)${pointDiff}`);
+    });
+
+    console.log('\n' + '='.repeat(80));
+
+    // Count wins for reference
+    const wins = { Minimal: 0, Functional: 0, Concurrent: 0, Next: 0 };
     Object.values(allResults).forEach(result => {
       if (result.winner in wins) {
         wins[result.winner as keyof typeof wins]++;
       }
     });
 
-    console.log('\n🏆 Overall Winner Count:');
+    console.log('\n📊 Win Count (for reference):');
     console.log(`   Minimal:    ${wins.Minimal} wins`);
+    console.log(`   Functional: ${wins.Functional} wins`);
     console.log(`   Concurrent: ${wins.Concurrent} wins`);
     console.log(`   Next:       ${wins.Next} wins`);
 
-    const overallWinner = Object.entries(wins).reduce((a, b) => a[1] > b[1] ? a : b)[0];
-    console.log(`\n🎉 Overall Champion: ${overallWinner}\n`);
+    console.log('\n🎯 Champion: ' + implementations[0].name.toUpperCase() + ' (Most Points)\n');
     console.log('='.repeat(80) + '\n');
 
     expect(Object.keys(allResults).length).toBeGreaterThan(0);
