@@ -53,15 +53,20 @@ function formatStats(stats: Stats, unit: string = 'ms'): string {
 // Benchmark Runner
 // ============================================================================
 
-async function runBenchmark(fn: () => void, iterations: number = 20): Promise<Stats> {
+async function runBenchmark(fn: () => void, iterations: number = 50, warmupRuns: number = 10): Promise<Stats> {
   const times: number[] = [];
 
-  // Warmup
-  for (let i = 0; i < 3; i++) {
+  // Warmup phase - important for JIT optimization and cache warming
+  console.log(`  Warmup: ${warmupRuns} runs...`);
+  for (let i = 0; i < warmupRuns; i++) {
     fn();
   }
 
-  // Measure
+  // Small delay to let GC settle
+  await new Promise(resolve => setTimeout(resolve, 10));
+
+  // Measure phase
+  console.log(`  Measuring: ${iterations} runs...`);
   for (let i = 0; i < iterations; i++) {
     const start = performance.now();
     fn();
@@ -125,28 +130,32 @@ describe('Performance Comparison: Next vs Concurrent vs Minimal', () => {
     console.log('\n🔬 Mount/Unmount Performance\n');
 
     const MOUNTS_PER_RUN = 20;
-    const ITERATIONS = 20;
+    const ITERATIONS = 50;
+    const WARMUP = 15;
 
+    console.log('Testing Minimal...');
     const minimalStats = await runBenchmark(() => {
       for (let i = 0; i < MOUNTS_PER_RUN; i++) {
         const { unmount } = renderHook(() => useBlocMinimal(TestCounterBloc));
         unmount();
       }
-    }, ITERATIONS);
+    }, ITERATIONS, WARMUP);
 
+    console.log('Testing Concurrent...');
     const concurrentStats = await runBenchmark(() => {
       for (let i = 0; i < MOUNTS_PER_RUN; i++) {
         const { unmount } = renderHook(() => useBlocConcurrent(TestCounterBloc));
         unmount();
       }
-    }, ITERATIONS);
+    }, ITERATIONS, WARMUP);
 
+    console.log('Testing Next...');
     const nextStats = await runBenchmark(() => {
       for (let i = 0; i < MOUNTS_PER_RUN; i++) {
         const { unmount } = renderHook(() => useBlocNext(TestCounterBloc));
         unmount();
       }
-    }, ITERATIONS);
+    }, ITERATIONS, WARMUP);
 
     console.log(`Minimal:    ${formatStats(minimalStats)} | Per mount: ${(minimalStats.mean / MOUNTS_PER_RUN).toFixed(4)}ms`);
     console.log(`Concurrent: ${formatStats(concurrentStats)} | Per mount: ${(concurrentStats.mean / MOUNTS_PER_RUN).toFixed(4)}ms`);
@@ -178,8 +187,10 @@ describe('Performance Comparison: Next vs Concurrent vs Minimal', () => {
     console.log('\n🔬 Update Performance\n');
 
     const UPDATES_PER_RUN = 100;
-    const ITERATIONS = 20;
+    const ITERATIONS = 50;
+    const WARMUP = 15;
 
+    console.log('Testing Minimal...');
     const minimalStats = await runBenchmark(() => {
       const hook = renderHook(() => useBlocMinimal(SharedCounterBloc));
       const bloc = SharedCounterBloc.getOrCreate();
@@ -190,8 +201,9 @@ describe('Performance Comparison: Next vs Concurrent vs Minimal', () => {
 
       hook.unmount();
       SharedCounterBloc.release();
-    }, ITERATIONS);
+    }, ITERATIONS, WARMUP);
 
+    console.log('Testing Concurrent...');
     const concurrentStats = await runBenchmark(() => {
       const hook = renderHook(() => useBlocConcurrent(SharedCounterBloc));
       const bloc = SharedCounterBloc.getOrCreate();
@@ -202,8 +214,9 @@ describe('Performance Comparison: Next vs Concurrent vs Minimal', () => {
 
       hook.unmount();
       SharedCounterBloc.release();
-    }, ITERATIONS);
+    }, ITERATIONS, WARMUP);
 
+    console.log('Testing Next...');
     const nextStats = await runBenchmark(() => {
       const hook = renderHook(() => useBlocNext(SharedCounterBloc));
       const bloc = SharedCounterBloc.getOrCreate();
@@ -214,7 +227,7 @@ describe('Performance Comparison: Next vs Concurrent vs Minimal', () => {
 
       hook.unmount();
       SharedCounterBloc.release();
-    }, ITERATIONS);
+    }, ITERATIONS, WARMUP);
 
     console.log(`Minimal:    ${formatStats(minimalStats)} | Per update: ${(minimalStats.mean / UPDATES_PER_RUN).toFixed(4)}ms`);
     console.log(`Concurrent: ${formatStats(concurrentStats)} | Per update: ${(concurrentStats.mean / UPDATES_PER_RUN).toFixed(4)}ms`);
@@ -247,33 +260,37 @@ describe('Performance Comparison: Next vs Concurrent vs Minimal', () => {
 
     const NUM_COMPONENTS = 50;
     const NUM_UPDATES = 10;
-    const ITERATIONS = 15;
+    const ITERATIONS = 40;
+    const WARMUP = 10;
 
     console.log('Mount Phase:\n');
 
+    console.log('Testing Minimal...');
     const minimalMountStats = await runBenchmark(() => {
       const hooks = Array.from({ length: NUM_COMPONENTS }, () =>
         renderHook(() => useBlocMinimal(SharedCounterBloc))
       );
       hooks.forEach(h => h.unmount());
       SharedCounterBloc.release();
-    }, ITERATIONS);
+    }, ITERATIONS, WARMUP);
 
+    console.log('Testing Concurrent...');
     const concurrentMountStats = await runBenchmark(() => {
       const hooks = Array.from({ length: NUM_COMPONENTS }, () =>
         renderHook(() => useBlocConcurrent(SharedCounterBloc))
       );
       hooks.forEach(h => h.unmount());
       SharedCounterBloc.release();
-    }, ITERATIONS);
+    }, ITERATIONS, WARMUP);
 
+    console.log('Testing Next...');
     const nextMountStats = await runBenchmark(() => {
       const hooks = Array.from({ length: NUM_COMPONENTS }, () =>
         renderHook(() => useBlocNext(SharedCounterBloc))
       );
       hooks.forEach(h => h.unmount());
       SharedCounterBloc.release();
-    }, ITERATIONS);
+    }, ITERATIONS, WARMUP);
 
     console.log(`Minimal:    ${formatStats(minimalMountStats)} | Per component: ${(minimalMountStats.mean / NUM_COMPONENTS).toFixed(4)}ms`);
     console.log(`Concurrent: ${formatStats(concurrentMountStats)} | Per component: ${(concurrentMountStats.mean / NUM_COMPONENTS).toFixed(4)}ms`);
@@ -298,6 +315,7 @@ describe('Performance Comparison: Next vs Concurrent vs Minimal', () => {
 
     console.log('Update Phase:\n');
 
+    console.log('Testing Minimal...');
     const minimalUpdateStats = await runBenchmark(() => {
       const hooks = Array.from({ length: NUM_COMPONENTS }, () =>
         renderHook(() => useBlocMinimal(SharedCounterBloc))
@@ -310,8 +328,9 @@ describe('Performance Comparison: Next vs Concurrent vs Minimal', () => {
 
       hooks.forEach(h => h.unmount());
       SharedCounterBloc.release();
-    }, ITERATIONS);
+    }, ITERATIONS, WARMUP);
 
+    console.log('Testing Concurrent...');
     const concurrentUpdateStats = await runBenchmark(() => {
       const hooks = Array.from({ length: NUM_COMPONENTS }, () =>
         renderHook(() => useBlocConcurrent(SharedCounterBloc))
@@ -324,8 +343,9 @@ describe('Performance Comparison: Next vs Concurrent vs Minimal', () => {
 
       hooks.forEach(h => h.unmount());
       SharedCounterBloc.release();
-    }, ITERATIONS);
+    }, ITERATIONS, WARMUP);
 
+    console.log('Testing Next...');
     const nextUpdateStats = await runBenchmark(() => {
       const hooks = Array.from({ length: NUM_COMPONENTS }, () =>
         renderHook(() => useBlocNext(SharedCounterBloc))
@@ -338,7 +358,7 @@ describe('Performance Comparison: Next vs Concurrent vs Minimal', () => {
 
       hooks.forEach(h => h.unmount());
       SharedCounterBloc.release();
-    }, ITERATIONS);
+    }, ITERATIONS, WARMUP);
 
     console.log(`Minimal:    ${formatStats(minimalUpdateStats)} | Per update: ${(minimalUpdateStats.mean / NUM_UPDATES).toFixed(4)}ms`);
     console.log(`Concurrent: ${formatStats(concurrentUpdateStats)} | Per update: ${(concurrentUpdateStats.mean / NUM_UPDATES).toFixed(4)}ms`);
