@@ -12,7 +12,9 @@ import {
   ChangeMetadata,
 } from '../types/events';
 import { TypedEventEmitter } from '../types/events';
-import { BlacLogger } from '../logging/Logger';
+import { debug } from '../logging/Logger';
+import { deepEqual } from '../utils/equality';
+import { cloneDeep, deepFreeze } from '../utils/immutable';
 
 /**
  * State snapshot with version tracking
@@ -56,7 +58,7 @@ export class StateStream<S> {
    */
   constructor(initialState: S, maxHistorySize = 10) {
     this.currentSnapshot = {
-      state: this.deepFreeze(this.cloneDeep(initialState)),
+      state: deepFreeze(cloneDeep(initialState)),
       version: version(0),
       timestamp: Date.now(),
     };
@@ -91,22 +93,22 @@ export class StateStream<S> {
    * @param options Update options
    */
   update(updater: StateUpdater<S>, options: UpdateOptions = {}): void {
-    BlacLogger.debug('StateStream', 'update', {
+    debug('StateStream', 'update', {
       version: this.version,
       source: options.source,
     });
 
     const previousSnapshot = this.currentSnapshot;
-    const nextState = updater(this.cloneDeep(previousSnapshot.state));
+    const nextState = updater(cloneDeep(previousSnapshot.state));
 
     // Check if state actually changed
-    if (this.deepEqual(previousSnapshot.state, nextState)) {
+    if (deepEqual(previousSnapshot.state, nextState)) {
       return; // No change, skip update
     }
 
     // Create new snapshot
     const nextSnapshot: StateSnapshot<S> = {
-      state: this.deepFreeze(nextState),
+      state: deepFreeze(nextState),
       version: incrementVersion(previousSnapshot.version),
       timestamp: Date.now(),
     };
@@ -173,12 +175,12 @@ export class StateStream<S> {
    * @param initialState New initial state
    */
   reset(initialState: S): void {
-    BlacLogger.debug('StateStream', 'reset', {
+    debug('StateStream', 'reset', {
       version: version(0),
     });
 
     this.currentSnapshot = {
-      state: this.deepFreeze(this.cloneDeep(initialState)),
+      state: deepFreeze(cloneDeep(initialState)),
       version: version(0),
       timestamp: Date.now(),
     };
@@ -204,89 +206,5 @@ export class StateStream<S> {
     if (this.history.length > this.maxHistorySize) {
       this.history = this.history.slice(-this.maxHistorySize);
     }
-  }
-
-  /**
-   * Deep clone an object (simple implementation, can be optimized)
-   */
-  private cloneDeep<T>(obj: T): T {
-    if (obj === null || typeof obj !== 'object') {
-      return obj;
-    }
-
-    if (obj instanceof Date) {
-      return new Date(obj.getTime()) as unknown as T;
-    }
-
-    if (obj instanceof Array) {
-      return obj.map((item) => this.cloneDeep(item)) as unknown as T;
-    }
-
-    if (obj instanceof Set) {
-      return new Set(
-        Array.from(obj).map((item) => this.cloneDeep(item)),
-      ) as unknown as T;
-    }
-
-    if (obj instanceof Map) {
-      const cloned = new Map();
-      obj.forEach((value, key) => {
-        cloned.set(this.cloneDeep(key), this.cloneDeep(value));
-      });
-      return cloned as unknown as T;
-    }
-
-    // Regular object
-    const cloned = Object.create(Object.getPrototypeOf(obj));
-    for (const key in obj) {
-      if (Object.prototype.hasOwnProperty.call(obj, key)) {
-        cloned[key] = this.cloneDeep(obj[key]);
-      }
-    }
-    return cloned;
-  }
-
-  /**
-   * Deep freeze an object to ensure immutability
-   */
-  private deepFreeze<T>(obj: T): T {
-    // Skip freezing in production for performance
-    // Also skip in test environments when DISABLE_STATE_FREEZE is set
-    // Freezing disabled to allow proxy tracking to work correctly
-    // Proxies cannot intercept property access on frozen objects due to proxy invariants
-    return obj;
-  }
-
-  /**
-   * Deep equality check with better typing
-   */
-  private deepEqual<T>(a: T, b: T): boolean {
-    if (a === b) return true;
-
-    if (a === null || b === null) return false;
-    if (a === undefined || b === undefined) return false;
-    if (typeof a !== typeof b) return false;
-
-    if (typeof a !== 'object') {
-      return a === b;
-    }
-
-    // Handle arrays
-    if (Array.isArray(a)) {
-      if (!Array.isArray(b)) return false;
-      if (a.length !== b.length) return false;
-      return a.every((val, idx) => this.deepEqual(val, b[idx]));
-    }
-
-    // Handle objects - cast to Record for index access
-    const objA = a as Record<string, unknown>;
-    const objB = b as Record<string, unknown>;
-    const keysA = Object.keys(objA);
-    const keysB = Object.keys(objB);
-    if (keysA.length !== keysB.length) return false;
-
-    return keysA.every(
-      (key) => keysB.includes(key) && this.deepEqual(objA[key], objB[key]),
-    );
   }
 }

@@ -8,9 +8,9 @@
 
 import { BrandedId } from '../types/branded';
 import { StateChange } from '../types/events';
-import { BlacLogger } from '../logging/Logger';
+import { error } from '../logging/Logger';
 import { BLAC_DEFAULTS } from '../constants';
-import { IdGenerator } from '../utils/idGenerator';
+import { generateId } from '../utils/idGenerator';
 
 // Branded types for type safety
 export type SubscriptionId = BrandedId<'Subscription'>;
@@ -68,7 +68,7 @@ export abstract class PipelineStage {
   readonly name: string;
 
   constructor(name: string, priority: number = 0) {
-    this.id = IdGenerator.generate<StageId>(`stage_${name}`);
+    this.id = generateId(`stage_${name}`) as StageId;
     this.name = name;
     this.priority = priority;
   }
@@ -177,14 +177,14 @@ export class SubscriptionPipeline {
           if (this.config.enableMetrics) {
             stageDurations.set(stage.id, performance.now() - stageStart);
           }
-        } catch (error) {
-          BlacLogger.error('SubscriptionPipeline', 'Stage execution error', {
+        } catch (err) {
+          error('SubscriptionPipeline', 'Stage execution error', {
             stageId: stage.id,
             stageName: stage.name,
-            error: error instanceof Error ? error.message : String(error),
+            error: err instanceof Error ? err.message : String(err),
           });
-          this.config.errorHandler(error as Error, stage);
-          throw error;
+          this.config.errorHandler(err as Error, stage);
+          throw err;
         }
       }
 
@@ -200,15 +200,15 @@ export class SubscriptionPipeline {
       };
 
       return result;
-    } catch (error) {
-      BlacLogger.error('SubscriptionPipeline', 'Pipeline execution error', {
+    } catch (err) {
+      error('SubscriptionPipeline', 'Pipeline execution error', {
         stagesProcessed,
-        error: error instanceof Error ? error.message : String(error),
+        error: err instanceof Error ? err.message : String(err),
       });
       return {
         executed: false,
         stagesProcessed,
-        error: error as Error,
+        error: err as Error,
       };
     }
   }
@@ -220,17 +220,7 @@ export class SubscriptionPipeline {
     stage: PipelineStage,
     context: PipelineContext<T>,
   ): PipelineContext<T> {
-    // const timeoutPromise = new Promise<never>((_, reject) => {
-    //   setTimeout(
-    //     () => reject(new Error(`Stage ${stage.name} timed out`)),
-    //     this.config.timeout,
-    //   );
-    // });
-
-    // const stagePromise = Promise.resolve(stage.process(context));
-
     return stage.process(context);
-    // return Promise.race([stagePromise, timeoutPromise]);
   }
 
   /**

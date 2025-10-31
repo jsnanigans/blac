@@ -20,9 +20,9 @@ import {
 } from './SubscriptionPipeline';
 import { SubscriptionBuilder } from './SubscriptionBuilder';
 import { StateChange } from '../types/events';
-import { BlacLogger } from '../logging/Logger';
+import { debug, error } from '../logging/Logger';
 import { BLAC_DEFAULTS } from '../constants';
-import { IdGenerator } from '../utils/idGenerator';
+import { generateId } from '../utils/idGenerator';
 
 // Import all stages
 import {
@@ -70,7 +70,6 @@ export interface SubscriptionSystemConfig {
   enableMetrics?: boolean;
   enableWeakRefs?: boolean;
   enableProxyTracking?: boolean;
-  maxSubscriptions?: number;
   cleanupIntervalMs?: number;
 }
 
@@ -90,15 +89,12 @@ export class SubscriptionSystem<T = unknown> {
       enableMetrics: config.enableMetrics ?? false,
       enableWeakRefs: config.enableWeakRefs ?? true,
       enableProxyTracking: config.enableProxyTracking ?? true,
-      maxSubscriptions:
-        config.maxSubscriptions ?? BLAC_DEFAULTS.MAX_SUBSCRIPTIONS,
       cleanupIntervalMs:
         config.cleanupIntervalMs ?? BLAC_DEFAULTS.CLEANUP_INTERVAL_MS,
     };
 
     this.registry = new SubscriptionRegistry({
       cleanupIntervalMs: this.config.cleanupIntervalMs,
-      maxSubscriptions: this.config.maxSubscriptions,
       enableWeakRefs: this.config.enableWeakRefs,
     });
   }
@@ -178,7 +174,7 @@ export class SubscriptionSystem<T = unknown> {
       this.containerId,
     );
 
-    BlacLogger.debug(
+    debug(
       'SubscriptionSystem',
       '🔄 STATE CHANGED - Evaluating subscriptions',
       {
@@ -190,7 +186,7 @@ export class SubscriptionSystem<T = unknown> {
     );
 
     if (subscriptionIds.length === 0) {
-      BlacLogger.debug('SubscriptionSystem', '⚠️  No subscriptions to notify', {
+      debug('SubscriptionSystem', '⚠️  No subscriptions to notify', {
         containerId: this.containerId,
         reason:
           'No components are currently subscribed to this state container',
@@ -202,7 +198,7 @@ export class SubscriptionSystem<T = unknown> {
     for (const subscriptionId of subscriptionIds) {
       const pipeline = this.pipelineCache.get(subscriptionId);
       if (!pipeline) {
-        BlacLogger.debug('SubscriptionSystem', '⚠️  No pipeline found', {
+        debug('SubscriptionSystem', '⚠️  No pipeline found', {
           subscriptionId,
           containerId: this.containerId,
         });
@@ -211,7 +207,7 @@ export class SubscriptionSystem<T = unknown> {
 
       const subscription = this.registry.get(subscriptionId);
       if (!subscription) {
-        BlacLogger.debug(
+        debug(
           'SubscriptionSystem',
           '⚠️  No subscription found in registry',
           {
@@ -222,7 +218,7 @@ export class SubscriptionSystem<T = unknown> {
         continue;
       }
 
-      BlacLogger.debug(
+      debug(
         'SubscriptionSystem',
         '➡️  Processing subscription through pipeline',
         {
@@ -245,7 +241,7 @@ export class SubscriptionSystem<T = unknown> {
 
       try {
         const result = pipeline.execute(context);
-        BlacLogger.debug(
+        debug(
           'SubscriptionSystem',
           '✅ Subscription pipeline completed',
           {
@@ -254,21 +250,21 @@ export class SubscriptionSystem<T = unknown> {
             stagesProcessed: result.stagesProcessed.length,
           },
         );
-      } catch (error) {
-        BlacLogger.error(
+      } catch (err) {
+        error(
           'SubscriptionSystem',
           '❌ Subscription pipeline error',
           {
             subscriptionId,
             containerId: this.containerId,
-            error: error instanceof Error ? error.message : String(error),
-            stack: error instanceof Error ? error.stack : undefined,
+            error: err instanceof Error ? err.message : String(err),
+            stack: err instanceof Error ? err.stack : undefined,
           },
         );
       }
     }
 
-    BlacLogger.debug('SubscriptionSystem', '✅ All subscriptions processed', {
+    debug('SubscriptionSystem', '✅ All subscriptions processed', {
       containerId: this.containerId,
       count: subscriptionIds.length,
     });
@@ -368,47 +364,6 @@ export class SubscriptionSystem<T = unknown> {
    * Generate unique consumer ID
    */
   private generateConsumerId(): ConsumerId {
-    return IdGenerator.generate<ConsumerId>('consumer');
-  }
-}
-
-/**
- * Factory for creating subscription systems with common configurations
- */
-export class SubscriptionSystemFactory {
-  /**
-   * Create a high-performance subscription system
-   */
-  static createPerformance<T>(containerId: string): SubscriptionSystem<T> {
-    return new SubscriptionSystem<T>(containerId, {
-      enableMetrics: false,
-      enableWeakRefs: true,
-      maxSubscriptions: 1000,
-      cleanupIntervalMs: 60000,
-    });
-  }
-
-  /**
-   * Create a debug subscription system
-   */
-  static createDebug<T>(containerId: string): SubscriptionSystem<T> {
-    return new SubscriptionSystem<T>(containerId, {
-      enableMetrics: true,
-      enableWeakRefs: true,
-      maxSubscriptions: BLAC_DEFAULTS.MAX_SUBSCRIPTIONS_HIGH_PERF,
-      cleanupIntervalMs: BLAC_DEFAULTS.CLEANUP_INTERVAL_HIGH_PERF_MS,
-    });
-  }
-
-  /**
-   * Create a minimal subscription system
-   */
-  static createMinimal<T>(containerId: string): SubscriptionSystem<T> {
-    return new SubscriptionSystem<T>(containerId, {
-      enableMetrics: false,
-      enableWeakRefs: false,
-      maxSubscriptions: 100,
-      cleanupIntervalMs: 120000,
-    });
+    return generateId('consumer') as ConsumerId;
   }
 }

@@ -14,9 +14,9 @@ import {
 } from './SubscriptionPipeline';
 import { NotificationCallback } from './stages/NotificationStage';
 import { StateChange } from '../types/events';
-import { BlacLogger } from '../logging/Logger';
+import { debug, info, error } from '../logging/Logger';
 import { BLAC_DEFAULTS } from '../constants';
-import { IdGenerator } from '../utils/idGenerator';
+import { generateId } from '../utils/idGenerator';
 
 export type ContainerId = BrandedId<'Container'>;
 export type ConsumerId = BrandedId<'Consumer'>;
@@ -73,7 +73,6 @@ export class SubscriptionRegistry {
   constructor(
     private readonly options: {
       cleanupIntervalMs?: number;
-      maxSubscriptions?: number;
       enableWeakRefs?: boolean;
     } = {},
   ) {
@@ -86,17 +85,8 @@ export class SubscriptionRegistry {
   register<TState = unknown>(
     config: SubscriptionConfig<TState>,
   ): SubscriptionId {
-    // if (
-    //   this.options.maxSubscriptions &&
-    //   this.subscriptions.size >= this.options.maxSubscriptions
-    // ) {
-    //   throw new Error(
-    //     `Maximum subscriptions (${this.options.maxSubscriptions}) reached`,
-    //   );
-    // }
-
     const id = this.generateId();
-    const pipeline = this.createPipeline(config);
+    const pipeline = this.createPipeline();
 
     const entry: SubscriptionEntry<TState> = {
       id,
@@ -116,7 +106,7 @@ export class SubscriptionRegistry {
     this.subscriptions.set(id, entry as SubscriptionEntry<unknown>);
     this.updateIndices(id, config, 'add');
 
-    BlacLogger.debug('SubscriptionRegistry', 'register', {
+    debug('SubscriptionRegistry', 'register', {
       subscriptionId: id,
       containerId: config.containerId,
     });
@@ -131,7 +121,7 @@ export class SubscriptionRegistry {
     const entry = this.subscriptions.get(id);
     if (!entry) return false;
 
-    BlacLogger.debug('SubscriptionRegistry', 'unregister', {
+    debug('SubscriptionRegistry', 'unregister', {
       subscriptionId: id,
     });
 
@@ -204,15 +194,11 @@ export class SubscriptionRegistry {
       try {
         entry.pipeline.execute(context);
         entry.lastAccessed = Date.now();
-      } catch (error) {
-        BlacLogger.error(
-          'SubscriptionRegistry',
-          'Subscription processing error',
-          {
-            subscriptionId: id,
-            error: error instanceof Error ? error.message : String(error),
-          },
-        );
+      } catch (err) {
+        error('SubscriptionRegistry', 'Subscription processing error', {
+          subscriptionId: id,
+          error: err instanceof Error ? err.message : String(err),
+        });
       }
     }
   }
@@ -263,15 +249,13 @@ export class SubscriptionRegistry {
    * Generate unique subscription ID
    */
   private generateId(): SubscriptionId {
-    return IdGenerator.generate<SubscriptionId>('sub');
+    return generateId('sub') as SubscriptionId;
   }
 
   /**
    * Create pipeline for subscription
    */
-  private createPipeline<TState = unknown>(
-    config: SubscriptionConfig<TState>,
-  ): SubscriptionPipeline {
+  private createPipeline(): SubscriptionPipeline {
     const pipeline = new SubscriptionPipeline({
       enableMetrics: false,
       timeout: 100,
@@ -295,7 +279,9 @@ export class SubscriptionRegistry {
     if (!this.consumerIndex.has(config.consumerId)) {
       this.consumerIndex.set(config.consumerId, new Set());
     }
-    const consumerSet = this.consumerIndex.get(config.consumerId)!;
+    const consumerSet = this.consumerIndex.get(config.consumerId);
+
+    if (!consumerSet) return;
 
     if (operation === 'add') {
       consumerSet.add(id);
@@ -310,7 +296,9 @@ export class SubscriptionRegistry {
     if (!this.containerIndex.has(config.containerId)) {
       this.containerIndex.set(config.containerId, new Set());
     }
-    const containerSet = this.containerIndex.get(config.containerId)!;
+    const containerSet = this.containerIndex.get(config.containerId);
+
+    if (!containerSet) return;
 
     if (operation === 'add') {
       containerSet.add(id);
@@ -356,7 +344,6 @@ export class SubscriptionRegistry {
   private performCleanup(): void {
     const now = Date.now();
     const maxAge = 60000; // 1 minute
-    const initialCount = this.subscriptions.size;
     let cleanedCount = 0;
 
     for (const [id, entry] of this.subscriptions.entries()) {
@@ -373,7 +360,7 @@ export class SubscriptionRegistry {
     }
 
     if (cleanedCount > 0) {
-      BlacLogger.info('SubscriptionRegistry', 'cleanup', {
+      info('SubscriptionRegistry', 'cleanup', {
         removed: cleanedCount,
         remaining: this.subscriptions.size,
       });

@@ -50,10 +50,25 @@ export * from './types/internal';
 export * from './types/utilities';
 
 // Logging
-export { BlacLogger, LogLevel } from './logging/Logger';
+export {
+  createLogger,
+  configureLogger,
+  debug,
+  info,
+  warn,
+  error,
+  LogLevel,
+  type LogConfig,
+  type LogEntry,
+} from './logging/Logger';
 
 // Constants
 export { BLAC_DEFAULTS } from './constants';
 
 // Utilities
-export { IdGenerator } from './utils/idGenerator';
+export {
+  generateId,
+  generateSimpleId,
+  createIdGenerator,
+  __resetIdCounters,
+} from './utils/idGenerator';

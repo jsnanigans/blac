@@ -12,7 +12,7 @@ import {
   LifecycleState,
   LifecycleEvent as LMLifecycleEvent,
 } from './LifecycleManager';
-import { BlacLogger } from '../logging/Logger';
+import { debug, info, warn, error } from '../logging/Logger';
 import {
   Generation,
   InstanceId,
@@ -27,7 +27,7 @@ import {
 } from '../types/internal';
 import { BaseEvent, StateChangeEvent, StateChange } from '../types/events';
 import { BLAC_DEFAULTS } from '../constants';
-import { IdGenerator } from '../utils/idGenerator';
+import { generateSimpleId } from '../utils/idGenerator';
 import {
   SubscriptionSystem,
   SubscriptionOptions,
@@ -525,7 +525,7 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
    * Called when state changes
    */
   protected onStateChange(event: StateChangeEvent<S>): void {
-    BlacLogger.debug('StateContainer', 'stateChange', {
+    debug('StateContainer', 'stateChange', {
       version: event.version,
     });
 
@@ -717,7 +717,7 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
       );
     }
 
-    BlacLogger.debug('StateContainer', 'emit', {
+    debug('StateContainer', 'emit', {
       container: this._name,
       version: this.version,
     });
@@ -736,7 +736,7 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
       );
     }
 
-    BlacLogger.debug('StateContainer', 'update', {
+    debug('StateContainer', 'update', {
       container: this._name,
       version: this.version,
     });
@@ -765,6 +765,6 @@ export abstract class StateContainer<S, E extends BaseEvent = BaseEvent>
    * Generate a unique ID
    */
   private generateId(): string {
-    return IdGenerator.generateSimple(this.constructor.name);
+    return generateSimpleId(this.constructor.name);
   }
 }

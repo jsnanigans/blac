@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { BlacLogger, LogLevel } from './Logger';
+import { configureLogger, debug, info, warn, error, LogLevel } from './Logger';
 
-describe('BlacLogger', () => {
+describe('Logger', () => {
   beforeEach(() => {
     // Reset logger config before each test
-    BlacLogger.configure({
+    configureLogger({
       enabled: false,
       level: LogLevel.INFO,
       output: (entry) => console.log(JSON.stringify(entry)),
@@ -14,22 +14,22 @@ describe('BlacLogger', () => {
   describe('configuration', () => {
     it('should be disabled by default', () => {
       const output = vi.fn();
-      BlacLogger.configure({ output });
+      configureLogger({ output });
 
-      BlacLogger.info('test', 'message');
+      info('test', 'message');
 
       expect(output).not.toHaveBeenCalled();
     });
 
     it('should respect enabled flag', () => {
       const output = vi.fn();
-      BlacLogger.configure({
+      configureLogger({
         enabled: true,
         level: LogLevel.INFO,
         output,
       });
 
-      BlacLogger.info('test', 'message');
+      info('test', 'message');
 
       expect(output).toHaveBeenCalledOnce();
     });
@@ -37,10 +37,10 @@ describe('BlacLogger', () => {
     it('should allow partial configuration updates', () => {
       const output = vi.fn();
 
-      BlacLogger.configure({ enabled: true });
-      BlacLogger.configure({ output });
+      configureLogger({ enabled: true });
+      configureLogger({ output });
 
-      BlacLogger.info('test', 'message');
+      info('test', 'message');
 
       expect(output).toHaveBeenCalledOnce();
     });
@@ -49,16 +49,16 @@ describe('BlacLogger', () => {
   describe('log levels', () => {
     it('should filter logs based on level - ERROR only', () => {
       const output = vi.fn();
-      BlacLogger.configure({
+      configureLogger({
         enabled: true,
         level: LogLevel.ERROR,
         output,
       });
 
-      BlacLogger.error('test', 'error');
-      BlacLogger.warn('test', 'warn');
-      BlacLogger.info('test', 'info');
-      BlacLogger.debug('test', 'debug');
+      error('test', 'error');
+      warn('test', 'warn');
+      info('test', 'info');
+      debug('test', 'debug');
 
       expect(output).toHaveBeenCalledOnce();
       expect(output).toHaveBeenCalledWith(
@@ -68,16 +68,16 @@ describe('BlacLogger', () => {
 
     it('should filter logs based on level - WARN and above', () => {
       const output = vi.fn();
-      BlacLogger.configure({
+      configureLogger({
         enabled: true,
         level: LogLevel.WARN,
         output,
       });
 
-      BlacLogger.error('test', 'error');
-      BlacLogger.warn('test', 'warn');
-      BlacLogger.info('test', 'info');
-      BlacLogger.debug('test', 'debug');
+      error('test', 'error');
+      warn('test', 'warn');
+      info('test', 'info');
+      debug('test', 'debug');
 
       expect(output).toHaveBeenCalledTimes(2);
       expect(output).toHaveBeenNthCalledWith(
@@ -92,32 +92,32 @@ describe('BlacLogger', () => {
 
     it('should filter logs based on level - INFO and above', () => {
       const output = vi.fn();
-      BlacLogger.configure({
+      configureLogger({
         enabled: true,
         level: LogLevel.INFO,
         output,
       });
 
-      BlacLogger.error('test', 'error');
-      BlacLogger.warn('test', 'warn');
-      BlacLogger.info('test', 'info');
-      BlacLogger.debug('test', 'debug');
+      error('test', 'error');
+      warn('test', 'warn');
+      info('test', 'info');
+      debug('test', 'debug');
 
       expect(output).toHaveBeenCalledTimes(3);
     });
 
     it('should log all levels at DEBUG', () => {
       const output = vi.fn();
-      BlacLogger.configure({
+      configureLogger({
         enabled: true,
         level: LogLevel.DEBUG,
         output,
       });
 
-      BlacLogger.error('test', 'error');
-      BlacLogger.warn('test', 'warn');
-      BlacLogger.info('test', 'info');
-      BlacLogger.debug('test', 'debug');
+      error('test', 'error');
+      warn('test', 'warn');
+      info('test', 'info');
+      debug('test', 'debug');
 
       expect(output).toHaveBeenCalledTimes(4);
     });
@@ -126,13 +126,13 @@ describe('BlacLogger', () => {
   describe('log entry structure', () => {
     it('should include required fields', () => {
       const output = vi.fn();
-      BlacLogger.configure({
+      configureLogger({
         enabled: true,
         level: LogLevel.DEBUG,
         output,
       });
 
-      BlacLogger.debug('TestContext', 'test message');
+      debug('TestContext', 'test message');
 
       expect(output).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -146,14 +146,14 @@ describe('BlacLogger', () => {
 
     it('should include data when provided', () => {
       const output = vi.fn();
-      BlacLogger.configure({
+      configureLogger({
         enabled: true,
         level: LogLevel.DEBUG,
         output,
       });
 
       const testData = { foo: 'bar', count: 42 };
-      BlacLogger.debug('TestContext', 'test message', testData);
+      debug('TestContext', 'test message', testData);
 
       expect(output).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -164,13 +164,13 @@ describe('BlacLogger', () => {
 
     it('should not include data field when data is undefined', () => {
       const output = vi.fn();
-      BlacLogger.configure({
+      configureLogger({
         enabled: true,
         level: LogLevel.DEBUG,
         output,
       });
 
-      BlacLogger.debug('TestContext', 'test message');
+      debug('TestContext', 'test message');
 
       const call = output.mock.calls[0][0];
       expect(call).not.toHaveProperty('data');
@@ -180,13 +180,13 @@ describe('BlacLogger', () => {
   describe('data serialization', () => {
     it('should serialize simple objects', () => {
       const output = vi.fn();
-      BlacLogger.configure({
+      configureLogger({
         enabled: true,
         level: LogLevel.DEBUG,
         output,
       });
 
-      BlacLogger.debug('test', 'message', { foo: 'bar' });
+      debug('test', 'message', { foo: 'bar' });
 
       expect(output).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -197,7 +197,7 @@ describe('BlacLogger', () => {
 
     it('should serialize nested objects', () => {
       const output = vi.fn();
-      BlacLogger.configure({
+      configureLogger({
         enabled: true,
         level: LogLevel.DEBUG,
         output,
@@ -210,7 +210,7 @@ describe('BlacLogger', () => {
         },
       };
 
-      BlacLogger.debug('test', 'message', data);
+      debug('test', 'message', data);
 
       expect(output).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -221,7 +221,7 @@ describe('BlacLogger', () => {
 
     it('should handle serialization failures gracefully', () => {
       const output = vi.fn();
-      BlacLogger.configure({
+      configureLogger({
         enabled: true,
         level: LogLevel.DEBUG,
         output,
@@ -233,7 +233,7 @@ describe('BlacLogger', () => {
 
       // Should not throw
       expect(() => {
-        BlacLogger.debug('test', 'message', circular);
+        debug('test', 'message', circular);
       }).not.toThrow();
 
       // Should have called output (with fallback serialization)
@@ -247,7 +247,7 @@ describe('BlacLogger', () => {
         throw new Error('Output failed');
       });
 
-      BlacLogger.configure({
+      configureLogger({
         enabled: true,
         level: LogLevel.DEBUG,
         output,
@@ -255,13 +255,13 @@ describe('BlacLogger', () => {
 
       // Should not throw - errors are caught internally
       expect(() => {
-        BlacLogger.debug('test', 'message');
+        debug('test', 'message');
       }).not.toThrow();
     });
 
     it('should not crash on invalid data', () => {
       const output = vi.fn();
-      BlacLogger.configure({
+      configureLogger({
         enabled: true,
         level: LogLevel.DEBUG,
         output,
@@ -269,10 +269,10 @@ describe('BlacLogger', () => {
 
       // Should handle various edge cases without throwing
       expect(() => {
-        BlacLogger.debug('test', 'message', undefined);
-        BlacLogger.debug('test', 'message', null);
-        BlacLogger.debug('test', 'message', Symbol('test'));
-        BlacLogger.debug('test', 'message', () => {});
+        debug('test', 'message', undefined);
+        debug('test', 'message', null);
+        debug('test', 'message', Symbol('test'));
+        debug('test', 'message', () => {});
       }).not.toThrow();
     });
   });
@@ -280,26 +280,26 @@ describe('BlacLogger', () => {
   describe('performance', () => {
     it('should not call output when logging is disabled', () => {
       const output = vi.fn();
-      BlacLogger.configure({
+      configureLogger({
         enabled: false,
         level: LogLevel.DEBUG,
         output,
       });
 
-      BlacLogger.debug('test', 'message', { expensive: 'data' });
+      debug('test', 'message', { expensive: 'data' });
 
       expect(output).not.toHaveBeenCalled();
     });
 
     it('should not call output when level is too low', () => {
       const output = vi.fn();
-      BlacLogger.configure({
+      configureLogger({
         enabled: true,
         level: LogLevel.ERROR,
         output,
       });
 
-      BlacLogger.debug('test', 'message', { expensive: 'data' });
+      debug('test', 'message', { expensive: 'data' });
 
       expect(output).not.toHaveBeenCalled();
     });

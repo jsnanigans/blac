@@ -7,7 +7,8 @@
 
 import { PipelineStage, PipelineContext } from '../SubscriptionPipeline';
 import { StateChange } from '../../types/events';
-import { BlacLogger } from '../../logging/Logger';
+import { debug } from '../../logging/Logger';
+import { deepEqual } from '../../utils/equality';
 
 export type FilterPredicate<T> = (
   current: T,
@@ -41,7 +42,7 @@ export class FilterStage<T = unknown> extends PipelineStage {
       | undefined;
     const pathsToCheck = dynamicFilterPaths || this.options.paths;
 
-    BlacLogger.debug('FilterStage', 'Evaluating render trigger', {
+    debug('FilterStage', 'Evaluating render trigger', {
       subscriptionId: context.subscriptionId,
       hasDynamicPaths: !!dynamicFilterPaths,
       hasStaticPaths: !!this.options.paths,
@@ -62,7 +63,7 @@ export class FilterStage<T = unknown> extends PipelineStage {
         context.skipNotification = true;
         context.metadata.set('filteredReason', 'path_mismatch');
 
-        BlacLogger.debug(
+        debug(
           'FilterStage',
           '❌ RENDER BLOCKED - No tracked properties changed',
           {
@@ -75,17 +76,13 @@ export class FilterStage<T = unknown> extends PipelineStage {
         return context;
       }
 
-      BlacLogger.debug(
-        'FilterStage',
-        '✅ RENDER ALLOWED - Tracked properties changed',
-        {
-          reason: 'At least one tracked path has changed',
-          trackedPaths: pathsToCheck,
-          subscriptionId: context.subscriptionId,
-        },
-      );
+      debug('FilterStage', '✅ RENDER ALLOWED - Tracked properties changed', {
+        reason: 'At least one tracked path has changed',
+        trackedPaths: pathsToCheck,
+        subscriptionId: context.subscriptionId,
+      });
     } else {
-      BlacLogger.debug('FilterStage', '✅ RENDER ALLOWED - No path filtering', {
+      debug('FilterStage', '✅ RENDER ALLOWED - No path filtering', {
         reason: 'No specific paths being tracked, all changes trigger render',
         subscriptionId: context.subscriptionId,
       });
@@ -103,16 +100,12 @@ export class FilterStage<T = unknown> extends PipelineStage {
         context.skipNotification = true;
         context.metadata.set('filteredReason', 'excluded_path');
 
-        BlacLogger.debug(
-          'FilterStage',
-          '❌ RENDER BLOCKED - Excluded path changed',
-          {
-            reason:
-              'An excluded path changed (changes to these paths should not trigger renders)',
-            excludedPaths: this.options.excludePaths,
-            subscriptionId: context.subscriptionId,
-          },
-        );
+        debug('FilterStage', '❌ RENDER BLOCKED - Excluded path changed', {
+          reason:
+            'An excluded path changed (changes to these paths should not trigger renders)',
+          excludedPaths: this.options.excludePaths,
+          subscriptionId: context.subscriptionId,
+        });
 
         return context;
       }
@@ -130,7 +123,7 @@ export class FilterStage<T = unknown> extends PipelineStage {
         context.skipNotification = true;
         context.metadata.set('filteredReason', 'predicate_false');
 
-        BlacLogger.debug(
+        debug(
           'FilterStage',
           '❌ RENDER BLOCKED - Custom predicate returned false',
           {
@@ -143,7 +136,7 @@ export class FilterStage<T = unknown> extends PipelineStage {
         return context;
       }
 
-      BlacLogger.debug(
+      debug(
         'FilterStage',
         '✅ RENDER ALLOWED - Custom predicate returned true',
         {
@@ -155,13 +148,9 @@ export class FilterStage<T = unknown> extends PipelineStage {
     }
 
     context.metadata.set('filterPassed', true);
-    BlacLogger.debug(
-      'FilterStage',
-      '✅ All filters passed - proceeding to notification',
-      {
-        subscriptionId: context.subscriptionId,
-      },
-    );
+    debug('FilterStage', '✅ All filters passed - proceeding to notification', {
+      subscriptionId: context.subscriptionId,
+    });
     return context;
   }
 
@@ -179,10 +168,10 @@ export class FilterStage<T = unknown> extends PipelineStage {
     const previousValue = this.getValueAtPath(previous, path);
 
     const changed = this.options.includeNested
-      ? !this.deepEqual(currentValue, previousValue)
+      ? !deepEqual(currentValue, previousValue)
       : currentValue !== previousValue;
 
-    BlacLogger.debug('FilterStage', 'hasPathChanged', {
+    debug('FilterStage', 'hasPathChanged', {
       path,
       currentValue,
       previousValue,
@@ -202,29 +191,5 @@ export class FilterStage<T = unknown> extends PipelineStage {
     }
 
     return value;
-  }
-
-  private deepEqual(a: unknown, b: unknown): boolean {
-    if (a === b) return true;
-    if (a == null || b == null) return false;
-    if (typeof a !== typeof b) return false;
-
-    if (typeof a === 'object' && typeof b === 'object') {
-      const objA = a as Record<string, unknown>;
-      const objB = b as Record<string, unknown>;
-
-      const keysA = Object.keys(objA);
-      const keysB = Object.keys(objB);
-
-      if (keysA.length !== keysB.length) return false;
-
-      for (const key of keysA) {
-        if (!this.deepEqual(objA[key], objB[key])) return false;
-      }
-
-      return true;
-    }
-
-    return false;
   }
 }

@@ -27,22 +27,6 @@ class TestStage extends PipelineStage {
   }
 }
 
-// class AsyncTestStage extends PipelineStage {
-//   constructor(
-//     name: string,
-//     private delay: number,
-//     priority: number = 0,
-//   ) {
-//     super(name, priority);
-//   }
-//
-//   process<T>(context: PipelineContext<T>): PipelineContext<T> {
-//     await new Promise((resolve) => setTimeout(resolve, this.delay));
-//     context.metadata.set(this.name, true);
-//     return context;
-//   }
-// }
-
 class ErrorStage extends PipelineStage {
   process<T>(_context: PipelineContext<T>): PipelineContext<T> {
     throw new Error('Stage error');

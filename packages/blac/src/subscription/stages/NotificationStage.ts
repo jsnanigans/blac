@@ -6,7 +6,7 @@
  */
 
 import { PipelineStage, PipelineContext } from '../SubscriptionPipeline';
-import { BlacLogger } from '../../logging/Logger';
+import { debug } from '../../logging/Logger';
 
 export type NotificationCallback<T = unknown> = (state: T) => void;
 
@@ -34,7 +34,7 @@ export class NotificationStage extends PipelineStage {
     if (context.skipNotification) {
       const filteredReason =
         context.metadata.get('filteredReason') || 'unknown';
-      BlacLogger.debug('NotificationStage', '⏭️  NOTIFICATION SKIPPED', {
+      debug('NotificationStage', '⏭️  NOTIFICATION SKIPPED', {
         reason: filteredReason,
         subscriptionId: context.subscriptionId,
         explanation: 'A previous pipeline stage blocked this notification',
@@ -42,7 +42,7 @@ export class NotificationStage extends PipelineStage {
       return context;
     }
 
-    BlacLogger.debug('NotificationStage', 'Processing notification', {
+    debug('NotificationStage', 'Processing notification', {
       subscriptionId: context.subscriptionId,
     });
 
@@ -61,7 +61,7 @@ export class NotificationStage extends PipelineStage {
         ? context.metadata.get('selectedValue')
         : context.stateChange.current;
 
-      BlacLogger.debug('NotificationStage', '🔔 TRIGGERING REACT RENDER', {
+      debug('NotificationStage', '🔔 TRIGGERING REACT RENDER', {
         subscriptionId: context.subscriptionId,
         hasSelectedValue: context.metadata.has('selectedValue'),
         retryCount,
@@ -71,28 +71,20 @@ export class NotificationStage extends PipelineStage {
       this.options.callback(value);
       context.metadata.set('notificationSent', true);
 
-      BlacLogger.debug(
-        'NotificationStage',
-        '✅ React render triggered successfully',
-        {
-          subscriptionId: context.subscriptionId,
-        },
-      );
+      debug('NotificationStage', '✅ React render triggered successfully', {
+        subscriptionId: context.subscriptionId,
+      });
     } catch (error) {
-      BlacLogger.debug(
-        'NotificationStage',
-        '❌ Error triggering React render',
-        {
-          subscriptionId: context.subscriptionId,
-          error: error instanceof Error ? error.message : String(error),
-          retryCount,
-          willRetry: retryCount < this.options.maxRetries,
-        },
-      );
+      debug('NotificationStage', '❌ Error triggering React render', {
+        subscriptionId: context.subscriptionId,
+        error: error instanceof Error ? error.message : String(error),
+        retryCount,
+        willRetry: retryCount < this.options.maxRetries,
+      });
 
       if (retryCount < this.options.maxRetries) {
         const backoffMs = Math.pow(2, retryCount) * 100;
-        BlacLogger.debug('NotificationStage', '🔄 Retrying notification', {
+        debug('NotificationStage', '🔄 Retrying notification', {
           subscriptionId: context.subscriptionId,
           retryCount: retryCount + 1,
           backoffMs,
@@ -103,7 +95,7 @@ export class NotificationStage extends PipelineStage {
           this.sendNotification(context, retryCount + 1);
         }, backoffMs);
       } else {
-        BlacLogger.debug('NotificationStage', '❌ Max retries exceeded', {
+        debug('NotificationStage', '❌ Max retries exceeded', {
           subscriptionId: context.subscriptionId,
           maxRetries: this.options.maxRetries,
         });

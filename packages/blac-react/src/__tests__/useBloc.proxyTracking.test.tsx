@@ -7,7 +7,7 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { StrictMode } from 'react';
 import { useBloc } from '../useBloc';
 import { Cubit, StateContainer } from '@blac/core';
-import { BlacLogger, LogLevel } from '@blac/core';
+import { configureLogger, LogLevel } from '@blac/core';
 
 // Test state shape
 interface TestState {
@@ -114,7 +114,7 @@ describe('useBloc with Proxy Tracking', () => {
   });
 
   afterEach(() => {
-    BlacLogger.configure({
+    configureLogger({
       enabled: false,
     });
   });
@@ -342,7 +342,7 @@ describe('useBloc with Proxy Tracking', () => {
   });
 
   it('should handle array property access', async () => {
-    BlacLogger.configure({
+    configureLogger({
       enabled: true,
       level: LogLevel.DEBUG,
       output: (entry) => {
