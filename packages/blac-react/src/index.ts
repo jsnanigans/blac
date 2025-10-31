@@ -21,7 +21,5 @@ export {
   type BlocMode,
 } from './useBloc';
 export { useBlocConcurrent } from './useBlocConcurrent';
-export { useBlocNext } from './useBlocNext';
-export { useBlocMinimal } from './useBlocMinimal';
 export { NextBridge } from './NextBridge';
 export type { ComponentRef } from './types';

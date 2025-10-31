@@ -4,8 +4,7 @@
  * Modern ergonomics: pass the Bloc constructor, get type-safe state and instance.
  * Automatically tracks which properties you access!
  *
- * This is a facade that delegates to either useBlocConcurrent (default) or useBlocNext
- * based on configuration.
+ * This is a facade that uses useBlocConcurrent for optimal performance.
  *
  * @example
  * ```tsx

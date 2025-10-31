@@ -1,8 +1,8 @@
 /**
  * useBlocConcurrent - Optimized concurrent mode implementation using useSyncExternalStore
  *
- * This implementation uses ReactBridge for automatic dependency tracking while
- * applying performance optimizations from useBlocNext:
+ * This implementation uses ReactBridge for automatic dependency tracking with
+ * performance optimizations:
  * - Single useMemo for initialization (reduces allocations)
  * - Optimized lifecycle management with fewer effects
  * - Efficient dependency comparison when using manual dependencies

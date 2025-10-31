@@ -16,7 +16,6 @@
     "docs:preview": "pnpm --filter @blac/docs preview",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "perf:hook": "pnpm --filter @blac/react test:memory performance-comparison-all --run",
     "release": "pnpm build && pnpm test && pnpm typecheck && changeset publish --no-git-tag"
   },
   "pnpm": {},
