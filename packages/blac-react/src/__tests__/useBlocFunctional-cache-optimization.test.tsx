@@ -1,5 +1,5 @@
 /**
- * Test suite for useBlocFunctional cache traversal optimization
+ * Test suite for useBloc cache traversal optimization
  *
  * This test verifies that the cache optimization (Priority 1) correctly:
  * 1. Caches traversal results from hasChanges()
@@ -9,7 +9,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { StateContainer } from '@blac/core';
-import { createTrackerState, hasChanges, captureTrackedPaths, startTracking, createProxy, getValueAtPath, type TrackerState } from '../useBlocFunctional';
+import { createTrackerState, hasChanges, captureTrackedPaths, startTracking, createProxy, getValueAtPath, type TrackerState } from '../useBloc';
 
 interface TestState {
   count: number;
@@ -21,7 +21,7 @@ interface TestState {
   };
 }
 
-describe('useBlocFunctional - Cache Traversal Optimization', () => {
+describe('useBloc - Cache Traversal Optimization', () => {
   let tracker: TrackerState<TestState>;
   let getValueAtPathSpy: any;
 

@@ -17,9 +17,5 @@ export {
   default as useBlocHook,
   type UseBlocOptions,
   type UseBlocReturn,
-  BlocConfig,
-  type BlocMode,
 } from './useBloc';
-export { useBlocConcurrent } from './useBlocConcurrent';
-export { NextBridge } from './NextBridge';
 export type { ComponentRef } from './types';

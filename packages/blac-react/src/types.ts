@@ -3,7 +3,7 @@
  */
 
 import type { StateContainer, AnyObject, ExtractState } from '@blac/core';
-import type { MutableRefObject } from 'react';
+import type { RefObject } from 'react';
 
 /**
  * Options for useBloc hook
@@ -45,14 +45,6 @@ export interface UseBlocOptions<
    * Callback when component unmounts
    */
   onUnmount?: (bloc: TBloc) => void;
-
-  /**
-   * Override default mode for this hook call
-   * - true: Use concurrent mode (useSyncExternalStore)
-   * - false: Use simple mode (useState + useEffect)
-   * - undefined: Use global default from BlocConfig
-   */
-  concurrent?: boolean;
 }
 
 /**
@@ -67,4 +59,4 @@ export type ComponentRef<TState> = {
  * Return type returns full state
  */
 export type UseBlocReturn<TBloc extends StateContainer<AnyObject, AnyObject>> =
-  [ExtractState<TBloc>, TBloc, MutableRefObject<ComponentRef<ExtractState<TBloc>>>];
+  [ExtractState<TBloc>, TBloc, RefObject<ComponentRef<ExtractState<TBloc>>>];

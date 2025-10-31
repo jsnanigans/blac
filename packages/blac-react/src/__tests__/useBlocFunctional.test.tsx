@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { renderHook, act } from '@testing-library/react';
 import { Cubit } from '@blac/core';
-import { useBlocFunctional } from '../useBlocFunctional';
+import { useBloc } from '../useBloc';
 
 // Test Cubit with multiple properties
 class TestCubit extends Cubit<{
@@ -46,14 +46,14 @@ class TestCubit extends Cubit<{
   }
 }
 
-describe('useBlocFunctional - Basic Functionality', () => {
+describe('useBloc - Basic Functionality', () => {
   beforeEach(() => {
     // Reset singleton instances between tests
     (TestCubit as any).instance = null;
   });
 
   it('1. should return initial state and bloc instance', () => {
-    const { result } = renderHook(() => useBlocFunctional(TestCubit));
+    const { result } = renderHook(() => useBloc(TestCubit));
     const [state, bloc] = result.current;
 
     expect(state.count).toBe(0);
@@ -66,7 +66,7 @@ describe('useBlocFunctional - Basic Functionality', () => {
     let renderCount = 0;
 
     function TestComponent() {
-      const [state, bloc] = useBlocFunctional(TestCubit);
+      const [state, bloc] = useBloc(TestCubit);
       renderCount++;
 
       // Access only the count property
@@ -93,7 +93,7 @@ describe('useBlocFunctional - Basic Functionality', () => {
     let blocInstance: TestCubit = null as unknown as TestCubit;
 
     function TestComponent() {
-      const [state, bloc] = useBlocFunctional(TestCubit);
+      const [state, bloc] = useBloc(TestCubit);
       blocInstance = bloc;
       renderCount++;
 
@@ -124,7 +124,7 @@ describe('useBlocFunctional - Basic Functionality', () => {
     let renderCount = 0;
 
     function TestComponent() {
-      const [state, bloc] = useBlocFunctional(TestCubit);
+      const [state, bloc] = useBloc(TestCubit);
       renderCount++;
 
       // Access both count and message
@@ -163,7 +163,7 @@ describe('useBlocFunctional - Basic Functionality', () => {
     let renderCount = 0;
 
     function TestComponent() {
-      const [state, bloc] = useBlocFunctional(TestCubit);
+      const [state, bloc] = useBloc(TestCubit);
       renderCount++;
 
       // Access nested property

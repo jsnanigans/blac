@@ -3,6 +3,7 @@
  * These tests verify TypeScript type safety at compile time
  */
 
+import { describe, test, expect } from 'vitest';
 import { Cubit } from '../Cubit';
 
 // ============================================
@@ -281,5 +282,54 @@ class AsyncCubit extends Cubit<AsyncState> {
   // This is a known limitation of Partial<Union>
   // Recommendation: use emit() for union state types
 }
+
+// ============================================
+// Runtime tests
+// ============================================
+
+describe('Cubit.patch() type tests', () => {
+  test('patch works with object state types', () => {
+    const cubit = new UserCubit();
+    expect(cubit.state.name).toBe('John');
+
+    cubit.updateName('Jane');
+    expect(cubit.state.name).toBe('Jane');
+
+    cubit.updateProfile('Alice', 25);
+    expect(cubit.state.name).toBe('Alice');
+    expect(cubit.state.age).toBe(25);
+  });
+
+  test('patch works with complex nested state', () => {
+    const cubit = new ComplexCubit();
+    expect(cubit.state.id).toBe(1);
+
+    cubit.updateId(42);
+    expect(cubit.state.id).toBe(42);
+  });
+
+  test('patch works with optional properties', () => {
+    const cubit = new OptionalCubit();
+    expect(cubit.state.optional).toBeUndefined();
+
+    cubit.setOptional(123);
+    expect(cubit.state.optional).toBe(123);
+
+    cubit.clearOptional();
+    expect(cubit.state.optional).toBeUndefined();
+  });
+
+  test('patch works with generic types', () => {
+    const cubit = new GenericCubit<string>('hello');
+    expect(cubit.state.value).toBe('hello');
+    expect(cubit.state.count).toBe(0);
+
+    cubit.updateValue('world');
+    expect(cubit.state.value).toBe('world');
+
+    cubit.incrementCount();
+    expect(cubit.state.count).toBe(1);
+  });
+});
 
 export {}; // Make this a module
