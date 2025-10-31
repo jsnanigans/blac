@@ -26,8 +26,8 @@ export function CounterDemo() {
       <section className="stack-lg">
         <h2>Shared Instance</h2>
         <p className="text-muted">
-          Both components below use the same counter instance. Changes in one are
-          reflected in the other.
+          Both components below use the same counter instance. Changes in one
+          are reflected in the other.
         </p>
         <div className="panel-grid panel-grid--two">
           <CounterView label="Counter A" />
@@ -57,17 +57,19 @@ export function CounterDemo() {
         <h2>Key Takeaways</h2>
         <ul className="features-list">
           <li>
-            <strong>Automatic tracking:</strong> CounterView only re-renders when
+            <strong>Automatic tracking:</strong> CounterView only re-renders
+            when
             <code>count</code> changes, CounterStats only when
             <code>incrementCount</code>, <code>decrementCount</code>, or
             <code>lastAction</code> change
           </li>
           <li>
-            <strong>No manual optimization:</strong> No useMemo, useCallback, or memo
-            needed - Blac handles it automatically via Proxies
+            <strong>No manual optimization:</strong> No useMemo, useCallback, or
+            memo needed - Blac handles it automatically via Proxies
           </li>
           <li>
-            <strong>Instance management:</strong> Default instances are shared, use
+            <strong>Instance management:</strong> Default instances are shared,
+            use
             <code>instanceKey</code> for isolated state
           </li>
           <li>

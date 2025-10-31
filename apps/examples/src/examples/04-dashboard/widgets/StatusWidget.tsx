@@ -14,11 +14,16 @@ export function StatusWidget() {
   console.log(`  ↳ [StatusWidget] Rendered (${renderCount.current} times)`);
 
   const timeAgo = Math.floor((Date.now() - state.lastUpdated) / 1000);
-  const statusClass = state.isAutoUpdating ? 'status-card is-live' : 'status-card';
+  const statusClass = state.isAutoUpdating
+    ? 'status-card is-live'
+    : 'status-card';
 
   return (
     <article className={`card ${statusClass}`}>
-      <div className="render-badge" title={`Rendered ${renderCount.current} times`}>
+      <div
+        className="render-badge"
+        title={`Rendered ${renderCount.current} times`}
+      >
         {renderCount.current}
       </div>
 

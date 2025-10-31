@@ -31,13 +31,11 @@ export function TodoList({ instanceKey }: TodoListProps) {
   }, [todos, filter]);
 
   console.log(
-    `[TodoList] Rendering - ${filteredTodos.length} todos (filter: ${filter})`
+    `[TodoList] Rendering - ${filteredTodos.length} todos (filter: ${filter})`,
   );
 
   if (filteredTodos.length === 0) {
-    return (
-      <div className="empty-panel text-center">No todos to display</div>
-    );
+    return <div className="empty-panel text-center">No todos to display</div>;
   }
 
   return (

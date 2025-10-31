@@ -46,7 +46,10 @@ export function TodoStats({ instanceKey }: TodoStatsProps) {
       </div>
       {counts.completed > 0 && (
         <div className="mt-2 text-center">
-          <button onClick={() => todoBloc.clearCompleted()} className="danger button-block">
+          <button
+            onClick={() => todoBloc.clearCompleted()}
+            className="danger button-block"
+          >
             Clear Completed
           </button>
         </div>

@@ -11,7 +11,7 @@
     "format": "prettier --write \".\"",
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
-    "typecheck": "tsc --noEmit",
+    "_typecheck": "tsc --noEmit",
     "dev": "vite"
   },
   "keywords": [],

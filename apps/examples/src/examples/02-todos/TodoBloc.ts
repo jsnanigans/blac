@@ -38,7 +38,9 @@ export class TodoBloc extends Cubit<TodoState> {
 
     // Lifecycle hooks for persistence
     this.onMount = () => {
-      console.log(`[TodoBloc] Mounted - loaded ${this.state.todos.length} todos`);
+      console.log(
+        `[TodoBloc] Mounted - loaded ${this.state.todos.length} todos`,
+      );
     };
 
     this.onUnmount = () => {
@@ -77,7 +79,7 @@ export class TodoBloc extends Cubit<TodoState> {
     this.emit({
       ...this.state,
       todos: this.state.todos.map((todo) =>
-        todo.id === id ? { ...todo, completed: !todo.completed } : todo
+        todo.id === id ? { ...todo, completed: !todo.completed } : todo,
       ),
     });
   };

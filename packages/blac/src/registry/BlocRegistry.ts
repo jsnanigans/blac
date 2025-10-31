@@ -210,7 +210,10 @@ export class BlocRegistry {
    * @param id - Instance identifier
    * @returns True if instance exists
    */
-  has(BlocClass: BlocConstructor<StateContainer<any, any>>, id: InstanceId): boolean {
+  has(
+    BlocClass: BlocConstructor<StateContainer<any, any>>,
+    id: InstanceId,
+  ): boolean {
     const entry = this.types.get(BlocClass.name);
     return entry ? entry.instances.has(id) : false;
   }
@@ -222,7 +225,10 @@ export class BlocRegistry {
    * @param id - Instance identifier
    * @returns True if instance was removed
    */
-  remove(BlocClass: BlocConstructor<StateContainer<any, any>>, id: InstanceId): boolean {
+  remove(
+    BlocClass: BlocConstructor<StateContainer<any, any>>,
+    id: InstanceId,
+  ): boolean {
     const entry = this.types.get(BlocClass.name);
     return entry ? entry.instances.delete(id) : false;
   }

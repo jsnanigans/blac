@@ -102,12 +102,17 @@ export function DashboardDemo() {
 
           <h3>How Blac Works:</h3>
           <ul className="features-list">
-            <li>State updates → Blac tracks which properties each component accessed</li>
+            <li>
+              State updates → Blac tracks which properties each component
+              accessed
+            </li>
             <li>Only components that accessed changed properties re-render</li>
             <li>No manual optimization needed</li>
             <li>Works with nested objects and arrays automatically</li>
             <li>
-              <strong>Result: Zero boilerplate, perfect optimization by default</strong>
+              <strong>
+                Result: Zero boilerplate, perfect optimization by default
+              </strong>
             </li>
           </ul>
 
@@ -117,22 +122,27 @@ export function DashboardDemo() {
               <strong>Open browser console</strong> to see component render logs
             </li>
             <li>
-              <strong>Click "Update Users"</strong> - only the 3 user metric widgets re-render
+              <strong>Click "Update Users"</strong> - only the 3 user metric
+              widgets re-render
             </li>
             <li>
-              <strong>Click "Update Orders"</strong> - only the 3 order metric widgets re-render
+              <strong>Click "Update Orders"</strong> - only the 3 order metric
+              widgets re-render
             </li>
             <li>
-              <strong>Notice</strong> the render counters (green badges) only increment for affected widgets
+              <strong>Notice</strong> the render counters (green badges) only
+              increment for affected widgets
             </li>
             <li>
-              <strong>Try auto-update mode</strong> - watch selective re-renders happen in real-time!
+              <strong>Try auto-update mode</strong> - watch selective re-renders
+              happen in real-time!
             </li>
           </ol>
 
           <div className="callout-banner">
-            🎯 This is the power of Blac: Optimal performance by default, with zero manual
-            optimization. Your components automatically become perfectly optimized.
+            🎯 This is the power of Blac: Optimal performance by default, with
+            zero manual optimization. Your components automatically become
+            perfectly optimized.
           </div>
         </div>
       </section>

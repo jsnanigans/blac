@@ -31,6 +31,7 @@ Use this with **React DevTools Profiler** to see actual render and reconciliatio
 - Visual comparison of reconciliation overhead
 
 **Key Features:**
+
 - Click "Increment" → Should trigger re-render (count is accessed)
 - Click "Change Name" → Should NOT re-render (name not accessed - proxy tracking works!)
 - Compare reconciliation phases in DevTools Profiler

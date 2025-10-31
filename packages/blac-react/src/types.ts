@@ -50,7 +50,7 @@ export interface UseBlocOptions<
 /**
  * Component reference object type for internal tracking
  */
-export type ComponentRef<TState> = {
+export type ComponentRef = {
   __blocInstanceId?: string;
   __bridge?: any; // Bridge type varies by implementation
 };
@@ -59,4 +59,4 @@ export type ComponentRef<TState> = {
  * Return type returns full state
  */
 export type UseBlocReturn<TBloc extends StateContainer<AnyObject, AnyObject>> =
-  [ExtractState<TBloc>, TBloc, RefObject<ComponentRef<ExtractState<TBloc>>>];
+  [ExtractState<TBloc>, TBloc, RefObject<ComponentRef>];

@@ -62,8 +62,8 @@ export class DashboardBloc extends Cubit<DashboardState> {
 
       // Revenue metrics
       revenueToday: 12450.75,
-      revenueThisWeek: 78234.50,
-      revenueThisMonth: 345678.90,
+      revenueThisWeek: 78234.5,
+      revenueThisMonth: 345678.9,
 
       // System metrics
       cpuUsage: 45,
@@ -111,8 +111,12 @@ export class DashboardBloc extends Cubit<DashboardState> {
     this.emit({
       ...this.state,
       ordersToday: this.state.ordersToday + Math.floor(Math.random() * 10),
-      pendingOrders: Math.max(0, this.state.pendingOrders + Math.floor(Math.random() * 6 - 3)),
-      completedOrders: this.state.completedOrders + Math.floor(Math.random() * 8),
+      pendingOrders: Math.max(
+        0,
+        this.state.pendingOrders + Math.floor(Math.random() * 6 - 3),
+      ),
+      completedOrders:
+        this.state.completedOrders + Math.floor(Math.random() * 8),
       lastUpdated: Date.now(),
     });
     console.log('📦 [DashboardBloc] Updated ORDER metrics');
@@ -139,9 +143,24 @@ export class DashboardBloc extends Cubit<DashboardState> {
   updateSystemMetrics = () => {
     this.emit({
       ...this.state,
-      cpuUsage: Math.max(0, Math.min(100, this.state.cpuUsage + Math.floor(Math.random() * 20 - 10))),
-      memoryUsage: Math.max(0, Math.min(100, this.state.memoryUsage + Math.floor(Math.random() * 10 - 5))),
-      diskUsage: Math.max(0, Math.min(100, this.state.diskUsage + Math.floor(Math.random() * 4 - 2))),
+      cpuUsage: Math.max(
+        0,
+        Math.min(
+          100,
+          this.state.cpuUsage + Math.floor(Math.random() * 20 - 10),
+        ),
+      ),
+      memoryUsage: Math.max(
+        0,
+        Math.min(
+          100,
+          this.state.memoryUsage + Math.floor(Math.random() * 10 - 5),
+        ),
+      ),
+      diskUsage: Math.max(
+        0,
+        Math.min(100, this.state.diskUsage + Math.floor(Math.random() * 4 - 2)),
+      ),
       lastUpdated: Date.now(),
     });
     console.log('⚙️ [DashboardBloc] Updated SYSTEM metrics');

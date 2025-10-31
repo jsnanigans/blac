@@ -17,12 +17,17 @@ export function CartView() {
   const { total, itemCount } = useMemo(() => {
     const items = state.items;
     return {
-      total: items.reduce((sum, item) => sum + item.product.price * item.quantity, 0),
+      total: items.reduce(
+        (sum, item) => sum + item.product.price * item.quantity,
+        0,
+      ),
       itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
     };
   }, [state.items]);
 
-  console.log(`[CartView] Rendering - ${itemCount} items, $${total.toFixed(2)}`);
+  console.log(
+    `[CartView] Rendering - ${itemCount} items, $${total.toFixed(2)}`,
+  );
 
   if (state.items.length === 0) {
     return (
@@ -49,14 +54,18 @@ export function CartView() {
             </div>
             <div className="cart-quantity">
               <button
-                onClick={() => cart.updateQuantity(item.product.id, item.quantity - 1)}
+                onClick={() =>
+                  cart.updateQuantity(item.product.id, item.quantity - 1)
+                }
                 className="button-compact"
               >
                 −
               </button>
               <span>{item.quantity}</span>
               <button
-                onClick={() => cart.updateQuantity(item.product.id, item.quantity + 1)}
+                onClick={() =>
+                  cart.updateQuantity(item.product.id, item.quantity + 1)
+                }
                 className="button-compact"
               >
                 +
@@ -79,7 +88,10 @@ export function CartView() {
         <div className="stack-sm">
           <span className="stat-label">Total items</span>
           <span className="stat-value">{itemCount}</span>
-          <button onClick={cart.clearCart} className="button-ghost button-compact">
+          <button
+            onClick={cart.clearCart}
+            className="button-ghost button-compact"
+          >
             Clear Cart
           </button>
         </div>

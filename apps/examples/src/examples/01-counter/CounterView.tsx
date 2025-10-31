@@ -41,9 +41,7 @@ export function CounterView({ label, instanceKey }: CounterViewProps) {
           Reset
         </button>
       </div>
-      <p className="meta-line">
-        Instance: {instanceKey || 'default (shared)'}
-      </p>
+      <p className="meta-line">Instance: {instanceKey || 'default (shared)'}</p>
     </div>
   );
 }

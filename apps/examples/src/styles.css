@@ -13,8 +13,10 @@
   --color-warning: #f9d44c;
   --color-danger: #ff3864;
   --color-danger-strong: #ff0037;
-  --shadow-glow: 0 0 0 1px rgb(18 247 255 / 0.35), 0 0 18px rgb(18 247 255 / 0.25);
-  --shadow-accent: 0 0 0 1px rgb(255 45 117 / 0.4), 0 0 18px rgb(255 45 117 / 0.32);
+  --shadow-glow:
+    0 0 0 1px rgb(18 247 255 / 0.35), 0 0 18px rgb(18 247 255 / 0.25);
+  --shadow-accent:
+    0 0 0 1px rgb(255 45 117 / 0.4), 0 0 18px rgb(255 45 117 / 0.32);
   --transition-fast: 120ms ease-out;
   --transition-medium: 220ms ease-out;
   --transition-slow: 360ms ease-out;
@@ -23,7 +25,8 @@
   --space-md: 1.25rem;
   --space-lg: 2rem;
   --space-xl: 3rem;
-  --font-body: 'Share Tech Mono', 'Roboto Mono', 'Consolas', 'Segoe UI', sans-serif;
+  --font-body:
+    'Share Tech Mono', 'Roboto Mono', 'Consolas', 'Segoe UI', sans-serif;
 }
 
 *,
@@ -168,7 +171,9 @@ pre {
   color: var(--color-muted);
   font-size: 0.9rem;
   letter-spacing: 0.2em;
-  transition: color var(--transition-fast), transform var(--transition-fast),
+  transition:
+    color var(--transition-fast),
+    transform var(--transition-fast),
     box-shadow var(--transition-fast);
 }
 
@@ -177,7 +182,9 @@ pre {
   position: absolute;
   inset: 0;
   border: 1px solid transparent;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 .nav-links a:hover,
@@ -246,7 +253,9 @@ pre {
   background-color: var(--color-panel);
   border: 2px solid var(--color-border-strong);
   box-shadow: 0 12px 0 0 rgb(12 18 32 / 0.9);
-  transition: transform var(--transition-medium), box-shadow var(--transition-medium),
+  transition:
+    transform var(--transition-medium),
+    box-shadow var(--transition-medium),
     border-color var(--transition-fast);
 }
 
@@ -262,7 +271,9 @@ pre {
 .example-card:hover {
   transform: translateY(-6px);
   border-color: var(--color-accent-alt);
-  box-shadow: 0 18px 0 0 rgb(12 18 32 / 0.9), var(--shadow-glow);
+  box-shadow:
+    0 18px 0 0 rgb(12 18 32 / 0.9),
+    var(--shadow-glow);
 }
 
 .example-card:hover::before {
@@ -481,14 +492,18 @@ section {
   display: grid;
   gap: var(--space-sm);
   box-shadow: 0 12px 0 0 rgb(10 16 32 / 0.9);
-  transition: transform var(--transition-medium), box-shadow var(--transition-medium),
+  transition:
+    transform var(--transition-medium),
+    box-shadow var(--transition-medium),
     border-color var(--transition-medium);
 }
 
 .card:hover {
   transform: translateY(-4px);
   border-color: var(--color-accent-alt);
-  box-shadow: 0 18px 0 0 rgb(10 16 32 / 0.9), var(--shadow-glow);
+  box-shadow:
+    0 18px 0 0 rgb(10 16 32 / 0.9),
+    var(--shadow-glow);
 }
 
 .card-title {
@@ -524,8 +539,11 @@ button {
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  transition: color var(--transition-fast), background-color var(--transition-fast),
-    border-color var(--transition-fast), box-shadow var(--transition-fast),
+  transition:
+    color var(--transition-fast),
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
     transform var(--transition-fast);
 }
 
@@ -534,7 +552,9 @@ button::after {
   position: absolute;
   inset: 0;
   border: 1px solid transparent;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 button:hover,
@@ -656,7 +676,9 @@ select {
   color: var(--color-text);
   font-family: var(--font-body);
   font-size: 1rem;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 input:focus,
@@ -783,14 +805,18 @@ input[type='checkbox'] {
   border: 2px solid var(--color-border-strong);
   background-color: var(--color-panel);
   box-shadow: 0 10px 0 0 rgb(12 18 32 / 0.85);
-  transition: transform var(--transition-medium), box-shadow var(--transition-medium),
+  transition:
+    transform var(--transition-medium),
+    box-shadow var(--transition-medium),
     border-color var(--transition-fast);
 }
 
 .product-card:hover {
   transform: translateY(-6px);
   border-color: var(--color-accent);
-  box-shadow: 0 16px 0 0 rgb(12 18 32 / 0.85), var(--shadow-accent);
+  box-shadow:
+    0 16px 0 0 rgb(12 18 32 / 0.85),
+    var(--shadow-accent);
 }
 
 .product-emoji {
@@ -1006,7 +1032,9 @@ input[type='checkbox'] {
     box-shadow: var(--shadow-glow);
   }
   50% {
-    box-shadow: 0 0 0 1px rgb(18 247 255 / 0.15), 0 0 8px rgb(18 247 255 / 0.4);
+    box-shadow:
+      0 0 0 1px rgb(18 247 255 / 0.15),
+      0 0 8px rgb(18 247 255 / 0.4);
   }
 }
 

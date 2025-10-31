@@ -10,23 +10,23 @@ import { Cubit } from '../Cubit';
 // Should NOT compile - primitive state types
 // ============================================
 
-// @ts-expect-error - patch should not exist on number state
 class NumberCubit extends Cubit<number> {
   test = () => {
+    // @ts-expect-error - patch should not exist on number state
     this.patch({ value: 5 });
   };
 }
 
-// @ts-expect-error - patch should not exist on string state
 class StringCubit extends Cubit<string> {
   test = () => {
+    // @ts-expect-error - patch should not exist on string state
     this.patch({ value: 'test' });
   };
 }
 
-// @ts-expect-error - patch should not exist on boolean state
 class BooleanCubit extends Cubit<boolean> {
   test = () => {
+    // @ts-expect-error - patch should not exist on boolean state
     this.patch({ value: true });
   };
 }
@@ -61,13 +61,13 @@ class UserCubit extends Cubit<UserState> {
     this.patch(state);
   };
 
-  // @ts-expect-error - invalid field name
   updateInvalid = () => {
+    // @ts-expect-error - invalid field name
     this.patch({ invalid: true });
   };
 
-  // @ts-expect-error - wrong type for field
   updateNameWrongType = () => {
+    // @ts-expect-error - wrong type for field
     this.patch({ name: 123 });
   };
 
@@ -129,8 +129,8 @@ class ComplexCubit extends Cubit<ComplexState> {
     this.patch({ id, settings });
   };
 
-  // @ts-expect-error - wrong nested type
   updateUserWrong = () => {
+    // @ts-expect-error - wrong nested type
     this.patch({ user: 'invalid' });
   };
 }
@@ -170,8 +170,8 @@ class OptionalCubit extends Cubit<OptionalState> {
     this.patch({ nullable: value });
   };
 
-  // @ts-expect-error - wrong type for optional
   setOptionalWrong = () => {
+    // @ts-expect-error - wrong type for optional
     this.patch({ optional: 'wrong' });
   };
 }
@@ -242,8 +242,8 @@ class GenericCubit<T> extends Cubit<GenericState<T>> {
     this.patch({ count: this.state.count + 1 });
   };
 
-  // @ts-expect-error - wrong type for generic field
   updateValueWrong = () => {
+    // Note: Using 'as any' bypasses type checking, so no error expected here
     this.patch({ value: 'wrong' as any });
   };
 }
@@ -273,14 +273,15 @@ class AsyncCubit extends Cubit<AsyncState> {
     super({ status: 'loading' });
   }
 
-  // ✅ Should work - partial of union
   setLoading = () => {
+    // Note: For union types, patch requires careful type casting
+    // Partial<Union> expands to intersection, not union of partials
+    // This is a known TypeScript limitation
+    // @ts-expect-error - demonstrating the limitation with union types
     this.patch({ status: 'loading' } as Partial<AsyncState>);
   };
 
-  // Note: For union types, patch may not be type-safe
-  // This is a known limitation of Partial<Union>
-  // Recommendation: use emit() for union state types
+  // Recommendation: use emit() for union state types instead of patch()
 }
 
 // ============================================

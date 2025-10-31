@@ -90,8 +90,10 @@ export class SubscriptionSystem<T = unknown> {
       enableMetrics: config.enableMetrics ?? false,
       enableWeakRefs: config.enableWeakRefs ?? true,
       enableProxyTracking: config.enableProxyTracking ?? true,
-      maxSubscriptions: config.maxSubscriptions ?? BLAC_DEFAULTS.MAX_SUBSCRIPTIONS,
-      cleanupIntervalMs: config.cleanupIntervalMs ?? BLAC_DEFAULTS.CLEANUP_INTERVAL_MS,
+      maxSubscriptions:
+        config.maxSubscriptions ?? BLAC_DEFAULTS.MAX_SUBSCRIPTIONS,
+      cleanupIntervalMs:
+        config.cleanupIntervalMs ?? BLAC_DEFAULTS.CLEANUP_INTERVAL_MS,
     };
 
     this.registry = new SubscriptionRegistry({

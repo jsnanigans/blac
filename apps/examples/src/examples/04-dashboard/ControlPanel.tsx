@@ -13,12 +13,8 @@ export function ControlPanel() {
     <div className="card card-subtle control-panel-card">
       <h3>Control Panel</h3>
       <div className="control-panel-grid">
-        <button onClick={dashboard.updateUserMetrics}>
-          👥 Update Users
-        </button>
-        <button onClick={dashboard.updateOrderMetrics}>
-          📦 Update Orders
-        </button>
+        <button onClick={dashboard.updateUserMetrics}>👥 Update Users</button>
+        <button onClick={dashboard.updateOrderMetrics}>📦 Update Orders</button>
         <button onClick={dashboard.updateRevenueMetrics}>
           💰 Update Revenue
         </button>
@@ -29,17 +25,21 @@ export function ControlPanel() {
           onClick={dashboard.toggleAutoUpdate}
           className={`${state.isAutoUpdating ? 'danger' : 'success'} control-panel-toggle`}
         >
-          {state.isAutoUpdating ? '⏸️ Stop Auto-Update' : '▶️ Start Auto-Update'}
+          {state.isAutoUpdating
+            ? '⏸️ Stop Auto-Update'
+            : '▶️ Start Auto-Update'}
         </button>
       </div>
 
       <div className="info-note">
-        <strong>💡 Pro Tip:</strong> Open your browser console and click the buttons above.
-        Notice how ONLY the widgets that access the changed metrics re-render!
+        <strong>💡 Pro Tip:</strong> Open your browser console and click the
+        buttons above. Notice how ONLY the widgets that access the changed
+        metrics re-render!
         <br />
         <br />
-        Example: Click "Update Users" - only UserMetricsWidget re-renders, NOT orders,
-        revenue, or system widgets. This is automatic - no manual optimization needed!
+        Example: Click "Update Users" - only UserMetricsWidget re-renders, NOT
+        orders, revenue, or system widgets. This is automatic - no manual
+        optimization needed!
       </div>
     </div>
   );

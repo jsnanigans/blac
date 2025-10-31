@@ -38,7 +38,7 @@ export abstract class Cubit<S> extends StateContainer<S> {
     if (typeof this.state !== 'object' || this.state === null) {
       throw new Error('patch() is only available for object state types');
     }
-    super.update((current) => ({ ...current, ...partial } as S));
+    super.update((current) => ({ ...current, ...partial }) as S);
   }) as S extends object ? (partial: Partial<S>) => void : never;
 }
 

@@ -44,7 +44,7 @@ export class CartBloc extends Vertex<CartState> {
     // Add product to cart
     this.on(AddToCartEvent, (event, emit) => {
       const existingItem = this.state.items.find(
-        (item) => item.product.id === event.product.id
+        (item) => item.product.id === event.product.id,
       );
 
       if (existingItem) {
@@ -54,7 +54,7 @@ export class CartBloc extends Vertex<CartState> {
           items: this.state.items.map((item) =>
             item.product.id === event.product.id
               ? { ...item, quantity: item.quantity + 1 }
-              : item
+              : item,
           ),
         });
       } else {
@@ -70,7 +70,9 @@ export class CartBloc extends Vertex<CartState> {
     this.on(RemoveFromCartEvent, (event, emit) => {
       emit({
         ...this.state,
-        items: this.state.items.filter((item) => item.product.id !== event.productId),
+        items: this.state.items.filter(
+          (item) => item.product.id !== event.productId,
+        ),
       });
     });
 
@@ -81,7 +83,7 @@ export class CartBloc extends Vertex<CartState> {
         emit({
           ...this.state,
           items: this.state.items.filter(
-            (item) => item.product.id !== event.productId
+            (item) => item.product.id !== event.productId,
           ),
         });
       } else {
@@ -90,7 +92,7 @@ export class CartBloc extends Vertex<CartState> {
           items: this.state.items.map((item) =>
             item.product.id === event.productId
               ? { ...item, quantity: event.quantity }
-              : item
+              : item,
           ),
         });
       }
@@ -174,7 +176,7 @@ export class CartBloc extends Vertex<CartState> {
   getTotal = (): number => {
     return this.state.items.reduce(
       (sum, item) => sum + item.product.price * item.quantity,
-      0
+      0,
     );
   };
 

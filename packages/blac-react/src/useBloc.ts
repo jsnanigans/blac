@@ -17,7 +17,12 @@
  */
 
 import { useMemo, useSyncExternalStore, useEffect, useRef } from 'react';
-import { type AnyObject, type BlocConstructor, StateContainer, type ExtractState } from '@blac/core';
+import {
+  type AnyObject,
+  type BlocConstructor,
+  StateContainer,
+  type ExtractState,
+} from '@blac/core';
 import type { UseBlocOptions, UseBlocReturn, ComponentRef } from './types';
 
 // ============================================================================
@@ -41,7 +46,15 @@ interface ProxyTrackerState<T> {
   maxDepth: number;
 }
 
-const ARRAY_METHODS = new Set(['map', 'filter', 'forEach', 'find', 'some', 'every', 'reduce']);
+const ARRAY_METHODS = new Set([
+  'map',
+  'filter',
+  'forEach',
+  'find',
+  'some',
+  'every',
+  'reduce',
+]);
 
 // Lifecycle: Called once during initial mount (lazy, inside getTracker)
 function createProxyTrackerState<T>(): ProxyTrackerState<T> {
@@ -105,7 +118,7 @@ function createArrayProxy<T, U>(
   state: ProxyTrackerState<T>,
   target: U[],
   path: string,
-  depth: number = 0
+  depth: number = 0,
 ): U[] {
   const proxy = new Proxy(target, {
     get: (arr, prop: string | symbol) => {
@@ -169,7 +182,7 @@ function createProxyInternal<T>(
   state: ProxyTrackerState<T>,
   target: T,
   path: string = '',
-  depth: number = 0
+  depth: number = 0,
 ): T {
   if (!state.isTracking || !isProxyable(target)) {
     return target;
@@ -216,7 +229,12 @@ function createProxyInternal<T>(
       const fullPath = path ? `${path}.${String(prop)}` : String(prop);
 
       if (isProxyable(value)) {
-        const proxiedValue = createProxyInternal(state, value as T, fullPath, depth + 1);
+        const proxiedValue = createProxyInternal(
+          state,
+          value as T,
+          fullPath,
+          depth + 1,
+        );
         return proxiedValue;
       }
 
@@ -250,10 +268,7 @@ function createProxyInternal<T>(
 }
 
 // Lifecycle: Called before each render (in getSnapshot) - caches proxy if state unchanged
-function createProxyForTarget<T>(
-  state: ProxyTrackerState<T>,
-  target: T
-): T {
+function createProxyForTarget<T>(state: ProxyTrackerState<T>, target: T): T {
   if (state.lastProxiedState === target && state.lastProxy) {
     return state.lastProxy;
   }
@@ -304,7 +319,10 @@ function startTracking<T extends AnyObject>(tracker: TrackerState<T>): void {
 }
 
 // Lifecycle: Called before each render (in getSnapshot)
-function createProxy<T extends AnyObject>(tracker: TrackerState<T>, state: T): T {
+function createProxy<T extends AnyObject>(
+  tracker: TrackerState<T>,
+  state: T,
+): T {
   return createProxyForTarget(tracker.proxyTrackerState, state);
 }
 
@@ -323,12 +341,15 @@ function getValueAtPath(obj: any, segments: string[]): any {
 // Lifecycle: Called after each render in getSnapshot (captures accessed paths)
 function captureTrackedPaths<T extends AnyObject>(
   tracker: TrackerState<T>,
-  state: T
+  state: T,
 ): void {
   tracker.previousRenderPaths = tracker.currentRenderPaths;
   tracker.currentRenderPaths = stopProxyTracking(tracker.proxyTrackerState);
 
-  if (tracker.previousRenderPaths.size === 0 && tracker.currentRenderPaths.size === 0) {
+  if (
+    tracker.previousRenderPaths.size === 0 &&
+    tracker.currentRenderPaths.size === 0
+  ) {
     return;
   }
 
@@ -342,16 +363,18 @@ function captureTrackedPaths<T extends AnyObject>(
   for (const path of trackedPathsUnion) {
     if (!tracker.pathCache.has(path)) {
       const segments = parsePath(path);
-      const value = canReuseCache && tracker.lastCheckedValues.has(path)
-        ? tracker.lastCheckedValues.get(path)
-        : getValueAtPath(state, segments);
+      const value =
+        canReuseCache && tracker.lastCheckedValues.has(path)
+          ? tracker.lastCheckedValues.get(path)
+          : getValueAtPath(state, segments);
 
       tracker.pathCache.set(path, { segments, value });
     } else {
       const info = tracker.pathCache.get(path)!;
-      info.value = canReuseCache && tracker.lastCheckedValues.has(path)
-        ? tracker.lastCheckedValues.get(path)
-        : getValueAtPath(state, info.segments);
+      info.value =
+        canReuseCache && tracker.lastCheckedValues.has(path)
+          ? tracker.lastCheckedValues.get(path)
+          : getValueAtPath(state, info.segments);
     }
   }
 
@@ -371,7 +394,7 @@ function captureTrackedPaths<T extends AnyObject>(
 // Lifecycle: Called on state change (in subscribe callback) to check if re-render needed
 function hasChanges<T extends AnyObject>(
   tracker: TrackerState<T>,
-  state: T
+  state: T,
 ): boolean {
   if (tracker.pathCache.size === 0) {
     return true;
@@ -419,9 +442,9 @@ function shallowEqual(arr1: unknown[], arr2: unknown[]): boolean {
  * Generates instance ID for isolated blocs
  */
 function generateInstanceId(
-  componentRef: ComponentRef<any>,
+  componentRef: ComponentRef,
   isIsolated: boolean,
-  providedId?: string
+  providedId?: string,
 ): string | undefined {
   if (providedId) return providedId;
 
@@ -443,9 +466,9 @@ interface TrackingMode {
   autoTrackEnabled: boolean;
 }
 
-function determineTrackingMode<TBloc extends StateContainer<AnyObject, AnyObject>>(
-  options?: UseBlocOptions<TBloc>
-): TrackingMode {
+function determineTrackingMode<
+  TBloc extends StateContainer<AnyObject, AnyObject>,
+>(options?: UseBlocOptions<TBloc>): TrackingMode {
   return {
     useManualDeps: options?.dependencies !== undefined,
     autoTrackEnabled: options?.autoTrack !== false,
@@ -455,10 +478,14 @@ function determineTrackingMode<TBloc extends StateContainer<AnyObject, AnyObject
 /**
  * Checks if tracker has any tracked data
  */
-function hasTrackedData<T extends AnyObject>(tracker: TrackerState<T>): boolean {
-  return tracker.proxyTrackerState.trackedPaths.size > 0 ||
-         tracker.pathCache.size > 0 ||
-         tracker.previousRenderPaths.size > 0;
+function hasTrackedData<T extends AnyObject>(
+  tracker: TrackerState<T>,
+): boolean {
+  return (
+    tracker.proxyTrackerState.trackedPaths.size > 0 ||
+    tracker.pathCache.size > 0 ||
+    tracker.previousRenderPaths.size > 0
+  );
 }
 
 /**
@@ -472,13 +499,17 @@ interface HookState<TBloc extends StateContainer<AnyObject, AnyObject>> {
 /**
  * Factory: Creates subscribe function for automatic proxy tracking mode
  */
-function createAutoTrackSubscribe<TBloc extends StateContainer<AnyObject, AnyObject>>(
+function createAutoTrackSubscribe<
+  TBloc extends StateContainer<AnyObject, AnyObject>,
+>(
   instance: TBloc,
-  hookState: HookState<TBloc>
+  hookState: HookState<TBloc>,
 ): (callback: () => void) => () => void {
   return (callback: () => void) => {
     return instance.subscribe(() => {
-      const tracker = hookState.tracker || (hookState.tracker = createTrackerState<ExtractState<TBloc>>());
+      const tracker =
+        hookState.tracker ||
+        (hookState.tracker = createTrackerState<ExtractState<TBloc>>());
       if (hasChanges(tracker, instance.state)) {
         callback();
       }
@@ -489,15 +520,20 @@ function createAutoTrackSubscribe<TBloc extends StateContainer<AnyObject, AnyObj
 /**
  * Factory: Creates subscribe function for manual dependencies mode
  */
-function createManualDepsSubscribe<TBloc extends StateContainer<AnyObject, AnyObject>>(
+function createManualDepsSubscribe<
+  TBloc extends StateContainer<AnyObject, AnyObject>,
+>(
   instance: TBloc,
   hookState: HookState<TBloc>,
-  options: UseBlocOptions<TBloc>
+  options: UseBlocOptions<TBloc>,
 ): (callback: () => void) => () => void {
   return (callback: () => void) => {
     return instance.subscribe(() => {
       const newDeps = options.dependencies!(instance.state, instance);
-      if (!hookState.manualDepsCache || !shallowEqual(hookState.manualDepsCache, newDeps)) {
+      if (
+        !hookState.manualDepsCache ||
+        !shallowEqual(hookState.manualDepsCache, newDeps)
+      ) {
         hookState.manualDepsCache = newDeps;
         callback();
       }
@@ -508,21 +544,22 @@ function createManualDepsSubscribe<TBloc extends StateContainer<AnyObject, AnyOb
 /**
  * Factory: Creates subscribe function for no-tracking mode
  */
-function createNoTrackSubscribe<TBloc extends StateContainer<AnyObject, AnyObject>>(
-  instance: TBloc
-): (callback: () => void) => () => void {
+function createNoTrackSubscribe<
+  TBloc extends StateContainer<AnyObject, AnyObject>,
+>(instance: TBloc): (callback: () => void) => () => void {
   return (callback: () => void) => instance.subscribe(callback);
 }
 
 /**
  * Factory: Creates getSnapshot function for automatic proxy tracking mode
  */
-function createAutoTrackSnapshot<TBloc extends StateContainer<AnyObject, AnyObject>>(
-  instance: TBloc,
-  hookState: HookState<TBloc>
-): () => ExtractState<TBloc> {
+function createAutoTrackSnapshot<
+  TBloc extends StateContainer<AnyObject, AnyObject>,
+>(instance: TBloc, hookState: HookState<TBloc>): () => ExtractState<TBloc> {
   return () => {
-    const tracker = hookState.tracker || (hookState.tracker = createTrackerState<ExtractState<TBloc>>());
+    const tracker =
+      hookState.tracker ||
+      (hookState.tracker = createTrackerState<ExtractState<TBloc>>());
 
     if (hasTrackedData(tracker)) {
       captureTrackedPaths(tracker, instance.state);
@@ -536,10 +573,12 @@ function createAutoTrackSnapshot<TBloc extends StateContainer<AnyObject, AnyObje
 /**
  * Factory: Creates getSnapshot function for manual dependencies mode
  */
-function createManualDepsSnapshot<TBloc extends StateContainer<AnyObject, AnyObject>>(
+function createManualDepsSnapshot<
+  TBloc extends StateContainer<AnyObject, AnyObject>,
+>(
   instance: TBloc,
   hookState: HookState<TBloc>,
-  options: UseBlocOptions<TBloc>
+  options: UseBlocOptions<TBloc>,
 ): () => ExtractState<TBloc> {
   return () => {
     hookState.manualDepsCache = options.dependencies!(instance.state, instance);
@@ -550,9 +589,9 @@ function createManualDepsSnapshot<TBloc extends StateContainer<AnyObject, AnyObj
 /**
  * Factory: Creates getSnapshot function for no-tracking mode
  */
-function createNoTrackSnapshot<TBloc extends StateContainer<AnyObject, AnyObject>>(
-  instance: TBloc
-): () => ExtractState<TBloc> {
+function createNoTrackSnapshot<
+  TBloc extends StateContainer<AnyObject, AnyObject>,
+>(instance: TBloc): () => ExtractState<TBloc> {
   return () => instance.state;
 }
 
@@ -575,17 +614,21 @@ function createNoTrackSnapshot<TBloc extends StateContainer<AnyObject, AnyObject
  */
 export function useBloc<TBloc extends StateContainer<AnyObject, AnyObject>>(
   BlocClass: BlocConstructor<TBloc>,
-  options?: UseBlocOptions<TBloc>
+  options?: UseBlocOptions<TBloc>,
 ): UseBlocReturn<TBloc> {
   // Component reference that persists across React Strict Mode remounts
-  const componentRef = useRef<ComponentRef<ExtractState<TBloc>>>({});
+  const componentRef = useRef<ComponentRef>({});
 
   const [bloc, subscribe, getSnapshot, instanceKey] = useMemo(() => {
     const isIsolated = (BlocClass as { isolated?: boolean }).isolated === true;
     const Constructor = BlocClass as StateContainerConstructor<TBloc>;
 
     // Generate instance key
-    const instanceId = generateInstanceId(componentRef.current, isIsolated, options?.instanceId);
+    const instanceId = generateInstanceId(
+      componentRef.current,
+      isIsolated,
+      options?.instanceId,
+    );
 
     // Get or create bloc instance
     const instance = Constructor.getOrCreate(instanceId, options?.staticProps);
@@ -641,58 +684,5 @@ export function useBloc<TBloc extends StateContainer<AnyObject, AnyObject>>(
   return [state, bloc, componentRef] as UseBlocReturn<TBloc>;
 }
 
-// Default export
-export default useBloc;
-
 // Re-export types
 export type { UseBlocOptions, UseBlocReturn } from './types';
-
-// ============================================================================
-// Testing Adapter
-// ============================================================================
-
-// Lifecycle: Used for testing - provides imperative API for manual tracking control
-export function createLibraryAdapter<TBloc extends StateContainer<AnyObject, AnyObject>>(
-  BlocClass: BlocConstructor<TBloc>
-) {
-  const bloc = (BlocClass as any).instance ?? new BlocClass();
-  const tracker = createTrackerState<ExtractState<TBloc>>();
-
-  return {
-    bloc,
-
-    startAccessTracking(): void {
-      startTracking(tracker);
-    },
-
-    endAccessTracking(): void {
-      captureTrackedPaths(tracker, bloc.state);
-    },
-
-    getStateProxy(): ExtractState<TBloc> {
-      return createProxy(tracker, bloc.state);
-    },
-
-    subscribe(callback: () => void): () => void {
-      return bloc.subscribe(() => {
-        if (hasChanges(tracker, bloc.state)) {
-          callback();
-        }
-      });
-    },
-
-    getTracker(): TrackerState<ExtractState<TBloc>> {
-      return tracker;
-    },
-  };
-}
-
-export type { TrackerState, PathInfo };
-export {
-  createTrackerState,
-  startTracking,
-  createProxy,
-  captureTrackedPaths,
-  hasChanges,
-  getValueAtPath,
-};

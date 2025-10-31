@@ -307,8 +307,7 @@ describe('Cubit.patch()', () => {
         constructor() {
           super({ count: 0, name: 'test' });
         }
-        incrementCount = () =>
-          this.patch({ count: this.state.count + 1 });
+        incrementCount = () => this.patch({ count: this.state.count + 1 });
       }
 
       const cubit = new TestCubit();

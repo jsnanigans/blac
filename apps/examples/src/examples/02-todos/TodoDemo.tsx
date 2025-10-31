@@ -41,7 +41,8 @@ export function TodoDemo() {
       <section className="stack-lg">
         <h2>Independent Lists</h2>
         <p className="text-muted">
-          Each list below has its own state using named instances. Try using both!
+          Each list below has its own state using named instances. Try using
+          both!
         </p>
         <div className="panel-grid panel-grid--two">
           <div className="stack-md">
@@ -65,25 +66,26 @@ export function TodoDemo() {
         <h2>Key Takeaways</h2>
         <ul className="features-list">
           <li>
-            <strong>Granular tracking:</strong> TodoList re-renders when todos or filter
-            change, TodoFilters only when filter changes, TodoStats only when todos
-            change
+            <strong>Granular tracking:</strong> TodoList re-renders when todos
+            or filter change, TodoFilters only when filter changes, TodoStats
+            only when todos change
           </li>
           <li>
-            <strong>Automatic optimization:</strong> Components automatically track only
-            the properties they access - no manual dependencies needed
+            <strong>Automatic optimization:</strong> Components automatically
+            track only the properties they access - no manual dependencies
+            needed
           </li>
           <li>
-            <strong>Named instances:</strong> Use <code>instanceKey</code> to create
-            multiple independent state containers
+            <strong>Named instances:</strong> Use <code>instanceKey</code> to
+            create multiple independent state containers
           </li>
           <li>
-            <strong>Persistence:</strong> TodoBloc uses lifecycle hooks and subscriptions
-            to automatically save to localStorage
+            <strong>Persistence:</strong> TodoBloc uses lifecycle hooks and
+            subscriptions to automatically save to localStorage
           </li>
           <li>
-            <strong>Reload safe:</strong> Refresh the page - your todos persist across
-            sessions!
+            <strong>Reload safe:</strong> Refresh the page - your todos persist
+            across sessions!
           </li>
         </ul>
       </section>

@@ -28,7 +28,10 @@ export function MetricWidget({
 
   return (
     <article className="card metric-card">
-      <div className="render-badge" title={`Rendered ${renderCount.current} times`}>
+      <div
+        className="render-badge"
+        title={`Rendered ${renderCount.current} times`}
+      >
         {renderCount.current}
       </div>
 

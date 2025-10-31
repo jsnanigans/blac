@@ -28,9 +28,10 @@ export function ShoppingDemo() {
       <section className="stack-lg">
         <h2>Event-Driven Architecture</h2>
         <p className="text-muted">
-          This example uses Vertex, which processes events through registered handlers.
-          All cart actions (AddToCart, RemoveFromCart, UpdateQuantity, Checkout) are
-          dispatched as events. Open the console to see event processing logs.
+          This example uses Vertex, which processes events through registered
+          handlers. All cart actions (AddToCart, RemoveFromCart, UpdateQuantity,
+          Checkout) are dispatched as events. Open the console to see event
+          processing logs.
         </p>
       </section>
 
@@ -45,28 +46,28 @@ export function ShoppingDemo() {
         <h2>Key Takeaways</h2>
         <ul className="features-list">
           <li>
-            <strong>Event-driven:</strong> All state changes go through typed events
-            (AddToCartEvent, CheckoutEvent, etc.)
+            <strong>Event-driven:</strong> All state changes go through typed
+            events (AddToCartEvent, CheckoutEvent, etc.)
           </li>
           <li>
             <strong>Deep tracking:</strong> Cart items are deeply nested objects
             (array → item → product → properties), all automatically tracked
           </li>
           <li>
-            <strong>Granular updates:</strong> ProductGrid never re-renders because it
-            doesn't access cart state, only methods
+            <strong>Granular updates:</strong> ProductGrid never re-renders
+            because it doesn't access cart state, only methods
           </li>
           <li>
-            <strong>Async handling:</strong> Checkout simulates async operation with
-            loading state - try checking out!
+            <strong>Async handling:</strong> Checkout simulates async operation
+            with loading state - try checking out!
           </li>
           <li>
-            <strong>Error states:</strong> 20% chance of checkout failure to demonstrate
-            error handling
+            <strong>Error states:</strong> 20% chance of checkout failure to
+            demonstrate error handling
           </li>
           <li>
-            <strong>Type safety:</strong> All events and handlers are fully typed for
-            compile-time safety
+            <strong>Type safety:</strong> All events and handlers are fully
+            typed for compile-time safety
           </li>
         </ul>
       </section>

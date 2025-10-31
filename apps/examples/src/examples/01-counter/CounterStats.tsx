@@ -17,7 +17,7 @@ export function CounterStats({ instanceKey }: CounterStatsProps) {
   const [state] = useBloc(CounterBloc, { instanceId: instanceKey });
 
   console.log(
-    `[CounterStats] Rendering - increments: ${state.incrementCount}, decrements: ${state.decrementCount}`
+    `[CounterStats] Rendering - increments: ${state.incrementCount}, decrements: ${state.decrementCount}`,
   );
 
   return (
@@ -38,7 +38,8 @@ export function CounterStats({ instanceKey }: CounterStatsProps) {
         </div>
       </div>
       <p className="meta-line">
-        💡 Only re-renders when increment / decrement counts or lastAction mutate.
+        💡 Only re-renders when increment / decrement counts or lastAction
+        mutate.
       </p>
     </div>
   );
