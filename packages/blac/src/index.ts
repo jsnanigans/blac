@@ -17,6 +17,9 @@ export * from './core/Vertex';
 // Proxy Tracking
 export * from './proxy/ProxyTracker';
 
+// Dependency Tracking (functional utilities for framework integrations)
+export * from './tracking';
+
 // Subscription System - selective exports to avoid conflicts
 export { SubscriptionSystem } from './subscription/SubscriptionSystem';
 export { SubscriptionBuilder } from './subscription/SubscriptionBuilder';

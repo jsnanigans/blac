@@ -1,0 +1,288 @@
+/**
+ * Functional proxy tracker for automatic dependency tracking
+ *
+ * This module provides a functional approach to proxy-based dependency tracking.
+ * Unlike the class-based ProxyTracker, this uses a state object pattern that's
+ * easier to integrate with functional programming patterns and framework hooks.
+ */
+
+/**
+ * Array methods that should trigger tracking of the entire array
+ */
+const ARRAY_METHODS = new Set([
+  'map',
+  'filter',
+  'forEach',
+  'find',
+  'some',
+  'every',
+  'reduce',
+]);
+
+/**
+ * Check if a value can be proxied
+ *
+ * Returns true for plain objects and arrays only.
+ * Excludes built-in objects like Date, Map, Set, etc.
+ */
+export function isProxyable(value: unknown): value is object {
+  if (typeof value !== 'object' || value === null) return false;
+  const proto = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === Array.prototype;
+}
+
+/**
+ * State container for proxy tracking
+ */
+export interface ProxyTrackerState<T> {
+  /** Set of all tracked property paths */
+  trackedPaths: Set<string>;
+  /** Whether tracking is currently active */
+  isTracking: boolean;
+  /** Cache of created proxies to avoid duplicates */
+  proxyCache: WeakMap<object, any>;
+  /** Cache of bound functions to maintain referential equality */
+  boundFunctionsCache: WeakMap<Function, Function> | null;
+  /** Last state object that was proxied (for cache invalidation) */
+  lastProxiedState: T | null;
+  /** Last proxy created (for cache reuse) */
+  lastProxy: T | null;
+  /** Maximum depth for nested proxy creation */
+  maxDepth: number;
+}
+
+/**
+ * Create a new proxy tracker state
+ *
+ * @example
+ * const state = createProxyTrackerState<MyState>();
+ * startProxyTracking(state);
+ * const proxy = createProxyForTarget(state, myObject);
+ * // ... use proxy ...
+ * const paths = stopProxyTracking(state);
+ */
+export function createProxyTrackerState<T>(): ProxyTrackerState<T> {
+  return {
+    trackedPaths: new Set<string>(),
+    isTracking: false,
+    proxyCache: new WeakMap<object, any>(),
+    boundFunctionsCache: null,
+    lastProxiedState: null,
+    lastProxy: null,
+    maxDepth: 10,
+  };
+}
+
+/**
+ * Start tracking property accesses
+ *
+ * Clears previous tracked paths and enables tracking mode.
+ */
+export function startProxyTracking<T>(state: ProxyTrackerState<T>): void {
+  state.isTracking = true;
+  state.trackedPaths.clear();
+}
+
+/**
+ * Stop tracking and return the tracked paths
+ *
+ * Returns a new Set containing all tracked paths.
+ */
+export function stopProxyTracking<T>(state: ProxyTrackerState<T>): Set<string> {
+  state.isTracking = false;
+  return new Set(state.trackedPaths);
+}
+
+/**
+ * Create a proxy for an array with property access tracking
+ *
+ * Tracks:
+ * - Array element access (arr[0])
+ * - Length access (arr.length)
+ * - Array method calls (arr.map, arr.filter, etc.)
+ */
+export function createArrayProxy<T, U>(
+  state: ProxyTrackerState<T>,
+  target: U[],
+  path: string,
+  depth: number = 0,
+): U[] {
+  const proxy = new Proxy(target, {
+    get: (arr, prop: string | symbol) => {
+      if (typeof prop === 'symbol') {
+        return Reflect.get(arr, prop);
+      }
+
+      const value = Reflect.get(arr, prop);
+
+      if (typeof value === 'function') {
+        if (ARRAY_METHODS.has(prop)) {
+          if (state.isTracking && path) {
+            state.trackedPaths.add(path);
+          }
+        }
+
+        if (!state.boundFunctionsCache) {
+          state.boundFunctionsCache = new WeakMap<Function, Function>();
+        }
+        const cached = state.boundFunctionsCache.get(value);
+        if (cached) {
+          return cached;
+        }
+        const bound = value.bind(arr);
+        state.boundFunctionsCache.set(value, bound);
+        return bound;
+      }
+
+      let fullPath: string;
+      if (prop === 'length') {
+        fullPath = path ? `${path}.length` : 'length';
+      } else if (typeof prop === 'string') {
+        const index = Number(prop);
+        if (!isNaN(index) && index >= 0) {
+          fullPath = path ? `${path}[${index}]` : `[${index}]`;
+        } else {
+          fullPath = path ? `${path}.${prop}` : prop;
+        }
+      } else {
+        return value;
+      }
+
+      if (isProxyable(value)) {
+        return createProxyInternal(state, value as T, fullPath, depth + 1);
+      }
+
+      if (state.isTracking) {
+        state.trackedPaths.add(fullPath);
+      }
+
+      return value;
+    },
+  });
+
+  state.proxyCache.set(target, proxy);
+  return proxy;
+}
+
+/**
+ * Create a proxy for an object with property access tracking
+ *
+ * This is the core proxy creation function that recursively creates proxies
+ * for nested objects and arrays.
+ *
+ * Tracks:
+ * - Property access (obj.prop)
+ * - Nested property access (obj.nested.prop)
+ * - 'in' operator usage ('prop' in obj)
+ * - Object.keys, Object.entries, etc.
+ */
+export function createProxyInternal<T>(
+  state: ProxyTrackerState<T>,
+  target: T,
+  path: string = '',
+  depth: number = 0,
+): T {
+  if (!state.isTracking || !isProxyable(target)) {
+    return target;
+  }
+
+  if (depth >= state.maxDepth) {
+    return target;
+  }
+
+  if (state.proxyCache.has(target)) {
+    return state.proxyCache.get(target);
+  }
+
+  if (Array.isArray(target)) {
+    return createArrayProxy(
+      state,
+      target as unknown as any[],
+      path,
+      depth,
+    ) as unknown as T;
+  }
+
+  const proxy = new Proxy(target, {
+    get: (obj, prop: string | symbol) => {
+      if (typeof prop === 'symbol') {
+        return Reflect.get(obj, prop);
+      }
+
+      const value = Reflect.get(obj, prop);
+
+      if (typeof value === 'function') {
+        if (!state.boundFunctionsCache) {
+          state.boundFunctionsCache = new WeakMap<Function, Function>();
+        }
+        const cached = state.boundFunctionsCache.get(value);
+        if (cached) {
+          return cached;
+        }
+        const bound = value.bind(obj);
+        state.boundFunctionsCache.set(value, bound);
+        return bound;
+      }
+
+      const fullPath = path ? `${path}.${String(prop)}` : String(prop);
+
+      if (isProxyable(value)) {
+        const proxiedValue = createProxyInternal(
+          state,
+          value as T,
+          fullPath,
+          depth + 1,
+        );
+        return proxiedValue;
+      }
+
+      if (typeof prop === 'string' && state.isTracking) {
+        if (!prop.startsWith('_') && !prop.startsWith('$$')) {
+          state.trackedPaths.add(fullPath);
+        }
+      }
+
+      return value;
+    },
+
+    has: (obj, prop: string | symbol) => {
+      if (typeof prop === 'string' && state.isTracking) {
+        const fullPath = path ? `${path}.${prop}` : prop;
+        state.trackedPaths.add(fullPath);
+      }
+      return Reflect.has(obj, prop);
+    },
+
+    ownKeys: (obj) => {
+      if (state.isTracking && path) {
+        state.trackedPaths.add(path);
+      }
+      return Reflect.ownKeys(obj);
+    },
+  });
+
+  state.proxyCache.set(target, proxy);
+  return proxy as T;
+}
+
+/**
+ * Create a proxy for a target with caching
+ *
+ * If the target hasn't changed since the last call, returns the cached proxy.
+ * Otherwise, creates a new proxy and caches it.
+ *
+ * This is the main entry point for creating tracked proxies.
+ */
+export function createProxyForTarget<T>(
+  state: ProxyTrackerState<T>,
+  target: T,
+): T {
+  if (state.lastProxiedState === target && state.lastProxy) {
+    return state.lastProxy;
+  }
+
+  const proxy = createProxyInternal(state, target, '', 0);
+  state.lastProxiedState = target;
+  state.lastProxy = proxy;
+  return proxy;
+}
