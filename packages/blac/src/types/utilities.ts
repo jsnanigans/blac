@@ -15,8 +15,7 @@ import type { AnyObject } from './branded';
  * type State = ExtractState<CounterBloc>; // number
  * ```
  */
-export type ExtractState<T> =
-  T extends StateContainer<infer S> ? S : never;
+export type ExtractState<T> = T extends StateContainer<infer S> ? S : never;
 
 /**
  * Extract constructor parameter types from a Bloc class

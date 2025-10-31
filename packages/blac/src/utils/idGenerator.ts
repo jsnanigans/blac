@@ -24,9 +24,12 @@ const globalCounters = new Map<string, number>();
 export function createIdGenerator(prefix: string) {
   let counter = 0;
   return {
-    next: () => `${prefix}_${Date.now()}_${++counter}_${Math.random().toString(36).substring(2, 11)}`,
+    next: () =>
+      `${prefix}_${Date.now()}_${++counter}_${Math.random().toString(36).substring(2, 11)}`,
     nextSimple: () => `${prefix}_${++counter}`,
-    reset: () => { counter = 0; }
+    reset: () => {
+      counter = 0;
+    },
   };
 }
 

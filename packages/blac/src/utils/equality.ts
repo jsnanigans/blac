@@ -61,7 +61,7 @@ export function deepEqual<T>(a: T, b: T, seen = new WeakMap()): boolean {
   if (keysA.length !== keysB.length) return false;
 
   return keysA.every(
-    key => keysB.includes(key) && deepEqual(objA[key], objB[key], seen)
+    (key) => keysB.includes(key) && deepEqual(objA[key], objB[key], seen),
   );
 }
 
@@ -78,5 +78,5 @@ export function shallowEqual<T>(a: T, b: T): boolean {
 
   if (keysA.length !== keysB.length) return false;
 
-  return keysA.every(key => (a as any)[key] === (b as any)[key]);
+  return keysA.every((key) => (a as any)[key] === (b as any)[key]);
 }

@@ -54,7 +54,10 @@ export abstract class StateContainer<S> {
    * Global registry of all StateContainer instances
    * Key format: "ClassName:instanceKey"
    */
-  private static readonly instances = new Map<string, StateContainerInstanceEntry>();
+  private static readonly instances = new Map<
+    string,
+    StateContainerInstanceEntry
+  >();
 
   /**
    * Get or create a StateContainer instance with reference counting
@@ -302,7 +305,9 @@ export abstract class StateContainer<S> {
    */
   protected emit(newState: S): void {
     if (this._disposed) {
-      throw new Error(`Cannot emit state from disposed container ${this._name}`);
+      throw new Error(
+        `Cannot emit state from disposed container ${this._name}`,
+      );
     }
 
     const previousState = this._state;
@@ -326,7 +331,9 @@ export abstract class StateContainer<S> {
    */
   protected update(updater: (current: S) => S): void {
     if (this._disposed) {
-      throw new Error(`Cannot update state from disposed container ${this._name}`);
+      throw new Error(
+        `Cannot update state from disposed container ${this._name}`,
+      );
     }
 
     const newState = updater(this._state);

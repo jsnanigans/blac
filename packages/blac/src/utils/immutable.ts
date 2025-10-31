@@ -20,11 +20,11 @@ export function cloneDeep<T>(obj: T, cloned = new WeakMap()): T {
   } else if (obj instanceof Array) {
     clone = [];
     cloned.set(obj, clone);
-    clone.push(...obj.map(item => cloneDeep(item, cloned)));
+    clone.push(...obj.map((item) => cloneDeep(item, cloned)));
   } else if (obj instanceof Set) {
     clone = new Set();
     cloned.set(obj, clone);
-    obj.forEach(value => clone.add(cloneDeep(value, cloned)));
+    obj.forEach((value) => clone.add(cloneDeep(value, cloned)));
   } else if (obj instanceof Map) {
     clone = new Map();
     cloned.set(obj, clone);
@@ -56,7 +56,11 @@ export function cloneDeep<T>(obj: T, cloned = new WeakMap()): T {
  * @param frozen - WeakSet for tracking circular references
  * @param enabled - Whether to actually freeze (default: false for proxy compatibility)
  */
-export function deepFreeze<T>(obj: T, frozen = new WeakSet(), enabled = false): T {
+export function deepFreeze<T>(
+  obj: T,
+  frozen = new WeakSet(),
+  enabled = false,
+): T {
   // Skip freezing if disabled (for proxy tracking compatibility)
   if (!enabled) return obj;
 
@@ -68,7 +72,7 @@ export function deepFreeze<T>(obj: T, frozen = new WeakSet(), enabled = false): 
   frozen.add(obj);
   Object.freeze(obj);
 
-  Object.getOwnPropertyNames(obj).forEach(prop => {
+  Object.getOwnPropertyNames(obj).forEach((prop) => {
     const propValue = (obj as any)[prop];
     if (typeof propValue === 'object' && propValue !== null) {
       deepFreeze(propValue, frozen, enabled);

@@ -40,7 +40,12 @@ export function createLogger(config: LogConfig) {
     return config.enabled && config.level >= level;
   };
 
-  const log = (level: string, context: string, message: string, data?: any): void => {
+  const log = (
+    level: string,
+    context: string,
+    message: string,
+    data?: any,
+  ): void => {
     try {
       const entry: LogEntry = {
         level,
@@ -86,7 +91,7 @@ export function createLogger(config: LogConfig) {
     },
     configure: (opts: Partial<LogConfig>) => {
       Object.assign(config, opts);
-    }
+    },
   };
 }
 
