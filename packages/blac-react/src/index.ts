@@ -6,4 +6,5 @@
  * Supports concurrent (useSyncExternalStore) mode for optimal performance.
  */
 
-export { useBloc, type UseBlocOptions, type UseBlocReturn } from './useBloc';
+export { useBloc } from './useBloc';
+export type { UseBlocOptions, UseBlocReturn } from './types';

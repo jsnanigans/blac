@@ -37,7 +37,7 @@ import type { UseBlocOptions, UseBlocReturn, ComponentRef } from './types';
 /**
  * StateContainer constructor with required static methods
  */
-type StateContainerConstructor<TBloc extends StateContainer<any, any>> =
+type StateContainerConstructor<TBloc extends StateContainer<any>> =
   BlocConstructor<TBloc> & {
     getOrCreate(instanceKey?: string, ...args: any[]): TBloc;
     release(instanceKey?: string): void;
@@ -76,7 +76,7 @@ interface TrackingMode {
 }
 
 function determineTrackingMode<
-  TBloc extends StateContainer<AnyObject, AnyObject>,
+  TBloc extends StateContainer<AnyObject>,
 >(options?: UseBlocOptions<TBloc>): TrackingMode {
   return {
     useManualDeps: options?.dependencies !== undefined,
@@ -87,7 +87,7 @@ function determineTrackingMode<
 /**
  * Internal state for subscription and snapshot functions
  */
-interface HookState<TBloc extends StateContainer<AnyObject, AnyObject>> {
+interface HookState<TBloc extends StateContainer<AnyObject>> {
   tracker: TrackerState<ExtractState<TBloc>> | null;
   manualDepsCache: unknown[] | null;
 }
@@ -96,7 +96,7 @@ interface HookState<TBloc extends StateContainer<AnyObject, AnyObject>> {
  * Factory: Creates subscribe function for automatic proxy tracking mode
  */
 function createAutoTrackSubscribe<
-  TBloc extends StateContainer<AnyObject, AnyObject>,
+  TBloc extends StateContainer<AnyObject>,
 >(
   instance: TBloc,
   hookState: HookState<TBloc>,
@@ -117,7 +117,7 @@ function createAutoTrackSubscribe<
  * Factory: Creates subscribe function for manual dependencies mode
  */
 function createManualDepsSubscribe<
-  TBloc extends StateContainer<AnyObject, AnyObject>,
+  TBloc extends StateContainer<AnyObject>,
 >(
   instance: TBloc,
   hookState: HookState<TBloc>,
@@ -141,7 +141,7 @@ function createManualDepsSubscribe<
  * Factory: Creates subscribe function for no-tracking mode
  */
 function createNoTrackSubscribe<
-  TBloc extends StateContainer<AnyObject, AnyObject>,
+  TBloc extends StateContainer<AnyObject>,
 >(instance: TBloc): (callback: () => void) => () => void {
   return (callback: () => void) => instance.subscribe(callback);
 }
@@ -150,7 +150,7 @@ function createNoTrackSubscribe<
  * Factory: Creates getSnapshot function for automatic proxy tracking mode
  */
 function createAutoTrackSnapshot<
-  TBloc extends StateContainer<AnyObject, AnyObject>,
+  TBloc extends StateContainer<AnyObject>,
 >(instance: TBloc, hookState: HookState<TBloc>): () => ExtractState<TBloc> {
   return () => {
     const tracker =
@@ -170,7 +170,7 @@ function createAutoTrackSnapshot<
  * Factory: Creates getSnapshot function for manual dependencies mode
  */
 function createManualDepsSnapshot<
-  TBloc extends StateContainer<AnyObject, AnyObject>,
+  TBloc extends StateContainer<AnyObject>,
 >(
   instance: TBloc,
   hookState: HookState<TBloc>,
@@ -186,7 +186,7 @@ function createManualDepsSnapshot<
  * Factory: Creates getSnapshot function for no-tracking mode
  */
 function createNoTrackSnapshot<
-  TBloc extends StateContainer<AnyObject, AnyObject>,
+  TBloc extends StateContainer<AnyObject>,
 >(instance: TBloc): () => ExtractState<TBloc> {
   return () => instance.state;
 }
@@ -208,7 +208,7 @@ function createNoTrackSnapshot<
  * 1. useMemo returns cached values (same bloc, subscribeFn, getSnapshotFn)
  * 2. useSyncExternalStore calls getSnapshotFn - captures paths, starts tracking, returns proxy
  */
-export function useBloc<TBloc extends StateContainer<AnyObject, AnyObject>>(
+export function useBloc<TBloc extends StateContainer<AnyObject>>(
   BlocClass: BlocConstructor<TBloc>,
   options?: UseBlocOptions<TBloc>,
 ): UseBlocReturn<TBloc> {
@@ -279,6 +279,3 @@ export function useBloc<TBloc extends StateContainer<AnyObject, AnyObject>>(
 
   return [state, bloc, componentRef] as UseBlocReturn<TBloc>;
 }
-
-// Re-export types
-export type { UseBlocOptions, UseBlocReturn } from './types';

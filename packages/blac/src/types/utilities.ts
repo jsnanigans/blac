@@ -16,7 +16,7 @@ import type { AnyObject } from './branded';
  * ```
  */
 export type ExtractState<T> =
-  T extends StateContainer<infer S, AnyObject> ? S : never;
+  T extends StateContainer<infer S> ? S : never;
 
 /**
  * Extract constructor parameter types from a Bloc class
@@ -39,19 +39,19 @@ export type ExtractConstructorArgs<T> = T extends new (
  * Bloc constructor type - represents a class constructor for StateContainer subclasses
  * Includes static methods from StateContainer for instance management
  *
- * Note: Uses `any` for state/event types to support variance - the actual Bloc instance
+ * Note: Uses `any` for state type to support variance - the actual Bloc instance
  * will have the correct specific types inferred at usage sites.
  *
  * @example
  * ```ts
- * function createBloc<TBloc extends StateContainer<any, any>>(
+ * function createBloc<TBloc extends StateContainer<any>>(
  *   BlocClass: BlocConstructor<TBloc>
  * ): TBloc {
  *   return BlocClass.getOrCreate();
  * }
  * ```
  */
-export type BlocConstructor<TBloc extends StateContainer<any, any>> = (new (
+export type BlocConstructor<TBloc extends StateContainer<any>> = (new (
   ...args: any[]
 ) => TBloc) & {
   getOrCreate?(instanceKey?: string, ...args: any[]): TBloc;

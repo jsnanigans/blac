@@ -3,7 +3,6 @@
  */
 
 import { vi } from 'vitest';
-import { Version, version } from '../types/branded';
 
 /**
  * Create a test state object
@@ -114,46 +113,5 @@ export class PerfTimer {
       result[label] = time - this.start;
     });
     return result;
-  }
-}
-
-/**
- * Create a sequence of versions for testing
- */
-export function* versionSequence(
-  start = 0,
-): Generator<Version, never, unknown> {
-  let current = start;
-  while (true) {
-    yield version(current++);
-  }
-}
-
-/**
- * Test fixture for state containers
- */
-export class TestFixture<S> {
-  states: S[] = [];
-  versions: Version[] = [];
-  notifications = 0;
-
-  recordState(state: S, v: Version): void {
-    this.states.push(state);
-    this.versions.push(v);
-    this.notifications++;
-  }
-
-  reset(): void {
-    this.states = [];
-    this.versions = [];
-    this.notifications = 0;
-  }
-
-  get lastState(): S | undefined {
-    return this.states[this.states.length - 1];
-  }
-
-  get lastVersion(): Version | undefined {
-    return this.versions[this.versions.length - 1];
   }
 }

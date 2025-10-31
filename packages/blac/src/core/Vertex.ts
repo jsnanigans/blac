@@ -1,8 +1,8 @@
 /**
  * Vertex - Event-driven state container (Bloc pattern)
  *
- * This validates that our StateContainer design can support
- * the event-driven Bloc pattern from the original BlaC.
+ * Simplified version that includes its own event handling,
+ * since events are only needed for the Vertex pattern.
  */
 
 import { StateContainer, StateContainerConfig } from './StateContainer';
@@ -33,11 +33,14 @@ interface EventHandlerRegistration<E extends BaseEvent, S> {
 
 /**
  * Vertex is an event-driven state container (Bloc pattern)
+ *
+ * Includes its own simple event system since events are only needed
+ * for the Vertex pattern, not for the base StateContainer.
  */
 export abstract class Vertex<
   S,
   E extends BaseEvent = BaseEvent,
-> extends StateContainer<S, E> {
+> extends StateContainer<S> {
   private eventHandlers = new Map<string, EventHandlerRegistration<E, S>[]>();
   private isProcessing = false;
   private eventQueue: E[] = [];
@@ -49,11 +52,6 @@ export abstract class Vertex<
    */
   constructor(initialState: S, config?: StateContainerConfig) {
     super(initialState, config);
-
-    // Subscribe to events for processing
-    this.subscribeToEvents((event) => {
-      this.processEvent(event as E);
-    });
   }
 
   /**
@@ -78,7 +76,7 @@ export abstract class Vertex<
    * Arrow function to maintain correct 'this' binding in React
    */
   protected add = (event: E): void => {
-    this.eventStream.dispatch(event);
+    this.processEvent(event);
   };
 
   /**
@@ -121,14 +119,14 @@ export abstract class Vertex<
     }
 
     // Create emit function that captures current context
-    const emit = (state: S) => {
+    const emitFn = (state: S) => {
       this.emit(state);
     };
 
     // Execute all handlers for this event type (synchronously)
     for (const registration of registrations) {
       try {
-        registration.handler(event, emit);
+        registration.handler(event, emitFn);
       } catch (error) {
         if (this.config.debug) {
           console.error(`Error handling event ${className}:`, error);

@@ -1,52 +1,31 @@
 /**
- * Architecture Exports
+ * BLAC Core - Simplified Architecture
  *
- * Clean, type-safe implementation with clear responsibility boundaries.
+ * Reduced from ~3000 lines to ~1000 lines by:
+ * - Removing subscription pipeline (SubscriptionSystem, SubscriptionPipeline, etc.)
+ * - Removing complex lifecycle management (5 states -> 1 disposed flag)
+ * - Removing version tracking and history
+ * - Removing StateStream and EventStream (replaced with simple listeners)
+ * - Making tracking system a separate concern
  */
 
-// Core
-export * from './core/StateStream';
-export type { EventHandler as EventStreamHandler } from './core/EventStream';
-export { EventStream } from './core/EventStream';
-export type { LifecycleEvent } from './core/LifecycleManager';
-export { LifecycleManager, LifecycleState } from './core/LifecycleManager';
+// Core State Management
 export * from './core/StateContainer';
 export * from './core/Cubit';
 export * from './core/Vertex';
 
-// Proxy Tracking
-export * from './proxy/ProxyTracker';
-
-// Dependency Tracking (functional utilities for framework integrations)
+// Dependency Tracking (framework-agnostic utilities for React/Vue/etc)
 export * from './tracking';
 
-// Subscription System - selective exports to avoid conflicts
-export { SubscriptionSystem } from './subscription/SubscriptionSystem';
-export { SubscriptionBuilder } from './subscription/SubscriptionBuilder';
-export type { Subscription } from './subscription/SubscriptionSystem';
+// Proxy Tracking (legacy - use tracking/* instead)
+export * from './proxy/ProxyTracker';
 
-// Registry - selective exports to avoid conflicts
+// Registry
 export { BlocRegistry } from './registry/BlocRegistry';
 
-// Types - use branded types as canonical
-export type {
-  AnyObject,
-  InstanceId,
-  SubscriptionId,
-  BrandedId,
-  Version,
-  Generation,
-} from './types/branded';
-export {
-  instanceId,
-  subscriptionId,
-  version,
-  generation,
-  incrementVersion,
-  incrementGeneration,
-} from './types/branded';
-export * from './types/events';
-export * from './types/internal';
+// Essential Types
+export type { AnyObject, Brand, BrandedId, InstanceId } from './types/branded';
+export type { BaseEvent } from './types/events';
 export * from './types/utilities';
 
 // Logging
