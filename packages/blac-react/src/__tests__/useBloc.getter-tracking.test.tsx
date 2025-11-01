@@ -21,9 +21,7 @@ import { Cubit } from '@blac/core';
 import { useBloc } from '../useBloc';
 import React, { StrictMode } from 'react';
 
-// ============================================================================
 // Test Blocs
-// ============================================================================
 
 class CounterBloc extends Cubit<{ count: number; other: string }> {
   static isolated = true;
@@ -160,9 +158,7 @@ class StateAndGetterBloc extends Cubit<{ count: number; name: string }> {
   };
 }
 
-// ============================================================================
 // Task 5.4: Integration Test - Basic Getter Tracking
-// ============================================================================
 
 describe('useBloc - Basic Getter Tracking', () => {
   it('should track getter access and re-render when getter value changes', async () => {
@@ -269,9 +265,7 @@ describe('useBloc - Basic Getter Tracking', () => {
   });
 });
 
-// ============================================================================
 // Task 5.5: Integration Test - Multiple Getters
-// ============================================================================
 
 describe('useBloc - Multiple Getters', () => {
   it('should track multiple getters independently', async () => {
@@ -337,9 +331,7 @@ describe('useBloc - Multiple Getters', () => {
   });
 });
 
-// ============================================================================
 // Task 5.6: Integration Test - Nested Getters
-// ============================================================================
 
 describe('useBloc - Nested Getters', () => {
   it('should handle getters calling other getters', async () => {
@@ -372,9 +364,7 @@ describe('useBloc - Nested Getters', () => {
   });
 });
 
-// ============================================================================
 // Task 5.7: Integration Test - Complex Return Values
-// ============================================================================
 
 describe('useBloc - Complex Return Values', () => {
   it('should use reference equality for arrays (new array = re-render)', async () => {
@@ -436,9 +426,7 @@ describe('useBloc - Complex Return Values', () => {
   });
 });
 
-// ============================================================================
 // Task 5.8: Integration Test - Error Handling
-// ============================================================================
 
 describe('useBloc - Error Handling', () => {
   it('should handle getter errors gracefully', async () => {
@@ -500,9 +488,7 @@ describe('useBloc - Error Handling', () => {
   });
 });
 
-// ============================================================================
 // Task 5.9: Integration Test - With State Tracking
-// ============================================================================
 
 describe('useBloc - State and Getter Tracking Combined', () => {
   it('should re-render when EITHER state or getter changes', async () => {
@@ -552,9 +538,7 @@ describe('useBloc - State and Getter Tracking Combined', () => {
   });
 });
 
-// ============================================================================
 // Task 5.10: Integration Test - Manual Dependencies
-// ============================================================================
 
 describe('useBloc - Manual Dependencies Mode', () => {
   it('should disable getter tracking when dependencies option provided', async () => {
@@ -603,9 +587,7 @@ describe('useBloc - Manual Dependencies Mode', () => {
   });
 });
 
-// ============================================================================
 // Task 5.11: Integration Test - autoTrack: false
-// ============================================================================
 
 describe('useBloc - autoTrack: false Mode', () => {
   it('should disable getter tracking when autoTrack: false', async () => {
@@ -639,9 +621,7 @@ describe('useBloc - autoTrack: false Mode', () => {
   });
 });
 
-// ============================================================================
 // Task 5.12: Integration Test - React Strict Mode
-// ============================================================================
 
 describe('useBloc - React Strict Mode', () => {
   it('should work correctly in Strict Mode (double-invocation)', async () => {
@@ -709,9 +689,7 @@ describe('useBloc - React Strict Mode', () => {
   });
 });
 
-// ============================================================================
 // Task 5.13: Integration Test - Memory Cleanup
-// ============================================================================
 
 describe('useBloc - Memory Cleanup', () => {
   it('should clean up tracking state on unmount', async () => {
@@ -733,9 +711,7 @@ describe('useBloc - Memory Cleanup', () => {
   });
 });
 
-// ============================================================================
 // Additional Edge Cases
-// ============================================================================
 
 describe('useBloc - Getter Tracking Edge Cases', () => {
   it('should handle Object.is edge cases (NaN, +0, -0)', async () => {

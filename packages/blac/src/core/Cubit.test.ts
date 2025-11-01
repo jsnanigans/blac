@@ -63,9 +63,7 @@ describe('Cubit', () => {
     StateContainer.clearAllInstances();
   });
 
-  // ============================================
   // Basic Functionality
-  // ============================================
 
   describe('Basic Functionality', () => {
     it('should extend StateContainer properly', () => {
@@ -166,9 +164,7 @@ describe('Cubit', () => {
     });
   });
 
-  // ============================================
   // CounterCubit Tests
-  // ============================================
 
   describe('CounterCubit Example', () => {
     it('should initialize with zero', () => {
@@ -252,9 +248,7 @@ describe('Cubit', () => {
     });
   });
 
-  // ============================================
   // TodoCubit Tests
-  // ============================================
 
   describe('TodoCubit Example', () => {
     let todoCubit: TodoCubit;
@@ -556,9 +550,7 @@ describe('Cubit', () => {
     });
   });
 
-  // ============================================
   // Edge Cases
-  // ============================================
 
   describe('Edge Cases', () => {
     it('should handle patching with empty object', () => {

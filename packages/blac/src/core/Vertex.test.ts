@@ -119,9 +119,7 @@ describe('Vertex', () => {
     StateContainer.clearAllInstances();
   });
 
-  // ============================================
   // Event System
-  // ============================================
 
   describe('Event System', () => {
     describe('on() - Event Registration', () => {
@@ -297,9 +295,7 @@ describe('Vertex', () => {
     });
   });
 
-  // ============================================
   // CounterVertex Example
-  // ============================================
 
   describe('CounterVertex Example', () => {
     let counter: CounterVertex;
@@ -378,9 +374,7 @@ describe('Vertex', () => {
     });
   });
 
-  // ============================================
   // AuthVertex Example
-  // ============================================
 
   describe('AuthVertex Example', () => {
     let auth: AuthVertex;
@@ -547,9 +541,7 @@ describe('Vertex', () => {
     });
   });
 
-  // ============================================
   // Integration with StateContainer
-  // ============================================
 
   describe('Integration with StateContainer', () => {
     it('should extend StateContainer properly', () => {
@@ -607,9 +599,7 @@ describe('Vertex', () => {
     });
   });
 
-  // ============================================
   // Edge Cases
-  // ============================================
 
   describe('Edge Cases', () => {
     it('should handle event with no handlers gracefully', () => {

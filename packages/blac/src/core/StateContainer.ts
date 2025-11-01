@@ -38,10 +38,6 @@ type StateListener<S> = (state: S) => void;
  * Base abstract class for all state containers
  */
 export abstract class StateContainer<S> {
-  // ============================================
-  // Static Registry Delegation
-  // ============================================
-
   private static _registry = globalRegistry;
 
   /**
@@ -145,10 +141,6 @@ export abstract class StateContainer<S> {
     return StateContainer._registry.hasInstance(this, key);
   }
 
-  // ============================================
-  // Instance Properties
-  // ============================================
-
   private _state: S;
   private readonly listeners = new Set<StateListener<S>>();
   private _disposed = false;
@@ -171,10 +163,6 @@ export abstract class StateContainer<S> {
     this.instanceId =
       config.instanceId || generateSimpleId(this.constructor.name);
   }
-
-  // ============================================
-  // Public API
-  // ============================================
 
   /**
    * Get the current state
@@ -225,10 +213,6 @@ export abstract class StateContainer<S> {
     }
   }
 
-  // ============================================
-  // Protected Methods for Subclasses
-  // ============================================
-
   /**
    * Emit a new state (with change detection)
    */
@@ -267,10 +251,6 @@ export abstract class StateContainer<S> {
     }
     this.emit(updater(this._state));
   }
-
-  // ============================================
-  // Optional Lifecycle Hooks
-  // ============================================
 
   /**
    * Optional disposal hook for subclasses

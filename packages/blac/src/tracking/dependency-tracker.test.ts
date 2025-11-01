@@ -53,9 +53,7 @@ interface ComplexState {
 }
 
 describe('Dependency Tracker', () => {
-  // ============================================
   // Core Tracking
-  // ============================================
 
   describe('Core Tracking', () => {
     describe('createTrackerState()', () => {
@@ -341,9 +339,7 @@ describe('Dependency Tracker', () => {
     });
   });
 
-  // ============================================
   // Change Detection
-  // ============================================
 
   describe('Change Detection', () => {
     describe('hasChanges()', () => {
@@ -536,9 +532,7 @@ describe('Dependency Tracker', () => {
     });
   });
 
-  // ============================================
   // Performance and Edge Cases
-  // ============================================
 
   describe('Performance and Edge Cases', () => {
     it('should handle many tracked paths efficiently', () => {
@@ -690,9 +684,7 @@ describe('Dependency Tracker', () => {
     });
   });
 
-  // ============================================
   // Integration Scenarios
-  // ============================================
 
   describe('Integration Scenarios', () => {
     it('should work through complete render cycle', () => {

@@ -5,10 +5,6 @@
 import type { StateContainer, AnyObject, ExtractState } from '@blac/core';
 import type { RefObject } from 'react';
 
-// ============================================================================
-// Public API Types
-// ============================================================================
-
 /**
  * Configuration options for the useBloc hook
  *
@@ -88,10 +84,6 @@ export type UseBlocReturn<TBloc extends StateContainer<AnyObject>> = [
   TBloc,
   RefObject<ComponentRef>,
 ];
-
-// ============================================================================
-// Internal Types (not part of public API)
-// ============================================================================
 
 /**
  * @internal

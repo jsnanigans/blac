@@ -74,9 +74,7 @@ describe('StateContainer', () => {
     StateContainer.clearAllInstances();
   });
 
-  // ============================================
   // Static Instance Management
-  // ============================================
 
   describe('Static Instance Management', () => {
     describe('getOrCreate()', () => {
@@ -225,9 +223,7 @@ describe('StateContainer', () => {
     });
   });
 
-  // ============================================
   // Instance Behavior
-  // ============================================
 
   describe('Instance Behavior', () => {
     describe('Constructor', () => {
@@ -383,9 +379,7 @@ describe('StateContainer', () => {
     });
   });
 
-  // ============================================
   // Protected Methods (via subclass testing)
-  // ============================================
 
   describe('Protected Methods', () => {
     describe('emit()', () => {
@@ -500,9 +494,7 @@ describe('StateContainer', () => {
     });
   });
 
-  // ============================================
   // Configuration
-  // ============================================
 
   describe('Configuration', () => {
     it('should respect custom instanceId', () => {
@@ -547,9 +539,7 @@ describe('StateContainer', () => {
     });
   });
 
-  // ============================================
   // Integration Scenarios
-  // ============================================
 
   describe('Integration Scenarios', () => {
     it('should handle complex object state updates', () => {
