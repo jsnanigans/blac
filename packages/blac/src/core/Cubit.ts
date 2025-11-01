@@ -9,6 +9,9 @@ import { StateContainer, StateContainerConfig } from './StateContainer';
 
 /**
  * Cubit is a simple state container that allows direct state emission
+ *
+ * Unlike StateContainer (where emit is protected), Cubit exposes emit and update
+ * as public methods to allow direct state management.
  */
 export abstract class Cubit<S> extends StateContainer<S> {
   /**
@@ -18,6 +21,20 @@ export abstract class Cubit<S> extends StateContainer<S> {
    */
   constructor(initialState: S, config?: StateContainerConfig) {
     super(initialState, config);
+  }
+
+  /**
+   * Emit a new state (public override of protected parent method)
+   */
+  public emit(newState: S): void {
+    super['emit'](newState);
+  }
+
+  /**
+   * Update state using a function (public override of protected parent method)
+   */
+  public update(updater: (current: S) => S): void {
+    super['update'](updater);
   }
 
   /**
@@ -34,11 +51,11 @@ export abstract class Cubit<S> extends StateContainer<S> {
    * this.patch({ count: 5, name: 'Updated' });
    * ```
    */
-  protected patch = ((partial: S extends object ? Partial<S> : never): void => {
+  public patch = ((partial: S extends object ? Partial<S> : never): void => {
     if (typeof this.state !== 'object' || this.state === null) {
       throw new Error('patch() is only available for object state types');
     }
-    super.update((current) => ({ ...current, ...partial }) as S);
+    this.update((current) => ({ ...current, ...partial }) as S);
   }) as S extends object ? (partial: Partial<S>) => void : never;
 }
 

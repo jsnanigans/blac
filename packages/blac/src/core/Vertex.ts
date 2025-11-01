@@ -112,7 +112,7 @@ export abstract class Vertex<
     const registrations = this.eventHandlers.get(className);
 
     if (!registrations || registrations.length === 0) {
-      if (this.config.debug) {
+      if (this.debug) {
         console.warn(`No handler registered for event: ${className}`);
       }
       return;
@@ -128,7 +128,7 @@ export abstract class Vertex<
       try {
         registration.handler(event, emitFn);
       } catch (error) {
-        if (this.config.debug) {
+        if (this.debug) {
           console.error(`Error handling event ${className}:`, error);
         }
         // Optionally emit error state

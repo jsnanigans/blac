@@ -269,6 +269,12 @@ export function useBloc<TBloc extends StateContainer<AnyObject>>(
       // Release bloc reference
       const Constructor = BlocClass as StateContainerConstructor<TBloc>;
       Constructor.release(instanceKey);
+
+      // For isolated instances, dispose manually since registry doesn't track them
+      const isIsolated = (BlocClass as { isolated?: boolean }).isolated === true;
+      if (isIsolated && !bloc.isDisposed) {
+        bloc.dispose();
+      }
     };
   }, []);
 

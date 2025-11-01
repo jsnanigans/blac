@@ -1,16 +1,23 @@
 /**
- * BlocRegistry module
+ * Registry module (deprecated)
  *
- * Constructor-based instance management.
- * Clean, type-safe, no string names or factories.
+ * Registry functionality has been consolidated into StateContainer.
+ * Use StateContainer static methods instead:
+ *
+ * - StateContainer.register() - Register a type
+ * - StateContainer.getOrCreate() - Get or create instance
+ * - StateContainer.isRegistered() - Check if type is registered
+ * - StateContainer.hasInstance() - Check if instance exists
+ * - StateContainer.removeInstance() - Remove instance
+ * - StateContainer.getAll() - Get all instances of a type
+ * - StateContainer.clear() - Clear all instances of a type
+ * - StateContainer.clearAllInstances() - Clear all instances
+ * - StateContainer.unregister() - Unregister a type
+ * - StateContainer.getStats() - Get statistics
  */
 
-export { BlocRegistry, type BlocTypeConfig } from './BlocRegistry';
-
-// Re-export BlocConstructor from utilities (single source of truth)
+// Re-export types for backwards compatibility
 export { type BlocConstructor } from '../types/utilities';
-
-// Re-export branded types from centralized location
 export {
   type InstanceId,
   instanceId as createInstanceId,

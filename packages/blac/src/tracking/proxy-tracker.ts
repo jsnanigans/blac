@@ -281,6 +281,11 @@ export function createProxyForTarget<T>(
     return state.lastProxy;
   }
 
+  // Clear caches when state changes to prevent stale bound functions
+  // This is critical for array methods like .map() which get bound to the target
+  state.proxyCache = new WeakMap<object, any>();
+  state.boundFunctionsCache = null;
+
   const proxy = createProxyInternal(state, target, '', 0);
   state.lastProxiedState = target;
   state.lastProxy = proxy;

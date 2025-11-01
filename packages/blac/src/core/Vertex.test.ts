@@ -15,7 +15,7 @@ import {
   LogoutEvent,
   type AuthState,
 } from './Vertex';
-import { StateContainer } from './StateContainer';
+import { StateContainer, type StateContainerConfig } from './StateContainer';
 import type { BaseEvent } from '../types/events';
 
 // Test events
@@ -47,8 +47,8 @@ class TestVertex extends Vertex<number> {
   public errorCount = 0;
   public lastError: Error | null = null;
 
-  constructor(initialValue = 0) {
-    super(initialValue, { name: 'TestVertex' });
+  constructor(initialValue = 0, config?: StateContainerConfig) {
+    super(initialValue, { name: 'TestVertex', ...config });
 
     this.on(AddEvent, (event, emit) => {
       emit(this.state + event.amount);
@@ -262,8 +262,7 @@ describe('Vertex', () => {
           readonly timestamp = Date.now();
         }
 
-        const vertex = new TestVertex(10);
-        vertex['config'].debug = true;
+        const vertex = new TestVertex(10, { debug: true });
 
         vertex.add(new UnhandledEvent());
 
@@ -604,7 +603,7 @@ describe('Vertex', () => {
       CounterVertex.release();
       CounterVertex.release();
 
-      expect(CounterVertex.hasInstance()).toBe(false);
+      expect(CounterVertex.getAll()).toHaveLength(0);
     });
   });
 

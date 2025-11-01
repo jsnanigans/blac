@@ -1,14 +1,13 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { App } from './src/App';
-import './bootstrap.css';
+import { JSFrameworkBenchmark } from './src/benchmarks/JSFrameworkBenchmark';
 import './main.css';
 
 const container = document.getElementById('main');
 
 if (container) {
   const root = createRoot(container);
-  root.render(<App />);
+  root.render(<JSFrameworkBenchmark />);
 } else {
   console.error("Failed to find the root element with ID 'main'");
 }

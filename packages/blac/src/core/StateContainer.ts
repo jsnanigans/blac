@@ -1,39 +1,29 @@
 /**
- * StateContainer - Simple state management container
+ * StateContainer - Clean, minimal state management container
  *
- * Simplified from ~770 lines to ~150 lines by removing:
- * - Subscription pipeline architecture
- * - Complex lifecycle management (5 states -> 1 disposed flag)
- * - Version tracking and history
- * - Multiple event streams
- * - Deep cloning and freezing
+ * Responsibilities:
+ * - State storage and updates
+ * - Change notifications to subscribers
+ * - Lifecycle management
  */
 
 import { generateSimpleId } from '../utils/idGenerator';
-import { debug } from '../logging/Logger';
+import { StateContainerRegistry, globalRegistry } from './StateContainerRegistry';
 
 /**
  * Configuration options for StateContainer
  */
 export interface StateContainerConfig {
-  /** Custom instance ID */
-  instanceId?: string;
   /** Container name for debugging */
   name?: string;
   /** Whether to keep container alive when no consumers */
   keepAlive?: boolean;
-  /** Whether container is isolated (not shared) */
-  isolated?: boolean;
   /** Enable debug logging */
   debug?: boolean;
-}
-
-/**
- * Instance entry for static instance registry
- */
-interface StateContainerInstanceEntry {
-  instance: StateContainer<any>;
-  refCount: number;
+  /** Custom instance identifier */
+  instanceId?: string;
+  /** Whether this instance should be isolated (not shared) */
+  isolated?: boolean;
 }
 
 /**
@@ -43,118 +33,113 @@ type StateListener<S> = (state: S) => void;
 
 /**
  * Base abstract class for all state containers
- * Simplified architecture with direct state management
  */
 export abstract class StateContainer<S> {
   // ============================================
-  // Static Instance Registry
+  // Static Registry Delegation
   // ============================================
 
-  /**
-   * Global registry of all StateContainer instances
-   * Key format: "ClassName:instanceKey"
-   */
-  private static readonly instances = new Map<
-    string,
-    StateContainerInstanceEntry
-  >();
+  private static _registry = globalRegistry;
 
   /**
-   * Get or create a StateContainer instance with reference counting
+   * Set a custom registry (mainly for testing)
+   */
+  static setRegistry(registry: StateContainerRegistry): void {
+    StateContainer._registry = registry;
+  }
+
+  /**
+   * Register a type as isolated or shared
+   */
+  static register<T extends StateContainer<any>>(
+    this: new (...args: any[]) => T,
+    isolated = false,
+  ): void {
+    StateContainer._registry.register(this, isolated);
+  }
+
+  /**
+   * Get or create an instance
+   * @param key - Optional instance key for shared instances
+   * @param args - Constructor arguments
    */
   static getOrCreate<T extends StateContainer<any>>(
     this: new (...args: any[]) => T,
-    instanceKey?: string,
-    ...constructorArgs: any[]
+    key?: string,
+    ...args: any[]
   ): T {
-    const className = this.name;
-    const key = instanceKey ?? className;
-    const fullKey = `${className}:${key}`;
-
-    // Get existing instance
-    const existing = StateContainer.instances.get(fullKey);
-    if (existing) {
-      existing.refCount++;
-      return existing.instance as T;
-    }
-
-    // Create new instance
-    const instance = new this(...constructorArgs);
-
-    StateContainer.instances.set(fullKey, {
-      instance,
-      refCount: 1,
-    });
-
-    return instance;
+    return StateContainer._registry.getOrCreate(this, key, ...args);
   }
 
   /**
-   * Release a reference to a StateContainer instance
-   * Disposes the instance when reference count reaches zero
+   * Release a reference to an instance
+   * @param key - Optional instance key
+   * @param forceDispose - Force dispose regardless of ref count or keepAlive
    */
   static release<T extends StateContainer<any>>(
     this: new (...args: any[]) => T,
-    instanceKey?: string,
+    key?: string,
     forceDispose = false,
   ): void {
-    const className = this.name;
-    const key = instanceKey ?? className;
-    const fullKey = `${className}:${key}`;
-
-    const entry = StateContainer.instances.get(fullKey);
-    if (!entry) return;
-
-    if (forceDispose) {
-      entry.instance.dispose();
-      StateContainer.instances.delete(fullKey);
-      return;
-    }
-
-    entry.refCount--;
-
-    // Only dispose if ref count reaches zero and not keepAlive
-    if (entry.refCount <= 0 && !entry.instance.keepAlive) {
-      entry.instance.dispose();
-      StateContainer.instances.delete(fullKey);
-    }
+    StateContainer._registry.release(this, key, forceDispose);
   }
 
   /**
-   * Get the current reference count for an instance
+   * Get all instances of this type
+   */
+  static getAll<T extends StateContainer<any>>(
+    this: new (...args: any[]) => T,
+  ): T[] {
+    return StateContainer._registry.getAll(this);
+  }
+
+  /**
+   * Clear all instances of this type
+   */
+  static clear<T extends StateContainer<any>>(
+    this: new (...args: any[]) => T,
+  ): void {
+    StateContainer._registry.clear(this);
+  }
+
+  /**
+   * Clear all instances from all types (for testing)
+   */
+  static clearAllInstances(): void {
+    StateContainer._registry.clearAll();
+  }
+
+  /**
+   * Get registry statistics (for debugging)
+   */
+  static getStats(): {
+    registeredTypes: number;
+    totalInstances: number;
+    typeBreakdown: Record<string, number>;
+  } {
+    return StateContainer._registry.getStats();
+  }
+
+  /**
+   * Get reference count for an instance
+   * @param key - Optional instance key
    */
   static getRefCount<T extends StateContainer<any>>(
     this: new (...args: any[]) => T,
-    instanceKey?: string,
+    key?: string,
   ): number {
-    const className = this.name;
-    const key = instanceKey ?? className;
-    const fullKey = `${className}:${key}`;
-    const entry = StateContainer.instances.get(fullKey);
-    return entry?.refCount ?? 0;
+    return StateContainer._registry.getRefCount(this, key);
   }
 
   /**
    * Check if an instance exists
+   * @param key - Optional instance key
    */
   static hasInstance<T extends StateContainer<any>>(
     this: new (...args: any[]) => T,
-    instanceKey?: string,
+    key?: string,
   ): boolean {
-    const className = this.name;
-    const key = instanceKey ?? className;
-    const fullKey = `${className}:${key}`;
-    return StateContainer.instances.has(fullKey);
-  }
-
-  /**
-   * Clear all instances (useful for testing)
-   */
-  static clearAllInstances(): void {
-    for (const entry of StateContainer.instances.values()) {
-      entry.instance.dispose();
-    }
-    StateContainer.instances.clear();
+    return StateContainer._registry.hasInstance(this, key);
   }
 
   // ============================================
@@ -162,33 +147,25 @@ export abstract class StateContainer<S> {
   // ============================================
 
   private _state: S;
-  private listeners = new Set<StateListener<S>>();
+  private readonly listeners = new Set<StateListener<S>>();
   private _disposed = false;
+  private readonly config: StateContainerConfig;
 
-  // Identity
-  protected readonly _instanceId: string;
-  protected readonly _className: string;
-  protected readonly _name: string;
-
-  // Configuration
-  protected readonly config: Required<StateContainerConfig>;
+  readonly name: string;
+  readonly keepAlive: boolean;
+  readonly debug: boolean;
+  readonly instanceId: string;
 
   /**
    * Create a new StateContainer
    */
   constructor(initialState: S, config: StateContainerConfig = {}) {
     this._state = initialState;
-    this._instanceId = config.instanceId || this.generateId();
-    this._className = this.constructor.name;
-    this._name = config.name || this._className;
-
-    this.config = {
-      instanceId: this._instanceId,
-      name: this._name,
-      keepAlive: config.keepAlive ?? false,
-      isolated: config.isolated ?? false,
-      debug: config.debug ?? false,
-    };
+    this.config = config;
+    this.name = config.name || this.constructor.name;
+    this.keepAlive = config.keepAlive ?? false;
+    this.debug = config.debug ?? false;
+    this.instanceId = config.instanceId || generateSimpleId(this.constructor.name);
   }
 
   // ============================================
@@ -203,34 +180,6 @@ export abstract class StateContainer<S> {
   }
 
   /**
-   * Get instance ID
-   */
-  get instanceId(): string {
-    return this._instanceId;
-  }
-
-  /**
-   * Get container name
-   */
-  get name(): string {
-    return this._name;
-  }
-
-  /**
-   * Get class name
-   */
-  get className(): string {
-    return this._className;
-  }
-
-  /**
-   * Check if container should be kept alive
-   */
-  get keepAlive(): boolean {
-    return this.config.keepAlive;
-  }
-
-  /**
    * Check if disposed
    */
   get isDisposed(): boolean {
@@ -239,61 +188,37 @@ export abstract class StateContainer<S> {
 
   /**
    * Subscribe to state changes
+   * @returns Unsubscribe function
    */
   subscribe(listener: StateListener<S>): () => void {
     if (this._disposed) {
-      throw new Error(`Cannot subscribe to disposed container ${this._name}`);
+      throw new Error(`Cannot subscribe to disposed container ${this.name}`);
     }
 
     this.listeners.add(listener);
-
-    // Return unsubscribe function
-    return () => {
-      this.listeners.delete(listener);
-    };
+    return () => this.listeners.delete(listener);
   }
 
   /**
    * Dispose the container
    */
   dispose(): void {
-    if (this._disposed) {
-      return; // Already disposed
-    }
+    if (this._disposed) return;
 
-    if (this.config.debug) {
-      console.log(`[${this._name}] Disposing...`);
+    if (this.debug) {
+      console.log(`[${this.name}] Disposing...`);
     }
 
     this._disposed = true;
 
-    // Call lifecycle hook
-    this.onDispose();
+    // Call optional lifecycle hook
+    this.onDispose?.();
 
-    // Clear all listeners
     this.listeners.clear();
 
-    if (this.config.debug) {
-      console.log(`[${this._name}] Disposed successfully`);
+    if (this.debug) {
+      console.log(`[${this.name}] Disposed successfully`);
     }
-  }
-
-  // ============================================
-  // Lifecycle Hooks (for subclasses)
-  // ============================================
-
-  /**
-   * Called when container is disposed
-   */
-  protected onDispose(): void {
-    // Override in subclasses
-  }
-
-  /**
-   * Called when state changes
-   */
-  protected onStateChange(newState: S, previousState: S): void {
-    // Override in subclasses
   }
 
   // ============================================
@@ -301,29 +226,30 @@ export abstract class StateContainer<S> {
   // ============================================
 
   /**
-   * Emit a new state
+   * Emit a new state (with change detection)
    */
   protected emit(newState: S): void {
     if (this._disposed) {
-      throw new Error(
-        `Cannot emit state from disposed container ${this._name}`,
-      );
+      throw new Error(`Cannot emit state from disposed container ${this.name}`);
     }
+
+    // Skip if state hasn't changed (reference equality)
+    if (this._state === newState) return;
 
     const previousState = this._state;
     this._state = newState;
 
-    if (this.config.debug) {
-      debug('StateContainer', 'emit', {
-        container: this._name,
-      });
+    // Call optional lifecycle hook
+    this.onStateChange?.(newState, previousState);
+
+    // Notify listeners
+    for (const listener of this.listeners) {
+      try {
+        listener(newState);
+      } catch (error) {
+        console.error(`[${this.name}] Error in listener:`, error);
+      }
     }
-
-    // Call lifecycle hook
-    this.onStateChange(newState, previousState);
-
-    // Notify all listeners
-    this.notifyListeners();
   }
 
   /**
@@ -331,32 +257,22 @@ export abstract class StateContainer<S> {
    */
   protected update(updater: (current: S) => S): void {
     if (this._disposed) {
-      throw new Error(
-        `Cannot update state from disposed container ${this._name}`,
-      );
+      throw new Error(`Cannot update state from disposed container ${this.name}`);
     }
-
-    const newState = updater(this._state);
-    this.emit(newState);
+    this.emit(updater(this._state));
   }
+
+  // ============================================
+  // Optional Lifecycle Hooks
+  // ============================================
 
   /**
-   * Notify all listeners about state change
+   * Optional disposal hook for subclasses
    */
-  private notifyListeners(): void {
-    for (const listener of this.listeners) {
-      try {
-        listener(this._state);
-      } catch (error) {
-        console.error(`[${this._name}] Error in listener:`, error);
-      }
-    }
-  }
+  protected onDispose?(): void;
 
   /**
-   * Generate a unique ID
+   * Optional state change hook for subclasses
    */
-  private generateId(): string {
-    return generateSimpleId(this.constructor.name);
-  }
+  protected onStateChange?(newState: S, previousState: S): void;
 }

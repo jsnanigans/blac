@@ -11,6 +11,7 @@
 
 // Core State Management
 export * from './core/StateContainer';
+export * from './core/StateContainerRegistry';
 export * from './core/Cubit';
 export * from './core/Vertex';
 
@@ -19,9 +20,6 @@ export * from './tracking';
 
 // Proxy Tracking (legacy - use tracking/* instead)
 export * from './proxy/ProxyTracker';
-
-// Registry
-export { BlocRegistry } from './registry/BlocRegistry';
 
 // Essential Types
 export type { AnyObject, Brand, BrandedId, InstanceId } from './types/branded';
