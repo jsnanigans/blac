@@ -16,18 +16,24 @@ class DemoBloc extends Cubit<{
   selected: number | null;
 }> {
   constructor() {
-    super({
-      data: [],
-      selected: null,
-    }, {
-      debug: true,  // Enable debug logging
-    });
+    super(
+      {
+        data: [],
+        selected: null,
+      },
+      {
+        debug: true, // Enable debug logging
+      },
+    );
     console.log('[DemoBloc] Constructor called, instance:', this.instanceId);
   }
 
   run = (): void => {
     console.log('[DemoBloc.run] Before emit, current state:', this.state);
-    console.log('[DemoBloc.run] Listeners count:', (this as any).listeners.size);
+    console.log(
+      '[DemoBloc.run] Listeners count:',
+      (this as any).listeners.size,
+    );
 
     const data = [
       { id: 1, label: 'item 1' },
@@ -60,10 +66,12 @@ export const JSFrameworkBenchmarkDebug: React.FC = () => {
   return (
     <div style={{ padding: '20px' }}>
       <h1>Debug JSFramework Benchmark</h1>
-      <button onClick={() => {
-        console.log('[Button] Calling bloc.run()');
-        bloc.run();
-      }}>
+      <button
+        onClick={() => {
+          console.log('[Button] Calling bloc.run()');
+          bloc.run();
+        }}
+      >
         Run (Create 2 rows)
       </button>
       <div>

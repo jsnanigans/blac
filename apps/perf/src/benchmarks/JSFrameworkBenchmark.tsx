@@ -1,5 +1,5 @@
 import { Cubit } from '@blac/core';
-import { useBloc } from '@blac/react';
+import { useBloc, useBlocActions } from '@blac/react';
 import React, { memo } from 'react';
 
 /**
@@ -113,40 +113,35 @@ class DemoBloc extends Cubit<{
 
   add = (): void => {
     const addData = buildData(1000);
-    this.update((state) => ({
-      ...state,
-      data: [...state.data, ...addData],
-    }));
+    this.patch({
+      data: [...this.state.data, ...addData],
+    });
   };
 
   updateEveryTenth = (): void => {
-    this.update((state) => {
-      const newData = state.data.slice(0);
-      for (let i = 0, len = newData.length; i < len; i += 10) {
-        const r = newData[i];
-        newData[i] = { id: r.id, label: r.label + ' !!!' };
-      }
-      return {
-        ...state,
-        data: newData,
-      };
+    const newData = this.state.data.slice(0);
+    for (let i = 0, len = newData.length; i < len; i += 10) {
+      const r = newData[i];
+      newData[i] = { id: r.id, label: r.label + ' !!!' };
+    }
+    this.patch({
+      data: newData,
     });
   };
 
   select = (id: number): void => {
-    this.update((state) => ({
-      ...state,
+    this.patch({
       selected: id,
-    }));
+    });
   };
 
   remove = (id: number): void => {
-    this.update((state) => {
-      const idx = state.data.findIndex((d) => d.id === id);
-      return {
-        ...state,
-        data: [...state.data.slice(0, idx), ...state.data.slice(idx + 1)],
-      };
+    const idx = this.state.data.findIndex((d) => d.id === id);
+    this.patch({
+      data: [
+        ...this.state.data.slice(0, idx),
+        ...this.state.data.slice(idx + 1),
+      ],
     });
   };
 
@@ -158,48 +153,41 @@ class DemoBloc extends Cubit<{
   };
 
   swapRows = (): void => {
-    this.update((state) => {
-      const d = state.data.slice(0);
-      if (d.length > 998) {
-        const tmp = d[1];
-        d[1] = d[998];
-        d[998] = tmp;
-        return { ...state, data: d };
-      }
-      return state;
-    });
+    const d = this.state.data.slice(0);
+    if (d.length > 998) {
+      const tmp = d[1];
+      d[1] = d[998];
+      d[998] = tmp;
+
+      return this.patch({ data: d });
+    }
+    this.patch({ data: d });
   };
 }
 
 interface RowProps {
   item: DataItem;
+  isSelected: boolean;
 }
 
-const Row: React.FC<RowProps> = memo(
-  ({ item }) => {
-    const [state, bloc] = useBloc(DemoBloc, {
-      dependencies: (state) => [state.selected === item.id],
-    });
+const Row: React.FC<RowProps> = memo(({ item, isSelected }) => {
+  const bloc = useBlocActions(DemoBloc);
 
-    const isSelected = state.selected === item.id;
-
-    return (
-      <tr className={isSelected ? 'danger' : ''}>
-        <td className="col-md-1">{item.id}</td>
-        <td className="col-md-4">
-          <a onClick={() => bloc.select(item.id)}>{item.label}</a>
-        </td>
-        <td className="col-md-1">
-          <a onClick={() => bloc.remove(item.id)}>
-            <span className="glyphicon glyphicon-remove" aria-hidden="true" />
-          </a>
-        </td>
-        <td className="col-md-6" />
-      </tr>
-    );
-  },
-  (prevProps, nextProps) => prevProps.item === nextProps.item,
-);
+  return (
+    <tr className={isSelected ? 'danger' : ''}>
+      <td className="col-md-1">{item.id}</td>
+      <td className="col-md-4">
+        <a onClick={() => bloc.select(item.id)}>{item.label}</a>
+      </td>
+      <td className="col-md-1">
+        <a onClick={() => bloc.remove(item.id)}>
+          <span className="glyphicon glyphicon-remove" aria-hidden="true" />
+        </a>
+      </td>
+      <td className="col-md-6" />
+    </tr>
+  );
+});
 
 interface ButtonProps {
   id: string;
@@ -220,52 +208,41 @@ const Button: React.FC<ButtonProps> = ({ id, cb, title }) => (
   </div>
 );
 
-const Jumbotron: React.FC = memo(
-  () => {
-    const [, bloc] = useBloc(DemoBloc);
+const Jumbotron: React.FC = () => {
+  const bloc = useBlocActions(DemoBloc);
 
-    return (
-      <div className="jumbotron">
-        <div className="row">
-          <div className="col-md-6">
-            <h1>React + BlaC keyed</h1>
-          </div>
-          <div className="col-md-6">
-            <div className="row">
-              <Button
-                id="run"
-                title="Create 1,000 rows"
-                cb={() => bloc.run()}
-              />
-              <Button
-                id="runlots"
-                title="Create 10,000 rows"
-                cb={() => bloc.runLots()}
-              />
-              <Button
-                id="add"
-                title="Append 1,000 rows"
-                cb={() => bloc.add()}
-              />
-              <Button
-                id="update"
-                title="Update every 10th row"
-                cb={() => bloc.updateEveryTenth()}
-              />
-              <Button id="clear" title="Clear" cb={() => bloc.clear()} />
-              <Button
-                id="swaprows"
-                title="Swap Rows"
-                cb={() => bloc.swapRows()}
-              />
-            </div>
+  return (
+    <div className="jumbotron">
+      <div className="row">
+        <div className="col-md-6">
+          <h1>React + BlaC keyed</h1>
+        </div>
+        <div className="col-md-6">
+          <div className="row">
+            <Button id="run" title="Create 1,000 rows" cb={() => bloc.run()} />
+            <Button
+              id="runlots"
+              title="Create 10,000 rows"
+              cb={() => bloc.runLots()}
+            />
+            <Button id="add" title="Append 1,000 rows" cb={() => bloc.add()} />
+            <Button
+              id="update"
+              title="Update every 10th row"
+              cb={() => bloc.updateEveryTenth()}
+            />
+            <Button id="clear" title="Clear" cb={() => bloc.clear()} />
+            <Button
+              id="swaprows"
+              title="Swap Rows"
+              cb={() => bloc.swapRows()}
+            />
           </div>
         </div>
       </div>
-    );
-  },
-  () => true,
-);
+    </div>
+  );
+};
 
 export const JSFrameworkBenchmark: React.FC = () => {
   const [state] = useBloc(DemoBloc);
@@ -276,7 +253,11 @@ export const JSFrameworkBenchmark: React.FC = () => {
       <table className="table table-hover table-striped test-data">
         <tbody>
           {state.data.map((item) => (
-            <Row key={item.id} item={item} />
+            <Row
+              key={item.id}
+              item={item}
+              isSelected={state.selected === item.id}
+            />
           ))}
         </tbody>
       </table>

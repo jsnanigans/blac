@@ -8,7 +8,10 @@
  */
 
 import { generateSimpleId } from '../utils/idGenerator';
-import { StateContainerRegistry, globalRegistry } from './StateContainerRegistry';
+import {
+  StateContainerRegistry,
+  globalRegistry,
+} from './StateContainerRegistry';
 
 /**
  * Configuration options for StateContainer
@@ -165,7 +168,8 @@ export abstract class StateContainer<S> {
     this.name = config.name || this.constructor.name;
     this.keepAlive = config.keepAlive ?? false;
     this.debug = config.debug ?? false;
-    this.instanceId = config.instanceId || generateSimpleId(this.constructor.name);
+    this.instanceId =
+      config.instanceId || generateSimpleId(this.constructor.name);
   }
 
   // ============================================
@@ -257,7 +261,9 @@ export abstract class StateContainer<S> {
    */
   protected update(updater: (current: S) => S): void {
     if (this._disposed) {
-      throw new Error(`Cannot update state from disposed container ${this.name}`);
+      throw new Error(
+        `Cannot update state from disposed container ${this.name}`,
+      );
     }
     this.emit(updater(this._state));
   }

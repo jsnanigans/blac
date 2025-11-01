@@ -5,8 +5,7 @@
 
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, afterEach } from 'vitest';
-import { renderHook, act, waitFor } from '@testing-library/react';
-import { render, screen } from '@testing-library/react';
+import { renderHook, act, waitFor , render, screen } from '@testing-library/react';
 import React from 'react';
 import { Cubit, StateContainer } from '@blac/core';
 import { useBloc } from '../useBloc';
@@ -60,7 +59,7 @@ describe('useBloc - Array.map() with proxy', () => {
       expect(state.data).toHaveLength(3);
 
       // Test that we can map over the array
-      const mapped = state.data.map(item => item.id);
+      const mapped = state.data.map((item) => item.id);
       console.log('Mapped IDs:', mapped);
       expect(mapped).toEqual([1, 2, 3]);
 
