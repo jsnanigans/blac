@@ -298,10 +298,12 @@ describe('StateContainer - Registry Features', () => {
       expect(CounterBloc.getAll()).toHaveLength(0);
     });
 
-    it('should respect keepAlive flag', () => {
+    it('should respect static keepAlive property', () => {
       class KeepAliveBloc extends StateContainer<number> {
+        static keepAlive = true;
+
         constructor() {
-          super(0, { keepAlive: true });
+          super(0);
         }
       }
 

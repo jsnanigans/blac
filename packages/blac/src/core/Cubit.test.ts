@@ -544,8 +544,8 @@ describe('Cubit', () => {
     });
 
     describe('keepAlive Configuration', () => {
-      it('should have keepAlive enabled', () => {
-        expect(todoCubit.keepAlive).toBe(true);
+      it('should have static keepAlive enabled', () => {
+        expect(TodoCubit.keepAlive).toBe(true);
       });
     });
   });

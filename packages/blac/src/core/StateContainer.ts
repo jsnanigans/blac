@@ -19,14 +19,10 @@ import {
 export interface StateContainerConfig {
   /** Container name for debugging */
   name?: string;
-  /** Whether to keep container alive when no consumers */
-  keepAlive?: boolean;
   /** Enable debug logging */
   debug?: boolean;
   /** Custom instance identifier */
   instanceId?: string;
-  /** Whether this instance should be isolated (not shared) */
-  isolated?: boolean;
 }
 
 /**
@@ -147,7 +143,6 @@ export abstract class StateContainer<S> {
   private readonly config: StateContainerConfig;
 
   readonly name: string;
-  readonly keepAlive: boolean;
   readonly debug: boolean;
   readonly instanceId: string;
 
@@ -158,7 +153,6 @@ export abstract class StateContainer<S> {
     this._state = initialState;
     this.config = config;
     this.name = config.name || this.constructor.name;
-    this.keepAlive = config.keepAlive ?? false;
     this.debug = config.debug ?? false;
     this.instanceId =
       config.instanceId || generateSimpleId(this.constructor.name);

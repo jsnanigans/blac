@@ -10,9 +10,55 @@ pnpm add @blac/core @blac/react
 
 ## Core Package (@blac/core)
 
+### StateContainer - Base State Management Class
+
+The foundation for all state containers in BlaC. Provides state storage, subscriptions, and lifecycle management.
+
+```typescript
+import { StateContainer } from '@blac/core';
+
+class CounterContainer extends StateContainer<number> {
+  constructor() {
+    super(0, { name: 'Counter' }); // initial state + config
+  }
+
+  // Protected methods for state updates
+  increment = () => {
+    this.update(state => state + 1);
+  };
+}
+```
+
+**Core Methods:**
+- `state` - Get current state (readonly)
+- `subscribe(callback)` - Subscribe to state changes, returns unsubscribe function
+- `dispose()` - Clean up the container
+- `isDisposed` - Check if disposed
+
+**Protected Methods (for subclasses):**
+- `emit(newState)` - Emit new state directly
+- `update(fn)` - Update state with function `(current) => next`
+
+**Configuration Options:**
+```typescript
+interface StateContainerConfig {
+  name?: string;        // Debug name
+  debug?: boolean;      // Enable debug logging
+  instanceId?: string;  // Custom instance ID
+}
+```
+
+**Static Class Properties:**
+```typescript
+class MyBloc extends Cubit<State> {
+  static isolated = true;   // Each instance unique (default: false)
+  static keepAlive = true;  // Never auto-dispose (default: false)
+}
+```
+
 ### Cubit - Simple State Container
 
-Extend `Cubit<S>` for direct state management.
+Extends `StateContainer` with public state mutation methods for direct state management.
 
 ```typescript
 import { Cubit } from '@blac/core';
@@ -25,67 +71,25 @@ class CounterCubit extends Cubit<number> {
   increment = () => {
     this.emit(this.state + 1);
   };
+
+  // Use arrow functions for correct 'this' binding in React
+  decrement = () => {
+    this.emit(this.state - 1);
+  };
 }
 ```
 
-**Methods:**
+**Public Methods:**
 - `emit(newState)` - Emit new state directly
 - `update(fn)` - Update with function `(current) => next`
 - `patch(partial)` - Shallow merge partial state (object state only)
 - `state` - Get current state (readonly)
 - `subscribe(callback)` - Subscribe to changes
+- `dispose()` - Clean up
 
-**Configuration:**
-```typescript
-constructor() {
-  super(initialState, {
-    name: 'MyBloc',      // for debugging
-    keepAlive: false,    // persist without consumers
-    isolated: false,     // unique per component
-    debug: false,        // enable logging
-  });
-}
-```
+### Using patch() for Object State
 
-### Complex State Example
-
-```typescript
-interface TodoState {
-  items: Todo[];
-  filter: 'all' | 'active' | 'done';
-}
-
-class TodoCubit extends Cubit<TodoState> {
-  constructor() {
-    super({ items: [], filter: 'all' });
-  }
-
-  addTodo = (text: string) => {
-    this.update(state => ({
-      ...state,
-      items: [...state.items, { id: Date.now(), text, done: false }]
-    }));
-  };
-
-  toggleTodo = (id: number) => {
-    this.update(state => ({
-      ...state,
-      items: state.items.map(todo =>
-        todo.id === id ? { ...todo, done: !todo.done } : todo
-      )
-    }));
-  };
-
-  // Using patch() for simple field updates
-  setFilter = (filter: 'all' | 'active' | 'done') => {
-    this.patch({ filter });
-  };
-}
-```
-
-### Using patch() for Simple Updates
-
-The `patch()` method provides a convenient way to update object state fields:
+The `patch()` method provides convenient partial updates for object state:
 
 ```typescript
 interface UserState {
@@ -96,27 +100,21 @@ interface UserState {
 
 class UserCubit extends Cubit<UserState> {
   constructor() {
-    super({ name: 'John', age: 30, email: 'john@example.com' });
+    super({ name: '', age: 0, email: '' });
   }
 
-  // Using patch - concise
+  // Using patch - concise for single/multiple fields
   setName = (name: string) => {
     this.patch({ name });
   };
 
-  // Equivalent using update
-  setNameAlt = (name: string) => {
-    this.update(state => ({ ...state, name }));
-  };
-
-  // Update multiple fields at once
   updateProfile = (name: string, age: number) => {
     this.patch({ name, age });
   };
 }
 ```
 
-**Important:** `patch()` performs **shallow merge only**. Nested objects are replaced, not merged:
+**Important:** `patch()` performs **shallow merge only**. For nested updates, use `update()`:
 
 ```typescript
 interface AppState {
@@ -126,50 +124,67 @@ interface AppState {
 
 class AppCubit extends Cubit<AppState> {
   updateTheme = (theme: string) => {
-    // ❌ This replaces entire settings object
-    this.patch({ settings: { theme } });
-    // Result: settings.language is lost!
-
-    // ✅ Use update for nested updates
+    // ✅ Correct: Use update for nested changes
     this.update(state => ({
       ...state,
       settings: { ...state.settings, theme }
     }));
+
+    // ❌ Wrong: This replaces entire settings object
+    // this.patch({ settings: { theme } });
   };
 }
 ```
 
-### Lifecycle Hooks
+### Vertex - Event-Driven State Container (Bloc Pattern)
+
+For event-driven architectures with explicit state transitions:
 
 ```typescript
-class DataCubit extends Cubit<Data> {
-  protected onMount() {
-    // Called when first consumer subscribes
-    this.fetchData();
+import { Vertex, BaseEvent } from '@blac/core';
+
+// Define events
+class IncrementEvent implements BaseEvent {
+  readonly type = 'increment';
+  readonly timestamp = Date.now();
+  constructor(public readonly amount: number = 1) {}
+}
+
+// Create Vertex with event handlers
+class CounterVertex extends Vertex<number> {
+  constructor() {
+    super(0);
+
+    // Register event handlers
+    this.on(IncrementEvent, (event, emit) => {
+      emit(this.state + event.amount);
+    });
   }
 
-  protected onUnmount() {
-    // Called when last consumer unsubscribes
-    this.cleanup();
-  }
-
-  protected onDispose() {
-    // Called when disposed
-  }
+  // Convenience methods
+  increment = (amount = 1) => {
+    this.add(new IncrementEvent(amount));
+  };
 }
 ```
 
-### Static Instance Methods
+**Methods:**
+- `add(event)` - Add event to be processed
+- `on(EventClass, handler)` - Register event handler (protected)
+
+### Static Instance Management
+
+All state containers support static instance management:
 
 ```typescript
 // Get or create shared instance
 const counter = CounterCubit.getOrCreate();
 const named = CounterCubit.getOrCreate('main');
 
-// With constructor args
+// With constructor arguments
 const user = UserCubit.getOrCreate('user-123', { userId: '123' });
 
-// Release reference (disposes when ref count hits zero)
+// Release reference (disposes when ref count reaches zero)
 CounterCubit.release();
 CounterCubit.release('main');
 
@@ -177,20 +192,28 @@ CounterCubit.release('main');
 const exists = CounterCubit.hasInstance('main');
 
 // Get reference count
-const count = CounterCubit.getRefCount('main');
+const refCount = CounterCubit.getRefCount('main');
+
+// Get all instances of a type
+const allCounters = CounterCubit.getAll();
+
+// Clear all instances (mainly for testing)
+StateContainer.clearAllInstances();
 ```
 
 ## React Package (@blac/react)
 
-### useBloc Hook
+### useBloc Hook - Automatic Dependency Tracking
+
+React hook with automatic proxy-based dependency tracking for optimal re-renders.
 
 ```typescript
 import { useBloc } from '@blac/react';
 
 function Counter() {
   const [count, cubit] = useBloc(CounterCubit);
-  // Only re-renders when accessed properties change (automatic tracking)
 
+  // Only re-renders when 'count' changes
   return (
     <div>
       <p>Count: {count}</p>
@@ -201,27 +224,69 @@ function Counter() {
 ```
 
 **Returns:** `[state, blocInstance, componentRef]`
+- `state` - Current state (may be a Proxy for tracking)
+- `blocInstance` - The bloc instance with all methods
+- `componentRef` - Internal reference (rarely needed)
 
 ### Automatic Dependency Tracking
 
-useBloc uses Proxy-based tracking. Only re-renders when accessed properties change.
+useBloc uses Proxy to track which properties you access during render:
 
 ```typescript
+interface UserState {
+  name: string;
+  email: string;
+  avatar: string;
+  bio: string;
+}
+
 function UserCard() {
   const [user, bloc] = useBloc(UserBloc);
 
-  // Only re-renders when user.name or user.avatar change
+  // Component only re-renders when name or avatar change
+  // Changes to email or bio won't trigger re-render
   return (
     <div>
       <img src={user.avatar} />
       <h2>{user.name}</h2>
-      {/* user.email is NOT accessed, so changes to it won't cause re-render */}
     </div>
   );
 }
 ```
 
-### Options
+### Getter Tracking
+
+useBloc also tracks getters automatically:
+
+```typescript
+class TodoCubit extends Cubit<TodoState> {
+  // Computed getter
+  get visibleTodos() {
+    return this.state.filter === 'active'
+      ? this.state.todos.filter(t => !t.done)
+      : this.state.todos;
+  }
+
+  get activeTodoCount() {
+    return this.state.todos.filter(t => !t.done).length;
+  }
+}
+
+function TodoList() {
+  const [state, cubit] = useBloc(TodoCubit);
+
+  // Re-renders when visibleTodos changes (computed value)
+  return (
+    <ul>
+      {cubit.visibleTodos.map(todo => (
+        <li key={todo.id}>{todo.text}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+### useBloc Options
 
 ```typescript
 const [state, bloc] = useBloc(MyBloc, {
@@ -234,15 +299,45 @@ const [state, bloc] = useBloc(MyBloc, {
   // Manual dependency tracking (overrides automatic)
   dependencies: (state, bloc) => [state.count, state.name],
 
+  // Disable automatic tracking (all changes trigger re-render)
+  autoTrack: false,
+
   // Lifecycle callbacks
   onMount: (bloc) => bloc.fetchData(),
   onUnmount: (bloc) => bloc.cleanup(),
 });
 ```
 
-### Isolated Instances
+### useBlocActions Hook - Actions Only
 
-Each component gets its own instance.
+Use when you only need to call methods without subscribing to state:
+
+```typescript
+import { useBlocActions } from '@blac/react';
+
+function ActionsOnly() {
+  const bloc = useBlocActions(CounterBloc);
+
+  // Never re-renders due to state changes
+  return (
+    <div>
+      <button onClick={bloc.increment}>+</button>
+      <button onClick={bloc.decrement}>-</button>
+      <button onClick={bloc.reset}>Reset</button>
+    </div>
+  );
+}
+```
+
+Benefits:
+- No state subscription overhead
+- No proxy tracking
+- Never re-renders from bloc state changes
+- Lighter weight for action-only components
+
+### Isolated vs Shared Instances
+
+**Isolated Instances** - Each component gets its own instance:
 
 ```typescript
 class LocalCounter extends Cubit<number> {
@@ -258,7 +353,7 @@ class LocalCounter extends Cubit<number> {
 // ComponentA and ComponentB have separate instances
 function ComponentA() {
   const [count] = useBloc(LocalCounter);
-  return <div>A: {count}</div>;
+  return <div>A: {count}</div>; // Independent count
 }
 
 function ComponentB() {
@@ -267,7 +362,7 @@ function ComponentB() {
 }
 ```
 
-### Shared State (Default)
+**Shared Instances** (Default) - Components share the same instance:
 
 ```typescript
 class SharedCounter extends Cubit<number> {
@@ -275,7 +370,7 @@ class SharedCounter extends Cubit<number> {
   increment = () => this.emit(this.state + 1);
 }
 
-// Both components share the same instance
+// Both components share state
 function ComponentA() {
   const [count] = useBloc(SharedCounter);
   return <div>A: {count}</div>;
@@ -289,63 +384,126 @@ function ComponentB() {
 
 ### Keep Alive
 
-Persist instance even without consumers.
+Persist instances even without active consumers:
 
 ```typescript
-class AuthBloc extends Cubit<AuthState> {
+class AuthCubit extends Cubit<AuthState> {
+  static keepAlive = true;  // Won't be disposed when no components use it
+
   constructor() {
-    super(initialState, { keepAlive: true });
+    super(initialState);
   }
 }
 ```
 
 ## Logging
 
-```typescript
-import { BlacLogger, LogLevel } from '@blac/core';
+Configure logging for debugging:
 
-BlacLogger.configure({
+```typescript
+import { configureLogger, LogLevel } from '@blac/core';
+
+configureLogger({
   enabled: true,
   level: LogLevel.DEBUG, // ERROR, WARN, INFO, DEBUG
+  output: (entry) => console.log(entry), // Custom output
 });
+```
+
+Using logger in your code:
+
+```typescript
+import { createLogger, LogLevel } from '@blac/core';
+
+const logger = createLogger({
+  enabled: true,
+  level: LogLevel.DEBUG,
+  output: (entry) => console.log(JSON.stringify(entry))
+});
+
+logger.debug('MyComponent', 'Rendering', { props });
+logger.info('MyBloc', 'State updated', { newState });
 ```
 
 ## Best Practices
 
-1. **Always use arrow functions** for methods in Cubit classes (for correct `this` binding)
-2. **Keep state immutable** - always create new objects when updating
+1. **Always use arrow functions** for methods in Cubit/Vertex classes (ensures correct `this` binding in React)
+2. **Keep state immutable** - always create new objects/arrays when updating
 3. **Use `patch()`** for simple field updates on object state
-4. **Use `update()`** for complex updates or nested state changes
-5. **Enable `isolated: true`** for component-specific state
-6. **Use `keepAlive: true`** for global state that should persist
-7. **Let automatic tracking work** - avoid manual `dependencies` unless needed
+4. **Use `update()`** for complex updates, array operations, or nested changes
+5. **Use `static isolated = true`** for component-specific state (forms, local UI state)
+6. **Use `static keepAlive = true`** for global persistent state (auth, app settings)
+7. **Let automatic tracking work** - avoid manual `dependencies` unless needed for optimization
 8. **Access only what you need** in components for optimal re-renders
+9. **Use `useBlocActions`** when you only need to trigger actions without reading state
 
 ## Quick Reference
 
-### Cubit Methods
-- `emit(state)` - Emit new state directly
-- `update(fn)` - Update with function `(current) => next`
-- `patch(partial)` - Shallow merge partial state (object only)
+### Cubit/Vertex Methods
+- `emit(state)` - Set new state directly
+- `update(fn)` - Update with function
+- `patch(partial)` - Shallow merge (object state only)
 - `state` - Current state (readonly)
 - `subscribe(callback)` - Subscribe to changes
 - `dispose()` - Clean up
+- `add(event)` - Add event (Vertex only)
 
-### Static Methods
+### Static Container Methods
 - `Class.getOrCreate(id?, ...args)` - Get/create instance
 - `Class.release(id?)` - Release reference
 - `Class.hasInstance(id?)` - Check existence
-- `Class.getRefCount(id?)` - Get ref count
+- `Class.getRefCount(id?)` - Get reference count
+- `Class.getAll()` - Get all instances
 
 ### useBloc Options
-- `staticProps` - Constructor args
+- `staticProps` - Constructor arguments
 - `instanceId` - Custom instance ID
-- `dependencies` - Manual tracking
+- `dependencies` - Manual dependency tracking
+- `autoTrack` - Enable/disable auto tracking
 - `onMount` - Mount callback
 - `onUnmount` - Unmount callback
 
-### Configuration
+### Configuration Options
 - `name` - Debug name
-- `keepAlive` - Persist without consumers
-- `isolated` - Unique per component
-- `debug` - Enable logging
+- `debug` - Enable debug logging
+- `instanceId` - Custom instance identifier
+
+### Static Properties
+- `static isolated = true` - Each instance unique per component
+- `static keepAlive = true` - Persist without consumers
+
+## TypeScript Support
+
+BlaC is fully typed with TypeScript. State types are inferred automatically:
+
+```typescript
+// State type is inferred as number
+class CounterCubit extends Cubit<number> {
+  constructor() { super(0); }
+}
+
+// Complex types work seamlessly
+interface AppState {
+  user: User | null;
+  settings: Settings;
+  todos: Todo[];
+}
+
+class AppCubit extends Cubit<AppState> {
+  constructor() {
+    super({
+      user: null,
+      settings: defaultSettings,
+      todos: []
+    });
+  }
+}
+
+// In React components
+function App() {
+  // Types are fully inferred
+  const [state, cubit] = useBloc(AppCubit);
+  // state is typed as AppState
+  // cubit is typed as AppCubit
+}
+```

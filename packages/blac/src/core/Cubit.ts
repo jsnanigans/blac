@@ -94,6 +94,7 @@ export interface TodoState {
 }
 
 export class TodoCubit extends Cubit<TodoState> {
+  static keepAlive = true;
   private nextId = 0;
 
   constructor() {
@@ -103,7 +104,7 @@ export class TodoCubit extends Cubit<TodoState> {
         filter: 'all',
         isLoading: false,
       },
-      { name: 'TodoCubit', keepAlive: true },
+      { name: 'TodoCubit' },
     );
   }
 

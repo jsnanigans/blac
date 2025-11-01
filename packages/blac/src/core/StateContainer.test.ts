@@ -48,6 +48,19 @@ class LifecycleTestContainer extends StateContainer<string> {
   }
 }
 
+// Test container with static keepAlive
+class KeepAliveTestContainer extends StateContainer<number> {
+  static keepAlive = true;
+
+  constructor(initialState: number = 0, config?: StateContainerConfig) {
+    super(initialState, config);
+  }
+
+  public testEmit(state: number): void {
+    this.emit(state);
+  }
+}
+
 // Object state container for testing
 interface ObjectState {
   count: number;
@@ -133,17 +146,15 @@ describe('StateContainer', () => {
         expect(instance.isDisposed).toBe(true);
       });
 
-      it('should respect keepAlive flag', () => {
-        const instance = TestContainer.getOrCreate(undefined, 0, {
-          keepAlive: true,
-        });
+      it('should respect static keepAlive property', () => {
+        const instance = KeepAliveTestContainer.getOrCreate(undefined, 0);
         const disposeSpy = vi.spyOn(instance, 'dispose');
 
-        TestContainer.release();
+        KeepAliveTestContainer.release();
 
         expect(disposeSpy).not.toHaveBeenCalled();
-        expect(TestContainer.hasInstance()).toBe(true);
-        expect(TestContainer.getRefCount()).toBe(0);
+        expect(KeepAliveTestContainer.hasInstance()).toBe(true);
+        expect(KeepAliveTestContainer.getRefCount()).toBe(0);
       });
 
       it('should force dispose option works', () => {
@@ -235,7 +246,6 @@ describe('StateContainer', () => {
       it('should initialize with default config', () => {
         const container = new TestContainer();
         expect(container.name).toBe('TestContainer');
-        expect(container.keepAlive).toBe(false);
         expect(container.isDisposed).toBe(false);
       });
 
@@ -505,16 +515,6 @@ describe('StateContainer', () => {
     it('should respect name configuration', () => {
       const container = new TestContainer(0, { name: 'MyCounter' });
       expect(container.name).toBe('MyCounter');
-    });
-
-    it('should respect keepAlive flag', () => {
-      const container = new TestContainer(0, { keepAlive: true });
-      expect(container.keepAlive).toBe(true);
-    });
-
-    it('should respect isolated flag', () => {
-      const container = new TestContainer(0, { isolated: true });
-      expect(container['config'].isolated).toBe(true);
     });
 
     it('should enable debug mode logging', () => {

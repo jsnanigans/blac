@@ -89,7 +89,7 @@ export class StateContainerRegistry {
 
   /**
    * Release a reference to an instance
-   * Disposes when ref count reaches zero (unless keepAlive)
+   * Disposes when ref count reaches zero (unless static keepAlive is true)
    */
   release<T extends StateContainer<any>>(
     constructor: new (...args: any[]) => T,
@@ -110,7 +110,9 @@ export class StateContainerRegistry {
 
     entry.refCount--;
 
-    if (entry.refCount <= 0 && !entry.instance.keepAlive) {
+    // Check static keepAlive property
+    const keepAlive = (constructor as any).keepAlive === true;
+    if (entry.refCount <= 0 && !keepAlive) {
       entry.instance.dispose();
       this.instances.delete(instanceKey);
     }
