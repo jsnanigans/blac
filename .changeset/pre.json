@@ -11,6 +11,7 @@
   },
   "changesets": [
     "disposal-race-condition-fix",
+    "ripe-doodles-yawn",
     "schema-validation-explicit"
   ]
 }

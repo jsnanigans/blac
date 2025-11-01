@@ -6,7 +6,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { StrictMode } from 'react';
 import { useBloc } from '../useBloc';
-import { Cubit, StateContainer , configureLogger, LogLevel } from '@blac/core';
+import { Cubit, StateContainer, configureLogger, LogLevel } from '@blac/core';
 
 // Test state shape
 interface TestState {

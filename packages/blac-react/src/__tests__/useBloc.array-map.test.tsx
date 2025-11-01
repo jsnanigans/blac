@@ -5,7 +5,13 @@
 
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, afterEach } from 'vitest';
-import { renderHook, act, waitFor , render, screen } from '@testing-library/react';
+import {
+  renderHook,
+  act,
+  waitFor,
+  render,
+  screen,
+} from '@testing-library/react';
 import React from 'react';
 import { Cubit, StateContainer } from '@blac/core';
 import { useBloc } from '../useBloc';
