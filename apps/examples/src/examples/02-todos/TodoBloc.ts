@@ -36,21 +36,15 @@ export class TodoBloc extends Cubit<TodoState> {
     super(initialState);
     this.storageKey = storageKey;
 
-    // Lifecycle hooks for persistence
-    this.onMount = () => {
-      console.log(
-        `[TodoBloc] Mounted - loaded ${this.state.todos.length} todos`,
-      );
-    };
-
-    this.onUnmount = () => {
-      console.log(`[TodoBloc] Unmounted - todos persisted to localStorage`);
-    };
-
     // Subscribe to state changes to save to localStorage
     this.subscribe((state) => {
       localStorage.setItem(this.storageKey, JSON.stringify(state));
     });
+
+    // Lifecycle hook for cleanup
+    this.onDispose = () => {
+      console.log(`[TodoBloc] Disposed - todos persisted to localStorage`);
+    };
   }
 
   /**

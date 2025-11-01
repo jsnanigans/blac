@@ -119,6 +119,9 @@ importers:
       '@blac/core':
         specifier: workspace:*
         version: link:../../packages/blac
+      '@blac/devtools-connect':
+        specifier: workspace:*
+        version: link:../../packages/devtools-connect
       '@blac/react':
         specifier: workspace:*
         version: link:../../packages/blac-react

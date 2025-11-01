@@ -1,6 +1,7 @@
 import { useBloc } from '@blac/react';
 import { TodoBloc } from './TodoBloc';
 import { useMemo } from 'react';
+import { Button } from '../../shared/components';
 
 interface TodoListProps {
   instanceKey?: string;
@@ -35,7 +36,7 @@ export function TodoList({ instanceKey }: TodoListProps) {
   );
 
   if (filteredTodos.length === 0) {
-    return <div className="empty-panel text-center">No todos to display</div>;
+    return <div className="empty-state">No todos to display</div>;
   }
 
   return (
@@ -47,16 +48,20 @@ export function TodoList({ instanceKey }: TodoListProps) {
         >
           <input
             type="checkbox"
+            className="todo-checkbox"
             checked={todo.completed}
             onChange={() => todoBloc.toggleTodo(todo.id)}
+            aria-label={`Mark "${todo.text}" as ${todo.completed ? 'incomplete' : 'complete'}`}
           />
-          <span className="todo-item-text">{todo.text}</span>
-          <button
+          <span className="todo-text">{todo.text}</span>
+          <Button
             onClick={() => todoBloc.deleteTodo(todo.id)}
-            className="danger button-compact"
+            variant="danger"
+            size="small"
+            aria-label={`Delete "${todo.text}"`}
           >
             Delete
-          </button>
+          </Button>
         </div>
       ))}
     </div>

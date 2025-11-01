@@ -75,15 +75,6 @@ export class DashboardBloc extends Cubit<DashboardState> {
       isAutoUpdating: false,
     });
 
-    this.onMount = () => {
-      console.log('[DashboardBloc] Mounted');
-    };
-
-    this.onUnmount = () => {
-      console.log('[DashboardBloc] Unmounted');
-      this.stopAutoUpdate();
-    };
-
     this.onDispose = () => {
       console.log('[DashboardBloc] Disposed');
       this.stopAutoUpdate();

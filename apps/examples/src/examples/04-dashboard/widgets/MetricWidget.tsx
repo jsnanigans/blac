@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { Card, RenderCounter } from '../../../shared/components';
 
 interface MetricWidgetProps {
   title: string;
@@ -11,40 +11,34 @@ interface MetricWidgetProps {
 
 /**
  * Reusable metric widget component with render counter.
- * The render counter makes it visually obvious when a component re-renders.
+ * Uses the shared RenderCounter component to visualize re-renders.
  */
 export function MetricWidget({
   title,
   value,
   subtitle,
   icon = '📊',
-  color = 'var(--primary)',
+  color = 'var(--color-primary)',
   componentName,
 }: MetricWidgetProps) {
-  const renderCount = useRef(0);
-  renderCount.current++;
-
-  console.log(`  ↳ [${componentName}] Rendered (${renderCount.current} times)`);
+  console.log(`  ↳ [${componentName}] Rendered`);
 
   return (
-    <article className="card metric-card">
-      <div
-        className="render-badge"
-        title={`Rendered ${renderCount.current} times`}
-      >
-        {renderCount.current}
-      </div>
+    <Card>
+      <div className="stack-sm" style={{ position: 'relative' }}>
+        <RenderCounter name={componentName} />
 
-      <div className="metric-body">
-        <div className="metric-icon">{icon}</div>
-        <div className="metric-info">
-          <span className="widget-subtitle">{title}</span>
-          <span className="metric-value" style={{ color }}>
-            {value}
-          </span>
-          {subtitle && <span className="metric-subtitle">{subtitle}</span>}
+        <div className="row-sm">
+          <div style={{ fontSize: '2rem' }}>{icon}</div>
+          <div className="stack-xs" style={{ flex: 1 }}>
+            <span className="text-small text-muted">{title}</span>
+            <span className="text-2xl" style={{ fontWeight: 700, color }}>
+              {value}
+            </span>
+            {subtitle && <span className="text-xs text-muted">{subtitle}</span>}
+          </div>
         </div>
       </div>
-    </article>
+    </Card>
   );
 }

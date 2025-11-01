@@ -5,9 +5,11 @@
  * - Instance lifecycle management with ref counting
  * - Singleton/shared instance pattern
  * - Isolated instance support
+ * - Lifecycle event notifications (plugin system)
  */
 
 import type { StateContainer } from './StateContainer';
+import type { Vertex } from './Vertex';
 
 interface InstanceEntry {
   instance: StateContainer<any>;
@@ -19,11 +21,38 @@ interface TypeConfig {
 }
 
 /**
+ * Lifecycle events that can be observed
+ */
+export type LifecycleEvent =
+  | 'created'
+  | 'stateChanged'
+  | 'eventAdded'
+  | 'disposed';
+
+/**
+ * Listener function types for each lifecycle event
+ */
+export type LifecycleListener<E extends LifecycleEvent> = E extends 'created'
+  ? (container: StateContainer<any>) => void
+  : E extends 'stateChanged'
+    ? (
+        container: StateContainer<any>,
+        previousState: any,
+        currentState: any,
+      ) => void
+    : E extends 'eventAdded'
+      ? (container: Vertex<any, any>, event: any) => void
+      : E extends 'disposed'
+        ? (container: StateContainer<any>) => void
+        : never;
+
+/**
  * Registry for managing StateContainer instances
  */
 export class StateContainerRegistry {
   private readonly instances = new Map<string, InstanceEntry>();
   private readonly types = new Map<string, TypeConfig>();
+  private readonly listeners = new Map<LifecycleEvent, Set<Function>>();
 
   /**
    * Register a type with isolation mode
@@ -219,6 +248,44 @@ export class StateContainerRegistry {
     const className = constructor.name;
     const instanceKey = `${className}:${key || 'default'}`;
     return this.instances.has(instanceKey);
+  }
+
+  /**
+   * Subscribe to lifecycle events
+   * @param event - The lifecycle event to listen for
+   * @param listener - The listener function to call when the event occurs
+   * @returns Unsubscribe function
+   */
+  on<E extends LifecycleEvent>(
+    event: E,
+    listener: LifecycleListener<E>,
+  ): () => void {
+    if (!this.listeners.has(event)) {
+      this.listeners.set(event, new Set());
+    }
+    this.listeners.get(event)!.add(listener as Function);
+
+    // Return unsubscribe function
+    return () => {
+      this.listeners.get(event)?.delete(listener as Function);
+    };
+  }
+
+  /**
+   * Emit lifecycle event to all listeners
+   * @internal - Called by StateContainer/Vertex lifecycle methods
+   */
+  emit(event: LifecycleEvent, ...args: any[]): void {
+    const listeners = this.listeners.get(event);
+    if (!listeners || listeners.size === 0) return; // Zero overhead when no listeners
+
+    for (const listener of listeners) {
+      try {
+        listener(...args);
+      } catch (error) {
+        console.error(`[BlaC] Listener error for '${event}':`, error);
+      }
+    }
   }
 }
 

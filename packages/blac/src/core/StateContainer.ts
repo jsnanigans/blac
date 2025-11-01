@@ -156,6 +156,9 @@ export abstract class StateContainer<S> {
     this.debug = config.debug ?? false;
     this.instanceId =
       config.instanceId || generateSimpleId(this.constructor.name);
+
+    // Notify lifecycle listeners
+    StateContainer._registry.emit('created', this);
   }
 
   /**
@@ -202,6 +205,9 @@ export abstract class StateContainer<S> {
 
     this.listeners.clear();
 
+    // Notify lifecycle listeners
+    StateContainer._registry.emit('disposed', this);
+
     if (this.debug) {
       console.log(`[${this.name}] Disposed successfully`);
     }
@@ -232,6 +238,14 @@ export abstract class StateContainer<S> {
         console.error(`[${this.name}] Error in listener:`, error);
       }
     }
+
+    // Notify lifecycle listeners
+    StateContainer._registry.emit(
+      'stateChanged',
+      this,
+      previousState,
+      newState,
+    );
   }
 
   /**

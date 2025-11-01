@@ -1,5 +1,6 @@
 import { useBloc } from '@blac/react';
 import { TodoBloc, FilterType } from './TodoBloc';
+import { Button } from '../../shared/components';
 
 interface TodoFiltersProps {
   instanceKey?: string;
@@ -24,15 +25,15 @@ export function TodoFilters({ instanceKey }: TodoFiltersProps) {
   ];
 
   return (
-    <div className="filter-row">
+    <div className="row-sm flex-wrap">
       {filters.map(({ label, value }) => (
-        <button
+        <Button
           key={value}
           onClick={() => todoBloc.setFilter(value)}
-          className={state.filter === value ? 'button-active' : 'button-ghost'}
+          variant={state.filter === value ? 'primary' : 'ghost'}
         >
           {label}
-        </button>
+        </Button>
       ))}
     </div>
   );

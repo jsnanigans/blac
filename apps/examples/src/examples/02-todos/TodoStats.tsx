@@ -1,6 +1,7 @@
 import { useBloc } from '@blac/react';
 import { TodoBloc } from './TodoBloc';
 import { useMemo } from 'react';
+import { Card, StatCard, Button } from '../../shared/components';
 
 interface TodoStatsProps {
   instanceKey?: string;
@@ -29,31 +30,24 @@ export function TodoStats({ instanceKey }: TodoStatsProps) {
   console.log('[TodoStats] Rendering -', counts);
 
   return (
-    <div className="card card-subtle">
+    <Card>
       <div className="stats-grid">
-        <div className="stat-block">
-          <span className="stat-value">{counts.total}</span>
-          <span className="stat-label">Total</span>
-        </div>
-        <div className="stat-block">
-          <span className="stat-value highlight">{counts.active}</span>
-          <span className="stat-label">Active</span>
-        </div>
-        <div className="stat-block">
-          <span className="stat-value">{counts.completed}</span>
-          <span className="stat-label">Completed</span>
-        </div>
+        <StatCard label="Total" value={counts.total} />
+        <StatCard label="Active" value={counts.active} />
+        <StatCard label="Completed" value={counts.completed} />
       </div>
       {counts.completed > 0 && (
-        <div className="mt-2 text-center">
-          <button
-            onClick={() => todoBloc.clearCompleted()}
-            className="danger button-block"
-          >
-            Clear Completed
-          </button>
-        </div>
+        <Button
+          onClick={() => todoBloc.clearCompleted()}
+          variant="danger"
+          className="mt-2"
+        >
+          Clear Completed ({counts.completed})
+        </Button>
       )}
-    </div>
+      <p className="text-xs text-muted">
+        💡 Only re-renders when todos change, not when filter changes
+      </p>
+    </Card>
   );
 }

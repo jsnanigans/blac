@@ -30,13 +30,9 @@ export class CartBloc extends Vertex<CartState> {
     // Register event handlers
     this.setupEventHandlers();
 
-    // Lifecycle
-    this.onMount = () => {
-      console.log('[CartBloc] Mounted with', this.state.items.length, 'items');
-    };
-
-    this.onUnmount = () => {
-      console.log('[CartBloc] Unmounted');
+    // Lifecycle hook for cleanup
+    this.onDispose = () => {
+      console.log('[CartBloc] Disposed');
     };
   }
 
@@ -172,15 +168,23 @@ export class CartBloc extends Vertex<CartState> {
     this.add(new ClearCartEvent());
   };
 
-  // Computed properties
-  getTotal = (): number => {
+  // Computed properties using getters
+  get subtotal(): number {
     return this.state.items.reduce(
       (sum, item) => sum + item.product.price * item.quantity,
       0,
     );
-  };
+  }
 
-  getItemCount = (): number => {
+  get tax(): number {
+    return this.subtotal * 0.08; // 8% tax
+  }
+
+  get total(): number {
+    return this.subtotal + this.tax;
+  }
+
+  get itemCount(): number {
     return this.state.items.reduce((sum, item) => sum + item.quantity, 0);
-  };
+  }
 }

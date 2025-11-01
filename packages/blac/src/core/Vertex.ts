@@ -76,6 +76,9 @@ export abstract class Vertex<
    * Arrow function to maintain correct 'this' binding in React
    */
   public add = (event: E): void => {
+    // Notify lifecycle listeners
+    StateContainer._registry.emit('eventAdded', this, event);
+
     this.processEvent(event);
   };
 

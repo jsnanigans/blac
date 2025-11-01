@@ -1,5 +1,11 @@
 # @blac/core
 
+## 2.0.0-rc.4
+
+### Patch Changes
+
+- Remove useless config options
+
 ## 2.0.0-rc.3
 
 ### Patch Changes

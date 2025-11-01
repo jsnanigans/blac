@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useBloc } from '@blac/react';
 import { TodoBloc } from './TodoBloc';
+import { Button } from '../../shared/components';
 
 interface TodoInputProps {
   instanceKey?: string;
@@ -19,13 +20,15 @@ export function TodoInput({ instanceKey }: TodoInputProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    todoBloc.addTodo(text);
-    setText('');
+    if (text.trim()) {
+      todoBloc.addTodo(text);
+      setText('');
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="stack-sm">
-      <div className="input-group">
+    <form onSubmit={handleSubmit}>
+      <div className="row-sm">
         <input
           type="text"
           value={text}
@@ -33,7 +36,9 @@ export function TodoInput({ instanceKey }: TodoInputProps) {
           placeholder="What needs to be done?"
           aria-label="Add todo"
         />
-        <button type="submit">Add</button>
+        <Button type="submit" variant="primary">
+          Add
+        </Button>
       </div>
     </form>
   );

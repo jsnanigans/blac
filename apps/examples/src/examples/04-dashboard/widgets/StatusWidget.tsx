@@ -1,6 +1,6 @@
 import { useBloc } from '@blac/react';
 import { DashboardBloc } from '../DashboardBloc';
-import { useRef } from 'react';
+import { Card, Badge, RenderCounter } from '../../../shared/components';
 
 /**
  * Widget that ONLY accesses lastUpdated and isAutoUpdating.
@@ -8,37 +8,35 @@ import { useRef } from 'react';
  */
 export function StatusWidget() {
   const [state] = useBloc(DashboardBloc);
-  const renderCount = useRef(0);
-  renderCount.current++;
 
-  console.log(`  ↳ [StatusWidget] Rendered (${renderCount.current} times)`);
+  console.log(`  ↳ [StatusWidget] Rendered`);
 
   const timeAgo = Math.floor((Date.now() - state.lastUpdated) / 1000);
-  const statusClass = state.isAutoUpdating
-    ? 'status-card is-live'
-    : 'status-card';
 
   return (
-    <article className={`card ${statusClass}`}>
-      <div
-        className="render-badge"
-        title={`Rendered ${renderCount.current} times`}
-      >
-        {renderCount.current}
-      </div>
+    <Card>
+      <div className="stack-sm" style={{ position: 'relative' }}>
+        <RenderCounter name="Status" />
 
-      <div className="metric-body">
-        <div className="metric-icon status-icon">
-          {state.isAutoUpdating ? '🔄' : '⏸️'}
+        <div className="flex-between">
+          <h3>Dashboard Status</h3>
+          <Badge variant={state.isAutoUpdating ? 'success' : 'default'}>
+            {state.isAutoUpdating ? '🔄 Live' : '⏸️ Paused'}
+          </Badge>
         </div>
-        <div className="metric-info">
-          <span className="widget-subtitle">Status</span>
-          <span className="metric-value status-value">
-            {state.isAutoUpdating ? 'Auto-Updating' : 'Paused'}
-          </span>
-          <span className="metric-subtitle">Last update: {timeAgo}s ago</span>
+
+        <div className="stack-xs">
+          <div className="row-sm">
+            <span className="text-muted">Last update:</span>
+            <span style={{ fontWeight: 500 }}>{timeAgo}s ago</span>
+          </div>
+
+          <p className="text-xs text-muted">
+            💡 This widget only re-renders when update status changes, not when
+            metrics change
+          </p>
         </div>
       </div>
-    </article>
+    </Card>
   );
 }

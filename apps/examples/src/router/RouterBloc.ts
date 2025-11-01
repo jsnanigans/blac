@@ -16,16 +16,12 @@ export class RouterBloc extends Cubit<RouterState> {
       params: {},
     });
 
-    // Set up lifecycle hooks
-    this.onMount = () => {
-      // Listen for browser back/forward navigation
-      window.addEventListener('popstate', this.handlePopState);
-      console.log('[RouterBloc] Mounted - listening to browser navigation');
-    };
+    // Listen for browser back/forward navigation
+    window.addEventListener('popstate', this.handlePopState);
 
-    this.onUnmount = () => {
+    this.onDispose = () => {
       window.removeEventListener('popstate', this.handlePopState);
-      console.log('[RouterBloc] Unmounted - cleaned up listeners');
+      console.log('[RouterBloc] Disposed - cleaned up listeners');
     };
   }
 

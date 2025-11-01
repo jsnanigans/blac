@@ -1,13 +1,15 @@
+import { ReactNode } from 'react';
+
 interface ExampleLayoutProps {
   title: string;
   description: string;
   features: string[];
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 /**
  * Shared layout wrapper for all examples.
- * Provides consistent header and feature highlights.
+ * Provides consistent header and feature highlights with minimal styling.
  */
 export function ExampleLayout({
   title,
@@ -19,18 +21,22 @@ export function ExampleLayout({
     <div className="example-layout">
       <header className="example-header">
         <div className="stack-sm">
-          <span className="text-small">Interactive Module</span>
+          <span className="text-xs text-muted">EXAMPLE</span>
           <h1>{title}</h1>
         </div>
-        <p className="example-description">{description}</p>
-        <div className="example-features">
-          <strong>Showcases</strong>
-          <ul className="example-feature-list">
-            {features.map((feature, i) => (
-              <li key={i}>{feature}</li>
-            ))}
-          </ul>
-        </div>
+        <p className="text-muted">{description}</p>
+        {features.length > 0 && (
+          <div className="stack-sm">
+            <h4 className="text-small">Key Features</h4>
+            <ul className="stack-xs">
+              {features.map((feature, i) => (
+                <li key={i} className="text-small text-muted">
+                  • {feature}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </header>
       <main className="example-content">{children}</main>
     </div>

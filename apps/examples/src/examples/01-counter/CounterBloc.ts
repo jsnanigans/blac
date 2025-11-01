@@ -24,15 +24,7 @@ export class CounterBloc extends Cubit<CounterState> {
       lastAction: 'initialized',
     });
 
-    // Lifecycle hooks - demonstrate automatic cleanup
-    this.onMount = () => {
-      console.log('[CounterBloc] Mounted with count:', this.state.count);
-    };
-
-    this.onUnmount = () => {
-      console.log('[CounterBloc] Unmounted with count:', this.state.count);
-    };
-
+    // Lifecycle hook - demonstrate automatic cleanup on disposal
     this.onDispose = () => {
       console.log('[CounterBloc] Disposed - cleaning up resources');
     };

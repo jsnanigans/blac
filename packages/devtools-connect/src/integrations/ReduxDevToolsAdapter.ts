@@ -1,4 +1,5 @@
-import type { BlacPlugin, BlocBase, Vertex } from '@blac/core';
+import { globalRegistry } from '@blac/core';
+import type { StateContainer, Vertex } from '@blac/core';
 import { safeSerialize } from '../serialization/serialize';
 import { EventRegistry } from './EventRegistry';
 
@@ -44,9 +45,112 @@ interface ReduxDevToolsMessage {
   };
 }
 
+// Strict typing for Redux DevTools messages
+interface BaseReduxMessage {
+  type: string;
+}
+
+interface DispatchMessage extends BaseReduxMessage {
+  type: 'DISPATCH';
+  payload: {
+    type:
+      | 'JUMP_TO_STATE'
+      | 'JUMP_TO_ACTION'
+      | 'RESET'
+      | 'COMMIT'
+      | 'ROLLBACK'
+      | 'UPDATE_STATE'
+      | 'IMPORT_STATE';
+    [key: string]: any;
+  };
+  state?: string;
+}
+
+interface ActionMessage extends BaseReduxMessage {
+  type: 'ACTION';
+  payload:
+    | {
+        type: string;
+        payload?: any;
+        [key: string]: any;
+      }
+    | string; // Can be string (JSON) or object
+}
+
+type StrictReduxDevToolsMessage = DispatchMessage | ActionMessage;
+
+/**
+ * Type guard to check if message is a DISPATCH message
+ */
+function isDispatchMessage(msg: any): msg is DispatchMessage {
+  return msg?.type === 'DISPATCH' && msg?.payload?.type !== undefined;
+}
+
+/**
+ * Type guard to check if message is an ACTION message
+ */
+function isActionMessage(msg: any): msg is ActionMessage {
+  return msg?.type === 'ACTION' && msg?.payload !== undefined;
+}
+
+/**
+ * Type guard to check if DISPATCH message is a jump to state/action
+ */
+function isJumpToState(msg: DispatchMessage): msg is DispatchMessage & {
+  payload: { type: 'JUMP_TO_STATE' | 'JUMP_TO_ACTION' };
+  state: string;
+} {
+  return (
+    (msg.payload.type === 'JUMP_TO_STATE' ||
+      msg.payload.type === 'JUMP_TO_ACTION') &&
+    typeof msg.state === 'string'
+  );
+}
+
+/**
+ * Type guard to check if DISPATCH message is an UPDATE_STATE
+ */
+function isUpdateState(msg: DispatchMessage): msg is DispatchMessage & {
+  payload: { type: 'UPDATE_STATE'; path?: string; value?: any };
+} {
+  return msg.payload.type === 'UPDATE_STATE';
+}
+
 declare global {
   interface Window {
     __REDUX_DEVTOOLS_EXTENSION__?: ReduxDevToolsExtension;
+  }
+
+  interface WindowEventMap {
+    'blac-devtools-error': CustomEvent<{
+      type:
+        | 'ACTION_DISPATCH_FAILED'
+        | 'TIME_TRAVEL_FAILED'
+        | 'SERIALIZATION_FAILED'
+        | 'STATE_EDIT_FAILED';
+      error: string;
+      context?: any;
+    }>;
+    'blac-devtools-time-travel': CustomEvent<{
+      targetState: any;
+      restoredCount: number;
+      failedCount: number;
+    }>;
+    'blac-devtools-action-dispatched': CustomEvent<{
+      blocName: string;
+      action?: string;
+      eventName?: string;
+      payload?: any;
+      event?: any;
+    }>;
+    'blac-devtools-state-edited': CustomEvent<{
+      blocType: string;
+      displayName: string;
+      path: string;
+      oldValue: any;
+      newValue: any;
+    }>;
+    'blac-devtools-reset': CustomEvent;
   }
 }
 
@@ -61,7 +165,7 @@ export interface ReduxDevToolsAdapterConfig {
 interface InstanceMetadata {
   uid: string;
   blocType: string;
-  instanceId: string | number | undefined;
+  instanceId: string;
   instanceRef: string | undefined;
   isolated: boolean;
   keepAlive: boolean;
@@ -79,26 +183,27 @@ interface InstanceMetadata {
  *
  * @example
  * ```typescript
- * import { Blac } from '@blac/core';
  * import { ReduxDevToolsAdapter } from '@blac/devtools-connect';
  *
- * Blac.instance.plugins.add(
- *   new ReduxDevToolsAdapter({
- *     enabled: import.meta.env.DEV,
- *     name: 'My App State',
- *   })
- * );
+ * // Create and start the adapter
+ * const devtools = new ReduxDevToolsAdapter({
+ *   enabled: import.meta.env.DEV,
+ *   name: 'My App State',
+ * });
+ *
+ * // Later, cleanup
+ * devtools.disconnect();
  * ```
  */
-export class ReduxDevToolsAdapter implements BlacPlugin {
+export class ReduxDevToolsAdapter {
   readonly name = 'ReduxDevToolsAdapter';
-  readonly version = '0.2.0';
+  readonly version = '0.3.0';
 
   private devTools: ReduxDevToolsInstance | null = null;
   private currentState: Map<string, any> = new Map();
   private instanceMetadata: Map<string, InstanceMetadata> = new Map();
   private enabled: boolean;
-  private unsubscribe?: () => void;
+  private cleanupFunctions: Array<() => void> = [];
 
   // Time-travel support
   private stateHistory: Array<{
@@ -106,7 +211,7 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
     states: Map<string, any>;
     action: string;
   }> = [];
-  private blocRegistry: Map<string, BlocBase<any>> = new Map();
+  private containerRegistry: Map<string, StateContainer<any>> = new Map();
   private maxHistorySize = 50;
 
   // Flag to prevent recursive updates during time-travel
@@ -118,6 +223,19 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
 
     if (!this.enabled) {
       return;
+    }
+
+    // Warn if DevTools is enabled in production
+    if (
+      this.enabled &&
+      typeof process !== 'undefined' &&
+      process.env?.NODE_ENV === 'production'
+    ) {
+      console.warn(
+        '⚠️  [ReduxDevToolsAdapter] DevTools is enabled in production!\n' +
+          'This exposes internal application state and should only be used for debugging.\n' +
+          'Set enabled: false or enabled: import.meta.env.DEV in production builds.',
+      );
     }
 
     if (typeof window === 'undefined') {
@@ -160,9 +278,37 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
       this.recordStateSnapshot('[INIT]');
 
       // Subscribe to DevTools commands (time-travel, etc.)
-      this.unsubscribe = this.devTools.subscribe((message) => {
+      const devToolsUnsub = this.devTools.subscribe((message) => {
         this.handleDevToolsMessage(message);
       });
+      if (devToolsUnsub) {
+        this.cleanupFunctions.push(devToolsUnsub);
+      }
+
+      // Subscribe to lifecycle events from BlaC core
+      this.cleanupFunctions.push(
+        globalRegistry.on('created', (container) => {
+          this.handleContainerCreated(container);
+        }),
+      );
+
+      this.cleanupFunctions.push(
+        globalRegistry.on('stateChanged', (container, prev, curr) => {
+          this.handleStateChanged(container, prev, curr);
+        }),
+      );
+
+      this.cleanupFunctions.push(
+        globalRegistry.on('eventAdded', (vertex, event) => {
+          this.handleEventAdded(vertex, event);
+        }),
+      );
+
+      this.cleanupFunctions.push(
+        globalRegistry.on('disposed', (container) => {
+          this.handleContainerDisposed(container);
+        }),
+      );
 
       console.log(
         '[ReduxDevToolsAdapter] Connected to Redux DevTools - Time-travel debugging enabled!',
@@ -173,20 +319,20 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
     }
   }
 
-  onBlocCreated(bloc: BlocBase<any>): void {
+  private handleContainerCreated(container: StateContainer<any>): void {
     if (!this.devTools) return;
 
-    const key = this.getInstanceKey(bloc);
-    const displayName = this.getInstanceDisplayName(bloc);
+    const key = this.getInstanceKey(container);
+    const displayName = this.getInstanceDisplayName(container);
 
-    // Register bloc for time-travel
-    this.blocRegistry.set(key, bloc);
+    // Register container for time-travel
+    this.containerRegistry.set(key, container);
 
     // Store metadata
-    const metadata = this.extractMetadata(bloc);
+    const metadata = this.extractMetadata(container);
     this.instanceMetadata.set(key, metadata);
 
-    const stateResult = safeSerialize(bloc.state);
+    const stateResult = safeSerialize(container.state);
     const state = stateResult.success
       ? stateResult.data
       : { error: stateResult.error };
@@ -204,10 +350,10 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
       {
         type: action,
         meta: {
-          uid: bloc.uid,
-          blocType: bloc._name,
-          instanceId: bloc._id,
-          instanceRef: bloc._instanceRef,
+          uid: metadata.uid,
+          blocType: metadata.blocType,
+          instanceId: metadata.instanceId,
+          instanceRef: metadata.instanceRef,
           isolated: metadata.isolated,
           keepAlive: metadata.keepAlive,
           lifecycle: metadata.lifecycleState,
@@ -221,25 +367,26 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
     this.recordStateSnapshot(action);
   }
 
-  onEventAdded(bloc: Vertex<any, any>, event: any): void {
+  private handleEventAdded(vertex: Vertex<any, any>, event: any): void {
     if (!this.devTools) return;
 
     // Skip Redux DevTools updates during time-travel
     if (this.isTimeTraveling) return;
 
-    const displayName = this.getInstanceDisplayName(bloc);
+    const displayName = this.getInstanceDisplayName(vertex);
     const eventName = event.constructor?.name || 'UnknownEvent';
     const eventResult = safeSerialize(event);
 
+    const metadata = this.extractMetadata(vertex);
     const action = `📨 [${displayName}] ${eventName}`;
     this.devTools.send(
       {
         type: action,
         payload: eventResult.success ? eventResult.data : eventResult.error,
         meta: {
-          uid: bloc.uid,
-          blocType: bloc._name,
-          instanceId: bloc._id,
+          uid: metadata.uid,
+          blocType: metadata.blocType,
+          instanceId: metadata.instanceId,
           timestamp: Date.now(),
         },
       },
@@ -250,15 +397,15 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
     // This prevents duplicate snapshots for event → state change flow
   }
 
-  onStateChanged(
-    bloc: BlocBase<any>,
+  private handleStateChanged(
+    container: StateContainer<any>,
     previousState: any,
     currentState: any,
   ): void {
     if (!this.devTools) return;
 
-    const key = this.getInstanceKey(bloc);
-    const displayName = this.getInstanceDisplayName(bloc);
+    const key = this.getInstanceKey(container);
+    const displayName = this.getInstanceDisplayName(container);
 
     const currentResult = safeSerialize(currentState);
     const current = currentResult.success
@@ -273,7 +420,7 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
     this.currentState.set(key, current);
 
     // Update metadata (subscriber count may have changed)
-    const metadata = this.extractMetadata(bloc);
+    const metadata = this.extractMetadata(container);
     this.instanceMetadata.set(key, metadata);
 
     // Skip Redux DevTools updates during time-travel to prevent recursive timeline pollution
@@ -288,9 +435,9 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
           current,
         },
         meta: {
-          uid: bloc.uid,
-          blocType: bloc._name,
-          instanceId: bloc._id,
+          uid: metadata.uid,
+          blocType: metadata.blocType,
+          instanceId: metadata.instanceId,
           lifecycle: metadata.lifecycleState,
           subscribers: metadata.subscriberCount,
           timestamp: Date.now(),
@@ -303,23 +450,24 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
     this.recordStateSnapshot(action);
   }
 
-  onBlocDisposed(bloc: BlocBase<any>): void {
+  private handleContainerDisposed(container: StateContainer<any>): void {
     if (!this.devTools) return;
 
-    const key = this.getInstanceKey(bloc);
-    const displayName = this.getInstanceDisplayName(bloc);
-    const isIsolated = bloc._isolated;
+    const key = this.getInstanceKey(container);
+    const displayName = this.getInstanceDisplayName(container);
+    const metadata = this.extractMetadata(container);
+    const isIsolated = metadata.isolated;
 
-    // Isolated blocs should ALWAYS be removed immediately
+    // Isolated containers should ALWAYS be removed immediately
     // They are tightly coupled to a single component and cannot be keepAlive
-    if (isIsolated && bloc._keepAlive) {
+    if (isIsolated && metadata.keepAlive) {
       console.warn(
-        `[ReduxDevToolsAdapter] Isolated bloc "${displayName}" has keepAlive=true. This is invalid - isolated blocs are always disposed with their component.`,
+        `[ReduxDevToolsAdapter] Isolated container "${displayName}" has keepAlive=true. This is invalid - isolated containers are always disposed with their component.`,
       );
     }
 
-    // Unregister bloc - this removes it from the state tree
-    this.blocRegistry.delete(key);
+    // Unregister container - this removes it from the state tree
+    this.containerRegistry.delete(key);
     this.currentState.delete(key);
     this.instanceMetadata.delete(key);
 
@@ -332,9 +480,9 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
       {
         type: action,
         meta: {
-          uid: bloc.uid,
-          blocType: bloc._name,
-          instanceId: bloc._id,
+          uid: metadata.uid,
+          blocType: metadata.blocType,
+          instanceId: metadata.instanceId,
           isolated: isIsolated,
           timestamp: Date.now(),
         },
@@ -347,45 +495,53 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
   }
 
   /**
-   * Generate unique key for a bloc instance
+   * Generate unique key for a container instance
    */
-  private getInstanceKey(bloc: BlocBase<any>): string {
-    return `${bloc._name}:${bloc.uid}`;
+  private getInstanceKey(container: StateContainer<any>): string {
+    return `${container.name}:${container.instanceId}`;
   }
 
   /**
    * Get instance display name with ID suffix if different from type name.
-   * For isolated instances, always include uid to ensure uniqueness in DevTools.
+   * For isolated instances, always include instanceId to ensure uniqueness in DevTools.
    */
-  private getInstanceDisplayName(bloc: BlocBase<any>): string {
+  private getInstanceDisplayName(container: StateContainer<any>): string {
+    const metadata = this.extractMetadata(container);
+
     // Isolated instances MUST have unique display names since there can be many at once
-    if (bloc._isolated) {
-      // Use uid suffix for isolated instances (e.g., "CounterCubit:abc123")
-      const shortUid = bloc.uid.substring(0, 8);
-      return `${bloc._name}:${shortUid}`;
+    if (metadata.isolated) {
+      // Use instanceId suffix for isolated instances (e.g., "CounterCubit:abc123")
+      const shortId = container.instanceId.substring(0, 8);
+      return `${container.name}:${shortId}`;
     }
 
     // For shared/keepAlive instances, use custom ID if provided
-    const idStr = String(bloc._id);
-    const hasCustomId = idStr !== bloc._name;
-    return hasCustomId ? `${bloc._name}:${idStr}` : bloc._name;
+    const hasCustomId =
+      metadata.instanceId !== undefined &&
+      String(metadata.instanceId) !== container.name;
+    return hasCustomId
+      ? `${container.name}:${metadata.instanceId}`
+      : container.name;
   }
 
   /**
    * Get the state key used in Redux DevTools state tree.
    * This is the key that appears in the DevTools state viewer.
    *
-   * - Isolated instances: Use displayName (includes uid for uniqueness)
+   * - Isolated instances: Use displayName (includes instanceId for uniqueness)
    * - Shared with custom ID: Use "Type#instanceId" pattern
    * - Default shared: Use displayName
    */
-  private getStateKey(bloc: BlocBase<any>): string {
-    const displayName = this.getInstanceDisplayName(bloc);
-    const metadata = this.extractMetadata(bloc);
+  private getStateKey(container: StateContainer<any>): string {
+    const displayName = this.getInstanceDisplayName(container);
+    const metadata = this.extractMetadata(container);
 
     if (metadata.isolated) {
-      return displayName; // Already includes uid for uniqueness
-    } else if (String(metadata.instanceId) !== metadata.blocType) {
+      return displayName; // Already includes instanceId for uniqueness
+    } else if (
+      metadata.instanceId !== undefined &&
+      metadata.instanceId !== metadata.blocType
+    ) {
       return `${metadata.blocType}#${metadata.instanceId}`;
     } else {
       return displayName;
@@ -393,23 +549,23 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
   }
 
   /**
-   * Extract metadata from a bloc instance
+   * Extract metadata from a container instance
    */
-  private extractMetadata(bloc: BlocBase<any>): InstanceMetadata {
-    const stats = bloc._subscriptionManager.getStats();
+  private extractMetadata(container: StateContainer<any>): InstanceMetadata {
+    const constructor = container.constructor as any;
+
     return {
-      uid: bloc.uid,
-      blocType: bloc._name,
-      instanceId: bloc._id,
-      instanceRef: bloc._instanceRef,
-      isolated: bloc._isolated,
-      keepAlive: bloc._keepAlive,
+      uid: container.instanceId,
+      blocType: container.name,
+      instanceId: container.instanceId,
+      instanceRef: undefined, // Not used in new architecture
+      isolated: constructor.isolated === true,
+      keepAlive: constructor.keepAlive === true,
       createdAt:
-        this.instanceMetadata.get(this.getInstanceKey(bloc))?.createdAt ||
+        this.instanceMetadata.get(this.getInstanceKey(container))?.createdAt ||
         Date.now(),
-      lifecycleState:
-        (bloc as any)._lifecycleManager?.currentState || 'unknown',
-      subscriberCount: stats.activeSubscriptions,
+      lifecycleState: container.isDisposed ? 'DISPOSED' : 'ACTIVE',
+      subscriberCount: 0, // StateContainer doesn't expose subscription count
     };
   }
 
@@ -420,23 +576,22 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
     const state: Record<string, any> = {};
 
     for (const [key, stateData] of this.currentState.entries()) {
-      const bloc = this.blocRegistry.get(key);
-      if (!bloc) continue;
+      const container = this.containerRegistry.get(key);
+      if (!container) continue;
 
-      // Skip disposed blocs (defensive check - they should already be cleaned up)
-      const lifecycleState = (bloc as any)._lifecycleManager?.currentState;
-      if (lifecycleState === 'DISPOSED' || lifecycleState === 'DISPOSING') {
+      // Skip disposed containers (defensive check - they should already be cleaned up)
+      if (container.isDisposed) {
         console.warn(
-          `[ReduxDevToolsAdapter] Found disposed bloc in state tree: ${key}. Cleaning up.`,
+          `[ReduxDevToolsAdapter] Found disposed container in state tree: ${key}. Cleaning up.`,
         );
         this.currentState.delete(key);
-        this.blocRegistry.delete(key);
+        this.containerRegistry.delete(key);
         this.instanceMetadata.delete(key);
         continue;
       }
 
-      // Get the state key for this bloc (handles isolated/shared/custom ID logic)
-      const stateKey = this.getStateKey(bloc);
+      // Get the state key for this container (handles isolated/shared/custom ID logic)
+      const stateKey = this.getStateKey(container);
 
       // Just use the actual state (metadata is available in action payloads)
       state[stateKey] = stateData;
@@ -445,19 +600,63 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
     return state;
   }
 
-  private handleDevToolsMessage(message: ReduxDevToolsMessage): void {
-    if (message.type === 'DISPATCH' && message.payload?.type) {
-      switch (message.payload.type) {
-        case 'JUMP_TO_STATE':
-        case 'JUMP_TO_ACTION':
-          if (message.state) {
-            this.handleTimeTravel(message.state);
-          }
-          break;
+  /**
+   * Dispatch error event to notify app of DevTools errors.
+   *
+   * This allows applications to listen for and handle DevTools-related errors.
+   *
+   * @param type - The error type
+   * @param error - The error object or message
+   * @param context - Additional context about the error
+   *
+   * @example
+   * ```typescript
+   * window.addEventListener('blac-devtools-error', (event) => {
+   *   console.error('DevTools error:', event.detail.type, event.detail.error);
+   * });
+   * ```
+   */
+  private dispatchError(
+    type:
+      | 'ACTION_DISPATCH_FAILED'
+      | 'TIME_TRAVEL_FAILED'
+      | 'SERIALIZATION_FAILED'
+      | 'STATE_EDIT_FAILED',
+    error: unknown,
+    context?: any,
+  ): void {
+    const errorMessage = error instanceof Error ? error.message : String(error);
 
+    window.dispatchEvent(
+      new CustomEvent('blac-devtools-error', {
+        detail: {
+          type,
+          error: errorMessage,
+          context,
+        },
+      }),
+    );
+  }
+
+  private handleDevToolsMessage(message: ReduxDevToolsMessage): void {
+    // Handle DISPATCH messages with type guards
+    if (isDispatchMessage(message)) {
+      // Handle time-travel operations
+      if (isJumpToState(message)) {
+        this.handleTimeTravel(message.state);
+        return;
+      }
+
+      // Handle state editing
+      if (isUpdateState(message)) {
+        this.handleStateEdit(message.payload);
+        return;
+      }
+
+      // Handle other dispatch types
+      switch (message.payload.type) {
         case 'RESET':
           console.log('[ReduxDevToolsAdapter] Reset requested');
-          // Could emit a custom event that the app can listen to
           window.dispatchEvent(new CustomEvent('blac-devtools-reset'));
           break;
 
@@ -469,10 +668,6 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
           console.log('[ReduxDevToolsAdapter] Rollback requested');
           break;
 
-        case 'UPDATE_STATE':
-          this.handleStateEdit(message.payload);
-          break;
-
         case 'IMPORT_STATE':
           if (message.payload.nextLiftedState) {
             console.log(
@@ -482,10 +677,11 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
           }
           break;
       }
+      return;
     }
 
-    // Handle action dispatch from DevTools UI
-    if (message.type === 'ACTION' && message.payload) {
+    // Handle ACTION messages with type guard
+    if (isActionMessage(message)) {
       // Redux DevTools sends the action as a JSON string when dispatching from the UI
       let action = message.payload;
       console.log(
@@ -503,6 +699,9 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
           if (this.devTools) {
             this.devTools.error('Invalid action JSON format');
           }
+          this.dispatchError('ACTION_DISPATCH_FAILED', error, {
+            payload: action,
+          });
           return;
         }
       }
@@ -522,30 +721,38 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
       // Set flag to prevent recursive Redux DevTools updates
       this.isTimeTraveling = true;
 
-      // Restore each Bloc's state from the flat structure
+      // Restore each container's state from the flat structure
       let restoredCount = 0;
       let failedCount = 0;
 
       for (const [stateKey, stateData] of Object.entries(targetState)) {
-        // Find the matching bloc
-        let bloc: BlocBase<any> | undefined;
+        // Find the matching container
+        let container: StateContainer<any> | undefined;
 
-        for (const [_key, registeredBloc] of this.blocRegistry.entries()) {
+        for (const [
+          _key,
+          registeredContainer,
+        ] of this.containerRegistry.entries()) {
           // Match using the same state key logic as getGlobalState()
-          const matchKey = this.getStateKey(registeredBloc);
+          const matchKey = this.getStateKey(registeredContainer);
 
           if (matchKey === stateKey) {
-            bloc = registeredBloc;
+            container = registeredContainer;
             break;
           }
         }
 
-        if (bloc) {
+        if (container) {
           try {
-            // Use _pushState to restore the state
+            // Restore state using emit if available (Cubit/Vertex) or protected update
             // The isTimeTraveling flag prevents these state changes from
             // being sent back to Redux DevTools (preventing timeline pollution)
-            bloc._pushState(stateData, bloc.state, '[TIME_TRAVEL]');
+            if ('emit' in container && typeof container.emit === 'function') {
+              (container as any).emit(stateData);
+            } else {
+              // Fallback using protected update method
+              (container as any).update(() => stateData);
+            }
             restoredCount++;
           } catch (error) {
             console.error(
@@ -561,7 +768,7 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
       this.isTimeTraveling = false;
 
       console.log(
-        `[ReduxDevToolsAdapter] Time-travel complete: ${restoredCount} blocs restored, ${failedCount} failed`,
+        `[ReduxDevToolsAdapter] Time-travel complete: ${restoredCount} containers restored, ${failedCount} failed`,
       );
 
       // Dispatch custom event for user notification
@@ -582,14 +789,27 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
       if (this.devTools) {
         this.devTools.error('Failed to parse time-travel state');
       }
+
+      // Notify app of error
+      this.dispatchError('TIME_TRAVEL_FAILED', error, { stateString });
     }
   }
 
   private recordStateSnapshot(action: string): void {
-    // Create a deep copy of current state
+    // Create a deep copy of current state for accurate time-travel
     const snapshot = new Map<string, any>();
     for (const [blocName, state] of this.currentState.entries()) {
-      snapshot.set(blocName, state);
+      try {
+        // Deep clone using JSON roundtrip (works for serializable states)
+        snapshot.set(blocName, JSON.parse(JSON.stringify(state)));
+      } catch (error) {
+        // Fallback to shallow copy if state is not serializable
+        console.warn(
+          `[ReduxDevToolsAdapter] Cannot deep clone state for ${blocName}, using shallow copy. Time-travel may be inaccurate if state is mutated.`,
+          error,
+        );
+        snapshot.set(blocName, state);
+      }
     }
 
     this.stateHistory.push({
@@ -630,8 +850,9 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
       }
 
       // Remove emoji prefix if present (🔒, 🔗, 📌, ⚡, 📨, 🗑️)
+      // Match any emoji characters at the start followed by optional whitespace
       const cleanedType = action.type.replace(
-        /^[\u{1F300}-\u{1F9FF}]+\s*/u,
+        /^[\p{Emoji}\p{Emoji_Modifier}\p{Emoji_Component}]+\s*/gu,
         '',
       );
 
@@ -647,55 +868,61 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
 
       const [, displayName, actionName] = match;
 
-      // Find the bloc/cubit by display name
-      let bloc: BlocBase<any> | undefined;
-      let blocKey: string | undefined;
+      // Find the container by display name
+      let container: StateContainer<any> | undefined;
+      let containerKey: string | undefined;
 
       // Try to find by exact display name match
-      for (const [key, registeredBloc] of this.blocRegistry.entries()) {
+      for (const [
+        key,
+        registeredContainer,
+      ] of this.containerRegistry.entries()) {
         const registeredDisplayName =
-          this.getInstanceDisplayName(registeredBloc);
+          this.getInstanceDisplayName(registeredContainer);
         if (registeredDisplayName === displayName) {
-          bloc = registeredBloc;
-          blocKey = key;
+          container = registeredContainer;
+          containerKey = key;
           break;
         }
       }
 
-      // If not found, try to find by bloc type name (for shared instances)
-      if (!bloc) {
-        for (const [key, registeredBloc] of this.blocRegistry.entries()) {
-          if (registeredBloc._name === displayName) {
-            bloc = registeredBloc;
-            blocKey = key;
+      // If not found, try to find by container type name (for shared instances)
+      if (!container) {
+        for (const [
+          key,
+          registeredContainer,
+        ] of this.containerRegistry.entries()) {
+          if (registeredContainer.name === displayName) {
+            container = registeredContainer;
+            containerKey = key;
             break;
           }
         }
       }
 
-      if (!bloc || !blocKey) {
-        const availableBlocs = Array.from(this.blocRegistry.values()).map((b) =>
-          this.getInstanceDisplayName(b),
-        );
+      if (!container || !containerKey) {
+        const availableContainers = Array.from(
+          this.containerRegistry.values(),
+        ).map((c) => this.getInstanceDisplayName(c));
         console.error(
-          `[ReduxDevToolsAdapter] Bloc/Cubit "${displayName}" not found. Available: ${availableBlocs.join(', ')}`,
+          `[ReduxDevToolsAdapter] Container "${displayName}" not found. Available: ${availableContainers.join(', ')}`,
         );
         return;
       }
 
-      // Handle built-in state actions (work for both Blocs and Cubits)
+      // Handle built-in state actions (work for both Cubits and Vertices)
       if (actionName === 'emit') {
-        this.handleEmitAction(bloc, displayName, action);
+        this.handleEmitAction(container, displayName, action);
         return;
       }
 
       if (actionName === 'patch') {
-        this.handlePatchAction(bloc, displayName, action);
+        this.handlePatchAction(container, displayName, action);
         return;
       }
 
-      // Handle custom events (Blocs only)
-      this.handleCustomEvent(bloc, displayName, actionName, action);
+      // Handle custom events (Vertices only)
+      this.handleCustomEvent(container, displayName, actionName, action);
     } catch (error) {
       console.error('[ReduxDevToolsAdapter] Failed to dispatch action:', error);
 
@@ -704,6 +931,9 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
           `Failed to dispatch action: ${error instanceof Error ? error.message : 'Unknown error'}`,
         );
       }
+
+      // Notify app of error
+      this.dispatchError('ACTION_DISPATCH_FAILED', error, { action });
     }
   }
 
@@ -711,13 +941,13 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
    * Handle emit action - replaces entire state
    */
   private handleEmitAction(
-    bloc: BlocBase<any>,
-    blocName: string,
+    container: StateContainer<any>,
+    containerName: string,
     action: any,
   ): void {
     if (!action.payload || !('state' in action.payload)) {
       console.error(
-        `[ReduxDevToolsAdapter] emit action requires payload.state. Example: { type: "[${blocName}] emit", payload: { state: newState } }`,
+        `[ReduxDevToolsAdapter] emit action requires payload.state. Example: { type: "[${containerName}] emit", payload: { state: newState } }`,
       );
       return;
     }
@@ -725,19 +955,24 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
     const newState = action.payload.state;
 
     console.log(
-      `[ReduxDevToolsAdapter] Emitting state to "${blocName}"`,
+      `[ReduxDevToolsAdapter] Emitting state to "${containerName}"`,
       'New state:',
       newState,
     );
 
-    // Use _pushState to emit new state (same as emit but public)
-    bloc._pushState(newState, bloc.state, '[DEVTOOLS_EMIT]');
+    // Use emit to update state (available on Cubit/Vertex)
+    if ('emit' in container && typeof container.emit === 'function') {
+      (container as any).emit(newState);
+    } else {
+      // Fallback using protected update method
+      (container as any).update(() => newState);
+    }
 
     // Dispatch custom event for user notification
     window.dispatchEvent(
       new CustomEvent('blac-devtools-action-dispatched', {
         detail: {
-          blocName,
+          blocName: containerName,
           action: 'emit',
           payload: action.payload,
         },
@@ -749,13 +984,13 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
    * Handle patch action - merges with existing state
    */
   private handlePatchAction(
-    bloc: BlocBase<any>,
-    blocName: string,
+    container: StateContainer<any>,
+    containerName: string,
     action: any,
   ): void {
     if (!action.payload || !('state' in action.payload)) {
       console.error(
-        `[ReduxDevToolsAdapter] patch action requires payload.state. Example: { type: "[${blocName}] patch", payload: { state: { count: 5 } } }`,
+        `[ReduxDevToolsAdapter] patch action requires payload.state. Example: { type: "[${containerName}] patch", payload: { state: { count: 5 } } }`,
       );
       return;
     }
@@ -763,20 +998,20 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
     const partialState = action.payload.state;
 
     console.log(
-      `[ReduxDevToolsAdapter] Patching state of "${blocName}"`,
+      `[ReduxDevToolsAdapter] Patching state of "${containerName}"`,
       'Partial state:',
       partialState,
     );
 
-    // Check if bloc has patch method
-    if ('patch' in bloc && typeof bloc.patch === 'function') {
-      bloc.patch(partialState);
+    // Check if container has patch method (Cubit only)
+    if ('patch' in container && typeof container.patch === 'function') {
+      container.patch(partialState);
 
       // Dispatch custom event for user notification
       window.dispatchEvent(
         new CustomEvent('blac-devtools-action-dispatched', {
           detail: {
-            blocName,
+            blocName: containerName,
             action: 'patch',
             payload: action.payload,
           },
@@ -784,28 +1019,28 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
       );
     } else {
       console.error(
-        `[ReduxDevToolsAdapter] Bloc/Cubit "${blocName}" does not have a patch method. Use emit instead.`,
+        `[ReduxDevToolsAdapter] Container "${containerName}" does not have a patch method. Use emit instead.`,
       );
     }
   }
 
   /**
-   * Handle custom registered events (Blocs only)
+   * Handle custom registered events (Vertices only)
    */
   private handleCustomEvent(
-    bloc: BlocBase<any>,
-    blocName: string,
+    container: StateContainer<any>,
+    containerName: string,
     eventName: string,
     action: any,
   ): void {
-    // Check if bloc supports events (is a Bloc, not just a Cubit)
-    if (!('add' in bloc) || typeof bloc.add !== 'function') {
+    // Check if container supports events (is a Vertex, not just a Cubit)
+    if (!('add' in container) || typeof container.add !== 'function') {
       console.error(
-        `[ReduxDevToolsAdapter] "${blocName}" is a Cubit and does not support custom events.`,
+        `[ReduxDevToolsAdapter] "${containerName}" is a Cubit and does not support custom events.`,
         '\n\nCubits only support built-in actions:',
-        `\n  - { type: "[${blocName}] emit", payload: { state: newState } }`,
-        `\n  - { type: "[${blocName}] patch", payload: { state: partialState } }`,
-        '\n\nTo dispatch custom events, use a Bloc instead of a Cubit.',
+        `\n  - { type: "[${containerName}] emit", payload: { state: newState } }`,
+        `\n  - { type: "[${containerName}] patch", payload: { state: partialState } }`,
+        '\n\nTo dispatch custom events, use a Vertex instead of a Cubit.',
       );
       return;
     }
@@ -829,19 +1064,19 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
     );
 
     console.log(
-      `[ReduxDevToolsAdapter] Dispatching event "${eventName}" to "${blocName}"`,
+      `[ReduxDevToolsAdapter] Dispatching event "${eventName}" to "${containerName}"`,
       'Event:',
       event,
     );
 
     // Dispatch the event
-    (bloc as Vertex<any, any>).add(event);
+    (container as Vertex<any, any>).add(event);
 
     // Dispatch custom event for user notification
     window.dispatchEvent(
       new CustomEvent('blac-devtools-action-dispatched', {
         detail: {
-          blocName,
+          blocName: containerName,
           eventName,
           payload: action.payload,
           event,
@@ -882,33 +1117,37 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
       const stateKey = pathParts[0]; // e.g., "CounterCubit" or "CounterBloc#user-1"
       const statePath = pathParts.slice(1); // Path within the state
 
-      // Find the bloc by state key
-      let bloc: BlocBase<any> | undefined;
-      let blocKey: string | undefined;
+      // Find the container by state key
+      let container: StateContainer<any> | undefined;
+      let containerKey: string | undefined;
 
-      for (const [key, registeredBloc] of this.blocRegistry.entries()) {
+      for (const [
+        key,
+        registeredContainer,
+      ] of this.containerRegistry.entries()) {
         // Match using the same state key logic as getGlobalState()
-        const matchKey = this.getStateKey(registeredBloc);
+        const matchKey = this.getStateKey(registeredContainer);
 
         if (matchKey === stateKey) {
-          bloc = registeredBloc;
-          blocKey = key;
+          container = registeredContainer;
+          containerKey = key;
           break;
         }
       }
 
-      if (!bloc || !blocKey) {
-        const availableKeys = Array.from(this.blocRegistry.values()).map((b) =>
-          this.getStateKey(b),
+      if (!container || !containerKey) {
+        const availableKeys = Array.from(this.containerRegistry.values()).map(
+          (c) => this.getStateKey(c),
         );
         console.error(
-          `[ReduxDevToolsAdapter] Bloc "${stateKey}" not found. Available: ${availableKeys.join(', ') || 'none'}`,
+          `[ReduxDevToolsAdapter] Container "${stateKey}" not found. Available: ${availableKeys.join(', ') || 'none'}`,
         );
         return;
       }
 
-      const currentState = bloc.state;
-      const displayName = this.getInstanceDisplayName(bloc);
+      const currentState = container.state;
+      const displayName = this.getInstanceDisplayName(container);
+      const metadata = this.extractMetadata(container);
 
       // If path is just the state key (no property path), update entire state
       if (statePath.length === 0) {
@@ -920,12 +1159,18 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
           value,
         );
 
-        bloc._pushState(value, currentState, '[DEVTOOLS_EDIT]');
+        // Use emit to update state
+        if ('emit' in container && typeof container.emit === 'function') {
+          (container as any).emit(value);
+        } else {
+          // Fallback using protected update method
+          (container as any).update(() => value);
+        }
 
         window.dispatchEvent(
           new CustomEvent('blac-devtools-state-edited', {
             detail: {
-              blocType: bloc._name,
+              blocType: metadata.blocType,
               displayName,
               path: '',
               oldValue: currentState,
@@ -971,13 +1216,18 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
       );
 
       // Emit updated state
-      bloc._pushState(newState, currentState, '[DEVTOOLS_EDIT]');
+      if ('emit' in container && typeof container.emit === 'function') {
+        (container as any).emit(newState);
+      } else {
+        // Fallback using protected update method
+        (container as any).update(() => newState);
+      }
 
       // Dispatch custom event for user notification
       window.dispatchEvent(
         new CustomEvent('blac-devtools-state-edited', {
           detail: {
-            blocType: bloc._name,
+            blocType: metadata.blocType,
             displayName,
             path: statePath.join('.'),
             oldValue: this.getValueAtPath(currentState, statePath),
@@ -993,6 +1243,9 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
           `Failed to edit state: ${error instanceof Error ? error.message : 'Unknown error'}`,
         );
       }
+
+      // Notify app of error
+      this.dispatchError('STATE_EDIT_FAILED', error, { payload });
     }
   }
 
@@ -1015,10 +1268,9 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
    * Disconnect from Redux DevTools and clean up resources
    */
   disconnect(): void {
-    if (this.unsubscribe) {
-      this.unsubscribe();
-      this.unsubscribe = undefined;
-    }
+    // Run all cleanup functions
+    this.cleanupFunctions.forEach((cleanup) => cleanup());
+    this.cleanupFunctions = [];
 
     if (this.devTools) {
       this.devTools.unsubscribe();
@@ -1027,7 +1279,7 @@ export class ReduxDevToolsAdapter implements BlacPlugin {
 
     this.currentState.clear();
     this.instanceMetadata.clear();
-    this.blocRegistry.clear();
+    this.containerRegistry.clear();
     this.enabled = false;
   }
 

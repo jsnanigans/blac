@@ -1,5 +1,6 @@
 import { useBloc } from '@blac/react';
 import { CounterBloc } from './CounterBloc';
+import { Card, Button, Badge } from '../../shared/components';
 
 interface CounterViewProps {
   label: string;
@@ -22,26 +23,29 @@ export function CounterView({ label, instanceKey }: CounterViewProps) {
   console.log(`[CounterView ${label}] Rendering with count:`, state.count);
 
   return (
-    <div className="card counter-card">
+    <Card>
       <div className="flex-between">
         <h3>{label}</h3>
-        <span className="badge badge-outline">
+        <Badge variant={instanceKey ? 'primary' : 'default'}>
           {instanceKey ? 'Isolated' : 'Shared'}
-        </span>
+        </Badge>
       </div>
+
+      <div className="counter-display">{state.count}</div>
+
       <div className="counter-controls">
-        <button onClick={counter.decrement} className="button-square">
-          −
-        </button>
-        <div className="counter-value">{state.count}</div>
-        <button onClick={counter.increment} className="button-square">
+        <Button onClick={counter.decrement}>−</Button>
+        <Button onClick={counter.increment} variant="primary">
           +
-        </button>
-        <button onClick={counter.reset} className="button-ghost">
+        </Button>
+        <Button onClick={counter.reset} variant="ghost">
           Reset
-        </button>
+        </Button>
       </div>
-      <p className="meta-line">Instance: {instanceKey || 'default (shared)'}</p>
-    </div>
+
+      <p className="text-xs text-muted">
+        Instance: {instanceKey || 'default (shared)'}
+      </p>
+    </Card>
   );
 }

@@ -1,5 +1,6 @@
 import { useBloc } from '@blac/react';
 import { CounterBloc } from './CounterBloc';
+import { Card, StatCard } from '../../shared/components';
 
 interface CounterStatsProps {
   instanceKey?: string;
@@ -21,26 +22,16 @@ export function CounterStats({ instanceKey }: CounterStatsProps) {
   );
 
   return (
-    <div className="card card-subtle">
-      <h4>Signal Readout</h4>
+    <Card>
+      <h4>Statistics</h4>
       <div className="stats-grid">
-        <div className="stat-block">
-          <span className="stat-value">{state.incrementCount}</span>
-          <span className="stat-label">Increments</span>
-        </div>
-        <div className="stat-block">
-          <span className="stat-value">{state.decrementCount}</span>
-          <span className="stat-label">Decrements</span>
-        </div>
-        <div className="stat-block">
-          <span className="stat-value">{state.lastAction}</span>
-          <span className="stat-label">Last Action</span>
-        </div>
+        <StatCard label="Increments" value={state.incrementCount} />
+        <StatCard label="Decrements" value={state.decrementCount} />
+        <StatCard label="Last Action" value={state.lastAction} />
       </div>
-      <p className="meta-line">
-        💡 Only re-renders when increment / decrement counts or lastAction
-        mutate.
+      <p className="text-xs text-muted">
+        💡 Only re-renders when increment/decrement counts or lastAction change
       </p>
-    </div>
+    </Card>
   );
 }

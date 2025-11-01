@@ -1,6 +1,6 @@
 {
   "name": "examples",
-  "version": "1.0.1-rc.0",
+  "version": "1.0.1-rc.1",
   "private": true,
   "publishConfig": {
     "access": "restricted"
@@ -22,6 +22,7 @@
   "description": "Blac examples app showcasing state management features",
   "dependencies": {
     "@blac/core": "workspace:*",
+    "@blac/devtools-connect": "workspace:*",
     "@blac/react": "workspace:*",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

@@ -15,6 +15,13 @@ export * from './core/StateContainerRegistry';
 export * from './core/Cubit';
 export * from './core/Vertex';
 
+// Plugin System - Export registry and lifecycle types
+export { globalRegistry } from './core/StateContainerRegistry';
+export type {
+  LifecycleEvent,
+  LifecycleListener,
+} from './core/StateContainerRegistry';
+
 // Dependency Tracking (framework-agnostic utilities for React/Vue/etc)
 export * from './tracking';
 
