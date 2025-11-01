@@ -54,7 +54,7 @@ class PrimitiveCubit extends Cubit<number> {
 
   // Expose patch for testing error case
   tryPatch(value: any): void {
-    this.patch(value);
+    (this.patch as any)(value);
   }
 }
 

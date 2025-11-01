@@ -196,10 +196,10 @@ describe('Equality Utils', () => {
 
     describe('Type Mismatches', () => {
       it('should return false for different types', () => {
-        expect(deepEqual(1, '1')).toBe(false);
+        expect(deepEqual(1, '1' as any)).toBe(false);
         expect(deepEqual([], {})).toBe(false);
         expect(deepEqual(null, undefined)).toBe(false);
-        expect(deepEqual(0, false)).toBe(false);
+        expect(deepEqual(0, false as any)).toBe(false);
       });
     });
   });
@@ -239,7 +239,7 @@ describe('Equality Utils', () => {
       const obj1 = { a: 1, b: 2 };
       const obj2 = { a: 1, c: 2 };
 
-      expect(shallowEqual(obj1, obj2)).toBe(false);
+      expect(shallowEqual(obj1, obj2 as any)).toBe(false);
     });
 
     it('should detect different key counts', () => {

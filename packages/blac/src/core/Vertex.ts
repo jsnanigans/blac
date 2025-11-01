@@ -75,7 +75,7 @@ export abstract class Vertex<
    * Add an event to be processed
    * Arrow function to maintain correct 'this' binding in React
    */
-  protected add = (event: E): void => {
+  public add = (event: E): void => {
     this.processEvent(event);
   };
 
