@@ -1,6 +1,6 @@
 {
   "name": "@blac/react",
-  "version": "2.0.0-rc.4",
+  "version": "2.0.0-rc.6",
   "license": "MIT",
   "author": "Brendan Mullins <jsnanigans@gmail.com>",
   "main": "./dist/index.js",
@@ -19,7 +19,11 @@
     }
   },
   "files": [
-    "dist",
+    "dist/**/*.js",
+    "dist/**/*.cjs",
+    "dist/**/*.d.ts",
+    "dist/**/*.d.cts",
+    "dist/**/*.map",
     "README.md",
     "LICENSE"
   ],

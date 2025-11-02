@@ -34,7 +34,7 @@ type StateListener<S> = (state: S) => void;
  * Base abstract class for all state containers
  */
 export abstract class StateContainer<S> {
-  private static _registry = globalRegistry;
+  protected static _registry = globalRegistry;
 
   /**
    * Set a custom registry (mainly for testing)

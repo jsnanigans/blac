@@ -1,6 +1,6 @@
 {
   "name": "@blac/devtools-connect",
-  "version": "2.0.0-rc.4",
+  "version": "2.0.0-rc.6",
   "license": "MIT",
   "author": "Brendan Mullins <jsnanigans@gmail.com>",
   "description": "DevTools connection plugin for BlaC state management",
@@ -20,7 +20,11 @@
     }
   },
   "files": [
-    "dist",
+    "dist/**/*.js",
+    "dist/**/*.cjs",
+    "dist/**/*.d.ts",
+    "dist/**/*.d.cts",
+    "dist/**/*.map",
     "README.md",
     "LICENSE"
   ],
