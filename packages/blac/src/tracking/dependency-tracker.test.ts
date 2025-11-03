@@ -611,9 +611,11 @@ describe('Dependency Tracker', () => {
       const newState: RefState = { obj, arr };
       expect(hasChanges(tracker, newState)).toBe(false);
 
-      // Different reference, same value
+      // Different reference, same value - WILL trigger change
+      // because accessing obj.value tracks BOTH 'obj' and 'obj.value'
+      // and 'obj' reference changed (even though value is same)
       const newState2: RefState = { obj: { value: 10 }, arr };
-      expect(hasChanges(tracker, newState2)).toBe(false);
+      expect(hasChanges(tracker, newState2)).toBe(true);
 
       // Different value
       const newState3: RefState = { obj: { value: 20 }, arr };

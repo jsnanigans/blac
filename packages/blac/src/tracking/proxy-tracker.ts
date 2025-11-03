@@ -116,12 +116,7 @@ export function createArrayProxy<T, U>(
       const value = Reflect.get(arr, prop);
 
       if (typeof value === 'function') {
-        if (ARRAY_METHODS.has(prop)) {
-          if (state.isTracking && path) {
-            state.trackedPaths.add(path);
-          }
-        }
-
+        // Don't track array methods - the array itself is already tracked
         if (!state.boundFunctionsCache) {
           state.boundFunctionsCache = new WeakMap<Function, Function>();
         }
@@ -134,10 +129,18 @@ export function createArrayProxy<T, U>(
         return bound;
       }
 
-      let fullPath: string;
+      // Track array length access
       if (prop === 'length') {
-        fullPath = path ? `${path}.length` : 'length';
-      } else if (typeof prop === 'string') {
+        if (state.isTracking) {
+          const fullPath = path ? `${path}.length` : 'length';
+          state.trackedPaths.add(fullPath);
+        }
+        return value;
+      }
+
+      // Track array index access
+      let fullPath: string;
+      if (typeof prop === 'string') {
         const index = Number(prop);
         if (!isNaN(index) && index >= 0) {
           fullPath = path ? `${path}[${index}]` : `[${index}]`;
@@ -226,6 +229,15 @@ export function createProxyInternal<T>(
 
       const fullPath = path ? `${path}.${String(prop)}` : String(prop);
 
+      // Track ALL property accesses (objects, arrays, primitives)
+      // This ensures accessing state.items or state.user tracks those paths
+      if (typeof prop === 'string' && state.isTracking) {
+        if (!prop.startsWith('_') && !prop.startsWith('$$')) {
+          state.trackedPaths.add(fullPath);
+        }
+      }
+
+      // If the value is an object/array, create a nested proxy for deeper tracking
       if (isProxyable(value)) {
         const proxiedValue = createProxyInternal(
           state,
@@ -234,12 +246,6 @@ export function createProxyInternal<T>(
           depth + 1,
         );
         return proxiedValue;
-      }
-
-      if (typeof prop === 'string' && state.isTracking) {
-        if (!prop.startsWith('_') && !prop.startsWith('$$')) {
-          state.trackedPaths.add(fullPath);
-        }
       }
 
       return value;

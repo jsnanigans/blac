@@ -51,28 +51,31 @@ describe('useBloc - Array.map() with proxy', () => {
   });
 
   it('should allow mapping over state.data array', async () => {
-    const { result } = renderHook(() => useBloc(DemoBloc));
+    const { result } = renderHook(() => {
+      const [state, bloc] = useBloc(DemoBloc);
+      // Access state.data during render so it gets tracked
+      return {
+        data: state.data,
+        mapped: state.data.map((item) => item.id),
+        bloc,
+      };
+    });
 
-    const [initialState] = result.current;
-    expect(initialState.data).toEqual([]);
+    expect(result.current.data).toEqual([]);
+    expect(result.current.mapped).toEqual([]);
 
     act(() => {
-      result.current[1].run();
+      result.current.bloc.run();
     });
 
     await waitFor(() => {
-      const [state] = result.current;
-      expect(state.data).toHaveLength(3);
-
-      // Test that we can map over the array
-      const mapped = state.data.map((item) => item.id);
-      console.log('Mapped IDs:', mapped);
-      expect(mapped).toEqual([1, 2, 3]);
+      expect(result.current.data).toHaveLength(3);
+      expect(result.current.mapped).toEqual([1, 2, 3]);
 
       // Test that we can access individual items
-      expect(state.data[0]).toBeDefined();
-      expect(state.data[0].id).toBe(1);
-      expect(state.data[0].label).toBe('item 1');
+      expect(result.current.data[0]).toBeDefined();
+      expect(result.current.data[0].id).toBe(1);
+      expect(result.current.data[0].label).toBe('item 1');
     });
   });
 

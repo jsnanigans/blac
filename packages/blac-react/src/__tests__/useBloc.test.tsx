@@ -65,37 +65,41 @@ describe('useBloc', () => {
     });
 
     it('should update when bloc state changes', async () => {
-      const { result } = renderHook(() => useBloc(CounterBloc));
-
-      const [, bloc] = result.current;
+      const { result } = renderHook(() => {
+        const [state, bloc] = useBloc(CounterBloc);
+        // Access state during render so it gets tracked
+        return { state, bloc };
+      });
 
       act(() => {
-        bloc.increment();
+        result.current.bloc.increment();
       });
 
       await waitFor(() => {
-        const [state] = result.current;
-        expect(state).toBe(1);
+        expect(result.current.state).toBe(1);
       });
     });
 
     it('should share instance across multiple hooks (default shared)', async () => {
-      const { result: result1 } = renderHook(() => useBloc(CounterBloc));
-      const { result: result2 } = renderHook(() => useBloc(CounterBloc));
-
-      const [, bloc1] = result1.current;
-      const [, bloc2] = result2.current;
+      const { result: result1 } = renderHook(() => {
+        const [state, bloc] = useBloc(CounterBloc);
+        return { state, bloc };
+      });
+      const { result: result2 } = renderHook(() => {
+        const [state, bloc] = useBloc(CounterBloc);
+        return { state, bloc };
+      });
 
       // Should be same instance
-      expect(bloc1).toBe(bloc2);
+      expect(result1.current.bloc).toBe(result2.current.bloc);
 
       act(() => {
-        bloc1.increment();
+        result1.current.bloc.increment();
       });
 
       await waitFor(() => {
-        expect(result1.current[0]).toBe(1);
-        expect(result2.current[0]).toBe(1);
+        expect(result1.current.state).toBe(1);
+        expect(result2.current.state).toBe(1);
       });
     });
   });
@@ -113,19 +117,22 @@ describe('useBloc', () => {
     });
 
     it('should maintain separate state for each instance', async () => {
-      const { result: result1 } = renderHook(() => useBloc(IsolatedBloc));
-      const { result: result2 } = renderHook(() => useBloc(IsolatedBloc));
-
-      const [, bloc1] = result1.current;
-      const [, bloc2] = result2.current;
+      const { result: result1 } = renderHook(() => {
+        const [state, bloc] = useBloc(IsolatedBloc);
+        return { state, bloc };
+      });
+      const { result: result2 } = renderHook(() => {
+        const [state, bloc] = useBloc(IsolatedBloc);
+        return { state, bloc };
+      });
 
       act(() => {
-        bloc1.increment();
+        result1.current.bloc.increment();
       });
 
       await waitFor(() => {
-        expect(result1.current[0]).toBe(1);
-        expect(result2.current[0]).toBe(0); // Other instance unchanged
+        expect(result1.current.state).toBe(1);
+        expect(result2.current.state).toBe(0); // Other instance unchanged
       });
     });
 

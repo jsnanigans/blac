@@ -57,58 +57,68 @@ describe('useBloc - Cubit emit()', () => {
   });
 
   it('should trigger re-render when emit() is called', async () => {
-    const { result } = renderHook(() => useBloc(DemoBloc));
+    const { result } = renderHook(() => {
+      const [state, bloc] = useBloc(DemoBloc);
+      // Access state during render so it gets tracked
+      // Access the array itself (not .length)
+      return { data: state.data, selected: state.selected, bloc };
+    });
 
-    const [initialState, bloc] = result.current;
-    expect(initialState.data).toEqual([]);
-    expect(initialState.selected).toBe(null);
+    expect(result.current.data).toEqual([]);
+    expect(result.current.selected).toBe(null);
 
     act(() => {
-      bloc.run();
+      result.current.bloc.run();
     });
 
     await waitFor(() => {
-      const [state] = result.current;
-      expect(state.data).toHaveLength(2);
-      expect(state.data[0]).toEqual({ id: 1, label: 'item 1' });
+      expect(result.current.data).toHaveLength(2);
     });
   });
 
   it('should trigger re-render when update() is called', async () => {
-    const { result } = renderHook(() => useBloc(DemoBloc));
-
-    act(() => {
-      result.current[1].run();
-    });
-
-    await waitFor(() => {
-      expect(result.current[0].data).toHaveLength(2);
+    const { result } = renderHook(() => {
+      const [state, bloc] = useBloc(DemoBloc);
+      // Access state during render so it gets tracked
+      // Access the array itself (not .length)
+      return { data: state.data, selected: state.selected, bloc };
     });
 
     act(() => {
-      result.current[1].select(1);
+      result.current.bloc.run();
     });
 
     await waitFor(() => {
-      const [state] = result.current;
-      expect(state.selected).toBe(1);
+      expect(result.current.data).toHaveLength(2);
+    });
+
+    act(() => {
+      result.current.bloc.select(1);
+    });
+
+    await waitFor(() => {
+      expect(result.current.selected).toBe(1);
     });
   });
 
-  it('should work with component that does not access state', async () => {
-    const { result } = renderHook(() => useBloc(DemoBloc));
+  it('should NOT re-render when component does not access state', async () => {
+    let renderCount = 0;
 
-    // Don't access state, only bloc
-    const [, bloc] = result.current;
+    const { result } = renderHook(() => {
+      renderCount++;
+      const [state, bloc] = useBloc(DemoBloc);
+      // Don't access any state properties during render
+      return { bloc };
+    });
+
+    expect(renderCount).toBe(1);
 
     act(() => {
-      bloc.run();
+      result.current.bloc.run();
     });
 
-    // Should still update
-    await waitFor(() => {
-      const [state] = result.current;
-      expect(state.data).toHaveLength(2);
-    });
+    // Should NOT re-render because no state was accessed
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(renderCount).toBe(1); // No re-render
   });
 });

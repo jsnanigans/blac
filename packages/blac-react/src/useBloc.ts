@@ -385,16 +385,34 @@ function createAutoTrackSubscribe<TBloc extends StateContainer<AnyObject>>(
         hookState.tracker ||
         (hookState.tracker = createTrackerState<ExtractState<TBloc>>());
 
+      // Check if we have tracked state properties
+      // Note: pathCache contains committed tracked paths after first render completes
+      const hasStateDeps = tracker.pathCache && tracker.pathCache.size > 0;
+      const hasGetterDeps =
+        hookState.getterTracker &&
+        hookState.getterTracker.trackedGetters.size > 0;
+
+      // Special case: Primitive state (number, string, boolean) can't be proxied
+      // so nothing gets tracked. Use conservative behavior for primitive state.
+      const isPrimitiveState =
+        instance.state !== null &&
+        typeof instance.state !== 'object' &&
+        typeof instance.state !== 'function';
+
+      // EARLY EXIT: If nothing tracked at all after first render, no re-render needed
+      // This handles the case where state is destructured but never accessed.
+      // Exception: For primitive state, always re-render (can't track primitives)
+      if (!hasStateDeps && !hasGetterDeps && !isPrimitiveState) {
+        return;
+      }
+
+      // At this point we know something was tracked, check for changes
       let stateChanged = hasChanges(tracker, instance.state);
 
       // Special case: if NO state properties were tracked (pathCache.size === 0)
       // but getters WERE tracked, then don't treat "no state tracking" as "track everything".
       // Only rely on getter changes in this case.
-      if (
-        tracker.pathCache.size === 0 &&
-        hookState.getterTracker &&
-        hookState.getterTracker.trackedGetters.size > 0
-      ) {
+      if (!hasStateDeps && hasGetterDeps) {
         stateChanged = false; // Override - only getters are relevant
       }
 
