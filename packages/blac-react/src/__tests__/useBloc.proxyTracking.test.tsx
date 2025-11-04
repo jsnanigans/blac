@@ -188,17 +188,15 @@ describe('useBloc with Proxy Tracking', () => {
       expect(result.current.bio).toBe('Senior Developer');
     });
 
-    // Update an unrelated property - WILL re-render because user object changes
-    // Note: Accessing state.user.profile.bio tracks all intermediate paths including 'user'
-    // When user.name changes, a new user object is created, triggering a re-render
-    // This is coarse-grained tracking behavior
+    // Update an unrelated property - should NOT re-render with fine-grained tracking
+    // Note: With fine-grained tracking, only 'user.profile.bio' is tracked (not 'user')
+    // When user.name changes but bio stays same, no re-render occurs
     act(() => {
       result.current.bloc.updateUserName('Bob');
     });
 
-    await waitFor(() => {
-      expect(renderCount).toBe(3); // Re-renders due to user object change
-    });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(renderCount).toBe(2); // No re-render with fine-grained tracking
   });
 
   it('should handle multiple property access', async () => {
@@ -315,15 +313,15 @@ describe('useBloc with Proxy Tracking', () => {
     expect(result.current.theme).toBe('light');
     expect(result.current.data).toBe(0); // likes
 
-    // Initially, updating views WILL re-render because counters object changes
-    // Note: state.counters.likes access tracks both 'counters' and 'counters.likes'
+    // Initially, updating views should NOT re-render with fine-grained tracking
+    // Note: state.counters.likes tracks only 'counters.likes', not 'counters'
+    // Updating views changes counters.views, leaving counters.likes unchanged
     act(() => {
       result.current.bloc.incrementViews();
     });
 
-    await waitFor(() => {
-      expect(renderCount).toBe(2); // Re-renders due to counters object change
-    });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(renderCount).toBe(1); // No re-render with fine-grained tracking
 
     // Switch to dark mode
     act(() => {
@@ -331,17 +329,17 @@ describe('useBloc with Proxy Tracking', () => {
     });
 
     await waitFor(() => {
-      expect(renderCount).toBe(3);
+      expect(renderCount).toBe(2); // Render count: 2 (was 1, theme changed)
       expect(result.current.theme).toBe('dark');
     });
 
-    // Now updating views SHOULD re-render (dark mode)
+    // Now updating views SHOULD re-render (dark mode, now tracking views)
     act(() => {
       result.current.bloc.incrementViews();
     });
 
     await waitFor(() => {
-      expect(renderCount).toBe(4);
+      expect(renderCount).toBe(3); // Render count: 3 (was 2, views changed)
       expect(result.current.data).toBe(2); // views incremented twice
     });
   });

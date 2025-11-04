@@ -122,15 +122,15 @@ describe('Dependency Tracking - Advanced Sanity Check', () => {
       expect(result.current.emailNotifications).toBe(false);
     });
 
-    // Update a sibling nested property (theme) - should re-render
-    // because preferences object changed
+    // Update a sibling nested property (theme) - should NOT re-render
+    // With fine-grained tracking: only 'preferences.notifications.email' is tracked
+    // Updating 'preferences.theme' doesn't affect the tracked path
     act(() => {
       result.current.bloc.updateTheme('dark');
     });
 
-    await waitFor(() => {
-      expect(renderCount).toBe(3);
-    });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(renderCount).toBe(2); // No re-render with fine-grained tracking
 
     // Update a completely unrelated property (stats) - should NOT re-render
     act(() => {
@@ -138,7 +138,7 @@ describe('Dependency Tracking - Advanced Sanity Check', () => {
     });
 
     await new Promise((resolve) => setTimeout(resolve, 50));
-    expect(renderCount).toBe(3); // No re-render
+    expect(renderCount).toBe(2); // Still no re-render
   });
 
   it('should optimize when accessing primitive at top level vs nested', async () => {
@@ -234,15 +234,15 @@ describe('Dependency Tracking - Advanced Sanity Check', () => {
       expect(renderCount).toBe(4);
     });
 
-    // Update something NOT tracked directly but in same parent object (preferences)
-    // This WILL re-render due to coarse-grained tracking (preferences object changed)
+    // Update something NOT tracked - should NOT re-render
+    // With fine-grained tracking: only theme, loginCount, and name are tracked
+    // toggleEmailNotifications changes preferences.notifications.email (not tracked)
     act(() => {
       result.current.bloc.toggleEmailNotifications();
     });
 
-    await waitFor(() => {
-      expect(renderCount).toBe(5); // Re-renders because preferences object changed
-    });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(renderCount).toBe(4); // No re-render with fine-grained tracking
   });
 
   it('should handle spreading objects - testing coarse-grained tracking', async () => {
@@ -285,7 +285,11 @@ describe('Dependency Tracking - Advanced Sanity Check', () => {
     });
 
     expect(renderCount).toBe(1);
-    expect(result.current.prefKeys).toEqual(['theme', 'language', 'notifications']);
+    expect(result.current.prefKeys).toEqual([
+      'theme',
+      'language',
+      'notifications',
+    ]);
 
     // This tests the coarse-grained tracking behavior
     // Since we accessed state.preferences, any change to preferences will trigger re-render

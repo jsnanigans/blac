@@ -11,6 +11,7 @@ import {
   captureTrackedPaths,
   hasChanges,
   hasTrackedData,
+  optimizeTrackedPaths,
   type TrackerState,
 } from './dependency-tracker';
 
@@ -66,7 +67,6 @@ describe('Dependency Tracker', () => {
         expect(tracker.pathCache).toBeInstanceOf(Map);
         expect(tracker.lastCheckedState).toBeNull();
         expect(tracker.lastCheckedValues).toBeInstanceOf(Map);
-        expect(tracker.cleanupCounter).toBe(0);
       });
 
       it('should create independent tracker instances', () => {
@@ -583,7 +583,6 @@ describe('Dependency Tracker', () => {
         proxy = createProxy(tracker, state);
         const __ = proxy.name;
         captureTrackedPaths(tracker, state);
-        tracker.cleanupCounter = i + 1; // Simulate cleanup counter
       }
 
       // After cleanup interval, 'count' should be removed
@@ -591,7 +590,7 @@ describe('Dependency Tracker', () => {
       expect(tracker.pathCache.has('name')).toBe(true);
     });
 
-    it('should handle object references correctly', () => {
+    it('should handle object references correctly with fine-grained tracking', () => {
       interface RefState {
         obj: { value: number };
         arr: number[];
@@ -607,17 +606,20 @@ describe('Dependency Tracker', () => {
       const _ = proxy.obj.value;
       captureTrackedPaths(tracker, state);
 
+      // Fine-grained tracking: only 'obj.value' is tracked, not 'obj'
+      expect(tracker.currentRenderPaths.has('obj.value')).toBe(true);
+      expect(tracker.currentRenderPaths.has('obj')).toBe(false);
+
       // Same reference, no change
       const newState: RefState = { obj, arr };
       expect(hasChanges(tracker, newState)).toBe(false);
 
-      // Different reference, same value - WILL trigger change
-      // because accessing obj.value tracks BOTH 'obj' and 'obj.value'
-      // and 'obj' reference changed (even though value is same)
+      // Different reference, same value - should NOT trigger change
+      // because only 'obj.value' is tracked (fine-grained), and value is same
       const newState2: RefState = { obj: { value: 10 }, arr };
-      expect(hasChanges(tracker, newState2)).toBe(true);
+      expect(hasChanges(tracker, newState2)).toBe(false);
 
-      // Different value
+      // Different value - WILL trigger change
       const newState3: RefState = { obj: { value: 20 }, arr };
       expect(hasChanges(tracker, newState3)).toBe(true);
     });
@@ -779,6 +781,173 @@ describe('Dependency Tracker', () => {
       // Both should be tracked now
       expect(tracker.pathCache.has('count')).toBe(true);
       expect(tracker.pathCache.has('name')).toBe(true);
+    });
+  });
+
+  // Fine-Grained Path Optimization
+
+  describe('Fine-Grained Path Optimization', () => {
+    describe('optimizeTrackedPaths()', () => {
+      it('should remove parent when only leaf accessed', () => {
+        const paths = new Set(['user', 'user.profile', 'user.profile.bio']);
+        const optimized = optimizeTrackedPaths(paths);
+
+        expect(optimized.has('user.profile.bio')).toBe(true);
+        expect(optimized.has('user.profile')).toBe(false);
+        expect(optimized.has('user')).toBe(false);
+        expect(optimized.size).toBe(1);
+      });
+
+      it('should keep siblings without parent', () => {
+        const paths = new Set(['user', 'user.name', 'user.age']);
+        const optimized = optimizeTrackedPaths(paths);
+
+        expect(optimized.has('user.name')).toBe(true);
+        expect(optimized.has('user.age')).toBe(true);
+        expect(optimized.has('user')).toBe(false);
+        expect(optimized.size).toBe(2);
+      });
+
+      it('should handle mixed depth siblings', () => {
+        const paths = new Set([
+          'user',
+          'user.profile',
+          'user.profile.bio',
+          'user.name',
+        ]);
+        const optimized = optimizeTrackedPaths(paths);
+
+        expect(optimized.has('user.profile.bio')).toBe(true);
+        expect(optimized.has('user.name')).toBe(true);
+        expect(optimized.has('user.profile')).toBe(false);
+        expect(optimized.has('user')).toBe(false);
+        expect(optimized.size).toBe(2);
+      });
+
+      it('should handle array indices separately', () => {
+        const paths = new Set(['items', 'items[0]', 'items[1]']);
+        const optimized = optimizeTrackedPaths(paths);
+
+        expect(optimized.has('items[0]')).toBe(true);
+        expect(optimized.has('items[1]')).toBe(true);
+        expect(optimized.has('items')).toBe(false);
+        expect(optimized.size).toBe(2);
+      });
+
+      it('should handle array properties separately from indices', () => {
+        const paths = new Set(['items', 'items.length', 'items[0]']);
+        const optimized = optimizeTrackedPaths(paths);
+
+        expect(optimized.has('items.length')).toBe(true);
+        expect(optimized.has('items[0]')).toBe(true);
+        expect(optimized.has('items')).toBe(false);
+        expect(optimized.size).toBe(2);
+      });
+
+      it('should handle empty set correctly', () => {
+        const paths = new Set<string>();
+        const optimized = optimizeTrackedPaths(paths);
+
+        expect(optimized.size).toBe(0);
+      });
+
+      it('should handle single path correctly', () => {
+        const paths = new Set(['user.name']);
+        const optimized = optimizeTrackedPaths(paths);
+
+        expect(optimized.has('user.name')).toBe(true);
+        expect(optimized.size).toBe(1);
+      });
+
+      it('should handle top-level properties', () => {
+        const paths = new Set(['count', 'name', 'theme']);
+        const optimized = optimizeTrackedPaths(paths);
+
+        expect(optimized.has('count')).toBe(true);
+        expect(optimized.has('name')).toBe(true);
+        expect(optimized.has('theme')).toBe(true);
+        expect(optimized.size).toBe(3);
+      });
+
+      it('should handle complex nested structure', () => {
+        const paths = new Set([
+          'state',
+          'state.user',
+          'state.user.profile',
+          'state.user.profile.bio',
+          'state.user.profile.avatar',
+          'state.user.settings',
+          'state.user.settings.theme',
+          'state.stats',
+          'state.stats.count',
+        ]);
+        const optimized = optimizeTrackedPaths(paths);
+
+        expect(optimized.has('state.user.profile.bio')).toBe(true);
+        expect(optimized.has('state.user.profile.avatar')).toBe(true);
+        expect(optimized.has('state.user.settings.theme')).toBe(true);
+        expect(optimized.has('state.stats.count')).toBe(true);
+        expect(optimized.has('state')).toBe(false);
+        expect(optimized.has('state.user')).toBe(false);
+        expect(optimized.has('state.user.profile')).toBe(false);
+        expect(optimized.size).toBe(4);
+      });
+    });
+
+    it('should use fine-grained tracking in real scenario', () => {
+      interface TestState {
+        user: {
+          personal: { name: string; age: number };
+          preferences: { theme: string; language: string };
+        };
+        stats: { count: number };
+      }
+
+      const tracker = createTrackerState<TestState>();
+      const state: TestState = {
+        user: {
+          personal: { name: 'John', age: 30 },
+          preferences: { theme: 'light', language: 'en' },
+        },
+        stats: { count: 0 },
+      };
+
+      // Access nested properties
+      startTracking(tracker);
+      const proxy = createProxy(tracker, state);
+      const _ = proxy.user.personal.name;
+      const __ = proxy.user.preferences.theme;
+      captureTrackedPaths(tracker, state);
+
+      // Should only track leaf paths
+      expect(tracker.currentRenderPaths.has('user.personal.name')).toBe(true);
+      expect(tracker.currentRenderPaths.has('user.preferences.theme')).toBe(
+        true,
+      );
+      expect(tracker.currentRenderPaths.has('user')).toBe(false);
+      expect(tracker.currentRenderPaths.has('user.personal')).toBe(false);
+      expect(tracker.currentRenderPaths.has('user.preferences')).toBe(false);
+      expect(tracker.currentRenderPaths.size).toBe(2);
+
+      // Update unrelated field - should not detect change
+      const newState1: TestState = {
+        ...state,
+        user: {
+          ...state.user,
+          personal: { ...state.user.personal, age: 31 }, // Changed age, not name
+        },
+      };
+      expect(hasChanges(tracker, newState1)).toBe(false);
+
+      // Update tracked field - should detect change
+      const newState2: TestState = {
+        ...state,
+        user: {
+          ...state.user,
+          personal: { ...state.user.personal, name: 'Jane' },
+        },
+      };
+      expect(hasChanges(tracker, newState2)).toBe(true);
     });
   });
 });

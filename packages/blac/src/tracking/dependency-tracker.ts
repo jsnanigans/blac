@@ -41,14 +41,74 @@ export interface TrackerState<T extends AnyObject> {
   lastCheckedState: T | null;
   /** Values from the last change check (optimization) */
   lastCheckedValues: Map<string, any>;
-  /** Counter for periodic cleanup of unused paths */
-  cleanupCounter: number;
 }
 
 /**
- * How often to clean up unused paths from the cache
+ * Check if one path is a child of another path
+ *
+ * @example
+ * isChildPath('user.name', 'user') // true
+ * isChildPath('user.profile.bio', 'user.profile') // true
+ * isChildPath('items[0]', 'items') // true
+ * isChildPath('user.name', 'user.profile') // false
  */
-const CLEANUP_INTERVAL = 10;
+function isChildPath(child: string, parent: string): boolean {
+  if (child === parent) return false;
+  return child.startsWith(parent + '.') || child.startsWith(parent + '[');
+}
+
+/**
+ * Optimize tracked paths by removing redundant parent paths
+ *
+ * This implements fine-grained tracking by keeping only the most specific
+ * paths accessed. For example, if 'user.profile.bio' is accessed, we don't
+ * need to track 'user' or 'user.profile' as those are redundant.
+ *
+ * @example
+ * // Single deep access
+ * optimizeTrackedPaths(['user', 'user.profile', 'user.profile.bio'])
+ * // Returns: ['user.profile.bio']
+ *
+ * // Multiple siblings
+ * optimizeTrackedPaths(['user', 'user.name', 'user.age'])
+ * // Returns: ['user.name', 'user.age']
+ *
+ * // Mixed depths
+ * optimizeTrackedPaths(['user', 'user.profile', 'user.profile.bio', 'user.name'])
+ * // Returns: ['user.profile.bio', 'user.name']
+ */
+export function optimizeTrackedPaths(paths: Set<string>): Set<string> {
+  if (paths.size === 0) {
+    return new Set();
+  }
+
+  if (paths.size === 1) {
+    return new Set(paths);
+  }
+
+  // Sort paths by length descending (longest/most specific first)
+  const sortedPaths = Array.from(paths).sort((a, b) => b.length - a.length);
+  const optimized = new Set<string>();
+
+  for (const path of sortedPaths) {
+    // Check if we already have a more specific child path
+    let hasMoreSpecificChild = false;
+
+    for (const optimizedPath of optimized) {
+      if (isChildPath(optimizedPath, path)) {
+        hasMoreSpecificChild = true;
+        break;
+      }
+    }
+
+    // Only add this path if we don't have a more specific version
+    if (!hasMoreSpecificChild) {
+      optimized.add(path);
+    }
+  }
+
+  return optimized;
+}
 
 /**
  * Create a new tracker state
@@ -61,7 +121,6 @@ export function createTrackerState<T extends AnyObject>(): TrackerState<T> {
     pathCache: new Map<string, PathInfo>(),
     lastCheckedState: null,
     lastCheckedValues: new Map<string, any>(),
-    cleanupCounter: 0,
   };
 }
 
@@ -88,14 +147,18 @@ export function createProxy<T extends AnyObject>(
  * Capture the paths that were tracked during a render
  *
  * This should be called after each render to record which paths were accessed.
- * It also performs periodic cleanup of unused paths to prevent memory leaks.
+ * Uses fine-grained optimization to remove redundant parent paths, keeping only
+ * the most specific paths that were accessed.
  */
 export function captureTrackedPaths<T extends AnyObject>(
   tracker: TrackerState<T>,
   state: T,
 ): void {
   tracker.previousRenderPaths = tracker.currentRenderPaths;
-  tracker.currentRenderPaths = stopProxyTracking(tracker.proxyTrackerState);
+
+  // Get raw tracked paths and optimize them (remove redundant parents)
+  const rawPaths = stopProxyTracking(tracker.proxyTrackerState);
+  tracker.currentRenderPaths = optimizeTrackedPaths(rawPaths);
 
   if (
     tracker.previousRenderPaths.size === 0 &&
@@ -126,16 +189,6 @@ export function captureTrackedPaths<T extends AnyObject>(
         canReuseCache && tracker.lastCheckedValues.has(path)
           ? tracker.lastCheckedValues.get(path)
           : getValueAtPath(state, info.segments);
-    }
-  }
-
-  tracker.cleanupCounter++;
-  if (tracker.cleanupCounter >= CLEANUP_INTERVAL) {
-    tracker.cleanupCounter = 0;
-    for (const path of tracker.pathCache.keys()) {
-      if (!trackedPathsUnion.has(path)) {
-        tracker.pathCache.delete(path);
-      }
     }
   }
 
