@@ -69,6 +69,13 @@ export interface UseBlocOptions<TBloc extends StateContainer<AnyObject>> {
   onUnmount?: (bloc: TBloc) => void;
 }
 
+export interface UseBlocOptionsWithDependencies<
+  TBloc extends StateContainer<AnyObject>,
+> extends UseBlocOptions<TBloc> {
+  dependencies: (state: ExtractState<TBloc>, bloc: TBloc) => unknown[];
+  autoTrack?: never;
+}
+
 /**
  * Return type of the useBloc hook
  *

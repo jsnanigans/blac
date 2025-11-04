@@ -251,6 +251,21 @@ export class StateContainerRegistry {
   }
 
   /**
+   * Get an existing instance without incrementing ref count
+   * Returns null if instance doesn't exist
+   * Used for "borrowing" an instance without claiming ownership
+   */
+  getInstance<T extends StateContainer<any>>(
+    constructor: new (...args: any[]) => T,
+    key?: string,
+  ): T | null {
+    const className = constructor.name;
+    const instanceKey = `${className}:${key || 'default'}`;
+    const entry = this.instances.get(instanceKey);
+    return entry ? (entry.instance as T) : null;
+  }
+
+  /**
    * Subscribe to lifecycle events
    * @param event - The lifecycle event to listen for
    * @param listener - The listener function to call when the event occurs

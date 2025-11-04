@@ -583,9 +583,9 @@ describe('Vertex', () => {
       );
     });
 
-    it('should work with getOrCreate pattern', () => {
-      const vertex1 = CounterVertex.getOrCreate();
-      const vertex2 = CounterVertex.getOrCreate();
+    it('should work with attach pattern', () => {
+      const vertex1 = CounterVertex.resolve();
+      const vertex2 = CounterVertex.resolve();
 
       expect(vertex1).toBe(vertex2);
 

@@ -150,6 +150,11 @@ The React integration uses sophisticated proxy-based tracking:
    - **Shared Instances** (default): Multiple components share same bloc
    - **Isolated Instances**: Each component gets its own bloc (mark with `static isolated = true`)
    - Registry manages instance lifecycle and reference counting
+   - **Three Access Patterns:**
+     - `.resolve()`: Ownership (increments ref count) - use in React hooks
+     - `.get()`: Borrowing (no ref count change, throws if not found) - use in bloc-to-bloc communication
+     - `.getSafe()`: Safe borrowing (returns discriminated union) - use for conditional access
+   - **Prevents Memory Leaks**: Using `.get()` in bloc-to-bloc calls prevents ref count buildup
 
 ### Key Architectural Decisions
 
@@ -238,4 +243,71 @@ CounterCubit.getRefCount('main'); // Check references
 const [state, bloc] = useBloc(MyBloc, {
   dependencies: (s) => [s.field], // Manual tracking for debugging
 });
+```
+
+### Production App Analysis
+
+**TempDoc Reference:**
+- **Analysis Report:** `/Users/brendanmullins/Documents/Log/TempDoc/blac/2025-11/04/production-apps-analysis.md`
+- **Date:** 2025-11-04
+- **Apps Analyzed:** PMP & user-app (from user-fe-reviews project)
+- **Key Findings:**
+  - Both apps use 3 BlaC versions simultaneously (v0, v1, v2)
+  - Critical memory leaks: 0/34 disposals in PMP, 1/75 in user-app
+  - Missing instance management: Only 1 of 109 blocs marked `static isolated`
+  - Direct state access anti-pattern in ~35 files total
+  - No dependency tracking usage in either app
+  - 109 total Cubit/Bloc classes across both apps
+  - Migration plan: 11-14 weeks in 3 phases
+
+**Top Anti-Patterns Identified:**
+1. Missing disposal lifecycle (timers, observers, event listeners not cleaned up)
+2. Direct state access bypassing reactivity
+3. God objects (UserCubit: 161 lines, LayoutCubit: 199 lines)
+4. Complex nested state structures requiring deep spreading
+5. No dependency tracking optimization
+
+**Migration Priority:**
+1. Add disposal to prevent memory leaks (CRITICAL)
+2. Fix direct state access (CRITICAL)
+3. Mark instance isolation strategy (HIGH)
+4. Complete v2 migration (HIGH)
+
+### Instance Management API Redesign
+
+**TempDoc Reference:**
+- **Design Document:** `/Users/brendanmullins/Documents/Log/TempDoc/blac/2025-11/04/instance-management-api-redesign.md`
+- **Date:** 2025-11-04
+- **Status:** Implemented
+
+**New API Methods:**
+- `.resolve()`: Get/create with ownership (increments ref count) - primary API for React hooks
+- `.get()`: Get without ownership (throws if not found) - for bloc-to-bloc communication
+- `.getSafe()`: Get without ownership (returns discriminated union) - for conditional access
+
+**Key Benefits:**
+- Prevents memory leaks in bloc-to-bloc communication patterns
+- Makes ownership semantics explicit (`.resolve()` clearly indicates instance resolution)
+- Familiar pattern from DI containers (similar to dependency injection)
+- Provides type-safe conditional access with `.getSafe()`
+- Clean break from deprecated `.getOrCreate()` API
+
+**Usage Examples:**
+```typescript
+// React component (ownership)
+const counter = CounterCubit.resolve('main', 0);
+
+// Bloc-to-bloc communication (borrowing - no memory leak!)
+class UserBloc {
+  loadProfile = () => {
+    const analytics = AnalyticsBloc.get('main');
+    analytics.trackEvent('profile_loaded');
+  };
+}
+
+// Conditional access (safe borrowing)
+const result = NotificationCubit.getSafe('user-123');
+if (!result.error) {
+  result.instance.markAsRead();
+}
 ```

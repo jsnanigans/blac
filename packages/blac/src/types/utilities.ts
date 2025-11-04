@@ -46,15 +46,34 @@ export type ExtractConstructorArgs<T> = T extends new (
  * function createBloc<TBloc extends StateContainer<any>>(
  *   BlocClass: BlocConstructor<TBloc>
  * ): TBloc {
- *   return BlocClass.getOrCreate();
+ *   // Use .resolve() for ownership (increments ref count)
+ *   return BlocClass.resolve();
+ * }
+ *
+ * function borrowBloc<TBloc extends StateContainer<any>>(
+ *   BlocClass: BlocConstructor<TBloc>
+ * ): TBloc | null {
+ *   // Use .getSafe() for conditional access (no ref count change)
+ *   const result = BlocClass.getSafe?.();
+ *   return result?.error ? null : result.instance;
  * }
  * ```
  */
 export type BlocConstructor<TBloc extends StateContainer<any>> = (new (
   ...args: any[]
 ) => TBloc) & {
-  getOrCreate?(instanceKey?: string, ...args: any[]): TBloc;
+  /** Resolve instance with ownership (increments ref count) */
+  resolve?(instanceKey?: string, ...args: any[]): TBloc;
+  /** Get existing instance without ownership (throws if not found) */
+  get?(instanceKey?: string): TBloc;
+  /** Get existing instance without ownership (returns discriminated union) */
+  getSafe?(
+    instanceKey?: string,
+  ): { error: Error; instance: null } | { error: null; instance: TBloc };
+  /** Release ownership (decrements ref count) */
   release?(instanceKey?: string): void;
+  /** Mark as isolated (each component gets its own instance) */
   isolated?: boolean;
+  /** Mark as keepAlive (instance survives zero ref count) */
   keepAlive?: boolean;
 };

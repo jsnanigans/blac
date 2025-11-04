@@ -14,7 +14,9 @@ pnpm add @blac/core @blac/react
 
 The foundation for all state containers in BlaC. Provides state storage, subscriptions, and lifecycle management.
 
-**Purpose**: Use StateContainer directly when you want to control method visibility (protected `emit`/`update` methods).
+**Purpose**: Used internally as a base class for the [[Cubit]] and [[Vertex]].
+
+**Note:** Its not recommended to use the StateContainer directly; use a [[Cubit]] or a [[Vertex]], they both extend the [[StateContainer]]
 
 ```typescript
 import { StateContainer } from '@blac/core';
@@ -84,7 +86,7 @@ class MyBloc extends StateContainer<State> {
 
 Extends `StateContainer` with **public** state mutation methods for direct state management.
 
-**Purpose**: Use Cubit when you want simple, direct state mutations without events.
+**Purpose**: Use Cubit when you want simple, direct state mutations without events. The [[Cubit]] fits most use cases.
 
 ```typescript
 import { Cubit } from '@blac/core';
@@ -254,15 +256,19 @@ class MyVertex extends Vertex<State> {
 
 ### Static Instance Management
 
-All state containers (StateContainer, Cubit, Vertex) support static instance management:
+All state containers (StateContainer, Cubit, Vertex) support static instance management with three access patterns:
+
+#### `.resolve()` - Ownership Semantics (Instance Resolution)
+
+Get or create an instance with ref counting. Used when you "own" the instance lifetime.
 
 ```typescript
-// Get or create shared instance
-const counter = CounterCubit.getOrCreate();
-const named = CounterCubit.getOrCreate('main');
+// Get or create shared instance (increments ref count)
+const counter = CounterCubit.resolve();
+const named = CounterCubit.resolve('main');
 
 // With constructor arguments
-const user = UserCubit.getOrCreate('user-123', { userId: '123' });
+const user = UserCubit.resolve('user-123', { userId: '123' });
 
 // Release reference (disposes when ref count reaches zero)
 CounterCubit.release();
@@ -270,7 +276,71 @@ CounterCubit.release('main');
 
 // Force dispose (ignores ref count and keepAlive)
 CounterCubit.release('main', true);
+```
 
+**Use `.resolve()` when:**
+- React components need to manage instance lifetime (used internally by `useBloc`/`useBlocActions`)
+- You want to ensure the instance stays alive during usage
+- You need ownership semantics with automatic cleanup
+
+#### `.get()` - Borrowing Semantics (Strict)
+
+Get an existing instance WITHOUT incrementing ref count. Throws if instance doesn't exist.
+
+```typescript
+// Borrow existing instance (no ref count change)
+const counter = CounterCubit.get('main');
+counter.increment();
+// No .release() needed - we're just borrowing!
+
+// Throws error if instance doesn't exist:
+// CounterCubit instance "main" not found.
+// Use .resolve() to create and claim ownership, or .getSafe() for conditional access.
+```
+
+**Use `.get()` when:**
+- Bloc-to-bloc communication (calling methods on other blocs)
+- Event handlers where component already owns the instance via `.resolve()`
+- Accessing keepAlive singleton instances
+- You know the instance exists and is being managed elsewhere
+
+**Common pattern - Prevents memory leaks:**
+```typescript
+class UserBloc extends Cubit<UserState> {
+  loadProfile = () => {
+    // ✅ Just borrow - no memory leak!
+    const analytics = AnalyticsCubit.get('main');
+    analytics.trackEvent('profile_loaded');
+    // No .release() needed
+  };
+}
+```
+
+#### `.getSafe()` - Borrowing Semantics (Safe)
+
+Get an existing instance WITHOUT incrementing ref count. Returns discriminated union instead of throwing.
+
+```typescript
+// Safe borrowing with error handling
+const result = NotificationCubit.getSafe('user-123');
+
+if (result.error) {
+  console.log('Instance not found:', result.error.message);
+  return null;
+}
+
+// TypeScript knows instance is non-null after check
+result.instance.markAsRead();
+```
+
+**Use `.getSafe()` when:**
+- Instance existence is conditional/uncertain
+- You want type-safe error handling without try/catch
+- Checking if another component has created an instance
+
+#### Other Static Methods
+
+```typescript
 // Check if instance exists
 const exists = CounterCubit.hasInstance('main');
 
@@ -335,7 +405,6 @@ interface UserState {
   name: string;
   email: string;
   avatar: string;
-  bio: string;
 }
 
 function UserCard() {
@@ -360,6 +429,7 @@ useBloc also tracks **getters** (computed properties) automatically:
 class TodoCubit extends Cubit<TodoState> {
   // Computed getter
   get visibleTodos() {
+	  return Math.random()
     return this.state.filter === 'active'
       ? this.state.todos.filter(t => !t.done)
       : this.state.todos;
@@ -368,10 +438,16 @@ class TodoCubit extends Cubit<TodoState> {
   get activeTodoCount() {
     return this.state.todos.filter(t => !t.done).length;
   }
+
+  get fullInventory(): boolean {
+	  return this.state.length > 50
+  }
 }
 
+// todo: option disable automatic caching for render cycle for getters
+
 function TodoList() {
-  const [state, cubit] = useBloc(TodoCubit);
+  const [, cubit] = useBloc(TodoCubit);
 
   // ✅ Re-renders when visibleTodos changes (computed value)
   // Getter is computed once per render cycle (cached)
@@ -385,13 +461,15 @@ function TodoList() {
 }
 ```
 
+**Note:** Ensure that your getters are **Pure Functions** to avoid unexpected behavior, BlaC caches the getters
+
 **How Getter Tracking Works:**
 
 1. During render, accessing a getter (e.g., `cubit.visibleTodos`) is recorded
 2. After render, tracked getters are committed
 3. On state change, all tracked getters are re-computed and compared
 4. If any getter value changed (via `Object.is`), component re-renders
-5. Getter values are cached per render cycle for performance
+5. Getter values are cached per render cycle for performance, this means that the getter will only be executed once per render cycle even if its used multiple times. For this reason its recommended to have "pure" getters
 
 ---
 
@@ -422,7 +500,7 @@ const [state, bloc] = useBloc(MyBloc, {
 **`staticProps`**: Constructor arguments
 ```typescript
 class UserBloc extends StateContainer<State> {
-  constructor(props: { userId: string }) {
+  constructor(props?: { userId: string }) {
     super(initialState);
   }
 }
@@ -432,6 +510,7 @@ const [state, bloc] = useBloc(UserBloc, {
   staticProps: { userId: '123' }
 });
 ```
+Always make constructor parameters optional to avoid runtime errors, the type of the constructor props is not enforced.
 
 **`instanceId`**: Custom instance ID for shared blocs
 ```typescript
@@ -446,6 +525,7 @@ function ComponentB() {
   return <div>{state}</div>; // Same state as ComponentA
 }
 ```
+This enables shared state across specific components with their own instance of the Bloc. Useful when you need multiple instances or the same Components or Component-Trees at the same time, each with their own state.
 
 **`dependencies`**: Manual dependency tracking
 ```typescript
@@ -454,6 +534,7 @@ const [state, bloc] = useBloc(UserBloc, {
   dependencies: (state, bloc) => [state.count, state.name]
 });
 ```
+Use this to overwrite the automatic dependency tracking or to fine tune to avoid unwanted re-renders that the automatic tracking cannot detect.
 
 **`autoTrack`**: Control automatic tracking
 ```typescript
@@ -462,6 +543,7 @@ const [state, bloc] = useBloc(UserBloc, {
   autoTrack: false
 });
 ```
+When the `dependencies` option is defined, automatic tracking is also disabled.
 
 **`onMount` / `onUnmount`**: Lifecycle callbacks
 ```typescript
@@ -546,6 +628,9 @@ function ComponentB() {
   return <div>B: {count}</div>; // Different count
 }
 ```
+The Bloc is tightly coupled 1:1 with the component.
+
+// TODO: add example for isolated instances that shows advanced apis and patterns. for example api access and tracking each component through Blac without custom ref management
 
 **Shared Instances** (Default) - Components share the same instance:
 
@@ -1125,8 +1210,13 @@ interface UseBlocOptions<TBloc extends StateContainer<AnyObject>> {
 
 ### Static Container Methods
 
-- `Class.getOrCreate(id?, ...args)` - Get/create instance
+**Instance Access:**
+- `Class.resolve(id?, ...args)` - Get/create instance with ownership (increments ref count)
+- `Class.get(id?)` - Get existing instance without ownership (throws if not found)
+- `Class.getSafe(id?)` - Get existing instance without ownership (returns discriminated union)
 - `Class.release(id?, force?)` - Release reference
+
+**Instance Info:**
 - `Class.hasInstance(id?)` - Check existence
 - `Class.getRefCount(id?)` - Get reference count
 - `Class.getAll()` - Get all instances
@@ -1274,6 +1364,40 @@ const [state, bloc] = useBloc(UserBloc);
 // Automatically tracks accessed properties
 ```
 
+### From getOrCreate to resolve/get/getSafe
+
+The instance management API has been redesigned to make ownership semantics explicit:
+
+```typescript
+// Before: .getOrCreate() (always incremented ref count)
+const counter = CounterCubit.getOrCreate('main', 0);
+
+// After: Choose based on ownership needs
+
+// 1. Ownership (replaces most .getOrCreate() usage)
+const counter = CounterCubit.resolve('main', 0);
+
+// 2. Borrowing - strict (for bloc-to-bloc communication)
+const analytics = AnalyticsCubit.get('main');
+
+// 3. Borrowing - safe (for conditional access)
+const result = NotificationCubit.getSafe('user-123');
+if (!result.error) {
+  result.instance.markAsRead();
+}
+```
+
+**Why the change:**
+- `.resolve()` is familiar from DI containers and clearly indicates instance resolution
+- `.get()` prevents memory leaks in bloc-to-bloc communication
+- `.getSafe()` provides type-safe conditional access
+- Avoids React linter issues (methods starting with "use" are flagged as hooks)
+
+**Migration tips:**
+- React components: Use `.resolve()` (handled automatically by `useBloc`/`useBlocActions`)
+- Bloc methods calling other blocs: Use `.get()` (prevents memory leaks)
+- Conditional instance access: Use `.getSafe()` (type-safe error handling)
+
 ---
 
 ## Performance Tips
@@ -1291,3 +1415,4 @@ const [state, bloc] = useBloc(UserBloc);
 ## License
 
 MIT
+

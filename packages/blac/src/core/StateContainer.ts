@@ -54,16 +54,137 @@ export abstract class StateContainer<S> {
   }
 
   /**
-   * Get or create an instance
+   * Resolve an instance with ref counting (ownership semantics)
+   *
+   * This is the primary API for components/contexts that "own" an instance.
+   * Gets or creates the instance and increments ref count to keep it alive
+   * until .release() is called.
+   *
+   * Use this when:
+   * - React components need to manage instance lifetime
+   * - You want to ensure the instance stays alive during usage
+   * - You need ownership semantics with automatic cleanup
+   *
+   * @example
+   * ```typescript
+   * // In React component
+   * const counter = CounterCubit.resolve('main', 0);
+   * // Component "owns" the instance, keeps it alive
+   *
+   * // Later, call release() on unmount
+   * CounterCubit.release('main');
+   * ```
+   *
    * @param key - Optional instance key for shared instances
    * @param args - Constructor arguments
+   * @returns Instance with incremented ref count
    */
-  static getOrCreate<T extends StateContainer<any>>(
+  static resolve<T extends StateContainer<any>>(
     this: new (...args: any[]) => T,
     key?: string,
     ...args: any[]
   ): T {
     return StateContainer._registry.getOrCreate(this, key, ...args);
+  }
+
+  /**
+   * Get an existing instance without ref counting (borrowing semantics)
+   *
+   * This is for accessing instances without claiming ownership.
+   * Does NOT increment ref count - assumes someone else is keeping it alive.
+   * Throws error if instance doesn't exist.
+   *
+   * Use this when:
+   * - Bloc-to-bloc communication (calling methods on other blocs)
+   * - Event handlers where component already owns the instance
+   * - Accessing keepAlive singleton instances
+   * - You know the instance exists and is being managed elsewhere
+   *
+   * @example
+   * ```typescript
+   * // Bloc-to-bloc communication (no memory leak!)
+   * class UserBloc {
+   *   loadProfile = () => {
+   *     const analytics = AnalyticsBloc.get('main');
+   *     analytics.trackEvent('profile_loaded');
+   *     // No .release() needed - we're just borrowing
+   *   };
+   * }
+   *
+   * // Event handler in component
+   * function Counter() {
+   *   const counter = CounterCubit.resolve('main', 0); // Component owns
+   *
+   *   const handleClick = () => {
+   *     // Just borrow, don't create new ownership
+   *     const counter = CounterCubit.get('main');
+   *     counter.increment();
+   *   };
+   * }
+   * ```
+   *
+   * @param key - Optional instance key
+   * @returns Existing instance (no ref count change)
+   * @throws Error if instance doesn't exist
+   */
+  static get<T extends StateContainer<any>>(
+    this: new (...args: any[]) => T,
+    key?: string,
+  ): T {
+    const instance = StateContainer._registry.getInstance(this, key);
+    if (!instance) {
+      const instanceKey = key || 'default';
+      throw new Error(
+        `${this.name} instance "${instanceKey}" not found.\n` +
+          `Use .resolve() to create and claim ownership, or .getSafe() for conditional access.`,
+      );
+    }
+    return instance;
+  }
+
+  /**
+   * Safely get an existing instance (borrowing semantics with error handling)
+   *
+   * Returns a discriminated union for type-safe conditional access.
+   * Does NOT increment ref count - assumes someone else is keeping it alive.
+   * Never throws - returns error object if instance doesn't exist.
+   *
+   * Use this when:
+   * - Instance existence is conditional/uncertain
+   * - You want type-safe error handling without try/catch
+   * - Checking if another component has created an instance
+   *
+   * @example
+   * ```typescript
+   * // Conditional access
+   * const result = NotificationCubit.getSafe('user-123');
+   * if (result.error) {
+   *   return null; // User not logged in
+   * }
+   * return <Badge count={result.instance.state.unreadCount} />;
+   *
+   * // Type-safe - TypeScript knows instance is non-null after check
+   * if (!result.error) {
+   *   result.instance.markAsRead(); // ✅ TypeScript knows it's safe
+   * }
+   * ```
+   *
+   * @param key - Optional instance key
+   * @returns Discriminated union: {error: null, instance: T} or {error: Error, instance: null}
+   */
+  static getSafe<T extends StateContainer<any>>(
+    this: new (...args: any[]) => T,
+    key?: string,
+  ): { error: Error; instance: null } | { error: null; instance: T } {
+    const instance = StateContainer._registry.getInstance(this, key);
+    if (!instance) {
+      const instanceKey = key || 'default';
+      return {
+        error: new Error(`${this.name} instance "${instanceKey}" not found`),
+        instance: null,
+      };
+    }
+    return { error: null, instance };
   }
 
   /**

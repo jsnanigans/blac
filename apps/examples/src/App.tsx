@@ -21,7 +21,8 @@ const Logo = () => {
  */
 export function App() {
   // Initialize the router - it will be shared across the app
-  RouterBloc.getOrCreate('app-router');
+  // Using .resolve() to claim ownership and increment ref count
+  RouterBloc.resolve('app-router');
 
   return (
     <div className="app-container">

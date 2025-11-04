@@ -25,7 +25,7 @@ import type { ComponentRef } from './types';
  */
 type StateContainerConstructor<TBloc extends StateContainer<any>> =
   BlocConstructor<TBloc> & {
-    getOrCreate(instanceKey?: string, ...args: any[]): TBloc;
+    resolve(instanceKey?: string, ...args: any[]): TBloc;
     release(instanceKey?: string): void;
   };
 
@@ -118,8 +118,8 @@ export function useBlocActions<TBloc extends StateContainer<AnyObject>>(
       options?.instanceId,
     );
 
-    // Get or create bloc instance
-    const instance = Constructor.getOrCreate(instanceId, options?.staticProps);
+    // Get or create bloc instance with ownership (increments ref count)
+    const instance = Constructor.resolve(instanceId, options?.staticProps);
 
     return [instance, instanceId] as const;
   }, [BlocClass]);

@@ -58,3 +58,19 @@ export {
 
 // Path utilities
 export { parsePath, getValueAtPath, shallowEqual } from './path-utils';
+
+// Getter tracking
+export {
+  type GetterTrackerState,
+  createGetterTracker,
+  createBlocProxy,
+  hasGetterChanges,
+  isGetter,
+  getDescriptor,
+  setActiveTracker,
+  clearActiveTracker,
+  getActiveTracker,
+  commitTrackedGetters,
+  invalidateRenderCache,
+  resetGetterTracker,
+} from './getter-tracker';

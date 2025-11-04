@@ -90,9 +90,9 @@ describe('StateContainer', () => {
   // Static Instance Management
 
   describe('Static Instance Management', () => {
-    describe('getOrCreate()', () => {
+    describe('resolve()', () => {
       it('should create new instance on first call', () => {
-        const instance = TestContainer.getOrCreate();
+        const instance = TestContainer.resolve();
 
         expect(instance).toBeInstanceOf(TestContainer);
         expect(instance.state).toBe(0);
@@ -100,17 +100,17 @@ describe('StateContainer', () => {
       });
 
       it('should return existing instance with ref count increment', () => {
-        const instance1 = TestContainer.getOrCreate();
-        const instance2 = TestContainer.getOrCreate();
+        const instance1 = TestContainer.resolve();
+        const instance2 = TestContainer.resolve();
 
         expect(instance1).toBe(instance2);
         expect(TestContainer.getRefCount()).toBe(2);
       });
 
       it('should handle custom instance keys', () => {
-        const instance1 = TestContainer.getOrCreate('key1');
-        const instance2 = TestContainer.getOrCreate('key2');
-        const instance3 = TestContainer.getOrCreate('key1');
+        const instance1 = TestContainer.resolve('key1');
+        const instance2 = TestContainer.resolve('key2');
+        const instance3 = TestContainer.resolve('key1');
 
         expect(instance1).not.toBe(instance2);
         expect(instance1).toBe(instance3);
@@ -119,7 +119,7 @@ describe('StateContainer', () => {
       });
 
       it('should pass constructor args correctly', () => {
-        const instance = TestContainer.getOrCreate(undefined, 42);
+        const instance = TestContainer.resolve(undefined, 42);
 
         expect(instance.state).toBe(42);
       });
@@ -127,8 +127,8 @@ describe('StateContainer', () => {
 
     describe('release()', () => {
       it('should decrement ref count', () => {
-        TestContainer.getOrCreate();
-        TestContainer.getOrCreate();
+        TestContainer.resolve();
+        TestContainer.resolve();
         expect(TestContainer.getRefCount()).toBe(2);
 
         TestContainer.release();
@@ -136,7 +136,7 @@ describe('StateContainer', () => {
       });
 
       it('should dispose when ref count reaches zero (non-keepAlive)', () => {
-        const instance = TestContainer.getOrCreate();
+        const instance = TestContainer.resolve();
         const disposeSpy = vi.spyOn(instance, 'dispose');
 
         TestContainer.release();
@@ -147,7 +147,7 @@ describe('StateContainer', () => {
       });
 
       it('should respect static keepAlive property', () => {
-        const instance = KeepAliveTestContainer.getOrCreate(undefined, 0);
+        const instance = KeepAliveTestContainer.resolve(undefined, 0);
         const disposeSpy = vi.spyOn(instance, 'dispose');
 
         KeepAliveTestContainer.release();
@@ -158,8 +158,8 @@ describe('StateContainer', () => {
       });
 
       it('should force dispose option works', () => {
-        TestContainer.getOrCreate();
-        TestContainer.getOrCreate();
+        TestContainer.resolve();
+        TestContainer.resolve();
         expect(TestContainer.getRefCount()).toBe(2);
 
         TestContainer.release(undefined, true);
@@ -178,10 +178,10 @@ describe('StateContainer', () => {
       it('should return correct count', () => {
         expect(TestContainer.getRefCount()).toBe(0);
 
-        TestContainer.getOrCreate();
+        TestContainer.resolve();
         expect(TestContainer.getRefCount()).toBe(1);
 
-        TestContainer.getOrCreate();
+        TestContainer.resolve();
         expect(TestContainer.getRefCount()).toBe(2);
 
         TestContainer.release();
@@ -197,7 +197,7 @@ describe('StateContainer', () => {
       it('should correctly identify existing instances', () => {
         expect(TestContainer.hasInstance()).toBe(false);
 
-        TestContainer.getOrCreate();
+        TestContainer.resolve();
         expect(TestContainer.hasInstance()).toBe(true);
 
         TestContainer.release();
@@ -205,7 +205,7 @@ describe('StateContainer', () => {
       });
 
       it('should work with custom instance keys', () => {
-        TestContainer.getOrCreate('key1');
+        TestContainer.resolve('key1');
 
         expect(TestContainer.hasInstance('key1')).toBe(true);
         expect(TestContainer.hasInstance('key2')).toBe(false);
@@ -214,9 +214,9 @@ describe('StateContainer', () => {
 
     describe('clearAllInstances()', () => {
       it('should dispose all instances and clear registry', () => {
-        const instance1 = TestContainer.getOrCreate('key1');
-        const instance2 = TestContainer.getOrCreate('key2');
-        const instance3 = ObjectStateContainer.getOrCreate();
+        const instance1 = TestContainer.resolve('key1');
+        const instance2 = TestContainer.resolve('key2');
+        const instance3 = ObjectStateContainer.resolve();
 
         const spy1 = vi.spyOn(instance1, 'dispose');
         const spy2 = vi.spyOn(instance2, 'dispose');
@@ -582,12 +582,12 @@ describe('StateContainer', () => {
       expect(container.state).toBe(100);
     });
 
-    it('should work with getOrCreate lifecycle', () => {
-      const instance1 = TestContainer.getOrCreate('shared');
+    it('should work with attach lifecycle', () => {
+      const instance1 = TestContainer.resolve('shared');
       const listener = vi.fn();
       instance1.subscribe(listener);
 
-      const instance2 = TestContainer.getOrCreate('shared');
+      const instance2 = TestContainer.resolve('shared');
       expect(instance1).toBe(instance2);
 
       instance2.testEmit(42);

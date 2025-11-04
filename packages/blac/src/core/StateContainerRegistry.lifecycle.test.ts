@@ -573,7 +573,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
     it('should check if instance exists with hasInstance()', () => {
       expect(registry.hasInstance(TestCubit, 'test')).toBe(false);
 
-      TestCubit.getOrCreate('test');
+      TestCubit.resolve('test');
 
       expect(registry.hasInstance(TestCubit, 'test')).toBe(true);
     });
@@ -581,10 +581,10 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
     it('should get ref count with getRefCount()', () => {
       expect(registry.getRefCount(TestCubit, 'test')).toBe(0);
 
-      const instance1 = TestCubit.getOrCreate('test');
+      const instance1 = TestCubit.resolve('test');
       expect(registry.getRefCount(TestCubit, 'test')).toBe(1);
 
-      const instance2 = TestCubit.getOrCreate('test');
+      const instance2 = TestCubit.resolve('test');
       expect(instance1).toBe(instance2);
       expect(registry.getRefCount(TestCubit, 'test')).toBe(2);
 
@@ -596,8 +596,8 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
     });
 
     it('should force dispose with release(forceDispose=true)', () => {
-      const instance1 = TestCubit.getOrCreate('test');
-      const instance2 = TestCubit.getOrCreate('test');
+      const instance1 = TestCubit.resolve('test');
+      const instance2 = TestCubit.resolve('test');
 
       expect(registry.getRefCount(TestCubit, 'test')).toBe(2);
       expect(instance1.isDisposed).toBe(false);
@@ -620,7 +620,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       const listener = vi.fn();
       registry.on('disposed', listener);
 
-      const instance = TestCubit.getOrCreate('test');
+      const instance = TestCubit.resolve('test');
       TestCubit.release('test', true);
 
       expect(listener).toHaveBeenCalledTimes(1);

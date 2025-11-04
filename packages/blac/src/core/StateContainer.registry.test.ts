@@ -80,8 +80,8 @@ describe('StateContainer - Registry Features', () => {
     it('should allow setting isolated mode explicitly', () => {
       CounterBloc.register(true);
 
-      const instance1 = CounterBloc.getOrCreate();
-      const instance2 = CounterBloc.getOrCreate();
+      const instance1 = CounterBloc.resolve();
+      const instance2 = CounterBloc.resolve();
 
       expect(instance1).not.toBe(instance2);
     });
@@ -89,7 +89,7 @@ describe('StateContainer - Registry Features', () => {
 
   describe('Shared Instances (Default)', () => {
     it('should create instance on first get (auto-register)', () => {
-      const instance = CounterBloc.getOrCreate();
+      const instance = CounterBloc.resolve();
 
       expect(instance).toBeInstanceOf(CounterBloc);
       const stats = StateContainer.getStats();
@@ -97,30 +97,30 @@ describe('StateContainer - Registry Features', () => {
     });
 
     it('should return same instance for default key', () => {
-      const instance1 = CounterBloc.getOrCreate();
-      const instance2 = CounterBloc.getOrCreate();
+      const instance1 = CounterBloc.resolve();
+      const instance2 = CounterBloc.resolve();
 
       expect(instance1).toBe(instance2);
     });
 
     it('should create different instances for different keys', () => {
-      const instance1 = CounterBloc.getOrCreate('counter-1');
-      const instance2 = CounterBloc.getOrCreate('counter-2');
+      const instance1 = CounterBloc.resolve('counter-1');
+      const instance2 = CounterBloc.resolve('counter-2');
 
       expect(instance1).not.toBe(instance2);
     });
 
     it('should return same instance for same custom key', () => {
-      const instance1 = CounterBloc.getOrCreate('shared');
-      const instance2 = CounterBloc.getOrCreate('shared');
+      const instance1 = CounterBloc.resolve('shared');
+      const instance2 = CounterBloc.resolve('shared');
 
       expect(instance1).toBe(instance2);
     });
 
     it('should create instance only once per key', () => {
-      const instance1 = CounterBloc.getOrCreate();
-      const instance2 = CounterBloc.getOrCreate();
-      const instance3 = CounterBloc.getOrCreate();
+      const instance1 = CounterBloc.resolve();
+      const instance2 = CounterBloc.resolve();
+      const instance3 = CounterBloc.resolve();
 
       expect(instance1).toBe(instance2);
       expect(instance2).toBe(instance3);
@@ -129,8 +129,8 @@ describe('StateContainer - Registry Features', () => {
 
   describe('Isolated Instances', () => {
     it('should create new instance on each get (static isolated)', () => {
-      const instance1 = IsolatedCounterBloc.getOrCreate();
-      const instance2 = IsolatedCounterBloc.getOrCreate();
+      const instance1 = IsolatedCounterBloc.resolve();
+      const instance2 = IsolatedCounterBloc.resolve();
 
       expect(instance1).not.toBe(instance2);
       expect(instance1).toBeInstanceOf(IsolatedCounterBloc);
@@ -138,8 +138,8 @@ describe('StateContainer - Registry Features', () => {
     });
 
     it('should create new instance even with same key', () => {
-      const instance1 = IsolatedCounterBloc.getOrCreate('same-key');
-      const instance2 = IsolatedCounterBloc.getOrCreate('same-key');
+      const instance1 = IsolatedCounterBloc.resolve('same-key');
+      const instance2 = IsolatedCounterBloc.resolve('same-key');
 
       expect(instance1).not.toBe(instance2);
     });
@@ -147,8 +147,8 @@ describe('StateContainer - Registry Features', () => {
     it('should respect isolated mode set via register', () => {
       CounterBloc.register(true);
 
-      const instance1 = CounterBloc.getOrCreate();
-      const instance2 = CounterBloc.getOrCreate();
+      const instance1 = CounterBloc.resolve();
+      const instance2 = CounterBloc.resolve();
 
       expect(instance1).not.toBe(instance2);
     });
@@ -156,9 +156,9 @@ describe('StateContainer - Registry Features', () => {
 
   describe('Query Operations', () => {
     it('should return all shared instances of a type', () => {
-      CounterBloc.getOrCreate('c1');
-      CounterBloc.getOrCreate('c2');
-      CounterBloc.getOrCreate('c3');
+      CounterBloc.resolve('c1');
+      CounterBloc.resolve('c2');
+      CounterBloc.resolve('c3');
 
       const instances = CounterBloc.getAll();
       expect(instances).toHaveLength(3);
@@ -176,9 +176,9 @@ describe('StateContainer - Registry Features', () => {
     });
 
     it('should not track isolated instances in getAll', () => {
-      IsolatedCounterBloc.getOrCreate();
-      IsolatedCounterBloc.getOrCreate();
-      IsolatedCounterBloc.getOrCreate();
+      IsolatedCounterBloc.resolve();
+      IsolatedCounterBloc.resolve();
+      IsolatedCounterBloc.resolve();
 
       // Isolated instances are not tracked in registry
       const instances = IsolatedCounterBloc.getAll();
@@ -186,9 +186,9 @@ describe('StateContainer - Registry Features', () => {
     });
 
     it('should get stats for all types', () => {
-      CounterBloc.getOrCreate('c1');
-      CounterBloc.getOrCreate('c2');
-      UserBloc.getOrCreate('u1');
+      CounterBloc.resolve('c1');
+      CounterBloc.resolve('c2');
+      UserBloc.resolve('u1');
 
       const stats = StateContainer.getStats();
       expect(stats.registeredTypes).toBe(2);
@@ -202,9 +202,9 @@ describe('StateContainer - Registry Features', () => {
 
   describe('Clear Operations', () => {
     it('should clear all instances of a type', () => {
-      CounterBloc.getOrCreate('c1');
-      CounterBloc.getOrCreate('c2');
-      UserBloc.getOrCreate('u1');
+      CounterBloc.resolve('c1');
+      CounterBloc.resolve('c2');
+      UserBloc.resolve('u1');
 
       CounterBloc.clear();
 
@@ -219,9 +219,9 @@ describe('StateContainer - Registry Features', () => {
     });
 
     it('should clear all instances from all types', () => {
-      CounterBloc.getOrCreate('c1');
-      CounterBloc.getOrCreate('c2');
-      UserBloc.getOrCreate('u1');
+      CounterBloc.resolve('c1');
+      CounterBloc.resolve('c2');
+      UserBloc.resolve('u1');
 
       StateContainer.clearAllInstances();
 
@@ -234,7 +234,7 @@ describe('StateContainer - Registry Features', () => {
   describe('Error Handling', () => {
     it('should auto-register on first get (no error for unregistered)', () => {
       expect(() => {
-        CounterBloc.getOrCreate();
+        CounterBloc.resolve();
       }).not.toThrow();
 
       const stats = StateContainer.getStats();
@@ -250,14 +250,14 @@ describe('StateContainer - Registry Features', () => {
       }
 
       expect(() => {
-        ErrorBloc.getOrCreate();
+        ErrorBloc.resolve();
       }).toThrow('Constructor error');
     });
   });
 
   describe('Type Safety', () => {
     it('should infer correct return types', () => {
-      const instance = CounterBloc.getOrCreate();
+      const instance = CounterBloc.resolve();
 
       // TypeScript should infer this is a CounterBloc
       instance.increment();
@@ -265,30 +265,30 @@ describe('StateContainer - Registry Features', () => {
     });
 
     it('should work with different state types', () => {
-      const instance = UserBloc.getOrCreate();
+      const instance = UserBloc.resolve();
 
       instance.setName('Alice');
       expect(instance.state.name).toBe('Alice');
     });
 
     it('should support constructor arguments', () => {
-      const instance = UserBloc.getOrCreate(undefined, { initialName: 'Bob' });
+      const instance = UserBloc.resolve(undefined, { initialName: 'Bob' });
 
       expect(instance.state.name).toBe('Bob');
     });
   });
 
   describe('Reference Counting', () => {
-    it('should increment ref count on getOrCreate', () => {
-      const instance1 = CounterBloc.getOrCreate('test');
-      const instance2 = CounterBloc.getOrCreate('test');
+    it('should increment ref count on attach', () => {
+      const instance1 = CounterBloc.resolve('test');
+      const instance2 = CounterBloc.resolve('test');
 
       expect(instance1).toBe(instance2);
       expect(CounterBloc.getAll()).toHaveLength(1);
     });
 
     it('should dispose instance when ref count reaches zero', () => {
-      const instance = CounterBloc.getOrCreate('test');
+      const instance = CounterBloc.resolve('test');
 
       expect(instance.isDisposed).toBe(false);
 
@@ -307,7 +307,7 @@ describe('StateContainer - Registry Features', () => {
         }
       }
 
-      const instance = KeepAliveBloc.getOrCreate('test');
+      const instance = KeepAliveBloc.resolve('test');
       KeepAliveBloc.release('test');
 
       expect(instance.isDisposed).toBe(false);
