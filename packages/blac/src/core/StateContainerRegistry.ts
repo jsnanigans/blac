@@ -1,20 +1,18 @@
 /**
- * StateContainerRegistry - Clean, minimal registry for StateContainer instances
+ * StateContainerRegistry - Lightweight coordination layer for StateContainer lifecycle
  *
  * Responsibilities:
- * - Instance lifecycle management with ref counting
- * - Singleton/shared instance pattern
- * - Isolated instance support
+ * - Type registration and tracking
  * - Lifecycle event notifications (plugin system)
+ * - Global operations (clearAllInstances)
+ *
+ * NOTE: Instance storage has been moved to each StateContainer subclass.
+ * Each class owns and manages its own instances locally for better performance
+ * and cleaner architecture.
  */
 
 import type { StateContainer } from './StateContainer';
 import type { Vertex } from './Vertex';
-
-interface InstanceEntry {
-  instance: StateContainer<any>;
-  refCount: number;
-}
 
 interface TypeConfig {
   isolated: boolean;
@@ -47,15 +45,40 @@ export type LifecycleListener<E extends LifecycleEvent> = E extends 'created'
         : never;
 
 /**
- * Registry for managing StateContainer instances
+ * Registry for coordinating StateContainer lifecycle
+ *
+ * NOTE: Instances are now stored locally on each StateContainer subclass.
+ * This registry only tracks types and manages lifecycle events.
  */
 export class StateContainerRegistry {
-  private readonly instances = new Map<string, InstanceEntry>();
-  private readonly types = new Map<string, TypeConfig>();
+  /**
+   * Strong Set for tracking all registered types
+   * Used for clearAllInstances() and getStats()
+   */
+  private readonly types = new Set<new (...args: any[]) => StateContainer<any>>();
+
+  /**
+   * Type configurations (isolated flag)
+   */
+  private readonly typeConfigs = new Map<string, TypeConfig>();
+
+  /**
+   * Lifecycle event listeners
+   */
   private readonly listeners = new Map<LifecycleEvent, Set<Function>>();
 
   /**
-   * Register a type with isolation mode
+   * Register a type for tracking
+   * Called automatically on first instance creation
+   */
+  registerType<T extends StateContainer<any>>(
+    constructor: new (...args: any[]) => T,
+  ): void {
+    this.types.add(constructor);
+  }
+
+  /**
+   * Register a type with isolation mode (explicit registration)
    */
   register<T extends StateContainer<any>>(
     constructor: new (...args: any[]) => T,
@@ -68,143 +91,89 @@ export class StateContainerRegistry {
       isolated = true;
     }
 
-    if (this.types.has(className)) {
+    if (this.typeConfigs.has(className)) {
       throw new Error(`Type "${className}" is already registered`);
     }
 
-    this.types.set(className, { isolated });
+    this.typeConfigs.set(className, { isolated });
+    this.registerType(constructor);
   }
 
   /**
-   * Get or create a StateContainer instance
-   * For isolated: always creates new
-   * For shared: singleton per key
+   * Resolve an instance (delegates to StateContainer.resolve)
+   *
+   * @deprecated This method exists for backward compatibility.
+   * Prefer calling StateContainer.resolve() directly on your Bloc class.
    */
-  getOrCreate<T extends StateContainer<any>>(
+  resolve<T extends StateContainer<any>>(
     constructor: new (...args: any[]) => T,
     key?: string,
     ...args: any[]
   ): T {
-    const className = constructor.name;
-    let config = this.types.get(className);
-
-    // Auto-register if not registered
-    if (!config) {
-      const isolated = (constructor as any).isolated === true;
-      this.types.set(className, { isolated });
-      config = this.types.get(className)!;
-    }
-
-    // Isolated: always create new instance
-    if (config.isolated) {
-      return new constructor(...args);
-    }
-
-    // Shared: singleton pattern
-    const instanceKey = `${className}:${key || 'default'}`;
-    const existing = this.instances.get(instanceKey);
-
-    if (existing) {
-      existing.refCount++;
-      return existing.instance as T;
-    }
-
-    // Create new shared instance
-    const instance = new constructor(...args);
-    this.instances.set(instanceKey, { instance, refCount: 1 });
-
-    return instance;
+    return (constructor as any).resolve(key, ...args);
   }
 
   /**
-   * Release a reference to an instance
-   * Disposes when ref count reaches zero (unless static keepAlive is true)
+   * Release a reference (delegates to StateContainer.release)
+   *
+   * @deprecated For backward compatibility only.
    */
   release<T extends StateContainer<any>>(
     constructor: new (...args: any[]) => T,
     key?: string,
     forceDispose = false,
   ): void {
-    const className = constructor.name;
-    const instanceKey = `${className}:${key || 'default'}`;
-    const entry = this.instances.get(instanceKey);
-
-    if (!entry) return;
-
-    if (forceDispose) {
-      entry.instance.dispose();
-      this.instances.delete(instanceKey);
-      return;
-    }
-
-    entry.refCount--;
-
-    // Check static keepAlive property
-    const keepAlive = (constructor as any).keepAlive === true;
-    if (entry.refCount <= 0 && !keepAlive) {
-      entry.instance.dispose();
-      this.instances.delete(instanceKey);
-    }
+    return (constructor as any).release(key, forceDispose);
   }
 
   /**
-   * Get all instances of a type (shared only, isolated aren't tracked)
+   * Check if instance exists (delegates to StateContainer.hasInstance)
+   *
+   * @deprecated For backward compatibility only.
    */
-  getAll<T extends StateContainer<any>>(
+  hasInstance<T extends StateContainer<any>>(
     constructor: new (...args: any[]) => T,
-  ): T[] {
-    const className = constructor.name;
-    const prefix = `${className}:`;
-    const results: T[] = [];
-
-    for (const [key, entry] of this.instances) {
-      if (key.startsWith(prefix)) {
-        results.push(entry.instance as T);
-      }
-    }
-
-    return results;
+    key?: string,
+  ): boolean {
+    return (constructor as any).hasInstance(key);
   }
 
   /**
-   * Clear all instances of a type
+   * Get reference count (delegates to StateContainer.getRefCount)
+   *
+   * @deprecated For backward compatibility only.
    */
-  clear<T extends StateContainer<any>>(
+  getRefCount<T extends StateContainer<any>>(
     constructor: new (...args: any[]) => T,
-  ): void {
-    const className = constructor.name;
-    const prefix = `${className}:`;
-    const toDelete: string[] = [];
-
-    for (const [key, entry] of this.instances) {
-      if (key.startsWith(prefix)) {
-        if (!entry.instance.isDisposed) {
-          entry.instance.dispose();
-        }
-        toDelete.push(key);
-      }
-    }
-
-    for (const key of toDelete) {
-      this.instances.delete(key);
-    }
+    key?: string,
+  ): number {
+    return (constructor as any).getRefCount(key);
   }
 
   /**
    * Clear all instances from all types (for testing)
+   *
+   * Iterates all registered types and calls their clear() method.
+   * Also clears type tracking to reset the registry state.
+   *
+   * IMPORTANT: Must clear instances BEFORE clearing the types Set,
+   * otherwise we lose track of which types to clear!
    */
   clearAll(): void {
-    for (const entry of this.instances.values()) {
-      if (!entry.instance.isDisposed) {
-        entry.instance.dispose();
-      }
+    // Step 1: Clear instances from each type (while we still have the types list)
+    for (const Type of this.types) {
+      (Type as any).clear();
     }
-    this.instances.clear();
+    // Step 2: Now clear type tracking (resets registry state for tests)
     this.types.clear();
+    this.typeConfigs.clear();
   }
 
   /**
    * Get registry statistics (for debugging)
+   *
+   * NOTE: Since instances are now stored locally on each StateContainer subclass,
+   * we need to iterate registered types to collect statistics.
    */
   getStats(): {
     registeredTypes: number;
@@ -212,57 +181,23 @@ export class StateContainerRegistry {
     typeBreakdown: Record<string, number>;
   } {
     const typeBreakdown: Record<string, number> = {};
+    let totalInstances = 0;
 
-    for (const key of this.instances.keys()) {
-      const typeName = key.split(':')[0];
-      typeBreakdown[typeName] = (typeBreakdown[typeName] || 0) + 1;
+    // Collect stats from each registered type
+    for (const Type of this.types) {
+      const typeName = Type.name;
+      const instances = (Type as any).instances as Map<string, any>;
+      const count = instances.size;
+
+      typeBreakdown[typeName] = count;
+      totalInstances += count;
     }
 
     return {
       registeredTypes: this.types.size,
-      totalInstances: this.instances.size,
+      totalInstances,
       typeBreakdown,
     };
-  }
-
-  /**
-   * Get reference count for an instance
-   */
-  getRefCount<T extends StateContainer<any>>(
-    constructor: new (...args: any[]) => T,
-    key?: string,
-  ): number {
-    const className = constructor.name;
-    const instanceKey = `${className}:${key || 'default'}`;
-    const entry = this.instances.get(instanceKey);
-    return entry?.refCount ?? 0;
-  }
-
-  /**
-   * Check if an instance exists
-   */
-  hasInstance<T extends StateContainer<any>>(
-    constructor: new (...args: any[]) => T,
-    key?: string,
-  ): boolean {
-    const className = constructor.name;
-    const instanceKey = `${className}:${key || 'default'}`;
-    return this.instances.has(instanceKey);
-  }
-
-  /**
-   * Get an existing instance without incrementing ref count
-   * Returns null if instance doesn't exist
-   * Used for "borrowing" an instance without claiming ownership
-   */
-  getInstance<T extends StateContainer<any>>(
-    constructor: new (...args: any[]) => T,
-    key?: string,
-  ): T | null {
-    const className = constructor.name;
-    const instanceKey = `${className}:${key || 'default'}`;
-    const entry = this.instances.get(instanceKey);
-    return entry ? (entry.instance as T) : null;
   }
 
   /**

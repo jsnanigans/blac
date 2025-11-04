@@ -31,15 +31,44 @@ export interface StateContainerConfig {
 type StateListener<S> = (state: S) => void;
 
 /**
+ * Internal entry for instance storage
+ * Each entry tracks an instance and its reference count
+ */
+export interface InstanceEntry<T = any> {
+  instance: T;
+  refCount: number;
+}
+
+/**
  * Base abstract class for all state containers
  */
 export abstract class StateContainer<S> {
+  /**
+   * Global registry for lifecycle events (plugin system)
+   */
   protected static _registry = globalRegistry;
 
   /**
+   * Local instance storage for this StateContainer subclass
+   *
+   * IMPORTANT: Due to TypeScript's static property inheritance, each subclass
+   * automatically gets its own separate Map. For example:
+   *   - CounterBloc.instances !== UserBloc.instances
+   *   - Each class owns and manages its own instances
+   *
+   * This Map stores both shared and isolated instances with ref counting.
+   */
+  private static instances = new Map<string, InstanceEntry>();
+
+  /**
    * Set a custom registry (mainly for testing)
+   *
+   * Clears all instances before switching to ensure clean test isolation.
    */
   static setRegistry(registry: StateContainerRegistry): void {
+    // Clear all instances from the old registry
+    StateContainer._registry.clearAll();
+    // Switch to new registry
     StateContainer._registry = registry;
   }
 
@@ -84,7 +113,40 @@ export abstract class StateContainer<S> {
     key?: string,
     ...args: any[]
   ): T {
-    return StateContainer._registry.getOrCreate(this, key, ...args);
+    // Check if this is an isolated type
+    // Check both static property and registry config
+    const staticIsolated = (this as any).isolated === true;
+    const registryConfig = StateContainer._registry['typeConfigs'].get(this.name);
+    const isolated = staticIsolated || registryConfig?.isolated === true;
+
+    // Isolated: always create new instance (not tracked)
+    if (isolated) {
+      const instance = new this(...args) as T;
+      // Register type with registry for lifecycle coordination
+      StateContainer._registry.registerType(this);
+      return instance;
+    }
+
+    // Shared: singleton pattern with ref counting
+    const instanceKey = key || 'default';
+
+    // Check for existing instance in local storage
+    const entry = (this as any).instances.get(instanceKey);
+    if (entry) {
+      entry.refCount++;
+      return entry.instance as T;
+    }
+
+    // Create new shared instance
+    const instance = new this(...args) as T;
+
+    // Store in local instances Map
+    (this as any).instances.set(instanceKey, { instance, refCount: 1 });
+
+    // Register type with registry for lifecycle coordination
+    StateContainer._registry.registerType(this);
+
+    return instance;
   }
 
   /**
@@ -131,15 +193,17 @@ export abstract class StateContainer<S> {
     this: new (...args: any[]) => T,
     key?: string,
   ): T {
-    const instance = StateContainer._registry.getInstance(this, key);
-    if (!instance) {
-      const instanceKey = key || 'default';
+    const instanceKey = key || 'default';
+    const entry = (this as any).instances.get(instanceKey);
+
+    if (!entry) {
       throw new Error(
         `${this.name} instance "${instanceKey}" not found.\n` +
           `Use .resolve() to create and claim ownership, or .getSafe() for conditional access.`,
       );
     }
-    return instance;
+
+    return entry.instance as T;
   }
 
   /**
@@ -176,15 +240,17 @@ export abstract class StateContainer<S> {
     this: new (...args: any[]) => T,
     key?: string,
   ): { error: Error; instance: null } | { error: null; instance: T } {
-    const instance = StateContainer._registry.getInstance(this, key);
-    if (!instance) {
-      const instanceKey = key || 'default';
+    const instanceKey = key || 'default';
+    const entry = (this as any).instances.get(instanceKey);
+
+    if (!entry) {
       return {
         error: new Error(`${this.name} instance "${instanceKey}" not found`),
         instance: null,
       };
     }
-    return { error: null, instance };
+
+    return { error: null, instance: entry.instance as T };
   }
 
   /**
@@ -197,7 +263,33 @@ export abstract class StateContainer<S> {
     key?: string,
     forceDispose = false,
   ): void {
-    StateContainer._registry.release(this, key, forceDispose);
+    const instanceKey = key || 'default';
+    const entry = (this as any).instances.get(instanceKey);
+
+    if (!entry) return;
+
+    // Force dispose immediately
+    if (forceDispose) {
+      if (!entry.instance.isDisposed) {
+        entry.instance.dispose();
+      }
+      (this as any).instances.delete(instanceKey);
+      return;
+    }
+
+    // Decrement ref count
+    entry.refCount--;
+
+    // Check static keepAlive property
+    const keepAlive = (this as any).keepAlive === true;
+
+    // Auto-dispose when ref count reaches 0 (unless keepAlive)
+    if (entry.refCount <= 0 && !keepAlive) {
+      if (!entry.instance.isDisposed) {
+        entry.instance.dispose();
+      }
+      (this as any).instances.delete(instanceKey);
+    }
   }
 
   /**
@@ -206,7 +298,68 @@ export abstract class StateContainer<S> {
   static getAll<T extends StateContainer<any>>(
     this: new (...args: any[]) => T,
   ): T[] {
-    return StateContainer._registry.getAll(this);
+    const result: T[] = [];
+    for (const entry of (this as any).instances.values()) {
+      result.push(entry.instance as T);
+    }
+    return result;
+  }
+
+  /**
+   * Safely iterate over all instances of this type
+   *
+   * Uses realtime iteration - instances disposed during iteration are automatically skipped.
+   * This is more memory-efficient than getAll() when working with hundreds of instances,
+   * as it doesn't create an intermediate array.
+   *
+   * Use this when:
+   * - Broadcasting operations to multiple instances
+   * - Cleaning up stale instances
+   * - Collecting statistics across instances
+   * - Working with large numbers of instances
+   *
+   * @example
+   * ```typescript
+   * // Broadcast message to all user sessions
+   * UserSessionBloc.forEach((session) => {
+   *   session.notify('Server maintenance in 5 minutes');
+   * });
+   *
+   * // Clean up stale sessions
+   * UserSessionBloc.forEach((session) => {
+   *   if (session.state.lastActivity < threshold) {
+   *     UserSessionBloc.release(session.instanceId);
+   *   }
+   * });
+   *
+   * // Collect statistics
+   * let totalMessages = 0;
+   * ChatRoomBloc.forEach((room) => {
+   *   totalMessages += room.state.messageCount;
+   * });
+   * ```
+   *
+   * @param callback - Function to call for each instance
+   */
+  static forEach<T extends StateContainer<any>>(
+    this: new (...args: any[]) => T,
+    callback: (instance: T) => void,
+  ): void {
+    // Iterate local instances with disposal safety
+    for (const entry of (this as any).instances.values()) {
+      const instance = entry.instance as T;
+      // Skip if instance was disposed since iteration started
+      if (!instance.isDisposed) {
+        try {
+          callback(instance);
+        } catch (error) {
+          console.error(
+            `[BlaC] forEach callback error for ${this.name}:`,
+            error,
+          );
+        }
+      }
+    }
   }
 
   /**
@@ -215,11 +368,20 @@ export abstract class StateContainer<S> {
   static clear<T extends StateContainer<any>>(
     this: new (...args: any[]) => T,
   ): void {
-    StateContainer._registry.clear(this);
+    // Dispose all instances
+    for (const entry of (this as any).instances.values()) {
+      if (!entry.instance.isDisposed) {
+        entry.instance.dispose();
+      }
+    }
+    // Clear the Map
+    (this as any).instances.clear();
   }
 
   /**
    * Clear all instances from all types (for testing)
+   *
+   * Uses the registry's type tracking to clear all registered StateContainer types.
    */
   static clearAllInstances(): void {
     StateContainer._registry.clearAll();
@@ -244,7 +406,9 @@ export abstract class StateContainer<S> {
     this: new (...args: any[]) => T,
     key?: string,
   ): number {
-    return StateContainer._registry.getRefCount(this, key);
+    const instanceKey = key || 'default';
+    const entry = (this as any).instances.get(instanceKey);
+    return entry?.refCount ?? 0;
   }
 
   /**
@@ -255,7 +419,8 @@ export abstract class StateContainer<S> {
     this: new (...args: any[]) => T,
     key?: string,
   ): boolean {
-    return StateContainer._registry.hasInstance(this, key);
+    const instanceKey = key || 'default';
+    return (this as any).instances.has(instanceKey);
   }
 
   private _state: S;

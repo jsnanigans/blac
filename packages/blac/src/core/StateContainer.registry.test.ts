@@ -200,6 +200,196 @@ describe('StateContainer - Registry Features', () => {
     });
   });
 
+  describe('forEach Operations', () => {
+    it('should iterate over all shared instances', () => {
+      const c1 = CounterBloc.resolve('c1');
+      const c2 = CounterBloc.resolve('c2');
+      const c3 = CounterBloc.resolve('c3');
+
+      // Increment each instance to different values
+      c1.increment(); // 1
+      c2.increment();
+      c2.increment(); // 2
+      c3.increment();
+      c3.increment();
+      c3.increment(); // 3
+
+      const states: number[] = [];
+      CounterBloc.forEach((instance) => {
+        states.push(instance.state);
+      });
+
+      expect(states).toHaveLength(3);
+      expect(states.sort()).toEqual([1, 2, 3]);
+    });
+
+    it('should skip disposed instances during iteration', () => {
+      const c1 = CounterBloc.resolve('c1');
+      const c2 = CounterBloc.resolve('c2');
+      const c3 = CounterBloc.resolve('c3');
+
+      // Mark different values
+      c1.increment();
+      c2.increment();
+      c2.increment();
+      c3.increment();
+      c3.increment();
+      c3.increment();
+
+      const states: number[] = [];
+      CounterBloc.forEach((instance) => {
+        states.push(instance.state);
+
+        // Dispose middle instance during iteration
+        if (instance.state === 2) {
+          CounterBloc.release('c2');
+        }
+      });
+
+      // Should have processed all 3 instances
+      expect(states.sort()).toEqual([1, 2, 3]);
+
+      // c2 should now be disposed
+      expect(c2.isDisposed).toBe(true);
+
+      // Second forEach should skip the disposed one
+      const secondStates: number[] = [];
+      CounterBloc.forEach((instance) => {
+        secondStates.push(instance.state);
+      });
+
+      expect(secondStates.sort()).toEqual([1, 3]);
+    });
+
+    it('should not throw when callback throws', () => {
+      CounterBloc.resolve('c1');
+      CounterBloc.resolve('c2');
+      CounterBloc.resolve('c3');
+
+      const visitedKeys: string[] = [];
+
+      // Should not throw, but should log error
+      expect(() => {
+        CounterBloc.forEach((instance) => {
+          visitedKeys.push(instance.instanceId);
+          if (instance.state === 0) {
+            throw new Error('Test error');
+          }
+        });
+      }).not.toThrow();
+
+      // All instances should have been visited despite error
+      expect(visitedKeys).toHaveLength(3);
+    });
+
+    it('should work with no instances', () => {
+      let callCount = 0;
+      CounterBloc.forEach(() => {
+        callCount++;
+      });
+
+      expect(callCount).toBe(0);
+    });
+
+    it('should work with single instance', () => {
+      const instance = CounterBloc.resolve('single');
+      instance.increment();
+
+      let state: number | null = null;
+      CounterBloc.forEach((inst) => {
+        state = inst.state;
+      });
+
+      expect(state).toBe(1);
+    });
+
+    it('should not iterate over isolated instances', () => {
+      IsolatedCounterBloc.resolve();
+      IsolatedCounterBloc.resolve();
+      IsolatedCounterBloc.resolve();
+
+      let callCount = 0;
+      IsolatedCounterBloc.forEach(() => {
+        callCount++;
+      });
+
+      expect(callCount).toBe(0);
+    });
+
+    it('should allow state mutation during iteration', () => {
+      CounterBloc.resolve('c1');
+      CounterBloc.resolve('c2');
+      CounterBloc.resolve('c3');
+
+      // Increment all instances
+      CounterBloc.forEach((instance) => {
+        instance.increment();
+      });
+
+      // Verify all were incremented
+      const states: number[] = [];
+      CounterBloc.forEach((instance) => {
+        states.push(instance.state);
+      });
+
+      expect(states.every((s) => s === 1)).toBe(true);
+    });
+
+    it('should support collecting statistics', () => {
+      const c1 = CounterBloc.resolve('c1');
+      const c2 = CounterBloc.resolve('c2');
+      const c3 = CounterBloc.resolve('c3');
+
+      c1.increment();
+      c1.increment(); // 2
+      c2.increment(); // 1
+      c3.increment();
+      c3.increment();
+      c3.increment(); // 3
+
+      let totalCount = 0;
+      let maxCount = 0;
+      CounterBloc.forEach((instance) => {
+        totalCount += instance.state;
+        maxCount = Math.max(maxCount, instance.state);
+      });
+
+      expect(totalCount).toBe(6); // 2 + 1 + 3
+      expect(maxCount).toBe(3);
+    });
+
+    it('should support conditional release during iteration', () => {
+      const c1 = CounterBloc.resolve('c1');
+      const c2 = CounterBloc.resolve('c2');
+      const c3 = CounterBloc.resolve('c3');
+
+      c1.increment(); // Keep (state: 1)
+      c2.increment();
+      c2.increment(); // Release (state: 2)
+      c3.increment();
+      c3.increment();
+      c3.increment(); // Release (state: 3)
+
+      // Track which keys to release
+      const keysToRelease: string[] = [];
+      CounterBloc.forEach((instance) => {
+        if (instance.state > 1) {
+          // Determine key based on state value
+          if (instance.state === 2) keysToRelease.push('c2');
+          if (instance.state === 3) keysToRelease.push('c3');
+        }
+      });
+
+      // Release after iteration
+      keysToRelease.forEach((key) => CounterBloc.release(key));
+
+      // Only c1 should remain
+      const remaining = CounterBloc.getAll();
+      expect(remaining).toHaveLength(1);
+      expect(remaining[0].state).toBe(1);
+    });
+  });
+
   describe('Clear Operations', () => {
     it('should clear all instances of a type', () => {
       CounterBloc.resolve('c1');
