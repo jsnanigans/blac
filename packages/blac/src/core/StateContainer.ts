@@ -12,6 +12,7 @@ import {
   StateContainerRegistry,
   globalRegistry,
 } from './StateContainerRegistry';
+import { devToolsAPI } from '../devtools/DevToolsAPI';
 
 /**
  * Configuration options for StateContainer
@@ -445,6 +446,9 @@ export abstract class StateContainer<S> {
 
     // Notify lifecycle listeners
     StateContainer._registry.emit('created', this);
+
+    // Notify DevTools
+    devToolsAPI.onInstanceCreated(this);
   }
 
   /**
@@ -494,6 +498,9 @@ export abstract class StateContainer<S> {
     // Notify lifecycle listeners
     StateContainer._registry.emit('disposed', this);
 
+    // Notify DevTools
+    devToolsAPI.onInstanceDisposed(this);
+
     if (this.debug) {
       console.log(`[${this.name}] Disposed successfully`);
     }
@@ -532,6 +539,9 @@ export abstract class StateContainer<S> {
       previousState,
       newState,
     );
+
+    // Notify DevTools
+    devToolsAPI.onInstanceUpdated(this);
   }
 
   /**

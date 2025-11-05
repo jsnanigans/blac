@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Background -->
+  <rect width="128" height="128" rx="24" fill="#1e1e1e"/>
+
+  <!-- B letter stylized -->
+  <path d="M 32 32 L 32 96 L 60 96 C 72 96 80 88 80 76 C 80 68 76 62 70 60 C 74 58 76 52 76 46 C 76 34 68 32 56 32 Z M 48 46 L 56 46 C 60 46 62 48 62 52 C 62 56 60 58 56 58 L 48 58 Z M 48 72 L 60 72 C 64 72 66 74 66 78 C 66 82 64 84 60 84 L 48 84 Z" fill="#007ACC"/>
+
+  <!-- State dots -->
+  <circle cx="96" cy="40" r="6" fill="#4CAF50"/>
+  <circle cx="96" cy="64" r="6" fill="#FF9800"/>
+  <circle cx="96" cy="88" r="6" fill="#2196F3"/>
+</svg>

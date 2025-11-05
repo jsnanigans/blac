@@ -1,0 +1,40 @@
+{
+  "manifest_version": 3,
+  "name": "BlaC DevTools",
+  "version": "1.0.0",
+  "description": "DevTools extension for BlaC state management library",
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "dist/background/service-worker.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["dist/content/content-script.js"],
+      "run_at": "document_start",
+      "all_frames": true
+    }
+  ],
+  "devtools_page": "dist/devtools/devtools.html",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "action": {
+    "default_popup": "dist/popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  }
+}

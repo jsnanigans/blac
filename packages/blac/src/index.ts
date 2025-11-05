@@ -56,3 +56,15 @@ export {
   createIdGenerator,
   __resetIdCounters,
 } from './utils/idGenerator';
+
+// DevTools API (development mode only)
+export { devToolsAPI } from './devtools/DevToolsAPI';
+export type {
+  InstanceData,
+  DevToolsEvent,
+  DevToolsEventType,
+  DevToolsCallback
+} from './devtools/DevToolsAPI';
+
+// Auto-expose DevTools API in browser environments
+import './devtools/exposeGlobalAPI';

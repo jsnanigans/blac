@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BlaC DevTools Panel</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    #root {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      font-size: 18px;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+  <div id="root">
+    <div class="loading">Loading BlaC DevTools...</div>
+  </div>
+  <script type="module" src="index.tsx"></script>
+</body>
+</html>
