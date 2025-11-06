@@ -18,10 +18,6 @@ interface CounterViewProps {
 export function CounterView({ label, instanceKey }: CounterViewProps) {
   const [state, counter] = useBloc(CounterBloc, { instanceId: instanceKey });
 
-  // This component will ONLY re-render when count changes,
-  // not when incrementCount, decrementCount, or lastAction change!
-  console.log(`[CounterView ${label}] Rendering with count:`, state.count);
-
   return (
     <Card>
       <div className="flex-between">

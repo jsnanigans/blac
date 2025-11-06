@@ -63,9 +63,12 @@ type StateContainerConstructor<TBloc extends StateContainer<any>> =
 function generateInstanceId(
   componentRef: ComponentRef,
   isIsolated: boolean,
-  providedId?: string,
+  providedId?: string | number,
 ): string | undefined {
-  if (providedId) return providedId;
+  if (providedId !== undefined) {
+    // Convert number to string
+    return typeof providedId === 'number' ? String(providedId) : providedId;
+  }
 
   if (isIsolated) {
     if (!componentRef.__blocInstanceId) {
@@ -272,19 +275,26 @@ function createNoTrackSnapshot<TBloc extends StateContainer<AnyObject>>(
  * 1. useMemo returns cached values (same bloc, subscribeFn, getSnapshotFn)
  * 2. useSyncExternalStore calls getSnapshotFn - captures paths, starts tracking, returns proxy
  */
-export function useBloc<TBloc extends StateContainer<AnyObject>>(
+export function useBloc<TBloc extends StateContainer<any>>(
   BlocClass: BlocConstructor<TBloc>,
   options?: UseBlocOptions<TBloc>,
 ): UseBlocReturn<TBloc> {
   // Component reference that persists across React Strict Mode remounts
   const componentRef = useRef<ComponentRef>({});
+  const Constructor = BlocClass as StateContainerConstructor<TBloc>;
+  const isIsolated = Constructor.isolated === true;
 
   const [bloc, subscribe, getSnapshot, instanceKey, hookState, rawInstance] =
-    useMemo(() => {
-      const isIsolated =
-        (BlocClass as { isolated?: boolean }).isolated === true;
-      const Constructor = BlocClass as StateContainerConstructor<TBloc>;
-
+    useMemo<
+      readonly [
+        TBloc,
+        (callback: () => void) => () => void,
+        () => ExtractState<TBloc>,
+        string | undefined,
+        HookState<TBloc>,
+        TBloc,
+      ]
+    >(() => {
       // Generate instance key
       const instanceId = generateInstanceId(
         componentRef.current,
@@ -292,8 +302,10 @@ export function useBloc<TBloc extends StateContainer<AnyObject>>(
         options?.instanceId,
       );
 
+      console.log('useBloc: instanceId =', instanceId);
+
       // Get or create bloc instance with ownership (increments ref count)
-      const instance = Constructor.resolve(instanceId, options?.staticProps);
+      const instance = BlocClass.resolve(instanceId, options?.staticProps);
 
       // Determine tracking mode
       const { useManualDeps, autoTrackEnabled } =
@@ -340,13 +352,13 @@ export function useBloc<TBloc extends StateContainer<AnyObject>>(
       }
 
       return [
-        hookState.proxiedBloc,
+        hookState.proxiedBloc!,
         subscribeFn,
         getSnapshotFn,
         instanceId,
         hookState,
         instance,
-      ] as const;
+      ];
     }, [BlocClass]);
 
   const state = useSyncExternalStore(subscribe, getSnapshot);
@@ -379,8 +391,6 @@ export function useBloc<TBloc extends StateContainer<AnyObject>>(
       Constructor.release(instanceKey);
 
       // For isolated instances, dispose manually since registry doesn't track them
-      const isIsolated =
-        (BlocClass as { isolated?: boolean }).isolated === true;
       if (isIsolated && !rawInstance.isDisposed) {
         rawInstance.dispose();
       }

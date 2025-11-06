@@ -16,11 +16,22 @@ export * from './core/Cubit';
 export * from './core/Vertex';
 
 // Plugin System - Export registry and lifecycle types
-export { globalRegistry } from './core/StateContainerRegistry';
+export { globalRegistry, getPluginManager } from './core/StateContainerRegistry';
 export type {
   LifecycleEvent,
   LifecycleListener,
 } from './core/StateContainerRegistry';
+
+// Plugin API
+export type {
+  BlacPlugin,
+  BlacPluginWithInit,
+  PluginContext,
+  PluginConfig,
+  InstanceMetadata,
+} from './plugin/BlacPlugin';
+export { PluginManager, createPluginManager } from './plugin/PluginManager';
+export { hasInitHook } from './plugin/BlacPlugin';
 
 // Dependency Tracking (framework-agnostic utilities for React/Vue/etc)
 export * from './tracking';
@@ -57,14 +68,8 @@ export {
   __resetIdCounters,
 } from './utils/idGenerator';
 
-// DevTools API (development mode only)
-export { devToolsAPI } from './devtools/DevToolsAPI';
-export type {
-  InstanceData,
-  DevToolsEvent,
-  DevToolsEventType,
-  DevToolsCallback
-} from './devtools/DevToolsAPI';
-
-// Auto-expose DevTools API in browser environments
-import './devtools/exposeGlobalAPI';
+// Note: DevTools is now a plugin in @blac/devtools-connect
+// Usage:
+//   import { getPluginManager } from '@blac/core';
+//   import { createDevToolsBrowserPlugin } from '@blac/devtools-connect';
+//   getPluginManager().install(createDevToolsBrowserPlugin(), { environment: 'development' });

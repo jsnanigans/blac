@@ -29,10 +29,15 @@ window.addEventListener('message', (event) => {
 
   console.log('[BlaC DevTools] Message from inject:', event.data);
 
-  // Forward to service worker
+  // Forward to service worker (spread first to preserve our source)
   chrome.runtime.sendMessage({
-    source: 'blac-devtools-content',
     ...event.data,
+    source: 'blac-devtools-content',
+  }).catch((error) => {
+    // Ignore errors if extension context is invalidated
+    if (!error.message.includes('Extension context invalidated')) {
+      console.warn('[BlaC DevTools] Failed to send message:', error);
+    }
   });
 });
 
@@ -60,10 +65,12 @@ let isNavigating = false;
 window.addEventListener('beforeunload', () => {
   isNavigating = true;
 
-  // Notify service worker
+  // Notify service worker (ignore errors during unload)
   chrome.runtime.sendMessage({
     source: 'blac-devtools-content',
     type: 'PAGE_UNLOAD',
+  }).catch(() => {
+    // Ignore errors during page unload
   });
 });
 

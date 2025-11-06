@@ -30,8 +30,9 @@ export interface UseBlocOptions<TBloc extends StateContainer<AnyObject>> {
    * Custom instance ID for shared blocs
    * - For isolated blocs, each useBloc call gets its own instance
    * - For shared blocs, the same instanceId will share the same bloc instance
+   * - Must be a string or number (null is not valid)
    */
-  instanceId?: string;
+  instanceId?: string | number;
 
   /**
    * Manual dependency tracking function
@@ -86,7 +87,7 @@ export interface UseBlocOptionsWithDependencies<
  * - [1]: The bloc instance with methods
  * - [2]: Component ref (internal use only)
  */
-export type UseBlocReturn<TBloc extends StateContainer<AnyObject>> = [
+export type UseBlocReturn<TBloc extends StateContainer<any>> = [
   ExtractState<TBloc>,
   TBloc,
   RefObject<ComponentRef>,

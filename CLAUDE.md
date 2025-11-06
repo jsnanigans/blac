@@ -273,6 +273,28 @@ const [state, bloc] = useBloc(MyBloc, {
 3. Mark instance isolation strategy (HIGH)
 4. Complete v2 migration (HIGH)
 
+### DevTools Extension Development
+
+**TempDoc Reference:**
+- **Redux DevTools Learnings:** `/Users/brendanmullins/Documents/Log/TempDoc/blac/2025-11/06/redux-devtools-learnings.md`
+- **Date:** 2025-11-06
+- **Status:** 🚧 In Progress
+
+**Key Insights from Redux DevTools:**
+- Message chunking for large payloads (>32MB)
+- Throttled state updates for performance
+- Strict source validation and security checks
+- Mock Chrome API for testing
+- Clear separation: content script → inject script → page API
+
+**Our Advantages:**
+- Cleaner plugin architecture (more decoupled)
+- Modern TypeScript with better type safety
+- Simpler communication pattern
+- Framework agnostic (not Redux-specific)
+
+**Extension Location:** `packages/devtools-extension/`
+
 ### Local Instance Management Architecture
 
 **TempDoc Reference:**

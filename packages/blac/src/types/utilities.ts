@@ -63,17 +63,17 @@ export type BlocConstructor<TBloc extends StateContainer<any>> = (new (
   ...args: any[]
 ) => TBloc) & {
   /** Resolve instance with ownership (increments ref count) */
-  resolve?(instanceKey?: string, ...args: any[]): TBloc;
+  resolve(instanceKey?: string, ...args: any[]): TBloc;
   /** Get existing instance without ownership (throws if not found) */
-  get?(instanceKey?: string): TBloc;
+  get(instanceKey?: string): TBloc;
   /** Get existing instance without ownership (returns discriminated union) */
-  getSafe?(
+  getSafe(
     instanceKey?: string,
   ): { error: Error; instance: null } | { error: null; instance: TBloc };
   /** Release ownership (decrements ref count) */
-  release?(instanceKey?: string): void;
+  release(instanceKey?: string): void;
   /** Mark as isolated (each component gets its own instance) */
-  isolated?: boolean;
+  isolated: boolean;
   /** Mark as keepAlive (instance survives zero ref count) */
-  keepAlive?: boolean;
+  keepAlive: boolean;
 };

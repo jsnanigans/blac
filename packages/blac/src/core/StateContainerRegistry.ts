@@ -1,21 +1,28 @@
 /**
- * StateContainerRegistry - Lightweight coordination layer for StateContainer lifecycle
+ * StateContainerRegistry - Centralized instance and lifecycle management
  *
  * Responsibilities:
+ * - Instance storage and management (WeakMap per constructor)
  * - Type registration and tracking
  * - Lifecycle event notifications (plugin system)
  * - Global operations (clearAllInstances)
- *
- * NOTE: Instance storage has been moved to each StateContainer subclass.
- * Each class owns and manages its own instances locally for better performance
- * and cleaner architecture.
  */
 
 import type { StateContainer } from './StateContainer';
 import type { Vertex } from './Vertex';
+import { createPluginManager } from '../plugin/PluginManager';
 
 interface TypeConfig {
   isolated: boolean;
+}
+
+/**
+ * Internal entry for instance storage
+ * Each entry tracks an instance and its reference count
+ */
+export interface InstanceEntry<T = any> {
+  instance: T;
+  refCount: number;
 }
 
 /**
@@ -45,17 +52,35 @@ export type LifecycleListener<E extends LifecycleEvent> = E extends 'created'
         : never;
 
 /**
- * Registry for coordinating StateContainer lifecycle
+ * Registry for coordinating StateContainer lifecycle and managing instances
  *
- * NOTE: Instances are now stored locally on each StateContainer subclass.
- * This registry only tracks types and manages lifecycle events.
+ * Centralizes all instance management using WeakMap to ensure proper isolation.
  */
 export class StateContainerRegistry {
+  /**
+   * Global storage for all instance Maps, keyed by constructor
+   *
+   * IMPORTANT: JavaScript/TypeScript static properties are inherited by reference,
+   * meaning all subclasses would share the same Map. To ensure each subclass has
+   * its own instance storage, we use a WeakMap keyed by the constructor function.
+   *
+   * This approach guarantees:
+   * - CounterBloc instances are separate from UserBloc instances
+   * - Each class owns and manages its own instances
+   * - Automatic garbage collection when classes are no longer referenced
+   */
+  private readonly instancesByConstructor = new WeakMap<
+    Function,
+    Map<string, InstanceEntry>
+  >();
+
   /**
    * Strong Set for tracking all registered types
    * Used for clearAllInstances() and getStats()
    */
-  private readonly types = new Set<new (...args: any[]) => StateContainer<any>>();
+  private readonly types = new Set<
+    new (...args: any[]) => StateContainer<any>
+  >();
 
   /**
    * Type configurations (isolated flag)
@@ -99,70 +124,241 @@ export class StateContainerRegistry {
     this.registerType(constructor);
   }
 
+  // ==================== Instance Management ====================
+
   /**
-   * Resolve an instance (delegates to StateContainer.resolve)
-   *
-   * @deprecated This method exists for backward compatibility.
-   * Prefer calling StateContainer.resolve() directly on your Bloc class.
+   * Get the instances Map for a specific class
+   * Creates a new Map on first access.
    */
-  resolve<T extends StateContainer<any>>(
-    constructor: new (...args: any[]) => T,
-    key?: string,
-    ...args: any[]
-  ): T {
-    return (constructor as any).resolve(key, ...args);
+  private ensureInstancesMap<T extends StateContainer<any>>(
+    Type: new (...args: any[]) => T,
+  ): Map<string, InstanceEntry> {
+    let instances = this.instancesByConstructor.get(Type);
+    if (!instances) {
+      instances = new Map<string, InstanceEntry>();
+      this.instancesByConstructor.set(Type, instances);
+    }
+    return instances;
   }
 
   /**
-   * Release a reference (delegates to StateContainer.release)
-   *
-   * @deprecated For backward compatibility only.
+   * Get the instances Map for a specific class (public API for stats/debugging)
+   */
+  getInstancesMap<T extends StateContainer<any>>(
+    Type: new (...args: any[]) => T,
+  ): Map<string, InstanceEntry> {
+    return this.instancesByConstructor.get(Type) || new Map();
+  }
+
+  /**
+   * Resolve an instance with ref counting (ownership semantics)
+   */
+  resolve<T extends StateContainer<any>>(
+    Type: new (...args: any[]) => T,
+    key?: string,
+    constructorArgs?: any,
+  ): T {
+    const instanceKey = key || 'default';
+
+    // Check if this is an isolated type
+    const staticIsolated = (Type as any).isolated === true;
+    const registryConfig = this.typeConfigs.get(Type.name);
+    const isolated = staticIsolated || registryConfig?.isolated === true;
+
+    // Isolated: always create new instance (not tracked)
+    if (isolated) {
+      const instance = new Type(constructorArgs) as T;
+      // Register type for lifecycle coordination
+      this.registerType(Type);
+      return instance;
+    }
+
+    // Shared: singleton pattern with ref counting
+    const instances = this.ensureInstancesMap(Type);
+    const entry = instances.get(instanceKey);
+
+    if (entry) {
+      entry.refCount++;
+      return entry.instance as T;
+    }
+
+    // Create new shared instance
+    const instance = new Type(constructorArgs) as T;
+    instances.set(instanceKey, { instance, refCount: 1 });
+
+    // Register type for lifecycle coordination
+    this.registerType(Type);
+
+    return instance;
+  }
+
+  /**
+   * Get an existing instance without ref counting (borrowing semantics)
+   * @throws Error if instance doesn't exist
+   */
+  get<T extends StateContainer<any>>(
+    Type: new (...args: any[]) => T,
+    key?: string,
+  ): T {
+    const instanceKey = key || 'default';
+    const instances = this.ensureInstancesMap(Type);
+    const entry = instances.get(instanceKey);
+
+    if (!entry) {
+      throw new Error(
+        `${Type.name} instance "${instanceKey}" not found.\n` +
+          `Use .resolve() to create and claim ownership, or .getSafe() for conditional access.`,
+      );
+    }
+
+    return entry.instance as T;
+  }
+
+  /**
+   * Safely get an existing instance (borrowing semantics with error handling)
+   * Returns discriminated union for type-safe conditional access
+   */
+  getSafe<T extends StateContainer<any>>(
+    Type: new (...args: any[]) => T,
+    key?: string,
+  ): { error: Error; instance: null } | { error: null; instance: T } {
+    const instanceKey = key || 'default';
+    const instances = this.ensureInstancesMap(Type);
+    const entry = instances.get(instanceKey);
+
+    if (!entry) {
+      return {
+        error: new Error(`${Type.name} instance "${instanceKey}" not found`),
+        instance: null,
+      };
+    }
+
+    return { error: null, instance: entry.instance as T };
+  }
+
+  /**
+   * Release a reference to an instance
    */
   release<T extends StateContainer<any>>(
-    constructor: new (...args: any[]) => T,
+    Type: new (...args: any[]) => T,
     key?: string,
     forceDispose = false,
   ): void {
-    return (constructor as any).release(key, forceDispose);
+    const instanceKey = key || 'default';
+    const instances = this.ensureInstancesMap(Type);
+    const entry = instances.get(instanceKey);
+
+    if (!entry) return;
+
+    // Force dispose immediately
+    if (forceDispose) {
+      if (!entry.instance.isDisposed) {
+        entry.instance.dispose();
+      }
+      instances.delete(instanceKey);
+      return;
+    }
+
+    // Decrement ref count
+    entry.refCount--;
+
+    // Check static keepAlive property
+    const keepAlive = (Type as any).keepAlive === true;
+
+    // Auto-dispose when ref count reaches 0 (unless keepAlive)
+    if (entry.refCount <= 0 && !keepAlive) {
+      if (!entry.instance.isDisposed) {
+        entry.instance.dispose();
+      }
+      instances.delete(instanceKey);
+    }
   }
 
   /**
-   * Check if instance exists (delegates to StateContainer.hasInstance)
-   *
-   * @deprecated For backward compatibility only.
+   * Get all instances of a specific type
    */
-  hasInstance<T extends StateContainer<any>>(
-    constructor: new (...args: any[]) => T,
-    key?: string,
-  ): boolean {
-    return (constructor as any).hasInstance(key);
+  getAll<T extends StateContainer<any>>(Type: new (...args: any[]) => T): T[] {
+    const instances = this.ensureInstancesMap(Type);
+    const result: T[] = [];
+    for (const entry of instances.values()) {
+      result.push(entry.instance as T);
+    }
+    return result;
   }
 
   /**
-   * Get reference count (delegates to StateContainer.getRefCount)
-   *
-   * @deprecated For backward compatibility only.
+   * Safely iterate over all instances of a type
+   */
+  forEach<T extends StateContainer<any>>(
+    Type: new (...args: any[]) => T,
+    callback: (instance: T) => void,
+  ): void {
+    const instances = this.ensureInstancesMap(Type);
+    for (const entry of instances.values()) {
+      const instance = entry.instance as T;
+      if (!instance.isDisposed) {
+        try {
+          callback(instance);
+        } catch (error) {
+          console.error(
+            `[BlaC] forEach callback error for ${Type.name}:`,
+            error,
+          );
+        }
+      }
+    }
+  }
+
+  /**
+   * Clear all instances of a specific type
+   */
+  clear<T extends StateContainer<any>>(Type: new (...args: any[]) => T): void {
+    const instances = this.ensureInstancesMap(Type);
+    // Dispose all instances
+    for (const entry of instances.values()) {
+      if (!entry.instance.isDisposed) {
+        entry.instance.dispose();
+      }
+    }
+    // Clear the Map
+    instances.clear();
+  }
+
+  /**
+   * Get reference count for an instance
    */
   getRefCount<T extends StateContainer<any>>(
-    constructor: new (...args: any[]) => T,
+    Type: new (...args: any[]) => T,
     key?: string,
   ): number {
-    return (constructor as any).getRefCount(key);
+    const instanceKey = key || 'default';
+    const instances = this.ensureInstancesMap(Type);
+    const entry = instances.get(instanceKey);
+    return entry?.refCount ?? 0;
+  }
+
+  /**
+   * Check if an instance exists
+   */
+  hasInstance<T extends StateContainer<any>>(
+    Type: new (...args: any[]) => T,
+    key?: string,
+  ): boolean {
+    const instanceKey = key || 'default';
+    const instances = this.ensureInstancesMap(Type);
+    return instances.has(instanceKey);
   }
 
   /**
    * Clear all instances from all types (for testing)
    *
-   * Iterates all registered types and calls their clear() method.
+   * Iterates all registered types and clears their instances.
    * Also clears type tracking to reset the registry state.
-   *
-   * IMPORTANT: Must clear instances BEFORE clearing the types Set,
-   * otherwise we lose track of which types to clear!
    */
   clearAll(): void {
     // Step 1: Clear instances from each type (while we still have the types list)
     for (const Type of this.types) {
-      (Type as any).clear();
+      this.clear(Type);
     }
     // Step 2: Now clear type tracking (resets registry state for tests)
     this.types.clear();
@@ -171,9 +367,6 @@ export class StateContainerRegistry {
 
   /**
    * Get registry statistics (for debugging)
-   *
-   * NOTE: Since instances are now stored locally on each StateContainer subclass,
-   * we need to iterate registered types to collect statistics.
    */
   getStats(): {
     registeredTypes: number;
@@ -186,7 +379,7 @@ export class StateContainerRegistry {
     // Collect stats from each registered type
     for (const Type of this.types) {
       const typeName = Type.name;
-      const instances = (Type as any).instances as Map<string, any>;
+      const instances = this.getInstancesMap(Type);
       const count = instances.size;
 
       typeBreakdown[typeName] = count;
@@ -198,6 +391,13 @@ export class StateContainerRegistry {
       totalInstances,
       typeBreakdown,
     };
+  }
+
+  /**
+   * Get all registered types (for plugin system)
+   */
+  getTypes(): Array<new (...args: any[]) => StateContainer<any>> {
+    return Array.from(this.types);
   }
 
   /**
@@ -231,6 +431,7 @@ export class StateContainerRegistry {
 
     for (const listener of listeners) {
       try {
+        console.log(args);
         listener(...args);
       } catch (error) {
         console.error(`[BlaC] Listener error for '${event}':`, error);
@@ -243,3 +444,18 @@ export class StateContainerRegistry {
  * Global default registry instance
  */
 export const globalRegistry = new StateContainerRegistry();
+
+/**
+ * Global plugin manager (initialized lazily)
+ */
+let _globalPluginManager: any = null;
+
+/**
+ * Get the global plugin manager
+ */
+export function getPluginManager(): any {
+  if (!_globalPluginManager) {
+    _globalPluginManager = createPluginManager(globalRegistry);
+  }
+  return _globalPluginManager;
+}

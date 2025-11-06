@@ -69,10 +69,13 @@ export function generateId(prefix: string): string {
  * // Returns: "CounterBloc_1698765432100_a3k9d7f2q"
  * ```
  */
-export function generateSimpleId(prefix: string): string {
+export function generateSimpleId(prefix: string, affix?: string): string {
+  if (affix) {
+    return `${prefix}:${affix}`;
+  }
   const timestamp = Date.now();
   const random = Math.random().toString(36).substring(2, 11);
-  return `${prefix}_${timestamp}_${random}`;
+  return `${prefix}:${timestamp}_${random}`;
 }
 
 /**

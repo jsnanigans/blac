@@ -7,8 +7,8 @@ console.log('[BlaC DevTools] DevTools page loaded');
 // Create the BlaC panel
 chrome.devtools.panels.create(
   'BlaC',
-  'icons/icon-16.png',
-  'dist/panel/index.html',
+  '', // Empty icon path (icons not needed)
+  'dist/src/panel/index.html',
   (panel) => {
     console.log('[BlaC DevTools] Panel created');
 

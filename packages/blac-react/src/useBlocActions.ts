@@ -47,8 +47,9 @@ export interface UseBlocActionsOptions<
    * Custom instance ID for shared blocs
    * - For isolated blocs, each useBlocActions call gets its own instance
    * - For shared blocs, the same instanceId will share the same bloc instance
+   * - Must be a string or number (null is not valid)
    */
-  instanceId?: string;
+  instanceId?: string | number;
 
   /**
    * Callback invoked when the component mounts
@@ -71,9 +72,12 @@ export interface UseBlocActionsOptions<
 function generateInstanceId(
   componentRef: ComponentRef,
   isIsolated: boolean,
-  providedId?: string,
+  providedId?: string | number,
 ): string | undefined {
-  if (providedId) return providedId;
+  if (providedId !== undefined) {
+    // Convert number to string
+    return typeof providedId === 'number' ? String(providedId) : providedId;
+  }
 
   if (isIsolated) {
     if (!componentRef.__blocInstanceId) {
@@ -119,7 +123,9 @@ export function useBlocActions<TBloc extends StateContainer<AnyObject>>(
     );
 
     // Get or create bloc instance with ownership (increments ref count)
-    const instance = Constructor.resolve(instanceId, options?.staticProps);
+    const instance = options?.staticProps
+      ? Constructor.resolve(instanceId, options.staticProps)
+      : Constructor.resolve(instanceId);
 
     return [instance, instanceId] as const;
   }, [BlocClass]);

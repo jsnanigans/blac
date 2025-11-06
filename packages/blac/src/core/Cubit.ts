@@ -5,7 +5,7 @@
  * the simple Cubit pattern from the original BlaC.
  */
 
-import { StateContainer, StateContainerConfig } from './StateContainer';
+import { StateContainer } from './StateContainer';
 
 /**
  * Cubit is a simple state container that allows direct state emission
@@ -17,10 +17,9 @@ export abstract class Cubit<S> extends StateContainer<S> {
   /**
    * Create a new Cubit
    * @param initialState Initial state value
-   * @param config Configuration options
    */
-  constructor(initialState: S, config?: StateContainerConfig) {
-    super(initialState, config);
+  constructor(initialState: S) {
+    super(initialState);
   }
 
   /**

@@ -2,21 +2,18 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './src/App';
 import './src/styles.css';
-import { ReduxDevToolsAdapter } from '@blac/devtools-connect';
+import { getPluginManager } from '@blac/core';
+import { createDevToolsBrowserPlugin } from '@blac/devtools-connect';
 
-// Initialize Redux DevTools integration
-const devtools = new ReduxDevToolsAdapter({
-  enabled: import.meta.env.DEV,
-  name: 'BlaC Examples',
-  maxAge: 50,
-  trace: false,
-});
+// Install DevTools plugin (new plugin API)
+// This exposes window.__BLAC_DEVTOOLS__ for the browser extension
+if (import.meta.env.DEV) {
+  const devToolsPlugin = createDevToolsBrowserPlugin({
+    enabled: true,
+  });
 
-// Log connection status
-if (devtools.isConnected()) {
-  console.log('[BlaC Examples] Redux DevTools connected!');
-} else {
-  console.log('[BlaC Examples] Redux DevTools not available');
+  getPluginManager().install(devToolsPlugin);
+  console.log('[BlaC Examples] DevTools plugin installed');
 }
 
 const container = document.getElementById('root');

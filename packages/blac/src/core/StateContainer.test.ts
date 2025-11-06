@@ -249,9 +249,14 @@ describe('StateContainer', () => {
         expect(container.isDisposed).toBe(false);
       });
 
+      it('should set default instanceId', () => {
+        const container = new TestContainer(0);
+        expect(container.instanceId).toBe('TestContainer:main');
+      });
+
       it('should respect custom instanceId', () => {
         const container = new TestContainer(0, { instanceId: 'custom-id' });
-        expect(container.instanceId).toBe('custom-id');
+        expect(container.instanceId).toBe('TestContainer:custom-id');
       });
 
       it('should respect custom name', () => {
@@ -507,11 +512,6 @@ describe('StateContainer', () => {
   // Configuration
 
   describe('Configuration', () => {
-    it('should respect custom instanceId', () => {
-      const container = new TestContainer(0, { instanceId: 'test-id-123' });
-      expect(container.instanceId).toBe('test-id-123');
-    });
-
     it('should respect name configuration', () => {
       const container = new TestContainer(0, { name: 'MyCounter' });
       expect(container.name).toBe('MyCounter');

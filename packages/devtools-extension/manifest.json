@@ -23,18 +23,14 @@
       "all_frames": true
     }
   ],
-  "devtools_page": "dist/devtools/devtools.html",
-  "icons": {
-    "16": "icons/icon-16.png",
-    "48": "icons/icon-48.png",
-    "128": "icons/icon-128.png"
-  },
+  "devtools_page": "dist/src/devtools/devtools.html",
   "action": {
-    "default_popup": "dist/popup/popup.html",
-    "default_icon": {
-      "16": "icons/icon-16.png",
-      "48": "icons/icon-48.png",
-      "128": "icons/icon-128.png"
+    "default_popup": "dist/src/popup/popup.html"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["dist/inject/inject-script.js"],
+      "matches": ["<all_urls>"]
     }
-  }
+  ]
 }

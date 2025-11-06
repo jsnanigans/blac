@@ -1,5 +1,16 @@
 export { DevToolsPlugin } from './plugin/DevToolsPlugin';
 export type { DevToolsPluginConfig } from './plugin/types';
+
+// New plugin API (using @blac/core plugin system)
+export {
+  DevToolsBrowserPlugin,
+  createDevToolsBrowserPlugin,
+  type DevToolsBrowserPluginConfig,
+  type DevToolsInstanceData,
+  type DevToolsEvent as BrowserDevToolsEvent,
+  type DevToolsEventType,
+  type DevToolsCallback,
+} from './plugin/DevToolsBrowserPlugin';
 export { DevToolsBridge } from './bridge/DevToolsBridge';
 export type { DevToolsBridgeConfig } from './bridge/DevToolsBridge';
 export type {

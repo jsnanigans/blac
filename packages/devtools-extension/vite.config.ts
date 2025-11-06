@@ -4,6 +4,7 @@ import { resolve } from 'path';
 
 export default defineConfig({
   plugins: [react()],
+  base: './',
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
@@ -12,6 +13,8 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+    minify: false,
+    sourcemap: true,
     rollupOptions: {
       input: {
         'background/service-worker': resolve(__dirname, 'src/background/service-worker.ts'),

@@ -48,10 +48,9 @@ export abstract class Vertex<
   /**
    * Create a new Vertex
    * @param initialState Initial state value
-   * @param config Configuration options
    */
-  constructor(initialState: S, config?: StateContainerConfig) {
-    super(initialState, config);
+  constructor(initialState: S) {
+    super(initialState);
   }
 
   /**
