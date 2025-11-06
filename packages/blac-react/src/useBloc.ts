@@ -1,28 +1,8 @@
-/**
- * useBloc - hook for BlaC state management in React with automatic proxy tracking
- *
- * @example
- * ```tsx
- * // Basic usage - automatic tracking of accessed properties
- * function Counter() {
- *   const [state, bloc] = useBloc(CounterBloc);
- *   return (
- *     <div>
- *       <p>Count: {state.count}</p>  // Only re-renders when count changes
- *       <button onClick={bloc.increment}>+</button>
- *     </div>
- *   );
- * }
- * ```
- */
-
 import { useMemo, useSyncExternalStore, useEffect, useRef } from 'react';
 import {
-  type AnyObject,
   type BlocConstructor,
   StateContainer,
   type ExtractState,
-  // Import tracking utilities from core
   type TrackerState,
   createTrackerState,
   startTracking,
@@ -31,7 +11,6 @@ import {
   hasChanges,
   hasTrackedData,
   shallowEqual,
-  // Import getter tracking utilities from core
   type GetterTrackerState,
   createGetterTracker,
   createBlocProxy,
@@ -48,18 +27,12 @@ import type {
   UseBlocOptionsWithDependencies,
 } from './types';
 
-/**
- * StateContainer constructor with required static methods
- */
 type StateContainerConstructor<TBloc extends StateContainer<any>> =
   BlocConstructor<TBloc> & {
     resolve(instanceKey?: string, ...args: any[]): TBloc;
     release(instanceKey?: string): void;
   };
 
-/**
- * Generates instance ID for isolated blocs
- */
 function generateInstanceId(
   componentRef: ComponentRef,
   isIsolated: boolean,
@@ -80,15 +53,12 @@ function generateInstanceId(
   return undefined;
 }
 
-/**
- * Determines tracking mode from options
- */
 interface TrackingMode {
   useManualDeps: boolean;
   autoTrackEnabled: boolean;
 }
 
-function determineTrackingMode<TBloc extends StateContainer<AnyObject>>(
+function determineTrackingMode<TBloc extends StateContainer<any>>(
   options?: UseBlocOptions<TBloc>,
 ): TrackingMode {
   return {
@@ -100,7 +70,7 @@ function determineTrackingMode<TBloc extends StateContainer<AnyObject>>(
 /**
  * Internal state for subscription and snapshot functions
  */
-interface HookState<TBloc extends StateContainer<AnyObject>> {
+interface HookState<TBloc extends StateContainer<any>> {
   /** State property tracker (existing) */
   tracker: TrackerState<ExtractState<TBloc>> | null;
   /** Manual dependencies cache (existing) */
@@ -114,7 +84,7 @@ interface HookState<TBloc extends StateContainer<AnyObject>> {
 /**
  * Factory: Creates subscribe function for automatic proxy tracking mode
  */
-function createAutoTrackSubscribe<TBloc extends StateContainer<AnyObject>>(
+function createAutoTrackSubscribe<TBloc extends StateContainer<any>>(
   instance: TBloc,
   hookState: HookState<TBloc>,
 ): (callback: () => void) => () => void {
@@ -171,10 +141,7 @@ function createAutoTrackSubscribe<TBloc extends StateContainer<AnyObject>>(
   };
 }
 
-/**
- * Factory: Creates subscribe function for manual dependencies mode
- */
-function createManualDepsSubscribe<TBloc extends StateContainer<AnyObject>>(
+function createManualDepsSubscribe<TBloc extends StateContainer<any>>(
   instance: TBloc,
   hookState: HookState<TBloc>,
   options: UseBlocOptionsWithDependencies<TBloc>,
@@ -196,7 +163,7 @@ function createManualDepsSubscribe<TBloc extends StateContainer<AnyObject>>(
 /**
  * Factory: Creates subscribe function for no-tracking mode
  */
-function createNoTrackSubscribe<TBloc extends StateContainer<AnyObject>>(
+function createNoTrackSubscribe<TBloc extends StateContainer<any>>(
   instance: TBloc,
 ): (callback: () => void) => () => void {
   return (callback: () => void) => instance.subscribe(callback);
@@ -205,7 +172,7 @@ function createNoTrackSubscribe<TBloc extends StateContainer<AnyObject>>(
 /**
  * Factory: Creates getSnapshot function for automatic proxy tracking mode
  */
-function createAutoTrackSnapshot<TBloc extends StateContainer<AnyObject>>(
+function createAutoTrackSnapshot<TBloc extends StateContainer<any>>(
   instance: TBloc,
   hookState: HookState<TBloc>,
 ): () => ExtractState<TBloc> {
@@ -238,7 +205,7 @@ function createAutoTrackSnapshot<TBloc extends StateContainer<AnyObject>>(
 /**
  * Factory: Creates getSnapshot function for manual dependencies mode
  */
-function createManualDepsSnapshot<TBloc extends StateContainer<AnyObject>>(
+function createManualDepsSnapshot<TBloc extends StateContainer<any>>(
   instance: TBloc,
   hookState: HookState<TBloc>,
   options: UseBlocOptionsWithDependencies<TBloc>,
@@ -252,7 +219,7 @@ function createManualDepsSnapshot<TBloc extends StateContainer<AnyObject>>(
 /**
  * Factory: Creates getSnapshot function for no-tracking mode
  */
-function createNoTrackSnapshot<TBloc extends StateContainer<AnyObject>>(
+function createNoTrackSnapshot<TBloc extends StateContainer<any>>(
   instance: TBloc,
 ): () => ExtractState<TBloc> {
   return () => instance.state;

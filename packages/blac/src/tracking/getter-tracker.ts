@@ -1,132 +1,23 @@
-/**
- * Getter Tracking
- *
- * Framework-agnostic utilities for tracking computed property (getter) access
- * and detecting when getter values change. This enables fine-grained reactivity
- * for computed properties in state management.
- *
- * ## Usage
- *
- * ```typescript
- * import {
- *   createGetterTracker,
- *   createBlocProxy,
- *   hasGetterChanges
- * } from '@blac/core';
- *
- * // Create tracker
- * const tracker = createGetterTracker();
- *
- * // Create proxied bloc that tracks getter access
- * const proxiedBloc = createBlocProxy(myBloc);
- *
- * // Set active tracker before render
- * setActiveTracker(myBloc, tracker);
- *
- * // Enable tracking during render
- * tracker.isTracking = true;
- * // ... access getters on proxiedBloc ...
- * tracker.isTracking = false;
- *
- * // Commit tracked getters after render
- * commitTrackedGetters(tracker);
- *
- * // Later, check if getter values changed
- * if (hasGetterChanges(myBloc, tracker)) {
- *   // Trigger re-render
- * }
- * ```
- *
- * ## Performance Optimizations
- *
- * ### Render Cache
- * When checking if getters changed (hasGetterChanges), we compute all tracked
- * getters and store their values in a render cache. If a re-render is triggered,
- * the cached values are reused during render instead of recomputing. This ensures
- * each getter is computed at most once per render cycle.
- *
- * ### Descriptor Cache
- * Property descriptors are cached per class to avoid repeated prototype chain walks.
- * This is critical for performance since we need to distinguish getters from methods.
- *
- * ### Proxy Cache
- * Proxied blocs are cached per instance. Multiple components sharing the same bloc
- * will get the same proxy instance. Each component sets its tracker in activeTrackerMap
- * before render, and the proxy looks it up.
- */
-
 import type { StateContainer } from '../core/StateContainer';
-import type { AnyObject } from '../types/branded';
 
-/**
- * State for tracking getter access and values during render
- *
- * @remarks
- * This tracks which getters are accessed during component render and stores
- * their computed values for comparison on subsequent state changes.
- * Only getters (properties with a getter descriptor) are tracked automatically.
- *
- * Similar to state tracking, we use two sets:
- * - `currentlyAccessing`: Temporary set for getters accessed during current render
- * - `trackedGetters`: Committed set of getters from last completed render
- *
- * PERFORMANCE: Render cache optimization
- * - When checking if we should re-render (hasGetterChanges), we compute all getters
- * - Store these computed values in `renderCache` for the upcoming render
- * - During render, if we access a cached getter, use the cached value instead of recomputing
- * - This ensures each getter is computed at most once per render cycle
- * - Cache is invalidated after render completes or when state changes again
- */
 export interface GetterTrackerState {
-  /** Map of getter names to their last computed values (for comparison) */
   trackedValues: Map<string | symbol, unknown>;
-  /** Temporary set of getters being accessed during current render */
   currentlyAccessing: Set<string | symbol>;
-  /** Committed set of getters from last completed render (used for change detection) */
   trackedGetters: Set<string | symbol>;
-  /** Flag to enable/disable tracking (only enabled during render phase) */
   isTracking: boolean;
-  /** Cache of getter values computed during hasGetterChanges (valid for current render cycle) */
   renderCache: Map<string | symbol, unknown>;
-  /** Flag indicating render cache is valid and can be used */
   cacheValid: boolean;
 }
 
-/**
- * Cache for property descriptors to avoid repeated prototype chain walks
- * Maps from object constructor to a map of property name to descriptor
- */
 const descriptorCache = new WeakMap<
   Function,
   Map<string | symbol, PropertyDescriptor | undefined>
 >();
 
-/**
- * Cache for proxied blocs to ensure same proxy is returned for same bloc instance
- * This is important for identity checks (e.g., bloc1 === bloc2) across components
- * using the same shared bloc instance.
- */
 const blocProxyCache = new WeakMap<StateContainer<any>, any>();
 
-/**
- * Map to store the currently active tracker during render.
- * This allows the cached proxy to know which component's tracker to use.
- * Set before render, cleared after render.
- */
 const activeTrackerMap = new WeakMap<StateContainer<any>, GetterTrackerState>();
 
-/**
- * Get property descriptor for a given property, with caching
- *
- * @remarks
- * Walks up the prototype chain once per class to find the descriptor,
- * then caches the result for performance. This is critical because
- * we need to distinguish getters from methods and properties.
- *
- * @param obj - The object to get the descriptor from
- * @param prop - The property name or symbol
- * @returns The property descriptor if found, undefined otherwise
- */
 export function getDescriptor(
   obj: any,
   prop: string | symbol,
@@ -161,23 +52,11 @@ export function getDescriptor(
   return descriptor;
 }
 
-/**
- * Check if a property is a getter (has a getter descriptor)
- *
- * @param obj - The object to check
- * @param prop - The property name or symbol
- * @returns True if the property is a getter, false otherwise
- */
 export function isGetter(obj: any, prop: string | symbol): boolean {
   const descriptor = getDescriptor(obj, prop);
   return descriptor?.get !== undefined;
 }
 
-/**
- * Create a new getter tracking state
- *
- * @returns A new GetterTrackerState initialized with empty collections
- */
 export function createGetterTracker(): GetterTrackerState {
   return {
     trackedValues: new Map(),
@@ -189,59 +68,25 @@ export function createGetterTracker(): GetterTrackerState {
   };
 }
 
-/**
- * Set the active tracker for a bloc instance
- *
- * @remarks
- * This should be called before rendering to associate a tracker with a bloc.
- * The proxy will look up this tracker to know where to record accessed getters.
- *
- * @param bloc - The bloc instance
- * @param tracker - The getter tracker to associate with the bloc
- */
-export function setActiveTracker<TBloc extends StateContainer<AnyObject>>(
+export function setActiveTracker<TBloc extends StateContainer<any>>(
   bloc: TBloc,
   tracker: GetterTrackerState,
 ): void {
   activeTrackerMap.set(bloc, tracker);
 }
 
-/**
- * Clear the active tracker for a bloc instance
- *
- * @remarks
- * This should be called after rendering is complete to clean up the association.
- *
- * @param bloc - The bloc instance
- */
-export function clearActiveTracker<TBloc extends StateContainer<AnyObject>>(
+export function clearActiveTracker<TBloc extends StateContainer<any>>(
   bloc: TBloc,
 ): void {
   activeTrackerMap.delete(bloc);
 }
 
-/**
- * Get the active tracker for a bloc instance
- *
- * @param bloc - The bloc instance
- * @returns The active tracker if set, undefined otherwise
- */
-export function getActiveTracker<TBloc extends StateContainer<AnyObject>>(
+export function getActiveTracker<TBloc extends StateContainer<any>>(
   bloc: TBloc,
 ): GetterTrackerState | undefined {
   return activeTrackerMap.get(bloc);
 }
 
-/**
- * Commit tracked getters from current render to the tracked set
- *
- * @remarks
- * This should be called after each render to record which getters were accessed.
- * It moves getters from `currentlyAccessing` to `trackedGetters` and clears
- * the temporary set.
- *
- * @param tracker - The getter tracker
- */
 export function commitTrackedGetters(tracker: GetterTrackerState): void {
   if (tracker.currentlyAccessing.size > 0) {
     tracker.trackedGetters = new Set(tracker.currentlyAccessing);
@@ -249,23 +94,7 @@ export function commitTrackedGetters(tracker: GetterTrackerState): void {
   tracker.currentlyAccessing.clear();
 }
 
-/**
- * Create a proxy that intercepts getter access on a bloc instance
- *
- * @remarks
- * This proxy wraps the bloc instance to track which getters are accessed
- * during component render. When tracking is enabled (during render phase),
- * it records accessed getters and stores their computed values for later
- * comparison.
- *
- * IMPORTANT: This function caches proxies per bloc instance. Multiple components
- * sharing the same bloc will get the same proxy instance. Each component sets
- * its tracker in activeTrackerMap before render, and the proxy looks it up.
- *
- * @param bloc - The bloc instance to wrap
- * @returns A proxied bloc that tracks getter access
- */
-export function createBlocProxy<TBloc extends StateContainer<AnyObject>>(
+export function createBlocProxy<TBloc extends StateContainer<any>>(
   bloc: TBloc,
 ): TBloc {
   // Check cache first - return existing proxy if available
@@ -308,31 +137,7 @@ export function createBlocProxy<TBloc extends StateContainer<AnyObject>>(
   return proxy;
 }
 
-/**
- * Check if any tracked getters have changed values
- *
- * @remarks
- * Re-computes all getters that were accessed during the last render and
- * compares their new values with stored values using Object.is() (reference
- * equality).
- *
- * OPTIMIZATION: Render cache population
- * - Computes ALL tracked getters (no early exit) to populate the render cache
- * - This ensures each getter is computed only once per render cycle
- * - If we're going to re-render, getters accessed during render will use cached values
- * - Cache is populated even if no changes detected (useful for parent-triggered re-renders)
- * - Trade-off: Give up early exit to ensure full cache population
- *
- * Error handling: If a getter throws during re-computation, we log a warning,
- * stop tracking that specific getter, and treat it as "changed" to trigger
- * a re-render. This prevents the tracking system from breaking while still
- * allowing React's error boundary to handle the error on the next render.
- *
- * @param bloc - The bloc instance
- * @param tracker - The getter tracking state
- * @returns True if any tracked getter value changed, false otherwise
- */
-export function hasGetterChanges<TBloc extends StateContainer<AnyObject>>(
+export function hasGetterChanges<TBloc extends StateContainer<any>>(
   bloc: TBloc,
   tracker: GetterTrackerState | null,
 ): boolean {
@@ -393,27 +198,10 @@ export function hasGetterChanges<TBloc extends StateContainer<AnyObject>>(
   return hasAnyChange;
 }
 
-/**
- * Invalidate the render cache for a tracker
- *
- * @remarks
- * This should be called after render completes to prevent stale cache values
- * from being used in the next render cycle.
- *
- * @param tracker - The getter tracker
- */
 export function invalidateRenderCache(tracker: GetterTrackerState): void {
   tracker.cacheValid = false;
 }
 
-/**
- * Reset all tracking state for a tracker
- *
- * @remarks
- * Clears all tracked getters, values, and caches. Useful for cleanup or reset.
- *
- * @param tracker - The getter tracker
- */
 export function resetGetterTracker(tracker: GetterTrackerState): void {
   tracker.trackedValues.clear();
   tracker.currentlyAccessing.clear();

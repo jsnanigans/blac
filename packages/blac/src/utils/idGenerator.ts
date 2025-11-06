@@ -17,16 +17,16 @@ const globalCounters = new Map<string, number>();
  * @example
  * ```ts
  * const generator = createIdGenerator('sub');
- * const id1 = generator.next(); // "sub_1698765432100_1_a3k9d7f2q"
- * const id2 = generator.next(); // "sub_1698765432101_2_b4n8e9g3r"
+ * const id1 = generator.next(); // "sub:1698765432100_1_a3k9d7f2q"
+ * const id2 = generator.next(); // "sub:1698765432101_2_b4n8e9g3r"
  * ```
  */
 export function createIdGenerator(prefix: string) {
   let counter = 0;
   return {
     next: () =>
-      `${prefix}_${Date.now()}_${++counter}_${Math.random().toString(36).substring(2, 11)}`,
-    nextSimple: () => `${prefix}_${++counter}`,
+      `${prefix}:${Date.now()}_${++counter}_${Math.random().toString(36).substring(2, 11)}`,
+    nextSimple: () => `${prefix}:${++counter}`,
     reset: () => {
       counter = 0;
     },
@@ -36,7 +36,7 @@ export function createIdGenerator(prefix: string) {
 /**
  * Generate ID with timestamp, counter, and random suffix (tree-shakeable)
  *
- * Format: `${prefix}_${timestamp}_${counter}_${random}`
+ * Format: `${prefix}:${timestamp}_${counter}_${random}`
  *
  * @param prefix - Prefix for the ID (e.g., 'sub', 'consumer', 'stage')
  * @returns Branded ID string
@@ -44,7 +44,7 @@ export function createIdGenerator(prefix: string) {
  * @example
  * ```ts
  * const id = generateId('sub');
- * // Returns: "sub_1698765432100_1_a3k9d7f2q"
+ * // Returns: "sub:1698765432100_1_a3k9d7f2q"
  * ```
  */
 export function generateId(prefix: string): string {
@@ -52,13 +52,13 @@ export function generateId(prefix: string): string {
   globalCounters.set(prefix, counter);
   const timestamp = Date.now();
   const random = Math.random().toString(36).substring(2, 11);
-  return `${prefix}_${timestamp}_${counter}_${random}`;
+  return `${prefix}:${timestamp}_${counter}_${random}`;
 }
 
 /**
  * Generate simple ID with timestamp and random (no counter tracking)
  *
- * Format: `${prefix}_${timestamp}_${random}`
+ * Format: `${prefix}:${timestamp}_${random}`
  *
  * @param prefix - Prefix for the ID
  * @returns Branded ID string
@@ -66,7 +66,7 @@ export function generateId(prefix: string): string {
  * @example
  * ```ts
  * const id = generateSimpleId('CounterBloc');
- * // Returns: "CounterBloc_1698765432100_a3k9d7f2q"
+ * // Returns: "CounterBloc:1698765432100_a3k9d7f2q"
  * ```
  */
 export function generateSimpleId(prefix: string, affix?: string): string {

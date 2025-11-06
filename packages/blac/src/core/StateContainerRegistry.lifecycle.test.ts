@@ -62,6 +62,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       const unsubscribe = registry.on('created', listener);
 
       const bloc = new TestCubit();
+      bloc.initiConfig({});
 
       expect(listener).toHaveBeenCalledTimes(1);
       expect(listener).toHaveBeenCalledWith(bloc);
@@ -85,7 +86,6 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       registry.on('eventAdded', listener);
 
       const vertex = new TestVertex();
-      const event = new TestEvent(5);
       vertex.addValue(5);
 
       expect(listener).toHaveBeenCalledTimes(1);
@@ -118,7 +118,8 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       registry.on('created', listener2);
       registry.on('created', listener3);
 
-      new TestCubit();
+      const bloc = new TestCubit();
+      bloc.initiConfig({});
 
       expect(listener1).toHaveBeenCalledTimes(1);
       expect(listener2).toHaveBeenCalledTimes(1);
@@ -135,6 +136,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       registry.on('disposed', disposedListener);
 
       const bloc = new TestCubit();
+      bloc.initiConfig({});
       bloc.increment();
       bloc.dispose();
 
@@ -149,11 +151,13 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       const listener = vi.fn();
       const unsubscribe = registry.on('created', listener);
 
-      new TestCubit();
+      const bloc = new TestCubit();
+      bloc.initiConfig({});
       expect(listener).toHaveBeenCalledTimes(1);
 
       unsubscribe();
-      new TestCubit();
+      const bloc2 = new TestCubit();
+      bloc2.initiConfig({});
       expect(listener).toHaveBeenCalledTimes(1); // Should not increase
     });
 
@@ -191,7 +195,8 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       registry.on('created', listener2);
 
       unsubscribe1();
-      new TestCubit();
+      const bloc = new TestCubit();
+      bloc.initiConfig({});
 
       expect(listener1).not.toHaveBeenCalled();
       expect(listener2).toHaveBeenCalledTimes(1);
@@ -204,6 +209,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       registry.on('created', listener);
 
       const bloc = new TestCubit();
+      bloc.initiConfig({});
 
       expect(listener).toHaveBeenCalledTimes(1);
       expect(listener).toHaveBeenCalledWith(bloc);
@@ -245,6 +251,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       registry.on('disposed', listener);
 
       const bloc = new TestCubit();
+      bloc.initiConfig({});
       bloc.dispose();
 
       expect(listener).toHaveBeenCalledTimes(1);
@@ -265,7 +272,8 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       registry.on('created', listener1);
       registry.on('created', listener2);
 
-      new TestCubit();
+      const bloc = new TestCubit();
+      bloc.initiConfig({});
 
       expect(listener1).toHaveBeenCalledTimes(1);
       expect(listener2).toHaveBeenCalledTimes(1);
@@ -382,6 +390,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       });
 
       const bloc = new TestCubit(0);
+      bloc.initiConfig({});
       bloc.increment();
       bloc.dispose();
 
@@ -486,7 +495,8 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       const listener = vi.fn();
       const unsubscribe = globalRegistry.on('created', listener);
 
-      new TestCubit();
+      const bloc = new TestCubit();
+      bloc.initiConfig({});
 
       expect(listener).toHaveBeenCalledTimes(1);
 
@@ -506,7 +516,8 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       customRegistry.on('created', customListener);
 
       // Events only go to the active registry
-      new TestCubit();
+      const bloc = new TestCubit();
+      bloc.initiConfig({});
 
       expect(globalListener).toHaveBeenCalledTimes(1);
       expect(customListener).not.toHaveBeenCalled();

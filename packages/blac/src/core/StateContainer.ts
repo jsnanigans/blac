@@ -188,19 +188,21 @@ export abstract class StateContainer<S> {
   private _state: S;
   private readonly listeners = new Set<StateListener<S>>();
   private _disposed = false;
-  private config: StateContainerConfig;
+  private config: StateContainerConfig = {};
 
-  name: string;
-  debug: boolean;
-  instanceId: string;
+  name: string = this.constructor.name;
+  debug: boolean = false;
+  instanceId: string = generateSimpleId(this.constructor.name, 'main');
 
   /**
    * Create a new StateContainer
    */
-  constructor(initialState: S, config?: StateContainerConfig) {
+  constructor(initialState: S) {
     this._state = initialState;
-    this.config = config || {};
+  }
 
+  initiConfig(config: StateContainerConfig): void {
+    this.config = { ...config };
     this.name = this.config.name || this.constructor.name;
     this.debug = this.config.debug ?? false;
     this.instanceId = generateSimpleId(

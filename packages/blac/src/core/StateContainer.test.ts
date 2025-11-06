@@ -4,12 +4,12 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { StateContainer, StateContainerConfig } from './StateContainer';
+import { StateContainer } from './StateContainer';
 
 // Test implementation of StateContainer
 class TestContainer extends StateContainer<number> {
-  constructor(initialState: number = 0, config?: StateContainerConfig) {
-    super(initialState, config);
+  constructor(initialState: number = 0) {
+    super(initialState);
   }
 
   // Expose protected methods for testing
@@ -29,8 +29,8 @@ class LifecycleTestContainer extends StateContainer<string> {
   public lastPreviousState?: string;
   public lastNewState?: string;
 
-  constructor(initialState = 'initial', config?: StateContainerConfig) {
-    super(initialState, config);
+  constructor(initialState = 'initial') {
+    super(initialState);
   }
 
   protected onDispose(): void {
@@ -52,8 +52,8 @@ class LifecycleTestContainer extends StateContainer<string> {
 class KeepAliveTestContainer extends StateContainer<number> {
   static keepAlive = true;
 
-  constructor(initialState: number = 0, config?: StateContainerConfig) {
-    super(initialState, config);
+  constructor(initialState: number = 0) {
+    super(initialState);
   }
 
   public testEmit(state: number): void {
@@ -68,8 +68,8 @@ interface ObjectState {
 }
 
 class ObjectStateContainer extends StateContainer<ObjectState> {
-  constructor(config?: StateContainerConfig) {
-    super({ count: 0, name: 'test' }, config);
+  constructor() {
+    super({ count: 0, name: 'test' });
   }
 
   public increment(): void {
@@ -255,19 +255,21 @@ describe('StateContainer', () => {
       });
 
       it('should respect custom instanceId', () => {
-        const container = new TestContainer(0, { instanceId: 'custom-id' });
+        const container = new TestContainer(0);
+        container.initiConfig({ instanceId: 'custom-id' });
         expect(container.instanceId).toBe('TestContainer:custom-id');
       });
 
       it('should respect custom name', () => {
-        const container = new TestContainer(0, { name: 'CustomName' });
+        const container = new TestContainer(0);
+        container.initiConfig({ name: 'CustomName' });
         expect(container.name).toBe('CustomName');
       });
 
-      it('should generate unique instanceId if not provided', () => {
+      it('should not generate unique instanceId if not provided', () => {
         const container1 = new TestContainer();
         const container2 = new TestContainer();
-        expect(container1.instanceId).not.toBe(container2.instanceId);
+        expect(container1.instanceId).toBe(container2.instanceId);
       });
     });
 
@@ -513,7 +515,8 @@ describe('StateContainer', () => {
 
   describe('Configuration', () => {
     it('should respect name configuration', () => {
-      const container = new TestContainer(0, { name: 'MyCounter' });
+      const container = new TestContainer(0);
+      container.initiConfig({ name: 'MyCounter' });
       expect(container.name).toBe('MyCounter');
     });
 
@@ -522,7 +525,8 @@ describe('StateContainer', () => {
         .spyOn(console, 'log')
         .mockImplementation(() => {});
 
-      const container = new TestContainer(0, {
+      const container = new TestContainer(0);
+      container.initiConfig({
         debug: true,
         name: 'DebugTest',
       });

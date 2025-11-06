@@ -4,18 +4,8 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import {
-  Vertex,
-  CounterVertex,
-  IncrementEvent,
-  DecrementEvent,
-  ResetEvent,
-  AuthVertex,
-  LoginEvent,
-  LogoutEvent,
-  type AuthState,
-} from './Vertex';
-import { StateContainer, type StateContainerConfig } from './StateContainer';
+import { Vertex, CounterVertex, AuthVertex, type AuthState } from './Vertex';
+import { StateContainer } from './StateContainer';
 import type { BaseEvent } from '../types/events';
 
 // Test events
@@ -47,8 +37,8 @@ class TestVertex extends Vertex<number> {
   public errorCount = 0;
   public lastError: Error | null = null;
 
-  constructor(initialValue = 0, config?: StateContainerConfig) {
-    super(initialValue, { name: 'TestVertex', ...config });
+  constructor(initialValue = 0) {
+    super(initialValue);
 
     this.on(AddEvent, (event, emit) => {
       emit(this.state + event.amount);
@@ -78,7 +68,7 @@ class MultiHandlerVertex extends Vertex<string[]> {
   public callOrder: string[] = [];
 
   constructor() {
-    super([], { name: 'MultiHandlerVertex' });
+    super([]);
 
     this.on(AddEvent, (event, emit) => {
       this.callOrder.push('handler1');
@@ -100,7 +90,7 @@ class MultiHandlerVertex extends Vertex<string[]> {
 // Test Vertex for event queue testing
 class QueueTestVertex extends Vertex<number[]> {
   constructor() {
-    super([], { name: 'QueueTestVertex' });
+    super([]);
 
     this.on(AddEvent, (event, emit) => {
       const newState = [...this.state, event.amount];
@@ -260,7 +250,8 @@ describe('Vertex', () => {
           readonly timestamp = Date.now();
         }
 
-        const vertex = new TestVertex(10, { debug: true });
+        const vertex = new TestVertex(10);
+        vertex.initiConfig({ debug: true });
 
         vertex.add(new UnhandledEvent());
 

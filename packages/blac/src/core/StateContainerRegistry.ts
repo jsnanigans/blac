@@ -8,7 +8,7 @@
  * - Global operations (clearAllInstances)
  */
 
-import type { StateContainer } from './StateContainer';
+import type { StateContainer, StateContainerConfig } from './StateContainer';
 import type { Vertex } from './Vertex';
 import { createPluginManager } from '../plugin/PluginManager';
 
@@ -165,9 +165,14 @@ export class StateContainerRegistry {
     const registryConfig = this.typeConfigs.get(Type.name);
     const isolated = staticIsolated || registryConfig?.isolated === true;
 
+    const config: StateContainerConfig = {
+      instanceId: instanceKey,
+    };
+
     // Isolated: always create new instance (not tracked)
     if (isolated) {
       const instance = new Type(constructorArgs) as T;
+      instance.initiConfig(config);
       // Register type for lifecycle coordination
       this.registerType(Type);
       return instance;
@@ -184,6 +189,7 @@ export class StateContainerRegistry {
 
     // Create new shared instance
     const instance = new Type(constructorArgs) as T;
+    instance.initiConfig(config);
     instances.set(instanceKey, { instance, refCount: 1 });
 
     // Register type for lifecycle coordination

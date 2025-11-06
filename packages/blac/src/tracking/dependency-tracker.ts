@@ -1,11 +1,4 @@
-/**
- * Dependency tracking for state management
- *
- * Provides high-level dependency tracking that combines proxy tracking with
- * change detection to determine when a component needs to re-render.
- */
-
-import type { AnyObject } from '../types/branded';
+import type { StateContainer } from '../core/StateContainer';
 import {
   type ProxyTrackerState,
   createProxyTrackerState,
@@ -15,68 +8,25 @@ import {
 } from './proxy-tracker';
 import { parsePath, getValueAtPath } from './path-utils';
 
-/**
- * Information about a tracked path
- */
 export interface PathInfo {
-  /** Parsed path segments */
   segments: string[];
-  /** Last known value at this path */
   value: any;
 }
 
-/**
- * State for dependency tracking
- */
-export interface TrackerState<T extends AnyObject> {
-  /** Internal proxy tracker state */
+export interface TrackerState<T extends any> {
   proxyTrackerState: ProxyTrackerState<T>;
-  /** Paths tracked in the previous render */
   previousRenderPaths: Set<string>;
-  /** Paths tracked in the current render */
   currentRenderPaths: Set<string>;
-  /** Cache of parsed paths and their values */
   pathCache: Map<string, PathInfo>;
-  /** Last state object that was checked for changes */
   lastCheckedState: T | null;
-  /** Values from the last change check (optimization) */
   lastCheckedValues: Map<string, any>;
 }
 
-/**
- * Check if one path is a child of another path
- *
- * @example
- * isChildPath('user.name', 'user') // true
- * isChildPath('user.profile.bio', 'user.profile') // true
- * isChildPath('items[0]', 'items') // true
- * isChildPath('user.name', 'user.profile') // false
- */
 function isChildPath(child: string, parent: string): boolean {
   if (child === parent) return false;
   return child.startsWith(parent + '.') || child.startsWith(parent + '[');
 }
 
-/**
- * Optimize tracked paths by removing redundant parent paths
- *
- * This implements fine-grained tracking by keeping only the most specific
- * paths accessed. For example, if 'user.profile.bio' is accessed, we don't
- * need to track 'user' or 'user.profile' as those are redundant.
- *
- * @example
- * // Single deep access
- * optimizeTrackedPaths(['user', 'user.profile', 'user.profile.bio'])
- * // Returns: ['user.profile.bio']
- *
- * // Multiple siblings
- * optimizeTrackedPaths(['user', 'user.name', 'user.age'])
- * // Returns: ['user.name', 'user.age']
- *
- * // Mixed depths
- * optimizeTrackedPaths(['user', 'user.profile', 'user.profile.bio', 'user.name'])
- * // Returns: ['user.profile.bio', 'user.name']
- */
 export function optimizeTrackedPaths(paths: Set<string>): Set<string> {
   if (paths.size === 0) {
     return new Set();
@@ -110,10 +60,7 @@ export function optimizeTrackedPaths(paths: Set<string>): Set<string> {
   return optimized;
 }
 
-/**
- * Create a new tracker state
- */
-export function createTrackerState<T extends AnyObject>(): TrackerState<T> {
+export function createTrackerState<T extends any>(): TrackerState<T> {
   return {
     proxyTrackerState: createProxyTrackerState<T>(),
     previousRenderPaths: new Set<string>(),
@@ -124,33 +71,20 @@ export function createTrackerState<T extends AnyObject>(): TrackerState<T> {
   };
 }
 
-/**
- * Start tracking property accesses
- */
-export function startTracking<T extends AnyObject>(
+export function startTracking<T extends any>(
   tracker: TrackerState<T>,
 ): void {
   startProxyTracking(tracker.proxyTrackerState);
 }
 
-/**
- * Create a proxy for the given state
- */
-export function createProxy<T extends AnyObject>(
+export function createProxy<T extends any>(
   tracker: TrackerState<T>,
   state: T,
 ): T {
   return createProxyForTarget(tracker.proxyTrackerState, state);
 }
 
-/**
- * Capture the paths that were tracked during a render
- *
- * This should be called after each render to record which paths were accessed.
- * Uses fine-grained optimization to remove redundant parent paths, keeping only
- * the most specific paths that were accessed.
- */
-export function captureTrackedPaths<T extends AnyObject>(
+export function captureTrackedPaths<T extends any>(
   tracker: TrackerState<T>,
   state: T,
 ): void {
@@ -195,13 +129,7 @@ export function captureTrackedPaths<T extends AnyObject>(
   tracker.lastCheckedValues.clear();
 }
 
-/**
- * Check if any tracked paths have changed
- *
- * This is called when state changes to determine if a re-render is needed.
- * Returns true if any tracked path has a different value than before.
- */
-export function hasChanges<T extends AnyObject>(
+export function hasChanges<T extends any>(
   tracker: TrackerState<T>,
   state: T,
 ): boolean {
@@ -225,12 +153,7 @@ export function hasChanges<T extends AnyObject>(
   return false;
 }
 
-/**
- * Check if tracker has any tracked data
- *
- * Returns true if there are any tracked paths or cached paths.
- */
-export function hasTrackedData<T extends AnyObject>(
+export function hasTrackedData<T extends any>(
   tracker: TrackerState<T>,
 ): boolean {
   return (
