@@ -7,7 +7,9 @@ import { createDevToolsBrowserPlugin } from '@blac/devtools-connect';
 
 // Install DevTools plugin (new plugin API)
 // This exposes window.__BLAC_DEVTOOLS__ for the browser extension
+console.log('[BlaC Examples] Installing DevTools plugin...');
 if (import.meta.env.DEV) {
+  console.log('[BlaC Examples] DEV mode detected, enabling DevTools plugin');
   const devToolsPlugin = createDevToolsBrowserPlugin({
     enabled: true,
   });

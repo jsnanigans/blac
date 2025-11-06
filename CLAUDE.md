@@ -293,7 +293,7 @@ const [state, bloc] = useBloc(MyBloc, {
 - Simpler communication pattern
 - Framework agnostic (not Redux-specific)
 
-**Extension Location:** `packages/devtools-extension/`
+**Extension Location:** `apps/devtools-extension/`
 
 ### Local Instance Management Architecture
 

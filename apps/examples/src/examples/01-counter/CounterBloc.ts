@@ -23,11 +23,6 @@ export class CounterBloc extends Cubit<CounterState> {
       decrementCount: 0,
       lastAction: 'initialized',
     });
-
-    // Lifecycle hook - demonstrate automatic cleanup on disposal
-    this.onDispose = () => {
-      console.log('[CounterBloc] Disposed - cleaning up resources');
-    };
   }
 
   /**

@@ -193,6 +193,7 @@ export abstract class StateContainer<S> {
   name: string = this.constructor.name;
   debug: boolean = false;
   instanceId: string = generateSimpleId(this.constructor.name, 'main');
+  createdAt: number = Date.now();
 
   /**
    * Create a new StateContainer
@@ -299,7 +300,9 @@ export abstract class StateContainer<S> {
       previousState,
       newState,
     );
+    this.lastUpdateTimestamp = Date.now();
   }
+  lastUpdateTimestamp: number = Date.now();
 
   /**
    * Update state using a function

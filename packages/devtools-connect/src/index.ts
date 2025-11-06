@@ -6,7 +6,6 @@ export {
   DevToolsBrowserPlugin,
   createDevToolsBrowserPlugin,
   type DevToolsBrowserPluginConfig,
-  type DevToolsInstanceData,
   type DevToolsEvent as BrowserDevToolsEvent,
   type DevToolsEventType,
   type DevToolsCallback,

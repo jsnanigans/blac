@@ -28,7 +28,7 @@ Successfully integrated DevTools API into the BlaC core library:
 ### ✅ Phase 2-4: Chrome Extension
 Successfully created a working Chrome extension with real-time communication:
 
-- **Extension Structure** (`packages/devtools-extension/`)
+- **Extension Structure** (`apps/devtools-extension/`)
   - Manifest V3 compliant
   - Service worker for message routing
   - Content script for page bridge
@@ -64,7 +64,7 @@ The MVP is **functionally complete** and includes:
 
 1. Build the extension:
    ```bash
-   cd packages/devtools-extension
+   cd apps/devtools-extension
    pnpm install
    pnpm build
    ```
@@ -73,7 +73,7 @@ The MVP is **functionally complete** and includes:
    - Open `chrome://extensions/`
    - Enable "Developer mode"
    - Click "Load unpacked"
-   - Select `packages/devtools-extension` directory
+   - Select `apps/devtools-extension` directory
 
 3. Use in your BlaC application:
    - The DevTools API is automatically exposed in development mode
@@ -129,7 +129,7 @@ The MVP is **functionally complete** and includes:
 - `/packages/blac/src/devtools/__tests__/DevToolsAPI.test.ts`
 
 ### Extension
-- `/packages/devtools-extension/` (complete package)
+- `/apps/devtools-extension/` (complete package)
   - `manifest.json`
   - `package.json`
   - `tsconfig.json`

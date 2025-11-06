@@ -1,0 +1,36 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // Override base config for Chrome extension environment
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+
+    // Chrome extension specific types
+    "types": ["chrome", "vite/client"],
+
+    // Enable source maps for debugging
+    "sourceMap": true,
+
+    // Skip lib check to avoid errors in dependencies
+    // LSP will still provide type information and autocomplete
+    "skipLibCheck": true,
+
+    // Path aliases for cleaner imports
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@blac/core": ["../../packages/blac/src/index.ts"],
+      "@blac/react": ["../../packages/blac-react/src/index.ts"],
+      "@blac/devtools-connect": ["../../packages/devtools-connect/src/index.ts"]
+    }
+  },
+  "include": [
+    "src/**/*",
+    "vite.config.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}

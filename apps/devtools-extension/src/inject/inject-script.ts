@@ -28,6 +28,8 @@
       return;
     }
 
+    console.log('[BlaC DevTools] Initializing monitoring');
+
     // Send initial state
     sendMessage({
       type: 'INITIAL_STATE',
@@ -38,7 +40,7 @@
     });
 
     // Subscribe to changes
-    const unsubscribe = api.subscribe((event) => {
+    const unsubscribe = api.subscribe((event: any) => {
       sendMessage({
         type: 'STATE_UPDATE',
         payload: {
@@ -75,10 +77,13 @@
 
   // Send message to content script
   function sendMessage(data: any) {
-    window.postMessage({
-      source: 'blac-devtools-inject',
-      ...data,
-    }, '*');
+    window.postMessage(
+      {
+        source: 'blac-devtools-inject',
+        ...data,
+      },
+      '*',
+    );
   }
 
   // Handle commands from DevTools panel
@@ -124,3 +129,4 @@
   // Start checking for API
   checkForAPI();
 })();
+

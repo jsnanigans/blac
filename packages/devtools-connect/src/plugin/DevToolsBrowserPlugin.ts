@@ -5,20 +5,8 @@
  * BlaC DevTools browser extension using the new plugin API.
  */
 
-import type {
-  BlacPlugin,
-  PluginContext,
-  InstanceMetadata,
-} from '@blac/core';
+import type { BlacPlugin, PluginContext, InstanceMetadata } from '@blac/core';
 import { safeSerialize } from '../serialization/serialize';
-
-/**
- * Instance data structure for DevTools (with serialized state)
- */
-export interface DevToolsInstanceData extends InstanceMetadata {
-  state: any; // Serialized state
-  createdAt: number;
-}
 
 /**
  * Event types for DevTools
@@ -31,7 +19,7 @@ export type DevToolsEventType =
 export interface DevToolsEvent {
   type: DevToolsEventType;
   timestamp: number;
-  data: DevToolsInstanceData;
+  data: InstanceMetadata;
 }
 
 /**
@@ -57,7 +45,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
   readonly version = '1.0.0';
 
   private listeners = new Set<DevToolsCallback>();
-  private instanceCache = new Map<string, DevToolsInstanceData>();
+  private instanceCache = new Map<string, InstanceMetadata>();
   private context?: PluginContext;
   private config: Required<DevToolsBrowserPluginConfig>;
   private instanceTimestamps = new Map<string, number>();
@@ -117,9 +105,9 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
    */
   onStateChanged(
     instance: any,
-    previousState: any,
-    currentState: any,
-    context: PluginContext
+    _previousState: any,
+    _currentState: any,
+    context: PluginContext,
   ): void {
     const data = this.createInstanceData(instance, context);
     this.instanceCache.set(data.id, data);
@@ -157,7 +145,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
   /**
    * Get all current instances
    */
-  getInstances(): DevToolsInstanceData[] {
+  getInstances(): InstanceMetadata[] {
     return Array.from(this.instanceCache.values());
   }
 
@@ -191,7 +179,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     }
 
     console.log(
-      `[DevToolsBrowserPlugin] Found ${this.instanceCache.size} existing instances`
+      `[DevToolsBrowserPlugin] Found ${this.instanceCache.size} existing instances`,
     );
   }
 
@@ -213,8 +201,8 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
    */
   private createInstanceData(
     instance: any,
-    context: PluginContext
-  ): DevToolsInstanceData {
+    context: PluginContext,
+  ): InstanceMetadata {
     const metadata = context.getInstanceMetadata(instance);
     const state = context.getState(instance);
 
@@ -226,7 +214,6 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     return {
       ...metadata,
       state: safeSerialize(state).data,
-      createdAt: this.instanceTimestamps.get(metadata.id) || Date.now(),
     };
   }
 
@@ -245,7 +232,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
 
     console.log(
       '%c[BlaC DevTools] API exposed at window.__BLAC_DEVTOOLS__',
-      'color: #4CAF50; font-weight: bold'
+      'color: #4CAF50; font-weight: bold',
     );
   }
 }
@@ -254,7 +241,8 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
  * Create and configure DevTools browser plugin
  */
 export function createDevToolsBrowserPlugin(
-  config?: DevToolsBrowserPluginConfig
+  config?: DevToolsBrowserPluginConfig,
 ): DevToolsBrowserPlugin {
   return new DevToolsBrowserPlugin(config);
 }
+

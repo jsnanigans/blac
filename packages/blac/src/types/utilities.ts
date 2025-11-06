@@ -15,6 +15,6 @@ export type BlocConstructor<TBloc extends StateContainer<any>> = (new (
     instanceKey?: string,
   ): { error: Error; instance: null } | { error: null; instance: TBloc };
   release(instanceKey?: string): void;
-  isolated: boolean;
-  keepAlive: boolean;
+  isolated?: boolean;
+  keepAlive?: boolean;
 };

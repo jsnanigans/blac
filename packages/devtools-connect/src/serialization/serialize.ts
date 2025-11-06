@@ -168,12 +168,15 @@ export function serialize(data: any, options: SerializeOptions = {}): any {
 export function safeSerialize(
   data: any,
   options?: SerializeOptions,
-): { success: true; data: any } | { success: false; error: string } {
+):
+  | { success: true; data: any }
+  | { success: false; error: string; data: undefined } {
   try {
     const serialized = serialize(data, options);
     return { success: true, data: serialized };
   } catch (error) {
     return {
+      data: undefined,
       success: false,
       error: error instanceof Error ? error.message : String(error),
     };

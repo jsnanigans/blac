@@ -196,26 +196,24 @@ export class PluginManager {
       getInstanceMetadata: (
         instance: StateContainer<any>,
       ): InstanceMetadata => {
-        const TypeClass = instance.constructor as any;
-        let refCount = 0;
+        // const TypeClass = instance.constructor as any;
 
-        // Check if this is a shared instance
-        if (TypeClass.instances) {
-          for (const [key, entry] of TypeClass.instances) {
-            if (entry.instance === instance) {
-              refCount = entry.refCount || 0;
-              break;
-            }
-          }
-        }
+        // if (TypeClass.instances) {
+        //   for (const [key, entry] of TypeClass.instances) {
+        //     if (entry.instance === instance) {
+        //       break;
+        //     }
+        //   }
+        // }
 
         return {
           id: instance.instanceId,
           className: instance.constructor.name,
-          instanceKey: instance.instanceId,
-          refCount,
           isDisposed: instance.isDisposed,
           name: instance.name,
+          lastStateChangeTimestamp: instance.lastUpdateTimestamp,
+          createdAt: instance.createdAt,
+          state: instance.state,
         };
       },
 
@@ -271,4 +269,3 @@ export function createPluginManager(
 ): PluginManager {
   return new PluginManager(registry);
 }
-

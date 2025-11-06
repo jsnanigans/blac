@@ -29,16 +29,30 @@ window.addEventListener('message', (event) => {
 
   console.log('[BlaC DevTools] Message from inject:', event.data);
 
+  // Check if extension context is still valid
+  if (!chrome.runtime?.id) {
+    console.warn('[BlaC DevTools] Extension context invalidated, ignoring message');
+    return;
+  }
+
   // Forward to service worker (spread first to preserve our source)
-  chrome.runtime.sendMessage({
-    ...event.data,
-    source: 'blac-devtools-content',
-  }).catch((error) => {
-    // Ignore errors if extension context is invalidated
-    if (!error.message.includes('Extension context invalidated')) {
+  chrome.runtime
+    .sendMessage({
+      ...event.data,
+      source: 'blac-devtools-content',
+    })
+    .catch((error) => {
+      // Ignore errors if extension context is invalidated or no receivers
+      if (
+        error.message.includes('Extension context invalidated') ||
+        error.message.includes('Receiving end does not exist') ||
+        error.message.includes('Could not establish connection')
+      ) {
+        // Silent ignore - this is expected when devtools is not open
+        return;
+      }
       console.warn('[BlaC DevTools] Failed to send message:', error);
-    }
-  });
+    });
 });
 
 // Listen for messages from DevTools panel (via service worker)
@@ -49,10 +63,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.source !== 'blac-devtools-panel') return;
 
   // Forward to injected script
-  window.postMessage({
-    source: 'blac-devtools-content',
-    ...message,
-  }, '*');
+  window.postMessage(
+    {
+      source: 'blac-devtools-content',
+      ...message,
+    },
+    '*',
+  );
 
   sendResponse({ received: true });
   return true;
@@ -65,13 +82,18 @@ let isNavigating = false;
 window.addEventListener('beforeunload', () => {
   isNavigating = true;
 
+  // Check if extension context is still valid
+  if (!chrome.runtime?.id) return;
+
   // Notify service worker (ignore errors during unload)
-  chrome.runtime.sendMessage({
-    source: 'blac-devtools-content',
-    type: 'PAGE_UNLOAD',
-  }).catch(() => {
-    // Ignore errors during page unload
-  });
+  chrome.runtime
+    .sendMessage({
+      source: 'blac-devtools-content',
+      type: 'PAGE_UNLOAD',
+    })
+    .catch(() => {
+      // Ignore errors during page unload
+    });
 });
 
 // Re-inject on navigation without page reload (SPA)
@@ -100,3 +122,4 @@ observer.observe(document.documentElement, {
 
 // Export for TypeScript
 export {};
+

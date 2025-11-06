@@ -16,14 +16,12 @@ export interface InstanceMetadata {
   id: string;
   /** Class name (e.g., 'CounterCubit') */
   className: string;
-  /** Instance key for shared instances */
-  instanceKey: string;
-  /** Reference count (0 for isolated instances) */
-  refCount: number;
-  /** Whether instance is disposed */
   isDisposed: boolean;
   /** Custom name if provided */
   name: string;
+  lastStateChangeTimestamp: number;
+  state: any;
+  createdAt: number;
 }
 
 /**
@@ -44,7 +42,7 @@ export interface PluginContext {
    * Query all instances of a specific type
    */
   queryInstances<T extends StateContainer<any>>(
-    typeClass: new (...args: any[]) => T
+    typeClass: new (...args: any[]) => T,
   ): T[];
 
   /**
@@ -86,7 +84,10 @@ export interface BlacPlugin {
   /**
    * Called when a StateContainer instance is created
    */
-  onInstanceCreated?(instance: StateContainer<any>, context: PluginContext): void;
+  onInstanceCreated?(
+    instance: StateContainer<any>,
+    context: PluginContext,
+  ): void;
 
   /**
    * Called when state changes
@@ -95,7 +96,7 @@ export interface BlacPlugin {
     instance: StateContainer<S>,
     previousState: S,
     currentState: S,
-    context: PluginContext
+    context: PluginContext,
   ): void;
 
   /**
@@ -104,13 +105,16 @@ export interface BlacPlugin {
   onEventAdded?<E>(
     vertex: Vertex<any, E>,
     event: E,
-    context: PluginContext
+    context: PluginContext,
   ): void;
 
   /**
    * Called when an instance is disposed
    */
-  onInstanceDisposed?(instance: StateContainer<any>, context: PluginContext): void;
+  onInstanceDisposed?(
+    instance: StateContainer<any>,
+    context: PluginContext,
+  ): void;
 }
 
 /**
