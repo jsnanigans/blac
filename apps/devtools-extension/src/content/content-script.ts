@@ -8,12 +8,17 @@ console.log('[BlaC DevTools] Content script loaded');
 
 // Inject script into MAIN world to access window.__BLAC_DEVTOOLS__
 function injectScript() {
-  const script = document.createElement('script');
-  script.src = chrome.runtime.getURL('dist/inject/inject-script.js');
-  script.onload = () => script.remove();
+  // Inject the API monitoring script
+  const injectScript = document.createElement('script');
+  injectScript.src = chrome.runtime.getURL('dist/inject/inject-script.js');
+  injectScript.onload = () => injectScript.remove();
+  (document.head || document.documentElement).appendChild(injectScript);
 
-  // Inject as early as possible
-  (document.head || document.documentElement).appendChild(script);
+  // Inject the overlay UI script
+  const overlayScript = document.createElement('script');
+  overlayScript.src = chrome.runtime.getURL('dist/overlay/overlay.js');
+  overlayScript.onload = () => overlayScript.remove();
+  (document.head || document.documentElement).appendChild(overlayScript);
 }
 
 // Inject immediately

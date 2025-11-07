@@ -13,7 +13,8 @@
   },
   "dependencies": {
     "@blac/react": "workspace:",
-    "@blac/core": "workspace:"
+    "@blac/core": "workspace:",
+    "@blac/devtools-ui": "workspace:"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.254",

@@ -35,6 +35,12 @@ type StateListener<S> = (state: S) => void;
  */
 export abstract class StateContainer<S> {
   /**
+   * Exclude this class from DevTools reporting
+   * Set to true for internal/DevTools-related Blocs to prevent infinite loops
+   */
+  static __excludeFromDevTools = false;
+
+  /**
    * Global registry for lifecycle events and instance management
    */
   protected static _registry = globalRegistry;

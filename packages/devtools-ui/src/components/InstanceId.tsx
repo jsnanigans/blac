@@ -1,3 +1,5 @@
+import React from 'react';
+
 export default function InstanceId(props: {id: string}) {
   const [name, instance] = props.id.split(':');
 

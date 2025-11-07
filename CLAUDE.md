@@ -422,6 +422,8 @@ const activeSessions = allSessions.filter(s => s.state.isActive);
 
 **TempDoc Reference:**
 - **Implementation Plan:** `/Users/brendanmullins/Documents/Log/TempDoc/blac/2025-11/07/devtools-simple-plan.md`
+- **Package Extraction:** `/Users/brendanmullins/Documents/Log/TempDoc/blac/2025-11/07/devtools-ui-package-extraction.md`
+- **Infinite Loop Fix:** `/Users/brendanmullins/Documents/Log/TempDoc/blac/2025-11/07/devtools-infinite-loop-fix.md`
 - **Date:** 2025-11-07
 - **Status:** ✅ Completed
 
@@ -438,9 +440,48 @@ const activeSessions = allSessions.filter(s => s.state.isActive);
    - Color-coded borders (red for previous, green for current)
    - Auto-shows when state changes detected
 
+3. **In-App Floating Overlay** ✨ NEW
+   - Toggle with **Alt+D**
+   - Draggable window (grab header to move)
+   - Resizable (drag bottom-right corner)
+   - Close with Escape or × button
+   - Small toggle button when hidden (bottom-right corner)
+   - Works alongside Chrome DevTools panel
+   - Connects directly to `window.__BLAC_DEVTOOLS__` API
+
 **Color Generation:**
 - Consistent HSL colors generated from className using hash function
 - 70% saturation, 60% lightness for good visibility on dark theme
 - Same className = same color across all instances
 
-**Implementation:** All inline in `apps/devtools-extension/src/panel/index.tsx` (~265 lines total)
+**Architecture:**
+- **Shared Package:** `@blac/devtools-ui` (packages/devtools-ui/)
+  - Reusable `DevToolsPanel` component (~350 lines)
+  - `LayoutBloc` for state management
+  - Works in both Chrome DevTools and in-app overlay
+  - 7.96 kB ESM (2.08 kB gzipped)
+- **Chrome DevTools Extension:** `apps/devtools-extension/`
+  - Panel uses `@blac/devtools-ui` + Chrome messaging API
+- **In-App Overlay:** `apps/examples/src/overlay/`
+  - Uses `@blac/devtools-ui` + direct `__BLAC_DEVTOOLS__` API access
+  - Works without Chrome extension installed
+
+**Excluding Blocs from DevTools:**
+To prevent infinite loops (e.g., DevTools tracking itself), mark internal Blocs:
+```typescript
+class LayoutBloc extends Cubit<LayoutState> {
+  static __excludeFromDevTools = true;  // Won't appear in DevTools
+}
+```
+
+**Communication Logging:**
+- **TempDoc Reference:** `/Users/brendanmullins/Documents/Log/TempDoc/blac/2025-11/07/devtools-communication-logging.md`
+- Comprehensive logging added to plugin, overlay, and panel layers
+- Logs connection flow, event emission, and state updates
+- Use browser console to debug communication issues
+
+**Usage:**
+- Install extension in Chrome
+- DevTools will appear in Chrome DevTools (as before)
+- **NEW:** Press Alt+D on any page with BlaC to open floating overlay
+- Open browser console to see detailed communication logs

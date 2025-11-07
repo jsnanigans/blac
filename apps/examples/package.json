@@ -23,6 +23,7 @@
   "dependencies": {
     "@blac/core": "workspace:*",
     "@blac/devtools-connect": "workspace:*",
+    "@blac/devtools-ui": "workspace:*",
     "@blac/react": "workspace:*",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

@@ -29,7 +29,11 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["dist/inject/inject-script.js"],
+      "resources": [
+        "dist/inject/inject-script.js",
+        "dist/overlay/overlay.js",
+        "dist/chunks/*.js"
+      ],
       "matches": ["<all_urls>"]
     }
   ]

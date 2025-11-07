@@ -90,8 +90,16 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
    * Called when instance is created
    */
   onInstanceCreated(instance: any, context: PluginContext): void {
+    // Skip instances marked as internal (DevTools Blocs tracking themselves)
+    if (this.shouldExcludeInstance(instance)) {
+      const metadata = context.getInstanceMetadata(instance);
+      console.log(`[DevToolsBrowserPlugin] Excluded instance from tracking: ${metadata.className}#${metadata.id}`);
+      return;
+    }
+
     const data = this.createInstanceData(instance, context);
     this.instanceCache.set(data.id, data);
+    console.log(`[DevToolsBrowserPlugin] Instance created: ${data.className}#${data.id} (total: ${this.instanceCache.size})`);
 
     this.emit({
       type: 'instance-created',
@@ -109,8 +117,14 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     _currentState: any,
     context: PluginContext,
   ): void {
+    // Skip instances marked as internal (DevTools Blocs tracking themselves)
+    if (this.shouldExcludeInstance(instance)) {
+      return;
+    }
+
     const data = this.createInstanceData(instance, context);
     this.instanceCache.set(data.id, data);
+    console.log(`[DevToolsBrowserPlugin] State changed: ${data.className}#${data.id}`);
 
     this.emit({
       type: 'instance-updated',
@@ -123,9 +137,15 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
    * Called when instance is disposed
    */
   onInstanceDisposed(instance: any, context: PluginContext): void {
+    // Skip instances marked as internal (DevTools Blocs tracking themselves)
+    if (this.shouldExcludeInstance(instance)) {
+      return;
+    }
+
     const data = this.createInstanceData(instance, context);
     data.isDisposed = true;
     this.instanceCache.delete(data.id);
+    console.log(`[DevToolsBrowserPlugin] Instance disposed: ${data.className}#${data.id} (total: ${this.instanceCache.size})`);
 
     this.emit({
       type: 'instance-disposed',
@@ -138,15 +158,21 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
    * Subscribe to DevTools events
    */
   subscribe(callback: DevToolsCallback): () => void {
+    console.log('[DevToolsBrowserPlugin] New subscription added, total listeners:', this.listeners.size + 1);
     this.listeners.add(callback);
-    return () => this.listeners.delete(callback);
+    return () => {
+      console.log('[DevToolsBrowserPlugin] Subscription removed, total listeners:', this.listeners.size - 1);
+      this.listeners.delete(callback);
+    };
   }
 
   /**
    * Get all current instances
    */
   getInstances(): InstanceMetadata[] {
-    return Array.from(this.instanceCache.values());
+    const instances = Array.from(this.instanceCache.values());
+    console.log('[DevToolsBrowserPlugin] getInstances() called, returning', instances.length, 'instances');
+    return instances;
   }
 
   /**
@@ -173,6 +199,11 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     for (const TypeClass of types) {
       const instances = this.context.queryInstances(TypeClass);
       for (const instance of instances) {
+        // Skip instances marked as internal (DevTools Blocs tracking themselves)
+        if (this.shouldExcludeInstance(instance)) {
+          continue;
+        }
+
         const data = this.createInstanceData(instance, this.context);
         this.instanceCache.set(data.id, data);
       }
@@ -187,6 +218,12 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
    * Emit event to all listeners
    */
   private emit(event: DevToolsEvent): void {
+    console.log(`[DevToolsBrowserPlugin] Emitting event '${event.type}' to ${this.listeners.size} listener(s):`, {
+      className: event.data.className,
+      instanceId: event.data.id,
+      isDisposed: event.data.isDisposed,
+    });
+
     this.listeners.forEach((listener) => {
       try {
         listener(event);
@@ -215,6 +252,15 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       ...metadata,
       state: safeSerialize(state).data,
     };
+  }
+
+  /**
+   * Check if an instance should be excluded from DevTools tracking
+   */
+  private shouldExcludeInstance(instance: any): boolean {
+    // Check if the instance's constructor has __excludeFromDevTools set to true
+    const constructor = instance.constructor;
+    return constructor.__excludeFromDevTools === true;
   }
 
   /**

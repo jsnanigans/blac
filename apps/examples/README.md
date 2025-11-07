@@ -143,6 +143,34 @@ Open your browser console while using the examples to see:
 
 This helps understand how Blac's automatic dependency tracking works!
 
+## BlaC DevTools
+
+The examples app has BlaC DevTools enabled in development mode. Inspect and debug state in two ways:
+
+### 1. In-App Floating Overlay (Recommended)
+
+Press **Alt+D** to toggle a floating DevTools window:
+
+- 🔍 **Search & filter** instances by className or ID
+- 🎨 **Color-coded grouping** - same class = same color
+- 📊 **State diff view** - see previous vs current state side-by-side
+- 🪟 **Draggable & resizable** window
+- ⌨️ Close with **Escape** or click **×**
+
+### 2. Chrome DevTools Panel
+
+1. Install the [BlaC DevTools Extension](../../apps/devtools-extension) (load as unpacked extension)
+2. Open Chrome DevTools (F12)
+3. Navigate to "BlaC DevTools" tab
+
+Both modes show the same data and work simultaneously!
+
+**What You Can See:**
+- All Cubit/Vertex instances (RouterBloc, CounterCubit, etc.)
+- Current state for each instance
+- State changes with diff highlighting
+- Instance lifecycle (disposed instances marked in red)
+
 ## Learn More
 
 - [Blac Documentation](../../packages/blac/README.md)
