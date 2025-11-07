@@ -187,6 +187,10 @@ function createAutoTrackSnapshot<TBloc extends StateContainer<any>>(
 
     // Enable getter tracking during render and set as active tracker
     if (hookState.getterTracker) {
+      // Invalidate render cache at the START of each render
+      // This ensures getters are recomputed with fresh state
+      invalidateRenderCache(hookState.getterTracker);
+
       // Capture getters from previous render (commit currentlyAccessing to trackedGetters)
       commitTrackedGetters(hookState.getterTracker);
 
@@ -331,11 +335,9 @@ export function useBloc<TBloc extends StateContainer<any>>(
   const state = useSyncExternalStore(subscribe, getSnapshot);
 
   // Disable getter tracking after each render and clear active tracker
-  // Also invalidate render cache since this render cycle is complete
   useEffect(() => {
     if (hookState.getterTracker) {
       hookState.getterTracker.isTracking = false;
-      invalidateRenderCache(hookState.getterTracker);
       clearActiveTracker(rawInstance);
     }
   });

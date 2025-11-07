@@ -2,11 +2,18 @@ import { InstanceMetadata } from '@blac/core';
 
 export type InstanceData = InstanceMetadata;
 
+/**
+ * Atomic event from DevToolsBrowserPlugin
+ */
+export type AtomicEvent = {
+  type: 'instance-created' | 'instance-updated' | 'instance-disposed';
+  timestamp: number;
+  data: InstanceMetadata;
+};
+
 export type MessageIn =
   | { type: 'INITIAL_STATE'; payload: { instances: InstanceData[] } }
-  | { type: 'STATE_UPDATE'; payload: { instances: InstanceData[] } }
-  | { type: 'SYNC'; payload: { instances: InstanceData[] } }
-  | { type: 'REFRESH_RESPONSE'; payload: { instances: InstanceData[] } }
+  | { type: 'ATOMIC_UPDATE'; payload: AtomicEvent }
   | { type: 'CACHED_STATE'; payload: { instances: InstanceData[] } };
 
 type MessageOut = { type: 'GET_INSTANCES' };

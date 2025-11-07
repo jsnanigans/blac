@@ -275,9 +275,10 @@ const [state, bloc] = useBloc(MyBloc, {
 
 ### DevTools Extension Development
 
-**TempDoc Reference:**
-- **Redux DevTools Learnings:** `/Users/brendanmullins/Documents/Log/TempDoc/blac/2025-11/06/redux-devtools-learnings.md`
-- **Date:** 2025-11-06
+**TempDoc References:**
+- **Redux DevTools Learnings:** `/Users/brendanmullins/Documents/Log/TempDoc/blac/2025-11/06/redux-devtools-learnings.md` (2025-11-06)
+- **Stale Render Fix:** `/Users/brendanmullins/Documents/Log/TempDoc/blac/2025-11/07/devtools-stale-render-fix.md` (2025-11-07) ✅
+- **Picture-in-Picture Implementation:** `/Users/brendanmullins/Documents/Log/TempDoc/blac/2025-11/07/picture-in-picture-devtools-implementation.md` (2025-11-07) ✅
 - **Status:** 🚧 In Progress
 
 **Key Insights from Redux DevTools:**
@@ -292,6 +293,10 @@ const [state, bloc] = useBloc(MyBloc, {
 - Modern TypeScript with better type safety
 - Simpler communication pattern
 - Framework agnostic (not Redux-specific)
+
+**Recent Fixes:**
+- **Stale Render Issue (2025-11-07):** Fixed DevTools showing instance data "one change behind" by using `flushSync()` to force synchronous React re-renders when events come from external plugin system. Applied to both Chrome extension panel and in-app overlay.
+- **Picture-in-Picture Mode (2025-11-07):** Implemented Document Picture-in-Picture API support for DevTools. Auto-detects browser support (Chrome 116+) and opens DevTools in always-on-top PiP window. Falls back to draggable overlay for unsupported browsers. Toggle with Alt+D.
 
 **Extension Location:** `apps/devtools-extension/`
 
@@ -479,6 +484,31 @@ class LayoutBloc extends Cubit<LayoutState> {
 - Comprehensive logging added to plugin, overlay, and panel layers
 - Logs connection flow, event emission, and state updates
 - Use browser console to debug communication issues
+
+**Atomic Updates Protocol:**
+- **TempDoc Reference:** `/Users/brendanmullins/Documents/Log/TempDoc/blac/2025-11/07/devtools-atomic-updates-implementation.md`
+- **Date:** 2025-11-07
+- **Status:** ✅ Completed (NO legacy code, clean atomic-only implementation)
+- Redesigned communication to send only changed data instead of full instance lists
+- Three message types: INSTANCE_CREATED, INSTANCE_DISPOSED, STATE_CHANGED
+- Each message only sends the specific data that changed
+- **~100x reduction in data transfer** (removed periodic sync, atomic updates only)
+- `LayoutBloc` atomic methods: `addInstance()`, `removeInstance()`, `updateInstanceState()`, `setAllInstances()` (initial load only)
+- Protocol types defined in `packages/devtools-connect/src/protocol/messages.ts`
+- Both Chrome extension and in-app overlay use atomic protocol
+- Removed all deprecated/backward compatibility code
+
+**Syntax Highlighting & UI Improvements:**
+- **TempDoc Reference:** `/Users/brendanmullins/Documents/Log/TempDoc/blac/2025-11/07/devtools-syntax-highlighting-implementation.md`
+- **Date:** 2025-11-07
+- **Status:** ✅ Completed
+- Added `@uiw/react-json-view` for JSON syntax highlighting (8.42 kB gzipped)
+- **Current State section moved to top** (more intuitive UX)
+- **Collapsible State Diff** with animated toggle (starts collapsed, click to expand)
+- Fixed ugly yellow highlighting on changed values
+- Improved styles: better line-height, arrow opacity, spacing, colors
+- VS Code dark theme colors for consistency
+- Future-ready for editing (includes `JsonViewEditor` component)
 
 **Usage:**
 - Install extension in Chrome

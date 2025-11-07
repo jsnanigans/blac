@@ -2,7 +2,7 @@ import { RouterBloc, Link, Route } from './router';
 import { Home } from './Home';
 import { CounterDemo } from './examples/01-counter/CounterDemo';
 import { useState } from 'react';
-import './overlay/overlay';
+import { BlacDevtoolsUi } from '@blac/devtools-ui';
 
 const Logo = () => {
   return <div className="nav-brand">BlaC Examples</div>;
@@ -95,8 +95,10 @@ export function App() {
   RouterBloc.resolve();
 
   return (
-    <div className="app-container">
-      <DevToolsBanner />
+    <>
+      <BlacDevtoolsUi />
+      <div className="app-container">
+        <DevToolsBanner />
 
       <nav className="nav">
         <div className="nav-content">
@@ -122,6 +124,7 @@ export function App() {
           </Route>
         </div>
       </main>
-    </div>
+      </div>
+    </>
   );
 }

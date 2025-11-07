@@ -1,13 +1,109 @@
 /**
- * In-App Overlay - Floating DevTools window injected into the page
- * Toggle with Alt+D
+ * DraggableOverlay - Floating DevTools window that can be injected into any app
+ * Toggle with Alt+D or custom event
  */
 
-import ReactDOM from 'react-dom/client';
-import { DevToolsPanel, LayoutBloc } from '@blac/devtools-ui';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, } from 'react';
+import { flushSync } from 'react-dom';
+import { DevToolsPanel } from './DevToolsPanel';
+import type { LayoutBloc } from './DevToolsPanel';
 
-function DraggableOverlay() {
+export interface DraggableOverlayProps {
+  /**
+   * Optional custom mount handler for the DevToolsPanel.
+   * If not provided, will attempt to use window.__BLAC_DEVTOOLS__ API.
+   */
+  onMount?: (bloc: LayoutBloc) => void | (() => void);
+}
+
+/**
+ * Default mount handler that connects to window.__BLAC_DEVTOOLS__ API
+ * Now uses atomic updates for better performance
+ */
+export const defaultDevToolsMount = (bloc: LayoutBloc) => {
+  console.log('[BlaC Overlay] DevToolsPanel mounted, connecting to API...');
+  const api = (window as any).__BLAC_DEVTOOLS__;
+
+  if (!api) {
+    console.error('[BlaC Overlay] window.__BLAC_DEVTOOLS__ is undefined');
+    return;
+  }
+
+  if (!api.isEnabled()) {
+    console.warn('[BlaC Overlay] DevTools API is disabled');
+    return;
+  }
+
+  console.log('[BlaC Overlay] API is available and enabled');
+
+  // Initial state (fetch all instances on mount)
+  console.log('[BlaC Overlay] Fetching initial instances...');
+  const initialInstances = api.getInstances();
+  console.log(
+    `[BlaC Overlay] Initial instances (${initialInstances.length}):`,
+    initialInstances.map((i: any) => `${i.className}#${i.id}`),
+  );
+  bloc.setConnected(true);
+  bloc.setAllInstances(initialInstances);
+
+  // Subscribe to atomic updates
+  console.log('[BlaC Overlay] Subscribing to DevTools events (atomic updates)...');
+  const unsubscribe = api.subscribe((event: any) => {
+    // Only update if bloc is not disposed
+    if (!bloc.isDisposed) {
+      console.log(`[BlaC Overlay] Atomic event received: ${event.type}`, {
+        instanceId: event.data.id,
+        className: event.data.className,
+        timestamp: new Date(event.timestamp).toISOString(),
+      });
+
+      // Handle atomic updates based on event type
+      switch (event.type) {
+        case 'instance-created':
+          console.log(`[BlaC Overlay] Adding instance: ${event.data.className}#${event.data.id}`);
+          bloc.addInstance({
+            id: event.data.id,
+            className: event.data.className,
+            name: event.data.name,
+            isDisposed: event.data.isDisposed,
+            state: event.data.state,
+            lastStateChangeTimestamp: event.timestamp,
+            createdAt: event.timestamp,
+          });
+          break;
+
+        case 'instance-disposed':
+          console.log(`[BlaC Overlay] Removing instance: ${event.data.id}`);
+          bloc.removeInstance(event.data.id);
+          break;
+
+        case 'instance-updated':
+          console.log(`[BlaC Overlay] Updating instance state: ${event.data.className}#${event.data.id}`);
+          // For state updates, we need to get previous state from the current instance
+          const currentInstance = bloc.state.instances.find((i) => i.id === event.data.id);
+          const previousState = currentInstance?.state ?? null;
+          bloc.updateInstanceState(event.data.id, previousState, event.data.state);
+          break;
+
+        default:
+          console.warn(`[BlaC Overlay] Unknown event type: ${event.type}`);
+      }
+    } else {
+      console.warn(
+        '[BlaC Overlay] Event received but bloc is disposed, ignoring',
+      );
+    }
+  });
+  console.log('[BlaC Overlay] Successfully subscribed to DevTools events (atomic mode)');
+
+  // Cleanup on unmount
+  return () => {
+    console.log('[BlaC Overlay] DevToolsPanel unmounting, unsubscribing...');
+    unsubscribe();
+  };
+};
+
+export function DraggableOverlay({ onMount }: DraggableOverlayProps = {}) {
   const [visible, setVisible] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState({ x: 100, y: 100 });
@@ -183,62 +279,7 @@ function DraggableOverlay() {
 
       {/* DevTools Panel */}
       <div style={{ flex: 1, overflow: 'hidden' }}>
-        <DevToolsPanel
-          onMount={(bloc: LayoutBloc) => {
-            console.log('[BlaC Overlay] DevToolsPanel mounted, connecting to API...');
-            const api = (window as any).__BLAC_DEVTOOLS__;
-
-            if (!api) {
-              console.error('[BlaC Overlay] window.__BLAC_DEVTOOLS__ is undefined');
-              return;
-            }
-
-            if (!api.isEnabled()) {
-              console.warn('[BlaC Overlay] DevTools API is disabled');
-              return;
-            }
-
-            console.log('[BlaC Overlay] API is available and enabled');
-
-            // Initial state
-            console.log('[BlaC Overlay] Fetching initial instances...');
-            const initialInstances = api.getInstances();
-            console.log(`[BlaC Overlay] Initial instances (${initialInstances.length}):`,
-              initialInstances.map((i: any) => `${i.className}#${i.id}`)
-            );
-            bloc.setInstances(initialInstances);
-            bloc.setConnected(true);
-
-            // Subscribe to changes
-            console.log('[BlaC Overlay] Subscribing to DevTools events...');
-            const unsubscribe = api.subscribe((event: any) => {
-              // Only update if bloc is not disposed
-              if (!bloc.isDisposed) {
-                console.log(`[BlaC Overlay] Event received: ${event.type}`, {
-                  className: event.data.className,
-                  instanceId: event.data.id,
-                  isDisposed: event.data.isDisposed,
-                  timestamp: new Date(event.timestamp).toISOString(),
-                });
-
-                const instances = api.getInstances();
-                console.log(`[BlaC Overlay] Fetched ${instances.length} instances after event:`,
-                  instances.map((i: any) => `${i.className}#${i.id}`)
-                );
-                bloc.setInstances(instances);
-              } else {
-                console.warn('[BlaC Overlay] Event received but bloc is disposed, ignoring');
-              }
-            });
-            console.log('[BlaC Overlay] Successfully subscribed to DevTools events');
-
-            // Cleanup on unmount
-            return () => {
-              console.log('[BlaC Overlay] DevToolsPanel unmounting, unsubscribing...');
-              unsubscribe();
-            };
-          }}
-        />
+        <DevToolsPanel onMount={onMount ?? defaultDevToolsMount} />
       </div>
 
       {/* Resize Handle */}
@@ -277,50 +318,4 @@ function DraggableOverlay() {
       />
     </div>
   );
-}
-
-// Check if we're in the main world with access to __BLAC_DEVTOOLS__
-if (typeof window !== 'undefined') {
-  console.log('[BlaC Overlay] Initializing...');
-
-  // Wait for DOM to be ready
-  const initOverlay = () => {
-    // Check if already initialized
-    if (document.getElementById('blac-devtools-overlay-root')) {
-      console.log('[BlaC Overlay] Already initialized');
-      return;
-    }
-
-    // Create a container for the overlay
-    const container = document.createElement('div');
-    container.id = 'blac-devtools-overlay-root';
-    container.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 0;
-      height: 0;
-      z-index: 2147483647;
-      pointer-events: none;
-    `;
-    document.body.appendChild(container);
-
-    // Mount the overlay
-    const root = ReactDOM.createRoot(container);
-    root.render(<DraggableOverlay />);
-
-    console.log('[BlaC Overlay] Ready! Press Alt+D to toggle');
-  };
-
-  // Initialize when DOM is ready
-  if (document.body) {
-    initOverlay();
-  } else {
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initOverlay);
-    } else {
-      // DOM is already ready but body doesn't exist yet? Wait a bit
-      setTimeout(initOverlay, 100);
-    }
-  }
 }

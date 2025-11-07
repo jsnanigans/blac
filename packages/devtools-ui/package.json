@@ -47,7 +47,11 @@
     "@types/react-dom": "^19.1.7",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "typescript": "catalog:",
-    "tsdown": "catalog:"
+    "tsdown": "catalog:",
+    "typescript": "catalog:"
+  },
+  "dependencies": {
+    "@uiw/react-json-view": "2.0.0-alpha.39",
+    "json-diff-kit": "^1.0.33"
   }
 }

@@ -32,3 +32,13 @@ export {
   DevToolsEvent,
   type EventMetadata,
 } from './integrations/EventRegistry';
+
+// Protocol types (new atomic message protocol)
+export {
+  DevToolsMessageType,
+  type DevToolsMessage as ProtocolMessage,
+  type InstanceCreatedPayload,
+  type InstanceDisposedPayload,
+  type StateChangedPayload,
+  type WindowMessage as ProtocolWindowMessage,
+} from './protocol/messages';

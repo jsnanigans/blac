@@ -6,6 +6,7 @@ export interface UseBlocOptions<TBloc extends StateContainer<any>> {
   instanceId?: string | number;
   dependencies?: (state: ExtractState<TBloc>, bloc: TBloc) => unknown[];
   autoTrack?: boolean;
+  disableGetterCache?: boolean;
   onMount?: (bloc: TBloc) => void;
   onUnmount?: (bloc: TBloc) => void;
 }

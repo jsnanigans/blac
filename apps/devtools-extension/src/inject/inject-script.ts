@@ -30,7 +30,7 @@
 
     console.log('[BlaC DevTools] Initializing monitoring');
 
-    // Send initial state
+    // Send initial state (only time we send all instances)
     sendMessage({
       type: 'INITIAL_STATE',
       payload: {
@@ -39,31 +39,18 @@
       },
     });
 
-    // Subscribe to changes
+    // Subscribe to atomic changes
     const unsubscribe = api.subscribe((event: any) => {
+      // Forward atomic events directly - DO NOT fetch all instances!
       sendMessage({
-        type: 'STATE_UPDATE',
-        payload: {
-          event,
-          instances: api.getInstances(),
-        },
+        type: 'ATOMIC_UPDATE',
+        payload: event,
       });
     });
-
-    // Periodic sync (every 2 seconds)
-    const syncInterval = setInterval(() => {
-      sendMessage({
-        type: 'SYNC',
-        payload: {
-          instances: api.getInstances(),
-        },
-      });
-    }, 2000);
 
     // Clean up on page unload
     window.addEventListener('beforeunload', () => {
       unsubscribe();
-      clearInterval(syncInterval);
     });
 
     // Listen for commands from content script
@@ -95,28 +82,12 @@
 
     switch (command.type) {
       case 'GET_INSTANCES':
+        // Only send all instances when explicitly requested (initial load)
         sendMessage({
-          type: 'INSTANCES_RESPONSE',
+          type: 'INITIAL_STATE',
           payload: {
             instances: api.getInstances(),
-          },
-        });
-        break;
-
-      case 'GET_VERSION':
-        sendMessage({
-          type: 'VERSION_RESPONSE',
-          payload: {
             version: api.getVersion(),
-          },
-        });
-        break;
-
-      case 'REFRESH':
-        sendMessage({
-          type: 'REFRESH_RESPONSE',
-          payload: {
-            instances: api.getInstances(),
           },
         });
         break;
