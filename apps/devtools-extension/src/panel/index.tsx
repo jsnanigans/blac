@@ -13,10 +13,18 @@ type LayoutState = {
   selectedId: string | null;
   instances: InstanceData[];
   connected: boolean;
+  searchQuery: string;
+  previousStates: Map<string, any>;
 };
 class LayoutBloc extends Cubit<LayoutState> {
   constructor() {
-    super({ selectedId: null, instances: [], connected: false });
+    super({
+      selectedId: null,
+      instances: [],
+      connected: false,
+      searchQuery: '',
+      previousStates: new Map(),
+    });
   }
 
   onDispose() {
@@ -25,7 +33,20 @@ class LayoutBloc extends Cubit<LayoutState> {
   }
 
   setInstances = (instances: InstanceData[]) => {
-    this.patch({ instances });
+    const prev = new Map(this.state.previousStates);
+
+    // Store current as previous before updating
+    instances.forEach((inst) => {
+      const current = this.state.instances.find((i) => i.id === inst.id);
+      if (
+        current &&
+        JSON.stringify(current.state) !== JSON.stringify(inst.state)
+      ) {
+        prev.set(inst.id, structuredClone(current.state));
+      }
+    });
+
+    this.patch({ instances, previousStates: prev });
   };
 
   setSelectedId = (instance: string | null) => {
@@ -36,18 +57,58 @@ class LayoutBloc extends Cubit<LayoutState> {
     this.patch({ connected });
   };
 
+  setSearchQuery = (query: string) => {
+    this.patch({ searchQuery: query });
+  };
+
   get selected() {
     return (
       this.state.instances.find((inst) => inst.id === this.state.selectedId) ||
       null
     );
   }
+
+  get filteredInstances() {
+    const query = this.state.searchQuery.toLowerCase();
+
+    const filtered = this.state.instances.filter(
+      (inst) =>
+        !query ||
+        inst.className.toLowerCase().includes(query) ||
+        inst.id.toLowerCase().includes(query),
+    );
+
+    // Sort by className to group them together
+    return filtered.sort((a, b) => a.className.localeCompare(b.className));
+  }
+
+  get diff() {
+    if (!this.selected) return null;
+    const previous = this.state.previousStates.get(this.selected.id);
+    if (!previous) return null;
+
+    return { previous, current: this.selected.state };
+  }
+}
+
+// Generate consistent color from string
+function stringToColor(str: string): string {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  // Generate HSL color with good saturation and lightness for visibility
+  const hue = Math.abs(hash % 360);
+  return `hsl(${hue}, 70%, 60%)`;
 }
 
 function App() {
-  const [{ instances, connected }, { setSelectedId: setSelected, selected }] =
-    useBloc(LayoutBloc, {
-      onMount: (bloc) => {
+  const [{ instances, connected, searchQuery }, _bloc] = useBloc(
+    LayoutBloc,
+    {
+      onMount: (b) => {
+        const { setInstances, setConnected } = b as LayoutBloc;
         comm.connect();
         comm.onMessage((message) => {
           console.log('[App] Received message:', message);
@@ -57,20 +118,22 @@ function App() {
             case 'SYNC':
             case 'REFRESH_RESPONSE':
               if (message.payload?.instances) {
-                bloc.setInstances(message.payload.instances);
-                bloc.setConnected(true);
+                setInstances(message.payload.instances);
+                setConnected(true);
               }
               break;
 
             case 'CACHED_STATE':
               if (message.payload?.instances) {
-                bloc.setInstances(message.payload.instances);
+                setInstances(message.payload.instances);
               }
               break;
           }
         });
       },
-    });
+    },
+  );
+  const bloc = _bloc as LayoutBloc;
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -111,80 +174,186 @@ function App() {
           style={{
             width: '300px',
             borderRight: '1px solid #444',
-            overflow: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
             background: '#1e1e1e',
           }}
         >
-          {instances.length === 0 ? (
-            <div
-              style={{ padding: '20px', color: '#888', textAlign: 'center' }}
-            >
-              No instances detected
-            </div>
-          ) : (
-            instances.map((instance: InstanceData) => (
+          {/* Search Input */}
+          <div style={{ padding: '10px', borderBottom: '1px solid #444' }}>
+            <input
+              type="text"
+              placeholder="Filter instances..."
+              value={searchQuery}
+              onChange={(e) => bloc.setSearchQuery(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '8px',
+                background: '#3c3c3c',
+                border: '1px solid #555',
+                borderRadius: '4px',
+                color: '#ccc',
+                fontSize: '13px',
+              }}
+            />
+          </div>
+
+          {/* Instance List */}
+          <div style={{ flex: 1, overflow: 'auto' }}>
+            {instances.length === 0 ? (
               <div
-                key={instance.id}
-                onClick={() => setSelected(instance.id)}
-                style={{
-                  padding: '10px',
-                  borderBottom: '1px solid #333',
-                  cursor: 'pointer',
-                  background: selected === instance ? '#2d2d30' : 'transparent',
-                  transition: 'background 0.2s',
-                }}
-                onMouseEnter={(e) => {
-                  if (selected !== instance) {
-                    e.currentTarget.style.background = '#252526';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (selected !== instance) {
-                    e.currentTarget.style.background = 'transparent';
-                  }
-                }}
+                style={{ padding: '20px', color: '#888', textAlign: 'center' }}
               >
-                <div style={{ fontWeight: 500, marginBottom: '4px' }}>
-                  <InstanceId id={instance.id} />
-                </div>
-                {instance.isDisposed && (
+                No instances detected
+              </div>
+            ) : bloc.filteredInstances.length === 0 ? (
+              <div
+                style={{ padding: '20px', color: '#888', textAlign: 'center' }}
+              >
+                No matches found
+              </div>
+            ) : (
+              bloc.filteredInstances.map((instance: InstanceData) => (
+                <div
+                  key={instance.id}
+                  onClick={() => bloc.setSelectedId(instance.id)}
+                  style={{
+                    padding: '8px 10px',
+                    borderBottom: '1px solid #333',
+                    borderLeft: `4px solid ${stringToColor(instance.className)}`,
+                    cursor: 'pointer',
+                    background:
+                      bloc.selected?.id === instance.id
+                        ? '#094771'
+                        : 'transparent',
+                    transition: 'background 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (bloc.selected?.id !== instance.id) {
+                      e.currentTarget.style.background = '#252526';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (bloc.selected?.id !== instance.id) {
+                      e.currentTarget.style.background = 'transparent';
+                    }
+                  }}
+                >
                   <div
                     style={{
-                      fontSize: '11px',
-                      color: '#f44336',
-                      marginTop: '4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
                     }}
                   >
-                    DISPOSED
+                    <InstanceId id={instance.id} />
+                    {instance.isDisposed && (
+                      <span
+                        style={{
+                          fontSize: '10px',
+                          padding: '2px 6px',
+                          background: '#f44336',
+                          borderRadius: '3px',
+                        }}
+                      >
+                        DISPOSED
+                      </span>
+                    )}
                   </div>
-                )}
-              </div>
-            ))
-          )}
+                </div>
+              ))
+            )}
+          </div>
         </div>
 
         {/* State Viewer */}
         <div style={{ flex: 1, overflow: 'auto', padding: '20px' }}>
-          {selected ? (
+          {bloc.selected ? (
             <div>
               <h2 style={{ fontSize: '18px', marginBottom: '10px' }}>
-                <InstanceId id={selected.id} />
+                <InstanceId id={bloc.selected.id} />
               </h2>
-              <h3 style={{ fontSize: '16px', marginBottom: '10px' }}>
-                Current State
-              </h3>
-              <pre
-                style={{
-                  background: '#252526',
-                  padding: '15px',
-                  borderRadius: '4px',
-                  fontSize: '13px',
-                  fontFamily: 'Monaco, Consolas, monospace',
-                  overflow: 'auto',
-                }}
-              >
-                {JSON.stringify(selected.state, null, 2)}
-              </pre>
+
+              {bloc.diff ? (
+                <div>
+                  <h3 style={{ fontSize: '16px', marginBottom: '10px' }}>
+                    State Diff (Previous vs Current)
+                  </h3>
+                  <div style={{ display: 'flex', gap: '20px' }}>
+                    {/* Previous State */}
+                    <div style={{ flex: 1 }}>
+                      <div
+                        style={{
+                          fontSize: '14px',
+                          fontWeight: 600,
+                          marginBottom: '8px',
+                          color: '#f44336',
+                        }}
+                      >
+                        Previous
+                      </div>
+                      <pre
+                        style={{
+                          background: '#252526',
+                          padding: '15px',
+                          borderRadius: '4px',
+                          fontSize: '13px',
+                          fontFamily: 'Monaco, Consolas, monospace',
+                          overflow: 'auto',
+                          border: '1px solid #f44336',
+                        }}
+                      >
+                        {JSON.stringify(bloc.diff.previous, null, 2)}
+                      </pre>
+                    </div>
+
+                    {/* Current State */}
+                    <div style={{ flex: 1 }}>
+                      <div
+                        style={{
+                          fontSize: '14px',
+                          fontWeight: 600,
+                          marginBottom: '8px',
+                          color: '#4caf50',
+                        }}
+                      >
+                        Current
+                      </div>
+                      <pre
+                        style={{
+                          background: '#252526',
+                          padding: '15px',
+                          borderRadius: '4px',
+                          fontSize: '13px',
+                          fontFamily: 'Monaco, Consolas, monospace',
+                          overflow: 'auto',
+                          border: '1px solid #4caf50',
+                        }}
+                      >
+                        {JSON.stringify(bloc.diff.current, null, 2)}
+                      </pre>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <h3 style={{ fontSize: '16px', marginBottom: '10px' }}>
+                    Current State
+                  </h3>
+                  <pre
+                    style={{
+                      background: '#252526',
+                      padding: '15px',
+                      borderRadius: '4px',
+                      fontSize: '13px',
+                      fontFamily: 'Monaco, Consolas, monospace',
+                      overflow: 'auto',
+                    }}
+                  >
+                    {JSON.stringify(bloc.selected.state, null, 2)}
+                  </pre>
+                </div>
+              )}
             </div>
           ) : (
             <div

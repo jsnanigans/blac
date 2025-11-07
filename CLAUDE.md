@@ -417,3 +417,30 @@ ChatRoomBloc.forEach((room) => {
 const allSessions = UserSessionBloc.getAll();
 const activeSessions = allSessions.filter(s => s.state.isActive);
 ```
+
+### DevTools Extension: Simple Instance Grouping & Diff
+
+**TempDoc Reference:**
+- **Implementation Plan:** `/Users/brendanmullins/Documents/Log/TempDoc/blac/2025-11/07/devtools-simple-plan.md`
+- **Date:** 2025-11-07
+- **Status:** ✅ Completed
+
+**Features (KISS approach):**
+1. **Visual Instance Grouping + Search**
+   - Always-visible flat list sorted by className
+   - Color-coded 4px left border per className (generated from className seed)
+   - Simple search filter (className or instanceId)
+   - Visual grouping without collapsible headers
+
+2. **Simple Diff View**
+   - Track just previous state (1 snapshot per instance)
+   - Side-by-side comparison (Previous | Current)
+   - Color-coded borders (red for previous, green for current)
+   - Auto-shows when state changes detected
+
+**Color Generation:**
+- Consistent HSL colors generated from className using hash function
+- 70% saturation, 60% lightness for good visibility on dark theme
+- Same className = same color across all instances
+
+**Implementation:** All inline in `apps/devtools-extension/src/panel/index.tsx` (~265 lines total)
