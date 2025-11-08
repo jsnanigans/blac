@@ -337,6 +337,43 @@ result.instance.markAsRead();
 - Instance existence is conditional/uncertain
 - You want type-safe error handling without try/catch
 - Checking if another component has created an instance
+- **Note:** Like `.get()`, this method tracks cross-bloc dependencies when used in getters
+
+#### `.connect()` - Get or Create (B2B Communication)
+
+Get existing instance OR create it if it doesn't exist, without incrementing ref count. Ideal for bloc-to-bloc communication when you need to ensure an instance exists.
+
+```typescript
+class StatsCubit extends Cubit<StatsState> {
+  get totalWithAnalytics() {
+    // ✅ Ensures AnalyticsCubit exists, doesn't increment ref count
+    const analytics = AnalyticsCubit.connect();
+    return this.state.total + analytics.state.bonus;
+  }
+}
+
+// In another bloc, access the auto-created instance
+class DashboardCubit extends Cubit<DashboardState> {
+  loadData = () => {
+    // AnalyticsCubit already exists from StatsCubit.connect()
+    const analytics = AnalyticsCubit.get();
+    analytics.trackEvent('dashboard_loaded');
+  };
+}
+```
+
+**Use `.connect()` when:**
+- B2B communication where the instance might not exist yet
+- You want to lazily create shared instances on first access
+- You need to ensure an instance exists without claiming ownership
+- Accessing services/utilities that should exist but aren't tied to specific components
+- **Note:** Always tracks cross-bloc dependencies when used in getters
+
+**Comparison:**
+- **`.get()`**: Borrow existing (throws if missing) - use when you know it exists
+- **`.getSafe()`**: Borrow existing (returns error) - use for conditional access
+- **`.connect()`**: Get or create (no ref count change) - use to ensure existence
+- **`.resolve()`**: Get or create (increments ref count) - use in components for ownership
 
 #### Other Static Methods
 
@@ -347,8 +384,13 @@ const exists = CounterCubit.hasInstance('main');
 // Get reference count
 const refCount = CounterCubit.getRefCount('main');
 
-// Get all instances of a type
+// Get all instances of a type (returns array)
 const allCounters = CounterCubit.getAll();
+
+// Iterate over all instances safely (disposal-safe, memory-efficient)
+CounterCubit.forEach((instance) => {
+  console.log(instance.state);
+});
 
 // Clear all instances of a type
 CounterCubit.clear();
@@ -360,6 +402,42 @@ StateContainer.clearAllInstances();
 const stats = StateContainer.getStats();
 // { registeredTypes: 5, totalInstances: 12, typeBreakdown: { ... } }
 ```
+
+**`.getAll()` vs `.forEach()`:**
+
+Both methods let you access all instances of a type, but with different trade-offs:
+
+**`.getAll()`** - Returns an array of all instances
+```typescript
+const allSessions = UserSessionBloc.getAll();
+const activeSessions = allSessions.filter(s => s.state.isActive);
+```
+
+**Use `.getAll()` when:**
+- You need array operations (filter, map, reduce)
+- Working with small numbers of instances (<100)
+- You need to iterate multiple times
+
+**`.forEach(callback)`** - Iterates with a callback function
+```typescript
+// Broadcast to all sessions
+UserSessionBloc.forEach((session) => {
+  session.notify('Server maintenance in 5 minutes');
+});
+
+// Cleanup stale sessions (disposal-safe!)
+UserSessionBloc.forEach((session) => {
+  if (session.state.lastActivity < threshold) {
+    UserSessionBloc.release(session.instanceId); // Safe during iteration
+  }
+});
+```
+
+**Use `.forEach()` when:**
+- Working with large numbers of instances (100+) - more memory efficient
+- You might dispose instances during iteration (automatically skips disposed)
+- You only need to iterate once
+- You want built-in error handling (catches callback errors without stopping)
 
 ---
 
@@ -429,7 +507,6 @@ useBloc also tracks **getters** (computed properties) automatically:
 class TodoCubit extends Cubit<TodoState> {
   // Computed getter
   get visibleTodos() {
-	  return Math.random()
     return this.state.filter === 'active'
       ? this.state.todos.filter(t => !t.done)
       : this.state.todos;
@@ -440,11 +517,9 @@ class TodoCubit extends Cubit<TodoState> {
   }
 
   get fullInventory(): boolean {
-	  return this.state.length > 50
+    return this.state.length > 50;
   }
 }
-
-// todo: option disable automatic caching for render cycle for getters
 
 function TodoList() {
   const [, cubit] = useBloc(TodoCubit);
@@ -461,7 +536,31 @@ function TodoList() {
 }
 ```
 
-**Note:** Ensure that your getters are **Pure Functions** to avoid unexpected behavior, BlaC caches the getters
+**Note:** Ensure that your getters are **Pure Functions** to avoid unexpected behavior, as BlaC caches getter values per render cycle.
+
+**Cross-Bloc Dependencies:**
+
+Getters can access other blocs, and BlaC will automatically track those dependencies when using `.get()`, `.getSafe()`, or `.connect()`:
+
+```typescript
+class StatsCubit extends Cubit<StatsState> {
+  get totalWithBonus() {
+    // ✅ All three methods automatically track CounterBloc changes!
+    const counter = CounterBloc.get();        // Borrow (throws if missing)
+    // const counter = CounterBloc.getSafe(); // Borrow (returns error)
+    // const counter = CounterBloc.connect(); // Get or create
+    return this.state.total + counter.state;
+  }
+}
+
+function StatsDisplay() {
+  const [, cubit] = useBloc(StatsCubit);
+  // Re-renders when EITHER StatsCubit OR CounterBloc changes
+  return <div>Total: {cubit.totalWithBonus}</div>;
+}
+```
+
+**Important:** Only `.get()`, `.getSafe()`, and `.connect()` enable automatic tracking. Do NOT use `.resolve()` in getters as it increments ref count and causes memory leaks.
 
 **How Getter Tracking Works:**
 
@@ -469,7 +568,8 @@ function TodoList() {
 2. After render, tracked getters are committed
 3. On state change, all tracked getters are re-computed and compared
 4. If any getter value changed (via `Object.is`), component re-renders
-5. Getter values are cached per render cycle for performance, this means that the getter will only be executed once per render cycle even if its used multiple times. For this reason its recommended to have "pure" getters
+5. Getter values are cached per render cycle for performance - the getter will only execute once per render cycle even if used multiple times
+6. Cross-bloc dependencies are automatically tracked and subscribed to
 
 ---
 
@@ -695,6 +795,30 @@ function Login() {
 - Instance persists regardless of ref count
 - Useful for global singletons
 - Must manually dispose or use `release(key, true)`
+
+---
+
+## DevTools Integration
+
+### Excluding Blocs from DevTools
+
+To prevent internal blocs (like DevTools UI state) from appearing in DevTools panels, mark them with the static `__excludeFromDevTools` property:
+
+```typescript
+class InternalBloc extends Cubit<InternalState> {
+  static __excludeFromDevTools = true;  // Won't appear in DevTools
+
+  constructor() {
+    super(initialState);
+  }
+}
+```
+
+**Use cases:**
+- Internal DevTools state management
+- Meta-level application state
+- Debug utilities
+- Preventing infinite loops (DevTools tracking itself)
 
 ---
 
@@ -1214,12 +1338,14 @@ interface UseBlocOptions<TBloc extends StateContainer<AnyObject>> {
 - `Class.resolve(id?, ...args)` - Get/create instance with ownership (increments ref count)
 - `Class.get(id?)` - Get existing instance without ownership (throws if not found)
 - `Class.getSafe(id?)` - Get existing instance without ownership (returns discriminated union)
+- `Class.connect(id?, ...args)` - Get/create instance for B2B (no ref count change, tracks dependencies)
 - `Class.release(id?, force?)` - Release reference
 
 **Instance Info:**
 - `Class.hasInstance(id?)` - Check existence
 - `Class.getRefCount(id?)` - Get reference count
-- `Class.getAll()` - Get all instances
+- `Class.getAll()` - Get all instances (returns array)
+- `Class.forEach(callback)` - Iterate over instances safely (disposal-safe, memory-efficient)
 - `Class.clear()` - Clear all instances of type
 - `StateContainer.clearAllInstances()` - Clear everything
 - `StateContainer.getStats()` - Get registry statistics
@@ -1240,8 +1366,9 @@ interface UseBlocOptions<TBloc extends StateContainer<AnyObject>> {
 ### Static Properties
 
 ```typescript
-static isolated = true;   // Each instance unique per component
-static keepAlive = true;  // Persist without consumers
+static isolated = true;             // Each instance unique per component
+static keepAlive = true;            // Persist without consumers
+static __excludeFromDevTools = true; // Hide from DevTools panels
 ```
 
 ### Log Levels
@@ -1408,7 +1535,9 @@ if (!result.error) {
 4. **Use patch()** instead of update() for simple field updates
 5. **Mark isolated** blocs that don't need to be shared
 6. **Use keepAlive** for expensive-to-recreate singletons
-7. **Disable autoTrack** only if you have specific performance needs
+7. **Use `.get()` instead of `.resolve()`** in bloc-to-bloc communication to prevent memory leaks
+8. **Use `.forEach()` instead of `.getAll()`** when working with 100+ instances
+9. **Disable autoTrack** only if you have specific performance needs
 
 ---
 

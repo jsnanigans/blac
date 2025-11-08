@@ -251,7 +251,83 @@ export class StateContainerRegistry {
       };
     }
 
+    // Track cross-bloc dependency if we're inside a getter execution
+    const context = getGetterExecutionContext();
+    if (
+      context.tracker &&
+      context.currentBloc &&
+      context.currentBloc !== entry.instance
+    ) {
+      // Add this bloc as an external dependency
+      context.tracker.externalDependencies.add(entry.instance);
+    }
+
     return { error: null, instance: entry.instance as T };
+  }
+
+  /**
+   * Connect to an instance with borrowing semantics (for B2B communication)
+   * Gets existing instance OR creates it if it doesn't exist, without incrementing ref count.
+   * Tracks cross-bloc dependency for reactive updates.
+   *
+   * Use this in bloc-to-bloc communication when you need to ensure an instance exists
+   * but don't want to claim ownership (no ref count increment).
+   *
+   * @param Type - The bloc class constructor
+   * @param key - Optional instance key (defaults to 'default')
+   * @param constructorArgs - Constructor arguments (only used if creating new instance)
+   * @returns The bloc instance
+   */
+  connect<T extends StateContainer<any>>(
+    Type: new (...args: any[]) => T,
+    key?: string,
+    constructorArgs?: any,
+  ): T {
+    const instanceKey = key || 'default';
+
+    // Check if this is an isolated type (should not use connect with isolated types)
+    const staticIsolated = (Type as any).isolated === true;
+    const registryConfig = this.typeConfigs.get(Type.name);
+    const isolated = staticIsolated || registryConfig?.isolated === true;
+
+    if (isolated) {
+      throw new Error(
+        `Cannot use .connect() with isolated bloc "${Type.name}".\n` +
+          `Isolated blocs are component-scoped. Use .resolve() in components instead.`,
+      );
+    }
+
+    // Get or create shared instance
+    const instances = this.ensureInstancesMap(Type);
+    let entry = instances.get(instanceKey);
+
+    if (!entry) {
+      // Create new shared instance with refCount=1
+      // (Assumes someone else will eventually claim ownership or it's keepAlive)
+      const instance = new Type(constructorArgs) as T;
+      const config: StateContainerConfig = {
+        instanceId: instanceKey,
+      };
+      instance.initiConfig(config);
+      entry = { instance, refCount: 1 };
+      instances.set(instanceKey, entry);
+
+      // Register type for lifecycle coordination
+      this.registerType(Type);
+    }
+
+    // Track cross-bloc dependency if we're inside a getter execution
+    const context = getGetterExecutionContext();
+    if (
+      context.tracker &&
+      context.currentBloc &&
+      context.currentBloc !== entry.instance
+    ) {
+      // Add this bloc as an external dependency
+      context.tracker.externalDependencies.add(entry.instance);
+    }
+
+    return entry.instance as T;
   }
 
   /**

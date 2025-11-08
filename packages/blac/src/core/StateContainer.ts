@@ -107,6 +107,28 @@ export abstract class StateContainer<S> {
   }
 
   /**
+   * Connect to an instance with borrowing semantics (for B2B communication)
+   * Gets existing instance OR creates it if it doesn't exist, without incrementing ref count.
+   * Tracks cross-bloc dependency for reactive updates.
+   *
+   * Use this in bloc-to-bloc communication when you need to ensure an instance exists
+   * but don't want to claim ownership (no ref count increment).
+   *
+   * Delegates to the global registry.
+   *
+   * @param key - Optional instance key (defaults to 'default')
+   * @param constructorArgs - Constructor arguments (only used if creating new instance)
+   * @returns The bloc instance
+   */
+  static connect<T extends StateContainer<any>>(
+    this: new (...args: any[]) => T,
+    key?: string,
+    constructorArgs?: any,
+  ): T {
+    return StateContainer._registry.connect(this, key, constructorArgs);
+  }
+
+  /**
    * Release a reference to an instance
    * Delegates to the global registry.
    */
