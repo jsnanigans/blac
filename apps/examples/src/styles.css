@@ -195,6 +195,14 @@ code {
   width: 100%;
 }
 
+/* Remove padding and constraints for messenger app */
+.view-wrapper:has(.messenger-app) {
+  padding: var(--space-lg);
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
 /* ==================== Components ==================== */
 
 /* Button */

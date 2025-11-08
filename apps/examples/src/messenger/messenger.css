@@ -2,12 +2,15 @@
 
 .messenger-app {
   display: flex;
-  height: 100vh;
-  width: 100vw;
+  /* Use calc to account for nav + banner height + some padding */
+  height: calc(100vh - 120px);
+  width: 100%;
   background-color: #1a1d21;
   color: #e8e8e8;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   overflow: hidden;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
 /* Sidebar */

@@ -405,22 +405,6 @@ export function generateId(length = 8): string {
 // ==================== Object Utilities ====================
 
 /**
- * Deep clone an object using JSON serialization.
- * Note: This won't work for functions, Date objects, etc.
- *
- * @param obj - Object to clone
- * @returns Cloned object
- *
- * @example
- * ```ts
- * const cloned = deepClone({ a: 1, b: { c: 2 } });
- * ```
- */
-export function deepClone<T>(obj: T): T {
-  return JSON.parse(JSON.stringify(obj));
-}
-
-/**
  * Check if two values are deeply equal.
  *
  * @param a - First value

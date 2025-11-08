@@ -16,7 +16,10 @@ interface MessageItemProps {
  * - Fine-grained dependency tracking (only tracks user.name)
  */
 export function MessageItem({ message, isOwn }: MessageItemProps) {
-  const [user] = useBloc(UserCubit, { instanceId: message.userId });
+  const [user] = useBloc(UserCubit, {
+    instanceId: message.userId,
+    staticProps: { userId: message.userId },
+  });
 
   const formatTime = (timestamp: number) => {
     const date = new Date(timestamp);

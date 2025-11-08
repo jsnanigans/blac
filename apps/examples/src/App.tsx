@@ -104,7 +104,7 @@ export function App() {
 
   return (
     <>
-      <BlacDevtoolsUi mode="overlay" />
+      <BlacDevtoolsUi />
       <div className="app-container">
         <DevToolsBanner />
 

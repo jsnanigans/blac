@@ -98,7 +98,7 @@ export function useBloc<T extends new (...args: any[]) => StateContainer<any>>(
         (callback: () => void) => () => void,
         () => ExtractState<TBloc>,
         string | undefined,
-        AdapterState<ExtractState<TBloc>>,
+        AdapterState<TBloc>,
         TBloc,
       ]
     >(() => {
@@ -119,7 +119,7 @@ export function useBloc<T extends new (...args: any[]) => StateContainer<any>>(
       // Create subscribe and getSnapshot functions based on tracking mode
       let subscribeFn: (callback: () => void) => () => void;
       let getSnapshotFn: () => ExtractState<TBloc>;
-      let adapterState: AdapterState<ExtractState<TBloc>>;
+      let adapterState: AdapterState<TBloc>;
 
       if (useManualDeps && options?.dependencies) {
         // Manual dependencies mode - no automatic tracking
@@ -150,7 +150,7 @@ export function useBloc<T extends new (...args: any[]) => StateContainer<any>>(
         adapterState,
         instance,
       ];
-    }, [BlocClass]);
+    }, [BlocClass, options?.instanceId]);
 
   const state = useSyncExternalStore(subscribe, getSnapshot);
 

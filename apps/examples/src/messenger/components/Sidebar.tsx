@@ -1,7 +1,7 @@
 import { useBloc } from '@blac/react';
 import { AppCubit } from '../blocs/AppCubit';
 import { ContactsCubit } from '../blocs/ContactsCubit';
-import { ChannelBloc } from '../blocs/ChannelBloc';
+import { NotificationCubit } from '../blocs/NotificationCubit';
 import { UserCubit } from '../blocs/UserCubit';
 import { UserAvatar } from './UserAvatar';
 
@@ -17,13 +17,14 @@ interface SidebarProps {
  * - Fine-grained dependency tracking on channel list
  */
 export function Sidebar({ currentUserId }: SidebarProps) {
-  const [appState, appCubit] = useBloc(AppCubit);
+  const [appState, { setActiveChannel }] = useBloc(AppCubit, {
+    staticProps: { currentUserId },
+  });
   const [contacts] = useBloc(ContactsCubit);
-  const [currentUser] = useBloc(UserCubit, { instanceId: currentUserId });
-
-  const handleChannelClick = (channelId: string) => {
-    appCubit.setActiveChannel(channelId);
-  };
+  const [currentUser] = useBloc(UserCubit, {
+    instanceId: currentUserId,
+    staticProps: { userId: currentUserId },
+  });
 
   return (
     <div className="sidebar">
@@ -51,7 +52,7 @@ export function Sidebar({ currentUserId }: SidebarProps) {
               channelId={channel.id}
               channelName={channel.name}
               isActive={appState.activeChannelId === channel.id}
-              onClick={() => handleChannelClick(channel.id)}
+              onClick={() => setActiveChannel(channel.id)}
             />
           ))}
         </div>
@@ -79,9 +80,9 @@ interface ChannelListItemProps {
  * ChannelListItem - Individual channel in the sidebar
  *
  * Demonstrates:
- * - Dependency tracking on ONLY unreadCount from ChannelBloc
- * - Won't re-render when messages change, only when unread count changes
- * - This is a key optimization for large channel lists
+ * - Using NotificationCubit to track unread counts WITHOUT keeping ChannelBloc alive
+ * - Only re-renders when unread count changes
+ * - ChannelBloc instances only exist for the active channel
  */
 function ChannelListItem({
   channelId,
@@ -89,9 +90,9 @@ function ChannelListItem({
   isActive,
   onClick,
 }: ChannelListItemProps) {
-  // Try to get the channel if it exists (it might not be created yet)
-  const result = ChannelBloc.getSafe(channelId);
-  const unreadCount = !result.error ? result.instance.state.unreadCount : 0;
+  // Use NotificationCubit to get unread count without creating ChannelBloc instance
+  const [notifications] = useBloc(NotificationCubit);
+  const unreadCount = notifications.unreadCounts.get(channelId) || 0;
 
   return (
     <div

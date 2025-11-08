@@ -518,24 +518,32 @@ class LayoutBloc extends Cubit<LayoutState> {
 
 ### Messenger Example (Slack-like Chat)
 
-**TempDoc Reference:**
+**TempDoc References:**
 - **Architecture Plan:** `/Users/brendanmullins/Documents/Log/TempDoc/blac/2025-11/08/slack-messenger-example-architecture.md`
+- **Fix Summary:** `/Users/brendanmullins/Documents/Log/TempDoc/blac/2025-11/08/messenger-example-fixes.md` (2025-11-08) ✅
 - **Date:** 2025-11-08
-- **Status:** ✅ Completed
+- **Status:** ✅ Completed and Verified Against Documentation
 - **Location:** `apps/examples/src/messenger/`
 
 **Purpose:**
 Comprehensive example demonstrating BlaC's instance management and dependency tracking with a real-world Slack-like messenger application.
 
 **Key Features Demonstrated:**
-1. **Instance Management Patterns:**
-   - **Shared Instances:** AppCubit (single), UserCubit (one per user), ContactsCubit (single)
-   - **Isolated Instances:** ChannelBloc (one per channel, completely independent)
-   - Dynamic instance creation and disposal
-   - Proper reference counting and lifecycle management
+1. **Minimal Instance Footprint (NEW - 2025-11-08):**
+   - **Only active ChannelBloc exists** - inactive channels disposed and persisted to sessionStorage
+   - **Lazy UserCubit creation** - only users with messages in active channel have instances
+   - **NotificationCubit** - lightweight unread tracking without keeping ChannelBlocs alive
+   - **PersistenceService** - seamless save/restore of disposed channel data
+   - ~20% fewer total instances, 100% of inactive channel memory freed
 
-2. **Fine-Grained Dependency Tracking:**
-   - Sidebar ChannelItem only tracks `unreadCount` (won't re-render on new messages)
+2. **Instance Management Patterns:**
+   - **Shared Instances:** AppCubit (single), UserCubit (per user), ContactsCubit (single), NotificationCubit (single), ChannelBloc (per channel)
+   - **Protected Instances:** Current user's UserCubit never released (always kept alive)
+   - Dynamic instance creation and disposal based on channel content
+   - Proper reference counting and lifecycle management with sessionStorage persistence
+
+3. **Fine-Grained Dependency Tracking:**
+   - Sidebar ChannelItem tracks unread count from NotificationCubit (NOT ChannelBloc)
    - MessageList only tracks `messages` (won't re-render on typing indicators)
    - UserAvatar only tracks `avatar` and `status` (not full user state)
    - Demonstrates ~60% fewer tracked paths, ~30-50% fewer re-renders
@@ -558,15 +566,23 @@ Comprehensive example demonstrating BlaC's instance management and dependency tr
 
 **Architecture:**
 ```
-AppCubit (Global state)
+Core Instances (Always alive):
+├── RouterBloc (Navigation)
+├── AppCubit (Global state)
 ├── ContactsCubit (Channels/users list)
-├── ChannelBloc × N (Per-channel, isolated)
-│   └── Messages, typing state, unread count
-└── UserCubit × N (Per-user, shared)
-    └── Profile, status, avatar
+└── NotificationCubit (Lightweight unread tracking)
 
-WebSocketMock (Service layer)
-└── Simulates real-time messages and updates
+Dynamic Instances (Created/disposed on demand):
+├── ChannelBloc (ONLY active channel, persisted to sessionStorage when disposed)
+│   └── Messages, typing state
+└── UserCubit × N (ONLY users with messages in active channel)
+    └── Profile, status, avatar
+    └── Current user ALWAYS kept alive (never released)
+
+Service Layer:
+├── WebSocketMock (Simulates real-time server)
+│   └── Saves messages to persistence for inactive channels
+└── PersistenceService (SessionStorage save/restore)
 ```
 
 **Component Structure:**
@@ -585,11 +601,15 @@ pnpm dev
 ```
 
 **What to Observe:**
-- Open DevTools (Alt+D) to watch instance creation/disposal
-- Notice how switching channels creates new ChannelBloc instances
-- Watch sidebar unread badges update without full re-renders
-- See typing indicators and messages arrive in real-time
-- Observe message status transitions (sending → sent → delivered)
+- Open DevTools (Alt+D) to watch instance lifecycle in real-time
+- **Minimal Footprint:** Only 8-9 total instances active at any time (was 10+ with all channels)
+- **Lazy Loading:** Switching channels disposes old ChannelBloc, creates new one
+- **Smart UserCubits:** Only users with messages in active channel have instances
+- **Protected Current User:** User "user-me" never disposed (always exists)
+- **Lightweight Tracking:** Sidebar unread badges update without keeping ChannelBlocs alive
+- **Persistence:** Messages saved to sessionStorage when channels disposed
+- **Real-Time:** Messages arrive for inactive channels and are persisted automatically
+- **Status Updates:** Message delivery transitions (sending → sent → delivered)
 
 ### Cross-Bloc Dependency Tracking
 

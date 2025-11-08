@@ -1,6 +1,5 @@
 import { useBloc } from '@blac/react';
 import { ChannelBloc, MarkAsReadEvent } from '../blocs/ChannelBloc';
-import { ContactsCubit } from '../blocs/ContactsCubit';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
 import { useEffect } from 'react';
@@ -19,13 +18,10 @@ interface ChannelViewProps {
  * - Side effects (marking as read when channel is viewed)
  */
 export function ChannelView({ channelId, currentUserId }: ChannelViewProps) {
-  // Get channel info from ContactsCubit
-  const [contacts] = useBloc(ContactsCubit);
-  const channelInfo = contacts.channels.find((c) => c.id === channelId);
-
+  console.log(`[ChannelView] Rendering channel ${channelId}`);
   const [channel, channelBloc] = useBloc(ChannelBloc, {
     instanceId: channelId,
-    staticProps: { channel: channelInfo },
+    staticProps: { channelId },
   });
 
   // Mark channel as read when it's viewed
@@ -33,7 +29,7 @@ export function ChannelView({ channelId, currentUserId }: ChannelViewProps) {
     channelBloc.add(new MarkAsReadEvent());
   }, [channelId, channelBloc]);
 
-  if (!channelInfo) {
+  if (!channelBloc.channelInfo) {
     return <div>Channel not found</div>;
   }
 

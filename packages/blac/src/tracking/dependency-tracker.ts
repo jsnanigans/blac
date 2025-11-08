@@ -27,6 +27,29 @@ function isChildPath(child: string, parent: string): boolean {
   return child.startsWith(parent + '.') || child.startsWith(parent + '[');
 }
 
+/**
+ * Extract the parent array path from an array child path
+ * Examples:
+ *   'messages.length' -> 'messages'
+ *   'messages[0]' -> 'messages'
+ *   'messages[0].text' -> 'messages'
+ *   'data.items[0]' -> 'data.items'
+ */
+function getArrayParentPath(path: string): string | null {
+  // Check if path ends with .length
+  if (path.endsWith('.length')) {
+    return path.slice(0, -7); // Remove '.length'
+  }
+
+  // Check if path contains array indexing [n]
+  const arrayIndexMatch = path.match(/^(.+?)\[\d+\]/);
+  if (arrayIndexMatch) {
+    return arrayIndexMatch[1];
+  }
+
+  return null;
+}
+
 export function optimizeTrackedPaths(paths: Set<string>): Set<string> {
   if (paths.size === 0) {
     return new Set();
@@ -55,6 +78,23 @@ export function optimizeTrackedPaths(paths: Set<string>): Set<string> {
     if (!hasMoreSpecificChild) {
       optimized.add(path);
     }
+  }
+
+  // IMPORTANT: Add array parent paths back to track array reference changes
+  // When we track array children (e.g., 'messages.length' or 'messages[0]'),
+  // we must also track the array itself because the array reference can change
+  // even when length/elements stay the same (e.g., new array with same length)
+  const arrayParents = new Set<string>();
+  for (const path of optimized) {
+    const arrayParent = getArrayParentPath(path);
+    if (arrayParent) {
+      arrayParents.add(arrayParent);
+    }
+  }
+
+  // Add array parent paths to the optimized set
+  for (const arrayParent of arrayParents) {
+    optimized.add(arrayParent);
   }
 
   return optimized;

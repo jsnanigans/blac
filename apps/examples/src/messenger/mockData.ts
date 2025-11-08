@@ -31,6 +31,27 @@ export const MOCK_USERS: User[] = [
     status: 'online',
     customStatus: 'Deploying to prod',
   },
+  {
+    id: 'bot-diana',
+    name: 'Diana (Bot)',
+    avatar: '🧠',
+    status: 'offline',
+    customStatus: 'Learning new things',
+  },
+  {
+    id: 'bot-evan',
+    name: 'Evan (Bot)',
+    avatar: '💡',
+    status: 'online',
+    customStatus: 'Brainstorming ideas',
+  },
+  {
+    id: 'bot-fiona',
+    name: 'Fiona (Bot)',
+    avatar: '🎨',
+    status: 'away',
+    customStatus: 'Designing UI/UX',
+  },
 ];
 
 export const MOCK_CHANNELS: Channel[] = [
@@ -68,7 +89,10 @@ export const MOCK_CHANNELS: Channel[] = [
  * Get initial welcome messages for a channel
  */
 export function getWelcomeMessages(channelId: string) {
-  const welcomeMessages: Record<string, Array<{ userId: string; text: string }>> = {
+  const welcomeMessages: Record<
+    string,
+    Array<{ userId: string; text: string }>
+  > = {
     general: [
       {
         userId: 'bot-alice',
@@ -116,7 +140,8 @@ export function getWelcomeMessages(channelId: string) {
     channelId,
     userId: msg.userId,
     text: msg.text,
-    timestamp: Date.now() - (welcomeMessages[channelId]?.length || 0 - index) * 60000, // Spread over last few minutes
+    timestamp:
+      Date.now() - (welcomeMessages[channelId]?.length || 0 - index) * 60000, // Spread over last few minutes
     status: 'delivered' as const,
   }));
 }

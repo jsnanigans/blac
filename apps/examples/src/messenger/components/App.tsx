@@ -1,18 +1,10 @@
 import { useBloc } from '@blac/react';
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { AppCubit } from '../blocs/AppCubit';
-import { ContactsCubit } from '../blocs/ContactsCubit';
-import { UserCubit } from '../blocs/UserCubit';
-import { ChannelBloc, ReceiveMessageEvent } from '../blocs/ChannelBloc';
 import { Sidebar } from './Sidebar';
 import { ChannelView } from './ChannelView';
 import { webSocket } from '../services/WebSocketMock';
-import {
-  CURRENT_USER_ID,
-  MOCK_USERS,
-  MOCK_CHANNELS,
-  getWelcomeMessages,
-} from '../mockData';
+import { CURRENT_USER_ID } from '../mockData';
 
 /**
  * Main App component for the messenger
@@ -26,50 +18,6 @@ export function MessengerApp() {
   const [appState] = useBloc(AppCubit, {
     staticProps: { currentUserId: CURRENT_USER_ID },
   });
-  const [contacts] = useBloc(ContactsCubit);
-
-  // Initialize all user instances BEFORE first render (shared instances)
-  // Using useMemo with empty deps to run only once before render
-  useMemo(() => {
-    MOCK_USERS.forEach((user) => {
-      UserCubit.resolve(user.id, { user });
-    });
-  }, []);
-
-  // Clean up user instances on unmount
-  useEffect(() => {
-    return () => {
-      MOCK_USERS.forEach((user) => {
-        UserCubit.release(user.id);
-      });
-    };
-  }, []);
-
-  // Initialize channel instances with welcome messages
-  useEffect(() => {
-    MOCK_CHANNELS.forEach((channel) => {
-      const channelBloc = ChannelBloc.resolve(channel.id, { channel });
-
-      // Add welcome messages
-      const welcomeMessages = getWelcomeMessages(channel.id);
-      welcomeMessages.forEach((message) => {
-        channelBloc.add(new ReceiveMessageEvent(message));
-      });
-    });
-
-    // Set first channel as active
-    if (contacts.channels.length > 0 && !appState.activeChannelId) {
-      const firstChannel = contacts.channels[0];
-      AppCubit.get().setActiveChannel(firstChannel.id);
-    }
-
-    return () => {
-      // Clean up channel instances when app unmounts
-      MOCK_CHANNELS.forEach((channel) => {
-        ChannelBloc.release(channel.id);
-      });
-    };
-  }, []);
 
   // Connect to WebSocket
   useEffect(() => {

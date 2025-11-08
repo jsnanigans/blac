@@ -1,8 +1,10 @@
-import { useState, useRef, KeyboardEvent } from 'react';
+import { useRef, KeyboardEvent } from 'react';
 import { useBloc } from '@blac/react';
-import { ChannelBloc, SendMessageEvent } from '../blocs/ChannelBloc';
-import { ContactsCubit } from '../blocs/ContactsCubit';
-import { webSocket } from '../services/WebSocketMock';
+import {
+  ChannelBloc,
+  SendMessageEvent,
+  UpdateDraftMessageEvent,
+} from '../blocs/ChannelBloc';
 
 interface MessageInputProps {
   channelId: string;
@@ -18,36 +20,16 @@ interface MessageInputProps {
  * - Integration with WebSocket mock service
  */
 export function MessageInput({ channelId, currentUserId }: MessageInputProps) {
-  // Get channel info from ContactsCubit
-  const [contacts] = useBloc(ContactsCubit);
-  const channelInfo = contacts.channels.find((c) => c.id === channelId);
-
-  const [, channelBloc] = useBloc(ChannelBloc, {
+  const [{ draftMessage }, channelBloc] = useBloc(ChannelBloc, {
     instanceId: channelId,
-    staticProps: channelInfo ? { channel: channelInfo } : undefined,
+    staticProps: { channelId },
   });
-  const [text, setText] = useState('');
+
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleSend = () => {
-    const trimmedText = text.trim();
-    if (!trimmedText) return;
-
     // Add event to ChannelBloc
-    const message = channelBloc.add(
-      new SendMessageEvent(trimmedText, currentUserId),
-    );
-
-    // Send to WebSocket (will update status asynchronously)
-    webSocket.send({
-      type: 'send_message',
-      channelId,
-      userId: currentUserId,
-      payload: { messageId: message?.id, text: trimmedText },
-    });
-
-    // Clear input
-    setText('');
+    channelBloc.add(new SendMessageEvent(currentUserId));
     inputRef.current?.focus();
   };
 
@@ -63,15 +45,17 @@ export function MessageInput({ channelId, currentUserId }: MessageInputProps) {
       <input
         ref={inputRef}
         type="text"
-        value={text}
-        onChange={(e) => setText(e.target.value)}
+        value={draftMessage}
+        onChange={(e) =>
+          channelBloc.add(new UpdateDraftMessageEvent(e.target.value))
+        }
         onKeyPress={handleKeyPress}
         placeholder={`Message #${channelId}`}
         className="message-input-field"
       />
       <button
         onClick={handleSend}
-        disabled={!text.trim()}
+        disabled={!draftMessage}
         className="message-send-button"
       >
         Send

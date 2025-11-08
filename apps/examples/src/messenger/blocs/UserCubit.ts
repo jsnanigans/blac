@@ -1,5 +1,6 @@
 import { Cubit } from '@blac/core';
 import type { User } from '../types';
+import { MOCK_USERS } from '../mockData';
 
 /**
  * User profile state - shared instances (one per user)
@@ -9,11 +10,12 @@ import type { User } from '../types';
  * the same user instance without duplication
  */
 export class UserCubit extends Cubit<User> {
-  constructor(props?: { user: User }) {
-    if (!props?.user) {
+  constructor(props?: { userId: string }) {
+    const user = MOCK_USERS.find((u) => u.id === props?.userId);
+    if (!user) {
       throw new Error('UserCubit requires user to be passed via staticProps');
     }
-    super(props.user);
+    super(user);
   }
 
   setStatus = (status: User['status']) => {
