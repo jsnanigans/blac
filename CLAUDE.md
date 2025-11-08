@@ -279,6 +279,8 @@ const [state, bloc] = useBloc(MyBloc, {
 - **Redux DevTools Learnings:** `/Users/brendanmullins/Documents/Log/TempDoc/blac/2025-11/06/redux-devtools-learnings.md` (2025-11-06)
 - **Stale Render Fix:** `/Users/brendanmullins/Documents/Log/TempDoc/blac/2025-11/07/devtools-stale-render-fix.md` (2025-11-07) ✅
 - **Picture-in-Picture Implementation:** `/Users/brendanmullins/Documents/Log/TempDoc/blac/2025-11/07/picture-in-picture-devtools-implementation.md` (2025-11-07) ✅
+- **Instance Initialization Fix:** `/Users/brendanmullins/Documents/Log/TempDoc/blac/2025-11/08/chrome-extension-instance-initialization-fix.md` (2025-11-08) ✅
+- **Call Stack Tracking:** `/Users/brendanmullins/Documents/Log/TempDoc/blac/2025-11/09/devtools-callstack-tracking-implementation.md` (2025-11-09) ✅
 - **Status:** 🚧 In Progress
 
 **Key Insights from Redux DevTools:**
@@ -429,21 +431,43 @@ const activeSessions = allSessions.filter(s => s.state.isActive);
 - **Implementation Plan:** `/Users/brendanmullins/Documents/Log/TempDoc/blac/2025-11/07/devtools-simple-plan.md`
 - **Package Extraction:** `/Users/brendanmullins/Documents/Log/TempDoc/blac/2025-11/07/devtools-ui-package-extraction.md`
 - **Infinite Loop Fix:** `/Users/brendanmullins/Documents/Log/TempDoc/blac/2025-11/07/devtools-infinite-loop-fix.md`
-- **Date:** 2025-11-07
+- **Instance Grouping:** `/Users/brendanmullins/Documents/Log/TempDoc/blac/2025-11/09/devtools-instance-grouping-implementation.md`
+- **Date:** 2025-11-09
 - **Status:** ✅ Completed
 
 **Features (KISS approach):**
-1. **Visual Instance Grouping + Search**
-   - Always-visible flat list sorted by className
-   - Color-coded 4px left border per className (generated from className seed)
+1. **Invisible Instance Grouping + Search**
+   - Instances grouped by className (no visible headers)
+   - Groups sorted by first created-at date (earliest first)
+   - Instances within groups sorted by created-at (earliest first)
+   - Clean, flat appearance with logical organization
    - Simple search filter (className or instanceId)
-   - Visual grouping without collapsible headers
 
-2. **Simple Diff View**
-   - Track just previous state (1 snapshot per instance)
-   - Side-by-side comparison (Previous | Current)
-   - Color-coded borders (red for previous, green for current)
-   - Auto-shows when state changes detected
+2. **State History Timeline View**
+   - **All sections are collapsible** (Current State, State History)
+   - Stores up to 50 state snapshots per instance
+   - Shows full history timeline with newest snapshots first
+   - **Each entry shows only what changed** (not full state)
+   - Relative timestamps ("2m ago", "5h ago")
+   - Visual indicators: CURRENT (green), SNAPSHOT #, INITIAL
+   - Current State expanded by default, History collapsed
+   - Deep diff algorithm extracts changed properties
+   - **TempDoc:** `/Users/brendanmullins/Documents/Log/TempDoc/blac/2025-11/09/devtools-collapsible-sections-history-view.md`
+
+   **Call Stack Tracking (INITIATOR)** ✨ NEW
+   - Shows which line of code triggered each state update
+   - Similar to Chrome DevTools network "Initiator" tab
+   - Automatically filters out internal BlaC framework calls
+   - **Zero overhead in production** (disabled when `NODE_ENV=production`)
+   - Displays in "INITIATOR" section between header and state changes
+   - Scrollable with max height, monospace font for readability
+   - **TempDoc:** `/Users/brendanmullins/Documents/Log/TempDoc/blac/2025-11/09/devtools-callstack-tracking-implementation.md`
+
+   Implementation highlights:
+   - Captured in `StateContainer.emit()` via `Error().stack`
+   - Passed through lifecycle events and plugin system
+   - Stored in state snapshots with `StateSnapshot.callstack`
+   - Backward compatible (optional field)
 
 3. **In-App Floating Overlay** ✨ NEW
    - Toggle with **Alt+D**

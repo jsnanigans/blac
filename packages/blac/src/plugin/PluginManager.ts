@@ -147,12 +147,13 @@ export class PluginManager {
     // State changed
     this.registry.on(
       'stateChanged',
-      (instance, previousState, currentState) => {
+      (instance, previousState, currentState, callstack) => {
         this.notifyPlugins(
           'onStateChanged',
           instance,
           previousState,
           currentState,
+          callstack,
         );
       },
     );

@@ -66,40 +66,66 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
 
       // Handle atomic updates based on event type
       switch (event.type) {
+        case 'init':
+          console.log('[BlaC Overlay] Received INIT event - resetting all state');
+          // Clear all existing state
+          diffBloc.clearAllPreviousStates();
+          // Set new instances from init event
+          const initInstances = (Array.isArray(event.data) ? event.data : []).map(
+            (inst: any) => ({
+              id: inst.id,
+              className: inst.className,
+              name: inst.name,
+              isDisposed: inst.isDisposed,
+              state: inst.state,
+              lastStateChangeTimestamp: event.timestamp,
+              createdAt: event.timestamp,
+            }),
+          );
+          instancesBloc.setAllInstances(initInstances);
+          console.log(
+            `[BlaC Overlay] Reset complete - loaded ${initInstances.length} instances`,
+          );
+          break;
+
         case 'instance-created':
           console.log(
-            `[BlaC Overlay] Adding instance: ${event.data.className}#${event.data.id}`,
+            `[BlaC Overlay] Adding instance: ${(event.data as any).className}#${(event.data as any).id}`,
           );
           instancesBloc.addInstance({
-            id: event.data.id,
-            className: event.data.className,
-            name: event.data.name,
-            isDisposed: event.data.isDisposed,
-            state: event.data.state,
+            id: (event.data as any).id,
+            className: (event.data as any).className,
+            name: (event.data as any).name,
+            isDisposed: (event.data as any).isDisposed,
+            state: (event.data as any).state,
             lastStateChangeTimestamp: event.timestamp,
             createdAt: event.timestamp,
           });
           break;
 
         case 'instance-disposed':
-          console.log(`[BlaC Overlay] Removing instance: ${event.data.id}`);
-          instancesBloc.removeInstance(event.data.id);
+          console.log(`[BlaC Overlay] Removing instance: ${(event.data as any).id}`);
+          instancesBloc.removeInstance((event.data as any).id);
           // Clear previous state as well
-          diffBloc.clearPreviousState(event.data.id);
+          diffBloc.clearPreviousState((event.data as any).id);
           break;
 
         case 'instance-updated':
           console.log(
-            `[BlaC Overlay] Updating instance state: ${event.data.className}#${event.data.id}`,
+            `[BlaC Overlay] Updating instance state: ${(event.data as any).className}#${(event.data as any).id}${(event.data as any).callstack ? ' (with callstack)' : ''}`,
           );
           // Get current instance to capture previous state
-          const currentInstance = instancesBloc.getInstance(event.data.id);
+          const currentInstance = instancesBloc.getInstance((event.data as any).id);
           if (currentInstance) {
-            // Store previous state in DiffBloc
-            diffBloc.storePreviousState(event.data.id, currentInstance.state);
+            // Store previous state in DiffBloc with callstack
+            diffBloc.storePreviousState(
+              (event.data as any).id,
+              currentInstance.state,
+              (event.data as any).callstack,
+            );
           }
           // Update instance with new state
-          instancesBloc.updateInstanceState(event.data.id, event.data.state);
+          instancesBloc.updateInstanceState((event.data as any).id, (event.data as any).state);
           break;
 
         default:

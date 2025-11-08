@@ -5,11 +5,17 @@ export type InstanceData = InstanceMetadata;
 /**
  * Atomic event from DevToolsBrowserPlugin
  */
-export type AtomicEvent = {
-  type: 'instance-created' | 'instance-updated' | 'instance-disposed';
-  timestamp: number;
-  data: InstanceMetadata;
-};
+export type AtomicEvent =
+  | {
+      type: 'init';
+      timestamp: number;
+      data: InstanceMetadata[];
+    }
+  | {
+      type: 'instance-created' | 'instance-updated' | 'instance-disposed';
+      timestamp: number;
+      data: InstanceMetadata;
+    };
 
 export type MessageIn =
   | { type: 'INITIAL_STATE'; payload: { instances: InstanceData[] } }

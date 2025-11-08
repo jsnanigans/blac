@@ -5,3 +5,4 @@ export { InstanceListItem } from './InstanceListItem';
 export { StateViewer } from './StateViewer';
 export { CurrentStateView } from './CurrentStateView';
 export { StateDiffView } from './StateDiffView';
+export { StateHistoryView } from './StateHistoryView';

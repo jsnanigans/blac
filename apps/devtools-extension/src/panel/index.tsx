@@ -17,8 +17,9 @@ function App() {
       onMount={(instancesBloc: DevToolsInstancesBloc) => {
         console.log('[Panel] DevToolsPanel mounted');
 
-        // Get the DiffBloc for storing previous states (safe now that all blocs are initialized)
-        const diffBloc = DevToolsDiffBloc.get('default');
+        // Get the DiffBloc for storing previous states
+        // Safe to use .get() here because DevToolsPanel initializes it via useBloc
+        const diffBloc = DevToolsDiffBloc.get();
 
         comm.connect();
         comm.onMessage((message) => {
@@ -50,6 +51,30 @@ function App() {
 
               flushSync(() => {
                 switch (event.type) {
+                  case 'init':
+                    console.log(
+                      '[Panel] Received INIT event - resetting all state',
+                    );
+                    // Clear all existing state
+                    diffBloc.clearAllPreviousStates();
+                    // Set new instances from init event
+                    const initInstances = (
+                      Array.isArray(event.data) ? event.data : []
+                    ).map((inst: any) => ({
+                      id: inst.id,
+                      className: inst.className,
+                      name: inst.name,
+                      isDisposed: inst.isDisposed,
+                      state: inst.state,
+                      lastStateChangeTimestamp: event.timestamp,
+                      createdAt: event.timestamp,
+                    }));
+                    instancesBloc.setAllInstances(initInstances);
+                    console.log(
+                      `[Panel] Reset complete - loaded ${initInstances.length} instances`,
+                    );
+                    break;
+
                   case 'instance-created':
                     console.log(
                       `[Panel] Adding instance: ${event.data.className}#${event.data.id}`,
@@ -74,17 +99,18 @@ function App() {
 
                   case 'instance-updated':
                     console.log(
-                      `[Panel] Updating instance: ${event.data.className}#${event.data.id}`,
+                      `[Panel] Updating instance: ${event.data.className}#${event.data.id}${event.data.callstack ? ' (with callstack)' : ''}`,
                     );
                     // Get current instance to capture previous state
                     const currentInstance = instancesBloc.getInstance(
                       event.data.id,
                     );
                     if (currentInstance) {
-                      // Store previous state in DiffBloc
+                      // Store previous state in DiffBloc with callstack
                       diffBloc.storePreviousState(
                         event.data.id,
                         currentInstance.state,
+                        event.data.callstack,
                       );
                     }
                     // Update instance with new state

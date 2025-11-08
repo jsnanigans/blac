@@ -321,14 +321,61 @@ export abstract class StateContainer<S> {
       }
     }
 
+    // Capture stack trace for DevTools
+    const stackTrace = this.captureStackTrace();
+
     // Notify lifecycle listeners
     StateContainer._registry.emit(
       'stateChanged',
       this,
       previousState,
       newState,
+      stackTrace,
     );
     this.lastUpdateTimestamp = Date.now();
+  }
+
+  /**
+   * Capture stack trace for debugging
+   * Can be overridden to disable in production
+   */
+  private captureStackTrace(): string {
+    // Only capture in development (can be configured)
+    if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'production') {
+      return '';
+    }
+
+    try {
+      const error = new Error();
+      const stack = error.stack || '';
+      const lines = stack.split('\n');
+
+      // Skip Error message and this function's frames
+      const relevantLines = lines.slice(1);
+
+      // Filter out internal BlaC framework calls
+      const userCodeLines = relevantLines.filter((line) => {
+        if (!line.trim()) return false;
+
+        // Skip internal BlaC calls
+        if (
+          line.includes('StateContainer.emit') ||
+          line.includes('StateContainer.update') ||
+          line.includes('StateContainer.captureStackTrace') ||
+          line.includes('Cubit.patch') ||
+          line.includes('Vertex.')
+        ) {
+          return false;
+        }
+
+        return true;
+      });
+
+      return userCodeLines.join('\n').trim();
+    } catch (error) {
+      // Silently fail if stack trace capture fails
+      return '';
+    }
   }
   lastUpdateTimestamp: number = Date.now();
 

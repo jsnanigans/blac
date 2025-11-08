@@ -3,19 +3,50 @@ import JsonView from '@uiw/react-json-view';
 
 interface CurrentStateViewProps {
   state: any;
+  isExpanded: boolean;
+  onToggleExpanded: () => void;
 }
 
 /**
  * Displays current state with syntax highlighting
  */
 export const CurrentStateView: FC<CurrentStateViewProps> = React.memo(
-  ({ state }) => {
+  ({ state, isExpanded, onToggleExpanded }) => {
     return (
       <div>
-        <h3 style={{ fontSize: '16px', marginBottom: '10px', fontWeight: 600 }}>
-          Current State
-        </h3>
         <div
+          onClick={onToggleExpanded}
+          style={{
+            fontSize: '16px',
+            marginBottom: '10px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            userSelect: 'none',
+            padding: '4px 0',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = '#569cd6';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = '#fff';
+          }}
+        >
+          <span
+            style={{
+              display: 'inline-block',
+              transition: 'transform 0.2s',
+              transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+            }}
+          >
+            ▶
+          </span>
+          <span>Current State</span>
+        </div>
+        {isExpanded && (
+          <div
           style={{
             background: '#252526',
             padding: '15px',
@@ -48,6 +79,7 @@ export const CurrentStateView: FC<CurrentStateViewProps> = React.memo(
             }
           />
         </div>
+        )}
       </div>
     );
   },

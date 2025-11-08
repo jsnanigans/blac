@@ -59,6 +59,8 @@ export interface StateChangedPayload {
   currentState: any;
   /** Message timestamp */
   timestamp: number;
+  /** Call stack trace for debugging (optional) */
+  callstack?: string;
 }
 
 /**

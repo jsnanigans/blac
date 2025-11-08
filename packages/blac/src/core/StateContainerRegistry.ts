@@ -45,6 +45,7 @@ export type LifecycleListener<E extends LifecycleEvent> = E extends 'created'
         container: StateContainer<any>,
         previousState: any,
         currentState: any,
+        callstack?: string,
       ) => void
     : E extends 'eventAdded'
       ? (container: Vertex<any, any>, event: any) => void

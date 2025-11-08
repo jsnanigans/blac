@@ -10,7 +10,7 @@
 
 import React, { FC } from 'react';
 import { useBloc } from '@blac/react';
-import { DevToolsInstancesBloc } from './blocs';
+import { DevToolsInstancesBloc, DevToolsDiffBloc } from './blocs';
 import { DevToolsHeader, InstanceList, StateViewer } from './components';
 import type { DevToolsUIProps } from './types';
 
@@ -25,6 +25,7 @@ import type { DevToolsUIProps } from './types';
  */
 export const DevToolsPanel: FC<DevToolsUIProps> = React.memo(
   ({ onMount, onUnmount }) => {
+    // Initialize core blocs needed for the panel
     useBloc(DevToolsInstancesBloc, {
       onMount: (instancesBloc) => {
         console.log('[DevToolsPanel] DevToolsInstancesBloc created');
@@ -32,6 +33,13 @@ export const DevToolsPanel: FC<DevToolsUIProps> = React.memo(
       },
       onUnmount: () => {
         onUnmount?.();
+      },
+    });
+
+    // Initialize diff bloc for state comparison
+    useBloc(DevToolsDiffBloc, {
+      onMount: () => {
+        console.log('[DevToolsPanel] DevToolsDiffBloc created');
       },
     });
 

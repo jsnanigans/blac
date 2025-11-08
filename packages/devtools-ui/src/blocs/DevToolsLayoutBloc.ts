@@ -1,11 +1,12 @@
 import { Cubit } from '@blac/core';
 import type { InstanceData } from '../types';
 import { DevToolsInstancesBloc } from './DevToolsInstancesBloc';
-import { DevToolsDiffBloc, type DiffResult } from './DevToolsDiffBloc';
+import { DevToolsDiffBloc, type DiffResult, type StateSnapshot } from './DevToolsDiffBloc';
 
 type LayoutState = {
   selectedId: string | null;
-  isDiffExpanded: boolean;
+  isCurrentStateExpanded: boolean;
+  isHistoryExpanded: boolean;
 };
 
 /**
@@ -21,7 +22,8 @@ export class DevToolsLayoutBloc extends Cubit<LayoutState> {
   constructor() {
     super({
       selectedId: null,
-      isDiffExpanded: false,
+      isCurrentStateExpanded: true, // Default: expanded
+      isHistoryExpanded: false, // Default: collapsed
     });
   }
 
@@ -34,11 +36,19 @@ export class DevToolsLayoutBloc extends Cubit<LayoutState> {
   };
 
   /**
-   * Toggle diff panel expansion
+   * Toggle current state panel expansion
    */
-  toggleDiffExpanded = () => {
-    console.log(`[LayoutBloc] Toggling diff expanded`);
-    this.patch({ isDiffExpanded: !this.state.isDiffExpanded });
+  toggleCurrentStateExpanded = () => {
+    console.log(`[LayoutBloc] Toggling current state expanded`);
+    this.patch({ isCurrentStateExpanded: !this.state.isCurrentStateExpanded });
+  };
+
+  /**
+   * Toggle history panel expansion
+   */
+  toggleHistoryExpanded = () => {
+    console.log(`[LayoutBloc] Toggling history expanded`);
+    this.patch({ isHistoryExpanded: !this.state.isHistoryExpanded });
   };
 
   /**
@@ -61,5 +71,16 @@ export class DevToolsLayoutBloc extends Cubit<LayoutState> {
 
     const diffBloc = DevToolsDiffBloc.get();
     return diffBloc.getDiff(this.state.selectedId);
+  }
+
+  /**
+   * Get state history for selected instance
+   * Borrows data from DevToolsDiffBloc
+   */
+  get selectedHistory(): StateSnapshot[] {
+    if (!this.state.selectedId) return [];
+
+    const diffBloc = DevToolsDiffBloc.get();
+    return diffBloc.getHistory(this.state.selectedId);
   }
 }

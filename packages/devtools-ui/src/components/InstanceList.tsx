@@ -16,7 +16,7 @@ export const InstanceList: FC = React.memo(() => {
   const [, searchBloc] = useBloc(DevToolsSearchBloc);
   const [{ selectedId }, layoutBloc] = useBloc(DevToolsLayoutBloc);
 
-  const filteredInstances = searchBloc.getFilteredInstances();
+  const groupedInstances = searchBloc.getGroupedInstances();
 
   return (
     <div
@@ -68,7 +68,7 @@ export const InstanceList: FC = React.memo(() => {
           >
             No instances detected
           </div>
-        ) : filteredInstances.length === 0 ? (
+        ) : groupedInstances.length === 0 ? (
           <div
             style={{
               padding: '20px',
@@ -79,15 +79,17 @@ export const InstanceList: FC = React.memo(() => {
             No matches found
           </div>
         ) : (
-          filteredInstances.map((instance) => (
-            <InstanceListItem
-              key={instance.id}
-              instance={instance}
-              isSelected={selectedId === instance.id}
-              animationTriggers={animationTriggers.get(instance.id) || []}
-              onSelect={() => layoutBloc.setSelectedId(instance.id)}
-            />
-          ))
+          groupedInstances.map((group) =>
+            group.instances.map((instance) => (
+              <InstanceListItem
+                key={instance.id}
+                instance={instance}
+                isSelected={selectedId === instance.id}
+                animationTriggers={animationTriggers.get(instance.id) || []}
+                onSelect={() => layoutBloc.setSelectedId(instance.id)}
+              />
+            )),
+          )
         )}
       </div>
     </div>

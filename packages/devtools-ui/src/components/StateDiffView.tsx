@@ -1,10 +1,13 @@
-import React, { FC } from 'react';
+import React, { FC, useState } from 'react';
+import JsonView from '@uiw/react-json-view';
 import { Viewer, Differ } from 'json-diff-kit';
 import 'json-diff-kit/dist/viewer.css';
 import type { DiffResult } from '../blocs';
 
 // Create a differ instance for state comparisons
 const differ = new Differ();
+
+type DiffMode = 'changes-only' | 'full-diff';
 
 interface StateDiffViewProps {
   diff: DiffResult;
@@ -17,7 +20,11 @@ interface StateDiffViewProps {
  */
 export const StateDiffView: FC<StateDiffViewProps> = React.memo(
   ({ diff, isExpanded, onToggleExpanded }) => {
+    const [mode, setMode] = useState<DiffMode>('changes-only');
+
     if (!diff) return null;
+
+    const hasChanges = diff.changedOnly !== undefined;
 
     return (
       <div style={{ marginTop: '30px' }}>
@@ -152,28 +159,158 @@ export const StateDiffView: FC<StateDiffViewProps> = React.memo(
           >
             ▶
           </span>
-          <span>State Diff (Previous vs Current)</span>
+          <span>State Diff</span>
+          {hasChanges && (
+            <span
+              style={{
+                fontSize: '12px',
+                color: '#10b981',
+                fontWeight: 400,
+                marginLeft: '4px',
+              }}
+            >
+              (changes detected)
+            </span>
+          )}
         </div>
 
         {isExpanded && (
-          <div
-            style={{
-              background: '#1e1e1e',
-              borderRadius: '4px',
-              overflow: 'auto',
-              border: '1px solid #333',
-            }}
-          >
-            <Viewer
-              diff={differ.diff(diff.previous, diff.current)}
-              indent={2}
-              lineNumbers={true}
-              highlightInlineDiff={true}
-              inlineDiffOptions={{
-                mode: 'word',
-                wordSeparator: ' ',
+          <div>
+            {/* Tab Selector */}
+            <div
+              style={{
+                display: 'flex',
+                gap: '8px',
+                marginBottom: '12px',
+                borderBottom: '1px solid #333',
               }}
-            />
+            >
+              <button
+                onClick={() => setMode('changes-only')}
+                style={{
+                  background: mode === 'changes-only' ? '#252526' : 'transparent',
+                  border: 'none',
+                  color: mode === 'changes-only' ? '#569cd6' : '#888',
+                  padding: '8px 16px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  borderBottom: mode === 'changes-only' ? '2px solid #569cd6' : 'none',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  if (mode !== 'changes-only') {
+                    e.currentTarget.style.color = '#aaa';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (mode !== 'changes-only') {
+                    e.currentTarget.style.color = '#888';
+                  }
+                }}
+              >
+                Changes Only
+              </button>
+              <button
+                onClick={() => setMode('full-diff')}
+                style={{
+                  background: mode === 'full-diff' ? '#252526' : 'transparent',
+                  border: 'none',
+                  color: mode === 'full-diff' ? '#569cd6' : '#888',
+                  padding: '8px 16px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  borderBottom: mode === 'full-diff' ? '2px solid #569cd6' : 'none',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  if (mode !== 'full-diff') {
+                    e.currentTarget.style.color = '#aaa';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (mode !== 'full-diff') {
+                    e.currentTarget.style.color = '#888';
+                  }
+                }}
+              >
+                Full Diff
+              </button>
+            </div>
+
+            {/* Content */}
+            {mode === 'changes-only' ? (
+              <div
+                style={{
+                  background: '#1e1e1e',
+                  borderRadius: '4px',
+                  padding: '16px',
+                  border: '1px solid #333',
+                }}
+              >
+                {!hasChanges ? (
+                  <div style={{ color: '#888', fontSize: '13px' }}>
+                    No changes detected
+                  </div>
+                ) : (
+                  <JsonView
+                    value={diff.changedOnly}
+                    style={
+                      {
+                        '--w-rjv-font-family': 'Monaco, Menlo, Consolas, monospace',
+                        '--w-rjv-background-color': '#1e1e1e',
+                        '--w-rjv-color': '#d4d4d4',
+                        '--w-rjv-key-string': '#9cdcfe',
+                        '--w-rjv-info-color': '#6a9955',
+                        '--w-rjv-border-left': '1px solid #333',
+                        '--w-rjv-line-color': '#1e1e1e',
+                        '--w-rjv-arrow-color': '#858585',
+                        '--w-rjv-edit-color': '#569cd6',
+                        '--w-rjv-add-color': '#10b981',
+                        '--w-rjv-del-color': '#ef4444',
+                        '--w-rjv-copied-color': '#10b981',
+                        '--w-rjv-curlybraces-color': '#d4d4d4',
+                        '--w-rjv-brackets-color': '#d4d4d4',
+                        '--w-rjv-ellipsis-color': '#858585',
+                        '--w-rjv-quotes-color': '#ce9178',
+                        '--w-rjv-quotes-string-color': '#ce9178',
+                        '--w-rjv-type-string-color': '#ce9178',
+                        '--w-rjv-type-int-color': '#b5cea8',
+                        '--w-rjv-type-float-color': '#b5cea8',
+                        '--w-rjv-type-bigint-color': '#b5cea8',
+                        '--w-rjv-type-boolean-color': '#569cd6',
+                        '--w-rjv-type-date-color': '#c586c0',
+                        '--w-rjv-type-url-color': '#3b82f6',
+                        '--w-rjv-type-null-color': '#569cd6',
+                        '--w-rjv-type-nan-color': '#ef4444',
+                        '--w-rjv-type-undefined-color': '#569cd6',
+                      } as any
+                    }
+                  />
+                )}
+              </div>
+            ) : (
+              <div
+                style={{
+                  background: '#1e1e1e',
+                  borderRadius: '4px',
+                  overflow: 'auto',
+                  border: '1px solid #333',
+                }}
+              >
+                <Viewer
+                  diff={differ.diff(diff.previous, diff.current)}
+                  indent={2}
+                  lineNumbers={true}
+                  highlightInlineDiff={true}
+                  inlineDiffOptions={{
+                    mode: 'word',
+                    wordSeparator: ' ',
+                  }}
+                />
+              </div>
+            )}
           </div>
         )}
       </div>

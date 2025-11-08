@@ -12,6 +12,7 @@ import { safeSerialize } from '../serialization/serialize';
  * Event types for DevTools
  */
 export type DevToolsEventType =
+  | 'init'
   | 'instance-created'
   | 'instance-updated'
   | 'instance-disposed';
@@ -19,7 +20,7 @@ export type DevToolsEventType =
 export interface DevToolsEvent {
   type: DevToolsEventType;
   timestamp: number;
-  data: InstanceMetadata;
+  data: InstanceMetadata | InstanceMetadata[]; // Array for 'init', single for others
 }
 
 /**
@@ -113,8 +114,9 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
    */
   onStateChanged(
     instance: any,
-    _previousState: any,
-    _currentState: any,
+    previousState: any,
+    currentState: any,
+    callstack: string | undefined,
     context: PluginContext,
   ): void {
     // Skip instances marked as internal (DevTools Blocs tracking themselves)
@@ -122,9 +124,9 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       return;
     }
 
-    const data = this.createInstanceData(instance, context);
+    const data = this.createInstanceData(instance, context, previousState, currentState, callstack);
     this.instanceCache.set(data.id, data);
-    console.log(`[DevToolsBrowserPlugin] State changed: ${data.className}#${data.id}`);
+    console.log(`[DevToolsBrowserPlugin] State changed: ${data.className}#${data.id}${callstack ? ' (with callstack)' : ''}`);
 
     this.emit({
       type: 'instance-updated',
@@ -212,6 +214,14 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     console.log(
       `[DevToolsBrowserPlugin] Found ${this.instanceCache.size} existing instances`,
     );
+
+    // Emit INIT event with all instances
+    const allInstances = Array.from(this.instanceCache.values());
+    this.emit({
+      type: 'init',
+      timestamp: Date.now(),
+      data: allInstances,
+    });
   }
 
   /**
@@ -239,6 +249,9 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
   private createInstanceData(
     instance: any,
     context: PluginContext,
+    previousState?: any,
+    currentState?: any,
+    callstack?: string,
   ): InstanceMetadata {
     const metadata = context.getInstanceMetadata(instance);
     const state = context.getState(instance);
@@ -251,6 +264,9 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     return {
       ...metadata,
       state: safeSerialize(state).data,
+      callstack,
+      previousState: previousState ? safeSerialize(previousState).data : undefined,
+      currentState: currentState ? safeSerialize(currentState).data : undefined,
     };
   }
 

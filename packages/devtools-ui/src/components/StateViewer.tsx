@@ -3,16 +3,16 @@ import { useBloc } from '@blac/react';
 import { DevToolsLayoutBloc } from '../blocs';
 import InstanceId from './InstanceId';
 import { CurrentStateView } from './CurrentStateView';
-import { StateDiffView } from './StateDiffView';
+import { StateHistoryView } from './StateHistoryView';
 
 /**
- * Right panel displaying selected instance state and diff
+ * Right panel displaying selected instance state and history
  */
 export const StateViewer: FC = () => {
-  const [{ isDiffExpanded }, layoutBloc] = useBloc(DevToolsLayoutBloc);
+  const [{ isCurrentStateExpanded, isHistoryExpanded }, layoutBloc] = useBloc(DevToolsLayoutBloc);
 
   const selectedInstance = layoutBloc.selectedInstance;
-  const diff = layoutBloc.selectedDiff;
+  const history = layoutBloc.selectedHistory;
 
   if (!selectedInstance) {
     return (
@@ -65,13 +65,18 @@ export const StateViewer: FC = () => {
       {/* Scrollable Content */}
       <div style={{ flex: 1, overflow: 'auto', padding: '20px' }}>
         {/* Current State Section */}
-        <CurrentStateView state={selectedInstance.state} />
+        <CurrentStateView
+          state={selectedInstance.state}
+          isExpanded={isCurrentStateExpanded}
+          onToggleExpanded={layoutBloc.toggleCurrentStateExpanded}
+        />
 
-        {/* State Diff Section (Collapsible) */}
-        <StateDiffView
-          diff={diff}
-          isExpanded={isDiffExpanded}
-          onToggleExpanded={layoutBloc.toggleDiffExpanded}
+        {/* State History Section (Collapsible) */}
+        <StateHistoryView
+          history={history}
+          currentState={selectedInstance.state}
+          isExpanded={isHistoryExpanded}
+          onToggleExpanded={layoutBloc.toggleHistoryExpanded}
         />
       </div>
     </div>
