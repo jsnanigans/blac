@@ -1,5 +1,6 @@
 /**
  * PluginManager - Manages plugins and provides plugin context
+ * TESTS ARE FOR AN OLDER VERSION AND NEED TO BE REWRITTEN
  */
 
 import type { StateContainer } from '../core/StateContainer';

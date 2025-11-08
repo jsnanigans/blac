@@ -21,6 +21,7 @@ export { hasInitHook } from './plugin/BlacPlugin';
 
 export * from './tracking';
 export * from './proxy/ProxyTracker';
+export * from './adapter';
 
 export type { Brand, BrandedId, InstanceId } from './types/branded';
 export type { BaseEvent } from './types/events';

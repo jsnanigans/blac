@@ -1,32 +1,28 @@
-import { useMemo, useSyncExternalStore, useEffect, useRef, useState } from 'react';
+import {
+  useMemo,
+  useSyncExternalStore,
+  useEffect,
+  useRef,
+  useReducer,
+} from 'react';
 import {
   type BlocConstructor,
   StateContainer,
   type ExtractState,
-  type TrackerState,
-  createTrackerState,
-  startTracking,
-  createProxy,
-  captureTrackedPaths,
-  hasChanges,
-  hasTrackedData,
-  shallowEqual,
-  type GetterTrackerState,
-  createGetterTracker,
-  createBlocProxy,
-  hasGetterChanges,
-  setActiveTracker,
-  clearActiveTracker,
-  commitTrackedGetters,
-  invalidateRenderCache,
-  clearExternalDependencies,
+  type AdapterState,
+  ExternalDependencyManager,
+  createAutoTrackSubscribe,
+  createManualDepsSubscribe,
+  createNoTrackSubscribe,
+  createAutoTrackSnapshot,
+  createManualDepsSnapshot,
+  createNoTrackSnapshot,
+  initAutoTrackState,
+  initManualDepsState,
+  initNoTrackState,
+  disableGetterTracking,
 } from '@blac/core';
-import type {
-  UseBlocOptions,
-  UseBlocReturn,
-  ComponentRef,
-  UseBlocOptionsWithDependencies,
-} from './types';
+import type { UseBlocOptions, UseBlocReturn, ComponentRef } from './types';
 
 type StateContainerConstructor<TBloc extends StateContainer<any>> =
   BlocConstructor<TBloc> & {
@@ -69,171 +65,6 @@ function determineTrackingMode<TBloc extends StateContainer<any>>(
 }
 
 /**
- * Internal state for subscription and snapshot functions
- */
-interface HookState<TBloc extends StateContainer<any>> {
-  /** State property tracker (existing) */
-  tracker: TrackerState<ExtractState<TBloc>> | null;
-  /** Manual dependencies cache (existing) */
-  manualDepsCache: unknown[] | null;
-  /** Getter tracking state (new) */
-  getterTracker: GetterTrackerState | null;
-  /** Cached proxied bloc instance (new) */
-  proxiedBloc: TBloc | null;
-}
-
-/**
- * Factory: Creates subscribe function for automatic proxy tracking mode
- */
-function createAutoTrackSubscribe<TBloc extends StateContainer<any>>(
-  instance: TBloc,
-  hookState: HookState<TBloc>,
-): (callback: () => void) => () => void {
-  return (callback: () => void) => {
-    return instance.subscribe(() => {
-      const tracker =
-        hookState.tracker ||
-        (hookState.tracker = createTrackerState<ExtractState<TBloc>>());
-
-      // Check if we have tracked state properties
-      // Note: pathCache contains committed tracked paths after first render completes
-      const hasStateDeps = tracker.pathCache && tracker.pathCache.size > 0;
-      const hasGetterDeps =
-        hookState.getterTracker &&
-        hookState.getterTracker.trackedGetters.size > 0;
-
-      // Special case: Primitive state (number, string, boolean) can't be proxied
-      // so nothing gets tracked. Use conservative behavior for primitive state.
-      const isPrimitiveState =
-        instance.state !== null &&
-        typeof instance.state !== 'object' &&
-        typeof instance.state !== 'function';
-
-      // EARLY EXIT: If nothing tracked at all after first render, no re-render needed
-      // This handles the case where state is destructured but never accessed.
-      // Exception: For primitive state, always re-render (can't track primitives)
-      if (!hasStateDeps && !hasGetterDeps && !isPrimitiveState) {
-        return;
-      }
-
-      // At this point we know something was tracked, check for changes
-      let stateChanged = hasChanges(tracker, instance.state);
-
-      // Special case: if NO state properties were tracked (pathCache.size === 0)
-      // but getters WERE tracked, then don't treat "no state tracking" as "track everything".
-      // Only rely on getter changes in this case.
-      if (!hasStateDeps && hasGetterDeps) {
-        stateChanged = false; // Override - only getters are relevant
-      }
-
-      // EARLY EXIT: If state already changed, skip getter checks entirely
-      if (stateChanged) {
-        callback();
-        return;
-      }
-
-      // Only check getters if state didn't change
-      const getterChanged = hasGetterChanges(instance, hookState.getterTracker);
-
-      if (getterChanged) {
-        callback();
-      }
-    });
-  };
-}
-
-function createManualDepsSubscribe<TBloc extends StateContainer<any>>(
-  instance: TBloc,
-  hookState: HookState<TBloc>,
-  options: UseBlocOptionsWithDependencies<TBloc>,
-): (callback: () => void) => () => void {
-  return (callback: () => void) => {
-    return instance.subscribe(() => {
-      const newDeps = options.dependencies(instance.state, instance);
-      if (
-        !hookState.manualDepsCache ||
-        !shallowEqual(hookState.manualDepsCache, newDeps)
-      ) {
-        hookState.manualDepsCache = newDeps;
-        callback();
-      }
-    });
-  };
-}
-
-/**
- * Factory: Creates subscribe function for no-tracking mode
- */
-function createNoTrackSubscribe<TBloc extends StateContainer<any>>(
-  instance: TBloc,
-): (callback: () => void) => () => void {
-  return (callback: () => void) => instance.subscribe(callback);
-}
-
-/**
- * Factory: Creates getSnapshot function for automatic proxy tracking mode
- */
-function createAutoTrackSnapshot<TBloc extends StateContainer<any>>(
-  instance: TBloc,
-  hookState: HookState<TBloc>,
-): () => ExtractState<TBloc> {
-  return () => {
-    const tracker =
-      hookState.tracker ||
-      (hookState.tracker = createTrackerState<ExtractState<TBloc>>());
-
-    if (hasTrackedData(tracker)) {
-      captureTrackedPaths(tracker, instance.state);
-    }
-
-    // Enable getter tracking during render and set as active tracker
-    if (hookState.getterTracker) {
-      // Invalidate render cache at the START of each render
-      // This ensures getters are recomputed with fresh state
-      invalidateRenderCache(hookState.getterTracker);
-
-      // Capture getters from previous render (commit currentlyAccessing to trackedGetters)
-      commitTrackedGetters(hookState.getterTracker);
-
-      // DON'T clear external dependencies here - we need them for useEffect
-      // They will be cleared in useEffect after we set up subscriptions
-
-      // Enable tracking for this render
-      hookState.getterTracker.isTracking = true;
-
-      // Set this component's tracker as the active one for this bloc
-      setActiveTracker(instance, hookState.getterTracker);
-    }
-
-    startTracking(tracker);
-    return createProxy(tracker, instance.state);
-  };
-}
-
-/**
- * Factory: Creates getSnapshot function for manual dependencies mode
- */
-function createManualDepsSnapshot<TBloc extends StateContainer<any>>(
-  instance: TBloc,
-  hookState: HookState<TBloc>,
-  options: UseBlocOptionsWithDependencies<TBloc>,
-): () => ExtractState<TBloc> {
-  return () => {
-    hookState.manualDepsCache = options.dependencies(instance.state, instance);
-    return instance.state;
-  };
-}
-
-/**
- * Factory: Creates getSnapshot function for no-tracking mode
- */
-function createNoTrackSnapshot<TBloc extends StateContainer<any>>(
-  instance: TBloc,
-): () => ExtractState<TBloc> {
-  return () => instance.state;
-}
-
-/**
  * Lifecycle: INITIAL MOUNT
  * 1. useMemo runs once - creates bloc, subscribeFn, getSnapshotFn
  * 2. useSyncExternalStore calls getSnapshotFn (1st time) - lazy creates tracker, starts tracking, returns proxy
@@ -250,9 +81,7 @@ function createNoTrackSnapshot<TBloc extends StateContainer<any>>(
  * 1. useMemo returns cached values (same bloc, subscribeFn, getSnapshotFn)
  * 2. useSyncExternalStore calls getSnapshotFn - captures paths, starts tracking, returns proxy
  */
-export function useBloc<
-  T extends new (...args: any[]) => StateContainer<any>
->(
+export function useBloc<T extends new (...args: any[]) => StateContainer<any>>(
   BlocClass: T & BlocConstructor<InstanceType<T>>,
   options?: UseBlocOptions<InstanceType<T>>,
 ): UseBlocReturn<InstanceType<T>> {
@@ -262,14 +91,14 @@ export function useBloc<
   const Constructor = BlocClass as StateContainerConstructor<TBloc>;
   const isIsolated = Constructor.isolated === true;
 
-  const [bloc, subscribe, getSnapshot, instanceKey, hookState, rawInstance] =
+  const [bloc, subscribe, getSnapshot, instanceKey, adapterState, rawInstance] =
     useMemo<
       readonly [
         TBloc,
         (callback: () => void) => () => void,
         () => ExtractState<TBloc>,
         string | undefined,
-        HookState<TBloc>,
+        AdapterState<ExtractState<TBloc>>,
         TBloc,
       ]
     >(() => {
@@ -280,7 +109,6 @@ export function useBloc<
         options?.instanceId,
       );
 
-
       // Get or create bloc instance with ownership (increments ref count)
       const instance = BlocClass.resolve(instanceId, options?.staticProps);
 
@@ -288,52 +116,38 @@ export function useBloc<
       const { useManualDeps, autoTrackEnabled } =
         determineTrackingMode(options);
 
-      // Mutable state shared between subscribe and getSnapshot
-      const hookState: HookState<TBloc> = {
-        tracker: null,
-        manualDepsCache: null,
-        getterTracker: null,
-        proxiedBloc: null,
-      };
-
       // Create subscribe and getSnapshot functions based on tracking mode
       let subscribeFn: (callback: () => void) => () => void;
       let getSnapshotFn: () => ExtractState<TBloc>;
+      let adapterState: AdapterState<ExtractState<TBloc>>;
 
       if (useManualDeps && options?.dependencies) {
         // Manual dependencies mode - no automatic tracking
-        subscribeFn = createManualDepsSubscribe(
-          instance,
-          hookState,
-          options as UseBlocOptionsWithDependencies<TBloc>,
-        );
-        getSnapshotFn = createManualDepsSnapshot(
-          instance,
-          hookState,
-          options as UseBlocOptionsWithDependencies<TBloc>,
-        );
-        hookState.proxiedBloc = instance; // Use raw instance
+        adapterState = initManualDepsState(instance);
+        subscribeFn = createManualDepsSubscribe(instance, adapterState, {
+          dependencies: options.dependencies,
+        });
+        getSnapshotFn = createManualDepsSnapshot(instance, adapterState, {
+          dependencies: options.dependencies,
+        });
       } else if (!autoTrackEnabled) {
         // No tracking mode
+        adapterState = initNoTrackState(instance);
         subscribeFn = createNoTrackSubscribe(instance);
         getSnapshotFn = createNoTrackSnapshot(instance);
-        hookState.proxiedBloc = instance; // Use raw instance
       } else {
         // Auto-tracking mode - enable both state and getter tracking
-        subscribeFn = createAutoTrackSubscribe(instance, hookState);
-        getSnapshotFn = createAutoTrackSnapshot(instance, hookState);
-
-        // Initialize getter tracker and create proxied bloc
-        hookState.getterTracker = createGetterTracker();
-        hookState.proxiedBloc = createBlocProxy(instance);
+        adapterState = initAutoTrackState(instance);
+        subscribeFn = createAutoTrackSubscribe(instance, adapterState);
+        getSnapshotFn = createAutoTrackSnapshot(instance, adapterState);
       }
 
       return [
-        hookState.proxiedBloc!,
+        adapterState.proxiedBloc!,
         subscribeFn,
         getSnapshotFn,
         instanceId,
-        hookState,
+        adapterState,
         instance,
       ];
     }, [BlocClass]);
@@ -341,89 +155,20 @@ export function useBloc<
   const state = useSyncExternalStore(subscribe, getSnapshot);
 
   // Force re-render mechanism for external bloc changes
-  const [, forceUpdate] = useState({});
+  const [, forceUpdate] = useReducer((x: number) => x + 1, 0);
 
-  // Store subscriptions in a ref that persists across renders
-  const externalSubscriptionsRef = useRef<(() => void)[]>([]);
+  // External dependency manager (persists across renders)
+  const externalDepsManager = useRef(new ExternalDependencyManager());
 
-  // Track previous dependencies to avoid unnecessary re-subscriptions
-  const prevDepsRef = useRef<Set<StateContainer<any>>>(new Set());
-
-  // Disable getter tracking after each render and clear active tracker
+  // Disable getter tracking and manage external bloc subscriptions after each render
   useEffect(() => {
-    if (hookState.getterTracker) {
-      hookState.getterTracker.isTracking = false;
-      clearActiveTracker(rawInstance);
-    }
-  });
-
-  // Manage external bloc subscriptions
-  useEffect(() => {
-    if (!hookState.getterTracker?.externalDependencies) return;
-
-    const currentDeps = hookState.getterTracker.externalDependencies;
-
-    // Check if dependencies actually changed
-    if (areDependenciesEqual(prevDepsRef.current, currentDeps)) {
-      // Dependencies haven't changed, don't re-subscribe
-      // Just clear the externalDependencies for next render
-      clearExternalDependencies(hookState.getterTracker);
-      return;
-    }
-
-    // Dependencies changed, clean up old subscriptions
-    externalSubscriptionsRef.current.forEach(unsub => unsub());
-    externalSubscriptionsRef.current = [];
-
-    // Subscribe to each external dependency
-    for (const externalBloc of currentDeps) {
-      if (externalBloc === rawInstance) continue;
-
-      const unsub = externalBloc.subscribe(() => {
-        // Invalidate the render cache so getters are recomputed with fresh values
-        if (hookState.getterTracker) {
-          invalidateRenderCache(hookState.getterTracker);
-        }
-
-        // When external bloc changes, check if our getters changed
-        if (hasGetterChanges(rawInstance, hookState.getterTracker)) {
-          // Force a re-render using useState
-          forceUpdate({});
-        }
-      });
-
-      externalSubscriptionsRef.current.push(unsub);
-    }
-
-    // Store current dependencies for next comparison
-    prevDepsRef.current = new Set(currentDeps);
-
-    // Clear external dependencies AFTER setting up subscriptions
-    // so they can be re-discovered in the next render
-    clearExternalDependencies(hookState.getterTracker);
-  }); // Run on every render to pick up new dependencies
-
-  // Cleanup all subscriptions on unmount
-  useEffect(() => {
-    return () => {
-      externalSubscriptionsRef.current.forEach(unsub => unsub());
-      externalSubscriptionsRef.current = [];
-    };
-  }, []);
-
-  // Helper function to compare dependency sets
-  function areDependenciesEqual(
-    oldDeps: Set<StateContainer<any>>,
-    newDeps: Set<StateContainer<any>>
-  ): boolean {
-    if (oldDeps.size !== newDeps.size) return false;
-
-    for (const dep of newDeps) {
-      if (!oldDeps.has(dep)) return false;
-    }
-
-    return true;
-  }
+    disableGetterTracking(adapterState, rawInstance);
+    externalDepsManager.current.updateSubscriptions(
+      adapterState.getterTracker,
+      rawInstance,
+      forceUpdate,
+    );
+  }); // Run on every render to pick up new dependencies and disable tracking
 
   // Mount/unmount lifecycle
   useEffect(() => {
@@ -433,16 +178,20 @@ export function useBloc<
     }
 
     return () => {
-      // Call onUnmount callback if provided
+      // Cleanup in proper order: subscriptions -> callbacks -> disposal
+
+      // 1. Clean up external subscriptions FIRST (before bloc is disposed)
+      externalDepsManager.current.cleanup();
+
+      // 2. Call onUnmount callback if provided
       if (options?.onUnmount) {
         options.onUnmount(bloc);
       }
 
-      // Release bloc reference
-      const Constructor = BlocClass as StateContainerConstructor<TBloc>;
+      // 3. Release bloc reference
       Constructor.release(instanceKey);
 
-      // For isolated instances, dispose manually since registry doesn't track them
+      // 4. For isolated instances, dispose manually since registry doesn't track them
       if (isIsolated && !rawInstance.isDisposed) {
         rawInstance.dispose();
       }

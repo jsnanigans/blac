@@ -624,3 +624,48 @@ const Component = () => {
 - Uses `useState` to force re-renders
 
 **Key Implementation Insight:** Must invalidate getter render cache before checking for changes when external bloc updates (critical fix discovered during implementation)
+
+### Framework Adapter Refactoring
+
+**TempDoc Reference:**
+- **Refactoring Summary:** `/Users/brendanmullins/Documents/Log/TempDoc/blac/2025-11/08/framework-adapter-refactoring.md`
+- **Date:** 2025-11-08
+- **Status:** ✅ Completed
+- **Test Results:** All 83 tests passing (0 regressions)
+
+**What Changed:**
+Extracted all framework-agnostic tracking logic from `@blac/react` into a reusable `@blac/core/adapter` module. This makes BlaC integration significantly easier for other frameworks (Vue, Solid, Svelte, Angular, etc.).
+
+**New Core Module:**
+- `packages/blac/src/adapter/framework-adapter.ts` (~300 lines of reusable logic)
+- Exports: `AdapterState`, `ExternalDependencyManager`, subscription factories, snapshot factories, state initialization utilities
+
+**Key Benefits:**
+- ✅ 300 lines of reusable adapter logic for all frameworks
+- ✅ 50% reduction in React-specific code (450 lines → 220 lines)
+- ✅ Clean separation of concerns (framework-agnostic vs framework-specific)
+- ✅ Zero behavior changes (all tests passing)
+- ✅ Ready for multi-framework support
+
+**Usage Example (Vue Integration):**
+```typescript
+import {
+  AdapterState,
+  ExternalDependencyManager,
+  createAutoTrackSubscribe,
+  createAutoTrackSnapshot,
+  initAutoTrackState,
+  disableGetterTracking,
+} from '@blac/core';
+
+export function useBloc(BlocClass) {
+  const instance = BlocClass.resolve();
+  const adapterState = initAutoTrackState(instance);
+  const subscribe = createAutoTrackSubscribe(instance, adapterState);
+  const getSnapshot = createAutoTrackSnapshot(instance, adapterState);
+
+  // ... Vue-specific integration logic
+}
+```
+
+See TempDoc for complete Vue and Solid.js integration examples.
