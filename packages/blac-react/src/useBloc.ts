@@ -246,11 +246,14 @@ function createNoTrackSnapshot<TBloc extends StateContainer<any>>(
  * 1. useMemo returns cached values (same bloc, subscribeFn, getSnapshotFn)
  * 2. useSyncExternalStore calls getSnapshotFn - captures paths, starts tracking, returns proxy
  */
-export function useBloc<TBloc extends StateContainer<any>>(
-  BlocClass: BlocConstructor<TBloc>,
-  options?: UseBlocOptions<TBloc>,
-): UseBlocReturn<TBloc> {
+export function useBloc<
+  T extends new (...args: any[]) => StateContainer<any>
+>(
+  BlocClass: T & BlocConstructor<InstanceType<T>>,
+  options?: UseBlocOptions<InstanceType<T>>,
+): UseBlocReturn<InstanceType<T>> {
   // Component reference that persists across React Strict Mode remounts
+  type TBloc = InstanceType<T>;
   const componentRef = useRef<ComponentRef>({});
   const Constructor = BlocClass as StateContainerConstructor<TBloc>;
   const isIsolated = Constructor.isolated === true;

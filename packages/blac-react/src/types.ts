@@ -1,7 +1,7 @@
-import type { StateContainer, ExtractState } from '@blac/core';
+import type { ExtractState } from '@blac/core';
 import type { RefObject } from 'react';
 
-export interface UseBlocOptions<TBloc extends StateContainer<any>> {
+export interface UseBlocOptions<TBloc> {
   staticProps?: any;
   instanceId?: string | number;
   dependencies?: (state: ExtractState<TBloc>, bloc: TBloc) => unknown[];
@@ -11,14 +11,12 @@ export interface UseBlocOptions<TBloc extends StateContainer<any>> {
   onUnmount?: (bloc: TBloc) => void;
 }
 
-export interface UseBlocOptionsWithDependencies<
-  TBloc extends StateContainer<any>,
-> extends UseBlocOptions<TBloc> {
+export interface UseBlocOptionsWithDependencies<TBloc> extends UseBlocOptions<TBloc> {
   dependencies: (state: ExtractState<TBloc>, bloc: TBloc) => unknown[];
   autoTrack?: never;
 }
 
-export type UseBlocReturn<TBloc extends StateContainer<any>> = [
+export type UseBlocReturn<TBloc> = [
   ExtractState<TBloc>,
   TBloc,
   RefObject<ComponentRef>,

@@ -3,24 +3,26 @@
  * Toggle with Alt+D or custom event
  */
 
-import React, { useState, useEffect, } from 'react';
-import { flushSync } from 'react-dom';
+import React, { useState, useEffect } from 'react';
 import { DevToolsPanel } from './DevToolsPanel';
-import type { LayoutBloc } from './DevToolsPanel';
+import { DevToolsInstancesBloc, DevToolsDiffBloc } from './blocs';
 
 export interface DraggableOverlayProps {
   /**
    * Optional custom mount handler for the DevToolsPanel.
    * If not provided, will attempt to use window.__BLAC_DEVTOOLS__ API.
+   *
+   * @param instancesBloc - The instances bloc for managing instance data
+   * @returns Optional cleanup function
    */
-  onMount?: (bloc: LayoutBloc) => void | (() => void);
+  onMount?: (instancesBloc: DevToolsInstancesBloc) => void | (() => void);
 }
 
 /**
  * Default mount handler that connects to window.__BLAC_DEVTOOLS__ API
  * Now uses atomic updates for better performance
  */
-export const defaultDevToolsMount = (bloc: LayoutBloc) => {
+export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
   console.log('[BlaC Overlay] DevToolsPanel mounted, connecting to API...');
   const api = (window as any).__BLAC_DEVTOOLS__;
 
@@ -36,6 +38,9 @@ export const defaultDevToolsMount = (bloc: LayoutBloc) => {
 
   console.log('[BlaC Overlay] API is available and enabled');
 
+  // Get the DiffBloc to store previous states
+  const diffBloc: DevToolsDiffBloc = DevToolsDiffBloc.resolve();
+
   // Initial state (fetch all instances on mount)
   console.log('[BlaC Overlay] Fetching initial instances...');
   const initialInstances = api.getInstances();
@@ -43,14 +48,16 @@ export const defaultDevToolsMount = (bloc: LayoutBloc) => {
     `[BlaC Overlay] Initial instances (${initialInstances.length}):`,
     initialInstances.map((i: any) => `${i.className}#${i.id}`),
   );
-  bloc.setConnected(true);
-  bloc.setAllInstances(initialInstances);
+  instancesBloc.setConnected(true);
+  instancesBloc.setAllInstances(initialInstances);
 
   // Subscribe to atomic updates
-  console.log('[BlaC Overlay] Subscribing to DevTools events (atomic updates)...');
+  console.log(
+    '[BlaC Overlay] Subscribing to DevTools events (atomic updates)...',
+  );
   const unsubscribe = api.subscribe((event: any) => {
     // Only update if bloc is not disposed
-    if (!bloc.isDisposed) {
+    if (!instancesBloc.isDisposed) {
       console.log(`[BlaC Overlay] Atomic event received: ${event.type}`, {
         instanceId: event.data.id,
         className: event.data.className,
@@ -60,8 +67,10 @@ export const defaultDevToolsMount = (bloc: LayoutBloc) => {
       // Handle atomic updates based on event type
       switch (event.type) {
         case 'instance-created':
-          console.log(`[BlaC Overlay] Adding instance: ${event.data.className}#${event.data.id}`);
-          bloc.addInstance({
+          console.log(
+            `[BlaC Overlay] Adding instance: ${event.data.className}#${event.data.id}`,
+          );
+          instancesBloc.addInstance({
             id: event.data.id,
             className: event.data.className,
             name: event.data.name,
@@ -74,15 +83,23 @@ export const defaultDevToolsMount = (bloc: LayoutBloc) => {
 
         case 'instance-disposed':
           console.log(`[BlaC Overlay] Removing instance: ${event.data.id}`);
-          bloc.removeInstance(event.data.id);
+          instancesBloc.removeInstance(event.data.id);
+          // Clear previous state as well
+          diffBloc.clearPreviousState(event.data.id);
           break;
 
         case 'instance-updated':
-          console.log(`[BlaC Overlay] Updating instance state: ${event.data.className}#${event.data.id}`);
-          // For state updates, we need to get previous state from the current instance
-          const currentInstance = bloc.state.instances.find((i) => i.id === event.data.id);
-          const previousState = currentInstance?.state ?? null;
-          bloc.updateInstanceState(event.data.id, previousState, event.data.state);
+          console.log(
+            `[BlaC Overlay] Updating instance state: ${event.data.className}#${event.data.id}`,
+          );
+          // Get current instance to capture previous state
+          const currentInstance = instancesBloc.getInstance(event.data.id);
+          if (currentInstance) {
+            // Store previous state in DiffBloc
+            diffBloc.storePreviousState(event.data.id, currentInstance.state);
+          }
+          // Update instance with new state
+          instancesBloc.updateInstanceState(event.data.id, event.data.state);
           break;
 
         default:
@@ -94,7 +111,9 @@ export const defaultDevToolsMount = (bloc: LayoutBloc) => {
       );
     }
   });
-  console.log('[BlaC Overlay] Successfully subscribed to DevTools events (atomic mode)');
+  console.log(
+    '[BlaC Overlay] Successfully subscribed to DevTools events (atomic mode)',
+  );
 
   // Cleanup on unmount
   return () => {

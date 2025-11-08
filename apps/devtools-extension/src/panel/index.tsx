@@ -4,13 +4,22 @@
 
 import ReactDOM from 'react-dom/client';
 import { flushSync } from 'react-dom';
-import { DevToolsPanel, LayoutBloc } from '@blac/devtools-ui';
+import {
+  DevToolsPanel,
+  DevToolsInstancesBloc,
+  DevToolsDiffBloc,
+} from '@blac/devtools-ui';
 import comm from './comm';
 
 function App() {
   return (
     <DevToolsPanel
-      onMount={(bloc: LayoutBloc) => {
+      onMount={(instancesBloc: DevToolsInstancesBloc) => {
+        console.log('[Panel] DevToolsPanel mounted');
+
+        // Get the DiffBloc for storing previous states (safe now that all blocs are initialized)
+        const diffBloc = DevToolsDiffBloc.get('default');
+
         comm.connect();
         comm.onMessage((message) => {
           console.log('[Panel] Received message:', message);
@@ -19,8 +28,8 @@ function App() {
               // Initial load - set all instances at once
               if (message.payload?.instances) {
                 flushSync(() => {
-                  bloc.setAllInstances(message.payload.instances);
-                  bloc.setConnected(true);
+                  instancesBloc.setAllInstances(message.payload.instances);
+                  instancesBloc.setConnected(true);
                 });
               }
               break;
@@ -29,7 +38,7 @@ function App() {
               // Cached state on reconnect - set all instances
               if (message.payload?.instances) {
                 flushSync(() => {
-                  bloc.setAllInstances(message.payload.instances);
+                  instancesBloc.setAllInstances(message.payload.instances);
                 });
               }
               break;
@@ -42,8 +51,10 @@ function App() {
               flushSync(() => {
                 switch (event.type) {
                   case 'instance-created':
-                    console.log(`[Panel] Adding instance: ${event.data.className}#${event.data.id}`);
-                    bloc.addInstance({
+                    console.log(
+                      `[Panel] Adding instance: ${event.data.className}#${event.data.id}`,
+                    );
+                    instancesBloc.addInstance({
                       id: event.data.id,
                       className: event.data.className,
                       name: event.data.name,
@@ -56,14 +67,31 @@ function App() {
 
                   case 'instance-disposed':
                     console.log(`[Panel] Removing instance: ${event.data.id}`);
-                    bloc.removeInstance(event.data.id);
+                    instancesBloc.removeInstance(event.data.id);
+                    // Clear previous state as well
+                    diffBloc.clearPreviousState(event.data.id);
                     break;
 
                   case 'instance-updated':
-                    console.log(`[Panel] Updating instance: ${event.data.className}#${event.data.id}`);
-                    const currentInstance = bloc.state.instances.find((i) => i.id === event.data.id);
-                    const previousState = currentInstance?.state ?? null;
-                    bloc.updateInstanceState(event.data.id, previousState, event.data.state);
+                    console.log(
+                      `[Panel] Updating instance: ${event.data.className}#${event.data.id}`,
+                    );
+                    // Get current instance to capture previous state
+                    const currentInstance = instancesBloc.getInstance(
+                      event.data.id,
+                    );
+                    if (currentInstance) {
+                      // Store previous state in DiffBloc
+                      diffBloc.storePreviousState(
+                        event.data.id,
+                        currentInstance.state,
+                      );
+                    }
+                    // Update instance with new state
+                    instancesBloc.updateInstanceState(
+                      event.data.id,
+                      event.data.state,
+                    );
                     break;
                 }
               });

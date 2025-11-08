@@ -1,8 +1,10 @@
 import { RouterBloc, Link, Route } from './router';
 import { Home } from './Home';
 import { CounterDemo } from './examples/01-counter/CounterDemo';
+import { MessengerApp } from './messenger';
 import { useState } from 'react';
 import { BlacDevtoolsUi } from '@blac/devtools-ui';
+import './messenger/messenger.css';
 
 const Logo = () => {
   return <div className="nav-brand">BlaC Examples</div>;
@@ -38,12 +40,18 @@ const DevToolsBanner = () => {
             BlaC DevTools Active
           </div>
           <div style={{ fontSize: '13px', opacity: 0.9 }}>
-            Press <kbd style={{
-              background: 'rgba(255,255,255,0.2)',
-              padding: '2px 6px',
-              borderRadius: '3px',
-              fontFamily: 'monospace',
-            }}>Alt+D</kbd> to toggle in-app overlay, or open Chrome DevTools
+            Press{' '}
+            <kbd
+              style={{
+                background: 'rgba(255,255,255,0.2)',
+                padding: '2px 6px',
+                borderRadius: '3px',
+                fontFamily: 'monospace',
+              }}
+            >
+              Alt+D
+            </kbd>{' '}
+            to toggle in-app overlay, or open Chrome DevTools
           </div>
         </div>
       </div>
@@ -96,34 +104,40 @@ export function App() {
 
   return (
     <>
-      <BlacDevtoolsUi />
+      <BlacDevtoolsUi mode="overlay" />
       <div className="app-container">
         <DevToolsBanner />
 
-      <nav className="nav">
-        <div className="nav-content">
-          <Logo />
-          <ul className="nav-links">
-            <li>
-              <Link to="/">Home</Link>
-            </li>
-            <li>
-              <Link to="/counter">Counter</Link>
-            </li>
-          </ul>
-        </div>
-      </nav>
+        <nav className="nav">
+          <div className="nav-content">
+            <Logo />
+            <ul className="nav-links">
+              <li>
+                <Link to="/">Home</Link>
+              </li>
+              <li>
+                <Link to="/counter">Counter</Link>
+              </li>
+              <li>
+                <Link to="/messenger">Messenger</Link>
+              </li>
+            </ul>
+          </div>
+        </nav>
 
-      <main className="view-wrapper">
-        <div className="view-stack">
-          <Route path="/">
-            <Home />
-          </Route>
-          <Route path="/counter">
-            <CounterDemo />
-          </Route>
-        </div>
-      </main>
+        <main className="view-wrapper">
+          <div className="view-stack">
+            <Route path="/">
+              <Home />
+            </Route>
+            <Route path="/counter">
+              <CounterDemo />
+            </Route>
+            <Route path="/messenger">
+              <MessengerApp />
+            </Route>
+          </div>
+        </main>
       </div>
     </>
   );

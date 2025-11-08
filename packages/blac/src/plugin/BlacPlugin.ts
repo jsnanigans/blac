@@ -7,6 +7,7 @@
 
 import type { StateContainer } from '../core/StateContainer';
 import type { Vertex } from '../core/Vertex';
+import type { BaseEvent } from '../types/events';
 
 /**
  * Instance metadata exposed to plugins
@@ -102,7 +103,7 @@ export interface BlacPlugin {
   /**
    * Called when an event is added (Vertex only)
    */
-  onEventAdded?<E>(
+  onEventAdded?<E extends BaseEvent>(
     vertex: Vertex<any, E>,
     event: E,
     context: PluginContext,

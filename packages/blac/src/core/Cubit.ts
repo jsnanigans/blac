@@ -63,7 +63,7 @@ export abstract class Cubit<S> extends StateContainer<S> {
  */
 export class CounterCubit extends Cubit<number> {
   constructor() {
-    super(0, { name: 'CounterCubit' });
+    super(0);
   }
 
   increment = (): void => {
@@ -97,14 +97,11 @@ export class TodoCubit extends Cubit<TodoState> {
   private nextId = 0;
 
   constructor() {
-    super(
-      {
-        todos: [],
-        filter: 'all',
-        isLoading: false,
-      },
-      { name: 'TodoCubit' },
-    );
+    super({
+      todos: [],
+      filter: 'all',
+      isLoading: false,
+    });
   }
 
   addTodo = (text: string): void => {

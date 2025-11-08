@@ -8,7 +8,7 @@ type StateContainerConstructor<TBloc extends StateContainer<any>> =
     release(instanceKey?: string): void;
   };
 
-export interface UseBlocActionsOptions<TBloc extends StateContainer<any>> {
+export interface UseBlocActionsOptions<TBloc> {
   staticProps?: any;
   instanceId?: string | number;
   onMount?: (bloc: TBloc) => void;
@@ -35,11 +35,14 @@ function generateInstanceId(
   return undefined;
 }
 
-export function useBlocActions<TBloc extends StateContainer<any>>(
-  BlocClass: BlocConstructor<TBloc>,
-  options?: UseBlocActionsOptions<TBloc>,
-): TBloc {
+export function useBlocActions<
+  T extends new (...args: any[]) => StateContainer<any>
+>(
+  BlocClass: T & BlocConstructor<InstanceType<T>>,
+  options?: UseBlocActionsOptions<InstanceType<T>>,
+): InstanceType<T> {
   // Component reference that persists across React Strict Mode remounts
+  type TBloc = InstanceType<T>;
   const componentRef = useRef<ComponentRef>({});
 
   const [bloc, instanceKey] = useMemo(() => {

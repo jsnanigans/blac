@@ -1,11 +1,14 @@
-import type { LayoutBloc } from './DevToolsPanel';
+import type { DevToolsInstancesBloc } from './blocs';
 
 export interface DevToolsUIProps {
   /**
    * Callback when the DevTools panel mounts
    * Use this to connect to your data source (Chrome extension, window.__BLAC_DEVTOOLS__, etc)
+   *
+   * @param instancesBloc - The instances bloc for managing instance data
+   * @returns Optional cleanup function
    */
-  onMount: (bloc: LayoutBloc) => void | (() => void);
+  onMount: (instancesBloc: DevToolsInstancesBloc) => void | (() => void);
 
   /**
    * Callback when the DevTools panel unmounts

@@ -9,7 +9,8 @@
  * - Standalone debugging tools
  */
 
-export { DevToolsPanel, LayoutBloc } from './DevToolsPanel';
+// Main components
+export { DevToolsPanel } from './DevToolsPanel';
 export {
   DraggableOverlay,
   defaultDevToolsMount,
@@ -19,7 +20,22 @@ export {
   isPiPSupported,
 } from './PictureInPictureDevTools';
 export { BlacDevtoolsUi } from './BlacDevtoolsUi';
+
+// Blocs for state management
+export {
+  DevToolsInstancesBloc,
+  DevToolsSearchBloc,
+  DevToolsDiffBloc,
+  DevToolsLayoutBloc,
+} from './blocs';
+
+// Backward compatibility: export DevToolsInstancesBloc as LayoutBloc
+// @deprecated Use DevToolsInstancesBloc instead
+export { DevToolsInstancesBloc as LayoutBloc } from './blocs';
+
+// Types
 export type { DevToolsUIProps, InstanceData } from './types';
 export type { DraggableOverlayProps } from './DraggableOverlay';
 export type { PictureInPictureDevToolsProps } from './PictureInPictureDevTools';
 export type { BlacDevtoolsUiProps } from './BlacDevtoolsUi';
+export type { DiffResult } from './blocs';
