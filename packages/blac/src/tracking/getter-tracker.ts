@@ -7,6 +7,7 @@ export interface GetterTrackerState {
   isTracking: boolean;
   renderCache: Map<string | symbol, unknown>;
   cacheValid: boolean;
+  externalDependencies: Set<StateContainer<any>>; // Track external blocs accessed in getters
 }
 
 const descriptorCache = new WeakMap<
@@ -17,6 +18,29 @@ const descriptorCache = new WeakMap<
 const blocProxyCache = new WeakMap<StateContainer<any>, any>();
 
 const activeTrackerMap = new WeakMap<StateContainer<any>, GetterTrackerState>();
+
+// Global execution context for tracking getter execution
+interface GetterExecutionContext {
+  tracker: GetterTrackerState | null;
+  currentBloc: StateContainer<any> | null;
+  depth: number; // Track nesting depth to detect circular dependencies
+  visitedBlocs: Set<StateContainer<any>>; // Track visited blocs in current call stack
+}
+
+let getterExecutionContext: GetterExecutionContext = {
+  tracker: null,
+  currentBloc: null,
+  depth: 0,
+  visitedBlocs: new Set(),
+};
+
+// Maximum allowed getter nesting depth to prevent infinite recursion
+const MAX_GETTER_DEPTH = 10;
+
+// Export for use in StateContainer
+export function getGetterExecutionContext(): GetterExecutionContext {
+  return getterExecutionContext;
+}
 
 export function getDescriptor(
   obj: any,
@@ -65,6 +89,7 @@ export function createGetterTracker(): GetterTrackerState {
     isTracking: false,
     renderCache: new Map(),
     cacheValid: false,
+    externalDependencies: new Set(), // Initialize external dependencies set
   };
 }
 
@@ -121,11 +146,51 @@ export function createBlocProxy<TBloc extends StateContainer<any>>(
           return cachedValue;
         }
 
-        // Compute getter if no cache available (first access or cache invalidated)
-        const descriptor = getDescriptor(target, prop);
-        const value = descriptor!.get!.call(target);
-        tracker.trackedValues.set(prop, value);
-        return value;
+        // Check for circular dependencies
+        if (getterExecutionContext.depth >= MAX_GETTER_DEPTH) {
+          console.warn(
+            `[BlaC] Maximum getter depth (${MAX_GETTER_DEPTH}) exceeded. ` +
+            `Possible circular dependency in getter "${String(prop)}" on ${target.constructor.name}. ` +
+            `Returning undefined to prevent stack overflow.`
+          );
+          return undefined;
+        }
+
+        // Check if we're revisiting a bloc in the current call stack (direct circular dependency)
+        if (getterExecutionContext.visitedBlocs.has(target)) {
+          console.warn(
+            `[BlaC] Circular dependency detected: getter "${String(prop)}" on ${target.constructor.name} ` +
+            `is calling back into itself. Returning undefined to prevent infinite recursion.`
+          );
+          return undefined;
+        }
+
+        // Set execution context before calling getter
+        const prevContext = {
+          tracker: getterExecutionContext.tracker,
+          currentBloc: getterExecutionContext.currentBloc,
+          depth: getterExecutionContext.depth,
+          visitedBlocs: new Set(getterExecutionContext.visitedBlocs), // Copy set
+        };
+
+        getterExecutionContext.tracker = tracker;
+        getterExecutionContext.currentBloc = target;
+        getterExecutionContext.depth++;
+        getterExecutionContext.visitedBlocs.add(target);
+
+        try {
+          // Compute getter if no cache available (first access or cache invalidated)
+          const descriptor = getDescriptor(target, prop);
+          const value = descriptor!.get!.call(target);
+          tracker.trackedValues.set(prop, value);
+          return value;
+        } finally {
+          // Restore previous context
+          getterExecutionContext.tracker = prevContext.tracker;
+          getterExecutionContext.currentBloc = prevContext.currentBloc;
+          getterExecutionContext.depth = prevContext.depth;
+          getterExecutionContext.visitedBlocs = prevContext.visitedBlocs;
+        }
       }
 
       // Default behavior for non-getters or when tracking disabled
@@ -202,6 +267,10 @@ export function invalidateRenderCache(tracker: GetterTrackerState): void {
   tracker.cacheValid = false;
 }
 
+export function clearExternalDependencies(tracker: GetterTrackerState): void {
+  tracker.externalDependencies.clear();
+}
+
 export function resetGetterTracker(tracker: GetterTrackerState): void {
   tracker.trackedValues.clear();
   tracker.currentlyAccessing.clear();
@@ -209,4 +278,5 @@ export function resetGetterTracker(tracker: GetterTrackerState): void {
   tracker.renderCache.clear();
   tracker.cacheValid = false;
   tracker.isTracking = false;
+  tracker.externalDependencies.clear();
 }

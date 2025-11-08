@@ -11,6 +11,7 @@
 import type { StateContainer, StateContainerConfig } from './StateContainer';
 import type { Vertex } from './Vertex';
 import { createPluginManager } from '../plugin/PluginManager';
+import { getGetterExecutionContext } from '../tracking/getter-tracker';
 
 interface TypeConfig {
   isolated: boolean;
@@ -215,6 +216,17 @@ export class StateContainerRegistry {
         `${Type.name} instance "${instanceKey}" not found.\n` +
           `Use .resolve() to create and claim ownership, or .getSafe() for conditional access.`,
       );
+    }
+
+    // Track cross-bloc dependency if we're inside a getter execution
+    const context = getGetterExecutionContext();
+    if (
+      context.tracker &&
+      context.currentBloc &&
+      context.currentBloc !== entry.instance
+    ) {
+      // Add this bloc as an external dependency
+      context.tracker.externalDependencies.add(entry.instance);
     }
 
     return entry.instance as T;

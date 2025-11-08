@@ -73,4 +73,6 @@ export {
   commitTrackedGetters,
   invalidateRenderCache,
   resetGetterTracker,
+  clearExternalDependencies,
+  getGetterExecutionContext,
 } from './getter-tracker';

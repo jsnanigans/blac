@@ -590,3 +590,37 @@ pnpm dev
 - Watch sidebar unread badges update without full re-renders
 - See typing indicators and messages arrive in real-time
 - Observe message status transitions (sending → sent → delivered)
+
+### Cross-Bloc Dependency Tracking
+
+**TempDoc References:**
+- **Investigation Report:** `/Users/brendanmullins/Documents/Log/TempDoc/blac/2025-11/08/cross-bloc-dependency-tracking-report.md`
+- **Implementation Summary:** `/Users/brendanmullins/Documents/Log/TempDoc/blac/2025-11/08/cross-bloc-implementation-summary.md`
+- **PoC Plan:** `/Users/brendanmullins/Documents/Log/TempDoc/blac/2025-11/08/cross-bloc-poc-implementation.md`
+- **Date:** 2025-11-08
+- **Status:** ✅ Implemented and Tested
+- **Test:** `packages/blac-react/src/__tests__/useBloc.getter-external-blocs.test.tsx`
+
+**Feature:** Getters that access external blocs now automatically trigger re-renders when the external bloc changes.
+
+**Example:**
+```typescript
+class BetaBloc extends Cubit<number> {
+  get both() {
+    return this.state + AlphaBloc.get().state;  // Auto-tracks AlphaBloc
+  }
+}
+
+const Component = () => {
+  const [state, bloc] = useBloc(BetaBloc);
+  return <div>{bloc.both}</div>;  // Re-renders when AlphaBloc OR BetaBloc changes
+};
+```
+
+**Implementation Approach:** Getter Execution Context with Re-computation
+- Tracks which blocs are accessed during getter execution
+- Subscribes to external dependencies automatically in useEffect
+- Re-computes getters when any dependency changes
+- Uses `useState` to force re-renders
+
+**Key Implementation Insight:** Must invalidate getter render cache before checking for changes when external bloc updates (critical fix discovered during implementation)

@@ -1,4 +1,4 @@
-import { useMemo, useSyncExternalStore, useEffect, useRef } from 'react';
+import { useMemo, useSyncExternalStore, useEffect, useRef, useState } from 'react';
 import {
   type BlocConstructor,
   StateContainer,
@@ -19,6 +19,7 @@ import {
   clearActiveTracker,
   commitTrackedGetters,
   invalidateRenderCache,
+  clearExternalDependencies,
 } from '@blac/core';
 import type {
   UseBlocOptions,
@@ -194,6 +195,9 @@ function createAutoTrackSnapshot<TBloc extends StateContainer<any>>(
       // Capture getters from previous render (commit currentlyAccessing to trackedGetters)
       commitTrackedGetters(hookState.getterTracker);
 
+      // DON'T clear external dependencies here - we need them for useEffect
+      // They will be cleared in useEffect after we set up subscriptions
+
       // Enable tracking for this render
       hookState.getterTracker.isTracking = true;
 
@@ -276,7 +280,6 @@ export function useBloc<
         options?.instanceId,
       );
 
-      console.log('useBloc: instanceId =', instanceId);
 
       // Get or create bloc instance with ownership (increments ref count)
       const instance = BlocClass.resolve(instanceId, options?.staticProps);
@@ -337,6 +340,15 @@ export function useBloc<
 
   const state = useSyncExternalStore(subscribe, getSnapshot);
 
+  // Force re-render mechanism for external bloc changes
+  const [, forceUpdate] = useState({});
+
+  // Store subscriptions in a ref that persists across renders
+  const externalSubscriptionsRef = useRef<(() => void)[]>([]);
+
+  // Track previous dependencies to avoid unnecessary re-subscriptions
+  const prevDepsRef = useRef<Set<StateContainer<any>>>(new Set());
+
   // Disable getter tracking after each render and clear active tracker
   useEffect(() => {
     if (hookState.getterTracker) {
@@ -344,6 +356,74 @@ export function useBloc<
       clearActiveTracker(rawInstance);
     }
   });
+
+  // Manage external bloc subscriptions
+  useEffect(() => {
+    if (!hookState.getterTracker?.externalDependencies) return;
+
+    const currentDeps = hookState.getterTracker.externalDependencies;
+
+    // Check if dependencies actually changed
+    if (areDependenciesEqual(prevDepsRef.current, currentDeps)) {
+      // Dependencies haven't changed, don't re-subscribe
+      // Just clear the externalDependencies for next render
+      clearExternalDependencies(hookState.getterTracker);
+      return;
+    }
+
+    // Dependencies changed, clean up old subscriptions
+    externalSubscriptionsRef.current.forEach(unsub => unsub());
+    externalSubscriptionsRef.current = [];
+
+    // Subscribe to each external dependency
+    for (const externalBloc of currentDeps) {
+      if (externalBloc === rawInstance) continue;
+
+      const unsub = externalBloc.subscribe(() => {
+        // Invalidate the render cache so getters are recomputed with fresh values
+        if (hookState.getterTracker) {
+          invalidateRenderCache(hookState.getterTracker);
+        }
+
+        // When external bloc changes, check if our getters changed
+        if (hasGetterChanges(rawInstance, hookState.getterTracker)) {
+          // Force a re-render using useState
+          forceUpdate({});
+        }
+      });
+
+      externalSubscriptionsRef.current.push(unsub);
+    }
+
+    // Store current dependencies for next comparison
+    prevDepsRef.current = new Set(currentDeps);
+
+    // Clear external dependencies AFTER setting up subscriptions
+    // so they can be re-discovered in the next render
+    clearExternalDependencies(hookState.getterTracker);
+  }); // Run on every render to pick up new dependencies
+
+  // Cleanup all subscriptions on unmount
+  useEffect(() => {
+    return () => {
+      externalSubscriptionsRef.current.forEach(unsub => unsub());
+      externalSubscriptionsRef.current = [];
+    };
+  }, []);
+
+  // Helper function to compare dependency sets
+  function areDependenciesEqual(
+    oldDeps: Set<StateContainer<any>>,
+    newDeps: Set<StateContainer<any>>
+  ): boolean {
+    if (oldDeps.size !== newDeps.size) return false;
+
+    for (const dep of newDeps) {
+      if (!oldDeps.has(dep)) return false;
+    }
+
+    return true;
+  }
 
   // Mount/unmount lifecycle
   useEffect(() => {
