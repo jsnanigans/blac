@@ -139,6 +139,14 @@ The React integration uses sophisticated proxy-based tracking:
    - Sibling properties are independent: `user.name` changes don't affect `user.age` tracking
    - Implemented in `optimizeTrackedPaths()` in `dependency-tracker.ts`
    - Results in ~60% fewer tracked paths and ~30-50% fewer unnecessary re-renders
+   - **Array tracking:** Calling ANY array method tracks the array parent
+     - Automatically covers: `map`, `filter`, `find`, `includes`, `slice`, `at`, etc.
+     - Future-proof: New array methods work automatically (no whitelist)
+     - Array parent path is automatically restored even if children are tracked
+     - Re-renders when array reference changes (perfect for immutable updates)
+     - No proxying of array elements (optimal performance for large arrays)
+   - **Object tracking:** Uses proxy `ownKeys` trap for `Object.keys()`, `Object.entries()`, etc.
+   - **TempDoc:** `/Users/brendanmullins/Documents/Log/TempDoc/blac/2025-11/10/elegant-array-object-tracking.md` (2025-11-10) ✅
 
 3. **Dual Tracking System**
    - **State Property Tracking**: Uses `TrackerState` from core with fine-grained optimization

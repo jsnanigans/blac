@@ -16,7 +16,7 @@ import {
   DevToolsLayoutBloc,
   DevToolsLogsBloc,
 } from './blocs';
-import { DevToolsHeader, TabBar, InstanceList, StateViewer, LogsView } from './components';
+import { DevToolsHeader, InstanceList, StateViewer, LogsView } from './components';
 import type { DevToolsUIProps } from './types';
 
 /**
@@ -71,11 +71,8 @@ export const DevToolsPanel: FC<DevToolsUIProps> = React.memo(
           flexDirection: 'column',
         }}
       >
-        {/* Header with connection status */}
+        {/* Compact Header with tabs integrated */}
         <DevToolsHeader />
-
-        {/* Tab Bar */}
-        <TabBar />
 
         {/* Main Content - conditionally render based on active tab */}
         {activeTab === 'Instances' ? (

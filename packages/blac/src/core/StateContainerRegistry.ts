@@ -12,6 +12,8 @@ import type { StateContainer, StateContainerConfig } from './StateContainer';
 import type { Vertex } from './Vertex';
 import { createPluginManager } from '../plugin/PluginManager';
 import { getGetterExecutionContext } from '../tracking/getter-tracker';
+import { BLAC_DEFAULTS, BLAC_ERROR_PREFIX, BLAC_STATIC_PROPS } from '../constants';
+import { isIsolatedClass, isKeepAliveClass } from '../utils/static-props';
 
 interface TypeConfig {
   isolated: boolean;
@@ -114,12 +116,12 @@ export class StateContainerRegistry {
     const className = constructor.name;
 
     // Check for static isolated property
-    if (!isolated && (constructor as any).isolated === true) {
+    if (!isolated && isIsolatedClass(constructor)) {
       isolated = true;
     }
 
     if (this.typeConfigs.has(className)) {
-      throw new Error(`Type "${className}" is already registered`);
+      throw new Error(`${BLAC_ERROR_PREFIX} Type "${className}" is already registered`);
     }
 
     this.typeConfigs.set(className, { isolated });
@@ -157,15 +159,13 @@ export class StateContainerRegistry {
    */
   resolve<T extends StateContainer<any>>(
     Type: new (...args: any[]) => T,
-    key?: string,
+    instanceKey: string = BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
     constructorArgs?: any,
   ): T {
-    const instanceKey = key || 'default';
 
     // Check if this is an isolated type
-    const staticIsolated = (Type as any).isolated === true;
     const registryConfig = this.typeConfigs.get(Type.name);
-    const isolated = staticIsolated || registryConfig?.isolated === true;
+    const isolated = isIsolatedClass(Type) || registryConfig?.isolated === true;
 
     const config: StateContainerConfig = {
       instanceId: instanceKey,
@@ -206,15 +206,14 @@ export class StateContainerRegistry {
    */
   get<T extends StateContainer<any>>(
     Type: new (...args: any[]) => T,
-    key?: string,
+    instanceKey: string = BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
   ): T {
-    const instanceKey = key || 'default';
     const instances = this.ensureInstancesMap(Type);
     const entry = instances.get(instanceKey);
 
     if (!entry) {
       throw new Error(
-        `${Type.name} instance "${instanceKey}" not found.\n` +
+        `${BLAC_ERROR_PREFIX} ${Type.name} instance "${instanceKey}" not found.\n` +
           `Use .resolve() to create and claim ownership, or .getSafe() for conditional access.`,
       );
     }
@@ -239,15 +238,14 @@ export class StateContainerRegistry {
    */
   getSafe<T extends StateContainer<any>>(
     Type: new (...args: any[]) => T,
-    key?: string,
+    instanceKey: string = BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
   ): { error: Error; instance: null } | { error: null; instance: T } {
-    const instanceKey = key || 'default';
     const instances = this.ensureInstancesMap(Type);
     const entry = instances.get(instanceKey);
 
     if (!entry) {
       return {
-        error: new Error(`${Type.name} instance "${instanceKey}" not found`),
+        error: new Error(`${BLAC_ERROR_PREFIX} ${Type.name} instance "${instanceKey}" not found`),
         instance: null,
       };
     }
@@ -275,25 +273,23 @@ export class StateContainerRegistry {
    * but don't want to claim ownership (no ref count increment).
    *
    * @param Type - The bloc class constructor
-   * @param key - Optional instance key (defaults to 'default')
+   * @param instanceKey - Optional instance key (defaults to 'default')
    * @param constructorArgs - Constructor arguments (only used if creating new instance)
    * @returns The bloc instance
    */
   connect<T extends StateContainer<any>>(
     Type: new (...args: any[]) => T,
-    key?: string,
+    instanceKey: string = BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
     constructorArgs?: any,
   ): T {
-    const instanceKey = key || 'default';
 
     // Check if this is an isolated type (should not use connect with isolated types)
-    const staticIsolated = (Type as any).isolated === true;
     const registryConfig = this.typeConfigs.get(Type.name);
-    const isolated = staticIsolated || registryConfig?.isolated === true;
+    const isolated = isIsolatedClass(Type) || registryConfig?.isolated === true;
 
     if (isolated) {
       throw new Error(
-        `Cannot use .connect() with isolated bloc "${Type.name}".\n` +
+        `${BLAC_ERROR_PREFIX} Cannot use .connect() with isolated bloc "${Type.name}".\n` +
           `Isolated blocs are component-scoped. Use .resolve() in components instead.`,
       );
     }
@@ -336,10 +332,9 @@ export class StateContainerRegistry {
    */
   release<T extends StateContainer<any>>(
     Type: new (...args: any[]) => T,
-    key?: string,
+    instanceKey: string = BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
     forceDispose = false,
   ): void {
-    const instanceKey = key || 'default';
     const instances = this.ensureInstancesMap(Type);
     const entry = instances.get(instanceKey);
 
@@ -358,7 +353,7 @@ export class StateContainerRegistry {
     entry.refCount--;
 
     // Check static keepAlive property
-    const keepAlive = (Type as any).keepAlive === true;
+    const keepAlive = isKeepAliveClass(Type);
 
     // Auto-dispose when ref count reaches 0 (unless keepAlive)
     if (entry.refCount <= 0 && !keepAlive) {
@@ -396,7 +391,7 @@ export class StateContainerRegistry {
           callback(instance);
         } catch (error) {
           console.error(
-            `[BlaC] forEach callback error for ${Type.name}:`,
+            `${BLAC_ERROR_PREFIX} forEach callback error for ${Type.name}:`,
             error,
           );
         }
@@ -424,9 +419,8 @@ export class StateContainerRegistry {
    */
   getRefCount<T extends StateContainer<any>>(
     Type: new (...args: any[]) => T,
-    key?: string,
+    instanceKey: string = BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
   ): number {
-    const instanceKey = key || 'default';
     const instances = this.ensureInstancesMap(Type);
     const entry = instances.get(instanceKey);
     return entry?.refCount ?? 0;
@@ -437,9 +431,8 @@ export class StateContainerRegistry {
    */
   hasInstance<T extends StateContainer<any>>(
     Type: new (...args: any[]) => T,
-    key?: string,
+    instanceKey: string = BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
   ): boolean {
-    const instanceKey = key || 'default';
     const instances = this.ensureInstancesMap(Type);
     return instances.has(instanceKey);
   }
@@ -526,10 +519,9 @@ export class StateContainerRegistry {
 
     for (const listener of listeners) {
       try {
-        console.log(args);
         listener(...args);
       } catch (error) {
-        console.error(`[BlaC] Listener error for '${event}':`, error);
+        console.error(`${BLAC_ERROR_PREFIX} Listener error for '${event}':`, error);
       }
     }
   }

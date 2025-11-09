@@ -39,11 +39,25 @@ export {
   type LogEntry,
 } from './logging/Logger';
 
-export { BLAC_DEFAULTS } from './constants';
+export {
+  BLAC_DEFAULTS,
+  BLAC_STATIC_PROPS,
+  BLAC_ID_PATTERNS,
+  BLAC_ERROR_PREFIX,
+} from './constants';
 
 export {
   generateId,
   generateSimpleId,
   createIdGenerator,
   __resetIdCounters,
+  generateIsolatedKey,
+  isIsolatedKey,
 } from './utils/idGenerator';
+
+export {
+  getStaticProp,
+  isIsolatedClass,
+  isKeepAliveClass,
+  isExcludedFromDevTools,
+} from './utils/static-props';

@@ -9,6 +9,16 @@
  */
 export const BLAC_DEFAULTS = {
   /**
+   * Default instance key for shared instances
+   */
+  DEFAULT_INSTANCE_KEY: 'default',
+
+  /**
+   * Maximum getter nesting depth (prevents infinite recursion)
+   */
+  MAX_GETTER_DEPTH: 10,
+
+  /**
    * Default cleanup interval for subscriptions (30 seconds)
    */
   CLEANUP_INTERVAL_MS: 30_000,
@@ -43,3 +53,44 @@ export const BLAC_DEFAULTS = {
    */
   MAX_PIPELINE_STAGES: 30,
 } as const;
+
+/**
+ * Static property names for StateContainer classes
+ * Used for feature flags and configuration on bloc classes
+ */
+export const BLAC_STATIC_PROPS = {
+  /**
+   * Mark a bloc as isolated (each component gets its own instance)
+   */
+  ISOLATED: 'isolated',
+
+  /**
+   * Mark a bloc to never be auto-disposed (kept alive permanently)
+   */
+  KEEP_ALIVE: 'keepAlive',
+
+  /**
+   * Exclude a bloc from DevTools reporting (prevents infinite loops)
+   */
+  EXCLUDE_FROM_DEVTOOLS: '__excludeFromDevTools',
+} as const;
+
+/**
+ * ID generation patterns and constants
+ */
+export const BLAC_ID_PATTERNS = {
+  /**
+   * Prefix for isolated instance keys
+   */
+  ISOLATED_PREFIX: 'isolated-',
+
+  /**
+   * Length of generated ID portion (9 characters from base36)
+   */
+  ID_LENGTH: 9,
+} as const;
+
+/**
+ * Standard error message prefix
+ */
+export const BLAC_ERROR_PREFIX = '[BlaC]' as const;

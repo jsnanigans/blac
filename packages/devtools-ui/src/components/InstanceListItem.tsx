@@ -25,9 +25,9 @@ export const InstanceListItem: FC<InstanceListItemProps> = React.memo(
       <div
         onClick={onSelect}
         style={{
-          padding: '8px 10px',
+          padding: '6px 8px',
           borderBottom: '1px solid #333',
-          borderLeft: `4px solid ${borderColor}`,
+          borderLeft: `3px solid ${borderColor}`,
           cursor: 'pointer',
           background: isSelected ? '#094771' : 'transparent',
           transition: 'background 0.2s',

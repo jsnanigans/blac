@@ -330,7 +330,13 @@ describe('PluginManager', () => {
         const counter = CounterCubit.resolve('main', 0);
         counter.increment();
 
-        expect(onStateChanged).toHaveBeenCalledWith(counter, 0, 1, expect.any(Object));
+        expect(onStateChanged).toHaveBeenCalledWith(
+          counter,
+          0,
+          1,
+          expect.any(String),
+          expect.any(Object),
+        );
       });
     });
 

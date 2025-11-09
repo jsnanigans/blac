@@ -1,5 +1,4 @@
 export { DevToolsHeader } from './DevToolsHeader';
-export { TabBar } from './TabBar';
 export { SearchBar } from './SearchBar';
 export { InstanceList } from './InstanceList';
 export { InstanceListItem } from './InstanceListItem';

@@ -72,16 +72,16 @@ export abstract class StateContainer<S> {
    *
    * Delegates to the global registry for instance management.
    *
-   * @param key - Optional instance key for shared instances
+   * @param instanceKey - Optional instance key for shared instances
    * @param constructorArgs - Constructor arguments
    * @returns Instance with incremented ref count
    */
   static resolve<T extends StateContainer<any>>(
     this: new (...args: any[]) => T,
-    key?: string,
+    instanceKey?: string,
     constructorArgs?: any,
   ): T {
-    return StateContainer._registry.resolve(this, key, constructorArgs);
+    return StateContainer._registry.resolve(this, instanceKey, constructorArgs);
   }
 
   /**
@@ -90,9 +90,9 @@ export abstract class StateContainer<S> {
    */
   static get<T extends StateContainer<any>>(
     this: new (...args: any[]) => T,
-    key?: string,
+    instanceKey?: string,
   ): T {
-    return StateContainer._registry.get(this, key);
+    return StateContainer._registry.get(this, instanceKey);
   }
 
   /**
@@ -101,9 +101,9 @@ export abstract class StateContainer<S> {
    */
   static getSafe<T extends StateContainer<any>>(
     this: new (...args: any[]) => T,
-    key?: string,
+    instanceKey?: string,
   ): { error: Error; instance: null } | { error: null; instance: T } {
-    return StateContainer._registry.getSafe(this, key);
+    return StateContainer._registry.getSafe(this, instanceKey);
   }
 
   /**
@@ -116,16 +116,16 @@ export abstract class StateContainer<S> {
    *
    * Delegates to the global registry.
    *
-   * @param key - Optional instance key (defaults to 'default')
+   * @param instanceKey - Optional instance key (defaults to 'default')
    * @param constructorArgs - Constructor arguments (only used if creating new instance)
    * @returns The bloc instance
    */
   static connect<T extends StateContainer<any>>(
     this: new (...args: any[]) => T,
-    key?: string,
+    instanceKey?: string,
     constructorArgs?: any,
   ): T {
-    return StateContainer._registry.connect(this, key, constructorArgs);
+    return StateContainer._registry.connect(this, instanceKey, constructorArgs);
   }
 
   /**
@@ -134,10 +134,10 @@ export abstract class StateContainer<S> {
    */
   static release<T extends StateContainer<any>>(
     this: new (...args: any[]) => T,
-    key?: string,
+    instanceKey?: string,
     forceDispose = false,
   ): void {
-    StateContainer._registry.release(this, key, forceDispose);
+    StateContainer._registry.release(this, instanceKey, forceDispose);
   }
 
   /**
@@ -197,9 +197,9 @@ export abstract class StateContainer<S> {
    */
   static getRefCount<T extends StateContainer<any>>(
     this: new (...args: any[]) => T,
-    key?: string,
+    instanceKey?: string,
   ): number {
-    return StateContainer._registry.getRefCount(this, key);
+    return StateContainer._registry.getRefCount(this, instanceKey);
   }
 
   /**
@@ -208,9 +208,9 @@ export abstract class StateContainer<S> {
    */
   static hasInstance<T extends StateContainer<any>>(
     this: new (...args: any[]) => T,
-    key?: string,
+    instanceKey?: string,
   ): boolean {
-    return StateContainer._registry.hasInstance(this, key);
+    return StateContainer._registry.hasInstance(this, instanceKey);
   }
 
   private _state: S;

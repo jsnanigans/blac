@@ -21,34 +21,16 @@ import {
   initManualDepsState,
   initNoTrackState,
   disableGetterTracking,
+  isIsolatedClass,
 } from '@blac/core';
 import type { UseBlocOptions, UseBlocReturn, ComponentRef } from './types';
+import { generateInstanceKey } from './utils/instance-keys';
 
 type StateContainerConstructor<TBloc extends StateContainer<any>> =
   BlocConstructor<TBloc> & {
     resolve(instanceKey?: string, ...args: any[]): TBloc;
     release(instanceKey?: string): void;
   };
-
-function generateInstanceId(
-  componentRef: ComponentRef,
-  isIsolated: boolean,
-  providedId?: string | number,
-): string | undefined {
-  if (providedId !== undefined) {
-    // Convert number to string
-    return typeof providedId === 'number' ? String(providedId) : providedId;
-  }
-
-  if (isIsolated) {
-    if (!componentRef.__blocInstanceId) {
-      componentRef.__blocInstanceId = `isolated-${Math.random().toString(36).slice(2, 11)}`;
-    }
-    return componentRef.__blocInstanceId;
-  }
-
-  return undefined;
-}
 
 interface TrackingMode {
   useManualDeps: boolean;
@@ -89,7 +71,7 @@ export function useBloc<T extends new (...args: any[]) => StateContainer<any>>(
   type TBloc = InstanceType<T>;
   const componentRef = useRef<ComponentRef>({});
   const Constructor = BlocClass as StateContainerConstructor<TBloc>;
-  const isIsolated = Constructor.isolated === true;
+  const isIsolated = isIsolatedClass(BlocClass);
 
   const [bloc, subscribe, getSnapshot, instanceKey, adapterState, rawInstance] =
     useMemo<
@@ -103,14 +85,14 @@ export function useBloc<T extends new (...args: any[]) => StateContainer<any>>(
       ]
     >(() => {
       // Generate instance key
-      const instanceId = generateInstanceId(
+      const instanceKey = generateInstanceKey(
         componentRef.current,
         isIsolated,
         options?.instanceId,
       );
 
       // Get or create bloc instance with ownership (increments ref count)
-      const instance = BlocClass.resolve(instanceId, options?.staticProps);
+      const instance = BlocClass.resolve(instanceKey, options?.staticProps);
 
       // Determine tracking mode
       const { useManualDeps, autoTrackEnabled } =
@@ -146,7 +128,7 @@ export function useBloc<T extends new (...args: any[]) => StateContainer<any>>(
         adapterState.proxiedBloc!,
         subscribeFn,
         getSnapshotFn,
-        instanceId,
+        instanceKey,
         adapterState,
         instance,
       ];

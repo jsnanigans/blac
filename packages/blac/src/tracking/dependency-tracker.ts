@@ -82,8 +82,10 @@ export function optimizeTrackedPaths(paths: Set<string>): Set<string> {
 
   // IMPORTANT: Add array parent paths back to track array reference changes
   // When we track array children (e.g., 'messages.length' or 'messages[0]'),
-  // we must also track the array itself because the array reference can change
-  // even when length/elements stay the same (e.g., new array with same length)
+  // we must also track the array itself because:
+  // 1. Array methods like .map() track the array path
+  // 2. The array reference can change even when length/elements stay the same
+  // 3. Callback parameters in .map() receive raw elements (not proxies)
   const arrayParents = new Set<string>();
   for (const path of optimized) {
     const arrayParent = getArrayParentPath(path);

@@ -11,7 +11,7 @@ export const SearchBar: FC = React.memo(() => {
   return (
     <div
       style={{
-        padding: '10px',
+        padding: '6px 8px',
         borderBottom: '1px solid #444',
         background: '#252526',
       }}
@@ -23,12 +23,12 @@ export const SearchBar: FC = React.memo(() => {
         onChange={(e) => bloc.setQuery(e.target.value)}
         style={{
           width: '100%',
-          padding: '6px 10px',
+          padding: '4px 8px',
           background: '#1e1e1e',
           border: '1px solid #444',
-          borderRadius: '4px',
+          borderRadius: '3px',
           color: '#fff',
-          fontSize: '13px',
+          fontSize: '11px',
           outline: 'none',
         }}
         onFocus={(e) => {

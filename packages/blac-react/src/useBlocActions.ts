@@ -1,6 +1,7 @@
 import { useMemo, useEffect, useRef } from 'react';
-import type { BlocConstructor, StateContainer } from '@blac/core';
+import { type BlocConstructor, StateContainer, isIsolatedClass } from '@blac/core';
 import type { ComponentRef } from './types';
+import { generateInstanceKey } from './utils/instance-keys';
 
 type StateContainerConstructor<TBloc extends StateContainer<any>> =
   BlocConstructor<TBloc> & {
@@ -15,26 +16,6 @@ export interface UseBlocActionsOptions<TBloc> {
   onUnmount?: (bloc: TBloc) => void;
 }
 
-function generateInstanceId(
-  componentRef: ComponentRef,
-  isIsolated: boolean,
-  providedId?: string | number,
-): string | undefined {
-  if (providedId !== undefined) {
-    // Convert number to string
-    return typeof providedId === 'number' ? String(providedId) : providedId;
-  }
-
-  if (isIsolated) {
-    if (!componentRef.__blocInstanceId) {
-      componentRef.__blocInstanceId = `isolated-${Math.random().toString(36).slice(2, 11)}`;
-    }
-    return componentRef.__blocInstanceId;
-  }
-
-  return undefined;
-}
-
 export function useBlocActions<
   T extends new (...args: any[]) => StateContainer<any>
 >(
@@ -46,11 +27,11 @@ export function useBlocActions<
   const componentRef = useRef<ComponentRef>({});
 
   const [bloc, instanceKey] = useMemo(() => {
-    const isIsolated = (BlocClass as { isolated?: boolean }).isolated === true;
+    const isIsolated = isIsolatedClass(BlocClass);
     const Constructor = BlocClass as StateContainerConstructor<TBloc>;
 
     // Generate instance key
-    const instanceId = generateInstanceId(
+    const instanceKey = generateInstanceKey(
       componentRef.current,
       isIsolated,
       options?.instanceId,
@@ -58,10 +39,10 @@ export function useBlocActions<
 
     // Get or create bloc instance with ownership (increments ref count)
     const instance = options?.staticProps
-      ? Constructor.resolve(instanceId, options.staticProps)
-      : Constructor.resolve(instanceId);
+      ? Constructor.resolve(instanceKey, options.staticProps)
+      : Constructor.resolve(instanceKey);
 
-    return [instance, instanceId] as const;
+    return [instance, instanceKey] as const;
   }, [BlocClass]);
 
   // Mount/unmount lifecycle
@@ -82,9 +63,7 @@ export function useBlocActions<
       Constructor.release(instanceKey);
 
       // For isolated instances, dispose manually since registry doesn't track them
-      const isIsolated =
-        (BlocClass as { isolated?: boolean }).isolated === true;
-      if (isIsolated && !bloc.isDisposed) {
+      if (isIsolatedClass(BlocClass) && !bloc.isDisposed) {
         bloc.dispose();
       }
     };

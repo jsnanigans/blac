@@ -144,6 +144,11 @@ describe('StateContainer Lifecycle Events', () => {
 
     // Verify stateChanged event was emitted
     expect(stateChangedListener).toHaveBeenCalledTimes(1);
-    expect(stateChangedListener).toHaveBeenCalledWith(instance, 0, 1);
+    expect(stateChangedListener).toHaveBeenCalledWith(
+      instance,
+      0,
+      1,
+      expect.any(String), // callstack
+    );
   });
 });

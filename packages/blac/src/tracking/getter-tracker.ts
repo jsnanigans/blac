@@ -1,4 +1,5 @@
 import type { StateContainer } from '../core/StateContainer';
+import { BLAC_DEFAULTS, BLAC_ERROR_PREFIX } from '../constants';
 
 export interface GetterTrackerState {
   trackedValues: Map<string | symbol, unknown>;
@@ -35,7 +36,7 @@ let getterExecutionContext: GetterExecutionContext = {
 };
 
 // Maximum allowed getter nesting depth to prevent infinite recursion
-const MAX_GETTER_DEPTH = 10;
+const MAX_GETTER_DEPTH = BLAC_DEFAULTS.MAX_GETTER_DEPTH;
 
 // Export for use in StateContainer
 export function getGetterExecutionContext(): GetterExecutionContext {
@@ -149,7 +150,7 @@ export function createBlocProxy<TBloc extends StateContainer<any>>(
         // Check for circular dependencies
         if (getterExecutionContext.depth >= MAX_GETTER_DEPTH) {
           console.warn(
-            `[BlaC] Maximum getter depth (${MAX_GETTER_DEPTH}) exceeded. ` +
+            `${BLAC_ERROR_PREFIX} Maximum getter depth (${MAX_GETTER_DEPTH}) exceeded. ` +
             `Possible circular dependency in getter "${String(prop)}" on ${target.constructor.name}. ` +
             `Returning undefined to prevent stack overflow.`
           );
@@ -159,7 +160,7 @@ export function createBlocProxy<TBloc extends StateContainer<any>>(
         // Check if we're revisiting a bloc in the current call stack (direct circular dependency)
         if (getterExecutionContext.visitedBlocs.has(target)) {
           console.warn(
-            `[BlaC] Circular dependency detected: getter "${String(prop)}" on ${target.constructor.name} ` +
+            `${BLAC_ERROR_PREFIX} Circular dependency detected: getter "${String(prop)}" on ${target.constructor.name} ` +
             `is calling back into itself. Returning undefined to prevent infinite recursion.`
           );
           return undefined;
@@ -242,7 +243,7 @@ export function hasGetterChanges<TBloc extends StateContainer<any>>(
     } catch (error) {
       // Getter threw an error during comparison
       console.warn(
-        `[BlaC] Getter "${String(prop)}" threw error during change detection. Stopping tracking for this getter.`,
+        `${BLAC_ERROR_PREFIX} Getter "${String(prop)}" threw error during change detection. Stopping tracking for this getter.`,
         error,
       );
 

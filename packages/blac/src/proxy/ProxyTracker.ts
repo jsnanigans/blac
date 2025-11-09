@@ -141,27 +141,17 @@ export class ProxyTracker<T> {
       get: (arr, prop: string | symbol) => {
         const value = Reflect.get(arr, prop);
 
-        // Handle array methods
+        // Handle array methods - track array when ANY method is accessed
         if (typeof value === 'function') {
-          // For methods like map, filter, etc., track array access
-          if (
-            [
-              'map',
-              'filter',
-              'forEach',
-              'find',
-              'some',
-              'every',
-              'reduce',
-            ].includes(String(prop))
-          ) {
-            if (this.isTracking && path) {
-              this.trackedPaths.add(path);
-              debug('ProxyTracker', 'Tracked array method access', {
-                path: path,
-                method: String(prop),
-              });
-            }
+          // Track the array itself when any method is accessed
+          // This covers: map, filter, forEach, find, includes, slice, join, at, etc.
+          // Future-proof: automatically handles new array methods
+          if (this.isTracking && path && typeof prop === 'string') {
+            this.trackedPaths.add(path);
+            debug('ProxyTracker', 'Tracked array method access', {
+              path: path,
+              method: String(prop),
+            });
           }
           return value.bind(arr);
         }

@@ -17,15 +17,15 @@ export const CurrentStateView: FC<CurrentStateViewProps> = React.memo(
         <div
           onClick={onToggleExpanded}
           style={{
-            fontSize: '16px',
-            marginBottom: '10px',
+            fontSize: '14px',
+            marginBottom: '8px',
             fontWeight: 600,
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '8px',
+            gap: '6px',
             userSelect: 'none',
-            padding: '4px 0',
+            padding: '3px 0',
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.color = '#569cd6';
@@ -39,6 +39,7 @@ export const CurrentStateView: FC<CurrentStateViewProps> = React.memo(
               display: 'inline-block',
               transition: 'transform 0.2s',
               transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+              fontSize: '12px',
             }}
           >
             ▶
@@ -49,8 +50,8 @@ export const CurrentStateView: FC<CurrentStateViewProps> = React.memo(
           <div
           style={{
             background: '#252526',
-            padding: '15px',
-            borderRadius: '4px',
+            padding: '10px',
+            borderRadius: '3px',
             overflow: 'auto',
             border: '1px solid #333',
           }}
@@ -60,7 +61,7 @@ export const CurrentStateView: FC<CurrentStateViewProps> = React.memo(
             className="w-json-view-container"
             style={
               {
-                fontSize: '13px',
+                fontSize: '12px',
                 fontFamily: 'Monaco, Consolas, monospace',
                 '--w-rjv-background-color': '#252526',
                 '--w-rjv-color': '#d4d4d4',

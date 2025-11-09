@@ -78,7 +78,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       bloc.increment();
 
       expect(listener).toHaveBeenCalledTimes(1);
-      expect(listener).toHaveBeenCalledWith(bloc, 0, 1);
+      expect(listener).toHaveBeenCalledWith(bloc, 0, 1, expect.any(String));
     });
 
     it('should subscribe to eventAdded events', () => {
@@ -228,7 +228,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       // Should emit when state changes
       bloc.increment();
       expect(listener).toHaveBeenCalledTimes(1);
-      expect(listener).toHaveBeenCalledWith(bloc, 0, 1);
+      expect(listener).toHaveBeenCalledWith(bloc, 0, 1, expect.any(String));
     });
 
     it('should emit eventAdded before event processing', () => {

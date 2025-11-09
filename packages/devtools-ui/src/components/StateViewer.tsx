@@ -54,16 +54,16 @@ export const StateViewer: FC = () => {
           zIndex: 10,
           background: '#1e1e1e',
           borderBottom: '1px solid #444',
-          padding: '15px 20px',
+          padding: '8px 12px',
         }}
       >
-        <h2 style={{ fontSize: '18px', margin: 0 }}>
+        <h2 style={{ fontSize: '14px', margin: 0 }}>
           <InstanceId id={selectedInstance.id} />
         </h2>
       </div>
 
       {/* Scrollable Content */}
-      <div style={{ flex: 1, overflow: 'auto', padding: '20px' }}>
+      <div style={{ flex: 1, overflow: 'auto', padding: '12px' }}>
         {/* Current State Section */}
         <CurrentStateView
           state={selectedInstance.state}

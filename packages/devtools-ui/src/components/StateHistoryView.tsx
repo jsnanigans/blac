@@ -138,19 +138,19 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
     }
 
     return (
-      <div style={{ marginTop: '30px' }}>
+      <div style={{ marginTop: '20px' }}>
         <div
           onClick={onToggleExpanded}
           style={{
-            fontSize: '16px',
-            marginBottom: '10px',
+            fontSize: '14px',
+            marginBottom: '8px',
             fontWeight: 600,
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '8px',
+            gap: '6px',
             userSelect: 'none',
-            padding: '4px 0',
+            padding: '3px 0',
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.color = '#569cd6';
@@ -164,6 +164,7 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
               display: 'inline-block',
               transition: 'transform 0.2s',
               transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+              fontSize: '12px',
             }}
           >
             ▶
@@ -172,7 +173,7 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
           {history.length > 0 && (
             <span
               style={{
-                fontSize: '12px',
+                fontSize: '11px',
                 color: '#888',
                 fontWeight: 400,
                 marginLeft: '4px',
@@ -184,23 +185,23 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
         </div>
 
         {isExpanded && (
-          <div style={{ marginTop: '12px' }}>
+          <div style={{ marginTop: '10px' }}>
             {historyEntries.length === 0 ? (
               <div
                 style={{
                   color: '#888',
-                  fontSize: '13px',
-                  padding: '20px',
+                  fontSize: '12px',
+                  padding: '15px',
                   textAlign: 'center',
                   border: '1px solid #333',
-                  borderRadius: '4px',
+                  borderRadius: '3px',
                   background: '#1e1e1e',
                 }}
               >
                 No state changes recorded yet
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {historyEntries.map((entry, index) => {
                   const hasChanges = entry.changes !== undefined;
                   const isCurrent = index === 0;
@@ -211,7 +212,7 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
                       key={entry.snapshot.timestamp}
                       style={{
                         border: '1px solid #333',
-                        borderRadius: '4px',
+                        borderRadius: '3px',
                         background: '#1e1e1e',
                         overflow: 'hidden',
                       }}
@@ -219,7 +220,7 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
                       {/* Header */}
                       <div
                         style={{
-                          padding: '10px 12px',
+                          padding: '8px 10px',
                           background: isCurrent ? '#1a3a1a' : '#252526',
                           borderBottom: '1px solid #333',
                           display: 'flex',
@@ -227,10 +228,10 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
                           justifyContent: 'space-between',
                         }}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span
                             style={{
-                              fontSize: '12px',
+                              fontSize: '11px',
                               fontWeight: 600,
                               color: isCurrent ? '#10b981' : '#888',
                             }}
@@ -238,7 +239,7 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
                             {isCurrent ? 'CURRENT' : isInitial ? 'INITIAL' : `SNAPSHOT ${historyEntries.length - index}`}
                           </span>
                           {!isCurrent && (
-                            <span style={{ fontSize: '11px', color: '#666' }}>
+                            <span style={{ fontSize: '10px', color: '#666' }}>
                               {formatTime(entry.snapshot.timestamp)}
                             </span>
                           )}
@@ -246,7 +247,7 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
                         {hasChanges && !isInitial && (
                           <span
                             style={{
-                              fontSize: '11px',
+                              fontSize: '10px',
                               color: '#10b981',
                               fontWeight: 600,
                             }}
@@ -260,13 +261,13 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
                       {entry.snapshot.callstack && (
                         <div
                           style={{
-                            padding: '10px 12px',
+                            padding: '8px 10px',
                             background: '#252526',
                             borderBottom: '1px solid #333',
-                            fontSize: '11px',
+                            fontSize: '10px',
                           }}
                         >
-                          <div style={{ color: '#888', marginBottom: '6px', fontWeight: 600 }}>
+                          <div style={{ color: '#888', marginBottom: '5px', fontWeight: 600 }}>
                             INITIATOR:
                           </div>
                           <pre
@@ -274,10 +275,10 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
                               margin: 0,
                               color: '#d4d4d4',
                               fontFamily: 'Monaco, Menlo, Consolas, monospace',
-                              fontSize: '10px',
-                              lineHeight: '1.4',
+                              fontSize: '9px',
+                              lineHeight: '1.3',
                               overflow: 'auto',
-                              maxHeight: '120px',
+                              maxHeight: '100px',
                               whiteSpace: 'pre-wrap',
                               wordBreak: 'break-all',
                             }}
@@ -288,7 +289,7 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
                       )}
 
                       {/* Content */}
-                      <div style={{ padding: '12px' }}>
+                      <div style={{ padding: '10px' }}>
                         {!hasChanges && !isInitial ? (
                           <div style={{ color: '#666', fontSize: '12px', fontStyle: 'italic' }}>
                             No changes

@@ -824,24 +824,24 @@ describe('Dependency Tracker', () => {
         expect(optimized.size).toBe(2);
       });
 
-      it('should handle array indices separately', () => {
+      it('should handle array indices separately but keep parent', () => {
         const paths = new Set(['items', 'items[0]', 'items[1]']);
         const optimized = optimizeTrackedPaths(paths);
 
         expect(optimized.has('items[0]')).toBe(true);
         expect(optimized.has('items[1]')).toBe(true);
-        expect(optimized.has('items')).toBe(false);
-        expect(optimized.size).toBe(2);
+        expect(optimized.has('items')).toBe(true); // Parent restored
+        expect(optimized.size).toBe(3);
       });
 
-      it('should handle array properties separately from indices', () => {
+      it('should handle array properties and restore parent', () => {
         const paths = new Set(['items', 'items.length', 'items[0]']);
         const optimized = optimizeTrackedPaths(paths);
 
         expect(optimized.has('items.length')).toBe(true);
         expect(optimized.has('items[0]')).toBe(true);
-        expect(optimized.has('items')).toBe(false);
-        expect(optimized.size).toBe(2);
+        expect(optimized.has('items')).toBe(true); // Parent restored
+        expect(optimized.size).toBe(3);
       });
 
       it('should handle empty set correctly', () => {
