@@ -1,4 +1,5 @@
 export { DevToolsHeader } from './DevToolsHeader';
+export { TabBar } from './TabBar';
 export { SearchBar } from './SearchBar';
 export { InstanceList } from './InstanceList';
 export { InstanceListItem } from './InstanceListItem';
@@ -6,3 +7,4 @@ export { StateViewer } from './StateViewer';
 export { CurrentStateView } from './CurrentStateView';
 export { StateDiffView } from './StateDiffView';
 export { StateHistoryView } from './StateHistoryView';
+export { LogsView } from './LogsView';

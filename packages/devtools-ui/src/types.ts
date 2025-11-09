@@ -32,3 +32,35 @@ export interface InstanceData {
   /** Creation timestamp */
   createdAt: number;
 }
+
+/**
+ * Event types that can be logged
+ */
+export type LogEventType =
+  | 'init' // Initial state load
+  | 'created' // Instance created
+  | 'disposed' // Instance disposed
+  | 'state-changed' // State changed
+  | 'event-added'; // Event added (for Vertex/Bloc)
+
+/**
+ * Single log entry
+ */
+export interface LogEntry {
+  /** Unique log entry ID */
+  id: string;
+  /** Timestamp when event occurred */
+  timestamp: number;
+  /** Type of event */
+  eventType: LogEventType;
+  /** Instance ID */
+  instanceId: string;
+  /** Class name */
+  className: string;
+  /** Custom instance name */
+  instanceName?: string;
+  /** Event-specific data */
+  data?: any;
+  /** Call stack (for state changes) */
+  callstack?: string;
+}

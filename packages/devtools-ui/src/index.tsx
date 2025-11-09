@@ -27,6 +27,7 @@ export {
   DevToolsSearchBloc,
   DevToolsDiffBloc,
   DevToolsLayoutBloc,
+  DevToolsLogsBloc,
 } from './blocs';
 
 // Backward compatibility: export DevToolsInstancesBloc as LayoutBloc

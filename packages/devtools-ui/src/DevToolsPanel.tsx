@@ -10,8 +10,13 @@
 
 import React, { FC } from 'react';
 import { useBloc } from '@blac/react';
-import { DevToolsInstancesBloc, DevToolsDiffBloc } from './blocs';
-import { DevToolsHeader, InstanceList, StateViewer } from './components';
+import {
+  DevToolsInstancesBloc,
+  DevToolsDiffBloc,
+  DevToolsLayoutBloc,
+  DevToolsLogsBloc,
+} from './blocs';
+import { DevToolsHeader, TabBar, InstanceList, StateViewer, LogsView } from './components';
 import type { DevToolsUIProps } from './types';
 
 /**
@@ -43,6 +48,20 @@ export const DevToolsPanel: FC<DevToolsUIProps> = React.memo(
       },
     });
 
+    // Initialize logs bloc for event logging
+    useBloc(DevToolsLogsBloc, {
+      onMount: () => {
+        console.log('[DevToolsPanel] DevToolsLogsBloc created');
+      },
+    });
+
+    // Initialize layout bloc for tab management
+    const [{ activeTab }] = useBloc(DevToolsLayoutBloc, {
+      onMount: () => {
+        console.log('[DevToolsPanel] DevToolsLayoutBloc created');
+      },
+    });
+
     return (
       <div
         style={{
@@ -55,14 +74,21 @@ export const DevToolsPanel: FC<DevToolsUIProps> = React.memo(
         {/* Header with connection status */}
         <DevToolsHeader />
 
-        {/* Main Content */}
-        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-          {/* Left Panel: Instance List */}
-          <InstanceList />
+        {/* Tab Bar */}
+        <TabBar />
 
-          {/* Right Panel: State Viewer */}
-          <StateViewer />
-        </div>
+        {/* Main Content - conditionally render based on active tab */}
+        {activeTab === 'Instances' ? (
+          <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+            {/* Left Panel: Instance List */}
+            <InstanceList />
+
+            {/* Right Panel: State Viewer */}
+            <StateViewer />
+          </div>
+        ) : (
+          <LogsView />
+        )}
       </div>
     );
   },
@@ -76,4 +102,5 @@ export {
   DevToolsSearchBloc,
   DevToolsDiffBloc,
   DevToolsLayoutBloc,
+  DevToolsLogsBloc,
 } from './blocs';

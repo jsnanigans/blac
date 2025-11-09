@@ -353,11 +353,13 @@ export abstract class StateContainer<S> {
       // Skip Error message and this function's frames
       const relevantLines = lines.slice(1);
 
-      // Filter out internal BlaC framework calls
-      const userCodeLines = relevantLines.filter((line) => {
-        if (!line.trim()) return false;
+      // Filter and format stack trace
+      const formattedLines: string[] = [];
 
-        // Skip internal BlaC calls
+      for (const line of relevantLines) {
+        if (!line.trim()) continue;
+
+        // Skip internal BlaC framework calls
         if (
           line.includes('StateContainer.emit') ||
           line.includes('StateContainer.update') ||
@@ -365,17 +367,89 @@ export abstract class StateContainer<S> {
           line.includes('Cubit.patch') ||
           line.includes('Vertex.')
         ) {
-          return false;
+          continue;
         }
 
-        return true;
-      });
+        // Skip React internals and build tool noise
+        if (
+          line.includes('node_modules') ||
+          line.includes('react-dom') ||
+          line.includes('react_jsx') ||
+          line.includes('.vite/deps') ||
+          line.includes('executeDispatch') ||
+          line.includes('runWithFiber') ||
+          line.includes('invokeGuarded') ||
+          line.includes('callCallback') ||
+          line.includes('processDispatchQueue') ||
+          line.includes('dispatchEvent') ||
+          line.includes('batchedUpdates')
+        ) {
+          continue;
+        }
 
-      return userCodeLines.join('\n').trim();
+        // Parse and format the line
+        const formatted = this.formatStackLine(line);
+        if (formatted) {
+          formattedLines.push(formatted);
+        }
+      }
+
+      return formattedLines.join('\n');
     } catch (error) {
       // Silently fail if stack trace capture fails
       return '';
     }
+  }
+
+  /**
+   * Format a single stack trace line for better readability
+   * Removes URL prefixes, query params, and cleans up the output
+   */
+  private formatStackLine(line: string): string | null {
+    // Chrome format: "    at functionName (http://...file.ts:line:col)"
+    const match = line.match(/at\s+(.+?)\s+\((.+?):(\d+):(\d+)\)/);
+    if (!match) {
+      // Try simpler format: "    at http://...file.ts:line:col"
+      const simpleMatch = line.match(/at\s+(.+?):(\d+):(\d+)/);
+      if (simpleMatch) {
+        const [, url, lineNum, col] = simpleMatch;
+        const cleanPath = this.cleanFilePath(url);
+        return `  at ${cleanPath}:${lineNum}:${col}`;
+      }
+      return null;
+    }
+
+    const [, functionName, url, lineNum, col] = match;
+    const cleanPath = this.cleanFilePath(url);
+
+    return `  at ${functionName} (${cleanPath}:${lineNum}:${col})`;
+  }
+
+  /**
+   * Clean up file path by removing URL prefixes and query params
+   */
+  private cleanFilePath(url: string): string {
+    // Remove localhost URLs and convert to relative paths
+    let path = url
+      .replace(/http:\/\/localhost:\d+\/@fs/, '')
+      .replace(/http:\/\/localhost:\d+\//, '')
+      .replace(/\?t=\d+/, '') // Remove Vite timestamp
+      .replace(/\?v=[a-f0-9]+/, ''); // Remove Vite hash
+
+    // Extract just the meaningful part of the path
+    // For project files, show relative to project root
+    const projectMatch = path.match(/\/Projects\/blac\/(.+)/);
+    if (projectMatch) {
+      path = projectMatch[1];
+    }
+
+    // For absolute paths, show just the last few segments
+    const segments = path.split('/');
+    if (segments.length > 3) {
+      path = segments.slice(-3).join('/');
+    }
+
+    return path;
   }
   lastUpdateTimestamp: number = Date.now();
 

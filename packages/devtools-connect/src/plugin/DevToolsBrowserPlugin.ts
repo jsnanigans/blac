@@ -51,6 +51,10 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
   private config: Required<DevToolsBrowserPluginConfig>;
   private instanceTimestamps = new Map<string, number>();
 
+  // Persistent event history storage (complete log from app startup)
+  private eventHistory: DevToolsEvent[] = [];
+  private readonly MAX_HISTORY_SIZE = 10000; // Store up to 10k events
+
   constructor(config: DevToolsBrowserPluginConfig = {}) {
     this.config = {
       enabled: true,
@@ -80,6 +84,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     this.listeners.clear();
     this.instanceCache.clear();
     this.instanceTimestamps.clear();
+    this.eventHistory = [];
 
     // Remove global API
     if (typeof window !== 'undefined') {
@@ -157,11 +162,12 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
   }
 
   /**
-   * Subscribe to DevTools events
+   * Subscribe to DevTools events (real-time events only, not history)
    */
   subscribe(callback: DevToolsCallback): () => void {
     console.log('[DevToolsBrowserPlugin] New subscription added, total listeners:', this.listeners.size + 1);
     this.listeners.add(callback);
+
     return () => {
       console.log('[DevToolsBrowserPlugin] Subscription removed, total listeners:', this.listeners.size - 1);
       this.listeners.delete(callback);
@@ -175,6 +181,15 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     const instances = Array.from(this.instanceCache.values());
     console.log('[DevToolsBrowserPlugin] getInstances() called, returning', instances.length, 'instances');
     return instances;
+  }
+
+  /**
+   * Get complete event history from app startup
+   * This allows DevTools to request the full log when it opens
+   */
+  getEventHistory(): DevToolsEvent[] {
+    console.log('[DevToolsBrowserPlugin] getEventHistory() called, returning', this.eventHistory.length, 'events');
+    return [...this.eventHistory]; // Return copy to prevent external mutation
   }
 
   /**
@@ -225,22 +240,35 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
   }
 
   /**
-   * Emit event to all listeners
+   * Emit event to all listeners AND store in persistent history
    */
   private emit(event: DevToolsEvent): void {
-    console.log(`[DevToolsBrowserPlugin] Emitting event '${event.type}' to ${this.listeners.size} listener(s):`, {
-      className: event.data.className,
-      instanceId: event.data.id,
-      isDisposed: event.data.isDisposed,
-    });
+    // Always store event in history (persistent log from app startup)
+    if (this.eventHistory.length < this.MAX_HISTORY_SIZE) {
+      this.eventHistory.push(event);
+    } else {
+      // Remove oldest event when history is full (FIFO)
+      this.eventHistory.shift();
+      this.eventHistory.push(event);
+      console.warn(`[DevToolsBrowserPlugin] Event history full (${this.MAX_HISTORY_SIZE}), dropped oldest event`);
+    }
 
-    this.listeners.forEach((listener) => {
-      try {
-        listener(event);
-      } catch (error) {
-        console.error('[DevToolsBrowserPlugin] Listener error:', error);
-      }
-    });
+    // Also emit to all current real-time listeners
+    if (this.listeners.size > 0) {
+      console.log(`[DevToolsBrowserPlugin] Emitting event '${event.type}' to ${this.listeners.size} listener(s):`, {
+        className: Array.isArray(event.data) ? 'multiple' : event.data.className,
+        instanceId: Array.isArray(event.data) ? `${event.data.length} instances` : event.data.id,
+        isDisposed: Array.isArray(event.data) ? 'N/A' : event.data.isDisposed,
+      });
+
+      this.listeners.forEach((listener) => {
+        try {
+          listener(event);
+        } catch (error) {
+          console.error('[DevToolsBrowserPlugin] Listener error:', error);
+        }
+      });
+    }
   }
 
   /**
@@ -287,6 +315,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
 
     (window as any).__BLAC_DEVTOOLS__ = {
       getInstances: () => this.getInstances(),
+      getEventHistory: () => this.getEventHistory(),
       subscribe: (callback: DevToolsCallback) => this.subscribe(callback),
       getVersion: () => this.getVersion(),
       isEnabled: () => this.enabled,

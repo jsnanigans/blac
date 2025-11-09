@@ -3,7 +3,10 @@ import type { InstanceData } from '../types';
 import { DevToolsInstancesBloc } from './DevToolsInstancesBloc';
 import { DevToolsDiffBloc, type DiffResult, type StateSnapshot } from './DevToolsDiffBloc';
 
+export type TabName = 'Instances' | 'Logs';
+
 type LayoutState = {
+  activeTab: TabName;
   selectedId: string | null;
   isCurrentStateExpanded: boolean;
   isHistoryExpanded: boolean;
@@ -21,11 +24,20 @@ export class DevToolsLayoutBloc extends Cubit<LayoutState> {
 
   constructor() {
     super({
+      activeTab: 'Instances', // Default: Instances tab
       selectedId: null,
       isCurrentStateExpanded: true, // Default: expanded
       isHistoryExpanded: false, // Default: collapsed
     });
   }
+
+  /**
+   * Set active tab
+   */
+  setActiveTab = (tab: TabName) => {
+    console.log(`[LayoutBloc] Active tab changed to:`, tab);
+    this.patch({ activeTab: tab });
+  };
 
   /**
    * Set selected instance ID
