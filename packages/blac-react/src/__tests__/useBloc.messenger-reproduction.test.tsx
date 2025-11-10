@@ -206,29 +206,28 @@ describe('Messenger Reproduction - Array Tracking', () => {
     // Setup: Add initial messages
     const channel = ChannelBloc.resolve(channelId, channelId);
     const msg1Id = channel.addMessage('Hello World', currentUserId);
+    const msg2Id = channel.addMessage('this is that', currentUserId);
     const msg3Id = channel.addMessage('Good thanks', currentUserId);
 
     // Render MessageList
-    const { rerender } = render(
-      <MessageList channelId={channelId} currentUserId={currentUserId} />,
-    );
+    render(<MessageList channelId={channelId} currentUserId={currentUserId} />);
 
     // Initial render
     expect(messageListRenderCount).toBe(1);
+    screen.debug();
     expect(screen.getByTestId('message-count')).toHaveTextContent('3');
 
     // All messages should show 'sending' status
     expect(screen.getByTestId(`status-${msg1Id}`)).toHaveTextContent('⏳');
+    expect(screen.getByTestId(`status-${msg2Id}`)).toHaveTextContent('⏳');
     expect(screen.getByTestId(`status-${msg3Id}`)).toHaveTextContent('⏳');
 
     // ============================================================================
     // CRITICAL TEST: Update message status (like updateMessageStatusEvent)
     // ============================================================================
-    channel.updateMessageStatus(msg1Id, 'sent');
-
-    rerender(
-      <MessageList channelId={channelId} currentUserId={currentUserId} />,
-    );
+    act(() => {
+      channel.updateMessageStatus(msg1Id, 'sent');
+    });
 
     // EXPECTATION: MessageList should re-render
     expect(messageListRenderCount).toBe(2);
@@ -247,9 +246,7 @@ describe('Messenger Reproduction - Array Tracking', () => {
     const channel = ChannelBloc.resolve(channelId, channelId);
     const msg1Id = channel.addMessage('Test message', currentUserId);
 
-    const { rerender } = render(
-      <MessageList channelId={channelId} currentUserId={currentUserId} />,
-    );
+    render(<MessageList channelId={channelId} currentUserId={currentUserId} />);
 
     // Debug: Check what paths are being tracked
     const instance = ChannelBloc.get(channelId);
@@ -280,18 +277,12 @@ describe('Messenger Reproduction - Array Tracking', () => {
       JSON.stringify(channel.state.messages, null, 2),
     );
 
-    // rerender(
-    //   <MessageList channelId={channelId} currentUserId={currentUserId} />,
-    // );
     expect(screen.getByTestId(`status-${msg1Id}`)).toHaveTextContent('✓');
 
     // sent → delivered
     act(() => {
       channel.updateMessageStatus(msg1Id, 'delivered');
     });
-    // rerender(
-    //   <MessageList channelId={channelId} currentUserId={currentUserId} />,
-    // );
     expect(screen.getByTestId(`status-${msg1Id}`)).toHaveTextContent('✓✓');
   });
 
@@ -306,18 +297,14 @@ describe('Messenger Reproduction - Array Tracking', () => {
     const msg4Id = channel.addMessage('Message 4', currentUserId);
     const msg5Id = channel.addMessage('Message 5', currentUserId);
 
-    const { rerender } = render(
-      <MessageList channelId={channelId} currentUserId={currentUserId} />,
-    );
+    render(<MessageList channelId={channelId} currentUserId={currentUserId} />);
 
     expect(messageListRenderCount).toBe(1);
 
     // Update message in the middle
-    channel.updateMessageStatus(msg3Id, 'delivered');
-
-    rerender(
-      <MessageList channelId={channelId} currentUserId={currentUserId} />,
-    );
+    act(() => {
+      channel.updateMessageStatus(msg3Id, 'delivered');
+    });
 
     // Should re-render
     expect(messageListRenderCount).toBe(2);
@@ -339,19 +326,15 @@ describe('Messenger Reproduction - Array Tracking', () => {
     channel.addMessage('Message 2', currentUserId);
     const lastMsgId = channel.addMessage('Message 3', currentUserId);
 
-    const { rerender } = render(
-      <MessageList channelId={channelId} currentUserId={currentUserId} />,
-    );
+    render(<MessageList channelId={channelId} currentUserId={currentUserId} />);
 
     expect(messageListRenderCount).toBe(1);
     expect(screen.getByTestId(`status-${lastMsgId}`)).toHaveTextContent('⏳');
 
     // Update last message
-    channel.updateMessageStatus(lastMsgId, 'sent');
-
-    rerender(
-      <MessageList channelId={channelId} currentUserId={currentUserId} />,
-    );
+    act(() => {
+      channel.updateMessageStatus(lastMsgId, 'sent');
+    });
 
     expect(messageListRenderCount).toBe(2);
     expect(screen.getByTestId(`status-${lastMsgId}`)).toHaveTextContent('✓');
@@ -364,21 +347,17 @@ describe('Messenger Reproduction - Array Tracking', () => {
     const channel = ChannelBloc.resolve(channelId, channelId);
     channel.addMessage('Hello', currentUserId);
 
-    const { rerender } = render(
-      <MessageList channelId={channelId} currentUserId={currentUserId} />,
-    );
+    render(<MessageList channelId={channelId} currentUserId={currentUserId} />);
 
     expect(messageListRenderCount).toBe(1);
 
     // Update typingUsers (not messages)
-    channel.emit({
-      ...channel.state,
-      typingUsers: ['user-other'],
+    act(() => {
+      channel.emit({
+        ...channel.state,
+        typingUsers: ['user-other'],
+      });
     });
-
-    rerender(
-      <MessageList channelId={channelId} currentUserId={currentUserId} />,
-    );
 
     // Should NOT re-render because MessageList only tracks messages
     expect(messageListRenderCount).toBe(1);

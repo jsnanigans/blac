@@ -1,4 +1,12 @@
-import type { DevToolsMessage, DevToolsCommand, WindowMessage } from './types';
+import type {
+  DevToolsMessage,
+  WindowMessage,
+  DevToolsMessageType,
+} from '../protocol/messages';
+import type { DevToolsStateManager } from '../state/DevToolsStateManager';
+
+// Keep old types for backward compatibility (used by ReduxDevToolsAdapter)
+import type { DevToolsCommand } from './types';
 
 const MAX_MESSAGE_SIZE = 10_000_000;
 const MAX_MESSAGES_PER_SECOND = 100;
@@ -7,6 +15,7 @@ export interface DevToolsBridgeConfig {
   enabled: boolean;
   maxMessageSize?: number;
   maxMessagesPerSecond?: number;
+  stateManager?: DevToolsStateManager;
 }
 
 export class DevToolsBridge {
@@ -15,6 +24,7 @@ export class DevToolsBridge {
   private rateLimitWindow = 1000;
   private maxMessagesPerSecond: number;
   private maxMessageSize: number;
+  private stateManager?: DevToolsStateManager;
   private commandHandlers: Map<string, (command: DevToolsCommand) => void> =
     new Map();
   private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
@@ -29,6 +39,7 @@ export class DevToolsBridge {
     this.maxMessagesPerSecond =
       config.maxMessagesPerSecond ?? MAX_MESSAGES_PER_SECOND;
     this.maxMessageSize = config.maxMessageSize ?? MAX_MESSAGE_SIZE;
+    this.stateManager = config.stateManager;
 
     if (!config.enabled || typeof window === 'undefined') {
       return;
@@ -91,10 +102,19 @@ export class DevToolsBridge {
       if (!data || typeof data !== 'object') return;
       if (data.source !== 'blac-devtools-extension') return;
 
-      const command = data.payload as DevToolsCommand;
+      const message = data.payload;
 
       // Update heartbeat timestamp on any message
       this.lastHeartbeat = Date.now();
+
+      // Handle PANEL_CONNECT - send full state dump
+      if (message.type === DevToolsMessageType.PANEL_CONNECT) {
+        this.handlePanelConnect(message);
+        return;
+      }
+
+      // Handle legacy commands (for backward compatibility with ReduxDevToolsAdapter)
+      const command = message as DevToolsCommand;
 
       // Handle heartbeat acknowledgment
       if (command.type === 'HEARTBEAT_ACK') {
@@ -149,16 +169,11 @@ export class DevToolsBridge {
     this.reconnectAttempts++;
     const delay = this.reconnectDelay * this.reconnectAttempts;
 
-    console.log(
-      `[BlaC DevTools] Reconnection attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${delay}ms`,
-    );
-
     setTimeout(() => {
       const wasConnected = this.isConnected;
       this.isConnected = this.checkConnection();
 
       if (this.isConnected && !wasConnected) {
-        console.log('[BlaC DevTools] Reconnected successfully');
         this.reconnectAttempts = 0;
         this.connectedSince = Date.now();
 
@@ -187,6 +202,26 @@ export class DevToolsBridge {
         );
       }
     }
+  }
+
+  private handlePanelConnect(message: DevToolsMessage): void {
+    if (message.type !== DevToolsMessageType.PANEL_CONNECT) return;
+
+    if (!this.stateManager) {
+      console.warn(
+        '[DevToolsBridge] No state manager configured, cannot send full state dump',
+      );
+      return;
+    }
+
+    // Get full state from state manager
+    const fullState = this.stateManager.getFullState();
+
+    // Send FULL_STATE_DUMP to the connecting panel
+    this.send({
+      type: DevToolsMessageType.FULL_STATE_DUMP,
+      payload: fullState,
+    });
   }
 
   private startRateLimitReset(): void {

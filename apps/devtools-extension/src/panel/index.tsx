@@ -16,8 +16,6 @@ function App() {
   return (
     <DevToolsPanel
       onMount={(instancesBloc: DevToolsInstancesBloc) => {
-        console.log('[Panel] DevToolsPanel mounted');
-
         // Get the DiffBloc for storing previous states
         // Safe to use .get() here because DevToolsPanel initializes it via useBloc
         const diffBloc = DevToolsDiffBloc.get();
@@ -28,14 +26,64 @@ function App() {
 
         comm.connect();
         comm.onMessage((message) => {
-          console.log('[Panel] Received message:', message);
           switch (message.type) {
+            case 'BLAC_NOT_AVAILABLE':
+              // BlaC is not on this page
+              flushSync(() => {
+                instancesBloc.setConnected(false);
+                instancesBloc.setAllInstances([]);
+              });
+              break;
+
             case 'INITIAL_STATE':
               // Initial load - set all instances at once
               if (message.payload?.instances) {
                 flushSync(() => {
                   instancesBloc.setAllInstances(message.payload.instances);
                   instancesBloc.setConnected(true);
+                });
+              }
+              // Process event history to populate logs
+              if (message.payload?.eventHistory) {
+                flushSync(() => {
+                  message.payload.eventHistory.forEach((event: any) => {
+                    if (event.type === 'init') {
+                      logsBloc.addLog(
+                        'init',
+                        '__system__',
+                        'System',
+                        'DevTools',
+                        { instanceCount: Array.isArray(event.data) ? event.data.length : 0 },
+                      );
+                    } else if (event.type === 'instance-created') {
+                      logsBloc.addLog(
+                        'created',
+                        event.data.id,
+                        event.data.className,
+                        event.data.name,
+                        { initialState: event.data.state },
+                      );
+                    } else if (event.type === 'instance-disposed') {
+                      logsBloc.addLog(
+                        'disposed',
+                        event.data.id,
+                        event.data.className,
+                        event.data.name,
+                      );
+                    } else if (event.type === 'instance-updated') {
+                      logsBloc.addLog(
+                        'state-changed',
+                        event.data.id,
+                        event.data.className,
+                        event.data.name,
+                        {
+                          previousState: event.data.previousState,
+                          newState: event.data.state || event.data.currentState,
+                        },
+                        event.data.callstack,
+                      );
+                    }
+                  });
                 });
               }
               break;
@@ -57,9 +105,6 @@ function App() {
               flushSync(() => {
                 switch (event.type) {
                   case 'init':
-                    console.log(
-                      '[Panel] Received INIT event - resetting all state',
-                    );
                     // Clear all existing state
                     diffBloc.clearAllPreviousStates();
                     logsBloc.clearLogs();
@@ -84,15 +129,9 @@ function App() {
                       'DevTools',
                       { instanceCount: initInstances.length },
                     );
-                    console.log(
-                      `[Panel] Reset complete - loaded ${initInstances.length} instances`,
-                    );
                     break;
 
                   case 'instance-created':
-                    console.log(
-                      `[Panel] Adding instance: ${event.data.className}#${event.data.id}`,
-                    );
                     instancesBloc.addInstance({
                       id: event.data.id,
                       className: event.data.className,
@@ -113,7 +152,6 @@ function App() {
                     break;
 
                   case 'instance-disposed':
-                    console.log(`[Panel] Removing instance: ${event.data.id}`);
                     // Get instance info before removing for the log
                     const disposedInstance = instancesBloc.getInstance(
                       event.data.id,
@@ -133,9 +171,6 @@ function App() {
                     break;
 
                   case 'instance-updated':
-                    console.log(
-                      `[Panel] Updating instance: ${event.data.className}#${event.data.id}${event.data.callstack ? ' (with callstack)' : ''}`,
-                    );
                     // Get current instance to capture previous state
                     const currentInstance = instancesBloc.getInstance(
                       event.data.id,
@@ -173,7 +208,6 @@ function App() {
         });
       }}
       onUnmount={() => {
-        console.log('[Panel] Unmounted');
         comm.disconnect();
       }}
     />

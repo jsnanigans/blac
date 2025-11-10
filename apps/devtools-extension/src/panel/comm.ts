@@ -18,9 +18,10 @@ export type AtomicEvent =
     };
 
 export type MessageIn =
-  | { type: 'INITIAL_STATE'; payload: { instances: InstanceData[] } }
+  | { type: 'INITIAL_STATE'; payload: { instances: InstanceData[]; eventHistory?: AtomicEvent[] } }
   | { type: 'ATOMIC_UPDATE'; payload: AtomicEvent }
-  | { type: 'CACHED_STATE'; payload: { instances: InstanceData[] } };
+  | { type: 'CACHED_STATE'; payload: { instances: InstanceData[] } }
+  | { type: 'BLAC_NOT_AVAILABLE'; payload: { reason: string } };
 
 type MessageOut = { type: 'GET_INSTANCES' };
 

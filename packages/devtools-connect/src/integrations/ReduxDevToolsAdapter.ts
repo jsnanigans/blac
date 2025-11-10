@@ -309,10 +309,6 @@ export class ReduxDevToolsAdapter {
           this.handleContainerDisposed(container);
         }),
       );
-
-      console.log(
-        '[ReduxDevToolsAdapter] Connected to Redux DevTools - Time-travel debugging enabled!',
-      );
     } catch (error) {
       console.error('[ReduxDevToolsAdapter] Failed to connect:', error);
       this.devTools = null;
@@ -656,25 +652,16 @@ export class ReduxDevToolsAdapter {
       // Handle other dispatch types
       switch (message.payload.type) {
         case 'RESET':
-          console.log('[ReduxDevToolsAdapter] Reset requested');
           window.dispatchEvent(new CustomEvent('blac-devtools-reset'));
           break;
 
         case 'COMMIT':
-          console.log('[ReduxDevToolsAdapter] Commit current state');
           break;
 
         case 'ROLLBACK':
-          console.log('[ReduxDevToolsAdapter] Rollback requested');
           break;
 
         case 'IMPORT_STATE':
-          if (message.payload.nextLiftedState) {
-            console.log(
-              '[ReduxDevToolsAdapter] Import state:',
-              message.payload,
-            );
-          }
           break;
       }
       return;
@@ -684,10 +671,6 @@ export class ReduxDevToolsAdapter {
     if (isActionMessage(message)) {
       // Redux DevTools sends the action as a JSON string when dispatching from the UI
       let action = message.payload;
-      console.log(
-        '[ReduxDevToolsAdapter] Dispatching action from DevTools:',
-        action,
-      );
       if (typeof action === 'string') {
         try {
           action = JSON.parse(action);
@@ -712,11 +695,6 @@ export class ReduxDevToolsAdapter {
   private handleTimeTravel(stateString: string): void {
     try {
       const targetState = JSON.parse(stateString);
-
-      console.log(
-        '[ReduxDevToolsAdapter] Time-travel: Restoring state...',
-        targetState,
-      );
 
       // Set flag to prevent recursive Redux DevTools updates
       this.isTimeTraveling = true;
@@ -766,10 +744,6 @@ export class ReduxDevToolsAdapter {
 
       // Clear flag after restoration complete
       this.isTimeTraveling = false;
-
-      console.log(
-        `[ReduxDevToolsAdapter] Time-travel complete: ${restoredCount} containers restored, ${failedCount} failed`,
-      );
 
       // Dispatch custom event for user notification
       window.dispatchEvent(
@@ -954,12 +928,6 @@ export class ReduxDevToolsAdapter {
 
     const newState = action.payload.state;
 
-    console.log(
-      `[ReduxDevToolsAdapter] Emitting state to "${containerName}"`,
-      'New state:',
-      newState,
-    );
-
     // Use emit to update state (available on Cubit/Vertex)
     if ('emit' in container && typeof container.emit === 'function') {
       (container as any).emit(newState);
@@ -996,12 +964,6 @@ export class ReduxDevToolsAdapter {
     }
 
     const partialState = action.payload.state;
-
-    console.log(
-      `[ReduxDevToolsAdapter] Patching state of "${containerName}"`,
-      'Partial state:',
-      partialState,
-    );
 
     // Check if container has patch method (Cubit only)
     if ('patch' in container && typeof container.patch === 'function') {
@@ -1061,12 +1023,6 @@ export class ReduxDevToolsAdapter {
     const event = EventRegistry.deserializeEvent(
       eventName,
       action.payload || {},
-    );
-
-    console.log(
-      `[ReduxDevToolsAdapter] Dispatching event "${eventName}" to "${containerName}"`,
-      'Event:',
-      event,
     );
 
     // Dispatch the event
@@ -1151,14 +1107,6 @@ export class ReduxDevToolsAdapter {
 
       // If path is just the state key (no property path), update entire state
       if (statePath.length === 0) {
-        console.log(
-          `[ReduxDevToolsAdapter] Replacing entire state of "${displayName}"`,
-          '\nOld value:',
-          currentState,
-          '\nNew value:',
-          value,
-        );
-
         // Use emit to update state
         if ('emit' in container && typeof container.emit === 'function') {
           (container as any).emit(value);
@@ -1206,14 +1154,6 @@ export class ReduxDevToolsAdapter {
       }
 
       target[finalKey] = value;
-
-      console.log(
-        `[ReduxDevToolsAdapter] Editing state of "${displayName}" at path "${statePath.join('.')}"`,
-        '\nOld value:',
-        currentState,
-        '\nNew value:',
-        newState,
-      );
 
       // Emit updated state
       if ('emit' in container && typeof container.emit === 'function') {

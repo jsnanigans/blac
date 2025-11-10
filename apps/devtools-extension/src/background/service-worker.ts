@@ -16,12 +16,8 @@ const devToolsConnections = new Map<number, Connection>();
 // Cached state for reconnection
 const stateCache = new Map<number, any>();
 
-console.log('[BlaC DevTools] Service worker started');
-
 // Handle connections from DevTools panels
 chrome.runtime.onConnect.addListener((port) => {
-  console.log('[BlaC DevTools] Port connected:', port.name);
-
   if (port.name.startsWith('devtools-')) {
     const tabId = parseInt(port.name.split('-')[1], 10);
 
@@ -38,8 +34,6 @@ chrome.runtime.onConnect.addListener((port) => {
 
     // Handle messages from DevTools panel
     port.onMessage.addListener((message) => {
-      console.log('[BlaC DevTools] Message from panel:', message);
-
       // Forward to content script
       chrome.tabs.sendMessage(tabId, {
         source: 'blac-devtools-panel',
@@ -49,7 +43,6 @@ chrome.runtime.onConnect.addListener((port) => {
 
     // Clean up on disconnect
     port.onDisconnect.addListener(() => {
-      console.log('[BlaC DevTools] Port disconnected for tab', tabId);
       devToolsConnections.delete(tabId);
     });
   }
@@ -57,8 +50,6 @@ chrome.runtime.onConnect.addListener((port) => {
 
 // Handle messages from content scripts
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log('[BlaC DevTools] Message from content:', message, 'Tab:', sender.tab?.id);
-
   // Only process messages from content scripts
   if (!sender.tab?.id || message.source !== 'blac-devtools-content') {
     return;
@@ -84,20 +75,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 // Clean up cache when tab is closed
 chrome.tabs.onRemoved.addListener((tabId) => {
-  console.log('[BlaC DevTools] Tab closed:', tabId);
   stateCache.delete(tabId);
   devToolsConnections.delete(tabId);
-});
-
-// Handle extension installation/update
-chrome.runtime.onInstalled.addListener((details) => {
-  console.log('[BlaC DevTools] Extension installed/updated:', details);
-
-  if (details.reason === 'install') {
-    console.log('[BlaC DevTools] First installation');
-  } else if (details.reason === 'update') {
-    console.log('[BlaC DevTools] Updated from version', details.previousVersion);
-  }
 });
 
 // Export for TypeScript

@@ -4,8 +4,6 @@
  * Runs in ISOLATED world, communicates with injected script via postMessage
  */
 
-console.log('[BlaC DevTools] Content script loaded');
-
 // Inject script into MAIN world to access window.__BLAC_DEVTOOLS__
 function injectScript() {
   // Inject the API monitoring script
@@ -31,8 +29,6 @@ window.addEventListener('message', (event) => {
 
   // Check for our message format
   if (event.data?.source !== 'blac-devtools-inject') return;
-
-  console.log('[BlaC DevTools] Message from inject:', event.data);
 
   // Check if extension context is still valid
   if (!chrome.runtime?.id) {
@@ -62,16 +58,14 @@ window.addEventListener('message', (event) => {
 
 // Listen for messages from DevTools panel (via service worker)
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log('[BlaC DevTools] Message from panel:', message);
-
   // Only process messages from our extension
   if (message.source !== 'blac-devtools-panel') return;
 
   // Forward to injected script
   window.postMessage(
     {
-      source: 'blac-devtools-content',
       ...message,
+      source: 'blac-devtools-content',
     },
     '*',
   );

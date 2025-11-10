@@ -3,10 +3,15 @@
  *
  * Provides real-time instance inspection and state monitoring for the
  * BlaC DevTools browser extension using the new plugin API.
+ *
+ * Acts as the "backend" that stores complete state history and responds
+ * to connection requests from DevTools panels.
  */
 
 import type { BlacPlugin, PluginContext, InstanceMetadata } from '@blac/core';
 import { safeSerialize } from '../serialization/serialize';
+import { DevToolsStateManager } from '../state/DevToolsStateManager';
+import type { InstanceState } from '../protocol/messages';
 
 /**
  * Event types for DevTools
@@ -34,6 +39,10 @@ export type DevToolsCallback = (event: DevToolsEvent) => void;
 export interface DevToolsBrowserPluginConfig {
   /** Enable/disable the plugin */
   enabled?: boolean;
+  /** Max instances to track (default: 2000) */
+  maxInstances?: number;
+  /** Max snapshots per instance (default: 20) */
+  maxSnapshots?: number;
 }
 
 /**
@@ -55,18 +64,28 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
   private eventHistory: DevToolsEvent[] = [];
   private readonly MAX_HISTORY_SIZE = 10000; // Store up to 10k events
 
+  // State manager for structured state history (backend for DevTools panels)
+  private stateManager: DevToolsStateManager;
+
   constructor(config: DevToolsBrowserPluginConfig = {}) {
     this.config = {
       enabled: true,
+      maxInstances: 2000,
+      maxSnapshots: 20,
       ...config,
     };
+
+    // Initialize state manager
+    this.stateManager = new DevToolsStateManager({
+      maxInstances: this.config.maxInstances,
+      maxSnapshots: this.config.maxSnapshots,
+    });
   }
 
   /**
    * Called when plugin is installed
    */
   onInstall(context: PluginContext): void {
-    console.log('[DevToolsBrowserPlugin] Installed');
     this.context = context;
 
     // Scan for existing instances
@@ -80,7 +99,6 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
    * Called when plugin is uninstalled
    */
   onUninstall(): void {
-    console.log('[DevToolsBrowserPlugin] Uninstalled');
     this.listeners.clear();
     this.instanceCache.clear();
     this.instanceTimestamps.clear();
@@ -98,14 +116,23 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
   onInstanceCreated(instance: any, context: PluginContext): void {
     // Skip instances marked as internal (DevTools Blocs tracking themselves)
     if (this.shouldExcludeInstance(instance)) {
-      const metadata = context.getInstanceMetadata(instance);
-      console.log(`[DevToolsBrowserPlugin] Excluded instance from tracking: ${metadata.className}#${metadata.id}`);
       return;
     }
 
     const data = this.createInstanceData(instance, context);
     this.instanceCache.set(data.id, data);
-    console.log(`[DevToolsBrowserPlugin] Instance created: ${data.className}#${data.id} (total: ${this.instanceCache.size})`);
+
+    // Add to state manager
+    const createdAt = Date.now();
+    this.instanceTimestamps.set(data.id, createdAt);
+    this.stateManager.addInstance({
+      id: data.id,
+      className: data.className,
+      name: data.name || data.id,
+      state: data.state,
+      isIsolated: data.isIsolated,
+      createdAt,
+    });
 
     this.emit({
       type: 'instance-created',
@@ -131,7 +158,14 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
 
     const data = this.createInstanceData(instance, context, previousState, currentState, callstack);
     this.instanceCache.set(data.id, data);
-    console.log(`[DevToolsBrowserPlugin] State changed: ${data.className}#${data.id}${callstack ? ' (with callstack)' : ''}`);
+
+    // Update state manager with history
+    this.stateManager.updateState(
+      data.id,
+      safeSerialize(previousState).data,
+      safeSerialize(currentState).data,
+      callstack,
+    );
 
     this.emit({
       type: 'instance-updated',
@@ -152,7 +186,9 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     const data = this.createInstanceData(instance, context);
     data.isDisposed = true;
     this.instanceCache.delete(data.id);
-    console.log(`[DevToolsBrowserPlugin] Instance disposed: ${data.className}#${data.id} (total: ${this.instanceCache.size})`);
+
+    // Remove from state manager
+    this.stateManager.removeInstance(data.id);
 
     this.emit({
       type: 'instance-disposed',
@@ -165,11 +201,9 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
    * Subscribe to DevTools events (real-time events only, not history)
    */
   subscribe(callback: DevToolsCallback): () => void {
-    console.log('[DevToolsBrowserPlugin] New subscription added, total listeners:', this.listeners.size + 1);
     this.listeners.add(callback);
 
     return () => {
-      console.log('[DevToolsBrowserPlugin] Subscription removed, total listeners:', this.listeners.size - 1);
       this.listeners.delete(callback);
     };
   }
@@ -178,9 +212,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
    * Get all current instances
    */
   getInstances(): InstanceMetadata[] {
-    const instances = Array.from(this.instanceCache.values());
-    console.log('[DevToolsBrowserPlugin] getInstances() called, returning', instances.length, 'instances');
-    return instances;
+    return Array.from(this.instanceCache.values());
   }
 
   /**
@@ -188,8 +220,15 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
    * This allows DevTools to request the full log when it opens
    */
   getEventHistory(): DevToolsEvent[] {
-    console.log('[DevToolsBrowserPlugin] getEventHistory() called, returning', this.eventHistory.length, 'events');
     return [...this.eventHistory]; // Return copy to prevent external mutation
+  }
+
+  /**
+   * Get full state dump with complete history (new backend API)
+   * This provides structured state with 20 snapshots per instance
+   */
+  getFullState(): { instances: InstanceState[]; timestamp: number } {
+    return this.stateManager.getFullState();
   }
 
   /**
@@ -223,12 +262,20 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
 
         const data = this.createInstanceData(instance, this.context);
         this.instanceCache.set(data.id, data);
+
+        // Add to state manager
+        const createdAt = Date.now();
+        this.instanceTimestamps.set(data.id, createdAt);
+        this.stateManager.addInstance({
+          id: data.id,
+          className: data.className,
+          name: data.name || data.id,
+          state: data.state,
+          isIsolated: data.isIsolated,
+          createdAt,
+        });
       }
     }
-
-    console.log(
-      `[DevToolsBrowserPlugin] Found ${this.instanceCache.size} existing instances`,
-    );
 
     // Emit INIT event with all instances
     const allInstances = Array.from(this.instanceCache.values());
@@ -250,17 +297,10 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       // Remove oldest event when history is full (FIFO)
       this.eventHistory.shift();
       this.eventHistory.push(event);
-      console.warn(`[DevToolsBrowserPlugin] Event history full (${this.MAX_HISTORY_SIZE}), dropped oldest event`);
     }
 
     // Also emit to all current real-time listeners
     if (this.listeners.size > 0) {
-      console.log(`[DevToolsBrowserPlugin] Emitting event '${event.type}' to ${this.listeners.size} listener(s):`, {
-        className: Array.isArray(event.data) ? 'multiple' : event.data.className,
-        instanceId: Array.isArray(event.data) ? `${event.data.length} instances` : event.data.id,
-        isDisposed: Array.isArray(event.data) ? 'N/A' : event.data.isDisposed,
-      });
-
       this.listeners.forEach((listener) => {
         try {
           listener(event);
@@ -316,15 +356,11 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     (window as any).__BLAC_DEVTOOLS__ = {
       getInstances: () => this.getInstances(),
       getEventHistory: () => this.getEventHistory(),
+      getFullState: () => this.getFullState(), // NEW: Backend API for panels
       subscribe: (callback: DevToolsCallback) => this.subscribe(callback),
       getVersion: () => this.getVersion(),
       isEnabled: () => this.enabled,
     };
-
-    console.log(
-      '%c[BlaC DevTools] API exposed at window.__BLAC_DEVTOOLS__',
-      'color: #4CAF50; font-weight: bold',
-    );
   }
 }
 

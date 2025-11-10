@@ -39,9 +39,7 @@ export class DevToolsPlugin implements BlacPlugin {
     });
 
     this.bridge.onCommand('REQUEST_STATE', (command) => {
-      if (command.type === 'REQUEST_STATE') {
-        console.log('[DevToolsPlugin] State request:', command.payload.blocId);
-      }
+      // Handle state request
     });
   }
 
@@ -150,10 +148,7 @@ export class DevToolsPlugin implements BlacPlugin {
   }
 
   private handleTimeTravel(eventIndex: number): void {
-    console.log('[DevToolsPlugin] Time travel to event:', eventIndex);
-    console.warn(
-      '[DevToolsPlugin] Time-travel is experimental and only works with synchronous events',
-    );
+    // Time-travel is experimental and only works with synchronous events
   }
 
   getEventHistory(): ReadonlyArray<SerializedEvent> {

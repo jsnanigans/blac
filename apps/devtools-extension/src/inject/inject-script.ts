@@ -5,17 +5,60 @@
  */
 
 (() => {
-  console.log('[BlaC DevTools] Inject script loaded');
+  let isInitialized = false;
+  let checkAttempts = 0;
+  const MAX_CHECK_ATTEMPTS = 20; // 10 seconds total (20 * 500ms)
+  let queuedCommands: any[] = [];
+
+  /**
+   * Transform backend InstanceState to panel-compatible format
+   * Backend returns: { id, className, name, isIsolated, currentState, history, createdAt }
+   * Panel expects: { id, className, name, isDisposed, state, lastStateChangeTimestamp, createdAt }
+   */
+  function transformInstancesForPanel(instances: any[]): any[] {
+    return instances.map((inst) => {
+      // If already in panel format (legacy getInstances), pass through
+      if ('state' in inst && !('currentState' in inst)) {
+        return inst;
+      }
+
+      // Transform new format to panel format
+      const history = inst.history || [];
+      const lastChange = history.length > 0 ? history[0] : null;
+
+      return {
+        id: inst.id,
+        className: inst.className,
+        name: inst.name,
+        isDisposed: inst.isDisposed || false,
+        state: inst.currentState !== undefined ? inst.currentState : inst.state,
+        lastStateChangeTimestamp: lastChange?.timestamp || inst.createdAt || Date.now(),
+        createdAt: inst.createdAt || Date.now(),
+        // Include history for future use (panel doesn't use it yet, but no harm including it)
+        history: inst.history,
+      };
+    });
+  }
 
   // Check for BlaC DevTools API
   function checkForAPI() {
+    checkAttempts++;
+
     if (typeof window.__BLAC_DEVTOOLS__ === 'undefined') {
-      console.log('[BlaC DevTools] API not found, retrying...');
+      if (checkAttempts >= MAX_CHECK_ATTEMPTS) {
+        // Give up silently - BlaC is not on this page
+        // Notify panel that BlaC is not available
+        sendMessage({
+          type: 'BLAC_NOT_AVAILABLE',
+          payload: { reason: 'BlaC plugin not installed on page' }
+        });
+        return;
+      }
+
       setTimeout(checkForAPI, 500);
       return;
     }
 
-    console.log('[BlaC DevTools] API found!');
     initializeMonitoring();
   }
 
@@ -24,18 +67,22 @@
     const api = window.__BLAC_DEVTOOLS__;
 
     if (!api || !api.isEnabled()) {
-      console.log('[BlaC DevTools] API is disabled');
       return;
     }
 
-    console.log('[BlaC DevTools] Initializing monitoring');
+    isInitialized = true;
 
-    // Send initial state (only time we send all instances)
+    // Send initial state with full history (backend API)
+    const fullState = api.getFullState?.() || { instances: api.getInstances(), timestamp: Date.now() };
+    const transformedInstances = transformInstancesForPanel(fullState.instances);
+    const eventHistory = api.getEventHistory?.() || [];
     sendMessage({
       type: 'INITIAL_STATE',
       payload: {
-        instances: api.getInstances(),
+        instances: transformedInstances,
+        eventHistory: eventHistory,
         version: api.getVersion(),
+        timestamp: fullState.timestamp,
       },
     });
 
@@ -53,13 +100,9 @@
       unsubscribe();
     });
 
-    // Listen for commands from content script
-    window.addEventListener('message', (event) => {
-      if (event.source !== window) return;
-      if (event.data?.source !== 'blac-devtools-content') return;
-
-      handleCommand(event.data);
-    });
+    // Process any queued commands
+    queuedCommands.forEach(handleCommand);
+    queuedCommands = [];
   }
 
   // Send message to content script
@@ -75,19 +118,31 @@
 
   // Handle commands from DevTools panel
   function handleCommand(command: any) {
-    const api = window.__BLAC_DEVTOOLS__;
-    if (!api) return;
+    // If not initialized yet, queue the command
+    if (!isInitialized) {
+      queuedCommands.push(command);
+      return;
+    }
 
-    console.log('[BlaC DevTools] Handling command:', command);
+    const api = window.__BLAC_DEVTOOLS__;
+    if (!api) {
+      console.warn('[BlaC DevTools] Cannot handle command, API not available');
+      return;
+    }
 
     switch (command.type) {
       case 'GET_INSTANCES':
-        // Only send all instances when explicitly requested (initial load)
+        // Send full state dump with history (for late panel connections)
+        const fullState = api.getFullState?.() || { instances: api.getInstances(), timestamp: Date.now() };
+        const transformedInstances = transformInstancesForPanel(fullState.instances);
+        const eventHistory = api.getEventHistory?.() || [];
         sendMessage({
           type: 'INITIAL_STATE',
           payload: {
-            instances: api.getInstances(),
+            instances: transformedInstances,
+            eventHistory: eventHistory,
             version: api.getVersion(),
+            timestamp: fullState.timestamp,
           },
         });
         break;
@@ -96,6 +151,14 @@
         console.warn('[BlaC DevTools] Unknown command:', command.type);
     }
   }
+
+  // Listen for commands from content script (set up immediately!)
+  window.addEventListener('message', (event) => {
+    if (event.source !== window) return;
+    if (event.data?.source !== 'blac-devtools-content') return;
+
+    handleCommand(event.data);
+  });
 
   // Start checking for API
   checkForAPI();
