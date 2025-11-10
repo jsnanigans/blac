@@ -21,7 +21,10 @@ describe('cloneDeep', () => {
     });
 
     it('should deep clone nested arrays', () => {
-      const original = [[1, 2], [3, 4]];
+      const original = [
+        [1, 2],
+        [3, 4],
+      ];
       const cloned = cloneDeep(original);
       expect(cloned).toEqual(original);
       expect(cloned).not.toBe(original);
@@ -30,7 +33,10 @@ describe('cloneDeep', () => {
     });
 
     it('should allow modification without affecting original', () => {
-      const original = [[1, 2], [3, 4]];
+      const original = [
+        [1, 2],
+        [3, 4],
+      ];
       const cloned = cloneDeep(original);
       cloned[0][0] = 999;
       expect(original[0][0]).toBe(1);
@@ -121,7 +127,10 @@ describe('cloneDeep', () => {
 
   describe('Map', () => {
     it('should clone Map instances', () => {
-      const original = new Map([['a', 1], ['b', 2]]);
+      const original = new Map([
+        ['a', 1],
+        ['b', 2],
+      ]);
       const cloned = cloneDeep(original);
       expect(cloned).toEqual(original);
       expect(cloned).not.toBe(original);
@@ -197,10 +206,10 @@ describe('cloneDeep', () => {
       const original = {
         users: [
           { name: 'Alice', tags: new Set(['admin']) },
-          { name: 'Bob', tags: new Set(['user']) }
+          { name: 'Bob', tags: new Set(['user']) },
         ],
         settings: new Map([['theme', 'dark']]),
-        createdAt: new Date('2024-01-01')
+        createdAt: new Date('2024-01-01'),
       };
 
       const cloned = cloneDeep(original);

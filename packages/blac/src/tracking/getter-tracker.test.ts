@@ -32,7 +32,7 @@ class TestBloc extends Cubit<{ count: number }> {
     return {
       doubled: this.doubled,
       tripled: this.tripled,
-      sum: this.doubled + this.tripled
+      sum: this.doubled + this.tripled,
     };
   }
 
@@ -434,7 +434,7 @@ describe('getter-tracker', () => {
       expect(value).toEqual({
         doubled: 0,
         tripled: 0,
-        sum: 0
+        sum: 0,
       });
 
       // Should track 'complex' getter
@@ -447,7 +447,7 @@ describe('getter-tracker', () => {
       const initialValue = {
         doubled: 0,
         tripled: 0,
-        sum: 0
+        sum: 0,
       };
       tracker.trackedValues.set('complex', initialValue);
 
@@ -458,7 +458,7 @@ describe('getter-tracker', () => {
       expect(tracker.trackedValues.get('complex')).toEqual({
         doubled: 2,
         tripled: 3,
-        sum: 5
+        sum: 5,
       });
     });
   });

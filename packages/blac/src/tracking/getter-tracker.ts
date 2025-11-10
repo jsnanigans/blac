@@ -151,8 +151,8 @@ export function createBlocProxy<TBloc extends StateContainer<any>>(
         if (getterExecutionContext.depth >= MAX_GETTER_DEPTH) {
           console.warn(
             `${BLAC_ERROR_PREFIX} Maximum getter depth (${MAX_GETTER_DEPTH}) exceeded. ` +
-            `Possible circular dependency in getter "${String(prop)}" on ${target.constructor.name}. ` +
-            `Returning undefined to prevent stack overflow.`
+              `Possible circular dependency in getter "${String(prop)}" on ${target.constructor.name}. ` +
+              `Returning undefined to prevent stack overflow.`,
           );
           return undefined;
         }
@@ -161,7 +161,7 @@ export function createBlocProxy<TBloc extends StateContainer<any>>(
         if (getterExecutionContext.visitedBlocs.has(target)) {
           console.warn(
             `${BLAC_ERROR_PREFIX} Circular dependency detected: getter "${String(prop)}" on ${target.constructor.name} ` +
-            `is calling back into itself. Returning undefined to prevent infinite recursion.`
+              `is calling back into itself. Returning undefined to prevent infinite recursion.`,
           );
           return undefined;
         }

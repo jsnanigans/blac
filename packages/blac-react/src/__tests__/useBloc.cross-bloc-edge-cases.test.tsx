@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
-import { Cubit } from "@blac/core";
-import { useBloc } from "../useBloc";
+import { Cubit } from '@blac/core';
+import { useBloc } from '../useBloc';
 
 // Deep dependency chain blocs
 class DeepABloc extends Cubit<number> {

@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
-import { Cubit } from "@blac/core";
-import { useBloc } from "../useBloc";
-import { useBlocActions } from "../useBlocActions";
+import { Cubit } from '@blac/core';
+import { useBloc } from '../useBloc';
+import { useBlocActions } from '../useBlocActions';
 
 class AlphaBloc extends Cubit<number> {
   constructor() {
@@ -48,10 +48,16 @@ describe('useBloc - getter tracking with external blocs', () => {
           <div data-testid="render-count">{renderCount}</div>
           <div data-testid="beta-both">{betaBlocInstance.both}</div>
           <div data-testid="beta-state">{betaBlocState}</div>
-          <button data-testid="increment-alpha" onClick={alphaBlocActions.increment}>
+          <button
+            data-testid="increment-alpha"
+            onClick={alphaBlocActions.increment}
+          >
             Increment Alpha
           </button>
-          <button data-testid="increment-beta" onClick={betaBlocInstance.increment}>
+          <button
+            data-testid="increment-beta"
+            onClick={betaBlocInstance.increment}
+          >
             Increment Beta
           </button>
         </div>
@@ -119,7 +125,10 @@ describe('useBloc - getter tracking with external blocs', () => {
       return (
         <div>
           <div data-testid="gamma-with-alpha">{gammaBloc.gammaWithAlpha}</div>
-          <button data-testid="increment-alpha" onClick={alphaActions.increment}>
+          <button
+            data-testid="increment-alpha"
+            onClick={alphaActions.increment}
+          >
             Increment Alpha
           </button>
         </div>
@@ -271,7 +280,7 @@ describe('useBloc - getter tracking with external blocs', () => {
     render(<Component />);
 
     expect(screen.getByTestId('error').textContent).toContain(
-      'Cannot use .connect() with isolated bloc'
+      'Cannot use .connect() with isolated bloc',
     );
 
     TestBloc.clear();

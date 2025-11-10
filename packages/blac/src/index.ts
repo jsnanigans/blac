@@ -3,7 +3,10 @@ export * from './core/StateContainerRegistry';
 export * from './core/Cubit';
 export * from './core/Vertex';
 
-export { globalRegistry, getPluginManager } from './core/StateContainerRegistry';
+export {
+  globalRegistry,
+  getPluginManager,
+} from './core/StateContainerRegistry';
 export type {
   LifecycleEvent,
   LifecycleListener,

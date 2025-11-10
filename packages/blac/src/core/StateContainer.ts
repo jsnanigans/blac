@@ -341,7 +341,10 @@ export abstract class StateContainer<S> {
    */
   private captureStackTrace(): string {
     // Only capture in development (can be configured)
-    if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'production') {
+    if (
+      typeof process !== 'undefined' &&
+      process.env?.NODE_ENV === 'production'
+    ) {
       return '';
     }
 

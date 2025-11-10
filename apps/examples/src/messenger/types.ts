@@ -27,8 +27,16 @@ export interface User {
 }
 
 // WebSocket message types
-export type OutgoingMessageType = 'send_message' | 'typing_start' | 'typing_stop' | 'mark_read';
-export type IncomingMessageType = 'message_received' | 'message_delivered' | 'user_typing' | 'user_status_changed';
+export type OutgoingMessageType =
+  | 'send_message'
+  | 'typing_start'
+  | 'typing_stop'
+  | 'mark_read';
+export type IncomingMessageType =
+  | 'message_received'
+  | 'message_delivered'
+  | 'user_typing'
+  | 'user_status_changed';
 
 export interface OutgoingMessage {
   type: OutgoingMessageType;

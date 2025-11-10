@@ -84,7 +84,7 @@ export class ExternalDependencyManager {
    */
   private areDependenciesEqual(
     oldDeps: Set<StateContainer<any>>,
-    newDeps: Set<StateContainer<any>>
+    newDeps: Set<StateContainer<any>>,
   ): boolean {
     if (oldDeps.size !== newDeps.size) return false;
 
@@ -105,7 +105,7 @@ export class ExternalDependencyManager {
   updateSubscriptions(
     getterTracker: GetterTrackerState | null,
     rawInstance: StateContainer<any>,
-    onGetterChange: () => void
+    onGetterChange: () => void,
   ): boolean {
     if (!getterTracker?.externalDependencies) {
       return false;
@@ -152,7 +152,7 @@ export class ExternalDependencyManager {
    * Cleanup all subscriptions
    */
   cleanup(): void {
-    this.subscriptions.forEach(unsub => unsub());
+    this.subscriptions.forEach((unsub) => unsub());
     this.subscriptions = [];
   }
 }
@@ -162,7 +162,7 @@ export class ExternalDependencyManager {
  */
 export function createAutoTrackSubscribe<TBloc extends StateContainer<any>>(
   instance: TBloc,
-  adapterState: AdapterState<TBloc>
+  adapterState: AdapterState<TBloc>,
 ): SubscribeFunction {
   return (callback: SubscriptionCallback) => {
     return instance.subscribe(() => {
@@ -203,7 +203,10 @@ export function createAutoTrackSubscribe<TBloc extends StateContainer<any>>(
       }
 
       // Only check getters if state didn't change
-      const getterChanged = hasGetterChanges(instance, adapterState.getterTracker);
+      const getterChanged = hasGetterChanges(
+        instance,
+        adapterState.getterTracker,
+      );
 
       if (getterChanged) {
         callback();
@@ -218,7 +221,7 @@ export function createAutoTrackSubscribe<TBloc extends StateContainer<any>>(
 export function createManualDepsSubscribe<TBloc extends StateContainer<any>>(
   instance: TBloc,
   adapterState: AdapterState<TBloc>,
-  config: ManualDepsConfig<TBloc>
+  config: ManualDepsConfig<TBloc>,
 ): SubscribeFunction {
   return (callback: SubscriptionCallback) => {
     return instance.subscribe(() => {
@@ -238,7 +241,7 @@ export function createManualDepsSubscribe<TBloc extends StateContainer<any>>(
  * Create a subscription function for no-tracking mode
  */
 export function createNoTrackSubscribe<TBloc extends StateContainer<any>>(
-  instance: TBloc
+  instance: TBloc,
 ): SubscribeFunction {
   return (callback: SubscriptionCallback) => instance.subscribe(callback);
 }
@@ -248,7 +251,7 @@ export function createNoTrackSubscribe<TBloc extends StateContainer<any>>(
  */
 export function createAutoTrackSnapshot<TBloc extends StateContainer<any>>(
   instance: TBloc,
-  adapterState: AdapterState<TBloc>
+  adapterState: AdapterState<TBloc>,
 ): SnapshotFunction<ExtractState<TBloc>> {
   return () => {
     const tracker =
@@ -285,10 +288,13 @@ export function createAutoTrackSnapshot<TBloc extends StateContainer<any>>(
 export function createManualDepsSnapshot<TBloc extends StateContainer<any>>(
   instance: TBloc,
   adapterState: AdapterState<TBloc>,
-  config: ManualDepsConfig<TBloc>
+  config: ManualDepsConfig<TBloc>,
 ): SnapshotFunction<ExtractState<TBloc>> {
   return () => {
-    adapterState.manualDepsCache = config.dependencies(instance.state, instance);
+    adapterState.manualDepsCache = config.dependencies(
+      instance.state,
+      instance,
+    );
     return instance.state;
   };
 }
@@ -297,7 +303,7 @@ export function createManualDepsSnapshot<TBloc extends StateContainer<any>>(
  * Create a snapshot function for no-tracking mode
  */
 export function createNoTrackSnapshot<TBloc extends StateContainer<any>>(
-  instance: TBloc
+  instance: TBloc,
 ): SnapshotFunction<ExtractState<TBloc>> {
   return () => instance.state;
 }
@@ -306,7 +312,7 @@ export function createNoTrackSnapshot<TBloc extends StateContainer<any>>(
  * Initialize adapter state for auto-tracking mode
  */
 export function initAutoTrackState<TBloc extends StateContainer<any>>(
-  instance: TBloc
+  instance: TBloc,
 ): AdapterState<TBloc> {
   return {
     tracker: null,
@@ -320,7 +326,7 @@ export function initAutoTrackState<TBloc extends StateContainer<any>>(
  * Initialize adapter state for manual dependencies mode
  */
 export function initManualDepsState<TBloc extends StateContainer<any>>(
-  instance: TBloc
+  instance: TBloc,
 ): AdapterState<TBloc> {
   return {
     tracker: null,
@@ -334,7 +340,7 @@ export function initManualDepsState<TBloc extends StateContainer<any>>(
  * Initialize adapter state for no-tracking mode
  */
 export function initNoTrackState<TBloc extends StateContainer<any>>(
-  instance: TBloc
+  instance: TBloc,
 ): AdapterState<TBloc> {
   return {
     tracker: null,
@@ -349,7 +355,7 @@ export function initNoTrackState<TBloc extends StateContainer<any>>(
  */
 export function disableGetterTracking<TBloc extends StateContainer<any>>(
   adapterState: AdapterState<TBloc>,
-  rawInstance: TBloc
+  rawInstance: TBloc,
 ): void {
   if (adapterState.getterTracker) {
     adapterState.getterTracker.isTracking = false;

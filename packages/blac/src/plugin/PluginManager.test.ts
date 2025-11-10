@@ -16,9 +16,7 @@ class CounterCubit extends Cubit<number> {
   };
 }
 
-type CounterEvent =
-  | { type: 'increment' }
-  | { type: 'decrement' };
+type CounterEvent = { type: 'increment' } | { type: 'decrement' };
 
 class CounterVertex extends Vertex<number, CounterEvent> {
   constructor() {
@@ -58,7 +56,7 @@ describe('PluginManager', () => {
     it('should install a plugin', () => {
       const plugin: BlacPlugin = {
         name: 'test-plugin',
-        version: '1.0.0'
+        version: '1.0.0',
       };
 
       manager.install(plugin);
@@ -72,30 +70,34 @@ describe('PluginManager', () => {
       const plugin: BlacPlugin = {
         name: 'test-plugin',
         version: '1.0.0',
-        onInstall
+        onInstall,
       };
 
       manager.install(plugin);
 
       expect(onInstall).toHaveBeenCalledOnce();
-      expect(onInstall).toHaveBeenCalledWith(expect.objectContaining({
-        getInstanceMetadata: expect.any(Function),
-        getState: expect.any(Function),
-        queryInstances: expect.any(Function),
-        getAllTypes: expect.any(Function),
-        getStats: expect.any(Function)
-      }));
+      expect(onInstall).toHaveBeenCalledWith(
+        expect.objectContaining({
+          getInstanceMetadata: expect.any(Function),
+          getState: expect.any(Function),
+          queryInstances: expect.any(Function),
+          getAllTypes: expect.any(Function),
+          getStats: expect.any(Function),
+        }),
+      );
     });
 
     it('should throw error if plugin already installed', () => {
       const plugin: BlacPlugin = {
         name: 'test-plugin',
-        version: '1.0.0'
+        version: '1.0.0',
       };
 
       manager.install(plugin);
 
-      expect(() => manager.install(plugin)).toThrow('Plugin "test-plugin" is already installed');
+      expect(() => manager.install(plugin)).toThrow(
+        'Plugin "test-plugin" is already installed',
+      );
     });
 
     it('should rollback if onInstall throws error', () => {
@@ -104,7 +106,7 @@ describe('PluginManager', () => {
         version: '1.0.0',
         onInstall: () => {
           throw new Error('Install failed');
-        }
+        },
       };
 
       expect(() => manager.install(plugin)).toThrow('Install failed');
@@ -114,7 +116,7 @@ describe('PluginManager', () => {
     it('should respect enabled flag', () => {
       const plugin: BlacPlugin = {
         name: 'test-plugin',
-        version: '1.0.0'
+        version: '1.0.0',
       };
 
       manager.install(plugin, { enabled: false });
@@ -125,7 +127,7 @@ describe('PluginManager', () => {
     it('should install when enabled is true', () => {
       const plugin: BlacPlugin = {
         name: 'test-plugin',
-        version: '1.0.0'
+        version: '1.0.0',
       };
 
       manager.install(plugin, { enabled: true });
@@ -138,7 +140,7 @@ describe('PluginManager', () => {
     it('should uninstall a plugin', () => {
       const plugin: BlacPlugin = {
         name: 'test-plugin',
-        version: '1.0.0'
+        version: '1.0.0',
       };
 
       manager.install(plugin);
@@ -152,7 +154,7 @@ describe('PluginManager', () => {
       const plugin: BlacPlugin = {
         name: 'test-plugin',
         version: '1.0.0',
-        onUninstall
+        onUninstall,
       };
 
       manager.install(plugin);
@@ -162,7 +164,9 @@ describe('PluginManager', () => {
     });
 
     it('should throw error if plugin not installed', () => {
-      expect(() => manager.uninstall('unknown-plugin')).toThrow('Plugin "unknown-plugin" is not installed');
+      expect(() => manager.uninstall('unknown-plugin')).toThrow(
+        'Plugin "unknown-plugin" is not installed',
+      );
     });
 
     it('should not throw if onUninstall throws error', () => {
@@ -171,7 +175,7 @@ describe('PluginManager', () => {
         version: '1.0.0',
         onUninstall: () => {
           throw new Error('Uninstall failed');
-        }
+        },
       };
 
       manager.install(plugin);
@@ -184,7 +188,7 @@ describe('PluginManager', () => {
     it('should return installed plugin', () => {
       const plugin: BlacPlugin = {
         name: 'test-plugin',
-        version: '1.0.0'
+        version: '1.0.0',
       };
 
       manager.install(plugin);
@@ -201,11 +205,11 @@ describe('PluginManager', () => {
     it('should return all installed plugins', () => {
       const plugin1: BlacPlugin = {
         name: 'plugin-1',
-        version: '1.0.0'
+        version: '1.0.0',
       };
       const plugin2: BlacPlugin = {
         name: 'plugin-2',
-        version: '2.0.0'
+        version: '2.0.0',
       };
 
       manager.install(plugin1);
@@ -226,7 +230,7 @@ describe('PluginManager', () => {
     it('should return true for installed plugin', () => {
       const plugin: BlacPlugin = {
         name: 'test-plugin',
-        version: '1.0.0'
+        version: '1.0.0',
       };
 
       manager.install(plugin);
@@ -243,11 +247,11 @@ describe('PluginManager', () => {
     it('should uninstall all plugins', () => {
       const plugin1: BlacPlugin = {
         name: 'plugin-1',
-        version: '1.0.0'
+        version: '1.0.0',
       };
       const plugin2: BlacPlugin = {
         name: 'plugin-2',
-        version: '2.0.0'
+        version: '2.0.0',
       };
 
       manager.install(plugin1);
@@ -266,12 +270,12 @@ describe('PluginManager', () => {
       const plugin1: BlacPlugin = {
         name: 'plugin-1',
         version: '1.0.0',
-        onUninstall: onUninstall1
+        onUninstall: onUninstall1,
       };
       const plugin2: BlacPlugin = {
         name: 'plugin-2',
         version: '2.0.0',
-        onUninstall: onUninstall2
+        onUninstall: onUninstall2,
       };
 
       manager.install(plugin1);
@@ -290,7 +294,7 @@ describe('PluginManager', () => {
         const plugin: BlacPlugin = {
           name: 'test-plugin',
           version: '1.0.0',
-          onInstanceCreated
+          onInstanceCreated,
         };
 
         manager.install(plugin);
@@ -298,7 +302,10 @@ describe('PluginManager', () => {
         const counter = CounterCubit.resolve('main', 0);
 
         expect(onInstanceCreated).toHaveBeenCalledOnce();
-        expect(onInstanceCreated).toHaveBeenCalledWith(counter, expect.any(Object));
+        expect(onInstanceCreated).toHaveBeenCalledWith(
+          counter,
+          expect.any(Object),
+        );
       });
 
       it('should not break if plugin hook throws error', () => {
@@ -307,7 +314,7 @@ describe('PluginManager', () => {
           version: '1.0.0',
           onInstanceCreated: () => {
             throw new Error('Hook error');
-          }
+          },
         };
 
         manager.install(plugin);
@@ -322,7 +329,7 @@ describe('PluginManager', () => {
         const plugin: BlacPlugin = {
           name: 'test-plugin',
           version: '1.0.0',
-          onStateChanged
+          onStateChanged,
         };
 
         manager.install(plugin);
@@ -346,7 +353,7 @@ describe('PluginManager', () => {
         const plugin: BlacPlugin = {
           name: 'test-plugin',
           version: '1.0.0',
-          onEventAdded
+          onEventAdded,
         };
 
         manager.install(plugin);
@@ -357,7 +364,7 @@ describe('PluginManager', () => {
         expect(onEventAdded).toHaveBeenCalledWith(
           counter,
           { type: 'increment' },
-          expect.any(Object)
+          expect.any(Object),
         );
       });
     });
@@ -368,7 +375,7 @@ describe('PluginManager', () => {
         const plugin: BlacPlugin = {
           name: 'test-plugin',
           version: '1.0.0',
-          onInstanceDisposed
+          onInstanceDisposed,
         };
 
         manager.install(plugin);
@@ -376,7 +383,10 @@ describe('PluginManager', () => {
         const counter = CounterCubit.resolve('main', 0);
         CounterCubit.release('main');
 
-        expect(onInstanceDisposed).toHaveBeenCalledWith(counter, expect.any(Object));
+        expect(onInstanceDisposed).toHaveBeenCalledWith(
+          counter,
+          expect.any(Object),
+        );
       });
     });
 
@@ -385,7 +395,7 @@ describe('PluginManager', () => {
       const plugin: BlacPlugin = {
         name: 'test-plugin',
         version: '1.0.0',
-        onStateChanged
+        onStateChanged,
       };
 
       manager.install(plugin, { enabled: false });
@@ -405,7 +415,7 @@ describe('PluginManager', () => {
         version: '1.0.0',
         onInstall: (context) => {
           capturedContext = context;
-        }
+        },
       };
 
       manager.install(plugin);
@@ -418,7 +428,7 @@ describe('PluginManager', () => {
         className: 'CounterCubit',
         isDisposed: false,
         name: counter.name,
-        state: 0
+        state: 0,
       });
       expect(metadata.lastStateChangeTimestamp).toBeGreaterThan(0);
       expect(metadata.createdAt).toBeGreaterThan(0);
@@ -431,7 +441,7 @@ describe('PluginManager', () => {
         version: '1.0.0',
         onInstall: (context) => {
           capturedContext = context;
-        }
+        },
       };
 
       manager.install(plugin);
@@ -450,7 +460,7 @@ describe('PluginManager', () => {
         version: '1.0.0',
         onInstall: (context) => {
           capturedContext = context;
-        }
+        },
       };
 
       manager.install(plugin);
@@ -471,7 +481,7 @@ describe('PluginManager', () => {
         version: '1.0.0',
         onInstall: (context) => {
           capturedContext = context;
-        }
+        },
       };
 
       manager.install(plugin);
@@ -492,7 +502,7 @@ describe('PluginManager', () => {
         version: '1.0.0',
         onInstall: (context) => {
           capturedContext = context;
-        }
+        },
       };
 
       manager.install(plugin);
@@ -514,7 +524,7 @@ describe('PluginManager', () => {
 
       const plugin: BlacPlugin = {
         name: 'test-plugin',
-        version: '1.0.0'
+        version: '1.0.0',
       };
 
       manager.install(plugin, { environment: 'development' });
@@ -530,7 +540,7 @@ describe('PluginManager', () => {
 
       const plugin: BlacPlugin = {
         name: 'test-plugin',
-        version: '1.0.0'
+        version: '1.0.0',
       };
 
       manager.install(plugin, { environment: 'development' });
@@ -543,7 +553,7 @@ describe('PluginManager', () => {
     it('should install plugin when environment is "all"', () => {
       const plugin: BlacPlugin = {
         name: 'test-plugin',
-        version: '1.0.0'
+        version: '1.0.0',
       };
 
       manager.install(plugin, { environment: 'all' });

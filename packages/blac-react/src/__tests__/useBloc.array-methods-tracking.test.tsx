@@ -36,7 +36,7 @@ describe('Array Methods Tracking', () => {
       const [{ items }] = useBloc(ArrayMethodCubit);
       renderCount++;
 
-      const mapped = items.map(x => x * 2);
+      const mapped = items.map((x) => x * 2);
       return <div data-testid="result">{mapped.join(',')}</div>;
     }
 
@@ -59,7 +59,7 @@ describe('Array Methods Tracking', () => {
       const [{ items }] = useBloc(ArrayMethodCubit);
       renderCount++;
 
-      const filtered = items.filter(x => x > 2);
+      const filtered = items.filter((x) => x > 2);
       return <div data-testid="result">{filtered.join(',')}</div>;
     }
 
@@ -80,7 +80,7 @@ describe('Array Methods Tracking', () => {
       const [{ items }] = useBloc(ArrayMethodCubit);
       renderCount++;
 
-      const found = items.find(x => x > 3);
+      const found = items.find((x) => x > 3);
       return <div data-testid="result">{found}</div>;
     }
 
@@ -102,7 +102,7 @@ describe('Array Methods Tracking', () => {
       const [{ items }] = useBloc(ArrayMethodCubit);
       renderCount++;
 
-      const flat = items.flatMap(x => [x, x * 2]);
+      const flat = items.flatMap((x) => [x, x * 2]);
       return <div data-testid="result">{flat.join(',')}</div>;
     }
 
@@ -123,7 +123,7 @@ describe('Array Methods Tracking', () => {
       const [{ items }] = useBloc(ArrayMethodCubit);
       renderCount++;
 
-      const idx = items.findIndex(x => x > 3);
+      const idx = items.findIndex((x) => x > 3);
       return <div data-testid="result">{idx}</div>;
     }
 

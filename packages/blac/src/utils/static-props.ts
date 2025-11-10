@@ -41,6 +41,11 @@ export function isKeepAliveClass(Type: new (...args: any[]) => any): boolean {
  * Check if a class should be excluded from DevTools
  * Used to prevent infinite loops when DevTools tracks itself
  */
-export function isExcludedFromDevTools(Type: new (...args: any[]) => any): boolean {
-  return getStaticProp<boolean>(Type, BLAC_STATIC_PROPS.EXCLUDE_FROM_DEVTOOLS) === true;
+export function isExcludedFromDevTools(
+  Type: new (...args: any[]) => any,
+): boolean {
+  return (
+    getStaticProp<boolean>(Type, BLAC_STATIC_PROPS.EXCLUDE_FROM_DEVTOOLS) ===
+    true
+  );
 }

@@ -1,5 +1,9 @@
 import { useMemo, useEffect, useRef } from 'react';
-import { type BlocConstructor, StateContainer, isIsolatedClass } from '@blac/core';
+import {
+  type BlocConstructor,
+  StateContainer,
+  isIsolatedClass,
+} from '@blac/core';
 import type { ComponentRef } from './types';
 import { generateInstanceKey } from './utils/instance-keys';
 
@@ -17,7 +21,7 @@ export interface UseBlocActionsOptions<TBloc> {
 }
 
 export function useBlocActions<
-  T extends new (...args: any[]) => StateContainer<any>
+  T extends new (...args: any[]) => StateContainer<any>,
 >(
   BlocClass: T & BlocConstructor<InstanceType<T>>,
   options?: UseBlocActionsOptions<InstanceType<T>>,

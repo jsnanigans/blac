@@ -166,6 +166,7 @@ Press **Alt+D** to toggle a floating DevTools window:
 Both modes show the same data and work simultaneously!
 
 **What You Can See:**
+
 - All Cubit/Vertex instances (RouterBloc, CounterCubit, etc.)
 - Current state for each instance
 - State changes with diff highlighting

@@ -156,7 +156,13 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       return;
     }
 
-    const data = this.createInstanceData(instance, context, previousState, currentState, callstack);
+    const data = this.createInstanceData(
+      instance,
+      context,
+      previousState,
+      currentState,
+      callstack,
+    );
     this.instanceCache.set(data.id, data);
 
     // Update state manager with history
@@ -333,7 +339,9 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       ...metadata,
       state: safeSerialize(state).data,
       callstack,
-      previousState: previousState ? safeSerialize(previousState).data : undefined,
+      previousState: previousState
+        ? safeSerialize(previousState).data
+        : undefined,
       currentState: currentState ? safeSerialize(currentState).data : undefined,
     };
   }
@@ -372,4 +380,3 @@ export function createDevToolsBrowserPlugin(
 ): DevToolsBrowserPlugin {
   return new DevToolsBrowserPlugin(config);
 }
-

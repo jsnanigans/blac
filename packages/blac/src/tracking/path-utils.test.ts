@@ -42,7 +42,12 @@ describe('parsePath', () => {
   describe('mixed notation', () => {
     it('should parse mixed dot and bracket notation', () => {
       expect(parsePath('items[0].name')).toEqual(['items', '0', 'name']);
-      expect(parsePath('users[2].address.city')).toEqual(['users', '2', 'address', 'city']);
+      expect(parsePath('users[2].address.city')).toEqual([
+        'users',
+        '2',
+        'address',
+        'city',
+      ]);
     });
 
     it('should parse complex mixed paths', () => {
@@ -53,7 +58,7 @@ describe('parsePath', () => {
         'profile',
         'tags',
         '0',
-        'name'
+        'name',
       ]);
     });
 
@@ -106,13 +111,15 @@ describe('getValueAtPath', () => {
         user: {
           name: 'Alice',
           profile: {
-            bio: 'Hello world'
-          }
-        }
+            bio: 'Hello world',
+          },
+        },
       };
 
       expect(getValueAtPath(obj, ['user', 'name'])).toBe('Alice');
-      expect(getValueAtPath(obj, ['user', 'profile', 'bio'])).toBe('Hello world');
+      expect(getValueAtPath(obj, ['user', 'profile', 'bio'])).toBe(
+        'Hello world',
+      );
     });
 
     it('should return undefined for missing nested property', () => {
@@ -131,7 +138,12 @@ describe('getValueAtPath', () => {
     });
 
     it('should handle nested arrays', () => {
-      const obj = { matrix: [[1, 2], [3, 4]] };
+      const obj = {
+        matrix: [
+          [1, 2],
+          [3, 4],
+        ],
+      };
       expect(getValueAtPath(obj, ['matrix', '0', '1'])).toBe(2);
       expect(getValueAtPath(obj, ['matrix', '1', '0'])).toBe(3);
     });
@@ -147,8 +159,8 @@ describe('getValueAtPath', () => {
       const obj = {
         users: [
           { name: 'Alice', age: 30 },
-          { name: 'Bob', age: 25 }
-        ]
+          { name: 'Bob', age: 25 },
+        ],
       };
 
       expect(getValueAtPath(obj, ['users', '0', 'name'])).toBe('Alice');
@@ -161,14 +173,16 @@ describe('getValueAtPath', () => {
           users: [
             {
               profile: {
-                tags: ['admin', 'user']
-              }
-            }
-          ]
-        }
+                tags: ['admin', 'user'],
+              },
+            },
+          ],
+        },
       };
 
-      expect(getValueAtPath(obj, ['data', 'users', '0', 'profile', 'tags', '0'])).toBe('admin');
+      expect(
+        getValueAtPath(obj, ['data', 'users', '0', 'profile', 'tags', '0']),
+      ).toBe('admin');
     });
   });
 
@@ -250,7 +264,9 @@ describe('shallowEqual', () => {
     });
 
     it('should handle mixed types', () => {
-      expect(shallowEqual([1, 'a', true, null], [1, 'a', true, null])).toBe(true);
+      expect(shallowEqual([1, 'a', true, null], [1, 'a', true, null])).toBe(
+        true,
+      );
       expect(shallowEqual([1, 'a', true], [1, 'a', false])).toBe(false);
     });
   });

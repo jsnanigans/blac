@@ -40,8 +40,30 @@ describe('deepEqual', () => {
     });
 
     it('should handle nested arrays', () => {
-      expect(deepEqual([[1, 2], [3, 4]], [[1, 2], [3, 4]])).toBe(true);
-      expect(deepEqual([[1, 2], [3, 4]], [[1, 2], [3, 5]])).toBe(false);
+      expect(
+        deepEqual(
+          [
+            [1, 2],
+            [3, 4],
+          ],
+          [
+            [1, 2],
+            [3, 4],
+          ],
+        ),
+      ).toBe(true);
+      expect(
+        deepEqual(
+          [
+            [1, 2],
+            [3, 4],
+          ],
+          [
+            [1, 2],
+            [3, 5],
+          ],
+        ),
+      ).toBe(false);
     });
 
     it('should return false for array vs non-array', () => {
@@ -65,14 +87,14 @@ describe('deepEqual', () => {
       expect(
         deepEqual(
           { user: { name: 'Alice', age: 30 } },
-          { user: { name: 'Alice', age: 30 } }
-        )
+          { user: { name: 'Alice', age: 30 } },
+        ),
       ).toBe(true);
       expect(
         deepEqual(
           { user: { name: 'Alice', age: 30 } },
-          { user: { name: 'Alice', age: 31 } }
-        )
+          { user: { name: 'Alice', age: 31 } },
+        ),
       ).toBe(false);
     });
 
@@ -117,14 +139,26 @@ describe('deepEqual', () => {
 
   describe('Map', () => {
     it('should return true for equal Maps', () => {
-      const map1 = new Map([['a', 1], ['b', 2]]);
-      const map2 = new Map([['a', 1], ['b', 2]]);
+      const map1 = new Map([
+        ['a', 1],
+        ['b', 2],
+      ]);
+      const map2 = new Map([
+        ['a', 1],
+        ['b', 2],
+      ]);
       expect(deepEqual(map1, map2)).toBe(true);
     });
 
     it('should return false for different Maps', () => {
-      const map1 = new Map([['a', 1], ['b', 2]]);
-      const map2 = new Map([['a', 1], ['b', 3]]);
+      const map1 = new Map([
+        ['a', 1],
+        ['b', 2],
+      ]);
+      const map2 = new Map([
+        ['a', 1],
+        ['b', 3],
+      ]);
       expect(deepEqual(map1, map2)).toBe(false);
     });
 
@@ -178,19 +212,25 @@ describe('deepEqual', () => {
       const obj1 = {
         users: [
           { name: 'Alice', meta: { age: 30, tags: new Set(['admin']) } },
-          { name: 'Bob', meta: { age: 25, tags: new Set(['user']) } }
+          { name: 'Bob', meta: { age: 25, tags: new Set(['user']) } },
         ],
-        settings: new Map([['theme', 'dark'], ['lang', 'en']]),
-        createdAt: new Date('2024-01-01')
+        settings: new Map([
+          ['theme', 'dark'],
+          ['lang', 'en'],
+        ]),
+        createdAt: new Date('2024-01-01'),
       };
 
       const obj2 = {
         users: [
           { name: 'Alice', meta: { age: 30, tags: new Set(['admin']) } },
-          { name: 'Bob', meta: { age: 25, tags: new Set(['user']) } }
+          { name: 'Bob', meta: { age: 25, tags: new Set(['user']) } },
         ],
-        settings: new Map([['theme', 'dark'], ['lang', 'en']]),
-        createdAt: new Date('2024-01-01')
+        settings: new Map([
+          ['theme', 'dark'],
+          ['lang', 'en'],
+        ]),
+        createdAt: new Date('2024-01-01'),
       };
 
       expect(deepEqual(obj1, obj2)).toBe(true);

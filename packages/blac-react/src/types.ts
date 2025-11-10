@@ -11,7 +11,8 @@ export interface UseBlocOptions<TBloc> {
   onUnmount?: (bloc: TBloc) => void;
 }
 
-export interface UseBlocOptionsWithDependencies<TBloc> extends UseBlocOptions<TBloc> {
+export interface UseBlocOptionsWithDependencies<TBloc>
+  extends UseBlocOptions<TBloc> {
   dependencies: (state: ExtractState<TBloc>, bloc: TBloc) => unknown[];
   autoTrack?: never;
 }

@@ -12,7 +12,11 @@ import type { StateContainer, StateContainerConfig } from './StateContainer';
 import type { Vertex } from './Vertex';
 import { createPluginManager } from '../plugin/PluginManager';
 import { getGetterExecutionContext } from '../tracking/getter-tracker';
-import { BLAC_DEFAULTS, BLAC_ERROR_PREFIX, BLAC_STATIC_PROPS } from '../constants';
+import {
+  BLAC_DEFAULTS,
+  BLAC_ERROR_PREFIX,
+  BLAC_STATIC_PROPS,
+} from '../constants';
 import { isIsolatedClass, isKeepAliveClass } from '../utils/static-props';
 
 interface TypeConfig {
@@ -121,7 +125,9 @@ export class StateContainerRegistry {
     }
 
     if (this.typeConfigs.has(className)) {
-      throw new Error(`${BLAC_ERROR_PREFIX} Type "${className}" is already registered`);
+      throw new Error(
+        `${BLAC_ERROR_PREFIX} Type "${className}" is already registered`,
+      );
     }
 
     this.typeConfigs.set(className, { isolated });
@@ -162,7 +168,6 @@ export class StateContainerRegistry {
     instanceKey: string = BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
     constructorArgs?: any,
   ): T {
-
     // Check if this is an isolated type
     const registryConfig = this.typeConfigs.get(Type.name);
     const isolated = isIsolatedClass(Type) || registryConfig?.isolated === true;
@@ -245,7 +250,9 @@ export class StateContainerRegistry {
 
     if (!entry) {
       return {
-        error: new Error(`${BLAC_ERROR_PREFIX} ${Type.name} instance "${instanceKey}" not found`),
+        error: new Error(
+          `${BLAC_ERROR_PREFIX} ${Type.name} instance "${instanceKey}" not found`,
+        ),
         instance: null,
       };
     }
@@ -282,7 +289,6 @@ export class StateContainerRegistry {
     instanceKey: string = BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
     constructorArgs?: any,
   ): T {
-
     // Check if this is an isolated type (should not use connect with isolated types)
     const registryConfig = this.typeConfigs.get(Type.name);
     const isolated = isIsolatedClass(Type) || registryConfig?.isolated === true;
@@ -521,7 +527,10 @@ export class StateContainerRegistry {
       try {
         listener(...args);
       } catch (error) {
-        console.error(`${BLAC_ERROR_PREFIX} Listener error for '${event}':`, error);
+        console.error(
+          `${BLAC_ERROR_PREFIX} Listener error for '${event}':`,
+          error,
+        );
       }
     }
   }

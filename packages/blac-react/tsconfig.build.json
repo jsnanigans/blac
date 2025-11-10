@@ -8,5 +8,10 @@
     "paths": {}
   },
   "include": ["src"],
-  "exclude": ["src/__tests__", "src/__archived__", "**/*.test.ts", "**/*.test.tsx"]
+  "exclude": [
+    "src/__tests__",
+    "src/__archived__",
+    "**/*.test.ts",
+    "**/*.test.tsx"
+  ]
 }

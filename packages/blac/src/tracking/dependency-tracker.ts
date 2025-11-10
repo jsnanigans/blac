@@ -113,9 +113,7 @@ export function createTrackerState<T extends any>(): TrackerState<T> {
   };
 }
 
-export function startTracking<T extends any>(
-  tracker: TrackerState<T>,
-): void {
+export function startTracking<T extends any>(tracker: TrackerState<T>): void {
   startProxyTracking(tracker.proxyTrackerState);
 }
 

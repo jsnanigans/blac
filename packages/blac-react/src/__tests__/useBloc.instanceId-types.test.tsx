@@ -92,7 +92,9 @@ describe('useBloc instanceId type checking', () => {
 
     function CounterView({ label, instanceKey }: CounterViewProps) {
       // This is the common pattern: passing optional prop directly to instanceId
-      const [state, counter] = useBloc(CounterCubit, { instanceId: instanceKey });
+      const [state, counter] = useBloc(CounterCubit, {
+        instanceId: instanceKey,
+      });
       return (
         <div>
           {label}: {state.count}

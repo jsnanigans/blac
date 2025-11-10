@@ -33,7 +33,12 @@ export class MyPlugin implements BlacPlugin {
     console.log(`State:`, state);
   }
 
-  onStateChanged(instance: any, prev: any, current: any, context: PluginContext): void {
+  onStateChanged(
+    instance: any,
+    prev: any,
+    current: any,
+    context: PluginContext,
+  ): void {
     console.log('State changed');
   }
 
@@ -76,19 +81,25 @@ interface BlacPlugin {
   // Optional lifecycle hooks
   onInstall?(context: PluginContext): void;
   onUninstall?(): void;
-  onInstanceCreated?(instance: StateContainer<any>, context: PluginContext): void;
+  onInstanceCreated?(
+    instance: StateContainer<any>,
+    context: PluginContext,
+  ): void;
   onStateChanged?<S>(
     instance: StateContainer<S>,
     previousState: S,
     currentState: S,
-    context: PluginContext
+    context: PluginContext,
   ): void;
   onEventAdded?<E>(
     vertex: Vertex<any, E>,
     event: E,
-    context: PluginContext
+    context: PluginContext,
   ): void;
-  onInstanceDisposed?(instance: StateContainer<any>, context: PluginContext): void;
+  onInstanceDisposed?(
+    instance: StateContainer<any>,
+    context: PluginContext,
+  ): void;
 }
 ```
 
@@ -106,7 +117,7 @@ interface PluginContext {
 
   // Query all instances of a specific type
   queryInstances<T extends StateContainer<any>>(
-    typeClass: new (...args: any[]) => T
+    typeClass: new (...args: any[]) => T,
   ): T[];
 
   // Query all registered types
@@ -125,12 +136,12 @@ interface PluginContext {
 
 ```typescript
 interface InstanceMetadata {
-  id: string;              // Unique instance ID
-  className: string;       // Class name (e.g., 'CounterCubit')
-  instanceKey: string;     // Instance key for shared instances
-  refCount: number;        // Reference count (0 for isolated)
-  isDisposed: boolean;     // Whether instance is disposed
-  name: string;            // Custom name if provided
+  id: string; // Unique instance ID
+  className: string; // Class name (e.g., 'CounterCubit')
+  instanceKey: string; // Instance key for shared instances
+  refCount: number; // Reference count (0 for isolated)
+  isDisposed: boolean; // Whether instance is disposed
+  name: string; // Custom name if provided
 }
 ```
 
@@ -138,7 +149,7 @@ interface InstanceMetadata {
 
 ```typescript
 interface PluginConfig {
-  enabled?: boolean;       // Enable/disable the plugin
+  enabled?: boolean; // Enable/disable the plugin
   environment?: 'development' | 'production' | 'test' | 'all';
 }
 ```
@@ -169,9 +180,16 @@ export class LoggingPlugin implements BlacPlugin {
     }
   }
 
-  onStateChanged(instance: any, prev: any, current: any, context: PluginContext): void {
+  onStateChanged(
+    instance: any,
+    prev: any,
+    current: any,
+    context: PluginContext,
+  ): void {
     const metadata = context.getInstanceMetadata(instance);
-    console.log(`[BlaC] State changed in ${metadata.className}#${metadata.instanceKey}`);
+    console.log(
+      `[BlaC] State changed in ${metadata.className}#${metadata.instanceKey}`,
+    );
 
     if (this.logLevel === 'debug') {
       console.log('Previous:', prev);
@@ -182,7 +200,7 @@ export class LoggingPlugin implements BlacPlugin {
 
 // Usage
 pluginManager.install(new LoggingPlugin('debug'), {
-  environment: 'development'
+  environment: 'development',
 });
 ```
 
@@ -247,7 +265,12 @@ export class PersistencePlugin implements BlacPlugin {
     }
   }
 
-  onStateChanged(instance: any, prev: any, current: any, context: PluginContext): void {
+  onStateChanged(
+    instance: any,
+    prev: any,
+    current: any,
+    context: PluginContext,
+  ): void {
     const metadata = context.getInstanceMetadata(instance);
 
     if (this.persistedTypes.has(metadata.className)) {
@@ -274,7 +297,7 @@ export class PersistencePlugin implements BlacPlugin {
 // Usage
 pluginManager.install(
   new PersistencePlugin(localStorage, ['UserCubit', 'SettingsCubit']),
-  { environment: 'all' }
+  { environment: 'all' },
 );
 ```
 
@@ -289,7 +312,7 @@ import { createDevToolsBrowserPlugin } from '@blac/devtools-connect';
 // Install DevTools plugin
 const pluginManager = getPluginManager();
 pluginManager.install(createDevToolsBrowserPlugin(), {
-  environment: 'development'
+  environment: 'development',
 });
 ```
 
@@ -357,7 +380,11 @@ import type {
 
 ```typescript
 import { describe, it, expect, beforeEach } from 'vitest';
-import { StateContainer, createPluginManager, StateContainerRegistry } from '@blac/core';
+import {
+  StateContainer,
+  createPluginManager,
+  StateContainerRegistry,
+} from '@blac/core';
 import { MyPlugin } from './MyPlugin';
 
 describe('MyPlugin', () => {
