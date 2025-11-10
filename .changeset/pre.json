@@ -7,7 +7,9 @@
     "@blac/docs": "0.0.0",
     "examples": "1.0.0",
     "perf": "1.0.0",
-    "@blac/devtools-connect": "2.0.0-rc.2"
+    "@blac/devtools-connect": "2.0.0-rc.2",
+    "@blac/devtools-extension": "1.0.0",
+    "@blac/devtools-ui": "1.0.0"
   },
   "changesets": [
     "disposal-race-condition-fix",
@@ -15,6 +17,7 @@
     "fast-apes-sing",
     "lovely-ghosts-dream",
     "ripe-doodles-yawn",
-    "schema-validation-explicit"
+    "schema-validation-explicit",
+    "three-rabbits-slide"
   ]
 }

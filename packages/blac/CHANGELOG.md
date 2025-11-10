@@ -1,5 +1,11 @@
 # @blac/core
 
+## 2.0.0-rc.7
+
+### Patch Changes
+
+- check changelog
+
 ## 2.0.0-rc.6
 
 ### Patch Changes

@@ -10,5 +10,3 @@ export { useBloc } from './useBloc';
 export { useBlocActions } from './useBlocActions';
 export type { UseBlocOptions, UseBlocReturn } from './types';
 export type { UseBlocActionsOptions } from './useBlocActions';
-
-export * from '@blac/core';
