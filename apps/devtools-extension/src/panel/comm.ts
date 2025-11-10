@@ -21,7 +21,8 @@ export type MessageIn =
   | { type: 'INITIAL_STATE'; payload: { instances: InstanceData[]; eventHistory?: AtomicEvent[] } }
   | { type: 'ATOMIC_UPDATE'; payload: AtomicEvent }
   | { type: 'CACHED_STATE'; payload: { instances: InstanceData[] } }
-  | { type: 'BLAC_NOT_AVAILABLE'; payload: { reason: string } };
+  | { type: 'BLAC_NOT_AVAILABLE'; payload: { reason: string } }
+  | { type: 'PAGE_RELOAD'; payload: { tabId: number; timestamp: number } };
 
 type MessageOut = { type: 'GET_INSTANCES' };
 

@@ -540,7 +540,7 @@ function TodoList() {
 
 **Cross-Bloc Dependencies:**
 
-Getters can access other blocs, and BlaC will automatically track those dependencies when using `.get()`, `.getSafe()`, or `.connect()`:
+Getters can access other blocs, and BlaC will **automatically track those dependencies** when using `.get()`, `.getSafe()`, or `.connect()`:
 
 ```typescript
 class StatsCubit extends Cubit<StatsState> {
@@ -561,6 +561,85 @@ function StatsDisplay() {
 ```
 
 **Important:** Only `.get()`, `.getSafe()`, and `.connect()` enable automatic tracking. Do NOT use `.resolve()` in getters as it increments ref count and causes memory leaks.
+
+**How Cross-Bloc Tracking Works:**
+
+When you access a getter that uses `.get()`, `.getSafe()`, or `.connect()` to access another bloc:
+
+1. **During render**: BlaC records which external blocs are accessed
+2. **Subscription setup**: BlaC automatically subscribes to all accessed blocs
+3. **Change detection**: When any accessed bloc's state changes, BlaC re-evaluates the getter
+4. **Comparison**: If the getter's return value changed, component re-renders
+5. **Cleanup**: Subscriptions are automatically cleaned up when component unmounts
+
+**Real-World Example - Notification System:**
+
+```typescript
+// Lightweight notification tracker (always alive)
+class NotificationCubit extends Cubit<NotificationState> {
+  static keepAlive = true;
+
+  constructor() {
+    super({ unreadCounts: new Map() });
+  }
+
+  incrementUnread = (channelId: string) => {
+    const newCounts = new Map(this.state.unreadCounts);
+    newCounts.set(channelId, (newCounts.get(channelId) || 0) + 1);
+    this.patch({ unreadCounts: newCounts });
+  };
+
+  clearUnread = (channelId: string) => {
+    const newCounts = new Map(this.state.unreadCounts);
+    newCounts.set(channelId, 0);
+    this.patch({ unreadCounts: newCounts });
+  };
+}
+
+// Heavy channel state (created on-demand)
+class ChannelBloc extends Vertex<ChannelState> {
+  constructor(props: { channelId: string }) {
+    super({ messages: [], typingUsers: new Set() });
+
+    // Register event handlers
+    this.on(ReceiveMessageEvent, (event, emit) => {
+      emit({
+        ...this.state,
+        messages: [...this.state.messages, event.message]
+      });
+
+      // Update notification count (borrowing, not owning)
+      const notifications = NotificationCubit.get();
+      notifications.incrementUnread(props.channelId);
+    });
+  }
+
+  // Computed getter - tracks message state
+  get unreadCount(): number {
+    const notifications = NotificationCubit.get();
+    return notifications.state.unreadCounts.get(this.state.channel.id) || 0;
+  }
+}
+
+// Sidebar shows unread counts WITHOUT creating ChannelBloc instances
+function ChannelListItem({ channelId }: Props) {
+  const [notifications] = useBloc(NotificationCubit);
+  const unreadCount = notifications.unreadCounts.get(channelId) || 0;
+
+  return (
+    <div>
+      Channel #{channelId}
+      {unreadCount > 0 && <span className="badge">{unreadCount}</span>}
+    </div>
+  );
+}
+```
+
+**Benefits:**
+- ✅ Sidebar can show unread counts without loading heavy ChannelBloc instances
+- ✅ Automatic re-rendering when notification state changes
+- ✅ No manual subscription management needed
+- ✅ Memory efficient - only active channels load full state
 
 **How Getter Tracking Works:**
 
@@ -795,6 +874,374 @@ function Login() {
 - Instance persists regardless of ref count
 - Useful for global singletons
 - Must manually dispose or use `release(key, true)`
+
+---
+
+## Inter-Bloc Communication Patterns
+
+BlaC supports multiple patterns for blocs to communicate with each other. Choose the pattern that best fits your use case.
+
+### Pattern 1: Constructor-Based Dependencies
+
+Resolve dependencies when the bloc is created. Use this for essential dependencies that the bloc needs throughout its lifetime.
+
+```typescript
+class AppCubit extends Cubit<AppState> {
+  // Resolve dependencies in constructor - increments ref count
+  notificationCubit = NotificationCubit.resolve();
+
+  constructor(props: { userId: string }) {
+    super({ userId: props.userId, isReady: false });
+    this.setupApp();
+  }
+
+  private setupApp() {
+    // Can safely use resolved dependencies
+    this.notificationCubit.clearAll();
+  }
+
+  // Must clean up owned references
+  protected onDispose() {
+    NotificationCubit.release();
+  }
+}
+```
+
+**When to use:**
+- ✅ Bloc needs dependency throughout its lifetime
+- ✅ You want to ensure dependency stays alive
+- ✅ You'll clean up in `onDispose()`
+
+**⚠️ Warning:** Must call `.release()` in `onDispose()` to prevent memory leaks.
+
+---
+
+### Pattern 2: Event Handler-Based Communication
+
+Access other blocs in event handlers using `.get()` or `.getSafe()`. This is the most common pattern for bloc-to-bloc communication.
+
+```typescript
+class ChannelBloc extends Vertex<ChannelState> {
+  constructor(props: { channelId: string }) {
+    super({ messages: [], channelId: props.channelId });
+
+    this.on(ReceiveMessageEvent, (event, emit) => {
+      // Add message to state
+      emit({
+        ...this.state,
+        messages: [...this.state.messages, event.message]
+      });
+
+      // ✅ Borrow NotificationCubit to update unread count
+      const notifications = NotificationCubit.getSafe();
+      if (!notifications.error) {
+        notifications.instance.incrementUnread(this.state.channelId);
+      }
+    });
+
+    this.on(MarkAsReadEvent, (_event, emit) => {
+      // ✅ Use .get() when you know instance exists
+      const notifications = NotificationCubit.get();
+      notifications.clearUnread(this.state.channelId);
+    });
+  }
+}
+```
+
+**When to use:**
+- ✅ One-off interactions between blocs
+- ✅ Event handling that triggers side effects
+- ✅ You don't want to create ownership (no ref count increment)
+
+**Benefits:**
+- No memory leaks (borrowing, not owning)
+- No cleanup needed
+- Clear, explicit dependencies
+
+---
+
+### Pattern 3: Getter-Based Dependencies (with Automatic Tracking)
+
+Access other blocs in **getters** for computed values that depend on multiple blocs. BlaC automatically tracks and subscribes to these dependencies.
+
+```typescript
+class CartCubit extends Cubit<CartState> {
+  constructor() {
+    super({ items: [] });
+  }
+
+  // ✅ Computed getter with cross-bloc dependency
+  get totalWithShipping(): number {
+    const itemTotal = this.state.items.reduce((sum, item) => sum + item.price, 0);
+
+    // Automatic tracking - component re-renders when ShippingCubit changes!
+    const shipping = ShippingCubit.get();
+    return itemTotal + shipping.state.cost;
+  }
+
+  // ✅ Multi-bloc dependencies automatically tracked
+  get orderSummary(): string {
+    const shipping = ShippingCubit.get();
+    const tax = TaxCubit.get();
+
+    return `Items: ${this.state.items.length}, Shipping: $${shipping.state.cost}, Tax: $${tax.state.amount}`;
+  }
+}
+
+function CheckoutSummary() {
+  const [, cart] = useBloc(CartCubit);
+
+  // Component re-renders when CartCubit OR ShippingCubit OR TaxCubit changes
+  return (
+    <div>
+      <p>Total: ${cart.totalWithShipping}</p>
+      <p>{cart.orderSummary}</p>
+    </div>
+  );
+}
+```
+
+**When to use:**
+- ✅ Computed values that depend on multiple blocs
+- ✅ You want automatic re-rendering when dependencies change
+- ✅ Creating derived/aggregate state
+
+**How it works:**
+1. Component accesses getter during render
+2. BlaC records all `.get()`, `.getSafe()`, and `.connect()` calls
+3. Automatically subscribes to all accessed blocs
+4. Re-evaluates getter when any dependency changes
+5. Triggers component re-render if getter value changed
+
+**⚠️ Important:**
+- Only use `.get()`, `.getSafe()`, or `.connect()` in getters
+- Never use `.resolve()` in getters (causes memory leaks)
+- Keep getters pure (no side effects)
+
+---
+
+### Pattern 4: Lazy/On-Demand Dependencies
+
+Create dependencies only when needed using `.connect()` or conditional `.getSafe()` checks.
+
+```typescript
+class UserProfileCubit extends Cubit<UserProfileState> {
+  constructor(props: { userId: string }) {
+    super({ userId: props.userId, profile: null });
+  }
+
+  loadProfile = async () => {
+    const profile = await api.getProfile(this.state.userId);
+    this.patch({ profile });
+
+    // ✅ Create analytics bloc only when profile is loaded
+    const analytics = AnalyticsCubit.connect();
+    analytics.trackEvent('profile_loaded', { userId: this.state.userId });
+  };
+
+  get premiumFeatures(): string[] {
+    // ✅ Check if feature flag bloc exists
+    const featureFlags = FeatureFlagCubit.getSafe();
+
+    if (featureFlags.error) {
+      return []; // Feature flags not available
+    }
+
+    return featureFlags.instance.state.premiumFeatures;
+  }
+}
+```
+
+**When to use:**
+- ✅ Optional dependencies (may or may not exist)
+- ✅ Conditional logic based on other bloc existence
+- ✅ Creating dependencies on-demand
+
+---
+
+### Pattern 5: Shared Service Blocs
+
+Use `keepAlive` singletons for shared services accessed by many blocs.
+
+```typescript
+// Global service - always alive
+class AnalyticsService extends Cubit<AnalyticsState> {
+  static keepAlive = true;
+
+  constructor() {
+    super({ events: [] });
+  }
+
+  trackEvent = (name: string, data: Record<string, any>) => {
+    this.emit({
+      ...this.state,
+      events: [...this.state.events, { name, data, timestamp: Date.now() }]
+    });
+  };
+}
+
+// Other blocs can safely access analytics
+class TodoCubit extends Cubit<TodoState> {
+  addTodo = (text: string) => {
+    this.emit({
+      ...this.state,
+      todos: [...this.state.todos, { text, done: false }]
+    });
+
+    // ✅ Borrow service (no cleanup needed)
+    const analytics = AnalyticsService.get();
+    analytics.trackEvent('todo_added', { text });
+  };
+}
+
+class UserCubit extends Cubit<UserState> {
+  login = async (email: string, password: string) => {
+    const user = await api.login(email, password);
+    this.patch({ user });
+
+    // ✅ All blocs can access same analytics instance
+    const analytics = AnalyticsService.get();
+    analytics.trackEvent('user_login', { email });
+  };
+}
+```
+
+**When to use:**
+- ✅ Logging, analytics, monitoring services
+- ✅ Feature flags, configuration
+- ✅ Shared utilities accessed by many blocs
+
+**Benefits:**
+- Single source of truth
+- No ownership complexity
+- Always available (keepAlive)
+- No cleanup needed
+
+---
+
+### Choosing the Right Pattern
+
+| Pattern | Use When | Ownership | Memory |
+|---------|----------|-----------|--------|
+| **Constructor** | Essential lifetime dependency | Yes (must release) | High |
+| **Event Handler** | Event-driven side effects | No (borrowing) | Low |
+| **Getter** | Computed multi-bloc values | No (auto-tracked) | Low |
+| **Lazy/On-Demand** | Optional/conditional dependencies | No | Very Low |
+| **Service** | Shared utilities/services | No (keepAlive) | Persistent |
+
+---
+
+### Real-World Example: Messenger App
+
+Here's how a real messenger app coordinates multiple blocs:
+
+```typescript
+// === Shared Singletons ===
+
+class NotificationCubit extends Cubit<NotificationState> {
+  static keepAlive = true; // Always alive
+  // Tracks unread counts (lightweight)
+}
+
+class ContactsCubit extends Cubit<ContactsState> {
+  static keepAlive = true; // Always alive
+  // List of channels and users
+}
+
+// === Per-Entity Instances ===
+
+class ChannelBloc extends Vertex<ChannelState> {
+  // One instance per channel (created on-demand)
+  constructor(props: { channelId: string }) {
+    super({ messages: [] });
+
+    this.on(ReceiveMessageEvent, (event, emit) => {
+      // Pattern 2: Event handler communication
+      const notifications = NotificationCubit.get();
+      notifications.incrementUnread(props.channelId);
+
+      emit({
+        ...this.state,
+        messages: [...this.state.messages, event.message]
+      });
+    });
+  }
+
+  // Pattern 3: Getter-based (automatic tracking)
+  get unreadCount(): number {
+    const notifications = NotificationCubit.get();
+    return notifications.state.unreadCounts.get(this.channelId) || 0;
+  }
+
+  // Pattern 2: Method-based communication
+  markAsRead = () => {
+    const notifications = NotificationCubit.get();
+    notifications.clearUnread(this.channelId);
+  };
+}
+
+class UserCubit extends Cubit<User> {
+  // One instance per user (created on-demand)
+}
+
+// === App Coordinator ===
+
+class AppCubit extends Cubit<AppState> {
+  // Pattern 1: Constructor-based (owns dependency)
+  notificationCubit = NotificationCubit.resolve();
+
+  constructor(props: { userId: string }) {
+    super({ userId: props.userId, activeChannelId: null });
+  }
+
+  setActiveChannel = (channelId: string) => {
+    // Pattern 2: Borrow to coordinate
+    const notifications = NotificationCubit.get();
+    notifications.clearUnread(channelId);
+
+    this.patch({ activeChannelId: channelId });
+  };
+
+  protected onDispose() {
+    // Clean up owned reference
+    NotificationCubit.release();
+  }
+}
+
+// === Components ===
+
+// Sidebar: Shows unread counts without creating heavy ChannelBloc instances
+function ChannelListItem({ channelId }: Props) {
+  const [notifications] = useBloc(NotificationCubit);
+  const unreadCount = notifications.unreadCounts.get(channelId) || 0;
+
+  return <div>#{channelId} {unreadCount > 0 && <Badge>{unreadCount}</Badge>}</div>;
+}
+
+// Channel view: Accesses full channel state
+function ChannelView({ channelId }: Props) {
+  const [channel, bloc] = useBloc(ChannelBloc, {
+    instanceId: channelId,
+    staticProps: { channelId }
+  });
+
+  // Pattern 3: Getter automatically tracks NotificationCubit
+  return (
+    <div>
+      <h2>Messages</h2>
+      {channel.messages.map(msg => <Message key={msg.id} {...msg} />)}
+      {bloc.unreadCount > 0 && <div>{bloc.unreadCount} unread</div>}
+    </div>
+  );
+}
+```
+
+**Architecture Benefits:**
+- ✅ Lightweight NotificationCubit is always alive (small memory footprint)
+- ✅ Heavy ChannelBloc instances created only when viewing channels
+- ✅ Sidebar shows unread counts without loading all channels
+- ✅ Automatic cross-bloc re-rendering via getters
+- ✅ Clear ownership and lifecycle management
 
 ---
 

@@ -57,6 +57,24 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   const tabId = sender.tab.id;
 
+  // Handle page unload - clear cache and notify panel
+  if (message.type === 'PAGE_UNLOAD') {
+    // Clear cached state for this tab
+    stateCache.delete(tabId);
+
+    // Notify DevTools panel that page is reloading
+    const connection = devToolsConnections.get(tabId);
+    if (connection) {
+      connection.port.postMessage({
+        type: 'PAGE_RELOAD',
+        payload: { tabId, timestamp: Date.now() },
+      });
+    }
+
+    sendResponse({ received: true });
+    return true;
+  }
+
   // Cache the state
   if (message.type === 'STATE_UPDATE') {
     stateCache.set(tabId, message.payload);

@@ -27,6 +27,16 @@ function App() {
         comm.connect();
         comm.onMessage((message) => {
           switch (message.type) {
+            case 'PAGE_RELOAD':
+              // Page is reloading - clear all state
+              flushSync(() => {
+                instancesBloc.setConnected(false);
+                instancesBloc.setAllInstances([]);
+                diffBloc.clearAllPreviousStates();
+                logsBloc.clearLogs();
+              });
+              break;
+
             case 'BLAC_NOT_AVAILABLE':
               // BlaC is not on this page
               flushSync(() => {
