@@ -31,6 +31,16 @@ interface BlacDevToolsAPI {
    * Check if DevTools is enabled
    */
   isEnabled(): boolean;
+
+  /**
+   * Get complete event history from app startup
+   */
+  getEventHistory(): any[];
+
+  /**
+   * Get full state dump with complete history
+   */
+  getFullState(): { instances: any[]; timestamp: number };
 }
 
 /**

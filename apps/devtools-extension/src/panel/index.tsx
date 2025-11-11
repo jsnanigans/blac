@@ -55,8 +55,9 @@ function App() {
               }
               // Process event history to populate logs
               if (message.payload?.eventHistory) {
+                const eventHistory = message.payload.eventHistory;
                 flushSync(() => {
-                  message.payload.eventHistory.forEach((event: any) => {
+                  eventHistory.forEach((event: any) => {
                     if (event.type === 'init') {
                       logsBloc.addLog(
                         'init',
