@@ -1,6 +1,6 @@
 {
   "name": "@blac/devtools-extension",
-  "version": "2.0.0-rc.7",
+  "version": "2.0.0-rc.8",
   "description": "Chrome DevTools extension for BlaC state management",
   "private": true,
   "scripts": {
@@ -9,12 +9,13 @@
     "preview": "vite preview",
     "typecheck": "tsc --project tsconfig.typecheck.json --noEmit",
     "typecheck:all": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "package:webstore": "pnpm build && rm -f webstore.zip && zip -r webstore.zip manifest.json icons dist -x '*.map'"
   },
   "dependencies": {
-    "@blac/react": "workspace:2.0.0-rc.7",
-    "@blac/core": "workspace:2.0.0-rc.7",
-    "@blac/devtools-ui": "workspace:2.0.0-rc.7"
+    "@blac/react": "workspace:2.0.0-rc.8",
+    "@blac/core": "workspace:2.0.0-rc.8",
+    "@blac/devtools-ui": "workspace:2.0.0-rc.8"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.254",

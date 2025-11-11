@@ -343,14 +343,20 @@ export abstract class StateContainer<S> {
   }
 
   /**
+   * Enable stack trace capture in development
+   * Defaults to true, but can be disabled to improve performance
+   */
+  static enableStackTrace = true;
+
+  /**
    * Capture stack trace for debugging
    * Can be overridden to disable in production
    */
   private captureStackTrace(): string {
-    // Only capture in development (can be configured)
+    // Only capture if enabled and in development (can be configured)
     if (
-      typeof process !== 'undefined' &&
-      process.env?.NODE_ENV === 'production'
+      !StateContainer.enableStackTrace ||
+      (typeof process !== 'undefined' && process.env?.NODE_ENV === 'production')
     ) {
       return '';
     }

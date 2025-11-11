@@ -238,3 +238,7 @@ Packages published to npm:
 - `@blac/core`
 - `@blac/react`
 - `@blac/devtools-connect`
+
+## Chrome Web Store (DevTools Extension)
+
+Chrome Web Store submission guide: `TempDoc/blac/2025-11/11/chrome-webstore-submission-guide.md`
