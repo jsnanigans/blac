@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { Cubit } from '@blac/core';
 import { useBloc } from '../useBloc';
@@ -84,7 +84,7 @@ describe('useBloc - cross-bloc edge cases', () => {
 
     const Component = () => {
       renderCount++;
-      const [state, bloc] = useBloc(DynamicDepBloc);
+      const [_state, bloc] = useBloc(DynamicDepBloc);
 
       // Toggle to enable external dependency
       if (renderCount === 1) {

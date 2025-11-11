@@ -4,7 +4,6 @@ import { StateContainerRegistry } from '../core/StateContainerRegistry';
 import { Cubit } from '../core/Cubit';
 import { Vertex } from '../core/Vertex';
 import type { BlacPlugin } from './BlacPlugin';
-import type { BaseEvent } from '../types/events';
 
 class CounterCubit extends Cubit<number> {
   constructor() {
@@ -16,7 +15,9 @@ class CounterCubit extends Cubit<number> {
   };
 }
 
-type CounterEvent = { type: 'increment' } | { type: 'decrement' };
+type CounterEvent =
+  | { type: 'increment'; timestamp: number }
+  | { type: 'decrement'; timestamp: number };
 
 class CounterVertex extends Vertex<number, CounterEvent> {
   constructor() {
@@ -359,11 +360,11 @@ describe('PluginManager', () => {
         manager.install(plugin);
 
         const counter = CounterVertex.resolve('main', 0);
-        counter.add({ type: 'increment' });
+        counter.add({ type: 'increment', timestamp: Date.now() });
 
         expect(onEventAdded).toHaveBeenCalledWith(
           counter,
-          { type: 'increment' },
+          expect.objectContaining({ type: 'increment' }),
           expect.any(Object),
         );
       });

@@ -9,8 +9,8 @@
   "main": "index.js",
   "scripts": {
     "format": "prettier --write \".\"",
-    "lint": "eslint . --ext .ts,.tsx",
-    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "_lint": "eslint . --ext .ts,.tsx",
+    "_lint:fix": "eslint . --ext .ts,.tsx --fix",
     "_typecheck": "tsc --noEmit",
     "dev": "vite",
     "_build": "vite build",

@@ -3,6 +3,15 @@
   "version": "2.0.0-rc.7",
   "license": "MIT",
   "author": "Brendan Mullins <jsnanigans@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jsnanigans/blac.git",
+    "directory": "packages/blac-react"
+  },
+  "homepage": "https://github.com/jsnanigans/blac#readme",
+  "bugs": {
+    "url": "https://github.com/jsnanigans/blac/issues"
+  },
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -39,7 +48,7 @@
   ],
   "scripts": {
     "dev": "tsdown --watch",
-    "build": "tsdown && tsc -p tsconfig.build.json",
+    "build": "tsdown && tsc -p tsconfig.build.json && cp dist/index.d.ts dist/index.d.cts",
     "clean": "rm -rf dist",
     "format": "prettier --write \".\"",
     "lint": "eslint src --ext .ts,.tsx",
@@ -68,10 +77,8 @@
       "optional": true
     }
   },
-  "dependencies": {
-    "@blac/core": "workspace:*"
-  },
   "devDependencies": {
+    "@blac/core": "workspace:*",
     "@testing-library/dom": "catalog:",
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/react": "^16.3.0",

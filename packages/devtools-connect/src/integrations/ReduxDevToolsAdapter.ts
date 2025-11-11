@@ -77,7 +77,7 @@ interface ActionMessage extends BaseReduxMessage {
     | string; // Can be string (JSON) or object
 }
 
-type StrictReduxDevToolsMessage = DispatchMessage | ActionMessage;
+type _StrictReduxDevToolsMessage = DispatchMessage | ActionMessage;
 
 /**
  * Type guard to check if message is a DISPATCH message
@@ -725,7 +725,10 @@ export class ReduxDevToolsAdapter {
             // Restore state using emit if available (Cubit/Vertex) or protected update
             // The isTimeTraveling flag prevents these state changes from
             // being sent back to Redux DevTools (preventing timeline pollution)
-            if ('emit' in container && typeof container.emit === 'function') {
+            if (
+              'emit' in container &&
+              typeof (container as any).emit === 'function'
+            ) {
               (container as any).emit(stateData);
             } else {
               // Fallback using protected update method
@@ -929,7 +932,7 @@ export class ReduxDevToolsAdapter {
     const newState = action.payload.state;
 
     // Use emit to update state (available on Cubit/Vertex)
-    if ('emit' in container && typeof container.emit === 'function') {
+    if ('emit' in container && typeof (container as any).emit === 'function') {
       (container as any).emit(newState);
     } else {
       // Fallback using protected update method
@@ -1108,7 +1111,10 @@ export class ReduxDevToolsAdapter {
       // If path is just the state key (no property path), update entire state
       if (statePath.length === 0) {
         // Use emit to update state
-        if ('emit' in container && typeof container.emit === 'function') {
+        if (
+          'emit' in container &&
+          typeof (container as any).emit === 'function'
+        ) {
           (container as any).emit(value);
         } else {
           // Fallback using protected update method
@@ -1156,7 +1162,10 @@ export class ReduxDevToolsAdapter {
       target[finalKey] = value;
 
       // Emit updated state
-      if ('emit' in container && typeof container.emit === 'function') {
+      if (
+        'emit' in container &&
+        typeof (container as any).emit === 'function'
+      ) {
         (container as any).emit(newState);
       } else {
         // Fallback using protected update method

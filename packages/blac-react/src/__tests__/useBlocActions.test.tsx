@@ -235,9 +235,8 @@ describe('useBlocActions', () => {
     });
 
     it('should release bloc reference on unmount', () => {
-      const { result, unmount } = renderHook(() => useBlocActions(CounterBloc));
+      const { unmount } = renderHook(() => useBlocActions(CounterBloc));
 
-      const bloc = result.current;
       const releaseSpy = vi.spyOn(CounterBloc as any, 'release');
 
       unmount();

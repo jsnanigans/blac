@@ -18,11 +18,11 @@ describe('deepEqual', () => {
     });
 
     it('should return false for different types', () => {
-      expect(deepEqual(1, '1')).toBe(false);
-      expect(deepEqual(0, false)).toBe(false);
-      expect(deepEqual(null, undefined)).toBe(false);
-      expect(deepEqual(1, null)).toBe(false);
-      expect(deepEqual(1, undefined)).toBe(false);
+      expect(deepEqual(1, '1' as any)).toBe(false);
+      expect(deepEqual(0, false as any)).toBe(false);
+      expect(deepEqual(null, undefined as any)).toBe(false);
+      expect(deepEqual(1, null as any)).toBe(false);
+      expect(deepEqual(1, undefined as any)).toBe(false);
     });
   });
 
@@ -117,7 +117,9 @@ describe('deepEqual', () => {
     });
 
     it('should return false for date vs non-date', () => {
-      expect(deepEqual(new Date('2024-01-01'), '2024-01-01')).toBe(false);
+      expect(deepEqual(new Date('2024-01-01'), '2024-01-01' as any)).toBe(
+        false,
+      );
     });
   });
 
@@ -133,7 +135,7 @@ describe('deepEqual', () => {
     });
 
     it('should return false for Set vs Array', () => {
-      expect(deepEqual(new Set([1, 2, 3]), [1, 2, 3])).toBe(false);
+      expect(deepEqual(new Set([1, 2, 3]), [1, 2, 3] as any)).toBe(false);
     });
   });
 
@@ -171,7 +173,7 @@ describe('deepEqual', () => {
     });
 
     it('should return false for Map vs Object', () => {
-      expect(deepEqual(new Map([['a', 1]]), { a: 1 })).toBe(false);
+      expect(deepEqual(new Map([['a', 1]]), { a: 1 } as any)).toBe(false);
     });
   });
 

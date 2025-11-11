@@ -425,11 +425,11 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
 
     it('should support time-travel debugging plugin pattern', () => {
       const history: Array<{ state: any; timestamp: number }> = [];
-      let currentIndex = -1;
+      let _currentIndex = -1;
 
       // Simulate time-travel plugin
       registry.on('stateChanged', (container, prev, next) => {
-        currentIndex++;
+        _currentIndex++;
         history.push({ state: next, timestamp: Date.now() });
       });
 
@@ -608,7 +608,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
 
     it('should force dispose with release(forceDispose=true)', () => {
       const instance1 = TestCubit.resolve('test');
-      const instance2 = TestCubit.resolve('test');
+      const _instance2 = TestCubit.resolve('test');
 
       expect(registry.getRefCount(TestCubit, 'test')).toBe(2);
       expect(instance1.isDisposed).toBe(false);

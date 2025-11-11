@@ -33,7 +33,7 @@ describe('ProxyTracker', () => {
       const proxy = tracker.createProxy(state);
 
       // Access multiple properties
-      const sum = proxy.a + proxy.b;
+      const _sum = proxy.a + proxy.b;
 
       const paths = tracker.stopTracking();
       expect(Array.from(paths).sort()).toEqual(['a', 'b']);
@@ -72,7 +72,7 @@ describe('ProxyTracker', () => {
       const proxy = tracker.createProxy(state);
 
       // Access nested property
-      const city = proxy.user.address.city;
+      const _city = proxy.user.address.city;
 
       const paths = tracker.stopTracking();
       // Only track leaf property, not intermediate objects
@@ -94,7 +94,7 @@ describe('ProxyTracker', () => {
       const proxy = tracker.createProxy(state);
 
       // Only access name
-      const name = proxy.user.name;
+      const _name = proxy.user.name;
 
       const paths = tracker.stopTracking();
       // Only track leaf property, not intermediate objects
@@ -114,8 +114,8 @@ describe('ProxyTracker', () => {
       const proxy = tracker.createProxy(state);
 
       // Access array index
-      const first = proxy.items[0];
-      const second = proxy.items[1];
+      const _first = proxy.items[0];
+      const _second = proxy.items[1];
 
       const paths = tracker.stopTracking();
       // Track array indices as leaf values
@@ -131,7 +131,7 @@ describe('ProxyTracker', () => {
       const proxy = tracker.createProxy(state);
 
       // Access array length
-      const len = proxy.items.length;
+      const _len = proxy.items.length;
 
       const paths = tracker.stopTracking();
       // Track array length as leaf value
@@ -147,7 +147,7 @@ describe('ProxyTracker', () => {
       const proxy = tracker.createProxy(state);
 
       // Use array method
-      const doubled = proxy.items.map((x: number) => x * 2);
+      const _doubled = proxy.items.map((x: number) => x * 2);
 
       const paths = tracker.stopTracking();
       expect(Array.from(paths)).toContain('items');
@@ -165,7 +165,7 @@ describe('ProxyTracker', () => {
       const proxy = tracker.createProxy(state);
 
       // Access nested array element
-      const value = proxy.matrix[0][1];
+      const _value = proxy.matrix[0][1];
 
       const paths = tracker.stopTracking();
       // Only track the actual accessed leaf value
@@ -187,9 +187,9 @@ describe('ProxyTracker', () => {
       const proxy = tracker.createProxy(state);
 
       // Access null and undefined values
-      const n = proxy.nullValue;
-      const u = proxy.undefinedValue;
-      const nv = proxy.nested.value;
+      const _n = proxy.nullValue;
+      const _u = proxy.undefinedValue;
+      const _nv = proxy.nested.value;
 
       const paths = tracker.stopTracking();
       // Only track leaf values (null/undefined are not objects so they're leaves)
@@ -224,7 +224,7 @@ describe('ProxyTracker', () => {
       const proxy = tracker.createProxy(state);
 
       // Access circular reference
-      const self = proxy.self.self.a;
+      const _self = proxy.self.self.a;
 
       const paths = tracker.stopTracking();
       // Only the leaf property 'a' is tracked
@@ -242,9 +242,9 @@ describe('ProxyTracker', () => {
       const proxy = tracker.createProxy(state);
 
       // Access all properties
-      const pub = proxy.public;
-      const priv = proxy._private;
-      const internal = proxy.$$internal;
+      const _pub = proxy.public;
+      const _priv = proxy._private;
+      const _internal = proxy.$$internal;
 
       const paths = tracker.stopTracking();
       expect(Array.from(paths)).toEqual(['public']);
@@ -314,7 +314,7 @@ describe('ProxyTracker', () => {
       const proxy = tracker.createProxy(state);
 
       // Try to access deep property
-      const deep = proxy.level1.level2.level3.level4;
+      const _deep = proxy.level1.level2.level3.level4;
 
       const paths = tracker.stopTracking();
       // With max depth 2, we can't proxy level3, so level4 is the last accessible leaf
@@ -351,7 +351,7 @@ describe('ProxyTracker', () => {
       const state = { value: 10 };
 
       expect(() => {
-        trackAccess(state, (s) => {
+        trackAccess(state, (_s) => {
           throw new Error('Test error');
         });
       }).toThrow('Test error');
@@ -397,7 +397,7 @@ describe('ProxyTracker', () => {
       const proxy = tracker.createProxy(state);
 
       // Iterate over keys
-      const keys = Object.keys(proxy.data);
+      const _keys = Object.keys(proxy.data);
 
       const paths = tracker.stopTracking();
       expect(Array.from(paths).sort()).toEqual(['data']);
@@ -431,8 +431,8 @@ describe('ProxyTracker', () => {
       const proxy = tracker.createProxy(state);
 
       // Use "in" operator
-      const hasName = 'name' in proxy.user;
-      const hasEmail = 'email' in proxy.user;
+      const _hasName = 'name' in proxy.user;
+      const _hasEmail = 'email' in proxy.user;
 
       const paths = tracker.stopTracking();
       // 'in' operator uses the 'has' trap which tracks the properties being checked

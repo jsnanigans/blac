@@ -46,6 +46,13 @@ export abstract class StateContainer<S> {
   protected static _registry = globalRegistry;
 
   /**
+   * Get the global registry (mainly for testing)
+   */
+  static getRegistry(): StateContainerRegistry {
+    return StateContainer._registry;
+  }
+
+  /**
    * Set a custom registry (mainly for testing)
    *
    * Clears all instances before switching to ensure clean test isolation.
@@ -398,7 +405,7 @@ export abstract class StateContainer<S> {
       }
 
       return formattedLines.join('\n');
-    } catch (error) {
+    } catch {
       // Silently fail if stack trace capture fails
       return '';
     }

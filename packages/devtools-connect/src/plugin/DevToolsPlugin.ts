@@ -1,5 +1,6 @@
-import type { BlacPlugin, BlocBase, Vertex } from '@blac/core';
+import type { BlacPlugin, StateContainer, Vertex } from '@blac/core';
 import { DevToolsBridge } from '../bridge/DevToolsBridge';
+import { DevToolsMessageType } from '../protocol/messages';
 import { safeSerialize } from '../serialization/serialize';
 import type { SerializedEvent } from '../bridge/types';
 import type { DevToolsPluginConfig } from './types';
@@ -38,21 +39,21 @@ export class DevToolsPlugin implements BlacPlugin {
       this.eventHistory = [];
     });
 
-    this.bridge.onCommand('REQUEST_STATE', (command) => {
+    this.bridge.onCommand('REQUEST_STATE', (_command) => {
       // Handle state request
     });
   }
 
-  onBlocCreated(bloc: BlocBase<any>): void {
+  onBlocCreated(bloc: StateContainer<any>): void {
     if (!this.enabled) return;
 
     const result = safeSerialize(bloc.state);
 
     this.bridge.send({
-      type: 'BLOC_CREATED',
+      type: DevToolsMessageType.BLOC_CREATED,
       payload: {
-        id: bloc.uid,
-        name: bloc._name,
+        id: bloc.instanceId,
+        name: bloc.name,
         state: result.success ? result.data : { error: result.error },
         timestamp: Date.now(),
       },
@@ -65,8 +66,8 @@ export class DevToolsPlugin implements BlacPlugin {
     const eventResult = safeSerialize(event);
     const serializedEvent: SerializedEvent = {
       id: this.generateEventId(),
-      blocId: bloc.uid,
-      blocName: bloc._name,
+      blocId: bloc.instanceId,
+      blocName: bloc.name,
       type: event.constructor?.name || 'UnknownEvent',
       payload: eventResult.success
         ? eventResult.data
@@ -81,42 +82,50 @@ export class DevToolsPlugin implements BlacPlugin {
     }
 
     this.bridge.send({
-      type: 'EVENT_DISPATCHED',
+      type: DevToolsMessageType.EVENT_DISPATCHED,
       payload: serializedEvent,
     });
   }
 
   onStateChanged(
-    bloc: BlocBase<any>,
+    bloc: StateContainer<any>,
     previousState: any,
     currentState: any,
   ): void {
     if (!this.enabled) return;
 
-    const stateResult = safeSerialize(currentState);
+    const prevStateResult = safeSerialize(previousState);
+    const currStateResult = safeSerialize(currentState);
     const diffResult = this.computeDiff(previousState, currentState);
 
     this.bridge.send({
-      type: 'STATE_CHANGED',
+      type: DevToolsMessageType.STATE_CHANGED,
       payload: {
-        blocId: bloc.uid,
-        state: stateResult.success
-          ? stateResult.data
-          : { error: stateResult.error },
+        id: bloc.instanceId,
+        blocId: bloc.instanceId,
+        previousState: prevStateResult.success
+          ? prevStateResult.data
+          : { error: prevStateResult.error },
+        currentState: currStateResult.success
+          ? currStateResult.data
+          : { error: currStateResult.error },
+        state: currStateResult.success
+          ? currStateResult.data
+          : { error: currStateResult.error },
         diff: diffResult,
         timestamp: Date.now(),
       },
     });
   }
 
-  onBlocDisposed(bloc: BlocBase<any>): void {
+  onBlocDisposed(bloc: StateContainer<any>): void {
     if (!this.enabled) return;
 
     this.bridge.send({
-      type: 'BLOC_DISPOSED',
+      type: DevToolsMessageType.BLOC_DISPOSED,
       payload: {
-        id: bloc.uid,
-        name: bloc._name,
+        id: bloc.instanceId,
+        name: bloc.name,
         timestamp: Date.now(),
       },
     });
@@ -147,7 +156,7 @@ export class DevToolsPlugin implements BlacPlugin {
     return Object.keys(diff).length > 0 ? diff : null;
   }
 
-  private handleTimeTravel(eventIndex: number): void {
+  private handleTimeTravel(_eventIndex: number): void {
     // Time-travel is experimental and only works with synchronous events
   }
 

@@ -56,7 +56,7 @@ describe('useBloc with dependencies', () => {
       );
     }
 
-    const { rerender } = render(<TestComponent />);
+    render(<TestComponent />);
 
     // Initial render
     expect(renderSpy).toHaveBeenCalledTimes(1);
@@ -170,7 +170,7 @@ describe('useBloc with dependencies', () => {
       );
     }
 
-    const { rerender } = render(<TestComponent />);
+    render(<TestComponent />);
 
     expect(renderSpy).toHaveBeenCalledTimes(1);
 
@@ -212,7 +212,7 @@ describe('useBloc with dependencies', () => {
     const renderSpy = vi.fn();
 
     function TestComponent() {
-      const [state, bloc] = useBloc(ComputedCubit, {
+      const [_state, bloc] = useBloc(ComputedCubit, {
         dependencies: (state, bloc) => [bloc.doubled],
       });
 

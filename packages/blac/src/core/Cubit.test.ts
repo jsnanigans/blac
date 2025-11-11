@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { Cubit, CounterCubit, TodoCubit, type TodoState } from './Cubit';
+import { Cubit, CounterCubit, TodoCubit } from './Cubit';
 import { StateContainer } from './StateContainer';
 
 // Test implementations
@@ -17,15 +17,12 @@ interface UserState {
 
 class UserCubit extends Cubit<UserState> {
   constructor() {
-    super(
-      {
-        id: '1',
-        name: 'John Doe',
-        email: 'john@example.com',
-        age: 30,
-      },
-      { name: 'UserCubit' },
-    );
+    super({
+      id: '1',
+      name: 'John Doe',
+      email: 'john@example.com',
+      age: 30,
+    });
   }
 
   updateName = (name: string): void => {

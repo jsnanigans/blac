@@ -176,7 +176,7 @@ describe('ReduxDevToolsAdapter - Time Travel', () => {
       const consoleError = vi
         .spyOn(console, 'error')
         .mockImplementation(() => {});
-      const adapter = new ReduxDevToolsAdapter({ enabled: true });
+      const _adapter = new ReduxDevToolsAdapter({ enabled: true });
 
       const messageHandler = mockDevTools.subscribe.mock.calls[0][0];
 
@@ -198,7 +198,7 @@ describe('ReduxDevToolsAdapter - Time Travel', () => {
       const consoleError = vi
         .spyOn(console, 'error')
         .mockImplementation(() => {});
-      const adapter = new ReduxDevToolsAdapter({ enabled: true });
+      const _adapter = new ReduxDevToolsAdapter({ enabled: true });
 
       const messageHandler = mockDevTools.subscribe.mock.calls[0][0];
 

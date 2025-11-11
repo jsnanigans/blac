@@ -12,6 +12,7 @@ export interface GetterTrackerState {
 }
 
 const descriptorCache = new WeakMap<
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   Function,
   Map<string | symbol, PropertyDescriptor | undefined>
 >();
@@ -28,7 +29,7 @@ interface GetterExecutionContext {
   visitedBlocs: Set<StateContainer<any>>; // Track visited blocs in current call stack
 }
 
-let getterExecutionContext: GetterExecutionContext = {
+const getterExecutionContext: GetterExecutionContext = {
   tracker: null,
   currentBloc: null,
   depth: 0,

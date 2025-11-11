@@ -5,7 +5,7 @@
  * since events are only needed for the Vertex pattern.
  */
 
-import { StateContainer, StateContainerConfig } from './StateContainer';
+import { StateContainer } from './StateContainer';
 import { BaseEvent } from '../types/events';
 
 /**
@@ -142,7 +142,7 @@ export abstract class Vertex<
   /**
    * Hook for handling event processing errors
    */
-  protected onEventError(event: E, error: Error): void {
+  protected onEventError(_event: E, _error: Error): void {
     // Override in subclass to handle errors
   }
 }

@@ -120,7 +120,7 @@ describe('DevTools Layout - Instance Management', () => {
   });
 
   it('should add instances and maintain order', async () => {
-    const { container } = render(<SimpleDevToolsPanel />);
+    render(<SimpleDevToolsPanel />);
     const bloc = LayoutBloc.resolve('default');
 
     act(() => {
@@ -159,7 +159,7 @@ describe('DevTools Layout - Instance Management', () => {
   });
 
   it('should sort instances by className', async () => {
-    const { container } = render(<SimpleDevToolsPanel />);
+    render(<SimpleDevToolsPanel />);
     const bloc = LayoutBloc.resolve('default');
 
     act(() => {
@@ -300,7 +300,7 @@ describe('DevTools Layout - Instance Management', () => {
   });
 
   it('should update instance data', async () => {
-    const { container } = render(<SimpleDevToolsPanel />);
+    render(<SimpleDevToolsPanel />);
     const bloc = LayoutBloc.resolve('default');
 
     act(() => {

@@ -4,6 +4,15 @@
   "license": "MIT",
   "author": "Brendan Mullins <jsnanigans@gmail.com>",
   "description": "DevTools connection plugin for BlaC state management",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jsnanigans/blac.git",
+    "directory": "packages/devtools-connect"
+  },
+  "homepage": "https://github.com/jsnanigans/blac#readme",
+  "bugs": {
+    "url": "https://github.com/jsnanigans/blac/issues"
+  },
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -38,12 +47,12 @@
   ],
   "scripts": {
     "dev": "tsdown --watch",
-    "build": "tsdown",
+    "build": "tsdown && tsc -p tsconfig.build.json && cp dist/index.d.ts dist/index.d.cts",
     "clean": "rm -rf dist",
     "format": "prettier --write \".\"",
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
-    "_typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
     "prepublishOnly": "echo 'Skipping prepublishOnly - build should be done at root level'",
     "deploy": "pnpm publish --access public"
   },

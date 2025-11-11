@@ -3,7 +3,7 @@
  * Testing framework-agnostic dependency tracking for automatic reactivity
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   createTrackerState,
   startTracking,
@@ -12,7 +12,6 @@ import {
   hasChanges,
   hasTrackedData,
   optimizeTrackedPaths,
-  type TrackerState,
 } from './dependency-tracker';
 
 interface SimpleState {
@@ -345,7 +344,7 @@ describe('Dependency Tracker', () => {
     describe('hasChanges()', () => {
       it('should detect value changes at tracked paths', () => {
         const tracker = createTrackerState<SimpleState>();
-        let state = { count: 10, name: 'test' };
+        const state = { count: 10, name: 'test' };
 
         // Track initial render
         startTracking(tracker);
@@ -728,7 +727,7 @@ describe('Dependency Tracker', () => {
 
       // Render - only access user.name
       startTracking(tracker);
-      let proxy = createProxy(tracker, state);
+      const proxy = createProxy(tracker, state);
       expect(proxy.user.name).toBe('John');
       captureTrackedPaths(tracker, state);
 

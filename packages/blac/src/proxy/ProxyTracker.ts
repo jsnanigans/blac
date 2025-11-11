@@ -5,7 +5,7 @@
  * which parts of the state a component depends on.
  */
 
-import { debug, info, warn, error } from '../logging/Logger';
+import { debug } from '../logging/Logger';
 
 /**
  * Check if a value is an object that can be proxied

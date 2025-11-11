@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "esnext",
+    "target": "es2021",
     "module": "esnext",
     "lib": ["esnext", "dom"],
     "jsx": "react-jsx",
@@ -12,7 +12,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "experimentalDecorators": true,
+    "experimentalDecorators": false,
     "resolveJsonModule": true,
     "types": ["vitest/globals", "@testing-library/jest-dom"],
     "paths": {

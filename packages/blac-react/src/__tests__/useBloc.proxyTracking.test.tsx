@@ -433,7 +433,7 @@ describe('useBloc with Proxy Tracking', () => {
 
     const { result } = renderHook(() => {
       renderCount++;
-      const [state, bloc] = useBloc(TestCubit);
+      const [_state, bloc] = useBloc(TestCubit);
 
       // State is destructured but NEVER accessed
       // This should result in no tracked dependencies

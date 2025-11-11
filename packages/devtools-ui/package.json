@@ -4,6 +4,15 @@
   "license": "MIT",
   "author": "Brendan Mullins <jsnanigans@gmail.com>",
   "description": "DevTools UI components for BlaC state management",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jsnanigans/blac.git",
+    "directory": "packages/devtools-ui"
+  },
+  "homepage": "https://github.com/jsnanigans/blac#readme",
+  "bugs": {
+    "url": "https://github.com/jsnanigans/blac/issues"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -30,7 +39,7 @@
   ],
   "scripts": {
     "dev": "tsdown --watch",
-    "build": "tsdown",
+    "build": "tsdown && tsc -p tsconfig.build.json && cp dist/index.d.ts dist/index.d.cts",
     "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit"
   },

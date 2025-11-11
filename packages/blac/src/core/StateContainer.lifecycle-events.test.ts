@@ -13,7 +13,7 @@ describe('StateContainer Lifecycle Events', () => {
 
   it('should emit "created" event when instance is created', () => {
     const createdListener = vi.fn();
-    StateContainer._registry.on('created', createdListener);
+    StateContainer.getRegistry().on('created', createdListener);
 
     class TestCubit extends Cubit<number> {
       constructor() {
@@ -31,7 +31,7 @@ describe('StateContainer Lifecycle Events', () => {
 
   it('should emit "disposed" event when instance is disposed', () => {
     const disposedListener = vi.fn();
-    StateContainer._registry.on('disposed', disposedListener);
+    StateContainer.getRegistry().on('disposed', disposedListener);
 
     class TestCubit extends Cubit<number> {
       constructor() {
@@ -50,7 +50,7 @@ describe('StateContainer Lifecycle Events', () => {
 
   it('should emit "created" only once for shared instances', () => {
     const createdListener = vi.fn();
-    StateContainer._registry.on('created', createdListener);
+    StateContainer.getRegistry().on('created', createdListener);
 
     class TestCubit extends Cubit<number> {
       constructor() {
@@ -71,7 +71,7 @@ describe('StateContainer Lifecycle Events', () => {
 
   it('should emit "disposed" only when ref count reaches 0', () => {
     const disposedListener = vi.fn();
-    StateContainer._registry.on('disposed', disposedListener);
+    StateContainer.getRegistry().on('disposed', disposedListener);
 
     class TestCubit extends Cubit<number> {
       constructor() {
@@ -95,8 +95,8 @@ describe('StateContainer Lifecycle Events', () => {
   it('should emit "created" and "disposed" for isolated instances', () => {
     const createdListener = vi.fn();
     const disposedListener = vi.fn();
-    StateContainer._registry.on('created', createdListener);
-    StateContainer._registry.on('disposed', disposedListener);
+    StateContainer.getRegistry().on('created', createdListener);
+    StateContainer.getRegistry().on('disposed', disposedListener);
 
     class TestCubit extends Cubit<number> {
       static isolated = true;
@@ -125,7 +125,7 @@ describe('StateContainer Lifecycle Events', () => {
 
   it('should emit "stateChanged" event when state changes', () => {
     const stateChangedListener = vi.fn();
-    StateContainer._registry.on('stateChanged', stateChangedListener);
+    StateContainer.getRegistry().on('stateChanged', stateChangedListener);
 
     class TestCubit extends Cubit<number> {
       constructor() {

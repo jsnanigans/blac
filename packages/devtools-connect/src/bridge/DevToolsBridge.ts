@@ -1,8 +1,5 @@
-import type {
-  DevToolsMessage,
-  WindowMessage,
-  DevToolsMessageType,
-} from '../protocol/messages';
+import type { DevToolsMessage, WindowMessage } from '../protocol/messages';
+import { DevToolsMessageType } from '../protocol/messages';
 import type { DevToolsStateManager } from '../state/DevToolsStateManager';
 
 // Keep old types for backward compatibility (used by ReduxDevToolsAdapter)
@@ -114,7 +111,7 @@ export class DevToolsBridge {
       }
 
       // Handle legacy commands (for backward compatibility with ReduxDevToolsAdapter)
-      const command = message as DevToolsCommand;
+      const command = message as unknown as DevToolsCommand;
 
       // Handle heartbeat acknowledgment
       if (command.type === 'HEARTBEAT_ACK') {
@@ -139,7 +136,7 @@ export class DevToolsBridge {
       if (!this.isConnected) return;
 
       this.send({
-        type: 'HEARTBEAT',
+        type: DevToolsMessageType.HEARTBEAT,
         payload: {
           timestamp: Date.now(),
           connectedSince: this.connectedSince,
@@ -178,7 +175,7 @@ export class DevToolsBridge {
         this.connectedSince = Date.now();
 
         this.send({
-          type: 'RECONNECTED',
+          type: DevToolsMessageType.RECONNECTED,
           payload: {
             timestamp: Date.now(),
             requestStateSync: true,

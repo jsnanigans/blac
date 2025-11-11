@@ -9,7 +9,7 @@
 /**
  * Array methods that should trigger tracking of the entire array
  */
-const ARRAY_METHODS = new Set([
+const _ARRAY_METHODS = new Set([
   'map',
   'filter',
   'forEach',
@@ -42,6 +42,7 @@ export interface ProxyTrackerState<T> {
   /** Cache of created proxies to avoid duplicates */
   proxyCache: WeakMap<object, any>;
   /** Cache of bound functions to maintain referential equality */
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   boundFunctionsCache: WeakMap<Function, Function> | null;
   /** Last state object that was proxied (for cache invalidation) */
   lastProxiedState: T | null;
@@ -118,6 +119,7 @@ export function createArrayProxy<T, U>(
       if (typeof value === 'function') {
         // Don't track array methods - the array itself is already tracked
         if (!state.boundFunctionsCache) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
           state.boundFunctionsCache = new WeakMap<Function, Function>();
         }
         const cached = state.boundFunctionsCache.get(value);
@@ -216,6 +218,7 @@ export function createProxyInternal<T>(
 
       if (typeof value === 'function') {
         if (!state.boundFunctionsCache) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
           state.boundFunctionsCache = new WeakMap<Function, Function>();
         }
         const cached = state.boundFunctionsCache.get(value);

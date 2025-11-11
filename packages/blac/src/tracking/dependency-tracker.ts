@@ -1,4 +1,3 @@
-import type { StateContainer } from '../core/StateContainer';
 import {
   type ProxyTrackerState,
   createProxyTrackerState,
@@ -13,7 +12,7 @@ export interface PathInfo {
   value: any;
 }
 
-export interface TrackerState<T extends any> {
+export interface TrackerState<T> {
   proxyTrackerState: ProxyTrackerState<T>;
   previousRenderPaths: Set<string>;
   currentRenderPaths: Set<string>;
@@ -102,7 +101,7 @@ export function optimizeTrackedPaths(paths: Set<string>): Set<string> {
   return optimized;
 }
 
-export function createTrackerState<T extends any>(): TrackerState<T> {
+export function createTrackerState<T>(): TrackerState<T> {
   return {
     proxyTrackerState: createProxyTrackerState<T>(),
     previousRenderPaths: new Set<string>(),
@@ -113,18 +112,15 @@ export function createTrackerState<T extends any>(): TrackerState<T> {
   };
 }
 
-export function startTracking<T extends any>(tracker: TrackerState<T>): void {
+export function startTracking<T>(tracker: TrackerState<T>): void {
   startProxyTracking(tracker.proxyTrackerState);
 }
 
-export function createProxy<T extends any>(
-  tracker: TrackerState<T>,
-  state: T,
-): T {
+export function createProxy<T>(tracker: TrackerState<T>, state: T): T {
   return createProxyForTarget(tracker.proxyTrackerState, state);
 }
 
-export function captureTrackedPaths<T extends any>(
+export function captureTrackedPaths<T>(
   tracker: TrackerState<T>,
   state: T,
 ): void {
@@ -169,10 +165,7 @@ export function captureTrackedPaths<T extends any>(
   tracker.lastCheckedValues.clear();
 }
 
-export function hasChanges<T extends any>(
-  tracker: TrackerState<T>,
-  state: T,
-): boolean {
+export function hasChanges<T>(tracker: TrackerState<T>, state: T): boolean {
   if (tracker.pathCache.size === 0) {
     return true;
   }
@@ -193,9 +186,7 @@ export function hasChanges<T extends any>(
   return false;
 }
 
-export function hasTrackedData<T extends any>(
-  tracker: TrackerState<T>,
-): boolean {
+export function hasTrackedData<T>(tracker: TrackerState<T>): boolean {
   return (
     tracker.proxyTrackerState.trackedPaths.size > 0 ||
     tracker.pathCache.size > 0 ||

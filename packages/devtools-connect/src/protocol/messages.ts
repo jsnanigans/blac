@@ -25,6 +25,16 @@ export enum DevToolsMessageType {
   FULL_STATE_DUMP = 'FULL_STATE_DUMP',
   /** Panel connection request (panel → plugin) */
   PANEL_CONNECT = 'PANEL_CONNECT',
+  /** Heartbeat to check connection status */
+  HEARTBEAT = 'HEARTBEAT',
+  /** Reconnection notification */
+  RECONNECTED = 'RECONNECTED',
+  /** Legacy: A new bloc instance was created */
+  BLOC_CREATED = 'BLOC_CREATED',
+  /** Legacy: An event was dispatched */
+  EVENT_DISPATCHED = 'EVENT_DISPATCHED',
+  /** Legacy: A bloc instance was disposed */
+  BLOC_DISPOSED = 'BLOC_DISPOSED',
 }
 
 /**
@@ -63,10 +73,16 @@ export interface InstanceDisposedPayload {
 export interface StateChangedPayload {
   /** Unique instance ID */
   id: string;
+  /** Bloc ID (legacy, same as id) */
+  blocId?: string;
   /** Previous state (before change) */
   previousState: any;
   /** Current state (after change) */
   currentState: any;
+  /** State (legacy, same as currentState) */
+  state?: any;
+  /** Diff between states (optional) */
+  diff?: any;
   /** Message timestamp */
   timestamp: number;
   /** Call stack trace for debugging (optional) */
@@ -110,6 +126,53 @@ export interface FullStateDumpPayload {
 }
 
 /**
+ * Payload for HEARTBEAT message
+ */
+export interface HeartbeatPayload {
+  timestamp: number;
+  connectedSince: number;
+}
+
+/**
+ * Payload for RECONNECTED message
+ */
+export interface ReconnectedPayload {
+  timestamp: number;
+  requestStateSync: boolean;
+}
+
+/**
+ * Payload for BLOC_CREATED message (legacy)
+ */
+export interface BlocCreatedPayload {
+  id: string;
+  name: string;
+  state: any;
+  timestamp: number;
+}
+
+/**
+ * Payload for EVENT_DISPATCHED message (legacy)
+ */
+export interface EventDispatchedPayload {
+  id: string;
+  blocId: string;
+  blocName: string;
+  type: string;
+  payload: any;
+  timestamp: number;
+}
+
+/**
+ * Payload for BLOC_DISPOSED message (legacy)
+ */
+export interface BlocDisposedPayload {
+  id: string;
+  name: string;
+  timestamp: number;
+}
+
+/**
  * Union type for all DevTools messages
  */
 export type DevToolsMessage =
@@ -132,6 +195,26 @@ export type DevToolsMessage =
   | {
       type: DevToolsMessageType.FULL_STATE_DUMP;
       payload: FullStateDumpPayload;
+    }
+  | {
+      type: DevToolsMessageType.HEARTBEAT;
+      payload: HeartbeatPayload;
+    }
+  | {
+      type: DevToolsMessageType.RECONNECTED;
+      payload: ReconnectedPayload;
+    }
+  | {
+      type: DevToolsMessageType.BLOC_CREATED;
+      payload: BlocCreatedPayload;
+    }
+  | {
+      type: DevToolsMessageType.EVENT_DISPATCHED;
+      payload: EventDispatchedPayload;
+    }
+  | {
+      type: DevToolsMessageType.BLOC_DISPOSED;
+      payload: BlocDisposedPayload;
     };
 
 /**

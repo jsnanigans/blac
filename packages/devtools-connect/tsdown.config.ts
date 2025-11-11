@@ -4,10 +4,7 @@ export default defineConfig({
   entry: 'src/index.ts',
   format: ['esm', 'cjs'],
   clean: true,
-  dts: {
-    // Don't bundle types from @blac/core - keep as import references
-    resolve: [],
-  },
+  dts: false, // Disable tsdown's type generation - we'll use tsc instead
   sourcemap: true,
   fixedExtension: false,
   // Explicitly mark @blac/core as external

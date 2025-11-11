@@ -23,6 +23,8 @@ export interface InstanceMetadata {
   lastStateChangeTimestamp: number;
   state: any;
   createdAt: number;
+  /** Whether this is an isolated instance */
+  isIsolated: boolean;
   /** Call stack for state update (optional, for DevTools) */
   callstack?: string;
   /** Previous state (optional, for state change events) */

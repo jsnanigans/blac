@@ -104,7 +104,7 @@ interface MessageItemProps {
   isOwn: boolean;
 }
 
-let messageItemRenderCount = 0;
+let _messageItemRenderCount = 0;
 
 /**
  * MessageItem - Exactly like apps/examples/src/messenger/components/MessageItem.tsx
@@ -115,7 +115,7 @@ let messageItemRenderCount = 0;
  * - Displays message.status with icon
  */
 function MessageItem({ message, isOwn }: MessageItemProps) {
-  messageItemRenderCount++;
+  _messageItemRenderCount++;
 
   const [user] = useBloc(UserCubit, {
     instanceId: message.userId,
@@ -195,7 +195,7 @@ function MessageList({ channelId, currentUserId }: MessageListProps) {
 afterEach(() => {
   StateContainer.clearAllInstances();
   messageListRenderCount = 0;
-  messageItemRenderCount = 0;
+  _messageItemRenderCount = 0;
 });
 
 describe('Messenger Reproduction - Array Tracking', () => {
@@ -252,7 +252,7 @@ describe('Messenger Reproduction - Array Tracking', () => {
     const instance = ChannelBloc.get(channelId);
     const adapterStates = (instance as any).__blac__adapterStates;
     if (adapterStates && adapterStates.size > 0) {
-      const firstAdapter = Array.from(adapterStates.values())[0];
+      const firstAdapter = Array.from(adapterStates.values())[0] as any;
       console.log('\n=== TRACKED PATHS AFTER FIRST RENDER ===');
       console.log(
         'Current paths:',

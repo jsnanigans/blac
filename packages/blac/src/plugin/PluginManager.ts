@@ -4,7 +4,6 @@
  */
 
 import type { StateContainer } from '../core/StateContainer';
-import type { Vertex } from '../core/Vertex';
 import type { StateContainerRegistry } from '../core/StateContainerRegistry';
 import type {
   BlacPlugin,
@@ -216,6 +215,7 @@ export class PluginManager {
           lastStateChangeTimestamp: instance.lastUpdateTimestamp,
           createdAt: instance.createdAt,
           state: instance.state,
+          isIsolated: instance.instanceId.startsWith('isolated-'),
         };
       },
 

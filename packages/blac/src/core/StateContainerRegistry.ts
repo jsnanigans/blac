@@ -12,11 +12,7 @@ import type { StateContainer, StateContainerConfig } from './StateContainer';
 import type { Vertex } from './Vertex';
 import { createPluginManager } from '../plugin/PluginManager';
 import { getGetterExecutionContext } from '../tracking/getter-tracker';
-import {
-  BLAC_DEFAULTS,
-  BLAC_ERROR_PREFIX,
-  BLAC_STATIC_PROPS,
-} from '../constants';
+import { BLAC_DEFAULTS, BLAC_ERROR_PREFIX } from '../constants';
 import { isIsolatedClass, isKeepAliveClass } from '../utils/static-props';
 
 interface TypeConfig {
@@ -78,7 +74,7 @@ export class StateContainerRegistry {
    * - Automatic garbage collection when classes are no longer referenced
    */
   private readonly instancesByConstructor = new WeakMap<
-    Function,
+    new (...args: any[]) => StateContainer<any>,
     Map<string, InstanceEntry>
   >();
 
@@ -98,7 +94,10 @@ export class StateContainerRegistry {
   /**
    * Lifecycle event listeners
    */
-  private readonly listeners = new Map<LifecycleEvent, Set<Function>>();
+  private readonly listeners = new Map<
+    LifecycleEvent,
+    Set<(...args: any[]) => void>
+  >();
 
   /**
    * Register a type for tracking
@@ -507,11 +506,11 @@ export class StateContainerRegistry {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, new Set());
     }
-    this.listeners.get(event)!.add(listener as Function);
+    this.listeners.get(event)!.add(listener as (...args: any[]) => void);
 
     // Return unsubscribe function
     return () => {
-      this.listeners.get(event)?.delete(listener as Function);
+      this.listeners.get(event)?.delete(listener as (...args: any[]) => void);
     };
   }
 
