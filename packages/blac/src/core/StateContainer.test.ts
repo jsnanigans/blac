@@ -256,13 +256,13 @@ describe('StateContainer', () => {
 
       it('should respect custom instanceId', () => {
         const container = new TestContainer(0);
-        container.initiConfig({ instanceId: 'custom-id' });
+        container.initConfig({ instanceId: 'custom-id' });
         expect(container.instanceId).toBe('TestContainer:custom-id');
       });
 
       it('should respect custom name', () => {
         const container = new TestContainer(0);
-        container.initiConfig({ name: 'CustomName' });
+        container.initConfig({ name: 'CustomName' });
         expect(container.name).toBe('CustomName');
       });
 
@@ -516,7 +516,7 @@ describe('StateContainer', () => {
   describe('Configuration', () => {
     it('should respect name configuration', () => {
       const container = new TestContainer(0);
-      container.initiConfig({ name: 'MyCounter' });
+      container.initConfig({ name: 'MyCounter' });
       expect(container.name).toBe('MyCounter');
     });
 
@@ -526,7 +526,7 @@ describe('StateContainer', () => {
         .mockImplementation(() => {});
 
       const container = new TestContainer(0);
-      container.initiConfig({
+      container.initConfig({
         debug: true,
         name: 'DebugTest',
       });

@@ -237,7 +237,7 @@ export abstract class StateContainer<S> {
     this._state = initialState;
   }
 
-  initiConfig(config: StateContainerConfig): void {
+  initConfig(config: StateContainerConfig): void {
     this.config = { ...config };
     this.name = this.config.name || this.constructor.name;
     this.debug = this.config.debug ?? false;

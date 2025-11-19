@@ -7,7 +7,11 @@ import { BlacDevtoolsUi } from '@blac/devtools-ui';
 import './messenger/messenger.css';
 
 const Logo = () => {
-  return <div className="nav-brand">BlaC Examples</div>;
+  return (
+    <div className="nav-brand">
+      BlaC <span style={{ fontWeight: 400, opacity: 0.8 }}>Examples</span>
+    </div>
+  );
 };
 
 const DevToolsBanner = () => {
@@ -23,50 +27,51 @@ const DevToolsBanner = () => {
   return (
     <div
       style={{
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
         color: 'white',
-        padding: '12px 20px',
+        padding: '10px 20px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         fontSize: '14px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+        position: 'relative',
+        zIndex: 100,
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <span style={{ fontSize: '24px' }}>🔧</span>
+        <span style={{ fontSize: '20px' }}>🛠️</span>
         <div>
-          <div style={{ fontWeight: 600, marginBottom: '2px' }}>
-            BlaC DevTools Active
-          </div>
-          <div style={{ fontSize: '13px', opacity: 0.9 }}>
+          <div style={{ fontWeight: 600 }}>BlaC DevTools Ready</div>
+          <div style={{ fontSize: '12px', opacity: 0.9 }}>
             Press{' '}
             <kbd
               style={{
                 background: 'rgba(255,255,255,0.2)',
-                padding: '2px 6px',
-                borderRadius: '3px',
+                padding: '1px 5px',
+                borderRadius: '4px',
                 fontFamily: 'monospace',
+                border: '1px solid rgba(255,255,255,0.3)',
               }}
             >
               Alt+D
             </kbd>{' '}
-            to toggle in-app overlay, or open Chrome DevTools
+            to toggle overlay
           </div>
         </div>
       </div>
-      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
         <button
           onClick={openDevTools}
           style={{
-            background: 'rgba(255,255,255,0.2)',
+            background: 'rgba(255,255,255,0.15)',
             border: '1px solid rgba(255,255,255,0.3)',
             color: 'white',
             cursor: 'pointer',
-            fontSize: '13px',
+            fontSize: '12px',
             padding: '6px 12px',
-            borderRadius: '4px',
+            borderRadius: '6px',
             fontWeight: 500,
+            transition: 'all 0.2s',
           }}
           title="Open BlaC DevTools Overlay"
         >
@@ -79,9 +84,12 @@ const DevToolsBanner = () => {
             border: 'none',
             color: 'white',
             cursor: 'pointer',
-            fontSize: '20px',
-            padding: '4px 8px',
+            fontSize: '18px',
+            padding: '4px',
             opacity: 0.8,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
           title="Dismiss"
         >

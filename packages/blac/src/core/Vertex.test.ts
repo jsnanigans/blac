@@ -251,7 +251,7 @@ describe('Vertex', () => {
         }
 
         const vertex = new TestVertex(10);
-        vertex.initiConfig({ debug: true });
+        vertex.initConfig({ debug: true });
 
         vertex.add(new UnhandledEvent());
 

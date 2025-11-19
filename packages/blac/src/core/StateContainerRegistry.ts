@@ -178,7 +178,7 @@ export class StateContainerRegistry {
     // Isolated: always create new instance (not tracked)
     if (isolated) {
       const instance = new Type(constructorArgs) as T;
-      instance.initiConfig(config);
+      instance.initConfig(config);
       // Register type for lifecycle coordination
       this.registerType(Type);
       return instance;
@@ -195,7 +195,7 @@ export class StateContainerRegistry {
 
     // Create new shared instance
     const instance = new Type(constructorArgs) as T;
-    instance.initiConfig(config);
+    instance.initConfig(config);
     instances.set(instanceKey, { instance, refCount: 1 });
 
     // Register type for lifecycle coordination
@@ -310,7 +310,7 @@ export class StateContainerRegistry {
       const config: StateContainerConfig = {
         instanceId: instanceKey,
       };
-      instance.initiConfig(config);
+      instance.initConfig(config);
       entry = { instance, refCount: 1 };
       instances.set(instanceKey, entry);
 

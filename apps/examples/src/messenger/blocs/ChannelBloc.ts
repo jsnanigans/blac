@@ -11,19 +11,19 @@ import { webSocket } from '../services/WebSocketMock';
 export class SendMessageEvent implements BaseEvent {
   readonly type = 'send_message';
   readonly timestamp = Date.now();
-  constructor(public readonly userId: string) {}
+  constructor(public readonly userId: string) { }
 }
 
 export class UpdateDraftMessageEvent implements BaseEvent {
   readonly type = 'update_draft_message';
   readonly timestamp = Date.now();
-  constructor(public readonly draftText: string) {}
+  constructor(public readonly draftText: string) { }
 }
 
 export class ReceiveMessageEvent implements BaseEvent {
   readonly type = 'receive_message';
   readonly timestamp = Date.now();
-  constructor(public readonly message: Message) {}
+  constructor(public readonly message: Message) { }
 }
 
 export class UserTypingEvent implements BaseEvent {
@@ -32,13 +32,13 @@ export class UserTypingEvent implements BaseEvent {
   constructor(
     public readonly userId: string,
     public readonly isTyping: boolean,
-  ) {}
+  ) { }
 }
 
 export class MarkAsReadEvent implements BaseEvent {
   readonly type = 'mark_as_read';
   readonly timestamp = Date.now();
-  constructor() {}
+  constructor() { }
 }
 
 export class UpdateMessageStatusEvent implements BaseEvent {
@@ -47,7 +47,7 @@ export class UpdateMessageStatusEvent implements BaseEvent {
   constructor(
     public readonly messageId: string,
     public readonly status: Message['status'],
-  ) {}
+  ) { }
 }
 
 export interface ChannelState {
@@ -113,26 +113,27 @@ export class ChannelBloc extends Vertex<ChannelState> {
       const draft = this.state.draftMessage?.trim() || '';
       if (draft.length === 0) return; // Don't send empty messages
 
-      const message: Message = {
-        id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      const newMessage: Message = {
+        id: Date.now().toString(),
         channelId: this.state.channel.id,
         userId: event.userId,
-        text: draft,
+        text: this.state.draftMessage.trim(),
         timestamp: Date.now(),
-        status: 'sending',
+        status: 'sent',
       };
 
       emit({
         ...this.state,
-        messages: [...this.state.messages, message],
+        messages: [...this.state.messages, newMessage],
         draftMessage: '',
       });
 
+      // Send to WebSocket mock
       webSocket.send({
         type: 'send_message',
         channelId: this.state.channel.id,
         userId: event.userId,
-        payload: { messageId: message.id, text: message.text },
+        payload: newMessage,
       });
     });
 
@@ -193,7 +194,7 @@ export class ChannelBloc extends Vertex<ChannelState> {
     this.on(UpdateDraftMessageEvent, (event, emit) => {
       emit({
         ...this.state,
-        draftMessage: event.draftText.trim(),
+        draftMessage: event.draftText,
       });
     });
   }
@@ -219,7 +220,6 @@ export class ChannelBloc extends Vertex<ChannelState> {
     persistenceService.saveChannel(
       this.state.channel.id,
       this.state.messages,
-      unreadCount,
     );
 
     console.log(

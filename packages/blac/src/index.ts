@@ -23,7 +23,6 @@ export { PluginManager, createPluginManager } from './plugin/PluginManager';
 export { hasInitHook } from './plugin/BlacPlugin';
 
 export * from './tracking';
-export * from './proxy/ProxyTracker';
 export * from './adapter';
 
 export type { Brand, BrandedId, InstanceId } from './types/branded';

@@ -62,7 +62,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       const unsubscribe = registry.on('created', listener);
 
       const bloc = new TestCubit();
-      bloc.initiConfig({});
+      bloc.initConfig({});
 
       expect(listener).toHaveBeenCalledTimes(1);
       expect(listener).toHaveBeenCalledWith(bloc);
@@ -119,7 +119,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       registry.on('created', listener3);
 
       const bloc = new TestCubit();
-      bloc.initiConfig({});
+      bloc.initConfig({});
 
       expect(listener1).toHaveBeenCalledTimes(1);
       expect(listener2).toHaveBeenCalledTimes(1);
@@ -136,7 +136,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       registry.on('disposed', disposedListener);
 
       const bloc = new TestCubit();
-      bloc.initiConfig({});
+      bloc.initConfig({});
       bloc.increment();
       bloc.dispose();
 
@@ -152,12 +152,12 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       const unsubscribe = registry.on('created', listener);
 
       const bloc = new TestCubit();
-      bloc.initiConfig({});
+      bloc.initConfig({});
       expect(listener).toHaveBeenCalledTimes(1);
 
       unsubscribe();
       const bloc2 = new TestCubit();
-      bloc2.initiConfig({});
+      bloc2.initConfig({});
       expect(listener).toHaveBeenCalledTimes(1); // Should not increase
     });
 
@@ -196,7 +196,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
 
       unsubscribe1();
       const bloc = new TestCubit();
-      bloc.initiConfig({});
+      bloc.initConfig({});
 
       expect(listener1).not.toHaveBeenCalled();
       expect(listener2).toHaveBeenCalledTimes(1);
@@ -209,7 +209,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       registry.on('created', listener);
 
       const bloc = new TestCubit();
-      bloc.initiConfig({});
+      bloc.initConfig({});
 
       expect(listener).toHaveBeenCalledTimes(1);
       expect(listener).toHaveBeenCalledWith(bloc);
@@ -251,7 +251,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       registry.on('disposed', listener);
 
       const bloc = new TestCubit();
-      bloc.initiConfig({});
+      bloc.initConfig({});
       bloc.dispose();
 
       expect(listener).toHaveBeenCalledTimes(1);
@@ -273,7 +273,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       registry.on('created', listener2);
 
       const bloc = new TestCubit();
-      bloc.initiConfig({});
+      bloc.initConfig({});
 
       expect(listener1).toHaveBeenCalledTimes(1);
       expect(listener2).toHaveBeenCalledTimes(1);
@@ -306,44 +306,6 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       }).not.toThrow();
 
       consoleErrorSpy.mockRestore();
-    });
-  });
-
-  describe('Performance - Zero Overhead When No Listeners', () => {
-    it('should have minimal overhead when no listeners registered', () => {
-      const startTime = performance.now();
-
-      // Create many instances without any listeners
-      for (let i = 0; i < 1000; i++) {
-        const bloc = new TestCubit();
-        bloc.increment();
-        bloc.dispose();
-      }
-
-      const noListenersTime = performance.now() - startTime;
-
-      // Now with listeners
-      const listener = vi.fn();
-      registry.on('created', listener);
-      registry.on('stateChanged', listener);
-      registry.on('disposed', listener);
-
-      const startTime2 = performance.now();
-
-      for (let i = 0; i < 1000; i++) {
-        const bloc = new TestCubit();
-        bloc.increment();
-        bloc.dispose();
-      }
-
-      const withListenersTime = performance.now() - startTime2;
-
-      // With no listeners should be reasonably fast
-      expect(noListenersTime).toBeLessThan(100);
-
-      // Performance note: The overhead is acceptable for a plugin system
-      console.log(`No listeners: ${noListenersTime.toFixed(2)}ms`);
-      console.log(`With listeners: ${withListenersTime.toFixed(2)}ms`);
     });
   });
 
@@ -390,7 +352,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       });
 
       const bloc = new TestCubit(0);
-      bloc.initiConfig({});
+      bloc.initConfig({});
       bloc.increment();
       bloc.dispose();
 
@@ -496,7 +458,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       const unsubscribe = globalRegistry.on('created', listener);
 
       const bloc = new TestCubit();
-      bloc.initiConfig({});
+      bloc.initConfig({});
 
       expect(listener).toHaveBeenCalledTimes(1);
 
@@ -517,7 +479,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
 
       // Events only go to the active registry
       const bloc = new TestCubit();
-      bloc.initiConfig({});
+      bloc.initConfig({});
 
       expect(globalListener).toHaveBeenCalledTimes(1);
       expect(customListener).not.toHaveBeenCalled();

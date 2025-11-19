@@ -49,3 +49,4 @@ packages/blac/dist
 apps/docs/.vitepress/cache
 apps/docs/.vitepress/dist
 .serena
+log.md

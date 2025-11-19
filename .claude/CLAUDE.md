@@ -63,10 +63,11 @@ The `useBloc` hook (packages/blac-react/src/useBloc.ts) integrates state contain
 
 ### Dependency Tracking System
 
-**ProxyTracker** (packages/blac/src/proxy/ProxyTracker.ts):
-- Creates proxies that track property access paths
+**Proxy Tracker** (packages/blac/src/tracking/proxy-tracker.ts):
+- Functional API for creating proxies that track property access paths
 - Used by auto-tracking mode to detect which state properties are accessed during render
 - Only triggers re-renders when tracked properties change
+- Only proxies plain objects `{}` and arrays `[]` (not custom class instances)
 
 **Adapter** (packages/blac/src/adapter/framework-adapter.ts):
 - Bridges state containers with React's subscription model
