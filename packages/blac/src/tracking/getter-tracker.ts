@@ -186,6 +186,10 @@ export function createBlocProxy<TBloc extends StateContainer<any>>(
           const value = descriptor!.get!.call(target);
           tracker.trackedValues.set(prop, value);
           return value;
+        } catch (error) {
+          // Remove from pending tracking since we failed to get a value
+          tracker.currentlyAccessing.delete(prop);
+          throw error;
         } finally {
           // Restore previous context
           getterExecutionContext.tracker = prevContext.tracker;

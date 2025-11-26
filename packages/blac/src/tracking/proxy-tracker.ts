@@ -7,19 +7,6 @@
  */
 
 /**
- * Array methods that should trigger tracking of the entire array
- */
-const _ARRAY_METHODS = new Set([
-  'map',
-  'filter',
-  'forEach',
-  'find',
-  'some',
-  'every',
-  'reduce',
-]);
-
-/**
  * Check if a value can be proxied
  *
  * Returns true for plain objects and arrays only.
