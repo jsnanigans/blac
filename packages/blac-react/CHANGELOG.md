@@ -1,5 +1,13 @@
 # @blac/react
 
+## 2.0.0-rc.9
+
+### Patch Changes
+
+- exclude maps from npm package
+- Updated dependencies
+  - @blac/core@2.0.0-rc.9
+
 ## 2.0.0-rc.8
 
 ### Patch Changes
