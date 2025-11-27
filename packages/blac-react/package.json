@@ -32,7 +32,6 @@
     "dist/**/*.cjs",
     "dist/**/*.d.ts",
     "dist/**/*.d.cts",
-    "dist/**/*.map",
     "README.md",
     "LICENSE"
   ],
