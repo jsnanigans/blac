@@ -24,6 +24,7 @@
     "pnpm": ">=9"
   },
   "devDependencies": {
+    "@microsoft/api-extractor": "^7.52.8",
     "@changesets/cli": "^2.29.5",
     "@eslint/js": "^9.32.0",
     "@types/bun": "catalog:",
