@@ -4,10 +4,10 @@ export default defineConfig({
   entry: 'src/index.ts',
   format: ['esm', 'cjs'],
   clean: true,
-  dts: false, // Disable tsdown's type generation - we'll use tsc instead
+  dts: false,
   sourcemap: true,
-  fixedExtension: false, // Use .js for ESM, .cjs for CJS
-  // Explicitly mark @blac/core as external
+  fixedExtension: false,
+  hash: false,
   external: ['@blac/core'],
   outExtensions({ format }) {
     return {
