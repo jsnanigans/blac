@@ -42,10 +42,8 @@ export function createIdGenerator(prefix: string) {
  * @returns Branded ID string
  *
  * @example
- * ```ts
  * const id = generateId('sub');
  * // Returns: "sub:1698765432100_1_a3k9d7f2q"
- * ```
  */
 export function generateId(prefix: string): string {
   const counter = (globalCounters.get(prefix) ?? 0) + 1;

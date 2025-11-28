@@ -15,9 +15,11 @@
  * Handles both dot notation (a.b.c) and bracket notation (a[0].b)
  *
  * @example
+ * ```ts
  * parsePath('user.name') // ['user', 'name']
  * parsePath('items[0].name') // ['items', '0', 'name']
  * parsePath('data.users[2].address.city') // ['data', 'users', '2', 'address', 'city']
+ * ```
  */
 export function parsePath(path: string): string[] {
   const segments: string[] = [];
@@ -54,10 +56,12 @@ export function parsePath(path: string): string[] {
  * Get a value from an object using a path of segments
  *
  * @example
+ * ```ts
  * const obj = { user: { name: 'Alice', age: 30 } }
  * getValueAtPath(obj, ['user', 'name']) // 'Alice'
  * getValueAtPath(obj, ['user', 'age']) // 30
  * getValueAtPath(obj, ['user', 'missing']) // undefined
+ * ```
  *
  * @internal
  */
@@ -78,9 +82,11 @@ export function getValueAtPath(obj: any, segments: string[]): any {
  * Compares two arrays element-by-element using Object.is
  *
  * @example
+ * ```ts
  * shallowEqual([1, 2, 3], [1, 2, 3]) // true
  * shallowEqual([1, 2, 3], [1, 2, 4]) // false
  * shallowEqual([1, 2], [1, 2, 3]) // false
+ * ```
  *
  * @internal
  */

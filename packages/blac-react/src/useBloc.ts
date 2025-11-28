@@ -46,6 +46,38 @@ function determineTrackingMode<TBloc extends StateContainer<any, any>>(
   };
 }
 
+/**
+ * React hook that connects a component to a state container with automatic re-render on state changes.
+ *
+ * Supports three tracking modes:
+ * - **Auto-tracking** (default): Automatically detects accessed state properties via Proxy
+ * - **Manual dependencies**: Explicit dependency array like useEffect
+ * - **No tracking**: Returns full state without optimization
+ *
+ * @template T - The state container constructor type
+ * @param BlocClass - The state container class to connect to
+ * @param options - Configuration options for tracking mode and instance management
+ * @returns Tuple with [state, bloc instance, ref]
+ *
+ * @example Basic usage
+ * ```ts
+ * const [state, myBloc, ref] = useBloc(MyBloc);
+ * ```
+ *
+ * @example With manual dependencies
+ * ```ts
+ * const [state, myBloc] = useBloc(MyBloc, {
+ *   dependencies: (state) => [state.count]
+ * });
+ * ```
+ *
+ * @example With isolated instance
+ * ```ts
+ * const [state, myBloc] = useBloc(MyBloc, {
+ *   instanceId: 'unique-id'
+ * });
+ * ```
+ */
 export function useBloc<
   T extends new (...args: any[]) => StateContainer<any, any>,
 >(

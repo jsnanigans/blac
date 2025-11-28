@@ -9,7 +9,7 @@ export type BlacOptions =
  * Decorator to configure StateContainer classes.
  *
  * @example Decorator syntax (requires experimentalDecorators or TC39 decorators)
- * ```typescript
+ * ```ts
  * @blac({ isolated: true })
  * class FormBloc extends Cubit<FormState> {}
  *
@@ -21,7 +21,7 @@ export type BlacOptions =
  * ```
  *
  * @example Function syntax (no decorator support needed)
- * ```typescript
+ * ```ts
  * const FormBloc = blac({ isolated: true })(
  *   class extends Cubit<FormState> {}
  * );

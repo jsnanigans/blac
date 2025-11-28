@@ -190,6 +190,177 @@
       "members": [
         {
           "kind": "Interface",
+          "canonicalReference": "@blac/core!AdapterState:interface",
+          "docComment": "",
+          "excerptTokens": [
+            {
+              "kind": "Content",
+              "text": "export interface AdapterState<TBloc extends "
+            },
+            {
+              "kind": "Reference",
+              "text": "StateContainer",
+              "canonicalReference": "@blac/core!StateContainer:class"
+            },
+            {
+              "kind": "Content",
+              "text": "<any, any>"
+            },
+            {
+              "kind": "Content",
+              "text": "> "
+            }
+          ],
+          "fileUrlPath": "dist/.types/adapter/framework-adapter.d.ts",
+          "releaseTag": "Public",
+          "typeParameters": [
+            {
+              "typeParameterName": "TBloc",
+              "constraintTokenRange": {
+                "startIndex": 1,
+                "endIndex": 3
+              },
+              "defaultTypeTokenRange": {
+                "startIndex": 0,
+                "endIndex": 0
+              }
+            }
+          ],
+          "name": "AdapterState",
+          "preserveMemberOrder": false,
+          "members": [
+            {
+              "kind": "PropertySignature",
+              "canonicalReference": "@blac/core!AdapterState#getterTracker:member",
+              "docComment": "",
+              "excerptTokens": [
+                {
+                  "kind": "Content",
+                  "text": "getterTracker: "
+                },
+                {
+                  "kind": "Reference",
+                  "text": "GetterTrackerState",
+                  "canonicalReference": "@blac/core!GetterTrackerState:interface"
+                },
+                {
+                  "kind": "Content",
+                  "text": " | null"
+                },
+                {
+                  "kind": "Content",
+                  "text": ";"
+                }
+              ],
+              "isReadonly": false,
+              "isOptional": false,
+              "releaseTag": "Public",
+              "name": "getterTracker",
+              "propertyTypeTokenRange": {
+                "startIndex": 1,
+                "endIndex": 3
+              }
+            },
+            {
+              "kind": "PropertySignature",
+              "canonicalReference": "@blac/core!AdapterState#manualDepsCache:member",
+              "docComment": "",
+              "excerptTokens": [
+                {
+                  "kind": "Content",
+                  "text": "manualDepsCache: "
+                },
+                {
+                  "kind": "Content",
+                  "text": "unknown[] | null"
+                },
+                {
+                  "kind": "Content",
+                  "text": ";"
+                }
+              ],
+              "isReadonly": false,
+              "isOptional": false,
+              "releaseTag": "Public",
+              "name": "manualDepsCache",
+              "propertyTypeTokenRange": {
+                "startIndex": 1,
+                "endIndex": 2
+              }
+            },
+            {
+              "kind": "PropertySignature",
+              "canonicalReference": "@blac/core!AdapterState#proxiedBloc:member",
+              "docComment": "",
+              "excerptTokens": [
+                {
+                  "kind": "Content",
+                  "text": "proxiedBloc: "
+                },
+                {
+                  "kind": "Content",
+                  "text": "TBloc | null"
+                },
+                {
+                  "kind": "Content",
+                  "text": ";"
+                }
+              ],
+              "isReadonly": false,
+              "isOptional": false,
+              "releaseTag": "Public",
+              "name": "proxiedBloc",
+              "propertyTypeTokenRange": {
+                "startIndex": 1,
+                "endIndex": 2
+              }
+            },
+            {
+              "kind": "PropertySignature",
+              "canonicalReference": "@blac/core!AdapterState#tracker:member",
+              "docComment": "",
+              "excerptTokens": [
+                {
+                  "kind": "Content",
+                  "text": "tracker: "
+                },
+                {
+                  "kind": "Reference",
+                  "text": "TrackerState",
+                  "canonicalReference": "@blac/core!TrackerState:interface"
+                },
+                {
+                  "kind": "Content",
+                  "text": "<"
+                },
+                {
+                  "kind": "Reference",
+                  "text": "ExtractState",
+                  "canonicalReference": "@blac/core!ExtractState:type"
+                },
+                {
+                  "kind": "Content",
+                  "text": "<TBloc>> | null"
+                },
+                {
+                  "kind": "Content",
+                  "text": ";"
+                }
+              ],
+              "isReadonly": false,
+              "isOptional": false,
+              "releaseTag": "Public",
+              "name": "tracker",
+              "propertyTypeTokenRange": {
+                "startIndex": 1,
+                "endIndex": 5
+              }
+            }
+          ],
+          "extendsTokenRanges": []
+        },
+        {
+          "kind": "Interface",
           "canonicalReference": "@blac/core!BaseEvent:interface",
           "docComment": "/**\n * Base event interface Used by Vertex for event-driven state management\n */\n",
           "excerptTokens": [
@@ -382,7 +553,7 @@
         {
           "kind": "Function",
           "canonicalReference": "@blac/core!blac:function(1)",
-          "docComment": "/**\n * Decorator to configure StateContainer classes.\n *\n * @example\n *\n * Decorator syntax (requires experimentalDecorators or TC39 decorators)\n * ```typescript\n * @blac({ isolated: true })\n * class FormBloc extends Cubit<FormState> {}\n *\n * @blac({ keepAlive: true })\n * class AuthBloc extends Cubit<AuthState> {}\n *\n * @blac({ excludeFromDevTools: true })\n * class InternalBloc extends Cubit<InternalState> {}\n * ```\n *\n * @example\n *\n * Function syntax (no decorator support needed)\n * ```typescript\n * const FormBloc = blac({ isolated: true })(\n *   class extends Cubit<FormState> {}\n * );\n * ```\n *\n */\n",
+          "docComment": "/**\n * Decorator to configure StateContainer classes.\n *\n * @example\n *\n * Decorator syntax (requires experimentalDecorators or TC39 decorators)\n * ```ts\n * @blac({ isolated: true })\n * class FormBloc extends Cubit<FormState> {}\n *\n * @blac({ keepAlive: true })\n * class AuthBloc extends Cubit<AuthState> {}\n *\n * @blac({ excludeFromDevTools: true })\n * class InternalBloc extends Cubit<InternalState> {}\n * ```\n *\n * @example\n *\n * Function syntax (no decorator support needed)\n * ```ts\n * const FormBloc = blac({ isolated: true })(\n *   class extends Cubit<FormState> {}\n * );\n * ```\n *\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -463,7 +634,7 @@
         {
           "kind": "Interface",
           "canonicalReference": "@blac/core!BlacPlugin:interface",
-          "docComment": "",
+          "docComment": "/**\n * Interface for plugins that extend BlaC functionality\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -478,7 +649,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!BlacPlugin#name:member",
-              "docComment": "",
+              "docComment": "/**\n * Unique plugin identifier\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -505,7 +676,7 @@
             {
               "kind": "MethodSignature",
               "canonicalReference": "@blac/core!BlacPlugin#onEventAdded:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Called when an event is added to a Vertex instance\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -610,7 +781,7 @@
             {
               "kind": "MethodSignature",
               "canonicalReference": "@blac/core!BlacPlugin#onInstall:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Called when the plugin is installed (optional)\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -656,7 +827,7 @@
             {
               "kind": "MethodSignature",
               "canonicalReference": "@blac/core!BlacPlugin#onInstanceCreated:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Called when a state container instance is created\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -723,7 +894,7 @@
             {
               "kind": "MethodSignature",
               "canonicalReference": "@blac/core!BlacPlugin#onInstanceDisposed:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Called when a state container instance is disposed\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -790,7 +961,7 @@
             {
               "kind": "MethodSignature",
               "canonicalReference": "@blac/core!BlacPlugin#onStateChanged:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Called when state changes in a container instance\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -918,7 +1089,7 @@
             {
               "kind": "MethodSignature",
               "canonicalReference": "@blac/core!BlacPlugin#onUninstall:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Called when the plugin is uninstalled\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -946,7 +1117,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!BlacPlugin#version:member",
-              "docComment": "",
+              "docComment": "/**\n * Plugin version identifier\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -976,7 +1147,7 @@
         {
           "kind": "Interface",
           "canonicalReference": "@blac/core!BlacPluginWithInit:interface",
-          "docComment": "",
+          "docComment": "/**\n * Plugin interface variant that requires mandatory onInstall hook\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -1000,7 +1171,7 @@
             {
               "kind": "MethodSignature",
               "canonicalReference": "@blac/core!BlacPluginWithInit#onInstall:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Required initialization hook called when plugin is installed\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -1276,6 +1447,205 @@
         },
         {
           "kind": "Function",
+          "canonicalReference": "@blac/core!createAutoTrackSnapshot:function(1)",
+          "docComment": "",
+          "excerptTokens": [
+            {
+              "kind": "Content",
+              "text": "export declare function createAutoTrackSnapshot<TBloc extends "
+            },
+            {
+              "kind": "Reference",
+              "text": "StateContainer",
+              "canonicalReference": "@blac/core!StateContainer:class"
+            },
+            {
+              "kind": "Content",
+              "text": "<any, any>"
+            },
+            {
+              "kind": "Content",
+              "text": ">(instance: "
+            },
+            {
+              "kind": "Content",
+              "text": "TBloc"
+            },
+            {
+              "kind": "Content",
+              "text": ", adapterState: "
+            },
+            {
+              "kind": "Reference",
+              "text": "AdapterState",
+              "canonicalReference": "@blac/core!AdapterState:interface"
+            },
+            {
+              "kind": "Content",
+              "text": "<TBloc>"
+            },
+            {
+              "kind": "Content",
+              "text": "): "
+            },
+            {
+              "kind": "Reference",
+              "text": "SnapshotFunction",
+              "canonicalReference": "@blac/core!SnapshotFunction:type"
+            },
+            {
+              "kind": "Content",
+              "text": "<"
+            },
+            {
+              "kind": "Reference",
+              "text": "ExtractState",
+              "canonicalReference": "@blac/core!ExtractState:type"
+            },
+            {
+              "kind": "Content",
+              "text": "<TBloc>>"
+            },
+            {
+              "kind": "Content",
+              "text": ";"
+            }
+          ],
+          "fileUrlPath": "dist/.types/adapter/framework-adapter.d.ts",
+          "returnTypeTokenRange": {
+            "startIndex": 9,
+            "endIndex": 13
+          },
+          "releaseTag": "Public",
+          "overloadIndex": 1,
+          "parameters": [
+            {
+              "parameterName": "instance",
+              "parameterTypeTokenRange": {
+                "startIndex": 4,
+                "endIndex": 5
+              },
+              "isOptional": false
+            },
+            {
+              "parameterName": "adapterState",
+              "parameterTypeTokenRange": {
+                "startIndex": 6,
+                "endIndex": 8
+              },
+              "isOptional": false
+            }
+          ],
+          "typeParameters": [
+            {
+              "typeParameterName": "TBloc",
+              "constraintTokenRange": {
+                "startIndex": 1,
+                "endIndex": 3
+              },
+              "defaultTypeTokenRange": {
+                "startIndex": 0,
+                "endIndex": 0
+              }
+            }
+          ],
+          "name": "createAutoTrackSnapshot"
+        },
+        {
+          "kind": "Function",
+          "canonicalReference": "@blac/core!createAutoTrackSubscribe:function(1)",
+          "docComment": "",
+          "excerptTokens": [
+            {
+              "kind": "Content",
+              "text": "export declare function createAutoTrackSubscribe<TBloc extends "
+            },
+            {
+              "kind": "Reference",
+              "text": "StateContainer",
+              "canonicalReference": "@blac/core!StateContainer:class"
+            },
+            {
+              "kind": "Content",
+              "text": "<any, any>"
+            },
+            {
+              "kind": "Content",
+              "text": ">(instance: "
+            },
+            {
+              "kind": "Content",
+              "text": "TBloc"
+            },
+            {
+              "kind": "Content",
+              "text": ", adapterState: "
+            },
+            {
+              "kind": "Reference",
+              "text": "AdapterState",
+              "canonicalReference": "@blac/core!AdapterState:interface"
+            },
+            {
+              "kind": "Content",
+              "text": "<TBloc>"
+            },
+            {
+              "kind": "Content",
+              "text": "): "
+            },
+            {
+              "kind": "Reference",
+              "text": "SubscribeFunction",
+              "canonicalReference": "@blac/core!SubscribeFunction:type"
+            },
+            {
+              "kind": "Content",
+              "text": ";"
+            }
+          ],
+          "fileUrlPath": "dist/.types/adapter/framework-adapter.d.ts",
+          "returnTypeTokenRange": {
+            "startIndex": 9,
+            "endIndex": 10
+          },
+          "releaseTag": "Public",
+          "overloadIndex": 1,
+          "parameters": [
+            {
+              "parameterName": "instance",
+              "parameterTypeTokenRange": {
+                "startIndex": 4,
+                "endIndex": 5
+              },
+              "isOptional": false
+            },
+            {
+              "parameterName": "adapterState",
+              "parameterTypeTokenRange": {
+                "startIndex": 6,
+                "endIndex": 8
+              },
+              "isOptional": false
+            }
+          ],
+          "typeParameters": [
+            {
+              "typeParameterName": "TBloc",
+              "constraintTokenRange": {
+                "startIndex": 1,
+                "endIndex": 3
+              },
+              "defaultTypeTokenRange": {
+                "startIndex": 0,
+                "endIndex": 0
+              }
+            }
+          ],
+          "name": "createAutoTrackSubscribe"
+        },
+        {
+          "kind": "Function",
           "canonicalReference": "@blac/core!createIdGenerator:function(1)",
           "docComment": "/**\n * Creates an ID generator with isolated counter state\n *\n * @param prefix - Prefix for generated IDs\n *\n * @returns Object with next(), nextSimple(), and reset() methods\n *\n * @example\n * ```ts\n * const generator = createIdGenerator('sub');\n * const id1 = generator.next(); // \"sub:1698765432100_1_a3k9d7f2q\"\n * const id2 = generator.next(); // \"sub:1698765432101_2_b4n8e9g3r\"\n * ```\n *\n */\n",
           "excerptTokens": [
@@ -1385,6 +1755,404 @@
         },
         {
           "kind": "Function",
+          "canonicalReference": "@blac/core!createManualDepsSnapshot:function(1)",
+          "docComment": "",
+          "excerptTokens": [
+            {
+              "kind": "Content",
+              "text": "export declare function createManualDepsSnapshot<TBloc extends "
+            },
+            {
+              "kind": "Reference",
+              "text": "StateContainer",
+              "canonicalReference": "@blac/core!StateContainer:class"
+            },
+            {
+              "kind": "Content",
+              "text": "<any, any>"
+            },
+            {
+              "kind": "Content",
+              "text": ">(instance: "
+            },
+            {
+              "kind": "Content",
+              "text": "TBloc"
+            },
+            {
+              "kind": "Content",
+              "text": ", adapterState: "
+            },
+            {
+              "kind": "Reference",
+              "text": "AdapterState",
+              "canonicalReference": "@blac/core!AdapterState:interface"
+            },
+            {
+              "kind": "Content",
+              "text": "<TBloc>"
+            },
+            {
+              "kind": "Content",
+              "text": ", config: "
+            },
+            {
+              "kind": "Reference",
+              "text": "ManualDepsConfig",
+              "canonicalReference": "@blac/core!ManualDepsConfig:interface"
+            },
+            {
+              "kind": "Content",
+              "text": "<TBloc>"
+            },
+            {
+              "kind": "Content",
+              "text": "): "
+            },
+            {
+              "kind": "Reference",
+              "text": "SnapshotFunction",
+              "canonicalReference": "@blac/core!SnapshotFunction:type"
+            },
+            {
+              "kind": "Content",
+              "text": "<"
+            },
+            {
+              "kind": "Reference",
+              "text": "ExtractState",
+              "canonicalReference": "@blac/core!ExtractState:type"
+            },
+            {
+              "kind": "Content",
+              "text": "<TBloc>>"
+            },
+            {
+              "kind": "Content",
+              "text": ";"
+            }
+          ],
+          "fileUrlPath": "dist/.types/adapter/framework-adapter.d.ts",
+          "returnTypeTokenRange": {
+            "startIndex": 12,
+            "endIndex": 16
+          },
+          "releaseTag": "Public",
+          "overloadIndex": 1,
+          "parameters": [
+            {
+              "parameterName": "instance",
+              "parameterTypeTokenRange": {
+                "startIndex": 4,
+                "endIndex": 5
+              },
+              "isOptional": false
+            },
+            {
+              "parameterName": "adapterState",
+              "parameterTypeTokenRange": {
+                "startIndex": 6,
+                "endIndex": 8
+              },
+              "isOptional": false
+            },
+            {
+              "parameterName": "config",
+              "parameterTypeTokenRange": {
+                "startIndex": 9,
+                "endIndex": 11
+              },
+              "isOptional": false
+            }
+          ],
+          "typeParameters": [
+            {
+              "typeParameterName": "TBloc",
+              "constraintTokenRange": {
+                "startIndex": 1,
+                "endIndex": 3
+              },
+              "defaultTypeTokenRange": {
+                "startIndex": 0,
+                "endIndex": 0
+              }
+            }
+          ],
+          "name": "createManualDepsSnapshot"
+        },
+        {
+          "kind": "Function",
+          "canonicalReference": "@blac/core!createManualDepsSubscribe:function(1)",
+          "docComment": "",
+          "excerptTokens": [
+            {
+              "kind": "Content",
+              "text": "export declare function createManualDepsSubscribe<TBloc extends "
+            },
+            {
+              "kind": "Reference",
+              "text": "StateContainer",
+              "canonicalReference": "@blac/core!StateContainer:class"
+            },
+            {
+              "kind": "Content",
+              "text": "<any, any>"
+            },
+            {
+              "kind": "Content",
+              "text": ">(instance: "
+            },
+            {
+              "kind": "Content",
+              "text": "TBloc"
+            },
+            {
+              "kind": "Content",
+              "text": ", adapterState: "
+            },
+            {
+              "kind": "Reference",
+              "text": "AdapterState",
+              "canonicalReference": "@blac/core!AdapterState:interface"
+            },
+            {
+              "kind": "Content",
+              "text": "<TBloc>"
+            },
+            {
+              "kind": "Content",
+              "text": ", config: "
+            },
+            {
+              "kind": "Reference",
+              "text": "ManualDepsConfig",
+              "canonicalReference": "@blac/core!ManualDepsConfig:interface"
+            },
+            {
+              "kind": "Content",
+              "text": "<TBloc>"
+            },
+            {
+              "kind": "Content",
+              "text": "): "
+            },
+            {
+              "kind": "Reference",
+              "text": "SubscribeFunction",
+              "canonicalReference": "@blac/core!SubscribeFunction:type"
+            },
+            {
+              "kind": "Content",
+              "text": ";"
+            }
+          ],
+          "fileUrlPath": "dist/.types/adapter/framework-adapter.d.ts",
+          "returnTypeTokenRange": {
+            "startIndex": 12,
+            "endIndex": 13
+          },
+          "releaseTag": "Public",
+          "overloadIndex": 1,
+          "parameters": [
+            {
+              "parameterName": "instance",
+              "parameterTypeTokenRange": {
+                "startIndex": 4,
+                "endIndex": 5
+              },
+              "isOptional": false
+            },
+            {
+              "parameterName": "adapterState",
+              "parameterTypeTokenRange": {
+                "startIndex": 6,
+                "endIndex": 8
+              },
+              "isOptional": false
+            },
+            {
+              "parameterName": "config",
+              "parameterTypeTokenRange": {
+                "startIndex": 9,
+                "endIndex": 11
+              },
+              "isOptional": false
+            }
+          ],
+          "typeParameters": [
+            {
+              "typeParameterName": "TBloc",
+              "constraintTokenRange": {
+                "startIndex": 1,
+                "endIndex": 3
+              },
+              "defaultTypeTokenRange": {
+                "startIndex": 0,
+                "endIndex": 0
+              }
+            }
+          ],
+          "name": "createManualDepsSubscribe"
+        },
+        {
+          "kind": "Function",
+          "canonicalReference": "@blac/core!createNoTrackSnapshot:function(1)",
+          "docComment": "",
+          "excerptTokens": [
+            {
+              "kind": "Content",
+              "text": "export declare function createNoTrackSnapshot<TBloc extends "
+            },
+            {
+              "kind": "Reference",
+              "text": "StateContainer",
+              "canonicalReference": "@blac/core!StateContainer:class"
+            },
+            {
+              "kind": "Content",
+              "text": "<any, any>"
+            },
+            {
+              "kind": "Content",
+              "text": ">(instance: "
+            },
+            {
+              "kind": "Content",
+              "text": "TBloc"
+            },
+            {
+              "kind": "Content",
+              "text": "): "
+            },
+            {
+              "kind": "Reference",
+              "text": "SnapshotFunction",
+              "canonicalReference": "@blac/core!SnapshotFunction:type"
+            },
+            {
+              "kind": "Content",
+              "text": "<"
+            },
+            {
+              "kind": "Reference",
+              "text": "ExtractState",
+              "canonicalReference": "@blac/core!ExtractState:type"
+            },
+            {
+              "kind": "Content",
+              "text": "<TBloc>>"
+            },
+            {
+              "kind": "Content",
+              "text": ";"
+            }
+          ],
+          "fileUrlPath": "dist/.types/adapter/framework-adapter.d.ts",
+          "returnTypeTokenRange": {
+            "startIndex": 6,
+            "endIndex": 10
+          },
+          "releaseTag": "Public",
+          "overloadIndex": 1,
+          "parameters": [
+            {
+              "parameterName": "instance",
+              "parameterTypeTokenRange": {
+                "startIndex": 4,
+                "endIndex": 5
+              },
+              "isOptional": false
+            }
+          ],
+          "typeParameters": [
+            {
+              "typeParameterName": "TBloc",
+              "constraintTokenRange": {
+                "startIndex": 1,
+                "endIndex": 3
+              },
+              "defaultTypeTokenRange": {
+                "startIndex": 0,
+                "endIndex": 0
+              }
+            }
+          ],
+          "name": "createNoTrackSnapshot"
+        },
+        {
+          "kind": "Function",
+          "canonicalReference": "@blac/core!createNoTrackSubscribe:function(1)",
+          "docComment": "",
+          "excerptTokens": [
+            {
+              "kind": "Content",
+              "text": "export declare function createNoTrackSubscribe<TBloc extends "
+            },
+            {
+              "kind": "Reference",
+              "text": "StateContainer",
+              "canonicalReference": "@blac/core!StateContainer:class"
+            },
+            {
+              "kind": "Content",
+              "text": "<any, any>"
+            },
+            {
+              "kind": "Content",
+              "text": ">(instance: "
+            },
+            {
+              "kind": "Content",
+              "text": "TBloc"
+            },
+            {
+              "kind": "Content",
+              "text": "): "
+            },
+            {
+              "kind": "Reference",
+              "text": "SubscribeFunction",
+              "canonicalReference": "@blac/core!SubscribeFunction:type"
+            },
+            {
+              "kind": "Content",
+              "text": ";"
+            }
+          ],
+          "fileUrlPath": "dist/.types/adapter/framework-adapter.d.ts",
+          "returnTypeTokenRange": {
+            "startIndex": 6,
+            "endIndex": 7
+          },
+          "releaseTag": "Public",
+          "overloadIndex": 1,
+          "parameters": [
+            {
+              "parameterName": "instance",
+              "parameterTypeTokenRange": {
+                "startIndex": 4,
+                "endIndex": 5
+              },
+              "isOptional": false
+            }
+          ],
+          "typeParameters": [
+            {
+              "typeParameterName": "TBloc",
+              "constraintTokenRange": {
+                "startIndex": 1,
+                "endIndex": 3
+              },
+              "defaultTypeTokenRange": {
+                "startIndex": 0,
+                "endIndex": 0
+              }
+            }
+          ],
+          "name": "createNoTrackSubscribe"
+        },
+        {
+          "kind": "Function",
           "canonicalReference": "@blac/core!createPluginManager:function(1)",
           "docComment": "/**\n * Create a plugin manager instance\n */\n",
           "excerptTokens": [
@@ -1433,7 +2201,7 @@
         {
           "kind": "Class",
           "canonicalReference": "@blac/core!Cubit:class",
-          "docComment": "",
+          "docComment": "/**\n * Simple state container with direct state emission. Extends StateContainer with public methods for emitting and updating state.\n *\n * @template S - State type  @template P - Props type (optional)\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -1526,7 +2294,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!Cubit#emit:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Replace state with a new value and notify all listeners\n *\n * @param newState - The new state value\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -1574,7 +2342,7 @@
             {
               "kind": "Property",
               "canonicalReference": "@blac/core!Cubit#patch:member",
-              "docComment": "",
+              "docComment": "/**\n * Merge partial state changes into current state (only for object states)\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -1613,7 +2381,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!Cubit#update:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Transform current state using an updater function and emit the new state\n *\n * @param updater - Function that receives current state and returns new state\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -1740,6 +2508,98 @@
         },
         {
           "kind": "Function",
+          "canonicalReference": "@blac/core!disableGetterTracking:function(1)",
+          "docComment": "",
+          "excerptTokens": [
+            {
+              "kind": "Content",
+              "text": "export declare function disableGetterTracking<TBloc extends "
+            },
+            {
+              "kind": "Reference",
+              "text": "StateContainer",
+              "canonicalReference": "@blac/core!StateContainer:class"
+            },
+            {
+              "kind": "Content",
+              "text": "<any, any>"
+            },
+            {
+              "kind": "Content",
+              "text": ">(adapterState: "
+            },
+            {
+              "kind": "Reference",
+              "text": "AdapterState",
+              "canonicalReference": "@blac/core!AdapterState:interface"
+            },
+            {
+              "kind": "Content",
+              "text": "<TBloc>"
+            },
+            {
+              "kind": "Content",
+              "text": ", rawInstance: "
+            },
+            {
+              "kind": "Content",
+              "text": "TBloc"
+            },
+            {
+              "kind": "Content",
+              "text": "): "
+            },
+            {
+              "kind": "Content",
+              "text": "void"
+            },
+            {
+              "kind": "Content",
+              "text": ";"
+            }
+          ],
+          "fileUrlPath": "dist/.types/adapter/framework-adapter.d.ts",
+          "returnTypeTokenRange": {
+            "startIndex": 9,
+            "endIndex": 10
+          },
+          "releaseTag": "Public",
+          "overloadIndex": 1,
+          "parameters": [
+            {
+              "parameterName": "adapterState",
+              "parameterTypeTokenRange": {
+                "startIndex": 4,
+                "endIndex": 6
+              },
+              "isOptional": false
+            },
+            {
+              "parameterName": "rawInstance",
+              "parameterTypeTokenRange": {
+                "startIndex": 7,
+                "endIndex": 8
+              },
+              "isOptional": false
+            }
+          ],
+          "typeParameters": [
+            {
+              "typeParameterName": "TBloc",
+              "constraintTokenRange": {
+                "startIndex": 1,
+                "endIndex": 3
+              },
+              "defaultTypeTokenRange": {
+                "startIndex": 0,
+                "endIndex": 0
+              }
+            }
+          ],
+          "name": "disableGetterTracking"
+        },
+        {
+          "kind": "Function",
           "canonicalReference": "@blac/core!error:function(1)",
           "docComment": "",
           "excerptTokens": [
@@ -1814,7 +2674,7 @@
         {
           "kind": "TypeAlias",
           "canonicalReference": "@blac/core!EventConstructor:type",
-          "docComment": "",
+          "docComment": "/**\n * Constructor type for event classes  @template T - Event type\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -1871,7 +2731,7 @@
         {
           "kind": "TypeAlias",
           "canonicalReference": "@blac/core!EventHandler:type",
-          "docComment": "",
+          "docComment": "/**\n * Handler function for processing events in Vertex  @template E - Event type  @template S - State type\n *\n * @param event - The event being handled\n *\n * @param emit - Function to emit new state\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -1926,6 +2786,146 @@
             "startIndex": 3,
             "endIndex": 4
           }
+        },
+        {
+          "kind": "Class",
+          "canonicalReference": "@blac/core!ExternalDependencyManager:class",
+          "docComment": "",
+          "excerptTokens": [
+            {
+              "kind": "Content",
+              "text": "export declare class ExternalDependencyManager "
+            }
+          ],
+          "fileUrlPath": "dist/.types/adapter/framework-adapter.d.ts",
+          "releaseTag": "Public",
+          "isAbstract": false,
+          "name": "ExternalDependencyManager",
+          "preserveMemberOrder": false,
+          "members": [
+            {
+              "kind": "Method",
+              "canonicalReference": "@blac/core!ExternalDependencyManager#cleanup:member(1)",
+              "docComment": "",
+              "excerptTokens": [
+                {
+                  "kind": "Content",
+                  "text": "cleanup(): "
+                },
+                {
+                  "kind": "Content",
+                  "text": "void"
+                },
+                {
+                  "kind": "Content",
+                  "text": ";"
+                }
+              ],
+              "isStatic": false,
+              "returnTypeTokenRange": {
+                "startIndex": 1,
+                "endIndex": 2
+              },
+              "releaseTag": "Public",
+              "isProtected": false,
+              "overloadIndex": 1,
+              "parameters": [],
+              "isOptional": false,
+              "isAbstract": false,
+              "name": "cleanup"
+            },
+            {
+              "kind": "Method",
+              "canonicalReference": "@blac/core!ExternalDependencyManager#updateSubscriptions:member(1)",
+              "docComment": "",
+              "excerptTokens": [
+                {
+                  "kind": "Content",
+                  "text": "updateSubscriptions(getterTracker: "
+                },
+                {
+                  "kind": "Reference",
+                  "text": "GetterTrackerState",
+                  "canonicalReference": "@blac/core!GetterTrackerState:interface"
+                },
+                {
+                  "kind": "Content",
+                  "text": " | null"
+                },
+                {
+                  "kind": "Content",
+                  "text": ", rawInstance: "
+                },
+                {
+                  "kind": "Reference",
+                  "text": "StateContainer",
+                  "canonicalReference": "@blac/core!StateContainer:class"
+                },
+                {
+                  "kind": "Content",
+                  "text": "<any, any>"
+                },
+                {
+                  "kind": "Content",
+                  "text": ", onGetterChange: "
+                },
+                {
+                  "kind": "Content",
+                  "text": "() => void"
+                },
+                {
+                  "kind": "Content",
+                  "text": "): "
+                },
+                {
+                  "kind": "Content",
+                  "text": "boolean"
+                },
+                {
+                  "kind": "Content",
+                  "text": ";"
+                }
+              ],
+              "isStatic": false,
+              "returnTypeTokenRange": {
+                "startIndex": 9,
+                "endIndex": 10
+              },
+              "releaseTag": "Public",
+              "isProtected": false,
+              "overloadIndex": 1,
+              "parameters": [
+                {
+                  "parameterName": "getterTracker",
+                  "parameterTypeTokenRange": {
+                    "startIndex": 1,
+                    "endIndex": 3
+                  },
+                  "isOptional": false
+                },
+                {
+                  "parameterName": "rawInstance",
+                  "parameterTypeTokenRange": {
+                    "startIndex": 4,
+                    "endIndex": 6
+                  },
+                  "isOptional": false
+                },
+                {
+                  "parameterName": "onGetterChange",
+                  "parameterTypeTokenRange": {
+                    "startIndex": 7,
+                    "endIndex": 8
+                  },
+                  "isOptional": false
+                }
+              ],
+              "isOptional": false,
+              "isAbstract": false,
+              "name": "updateSubscriptions"
+            }
+          ],
+          "implementsTokenRanges": []
         },
         {
           "kind": "TypeAlias",
@@ -2065,7 +3065,7 @@
         {
           "kind": "Function",
           "canonicalReference": "@blac/core!generateId:function(1)",
-          "docComment": "/**\n * Generate ID with timestamp, counter, and random suffix (tree-shakeable)\n *\n * Format: `${prefix}:${timestamp}_${counter}_${random}`\n *\n * @param prefix - Prefix for the ID (e.g., 'sub', 'consumer', 'stage')\n *\n * @returns Branded ID string\n *\n * @example\n * ```ts\n * const id = generateId('sub');\n * // Returns: \"sub:1698765432100_1_a3k9d7f2q\"\n * ```\n *\n */\n",
+          "docComment": "/**\n * Generate ID with timestamp, counter, and random suffix (tree-shakeable)\n *\n * Format: `${prefix}:${timestamp}_${counter}_${random}`\n *\n * @param prefix - Prefix for the ID (e.g., 'sub', 'consumer', 'stage')\n *\n * @returns Branded ID string\n *\n * @example\n *\n * const id = generateId('sub'); // Returns: \"sub:1698765432100_1_a3k9d7f2q\"\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -2468,6 +3468,234 @@
           "name": "info"
         },
         {
+          "kind": "Function",
+          "canonicalReference": "@blac/core!initAutoTrackState:function(1)",
+          "docComment": "",
+          "excerptTokens": [
+            {
+              "kind": "Content",
+              "text": "export declare function initAutoTrackState<TBloc extends "
+            },
+            {
+              "kind": "Reference",
+              "text": "StateContainer",
+              "canonicalReference": "@blac/core!StateContainer:class"
+            },
+            {
+              "kind": "Content",
+              "text": "<any, any>"
+            },
+            {
+              "kind": "Content",
+              "text": ">(instance: "
+            },
+            {
+              "kind": "Content",
+              "text": "TBloc"
+            },
+            {
+              "kind": "Content",
+              "text": "): "
+            },
+            {
+              "kind": "Reference",
+              "text": "AdapterState",
+              "canonicalReference": "@blac/core!AdapterState:interface"
+            },
+            {
+              "kind": "Content",
+              "text": "<TBloc>"
+            },
+            {
+              "kind": "Content",
+              "text": ";"
+            }
+          ],
+          "fileUrlPath": "dist/.types/adapter/framework-adapter.d.ts",
+          "returnTypeTokenRange": {
+            "startIndex": 6,
+            "endIndex": 8
+          },
+          "releaseTag": "Public",
+          "overloadIndex": 1,
+          "parameters": [
+            {
+              "parameterName": "instance",
+              "parameterTypeTokenRange": {
+                "startIndex": 4,
+                "endIndex": 5
+              },
+              "isOptional": false
+            }
+          ],
+          "typeParameters": [
+            {
+              "typeParameterName": "TBloc",
+              "constraintTokenRange": {
+                "startIndex": 1,
+                "endIndex": 3
+              },
+              "defaultTypeTokenRange": {
+                "startIndex": 0,
+                "endIndex": 0
+              }
+            }
+          ],
+          "name": "initAutoTrackState"
+        },
+        {
+          "kind": "Function",
+          "canonicalReference": "@blac/core!initManualDepsState:function(1)",
+          "docComment": "",
+          "excerptTokens": [
+            {
+              "kind": "Content",
+              "text": "export declare function initManualDepsState<TBloc extends "
+            },
+            {
+              "kind": "Reference",
+              "text": "StateContainer",
+              "canonicalReference": "@blac/core!StateContainer:class"
+            },
+            {
+              "kind": "Content",
+              "text": "<any, any>"
+            },
+            {
+              "kind": "Content",
+              "text": ">(instance: "
+            },
+            {
+              "kind": "Content",
+              "text": "TBloc"
+            },
+            {
+              "kind": "Content",
+              "text": "): "
+            },
+            {
+              "kind": "Reference",
+              "text": "AdapterState",
+              "canonicalReference": "@blac/core!AdapterState:interface"
+            },
+            {
+              "kind": "Content",
+              "text": "<TBloc>"
+            },
+            {
+              "kind": "Content",
+              "text": ";"
+            }
+          ],
+          "fileUrlPath": "dist/.types/adapter/framework-adapter.d.ts",
+          "returnTypeTokenRange": {
+            "startIndex": 6,
+            "endIndex": 8
+          },
+          "releaseTag": "Public",
+          "overloadIndex": 1,
+          "parameters": [
+            {
+              "parameterName": "instance",
+              "parameterTypeTokenRange": {
+                "startIndex": 4,
+                "endIndex": 5
+              },
+              "isOptional": false
+            }
+          ],
+          "typeParameters": [
+            {
+              "typeParameterName": "TBloc",
+              "constraintTokenRange": {
+                "startIndex": 1,
+                "endIndex": 3
+              },
+              "defaultTypeTokenRange": {
+                "startIndex": 0,
+                "endIndex": 0
+              }
+            }
+          ],
+          "name": "initManualDepsState"
+        },
+        {
+          "kind": "Function",
+          "canonicalReference": "@blac/core!initNoTrackState:function(1)",
+          "docComment": "",
+          "excerptTokens": [
+            {
+              "kind": "Content",
+              "text": "export declare function initNoTrackState<TBloc extends "
+            },
+            {
+              "kind": "Reference",
+              "text": "StateContainer",
+              "canonicalReference": "@blac/core!StateContainer:class"
+            },
+            {
+              "kind": "Content",
+              "text": "<any, any>"
+            },
+            {
+              "kind": "Content",
+              "text": ">(instance: "
+            },
+            {
+              "kind": "Content",
+              "text": "TBloc"
+            },
+            {
+              "kind": "Content",
+              "text": "): "
+            },
+            {
+              "kind": "Reference",
+              "text": "AdapterState",
+              "canonicalReference": "@blac/core!AdapterState:interface"
+            },
+            {
+              "kind": "Content",
+              "text": "<TBloc>"
+            },
+            {
+              "kind": "Content",
+              "text": ";"
+            }
+          ],
+          "fileUrlPath": "dist/.types/adapter/framework-adapter.d.ts",
+          "returnTypeTokenRange": {
+            "startIndex": 6,
+            "endIndex": 8
+          },
+          "releaseTag": "Public",
+          "overloadIndex": 1,
+          "parameters": [
+            {
+              "parameterName": "instance",
+              "parameterTypeTokenRange": {
+                "startIndex": 4,
+                "endIndex": 5
+              },
+              "isOptional": false
+            }
+          ],
+          "typeParameters": [
+            {
+              "typeParameterName": "TBloc",
+              "constraintTokenRange": {
+                "startIndex": 1,
+                "endIndex": 3
+              },
+              "defaultTypeTokenRange": {
+                "startIndex": 0,
+                "endIndex": 0
+              }
+            }
+          ],
+          "name": "initNoTrackState"
+        },
+        {
           "kind": "Interface",
           "canonicalReference": "@blac/core!InstanceEntry:interface",
           "docComment": "",
@@ -2594,7 +3822,7 @@
         {
           "kind": "Interface",
           "canonicalReference": "@blac/core!InstanceMetadata:interface",
-          "docComment": "",
+          "docComment": "/**\n * Metadata information about a state container instance for debugging and inspection\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -2609,7 +3837,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!InstanceMetadata#callstack:member",
-              "docComment": "",
+              "docComment": "/**\n * Stack trace from when instance was created (for debugging)\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -2636,7 +3864,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!InstanceMetadata#className:member",
-              "docComment": "",
+              "docComment": "/**\n * Name of the state container class\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -2663,7 +3891,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!InstanceMetadata#createdAt:member",
-              "docComment": "",
+              "docComment": "/**\n * Timestamp when instance was created (milliseconds)\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -2690,7 +3918,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!InstanceMetadata#currentState:member",
-              "docComment": "",
+              "docComment": "/**\n * Current state value\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -2717,7 +3945,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!InstanceMetadata#id:member",
-              "docComment": "",
+              "docComment": "/**\n * Unique instance identifier\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -2744,7 +3972,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!InstanceMetadata#isDisposed:member",
-              "docComment": "",
+              "docComment": "/**\n * Whether the instance has been disposed\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -2771,7 +3999,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!InstanceMetadata#isIsolated:member",
-              "docComment": "",
+              "docComment": "/**\n * Whether this is an isolated (component-scoped) instance\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -2798,7 +4026,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!InstanceMetadata#lastStateChangeTimestamp:member",
-              "docComment": "",
+              "docComment": "/**\n * When state last changed (milliseconds)\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -2825,7 +4053,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!InstanceMetadata#name:member",
-              "docComment": "",
+              "docComment": "/**\n * Display name for the instance\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -2852,7 +4080,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!InstanceMetadata#previousState:member",
-              "docComment": "",
+              "docComment": "/**\n * Previous state value\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -2879,7 +4107,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!InstanceMetadata#state:member",
-              "docComment": "",
+              "docComment": "/**\n * Current state value\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -3561,8 +4789,79 @@
         },
         {
           "kind": "Interface",
-          "canonicalReference": "@blac/core!PluginConfig:interface",
+          "canonicalReference": "@blac/core!ManualDepsConfig:interface",
           "docComment": "",
+          "excerptTokens": [
+            {
+              "kind": "Content",
+              "text": "export interface ManualDepsConfig<TBloc extends "
+            },
+            {
+              "kind": "Reference",
+              "text": "StateContainer",
+              "canonicalReference": "@blac/core!StateContainer:class"
+            },
+            {
+              "kind": "Content",
+              "text": "<any, any>"
+            },
+            {
+              "kind": "Content",
+              "text": "> "
+            }
+          ],
+          "fileUrlPath": "dist/.types/adapter/framework-adapter.d.ts",
+          "releaseTag": "Public",
+          "typeParameters": [
+            {
+              "typeParameterName": "TBloc",
+              "constraintTokenRange": {
+                "startIndex": 1,
+                "endIndex": 3
+              },
+              "defaultTypeTokenRange": {
+                "startIndex": 0,
+                "endIndex": 0
+              }
+            }
+          ],
+          "name": "ManualDepsConfig",
+          "preserveMemberOrder": false,
+          "members": [
+            {
+              "kind": "PropertySignature",
+              "canonicalReference": "@blac/core!ManualDepsConfig#dependencies:member",
+              "docComment": "",
+              "excerptTokens": [
+                {
+                  "kind": "Content",
+                  "text": "dependencies: "
+                },
+                {
+                  "kind": "Content",
+                  "text": "(state: any, bloc: TBloc) => unknown[]"
+                },
+                {
+                  "kind": "Content",
+                  "text": ";"
+                }
+              ],
+              "isReadonly": false,
+              "isOptional": false,
+              "releaseTag": "Public",
+              "name": "dependencies",
+              "propertyTypeTokenRange": {
+                "startIndex": 1,
+                "endIndex": 2
+              }
+            }
+          ],
+          "extendsTokenRanges": []
+        },
+        {
+          "kind": "Interface",
+          "canonicalReference": "@blac/core!PluginConfig:interface",
+          "docComment": "/**\n * Configuration options for plugin installation\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -3577,7 +4876,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!PluginConfig#enabled:member",
-              "docComment": "",
+              "docComment": "/**\n * Enable or disable the plugin\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -3604,7 +4903,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!PluginConfig#environment:member",
-              "docComment": "",
+              "docComment": "/**\n * Environments where plugin runs\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -3634,7 +4933,7 @@
         {
           "kind": "Interface",
           "canonicalReference": "@blac/core!PluginContext:interface",
-          "docComment": "",
+          "docComment": "/**\n * Safe context API provided to plugins for accessing registry data\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -3649,7 +4948,7 @@
             {
               "kind": "MethodSignature",
               "canonicalReference": "@blac/core!PluginContext#getAllTypes:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Get all registered state container types\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -3691,7 +4990,7 @@
             {
               "kind": "MethodSignature",
               "canonicalReference": "@blac/core!PluginContext#getInstanceMetadata:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Get metadata for a specific instance\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -3742,7 +5041,7 @@
             {
               "kind": "MethodSignature",
               "canonicalReference": "@blac/core!PluginContext#getState:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Get current state from a container\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -3805,7 +5104,7 @@
             {
               "kind": "MethodSignature",
               "canonicalReference": "@blac/core!PluginContext#getStats:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Get registry statistics\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -3842,7 +5141,7 @@
             {
               "kind": "MethodSignature",
               "canonicalReference": "@blac/core!PluginContext#queryInstances:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Get all instances of a specific type\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -4246,6 +5545,45 @@
             }
           ],
           "implementsTokenRanges": []
+        },
+        {
+          "kind": "TypeAlias",
+          "canonicalReference": "@blac/core!SnapshotFunction:type",
+          "docComment": "",
+          "excerptTokens": [
+            {
+              "kind": "Content",
+              "text": "export type SnapshotFunction<TState> = "
+            },
+            {
+              "kind": "Content",
+              "text": "() => TState"
+            },
+            {
+              "kind": "Content",
+              "text": ";"
+            }
+          ],
+          "fileUrlPath": "dist/.types/adapter/framework-adapter.d.ts",
+          "releaseTag": "Public",
+          "name": "SnapshotFunction",
+          "typeParameters": [
+            {
+              "typeParameterName": "TState",
+              "constraintTokenRange": {
+                "startIndex": 0,
+                "endIndex": 0
+              },
+              "defaultTypeTokenRange": {
+                "startIndex": 0,
+                "endIndex": 0
+              }
+            }
+          ],
+          "typeTokenRange": {
+            "startIndex": 1,
+            "endIndex": 2
+          }
         },
         {
           "kind": "Class",
@@ -7657,6 +8995,67 @@
         },
         {
           "kind": "TypeAlias",
+          "canonicalReference": "@blac/core!SubscribeFunction:type",
+          "docComment": "",
+          "excerptTokens": [
+            {
+              "kind": "Content",
+              "text": "export type SubscribeFunction = "
+            },
+            {
+              "kind": "Content",
+              "text": "(callback: "
+            },
+            {
+              "kind": "Reference",
+              "text": "SubscriptionCallback",
+              "canonicalReference": "@blac/core!SubscriptionCallback:type"
+            },
+            {
+              "kind": "Content",
+              "text": ") => () => void"
+            },
+            {
+              "kind": "Content",
+              "text": ";"
+            }
+          ],
+          "fileUrlPath": "dist/.types/adapter/framework-adapter.d.ts",
+          "releaseTag": "Public",
+          "name": "SubscribeFunction",
+          "typeTokenRange": {
+            "startIndex": 1,
+            "endIndex": 4
+          }
+        },
+        {
+          "kind": "TypeAlias",
+          "canonicalReference": "@blac/core!SubscriptionCallback:type",
+          "docComment": "",
+          "excerptTokens": [
+            {
+              "kind": "Content",
+              "text": "export type SubscriptionCallback = "
+            },
+            {
+              "kind": "Content",
+              "text": "() => void"
+            },
+            {
+              "kind": "Content",
+              "text": ";"
+            }
+          ],
+          "fileUrlPath": "dist/.types/adapter/framework-adapter.d.ts",
+          "releaseTag": "Public",
+          "name": "SubscriptionCallback",
+          "typeTokenRange": {
+            "startIndex": 1,
+            "endIndex": 2
+          }
+        },
+        {
+          "kind": "TypeAlias",
           "canonicalReference": "@blac/core!SystemEvent:type",
           "docComment": "",
           "excerptTokens": [
@@ -7807,7 +9206,7 @@
         {
           "kind": "Class",
           "canonicalReference": "@blac/core!Vertex:class",
-          "docComment": "",
+          "docComment": "/**\n * Event-driven state container that processes events to update state. Use with event handlers registered via the on() method.\n *\n * @template S - State type  @template E - Event type (extends BaseEvent)  @template P - Props type (optional)\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -7929,7 +9328,7 @@
             {
               "kind": "Property",
               "canonicalReference": "@blac/core!Vertex#add:member",
-              "docComment": "",
+              "docComment": "/**\n * Add an event to the event stream for processing\n *\n * @param event - The event to process\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -7959,7 +9358,7 @@
             {
               "kind": "Property",
               "canonicalReference": "@blac/core!Vertex#on:member",
-              "docComment": "",
+              "docComment": "/**\n * Register a handler for a specific event type\n *\n * @param EventClass - The event class constructor\n *\n * @param handler - Function to handle events of this type\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -8007,7 +9406,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!Vertex#onEventError:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Handle errors that occur during event processing. Override this method to implement custom error handling.\n *\n * @param _event - The event that caused the error\n *\n * @param _error - The error that occurred\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",

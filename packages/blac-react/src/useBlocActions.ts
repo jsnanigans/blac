@@ -13,13 +13,45 @@ type StateContainerConstructor<TBloc extends StateContainer<any, any>> =
     release(instanceKey?: string): void;
   };
 
+/**
+ * Configuration options for useBlocActions hook
+ * @template TBloc - The state container type
+ * @template TProps - Props type passed to the container
+ */
 export interface UseBlocActionsOptions<TBloc, TProps = any> {
+  /** Props passed to bloc constructor or updateProps */
   props?: TProps;
+  /** Custom instance identifier for shared or isolated instances */
   instanceId?: string | number;
+  /** Callback invoked when bloc instance mounts */
   onMount?: (bloc: TBloc) => void;
+  /** Callback invoked when bloc instance unmounts */
   onUnmount?: (bloc: TBloc) => void;
 }
 
+/**
+ * React hook that connects to a state container instance without triggering re-renders.
+ * Use this when you only need to call actions on the bloc without subscribing to state changes.
+ *
+ * @template T - The state container constructor type
+ * @param BlocClass - The state container class to connect to
+ * @param options - Configuration options for instance management and lifecycle
+ * @returns The state container instance for calling actions
+ *
+ * @example Basic usage
+ * ```ts
+ * const myBloc = useBlocActions(MyBloc);
+ * // Call methods on the bloc without re-rendering
+ * myBloc.someMethod();
+ * ```
+ *
+ * @example With isolated instance
+ * ```ts
+ * const myBloc = useBlocActions(MyBloc, {
+ *   instanceId: 'unique-id'
+ * });
+ * ```
+ */
 export function useBlocActions<
   T extends new (...args: any[]) => StateContainer<any, any>,
 >(

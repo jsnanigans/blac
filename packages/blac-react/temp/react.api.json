@@ -191,7 +191,7 @@
         {
           "kind": "Function",
           "canonicalReference": "@blac/react!useBloc:function(1)",
-          "docComment": "",
+          "docComment": "/**\n * React hook that connects a component to a state container with automatic re-render on state changes.\n *\n * Supports three tracking modes: - **Auto-tracking** (default): Automatically detects accessed state properties via Proxy - **Manual dependencies**: Explicit dependency array like useEffect - **No tracking**: Returns full state without optimization\n *\n * @template T - The state container constructor type\n *\n * @param BlocClass - The state container class to connect to\n *\n * @param options - Configuration options for tracking mode and instance management\n *\n * @returns Tuple with [state, bloc instance, ref]\n *\n * @example\n *\n * Basic usage\n * ```ts\n * const [state, myBloc, ref] = useBloc(MyBloc);\n * ```\n *\n * @example\n *\n * With manual dependencies\n * ```ts\n * const [state, myBloc] = useBloc(MyBloc, {\n *   dependencies: (state) => [state.count]\n * });\n * ```\n *\n * @example\n *\n * With isolated instance\n * ```ts\n * const [state, myBloc] = useBloc(MyBloc, {\n *   instanceId: 'unique-id'\n * });\n * ```\n *\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -328,7 +328,7 @@
         {
           "kind": "Function",
           "canonicalReference": "@blac/react!useBlocActions:function(1)",
-          "docComment": "",
+          "docComment": "/**\n * React hook that connects to a state container instance without triggering re-renders. Use this when you only need to call actions on the bloc without subscribing to state changes.\n *\n * @template T - The state container constructor type\n *\n * @param BlocClass - The state container class to connect to\n *\n * @param options - Configuration options for instance management and lifecycle\n *\n * @returns The state container instance for calling actions\n *\n * @example\n *\n * Basic usage\n * ```ts\n * const myBloc = useBlocActions(MyBloc);\n * // Call methods on the bloc without re-rendering\n * myBloc.someMethod();\n * ```\n *\n * @example\n *\n * With isolated instance\n * ```ts\n * const myBloc = useBlocActions(MyBloc, {\n *   instanceId: 'unique-id'\n * });\n * ```\n *\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -456,7 +456,7 @@
         {
           "kind": "Interface",
           "canonicalReference": "@blac/react!UseBlocActionsOptions:interface",
-          "docComment": "",
+          "docComment": "/**\n * Configuration options for useBlocActions hook  @template TBloc - The state container type  @template TProps - Props type passed to the container\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -503,7 +503,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/react!UseBlocActionsOptions#instanceId:member",
-              "docComment": "",
+              "docComment": "/**\n * Custom instance identifier for shared or isolated instances\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -530,7 +530,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/react!UseBlocActionsOptions#onMount:member",
-              "docComment": "",
+              "docComment": "/**\n * Callback invoked when bloc instance mounts\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -557,7 +557,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/react!UseBlocActionsOptions#onUnmount:member",
-              "docComment": "",
+              "docComment": "/**\n * Callback invoked when bloc instance unmounts\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -584,7 +584,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/react!UseBlocActionsOptions#props:member",
-              "docComment": "",
+              "docComment": "/**\n * Props passed to bloc constructor or updateProps\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -614,7 +614,7 @@
         {
           "kind": "Interface",
           "canonicalReference": "@blac/react!UseBlocOptions:interface",
-          "docComment": "",
+          "docComment": "/**\n * Configuration options for useBloc hook  @template TBloc - The state container type  @template TProps - Props type passed to the container\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -661,7 +661,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/react!UseBlocOptions#autoTrack:member",
-              "docComment": "",
+              "docComment": "/**\n * Enable automatic property tracking via Proxy (default: true)\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -688,7 +688,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/react!UseBlocOptions#dependencies:member",
-              "docComment": "",
+              "docComment": "/**\n * Manual dependency array like useEffect (disables autoTrack)\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -724,7 +724,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/react!UseBlocOptions#disableGetterCache:member",
-              "docComment": "",
+              "docComment": "/**\n * Disable caching for getter tracking\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -751,7 +751,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/react!UseBlocOptions#instanceId:member",
-              "docComment": "",
+              "docComment": "/**\n * Custom instance identifier for shared or isolated instances\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -778,7 +778,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/react!UseBlocOptions#onMount:member",
-              "docComment": "",
+              "docComment": "/**\n * Callback invoked when bloc instance mounts\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -805,7 +805,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/react!UseBlocOptions#onUnmount:member",
-              "docComment": "",
+              "docComment": "/**\n * Callback invoked when bloc instance unmounts\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -832,7 +832,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/react!UseBlocOptions#props:member",
-              "docComment": "",
+              "docComment": "/**\n * Props passed to bloc constructor or updateProps\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -862,7 +862,7 @@
         {
           "kind": "TypeAlias",
           "canonicalReference": "@blac/react!UseBlocReturn:type",
-          "docComment": "",
+          "docComment": "/**\n * Tuple return type from useBloc hook containing state, bloc instance, and ref - [0] Current state value - [1] State container instance (bloc) for calling actions - [2] Ref object for accessing component ref (advanced use cases)\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",

@@ -61,8 +61,28 @@ function parseDocComment(docComment) {
   // Extract @example blocks
   const exampleRegex = /@example\s*([\s\S]*?)(?=@\w|$)/g;
   while ((match = exampleRegex.exec(cleaned)) !== null) {
-    const example = match[1].trim();
+    let example = match[1].trim();
     if (example) {
+      // Check if example starts with a title (text before a code block)
+      const codeBlockMatch = example.match(/^([^\n`]+)\n(```[\s\S]*?```)$/);
+      if (codeBlockMatch) {
+        // Has title and code block - format as: **Title**\n\ncode
+        const title = codeBlockMatch[1].trim();
+        const code = codeBlockMatch[2].trim();
+        example = `**${title}**\n\n${code}`;
+      } else if (example.includes('```')) {
+        // Already has code block, use as-is
+      } else {
+        // Check if first line looks like a title (no code characters)
+        const lines = example.split('\n');
+        const firstLine = lines[0];
+        if (lines.length > 1 && !firstLine.includes('(') && !firstLine.includes('{') && !firstLine.includes('=')) {
+          // First line is likely a title
+          const title = firstLine.trim();
+          const code = lines.slice(1).join('\n').trim();
+          example = `**${title}**\n\n\`\`\`typescript\n${code}\n\`\`\``;
+        }
+      }
       result.examples.push(example);
     }
   }
@@ -196,7 +216,7 @@ function generateClassMarkdown(cls) {
   if (doc.examples.length > 0) {
     md += '**Examples:**\n\n';
     for (const example of doc.examples) {
-      md += '```typescript\n' + example + '\n```\n\n';
+      md += '\n' + example + '\n\n';
     }
   }
 
@@ -287,7 +307,14 @@ function generateFunctionMarkdown(fn) {
   if (doc.examples.length > 0) {
     md += '**Examples:**\n\n';
     for (const example of doc.examples) {
-      md += '```typescript\n' + example + '\n```\n\n';
+      // Examples are already formatted by parseDocComment
+      // They either have code blocks or have been wrapped already
+      if (example.includes('```')) {
+        md += example + '\n\n';
+      } else {
+        // Single-line example without code block
+        md += '```typescript\n' + example + '\n```\n\n';
+      }
     }
   }
 

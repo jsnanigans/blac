@@ -1,11 +1,22 @@
 import { StateContainer } from './StateContainer';
 import { BaseEvent } from '../types/events';
 
+/**
+ * Handler function for processing events in Vertex
+ * @template E - Event type
+ * @template S - State type
+ * @param event - The event being handled
+ * @param emit - Function to emit new state
+ */
 export type EventHandler<E extends BaseEvent, S> = (
   event: E,
   emit: (state: S) => void,
 ) => void;
 
+/**
+ * Constructor type for event classes
+ * @template T - Event type
+ */
 export type EventConstructor<T extends BaseEvent = BaseEvent> = new (
   ...args: never[]
 ) => T;
@@ -15,6 +26,14 @@ interface EventHandlerRegistration<E extends BaseEvent, S> {
   handler: EventHandler<E, S>;
 }
 
+/**
+ * Event-driven state container that processes events to update state.
+ * Use with event handlers registered via the on() method.
+ *
+ * @template S - State type
+ * @template E - Event type (extends BaseEvent)
+ * @template P - Props type (optional)
+ */
 export abstract class Vertex<
   S,
   E extends BaseEvent = BaseEvent,
@@ -28,6 +47,11 @@ export abstract class Vertex<
     super(initialState);
   }
 
+  /**
+   * Register a handler for a specific event type
+   * @param EventClass - The event class constructor
+   * @param handler - Function to handle events of this type
+   */
   protected on = <T extends E>(
     EventClass: EventConstructor<T>,
     handler: EventHandler<T, S>,
@@ -41,6 +65,10 @@ export abstract class Vertex<
     this.eventHandlers.set(className, registrations);
   };
 
+  /**
+   * Add an event to the event stream for processing
+   * @param event - The event to process
+   */
   public add = (event: E): void => {
     StateContainer._registry.emit('eventAdded', this, event);
     this.processEvent(event);
@@ -93,5 +121,11 @@ export abstract class Vertex<
     }
   }
 
+  /**
+   * Handle errors that occur during event processing.
+   * Override this method to implement custom error handling.
+   * @param _event - The event that caused the error
+   * @param _error - The error that occurred
+   */
   protected onEventError(_event: E, _error: Error): void {}
 }

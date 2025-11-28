@@ -8,9 +8,9 @@ outline: [2, 3]
 
 **Classes:** [`Cubit`](#cubit), [`ExternalDependencyManager`](#externaldependencymanager), [`PluginManager`](#pluginmanager), [`StateContainer`](#statecontainer), [`StateContainerRegistry`](#statecontainerregistry), [`Vertex`](#vertex)
 
-**Interfaces:** [`AdapterState`](#adapterstate), [`AuthState`](#authstate), [`BaseEvent`](#baseevent), [`BlacPlugin`](#blacplugin), [`BlacPluginWithInit`](#blacpluginwithinit), [`GetterTrackerState`](#gettertrackerstate), [`InstanceEntry`](#instanceentry), [`InstanceMetadata`](#instancemetadata), [`LogConfig`](#logconfig), [`LogEntry`](#logentry), [`ManualDepsConfig`](#manualdepsconfig), [`PathInfo`](#pathinfo), [`PluginConfig`](#pluginconfig), [`PluginContext`](#plugincontext), [`ProxyTrackerState`](#proxytrackerstate), [`StateContainerConfig`](#statecontainerconfig), [`SystemEventPayloads`](#systemeventpayloads), [`TodoState`](#todostate), [`TrackerState`](#trackerstate)
+**Interfaces:** [`AdapterState`](#adapterstate), [`BaseEvent`](#baseevent), [`BlacPlugin`](#blacplugin), [`BlacPluginWithInit`](#blacpluginwithinit), [`InstanceEntry`](#instanceentry), [`InstanceMetadata`](#instancemetadata), [`LogConfig`](#logconfig), [`LogEntry`](#logentry), [`ManualDepsConfig`](#manualdepsconfig), [`PluginConfig`](#pluginconfig), [`PluginContext`](#plugincontext), [`StateContainerConfig`](#statecontainerconfig), [`SystemEventPayloads`](#systemeventpayloads)
 
-**Functions:** [`blac`](#blac), [`captureTrackedPaths`](#capturetrackedpaths), [`clearActiveTracker`](#clearactivetracker), [`clearExternalDependencies`](#clearexternaldependencies), [`commitTrackedGetters`](#committrackedgetters), [`configureLogger`](#configurelogger), [`createArrayProxy`](#createarrayproxy), [`createAutoTrackSnapshot`](#createautotracksnapshot), [`createAutoTrackSubscribe`](#createautotracksubscribe), [`createBlocProxy`](#createblocproxy), [`createGetterTracker`](#creategettertracker), [`createIdGenerator`](#createidgenerator), [`createLogger`](#createlogger), [`createManualDepsSnapshot`](#createmanualdepssnapshot), [`createManualDepsSubscribe`](#createmanualdepssubscribe), [`createNoTrackSnapshot`](#createnotracksnapshot), [`createNoTrackSubscribe`](#createnotracksubscribe), [`createPluginManager`](#createpluginmanager), [`createProxy`](#createproxy), [`createProxyForTarget`](#createproxyfortarget), [`createProxyInternal`](#createproxyinternal), [`createProxyTrackerState`](#createproxytrackerstate), [`createTrackerState`](#createtrackerstate), [`debug`](#debug), [`disableGetterTracking`](#disablegettertracking), [`error`](#error), [`generateId`](#generateid), [`generateIsolatedKey`](#generateisolatedkey), [`generateSimpleId`](#generatesimpleid), [`getActiveTracker`](#getactivetracker), [`getDescriptor`](#getdescriptor), [`getGetterExecutionContext`](#getgetterexecutioncontext), [`getPluginManager`](#getpluginmanager), [`getStaticProp`](#getstaticprop), [`getValueAtPath`](#getvalueatpath), [`hasChanges`](#haschanges), [`hasGetterChanges`](#hasgetterchanges), [`hasInitHook`](#hasinithook), [`hasTrackedData`](#hastrackeddata), [`info`](#info), [`initAutoTrackState`](#initautotrackstate), [`initManualDepsState`](#initmanualdepsstate), [`initNoTrackState`](#initnotrackstate), [`invalidateRenderCache`](#invalidaterendercache), [`isExcludedFromDevTools`](#isexcludedfromdevtools), [`isGetter`](#isgetter), [`isIsolatedClass`](#isisolatedclass), [`isIsolatedKey`](#isisolatedkey), [`isKeepAliveClass`](#iskeepaliveclass), [`isProxyable`](#isproxyable), [`parsePath`](#parsepath), [`resetGetterTracker`](#resetgettertracker), [`setActiveTracker`](#setactivetracker), [`shallowEqual`](#shallowequal), [`startProxyTracking`](#startproxytracking), [`startTracking`](#starttracking), [`stopProxyTracking`](#stopproxytracking), [`warn`](#warn)
+**Functions:** [`blac`](#blac), [`configureLogger`](#configurelogger), [`createAutoTrackSnapshot`](#createautotracksnapshot), [`createAutoTrackSubscribe`](#createautotracksubscribe), [`createIdGenerator`](#createidgenerator), [`createLogger`](#createlogger), [`createManualDepsSnapshot`](#createmanualdepssnapshot), [`createManualDepsSubscribe`](#createmanualdepssubscribe), [`createNoTrackSnapshot`](#createnotracksnapshot), [`createNoTrackSubscribe`](#createnotracksubscribe), [`createPluginManager`](#createpluginmanager), [`debug`](#debug), [`disableGetterTracking`](#disablegettertracking), [`error`](#error), [`generateId`](#generateid), [`generateIsolatedKey`](#generateisolatedkey), [`generateSimpleId`](#generatesimpleid), [`getPluginManager`](#getpluginmanager), [`getStaticProp`](#getstaticprop), [`hasInitHook`](#hasinithook), [`info`](#info), [`initAutoTrackState`](#initautotrackstate), [`initManualDepsState`](#initmanualdepsstate), [`initNoTrackState`](#initnotrackstate), [`isExcludedFromDevTools`](#isexcludedfromdevtools), [`isIsolatedClass`](#isisolatedclass), [`isIsolatedKey`](#isisolatedkey), [`isKeepAliveClass`](#iskeepaliveclass), [`warn`](#warn)
 
 **Types:** `BlacOptions`, `BlocConstructor`, `Brand`, `BrandedId`, `EventConstructor`, `EventHandler`, `ExtractConstructorArgs`, `ExtractProps`, `ExtractState`, `InstanceId`, ...
 
@@ -19,6 +19,8 @@ outline: [2, 3]
 ### Cubit
 
 > **Abstract class**
+
+Simple state container with direct state emission. Extends StateContainer with public methods for emitting and updating state.
 
 ```typescript
 export declare abstract class Cubit<S, P = undefined> extends StateContainer<S, P>
@@ -43,11 +45,13 @@ constructor(initialState: S);
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `patch` | `S extends object ? (partial: Partial<S>) => void : never` |  |
+| `patch` | `S extends object ? (partial: Partial<S>) => void : never` | Merge partial state changes into current state (only for object states) |
 
 **Methods:**
 
 #### `emit`
+
+Replace state with a new value and notify all listeners
 
 ```typescript
 emit(newState: S): void;
@@ -55,9 +59,11 @@ emit(newState: S): void;
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `newState` | `S` |  |
+| `newState` | `S` | The new state value |
 
 #### `update`
+
+Transform current state using an updater function and emit the new state
 
 ```typescript
 update(updater: (current: S) => S): void;
@@ -65,7 +71,7 @@ update(updater: (current: S) => S): void;
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `updater` | `(current: S) => S` |  |
+| `updater` | `(current: S) => S` | Function that receives current state and returns new state |
 
 ---
 
@@ -663,6 +669,8 @@ resolve<T extends StateContainer<any>>(Type: new (...args: any[]) => T, instance
 
 > **Abstract class**
 
+Event-driven state container that processes events to update state. Use with event handlers registered via the on() method.
+
 ```typescript
 export declare abstract class Vertex<S, E extends BaseEvent = BaseEvent, P = undefined> extends StateContainer<S, P>
 ```
@@ -687,12 +695,14 @@ constructor(initialState: S);
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `add` | `(event: E) => void` |  |
-| `on` | `<T extends E>(EventClass: EventConstructor<T>, handler: EventHandler<T, S>) => void` |  |
+| `add` | `(event: E) => void` | Add an event to the event stream for processing |
+| `on` | `<T extends E>(EventClass: EventConstructor<T>, handler: EventHandler<T, S>) => void` | Register a handler for a specific event type |
 
 **Methods:**
 
 #### `onEventError` *(protected)*
+
+Handle errors that occur during event processing. Override this method to implement custom error handling.
 
 ```typescript
 protected onEventError(_event: E, _error: Error): void;
@@ -700,8 +710,8 @@ protected onEventError(_event: E, _error: Error): void;
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `_event` | `E` |  |
-| `_error` | `Error` |  |
+| `_event` | `E` | The event that caused the error |
+| `_error` | `Error` | The error that occurred |
 
 ---
 
@@ -719,23 +729,6 @@ export interface AdapterState<TBloc extends StateContainer<any, any>>
 | `manualDepsCache` | `unknown[] \| null` |  |
 | `proxiedBloc` | `TBloc \| null` |  |
 | `tracker` | `TrackerState<ExtractState<TBloc>> \| null` |  |
-
----
-
-### AuthState
-
-Auth State and Events for testing async handlers
-
-```typescript
-export interface AuthState
-```
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `error` | `string \| null` |  |
-| `isAuthenticated` | `boolean` |  |
-| `isLoading` | `boolean` |  |
-| `user` | `string` |  |
 
 ---
 
@@ -757,18 +750,22 @@ export interface BaseEvent
 
 ### BlacPlugin
 
+Interface for plugins that extend BlaC functionality
+
 ```typescript
 export interface BlacPlugin
 ```
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `name` | `string` |  |
-| `version` | `string` |  |
+| `name` | `string` | Unique plugin identifier |
+| `version` | `string` | Plugin version identifier |
 
 **Methods:**
 
 #### `onEventAdded`
+
+Called when an event is added to a Vertex instance
 
 ```typescript
 onEventAdded?<E extends BaseEvent>(vertex: Vertex<any, E>, event: E, context: PluginContext): void;
@@ -776,11 +773,15 @@ onEventAdded?<E extends BaseEvent>(vertex: Vertex<any, E>, event: E, context: Pl
 
 #### `onInstall`
 
+Called when the plugin is installed (optional)
+
 ```typescript
 onInstall?(context: PluginContext): void;
 ```
 
 #### `onInstanceCreated`
+
+Called when a state container instance is created
 
 ```typescript
 onInstanceCreated?(instance: StateContainer<any>, context: PluginContext): void;
@@ -788,17 +789,23 @@ onInstanceCreated?(instance: StateContainer<any>, context: PluginContext): void;
 
 #### `onInstanceDisposed`
 
+Called when a state container instance is disposed
+
 ```typescript
 onInstanceDisposed?(instance: StateContainer<any>, context: PluginContext): void;
 ```
 
 #### `onStateChanged`
 
+Called when state changes in a container instance
+
 ```typescript
 onStateChanged?<S>(instance: StateContainer<S>, previousState: S, currentState: S, callstack: string | undefined, context: PluginContext): void;
 ```
 
 #### `onUninstall`
+
+Called when the plugin is uninstalled
 
 ```typescript
 onUninstall?(): void;
@@ -808,6 +815,8 @@ onUninstall?(): void;
 
 ### BlacPluginWithInit
 
+Plugin interface variant that requires mandatory onInstall hook
+
 ```typescript
 export interface BlacPluginWithInit extends BlacPlugin
 ```
@@ -816,27 +825,11 @@ export interface BlacPluginWithInit extends BlacPlugin
 
 #### `onInstall`
 
+Required initialization hook called when plugin is installed
+
 ```typescript
 onInstall(context: PluginContext): void;
 ```
-
----
-
-### GetterTrackerState
-
-```typescript
-export interface GetterTrackerState
-```
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `cacheValid` | `boolean` |  |
-| `currentlyAccessing` | `Set<string \| symbol>` |  |
-| `externalDependencies` | `Set<StateContainer<any>>` |  |
-| `isTracking` | `boolean` |  |
-| `renderCache` | `Map<string \| symbol, unknown>` |  |
-| `trackedGetters` | `Set<string \| symbol>` |  |
-| `trackedValues` | `Map<string \| symbol, unknown>` |  |
 
 ---
 
@@ -855,23 +848,25 @@ export interface InstanceEntry<T = any>
 
 ### InstanceMetadata
 
+Metadata information about a state container instance for debugging and inspection
+
 ```typescript
 export interface InstanceMetadata
 ```
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `callstack` *(optional)* | `string` |  |
-| `className` | `string` |  |
-| `createdAt` | `number` |  |
-| `currentState` *(optional)* | `any` |  |
-| `id` | `string` |  |
-| `isDisposed` | `boolean` |  |
-| `isIsolated` | `boolean` |  |
-| `lastStateChangeTimestamp` | `number` |  |
-| `name` | `string` |  |
-| `previousState` *(optional)* | `any` |  |
-| `state` | `any` |  |
+| `callstack` *(optional)* | `string` | Stack trace from when instance was created (for debugging) |
+| `className` | `string` | Name of the state container class |
+| `createdAt` | `number` | Timestamp when instance was created (milliseconds) |
+| `currentState` *(optional)* | `any` | Current state value |
+| `id` | `string` | Unique instance identifier |
+| `isDisposed` | `boolean` | Whether the instance has been disposed |
+| `isIsolated` | `boolean` | Whether this is an isolated (component-scoped) instance |
+| `lastStateChangeTimestamp` | `number` | When state last changed (milliseconds) |
+| `name` | `string` | Display name for the instance |
+| `previousState` *(optional)* | `any` | Previous state value |
+| `state` | `any` | Current state value |
 
 ---
 
@@ -917,20 +912,9 @@ export interface ManualDepsConfig<TBloc extends StateContainer<any, any>>
 
 ---
 
-### PathInfo
-
-```typescript
-export interface PathInfo
-```
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `segments` | `string[]` |  |
-| `value` | `any` |  |
-
----
-
 ### PluginConfig
+
+Configuration options for plugin installation
 
 ```typescript
 export interface PluginConfig
@@ -938,12 +922,14 @@ export interface PluginConfig
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `enabled` *(optional)* | `boolean` |  |
-| `environment` *(optional)* | `'development' \| 'production' \| 'test' \| 'all'` |  |
+| `enabled` *(optional)* | `boolean` | Enable or disable the plugin |
+| `environment` *(optional)* | `'development' \| 'production' \| 'test' \| 'all'` | Environments where plugin runs |
 
 ---
 
 ### PluginContext
+
+Safe context API provided to plugins for accessing registry data
 
 ```typescript
 export interface PluginContext
@@ -953,11 +939,15 @@ export interface PluginContext
 
 #### `getAllTypes`
 
+Get all registered state container types
+
 ```typescript
 getAllTypes(): Array<new (...args: any[]) => StateContainer<any>>;
 ```
 
 #### `getInstanceMetadata`
+
+Get metadata for a specific instance
 
 ```typescript
 getInstanceMetadata(instance: StateContainer<any>): InstanceMetadata;
@@ -965,11 +955,15 @@ getInstanceMetadata(instance: StateContainer<any>): InstanceMetadata;
 
 #### `getState`
 
+Get current state from a container
+
 ```typescript
 getState<S>(instance: StateContainer<S>): S;
 ```
 
 #### `getStats`
+
+Get registry statistics
 
 ```typescript
 getStats(): {
@@ -981,29 +975,11 @@ getStats(): {
 
 #### `queryInstances`
 
+Get all instances of a specific type
+
 ```typescript
 queryInstances<T extends StateContainer<any>>(typeClass: new (...args: any[]) => T): T[];
 ```
-
----
-
-### ProxyTrackerState
-
-State container for proxy tracking
-
-```typescript
-export interface ProxyTrackerState<T>
-```
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `boundFunctionsCache` | `WeakMap<Function, Function> \| null` | Cache of bound functions to maintain referential equality |
-| `isTracking` | `boolean` | Whether tracking is currently active |
-| `lastProxiedState` | `T \| null` | Last state object that was proxied (for cache invalidation) |
-| `lastProxy` | `T \| null` | Last proxy created (for cache reuse) |
-| `maxDepth` | `number` | Maximum depth for nested proxy creation |
-| `proxyCache` | `WeakMap<object, any>` | Cache of created proxies to avoid duplicates |
-| `trackedPaths` | `Set<string>` | Set of all tracked property paths |
 
 ---
 
@@ -1035,37 +1011,6 @@ export interface SystemEventPayloads<S, P>
 
 ---
 
-### TodoState
-
-```typescript
-export interface TodoState
-```
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `filter` | `'all' \| 'active' \| 'completed'` |  |
-| `isLoading` | `boolean` |  |
-| `todos` | `string` |  |
-
----
-
-### TrackerState
-
-```typescript
-export interface TrackerState<T>
-```
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `currentRenderPaths` | `Set<string>` |  |
-| `lastCheckedState` | `T \| null` |  |
-| `lastCheckedValues` | `Map<string, any>` |  |
-| `pathCache` | `Map<string, PathInfo>` |  |
-| `previousRenderPaths` | `Set<string>` |  |
-| `proxyTrackerState` | `ProxyTrackerState<T>` |  |
-
----
-
 ## Functions
 
 ### blac
@@ -1082,68 +1027,16 @@ export declare function blac(options: BlacOptions): <T extends new (...args: any
 
 **Examples:**
 
-```typescript
 Decorator syntax (requires experimentalDecorators or TC39 decorators)
-```typescript
-```
+```ts
 
-```typescript
-Function syntax (no decorator support needed)
-```typescript
+**Function syntax (no decorator support needed)**
+
+```ts
 const FormBloc = blac({ isolated: true })(
   class extends Cubit<FormState> {}
 );
 ```
-```
-
----
-
-### captureTrackedPaths
-
-```typescript
-export declare function captureTrackedPaths<T>(tracker: TrackerState<T>, state: T): void;
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `tracker` | `TrackerState<T>` |  |
-| `state` | `T` |  |
-
----
-
-### clearActiveTracker
-
-```typescript
-export declare function clearActiveTracker<TBloc extends StateContainer<any>>(bloc: TBloc): void;
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `bloc` | `TBloc` |  |
-
----
-
-### clearExternalDependencies
-
-```typescript
-export declare function clearExternalDependencies(tracker: GetterTrackerState): void;
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `tracker` | `GetterTrackerState` |  |
-
----
-
-### commitTrackedGetters
-
-```typescript
-export declare function commitTrackedGetters(tracker: GetterTrackerState): void;
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `tracker` | `GetterTrackerState` |  |
 
 ---
 
@@ -1161,30 +1054,9 @@ export declare function configureLogger(opts: Partial<LogConfig>): void;
 
 **Examples:**
 
-```typescript
 ```ts
 configureLogger({ enabled: true, level: LogLevel.DEBUG });
 ```
-```
-
----
-
-### createArrayProxy
-
-Create a proxy for an array with property access tracking
-
-Tracks: - Array element access (arr[0]) - Length access (arr.length) - Array method calls (arr.map, arr.filter, etc.)
-
-```typescript
-export declare function createArrayProxy<T, U>(state: ProxyTrackerState<T>, target: U[], path: string, depth?: number): U[];
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `state` | `ProxyTrackerState<T>` |  |
-| `target` | `U[]` |  |
-| `path` | `string` |  |
-| `depth` | `number` |  |
 
 ---
 
@@ -1214,26 +1086,6 @@ export declare function createAutoTrackSubscribe<TBloc extends StateContainer<an
 
 ---
 
-### createBlocProxy
-
-```typescript
-export declare function createBlocProxy<TBloc extends StateContainer<any>>(bloc: TBloc): TBloc;
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `bloc` | `TBloc` |  |
-
----
-
-### createGetterTracker
-
-```typescript
-export declare function createGetterTracker(): GetterTrackerState;
-```
-
----
-
 ### createIdGenerator
 
 Creates an ID generator with isolated counter state
@@ -1254,12 +1106,10 @@ export declare function createIdGenerator(prefix: string): {
 
 **Examples:**
 
-```typescript
 ```ts
 const generator = createIdGenerator('sub');
 const id1 = generator.next(); // "sub:1698765432100_1_a3k9d7f2q"
 const id2 = generator.next(); // "sub:1698765432101_2_b4n8e9g3r"
-```
 ```
 
 ---
@@ -1286,7 +1136,6 @@ export declare function createLogger(config: LogConfig): {
 
 **Examples:**
 
-```typescript
 ```ts
 const logger = createLogger({
   enabled: true,
@@ -1294,7 +1143,6 @@ const logger = createLogger({
   output: (entry) => console.log(JSON.stringify(entry))
 });
 logger.debug('MyComponent', 'Rendering', { props: { foo: 'bar' } });
-```
 ```
 
 ---
@@ -1365,83 +1213,6 @@ export declare function createPluginManager(registry: StateContainerRegistry): P
 
 ---
 
-### createProxy
-
-```typescript
-export declare function createProxy<T>(tracker: TrackerState<T>, state: T): T;
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `tracker` | `TrackerState<T>` |  |
-| `state` | `T` |  |
-
----
-
-### createProxyForTarget
-
-Create a proxy for a target with caching
-
-If the target hasn't changed since the last call, returns the cached proxy. Otherwise, creates a new proxy and caches it.
-
-This is the main entry point for creating tracked proxies.
-
-```typescript
-export declare function createProxyForTarget<T>(state: ProxyTrackerState<T>, target: T): T;
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `state` | `ProxyTrackerState<T>` |  |
-| `target` | `T` |  |
-
----
-
-### createProxyInternal
-
-Create a proxy for an object with property access tracking
-
-This is the core proxy creation function that recursively creates proxies for nested objects and arrays.
-
-Tracks: - Property access (obj.prop) - Nested property access (obj.nested.prop) - 'in' operator usage ('prop' in obj) - Object.keys, Object.entries, etc.
-
-```typescript
-export declare function createProxyInternal<T>(state: ProxyTrackerState<T>, target: T, path?: string, depth?: number): T;
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `state` | `ProxyTrackerState<T>` |  |
-| `target` | `T` |  |
-| `path` | `string` |  |
-| `depth` | `number` |  |
-
----
-
-### createProxyTrackerState
-
-Create a new proxy tracker state
-
-```typescript
-export declare function createProxyTrackerState<T>(): ProxyTrackerState<T>;
-```
-
-**Examples:**
-
-```typescript
-const state = createProxyTrackerState<MyState>(); startProxyTracking(state); const proxy = createProxyForTarget(state, myObject); // ... use proxy ... const paths = stopProxyTracking(state);
-```
-
----
-
-### createTrackerState
-
-```typescript
-export declare function createTrackerState<T>(): TrackerState<T>;
-```
-
----
-
 ### debug
 
 ```typescript
@@ -1502,10 +1273,7 @@ export declare function generateId(prefix: string): string;
 **Examples:**
 
 ```typescript
-```ts
-const id = generateId('sub');
-// Returns: "sub:1698765432100_1_a3k9d7f2q"
-```
+const id = generateId('sub'); // Returns: "sub:1698765432100_1_a3k9d7f2q"
 ```
 
 ---
@@ -1543,44 +1311,9 @@ export declare function generateSimpleId(prefix: string, affix?: string): string
 
 **Examples:**
 
-```typescript
 ```ts
 const id = generateSimpleId('CounterBloc');
 // Returns: "CounterBloc:1698765432100_a3k9d7f2q"
-```
-```
-
----
-
-### getActiveTracker
-
-```typescript
-export declare function getActiveTracker<TBloc extends StateContainer<any>>(bloc: TBloc): GetterTrackerState | undefined;
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `bloc` | `TBloc` |  |
-
----
-
-### getDescriptor
-
-```typescript
-export declare function getDescriptor(obj: any, prop: string | symbol): PropertyDescriptor | undefined;
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `obj` | `any` |  |
-| `prop` | `string \| symbol` |  |
-
----
-
-### getGetterExecutionContext
-
-```typescript
-export declare function getGetterExecutionContext(): GetterExecutionContext;
 ```
 
 ---
@@ -1613,53 +1346,6 @@ export declare function getStaticProp<T>(Type: new (...args: any[]) => any, prop
 
 ---
 
-### getValueAtPath
-
-Get a value from an object using a path of segments
-
-```typescript
-export declare function getValueAtPath(obj: any, segments: string[]): any;
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `obj` | `any` |  |
-| `segments` | `string[]` |  |
-
-**Examples:**
-
-```typescript
-const obj = { user: { name: 'Alice', age: 30 } } getValueAtPath(obj, ['user', 'name']) // 'Alice' getValueAtPath(obj, ['user', 'age']) // 30 getValueAtPath(obj, ['user', 'missing']) // undefined
-```
-
----
-
-### hasChanges
-
-```typescript
-export declare function hasChanges<T>(tracker: TrackerState<T>, state: T): boolean;
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `tracker` | `TrackerState<T>` |  |
-| `state` | `T` |  |
-
----
-
-### hasGetterChanges
-
-```typescript
-export declare function hasGetterChanges<TBloc extends StateContainer<any>>(bloc: TBloc, tracker: GetterTrackerState | null): boolean;
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `bloc` | `TBloc` |  |
-| `tracker` | `GetterTrackerState \| null` |  |
-
----
-
 ### hasInitHook
 
 ```typescript
@@ -1669,18 +1355,6 @@ export declare function hasInitHook(plugin: BlacPlugin): plugin is BlacPluginWit
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `plugin` | `BlacPlugin` |  |
-
----
-
-### hasTrackedData
-
-```typescript
-export declare function hasTrackedData<T>(tracker: TrackerState<T>): boolean;
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `tracker` | `TrackerState<T>` |  |
 
 ---
 
@@ -1734,18 +1408,6 @@ export declare function initNoTrackState<TBloc extends StateContainer<any, any>>
 
 ---
 
-### invalidateRenderCache
-
-```typescript
-export declare function invalidateRenderCache(tracker: GetterTrackerState): void;
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `tracker` | `GetterTrackerState` |  |
-
----
-
 ### isExcludedFromDevTools
 
 Check if a class should be excluded from DevTools Used to prevent infinite loops when DevTools tracks itself
@@ -1757,19 +1419,6 @@ export declare function isExcludedFromDevTools(Type: new (...args: any[]) => any
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `Type` | `new (...args: any[]) => any` |  |
-
----
-
-### isGetter
-
-```typescript
-export declare function isGetter(obj: any, prop: string | symbol): boolean;
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `obj` | `any` |  |
-| `prop` | `string \| symbol` |  |
 
 ---
 
@@ -1814,136 +1463,6 @@ export declare function isKeepAliveClass(Type: new (...args: any[]) => any): boo
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `Type` | `new (...args: any[]) => any` |  |
-
----
-
-### isProxyable
-
-Check if a value can be proxied
-
-Returns true for plain objects and arrays only. Excludes built-in objects like Date, Map, Set, etc.
-
-```typescript
-export declare function isProxyable(value: unknown): value is object;
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `value` | `unknown` |  |
-
----
-
-### parsePath
-
-Parse a property path string into an array of segments
-
-Handles both dot notation (a.b.c) and bracket notation (a[0].b)
-
-```typescript
-export declare function parsePath(path: string): string[];
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `path` | `string` |  |
-
-**Examples:**
-
-```typescript
-parsePath('user.name') // ['user', 'name'] parsePath('items[0].name') // ['items', '0', 'name'] parsePath('data.users[2].address.city') // ['data', 'users', '2', 'address', 'city']
-```
-
----
-
-### resetGetterTracker
-
-```typescript
-export declare function resetGetterTracker(tracker: GetterTrackerState): void;
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `tracker` | `GetterTrackerState` |  |
-
----
-
-### setActiveTracker
-
-```typescript
-export declare function setActiveTracker<TBloc extends StateContainer<any>>(bloc: TBloc, tracker: GetterTrackerState): void;
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `bloc` | `TBloc` |  |
-| `tracker` | `GetterTrackerState` |  |
-
----
-
-### shallowEqual
-
-Shallow equality comparison for arrays
-
-Compares two arrays element-by-element using Object.is
-
-```typescript
-export declare function shallowEqual(arr1: unknown[], arr2: unknown[]): boolean;
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `arr1` | `unknown[]` |  |
-| `arr2` | `unknown[]` |  |
-
-**Examples:**
-
-```typescript
-shallowEqual([1, 2, 3], [1, 2, 3]) // true shallowEqual([1, 2, 3], [1, 2, 4]) // false shallowEqual([1, 2], [1, 2, 3]) // false
-```
-
----
-
-### startProxyTracking
-
-Start tracking property accesses
-
-Clears previous tracked paths and enables tracking mode.
-
-```typescript
-export declare function startProxyTracking<T>(state: ProxyTrackerState<T>): void;
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `state` | `ProxyTrackerState<T>` |  |
-
----
-
-### startTracking
-
-```typescript
-export declare function startTracking<T>(tracker: TrackerState<T>): void;
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `tracker` | `TrackerState<T>` |  |
-
----
-
-### stopProxyTracking
-
-Stop tracking and return the tracked paths
-
-Returns a new Set containing all tracked paths.
-
-```typescript
-export declare function stopProxyTracking<T>(state: ProxyTrackerState<T>): Set<string>;
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `state` | `ProxyTrackerState<T>` |  |
 
 ---
 
@@ -2010,11 +1529,15 @@ export type BrandedId<B> = Brand<string, B>;
 
 ### EventConstructor
 
+Constructor type for event classes
+
 ```typescript
 export type EventConstructor<T extends BaseEvent = BaseEvent> = new (...args: never[]) => T;
 ```
 
 ### EventHandler
+
+Handler function for processing events in Vertex
 
 ```typescript
 export type EventHandler<E extends BaseEvent, S> = (event: E, emit: (state: S) => void) => void;

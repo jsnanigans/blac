@@ -7,6 +7,7 @@
  * Set via DefinePlugin (Webpack) or define (Vite/Rollup)
  *
  * @example
+ * ```ts
  * // webpack.config.js
  * new webpack.DefinePlugin({
  *   __BLAC_LOGGING__: JSON.stringify(process.env.NODE_ENV !== 'production'),
@@ -18,5 +19,6 @@
  *     __BLAC_LOGGING__: JSON.stringify(process.env.NODE_ENV !== 'production'),
  *   }
  * };
+ * ```
  */
 declare const __BLAC_LOGGING__: boolean;
