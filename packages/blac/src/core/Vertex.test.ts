@@ -4,9 +4,125 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { Vertex, CounterVertex, AuthVertex, type AuthState } from './Vertex';
+import { Vertex } from './Vertex';
 import { StateContainer } from './StateContainer';
 import type { BaseEvent } from '../types/events';
+
+class IncrementEvent implements BaseEvent {
+  readonly type = 'increment';
+  readonly timestamp = Date.now();
+  constructor(public readonly amount: number = 1) {}
+}
+
+class DecrementEvent implements BaseEvent {
+  readonly type = 'decrement';
+  readonly timestamp = Date.now();
+  constructor(public readonly amount: number = 1) {}
+}
+
+class ResetEvent implements BaseEvent {
+  readonly type = 'reset';
+  readonly timestamp = Date.now();
+}
+
+class CounterVertex extends Vertex<number> {
+  constructor() {
+    super(0);
+
+    this.on(IncrementEvent, (event, emit) => {
+      emit(this.state + event.amount);
+    });
+
+    this.on(DecrementEvent, (event, emit) => {
+      emit(this.state - event.amount);
+    });
+
+    this.on(ResetEvent, (_, emit) => {
+      emit(0);
+    });
+  }
+
+  increment = (amount = 1) => {
+    this.add(new IncrementEvent(amount));
+  };
+
+  decrement = (amount = 1) => {
+    this.add(new DecrementEvent(amount));
+  };
+
+  reset = () => {
+    this.add(new ResetEvent());
+  };
+}
+
+interface AuthState {
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  user: { id: string; name: string; email: string } | null;
+  error: string | null;
+}
+
+class LoginEvent implements BaseEvent {
+  readonly type = 'login';
+  readonly timestamp = Date.now();
+  constructor(
+    public readonly email: string,
+    public readonly password: string,
+  ) {}
+}
+
+class LogoutEvent implements BaseEvent {
+  readonly type = 'logout';
+  readonly timestamp = Date.now();
+}
+
+class AuthVertex extends Vertex<AuthState> {
+  constructor() {
+    super({
+      isAuthenticated: false,
+      isLoading: false,
+      user: null,
+      error: null,
+    });
+
+    this.on(LoginEvent, (event, emit) => {
+      emit({ ...this.state, isLoading: true, error: null });
+
+      if (event.email === 'user@example.com' && event.password === 'password') {
+        emit({
+          isAuthenticated: true,
+          isLoading: false,
+          user: { id: '123', name: 'Test User', email: 'user@example.com' },
+          error: null,
+        });
+      } else {
+        emit({
+          isAuthenticated: false,
+          isLoading: false,
+          user: null,
+          error: 'Invalid credentials',
+        });
+      }
+    });
+
+    this.on(LogoutEvent, (_, emit) => {
+      emit({
+        isAuthenticated: false,
+        isLoading: false,
+        user: null,
+        error: null,
+      });
+    });
+  }
+
+  login = (email: string, password: string) => {
+    this.add(new LoginEvent(email, password));
+  };
+
+  logout = () => {
+    this.add(new LogoutEvent());
+  };
+}
 
 // Test events
 class AddEvent implements BaseEvent {

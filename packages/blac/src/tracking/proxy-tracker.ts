@@ -4,6 +4,8 @@
  * This module provides a functional approach to proxy-based dependency tracking.
  * Unlike the class-based ProxyTracker, this uses a state object pattern that's
  * easier to integrate with functional programming patterns and framework hooks.
+ *
+ * @internal
  */
 
 /**
@@ -11,6 +13,8 @@
  *
  * Returns true for plain objects and arrays only.
  * Excludes built-in objects like Date, Map, Set, etc.
+ *
+ * @internal
  */
 export function isProxyable(value: unknown): value is object {
   if (typeof value !== 'object' || value === null) return false;
@@ -20,6 +24,7 @@ export function isProxyable(value: unknown): value is object {
 
 /**
  * State container for proxy tracking
+ * @internal
  */
 export interface ProxyTrackerState<T> {
   /** Set of all tracked property paths */
@@ -48,6 +53,8 @@ export interface ProxyTrackerState<T> {
  * const proxy = createProxyForTarget(state, myObject);
  * // ... use proxy ...
  * const paths = stopProxyTracking(state);
+ *
+ * @internal
  */
 export function createProxyTrackerState<T>(): ProxyTrackerState<T> {
   return {
@@ -65,6 +72,8 @@ export function createProxyTrackerState<T>(): ProxyTrackerState<T> {
  * Start tracking property accesses
  *
  * Clears previous tracked paths and enables tracking mode.
+ *
+ * @internal
  */
 export function startProxyTracking<T>(state: ProxyTrackerState<T>): void {
   state.isTracking = true;
@@ -75,6 +84,8 @@ export function startProxyTracking<T>(state: ProxyTrackerState<T>): void {
  * Stop tracking and return the tracked paths
  *
  * Returns a new Set containing all tracked paths.
+ *
+ * @internal
  */
 export function stopProxyTracking<T>(state: ProxyTrackerState<T>): Set<string> {
   state.isTracking = false;
@@ -88,6 +99,8 @@ export function stopProxyTracking<T>(state: ProxyTrackerState<T>): Set<string> {
  * - Array element access (arr[0])
  * - Length access (arr.length)
  * - Array method calls (arr.map, arr.filter, etc.)
+ *
+ * @internal
  */
 export function createArrayProxy<T, U>(
   state: ProxyTrackerState<T>,
@@ -167,6 +180,8 @@ export function createArrayProxy<T, U>(
  * - Nested property access (obj.nested.prop)
  * - 'in' operator usage ('prop' in obj)
  * - Object.keys, Object.entries, etc.
+ *
+ * @internal
  */
 export function createProxyInternal<T>(
   state: ProxyTrackerState<T>,
@@ -268,6 +283,8 @@ export function createProxyInternal<T>(
  * Otherwise, creates a new proxy and caches it.
  *
  * This is the main entry point for creating tracked proxies.
+ *
+ * @internal
  */
 export function createProxyForTarget<T>(
   state: ProxyTrackerState<T>,

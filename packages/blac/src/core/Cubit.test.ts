@@ -4,8 +4,102 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { Cubit, CounterCubit, TodoCubit } from './Cubit';
+import { Cubit } from './Cubit';
 import { StateContainer } from './StateContainer';
+
+class CounterCubit extends Cubit<number> {
+  constructor() {
+    super(0);
+  }
+
+  increment = (): void => {
+    this.emit(this.state + 1);
+  };
+
+  decrement = (): void => {
+    this.emit(this.state - 1);
+  };
+
+  reset = (): void => {
+    this.emit(0);
+  };
+
+  addAmount = (amount: number): void => {
+    this.emit(this.state + amount);
+  };
+}
+
+interface TodoState {
+  todos: Array<{ id: string; text: string; done: boolean }>;
+  filter: 'all' | 'active' | 'completed';
+  isLoading: boolean;
+}
+
+class TodoCubit extends Cubit<TodoState> {
+  static keepAlive = true;
+  private nextId = 0;
+
+  constructor() {
+    super({
+      todos: [],
+      filter: 'all',
+      isLoading: false,
+    });
+  }
+
+  addTodo = (text: string): void => {
+    this.update((state) => ({
+      ...state,
+      todos: [
+        ...state.todos,
+        { id: `todo-${Date.now()}-${this.nextId++}`, text, done: false },
+      ],
+    }));
+  };
+
+  toggleTodo = (id: string): void => {
+    this.update((state) => ({
+      ...state,
+      todos: state.todos.map((todo) =>
+        todo.id === id ? { ...todo, done: !todo.done } : todo,
+      ),
+    }));
+  };
+
+  removeTodo = (id: string): void => {
+    this.update((state) => ({
+      ...state,
+      todos: state.todos.filter((todo) => todo.id !== id),
+    }));
+  };
+
+  setFilter = (filter: TodoState['filter']): void => {
+    this.patch({ filter });
+  };
+
+  setLoading = (isLoading: boolean): void => {
+    this.patch({ isLoading });
+  };
+
+  get visibleTodos() {
+    const todos = this.state.todos;
+    const filter = this.state.filter;
+
+    switch (filter) {
+      case 'active':
+        return todos.filter((t) => !t.done);
+      case 'completed':
+        return todos.filter((t) => t.done);
+      case 'all':
+      default:
+        return todos;
+    }
+  }
+
+  get activeTodoCount() {
+    return this.state.todos.filter((t) => !t.done).length;
+  }
+}
 
 // Test implementations
 interface UserState {

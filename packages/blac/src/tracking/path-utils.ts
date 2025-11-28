@@ -3,10 +3,14 @@
  *
  * Provides utilities for parsing property paths and extracting values
  * from nested objects using path strings.
+ *
+ * @internal
  */
 
 /**
  * Parse a property path string into an array of segments
+ *
+ * @internal
  *
  * Handles both dot notation (a.b.c) and bracket notation (a[0].b)
  *
@@ -54,6 +58,8 @@ export function parsePath(path: string): string[] {
  * getValueAtPath(obj, ['user', 'name']) // 'Alice'
  * getValueAtPath(obj, ['user', 'age']) // 30
  * getValueAtPath(obj, ['user', 'missing']) // undefined
+ *
+ * @internal
  */
 export function getValueAtPath(obj: any, segments: string[]): any {
   if (obj == null) return undefined;
@@ -75,6 +81,8 @@ export function getValueAtPath(obj: any, segments: string[]): any {
  * shallowEqual([1, 2, 3], [1, 2, 3]) // true
  * shallowEqual([1, 2, 3], [1, 2, 4]) // false
  * shallowEqual([1, 2], [1, 2, 3]) // false
+ *
+ * @internal
  */
 export function shallowEqual(arr1: unknown[], arr2: unknown[]): boolean {
   if (arr1.length !== arr2.length) return false;

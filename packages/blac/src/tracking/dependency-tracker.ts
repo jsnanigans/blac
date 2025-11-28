@@ -7,11 +7,17 @@ import {
 } from './proxy-tracker';
 import { parsePath, getValueAtPath } from './path-utils';
 
+/**
+ * @internal
+ */
 export interface PathInfo {
   segments: string[];
   value: any;
 }
 
+/**
+ * @internal
+ */
 export interface TrackerState<T> {
   proxyTrackerState: ProxyTrackerState<T>;
   previousRenderPaths: Set<string>;
@@ -49,6 +55,9 @@ function getArrayParentPath(path: string): string | null {
   return null;
 }
 
+/**
+ * @internal
+ */
 export function optimizeTrackedPaths(paths: Set<string>): Set<string> {
   if (paths.size === 0) {
     return new Set();
@@ -101,6 +110,9 @@ export function optimizeTrackedPaths(paths: Set<string>): Set<string> {
   return optimized;
 }
 
+/**
+ * @internal
+ */
 export function createTrackerState<T>(): TrackerState<T> {
   return {
     proxyTrackerState: createProxyTrackerState<T>(),
@@ -112,14 +124,23 @@ export function createTrackerState<T>(): TrackerState<T> {
   };
 }
 
+/**
+ * @internal
+ */
 export function startTracking<T>(tracker: TrackerState<T>): void {
   startProxyTracking(tracker.proxyTrackerState);
 }
 
+/**
+ * @internal
+ */
 export function createProxy<T>(tracker: TrackerState<T>, state: T): T {
   return createProxyForTarget(tracker.proxyTrackerState, state);
 }
 
+/**
+ * @internal
+ */
 export function captureTrackedPaths<T>(
   tracker: TrackerState<T>,
   state: T,
@@ -165,6 +186,9 @@ export function captureTrackedPaths<T>(
   tracker.lastCheckedValues.clear();
 }
 
+/**
+ * @internal
+ */
 export function hasChanges<T>(tracker: TrackerState<T>, state: T): boolean {
   if (tracker.pathCache.size === 0) {
     return true;
@@ -186,6 +210,9 @@ export function hasChanges<T>(tracker: TrackerState<T>, state: T): boolean {
   return false;
 }
 
+/**
+ * @internal
+ */
 export function hasTrackedData<T>(tracker: TrackerState<T>): boolean {
   return (
     tracker.proxyTrackerState.trackedPaths.size > 0 ||
