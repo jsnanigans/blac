@@ -19,10 +19,11 @@ export class RouterBloc extends Cubit<RouterState> {
     // Listen for browser back/forward navigation
     window.addEventListener('popstate', this.handlePopState);
 
-    this.onDispose = () => {
+    // Cleanup on dispose
+    this.onSystemEvent('dispose', () => {
       window.removeEventListener('popstate', this.handlePopState);
       console.log('[RouterBloc] Disposed - cleaned up listeners');
-    };
+    });
   }
 
   /**

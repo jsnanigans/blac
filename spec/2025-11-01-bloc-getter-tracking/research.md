@@ -192,7 +192,7 @@ interface HookState<TBloc extends StateContainer<AnyObject>> {
 
 ```typescript
 interface UseBlocOptions<TBloc> {
-  staticProps?: AnyObject;
+  props?: AnyObject;
   instanceId?: string;
   dependencies?: (state, bloc) => unknown[];  // Manual deps (disables auto-track)
   autoTrack?: boolean;                        // Enable/disable state tracking

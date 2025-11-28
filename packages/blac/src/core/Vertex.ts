@@ -1,62 +1,33 @@
-/**
- * Vertex - Event-driven state container (Bloc pattern)
- *
- * Simplified version that includes its own event handling,
- * since events are only needed for the Vertex pattern.
- */
-
 import { StateContainer } from './StateContainer';
 import { BaseEvent } from '../types/events';
 
-/**
- * Event handler signature (synchronous only)
- */
 export type EventHandler<E extends BaseEvent, S> = (
   event: E,
   emit: (state: S) => void,
 ) => void;
 
-/**
- * Type-safe event constructor
- */
 export type EventConstructor<T extends BaseEvent = BaseEvent> = new (
   ...args: never[]
 ) => T;
 
-/**
- * Event handler registration
- */
 interface EventHandlerRegistration<E extends BaseEvent, S> {
   eventClass: EventConstructor<E>;
   handler: EventHandler<E, S>;
 }
 
-/**
- * Vertex is an event-driven state container (Bloc pattern)
- *
- * Includes its own simple event system since events are only needed
- * for the Vertex pattern, not for the base StateContainer.
- */
 export abstract class Vertex<
   S,
   E extends BaseEvent = BaseEvent,
-> extends StateContainer<S> {
+  P = undefined,
+> extends StateContainer<S, P> {
   private eventHandlers = new Map<string, EventHandlerRegistration<E, S>[]>();
   private isProcessing = false;
   private eventQueue: E[] = [];
 
-  /**
-   * Create a new Vertex
-   * @param initialState Initial state value
-   */
   constructor(initialState: S) {
     super(initialState);
   }
 
-  /**
-   * Register an event handler
-   * Arrow function to maintain correct 'this' binding
-   */
   protected on = <T extends E>(
     EventClass: EventConstructor<T>,
     handler: EventHandler<T, S>,
@@ -70,22 +41,12 @@ export abstract class Vertex<
     this.eventHandlers.set(className, registrations);
   };
 
-  /**
-   * Add an event to be processed
-   * Arrow function to maintain correct 'this' binding in React
-   */
   public add = (event: E): void => {
-    // Notify lifecycle listeners
     StateContainer._registry.emit('eventAdded', this, event);
-
     this.processEvent(event);
   };
 
-  /**
-   * Process an event (synchronously)
-   */
   private processEvent(event: E): void {
-    // Queue event if already processing
     if (this.isProcessing) {
       this.eventQueue.push(event);
       return;
@@ -96,7 +57,6 @@ export abstract class Vertex<
     try {
       this.handleEvent(event);
 
-      // Process queued events
       while (this.eventQueue.length > 0) {
         const nextEvent = this.eventQueue.shift()!;
         this.handleEvent(nextEvent);
@@ -106,9 +66,6 @@ export abstract class Vertex<
     }
   }
 
-  /**
-   * Handle a single event (synchronously)
-   */
   private handleEvent(event: E): void {
     const className = event.constructor.name;
     const registrations = this.eventHandlers.get(className);
@@ -120,12 +77,10 @@ export abstract class Vertex<
       return;
     }
 
-    // Create emit function that captures current context
     const emitFn = (state: S) => {
       this.emit(state);
     };
 
-    // Execute all handlers for this event type (synchronously)
     for (const registration of registrations) {
       try {
         registration.handler(event, emitFn);
@@ -133,18 +88,12 @@ export abstract class Vertex<
         if (this.debug) {
           console.error(`Error handling event ${className}:`, error);
         }
-        // Optionally emit error state
         this.onEventError(event, error as Error);
       }
     }
   }
 
-  /**
-   * Hook for handling event processing errors
-   */
-  protected onEventError(_event: E, _error: Error): void {
-    // Override in subclass to handle errors
-  }
+  protected onEventError(_event: E, _error: Error): void {}
 }
 
 /**

@@ -22,7 +22,7 @@ class TestContainer extends StateContainer<number> {
   }
 }
 
-// Test container with lifecycle hooks
+// Test container with lifecycle hooks using system events
 class LifecycleTestContainer extends StateContainer<string> {
   public disposeCallCount = 0;
   public stateChangeCallCount = 0;
@@ -31,16 +31,17 @@ class LifecycleTestContainer extends StateContainer<string> {
 
   constructor(initialState = 'initial') {
     super(initialState);
-  }
 
-  protected onDispose(): void {
-    this.disposeCallCount++;
-  }
+    // Use system events for lifecycle hooks
+    this.onSystemEvent('dispose', () => {
+      this.disposeCallCount++;
+    });
 
-  protected onStateChange(newState: string, previousState: string): void {
-    this.stateChangeCallCount++;
-    this.lastNewState = newState;
-    this.lastPreviousState = previousState;
+    this.onSystemEvent('stateChanged', ({ state, previousState }) => {
+      this.stateChangeCallCount++;
+      this.lastNewState = state;
+      this.lastPreviousState = previousState;
+    });
   }
 
   public testEmit(state: string): void {
@@ -420,7 +421,7 @@ describe('StateContainer', () => {
         );
       });
 
-      it('should call onStateChange lifecycle hook', () => {
+      it('should call stateChanged system event hook', () => {
         const container = new LifecycleTestContainer('initial');
 
         container.testEmit('updated');
@@ -430,25 +431,33 @@ describe('StateContainer', () => {
         expect(container.lastNewState).toBe('updated');
       });
 
-      it('should call onStateChange before notifying listeners', () => {
-        const container = new LifecycleTestContainer('initial');
-        const callOrder: string[] = [];
+      it('should call stateChanged system event before notifying listeners', () => {
+        // Create a container class that tracks call order
+        class OrderTrackingContainer extends StateContainer<string> {
+          callOrder: string[] = [];
+
+          constructor() {
+            super('initial');
+
+            this.onSystemEvent('stateChanged', () => {
+              this.callOrder.push('stateChanged');
+            });
+          }
+
+          public testEmit(state: string): void {
+            this.emit(state);
+          }
+        }
+
+        const container = new OrderTrackingContainer();
 
         container.subscribe(() => {
-          callOrder.push('listener');
+          container.callOrder.push('listener');
         });
-
-        // Override onStateChange to track order
-        const originalOnStateChange =
-          container['onStateChange'].bind(container);
-        container['onStateChange'] = (newState, previousState) => {
-          callOrder.push('onStateChange');
-          originalOnStateChange(newState, previousState);
-        };
 
         container.testEmit('updated');
 
-        expect(callOrder).toEqual(['onStateChange', 'listener']);
+        expect(container.callOrder).toEqual(['stateChanged', 'listener']);
       });
     });
 

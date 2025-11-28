@@ -7,9 +7,9 @@ export function Home() {
         <span className="badge primary">BlaC Examples</span>
         <h1>State Management Reimagined</h1>
         <p>
-          Explore the power of BlaC through these interactive examples.
-          From simple counters to complex event-driven architectures,
-          see how BlaC makes state management predictable and type-safe.
+          Explore the power of BlaC through these interactive examples. From
+          simple counters to complex event-driven architectures, see how BlaC
+          makes state management predictable and type-safe.
         </p>
       </header>
 

@@ -42,8 +42,10 @@
   /* Shadows */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-lg:
+    0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl:
+    0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
 
   /* Spacing */
   --space-xs: 0.25rem;
@@ -54,7 +56,9 @@
   --space-2xl: 4rem;
 
   /* Typography */
-  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-sans:
+    'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
 
   /* Borders */
@@ -188,7 +192,11 @@ code {
 .nav-brand {
   font-weight: 800;
   font-size: 1.5rem;
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-primary) 0%,
+    var(--color-secondary) 100%
+  );
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -259,7 +267,11 @@ button,
 }
 
 button.primary {
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-primary) 0%,
+    var(--color-primary-hover) 100%
+  );
   color: white;
   box-shadow: var(--shadow-md);
 }
@@ -389,7 +401,11 @@ select:focus {
 }
 
 .home-header h1 {
-  background: linear-gradient(135deg, var(--color-text) 0%, var(--color-text-muted) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-text) 0%,
+    var(--color-text-muted) 100%
+  );
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -426,7 +442,11 @@ select:focus {
   left: 0;
   width: 100%;
   height: 4px;
-  background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+  background: linear-gradient(
+    90deg,
+    var(--color-primary),
+    var(--color-secondary)
+  );
   opacity: 0;
   transition: var(--transition-base);
 }
@@ -452,7 +472,11 @@ select:focus {
   font-weight: 800;
   text-align: center;
   padding: var(--space-2xl);
-  background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-bg) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-surface) 0%,
+    var(--color-bg) 100%
+  );
   border-radius: var(--border-radius-lg);
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
   color: var(--color-primary);
@@ -497,7 +521,6 @@ select:focus {
 .text-xs {
   font-size: 0.75rem;
 }
-
 
 .clear-button:hover {
   color: var(--color-text);

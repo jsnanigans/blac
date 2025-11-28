@@ -16,7 +16,7 @@ import { CURRENT_USER_ID } from '../mockData';
  */
 export function MessengerApp() {
   const [appState] = useBloc(AppCubit, {
-    staticProps: { currentUserId: CURRENT_USER_ID },
+    props: { currentUserId: CURRENT_USER_ID },
   });
 
   // Connect to WebSocket

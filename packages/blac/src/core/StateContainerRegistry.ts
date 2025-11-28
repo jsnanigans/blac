@@ -1,13 +1,3 @@
-/**
- * StateContainerRegistry - Centralized instance and lifecycle management
- *
- * Responsibilities:
- * - Instance storage and management (WeakMap per constructor)
- * - Type registration and tracking
- * - Lifecycle event notifications (plugin system)
- * - Global operations (clearAllInstances)
- */
-
 import type { StateContainer, StateContainerConfig } from './StateContainer';
 import type { Vertex } from './Vertex';
 import { createPluginManager } from '../plugin/PluginManager';
@@ -19,27 +9,17 @@ interface TypeConfig {
   isolated: boolean;
 }
 
-/**
- * Internal entry for instance storage
- * Each entry tracks an instance and its reference count
- */
 export interface InstanceEntry<T = any> {
   instance: T;
   refCount: number;
 }
 
-/**
- * Lifecycle events that can be observed
- */
 export type LifecycleEvent =
   | 'created'
   | 'stateChanged'
   | 'eventAdded'
   | 'disposed';
 
-/**
- * Listener function types for each lifecycle event
- */
 export type LifecycleListener<E extends LifecycleEvent> = E extends 'created'
   ? (container: StateContainer<any>) => void
   : E extends 'stateChanged'
@@ -55,70 +35,35 @@ export type LifecycleListener<E extends LifecycleEvent> = E extends 'created'
         ? (container: StateContainer<any>) => void
         : never;
 
-/**
- * Registry for coordinating StateContainer lifecycle and managing instances
- *
- * Centralizes all instance management using WeakMap to ensure proper isolation.
- */
 export class StateContainerRegistry {
-  /**
-   * Global storage for all instance Maps, keyed by constructor
-   *
-   * IMPORTANT: JavaScript/TypeScript static properties are inherited by reference,
-   * meaning all subclasses would share the same Map. To ensure each subclass has
-   * its own instance storage, we use a WeakMap keyed by the constructor function.
-   *
-   * This approach guarantees:
-   * - CounterBloc instances are separate from UserBloc instances
-   * - Each class owns and manages its own instances
-   * - Automatic garbage collection when classes are no longer referenced
-   */
   private readonly instancesByConstructor = new WeakMap<
     new (...args: any[]) => StateContainer<any>,
     Map<string, InstanceEntry>
   >();
 
-  /**
-   * Strong Set for tracking all registered types
-   * Used for clearAllInstances() and getStats()
-   */
   private readonly types = new Set<
     new (...args: any[]) => StateContainer<any>
   >();
 
-  /**
-   * Type configurations (isolated flag)
-   */
   private readonly typeConfigs = new Map<string, TypeConfig>();
 
-  /**
-   * Lifecycle event listeners
-   */
   private readonly listeners = new Map<
     LifecycleEvent,
     Set<(...args: any[]) => void>
   >();
 
-  /**
-   * Register a type for tracking
-   * Called automatically on first instance creation
-   */
   registerType<T extends StateContainer<any>>(
     constructor: new (...args: any[]) => T,
   ): void {
     this.types.add(constructor);
   }
 
-  /**
-   * Register a type with isolation mode (explicit registration)
-   */
   register<T extends StateContainer<any>>(
     constructor: new (...args: any[]) => T,
     isolated = false,
   ): void {
     const className = constructor.name;
 
-    // Check for static isolated property
     if (!isolated && isIsolatedClass(constructor)) {
       isolated = true;
     }
@@ -133,12 +78,6 @@ export class StateContainerRegistry {
     this.registerType(constructor);
   }
 
-  // ==================== Instance Management ====================
-
-  /**
-   * Get the instances Map for a specific class
-   * Creates a new Map on first access.
-   */
   private ensureInstancesMap<T extends StateContainer<any>>(
     Type: new (...args: any[]) => T,
   ): Map<string, InstanceEntry> {

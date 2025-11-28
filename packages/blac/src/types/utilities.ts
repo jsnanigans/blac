@@ -1,12 +1,16 @@
 import type { StateContainer } from '../core/StateContainer';
 
-export type ExtractState<T> = T extends StateContainer<infer S> ? S : never;
+export type ExtractState<T> =
+  T extends StateContainer<infer S, any> ? S : never;
+
+export type ExtractProps<T> =
+  T extends StateContainer<any, infer P> ? P : undefined;
 
 export type ExtractConstructorArgs<T> = T extends new (...args: infer P) => any
   ? P
   : never[];
 
-export type BlocConstructor<TBloc extends StateContainer<any>> = (new (
+export type BlocConstructor<TBloc extends StateContainer<any, any>> = (new (
   ...args: any[]
 ) => TBloc) & {
   resolve(instanceKey?: string, ...args: any[]): TBloc;

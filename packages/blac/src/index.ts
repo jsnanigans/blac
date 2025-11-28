@@ -1,4 +1,5 @@
 export * from './core/StateContainer';
+export type { SystemEvent, SystemEventPayloads } from './core/StateContainer';
 export * from './core/StateContainerRegistry';
 export * from './core/Cubit';
 export * from './core/Vertex';

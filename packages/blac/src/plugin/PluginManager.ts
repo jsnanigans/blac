@@ -1,8 +1,3 @@
-/**
- * PluginManager - Manages plugins and provides plugin context
- * TESTS ARE FOR AN OLDER VERSION AND NEED TO BE REWRITTEN
- */
-
 import type { StateContainer } from '../core/StateContainer';
 import type { StateContainerRegistry } from '../core/StateContainerRegistry';
 import type {
@@ -18,9 +13,6 @@ interface InstalledPlugin {
   context: PluginContext;
 }
 
-/**
- * Plugin manager for registering and coordinating plugins
- */
 export class PluginManager {
   private plugins = new Map<string, InstalledPlugin>();
   private registry: StateContainerRegistry;
@@ -30,9 +22,6 @@ export class PluginManager {
     this.setupLifecycleHooks();
   }
 
-  /**
-   * Install a plugin
-   */
   install(plugin: BlacPlugin, config: PluginConfig = {}): void {
     const effectiveConfig: PluginConfig = {
       enabled: true,
@@ -40,7 +29,6 @@ export class PluginManager {
       ...config,
     };
 
-    // Check if plugin should be enabled
     if (!this.shouldEnablePlugin(effectiveConfig)) {
       console.log(
         `[BlaC] Plugin "${plugin.name}" skipped (environment mismatch)`,
@@ -52,17 +40,14 @@ export class PluginManager {
       throw new Error(`Plugin "${plugin.name}" is already installed`);
     }
 
-    // Create plugin context
     const context = this.createPluginContext();
 
-    // Store plugin
     this.plugins.set(plugin.name, {
       plugin,
       config: effectiveConfig,
       context,
     });
 
-    // Call onInstall hook
     if (plugin.onInstall) {
       try {
         plugin.onInstall(context);
@@ -79,16 +64,12 @@ export class PluginManager {
     console.log(`[BlaC] Plugin "${plugin.name}" v${plugin.version} installed`);
   }
 
-  /**
-   * Uninstall a plugin
-   */
   uninstall(pluginName: string): void {
     const installed = this.plugins.get(pluginName);
     if (!installed) {
       throw new Error(`Plugin "${pluginName}" is not installed`);
     }
 
-    // Call onUninstall hook
     if (installed.plugin.onUninstall) {
       try {
         installed.plugin.onUninstall();
@@ -104,30 +85,17 @@ export class PluginManager {
     console.log(`[BlaC] Plugin "${pluginName}" uninstalled`);
   }
 
-  /**
-   * Get installed plugin
-   */
   getPlugin(pluginName: string): BlacPlugin | undefined {
     return this.plugins.get(pluginName)?.plugin;
   }
 
-  /**
-   * Get all installed plugins
-   */
   getAllPlugins(): BlacPlugin[] {
     return Array.from(this.plugins.values()).map((p) => p.plugin);
   }
 
-  /**
-   * Check if plugin is installed
-   */
   hasPlugin(pluginName: string): boolean {
     return this.plugins.has(pluginName);
   }
-
-  /**
-   * Clear all plugins (for testing)
-   */
   clear(): void {
     for (const name of this.plugins.keys()) {
       this.uninstall(name);

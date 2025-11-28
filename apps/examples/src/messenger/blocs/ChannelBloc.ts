@@ -11,19 +11,19 @@ import { webSocket } from '../services/WebSocketMock';
 export class SendMessageEvent implements BaseEvent {
   readonly type = 'send_message';
   readonly timestamp = Date.now();
-  constructor(public readonly userId: string) { }
+  constructor(public readonly userId: string) {}
 }
 
 export class UpdateDraftMessageEvent implements BaseEvent {
   readonly type = 'update_draft_message';
   readonly timestamp = Date.now();
-  constructor(public readonly draftText: string) { }
+  constructor(public readonly draftText: string) {}
 }
 
 export class ReceiveMessageEvent implements BaseEvent {
   readonly type = 'receive_message';
   readonly timestamp = Date.now();
-  constructor(public readonly message: Message) { }
+  constructor(public readonly message: Message) {}
 }
 
 export class UserTypingEvent implements BaseEvent {
@@ -32,13 +32,13 @@ export class UserTypingEvent implements BaseEvent {
   constructor(
     public readonly userId: string,
     public readonly isTyping: boolean,
-  ) { }
+  ) {}
 }
 
 export class MarkAsReadEvent implements BaseEvent {
   readonly type = 'mark_as_read';
   readonly timestamp = Date.now();
-  constructor() { }
+  constructor() {}
 }
 
 export class UpdateMessageStatusEvent implements BaseEvent {
@@ -47,7 +47,7 @@ export class UpdateMessageStatusEvent implements BaseEvent {
   constructor(
     public readonly messageId: string,
     public readonly status: Message['status'],
-  ) { }
+  ) {}
 }
 
 export interface ChannelState {
@@ -92,9 +92,7 @@ export class ChannelBloc extends Vertex<ChannelState> {
       (c) => c.id === props?.channelId,
     );
     if (!channelInfo) {
-      throw new Error(
-        'ChannelBloc requires a channel to be passed via staticProps',
-      );
+      throw new Error('ChannelBloc requires a channel to be passed via props');
     }
 
     // Try to load persisted data
@@ -197,6 +195,9 @@ export class ChannelBloc extends Vertex<ChannelState> {
         draftMessage: event.draftText,
       });
     });
+
+    // Setup dispose handler
+    this.setupDispose();
   }
 
   // Getter for typing indicator text
@@ -210,22 +211,19 @@ export class ChannelBloc extends Vertex<ChannelState> {
   /**
    * Persist channel data before disposal
    */
-  onDispose = () => {
-    // Save messages to sessionStorage so they can be restored later
-    const notificationCubit = NotificationCubit.getSafe();
-    const unreadCount = notificationCubit.error
-      ? 0
-      : notificationCubit.instance.getUnreadCount(this.state.channel.id);
+  private setupDispose() {
+    this.onSystemEvent('dispose', () => {
+      // Save messages to sessionStorage so they can be restored later
+      persistenceService.saveChannel(
+        this.state.channel.id,
+        this.state.messages,
+      );
 
-    persistenceService.saveChannel(
-      this.state.channel.id,
-      this.state.messages,
-    );
-
-    console.log(
-      `[ChannelBloc] Persisted ${this.state.messages.length} messages for channel ${this.state.channel.id}`,
-    );
-  };
+      console.log(
+        `[ChannelBloc] Persisted ${this.state.messages.length} messages for channel ${this.state.channel.id}`,
+      );
+    });
+  }
 
   get channelInfo(): Channel | null {
     return this.state.channel || null;

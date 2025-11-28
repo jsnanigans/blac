@@ -21,7 +21,7 @@ export function ChannelView({ channelId, currentUserId }: ChannelViewProps) {
   console.log(`[ChannelView] Rendering channel ${channelId}`);
   const [channel, channelBloc] = useBloc(ChannelBloc, {
     instanceId: channelId,
-    staticProps: { channelId },
+    props: { channelId },
   });
 
   // Mark channel as read when it's viewed

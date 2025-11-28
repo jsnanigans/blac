@@ -51,7 +51,7 @@ describe('useBloc - filtered list with getter', () => {
     function TestComponent() {
       renderCount++;
       const [state, bloc] = useBloc(ProfileCubit, {
-        staticProps: { initialProfiles },
+        props: { initialProfiles },
       });
 
       return (
@@ -77,7 +77,7 @@ describe('useBloc - filtered list with getter', () => {
     function TestComponent() {
       renderCount++;
       const [state, bloc] = useBloc(ProfileCubit, {
-        staticProps: { initialProfiles },
+        props: { initialProfiles },
       });
 
       return (
@@ -118,7 +118,7 @@ describe('useBloc - filtered list with getter', () => {
     function ProfileList() {
       renderCount++;
       const [state, bloc] = useBloc(ProfileCubit, {
-        staticProps: { initialProfiles },
+        props: { initialProfiles },
       });
 
       return (
@@ -177,7 +177,7 @@ describe('useBloc - filtered list with getter', () => {
     function TestComponent() {
       renderCount++;
       const [, bloc] = useBloc(ProfileCubit, {
-        staticProps: { initialProfiles },
+        props: { initialProfiles },
       });
 
       return (
@@ -235,7 +235,7 @@ describe('useBloc - filtered list with getter', () => {
     function TestComponent() {
       renderCount++;
       const [, bloc] = useBloc(ProfileCubit, {
-        staticProps: { initialProfiles },
+        props: { initialProfiles },
       });
 
       // Only access the getter, not the full state.profiles array

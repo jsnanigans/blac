@@ -13,7 +13,7 @@ export class UserCubit extends Cubit<User> {
   constructor(props?: { userId: string }) {
     const user = MOCK_USERS.find((u) => u.id === props?.userId);
     if (!user) {
-      throw new Error('UserCubit requires user to be passed via staticProps');
+      throw new Error('UserCubit requires user to be passed via props');
     }
     super(user);
   }

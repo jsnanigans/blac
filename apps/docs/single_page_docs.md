@@ -657,7 +657,7 @@ function ChannelListItem({ channelId }: Props) {
 ```typescript
 const [state, bloc] = useBloc(MyBloc, {
   // Pass constructor arguments
-  staticProps: { userId: '123' },
+  props: { userId: '123' },
 
   // Custom instance ID for shared blocs
   instanceId: 'main',
@@ -676,7 +676,7 @@ const [state, bloc] = useBloc(MyBloc, {
 
 **Options Details:**
 
-**`staticProps`**: Constructor arguments
+**`props`**: Constructor arguments
 ```typescript
 class UserBloc extends StateContainer<State> {
   constructor(props?: { userId: string }) {
@@ -686,7 +686,7 @@ class UserBloc extends StateContainer<State> {
 
 // Pass props
 const [state, bloc] = useBloc(UserBloc, {
-  staticProps: { userId: '123' }
+  props: { userId: '123' }
 });
 ```
 Always make constructor parameters optional to avoid runtime errors, the type of the constructor props is not enforced.
@@ -770,7 +770,7 @@ function ActionsOnly() {
 **Options:**
 ```typescript
 const bloc = useBlocActions(CounterBloc, {
-  staticProps: { initialValue: 0 },
+  props: { initialValue: 0 },
   instanceId: 'shared',
   onMount: (bloc) => console.log('Mounted'),
   onUnmount: (bloc) => console.log('Unmounting')
@@ -1222,7 +1222,7 @@ function ChannelListItem({ channelId }: Props) {
 function ChannelView({ channelId }: Props) {
   const [channel, bloc] = useBloc(ChannelBloc, {
     instanceId: channelId,
-    staticProps: { channelId }
+    props: { channelId }
   });
 
   // Pattern 3: Getter automatically tracks NotificationCubit
@@ -1801,7 +1801,7 @@ interface UseBlocOptions<TBloc extends StateContainer<AnyObject>> {
 
 ```typescript
 {
-  staticProps?: any;                    // Constructor arguments
+  props?: any;                    // Constructor arguments
   instanceId?: string;                  // Custom instance ID
   dependencies?: (state, bloc) => any[]; // Manual tracking
   autoTrack?: boolean;                  // Enable/disable auto tracking

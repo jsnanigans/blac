@@ -1,8 +1,8 @@
 import type { ExtractState } from '@blac/core';
 import type { RefObject } from 'react';
 
-export interface UseBlocOptions<TBloc> {
-  staticProps?: any;
+export interface UseBlocOptions<TBloc, TProps = any> {
+  props?: TProps;
   instanceId?: string | number;
   dependencies?: (state: ExtractState<TBloc>, bloc: TBloc) => unknown[];
   autoTrack?: boolean;
@@ -11,8 +11,8 @@ export interface UseBlocOptions<TBloc> {
   onUnmount?: (bloc: TBloc) => void;
 }
 
-export interface UseBlocOptionsWithDependencies<TBloc>
-  extends UseBlocOptions<TBloc> {
+export interface UseBlocOptionsWithDependencies<TBloc, TProps = any>
+  extends UseBlocOptions<TBloc, TProps> {
   dependencies: (state: ExtractState<TBloc>, bloc: TBloc) => unknown[];
   autoTrack?: never;
 }

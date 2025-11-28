@@ -18,12 +18,12 @@ interface SidebarProps {
  */
 export function Sidebar({ currentUserId }: SidebarProps) {
   const [appState, { setActiveChannel }] = useBloc(AppCubit, {
-    staticProps: { currentUserId },
+    props: { currentUserId },
   });
   const [contacts] = useBloc(ContactsCubit);
   const [currentUser] = useBloc(UserCubit, {
     instanceId: currentUserId,
-    staticProps: { userId: currentUserId },
+    props: { userId: currentUserId },
   });
 
   return (

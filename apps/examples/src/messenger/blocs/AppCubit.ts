@@ -19,9 +19,7 @@ export class AppCubit extends Cubit<AppState> {
 
   constructor(props?: { currentUserId: string }) {
     if (!props?.currentUserId) {
-      throw new Error(
-        'AppCubit requires currentUserId to be passed via staticProps',
-      );
+      throw new Error('AppCubit requires currentUserId to be passed via props');
     }
 
     super({

@@ -315,7 +315,6 @@
 }
 
 @keyframes typing {
-
   0%,
   60%,
   100% {
@@ -409,7 +408,11 @@
 }
 
 .message-item.message-own .message-bubble {
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-primary) 0%,
+    var(--color-secondary) 100%
+  );
   color: white;
   border-radius: 18px 18px 4px 18px;
 }
@@ -537,7 +540,11 @@
 }
 
 .message-send-button {
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-primary) 0%,
+    var(--color-primary-hover) 100%
+  );
   color: white;
   border: none;
   border-radius: 50%;

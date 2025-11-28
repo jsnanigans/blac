@@ -119,7 +119,7 @@ function MessageItem({ message, isOwn }: MessageItemProps) {
 
   const [user] = useBloc(UserCubit, {
     instanceId: message.userId,
-    staticProps: { userId: message.userId },
+    props: { userId: message.userId },
   });
 
   const statusIcons = {
@@ -164,7 +164,7 @@ function MessageList({ channelId, currentUserId }: MessageListProps) {
   // This is what determines dependency tracking
   const [{ messages }] = useBloc(ChannelBloc, {
     instanceId: channelId,
-    staticProps: { channelId },
+    props: { channelId },
   });
 
   if (messages.length === 0) {
