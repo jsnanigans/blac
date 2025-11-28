@@ -1,5 +1,12 @@
 # @blac/devtools-connect
 
+## 2.0.0-rc.11
+
+### Patch Changes
+
+- Updated dependencies
+  - @blac/core@2.0.0-rc.11
+
 ## 2.0.0-rc.10
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @blac/core
 
+## 2.0.0-rc.11
+
+### Patch Changes
+
+- Update build script
+
 ## 2.0.0-rc.10
 
 ### Patch Changes

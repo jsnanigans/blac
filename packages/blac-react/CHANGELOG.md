@@ -1,5 +1,13 @@
 # @blac/react
 
+## 2.0.0-rc.11
+
+### Patch Changes
+
+- Update build script
+- Updated dependencies
+  - @blac/core@2.0.0-rc.11
+
 ## 2.0.0-rc.10
 
 ### Patch Changes
