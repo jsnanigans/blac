@@ -1,4 +1,4 @@
-import { Cubit } from '@blac/core';
+import { Cubit, blac } from '@blac/core';
 import type { InstanceData } from '../types';
 import { fuzzyMatch } from '../utils/fuzzyMatch';
 import { DevToolsInstancesBloc } from './DevToolsInstancesBloc';
@@ -18,12 +18,8 @@ export interface InstanceGroup {
  * Manages search query and provides filtered instance results
  * Uses fuzzy matching algorithm for flexible search
  */
+@blac({ excludeFromDevTools: true })
 export class DevToolsSearchBloc extends Cubit<SearchState> {
-  /**
-   * Exclude from DevTools to prevent infinite loop
-   */
-  static __excludeFromDevTools = true;
-
   constructor() {
     super({ query: '' });
   }

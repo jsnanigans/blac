@@ -4,7 +4,7 @@
 import { render, screen, waitFor, act, cleanup } from '@testing-library/react';
 import { describe, it, expect, afterEach } from 'vitest';
 import { useBloc } from '../useBloc';
-import { Cubit, StateContainer } from '@blac/core';
+import { Cubit, StateContainer, blac } from '@blac/core';
 import React from 'react';
 
 // Simplified types
@@ -21,9 +21,8 @@ type LayoutState = {
 };
 
 // Simplified LayoutBloc
+@blac({ excludeFromDevTools: true })
 class LayoutBloc extends Cubit<LayoutState> {
-  static __excludeFromDevTools = true;
-
   constructor() {
     super({
       selectedId: null,

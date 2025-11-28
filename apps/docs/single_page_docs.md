@@ -1301,12 +1301,11 @@ function ChannelView({ channelId }: Props) {
 
 ### Excluding Blocs from DevTools
 
-To prevent internal blocs (like DevTools UI state) from appearing in DevTools panels, mark them with the static `__excludeFromDevTools` property:
+To prevent internal blocs (like DevTools UI state) from appearing in DevTools panels, use the `excludeFromDevTools` option:
 
 ```typescript
+@blac({ excludeFromDevTools: true })
 class InternalBloc extends Cubit<InternalState> {
-  static __excludeFromDevTools = true;  // Won't appear in DevTools
-
   constructor() {
     super(initialState);
   }
@@ -1946,17 +1945,17 @@ function createBloc<TBloc extends StateContainer<any>>(
 ```typescript
 import { blac } from '@blac/core';
 
-@blac({ isolated: true })   // Each instance unique per component
+@blac({ isolated: true })          // Each instance unique per component
 class MyBloc extends Cubit<State> {}
 
-@blac({ keepAlive: true })  // Persist without consumers
+@blac({ keepAlive: true })         // Persist without consumers
 class MyBloc extends Cubit<State> {}
+
+@blac({ excludeFromDevTools: true }) // Hide from DevTools panels
+class InternalBloc extends Cubit<State> {}
 
 // Function syntax (no decorator support needed)
 const MyBloc = blac({ isolated: true })(class extends Cubit<State> {});
-
-// Internal: Hide from DevTools (static property, not decorator)
-static __excludeFromDevTools = true;
 ```
 
 ### System Events

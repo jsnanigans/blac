@@ -1,4 +1,4 @@
-import { Cubit } from '@blac/core';
+import { Cubit, blac } from '@blac/core';
 import type { LogEntry, LogEventType } from '../types';
 
 type LogsState = {
@@ -19,12 +19,8 @@ let logIdCounter = 0;
  * Manages log entries for all BlaC instances
  * Captures lifecycle events, state changes, and other events
  */
+@blac({ excludeFromDevTools: true })
 export class DevToolsLogsBloc extends Cubit<LogsState> {
-  /**
-   * Exclude from DevTools to prevent infinite loop
-   */
-  static __excludeFromDevTools = true;
-
   constructor(maxLogs = 1000) {
     super({
       logs: [],

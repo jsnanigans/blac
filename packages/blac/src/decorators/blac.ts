@@ -1,6 +1,9 @@
 import { BLAC_STATIC_PROPS } from '../constants';
 
-export type BlacOptions = { isolated: true } | { keepAlive: true };
+export type BlacOptions =
+  | { isolated: true }
+  | { keepAlive: true }
+  | { excludeFromDevTools: true };
 
 /**
  * Decorator to configure StateContainer classes.
@@ -12,6 +15,9 @@ export type BlacOptions = { isolated: true } | { keepAlive: true };
  *
  * @blac({ keepAlive: true })
  * class AuthBloc extends Cubit<AuthState> {}
+ *
+ * @blac({ excludeFromDevTools: true })
+ * class InternalBloc extends Cubit<InternalState> {}
  * ```
  *
  * @example Function syntax (no decorator support needed)
@@ -31,6 +37,9 @@ export function blac(options: BlacOptions) {
     }
     if ('keepAlive' in options && options.keepAlive) {
       (target as any)[BLAC_STATIC_PROPS.KEEP_ALIVE] = true;
+    }
+    if ('excludeFromDevTools' in options && options.excludeFromDevTools) {
+      (target as any)[BLAC_STATIC_PROPS.EXCLUDE_FROM_DEVTOOLS] = true;
     }
     return target;
   };

@@ -1,4 +1,4 @@
-import { Cubit } from '@blac/core';
+import { Cubit, blac } from '@blac/core';
 import { DevToolsInstancesBloc } from './DevToolsInstancesBloc';
 
 const MAX_HISTORY_SIZE = 50;
@@ -25,12 +25,8 @@ export type DiffResult = {
  * Manages state history for diff viewing and time-travel debugging
  * Stores up to 50 state snapshots per instance
  */
+@blac({ excludeFromDevTools: true })
 export class DevToolsDiffBloc extends Cubit<DiffState> {
-  /**
-   * Exclude from DevTools to prevent infinite loop
-   */
-  static __excludeFromDevTools = true;
-
   constructor() {
     super({
       stateHistory: new Map(),

@@ -1,4 +1,4 @@
-import { Cubit } from '@blac/core';
+import { Cubit, blac } from '@blac/core';
 import type { InstanceData } from '../types';
 
 type InstancesState = {
@@ -12,13 +12,8 @@ type InstancesState = {
  * Manages the list of BlaC instances and connection status
  * Handles instance CRUD operations and visual animations
  */
+@blac({ excludeFromDevTools: true })
 export class DevToolsInstancesBloc extends Cubit<InstancesState> {
-  /**
-   * Exclude from DevTools to prevent infinite loop
-   * (DevTools tracking itself)
-   */
-  static __excludeFromDevTools = true;
-
   constructor() {
     super({
       instances: [],

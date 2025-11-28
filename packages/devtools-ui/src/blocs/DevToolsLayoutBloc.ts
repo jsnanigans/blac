@@ -1,4 +1,4 @@
-import { Cubit } from '@blac/core';
+import { Cubit, blac } from '@blac/core';
 import type { InstanceData } from '../types';
 import { DevToolsInstancesBloc } from './DevToolsInstancesBloc';
 import { DevToolsDiffBloc, type DiffResult, type StateSnapshot } from './DevToolsDiffBloc';
@@ -16,12 +16,8 @@ type LayoutState = {
  * Manages UI layout state (selection, panel expansion)
  * Provides coordinated getters that pull from other blocs
  */
+@blac({ excludeFromDevTools: true })
 export class DevToolsLayoutBloc extends Cubit<LayoutState> {
-  /**
-   * Exclude from DevTools to prevent infinite loop
-   */
-  static __excludeFromDevTools = true;
-
   constructor() {
     super({
       activeTab: 'Instances', // Default: Instances tab

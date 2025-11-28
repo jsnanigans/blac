@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { StateContainer, Cubit, getPluginManager } from '@blac/core';
+import { StateContainer, Cubit, getPluginManager, blac } from '@blac/core';
 import { DevToolsBrowserPlugin } from './DevToolsBrowserPlugin';
 
 describe('DevToolsBrowserPlugin Lifecycle Integration', () => {
@@ -148,13 +148,12 @@ describe('DevToolsBrowserPlugin Lifecycle Integration', () => {
     expect(plugin.getInstances()[0].className).toBe('TestCubit');
   });
 
-  it('should exclude instances marked with __excludeFromDevTools', () => {
+  it('should exclude instances marked with excludeFromDevTools', () => {
     const plugin = new DevToolsBrowserPlugin({ enabled: true });
     getPluginManager().install(plugin);
 
+    @blac({ excludeFromDevTools: true })
     class InternalCubit extends Cubit<number> {
-      static __excludeFromDevTools = true;
-
       constructor() {
         super(0);
       }

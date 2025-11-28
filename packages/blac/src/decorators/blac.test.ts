@@ -2,7 +2,11 @@ import { describe, it, expect } from 'vitest';
 import { blac } from './blac';
 import { Cubit } from '../core/Cubit';
 import { Vertex } from '../core/Vertex';
-import { isIsolatedClass, isKeepAliveClass } from '../utils/static-props';
+import {
+  isIsolatedClass,
+  isKeepAliveClass,
+  isExcludedFromDevTools,
+} from '../utils/static-props';
 
 describe('blac decorator', () => {
   describe('decorator syntax', () => {
@@ -134,6 +138,33 @@ describe('blac decorator', () => {
       );
 
       expect(isKeepAliveClass(KeepAliveVertex)).toBe(true);
+    });
+  });
+
+  describe('excludeFromDevTools option', () => {
+    it('should mark class as excluded from DevTools using @ decorator', () => {
+      @blac({ excludeFromDevTools: true })
+      class InternalBloc extends Cubit<number> {
+        constructor() {
+          super(0);
+        }
+      }
+
+      expect(isExcludedFromDevTools(InternalBloc)).toBe(true);
+      expect(isIsolatedClass(InternalBloc)).toBe(false);
+      expect(isKeepAliveClass(InternalBloc)).toBe(false);
+    });
+
+    it('should mark class as excluded from DevTools using function syntax', () => {
+      const InternalBloc = blac({ excludeFromDevTools: true })(
+        class extends Cubit<number> {
+          constructor() {
+            super(0);
+          }
+        },
+      );
+
+      expect(isExcludedFromDevTools(InternalBloc)).toBe(true);
     });
   });
 
