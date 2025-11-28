@@ -7,21 +7,45 @@ import type {
   InstanceMetadata,
 } from './BlacPlugin';
 
+/**
+ * Internal structure for tracking installed plugins
+ * @internal
+ */
 interface InstalledPlugin {
   plugin: BlacPlugin;
   config: PluginConfig;
   context: PluginContext;
 }
 
+/**
+ * Manages plugin lifecycle for the BlaC state management system.
+ * Plugins receive notifications about state container lifecycle events.
+ *
+ * @example
+ * ```ts
+ * const manager = createPluginManager(registry);
+ * manager.install(myPlugin, { environment: 'development' });
+ * ```
+ */
 export class PluginManager {
   private plugins = new Map<string, InstalledPlugin>();
   private registry: StateContainerRegistry;
 
+  /**
+   * Create a new PluginManager
+   * @param registry - The StateContainerRegistry to monitor for lifecycle events
+   */
   constructor(registry: StateContainerRegistry) {
     this.registry = registry;
     this.setupLifecycleHooks();
   }
 
+  /**
+   * Install a plugin with optional configuration
+   * @param plugin - The plugin to install
+   * @param config - Optional plugin configuration
+   * @throws Error if plugin is already installed
+   */
   install(plugin: BlacPlugin, config: PluginConfig = {}): void {
     const effectiveConfig: PluginConfig = {
       enabled: true,
@@ -64,6 +88,11 @@ export class PluginManager {
     console.log(`[BlaC] Plugin "${plugin.name}" v${plugin.version} installed`);
   }
 
+  /**
+   * Uninstall a plugin by name
+   * @param pluginName - The name of the plugin to uninstall
+   * @throws Error if plugin is not installed
+   */
   uninstall(pluginName: string): void {
     const installed = this.plugins.get(pluginName);
     if (!installed) {
@@ -85,17 +114,35 @@ export class PluginManager {
     console.log(`[BlaC] Plugin "${pluginName}" uninstalled`);
   }
 
+  /**
+   * Get an installed plugin by name
+   * @param pluginName - The name of the plugin to retrieve
+   * @returns The plugin instance or undefined if not found
+   */
   getPlugin(pluginName: string): BlacPlugin | undefined {
     return this.plugins.get(pluginName)?.plugin;
   }
 
+  /**
+   * Get all installed plugins
+   * @returns Array of all installed plugins
+   */
   getAllPlugins(): BlacPlugin[] {
     return Array.from(this.plugins.values()).map((p) => p.plugin);
   }
 
+  /**
+   * Check if a plugin is installed
+   * @param pluginName - The name of the plugin to check
+   * @returns true if the plugin is installed
+   */
   hasPlugin(pluginName: string): boolean {
     return this.plugins.has(pluginName);
   }
+
+  /**
+   * Uninstall all plugins
+   */
   clear(): void {
     for (const name of this.plugins.keys()) {
       this.uninstall(name);

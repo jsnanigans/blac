@@ -1,21 +1,42 @@
+/**
+ * Log severity levels (lower number = higher severity)
+ */
 export enum LogLevel {
+  /** Critical errors that may cause application failure */
   ERROR = 0,
+  /** Warning conditions that should be addressed */
   WARN = 1,
+  /** Informational messages about application state */
   INFO = 2,
+  /** Detailed debugging information */
   DEBUG = 3,
 }
 
+/**
+ * Structure of a log entry passed to output handlers
+ */
 export interface LogEntry {
+  /** Log level as string (DEBUG, INFO, WARN, ERROR) */
   level: string;
+  /** Context identifier (typically component or module name) */
   context: string;
+  /** Log message */
   message: string;
+  /** Optional structured data */
   data?: any;
+  /** Unix timestamp in milliseconds */
   timestamp: number;
 }
 
+/**
+ * Configuration for the logger
+ */
 export interface LogConfig {
+  /** Whether logging is enabled */
   enabled: boolean;
+  /** Minimum log level to output */
   level: LogLevel;
+  /** Function called to output log entries */
   output: (entry: LogEntry) => void;
 }
 
@@ -105,13 +126,39 @@ let currentConfig: LogConfig = {
 // Default logger instance
 let defaultLogger = createLogger(currentConfig);
 
-// Export individual methods for tree-shaking
+/**
+ * Log a debug message (tree-shakeable export)
+ * @param context - Context identifier (module or component name)
+ * @param message - Log message
+ * @param data - Optional structured data
+ */
 export const debug = (context: string, message: string, data?: any) =>
   defaultLogger.debug(context, message, data);
+
+/**
+ * Log an info message (tree-shakeable export)
+ * @param context - Context identifier (module or component name)
+ * @param message - Log message
+ * @param data - Optional structured data
+ */
 export const info = (context: string, message: string, data?: any) =>
   defaultLogger.info(context, message, data);
+
+/**
+ * Log a warning message (tree-shakeable export)
+ * @param context - Context identifier (module or component name)
+ * @param message - Log message
+ * @param data - Optional structured data
+ */
 export const warn = (context: string, message: string, data?: any) =>
   defaultLogger.warn(context, message, data);
+
+/**
+ * Log an error message (tree-shakeable export)
+ * @param context - Context identifier (module or component name)
+ * @param message - Log message
+ * @param data - Optional structured data
+ */
 export const error = (context: string, message: string, data?: any) =>
   defaultLogger.error(context, message, data);
 

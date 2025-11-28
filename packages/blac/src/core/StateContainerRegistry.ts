@@ -5,21 +5,38 @@ import { getGetterExecutionContext } from '../tracking/getter-tracker';
 import { BLAC_DEFAULTS, BLAC_ERROR_PREFIX } from '../constants';
 import { isIsolatedClass, isKeepAliveClass } from '../utils/static-props';
 
+/**
+ * Internal configuration for registered types
+ * @internal
+ */
 interface TypeConfig {
   isolated: boolean;
 }
 
+/**
+ * Entry in the instance registry, tracking the instance and its reference count
+ * @template T - Instance type
+ */
 export interface InstanceEntry<T = any> {
+  /** The state container instance */
   instance: T;
+  /** Number of active references to this instance */
   refCount: number;
 }
 
+/**
+ * Lifecycle events emitted by the registry
+ */
 export type LifecycleEvent =
   | 'created'
   | 'stateChanged'
   | 'eventAdded'
   | 'disposed';
 
+/**
+ * Listener function type for each lifecycle event
+ * @template E - The lifecycle event type
+ */
 export type LifecycleListener<E extends LifecycleEvent> = E extends 'created'
   ? (container: StateContainer<any>) => void
   : E extends 'stateChanged'
@@ -35,6 +52,19 @@ export type LifecycleListener<E extends LifecycleEvent> = E extends 'created'
         ? (container: StateContainer<any>) => void
         : never;
 
+/**
+ * Central registry for managing StateContainer instances.
+ * Handles instance lifecycle, ref counting, and lifecycle event emission.
+ *
+ * @example
+ * ```ts
+ * const registry = new StateContainerRegistry();
+ * const instance = registry.resolve(MyBloc);
+ * registry.on('stateChanged', (container, prev, next) => {
+ *   console.log('State changed:', prev, '->', next);
+ * });
+ * ```
+ */
 export class StateContainerRegistry {
   private readonly instancesByConstructor = new WeakMap<
     new (...args: any[]) => StateContainer<any>,
@@ -52,12 +82,22 @@ export class StateContainerRegistry {
     Set<(...args: any[]) => void>
   >();
 
+  /**
+   * Register a type for lifecycle event tracking
+   * @param constructor - The StateContainer class constructor
+   */
   registerType<T extends StateContainer<any>>(
     constructor: new (...args: any[]) => T,
   ): void {
     this.types.add(constructor);
   }
 
+  /**
+   * Register a StateContainer class with configuration
+   * @param constructor - The StateContainer class constructor
+   * @param isolated - Whether instances should be isolated (component-scoped)
+   * @throws Error if type is already registered
+   */
   register<T extends StateContainer<any>>(
     constructor: new (...args: any[]) => T,
     isolated = false,

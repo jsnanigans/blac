@@ -142,6 +142,11 @@ export interface PluginConfig {
   environment?: 'development' | 'production' | 'test' | 'all';
 }
 
+/**
+ * Type guard to check if a plugin has a required onInstall hook
+ * @param plugin - The plugin to check
+ * @returns true if the plugin implements BlacPluginWithInit
+ */
 export function hasInitHook(plugin: BlacPlugin): plugin is BlacPluginWithInit {
   return typeof plugin.onInstall === 'function';
 }

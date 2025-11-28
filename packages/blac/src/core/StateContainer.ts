@@ -4,40 +4,99 @@ import {
   globalRegistry,
 } from './StateContainerRegistry';
 
+/**
+ * Configuration options for initializing a StateContainer instance
+ */
 export interface StateContainerConfig {
+  /** Display name for the instance (defaults to class name) */
   name?: string;
+  /** Enable debug logging for this instance */
   debug?: boolean;
+  /** Custom instance identifier */
   instanceId?: string;
 }
 
+/**
+ * Listener function for state changes
+ * @internal
+ */
 type StateListener<S> = (state: S) => void;
 
+/**
+ * System events emitted by StateContainer lifecycle
+ */
 export type SystemEvent = 'propsUpdated' | 'stateChanged' | 'dispose';
 
+/**
+ * Payload types for each system event
+ * @template S - State type
+ * @template P - Props type
+ */
 export interface SystemEventPayloads<S, P> {
+  /** Emitted when props are updated via updateProps() */
   propsUpdated: { props: P; previousProps: P | undefined };
+  /** Emitted when state changes via emit() or update() */
   stateChanged: { state: S; previousState: S };
+  /** Emitted when the instance is disposed */
   dispose: void;
 }
 
+/**
+ * Handler function for system events
+ * @internal
+ */
 type SystemEventHandler<S, P, E extends SystemEvent> = (
   payload: SystemEventPayloads<S, P>[E],
 ) => void;
 
+/**
+ * Abstract base class for all state containers in BlaC.
+ * Provides lifecycle management, subscription handling, ref counting,
+ * and integration with the global registry.
+ *
+ * @template S - State type managed by this container
+ * @template P - Props type passed to the container (optional)
+ *
+ * @example
+ * ```ts
+ * class CounterBloc extends StateContainer<number> {
+ *   constructor() {
+ *     super(0);
+ *   }
+ *   increment() {
+ *     this.emit(this.state + 1);
+ *   }
+ * }
+ * ```
+ */
 export abstract class StateContainer<S, P = undefined> {
+  /** @internal Flag to exclude this class from DevTools tracking */
   static __excludeFromDevTools = false;
 
+  /** @internal Global registry for all state container instances */
   protected static _registry = globalRegistry;
 
+  /**
+   * Get the global StateContainerRegistry
+   * @returns The registry managing all state container instances
+   */
   static getRegistry(): StateContainerRegistry {
     return StateContainer._registry;
   }
 
+  /**
+   * Replace the global registry (clears existing instances)
+   * @param registry - The new registry to use
+   */
   static setRegistry(registry: StateContainerRegistry): void {
     StateContainer._registry.clearAll();
     StateContainer._registry = registry;
   }
 
+  /**
+   * Register this class with the global registry
+   * @param isolated - Whether instances should be isolated (component-scoped)
+   */
   static register<T extends StateContainer<any>>(
     this: new (...args: any[]) => T,
     isolated = false,
@@ -45,6 +104,13 @@ export abstract class StateContainer<S, P = undefined> {
     StateContainer._registry.register(this, isolated);
   }
 
+  /**
+   * Resolve an instance with ref counting (ownership semantics).
+   * Creates a new instance if one doesn't exist, or returns existing and increments ref count.
+   * @param instanceKey - Optional instance key (defaults to 'default')
+   * @param constructorArgs - Arguments to pass to constructor if creating new instance
+   * @returns The state container instance
+   */
   static resolve<T extends StateContainer<any>>(
     this: new (...args: any[]) => T,
     instanceKey?: string,
@@ -53,6 +119,12 @@ export abstract class StateContainer<S, P = undefined> {
     return StateContainer._registry.resolve(this, instanceKey, constructorArgs);
   }
 
+  /**
+   * Get an existing instance without incrementing ref count (borrowing semantics).
+   * @param instanceKey - Optional instance key (defaults to 'default')
+   * @returns The state container instance
+   * @throws Error if instance doesn't exist
+   */
   static get<T extends StateContainer<any>>(
     this: new (...args: any[]) => T,
     instanceKey?: string,
@@ -60,6 +132,11 @@ export abstract class StateContainer<S, P = undefined> {
     return StateContainer._registry.get(this, instanceKey);
   }
 
+  /**
+   * Safely get an existing instance with error handling.
+   * @param instanceKey - Optional instance key (defaults to 'default')
+   * @returns Discriminated union with either the instance or an error
+   */
   static getSafe<T extends StateContainer<any>>(
     this: new (...args: any[]) => T,
     instanceKey?: string,
@@ -67,6 +144,13 @@ export abstract class StateContainer<S, P = undefined> {
     return StateContainer._registry.getSafe(this, instanceKey);
   }
 
+  /**
+   * Connect to an instance for bloc-to-bloc communication (borrowing semantics).
+   * Gets or creates instance without incrementing ref count.
+   * @param instanceKey - Optional instance key (defaults to 'default')
+   * @param constructorArgs - Arguments to pass to constructor if creating new instance
+   * @returns The state container instance
+   */
   static connect<T extends StateContainer<any>>(
     this: new (...args: any[]) => T,
     instanceKey?: string,
@@ -75,6 +159,12 @@ export abstract class StateContainer<S, P = undefined> {
     return StateContainer._registry.connect(this, instanceKey, constructorArgs);
   }
 
+  /**
+   * Release a reference to an instance.
+   * Decrements ref count and disposes when it reaches 0 (unless keepAlive).
+   * @param instanceKey - Optional instance key (defaults to 'default')
+   * @param forceDispose - Force immediate disposal regardless of ref count
+   */
   static release<T extends StateContainer<any>>(
     this: new (...args: any[]) => T,
     instanceKey?: string,
@@ -83,12 +173,20 @@ export abstract class StateContainer<S, P = undefined> {
     StateContainer._registry.release(this, instanceKey, forceDispose);
   }
 
+  /**
+   * Get all instances of this class
+   * @returns Array of all instances
+   */
   static getAll<T extends StateContainer<any>>(
     this: new (...args: any[]) => T,
   ): T[] {
     return StateContainer._registry.getAll(this);
   }
 
+  /**
+   * Iterate over all instances of this class
+   * @param callback - Function to call for each instance
+   */
   static forEach<T extends StateContainer<any>>(
     this: new (...args: any[]) => T,
     callback: (instance: T) => void,
@@ -96,16 +194,26 @@ export abstract class StateContainer<S, P = undefined> {
     StateContainer._registry.forEach(this, callback);
   }
 
+  /**
+   * Clear all instances of this class (disposes them)
+   */
   static clear<T extends StateContainer<any>>(
     this: new (...args: any[]) => T,
   ): void {
     StateContainer._registry.clear(this);
   }
 
+  /**
+   * Clear all instances from all registered types
+   */
   static clearAllInstances(): void {
     StateContainer._registry.clearAll();
   }
 
+  /**
+   * Get registry statistics for debugging
+   * @returns Object with registeredTypes, totalInstances, and typeBreakdown
+   */
   static getStats(): {
     registeredTypes: number;
     totalInstances: number;
@@ -114,6 +222,11 @@ export abstract class StateContainer<S, P = undefined> {
     return StateContainer._registry.getStats();
   }
 
+  /**
+   * Get reference count for an instance
+   * @param instanceKey - Optional instance key (defaults to 'default')
+   * @returns Current ref count (0 if instance doesn't exist)
+   */
   static getRefCount<T extends StateContainer<any>>(
     this: new (...args: any[]) => T,
     instanceKey?: string,
@@ -121,6 +234,11 @@ export abstract class StateContainer<S, P = undefined> {
     return StateContainer._registry.getRefCount(this, instanceKey);
   }
 
+  /**
+   * Check if an instance exists
+   * @param instanceKey - Optional instance key (defaults to 'default')
+   * @returns true if instance exists
+   */
   static hasInstance<T extends StateContainer<any>>(
     this: new (...args: any[]) => T,
     instanceKey?: string,
@@ -138,11 +256,16 @@ export abstract class StateContainer<S, P = undefined> {
     Set<SystemEventHandler<S, P, any>>
   >();
 
+  /** Display name for this instance */
   name: string = this.constructor.name;
+  /** Whether debug logging is enabled */
   debug: boolean = false;
+  /** Unique identifier for this instance */
   instanceId: string = generateSimpleId(this.constructor.name, 'main');
+  /** Timestamp when this instance was created */
   createdAt: number = Date.now();
 
+  /** Current props value passed to this container */
   get props(): P | undefined {
     return this._props;
   }
@@ -151,6 +274,11 @@ export abstract class StateContainer<S, P = undefined> {
     this._state = initialState;
   }
 
+  /**
+   * Initialize configuration for this instance.
+   * Called by the registry after construction.
+   * @param config - Configuration options
+   */
   initConfig(config: StateContainerConfig): void {
     this.config = { ...config };
     this.name = this.config.name || this.constructor.name;
@@ -163,14 +291,21 @@ export abstract class StateContainer<S, P = undefined> {
     StateContainer._registry.emit('created', this);
   }
 
+  /** Current state value */
   get state(): S {
     return this._state;
   }
 
+  /** Whether this instance has been disposed */
   get isDisposed(): boolean {
     return this._disposed;
   }
 
+  /**
+   * Subscribe to state changes
+   * @param listener - Function called when state changes
+   * @returns Unsubscribe function
+   */
   subscribe(listener: StateListener<S>): () => void {
     if (this._disposed) {
       throw new Error(`Cannot subscribe to disposed container ${this.name}`);
@@ -180,6 +315,10 @@ export abstract class StateContainer<S, P = undefined> {
     return () => this.listeners.delete(listener);
   }
 
+  /**
+   * Dispose this instance and clean up resources.
+   * Clears all listeners and emits the 'dispose' system event.
+   */
   dispose(): void {
     if (this._disposed) return;
 
@@ -201,6 +340,11 @@ export abstract class StateContainer<S, P = undefined> {
     }
   }
 
+  /**
+   * Emit a new state value and notify all listeners.
+   * @param newState - The new state value
+   * @protected
+   */
   protected emit(newState: S): void {
     if (this._disposed) {
       throw new Error(`Cannot emit state from disposed container ${this.name}`);
@@ -236,6 +380,7 @@ export abstract class StateContainer<S, P = undefined> {
     this.lastUpdateTimestamp = Date.now();
   }
 
+  /** Whether to capture stack traces on state changes (disabled in production) */
   static enableStackTrace = true;
 
   private captureStackTrace(): string {
@@ -332,8 +477,14 @@ export abstract class StateContainer<S, P = undefined> {
     return path;
   }
 
+  /** Timestamp of the last state update */
   lastUpdateTimestamp: number = Date.now();
 
+  /**
+   * Update state using a transform function.
+   * @param updater - Function that receives current state and returns new state
+   * @protected
+   */
   protected update(updater: (current: S) => S): void {
     if (this._disposed) {
       throw new Error(
@@ -343,6 +494,13 @@ export abstract class StateContainer<S, P = undefined> {
     this.emit(updater(this._state));
   }
 
+  /**
+   * Subscribe to system lifecycle events.
+   * @param event - The event type to listen for
+   * @param handler - Handler function called when event occurs
+   * @returns Unsubscribe function
+   * @protected
+   */
   protected onSystemEvent = <E extends SystemEvent>(
     event: E,
     handler: SystemEventHandler<S, P, E>,
@@ -375,6 +533,11 @@ export abstract class StateContainer<S, P = undefined> {
     }
   }
 
+  /**
+   * Update the props for this container.
+   * Emits the 'propsUpdated' system event.
+   * @param newProps - The new props value
+   */
   updateProps(newProps: P): void {
     if (this._disposed) {
       throw new Error(`Cannot update props on disposed container ${this.name}`);

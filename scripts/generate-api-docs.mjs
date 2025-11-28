@@ -2,6 +2,7 @@
 /**
  * Custom API documenter for VitePress
  * Reads api-extractor .api.json files and generates clean markdown
+ * Outputs multiple pages organized by topic
  */
 
 import * as fs from 'node:fs';
@@ -13,12 +14,85 @@ const ROOT_DIR = path.resolve(__dirname, '..');
 const DOCS_DIR = path.join(ROOT_DIR, 'apps/docs');
 const API_OUTPUT_DIR = path.join(DOCS_DIR, 'api');
 
+// Topic groupings for @blac/core
+const CORE_TOPICS = {
+  main: {
+    title: '@blac/core',
+    description: 'Core state management primitives',
+    classes: ['StateContainer', 'Cubit', 'Vertex'],
+    interfaces: ['StateContainerConfig', 'BaseEvent', 'SystemEventPayloads'],
+    functions: ['blac'],
+    types: ['SystemEvent', 'ExtractState', 'ExtractProps', 'ExtractConstructorArgs'],
+  },
+  registry: {
+    title: 'Registry',
+    description: 'Instance management and lifecycle',
+    classes: ['StateContainerRegistry'],
+    interfaces: ['InstanceEntry', 'InstanceMetadata'],
+    functions: [],
+    types: ['LifecycleEvent', 'LifecycleListener', 'BlocConstructor'],
+  },
+  plugins: {
+    title: 'Plugins',
+    description: 'Plugin system for extending BlaC',
+    classes: ['PluginManager'],
+    interfaces: ['BlacPlugin', 'BlacPluginWithInit', 'PluginConfig', 'PluginContext'],
+    functions: ['createPluginManager', 'getPluginManager', 'hasInitHook'],
+    types: [],
+  },
+  adapter: {
+    title: 'Framework Adapter',
+    description: 'React integration and dependency tracking',
+    classes: ['ExternalDependencyManager'],
+    interfaces: ['AdapterState', 'ManualDepsConfig'],
+    functions: [
+      'initAutoTrackState',
+      'initManualDepsState',
+      'initNoTrackState',
+      'createAutoTrackSnapshot',
+      'createAutoTrackSubscribe',
+      'createManualDepsSnapshot',
+      'createManualDepsSubscribe',
+      'createNoTrackSnapshot',
+      'createNoTrackSubscribe',
+      'disableGetterTracking',
+    ],
+    types: ['SnapshotFunction', 'SubscribeFunction', 'SubscriptionCallback'],
+  },
+  logging: {
+    title: 'Logging',
+    description: 'Logging utilities for debugging',
+    classes: [],
+    interfaces: ['LogConfig', 'LogEntry'],
+    functions: ['createLogger', 'configureLogger', 'debug', 'info', 'warn', 'error'],
+    types: [],
+    enums: ['LogLevel'],
+  },
+  utilities: {
+    title: 'Utilities',
+    description: 'Helper functions, ID generation, and type utilities',
+    classes: [],
+    interfaces: [],
+    functions: [
+      'generateId',
+      'generateSimpleId',
+      'generateIsolatedKey',
+      'createIdGenerator',
+      'getStaticProp',
+      'isIsolatedClass',
+      'isIsolatedKey',
+      'isKeepAliveClass',
+      'isExcludedFromDevTools',
+    ],
+    types: ['BlacOptions', 'Brand', 'BrandedId', 'InstanceId', 'EventConstructor', 'EventHandler'],
+    variables: ['BLAC_DEFAULTS', 'BLAC_ERROR_PREFIX', 'BLAC_ID_PATTERNS', 'BLAC_STATIC_PROPS', 'globalRegistry'],
+  },
+};
+
 function sanitizeMarkdown(text) {
   if (!text || typeof text !== 'string') return '';
   return text
-    // Escape [native code] which VitePress tries to parse as links
     .replace(/\[native code\]/g, '`[native code]`')
-    // Escape other bracket patterns that look like links but aren't
     .replace(/function Object\(\) \{/g, '`function Object() {`');
 }
 
@@ -36,7 +110,6 @@ function parseDocComment(docComment) {
 
   if (!docComment) return result;
 
-  // Remove /** and */ and clean up
   let cleaned = docComment
     .replace(/^\/\*\*\s*\n?/, '')
     .replace(/\s*\*\/\s*$/, '')
@@ -45,39 +118,44 @@ function parseDocComment(docComment) {
     .join('\n')
     .trim();
 
-  // Extract @param tags
+  // Protect @ symbols inside code blocks from being parsed as tags
+  const codeBlockPlaceholder = '___CODE_BLOCK___';
+  const codeBlocks = [];
+  cleaned = cleaned.replace(/```[\s\S]*?```/g, (match) => {
+    codeBlocks.push(match);
+    return `${codeBlockPlaceholder}${codeBlocks.length - 1}${codeBlockPlaceholder}`;
+  });
+
   const paramRegex = /@param\s+(\w+)\s*[-–]?\s*([^@]*)/g;
   let match;
   while ((match = paramRegex.exec(cleaned)) !== null) {
     result.params[match[1]] = match[2].trim();
   }
 
-  // Extract @returns
   const returnsMatch = cleaned.match(/@returns?\s+([^@]*)/);
   if (returnsMatch) {
     result.returns = returnsMatch[1].trim();
   }
 
-  // Extract @example blocks
-  const exampleRegex = /@example\s*([\s\S]*?)(?=@\w|$)/g;
+  // Match @example until the next @tag at line start (not inside code blocks)
+  const exampleRegex = /@example\s*([\s\S]*?)(?=\n@\w|$)/g;
   while ((match = exampleRegex.exec(cleaned)) !== null) {
     let example = match[1].trim();
+    // Restore code blocks in example
+    example = example.replace(new RegExp(`${codeBlockPlaceholder}(\\d+)${codeBlockPlaceholder}`, 'g'), (_, idx) => codeBlocks[parseInt(idx)]);
+
     if (example) {
-      // Check if example starts with a title (text before a code block)
+      // Check for title + code block pattern
       const codeBlockMatch = example.match(/^([^\n`]+)\n(```[\s\S]*?```)$/);
       if (codeBlockMatch) {
-        // Has title and code block - format as: **Title**\n\ncode
         const title = codeBlockMatch[1].trim();
         const code = codeBlockMatch[2].trim();
         example = `**${title}**\n\n${code}`;
-      } else if (example.includes('```')) {
-        // Already has code block, use as-is
-      } else {
-        // Check if first line looks like a title (no code characters)
+      } else if (!example.includes('```')) {
+        // No code block - check if first line is a title
         const lines = example.split('\n');
         const firstLine = lines[0];
         if (lines.length > 1 && !firstLine.includes('(') && !firstLine.includes('{') && !firstLine.includes('=')) {
-          // First line is likely a title
           const title = firstLine.trim();
           const code = lines.slice(1).join('\n').trim();
           example = `**${title}**\n\n\`\`\`typescript\n${code}\n\`\`\``;
@@ -87,23 +165,34 @@ function parseDocComment(docComment) {
     }
   }
 
-  // Description is everything before the first @ tag
-  const firstTagIndex = cleaned.search(/@\w/);
-  if (firstTagIndex > 0) {
-    result.description = cleaned.slice(0, firstTagIndex).trim();
-  } else if (firstTagIndex === -1) {
+  // Restore code blocks for description extraction
+  cleaned = cleaned.replace(new RegExp(`${codeBlockPlaceholder}(\\d+)${codeBlockPlaceholder}`, 'g'), (_, idx) => codeBlocks[parseInt(idx)]);
+
+  // Find first @tag that's at the start of a line
+  const firstTagMatch = cleaned.match(/^@\w/m);
+  if (firstTagMatch) {
+    const firstTagIndex = cleaned.indexOf(firstTagMatch[0]);
+    if (firstTagIndex > 0) {
+      result.description = cleaned.slice(0, firstTagIndex).trim();
+    }
+  } else {
     result.description = cleaned;
   }
 
   return result;
 }
 
-function generateClassMarkdown(cls) {
+function sortByName(items) {
+  return [...items].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function generateClassMarkdown(cls, headingLevel = 3) {
   const doc = parseDocComment(cls.docComment);
   const signature = extractExcerpt(cls.excerptTokens);
+  const heading = '#'.repeat(headingLevel);
   let md = '';
 
-  md += `### ${cls.name}\n\n`;
+  md += `${heading} ${cls.name}\n\n`;
 
   if (cls.isAbstract) {
     md += `> **Abstract class**\n\n`;
@@ -115,7 +204,6 @@ function generateClassMarkdown(cls) {
 
   md += '```typescript\n' + signature.trim() + '\n```\n\n';
 
-  // Type parameters
   if (cls.typeParameters && cls.typeParameters.length > 0) {
     md += '**Type Parameters:**\n\n';
     for (const tp of cls.typeParameters) {
@@ -124,7 +212,6 @@ function generateClassMarkdown(cls) {
     md += '\n';
   }
 
-  // Constructor
   const constructor = cls.members.find((m) => m.kind === 'Constructor');
   if (constructor) {
     const ctorSignature = extractExcerpt(constructor.excerptTokens);
@@ -148,9 +235,8 @@ function generateClassMarkdown(cls) {
     }
   }
 
-  // Properties
-  const properties = cls.members.filter(
-    (m) => m.kind === 'Property' || m.kind === 'PropertySignature',
+  const properties = sortByName(
+    cls.members.filter((m) => m.kind === 'Property' || m.kind === 'PropertySignature'),
   );
   if (properties.length > 0) {
     md += '**Properties:**\n\n';
@@ -159,7 +245,6 @@ function generateClassMarkdown(cls) {
     for (const prop of properties) {
       const propDoc = parseDocComment(prop.docComment);
       const signature = extractExcerpt(prop.excerptTokens);
-      // Extract type from signature like "name: Type"
       const typeMatch = signature.match(/:\s*(.+?)(?:;|$)/);
       const typeStr = typeMatch ? typeMatch[1].trim().replace(/\|/g, '\\|') : '';
       const modifiers = [];
@@ -172,8 +257,7 @@ function generateClassMarkdown(cls) {
     md += '\n';
   }
 
-  // Methods
-  const methods = cls.members.filter((m) => m.kind === 'Method');
+  const methods = sortByName(cls.members.filter((m) => m.kind === 'Method'));
   if (methods.length > 0) {
     md += '**Methods:**\n\n';
     for (const method of methods) {
@@ -212,7 +296,6 @@ function generateClassMarkdown(cls) {
     }
   }
 
-  // Examples
   if (doc.examples.length > 0) {
     md += '**Examples:**\n\n';
     for (const example of doc.examples) {
@@ -223,12 +306,13 @@ function generateClassMarkdown(cls) {
   return md;
 }
 
-function generateInterfaceMarkdown(iface) {
+function generateInterfaceMarkdown(iface, headingLevel = 3) {
   const doc = parseDocComment(iface.docComment);
   const signature = extractExcerpt(iface.excerptTokens);
+  const heading = '#'.repeat(headingLevel);
   let md = '';
 
-  md += `### ${iface.name}\n\n`;
+  md += `${heading} ${iface.name}\n\n`;
 
   if (doc.description) {
     md += `${doc.description}\n\n`;
@@ -236,9 +320,8 @@ function generateInterfaceMarkdown(iface) {
 
   md += '```typescript\n' + signature.trim() + '\n```\n\n';
 
-  // Properties
-  const properties = (iface.members || []).filter(
-    (m) => m.kind === 'Property' || m.kind === 'PropertySignature',
+  const properties = sortByName(
+    (iface.members || []).filter((m) => m.kind === 'Property' || m.kind === 'PropertySignature'),
   );
   if (properties.length > 0) {
     md += '| Property | Type | Description |\n';
@@ -254,8 +337,9 @@ function generateInterfaceMarkdown(iface) {
     md += '\n';
   }
 
-  // Methods
-  const methods = (iface.members || []).filter((m) => m.kind === 'Method' || m.kind === 'MethodSignature');
+  const methods = sortByName(
+    (iface.members || []).filter((m) => m.kind === 'Method' || m.kind === 'MethodSignature'),
+  );
   if (methods.length > 0) {
     md += '**Methods:**\n\n';
     for (const method of methods) {
@@ -272,12 +356,13 @@ function generateInterfaceMarkdown(iface) {
   return md;
 }
 
-function generateFunctionMarkdown(fn) {
+function generateFunctionMarkdown(fn, headingLevel = 3) {
   const doc = parseDocComment(fn.docComment);
   const signature = extractExcerpt(fn.excerptTokens);
+  const heading = '#'.repeat(headingLevel);
   let md = '';
 
-  md += `### ${fn.name}\n\n`;
+  md += `${heading} ${fn.name}\n\n`;
 
   if (doc.description) {
     md += `${doc.description}\n\n`;
@@ -307,12 +392,9 @@ function generateFunctionMarkdown(fn) {
   if (doc.examples.length > 0) {
     md += '**Examples:**\n\n';
     for (const example of doc.examples) {
-      // Examples are already formatted by parseDocComment
-      // They either have code blocks or have been wrapped already
       if (example.includes('```')) {
         md += example + '\n\n';
       } else {
-        // Single-line example without code block
         md += '```typescript\n' + example + '\n```\n\n';
       }
     }
@@ -321,12 +403,13 @@ function generateFunctionMarkdown(fn) {
   return md;
 }
 
-function generateTypeAliasMarkdown(alias) {
+function generateTypeAliasMarkdown(alias, headingLevel = 3) {
   const doc = parseDocComment(alias.docComment);
   const signature = extractExcerpt(alias.excerptTokens);
+  const heading = '#'.repeat(headingLevel);
   let md = '';
 
-  md += `### ${alias.name}\n\n`;
+  md += `${heading} ${alias.name}\n\n`;
 
   if (doc.description) {
     md += `${doc.description}\n\n`;
@@ -337,12 +420,13 @@ function generateTypeAliasMarkdown(alias) {
   return md;
 }
 
-function generateVariableMarkdown(variable) {
+function generateVariableMarkdown(variable, headingLevel = 3) {
   const doc = parseDocComment(variable.docComment);
   const signature = extractExcerpt(variable.excerptTokens);
+  const heading = '#'.repeat(headingLevel);
   let md = '';
 
-  md += `### ${variable.name}\n\n`;
+  md += `${heading} ${variable.name}\n\n`;
 
   if (doc.description) {
     md += `${doc.description}\n\n`;
@@ -353,11 +437,12 @@ function generateVariableMarkdown(variable) {
   return md;
 }
 
-function generateEnumMarkdown(enumDef) {
+function generateEnumMarkdown(enumDef, headingLevel = 3) {
   const doc = parseDocComment(enumDef.docComment);
+  const heading = '#'.repeat(headingLevel);
   let md = '';
 
-  md += `### ${enumDef.name}\n\n`;
+  md += `${heading} ${enumDef.name}\n\n`;
 
   if (doc.description) {
     md += `${doc.description}\n\n`;
@@ -384,63 +469,210 @@ function generateEnumMarkdown(enumDef) {
   return md;
 }
 
-function generatePackageMarkdown(pkg, shortName) {
-  const entryPoint = pkg.members[0];
-  if (!entryPoint || entryPoint.kind !== 'EntryPoint') {
-    return `# ${pkg.name} API Reference\n\nNo API members found.\n`;
-  }
+function filterByNames(items, names) {
+  return items.filter((item) => names.includes(item.name));
+}
 
-  const members = entryPoint.members;
+function generateTopicPage(topic, topicKey, allMembers, packageName, isMainPage = false) {
+  const { classes, interfaces, functions, typeAliases, variables, enums } = allMembers;
 
-  // Group by kind
-  const classes = members.filter((m) => m.kind === 'Class');
-  const interfaces = members.filter((m) => m.kind === 'Interface');
-  const functions = members.filter((m) => m.kind === 'Function');
-  const typeAliases = members.filter((m) => m.kind === 'TypeAlias');
-  const variables = members.filter((m) => m.kind === 'Variable');
-  const enums = members.filter((m) => m.kind === 'Enum');
-
-  // Filter to only important/public items (skip example classes, internal utilities)
-  const importantClasses = classes.filter(
-    (c) =>
-      !c.name.includes('Example') &&
-      !c.name.includes('Counter') &&
-      !c.name.includes('Todo') &&
-      !c.name.includes('Auth') &&
-      !c.name.endsWith('Event'),
-  );
-
-  const importantInterfaces = interfaces.filter(
-    (i) => !i.name.includes('Example') && !i.name.startsWith('_'),
-  );
-
-  const importantFunctions = functions.filter((f) => !f.name.startsWith('_'));
+  const topicClasses = sortByName(filterByNames(classes, topic.classes || []));
+  const topicInterfaces = sortByName(filterByNames(interfaces, topic.interfaces || []));
+  const topicFunctions = sortByName(filterByNames(functions, topic.functions || []));
+  const topicTypes = sortByName(filterByNames(typeAliases, topic.types || []));
+  const topicVariables = sortByName(filterByNames(variables, topic.variables || []));
+  const topicEnums = sortByName(filterByNames(enums, topic.enums || []));
 
   let md = '';
   md += `---\n`;
   md += `outline: [2, 3]\n`;
   md += `---\n\n`;
-  md += `# ${pkg.name}\n\n`;
 
-  // Table of contents
-  md += `## Overview\n\n`;
-  if (importantClasses.length > 0) {
-    md += `**Classes:** ${importantClasses.map((c) => `[\`${c.name}\`](#${c.name.toLowerCase()})`).join(', ')}\n\n`;
+  if (isMainPage) {
+    md += `# ${topic.title}\n\n`;
+    md += `${topic.description}\n\n`;
+    md += generateMainPageNavigation(packageName);
+  } else {
+    md += `# ${topic.title}\n\n`;
+    md += `${topic.description}\n\n`;
+    md += `<small>[← Back to ${packageName}](./index.md)</small>\n\n`;
+  }
+
+  // Quick reference for this page
+  const allItems = [
+    ...topicClasses.map((c) => ({ name: c.name, type: 'class' })),
+    ...topicInterfaces.map((i) => ({ name: i.name, type: 'interface' })),
+    ...topicFunctions.map((f) => ({ name: f.name, type: 'function' })),
+    ...topicTypes.map((t) => ({ name: t.name, type: 'type' })),
+    ...topicVariables.map((v) => ({ name: v.name, type: 'constant' })),
+    ...topicEnums.map((e) => ({ name: e.name, type: 'enum' })),
+  ];
+
+  if (allItems.length > 0 && !isMainPage) {
+    md += `## Quick Reference\n\n`;
+    const grouped = {};
+    for (const item of allItems) {
+      if (!grouped[item.type]) grouped[item.type] = [];
+      grouped[item.type].push(item.name);
+    }
+    for (const [type, names] of Object.entries(grouped)) {
+      const label = type.charAt(0).toUpperCase() + type.slice(1) + (names.length > 1 ? 's' : '');
+      md += `**${label}:** ${names.map((n) => `[\`${n}\`](#${n.toLowerCase()})`).join(', ')}\n\n`;
+    }
+  }
+
+  if (topicClasses.length > 0) {
+    md += `## Classes\n\n`;
+    for (const cls of topicClasses) {
+      md += generateClassMarkdown(cls);
+      md += '---\n\n';
+    }
+  }
+
+  if (topicInterfaces.length > 0) {
+    md += `## Interfaces\n\n`;
+    for (const iface of topicInterfaces) {
+      md += generateInterfaceMarkdown(iface);
+      md += '---\n\n';
+    }
+  }
+
+  if (topicFunctions.length > 0) {
+    md += `## Functions\n\n`;
+    for (const fn of topicFunctions) {
+      md += generateFunctionMarkdown(fn);
+      md += '---\n\n';
+    }
+  }
+
+  if (topicTypes.length > 0) {
+    md += `## Types\n\n`;
+    for (const alias of topicTypes) {
+      md += generateTypeAliasMarkdown(alias);
+    }
+  }
+
+  if (topicEnums.length > 0) {
+    md += `## Enums\n\n`;
+    for (const e of topicEnums) {
+      md += generateEnumMarkdown(e);
+    }
+  }
+
+  if (topicVariables.length > 0) {
+    md += `## Constants\n\n`;
+    for (const v of topicVariables) {
+      md += generateVariableMarkdown(v);
+    }
+  }
+
+  return md;
+}
+
+function generateMainPageNavigation(packageName) {
+  let md = '';
+  md += `## API Sections\n\n`;
+  md += `| Section | Description |\n`;
+  md += `|---------|-------------|\n`;
+  md += `| [Registry](./core/registry.md) | Instance management and lifecycle |\n`;
+  md += `| [Plugins](./core/plugins.md) | Plugin system for extending BlaC |\n`;
+  md += `| [Framework Adapter](./core/adapter.md) | React integration and dependency tracking |\n`;
+  md += `| [Logging](./core/logging.md) | Logging utilities for debugging |\n`;
+  md += `| [Utilities](./core/utilities.md) | Helper functions, ID generation, and type utilities |\n`;
+  md += `\n`;
+  return md;
+}
+
+function parseApiJson(apiJson) {
+  const entryPoint = apiJson.members[0];
+  if (!entryPoint || entryPoint.kind !== 'EntryPoint') {
+    return null;
+  }
+
+  const members = entryPoint.members;
+
+  return {
+    classes: members.filter((m) => m.kind === 'Class'),
+    interfaces: members.filter((m) => m.kind === 'Interface'),
+    functions: members.filter((m) => m.kind === 'Function'),
+    typeAliases: members.filter((m) => m.kind === 'TypeAlias'),
+    variables: members.filter((m) => m.kind === 'Variable'),
+    enums: members.filter((m) => m.kind === 'Enum'),
+  };
+}
+
+function generateCorePackageDocs(apiJson) {
+  const allMembers = parseApiJson(apiJson);
+  if (!allMembers) {
+    return [{ path: 'core.md', content: '# @blac/core\n\nNo API members found.\n' }];
+  }
+
+  const pages = [];
+
+  // Main page
+  pages.push({
+    path: 'core.md',
+    content: generateTopicPage(CORE_TOPICS.main, 'main', allMembers, '@blac/core', true),
+  });
+
+  // Sub-pages
+  for (const [key, topic] of Object.entries(CORE_TOPICS)) {
+    if (key === 'main') continue;
+    pages.push({
+      path: `core/${key}.md`,
+      content: generateTopicPage(topic, key, allMembers, '@blac/core', false),
+    });
+  }
+
+  return pages;
+}
+
+function generateReactPackageDocs(apiJson) {
+  const allMembers = parseApiJson(apiJson);
+  if (!allMembers) {
+    return [{ path: 'react.md', content: '# @blac/react\n\nNo API members found.\n' }];
+  }
+
+  // For react, keep it simpler - single page for now
+  const { classes, interfaces, functions, typeAliases, variables, enums } = allMembers;
+
+  // Filter out example/internal items
+  const importantClasses = sortByName(
+    classes.filter(
+      (c) =>
+        !c.name.includes('Example') &&
+        !c.name.includes('Counter') &&
+        !c.name.includes('Todo') &&
+        !c.name.includes('Auth') &&
+        !c.name.endsWith('Event'),
+    ),
+  );
+
+  const importantInterfaces = sortByName(interfaces.filter((i) => !i.name.includes('Example') && !i.name.startsWith('_')));
+  const importantFunctions = sortByName(functions.filter((f) => !f.name.startsWith('_')));
+  const importantTypes = sortByName(typeAliases);
+  const importantVariables = sortByName(variables);
+  const importantEnums = sortByName(enums);
+
+  let md = '';
+  md += `---\n`;
+  md += `outline: [2, 3]\n`;
+  md += `---\n\n`;
+  md += `# @blac/react\n\n`;
+  md += `React integration hooks and components for BlaC state management.\n\n`;
+
+  // Quick reference
+  md += `## Quick Reference\n\n`;
+  if (importantFunctions.length > 0) {
+    md += `**Hooks:** ${importantFunctions.map((f) => `[\`${f.name}\`](#${f.name.toLowerCase()})`).join(', ')}\n\n`;
   }
   if (importantInterfaces.length > 0) {
     md += `**Interfaces:** ${importantInterfaces.map((i) => `[\`${i.name}\`](#${i.name.toLowerCase()})`).join(', ')}\n\n`;
   }
-  if (importantFunctions.length > 0) {
-    md += `**Functions:** ${importantFunctions.map((f) => `[\`${f.name}\`](#${f.name.toLowerCase()})`).join(', ')}\n\n`;
-  }
-  if (typeAliases.length > 0) {
-    md +=
-      `**Types:** ${typeAliases.slice(0, 10).map((t) => `\`${t.name}\``).join(', ')}` +
-      (typeAliases.length > 10 ? ', ...' : '') +
-      '\n\n';
+  if (importantTypes.length > 0) {
+    md += `**Types:** ${importantTypes.slice(0, 8).map((t) => `\`${t.name}\``).join(', ')}${importantTypes.length > 8 ? ', ...' : ''}\n\n`;
   }
 
-  // Classes
   if (importantClasses.length > 0) {
     md += `## Classes\n\n`;
     for (const cls of importantClasses) {
@@ -449,7 +681,14 @@ function generatePackageMarkdown(pkg, shortName) {
     }
   }
 
-  // Interfaces
+  if (importantFunctions.length > 0) {
+    md += `## Hooks\n\n`;
+    for (const fn of importantFunctions) {
+      md += generateFunctionMarkdown(fn);
+      md += '---\n\n';
+    }
+  }
+
   if (importantInterfaces.length > 0) {
     md += `## Interfaces\n\n`;
     for (const iface of importantInterfaces) {
@@ -458,86 +697,80 @@ function generatePackageMarkdown(pkg, shortName) {
     }
   }
 
-  // Functions
-  if (importantFunctions.length > 0) {
-    md += `## Functions\n\n`;
-    for (const fn of importantFunctions) {
-      md += generateFunctionMarkdown(fn);
-      md += '---\n\n';
-    }
-  }
-
-  // Type Aliases (summarized)
-  if (typeAliases.length > 0) {
-    md += `## Type Aliases\n\n`;
-    for (const alias of typeAliases) {
+  if (importantTypes.length > 0) {
+    md += `## Types\n\n`;
+    for (const alias of importantTypes) {
       md += generateTypeAliasMarkdown(alias);
     }
   }
 
-  // Variables
-  if (variables.length > 0) {
-    md += `## Constants\n\n`;
-    for (const v of variables) {
-      md += generateVariableMarkdown(v);
-    }
-  }
-
-  // Enums
-  if (enums.length > 0) {
+  if (importantEnums.length > 0) {
     md += `## Enums\n\n`;
-    for (const e of enums) {
+    for (const e of importantEnums) {
       md += generateEnumMarkdown(e);
     }
   }
 
-  return md;
+  if (importantVariables.length > 0) {
+    md += `## Constants\n\n`;
+    for (const v of importantVariables) {
+      md += generateVariableMarkdown(v);
+    }
+  }
+
+  return [{ path: 'react.md', content: md }];
 }
 
 const packages = [
   {
     inputPath: path.join(ROOT_DIR, 'packages/blac/temp/core.api.json'),
-    outputPath: path.join(API_OUTPUT_DIR, 'core.md'),
     shortName: 'core',
     title: '@blac/core',
+    generator: generateCorePackageDocs,
   },
   {
     inputPath: path.join(ROOT_DIR, 'packages/blac-react/temp/react.api.json'),
-    outputPath: path.join(API_OUTPUT_DIR, 'react.md'),
     shortName: 'react',
     title: '@blac/react',
+    generator: generateReactPackageDocs,
   },
 ];
 
-function checkVitepressSidebar() {
-  const configPath = path.join(DOCS_DIR, '.vitepress/config.ts');
-  const config = fs.readFileSync(configPath, 'utf-8');
-
-  // Check if sidebar already has the correct API entries
-  const hasCore = config.includes("link: '/api/core'");
-  const hasReact = config.includes("link: '/api/react'");
-
-  if (!hasCore || !hasReact) {
-    console.log('\nNote: Update your .vitepress/config.ts sidebar to include:');
-    console.log(`
-      '/api/': [
-        {
-          text: 'API Reference',
-          items: [
-            { text: '@blac/core', link: '/api/core' },
-            { text: '@blac/react', link: '/api/react' },
-          ],
-        },
-      ],`);
-  }
+function printSidebarConfig() {
+  console.log('\nRecommended VitePress sidebar config:');
+  console.log(`
+    '/api/': [
+      {
+        text: 'API Reference',
+        items: [
+          {
+            text: '@blac/core',
+            collapsed: false,
+            items: [
+              { text: 'Overview', link: '/api/core' },
+              { text: 'Registry', link: '/api/core/registry' },
+              { text: 'Plugins', link: '/api/core/plugins' },
+              { text: 'Framework Adapter', link: '/api/core/adapter' },
+              { text: 'Logging', link: '/api/core/logging' },
+              { text: 'Utilities', link: '/api/core/utilities' },
+            ],
+          },
+          { text: '@blac/react', link: '/api/react' },
+        ],
+      },
+    ],`);
 }
 
 async function main() {
   console.log('Generating API documentation...\n');
 
-  // Ensure output directory exists
+  // Ensure output directories exist
   if (!fs.existsSync(API_OUTPUT_DIR)) {
     fs.mkdirSync(API_OUTPUT_DIR, { recursive: true });
+  }
+  const coreSubDir = path.join(API_OUTPUT_DIR, 'core');
+  if (!fs.existsSync(coreSubDir)) {
+    fs.mkdirSync(coreSubDir, { recursive: true });
   }
 
   for (const pkg of packages) {
@@ -548,13 +781,16 @@ async function main() {
 
     console.log(`Processing ${pkg.title}...`);
     const apiJson = JSON.parse(fs.readFileSync(pkg.inputPath, 'utf-8'));
-    const markdown = generatePackageMarkdown(apiJson, pkg.shortName);
-    fs.writeFileSync(pkg.outputPath, markdown);
-    console.log(`  -> ${pkg.outputPath}`);
+    const pages = pkg.generator(apiJson);
+
+    for (const page of pages) {
+      const outputPath = path.join(API_OUTPUT_DIR, page.path);
+      fs.writeFileSync(outputPath, page.content);
+      console.log(`  -> ${outputPath}`);
+    }
   }
 
-  // Check VitePress sidebar config
-  checkVitepressSidebar();
+  printSidebarConfig();
 
   console.log('\nDone!');
 }

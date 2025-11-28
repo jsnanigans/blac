@@ -48,7 +48,13 @@ export type UseBlocReturn<TBloc> = [
   RefObject<ComponentRef>,
 ];
 
+/**
+ * Internal ref structure for component-bloc binding
+ * @internal
+ */
 export type ComponentRef = {
+  /** Cached bloc instance ID for this component */
   __blocInstanceId?: string;
+  /** Bridge connection for DevTools (if available) */
   __bridge?: any;
 };

@@ -191,7 +191,7 @@
         {
           "kind": "Interface",
           "canonicalReference": "@blac/core!AdapterState:interface",
-          "docComment": "",
+          "docComment": "/**\n * Internal state for framework adapters, holding tracking and caching data.  @template TBloc - The state container type\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -232,7 +232,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!AdapterState#getterTracker:member",
-              "docComment": "",
+              "docComment": "/**\n * Getter tracker for computed property tracking\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -264,7 +264,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!AdapterState#manualDepsCache:member",
-              "docComment": "",
+              "docComment": "/**\n * Cached manual dependencies for comparison\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -291,7 +291,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!AdapterState#proxiedBloc:member",
-              "docComment": "",
+              "docComment": "/**\n * Proxied bloc instance for auto-tracking\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -318,7 +318,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!AdapterState#tracker:member",
-              "docComment": "",
+              "docComment": "/**\n * Proxy tracker for state property access tracking\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -377,7 +377,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!BaseEvent#source:member",
-              "docComment": "",
+              "docComment": "/**\n * Optional source identifier for debugging\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -404,7 +404,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!BaseEvent#timestamp:member",
-              "docComment": "",
+              "docComment": "/**\n * Unix timestamp when the event was created\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -431,7 +431,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!BaseEvent#type:member",
-              "docComment": "",
+              "docComment": "/**\n * Event type identifier (typically the class name)\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -608,15 +608,15 @@
         {
           "kind": "TypeAlias",
           "canonicalReference": "@blac/core!BlacOptions:type",
-          "docComment": "",
+          "docComment": "/**\n * Configuration options for the  @blac decorator. Only one option can be specified at a time (union type).\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
-              "text": "export type BlacOptions = "
+              "text": "export type BlacOptions = \n/** Mark bloc as isolated (each component gets its own instance) */\n"
             },
             {
               "kind": "Content",
-              "text": "{\n    isolated: true;\n} | {\n    keepAlive: true;\n} | {\n    excludeFromDevTools: true;\n}"
+              "text": "{\n    isolated: true;\n}\n/** Mark bloc to never be auto-disposed when ref count reaches 0 */\n | {\n    keepAlive: true;\n}\n/** Exclude bloc from DevTools tracking (prevents infinite loops) */\n | {\n    excludeFromDevTools: true;\n}"
             },
             {
               "kind": "Content",
@@ -1225,7 +1225,7 @@
         {
           "kind": "TypeAlias",
           "canonicalReference": "@blac/core!BlocConstructor:type",
-          "docComment": "",
+          "docComment": "/**\n * Constructor type for StateContainer classes with static registry methods. Used for type-safe hook parameters.  @template TBloc - The StateContainer instance type\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -1286,7 +1286,7 @@
         {
           "kind": "TypeAlias",
           "canonicalReference": "@blac/core!Brand:type",
-          "docComment": "",
+          "docComment": "/**\n * Utility type for creating branded/nominal types. Prevents accidental type confusion between similar primitive types.  @template T - The base type  @template B - The brand identifier\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -1345,7 +1345,7 @@
         {
           "kind": "TypeAlias",
           "canonicalReference": "@blac/core!BrandedId:type",
-          "docComment": "",
+          "docComment": "/**\n * Branded string type for type-safe IDs.  @template B - The brand identifier\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -1448,7 +1448,7 @@
         {
           "kind": "Function",
           "canonicalReference": "@blac/core!createAutoTrackSnapshot:function(1)",
-          "docComment": "",
+          "docComment": "/**\n * Create a snapshot function for auto-tracking mode. Returns a proxied state that tracks property access.\n *\n * @param instance - The state container instance\n *\n * @param adapterState - The adapter state for tracking\n *\n * @returns Snapshot function for use with useSyncExternalStore\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -1554,7 +1554,7 @@
         {
           "kind": "Function",
           "canonicalReference": "@blac/core!createAutoTrackSubscribe:function(1)",
-          "docComment": "",
+          "docComment": "/**\n * Create a subscribe function for auto-tracking mode. Only triggers callback when tracked properties change.\n *\n * @param instance - The state container instance\n *\n * @param adapterState - The adapter state for tracking\n *\n * @returns Subscribe function for use with useSyncExternalStore\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -1756,7 +1756,7 @@
         {
           "kind": "Function",
           "canonicalReference": "@blac/core!createManualDepsSnapshot:function(1)",
-          "docComment": "",
+          "docComment": "/**\n * Create a snapshot function for manual dependency tracking mode. Caches dependencies for comparison on next render.\n *\n * @param instance - The state container instance\n *\n * @param adapterState - The adapter state for caching\n *\n * @param config - Configuration with dependencies function\n *\n * @returns Snapshot function for use with useSyncExternalStore\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -1883,7 +1883,7 @@
         {
           "kind": "Function",
           "canonicalReference": "@blac/core!createManualDepsSubscribe:function(1)",
-          "docComment": "",
+          "docComment": "/**\n * Create a subscribe function for manual dependency tracking mode. Only triggers callback when dependencies array changes.\n *\n * @param instance - The state container instance\n *\n * @param adapterState - The adapter state for caching\n *\n * @param config - Configuration with dependencies function\n *\n * @returns Subscribe function for use with useSyncExternalStore\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -1997,7 +1997,7 @@
         {
           "kind": "Function",
           "canonicalReference": "@blac/core!createNoTrackSnapshot:function(1)",
-          "docComment": "",
+          "docComment": "/**\n * Create a snapshot function for no-tracking mode. Returns the raw state directly.\n *\n * @param instance - The state container instance\n *\n * @returns Snapshot function for use with useSyncExternalStore\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -2082,7 +2082,7 @@
         {
           "kind": "Function",
           "canonicalReference": "@blac/core!createNoTrackSubscribe:function(1)",
-          "docComment": "",
+          "docComment": "/**\n * Create a subscribe function for no-tracking mode. Triggers callback on every state change.\n *\n * @param instance - The state container instance\n *\n * @returns Subscribe function for use with useSyncExternalStore\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -2436,7 +2436,7 @@
         {
           "kind": "Function",
           "canonicalReference": "@blac/core!debug:function(1)",
-          "docComment": "",
+          "docComment": "/**\n * Log a debug message (tree-shakeable export)\n *\n * @param context - Context identifier (module or component name)\n *\n * @param message - Log message\n *\n * @param data - Optional structured data\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -2509,7 +2509,7 @@
         {
           "kind": "Function",
           "canonicalReference": "@blac/core!disableGetterTracking:function(1)",
-          "docComment": "",
+          "docComment": "/**\n * Disable getter tracking after render phase completes. Clears the active tracker to prevent tracking outside of render.\n *\n * @param adapterState - The adapter state\n *\n * @param rawInstance - The raw bloc instance\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -2601,7 +2601,7 @@
         {
           "kind": "Function",
           "canonicalReference": "@blac/core!error:function(1)",
-          "docComment": "",
+          "docComment": "/**\n * Log an error message (tree-shakeable export)\n *\n * @param context - Context identifier (module or component name)\n *\n * @param message - Log message\n *\n * @param data - Optional structured data\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -2790,7 +2790,7 @@
         {
           "kind": "Class",
           "canonicalReference": "@blac/core!ExternalDependencyManager:class",
-          "docComment": "",
+          "docComment": "/**\n * Manages subscriptions to external bloc dependencies for getter tracking. When a getter accesses another bloc's state, this manager ensures re-renders occur when those external dependencies change.\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -2806,7 +2806,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!ExternalDependencyManager#cleanup:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Clean up all active subscriptions\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -2837,7 +2837,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!ExternalDependencyManager#updateSubscriptions:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Update subscriptions to external bloc dependencies. Creates subscriptions to blocs accessed via getters.\n *\n * @param getterTracker - The getter tracker state with external dependencies\n *\n * @param rawInstance - The primary bloc instance (excluded from subscriptions)\n *\n * @param onGetterChange - Callback to invoke when external dependency changes\n *\n * @returns true if subscriptions were updated, false if unchanged\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -2930,7 +2930,7 @@
         {
           "kind": "TypeAlias",
           "canonicalReference": "@blac/core!ExtractConstructorArgs:type",
-          "docComment": "",
+          "docComment": "/**\n * Extract constructor argument types from a class  @template T - The class type\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -2969,7 +2969,7 @@
         {
           "kind": "TypeAlias",
           "canonicalReference": "@blac/core!ExtractProps:type",
-          "docComment": "",
+          "docComment": "/**\n * Extract the props type from a StateContainer  @template T - The StateContainer type\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -3017,7 +3017,7 @@
         {
           "kind": "TypeAlias",
           "canonicalReference": "@blac/core!ExtractState:type",
-          "docComment": "",
+          "docComment": "/**\n * Extract the state type from a StateContainer  @template T - The StateContainer type\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -3341,7 +3341,7 @@
         {
           "kind": "Function",
           "canonicalReference": "@blac/core!hasInitHook:function(1)",
-          "docComment": "",
+          "docComment": "/**\n * Type guard to check if a plugin has a required onInstall hook\n *\n * @param plugin - The plugin to check\n *\n * @returns true if the plugin implements BlacPluginWithInit\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -3397,7 +3397,7 @@
         {
           "kind": "Function",
           "canonicalReference": "@blac/core!info:function(1)",
-          "docComment": "",
+          "docComment": "/**\n * Log an info message (tree-shakeable export)\n *\n * @param context - Context identifier (module or component name)\n *\n * @param message - Log message\n *\n * @param data - Optional structured data\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -3470,7 +3470,7 @@
         {
           "kind": "Function",
           "canonicalReference": "@blac/core!initAutoTrackState:function(1)",
-          "docComment": "",
+          "docComment": "/**\n * Initialize adapter state for auto-tracking mode. Creates getter tracker and proxied bloc instance.\n *\n * @param instance - The state container instance\n *\n * @returns Initialized adapter state\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -3546,7 +3546,7 @@
         {
           "kind": "Function",
           "canonicalReference": "@blac/core!initManualDepsState:function(1)",
-          "docComment": "",
+          "docComment": "/**\n * Initialize adapter state for manual dependency tracking mode. No proxy is created; bloc is used directly.\n *\n * @param instance - The state container instance\n *\n * @returns Initialized adapter state\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -3622,7 +3622,7 @@
         {
           "kind": "Function",
           "canonicalReference": "@blac/core!initNoTrackState:function(1)",
-          "docComment": "",
+          "docComment": "/**\n * Initialize adapter state for no-tracking mode. No tracking or proxy is created.\n *\n * @param instance - The state container instance\n *\n * @returns Initialized adapter state\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -3698,7 +3698,7 @@
         {
           "kind": "Interface",
           "canonicalReference": "@blac/core!InstanceEntry:interface",
-          "docComment": "",
+          "docComment": "/**\n * Entry in the instance registry, tracking the instance and its reference count  @template T - Instance type\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -3734,7 +3734,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!InstanceEntry#instance:member",
-              "docComment": "",
+              "docComment": "/**\n * The state container instance\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -3761,7 +3761,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!InstanceEntry#refCount:member",
-              "docComment": "",
+              "docComment": "/**\n * Number of active references to this instance\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -3791,7 +3791,7 @@
         {
           "kind": "TypeAlias",
           "canonicalReference": "@blac/core!InstanceId:type",
-          "docComment": "",
+          "docComment": "/**\n * Branded string type for state container instance IDs\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -4317,7 +4317,7 @@
         {
           "kind": "TypeAlias",
           "canonicalReference": "@blac/core!LifecycleEvent:type",
-          "docComment": "",
+          "docComment": "/**\n * Lifecycle events emitted by the registry\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -4343,7 +4343,7 @@
         {
           "kind": "TypeAlias",
           "canonicalReference": "@blac/core!LifecycleListener:type",
-          "docComment": "",
+          "docComment": "/**\n * Listener function type for each lifecycle event  @template E - The lifecycle event type\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -4427,7 +4427,7 @@
         {
           "kind": "Interface",
           "canonicalReference": "@blac/core!LogConfig:interface",
-          "docComment": "",
+          "docComment": "/**\n * Configuration for the logger\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -4442,7 +4442,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!LogConfig#enabled:member",
-              "docComment": "",
+              "docComment": "/**\n * Whether logging is enabled\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -4469,7 +4469,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!LogConfig#level:member",
-              "docComment": "",
+              "docComment": "/**\n * Minimum log level to output\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -4497,7 +4497,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!LogConfig#output:member",
-              "docComment": "",
+              "docComment": "/**\n * Function called to output log entries\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -4536,7 +4536,7 @@
         {
           "kind": "Interface",
           "canonicalReference": "@blac/core!LogEntry:interface",
-          "docComment": "",
+          "docComment": "/**\n * Structure of a log entry passed to output handlers\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -4551,7 +4551,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!LogEntry#context:member",
-              "docComment": "",
+              "docComment": "/**\n * Context identifier (typically component or module name)\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -4578,7 +4578,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!LogEntry#data:member",
-              "docComment": "",
+              "docComment": "/**\n * Optional structured data\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -4605,7 +4605,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!LogEntry#level:member",
-              "docComment": "",
+              "docComment": "/**\n * Log level as string (DEBUG, INFO, WARN, ERROR)\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -4632,7 +4632,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!LogEntry#message:member",
-              "docComment": "",
+              "docComment": "/**\n * Log message\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -4659,7 +4659,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!LogEntry#timestamp:member",
-              "docComment": "",
+              "docComment": "/**\n * Unix timestamp in milliseconds\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -4689,7 +4689,7 @@
         {
           "kind": "Enum",
           "canonicalReference": "@blac/core!LogLevel:enum",
-          "docComment": "",
+          "docComment": "/**\n * Log severity levels (lower number = higher severity)\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -4704,7 +4704,7 @@
             {
               "kind": "EnumMember",
               "canonicalReference": "@blac/core!LogLevel.DEBUG:member",
-              "docComment": "",
+              "docComment": "/**\n * Detailed debugging information\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -4725,7 +4725,7 @@
             {
               "kind": "EnumMember",
               "canonicalReference": "@blac/core!LogLevel.ERROR:member",
-              "docComment": "",
+              "docComment": "/**\n * Critical errors that may cause application failure\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -4746,7 +4746,7 @@
             {
               "kind": "EnumMember",
               "canonicalReference": "@blac/core!LogLevel.INFO:member",
-              "docComment": "",
+              "docComment": "/**\n * Informational messages about application state\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -4767,7 +4767,7 @@
             {
               "kind": "EnumMember",
               "canonicalReference": "@blac/core!LogLevel.WARN:member",
-              "docComment": "",
+              "docComment": "/**\n * Warning conditions that should be addressed\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -4790,7 +4790,7 @@
         {
           "kind": "Interface",
           "canonicalReference": "@blac/core!ManualDepsConfig:interface",
-          "docComment": "",
+          "docComment": "/**\n * Configuration for manual dependency tracking mode  @template TBloc - The state container type\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -4831,7 +4831,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!ManualDepsConfig#dependencies:member",
-              "docComment": "",
+              "docComment": "/**\n * Function that returns dependency array from state and bloc\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -5215,7 +5215,7 @@
         {
           "kind": "Class",
           "canonicalReference": "@blac/core!PluginManager:class",
-          "docComment": "",
+          "docComment": "/**\n * Manages plugin lifecycle for the BlaC state management system. Plugins receive notifications about state container lifecycle events.\n *\n * @example\n * ```ts\n * const manager = createPluginManager(registry);\n * manager.install(myPlugin, { environment: 'development' });\n * ```\n *\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -5231,7 +5231,7 @@
             {
               "kind": "Constructor",
               "canonicalReference": "@blac/core!PluginManager:constructor(1)",
-              "docComment": "/**\n * Constructs a new instance of the `PluginManager` class\n */\n",
+              "docComment": "/**\n * Create a new PluginManager\n *\n * @param registry - The StateContainerRegistry to monitor for lifecycle events\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -5264,7 +5264,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!PluginManager#clear:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Uninstall all plugins\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -5295,7 +5295,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!PluginManager#getAllPlugins:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Get all installed plugins\n *\n * @returns Array of all installed plugins\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -5331,7 +5331,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!PluginManager#getPlugin:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Get an installed plugin by name\n *\n * @param pluginName - The name of the plugin to retrieve\n *\n * @returns The plugin instance or undefined if not found\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -5384,7 +5384,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!PluginManager#hasPlugin:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Check if a plugin is installed\n *\n * @param pluginName - The name of the plugin to check\n *\n * @returns true if the plugin is installed\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -5432,7 +5432,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!PluginManager#install:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Install a plugin with optional configuration\n *\n * @param plugin - The plugin to install\n *\n * @param config - Optional plugin configuration\n *\n * @throws\n *\n * Error if plugin is already installed\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -5498,7 +5498,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!PluginManager#uninstall:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Uninstall a plugin by name\n *\n * @param pluginName - The name of the plugin to uninstall\n *\n * @throws\n *\n * Error if plugin is not installed\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -5549,7 +5549,7 @@
         {
           "kind": "TypeAlias",
           "canonicalReference": "@blac/core!SnapshotFunction:type",
-          "docComment": "",
+          "docComment": "/**\n * Function that returns a snapshot of the current state  @template TState - The state type\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -5588,7 +5588,7 @@
         {
           "kind": "Class",
           "canonicalReference": "@blac/core!StateContainer:class",
-          "docComment": "",
+          "docComment": "/**\n * Abstract base class for all state containers in BlaC. Provides lifecycle management, subscription handling, ref counting, and integration with the global registry.\n *\n * @template S - State type managed by this container  @template P - Props type passed to the container (optional)\n *\n * @example\n * ```ts\n * class CounterBloc extends StateContainer<number> {\n *   constructor() {\n *     super(0);\n *   }\n *   increment() {\n *     this.emit(this.state + 1);\n *   }\n * }\n * ```\n *\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -5634,67 +5634,6 @@
           "preserveMemberOrder": false,
           "members": [
             {
-              "kind": "Property",
-              "canonicalReference": "@blac/core!StateContainer.__excludeFromDevTools:member",
-              "docComment": "",
-              "excerptTokens": [
-                {
-                  "kind": "Content",
-                  "text": "static __excludeFromDevTools: "
-                },
-                {
-                  "kind": "Content",
-                  "text": "boolean"
-                },
-                {
-                  "kind": "Content",
-                  "text": ";"
-                }
-              ],
-              "isReadonly": false,
-              "isOptional": false,
-              "releaseTag": "Public",
-              "name": "__excludeFromDevTools",
-              "propertyTypeTokenRange": {
-                "startIndex": 1,
-                "endIndex": 2
-              },
-              "isStatic": true,
-              "isProtected": false,
-              "isAbstract": false
-            },
-            {
-              "kind": "Property",
-              "canonicalReference": "@blac/core!StateContainer._registry:member",
-              "docComment": "",
-              "excerptTokens": [
-                {
-                  "kind": "Content",
-                  "text": "protected static _registry: "
-                },
-                {
-                  "kind": "Reference",
-                  "text": "StateContainerRegistry",
-                  "canonicalReference": "@blac/core!StateContainerRegistry:class"
-                },
-                {
-                  "kind": "Content",
-                  "text": ";"
-                }
-              ],
-              "isReadonly": false,
-              "isOptional": false,
-              "releaseTag": "Public",
-              "name": "_registry",
-              "propertyTypeTokenRange": {
-                "startIndex": 1,
-                "endIndex": 2
-              },
-              "isStatic": true,
-              "isProtected": true,
-              "isAbstract": false
-            },
-            {
               "kind": "Constructor",
               "canonicalReference": "@blac/core!StateContainer:constructor(1)",
               "docComment": "/**\n * Constructs a new instance of the `StateContainer` class\n */\n",
@@ -5729,7 +5668,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!StateContainer.clear:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Clear all instances of this class (disposes them)\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -5803,7 +5742,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!StateContainer.clearAllInstances:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Clear all instances from all registered types\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -5834,7 +5773,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!StateContainer.connect:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Connect to an instance for bloc-to-bloc communication (borrowing semantics). Gets or creates instance without incrementing ref count.\n *\n * @param instanceKey - Optional instance key (defaults to 'default')\n *\n * @param constructorArgs - Arguments to pass to constructor if creating new instance\n *\n * @returns The state container instance\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -5940,7 +5879,7 @@
             {
               "kind": "Property",
               "canonicalReference": "@blac/core!StateContainer#createdAt:member",
-              "docComment": "",
+              "docComment": "/**\n * Timestamp when this instance was created\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -5970,7 +5909,7 @@
             {
               "kind": "Property",
               "canonicalReference": "@blac/core!StateContainer#debug:member",
-              "docComment": "",
+              "docComment": "/**\n * Whether debug logging is enabled\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -6000,7 +5939,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!StateContainer#dispose:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Dispose this instance and clean up resources. Clears all listeners and emits the 'dispose' system event.\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -6031,7 +5970,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!StateContainer#emit:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Emit a new state value and notify all listeners.\n *\n * @param newState - The new state value  @protected\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -6079,7 +6018,7 @@
             {
               "kind": "Property",
               "canonicalReference": "@blac/core!StateContainer.enableStackTrace:member",
-              "docComment": "",
+              "docComment": "/**\n * Whether to capture stack traces on state changes (disabled in production)\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -6109,7 +6048,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!StateContainer.forEach:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Iterate over all instances of this class\n *\n * @param callback - Function to call for each instance\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -6199,7 +6138,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!StateContainer.get:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Get an existing instance without incrementing ref count (borrowing semantics).\n *\n * @param instanceKey - Optional instance key (defaults to 'default')\n *\n * @returns The state container instance\n *\n * @throws\n *\n * Error if instance doesn't exist\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -6289,7 +6228,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!StateContainer.getAll:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Get all instances of this class\n *\n * @returns Array of all instances\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -6363,7 +6302,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!StateContainer.getRefCount:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Get reference count for an instance\n *\n * @param instanceKey - Optional instance key (defaults to 'default')\n *\n * @returns Current ref count (0 if instance doesn't exist)\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -6453,7 +6392,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!StateContainer.getRegistry:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Get the global StateContainerRegistry\n *\n * @returns The registry managing all state container instances\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -6485,7 +6424,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!StateContainer.getSafe:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Safely get an existing instance with error handling.\n *\n * @param instanceKey - Optional instance key (defaults to 'default')\n *\n * @returns Discriminated union with either the instance or an error\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -6584,7 +6523,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!StateContainer.getStats:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Get registry statistics for debugging\n *\n * @returns Object with registeredTypes, totalInstances, and typeBreakdown\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -6624,7 +6563,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!StateContainer.hasInstance:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Check if an instance exists\n *\n * @param instanceKey - Optional instance key (defaults to 'default')\n *\n * @returns true if instance exists\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -6714,7 +6653,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!StateContainer#initConfig:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Initialize configuration for this instance. Called by the registry after construction.\n *\n * @param config - Configuration options\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -6763,7 +6702,7 @@
             {
               "kind": "Property",
               "canonicalReference": "@blac/core!StateContainer#instanceId:member",
-              "docComment": "",
+              "docComment": "/**\n * Unique identifier for this instance\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -6793,7 +6732,7 @@
             {
               "kind": "Property",
               "canonicalReference": "@blac/core!StateContainer#isDisposed:member",
-              "docComment": "",
+              "docComment": "/**\n * Whether this instance has been disposed\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -6823,7 +6762,7 @@
             {
               "kind": "Property",
               "canonicalReference": "@blac/core!StateContainer#lastUpdateTimestamp:member",
-              "docComment": "",
+              "docComment": "/**\n * Timestamp of the last state update\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -6853,7 +6792,7 @@
             {
               "kind": "Property",
               "canonicalReference": "@blac/core!StateContainer#name:member",
-              "docComment": "",
+              "docComment": "/**\n * Display name for this instance\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -6883,7 +6822,7 @@
             {
               "kind": "Property",
               "canonicalReference": "@blac/core!StateContainer#onSystemEvent:member",
-              "docComment": "",
+              "docComment": "/**\n * Subscribe to system lifecycle events.\n *\n * @param event - The event type to listen for\n *\n * @param handler - Handler function called when event occurs\n *\n * @returns Unsubscribe function  @protected\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -6931,7 +6870,7 @@
             {
               "kind": "Property",
               "canonicalReference": "@blac/core!StateContainer#props:member",
-              "docComment": "",
+              "docComment": "/**\n * Current props value passed to this container\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -6961,7 +6900,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!StateContainer.register:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Register this class with the global registry\n *\n * @param isolated - Whether instances should be isolated (component-scoped)\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -7051,7 +6990,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!StateContainer.release:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Release a reference to an instance. Decrements ref count and disposes when it reaches 0 (unless keepAlive).\n *\n * @param instanceKey - Optional instance key (defaults to 'default')\n *\n * @param forceDispose - Force immediate disposal regardless of ref count\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -7157,7 +7096,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!StateContainer.resolve:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Resolve an instance with ref counting (ownership semantics). Creates a new instance if one doesn't exist, or returns existing and increments ref count.\n *\n * @param instanceKey - Optional instance key (defaults to 'default')\n *\n * @param constructorArgs - Arguments to pass to constructor if creating new instance\n *\n * @returns The state container instance\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -7263,7 +7202,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!StateContainer.setRegistry:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Replace the global registry (clears existing instances)\n *\n * @param registry - The new registry to use\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -7312,7 +7251,7 @@
             {
               "kind": "Property",
               "canonicalReference": "@blac/core!StateContainer#state:member",
-              "docComment": "",
+              "docComment": "/**\n * Current state value\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -7342,7 +7281,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!StateContainer#subscribe:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Subscribe to state changes\n *\n * @param listener - Function called when state changes\n *\n * @returns Unsubscribe function\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -7395,7 +7334,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!StateContainer#update:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Update state using a transform function.\n *\n * @param updater - Function that receives current state and returns new state  @protected\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -7443,7 +7382,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!StateContainer#updateProps:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Update the props for this container. Emits the 'propsUpdated' system event.\n *\n * @param newProps - The new props value\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -7494,7 +7433,7 @@
         {
           "kind": "Interface",
           "canonicalReference": "@blac/core!StateContainerConfig:interface",
-          "docComment": "",
+          "docComment": "/**\n * Configuration options for initializing a StateContainer instance\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -7509,7 +7448,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!StateContainerConfig#debug:member",
-              "docComment": "",
+              "docComment": "/**\n * Enable debug logging for this instance\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -7536,7 +7475,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!StateContainerConfig#instanceId:member",
-              "docComment": "",
+              "docComment": "/**\n * Custom instance identifier\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -7563,7 +7502,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!StateContainerConfig#name:member",
-              "docComment": "",
+              "docComment": "/**\n * Display name for the instance (defaults to class name)\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -7593,7 +7532,7 @@
         {
           "kind": "Class",
           "canonicalReference": "@blac/core!StateContainerRegistry:class",
-          "docComment": "",
+          "docComment": "/**\n * Central registry for managing StateContainer instances. Handles instance lifecycle, ref counting, and lifecycle event emission.\n *\n * @example\n * ```ts\n * const registry = new StateContainerRegistry();\n * const instance = registry.resolve(MyBloc);\n * registry.on('stateChanged', (container, prev, next) => {\n *   console.log('State changed:', prev, '->', next);\n * });\n * ```\n *\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -8617,7 +8556,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!StateContainerRegistry#register:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Register a StateContainer class with configuration\n *\n * @param constructor - The StateContainer class constructor\n *\n * @param isolated - Whether instances should be isolated (component-scoped)\n *\n * @throws\n *\n * Error if type is already registered\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -8707,7 +8646,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!StateContainerRegistry#registerType:member(1)",
-              "docComment": "",
+              "docComment": "/**\n * Register a type for lifecycle event tracking\n *\n * @param constructor - The StateContainer class constructor\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -8996,7 +8935,7 @@
         {
           "kind": "TypeAlias",
           "canonicalReference": "@blac/core!SubscribeFunction:type",
-          "docComment": "",
+          "docComment": "/**\n * Function that subscribes to state changes and returns an unsubscribe function\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -9031,7 +8970,7 @@
         {
           "kind": "TypeAlias",
           "canonicalReference": "@blac/core!SubscriptionCallback:type",
-          "docComment": "",
+          "docComment": "/**\n * Callback function invoked when subscribed state changes\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -9057,7 +8996,7 @@
         {
           "kind": "TypeAlias",
           "canonicalReference": "@blac/core!SystemEvent:type",
-          "docComment": "",
+          "docComment": "/**\n * System events emitted by StateContainer lifecycle\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -9083,7 +9022,7 @@
         {
           "kind": "Interface",
           "canonicalReference": "@blac/core!SystemEventPayloads:interface",
-          "docComment": "",
+          "docComment": "/**\n * Payload types for each system event  @template S - State type  @template P - Props type\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -9122,7 +9061,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!SystemEventPayloads#dispose:member",
-              "docComment": "",
+              "docComment": "/**\n * Emitted when the instance is disposed\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -9149,7 +9088,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!SystemEventPayloads#propsUpdated:member",
-              "docComment": "",
+              "docComment": "/**\n * Emitted when props are updated via updateProps()\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -9176,7 +9115,7 @@
             {
               "kind": "PropertySignature",
               "canonicalReference": "@blac/core!SystemEventPayloads#stateChanged:member",
-              "docComment": "",
+              "docComment": "/**\n * Emitted when state changes via emit() or update()\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -9478,7 +9417,7 @@
         {
           "kind": "Function",
           "canonicalReference": "@blac/core!warn:function(1)",
-          "docComment": "",
+          "docComment": "/**\n * Log a warning message (tree-shakeable export)\n *\n * @param context - Context identifier (module or component name)\n *\n * @param message - Log message\n *\n * @param data - Optional structured data\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",

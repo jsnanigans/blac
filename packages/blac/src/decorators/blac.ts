@@ -1,8 +1,15 @@
 import { BLAC_STATIC_PROPS } from '../constants';
 
+/**
+ * Configuration options for the @blac decorator.
+ * Only one option can be specified at a time (union type).
+ */
 export type BlacOptions =
+  /** Mark bloc as isolated (each component gets its own instance) */
   | { isolated: true }
+  /** Mark bloc to never be auto-disposed when ref count reaches 0 */
   | { keepAlive: true }
+  /** Exclude bloc from DevTools tracking (prevents infinite loops) */
   | { excludeFromDevTools: true };
 
 /**

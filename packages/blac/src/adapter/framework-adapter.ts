@@ -2,6 +2,7 @@
  * Framework Adapter
  *
  * Reusable utilities for integrating BlaC with any reactive framework.
+ * Provides subscription and snapshot functions for different tracking modes.
  */
 import type { StateContainer } from '../core/StateContainer';
 import type { TrackerState, GetterTrackerState } from '../tracking';
@@ -24,23 +25,51 @@ import {
   clearExternalDependencies,
 } from '../tracking';
 
+/**
+ * Internal state for framework adapters, holding tracking and caching data.
+ * @template TBloc - The state container type
+ */
 export interface AdapterState<TBloc extends StateContainer<any, any>> {
+  /** Proxy tracker for state property access tracking */
   tracker: TrackerState<ExtractState<TBloc>> | null;
+  /** Cached manual dependencies for comparison */
   manualDepsCache: unknown[] | null;
+  /** Getter tracker for computed property tracking */
   getterTracker: GetterTrackerState | null;
+  /** Proxied bloc instance for auto-tracking */
   proxiedBloc: TBloc | null;
 }
 
+/**
+ * Configuration for manual dependency tracking mode
+ * @template TBloc - The state container type
+ */
 export interface ManualDepsConfig<TBloc extends StateContainer<any, any>> {
+  /** Function that returns dependency array from state and bloc */
   dependencies: (state: any, bloc: TBloc) => unknown[];
 }
 
+/**
+ * Callback function invoked when subscribed state changes
+ */
 export type SubscriptionCallback = () => void;
 
+/**
+ * Function that subscribes to state changes and returns an unsubscribe function
+ */
 export type SubscribeFunction = (callback: SubscriptionCallback) => () => void;
 
+/**
+ * Function that returns a snapshot of the current state
+ * @template TState - The state type
+ */
 export type SnapshotFunction<TState> = () => TState;
 
+/**
+ * Manages subscriptions to external bloc dependencies for getter tracking.
+ * When a getter accesses another bloc's state, this manager ensures
+ * re-renders occur when those external dependencies change.
+ */
 export class ExternalDependencyManager {
   private subscriptions: (() => void)[] = [];
   private previousDeps = new Set<StateContainer<any, any>>();
@@ -58,6 +87,14 @@ export class ExternalDependencyManager {
     return true;
   }
 
+  /**
+   * Update subscriptions to external bloc dependencies.
+   * Creates subscriptions to blocs accessed via getters.
+   * @param getterTracker - The getter tracker state with external dependencies
+   * @param rawInstance - The primary bloc instance (excluded from subscriptions)
+   * @param onGetterChange - Callback to invoke when external dependency changes
+   * @returns true if subscriptions were updated, false if unchanged
+   */
   updateSubscriptions(
     getterTracker: GetterTrackerState | null,
     rawInstance: StateContainer<any, any>,
@@ -97,12 +134,22 @@ export class ExternalDependencyManager {
     return true;
   }
 
+  /**
+   * Clean up all active subscriptions
+   */
   cleanup(): void {
     this.subscriptions.forEach((unsub) => unsub());
     this.subscriptions = [];
   }
 }
 
+/**
+ * Create a subscribe function for auto-tracking mode.
+ * Only triggers callback when tracked properties change.
+ * @param instance - The state container instance
+ * @param adapterState - The adapter state for tracking
+ * @returns Subscribe function for use with useSyncExternalStore
+ */
 export function createAutoTrackSubscribe<
   TBloc extends StateContainer<any, any>,
 >(instance: TBloc, adapterState: AdapterState<TBloc>): SubscribeFunction {
@@ -149,6 +196,14 @@ export function createAutoTrackSubscribe<
   };
 }
 
+/**
+ * Create a subscribe function for manual dependency tracking mode.
+ * Only triggers callback when dependencies array changes.
+ * @param instance - The state container instance
+ * @param adapterState - The adapter state for caching
+ * @param config - Configuration with dependencies function
+ * @returns Subscribe function for use with useSyncExternalStore
+ */
 export function createManualDepsSubscribe<
   TBloc extends StateContainer<any, any>,
 >(
@@ -170,12 +225,25 @@ export function createManualDepsSubscribe<
   };
 }
 
+/**
+ * Create a subscribe function for no-tracking mode.
+ * Triggers callback on every state change.
+ * @param instance - The state container instance
+ * @returns Subscribe function for use with useSyncExternalStore
+ */
 export function createNoTrackSubscribe<TBloc extends StateContainer<any, any>>(
   instance: TBloc,
 ): SubscribeFunction {
   return (callback: SubscriptionCallback) => instance.subscribe(callback);
 }
 
+/**
+ * Create a snapshot function for auto-tracking mode.
+ * Returns a proxied state that tracks property access.
+ * @param instance - The state container instance
+ * @param adapterState - The adapter state for tracking
+ * @returns Snapshot function for use with useSyncExternalStore
+ */
 export function createAutoTrackSnapshot<TBloc extends StateContainer<any, any>>(
   instance: TBloc,
   adapterState: AdapterState<TBloc>,
@@ -204,6 +272,14 @@ export function createAutoTrackSnapshot<TBloc extends StateContainer<any, any>>(
   };
 }
 
+/**
+ * Create a snapshot function for manual dependency tracking mode.
+ * Caches dependencies for comparison on next render.
+ * @param instance - The state container instance
+ * @param adapterState - The adapter state for caching
+ * @param config - Configuration with dependencies function
+ * @returns Snapshot function for use with useSyncExternalStore
+ */
 export function createManualDepsSnapshot<
   TBloc extends StateContainer<any, any>,
 >(
@@ -220,12 +296,24 @@ export function createManualDepsSnapshot<
   };
 }
 
+/**
+ * Create a snapshot function for no-tracking mode.
+ * Returns the raw state directly.
+ * @param instance - The state container instance
+ * @returns Snapshot function for use with useSyncExternalStore
+ */
 export function createNoTrackSnapshot<TBloc extends StateContainer<any, any>>(
   instance: TBloc,
 ): SnapshotFunction<ExtractState<TBloc>> {
   return () => instance.state;
 }
 
+/**
+ * Initialize adapter state for auto-tracking mode.
+ * Creates getter tracker and proxied bloc instance.
+ * @param instance - The state container instance
+ * @returns Initialized adapter state
+ */
 export function initAutoTrackState<TBloc extends StateContainer<any, any>>(
   instance: TBloc,
 ): AdapterState<TBloc> {
@@ -237,6 +325,12 @@ export function initAutoTrackState<TBloc extends StateContainer<any, any>>(
   };
 }
 
+/**
+ * Initialize adapter state for manual dependency tracking mode.
+ * No proxy is created; bloc is used directly.
+ * @param instance - The state container instance
+ * @returns Initialized adapter state
+ */
 export function initManualDepsState<TBloc extends StateContainer<any, any>>(
   instance: TBloc,
 ): AdapterState<TBloc> {
@@ -248,6 +342,12 @@ export function initManualDepsState<TBloc extends StateContainer<any, any>>(
   };
 }
 
+/**
+ * Initialize adapter state for no-tracking mode.
+ * No tracking or proxy is created.
+ * @param instance - The state container instance
+ * @returns Initialized adapter state
+ */
 export function initNoTrackState<TBloc extends StateContainer<any, any>>(
   instance: TBloc,
 ): AdapterState<TBloc> {
@@ -259,6 +359,12 @@ export function initNoTrackState<TBloc extends StateContainer<any, any>>(
   };
 }
 
+/**
+ * Disable getter tracking after render phase completes.
+ * Clears the active tracker to prevent tracking outside of render.
+ * @param adapterState - The adapter state
+ * @param rawInstance - The raw bloc instance
+ */
 export function disableGetterTracking<TBloc extends StateContainer<any, any>>(
   adapterState: AdapterState<TBloc>,
   rawInstance: TBloc,

@@ -4,54 +4,17 @@ outline: [2, 3]
 
 # @blac/react
 
-## Overview
+React integration hooks and components for BlaC state management.
+
+## Quick Reference
+
+**Hooks:** [`useBloc`](#usebloc), [`useBlocActions`](#useblocactions)
 
 **Interfaces:** [`UseBlocActionsOptions`](#useblocactionsoptions), [`UseBlocOptions`](#useblocoptions)
 
-**Functions:** [`useBloc`](#usebloc), [`useBlocActions`](#useblocactions)
-
 **Types:** `UseBlocReturn`
 
-## Interfaces
-
-### UseBlocActionsOptions
-
-Configuration options for useBlocActions hook
-
-```typescript
-export interface UseBlocActionsOptions<TBloc, TProps = any>
-```
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `instanceId` *(optional)* | `string \| number` | Custom instance identifier for shared or isolated instances |
-| `onMount` *(optional)* | `(bloc: TBloc) => void` | Callback invoked when bloc instance mounts |
-| `onUnmount` *(optional)* | `(bloc: TBloc) => void` | Callback invoked when bloc instance unmounts |
-| `props` *(optional)* | `TProps` | Props passed to bloc constructor or updateProps |
-
----
-
-### UseBlocOptions
-
-Configuration options for useBloc hook
-
-```typescript
-export interface UseBlocOptions<TBloc, TProps = any>
-```
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `autoTrack` *(optional)* | `boolean` | Enable automatic property tracking via Proxy (default: true) |
-| `dependencies` *(optional)* | `(state: ExtractState<TBloc>, bloc: TBloc) => unknown[]` | Manual dependency array like useEffect (disables autoTrack) |
-| `disableGetterCache` *(optional)* | `boolean` | Disable caching for getter tracking |
-| `instanceId` *(optional)* | `string \| number` | Custom instance identifier for shared or isolated instances |
-| `onMount` *(optional)* | `(bloc: TBloc) => void` | Callback invoked when bloc instance mounts |
-| `onUnmount` *(optional)* | `(bloc: TBloc) => void` | Callback invoked when bloc instance unmounts |
-| `props` *(optional)* | `TProps` | Props passed to bloc constructor or updateProps |
-
----
-
-## Functions
+## Hooks
 
 ### useBloc
 
@@ -131,7 +94,46 @@ const myBloc = useBlocActions(MyBloc, {
 
 ---
 
-## Type Aliases
+## Interfaces
+
+### UseBlocActionsOptions
+
+Configuration options for useBlocActions hook  @template TBloc - The state container type  @template TProps - Props type passed to the container
+
+```typescript
+export interface UseBlocActionsOptions<TBloc, TProps = any>
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `instanceId` *(optional)* | `string \| number` | Custom instance identifier for shared or isolated instances |
+| `onMount` *(optional)* | `(bloc: TBloc) => void` | Callback invoked when bloc instance mounts |
+| `onUnmount` *(optional)* | `(bloc: TBloc) => void` | Callback invoked when bloc instance unmounts |
+| `props` *(optional)* | `TProps` | Props passed to bloc constructor or updateProps |
+
+---
+
+### UseBlocOptions
+
+Configuration options for useBloc hook  @template TBloc - The state container type  @template TProps - Props type passed to the container
+
+```typescript
+export interface UseBlocOptions<TBloc, TProps = any>
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `autoTrack` *(optional)* | `boolean` | Enable automatic property tracking via Proxy (default: true) |
+| `dependencies` *(optional)* | `(state: ExtractState<TBloc>, bloc: TBloc) => unknown[]` | Manual dependency array like useEffect (disables autoTrack) |
+| `disableGetterCache` *(optional)* | `boolean` | Disable caching for getter tracking |
+| `instanceId` *(optional)* | `string \| number` | Custom instance identifier for shared or isolated instances |
+| `onMount` *(optional)* | `(bloc: TBloc) => void` | Callback invoked when bloc instance mounts |
+| `onUnmount` *(optional)* | `(bloc: TBloc) => void` | Callback invoked when bloc instance unmounts |
+| `props` *(optional)* | `TProps` | Props passed to bloc constructor or updateProps |
+
+---
+
+## Types
 
 ### UseBlocReturn
 

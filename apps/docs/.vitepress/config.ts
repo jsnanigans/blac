@@ -2,7 +2,8 @@ import { defineConfig } from 'vitepress';
 
 export default defineConfig({
   title: 'BlaC',
-  description: 'A sophisticated TypeScript state management library implementing the BLoC pattern',
+  description:
+    'A sophisticated TypeScript state management library implementing the BLoC pattern',
 
   themeConfig: {
     logo: '/logo.svg',
@@ -92,7 +93,18 @@ export default defineConfig({
         {
           text: 'API Reference',
           items: [
-            { text: '@blac/core', link: '/api/core' },
+            {
+              text: '@blac/core',
+              collapsed: false,
+              items: [
+                { text: 'Overview', link: '/api/core' },
+                { text: 'Registry', link: '/api/core/registry' },
+                { text: 'Plugins', link: '/api/core/plugins' },
+                { text: 'Framework Adapter', link: '/api/core/adapter' },
+                { text: 'Logging', link: '/api/core/logging' },
+                { text: 'Utilities', link: '/api/core/utilities' },
+              ],
+            },
             { text: '@blac/react', link: '/api/react' },
           ],
         },
