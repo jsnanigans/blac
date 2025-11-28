@@ -65,12 +65,25 @@ interface StateContainerConfig {
 }
 ```
 
-**Static Class Properties:**
+**Class Configuration with `@blac()` Decorator:**
+
 ```typescript
-class MyBloc extends StateContainer<State> {
-  static isolated = true;   // Each instance unique (default: false)
-  static keepAlive = true;  // Never auto-dispose (default: false)
-}
+import { blac, StateContainer } from '@blac/core';
+
+// Isolated: Each component gets its own instance
+@blac({ isolated: true })
+class MyBloc extends StateContainer<State> {}
+
+// KeepAlive: Never auto-dispose when ref count reaches 0
+@blac({ keepAlive: true })
+class MyBloc extends StateContainer<State> {}
+```
+
+**Function syntax** (for projects without decorator support):
+```typescript
+const MyBloc = blac({ isolated: true })(
+  class extends StateContainer<State> {}
+);
 ```
 
 **System Events:**
@@ -616,8 +629,8 @@ When you access a getter that uses `.get()`, `.getSafe()`, or `.connect()` to ac
 
 ```typescript
 // Lightweight notification tracker (always alive)
+@blac({ keepAlive: true })
 class NotificationCubit extends Cubit<NotificationState> {
-  static keepAlive = true;
 
   constructor() {
     super({ unreadCounts: new Map() });
@@ -828,9 +841,8 @@ const bloc = useBlocActions(CounterBloc, {
 **Isolated Instances** - Each component gets its own instance:
 
 ```typescript
+@blac({ isolated: true })
 class LocalCounter extends Cubit<number> {
-  static isolated = true; // Mark as isolated
-
   constructor() {
     super(0);
   }
@@ -890,9 +902,8 @@ function ComponentB() {
 Persist instances even without active consumers:
 
 ```typescript
+@blac({ keepAlive: true })
 class AuthCubit extends Cubit<AuthState> {
-  static keepAlive = true;  // Won't be disposed when no components use it
-
   constructor() {
     super(initialState);
   }
@@ -1108,9 +1119,8 @@ Use `keepAlive` singletons for shared services accessed by many blocs.
 
 ```typescript
 // Global service - always alive
+@blac({ keepAlive: true })
 class AnalyticsService extends Cubit<AnalyticsState> {
-  static keepAlive = true;
-
   constructor() {
     super({ events: [] });
   }
@@ -1181,13 +1191,13 @@ Here's how a real messenger app coordinates multiple blocs:
 ```typescript
 // === Shared Singletons ===
 
+@blac({ keepAlive: true })
 class NotificationCubit extends Cubit<NotificationState> {
-  static keepAlive = true; // Always alive
   // Tracks unread counts (lightweight)
 }
 
+@blac({ keepAlive: true })
 class ContactsCubit extends Cubit<ContactsState> {
-  static keepAlive = true; // Always alive
   // List of channels and users
 }
 
@@ -1523,14 +1533,12 @@ updateTheme = (theme: string) => {
 
 ```typescript
 // ✅ DO: Use isolated for component-specific state
-class FormBloc extends Cubit<FormState> {
-  static isolated = true; // Each form gets its own state
-}
+@blac({ isolated: true })
+class FormBloc extends Cubit<FormState> {}
 
 // ✅ DO: Use shared (default) for global state
-class AuthBloc extends Cubit<AuthState> {
-  static keepAlive = true; // Persist across app
-}
+@blac({ keepAlive: true })
+class AuthBloc extends Cubit<AuthState> {}
 ```
 
 ### ✅ DO: Let Automatic Tracking Work
@@ -1615,9 +1623,8 @@ interface FormState {
   isSubmitting: boolean;
 }
 
+@blac({ isolated: true })
 class FormBloc extends Cubit<FormState> {
-  static isolated = true; // Each form gets its own instance
-
   constructor() {
     super({
       values: { email: '', password: '' },
@@ -1673,9 +1680,8 @@ interface DataState<T> {
   error: string | null;
 }
 
+@blac({ keepAlive: true })
 class UserBloc extends Cubit<DataState<User>> {
-  static keepAlive = true; // Persist data
-
   constructor() {
     super({ data: null, isLoading: false, error: null });
   }
@@ -1735,9 +1741,8 @@ interface AuthState {
 }
 
 // Vertex
+@blac({ keepAlive: true })
 class AuthVertex extends Vertex<AuthState> {
-  static keepAlive = true;
-
   constructor() {
     super({
       user: null,
@@ -1936,12 +1941,22 @@ function createBloc<TBloc extends StateContainer<any>>(
 }
 ```
 
-### Static Properties
+### Class Configuration Decorator
 
 ```typescript
-static isolated = true;             // Each instance unique per component
-static keepAlive = true;            // Persist without consumers
-static __excludeFromDevTools = true; // Hide from DevTools panels
+import { blac } from '@blac/core';
+
+@blac({ isolated: true })   // Each instance unique per component
+class MyBloc extends Cubit<State> {}
+
+@blac({ keepAlive: true })  // Persist without consumers
+class MyBloc extends Cubit<State> {}
+
+// Function syntax (no decorator support needed)
+const MyBloc = blac({ isolated: true })(class extends Cubit<State> {});
+
+// Internal: Hide from DevTools (static property, not decorator)
+static __excludeFromDevTools = true;
 ```
 
 ### System Events
@@ -2026,11 +2041,10 @@ function Good() {
 
 ```typescript
 // ❌ Wrong: Isolated blocs don't share
-class MyBloc extends Cubit<State> {
-  static isolated = true; // Each component gets own instance
-}
+@blac({ isolated: true })
+class MyBloc extends Cubit<State> {} // Each component gets own instance
 
-// ✅ Correct: Remove isolated for sharing
+// ✅ Correct: Remove decorator for sharing
 class MyBloc extends Cubit<State> {
   // Default: shared across components
 }
@@ -2043,9 +2057,8 @@ class MyBloc extends Cubit<State> {
 **Solution**: Use `keepAlive`:
 
 ```typescript
-class MyBloc extends Cubit<State> {
-  static keepAlive = true; // Persists after unmount
-}
+@blac({ keepAlive: true })
+class MyBloc extends Cubit<State> {} // Persists after unmount
 ```
 
 ### Cannot Use .connect() with Isolated Blocs
@@ -2056,9 +2069,8 @@ class MyBloc extends Cubit<State> {
 
 ```typescript
 // ❌ DON'T: connect() with isolated
-class FormBloc extends Cubit<FormState> {
-  static isolated = true;
-}
+@blac({ isolated: true })
+class FormBloc extends Cubit<FormState> {}
 FormBloc.connect(); // Throws error!
 
 // ✅ DO: Use resolve() for isolated blocs

@@ -64,3 +64,5 @@ export {
   isKeepAliveClass,
   isExcludedFromDevTools,
 } from './utils/static-props';
+
+export { blac, type BlacOptions } from './decorators';

@@ -11,7 +11,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "experimentalDecorators": false,
+    "experimentalDecorators": true,
     "resolveJsonModule": true
   },
   "include": ["src", "tests", "vite.config.ts"],
