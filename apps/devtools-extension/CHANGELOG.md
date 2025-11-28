@@ -1,5 +1,14 @@
 # @blac/devtools-extension
 
+## 2.0.0-rc.10
+
+### Patch Changes
+
+- Updated dependencies [80588cc]
+  - @blac/core@2.0.0-rc.10
+  - @blac/react@2.0.0-rc.10
+  - @blac/devtools-ui@2.0.0-rc.10
+
 ## 2.0.0-rc.9
 
 ### Patch Changes

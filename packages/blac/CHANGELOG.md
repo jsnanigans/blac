@@ -1,5 +1,11 @@
 # @blac/core
 
+## 2.0.0-rc.10
+
+### Patch Changes
+
+- 80588cc: Introduce decorator
+
 ## 2.0.0-rc.9
 
 ### Patch Changes
