@@ -16,33 +16,50 @@ hero:
 features:
   - icon: 🎯
     title: Type-Safe State Management
-    details: <!-- TODO: Add feature description -->
+    details: Full TypeScript support with inferred types for state, events, and props.
 
   - icon: ⚡
     title: Fine-Grained Reactivity
-    details: <!-- TODO: Add feature description -->
+    details: Auto-tracking proxy system ensures components only re-render when their dependencies change.
 
   - icon: 🔄
     title: Event-Driven Architecture
-    details: <!-- TODO: Add feature description -->
+    details: Vertex pattern provides structured event handling with type-safe event classes.
 
   - icon: 🧩
     title: Extensible Plugin System
-    details: <!-- TODO: Add feature description -->
+    details: Add functionality through plugins for persistence, logging, devtools, and more.
 
   - icon: 🎨
     title: React 18+ Integration
-    details: <!-- TODO: Add feature description -->
+    details: Built for Concurrent Mode with useSyncExternalStore, Suspense, and useTransition support.
 
   - icon: 🛡️
     title: Memory Safe
-    details: <!-- TODO: Add feature description -->
+    details: Automatic ref counting and disposal prevents memory leaks in component lifecycles.
 ---
 
 ## Quick Example
 
-<!-- TODO: Add quick examples -->
+```typescript
+import { Cubit } from '@blac/core';
+import { useBloc } from '@blac/react';
+
+class CounterCubit extends Cubit<number> {
+  constructor() {
+    super(0);
+  }
+  increment = () => this.emit(this.state + 1);
+}
+
+function Counter() {
+  const [count, counter] = useBloc(CounterCubit);
+  return <button onClick={counter.increment}>{count}</button>;
+}
+```
 
 ## Installation
 
-<!-- TODO: Add installation commands -->
+```bash
+npm install @blac/core @blac/react
+```

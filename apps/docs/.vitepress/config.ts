@@ -11,7 +11,7 @@ export default defineConfig({
       { text: 'Guide', link: '/guide/introduction' },
       { text: 'Core', link: '/core/getting-started' },
       { text: 'React', link: '/react/getting-started' },
-      { text: 'API Reference', link: '/api/core/blac' },
+      { text: 'API Reference', link: '/api/core' },
     ],
 
     sidebar: {
@@ -90,22 +90,10 @@ export default defineConfig({
       ],
       '/api/': [
         {
-          text: 'Core API',
+          text: 'API Reference',
           items: [
-            { text: 'Blac', link: '/api/core/blac' },
-            { text: 'BlocBase', link: '/api/core/bloc-base' },
-            { text: 'Cubit', link: '/api/core/cubit' },
-            { text: 'Bloc', link: '/api/core/bloc' },
-            { text: 'StateStream', link: '/api/core/state-stream' },
-            { text: 'BlacPlugin', link: '/api/core/plugin' },
-          ],
-        },
-        {
-          text: 'React API',
-          items: [
-            { text: 'useBloc', link: '/api/react/use-bloc' },
-            { text: 'ReactBridge', link: '/api/react/react-bridge' },
-            { text: 'Types', link: '/api/react/types' },
+            { text: '@blac/core', link: '/api/core' },
+            { text: '@blac/react', link: '/api/react' },
           ],
         },
       ],
