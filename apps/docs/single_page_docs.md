@@ -23,7 +23,7 @@ import { StateContainer } from '@blac/core';
 
 class CounterContainer extends StateContainer<number> {
   constructor() {
-    super(0, { name: 'Counter' }); // initial state + config
+    super(0); // initial state
   }
 
   // Methods use protected emit/update
@@ -39,16 +39,24 @@ class CounterContainer extends StateContainer<number> {
 - `name` - Debug name
 - `debug` - Debug mode flag
 - `instanceId` - Unique instance identifier
+- `createdAt` - Timestamp when instance was created
+- `lastUpdateTimestamp` - Timestamp of last state update
+- `props` - Get current props (readonly, for props-enabled containers)
 
 **Core Methods:**
 - `subscribe(callback)` - Subscribe to state changes, returns unsubscribe function
 - `dispose()` - Clean up the container
+- `updateProps(newProps)` - Update props (triggers `propsUpdated` system event)
 
 **Protected Methods** (for subclasses):
-- `emit(newState)` - Emit new state directly (with change detection via `Object.is`)
+- `emit(newState)` - Emit new state directly (with change detection via `===`)
 - `update(fn)` - Update state with function `(current) => next`
+- `onSystemEvent(event, handler)` - Subscribe to system lifecycle events
 
-**Configuration Options:**
+**Configuration:**
+
+Configuration is applied via `initConfig()` which is called automatically by the registry:
+
 ```typescript
 interface StateContainerConfig {
   name?: string;        // Debug name
@@ -65,20 +73,37 @@ class MyBloc extends StateContainer<State> {
 }
 ```
 
-**Optional Lifecycle Hooks:**
-```typescript
-class MyBloc extends StateContainer<State> {
-  // Called when dispose() is invoked
-  protected onDispose?(): void {
-    // Cleanup logic
-  }
+**System Events:**
 
-  // Called after state changes
-  protected onStateChange?(newState: State, previousState: State): void {
-    // React to state changes
+StateContainer provides system events for lifecycle management. Use `onSystemEvent` to subscribe:
+
+```typescript
+class MyBloc extends StateContainer<State, Props> {
+  constructor() {
+    super(initialState);
+
+    // Subscribe to state changes
+    this.onSystemEvent('stateChanged', ({ state, previousState }) => {
+      console.log('State changed from', previousState, 'to', state);
+    });
+
+    // Subscribe to props updates
+    this.onSystemEvent('propsUpdated', ({ props, previousProps }) => {
+      console.log('Props updated from', previousProps, 'to', props);
+    });
+
+    // Subscribe to disposal
+    this.onSystemEvent('dispose', () => {
+      console.log('Bloc is being disposed');
+    });
   }
 }
 ```
+
+Available system events:
+- `stateChanged` - Fired after state changes, payload: `{ state, previousState }`
+- `propsUpdated` - Fired when props are updated, payload: `{ props, previousProps }`
+- `dispose` - Fired when dispose() is called, payload: `void`
 
 ---
 
@@ -179,6 +204,10 @@ class TodoCubit extends Cubit<TodoState> {
   get activeTodoCount() {
     return this.state.todos.filter(t => !t.done).length;
   }
+
+  get fullInventory(): boolean {
+    return this.state.length > 50;
+  }
 }
 ```
 
@@ -232,6 +261,15 @@ class CounterVertex extends Vertex<number> {
 }
 ```
 
+**BaseEvent Interface:**
+```typescript
+interface BaseEvent {
+  readonly type: string;
+  readonly timestamp: number;
+  readonly source?: string;  // Optional source identifier
+}
+```
+
 **Methods:**
 - `add(event)` - Add event to be processed (public)
 - `on(EventClass, handler)` - Register event handler (protected)
@@ -256,7 +294,7 @@ class MyVertex extends Vertex<State> {
 
 ### Static Instance Management
 
-All state containers (StateContainer, Cubit, Vertex) support static instance management with three access patterns:
+All state containers (StateContainer, Cubit, Vertex) support static instance management with these access patterns:
 
 #### `.resolve()` - Ownership Semantics (Instance Resolution)
 
@@ -294,7 +332,7 @@ counter.increment();
 // No .release() needed - we're just borrowing!
 
 // Throws error if instance doesn't exist:
-// CounterCubit instance "main" not found.
+// [BlaC] CounterCubit instance "main" not found.
 // Use .resolve() to create and claim ownership, or .getSafe() for conditional access.
 ```
 
@@ -368,6 +406,8 @@ class DashboardCubit extends Cubit<DashboardState> {
 - You need to ensure an instance exists without claiming ownership
 - Accessing services/utilities that should exist but aren't tied to specific components
 - **Note:** Always tracks cross-bloc dependencies when used in getters
+
+**⚠️ Important:** Cannot use `.connect()` with isolated blocs (throws error).
 
 **Comparison:**
 - **`.get()`**: Borrow existing (throws if missing) - use when you know it exists
@@ -676,9 +716,9 @@ const [state, bloc] = useBloc(MyBloc, {
 
 **Options Details:**
 
-**`props`**: Constructor arguments
+**`props`**: Constructor arguments passed to the bloc
 ```typescript
-class UserBloc extends StateContainer<State> {
+class UserBloc extends StateContainer<State, { userId: string }> {
   constructor(props?: { userId: string }) {
     super(initialState);
   }
@@ -690,6 +730,8 @@ const [state, bloc] = useBloc(UserBloc, {
 });
 ```
 Always make constructor parameters optional to avoid runtime errors, the type of the constructor props is not enforced.
+
+Props are also updated when they change via `updateProps()` internally.
 
 **`instanceId`**: Custom instance ID for shared blocs
 ```typescript
@@ -809,8 +851,6 @@ function ComponentB() {
 ```
 The Bloc is tightly coupled 1:1 with the component.
 
-// TODO: add example for isolated instances that shows advanced apis and patterns. for example api access and tracking each component through Blac without custom ref management
-
 **Shared Instances** (Default) - Components share the same instance:
 
 ```typescript
@@ -900,9 +940,12 @@ class AppCubit extends Cubit<AppState> {
     this.notificationCubit.clearAll();
   }
 
-  // Must clean up owned references
-  protected onDispose() {
-    NotificationCubit.release();
+  // Must clean up owned references using system events
+  constructor() {
+    super(initialState);
+    this.onSystemEvent('dispose', () => {
+      NotificationCubit.release();
+    });
   }
 }
 ```
@@ -910,9 +953,9 @@ class AppCubit extends Cubit<AppState> {
 **When to use:**
 - ✅ Bloc needs dependency throughout its lifetime
 - ✅ You want to ensure dependency stays alive
-- ✅ You'll clean up in `onDispose()`
+- ✅ You'll clean up via `onSystemEvent('dispose', ...)`
 
-**⚠️ Warning:** Must call `.release()` in `onDispose()` to prevent memory leaks.
+**⚠️ Warning:** Must call `.release()` on dispose to prevent memory leaks.
 
 ---
 
@@ -1192,6 +1235,10 @@ class AppCubit extends Cubit<AppState> {
 
   constructor(props: { userId: string }) {
     super({ userId: props.userId, activeChannelId: null });
+
+    this.onSystemEvent('dispose', () => {
+      NotificationCubit.release();
+    });
   }
 
   setActiveChannel = (channelId: string) => {
@@ -1201,11 +1248,6 @@ class AppCubit extends Cubit<AppState> {
 
     this.patch({ activeChannelId: channelId });
   };
-
-  protected onDispose() {
-    // Clean up owned reference
-    NotificationCubit.release();
-  }
 }
 
 // === Components ===
@@ -1326,8 +1368,9 @@ const unsubscribe = globalRegistry.on('created', (container) => {
 });
 
 // Listen to state changes
-globalRegistry.on('stateChanged', (container, prevState, newState) => {
+globalRegistry.on('stateChanged', (container, prevState, newState, callstack) => {
   console.log('State changed:', container.name, prevState, newState);
+  if (callstack) console.log('Callstack:', callstack);
 });
 
 // Listen to events (Vertex only)
@@ -1346,9 +1389,53 @@ unsubscribe();
 
 **Available Lifecycle Events:**
 - `'created'` - Container instantiated
-- `'stateChanged'` - State updated (after emit)
+- `'stateChanged'` - State updated (after emit), includes optional callstack
 - `'eventAdded'` - Event added to Vertex (before processing)
 - `'disposed'` - Container disposed
+
+### BlacPlugin Interface
+
+For more structured plugin development:
+
+```typescript
+import type { BlacPlugin, PluginContext } from '@blac/core';
+
+const myPlugin: BlacPlugin = {
+  name: 'my-plugin',
+  version: '1.0.0',
+
+  onInstall(context: PluginContext) {
+    console.log('Plugin installed');
+  },
+
+  onInstanceCreated(instance, context) {
+    console.log('Instance created:', context.getInstanceMetadata(instance));
+  },
+
+  onStateChanged(instance, previousState, currentState, callstack, context) {
+    console.log('State changed');
+  },
+
+  onEventAdded(vertex, event, context) {
+    console.log('Event added:', event);
+  },
+
+  onInstanceDisposed(instance, context) {
+    console.log('Instance disposed');
+  },
+
+  onUninstall() {
+    console.log('Plugin uninstalled');
+  }
+};
+```
+
+**PluginContext Methods:**
+- `getInstanceMetadata(instance)` - Get metadata about an instance
+- `getState(instance)` - Get current state
+- `queryInstances(TypeClass)` - Get all instances of a type
+- `getAllTypes()` - Get all registered type constructors
+- `getStats()` - Get registry statistics
 
 **Use Cases:**
 - DevTools integration
@@ -1630,7 +1717,7 @@ class LoginEvent implements BaseEvent {
   readonly timestamp = Date.now();
   constructor(
     public readonly email: string,
-    public readonly password: string
+    public readonly password: string,
   ) {}
 }
 
@@ -1659,22 +1746,22 @@ class AuthVertex extends Vertex<AuthState> {
       error: null
     });
 
-    this.on(LoginEvent, async (event, emit) => {
+    this.on(LoginEvent, (event, emit) => {
       emit({ ...this.state, isLoading: true, error: null });
 
-      try {
-        const user = await auth.login(event.email, event.password);
+      // Simulate sync auth (in real app, async work would be done before dispatching event)
+      if (event.email === 'user@example.com' && event.password === 'password') {
         emit({
-          user,
+          user: { id: '123', name: 'Test User', email: 'user@example.com' },
           isAuthenticated: true,
           isLoading: false,
           error: null
         });
-      } catch (error) {
+      } else {
         emit({
           ...this.state,
           isLoading: false,
-          error: error.message
+          error: 'Invalid credentials'
         });
       }
     });
@@ -1740,17 +1827,39 @@ function App() {
 }
 ```
 
+**Props Type Parameter:**
+
+StateContainer supports a second generic parameter for props:
+
+```typescript
+interface UserProps {
+  userId: string;
+  initialData?: User;
+}
+
+class UserCubit extends Cubit<UserState, UserProps> {
+  constructor(props?: UserProps) {
+    super({ user: props?.initialData ?? null });
+  }
+}
+```
+
 **Generic Type Utilities:**
 
 ```typescript
-import type { ExtractState, AnyObject } from '@blac/core';
+import type { ExtractState, ExtractProps, BlocConstructor } from '@blac/core';
 
 // Extract state type from a bloc
 type CounterState = ExtractState<CounterCubit>; // number
 
-// AnyObject type for generic constraints
-interface UseBlocOptions<TBloc extends StateContainer<AnyObject>> {
-  // ...options
+// Extract props type from a bloc
+type UserProps = ExtractProps<UserCubit>; // { userId: string }
+
+// BlocConstructor type for generic constraints
+function createBloc<TBloc extends StateContainer<any>>(
+  Class: BlocConstructor<TBloc>
+): TBloc {
+  return Class.resolve();
 }
 ```
 
@@ -1762,11 +1871,16 @@ interface UseBlocOptions<TBloc extends StateContainer<AnyObject>> {
 
 **StateContainer:**
 - `state` - Current state (readonly)
+- `props` - Current props (readonly)
 - `subscribe(callback)` - Subscribe to changes
 - `dispose()` - Clean up
+- `updateProps(newProps)` - Update props
 - `isDisposed` - Check disposal status
+- `createdAt` - Creation timestamp
+- `lastUpdateTimestamp` - Last state update timestamp
 - `emit(state)` - Emit new state (protected)
 - `update(fn)` - Update with function (protected)
+- `onSystemEvent(event, handler)` - Subscribe to system events (protected)
 
 **Cubit:**
 - All StateContainer methods
@@ -1778,6 +1892,7 @@ interface UseBlocOptions<TBloc extends StateContainer<AnyObject>> {
 - All StateContainer methods
 - `add(event)` - Add event (public)
 - `on(EventClass, handler)` - Register handler (protected)
+- `onEventError(event, error)` - Error hook (protected)
 
 ### Static Container Methods
 
@@ -1802,11 +1917,22 @@ interface UseBlocOptions<TBloc extends StateContainer<AnyObject>> {
 ```typescript
 {
   props?: any;                    // Constructor arguments
-  instanceId?: string;                  // Custom instance ID
+  instanceId?: string | number;   // Custom instance ID
   dependencies?: (state, bloc) => any[]; // Manual tracking
-  autoTrack?: boolean;                  // Enable/disable auto tracking
-  onMount?: (bloc) => void;            // Mount callback
-  onUnmount?: (bloc) => void;          // Unmount callback
+  autoTrack?: boolean;            // Enable/disable auto tracking
+  onMount?: (bloc) => void;       // Mount callback
+  onUnmount?: (bloc) => void;     // Unmount callback
+}
+```
+
+### useBlocActions Options
+
+```typescript
+{
+  props?: any;                    // Constructor arguments
+  instanceId?: string | number;   // Custom instance ID
+  onMount?: (bloc) => void;       // Mount callback
+  onUnmount?: (bloc) => void;     // Unmount callback
 }
 ```
 
@@ -1816,6 +1942,25 @@ interface UseBlocOptions<TBloc extends StateContainer<AnyObject>> {
 static isolated = true;             // Each instance unique per component
 static keepAlive = true;            // Persist without consumers
 static __excludeFromDevTools = true; // Hide from DevTools panels
+```
+
+### System Events
+
+```typescript
+type SystemEvent = 'propsUpdated' | 'stateChanged' | 'dispose';
+
+// Payloads
+interface SystemEventPayloads<S, P> {
+  propsUpdated: { props: P; previousProps: P | undefined };
+  stateChanged: { state: S; previousState: S };
+  dispose: void;
+}
+```
+
+### Lifecycle Events (Registry)
+
+```typescript
+type LifecycleEvent = 'created' | 'stateChanged' | 'eventAdded' | 'disposed';
 ```
 
 ### Log Levels
@@ -1903,6 +2048,23 @@ class MyBloc extends Cubit<State> {
 }
 ```
 
+### Cannot Use .connect() with Isolated Blocs
+
+**Problem**: Error when calling `.connect()` on isolated bloc.
+
+**Solution**: Isolated blocs are component-scoped. Use `.resolve()` in components:
+
+```typescript
+// ❌ DON'T: connect() with isolated
+class FormBloc extends Cubit<FormState> {
+  static isolated = true;
+}
+FormBloc.connect(); // Throws error!
+
+// ✅ DO: Use resolve() for isolated blocs
+const form = FormBloc.resolve();
+```
+
 ---
 
 ## Migration Guide
@@ -1972,6 +2134,27 @@ if (!result.error) {
 - Bloc methods calling other blocs: Use `.get()` (prevents memory leaks)
 - Conditional instance access: Use `.getSafe()` (type-safe error handling)
 
+### From onDispose to onSystemEvent
+
+```typescript
+// Before (if you had a custom onDispose hook)
+class MyBloc extends Cubit<State> {
+  protected onDispose() {
+    // cleanup
+  }
+}
+
+// After (use system events)
+class MyBloc extends Cubit<State> {
+  constructor() {
+    super(initialState);
+    this.onSystemEvent('dispose', () => {
+      // cleanup
+    });
+  }
+}
+```
+
 ---
 
 ## Performance Tips
@@ -1985,10 +2168,10 @@ if (!result.error) {
 7. **Use `.get()` instead of `.resolve()`** in bloc-to-bloc communication to prevent memory leaks
 8. **Use `.forEach()` instead of `.getAll()`** when working with 100+ instances
 9. **Disable autoTrack** only if you have specific performance needs
+10. **Use system events** instead of lifecycle methods for cleaner cleanup
 
 ---
 
 ## License
 
 MIT
-
