@@ -1,5 +1,11 @@
 # @blac/core
 
+## 2.0.0-rc.13
+
+### Patch Changes
+
+- fix types
+
 ## 2.0.0-rc.12
 
 ### Patch Changes

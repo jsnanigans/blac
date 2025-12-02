@@ -1,5 +1,13 @@
 # @blac/devtools-connect
 
+## 2.0.0-rc.13
+
+### Patch Changes
+
+- fix types
+- Updated dependencies
+  - @blac/core@2.0.0-rc.13
+
 ## 2.0.0-rc.12
 
 ### Patch Changes
