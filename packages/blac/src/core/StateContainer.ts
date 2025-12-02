@@ -114,7 +114,7 @@ export abstract class StateContainer<S, P = undefined> {
    * @param constructorArgs - Arguments to pass to constructor if creating new instance
    * @returns The state container instance
    */
-  static resolve<S = never, T extends StateContainer<any>>(
+  static resolve<S = never, T extends StateContainer<any> = StateContainer<any>>(
     this: new (...args: any[]) => T,
     instanceKey?: string,
     constructorArgs?: any,
@@ -134,7 +134,7 @@ export abstract class StateContainer<S, P = undefined> {
    * @returns The state container instance
    * @throws Error if instance doesn't exist
    */
-  static get<S = never, T extends StateContainer<any>>(
+  static get<S = never, T extends StateContainer<any> = StateContainer<any>>(
     this: new (...args: any[]) => T,
     instanceKey?: string,
   ): StateOverride<T, S> {
@@ -151,7 +151,7 @@ export abstract class StateContainer<S, P = undefined> {
    * @param instanceKey - Optional instance key (defaults to 'default')
    * @returns Discriminated union with either the instance or an error
    */
-  static getSafe<S = never, T extends StateContainer<any>>(
+  static getSafe<S = never, T extends StateContainer<any> = StateContainer<any>>(
     this: new (...args: any[]) => T,
     instanceKey?: string,
   ):
@@ -171,7 +171,7 @@ export abstract class StateContainer<S, P = undefined> {
    * @param constructorArgs - Arguments to pass to constructor if creating new instance
    * @returns The state container instance
    */
-  static connect<S = never, T extends StateContainer<any>>(
+  static connect<S = never, T extends StateContainer<any> = StateContainer<any>>(
     this: new (...args: any[]) => T,
     instanceKey?: string,
     constructorArgs?: any,
@@ -189,7 +189,7 @@ export abstract class StateContainer<S, P = undefined> {
    * @param instanceKey - Optional instance key (defaults to 'default')
    * @param forceDispose - Force immediate disposal regardless of ref count
    */
-  static release<T extends StateContainer<any>>(
+  static release<T extends StateContainer<any> = StateContainer<any>>(
     this: new (...args: any[]) => T,
     instanceKey?: string,
     forceDispose = false,
@@ -201,7 +201,7 @@ export abstract class StateContainer<S, P = undefined> {
    * Get all instances of this class
    * @returns Array of all instances
    */
-  static getAll<T extends StateContainer<any>>(
+  static getAll<T extends StateContainer<any> = StateContainer<any>>(
     this: new (...args: any[]) => T,
   ): T[] {
     return StateContainer._registry.getAll(this);
@@ -211,7 +211,7 @@ export abstract class StateContainer<S, P = undefined> {
    * Iterate over all instances of this class
    * @param callback - Function to call for each instance
    */
-  static forEach<T extends StateContainer<any>>(
+  static forEach<T extends StateContainer<any> = StateContainer<any>>(
     this: new (...args: any[]) => T,
     callback: (instance: T) => void,
   ): void {
@@ -221,7 +221,7 @@ export abstract class StateContainer<S, P = undefined> {
   /**
    * Clear all instances of this class (disposes them)
    */
-  static clear<T extends StateContainer<any>>(
+  static clear<T extends StateContainer<any> = StateContainer<any>>(
     this: new (...args: any[]) => T,
   ): void {
     StateContainer._registry.clear(this);
@@ -251,7 +251,7 @@ export abstract class StateContainer<S, P = undefined> {
    * @param instanceKey - Optional instance key (defaults to 'default')
    * @returns Current ref count (0 if instance doesn't exist)
    */
-  static getRefCount<T extends StateContainer<any>>(
+  static getRefCount<T extends StateContainer<any> = StateContainer<any>>(
     this: new (...args: any[]) => T,
     instanceKey?: string,
   ): number {
@@ -263,7 +263,7 @@ export abstract class StateContainer<S, P = undefined> {
    * @param instanceKey - Optional instance key (defaults to 'default')
    * @returns true if instance exists
    */
-  static hasInstance<T extends StateContainer<any>>(
+  static hasInstance<T extends StateContainer<any> = StateContainer<any>>(
     this: new (...args: any[]) => T,
     instanceKey?: string,
   ): boolean {

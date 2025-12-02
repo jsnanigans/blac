@@ -1,5 +1,13 @@
 # @blac/react
 
+## 2.0.0-rc.12
+
+### Patch Changes
+
+- Support generic type for hook and use methods
+- Updated dependencies
+  - @blac/core@2.0.0-rc.12
+
 ## 2.0.0-rc.11
 
 ### Patch Changes
