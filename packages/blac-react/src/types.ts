@@ -1,4 +1,4 @@
-import type { ExtractState } from '@blac/core';
+import type { ExtractState, StateOverride, StateContainer } from '@blac/core';
 import type { RefObject } from 'react';
 
 /**
@@ -38,13 +38,19 @@ export interface UseBlocOptionsWithDependencies<TBloc, TProps = any>
 
 /**
  * Tuple return type from useBloc hook containing state, bloc instance, and ref
- * - [0] Current state value
+ * - [0] Current state value (with optional state type override)
  * - [1] State container instance (bloc) for calling actions
  * - [2] Ref object for accessing component ref (advanced use cases)
+ *
+ * @template TBloc - The state container type
+ * @template S - Optional state type override for generic StateContainers (defaults to never)
  */
-export type UseBlocReturn<TBloc> = [
-  ExtractState<TBloc>,
-  TBloc,
+export type UseBlocReturn<
+  TBloc extends StateContainer<any, any>,
+  S = never,
+> = [
+  [S] extends [never] ? ExtractState<TBloc> : S,
+  StateOverride<TBloc, S>,
   RefObject<ComponentRef>,
 ];
 

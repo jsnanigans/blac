@@ -1,6 +1,7 @@
 import { useMemo, useEffect, useRef } from 'react';
 import {
   type BlocConstructor,
+  type StateOverride,
   StateContainer,
   isIsolatedClass,
 } from '@blac/core';
@@ -33,7 +34,8 @@ export interface UseBlocActionsOptions<TBloc, TProps = any> {
  * React hook that connects to a state container instance without triggering re-renders.
  * Use this when you only need to call actions on the bloc without subscribing to state changes.
  *
- * @template T - The state container constructor type
+ * @template S - Optional state type override for generic StateContainers (defaults to never)
+ * @template T - The state container constructor type (inferred from BlocClass)
  * @param BlocClass - The state container class to connect to
  * @param options - Configuration options for instance management and lifecycle
  * @returns The state container instance for calling actions
@@ -51,13 +53,22 @@ export interface UseBlocActionsOptions<TBloc, TProps = any> {
  *   instanceId: 'unique-id'
  * });
  * ```
+ *
+ * @example With generic bloc and explicit state type
+ * ```ts
+ * const myBloc = useBlocActions<MyStateType>(GenericBloc);
+ * // myBloc.state is typed as MyStateType
+ * ```
  */
 export function useBlocActions<
-  T extends new (...args: any[]) => StateContainer<any, any>,
+  S = never,
+  T extends new (...args: any[]) => StateContainer<any, any> = new (
+    ...args: any[]
+  ) => StateContainer<any, any>,
 >(
   BlocClass: T & BlocConstructor<InstanceType<T>>,
   options?: UseBlocActionsOptions<InstanceType<T>>,
-): InstanceType<T> {
+): StateOverride<InstanceType<T>, S> {
   type TBloc = InstanceType<T>;
   const componentRef = useRef<ComponentRef>({});
   const initialPropsRef = useRef(options?.props);
@@ -96,5 +107,5 @@ export function useBlocActions<
     };
   }, []);
 
-  return bloc;
+  return bloc as StateOverride<InstanceType<T>, S>;
 }

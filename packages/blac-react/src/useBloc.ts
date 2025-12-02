@@ -54,7 +54,8 @@ function determineTrackingMode<TBloc extends StateContainer<any, any>>(
  * - **Manual dependencies**: Explicit dependency array like useEffect
  * - **No tracking**: Returns full state without optimization
  *
- * @template T - The state container constructor type
+ * @template S - Optional state type override for generic StateContainers (defaults to never)
+ * @template T - The state container constructor type (inferred from BlocClass)
  * @param BlocClass - The state container class to connect to
  * @param options - Configuration options for tracking mode and instance management
  * @returns Tuple with [state, bloc instance, ref]
@@ -77,13 +78,22 @@ function determineTrackingMode<TBloc extends StateContainer<any, any>>(
  *   instanceId: 'unique-id'
  * });
  * ```
+ *
+ * @example With generic bloc and explicit state type
+ * ```ts
+ * const [state, myBloc] = useBloc<MyStateType>(GenericBloc);
+ * // state is typed as MyStateType
+ * ```
  */
 export function useBloc<
-  T extends new (...args: any[]) => StateContainer<any, any>,
+  S = never,
+  T extends new (...args: any[]) => StateContainer<any, any> = new (
+    ...args: any[]
+  ) => StateContainer<any, any>,
 >(
   BlocClass: T & BlocConstructor<InstanceType<T>>,
   options?: UseBlocOptions<InstanceType<T>>,
-): UseBlocReturn<InstanceType<T>> {
+): UseBlocReturn<InstanceType<T>, S> {
   type TBloc = InstanceType<T>;
   const componentRef = useRef<ComponentRef>({});
   const Constructor = BlocClass as StateContainerConstructor<TBloc>;
@@ -190,5 +200,5 @@ export function useBloc<
     };
   }, []);
 
-  return [state, bloc, componentRef] as UseBlocReturn<TBloc>;
+  return [state, bloc, componentRef] as UseBlocReturn<TBloc, S>;
 }

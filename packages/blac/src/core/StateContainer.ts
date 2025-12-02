@@ -1,4 +1,5 @@
 import { generateSimpleId } from '../utils/idGenerator';
+import type { StateOverride } from '../types/utilities';
 import {
   StateContainerRegistry,
   globalRegistry,
@@ -107,56 +108,88 @@ export abstract class StateContainer<S, P = undefined> {
   /**
    * Resolve an instance with ref counting (ownership semantics).
    * Creates a new instance if one doesn't exist, or returns existing and increments ref count.
+   * @template S - Optional state type override for generic StateContainers
+   * @template T - The StateContainer type (inferred from class)
    * @param instanceKey - Optional instance key (defaults to 'default')
    * @param constructorArgs - Arguments to pass to constructor if creating new instance
    * @returns The state container instance
    */
-  static resolve<T extends StateContainer<any>>(
+  static resolve<
+    S = never,
+    T extends StateContainer<any> = StateContainer<any>,
+  >(
     this: new (...args: any[]) => T,
     instanceKey?: string,
     constructorArgs?: any,
-  ): T {
-    return StateContainer._registry.resolve(this, instanceKey, constructorArgs);
+  ): StateOverride<T, S> {
+    return StateContainer._registry.resolve(
+      this,
+      instanceKey,
+      constructorArgs,
+    ) as StateOverride<T, S>;
   }
 
   /**
    * Get an existing instance without incrementing ref count (borrowing semantics).
+   * @template S - Optional state type override for generic StateContainers
+   * @template T - The StateContainer type (inferred from class)
    * @param instanceKey - Optional instance key (defaults to 'default')
    * @returns The state container instance
    * @throws Error if instance doesn't exist
    */
-  static get<T extends StateContainer<any>>(
+  static get<S = never, T extends StateContainer<any> = StateContainer<any>>(
     this: new (...args: any[]) => T,
     instanceKey?: string,
-  ): T {
-    return StateContainer._registry.get(this, instanceKey);
+  ): StateOverride<T, S> {
+    return StateContainer._registry.get(this, instanceKey) as StateOverride<
+      T,
+      S
+    >;
   }
 
   /**
    * Safely get an existing instance with error handling.
+   * @template S - Optional state type override for generic StateContainers
+   * @template T - The StateContainer type (inferred from class)
    * @param instanceKey - Optional instance key (defaults to 'default')
    * @returns Discriminated union with either the instance or an error
    */
-  static getSafe<T extends StateContainer<any>>(
+  static getSafe<
+    S = never,
+    T extends StateContainer<any> = StateContainer<any>,
+  >(
     this: new (...args: any[]) => T,
     instanceKey?: string,
-  ): { error: Error; instance: null } | { error: null; instance: T } {
-    return StateContainer._registry.getSafe(this, instanceKey);
+  ):
+    | { error: Error; instance: null }
+    | { error: null; instance: StateOverride<T, S> } {
+    return StateContainer._registry.getSafe(this, instanceKey) as
+      | { error: Error; instance: null }
+      | { error: null; instance: StateOverride<T, S> };
   }
 
   /**
    * Connect to an instance for bloc-to-bloc communication (borrowing semantics).
    * Gets or creates instance without incrementing ref count.
+   * @template S - Optional state type override for generic StateContainers
+   * @template T - The StateContainer type (inferred from class)
    * @param instanceKey - Optional instance key (defaults to 'default')
    * @param constructorArgs - Arguments to pass to constructor if creating new instance
    * @returns The state container instance
    */
-  static connect<T extends StateContainer<any>>(
+  static connect<
+    S = never,
+    T extends StateContainer<any> = StateContainer<any>,
+  >(
     this: new (...args: any[]) => T,
     instanceKey?: string,
     constructorArgs?: any,
-  ): T {
-    return StateContainer._registry.connect(this, instanceKey, constructorArgs);
+  ): StateOverride<T, S> {
+    return StateContainer._registry.connect(
+      this,
+      instanceKey,
+      constructorArgs,
+    ) as StateOverride<T, S>;
   }
 
   /**
