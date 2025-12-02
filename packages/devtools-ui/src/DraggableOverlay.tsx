@@ -79,184 +79,122 @@ function processEventIntoLogs(event: any, logsBloc: DevToolsLogsBloc): void {
 
 /**
  * Default mount handler that connects to window.__BLAC_DEVTOOLS__ API
- * Now uses atomic updates for better performance
  */
 export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
-  console.log('[BlaC Overlay] DevToolsPanel mounted, connecting to API...');
   const api = (window as any).__BLAC_DEVTOOLS__;
 
   if (!api) {
-    console.error('[BlaC Overlay] window.__BLAC_DEVTOOLS__ is undefined');
+    console.error('[BlaC DevTools] window.__BLAC_DEVTOOLS__ is undefined');
     return;
   }
 
   if (!api.isEnabled()) {
-    console.warn('[BlaC Overlay] DevTools API is disabled');
+    console.warn('[BlaC DevTools] DevTools API is disabled');
     return;
   }
 
-  console.log('[BlaC Overlay] API is available and enabled');
-
-  // Get the DiffBloc to store previous states
-  const diffBloc =  DevToolsDiffBloc.resolve();
-
-  // Get the LogsBloc for logging events
+  const diffBloc = DevToolsDiffBloc.resolve();
   const logsBloc = DevToolsLogsBloc.resolve();
 
-  // Initial state (fetch all instances on mount)
-  console.log('[BlaC Overlay] Fetching initial instances...');
   const initialInstances = api.getInstances();
-  console.log(
-    `[BlaC Overlay] Initial instances (${initialInstances.length}):`,
-    initialInstances.map((i: any) => `${i.className}#${i.id}`),
-  );
   instancesBloc.setConnected(true);
   instancesBloc.setAllInstances(initialInstances);
 
-  // Fetch complete event history from app startup
-  console.log('[BlaC Overlay] Fetching event history from app startup...');
   const eventHistory = api.getEventHistory();
-  console.log(`[BlaC Overlay] Loaded ${eventHistory.length} historical events`);
-
-  // Process historical events into logs
   eventHistory.forEach((event: any) => {
     processEventIntoLogs(event, logsBloc);
   });
-  console.log('[BlaC Overlay] Finished processing historical events into logs');
 
-  // Subscribe to atomic updates
-  console.log(
-    '[BlaC Overlay] Subscribing to DevTools events (atomic updates)...',
-  );
   const unsubscribe = api.subscribe((event: any) => {
-    // Only update if bloc is not disposed
-    if (!instancesBloc.isDisposed) {
-      console.log(`[BlaC Overlay] Atomic event received: ${event.type}`, {
-        instanceId: event.data.id,
-        className: event.data.className,
-        timestamp: new Date(event.timestamp).toISOString(),
-      });
+    if (instancesBloc.isDisposed) return;
 
-      // Handle atomic updates based on event type
-      switch (event.type) {
-        case 'init':
-          console.log('[BlaC Overlay] Received INIT event - resetting all state');
-          // Clear all existing state
-          diffBloc.clearAllPreviousStates();
-          logsBloc.clearLogs();
-          // Set new instances from init event
-          const initInstances = (Array.isArray(event.data) ? event.data : []).map(
-            (inst: any) => ({
-              id: inst.id,
-              className: inst.className,
-              name: inst.name,
-              isDisposed: inst.isDisposed,
-              state: inst.state,
-              lastStateChangeTimestamp: event.timestamp,
-              createdAt: event.timestamp,
-            }),
-          );
-          instancesBloc.setAllInstances(initInstances);
-          // Log init event
-          logsBloc.addLog(
-            'init',
-            '__system__',
-            'System',
-            'DevTools',
-            { instanceCount: initInstances.length },
-          );
-          console.log(
-            `[BlaC Overlay] Reset complete - loaded ${initInstances.length} instances`,
-          );
-          break;
-
-        case 'instance-created':
-          console.log(
-            `[BlaC Overlay] Adding instance: ${(event.data as any).className}#${(event.data as any).id}`,
-          );
-          instancesBloc.addInstance({
-            id: (event.data as any).id,
-            className: (event.data as any).className,
-            name: (event.data as any).name,
-            isDisposed: (event.data as any).isDisposed,
-            state: (event.data as any).state,
+    switch (event.type) {
+      case 'init': {
+        diffBloc.clearAllPreviousStates();
+        logsBloc.clearLogs();
+        const initInstances = (Array.isArray(event.data) ? event.data : []).map(
+          (inst: any) => ({
+            id: inst.id,
+            className: inst.className,
+            name: inst.name,
+            isDisposed: inst.isDisposed,
+            state: inst.state,
             lastStateChangeTimestamp: event.timestamp,
             createdAt: event.timestamp,
-          });
-          // Log instance creation
-          logsBloc.addLog(
-            'created',
-            (event.data as any).id,
-            (event.data as any).className,
-            (event.data as any).name,
-            { initialState: (event.data as any).state },
-          );
-          break;
+          }),
+        );
+        instancesBloc.setAllInstances(initInstances);
+        logsBloc.addLog(
+          'init',
+          '__system__',
+          'System',
+          'DevTools',
+          { instanceCount: initInstances.length },
+        );
+        break;
+      }
 
-        case 'instance-disposed':
-          console.log(`[BlaC Overlay] Removing instance: ${(event.data as any).id}`);
-          // Get instance info before removing for the log
-          const disposedInstance = instancesBloc.getInstance((event.data as any).id);
-          instancesBloc.removeInstance((event.data as any).id);
-          // Clear previous state as well
-          diffBloc.clearPreviousState((event.data as any).id);
-          // Log disposal
-          if (disposedInstance) {
-            logsBloc.addLog(
-              'disposed',
-              (event.data as any).id,
-              disposedInstance.className,
-              disposedInstance.name,
-            );
-          }
-          break;
+      case 'instance-created':
+        instancesBloc.addInstance({
+          id: (event.data as any).id,
+          className: (event.data as any).className,
+          name: (event.data as any).name,
+          isDisposed: (event.data as any).isDisposed,
+          state: (event.data as any).state,
+          lastStateChangeTimestamp: event.timestamp,
+          createdAt: event.timestamp,
+        });
+        logsBloc.addLog(
+          'created',
+          (event.data as any).id,
+          (event.data as any).className,
+          (event.data as any).name,
+          { initialState: (event.data as any).state },
+        );
+        break;
 
-        case 'instance-updated':
-          console.log(
-            `[BlaC Overlay] Updating instance state: ${(event.data as any).className}#${(event.data as any).id}${(event.data as any).callstack ? ' (with callstack)' : ''}`,
-          );
-          // Get current instance to capture previous state
-          const currentInstance = instancesBloc.getInstance((event.data as any).id);
-          if (currentInstance) {
-            // Store previous state in DiffBloc with callstack
-            diffBloc.storePreviousState(
-              (event.data as any).id,
-              currentInstance.state,
-              (event.data as any).callstack,
-            );
-          }
-          // Update instance with new state
-          instancesBloc.updateInstanceState((event.data as any).id, (event.data as any).state);
-          // Log state change
+      case 'instance-disposed': {
+        const disposedInstance = instancesBloc.getInstance((event.data as any).id);
+        instancesBloc.removeInstance((event.data as any).id);
+        diffBloc.clearPreviousState((event.data as any).id);
+        if (disposedInstance) {
           logsBloc.addLog(
-            'state-changed',
+            'disposed',
             (event.data as any).id,
-            (event.data as any).className,
-            (event.data as any).name,
-            {
-              previousState: currentInstance?.state,
-              newState: (event.data as any).state,
-            },
+            disposedInstance.className,
+            disposedInstance.name,
+          );
+        }
+        break;
+      }
+
+      case 'instance-updated': {
+        const currentInstance = instancesBloc.getInstance((event.data as any).id);
+        if (currentInstance) {
+          diffBloc.storePreviousState(
+            (event.data as any).id,
+            currentInstance.state,
             (event.data as any).callstack,
           );
-          break;
-
-        default:
-          console.warn(`[BlaC Overlay] Unknown event type: ${event.type}`);
+        }
+        instancesBloc.updateInstanceState((event.data as any).id, (event.data as any).state);
+        logsBloc.addLog(
+          'state-changed',
+          (event.data as any).id,
+          (event.data as any).className,
+          (event.data as any).name,
+          {
+            previousState: currentInstance?.state,
+            newState: (event.data as any).state,
+          },
+          (event.data as any).callstack,
+        );
+        break;
       }
-    } else {
-      console.warn(
-        '[BlaC Overlay] Event received but bloc is disposed, ignoring',
-      );
     }
   });
-  console.log(
-    '[BlaC Overlay] Successfully subscribed to DevTools events (atomic mode)',
-  );
 
-  // Cleanup on unmount
   return () => {
-    console.log('[BlaC Overlay] DevToolsPanel unmounting, unsubscribing...');
     unsubscribe();
   };
 };
@@ -268,31 +206,23 @@ export function DraggableOverlay({ onMount }: DraggableOverlayProps = {}) {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [size, setSize] = useState({ width: 800, height: 600 });
 
-  // Keyboard shortcut: Alt+D and custom event listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.altKey && (e.key === 'd' || e.key === 'D')) {
         e.preventDefault();
-        console.log('[BlaC Overlay] Alt+D pressed, toggling visibility');
         setVisible((v) => !v);
       }
-      // Escape to close
       if (e.key === 'Escape' && visible) {
-        console.log('[BlaC Overlay] Escape pressed, closing');
         setVisible(false);
       }
     };
 
-    // Listen for custom event to toggle visibility
     const handleToggleEvent = () => {
-      console.log('[BlaC Overlay] Toggle event received');
       setVisible((v) => !v);
     };
 
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('blac-devtools-toggle', handleToggleEvent);
-
-    console.log('[BlaC Overlay] Event listeners attached, visible:', visible);
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
@@ -350,10 +280,7 @@ export function DraggableOverlay({ onMount }: DraggableOverlayProps = {}) {
           border: '1px solid #444',
           pointerEvents: 'auto',
         }}
-        onClick={() => {
-          console.log('[BlaC Overlay] Toggle button clicked');
-          setVisible(true);
-        }}
+        onClick={() => setVisible(true)}
         title="Toggle BlaC DevTools (Alt+D)"
       >
         🔧 BlaC DevTools
