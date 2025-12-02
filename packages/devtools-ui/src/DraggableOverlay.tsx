@@ -98,10 +98,10 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
   console.log('[BlaC Overlay] API is available and enabled');
 
   // Get the DiffBloc to store previous states
-  const diffBloc: DevToolsDiffBloc = DevToolsDiffBloc.resolve();
+  const diffBloc =  DevToolsDiffBloc.resolve();
 
   // Get the LogsBloc for logging events
-  const logsBloc: DevToolsLogsBloc = DevToolsLogsBloc.resolve();
+  const logsBloc = DevToolsLogsBloc.resolve();
 
   // Initial state (fetch all instances on mount)
   console.log('[BlaC Overlay] Fetching initial instances...');

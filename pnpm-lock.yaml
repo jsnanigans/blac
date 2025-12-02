@@ -111,13 +111,13 @@ importers:
   apps/devtools-extension:
     dependencies:
       '@blac/core':
-        specifier: workspace:2.0.0-rc.10
+        specifier: workspace:2.0.0-rc.12
         version: link:../../packages/blac
       '@blac/devtools-ui':
-        specifier: workspace:2.0.0-rc.10
+        specifier: workspace:2.0.0-rc.12
         version: link:../../packages/devtools-ui
       '@blac/react':
-        specifier: workspace:2.0.0-rc.10
+        specifier: workspace:2.0.0-rc.12
         version: link:../../packages/blac-react
     devDependencies:
       '@types/chrome':

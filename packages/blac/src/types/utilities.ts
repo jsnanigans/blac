@@ -52,11 +52,13 @@ export type ExtractConstructorArgs<T> = T extends new (...args: infer P) => any
 export type BlocConstructor<TBloc extends StateContainer<any, any>> = (new (
   ...args: any[]
 ) => TBloc) & {
-  resolve(instanceKey?: string, ...args: any[]): TBloc;
-  get(instanceKey?: string): TBloc;
-  getSafe(
+  resolve<S = never>(instanceKey?: string, ...args: any[]): StateOverride<TBloc, S>;
+  get<S = never>(instanceKey?: string): StateOverride<TBloc, S>;
+  getSafe<S = never>(
     instanceKey?: string,
-  ): { error: Error; instance: null } | { error: null; instance: TBloc };
+  ):
+    | { error: Error; instance: null }
+    | { error: null; instance: StateOverride<TBloc, S> };
   release(instanceKey?: string): void;
   isolated?: boolean;
   keepAlive?: boolean;

@@ -8,12 +8,6 @@ import {
 import type { ComponentRef } from './types';
 import { generateInstanceKey } from './utils/instance-keys';
 
-type StateContainerConstructor<TBloc extends StateContainer<any, any>> =
-  BlocConstructor<TBloc> & {
-    resolve(instanceKey?: string, ...args: any[]): TBloc;
-    release(instanceKey?: string): void;
-  };
-
 /**
  * Configuration options for useBlocActions hook
  * @template TBloc - The state container type
@@ -69,13 +63,11 @@ export function useBlocActions<
   BlocClass: T & BlocConstructor<InstanceType<T>>,
   options?: UseBlocActionsOptions<InstanceType<T>>,
 ): StateOverride<InstanceType<T>, S> {
-  type TBloc = InstanceType<T>;
   const componentRef = useRef<ComponentRef>({});
   const initialPropsRef = useRef(options?.props);
 
   const [bloc, instanceKey] = useMemo(() => {
     const isIsolated = isIsolatedClass(BlocClass);
-    const Constructor = BlocClass as StateContainerConstructor<TBloc>;
 
     const instanceKey = generateInstanceKey(
       componentRef.current,
@@ -83,7 +75,7 @@ export function useBlocActions<
       options?.instanceId,
     );
 
-    const instance = Constructor.resolve(instanceKey, initialPropsRef.current);
+    const instance = BlocClass.resolve(instanceKey, initialPropsRef.current);
 
     return [instance, instanceKey] as const;
   }, [BlocClass]);
@@ -98,8 +90,7 @@ export function useBlocActions<
         options.onUnmount(bloc);
       }
 
-      const Constructor = BlocClass as StateContainerConstructor<TBloc>;
-      Constructor.release(instanceKey);
+      BlocClass.release(instanceKey);
 
       if (isIsolatedClass(BlocClass) && !bloc.isDisposed) {
         bloc.dispose();

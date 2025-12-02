@@ -26,12 +26,6 @@ import {
 import type { UseBlocOptions, UseBlocReturn, ComponentRef } from './types';
 import { generateInstanceKey } from './utils/instance-keys';
 
-type StateContainerConstructor<TBloc extends StateContainer<any, any>> =
-  BlocConstructor<TBloc> & {
-    resolve(instanceKey?: string, ...args: any[]): TBloc;
-    release(instanceKey?: string): void;
-  };
-
 interface TrackingMode {
   useManualDeps: boolean;
   autoTrackEnabled: boolean;
@@ -96,7 +90,6 @@ export function useBloc<
 ): UseBlocReturn<InstanceType<T>, S> {
   type TBloc = InstanceType<T>;
   const componentRef = useRef<ComponentRef>({});
-  const Constructor = BlocClass as StateContainerConstructor<TBloc>;
   const isIsolated = isIsolatedClass(BlocClass);
 
   const initialPropsRef = useRef(options?.props);
@@ -192,7 +185,7 @@ export function useBloc<
         options.onUnmount(bloc);
       }
 
-      Constructor.release(instanceKey);
+      BlocClass.release(instanceKey);
 
       if (isIsolated && !rawInstance.isDisposed) {
         rawInstance.dispose();
