@@ -5,9 +5,9 @@ import { Cubit } from '../core/Cubit';
 import { Vertex } from '../core/Vertex';
 import type { BlacPlugin } from './BlacPlugin';
 
-class CounterCubit extends Cubit<number> {
-  constructor() {
-    super(0);
+class CounterCubit extends Cubit<number, number> {
+  constructor(p: number) {
+    super(p);
   }
 
   increment = () => {
@@ -19,9 +19,9 @@ type CounterEvent =
   | { type: 'increment'; timestamp: number }
   | { type: 'decrement'; timestamp: number };
 
-class CounterVertex extends Vertex<number, CounterEvent> {
-  constructor() {
-    super(0);
+class CounterVertex extends Vertex<number, CounterEvent, number> {
+  constructor(prop: number = 0) {
+    super(prop);
   }
 
   protected onEvent = (event: CounterEvent) => {
@@ -300,7 +300,7 @@ describe('PluginManager', () => {
 
         manager.install(plugin);
 
-        const counter = CounterCubit.resolve('main', 0);
+        const counter = CounterCubit.resolve('main');
 
         expect(onInstanceCreated).toHaveBeenCalledOnce();
         expect(onInstanceCreated).toHaveBeenCalledWith(
@@ -320,7 +320,7 @@ describe('PluginManager', () => {
 
         manager.install(plugin);
 
-        expect(() => CounterCubit.resolve('main', 0)).not.toThrow();
+        expect(() => CounterCubit.resolve('main', { props: 0 })).not.toThrow();
       });
     });
 
@@ -335,7 +335,7 @@ describe('PluginManager', () => {
 
         manager.install(plugin);
 
-        const counter = CounterCubit.resolve('main', 0);
+        const counter = CounterCubit.resolve('main', { props: 0 });
         counter.increment();
 
         expect(onStateChanged).toHaveBeenCalledWith(
@@ -359,7 +359,7 @@ describe('PluginManager', () => {
 
         manager.install(plugin);
 
-        const counter = CounterVertex.resolve('main', 0);
+        const counter = CounterVertex.resolve('main', { props: 0 });
         counter.add({ type: 'increment', timestamp: Date.now() });
 
         expect(onEventAdded).toHaveBeenCalledWith(
@@ -381,7 +381,7 @@ describe('PluginManager', () => {
 
         manager.install(plugin);
 
-        const counter = CounterCubit.resolve('main', 0);
+        const counter = CounterCubit.resolve('main', { props: 0 });
         CounterCubit.release('main');
 
         expect(onInstanceDisposed).toHaveBeenCalledWith(
@@ -401,7 +401,7 @@ describe('PluginManager', () => {
 
       manager.install(plugin, { enabled: false });
 
-      const counter = CounterCubit.resolve('main', 0);
+      const counter = CounterCubit.resolve('main', { props: 0 });
       counter.increment();
 
       expect(onStateChanged).not.toHaveBeenCalled();
@@ -421,7 +421,7 @@ describe('PluginManager', () => {
 
       manager.install(plugin);
 
-      const counter = CounterCubit.resolve('main', 0);
+      const counter = CounterCubit.resolve('main', { props: 0 });
       const metadata = capturedContext.getInstanceMetadata(counter);
 
       expect(metadata).toMatchObject({
@@ -447,7 +447,7 @@ describe('PluginManager', () => {
 
       manager.install(plugin);
 
-      const counter = CounterCubit.resolve('test-state', 0);
+      const counter = CounterCubit.resolve('test-state', { props: 0 });
       counter.increment();
 
       const state = capturedContext.getState(counter);
@@ -466,8 +466,8 @@ describe('PluginManager', () => {
 
       manager.install(plugin);
 
-      const counter1 = CounterCubit.resolve('query-test-1', 0);
-      const counter2 = CounterCubit.resolve('query-test-2', 0);
+      const counter1 = CounterCubit.resolve('query-test-1', { props: 0 });
+      const counter2 = CounterCubit.resolve('query-test-2', { props: 0 });
 
       const instances = capturedContext.queryInstances(CounterCubit);
       expect(instances).toHaveLength(2);
@@ -487,8 +487,8 @@ describe('PluginManager', () => {
 
       manager.install(plugin);
 
-      CounterCubit.resolve('types-test-1', 0);
-      CounterVertex.resolve('types-test-2', 0);
+      CounterCubit.resolve('types-test-1', { props: 0 });
+      CounterVertex.resolve('types-test-2', { props: 0 });
 
       const types = capturedContext.getAllTypes();
       expect(types.length).toBeGreaterThanOrEqual(2);
@@ -508,8 +508,8 @@ describe('PluginManager', () => {
 
       manager.install(plugin);
 
-      CounterCubit.resolve('stats-test-1', 0);
-      CounterCubit.resolve('stats-test-2', 0);
+      CounterCubit.resolve('stats-test-1', { props: 0 });
+      CounterCubit.resolve('stats-test-2', { props: 0 });
 
       const stats = capturedContext.getStats();
       expect(stats.registeredTypes).toBeGreaterThanOrEqual(1);

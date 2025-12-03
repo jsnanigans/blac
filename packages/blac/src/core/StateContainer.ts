@@ -1,5 +1,8 @@
 import { generateSimpleId } from '../utils/idGenerator';
-import type { StateOverride } from '../types/utilities';
+import type {
+  ExtractProps,
+  StateContainerConstructor,
+} from '../types/utilities';
 import {
   StateContainerRegistry,
   globalRegistry,
@@ -70,7 +73,7 @@ type SystemEventHandler<S, P, E extends SystemEvent> = (
  * }
  * ```
  */
-export abstract class StateContainer<S, P = undefined> {
+export abstract class StateContainer<S = any, P = any> {
   /** @internal Flag to exclude this class from DevTools tracking */
   static __excludeFromDevTools = false;
 
@@ -98,8 +101,8 @@ export abstract class StateContainer<S, P = undefined> {
    * Register this class with the global registry
    * @param isolated - Whether instances should be isolated (component-scoped)
    */
-  static register<T extends StateContainer<any>>(
-    this: new (...args: any[]) => T,
+  static register<T extends StateContainerConstructor>(
+    this: T,
     isolated = false,
   ): void {
     StateContainer._registry.register(this, isolated);
@@ -111,19 +114,22 @@ export abstract class StateContainer<S, P = undefined> {
    * @template S - Optional state type override for generic StateContainers
    * @template T - The StateContainer type (inferred from class)
    * @param instanceKey - Optional instance key (defaults to 'default')
-   * @param constructorArgs - Arguments to pass to constructor if creating new instance
+   * @param options - Resolution options (canCreate, countRef, props, trackExecutionContext)
    * @returns The state container instance
    */
-  static resolve<S = never, T extends StateContainer<any> = StateContainer<any>>(
-    this: new (...args: any[]) => T,
+  static resolve<
+    T extends StateContainerConstructor = StateContainerConstructor,
+  >(
+    this: T,
     instanceKey?: string,
-    constructorArgs?: any,
-  ): StateOverride<T, S> {
-    return StateContainer._registry.resolve(
-      this,
-      instanceKey,
-      constructorArgs,
-    ) as StateOverride<T, S>;
+    options?: {
+      canCreate?: boolean;
+      countRef?: boolean;
+      props?: ExtractProps<T>;
+      trackExecutionContext?: boolean;
+    },
+  ): InstanceType<T> {
+    return StateContainer._registry.resolve(this, instanceKey, options);
   }
 
   /**
@@ -134,14 +140,10 @@ export abstract class StateContainer<S, P = undefined> {
    * @returns The state container instance
    * @throws Error if instance doesn't exist
    */
-  static get<S = never, T extends StateContainer<any> = StateContainer<any>>(
-    this: new (...args: any[]) => T,
-    instanceKey?: string,
-  ): StateOverride<T, S> {
-    return StateContainer._registry.get(this, instanceKey) as StateOverride<
-      T,
-      S
-    >;
+  static get<
+    T extends StateContainerConstructor<any> = StateContainerConstructor<any>,
+  >(this: T, instanceKey?: string): InstanceType<T> {
+    return StateContainer._registry.get(this, instanceKey);
   }
 
   /**
@@ -151,36 +153,30 @@ export abstract class StateContainer<S, P = undefined> {
    * @param instanceKey - Optional instance key (defaults to 'default')
    * @returns Discriminated union with either the instance or an error
    */
-  static getSafe<S = never, T extends StateContainer<any> = StateContainer<any>>(
-    this: new (...args: any[]) => T,
+  static getSafe<
+    T extends StateContainerConstructor<any> = StateContainerConstructor<any>,
+  >(
+    this: T,
     instanceKey?: string,
   ):
     | { error: Error; instance: null }
-    | { error: null; instance: StateOverride<T, S> } {
-    return StateContainer._registry.getSafe(this, instanceKey) as
-      | { error: Error; instance: null }
-      | { error: null; instance: StateOverride<T, S> };
+    | { error: null; instance: InstanceType<T> } {
+    return StateContainer._registry.getSafe(this, instanceKey);
   }
 
   /**
    * Connect to an instance for bloc-to-bloc communication (borrowing semantics).
    * Gets or creates instance without incrementing ref count.
+   * Tracks cross-bloc dependency for reactive updates.
    * @template S - Optional state type override for generic StateContainers
    * @template T - The StateContainer type (inferred from class)
    * @param instanceKey - Optional instance key (defaults to 'default')
-   * @param constructorArgs - Arguments to pass to constructor if creating new instance
    * @returns The state container instance
    */
-  static connect<S = never, T extends StateContainer<any> = StateContainer<any>>(
-    this: new (...args: any[]) => T,
-    instanceKey?: string,
-    constructorArgs?: any,
-  ): StateOverride<T, S> {
-    return StateContainer._registry.connect(
-      this,
-      instanceKey,
-      constructorArgs,
-    ) as StateOverride<T, S>;
+  static connect<
+    T extends StateContainerConstructor<any> = StateContainerConstructor<any>,
+  >(this: T, instanceKey?: string): InstanceType<T> {
+    return StateContainer._registry.connect(this, instanceKey);
   }
 
   /**
@@ -189,11 +185,9 @@ export abstract class StateContainer<S, P = undefined> {
    * @param instanceKey - Optional instance key (defaults to 'default')
    * @param forceDispose - Force immediate disposal regardless of ref count
    */
-  static release<T extends StateContainer<any> = StateContainer<any>>(
-    this: new (...args: any[]) => T,
-    instanceKey?: string,
-    forceDispose = false,
-  ): void {
+  static release<
+    T extends StateContainerConstructor = StateContainerConstructor,
+  >(this: T, instanceKey?: string, forceDispose = false): void {
     StateContainer._registry.release(this, instanceKey, forceDispose);
   }
 
@@ -201,9 +195,9 @@ export abstract class StateContainer<S, P = undefined> {
    * Get all instances of this class
    * @returns Array of all instances
    */
-  static getAll<T extends StateContainer<any> = StateContainer<any>>(
-    this: new (...args: any[]) => T,
-  ): T[] {
+  static getAll<
+    T extends StateContainerConstructor = StateContainerConstructor,
+  >(this: T): InstanceType<T>[] {
     return StateContainer._registry.getAll(this);
   }
 
@@ -211,18 +205,17 @@ export abstract class StateContainer<S, P = undefined> {
    * Iterate over all instances of this class
    * @param callback - Function to call for each instance
    */
-  static forEach<T extends StateContainer<any> = StateContainer<any>>(
-    this: new (...args: any[]) => T,
-    callback: (instance: T) => void,
-  ): void {
+  static forEach<
+    T extends StateContainerConstructor = StateContainerConstructor,
+  >(this: T, callback: (instance: InstanceType<T>) => void): void {
     StateContainer._registry.forEach(this, callback);
   }
 
   /**
    * Clear all instances of this class (disposes them)
    */
-  static clear<T extends StateContainer<any> = StateContainer<any>>(
-    this: new (...args: any[]) => T,
+  static clear<T extends StateContainerConstructor = StateContainerConstructor>(
+    this: T,
   ): void {
     StateContainer._registry.clear(this);
   }
@@ -251,10 +244,9 @@ export abstract class StateContainer<S, P = undefined> {
    * @param instanceKey - Optional instance key (defaults to 'default')
    * @returns Current ref count (0 if instance doesn't exist)
    */
-  static getRefCount<T extends StateContainer<any> = StateContainer<any>>(
-    this: new (...args: any[]) => T,
-    instanceKey?: string,
-  ): number {
+  static getRefCount<
+    T extends StateContainerConstructor = StateContainerConstructor,
+  >(this: T, instanceKey?: string): number {
     return StateContainer._registry.getRefCount(this, instanceKey);
   }
 
@@ -263,10 +255,9 @@ export abstract class StateContainer<S, P = undefined> {
    * @param instanceKey - Optional instance key (defaults to 'default')
    * @returns true if instance exists
    */
-  static hasInstance<T extends StateContainer<any> = StateContainer<any>>(
-    this: new (...args: any[]) => T,
-    instanceKey?: string,
-  ): boolean {
+  static hasInstance<
+    T extends StateContainerConstructor = StateContainerConstructor,
+  >(this: T, instanceKey?: string): boolean {
     return StateContainer._registry.hasInstance(this, instanceKey);
   }
 

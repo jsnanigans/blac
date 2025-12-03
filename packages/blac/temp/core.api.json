@@ -204,7 +204,7 @@
             },
             {
               "kind": "Content",
-              "text": "<any, any>"
+              "text": "<any>"
             },
             {
               "kind": "Content",
@@ -1229,7 +1229,19 @@
           "excerptTokens": [
             {
               "kind": "Content",
-              "text": "export type BlocConstructor<TBloc extends "
+              "text": "export type BlocConstructor<S = "
+            },
+            {
+              "kind": "Content",
+              "text": "any"
+            },
+            {
+              "kind": "Content",
+              "text": ", T extends "
+            },
+            {
+              "kind": "Content",
+              "text": "new (...args: any[]) => "
             },
             {
               "kind": "Reference",
@@ -1238,7 +1250,24 @@
             },
             {
               "kind": "Content",
-              "text": "<any, any>"
+              "text": "<S, any>"
+            },
+            {
+              "kind": "Content",
+              "text": " = "
+            },
+            {
+              "kind": "Content",
+              "text": "new (...args: any[]) => "
+            },
+            {
+              "kind": "Reference",
+              "text": "StateContainer",
+              "canonicalReference": "@blac/core!StateContainer:class"
+            },
+            {
+              "kind": "Content",
+              "text": "<S, any>"
             },
             {
               "kind": "Content",
@@ -1246,25 +1275,34 @@
             },
             {
               "kind": "Content",
-              "text": "(new (...args: any[]) => TBloc) & {\n    resolve<S = never>(instanceKey?: string, ...args: any[]): "
+              "text": "(new (...args: any[]) => "
             },
             {
               "kind": "Reference",
-              "text": "StateOverride",
-              "canonicalReference": "@blac/core!StateOverride:type"
+              "text": "InstanceType",
+              "canonicalReference": "!InstanceType:type"
             },
             {
               "kind": "Content",
-              "text": "<TBloc, S>;\n    get<S = never>(instanceKey?: string): "
+              "text": "<T>) & {\n    resolve(instanceKey?: string, ...args: any[]): "
             },
             {
               "kind": "Reference",
-              "text": "StateOverride",
-              "canonicalReference": "@blac/core!StateOverride:type"
+              "text": "InstanceType",
+              "canonicalReference": "!InstanceType:type"
             },
             {
               "kind": "Content",
-              "text": "<TBloc, S>;\n    getSafe<S = never>(instanceKey?: string): {\n        error: "
+              "text": "<T>;\n    get(instanceKey?: string, ...args: any[]): "
+            },
+            {
+              "kind": "Reference",
+              "text": "InstanceType",
+              "canonicalReference": "!InstanceType:type"
+            },
+            {
+              "kind": "Content",
+              "text": "<T> | null;\n    getSafe(instanceKey?: string, ...args: any[]): {\n        error: "
             },
             {
               "kind": "Reference",
@@ -1277,12 +1315,12 @@
             },
             {
               "kind": "Reference",
-              "text": "StateOverride",
-              "canonicalReference": "@blac/core!StateOverride:type"
+              "text": "InstanceType",
+              "canonicalReference": "!InstanceType:type"
             },
             {
               "kind": "Content",
-              "text": "<TBloc, S>;\n    };\n    release(instanceKey?: string): void;\n    isolated?: boolean;\n    keepAlive?: boolean;\n}"
+              "text": "<T>;\n    };\n    release(instanceKey?: string): void;\n    isolated?: boolean;\n    keepAlive?: boolean;\n}"
             },
             {
               "kind": "Content",
@@ -1294,10 +1332,68 @@
           "name": "BlocConstructor",
           "typeParameters": [
             {
-              "typeParameterName": "TBloc",
+              "typeParameterName": "S",
+              "constraintTokenRange": {
+                "startIndex": 0,
+                "endIndex": 0
+              },
+              "defaultTypeTokenRange": {
+                "startIndex": 1,
+                "endIndex": 2
+              }
+            },
+            {
+              "typeParameterName": "T",
+              "constraintTokenRange": {
+                "startIndex": 3,
+                "endIndex": 6
+              },
+              "defaultTypeTokenRange": {
+                "startIndex": 7,
+                "endIndex": 10
+              }
+            }
+          ],
+          "typeTokenRange": {
+            "startIndex": 11,
+            "endIndex": 22
+          }
+        },
+        {
+          "kind": "TypeAlias",
+          "canonicalReference": "@blac/core!BlocInstanceType:type",
+          "docComment": "",
+          "excerptTokens": [
+            {
+              "kind": "Content",
+              "text": "export type BlocInstanceType<T extends "
+            },
+            {
+              "kind": "Content",
+              "text": "abstract new (...args: any) => any"
+            },
+            {
+              "kind": "Content",
+              "text": "> = "
+            },
+            {
+              "kind": "Content",
+              "text": "T extends abstract new (...args: any) => infer R ? R : any"
+            },
+            {
+              "kind": "Content",
+              "text": ";"
+            }
+          ],
+          "fileUrlPath": "dist/.types/types/utilities.d.ts",
+          "releaseTag": "Public",
+          "name": "BlocInstanceType",
+          "typeParameters": [
+            {
+              "typeParameterName": "T",
               "constraintTokenRange": {
                 "startIndex": 1,
-                "endIndex": 3
+                "endIndex": 2
               },
               "defaultTypeTokenRange": {
                 "startIndex": 0,
@@ -1306,8 +1402,8 @@
             }
           ],
           "typeTokenRange": {
-            "startIndex": 4,
-            "endIndex": 13
+            "startIndex": 3,
+            "endIndex": 4
           }
         },
         {
@@ -1852,7 +1948,16 @@
             },
             {
               "kind": "Content",
-              "text": "<TBloc>>"
+              "text": "<"
+            },
+            {
+              "kind": "Reference",
+              "text": "StateContainerConstructor",
+              "canonicalReference": "@blac/core!StateContainerConstructor:type"
+            },
+            {
+              "kind": "Content",
+              "text": ">>"
             },
             {
               "kind": "Content",
@@ -1862,7 +1967,7 @@
           "fileUrlPath": "dist/.types/adapter/framework-adapter.d.ts",
           "returnTypeTokenRange": {
             "startIndex": 12,
-            "endIndex": 16
+            "endIndex": 18
           },
           "releaseTag": "Public",
           "overloadIndex": 1,
@@ -3008,8 +3113,8 @@
             },
             {
               "kind": "Reference",
-              "text": "StateContainer",
-              "canonicalReference": "@blac/core!StateContainer:class"
+              "text": "StateContainerConstructor",
+              "canonicalReference": "@blac/core!StateContainerConstructor:type"
             },
             {
               "kind": "Content",
@@ -3044,7 +3149,7 @@
         {
           "kind": "TypeAlias",
           "canonicalReference": "@blac/core!ExtractState:type",
-          "docComment": "/**\n * Extract the state type from a StateContainer  @template T - The StateContainer type\n */\n",
+          "docComment": "/**\n * Extract the state type from a StateContainer  @template T - The StateContainer type  @template Override - Optional override type for generic StateContainers, `any` by default, should ot override if its `any`\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -3056,8 +3161,8 @@
             },
             {
               "kind": "Reference",
-              "text": "StateContainer",
-              "canonicalReference": "@blac/core!StateContainer:class"
+              "text": "StateContainerConstructor",
+              "canonicalReference": "@blac/core!StateContainerConstructor:type"
             },
             {
               "kind": "Content",
@@ -3258,11 +3363,29 @@
           "excerptTokens": [
             {
               "kind": "Content",
-              "text": "export declare function getStaticProp<T>(Type: "
+              "text": "export declare function getStaticProp<V, T extends "
+            },
+            {
+              "kind": "Reference",
+              "text": "StateContainerConstructor",
+              "canonicalReference": "@blac/core!StateContainerConstructor:type"
             },
             {
               "kind": "Content",
-              "text": "new (...args: any[]) => any"
+              "text": " = "
+            },
+            {
+              "kind": "Reference",
+              "text": "StateContainerConstructor",
+              "canonicalReference": "@blac/core!StateContainerConstructor:type"
+            },
+            {
+              "kind": "Content",
+              "text": ">(Type: "
+            },
+            {
+              "kind": "Content",
+              "text": "T"
             },
             {
               "kind": "Content",
@@ -3278,7 +3401,7 @@
             },
             {
               "kind": "Content",
-              "text": "T"
+              "text": "V"
             },
             {
               "kind": "Content",
@@ -3286,7 +3409,7 @@
             },
             {
               "kind": "Content",
-              "text": "T | undefined"
+              "text": "V | undefined"
             },
             {
               "kind": "Content",
@@ -3295,8 +3418,8 @@
           ],
           "fileUrlPath": "dist/.types/utils/static-props.d.ts",
           "returnTypeTokenRange": {
-            "startIndex": 7,
-            "endIndex": 8
+            "startIndex": 11,
+            "endIndex": 12
           },
           "releaseTag": "Public",
           "overloadIndex": 1,
@@ -3304,31 +3427,31 @@
             {
               "parameterName": "Type",
               "parameterTypeTokenRange": {
-                "startIndex": 1,
-                "endIndex": 2
+                "startIndex": 5,
+                "endIndex": 6
               },
               "isOptional": false
             },
             {
               "parameterName": "propName",
               "parameterTypeTokenRange": {
-                "startIndex": 3,
-                "endIndex": 4
+                "startIndex": 7,
+                "endIndex": 8
               },
               "isOptional": false
             },
             {
               "parameterName": "defaultValue",
               "parameterTypeTokenRange": {
-                "startIndex": 5,
-                "endIndex": 6
+                "startIndex": 9,
+                "endIndex": 10
               },
               "isOptional": true
             }
           ],
           "typeParameters": [
             {
-              "typeParameterName": "T",
+              "typeParameterName": "V",
               "constraintTokenRange": {
                 "startIndex": 0,
                 "endIndex": 0
@@ -3336,6 +3459,17 @@
               "defaultTypeTokenRange": {
                 "startIndex": 0,
                 "endIndex": 0
+              }
+            },
+            {
+              "typeParameterName": "T",
+              "constraintTokenRange": {
+                "startIndex": 1,
+                "endIndex": 2
+              },
+              "defaultTypeTokenRange": {
+                "startIndex": 3,
+                "endIndex": 4
               }
             }
           ],
@@ -4168,11 +4302,20 @@
           "excerptTokens": [
             {
               "kind": "Content",
-              "text": "export declare function isExcludedFromDevTools(Type: "
+              "text": "export declare function isExcludedFromDevTools<T extends "
+            },
+            {
+              "kind": "Reference",
+              "text": "StateContainerConstructor",
+              "canonicalReference": "@blac/core!StateContainerConstructor:type"
             },
             {
               "kind": "Content",
-              "text": "new (...args: any[]) => any"
+              "text": ">(Type: "
+            },
+            {
+              "kind": "Content",
+              "text": "T"
             },
             {
               "kind": "Content",
@@ -4189,8 +4332,8 @@
           ],
           "fileUrlPath": "dist/.types/utils/static-props.d.ts",
           "returnTypeTokenRange": {
-            "startIndex": 3,
-            "endIndex": 4
+            "startIndex": 5,
+            "endIndex": 6
           },
           "releaseTag": "Public",
           "overloadIndex": 1,
@@ -4198,10 +4341,23 @@
             {
               "parameterName": "Type",
               "parameterTypeTokenRange": {
+                "startIndex": 3,
+                "endIndex": 4
+              },
+              "isOptional": false
+            }
+          ],
+          "typeParameters": [
+            {
+              "typeParameterName": "T",
+              "constraintTokenRange": {
                 "startIndex": 1,
                 "endIndex": 2
               },
-              "isOptional": false
+              "defaultTypeTokenRange": {
+                "startIndex": 0,
+                "endIndex": 0
+              }
             }
           ],
           "name": "isExcludedFromDevTools"
@@ -4213,11 +4369,20 @@
           "excerptTokens": [
             {
               "kind": "Content",
-              "text": "export declare function isIsolatedClass(Type: "
+              "text": "export declare function isIsolatedClass<T extends "
+            },
+            {
+              "kind": "Reference",
+              "text": "StateContainerConstructor",
+              "canonicalReference": "@blac/core!StateContainerConstructor:type"
             },
             {
               "kind": "Content",
-              "text": "new (...args: any[]) => any"
+              "text": ">(Type: "
+            },
+            {
+              "kind": "Content",
+              "text": "T"
             },
             {
               "kind": "Content",
@@ -4234,8 +4399,8 @@
           ],
           "fileUrlPath": "dist/.types/utils/static-props.d.ts",
           "returnTypeTokenRange": {
-            "startIndex": 3,
-            "endIndex": 4
+            "startIndex": 5,
+            "endIndex": 6
           },
           "releaseTag": "Public",
           "overloadIndex": 1,
@@ -4243,10 +4408,23 @@
             {
               "parameterName": "Type",
               "parameterTypeTokenRange": {
+                "startIndex": 3,
+                "endIndex": 4
+              },
+              "isOptional": false
+            }
+          ],
+          "typeParameters": [
+            {
+              "typeParameterName": "T",
+              "constraintTokenRange": {
                 "startIndex": 1,
                 "endIndex": 2
               },
-              "isOptional": false
+              "defaultTypeTokenRange": {
+                "startIndex": 0,
+                "endIndex": 0
+              }
             }
           ],
           "name": "isIsolatedClass"
@@ -4303,11 +4481,20 @@
           "excerptTokens": [
             {
               "kind": "Content",
-              "text": "export declare function isKeepAliveClass(Type: "
+              "text": "export declare function isKeepAliveClass<T extends "
+            },
+            {
+              "kind": "Reference",
+              "text": "StateContainerConstructor",
+              "canonicalReference": "@blac/core!StateContainerConstructor:type"
             },
             {
               "kind": "Content",
-              "text": "new (...args: any[]) => any"
+              "text": ">(Type: "
+            },
+            {
+              "kind": "Content",
+              "text": "T"
             },
             {
               "kind": "Content",
@@ -4324,8 +4511,8 @@
           ],
           "fileUrlPath": "dist/.types/utils/static-props.d.ts",
           "returnTypeTokenRange": {
-            "startIndex": 3,
-            "endIndex": 4
+            "startIndex": 5,
+            "endIndex": 6
           },
           "releaseTag": "Public",
           "overloadIndex": 1,
@@ -4333,10 +4520,23 @@
             {
               "parameterName": "Type",
               "parameterTypeTokenRange": {
+                "startIndex": 3,
+                "endIndex": 4
+              },
+              "isOptional": false
+            }
+          ],
+          "typeParameters": [
+            {
+              "typeParameterName": "T",
+              "constraintTokenRange": {
                 "startIndex": 1,
                 "endIndex": 2
               },
-              "isOptional": false
+              "defaultTypeTokenRange": {
+                "startIndex": 0,
+                "endIndex": 0
+              }
             }
           ],
           "name": "isKeepAliveClass"
@@ -4830,7 +5030,7 @@
             },
             {
               "kind": "Content",
-              "text": "<any, any>"
+              "text": "<any>"
             },
             {
               "kind": "Content",
@@ -4866,7 +5066,7 @@
                 },
                 {
                   "kind": "Content",
-                  "text": "(state: any, bloc: TBloc) => unknown[]"
+                  "text": "(state: any, bloc: TBloc) => any[]"
                 },
                 {
                   "kind": "Content",
@@ -5619,11 +5819,19 @@
           "excerptTokens": [
             {
               "kind": "Content",
-              "text": "export declare abstract class StateContainer<S, P = "
+              "text": "export declare abstract class StateContainer<S = "
             },
             {
               "kind": "Content",
-              "text": "undefined"
+              "text": "any"
+            },
+            {
+              "kind": "Content",
+              "text": ", P = "
+            },
+            {
+              "kind": "Content",
+              "text": "any"
             },
             {
               "kind": "Content",
@@ -5640,8 +5848,8 @@
                 "endIndex": 0
               },
               "defaultTypeTokenRange": {
-                "startIndex": 0,
-                "endIndex": 0
+                "startIndex": 1,
+                "endIndex": 2
               }
             },
             {
@@ -5651,8 +5859,8 @@
                 "endIndex": 0
               },
               "defaultTypeTokenRange": {
-                "startIndex": 1,
-                "endIndex": 2
+                "startIndex": 3,
+                "endIndex": 4
               }
             }
           ],
@@ -5703,12 +5911,8 @@
                 },
                 {
                   "kind": "Reference",
-                  "text": "StateContainer",
-                  "canonicalReference": "@blac/core!StateContainer:class"
-                },
-                {
-                  "kind": "Content",
-                  "text": "<any>"
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
                 },
                 {
                   "kind": "Content",
@@ -5716,12 +5920,8 @@
                 },
                 {
                   "kind": "Reference",
-                  "text": "StateContainer",
-                  "canonicalReference": "@blac/core!StateContainer:class"
-                },
-                {
-                  "kind": "Content",
-                  "text": "<any>"
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
                 },
                 {
                   "kind": "Content",
@@ -5729,7 +5929,7 @@
                 },
                 {
                   "kind": "Content",
-                  "text": "new (...args: any[]) => T"
+                  "text": "T"
                 },
                 {
                   "kind": "Content",
@@ -5749,18 +5949,18 @@
                   "typeParameterName": "T",
                   "constraintTokenRange": {
                     "startIndex": 1,
-                    "endIndex": 3
+                    "endIndex": 2
                   },
                   "defaultTypeTokenRange": {
-                    "startIndex": 4,
-                    "endIndex": 6
+                    "startIndex": 3,
+                    "endIndex": 4
                   }
                 }
               ],
               "isStatic": true,
               "returnTypeTokenRange": {
-                "startIndex": 9,
-                "endIndex": 10
+                "startIndex": 7,
+                "endIndex": 8
               },
               "releaseTag": "Public",
               "isProtected": false,
@@ -5769,8 +5969,8 @@
                 {
                   "parameterName": "this",
                   "parameterTypeTokenRange": {
-                    "startIndex": 7,
-                    "endIndex": 8
+                    "startIndex": 5,
+                    "endIndex": 6
                   },
                   "isOptional": false
                 }
@@ -5813,24 +6013,16 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!StateContainer.connect:member(1)",
-              "docComment": "/**\n * Connect to an instance for bloc-to-bloc communication (borrowing semantics). Gets or creates instance without incrementing ref count.  @template S - Optional state type override for generic StateContainers  @template T - The StateContainer type (inferred from class)\n *\n * @param instanceKey - Optional instance key (defaults to 'default')\n *\n * @param constructorArgs - Arguments to pass to constructor if creating new instance\n *\n * @returns The state container instance\n */\n",
+              "docComment": "/**\n * Connect to an instance for bloc-to-bloc communication (borrowing semantics). Gets or creates instance without incrementing ref count. Tracks cross-bloc dependency for reactive updates.  @template S - Optional state type override for generic StateContainers  @template T - The StateContainer type (inferred from class)\n *\n * @param instanceKey - Optional instance key (defaults to 'default')\n *\n * @returns The state container instance\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
-                  "text": "static connect<S = "
-                },
-                {
-                  "kind": "Content",
-                  "text": "never"
-                },
-                {
-                  "kind": "Content",
-                  "text": ", T extends "
+                  "text": "static connect<T extends "
                 },
                 {
                   "kind": "Reference",
-                  "text": "StateContainer",
-                  "canonicalReference": "@blac/core!StateContainer:class"
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
                 },
                 {
                   "kind": "Content",
@@ -5842,8 +6034,8 @@
                 },
                 {
                   "kind": "Reference",
-                  "text": "StateContainer",
-                  "canonicalReference": "@blac/core!StateContainer:class"
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
                 },
                 {
                   "kind": "Content",
@@ -5855,7 +6047,7 @@
                 },
                 {
                   "kind": "Content",
-                  "text": "new (...args: any[]) => T"
+                  "text": "T"
                 },
                 {
                   "kind": "Content",
@@ -5867,24 +6059,16 @@
                 },
                 {
                   "kind": "Content",
-                  "text": ", constructorArgs?: "
-                },
-                {
-                  "kind": "Content",
-                  "text": "any"
-                },
-                {
-                  "kind": "Content",
                   "text": "): "
                 },
                 {
                   "kind": "Reference",
-                  "text": "StateOverride",
-                  "canonicalReference": "@blac/core!StateOverride:type"
+                  "text": "InstanceType",
+                  "canonicalReference": "!InstanceType:type"
                 },
                 {
                   "kind": "Content",
-                  "text": "<T, S>"
+                  "text": "<T>"
                 },
                 {
                   "kind": "Content",
@@ -5893,32 +6077,21 @@
               ],
               "typeParameters": [
                 {
-                  "typeParameterName": "S",
-                  "constraintTokenRange": {
-                    "startIndex": 0,
-                    "endIndex": 0
-                  },
-                  "defaultTypeTokenRange": {
-                    "startIndex": 1,
-                    "endIndex": 2
-                  }
-                },
-                {
                   "typeParameterName": "T",
                   "constraintTokenRange": {
-                    "startIndex": 3,
-                    "endIndex": 5
+                    "startIndex": 1,
+                    "endIndex": 3
                   },
                   "defaultTypeTokenRange": {
-                    "startIndex": 6,
-                    "endIndex": 8
+                    "startIndex": 4,
+                    "endIndex": 6
                   }
                 }
               ],
               "isStatic": true,
               "returnTypeTokenRange": {
-                "startIndex": 15,
-                "endIndex": 17
+                "startIndex": 11,
+                "endIndex": 13
               },
               "releaseTag": "Public",
               "isProtected": false,
@@ -5927,24 +6100,16 @@
                 {
                   "parameterName": "this",
                   "parameterTypeTokenRange": {
-                    "startIndex": 9,
-                    "endIndex": 10
+                    "startIndex": 7,
+                    "endIndex": 8
                   },
                   "isOptional": false
                 },
                 {
                   "parameterName": "instanceKey",
                   "parameterTypeTokenRange": {
-                    "startIndex": 11,
-                    "endIndex": 12
-                  },
-                  "isOptional": true
-                },
-                {
-                  "parameterName": "constructorArgs",
-                  "parameterTypeTokenRange": {
-                    "startIndex": 13,
-                    "endIndex": 14
+                    "startIndex": 9,
+                    "endIndex": 10
                   },
                   "isOptional": true
                 }
@@ -6133,8 +6298,112 @@
                 },
                 {
                   "kind": "Reference",
-                  "text": "StateContainer",
-                  "canonicalReference": "@blac/core!StateContainer:class"
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
+                },
+                {
+                  "kind": "Content",
+                  "text": " = "
+                },
+                {
+                  "kind": "Reference",
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
+                },
+                {
+                  "kind": "Content",
+                  "text": ">(this: "
+                },
+                {
+                  "kind": "Content",
+                  "text": "T"
+                },
+                {
+                  "kind": "Content",
+                  "text": ", callback: "
+                },
+                {
+                  "kind": "Content",
+                  "text": "(instance: "
+                },
+                {
+                  "kind": "Reference",
+                  "text": "InstanceType",
+                  "canonicalReference": "!InstanceType:type"
+                },
+                {
+                  "kind": "Content",
+                  "text": "<T>) => void"
+                },
+                {
+                  "kind": "Content",
+                  "text": "): "
+                },
+                {
+                  "kind": "Content",
+                  "text": "void"
+                },
+                {
+                  "kind": "Content",
+                  "text": ";"
+                }
+              ],
+              "typeParameters": [
+                {
+                  "typeParameterName": "T",
+                  "constraintTokenRange": {
+                    "startIndex": 1,
+                    "endIndex": 2
+                  },
+                  "defaultTypeTokenRange": {
+                    "startIndex": 3,
+                    "endIndex": 4
+                  }
+                }
+              ],
+              "isStatic": true,
+              "returnTypeTokenRange": {
+                "startIndex": 11,
+                "endIndex": 12
+              },
+              "releaseTag": "Public",
+              "isProtected": false,
+              "overloadIndex": 1,
+              "parameters": [
+                {
+                  "parameterName": "this",
+                  "parameterTypeTokenRange": {
+                    "startIndex": 5,
+                    "endIndex": 6
+                  },
+                  "isOptional": false
+                },
+                {
+                  "parameterName": "callback",
+                  "parameterTypeTokenRange": {
+                    "startIndex": 7,
+                    "endIndex": 10
+                  },
+                  "isOptional": false
+                }
+              ],
+              "isOptional": false,
+              "isAbstract": false,
+              "name": "forEach"
+            },
+            {
+              "kind": "Method",
+              "canonicalReference": "@blac/core!StateContainer.get:member(1)",
+              "docComment": "/**\n * Get an existing instance without incrementing ref count (borrowing semantics).  @template S - Optional state type override for generic StateContainers  @template T - The StateContainer type (inferred from class)\n *\n * @param instanceKey - Optional instance key (defaults to 'default')\n *\n * @returns The state container instance\n *\n * @throws\n *\n * Error if instance doesn't exist\n */\n",
+              "excerptTokens": [
+                {
+                  "kind": "Content",
+                  "text": "static get<T extends "
+                },
+                {
+                  "kind": "Reference",
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
                 },
                 {
                   "kind": "Content",
@@ -6146,8 +6415,8 @@
                 },
                 {
                   "kind": "Reference",
-                  "text": "StateContainer",
-                  "canonicalReference": "@blac/core!StateContainer:class"
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
                 },
                 {
                   "kind": "Content",
@@ -6159,23 +6428,28 @@
                 },
                 {
                   "kind": "Content",
-                  "text": "new (...args: any[]) => T"
+                  "text": "T"
                 },
                 {
                   "kind": "Content",
-                  "text": ", callback: "
+                  "text": ", instanceKey?: "
                 },
                 {
                   "kind": "Content",
-                  "text": "(instance: T) => void"
+                  "text": "string"
                 },
                 {
                   "kind": "Content",
                   "text": "): "
                 },
                 {
+                  "kind": "Reference",
+                  "text": "InstanceType",
+                  "canonicalReference": "!InstanceType:type"
+                },
+                {
                   "kind": "Content",
-                  "text": "void"
+                  "text": "<T>"
                 },
                 {
                   "kind": "Content",
@@ -6198,7 +6472,7 @@
               "isStatic": true,
               "returnTypeTokenRange": {
                 "startIndex": 11,
-                "endIndex": 12
+                "endIndex": 13
               },
               "releaseTag": "Public",
               "isProtected": false,
@@ -6213,137 +6487,10 @@
                   "isOptional": false
                 },
                 {
-                  "parameterName": "callback",
-                  "parameterTypeTokenRange": {
-                    "startIndex": 9,
-                    "endIndex": 10
-                  },
-                  "isOptional": false
-                }
-              ],
-              "isOptional": false,
-              "isAbstract": false,
-              "name": "forEach"
-            },
-            {
-              "kind": "Method",
-              "canonicalReference": "@blac/core!StateContainer.get:member(1)",
-              "docComment": "/**\n * Get an existing instance without incrementing ref count (borrowing semantics).  @template S - Optional state type override for generic StateContainers  @template T - The StateContainer type (inferred from class)\n *\n * @param instanceKey - Optional instance key (defaults to 'default')\n *\n * @returns The state container instance\n *\n * @throws\n *\n * Error if instance doesn't exist\n */\n",
-              "excerptTokens": [
-                {
-                  "kind": "Content",
-                  "text": "static get<S = "
-                },
-                {
-                  "kind": "Content",
-                  "text": "never"
-                },
-                {
-                  "kind": "Content",
-                  "text": ", T extends "
-                },
-                {
-                  "kind": "Reference",
-                  "text": "StateContainer",
-                  "canonicalReference": "@blac/core!StateContainer:class"
-                },
-                {
-                  "kind": "Content",
-                  "text": "<any>"
-                },
-                {
-                  "kind": "Content",
-                  "text": " = "
-                },
-                {
-                  "kind": "Reference",
-                  "text": "StateContainer",
-                  "canonicalReference": "@blac/core!StateContainer:class"
-                },
-                {
-                  "kind": "Content",
-                  "text": "<any>"
-                },
-                {
-                  "kind": "Content",
-                  "text": ">(this: "
-                },
-                {
-                  "kind": "Content",
-                  "text": "new (...args: any[]) => T"
-                },
-                {
-                  "kind": "Content",
-                  "text": ", instanceKey?: "
-                },
-                {
-                  "kind": "Content",
-                  "text": "string"
-                },
-                {
-                  "kind": "Content",
-                  "text": "): "
-                },
-                {
-                  "kind": "Reference",
-                  "text": "StateOverride",
-                  "canonicalReference": "@blac/core!StateOverride:type"
-                },
-                {
-                  "kind": "Content",
-                  "text": "<T, S>"
-                },
-                {
-                  "kind": "Content",
-                  "text": ";"
-                }
-              ],
-              "typeParameters": [
-                {
-                  "typeParameterName": "S",
-                  "constraintTokenRange": {
-                    "startIndex": 0,
-                    "endIndex": 0
-                  },
-                  "defaultTypeTokenRange": {
-                    "startIndex": 1,
-                    "endIndex": 2
-                  }
-                },
-                {
-                  "typeParameterName": "T",
-                  "constraintTokenRange": {
-                    "startIndex": 3,
-                    "endIndex": 5
-                  },
-                  "defaultTypeTokenRange": {
-                    "startIndex": 6,
-                    "endIndex": 8
-                  }
-                }
-              ],
-              "isStatic": true,
-              "returnTypeTokenRange": {
-                "startIndex": 13,
-                "endIndex": 15
-              },
-              "releaseTag": "Public",
-              "isProtected": false,
-              "overloadIndex": 1,
-              "parameters": [
-                {
-                  "parameterName": "this",
-                  "parameterTypeTokenRange": {
-                    "startIndex": 9,
-                    "endIndex": 10
-                  },
-                  "isOptional": false
-                },
-                {
                   "parameterName": "instanceKey",
                   "parameterTypeTokenRange": {
-                    "startIndex": 11,
-                    "endIndex": 12
+                    "startIndex": 9,
+                    "endIndex": 10
                   },
                   "isOptional": true
                 }
@@ -6363,12 +6510,8 @@
                 },
                 {
                   "kind": "Reference",
-                  "text": "StateContainer",
-                  "canonicalReference": "@blac/core!StateContainer:class"
-                },
-                {
-                  "kind": "Content",
-                  "text": "<any>"
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
                 },
                 {
                   "kind": "Content",
@@ -6376,12 +6519,8 @@
                 },
                 {
                   "kind": "Reference",
-                  "text": "StateContainer",
-                  "canonicalReference": "@blac/core!StateContainer:class"
-                },
-                {
-                  "kind": "Content",
-                  "text": "<any>"
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
                 },
                 {
                   "kind": "Content",
@@ -6389,15 +6528,20 @@
                 },
                 {
                   "kind": "Content",
-                  "text": "new (...args: any[]) => T"
+                  "text": "T"
                 },
                 {
                   "kind": "Content",
                   "text": "): "
                 },
                 {
+                  "kind": "Reference",
+                  "text": "InstanceType",
+                  "canonicalReference": "!InstanceType:type"
+                },
+                {
                   "kind": "Content",
-                  "text": "T[]"
+                  "text": "<T>[]"
                 },
                 {
                   "kind": "Content",
@@ -6409,18 +6553,18 @@
                   "typeParameterName": "T",
                   "constraintTokenRange": {
                     "startIndex": 1,
-                    "endIndex": 3
+                    "endIndex": 2
                   },
                   "defaultTypeTokenRange": {
-                    "startIndex": 4,
-                    "endIndex": 6
+                    "startIndex": 3,
+                    "endIndex": 4
                   }
                 }
               ],
               "isStatic": true,
               "returnTypeTokenRange": {
-                "startIndex": 9,
-                "endIndex": 10
+                "startIndex": 7,
+                "endIndex": 9
               },
               "releaseTag": "Public",
               "isProtected": false,
@@ -6429,8 +6573,8 @@
                 {
                   "parameterName": "this",
                   "parameterTypeTokenRange": {
-                    "startIndex": 7,
-                    "endIndex": 8
+                    "startIndex": 5,
+                    "endIndex": 6
                   },
                   "isOptional": false
                 }
@@ -6450,12 +6594,8 @@
                 },
                 {
                   "kind": "Reference",
-                  "text": "StateContainer",
-                  "canonicalReference": "@blac/core!StateContainer:class"
-                },
-                {
-                  "kind": "Content",
-                  "text": "<any>"
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
                 },
                 {
                   "kind": "Content",
@@ -6463,12 +6603,8 @@
                 },
                 {
                   "kind": "Reference",
-                  "text": "StateContainer",
-                  "canonicalReference": "@blac/core!StateContainer:class"
-                },
-                {
-                  "kind": "Content",
-                  "text": "<any>"
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
                 },
                 {
                   "kind": "Content",
@@ -6476,7 +6612,7 @@
                 },
                 {
                   "kind": "Content",
-                  "text": "new (...args: any[]) => T"
+                  "text": "T"
                 },
                 {
                   "kind": "Content",
@@ -6504,18 +6640,18 @@
                   "typeParameterName": "T",
                   "constraintTokenRange": {
                     "startIndex": 1,
-                    "endIndex": 3
+                    "endIndex": 2
                   },
                   "defaultTypeTokenRange": {
-                    "startIndex": 4,
-                    "endIndex": 6
+                    "startIndex": 3,
+                    "endIndex": 4
                   }
                 }
               ],
               "isStatic": true,
               "returnTypeTokenRange": {
-                "startIndex": 11,
-                "endIndex": 12
+                "startIndex": 9,
+                "endIndex": 10
               },
               "releaseTag": "Public",
               "isProtected": false,
@@ -6524,16 +6660,16 @@
                 {
                   "parameterName": "this",
                   "parameterTypeTokenRange": {
-                    "startIndex": 7,
-                    "endIndex": 8
+                    "startIndex": 5,
+                    "endIndex": 6
                   },
                   "isOptional": false
                 },
                 {
                   "parameterName": "instanceKey",
                   "parameterTypeTokenRange": {
-                    "startIndex": 9,
-                    "endIndex": 10
+                    "startIndex": 7,
+                    "endIndex": 8
                   },
                   "isOptional": true
                 }
@@ -6581,20 +6717,12 @@
               "excerptTokens": [
                 {
                   "kind": "Content",
-                  "text": "static getSafe<S = "
-                },
-                {
-                  "kind": "Content",
-                  "text": "never"
-                },
-                {
-                  "kind": "Content",
-                  "text": ", T extends "
+                  "text": "static getSafe<T extends "
                 },
                 {
                   "kind": "Reference",
-                  "text": "StateContainer",
-                  "canonicalReference": "@blac/core!StateContainer:class"
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
                 },
                 {
                   "kind": "Content",
@@ -6606,8 +6734,8 @@
                 },
                 {
                   "kind": "Reference",
-                  "text": "StateContainer",
-                  "canonicalReference": "@blac/core!StateContainer:class"
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
                 },
                 {
                   "kind": "Content",
@@ -6619,7 +6747,7 @@
                 },
                 {
                   "kind": "Content",
-                  "text": "new (...args: any[]) => T"
+                  "text": "T"
                 },
                 {
                   "kind": "Content",
@@ -6648,12 +6776,12 @@
                 },
                 {
                   "kind": "Reference",
-                  "text": "StateOverride",
-                  "canonicalReference": "@blac/core!StateOverride:type"
+                  "text": "InstanceType",
+                  "canonicalReference": "!InstanceType:type"
                 },
                 {
                   "kind": "Content",
-                  "text": "<T, S>;\n    }"
+                  "text": "<T>;\n    }"
                 },
                 {
                   "kind": "Content",
@@ -6662,32 +6790,21 @@
               ],
               "typeParameters": [
                 {
-                  "typeParameterName": "S",
-                  "constraintTokenRange": {
-                    "startIndex": 0,
-                    "endIndex": 0
-                  },
-                  "defaultTypeTokenRange": {
-                    "startIndex": 1,
-                    "endIndex": 2
-                  }
-                },
-                {
                   "typeParameterName": "T",
                   "constraintTokenRange": {
-                    "startIndex": 3,
-                    "endIndex": 5
+                    "startIndex": 1,
+                    "endIndex": 3
                   },
                   "defaultTypeTokenRange": {
-                    "startIndex": 6,
-                    "endIndex": 8
+                    "startIndex": 4,
+                    "endIndex": 6
                   }
                 }
               ],
               "isStatic": true,
               "returnTypeTokenRange": {
-                "startIndex": 13,
-                "endIndex": 18
+                "startIndex": 11,
+                "endIndex": 16
               },
               "releaseTag": "Public",
               "isProtected": false,
@@ -6696,16 +6813,16 @@
                 {
                   "parameterName": "this",
                   "parameterTypeTokenRange": {
-                    "startIndex": 9,
-                    "endIndex": 10
+                    "startIndex": 7,
+                    "endIndex": 8
                   },
                   "isOptional": false
                 },
                 {
                   "parameterName": "instanceKey",
                   "parameterTypeTokenRange": {
-                    "startIndex": 11,
-                    "endIndex": 12
+                    "startIndex": 9,
+                    "endIndex": 10
                   },
                   "isOptional": true
                 }
@@ -6765,12 +6882,8 @@
                 },
                 {
                   "kind": "Reference",
-                  "text": "StateContainer",
-                  "canonicalReference": "@blac/core!StateContainer:class"
-                },
-                {
-                  "kind": "Content",
-                  "text": "<any>"
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
                 },
                 {
                   "kind": "Content",
@@ -6778,12 +6891,8 @@
                 },
                 {
                   "kind": "Reference",
-                  "text": "StateContainer",
-                  "canonicalReference": "@blac/core!StateContainer:class"
-                },
-                {
-                  "kind": "Content",
-                  "text": "<any>"
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
                 },
                 {
                   "kind": "Content",
@@ -6791,7 +6900,7 @@
                 },
                 {
                   "kind": "Content",
-                  "text": "new (...args: any[]) => T"
+                  "text": "T"
                 },
                 {
                   "kind": "Content",
@@ -6819,18 +6928,18 @@
                   "typeParameterName": "T",
                   "constraintTokenRange": {
                     "startIndex": 1,
-                    "endIndex": 3
+                    "endIndex": 2
                   },
                   "defaultTypeTokenRange": {
-                    "startIndex": 4,
-                    "endIndex": 6
+                    "startIndex": 3,
+                    "endIndex": 4
                   }
                 }
               ],
               "isStatic": true,
               "returnTypeTokenRange": {
-                "startIndex": 11,
-                "endIndex": 12
+                "startIndex": 9,
+                "endIndex": 10
               },
               "releaseTag": "Public",
               "isProtected": false,
@@ -6839,16 +6948,16 @@
                 {
                   "parameterName": "this",
                   "parameterTypeTokenRange": {
-                    "startIndex": 7,
-                    "endIndex": 8
+                    "startIndex": 5,
+                    "endIndex": 6
                   },
                   "isOptional": false
                 },
                 {
                   "parameterName": "instanceKey",
                   "parameterTypeTokenRange": {
-                    "startIndex": 9,
-                    "endIndex": 10
+                    "startIndex": 7,
+                    "endIndex": 8
                   },
                   "isOptional": true
                 }
@@ -7115,12 +7224,8 @@
                 },
                 {
                   "kind": "Reference",
-                  "text": "StateContainer",
-                  "canonicalReference": "@blac/core!StateContainer:class"
-                },
-                {
-                  "kind": "Content",
-                  "text": "<any>"
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
                 },
                 {
                   "kind": "Content",
@@ -7128,7 +7233,7 @@
                 },
                 {
                   "kind": "Content",
-                  "text": "new (...args: any[]) => T"
+                  "text": "T"
                 },
                 {
                   "kind": "Content",
@@ -7156,7 +7261,7 @@
                   "typeParameterName": "T",
                   "constraintTokenRange": {
                     "startIndex": 1,
-                    "endIndex": 3
+                    "endIndex": 2
                   },
                   "defaultTypeTokenRange": {
                     "startIndex": 0,
@@ -7166,8 +7271,8 @@
               ],
               "isStatic": true,
               "returnTypeTokenRange": {
-                "startIndex": 8,
-                "endIndex": 9
+                "startIndex": 7,
+                "endIndex": 8
               },
               "releaseTag": "Public",
               "isProtected": false,
@@ -7176,16 +7281,16 @@
                 {
                   "parameterName": "this",
                   "parameterTypeTokenRange": {
-                    "startIndex": 4,
-                    "endIndex": 5
+                    "startIndex": 3,
+                    "endIndex": 4
                   },
                   "isOptional": false
                 },
                 {
                   "parameterName": "isolated",
                   "parameterTypeTokenRange": {
-                    "startIndex": 6,
-                    "endIndex": 7
+                    "startIndex": 5,
+                    "endIndex": 6
                   },
                   "isOptional": true
                 }
@@ -7205,12 +7310,8 @@
                 },
                 {
                   "kind": "Reference",
-                  "text": "StateContainer",
-                  "canonicalReference": "@blac/core!StateContainer:class"
-                },
-                {
-                  "kind": "Content",
-                  "text": "<any>"
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
                 },
                 {
                   "kind": "Content",
@@ -7218,12 +7319,8 @@
                 },
                 {
                   "kind": "Reference",
-                  "text": "StateContainer",
-                  "canonicalReference": "@blac/core!StateContainer:class"
-                },
-                {
-                  "kind": "Content",
-                  "text": "<any>"
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
                 },
                 {
                   "kind": "Content",
@@ -7231,7 +7328,7 @@
                 },
                 {
                   "kind": "Content",
-                  "text": "new (...args: any[]) => T"
+                  "text": "T"
                 },
                 {
                   "kind": "Content",
@@ -7267,18 +7364,18 @@
                   "typeParameterName": "T",
                   "constraintTokenRange": {
                     "startIndex": 1,
-                    "endIndex": 3
+                    "endIndex": 2
                   },
                   "defaultTypeTokenRange": {
-                    "startIndex": 4,
-                    "endIndex": 6
+                    "startIndex": 3,
+                    "endIndex": 4
                   }
                 }
               ],
               "isStatic": true,
               "returnTypeTokenRange": {
-                "startIndex": 13,
-                "endIndex": 14
+                "startIndex": 11,
+                "endIndex": 12
               },
               "releaseTag": "Public",
               "isProtected": false,
@@ -7287,24 +7384,24 @@
                 {
                   "parameterName": "this",
                   "parameterTypeTokenRange": {
-                    "startIndex": 7,
-                    "endIndex": 8
+                    "startIndex": 5,
+                    "endIndex": 6
                   },
                   "isOptional": false
                 },
                 {
                   "parameterName": "instanceKey",
                   "parameterTypeTokenRange": {
-                    "startIndex": 9,
-                    "endIndex": 10
+                    "startIndex": 7,
+                    "endIndex": 8
                   },
                   "isOptional": true
                 },
                 {
                   "parameterName": "forceDispose",
                   "parameterTypeTokenRange": {
-                    "startIndex": 11,
-                    "endIndex": 12
+                    "startIndex": 9,
+                    "endIndex": 10
                   },
                   "isOptional": true
                 }
@@ -7316,28 +7413,16 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!StateContainer.resolve:member(1)",
-              "docComment": "/**\n * Resolve an instance with ref counting (ownership semantics). Creates a new instance if one doesn't exist, or returns existing and increments ref count.  @template S - Optional state type override for generic StateContainers  @template T - The StateContainer type (inferred from class)\n *\n * @param instanceKey - Optional instance key (defaults to 'default')\n *\n * @param constructorArgs - Arguments to pass to constructor if creating new instance\n *\n * @returns The state container instance\n */\n",
+              "docComment": "/**\n * Resolve an instance with ref counting (ownership semantics). Creates a new instance if one doesn't exist, or returns existing and increments ref count.  @template S - Optional state type override for generic StateContainers  @template T - The StateContainer type (inferred from class)\n *\n * @param instanceKey - Optional instance key (defaults to 'default')\n *\n * @param options - Resolution options (canCreate, countRef, props, trackExecutionContext)\n *\n * @returns The state container instance\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
-                  "text": "static resolve<S = "
-                },
-                {
-                  "kind": "Content",
-                  "text": "never"
-                },
-                {
-                  "kind": "Content",
-                  "text": ", T extends "
+                  "text": "static resolve<T extends "
                 },
                 {
                   "kind": "Reference",
-                  "text": "StateContainer",
-                  "canonicalReference": "@blac/core!StateContainer:class"
-                },
-                {
-                  "kind": "Content",
-                  "text": "<any>"
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
                 },
                 {
                   "kind": "Content",
@@ -7345,12 +7430,21 @@
                 },
                 {
                   "kind": "Reference",
-                  "text": "StateContainer",
-                  "canonicalReference": "@blac/core!StateContainer:class"
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
                 },
                 {
                   "kind": "Content",
-                  "text": "<any>"
+                  "text": ", TProps = "
+                },
+                {
+                  "kind": "Reference",
+                  "text": "ExtractProps",
+                  "canonicalReference": "@blac/core!ExtractProps:type"
+                },
+                {
+                  "kind": "Content",
+                  "text": "<T>"
                 },
                 {
                   "kind": "Content",
@@ -7358,7 +7452,7 @@
                 },
                 {
                   "kind": "Content",
-                  "text": "new (...args: any[]) => T"
+                  "text": "T"
                 },
                 {
                   "kind": "Content",
@@ -7370,11 +7464,11 @@
                 },
                 {
                   "kind": "Content",
-                  "text": ", constructorArgs?: "
+                  "text": ", options?: "
                 },
                 {
                   "kind": "Content",
-                  "text": "any"
+                  "text": "{\n        canCreate?: boolean;\n        countRef?: boolean;\n        props?: TProps;\n        trackExecutionContext?: boolean;\n    }"
                 },
                 {
                   "kind": "Content",
@@ -7382,12 +7476,12 @@
                 },
                 {
                   "kind": "Reference",
-                  "text": "StateOverride",
-                  "canonicalReference": "@blac/core!StateOverride:type"
+                  "text": "InstanceType",
+                  "canonicalReference": "!InstanceType:type"
                 },
                 {
                   "kind": "Content",
-                  "text": "<T, S>"
+                  "text": "<T>"
                 },
                 {
                   "kind": "Content",
@@ -7396,32 +7490,32 @@
               ],
               "typeParameters": [
                 {
-                  "typeParameterName": "S",
+                  "typeParameterName": "T",
+                  "constraintTokenRange": {
+                    "startIndex": 1,
+                    "endIndex": 2
+                  },
+                  "defaultTypeTokenRange": {
+                    "startIndex": 3,
+                    "endIndex": 4
+                  }
+                },
+                {
+                  "typeParameterName": "TProps",
                   "constraintTokenRange": {
                     "startIndex": 0,
                     "endIndex": 0
                   },
                   "defaultTypeTokenRange": {
-                    "startIndex": 1,
-                    "endIndex": 2
-                  }
-                },
-                {
-                  "typeParameterName": "T",
-                  "constraintTokenRange": {
-                    "startIndex": 3,
-                    "endIndex": 5
-                  },
-                  "defaultTypeTokenRange": {
-                    "startIndex": 6,
-                    "endIndex": 8
+                    "startIndex": 5,
+                    "endIndex": 7
                   }
                 }
               ],
               "isStatic": true,
               "returnTypeTokenRange": {
-                "startIndex": 15,
-                "endIndex": 17
+                "startIndex": 14,
+                "endIndex": 16
               },
               "releaseTag": "Public",
               "isProtected": false,
@@ -7430,24 +7524,24 @@
                 {
                   "parameterName": "this",
                   "parameterTypeTokenRange": {
-                    "startIndex": 9,
-                    "endIndex": 10
+                    "startIndex": 8,
+                    "endIndex": 9
                   },
                   "isOptional": false
                 },
                 {
                   "parameterName": "instanceKey",
                   "parameterTypeTokenRange": {
-                    "startIndex": 11,
-                    "endIndex": 12
+                    "startIndex": 10,
+                    "endIndex": 11
                   },
                   "isOptional": true
                 },
                 {
-                  "parameterName": "constructorArgs",
+                  "parameterName": "options",
                   "parameterTypeTokenRange": {
-                    "startIndex": 13,
-                    "endIndex": 14
+                    "startIndex": 12,
+                    "endIndex": 13
                   },
                   "isOptional": true
                 }
@@ -7787,6 +7881,81 @@
           "extendsTokenRanges": []
         },
         {
+          "kind": "TypeAlias",
+          "canonicalReference": "@blac/core!StateContainerConstructor:type",
+          "docComment": "",
+          "excerptTokens": [
+            {
+              "kind": "Content",
+              "text": "export type StateContainerConstructor<S = "
+            },
+            {
+              "kind": "Content",
+              "text": "any"
+            },
+            {
+              "kind": "Content",
+              "text": ", P = "
+            },
+            {
+              "kind": "Content",
+              "text": "any"
+            },
+            {
+              "kind": "Content",
+              "text": "> = "
+            },
+            {
+              "kind": "Content",
+              "text": "new (...args: any[]) => "
+            },
+            {
+              "kind": "Reference",
+              "text": "StateContainer",
+              "canonicalReference": "@blac/core!StateContainer:class"
+            },
+            {
+              "kind": "Content",
+              "text": "<S, P>"
+            },
+            {
+              "kind": "Content",
+              "text": ";"
+            }
+          ],
+          "fileUrlPath": "dist/.types/types/utilities.d.ts",
+          "releaseTag": "Public",
+          "name": "StateContainerConstructor",
+          "typeParameters": [
+            {
+              "typeParameterName": "S",
+              "constraintTokenRange": {
+                "startIndex": 0,
+                "endIndex": 0
+              },
+              "defaultTypeTokenRange": {
+                "startIndex": 1,
+                "endIndex": 2
+              }
+            },
+            {
+              "typeParameterName": "P",
+              "constraintTokenRange": {
+                "startIndex": 0,
+                "endIndex": 0
+              },
+              "defaultTypeTokenRange": {
+                "startIndex": 3,
+                "endIndex": 4
+              }
+            }
+          ],
+          "typeTokenRange": {
+            "startIndex": 5,
+            "endIndex": 8
+          }
+        },
+        {
           "kind": "Class",
           "canonicalReference": "@blac/core!StateContainerRegistry:class",
           "docComment": "/**\n * Central registry for managing StateContainer instances. Handles instance lifecycle, ref counting, and lifecycle event emission.\n *\n * @example\n * ```ts\n * const registry = new StateContainerRegistry();\n * const instance = registry.resolve(MyBloc);\n * registry.on('stateChanged', (container, prev, next) => {\n *   console.log('State changed:', prev, '->', next);\n * });\n * ```\n *\n */\n",
@@ -7805,7 +7974,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!StateContainerRegistry#clear:member(1)",
-              "docComment": "/**\n * Clear all instances of a specific type\n */\n",
+              "docComment": "/**\n * Clear all instances of a specific type (disposes them).\n *\n * @param Type - The StateContainer class constructor\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -7813,12 +7982,8 @@
                 },
                 {
                   "kind": "Reference",
-                  "text": "StateContainer",
-                  "canonicalReference": "@blac/core!StateContainer:class"
-                },
-                {
-                  "kind": "Content",
-                  "text": "<any>"
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
                 },
                 {
                   "kind": "Content",
@@ -7826,7 +7991,7 @@
                 },
                 {
                   "kind": "Content",
-                  "text": "new (...args: any[]) => T"
+                  "text": "T"
                 },
                 {
                   "kind": "Content",
@@ -7846,7 +8011,7 @@
                   "typeParameterName": "T",
                   "constraintTokenRange": {
                     "startIndex": 1,
-                    "endIndex": 3
+                    "endIndex": 2
                   },
                   "defaultTypeTokenRange": {
                     "startIndex": 0,
@@ -7856,8 +8021,8 @@
               ],
               "isStatic": false,
               "returnTypeTokenRange": {
-                "startIndex": 6,
-                "endIndex": 7
+                "startIndex": 5,
+                "endIndex": 6
               },
               "releaseTag": "Public",
               "isProtected": false,
@@ -7866,8 +8031,8 @@
                 {
                   "parameterName": "Type",
                   "parameterTypeTokenRange": {
-                    "startIndex": 4,
-                    "endIndex": 5
+                    "startIndex": 3,
+                    "endIndex": 4
                   },
                   "isOptional": false
                 }
@@ -7910,7 +8075,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!StateContainerRegistry#connect:member(1)",
-              "docComment": "/**\n * Connect to an instance with borrowing semantics (for B2B communication) Gets existing instance OR creates it if it doesn't exist, without incrementing ref count. Tracks cross-bloc dependency for reactive updates.\n *\n * Use this in bloc-to-bloc communication when you need to ensure an instance exists but don't want to claim ownership (no ref count increment).\n *\n * @param Type - The bloc class constructor\n *\n * @param instanceKey - Optional instance key (defaults to 'default')\n *\n * @param constructorArgs - Constructor arguments (only used if creating new instance)\n *\n * @returns The bloc instance\n */\n",
+              "docComment": "/**\n * Connect to an instance with borrowing semantics (for B2B communication). Gets existing instance OR creates it if it doesn't exist, without incrementing ref count. Tracks cross-bloc dependency for reactive updates.\n *\n * Use this in bloc-to-bloc communication when you need to ensure an instance exists but don't want to claim ownership (no ref count increment).\n *\n * @param Type - The StateContainer class constructor\n *\n * @param instanceKey - Instance key (defaults to 'default')\n *\n * @returns The state container instance\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -7918,12 +8083,17 @@
                 },
                 {
                   "kind": "Reference",
-                  "text": "StateContainer",
-                  "canonicalReference": "@blac/core!StateContainer:class"
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
                 },
                 {
                   "kind": "Content",
-                  "text": "<any>"
+                  "text": " = "
+                },
+                {
+                  "kind": "Reference",
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
                 },
                 {
                   "kind": "Content",
@@ -7931,7 +8101,7 @@
                 },
                 {
                   "kind": "Content",
-                  "text": "new (...args: any[]) => T"
+                  "text": "T"
                 },
                 {
                   "kind": "Content",
@@ -7943,19 +8113,16 @@
                 },
                 {
                   "kind": "Content",
-                  "text": ", constructorArgs?: "
-                },
-                {
-                  "kind": "Content",
-                  "text": "any"
-                },
-                {
-                  "kind": "Content",
                   "text": "): "
                 },
                 {
+                  "kind": "Reference",
+                  "text": "InstanceType",
+                  "canonicalReference": "!InstanceType:type"
+                },
+                {
                   "kind": "Content",
-                  "text": "T"
+                  "text": "<T>"
                 },
                 {
                   "kind": "Content",
@@ -7967,17 +8134,17 @@
                   "typeParameterName": "T",
                   "constraintTokenRange": {
                     "startIndex": 1,
-                    "endIndex": 3
+                    "endIndex": 2
                   },
                   "defaultTypeTokenRange": {
-                    "startIndex": 0,
-                    "endIndex": 0
+                    "startIndex": 3,
+                    "endIndex": 4
                   }
                 }
               ],
               "isStatic": false,
               "returnTypeTokenRange": {
-                "startIndex": 10,
+                "startIndex": 9,
                 "endIndex": 11
               },
               "releaseTag": "Public",
@@ -7987,24 +8154,16 @@
                 {
                   "parameterName": "Type",
                   "parameterTypeTokenRange": {
-                    "startIndex": 4,
-                    "endIndex": 5
+                    "startIndex": 5,
+                    "endIndex": 6
                   },
                   "isOptional": false
                 },
                 {
                   "parameterName": "instanceKey",
                   "parameterTypeTokenRange": {
-                    "startIndex": 6,
-                    "endIndex": 7
-                  },
-                  "isOptional": true
-                },
-                {
-                  "parameterName": "constructorArgs",
-                  "parameterTypeTokenRange": {
-                    "startIndex": 8,
-                    "endIndex": 9
+                    "startIndex": 7,
+                    "endIndex": 8
                   },
                   "isOptional": true
                 }
@@ -8016,7 +8175,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!StateContainerRegistry#forEach:member(1)",
-              "docComment": "/**\n * Safely iterate over all instances of a type\n */\n",
+              "docComment": "/**\n * Safely iterate over all instances of a type. Skips disposed instances and catches callback errors.\n *\n * @param Type - The StateContainer class constructor\n *\n * @param callback - Function to call for each instance\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -8024,12 +8183,8 @@
                 },
                 {
                   "kind": "Reference",
-                  "text": "StateContainer",
-                  "canonicalReference": "@blac/core!StateContainer:class"
-                },
-                {
-                  "kind": "Content",
-                  "text": "<any>"
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
                 },
                 {
                   "kind": "Content",
@@ -8037,7 +8192,7 @@
                 },
                 {
                   "kind": "Content",
-                  "text": "new (...args: any[]) => T"
+                  "text": "T"
                 },
                 {
                   "kind": "Content",
@@ -8045,7 +8200,16 @@
                 },
                 {
                   "kind": "Content",
-                  "text": "(instance: T) => void"
+                  "text": "(instance: "
+                },
+                {
+                  "kind": "Reference",
+                  "text": "InstanceType",
+                  "canonicalReference": "!InstanceType:type"
+                },
+                {
+                  "kind": "Content",
+                  "text": "<T>) => void"
                 },
                 {
                   "kind": "Content",
@@ -8065,7 +8229,7 @@
                   "typeParameterName": "T",
                   "constraintTokenRange": {
                     "startIndex": 1,
-                    "endIndex": 3
+                    "endIndex": 2
                   },
                   "defaultTypeTokenRange": {
                     "startIndex": 0,
@@ -8075,8 +8239,8 @@
               ],
               "isStatic": false,
               "returnTypeTokenRange": {
-                "startIndex": 8,
-                "endIndex": 9
+                "startIndex": 9,
+                "endIndex": 10
               },
               "releaseTag": "Public",
               "isProtected": false,
@@ -8085,16 +8249,16 @@
                 {
                   "parameterName": "Type",
                   "parameterTypeTokenRange": {
-                    "startIndex": 4,
-                    "endIndex": 5
+                    "startIndex": 3,
+                    "endIndex": 4
                   },
                   "isOptional": false
                 },
                 {
                   "parameterName": "callback",
                   "parameterTypeTokenRange": {
-                    "startIndex": 6,
-                    "endIndex": 7
+                    "startIndex": 5,
+                    "endIndex": 8
                   },
                   "isOptional": false
                 }
@@ -8106,7 +8270,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!StateContainerRegistry#get:member(1)",
-              "docComment": "/**\n * Get an existing instance without ref counting (borrowing semantics)\n *\n * @throws\n *\n * Error if instance doesn't exist\n */\n",
+              "docComment": "/**\n * Get an existing instance without incrementing ref count (borrowing semantics). Tracks cross-bloc dependency for reactive updates.\n *\n * @param Type - The StateContainer class constructor\n *\n * @param instanceKey - Instance key (defaults to 'default')\n *\n * @returns The state container instance\n *\n * @throws\n *\n * Error if instance doesn't exist\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -8114,12 +8278,17 @@
                 },
                 {
                   "kind": "Reference",
-                  "text": "StateContainer",
-                  "canonicalReference": "@blac/core!StateContainer:class"
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
                 },
                 {
                   "kind": "Content",
-                  "text": "<any>"
+                  "text": " = "
+                },
+                {
+                  "kind": "Reference",
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
                 },
                 {
                   "kind": "Content",
@@ -8127,7 +8296,7 @@
                 },
                 {
                   "kind": "Content",
-                  "text": "new (...args: any[]) => T"
+                  "text": "T"
                 },
                 {
                   "kind": "Content",
@@ -8142,8 +8311,13 @@
                   "text": "): "
                 },
                 {
+                  "kind": "Reference",
+                  "text": "InstanceType",
+                  "canonicalReference": "!InstanceType:type"
+                },
+                {
                   "kind": "Content",
-                  "text": "T"
+                  "text": "<T>"
                 },
                 {
                   "kind": "Content",
@@ -8155,18 +8329,18 @@
                   "typeParameterName": "T",
                   "constraintTokenRange": {
                     "startIndex": 1,
-                    "endIndex": 3
+                    "endIndex": 2
                   },
                   "defaultTypeTokenRange": {
-                    "startIndex": 0,
-                    "endIndex": 0
+                    "startIndex": 3,
+                    "endIndex": 4
                   }
                 }
               ],
               "isStatic": false,
               "returnTypeTokenRange": {
-                "startIndex": 8,
-                "endIndex": 9
+                "startIndex": 9,
+                "endIndex": 11
               },
               "releaseTag": "Public",
               "isProtected": false,
@@ -8175,16 +8349,16 @@
                 {
                   "parameterName": "Type",
                   "parameterTypeTokenRange": {
-                    "startIndex": 4,
-                    "endIndex": 5
+                    "startIndex": 5,
+                    "endIndex": 6
                   },
                   "isOptional": false
                 },
                 {
                   "parameterName": "instanceKey",
                   "parameterTypeTokenRange": {
-                    "startIndex": 6,
-                    "endIndex": 7
+                    "startIndex": 7,
+                    "endIndex": 8
                   },
                   "isOptional": true
                 }
@@ -8196,7 +8370,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!StateContainerRegistry#getAll:member(1)",
-              "docComment": "/**\n * Get all instances of a specific type\n */\n",
+              "docComment": "/**\n * Get all instances of a specific type.\n *\n * @param Type - The StateContainer class constructor\n *\n * @returns Array of all instances\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -8204,12 +8378,8 @@
                 },
                 {
                   "kind": "Reference",
-                  "text": "StateContainer",
-                  "canonicalReference": "@blac/core!StateContainer:class"
-                },
-                {
-                  "kind": "Content",
-                  "text": "<any>"
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
                 },
                 {
                   "kind": "Content",
@@ -8217,15 +8387,20 @@
                 },
                 {
                   "kind": "Content",
-                  "text": "new (...args: any[]) => T"
+                  "text": "T"
                 },
                 {
                   "kind": "Content",
                   "text": "): "
                 },
                 {
+                  "kind": "Reference",
+                  "text": "InstanceType",
+                  "canonicalReference": "!InstanceType:type"
+                },
+                {
                   "kind": "Content",
-                  "text": "T[]"
+                  "text": "<T>[]"
                 },
                 {
                   "kind": "Content",
@@ -8237,7 +8412,7 @@
                   "typeParameterName": "T",
                   "constraintTokenRange": {
                     "startIndex": 1,
-                    "endIndex": 3
+                    "endIndex": 2
                   },
                   "defaultTypeTokenRange": {
                     "startIndex": 0,
@@ -8247,7 +8422,7 @@
               ],
               "isStatic": false,
               "returnTypeTokenRange": {
-                "startIndex": 6,
+                "startIndex": 5,
                 "endIndex": 7
               },
               "releaseTag": "Public",
@@ -8257,8 +8432,8 @@
                 {
                   "parameterName": "Type",
                   "parameterTypeTokenRange": {
-                    "startIndex": 4,
-                    "endIndex": 5
+                    "startIndex": 3,
+                    "endIndex": 4
                   },
                   "isOptional": false
                 }
@@ -8278,12 +8453,8 @@
                 },
                 {
                   "kind": "Reference",
-                  "text": "StateContainer",
-                  "canonicalReference": "@blac/core!StateContainer:class"
-                },
-                {
-                  "kind": "Content",
-                  "text": "<any>"
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
                 },
                 {
                   "kind": "Content",
@@ -8291,7 +8462,7 @@
                 },
                 {
                   "kind": "Content",
-                  "text": "new (...args: any[]) => T"
+                  "text": "T"
                 },
                 {
                   "kind": "Content",
@@ -8325,7 +8496,7 @@
                   "typeParameterName": "T",
                   "constraintTokenRange": {
                     "startIndex": 1,
-                    "endIndex": 3
+                    "endIndex": 2
                   },
                   "defaultTypeTokenRange": {
                     "startIndex": 0,
@@ -8335,8 +8506,8 @@
               ],
               "isStatic": false,
               "returnTypeTokenRange": {
-                "startIndex": 6,
-                "endIndex": 10
+                "startIndex": 5,
+                "endIndex": 9
               },
               "releaseTag": "Public",
               "isProtected": false,
@@ -8345,8 +8516,8 @@
                 {
                   "parameterName": "Type",
                   "parameterTypeTokenRange": {
-                    "startIndex": 4,
-                    "endIndex": 5
+                    "startIndex": 3,
+                    "endIndex": 4
                   },
                   "isOptional": false
                 }
@@ -8358,7 +8529,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!StateContainerRegistry#getRefCount:member(1)",
-              "docComment": "/**\n * Get reference count for an instance\n */\n",
+              "docComment": "/**\n * Get reference count for an instance.\n *\n * @param Type - The StateContainer class constructor\n *\n * @param instanceKey - Instance key (defaults to 'default')\n *\n * @returns Current ref count (0 if instance doesn't exist)\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -8366,12 +8537,8 @@
                 },
                 {
                   "kind": "Reference",
-                  "text": "StateContainer",
-                  "canonicalReference": "@blac/core!StateContainer:class"
-                },
-                {
-                  "kind": "Content",
-                  "text": "<any>"
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
                 },
                 {
                   "kind": "Content",
@@ -8379,7 +8546,7 @@
                 },
                 {
                   "kind": "Content",
-                  "text": "new (...args: any[]) => T"
+                  "text": "T"
                 },
                 {
                   "kind": "Content",
@@ -8407,7 +8574,7 @@
                   "typeParameterName": "T",
                   "constraintTokenRange": {
                     "startIndex": 1,
-                    "endIndex": 3
+                    "endIndex": 2
                   },
                   "defaultTypeTokenRange": {
                     "startIndex": 0,
@@ -8417,8 +8584,8 @@
               ],
               "isStatic": false,
               "returnTypeTokenRange": {
-                "startIndex": 8,
-                "endIndex": 9
+                "startIndex": 7,
+                "endIndex": 8
               },
               "releaseTag": "Public",
               "isProtected": false,
@@ -8427,16 +8594,16 @@
                 {
                   "parameterName": "Type",
                   "parameterTypeTokenRange": {
-                    "startIndex": 4,
-                    "endIndex": 5
+                    "startIndex": 3,
+                    "endIndex": 4
                   },
                   "isOptional": false
                 },
                 {
                   "parameterName": "instanceKey",
                   "parameterTypeTokenRange": {
-                    "startIndex": 6,
-                    "endIndex": 7
+                    "startIndex": 5,
+                    "endIndex": 6
                   },
                   "isOptional": true
                 }
@@ -8448,7 +8615,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!StateContainerRegistry#getSafe:member(1)",
-              "docComment": "/**\n * Safely get an existing instance (borrowing semantics with error handling) Returns discriminated union for type-safe conditional access\n */\n",
+              "docComment": "/**\n * Safely get an existing instance (borrowing semantics with error handling). Returns discriminated union for type-safe conditional access.\n *\n * @param Type - The StateContainer class constructor\n *\n * @param instanceKey - Instance key (defaults to 'default')\n *\n * @returns Discriminated union with either the instance or an error\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -8456,12 +8623,17 @@
                 },
                 {
                   "kind": "Reference",
-                  "text": "StateContainer",
-                  "canonicalReference": "@blac/core!StateContainer:class"
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
                 },
                 {
                   "kind": "Content",
-                  "text": "<any>"
+                  "text": " = "
+                },
+                {
+                  "kind": "Reference",
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
                 },
                 {
                   "kind": "Content",
@@ -8469,7 +8641,7 @@
                 },
                 {
                   "kind": "Content",
-                  "text": "new (...args: any[]) => T"
+                  "text": "T"
                 },
                 {
                   "kind": "Content",
@@ -8494,7 +8666,16 @@
                 },
                 {
                   "kind": "Content",
-                  "text": ";\n        instance: null;\n    } | {\n        error: null;\n        instance: T;\n    }"
+                  "text": ";\n        instance: null;\n    } | {\n        error: null;\n        instance: "
+                },
+                {
+                  "kind": "Reference",
+                  "text": "InstanceType",
+                  "canonicalReference": "!InstanceType:type"
+                },
+                {
+                  "kind": "Content",
+                  "text": "<T>;\n    }"
                 },
                 {
                   "kind": "Content",
@@ -8506,18 +8687,18 @@
                   "typeParameterName": "T",
                   "constraintTokenRange": {
                     "startIndex": 1,
-                    "endIndex": 3
+                    "endIndex": 2
                   },
                   "defaultTypeTokenRange": {
-                    "startIndex": 0,
-                    "endIndex": 0
+                    "startIndex": 3,
+                    "endIndex": 4
                   }
                 }
               ],
               "isStatic": false,
               "returnTypeTokenRange": {
-                "startIndex": 8,
-                "endIndex": 11
+                "startIndex": 9,
+                "endIndex": 14
               },
               "releaseTag": "Public",
               "isProtected": false,
@@ -8526,16 +8707,16 @@
                 {
                   "parameterName": "Type",
                   "parameterTypeTokenRange": {
-                    "startIndex": 4,
-                    "endIndex": 5
+                    "startIndex": 5,
+                    "endIndex": 6
                   },
                   "isOptional": false
                 },
                 {
                   "parameterName": "instanceKey",
                   "parameterTypeTokenRange": {
-                    "startIndex": 6,
-                    "endIndex": 7
+                    "startIndex": 7,
+                    "endIndex": 8
                   },
                   "isOptional": true
                 }
@@ -8547,7 +8728,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!StateContainerRegistry#getStats:member(1)",
-              "docComment": "/**\n * Get registry statistics (for debugging)\n */\n",
+              "docComment": "/**\n * Get registry statistics for debugging.\n *\n * @returns Object with registeredTypes, totalInstances, and typeBreakdown\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -8587,7 +8768,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!StateContainerRegistry#getTypes:member(1)",
-              "docComment": "/**\n * Get all registered types (for plugin system)\n */\n",
+              "docComment": "/**\n * Get all registered types (for plugin system).\n *\n * @returns Array of all registered StateContainer class constructors\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -8595,21 +8776,12 @@
                 },
                 {
                   "kind": "Reference",
-                  "text": "Array",
-                  "canonicalReference": "!Array:interface"
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
                 },
                 {
                   "kind": "Content",
-                  "text": "<new (...args: any[]) => "
-                },
-                {
-                  "kind": "Reference",
-                  "text": "StateContainer",
-                  "canonicalReference": "@blac/core!StateContainer:class"
-                },
-                {
-                  "kind": "Content",
-                  "text": "<any>>"
+                  "text": "[]"
                 },
                 {
                   "kind": "Content",
@@ -8619,7 +8791,7 @@
               "isStatic": false,
               "returnTypeTokenRange": {
                 "startIndex": 1,
-                "endIndex": 5
+                "endIndex": 3
               },
               "releaseTag": "Public",
               "isProtected": false,
@@ -8632,7 +8804,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!StateContainerRegistry#hasInstance:member(1)",
-              "docComment": "/**\n * Check if an instance exists\n */\n",
+              "docComment": "/**\n * Check if an instance exists.\n *\n * @param Type - The StateContainer class constructor\n *\n * @param instanceKey - Instance key (defaults to 'default')\n *\n * @returns true if instance exists\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -8640,12 +8812,8 @@
                 },
                 {
                   "kind": "Reference",
-                  "text": "StateContainer",
-                  "canonicalReference": "@blac/core!StateContainer:class"
-                },
-                {
-                  "kind": "Content",
-                  "text": "<any>"
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
                 },
                 {
                   "kind": "Content",
@@ -8653,7 +8821,7 @@
                 },
                 {
                   "kind": "Content",
-                  "text": "new (...args: any[]) => T"
+                  "text": "T"
                 },
                 {
                   "kind": "Content",
@@ -8681,7 +8849,7 @@
                   "typeParameterName": "T",
                   "constraintTokenRange": {
                     "startIndex": 1,
-                    "endIndex": 3
+                    "endIndex": 2
                   },
                   "defaultTypeTokenRange": {
                     "startIndex": 0,
@@ -8691,8 +8859,8 @@
               ],
               "isStatic": false,
               "returnTypeTokenRange": {
-                "startIndex": 8,
-                "endIndex": 9
+                "startIndex": 7,
+                "endIndex": 8
               },
               "releaseTag": "Public",
               "isProtected": false,
@@ -8701,16 +8869,16 @@
                 {
                   "parameterName": "Type",
                   "parameterTypeTokenRange": {
-                    "startIndex": 4,
-                    "endIndex": 5
+                    "startIndex": 3,
+                    "endIndex": 4
                   },
                   "isOptional": false
                 },
                 {
                   "parameterName": "instanceKey",
                   "parameterTypeTokenRange": {
-                    "startIndex": 6,
-                    "endIndex": 7
+                    "startIndex": 5,
+                    "endIndex": 6
                   },
                   "isOptional": true
                 }
@@ -8821,12 +8989,8 @@
                 },
                 {
                   "kind": "Reference",
-                  "text": "StateContainer",
-                  "canonicalReference": "@blac/core!StateContainer:class"
-                },
-                {
-                  "kind": "Content",
-                  "text": "<any>"
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
                 },
                 {
                   "kind": "Content",
@@ -8834,7 +8998,7 @@
                 },
                 {
                   "kind": "Content",
-                  "text": "new (...args: any[]) => T"
+                  "text": "T"
                 },
                 {
                   "kind": "Content",
@@ -8862,7 +9026,7 @@
                   "typeParameterName": "T",
                   "constraintTokenRange": {
                     "startIndex": 1,
-                    "endIndex": 3
+                    "endIndex": 2
                   },
                   "defaultTypeTokenRange": {
                     "startIndex": 0,
@@ -8872,8 +9036,8 @@
               ],
               "isStatic": false,
               "returnTypeTokenRange": {
-                "startIndex": 8,
-                "endIndex": 9
+                "startIndex": 7,
+                "endIndex": 8
               },
               "releaseTag": "Public",
               "isProtected": false,
@@ -8882,16 +9046,16 @@
                 {
                   "parameterName": "constructor",
                   "parameterTypeTokenRange": {
-                    "startIndex": 4,
-                    "endIndex": 5
+                    "startIndex": 3,
+                    "endIndex": 4
                   },
                   "isOptional": false
                 },
                 {
                   "parameterName": "isolated",
                   "parameterTypeTokenRange": {
-                    "startIndex": 6,
-                    "endIndex": 7
+                    "startIndex": 5,
+                    "endIndex": 6
                   },
                   "isOptional": true
                 }
@@ -8911,12 +9075,8 @@
                 },
                 {
                   "kind": "Reference",
-                  "text": "StateContainer",
-                  "canonicalReference": "@blac/core!StateContainer:class"
-                },
-                {
-                  "kind": "Content",
-                  "text": "<any>"
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
                 },
                 {
                   "kind": "Content",
@@ -8924,7 +9084,7 @@
                 },
                 {
                   "kind": "Content",
-                  "text": "new (...args: any[]) => T"
+                  "text": "T"
                 },
                 {
                   "kind": "Content",
@@ -8944,7 +9104,7 @@
                   "typeParameterName": "T",
                   "constraintTokenRange": {
                     "startIndex": 1,
-                    "endIndex": 3
+                    "endIndex": 2
                   },
                   "defaultTypeTokenRange": {
                     "startIndex": 0,
@@ -8954,8 +9114,8 @@
               ],
               "isStatic": false,
               "returnTypeTokenRange": {
-                "startIndex": 6,
-                "endIndex": 7
+                "startIndex": 5,
+                "endIndex": 6
               },
               "releaseTag": "Public",
               "isProtected": false,
@@ -8964,8 +9124,8 @@
                 {
                   "parameterName": "constructor",
                   "parameterTypeTokenRange": {
-                    "startIndex": 4,
-                    "endIndex": 5
+                    "startIndex": 3,
+                    "endIndex": 4
                   },
                   "isOptional": false
                 }
@@ -8977,7 +9137,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!StateContainerRegistry#release:member(1)",
-              "docComment": "/**\n * Release a reference to an instance\n */\n",
+              "docComment": "/**\n * Release a reference to an instance. Decrements ref count and disposes when it reaches 0 (unless keepAlive).\n *\n * @param Type - The StateContainer class constructor\n *\n * @param instanceKey - Instance key (defaults to 'default')\n *\n * @param forceDispose - Force immediate disposal regardless of ref count\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -8985,12 +9145,8 @@
                 },
                 {
                   "kind": "Reference",
-                  "text": "StateContainer",
-                  "canonicalReference": "@blac/core!StateContainer:class"
-                },
-                {
-                  "kind": "Content",
-                  "text": "<any>"
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
                 },
                 {
                   "kind": "Content",
@@ -8998,7 +9154,7 @@
                 },
                 {
                   "kind": "Content",
-                  "text": "new (...args: any[]) => T"
+                  "text": "T"
                 },
                 {
                   "kind": "Content",
@@ -9034,7 +9190,7 @@
                   "typeParameterName": "T",
                   "constraintTokenRange": {
                     "startIndex": 1,
-                    "endIndex": 3
+                    "endIndex": 2
                   },
                   "defaultTypeTokenRange": {
                     "startIndex": 0,
@@ -9044,8 +9200,8 @@
               ],
               "isStatic": false,
               "returnTypeTokenRange": {
-                "startIndex": 10,
-                "endIndex": 11
+                "startIndex": 9,
+                "endIndex": 10
               },
               "releaseTag": "Public",
               "isProtected": false,
@@ -9054,24 +9210,24 @@
                 {
                   "parameterName": "Type",
                   "parameterTypeTokenRange": {
-                    "startIndex": 4,
-                    "endIndex": 5
+                    "startIndex": 3,
+                    "endIndex": 4
                   },
                   "isOptional": false
                 },
                 {
                   "parameterName": "instanceKey",
                   "parameterTypeTokenRange": {
-                    "startIndex": 6,
-                    "endIndex": 7
+                    "startIndex": 5,
+                    "endIndex": 6
                   },
                   "isOptional": true
                 },
                 {
                   "parameterName": "forceDispose",
                   "parameterTypeTokenRange": {
-                    "startIndex": 8,
-                    "endIndex": 9
+                    "startIndex": 7,
+                    "endIndex": 8
                   },
                   "isOptional": true
                 }
@@ -9083,7 +9239,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!StateContainerRegistry#resolve:member(1)",
-              "docComment": "/**\n * Resolve an instance with ref counting (ownership semantics)\n */\n",
+              "docComment": "/**\n * Resolve an instance with ref counting (ownership semantics). Creates a new instance if one doesn't exist, or returns existing and increments ref count.\n *\n * @param Type - The StateContainer class constructor\n *\n * @param instanceKey - Instance key (defaults to 'default')\n *\n * @param options - Resolution options\n *\n * @param  - options.canCreate - Whether to create new instance if not found (default: true)\n *\n * @param  - options.countRef - Whether to increment ref count (default: true)\n *\n * @param  - options.props - Props to pass to constructor if creating new instance\n *\n * @param  - options.trackExecutionContext - Whether to track cross-bloc dependency (default: false)\n *\n * @returns The state container instance\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -9091,12 +9247,17 @@
                 },
                 {
                   "kind": "Reference",
-                  "text": "StateContainer",
-                  "canonicalReference": "@blac/core!StateContainer:class"
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
                 },
                 {
                   "kind": "Content",
-                  "text": "<any>"
+                  "text": " = "
+                },
+                {
+                  "kind": "Reference",
+                  "text": "StateContainerConstructor",
+                  "canonicalReference": "@blac/core!StateContainerConstructor:type"
                 },
                 {
                   "kind": "Content",
@@ -9104,7 +9265,7 @@
                 },
                 {
                   "kind": "Content",
-                  "text": "new (...args: any[]) => T"
+                  "text": "T"
                 },
                 {
                   "kind": "Content",
@@ -9116,19 +9277,24 @@
                 },
                 {
                   "kind": "Content",
-                  "text": ", constructorArgs?: "
+                  "text": ", options?: "
                 },
                 {
                   "kind": "Content",
-                  "text": "any"
+                  "text": "{\n        canCreate?: boolean;\n        countRef?: boolean;\n        props?: any;\n        trackExecutionContext?: boolean;\n    }"
                 },
                 {
                   "kind": "Content",
                   "text": "): "
                 },
                 {
+                  "kind": "Reference",
+                  "text": "InstanceType",
+                  "canonicalReference": "!InstanceType:type"
+                },
+                {
                   "kind": "Content",
-                  "text": "T"
+                  "text": "<T>"
                 },
                 {
                   "kind": "Content",
@@ -9140,18 +9306,18 @@
                   "typeParameterName": "T",
                   "constraintTokenRange": {
                     "startIndex": 1,
-                    "endIndex": 3
+                    "endIndex": 2
                   },
                   "defaultTypeTokenRange": {
-                    "startIndex": 0,
-                    "endIndex": 0
+                    "startIndex": 3,
+                    "endIndex": 4
                   }
                 }
               ],
               "isStatic": false,
               "returnTypeTokenRange": {
-                "startIndex": 10,
-                "endIndex": 11
+                "startIndex": 11,
+                "endIndex": 13
               },
               "releaseTag": "Public",
               "isProtected": false,
@@ -9160,24 +9326,24 @@
                 {
                   "parameterName": "Type",
                   "parameterTypeTokenRange": {
-                    "startIndex": 4,
-                    "endIndex": 5
+                    "startIndex": 5,
+                    "endIndex": 6
                   },
                   "isOptional": false
                 },
                 {
                   "parameterName": "instanceKey",
                   "parameterTypeTokenRange": {
-                    "startIndex": 6,
-                    "endIndex": 7
+                    "startIndex": 7,
+                    "endIndex": 8
                   },
                   "isOptional": true
                 },
                 {
-                  "parameterName": "constructorArgs",
+                  "parameterName": "options",
                   "parameterTypeTokenRange": {
-                    "startIndex": 8,
-                    "endIndex": 9
+                    "startIndex": 9,
+                    "endIndex": 10
                   },
                   "isOptional": true
                 }
@@ -9188,86 +9354,6 @@
             }
           ],
           "implementsTokenRanges": []
-        },
-        {
-          "kind": "TypeAlias",
-          "canonicalReference": "@blac/core!StateOverride:type",
-          "docComment": "/**\n * Conditionally override the state type of a StateContainer. When S is `never`, returns T unchanged (inferred state type). When S is provided, replaces the state type while preserving all other properties.\n *\n * @template T - The StateContainer type  @template S - The state type override (defaults to never)\n *\n * @example\n *\n * // Without override - returns original type type Result1 = StateOverride<MyBloc>; // MyBloc\n *\n * // With override - replaces state type type Result2 = StateOverride<MyBloc, CustomState>; // Omit<MyBloc, 'state'> & { readonly state: CustomState }\n */\n",
-          "excerptTokens": [
-            {
-              "kind": "Content",
-              "text": "export type StateOverride<T extends "
-            },
-            {
-              "kind": "Reference",
-              "text": "StateContainer",
-              "canonicalReference": "@blac/core!StateContainer:class"
-            },
-            {
-              "kind": "Content",
-              "text": "<any, any>"
-            },
-            {
-              "kind": "Content",
-              "text": ", S = "
-            },
-            {
-              "kind": "Content",
-              "text": "never"
-            },
-            {
-              "kind": "Content",
-              "text": "> = "
-            },
-            {
-              "kind": "Content",
-              "text": "[S] extends [never] ? T : "
-            },
-            {
-              "kind": "Reference",
-              "text": "Omit",
-              "canonicalReference": "!Omit:type"
-            },
-            {
-              "kind": "Content",
-              "text": "<T, 'state'> & {\n    readonly state: S;\n}"
-            },
-            {
-              "kind": "Content",
-              "text": ";"
-            }
-          ],
-          "fileUrlPath": "dist/.types/types/utilities.d.ts",
-          "releaseTag": "Public",
-          "name": "StateOverride",
-          "typeParameters": [
-            {
-              "typeParameterName": "T",
-              "constraintTokenRange": {
-                "startIndex": 1,
-                "endIndex": 3
-              },
-              "defaultTypeTokenRange": {
-                "startIndex": 0,
-                "endIndex": 0
-              }
-            },
-            {
-              "typeParameterName": "S",
-              "constraintTokenRange": {
-                "startIndex": 0,
-                "endIndex": 0
-              },
-              "defaultTypeTokenRange": {
-                "startIndex": 4,
-                "endIndex": 5
-              }
-            }
-          ],
-          "typeTokenRange": {
-            "startIndex": 6,
-            "endIndex": 9
-          }
         },
         {
           "kind": "TypeAlias",

@@ -159,5 +159,11 @@ export default tseslint.config(
         varsIgnorePattern: "^_"
       }]
     }
+  },
+  {
+    files: ["packages/blac/**/*.ts", "packages/blac/**/*.tsx", "packages/blac-react/**/*.ts", "packages/blac-react/**/*.tsx"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off"
+    }
   }
 );

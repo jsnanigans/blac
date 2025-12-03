@@ -6,7 +6,10 @@
  */
 import type { StateContainer } from '../core/StateContainer';
 import type { TrackerState, GetterTrackerState } from '../tracking';
-import type { ExtractState } from '../types/utilities';
+import type {
+  ExtractState,
+  StateContainerConstructor,
+} from '../types/utilities';
 import {
   createTrackerState,
   startTracking,
@@ -29,7 +32,7 @@ import {
  * Internal state for framework adapters, holding tracking and caching data.
  * @template TBloc - The state container type
  */
-export interface AdapterState<TBloc extends StateContainer<any, any>> {
+export interface AdapterState<TBloc extends StateContainer<any>> {
   /** Proxy tracker for state property access tracking */
   tracker: TrackerState<ExtractState<TBloc>> | null;
   /** Cached manual dependencies for comparison */
@@ -44,9 +47,9 @@ export interface AdapterState<TBloc extends StateContainer<any, any>> {
  * Configuration for manual dependency tracking mode
  * @template TBloc - The state container type
  */
-export interface ManualDepsConfig<TBloc extends StateContainer<any, any>> {
+export interface ManualDepsConfig<TBloc extends StateContainer<any>> {
   /** Function that returns dependency array from state and bloc */
-  dependencies: (state: any, bloc: TBloc) => unknown[];
+  dependencies: (state: any, bloc: TBloc) => any[];
 }
 
 /**
@@ -286,7 +289,7 @@ export function createManualDepsSnapshot<
   instance: TBloc,
   adapterState: AdapterState<TBloc>,
   config: ManualDepsConfig<TBloc>,
-): SnapshotFunction<ExtractState<TBloc>> {
+): SnapshotFunction<ExtractState<StateContainerConstructor>> {
   return () => {
     adapterState.manualDepsCache = config.dependencies(
       instance.state,

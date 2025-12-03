@@ -120,7 +120,7 @@ describe('StateContainer', () => {
       });
 
       it('should pass constructor args correctly', () => {
-        const instance = TestContainer.resolve(undefined, 42);
+        const instance = TestContainer.resolve(undefined, { props: 42 });
 
         expect(instance.state).toBe(42);
       });
@@ -148,7 +148,9 @@ describe('StateContainer', () => {
       });
 
       it('should respect static keepAlive property', () => {
-        const instance = KeepAliveTestContainer.resolve(undefined, 0);
+        const instance = KeepAliveTestContainer.resolve(undefined, {
+          props: 0,
+        });
         const disposeSpy = vi.spyOn(instance, 'dispose');
 
         KeepAliveTestContainer.release();

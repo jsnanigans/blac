@@ -29,9 +29,12 @@ class IsolatedCounterBloc extends StateContainer<number> {
   };
 }
 
-class UserBloc extends StateContainer<{ name: string; age: number }> {
-  constructor(config?: { initialName?: string }) {
-    super({ name: config?.initialName || 'Unknown', age: 0 });
+class UserBloc extends StateContainer<
+  { name: string; age: number },
+  { initialName?: string }
+> {
+  constructor(props: { initialName?: string }) {
+    super({ name: props?.initialName ?? '', age: 0 });
   }
 
   setName = (name: string) => {
@@ -461,8 +464,10 @@ describe('StateContainer - Registry Features', () => {
       expect(instance.state.name).toBe('Alice');
     });
 
-    it('should support constructor arguments', () => {
-      const instance = UserBloc.resolve(undefined, { initialName: 'Bob' });
+    it('should support props arguments', () => {
+      const instance = UserBloc.resolve(undefined, {
+        props: { initialName: 'Bob' },
+      });
 
       expect(instance.state.name).toBe('Bob');
     });

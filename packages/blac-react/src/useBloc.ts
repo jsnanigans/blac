@@ -6,8 +6,6 @@ import {
   useReducer,
 } from 'react';
 import {
-  type BlocConstructor,
-  StateContainer,
   type ExtractState,
   type AdapterState,
   ExternalDependencyManager,
@@ -22,6 +20,7 @@ import {
   initNoTrackState,
   disableGetterTracking,
   isIsolatedClass,
+  StateContainerConstructor,
 } from '@blac/core';
 import type { UseBlocOptions, UseBlocReturn, ComponentRef } from './types';
 import { generateInstanceKey } from './utils/instance-keys';
@@ -31,7 +30,7 @@ interface TrackingMode {
   autoTrackEnabled: boolean;
 }
 
-function determineTrackingMode<TBloc extends StateContainer<any, any>>(
+function determineTrackingMode<TBloc extends StateContainerConstructor>(
   options?: UseBlocOptions<TBloc>,
 ): TrackingMode {
   return {
@@ -80,14 +79,14 @@ function determineTrackingMode<TBloc extends StateContainer<any, any>>(
  * ```
  */
 export function useBloc<
-  S = never,
-  T extends new (...args: any[]) => StateContainer<any, any> = new (
-    ...args: any[]
-  ) => StateContainer<any, any>,
+  T extends StateContainerConstructor<any, any> = StateContainerConstructor<
+    any,
+    any
+  >,
 >(
-  BlocClass: T & BlocConstructor<InstanceType<T>>,
-  options?: UseBlocOptions<InstanceType<T>>,
-): UseBlocReturn<InstanceType<T>, S> {
+  BlocClass: T,
+  options?: UseBlocOptions<T>,
+): UseBlocReturn<T, ExtractState<T>> {
   type TBloc = InstanceType<T>;
   const componentRef = useRef<ComponentRef>({});
   const isIsolated = isIsolatedClass(BlocClass);
@@ -111,7 +110,10 @@ export function useBloc<
         options?.instanceId,
       );
 
-      const instance = BlocClass.resolve(instanceKey, initialPropsRef.current);
+      const instance = (BlocClass as any).resolve(
+        instanceKey,
+        initialPropsRef.current,
+      ) as TBloc;
 
       if (initialPropsRef.current !== undefined) {
         instance.updateProps(initialPropsRef.current);
@@ -126,10 +128,10 @@ export function useBloc<
 
       if (useManualDeps && options?.dependencies) {
         adapterState = initManualDepsState(instance);
-        subscribeFn = createManualDepsSubscribe(instance, adapterState, {
+        subscribeFn = createManualDepsSubscribe<any>(instance, adapterState, {
           dependencies: options.dependencies,
         });
-        getSnapshotFn = createManualDepsSnapshot(instance, adapterState, {
+        getSnapshotFn = createManualDepsSnapshot<any>(instance, adapterState, {
           dependencies: options.dependencies,
         });
       } else if (!autoTrackEnabled) {
@@ -185,7 +187,7 @@ export function useBloc<
         options.onUnmount(bloc);
       }
 
-      BlocClass.release(instanceKey);
+      (BlocClass as any).release(instanceKey);
 
       if (isIsolated && !rawInstance.isDisposed) {
         rawInstance.dispose();
@@ -193,5 +195,5 @@ export function useBloc<
     };
   }, []);
 
-  return [state, bloc, componentRef] as UseBlocReturn<TBloc, S>;
+  return [state, bloc, componentRef] as UseBlocReturn<T, ExtractState<T>>;
 }

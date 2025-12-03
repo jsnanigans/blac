@@ -47,7 +47,7 @@ interface UserState {
 // Blocs - Similar to messenger example
 // ============================================================================
 
-class ChannelBloc extends Cubit<ChannelState> {
+class ChannelBloc extends Cubit<ChannelState, string> {
   constructor(channelId: string) {
     super({
       channelId,
@@ -84,7 +84,7 @@ class ChannelBloc extends Cubit<ChannelState> {
   };
 }
 
-class UserCubit extends Cubit<UserState> {
+class UserCubit extends Cubit<UserState, string> {
   constructor(userId: string) {
     super({
       id: userId,
@@ -119,7 +119,7 @@ function MessageItem({ message, isOwn }: MessageItemProps) {
 
   const [user] = useBloc(UserCubit, {
     instanceId: message.userId,
-    props: { userId: message.userId },
+    props: message.userId,
   });
 
   const statusIcons = {
@@ -164,7 +164,7 @@ function MessageList({ channelId, currentUserId }: MessageListProps) {
   // This is what determines dependency tracking
   const [{ messages }] = useBloc(ChannelBloc, {
     instanceId: channelId,
-    props: { channelId },
+    props: channelId,
   });
 
   if (messages.length === 0) {
@@ -204,7 +204,7 @@ describe('Messenger Reproduction - Array Tracking', () => {
     const currentUserId = 'user-me';
 
     // Setup: Add initial messages
-    const channel = ChannelBloc.resolve(channelId, channelId);
+    const channel = ChannelBloc.resolve(channelId, { props: channelId });
     const msg1Id = channel.addMessage('Hello World', currentUserId);
     const msg2Id = channel.addMessage('this is that', currentUserId);
     const msg3Id = channel.addMessage('Good thanks', currentUserId);
@@ -243,7 +243,7 @@ describe('Messenger Reproduction - Array Tracking', () => {
     const channelId = 'channel-2';
     const currentUserId = 'user-me';
 
-    const channel = ChannelBloc.resolve(channelId, channelId);
+    const channel = ChannelBloc.resolve(channelId, { props: channelId });
     const msg1Id = channel.addMessage('Test message', currentUserId);
 
     render(<MessageList channelId={channelId} currentUserId={currentUserId} />);
@@ -290,7 +290,7 @@ describe('Messenger Reproduction - Array Tracking', () => {
     const channelId = 'channel-3';
     const currentUserId = 'user-me';
 
-    const channel = ChannelBloc.resolve(channelId, channelId);
+    const channel = ChannelBloc.resolve(channelId, { props: channelId });
     const msg1Id = channel.addMessage('Message 1', currentUserId);
     const msg2Id = channel.addMessage('Message 2', currentUserId);
     const msg3Id = channel.addMessage('Message 3', currentUserId);
@@ -321,7 +321,7 @@ describe('Messenger Reproduction - Array Tracking', () => {
     const channelId = 'channel-4';
     const currentUserId = 'user-me';
 
-    const channel = ChannelBloc.resolve(channelId, channelId);
+    const channel = ChannelBloc.resolve(channelId, { props: channelId });
     channel.addMessage('Message 1', currentUserId);
     channel.addMessage('Message 2', currentUserId);
     const lastMsgId = channel.addMessage('Message 3', currentUserId);
@@ -344,7 +344,7 @@ describe('Messenger Reproduction - Array Tracking', () => {
     const channelId = 'channel-5';
     const currentUserId = 'user-me';
 
-    const channel = ChannelBloc.resolve(channelId, channelId);
+    const channel = ChannelBloc.resolve(channelId, { props: channelId });
     channel.addMessage('Hello', currentUserId);
 
     render(<MessageList channelId={channelId} currentUserId={currentUserId} />);

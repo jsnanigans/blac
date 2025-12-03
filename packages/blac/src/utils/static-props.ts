@@ -3,6 +3,7 @@
  */
 
 import { BLAC_STATIC_PROPS } from '../constants';
+import { StateContainerConstructor } from '../types/utilities';
 
 /**
  * Get a static property from a class constructor
@@ -13,11 +14,10 @@ import { BLAC_STATIC_PROPS } from '../constants';
  * @param defaultValue - Optional default value if property is undefined
  * @returns The property value or default
  */
-export function getStaticProp<T>(
-  Type: new (...args: any[]) => any,
-  propName: string,
-  defaultValue?: T,
-): T | undefined {
+export function getStaticProp<
+  V,
+  T extends StateContainerConstructor = StateContainerConstructor,
+>(Type: T, propName: string, defaultValue?: V): V | undefined {
   return (Type as any)[propName] ?? defaultValue;
 }
 
@@ -25,7 +25,9 @@ export function getStaticProp<T>(
  * Check if a class is marked as isolated
  * Isolated classes create separate instances per component
  */
-export function isIsolatedClass(Type: new (...args: any[]) => any): boolean {
+export function isIsolatedClass<T extends StateContainerConstructor>(
+  Type: T,
+): boolean {
   return getStaticProp<boolean>(Type, BLAC_STATIC_PROPS.ISOLATED) === true;
 }
 
@@ -33,7 +35,9 @@ export function isIsolatedClass(Type: new (...args: any[]) => any): boolean {
  * Check if a class is marked as keepAlive
  * KeepAlive classes are never auto-disposed when ref count reaches 0
  */
-export function isKeepAliveClass(Type: new (...args: any[]) => any): boolean {
+export function isKeepAliveClass<T extends StateContainerConstructor>(
+  Type: T,
+): boolean {
   return getStaticProp<boolean>(Type, BLAC_STATIC_PROPS.KEEP_ALIVE) === true;
 }
 
@@ -41,8 +45,8 @@ export function isKeepAliveClass(Type: new (...args: any[]) => any): boolean {
  * Check if a class should be excluded from DevTools
  * Used to prevent infinite loops when DevTools tracks itself
  */
-export function isExcludedFromDevTools(
-  Type: new (...args: any[]) => any,
+export function isExcludedFromDevTools<T extends StateContainerConstructor>(
+  Type: T,
 ): boolean {
   return (
     getStaticProp<boolean>(Type, BLAC_STATIC_PROPS.EXCLUDE_FROM_DEVTOOLS) ===

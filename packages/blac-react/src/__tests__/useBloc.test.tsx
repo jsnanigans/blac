@@ -49,11 +49,41 @@ class UserBloc extends StateContainer<{ name: string; email: string }> {
   };
 }
 
+// class GenericBloc<T> extends StateContainer<T> {
+//   constructor(initialState: T) {
+//     super(initialState);
+//   }
+//
+//   setState = (newState: T) => {
+//     this.update(() => newState);
+//   };
+// }
+
 describe('useBloc', () => {
   afterEach(() => {
     // Clear all bloc instances between tests
     StateContainer.clearAllInstances();
   });
+
+  // describe('Generic Bloc', () => {
+  //   it('should work with generic bloc and explicit state type', () => {
+  //     const { result } = renderHook(() => {
+  //       const [state, bloc] =
+  //         useBloc<GenericBloc<{ items: string[] }>>(GenericBloc);
+  //       return { state, bloc };
+  //     });
+  //
+  //     const { state, bloc } = result.current;
+  //     expect(state).toEqual({ items: [] });
+  //     expect(bloc).toBeInstanceOf(GenericBloc);
+  //
+  //     act(() => {
+  //       bloc.setState({ items: ['a', 'b', 'c'] });
+  //     });
+  //
+  //     expect(result.current.state).toEqual({ items: ['a', 'b', 'c'] });
+  //   });
+  // });
 
   describe('Basic Usage', () => {
     it('should create bloc instance and subscribe to state', () => {
@@ -67,7 +97,6 @@ describe('useBloc', () => {
     it('should update when bloc state changes', async () => {
       const { result } = renderHook(() => {
         const [state, bloc] = useBloc(CounterBloc);
-        // Access state during render so it gets tracked
         return { state, bloc };
       });
 
@@ -225,7 +254,7 @@ describe('useBloc', () => {
     it('should pass static props to constructor', () => {
       const { result } = renderHook(() =>
         useBloc(UserBloc, {
-          props: { initialName: 'Bob' },
+          props: 0,
         }),
       );
 

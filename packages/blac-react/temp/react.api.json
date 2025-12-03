@@ -195,24 +195,12 @@
           "excerptTokens": [
             {
               "kind": "Content",
-              "text": "export declare function useBloc<S = "
-            },
-            {
-              "kind": "Content",
-              "text": "never"
-            },
-            {
-              "kind": "Content",
-              "text": ", T extends "
-            },
-            {
-              "kind": "Content",
-              "text": "new (...args: any[]) => "
+              "text": "export declare function useBloc<T extends "
             },
             {
               "kind": "Reference",
-              "text": "StateContainer",
-              "canonicalReference": "@blac/core!StateContainer:class"
+              "text": "StateContainerConstructor",
+              "canonicalReference": "@blac/core!StateContainerConstructor:type"
             },
             {
               "kind": "Content",
@@ -223,13 +211,9 @@
               "text": " = "
             },
             {
-              "kind": "Content",
-              "text": "new (...args: any[]) => "
-            },
-            {
               "kind": "Reference",
-              "text": "StateContainer",
-              "canonicalReference": "@blac/core!StateContainer:class"
+              "text": "StateContainerConstructor",
+              "canonicalReference": "@blac/core!StateContainerConstructor:type"
             },
             {
               "kind": "Content",
@@ -241,25 +225,7 @@
             },
             {
               "kind": "Content",
-              "text": "T & "
-            },
-            {
-              "kind": "Reference",
-              "text": "BlocConstructor",
-              "canonicalReference": "@blac/core!BlocConstructor:type"
-            },
-            {
-              "kind": "Content",
-              "text": "<"
-            },
-            {
-              "kind": "Reference",
-              "text": "InstanceType",
-              "canonicalReference": "!InstanceType:type"
-            },
-            {
-              "kind": "Content",
-              "text": "<T>>"
+              "text": "T"
             },
             {
               "kind": "Content",
@@ -272,16 +238,7 @@
             },
             {
               "kind": "Content",
-              "text": "<"
-            },
-            {
-              "kind": "Reference",
-              "text": "InstanceType",
-              "canonicalReference": "!InstanceType:type"
-            },
-            {
-              "kind": "Content",
-              "text": "<T>>"
+              "text": "<T>"
             },
             {
               "kind": "Content",
@@ -294,16 +251,16 @@
             },
             {
               "kind": "Content",
-              "text": "<"
+              "text": "<T, "
             },
             {
               "kind": "Reference",
-              "text": "InstanceType",
-              "canonicalReference": "!InstanceType:type"
+              "text": "ExtractState",
+              "canonicalReference": "@blac/core!ExtractState:type"
             },
             {
               "kind": "Content",
-              "text": "<T>, S>"
+              "text": "<T>>"
             },
             {
               "kind": "Content",
@@ -312,8 +269,8 @@
           ],
           "fileUrlPath": "dist/.types/useBloc.d.ts",
           "returnTypeTokenRange": {
-            "startIndex": 22,
-            "endIndex": 26
+            "startIndex": 12,
+            "endIndex": 16
           },
           "releaseTag": "Public",
           "overloadIndex": 1,
@@ -321,41 +278,30 @@
             {
               "parameterName": "BlocClass",
               "parameterTypeTokenRange": {
-                "startIndex": 11,
-                "endIndex": 16
+                "startIndex": 7,
+                "endIndex": 8
               },
               "isOptional": false
             },
             {
               "parameterName": "options",
               "parameterTypeTokenRange": {
-                "startIndex": 17,
-                "endIndex": 21
+                "startIndex": 9,
+                "endIndex": 11
               },
               "isOptional": true
             }
           ],
           "typeParameters": [
             {
-              "typeParameterName": "S",
-              "constraintTokenRange": {
-                "startIndex": 0,
-                "endIndex": 0
-              },
-              "defaultTypeTokenRange": {
-                "startIndex": 1,
-                "endIndex": 2
-              }
-            },
-            {
               "typeParameterName": "T",
               "constraintTokenRange": {
-                "startIndex": 3,
-                "endIndex": 6
+                "startIndex": 1,
+                "endIndex": 3
               },
               "defaultTypeTokenRange": {
-                "startIndex": 7,
-                "endIndex": 10
+                "startIndex": 4,
+                "endIndex": 6
               }
             }
           ],
@@ -368,45 +314,21 @@
           "excerptTokens": [
             {
               "kind": "Content",
-              "text": "export declare function useBlocActions<S = "
-            },
-            {
-              "kind": "Content",
-              "text": "never"
-            },
-            {
-              "kind": "Content",
-              "text": ", T extends "
-            },
-            {
-              "kind": "Content",
-              "text": "new (...args: any[]) => "
+              "text": "export declare function useBlocActions<T extends "
             },
             {
               "kind": "Reference",
-              "text": "StateContainer",
-              "canonicalReference": "@blac/core!StateContainer:class"
-            },
-            {
-              "kind": "Content",
-              "text": "<any, any>"
+              "text": "StateContainerConstructor",
+              "canonicalReference": "@blac/core!StateContainerConstructor:type"
             },
             {
               "kind": "Content",
               "text": " = "
             },
             {
-              "kind": "Content",
-              "text": "new (...args: any[]) => "
-            },
-            {
               "kind": "Reference",
-              "text": "StateContainer",
-              "canonicalReference": "@blac/core!StateContainer:class"
-            },
-            {
-              "kind": "Content",
-              "text": "<any, any>"
+              "text": "StateContainerConstructor",
+              "canonicalReference": "@blac/core!StateContainerConstructor:type"
             },
             {
               "kind": "Content",
@@ -414,25 +336,7 @@
             },
             {
               "kind": "Content",
-              "text": "T & "
-            },
-            {
-              "kind": "Reference",
-              "text": "BlocConstructor",
-              "canonicalReference": "@blac/core!BlocConstructor:type"
-            },
-            {
-              "kind": "Content",
-              "text": "<"
-            },
-            {
-              "kind": "Reference",
-              "text": "InstanceType",
-              "canonicalReference": "!InstanceType:type"
-            },
-            {
-              "kind": "Content",
-              "text": "<T>>"
+              "text": "T"
             },
             {
               "kind": "Content",
@@ -462,21 +366,12 @@
             },
             {
               "kind": "Reference",
-              "text": "StateOverride",
-              "canonicalReference": "@blac/core!StateOverride:type"
-            },
-            {
-              "kind": "Content",
-              "text": "<"
-            },
-            {
-              "kind": "Reference",
               "text": "InstanceType",
               "canonicalReference": "!InstanceType:type"
             },
             {
               "kind": "Content",
-              "text": "<T>, S>"
+              "text": "<T>"
             },
             {
               "kind": "Content",
@@ -485,8 +380,8 @@
           ],
           "fileUrlPath": "dist/.types/useBlocActions.d.ts",
           "returnTypeTokenRange": {
-            "startIndex": 22,
-            "endIndex": 26
+            "startIndex": 12,
+            "endIndex": 14
           },
           "releaseTag": "Public",
           "overloadIndex": 1,
@@ -494,41 +389,30 @@
             {
               "parameterName": "BlocClass",
               "parameterTypeTokenRange": {
-                "startIndex": 11,
-                "endIndex": 16
+                "startIndex": 5,
+                "endIndex": 6
               },
               "isOptional": false
             },
             {
               "parameterName": "options",
               "parameterTypeTokenRange": {
-                "startIndex": 17,
-                "endIndex": 21
+                "startIndex": 7,
+                "endIndex": 11
               },
               "isOptional": true
             }
           ],
           "typeParameters": [
             {
-              "typeParameterName": "S",
-              "constraintTokenRange": {
-                "startIndex": 0,
-                "endIndex": 0
-              },
-              "defaultTypeTokenRange": {
-                "startIndex": 1,
-                "endIndex": 2
-              }
-            },
-            {
               "typeParameterName": "T",
               "constraintTokenRange": {
-                "startIndex": 3,
-                "endIndex": 6
+                "startIndex": 1,
+                "endIndex": 2
               },
               "defaultTypeTokenRange": {
-                "startIndex": 7,
-                "endIndex": 10
+                "startIndex": 3,
+                "endIndex": 4
               }
             }
           ],
@@ -699,11 +583,25 @@
           "excerptTokens": [
             {
               "kind": "Content",
-              "text": "export interface UseBlocOptions<TBloc, TProps = "
+              "text": "export interface UseBlocOptions<TBloc extends "
+            },
+            {
+              "kind": "Reference",
+              "text": "StateContainerConstructor",
+              "canonicalReference": "@blac/core!StateContainerConstructor:type"
             },
             {
               "kind": "Content",
-              "text": "any"
+              "text": ", TProps = "
+            },
+            {
+              "kind": "Reference",
+              "text": "ExtractProps",
+              "canonicalReference": "@blac/core!ExtractProps:type"
+            },
+            {
+              "kind": "Content",
+              "text": "<TBloc>"
             },
             {
               "kind": "Content",
@@ -716,8 +614,8 @@
             {
               "typeParameterName": "TBloc",
               "constraintTokenRange": {
-                "startIndex": 0,
-                "endIndex": 0
+                "startIndex": 1,
+                "endIndex": 2
               },
               "defaultTypeTokenRange": {
                 "startIndex": 0,
@@ -731,8 +629,8 @@
                 "endIndex": 0
               },
               "defaultTypeTokenRange": {
-                "startIndex": 1,
-                "endIndex": 2
+                "startIndex": 3,
+                "endIndex": 5
               }
             }
           ],
@@ -786,7 +684,16 @@
                 },
                 {
                   "kind": "Content",
-                  "text": "<TBloc>, bloc: TBloc) => unknown[]"
+                  "text": "<TBloc>, bloc: "
+                },
+                {
+                  "kind": "Reference",
+                  "text": "InstanceType",
+                  "canonicalReference": "!InstanceType:type"
+                },
+                {
+                  "kind": "Content",
+                  "text": "<TBloc>) => unknown[]"
                 },
                 {
                   "kind": "Content",
@@ -799,7 +706,7 @@
               "name": "dependencies",
               "propertyTypeTokenRange": {
                 "startIndex": 1,
-                "endIndex": 4
+                "endIndex": 6
               }
             },
             {
@@ -867,7 +774,16 @@
                 },
                 {
                   "kind": "Content",
-                  "text": "(bloc: TBloc) => void"
+                  "text": "(bloc: "
+                },
+                {
+                  "kind": "Reference",
+                  "text": "InstanceType",
+                  "canonicalReference": "!InstanceType:type"
+                },
+                {
+                  "kind": "Content",
+                  "text": "<TBloc>) => void"
                 },
                 {
                   "kind": "Content",
@@ -880,7 +796,7 @@
               "name": "onMount",
               "propertyTypeTokenRange": {
                 "startIndex": 1,
-                "endIndex": 2
+                "endIndex": 4
               }
             },
             {
@@ -894,7 +810,16 @@
                 },
                 {
                   "kind": "Content",
-                  "text": "(bloc: TBloc) => void"
+                  "text": "(bloc: "
+                },
+                {
+                  "kind": "Reference",
+                  "text": "InstanceType",
+                  "canonicalReference": "!InstanceType:type"
+                },
+                {
+                  "kind": "Content",
+                  "text": "<TBloc>) => void"
                 },
                 {
                   "kind": "Content",
@@ -907,7 +832,7 @@
               "name": "onUnmount",
               "propertyTypeTokenRange": {
                 "startIndex": 1,
-                "endIndex": 2
+                "endIndex": 4
               }
             },
             {
@@ -943,7 +868,7 @@
         {
           "kind": "TypeAlias",
           "canonicalReference": "@blac/react!UseBlocReturn:type",
-          "docComment": "/**\n * Tuple return type from useBloc hook containing state, bloc instance, and ref - [0] Current state value (with optional state type override) - [1] State container instance (bloc) for calling actions - [2] Ref object for accessing component ref (advanced use cases)\n *\n * @template TBloc - The state container type  @template S - Optional state type override for generic StateContainers (defaults to never)\n */\n",
+          "docComment": "/**\n * Tuple return type from useBloc hook containing state, bloc instance, and ref - [0] Current state value (with optional state type override) - [1] State container instance (bloc) for calling actions - [2] Ref object for accessing component ref (advanced use cases)\n *\n * @template TBloc - The state container type\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -951,8 +876,8 @@
             },
             {
               "kind": "Reference",
-              "text": "StateContainer",
-              "canonicalReference": "@blac/core!StateContainer:class"
+              "text": "StateContainerConstructor",
+              "canonicalReference": "@blac/core!StateContainerConstructor:type"
             },
             {
               "kind": "Content",
@@ -963,8 +888,13 @@
               "text": ", S = "
             },
             {
+              "kind": "Reference",
+              "text": "ExtractState",
+              "canonicalReference": "@blac/core!ExtractState:type"
+            },
+            {
               "kind": "Content",
-              "text": "never"
+              "text": "<TBloc>"
             },
             {
               "kind": "Content",
@@ -972,25 +902,16 @@
             },
             {
               "kind": "Content",
-              "text": "[\n    [\n        S\n    ] extends [never] ? "
+              "text": "[S, "
             },
             {
               "kind": "Reference",
-              "text": "ExtractState",
-              "canonicalReference": "@blac/core!ExtractState:type"
+              "text": "InstanceType",
+              "canonicalReference": "!InstanceType:type"
             },
             {
               "kind": "Content",
-              "text": "<TBloc> : S,\n    "
-            },
-            {
-              "kind": "Reference",
-              "text": "StateOverride",
-              "canonicalReference": "@blac/core!StateOverride:type"
-            },
-            {
-              "kind": "Content",
-              "text": "<TBloc, S>,\n    "
+              "text": "<TBloc>, "
             },
             {
               "kind": "Reference",
@@ -1008,7 +929,7 @@
             },
             {
               "kind": "Content",
-              "text": ">\n]"
+              "text": ">]"
             },
             {
               "kind": "Content",
@@ -1038,13 +959,13 @@
               },
               "defaultTypeTokenRange": {
                 "startIndex": 4,
-                "endIndex": 5
+                "endIndex": 6
               }
             }
           ],
           "typeTokenRange": {
-            "startIndex": 6,
-            "endIndex": 15
+            "startIndex": 7,
+            "endIndex": 14
           }
         }
       ]

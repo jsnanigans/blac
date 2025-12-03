@@ -4,6 +4,7 @@ import { createPluginManager } from '../plugin/PluginManager';
 import { getGetterExecutionContext } from '../tracking/getter-tracker';
 import { BLAC_DEFAULTS, BLAC_ERROR_PREFIX } from '../constants';
 import { isIsolatedClass, isKeepAliveClass } from '../utils/static-props';
+import { StateContainerConstructor } from '../types/utilities';
 
 /**
  * Internal configuration for registered types
@@ -67,13 +68,11 @@ export type LifecycleListener<E extends LifecycleEvent> = E extends 'created'
  */
 export class StateContainerRegistry {
   private readonly instancesByConstructor = new WeakMap<
-    new (...args: any[]) => StateContainer<any>,
+    StateContainerConstructor,
     Map<string, InstanceEntry>
   >();
 
-  private readonly types = new Set<
-    new (...args: any[]) => StateContainer<any>
-  >();
+  private readonly types = new Set<StateContainerConstructor>();
 
   private readonly typeConfigs = new Map<string, TypeConfig>();
 
@@ -86,9 +85,7 @@ export class StateContainerRegistry {
    * Register a type for lifecycle event tracking
    * @param constructor - The StateContainer class constructor
    */
-  registerType<T extends StateContainer<any>>(
-    constructor: new (...args: any[]) => T,
-  ): void {
+  registerType<T extends StateContainerConstructor>(constructor: T): void {
     this.types.add(constructor);
   }
 
@@ -98,8 +95,8 @@ export class StateContainerRegistry {
    * @param isolated - Whether instances should be isolated (component-scoped)
    * @throws Error if type is already registered
    */
-  register<T extends StateContainer<any>>(
-    constructor: new (...args: any[]) => T,
+  register<T extends StateContainerConstructor>(
+    constructor: T,
     isolated = false,
   ): void {
     const className = constructor.name;
@@ -118,8 +115,8 @@ export class StateContainerRegistry {
     this.registerType(constructor);
   }
 
-  private ensureInstancesMap<T extends StateContainer<any>>(
-    Type: new (...args: any[]) => T,
+  private ensureInstancesMap<T extends StateContainerConstructor>(
+    Type: T,
   ): Map<string, InstanceEntry> {
     let instances = this.instancesByConstructor.get(Type);
     if (!instances) {
@@ -132,20 +129,51 @@ export class StateContainerRegistry {
   /**
    * Get the instances Map for a specific class (public API for stats/debugging)
    */
-  getInstancesMap<T extends StateContainer<any>>(
-    Type: new (...args: any[]) => T,
+  getInstancesMap<T extends StateContainerConstructor>(
+    Type: T,
   ): Map<string, InstanceEntry> {
     return this.instancesByConstructor.get(Type) || new Map();
   }
 
+  private trackExecutionContext(instance: StateContainer<any>): void {
+    // Track cross-bloc dependency if we're inside a getter execution
+    const context = getGetterExecutionContext();
+    if (
+      context.tracker &&
+      context.currentBloc &&
+      context.currentBloc !== instance
+    ) {
+      // Add this bloc as an external dependency
+      context.tracker.externalDependencies.add(instance);
+    }
+  }
+
   /**
-   * Resolve an instance with ref counting (ownership semantics)
+   * Resolve an instance with ref counting (ownership semantics).
+   * Creates a new instance if one doesn't exist, or returns existing and increments ref count.
+   * @param Type - The StateContainer class constructor
+   * @param instanceKey - Instance key (defaults to 'default')
+   * @param options - Resolution options
+   * @param options.canCreate - Whether to create new instance if not found (default: true)
+   * @param options.countRef - Whether to increment ref count (default: true)
+   * @param options.props - Props to pass to constructor if creating new instance
+   * @param options.trackExecutionContext - Whether to track cross-bloc dependency (default: false)
+   * @returns The state container instance
    */
-  resolve<T extends StateContainer<any>>(
-    Type: new (...args: any[]) => T,
+  resolve<T extends StateContainerConstructor = StateContainerConstructor>(
+    Type: T,
     instanceKey: string = BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
-    constructorArgs?: any,
-  ): T {
+    options: {
+      canCreate?: boolean;
+      countRef?: boolean;
+      props?: any;
+      trackExecutionContext?: boolean;
+    } = {
+      canCreate: true,
+      countRef: true,
+      trackExecutionContext: false,
+    },
+  ): InstanceType<T> {
     // Check if this is an isolated type
     const registryConfig = this.typeConfigs.get(Type.name);
     const isolated = isIsolatedClass(Type) || registryConfig?.isolated === true;
@@ -154,12 +182,21 @@ export class StateContainerRegistry {
       instanceId: instanceKey,
     };
 
+    if (isolated && !options.canCreate) {
+      throw new Error(
+        `${BLAC_ERROR_PREFIX} Cannot get isolated instance "${instanceKey}" of ${Type.name} when creation is disabled.`,
+      );
+    }
+
     // Isolated: always create new instance (not tracked)
     if (isolated) {
-      const instance = new Type(constructorArgs) as T;
+      const instance = new Type(options.props) as InstanceType<T>;
       instance.initConfig(config);
       // Register type for lifecycle coordination
       this.registerType(Type);
+      if (options.trackExecutionContext) {
+        this.trackExecutionContext(instance);
+      }
       return instance;
     }
 
@@ -167,155 +204,108 @@ export class StateContainerRegistry {
     const instances = this.ensureInstancesMap(Type);
     const entry = instances.get(instanceKey);
 
-    if (entry) {
+    // Increment ref count if found, only if counting is enabled or refCount is 0
+    if (entry && (options.countRef || entry.refCount === 0)) {
       entry.refCount++;
-      return entry.instance as T;
+    }
+
+    if (entry) {
+      if (options.trackExecutionContext) {
+        this.trackExecutionContext(entry.instance);
+      }
+      return entry.instance;
+    }
+
+    if (!options.canCreate) {
+      throw new Error(
+        `${BLAC_ERROR_PREFIX} ${Type.name} instance "${instanceKey}" not found and creation is disabled.`,
+      );
     }
 
     // Create new shared instance
-    const instance = new Type(constructorArgs) as T;
+    const instance = new Type(options.props) as InstanceType<T>;
     instance.initConfig(config);
     instances.set(instanceKey, { instance, refCount: 1 });
 
     // Register type for lifecycle coordination
     this.registerType(Type);
 
+    if (options.trackExecutionContext) {
+      this.trackExecutionContext(instance);
+    }
     return instance;
   }
 
   /**
-   * Get an existing instance without ref counting (borrowing semantics)
+   * Get an existing instance without incrementing ref count (borrowing semantics).
+   * Tracks cross-bloc dependency for reactive updates.
+   * @param Type - The StateContainer class constructor
+   * @param instanceKey - Instance key (defaults to 'default')
+   * @returns The state container instance
    * @throws Error if instance doesn't exist
    */
-  get<T extends StateContainer<any>>(
-    Type: new (...args: any[]) => T,
+  get<T extends StateContainerConstructor = StateContainerConstructor>(
+    Type: T,
     instanceKey: string = BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
-  ): T {
-    const instances = this.ensureInstancesMap(Type);
-    const entry = instances.get(instanceKey);
-
-    if (!entry) {
-      throw new Error(
-        `${BLAC_ERROR_PREFIX} ${Type.name} instance "${instanceKey}" not found.\n` +
-          `Use .resolve() to create and claim ownership, or .getSafe() for conditional access.`,
-      );
-    }
-
-    // Track cross-bloc dependency if we're inside a getter execution
-    const context = getGetterExecutionContext();
-    if (
-      context.tracker &&
-      context.currentBloc &&
-      context.currentBloc !== entry.instance
-    ) {
-      // Add this bloc as an external dependency
-      context.tracker.externalDependencies.add(entry.instance);
-    }
-
-    return entry.instance as T;
+  ): InstanceType<T> {
+    return this.resolve(Type, instanceKey, {
+      canCreate: false,
+      trackExecutionContext: true,
+    });
   }
 
   /**
-   * Safely get an existing instance (borrowing semantics with error handling)
-   * Returns discriminated union for type-safe conditional access
+   * Safely get an existing instance (borrowing semantics with error handling).
+   * Returns discriminated union for type-safe conditional access.
+   * @param Type - The StateContainer class constructor
+   * @param instanceKey - Instance key (defaults to 'default')
+   * @returns Discriminated union with either the instance or an error
    */
-  getSafe<T extends StateContainer<any>>(
-    Type: new (...args: any[]) => T,
+  getSafe<T extends StateContainerConstructor = StateContainerConstructor>(
+    Type: T,
     instanceKey: string = BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
-  ): { error: Error; instance: null } | { error: null; instance: T } {
-    const instances = this.ensureInstancesMap(Type);
-    const entry = instances.get(instanceKey);
-
-    if (!entry) {
-      return {
-        error: new Error(
-          `${BLAC_ERROR_PREFIX} ${Type.name} instance "${instanceKey}" not found`,
-        ),
-        instance: null,
-      };
+  ):
+    | { error: Error; instance: null }
+    | { error: null; instance: InstanceType<T> } {
+    try {
+      const instance = this.get(Type, instanceKey);
+      return { error: null, instance };
+    } catch (error: any) {
+      return { error, instance: null };
     }
-
-    // Track cross-bloc dependency if we're inside a getter execution
-    const context = getGetterExecutionContext();
-    if (
-      context.tracker &&
-      context.currentBloc &&
-      context.currentBloc !== entry.instance
-    ) {
-      // Add this bloc as an external dependency
-      context.tracker.externalDependencies.add(entry.instance);
-    }
-
-    return { error: null, instance: entry.instance as T };
   }
 
   /**
-   * Connect to an instance with borrowing semantics (for B2B communication)
+   * Connect to an instance with borrowing semantics (for B2B communication).
    * Gets existing instance OR creates it if it doesn't exist, without incrementing ref count.
    * Tracks cross-bloc dependency for reactive updates.
    *
    * Use this in bloc-to-bloc communication when you need to ensure an instance exists
    * but don't want to claim ownership (no ref count increment).
-   *
-   * @param Type - The bloc class constructor
-   * @param instanceKey - Optional instance key (defaults to 'default')
-   * @param constructorArgs - Constructor arguments (only used if creating new instance)
-   * @returns The bloc instance
+   * @param Type - The StateContainer class constructor
+   * @param instanceKey - Instance key (defaults to 'default')
+   * @returns The state container instance
    */
-  connect<T extends StateContainer<any>>(
-    Type: new (...args: any[]) => T,
+  connect<T extends StateContainerConstructor = StateContainerConstructor>(
+    Type: T,
     instanceKey: string = BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
-    constructorArgs?: any,
-  ): T {
-    // Check if this is an isolated type (should not use connect with isolated types)
-    const registryConfig = this.typeConfigs.get(Type.name);
-    const isolated = isIsolatedClass(Type) || registryConfig?.isolated === true;
-
-    if (isolated) {
-      throw new Error(
-        `${BLAC_ERROR_PREFIX} Cannot use .connect() with isolated bloc "${Type.name}".\n` +
-          `Isolated blocs are component-scoped. Use .resolve() in components instead.`,
-      );
-    }
-
-    // Get or create shared instance
-    const instances = this.ensureInstancesMap(Type);
-    let entry = instances.get(instanceKey);
-
-    if (!entry) {
-      // Create new shared instance with refCount=1
-      // (Assumes someone else will eventually claim ownership or it's keepAlive)
-      const instance = new Type(constructorArgs) as T;
-      const config: StateContainerConfig = {
-        instanceId: instanceKey,
-      };
-      instance.initConfig(config);
-      entry = { instance, refCount: 1 };
-      instances.set(instanceKey, entry);
-
-      // Register type for lifecycle coordination
-      this.registerType(Type);
-    }
-
-    // Track cross-bloc dependency if we're inside a getter execution
-    const context = getGetterExecutionContext();
-    if (
-      context.tracker &&
-      context.currentBloc &&
-      context.currentBloc !== entry.instance
-    ) {
-      // Add this bloc as an external dependency
-      context.tracker.externalDependencies.add(entry.instance);
-    }
-
-    return entry.instance as T;
+  ): InstanceType<T> {
+    return this.resolve(Type, instanceKey, {
+      canCreate: true,
+      countRef: false,
+      trackExecutionContext: true,
+    });
   }
 
   /**
-   * Release a reference to an instance
+   * Release a reference to an instance.
+   * Decrements ref count and disposes when it reaches 0 (unless keepAlive).
+   * @param Type - The StateContainer class constructor
+   * @param instanceKey - Instance key (defaults to 'default')
+   * @param forceDispose - Force immediate disposal regardless of ref count
    */
-  release<T extends StateContainer<any>>(
-    Type: new (...args: any[]) => T,
+  release<T extends StateContainerConstructor>(
+    Type: T,
     instanceKey: string = BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
     forceDispose = false,
   ): void {
@@ -349,27 +339,32 @@ export class StateContainerRegistry {
   }
 
   /**
-   * Get all instances of a specific type
+   * Get all instances of a specific type.
+   * @param Type - The StateContainer class constructor
+   * @returns Array of all instances
    */
-  getAll<T extends StateContainer<any>>(Type: new (...args: any[]) => T): T[] {
+  getAll<T extends StateContainerConstructor>(Type: T): InstanceType<T>[] {
     const instances = this.ensureInstancesMap(Type);
-    const result: T[] = [];
+    const result: InstanceType<T>[] = [];
     for (const entry of instances.values()) {
-      result.push(entry.instance as T);
+      result.push(entry.instance);
     }
     return result;
   }
 
   /**
-   * Safely iterate over all instances of a type
+   * Safely iterate over all instances of a type.
+   * Skips disposed instances and catches callback errors.
+   * @param Type - The StateContainer class constructor
+   * @param callback - Function to call for each instance
    */
-  forEach<T extends StateContainer<any>>(
-    Type: new (...args: any[]) => T,
-    callback: (instance: T) => void,
+  forEach<T extends StateContainerConstructor>(
+    Type: T,
+    callback: (instance: InstanceType<T>) => void,
   ): void {
     const instances = this.ensureInstancesMap(Type);
     for (const entry of instances.values()) {
-      const instance = entry.instance as T;
+      const instance = entry.instance;
       if (!instance.isDisposed) {
         try {
           callback(instance);
@@ -384,9 +379,10 @@ export class StateContainerRegistry {
   }
 
   /**
-   * Clear all instances of a specific type
+   * Clear all instances of a specific type (disposes them).
+   * @param Type - The StateContainer class constructor
    */
-  clear<T extends StateContainer<any>>(Type: new (...args: any[]) => T): void {
+  clear<T extends StateContainerConstructor>(Type: T): void {
     const instances = this.ensureInstancesMap(Type);
     // Dispose all instances
     for (const entry of instances.values()) {
@@ -399,10 +395,13 @@ export class StateContainerRegistry {
   }
 
   /**
-   * Get reference count for an instance
+   * Get reference count for an instance.
+   * @param Type - The StateContainer class constructor
+   * @param instanceKey - Instance key (defaults to 'default')
+   * @returns Current ref count (0 if instance doesn't exist)
    */
-  getRefCount<T extends StateContainer<any>>(
-    Type: new (...args: any[]) => T,
+  getRefCount<T extends StateContainerConstructor>(
+    Type: T,
     instanceKey: string = BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
   ): number {
     const instances = this.ensureInstancesMap(Type);
@@ -411,10 +410,13 @@ export class StateContainerRegistry {
   }
 
   /**
-   * Check if an instance exists
+   * Check if an instance exists.
+   * @param Type - The StateContainer class constructor
+   * @param instanceKey - Instance key (defaults to 'default')
+   * @returns true if instance exists
    */
-  hasInstance<T extends StateContainer<any>>(
-    Type: new (...args: any[]) => T,
+  hasInstance<T extends StateContainerConstructor>(
+    Type: T,
     instanceKey: string = BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
   ): boolean {
     const instances = this.ensureInstancesMap(Type);
@@ -438,7 +440,8 @@ export class StateContainerRegistry {
   }
 
   /**
-   * Get registry statistics (for debugging)
+   * Get registry statistics for debugging.
+   * @returns Object with registeredTypes, totalInstances, and typeBreakdown
    */
   getStats(): {
     registeredTypes: number;
@@ -466,9 +469,10 @@ export class StateContainerRegistry {
   }
 
   /**
-   * Get all registered types (for plugin system)
+   * Get all registered types (for plugin system).
+   * @returns Array of all registered StateContainer class constructors
    */
-  getTypes(): Array<new (...args: any[]) => StateContainer<any>> {
+  getTypes(): StateContainerConstructor[] {
     return Array.from(this.types);
   }
 

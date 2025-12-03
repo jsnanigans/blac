@@ -1,10 +1,5 @@
 import { useMemo, useEffect, useRef } from 'react';
-import {
-  type BlocConstructor,
-  type StateOverride,
-  StateContainer,
-  isIsolatedClass,
-} from '@blac/core';
+import { StateContainerConstructor, isIsolatedClass } from '@blac/core';
 import type { ComponentRef } from './types';
 import { generateInstanceKey } from './utils/instance-keys';
 
@@ -55,14 +50,11 @@ export interface UseBlocActionsOptions<TBloc, TProps = any> {
  * ```
  */
 export function useBlocActions<
-  S = never,
-  T extends new (...args: any[]) => StateContainer<any, any> = new (
-    ...args: any[]
-  ) => StateContainer<any, any>,
+  T extends StateContainerConstructor = StateContainerConstructor,
 >(
-  BlocClass: T & BlocConstructor<InstanceType<T>>,
+  BlocClass: T,
   options?: UseBlocActionsOptions<InstanceType<T>>,
-): StateOverride<InstanceType<T>, S> {
+): InstanceType<T> {
   const componentRef = useRef<ComponentRef>({});
   const initialPropsRef = useRef(options?.props);
 
@@ -75,7 +67,10 @@ export function useBlocActions<
       options?.instanceId,
     );
 
-    const instance = BlocClass.resolve(instanceKey, initialPropsRef.current);
+    const instance = (BlocClass as any).resolve(
+      instanceKey,
+      initialPropsRef.current,
+    );
 
     return [instance, instanceKey] as const;
   }, [BlocClass]);
@@ -90,7 +85,7 @@ export function useBlocActions<
         options.onUnmount(bloc);
       }
 
-      BlocClass.release(instanceKey);
+      (BlocClass as any).release(instanceKey);
 
       if (isIsolatedClass(BlocClass) && !bloc.isDisposed) {
         bloc.dispose();
@@ -98,5 +93,5 @@ export function useBlocActions<
     };
   }, []);
 
-  return bloc as StateOverride<InstanceType<T>, S>;
+  return bloc as InstanceType<T>;
 }

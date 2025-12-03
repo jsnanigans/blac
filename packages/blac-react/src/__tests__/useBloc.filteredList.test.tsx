@@ -13,7 +13,10 @@ interface ProfileState {
   profiles: Profile[];
 }
 
-class ProfileCubit extends Cubit<ProfileState> {
+class ProfileCubit extends Cubit<
+  ProfileState,
+  { initialProfiles?: Profile[] }
+> {
   constructor(props?: { initialProfiles?: Profile[] }) {
     super({ profiles: props?.initialProfiles || [] });
   }

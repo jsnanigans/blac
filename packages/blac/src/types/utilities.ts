@@ -3,38 +3,21 @@ import type { StateContainer } from '../core/StateContainer';
 /**
  * Extract the state type from a StateContainer
  * @template T - The StateContainer type
+ * @template Override - Optional override type for generic StateContainers, `any` by default, should ot override if its `any`
  */
 export type ExtractState<T> =
-  T extends StateContainer<infer S, any> ? S : never;
+  T extends StateContainerConstructor<infer S, any> ? S : never;
 
-/**
- * Conditionally override the state type of a StateContainer.
- * When S is `never`, returns T unchanged (inferred state type).
- * When S is provided, replaces the state type while preserving all other properties.
- *
- * @template T - The StateContainer type
- * @template S - The state type override (defaults to never)
- *
- * @example
- * // Without override - returns original type
- * type Result1 = StateOverride<MyBloc>; // MyBloc
- *
- * // With override - replaces state type
- * type Result2 = StateOverride<MyBloc, CustomState>; // Omit<MyBloc, 'state'> & { readonly state: CustomState }
- */
-export type StateOverride<
-  T extends StateContainer<any, any>,
-  S = never,
-> = [S] extends [never]
-  ? T
-  : Omit<T, 'state'> & { readonly state: S };
+export type StateContainerConstructor<S = any, P = any> = new (
+  ...args: any[]
+) => StateContainer<S, P>;
 
 /**
  * Extract the props type from a StateContainer
  * @template T - The StateContainer type
  */
 export type ExtractProps<T> =
-  T extends StateContainer<any, infer P> ? P : undefined;
+  T extends StateContainerConstructor<any, infer P> ? P : undefined;
 
 /**
  * Extract constructor argument types from a class
@@ -44,21 +27,28 @@ export type ExtractConstructorArgs<T> = T extends new (...args: infer P) => any
   ? P
   : never[];
 
+export type BlocInstanceType<T extends abstract new (...args: any) => any> =
+  T extends abstract new (...args: any) => infer R ? R : any;
+
 /**
  * Constructor type for StateContainer classes with static registry methods.
  * Used for type-safe hook parameters.
  * @template TBloc - The StateContainer instance type
  */
-export type BlocConstructor<TBloc extends StateContainer<any, any>> = (new (
-  ...args: any[]
-) => TBloc) & {
-  resolve<S = never>(instanceKey?: string, ...args: any[]): StateOverride<TBloc, S>;
-  get<S = never>(instanceKey?: string): StateOverride<TBloc, S>;
-  getSafe<S = never>(
+export type BlocConstructor<
+  S = any,
+  T extends new (...args: any[]) => StateContainer<S, any> = new (
+    ...args: any[]
+  ) => StateContainer<S, any>,
+> = (new (...args: any[]) => InstanceType<T>) & {
+  resolve(instanceKey?: string, ...args: any[]): InstanceType<T>;
+  get(instanceKey?: string, ...args: any[]): InstanceType<T> | null;
+  getSafe(
     instanceKey?: string,
+    ...args: any[]
   ):
     | { error: Error; instance: null }
-    | { error: null; instance: StateOverride<TBloc, S> };
+    | { error: null; instance: InstanceType<T> };
   release(instanceKey?: string): void;
   isolated?: boolean;
   keepAlive?: boolean;
