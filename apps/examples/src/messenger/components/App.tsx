@@ -5,6 +5,7 @@ import { Sidebar } from './Sidebar';
 import { ChannelView } from './ChannelView';
 import { webSocket } from '../services/WebSocketMock';
 import { CURRENT_USER_ID } from '../mockData';
+import { ChannelBloc, ReceiveMessageEvent } from '../blocs/ChannelBloc';
 
 /**
  * Main App component for the messenger

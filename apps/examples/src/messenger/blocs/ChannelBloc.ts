@@ -82,7 +82,7 @@ export class ChannelBloc extends Vertex<ChannelState> {
     // Create UserCubit on-demand
     const user = MOCK_USERS.find((u) => u.id === userId);
     if (user) {
-      UserCubit.resolve(userId, { user });
+      UserCubit.resolve(userId, { props: { user } });
       console.log(`[ChannelBloc] Created UserCubit for ${userId} on-demand`);
     }
   }

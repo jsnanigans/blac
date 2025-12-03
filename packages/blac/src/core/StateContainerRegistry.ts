@@ -4,7 +4,7 @@ import { createPluginManager } from '../plugin/PluginManager';
 import { getGetterExecutionContext } from '../tracking/getter-tracker';
 import { BLAC_DEFAULTS, BLAC_ERROR_PREFIX } from '../constants';
 import { isIsolatedClass, isKeepAliveClass } from '../utils/static-props';
-import { StateContainerConstructor } from '../types/utilities';
+import { ExtractProps, StateContainerConstructor } from '../types/utilities';
 
 /**
  * Internal configuration for registered types
@@ -166,14 +166,11 @@ export class StateContainerRegistry {
     options: {
       canCreate?: boolean;
       countRef?: boolean;
-      props?: any;
+      props?: ExtractProps<T>;
       trackExecutionContext?: boolean;
-    } = {
-      canCreate: true,
-      countRef: true,
-      trackExecutionContext: false,
-    },
+    } = {},
   ): InstanceType<T> {
+    const { canCreate = true, countRef = true, props, trackExecutionContext = false } = options;
     // Check if this is an isolated type
     const registryConfig = this.typeConfigs.get(Type.name);
     const isolated = isIsolatedClass(Type) || registryConfig?.isolated === true;
@@ -182,7 +179,7 @@ export class StateContainerRegistry {
       instanceId: instanceKey,
     };
 
-    if (isolated && !options.canCreate) {
+    if (isolated && !canCreate) {
       throw new Error(
         `${BLAC_ERROR_PREFIX} Cannot get isolated instance "${instanceKey}" of ${Type.name} when creation is disabled.`,
       );
@@ -190,11 +187,11 @@ export class StateContainerRegistry {
 
     // Isolated: always create new instance (not tracked)
     if (isolated) {
-      const instance = new Type(options.props) as InstanceType<T>;
+      const instance = new Type(props) as InstanceType<T>;
       instance.initConfig(config);
       // Register type for lifecycle coordination
       this.registerType(Type);
-      if (options.trackExecutionContext) {
+      if (trackExecutionContext) {
         this.trackExecutionContext(instance);
       }
       return instance;
@@ -205,32 +202,32 @@ export class StateContainerRegistry {
     const entry = instances.get(instanceKey);
 
     // Increment ref count if found, only if counting is enabled or refCount is 0
-    if (entry && (options.countRef || entry.refCount === 0)) {
+    if (entry && (countRef || entry.refCount === 0)) {
       entry.refCount++;
     }
 
     if (entry) {
-      if (options.trackExecutionContext) {
+      if (trackExecutionContext) {
         this.trackExecutionContext(entry.instance);
       }
       return entry.instance;
     }
 
-    if (!options.canCreate) {
+    if (!canCreate) {
       throw new Error(
         `${BLAC_ERROR_PREFIX} ${Type.name} instance "${instanceKey}" not found and creation is disabled.`,
       );
     }
 
     // Create new shared instance
-    const instance = new Type(options.props) as InstanceType<T>;
+    const instance = new Type(props) as InstanceType<T>;
     instance.initConfig(config);
     instances.set(instanceKey, { instance, refCount: 1 });
 
     // Register type for lifecycle coordination
     this.registerType(Type);
 
-    if (options.trackExecutionContext) {
+    if (trackExecutionContext) {
       this.trackExecutionContext(instance);
     }
     return instance;

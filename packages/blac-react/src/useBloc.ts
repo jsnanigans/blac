@@ -110,10 +110,9 @@ export function useBloc<
         options?.instanceId,
       );
 
-      const instance = (BlocClass as any).resolve(
-        instanceKey,
-        initialPropsRef.current,
-      ) as TBloc;
+      const instance = (BlocClass as any).resolve(instanceKey, {
+        props: initialPropsRef.current,
+      }) as TBloc;
 
       if (initialPropsRef.current !== undefined) {
         instance.updateProps(initialPropsRef.current);
