@@ -14,7 +14,7 @@ export interface AppState {
  * Global app state - shared single instance
  * Manages current user, active channel/thread, and UI state
  */
-export class AppCubit extends Cubit<AppState> {
+export class AppCubit extends Cubit<AppState, { currentUserId: string }> {
   notificationCubit = NotificationCubit.resolve();
 
   constructor(props?: { currentUserId: string }) {

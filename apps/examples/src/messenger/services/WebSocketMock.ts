@@ -138,7 +138,7 @@ export class WebSocketMock {
    * Simulate message delivery confirmation
    */
   private simulateMessageDelivery(outgoing: OutgoingMessage) {
-    const messageId = outgoing.payload.messageId;
+    const messageId = outgoing.payload.id;
 
     // Simulate network delay for "sent" status
     setTimeout(

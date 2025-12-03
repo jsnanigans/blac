@@ -22,8 +22,10 @@ export function getStaticProp<
 }
 
 /**
- * Check if a class is marked as isolated
- * Isolated classes create separate instances per component
+ * Check if a class is marked as isolated.
+ * Isolated classes create separate instances per component.
+ * @param Type - The class constructor to check
+ * @returns true if the class has `static isolated = true`
  */
 export function isIsolatedClass<T extends StateContainerConstructor>(
   Type: T,
@@ -32,8 +34,10 @@ export function isIsolatedClass<T extends StateContainerConstructor>(
 }
 
 /**
- * Check if a class is marked as keepAlive
- * KeepAlive classes are never auto-disposed when ref count reaches 0
+ * Check if a class is marked as keepAlive.
+ * KeepAlive classes are never auto-disposed when ref count reaches 0.
+ * @param Type - The class constructor to check
+ * @returns true if the class has `static keepAlive = true`
  */
 export function isKeepAliveClass<T extends StateContainerConstructor>(
   Type: T,
@@ -42,8 +46,10 @@ export function isKeepAliveClass<T extends StateContainerConstructor>(
 }
 
 /**
- * Check if a class should be excluded from DevTools
- * Used to prevent infinite loops when DevTools tracks itself
+ * Check if a class should be excluded from DevTools.
+ * Used to prevent infinite loops when DevTools tracks itself.
+ * @param Type - The class constructor to check
+ * @returns true if the class has `static __excludeFromDevTools = true`
  */
 export function isExcludedFromDevTools<T extends StateContainerConstructor>(
   Type: T,

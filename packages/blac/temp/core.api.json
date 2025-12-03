@@ -9266,7 +9266,16 @@
                 },
                 {
                   "kind": "Content",
-                  "text": "{\n        canCreate?: boolean;\n        countRef?: boolean;\n        props?: any;\n        trackExecutionContext?: boolean;\n    }"
+                  "text": "{\n        canCreate?: boolean;\n        countRef?: boolean;\n        props?: "
+                },
+                {
+                  "kind": "Reference",
+                  "text": "ExtractProps",
+                  "canonicalReference": "@blac/core!ExtractProps:type"
+                },
+                {
+                  "kind": "Content",
+                  "text": "<T>;\n        trackExecutionContext?: boolean;\n    }"
                 },
                 {
                   "kind": "Content",
@@ -9301,8 +9310,8 @@
               ],
               "isStatic": false,
               "returnTypeTokenRange": {
-                "startIndex": 11,
-                "endIndex": 13
+                "startIndex": 13,
+                "endIndex": 15
               },
               "releaseTag": "Public",
               "isProtected": false,
@@ -9328,7 +9337,7 @@
                   "parameterName": "options",
                   "parameterTypeTokenRange": {
                     "startIndex": 9,
-                    "endIndex": 10
+                    "endIndex": 12
                   },
                   "isOptional": true
                 }

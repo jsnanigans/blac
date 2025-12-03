@@ -280,6 +280,8 @@ export class PluginManager {
 
 /**
  * Create a plugin manager instance
+ * @param registry - The StateContainerRegistry to monitor for lifecycle events
+ * @returns A new PluginManager instance
  */
 export function createPluginManager(
   registry: StateContainerRegistry,

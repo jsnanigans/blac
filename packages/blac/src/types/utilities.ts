@@ -3,11 +3,15 @@ import type { StateContainer } from '../core/StateContainer';
 /**
  * Extract the state type from a StateContainer
  * @template T - The StateContainer type
- * @template Override - Optional override type for generic StateContainers, `any` by default, should ot override if its `any`
  */
 export type ExtractState<T> =
   T extends StateContainerConstructor<infer S, any> ? S : never;
 
+/**
+ * Constructor type for StateContainer classes
+ * @template S - State type managed by the container
+ * @template P - Props type passed to the container
+ */
 export type StateContainerConstructor<S = any, P = any> = new (
   ...args: any[]
 ) => StateContainer<S, P>;
@@ -27,6 +31,10 @@ export type ExtractConstructorArgs<T> = T extends new (...args: infer P) => any
   ? P
   : never[];
 
+/**
+ * Extract instance type from an abstract class constructor
+ * @template T - The abstract class constructor type
+ */
 export type BlocInstanceType<T extends abstract new (...args: any) => any> =
   T extends abstract new (...args: any) => infer R ? R : any;
 
