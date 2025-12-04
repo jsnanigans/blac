@@ -170,7 +170,12 @@ export class StateContainerRegistry {
       trackExecutionContext?: boolean;
     } = {},
   ): InstanceType<T> {
-    const { canCreate = true, countRef = true, props, trackExecutionContext = false } = options;
+    const {
+      canCreate = true,
+      countRef = true,
+      props,
+      trackExecutionContext = false,
+    } = options;
     // Check if this is an isolated type
     const registryConfig = this.typeConfigs.get(Type.name);
     const isolated = isIsolatedClass(Type) || registryConfig?.isolated === true;
