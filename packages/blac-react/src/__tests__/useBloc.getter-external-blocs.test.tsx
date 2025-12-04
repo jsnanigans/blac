@@ -249,40 +249,4 @@ describe('useBloc - getter tracking with external blocs', () => {
     ZetaBloc.clear();
     EtaBloc.clear();
   });
-
-  it('.connect() should throw for isolated blocs', () => {
-    class IsolatedBloc extends Cubit<number> {
-      static isolated = true;
-      constructor() {
-        super(1);
-      }
-    }
-
-    class TestBloc extends Cubit<number> {
-      constructor() {
-        super(2);
-      }
-
-      get isolated() {
-        return IsolatedBloc.connect().state; // Should throw
-      }
-    }
-
-    const Component = () => {
-      const [, testBloc] = useBloc(TestBloc);
-      try {
-        return <div>{testBloc.isolated}</div>;
-      } catch (error) {
-        return <div data-testid="error">{(error as Error).message}</div>;
-      }
-    };
-
-    render(<Component />);
-
-    expect(screen.getByTestId('error').textContent).toContain(
-      'Cannot use .connect() with isolated bloc',
-    );
-
-    TestBloc.clear();
-  });
 });

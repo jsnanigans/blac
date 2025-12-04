@@ -1362,7 +1362,7 @@
         {
           "kind": "TypeAlias",
           "canonicalReference": "@blac/core!BlocInstanceType:type",
-          "docComment": "",
+          "docComment": "/**\n * Extract instance type from an abstract class constructor  @template T - The abstract class constructor type\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -2286,7 +2286,7 @@
         {
           "kind": "Function",
           "canonicalReference": "@blac/core!createPluginManager:function(1)",
-          "docComment": "/**\n * Create a plugin manager instance\n */\n",
+          "docComment": "/**\n * Create a plugin manager instance\n *\n * @param registry - The StateContainerRegistry to monitor for lifecycle events\n *\n * @returns A new PluginManager instance\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -3149,7 +3149,7 @@
         {
           "kind": "TypeAlias",
           "canonicalReference": "@blac/core!ExtractState:type",
-          "docComment": "/**\n * Extract the state type from a StateContainer  @template T - The StateContainer type  @template Override - Optional override type for generic StateContainers, `any` by default, should ot override if its `any`\n */\n",
+          "docComment": "/**\n * Extract the state type from a StateContainer  @template T - The StateContainer type\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -4298,7 +4298,7 @@
         {
           "kind": "Function",
           "canonicalReference": "@blac/core!isExcludedFromDevTools:function(1)",
-          "docComment": "/**\n * Check if a class should be excluded from DevTools Used to prevent infinite loops when DevTools tracks itself\n */\n",
+          "docComment": "/**\n * Check if a class should be excluded from DevTools. Used to prevent infinite loops when DevTools tracks itself.\n *\n * @param Type - The class constructor to check\n *\n * @returns true if the class has `static __excludeFromDevTools = true`\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -4365,7 +4365,7 @@
         {
           "kind": "Function",
           "canonicalReference": "@blac/core!isIsolatedClass:function(1)",
-          "docComment": "/**\n * Check if a class is marked as isolated Isolated classes create separate instances per component\n */\n",
+          "docComment": "/**\n * Check if a class is marked as isolated. Isolated classes create separate instances per component.\n *\n * @param Type - The class constructor to check\n *\n * @returns true if the class has `static isolated = true`\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -4477,7 +4477,7 @@
         {
           "kind": "Function",
           "canonicalReference": "@blac/core!isKeepAliveClass:function(1)",
-          "docComment": "/**\n * Check if a class is marked as keepAlive KeepAlive classes are never auto-disposed when ref count reaches 0\n */\n",
+          "docComment": "/**\n * Check if a class is marked as keepAlive. KeepAlive classes are never auto-disposed when ref count reaches 0.\n *\n * @param Type - The class constructor to check\n *\n * @returns true if the class has `static keepAlive = true`\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -7868,7 +7868,7 @@
         {
           "kind": "TypeAlias",
           "canonicalReference": "@blac/core!StateContainerConstructor:type",
-          "docComment": "",
+          "docComment": "/**\n * Constructor type for StateContainer classes  @template S - State type managed by the container  @template P - Props type passed to the container\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",

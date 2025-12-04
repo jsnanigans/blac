@@ -39,7 +39,10 @@ class IsolatedBloc extends StateContainer<{ value: number }> {
   };
 }
 
-class UserBloc extends StateContainer<{ name: string }> {
+class UserBloc extends StateContainer<
+  { name: string },
+  { initialName?: string }
+> {
   constructor(props?: { initialName?: string }) {
     super({ name: props?.initialName || '' });
   }

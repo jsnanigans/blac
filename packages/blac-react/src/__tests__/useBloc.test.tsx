@@ -254,7 +254,7 @@ describe('useBloc', () => {
     it('should pass static props to constructor', () => {
       const { result } = renderHook(() =>
         useBloc(UserBloc, {
-          props: 0,
+          props: { initialName: 'Bob' },
         }),
       );
 

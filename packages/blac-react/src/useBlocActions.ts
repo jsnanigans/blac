@@ -67,10 +67,9 @@ export function useBlocActions<
       options?.instanceId,
     );
 
-    const instance = (BlocClass as any).resolve(
-      instanceKey,
-      initialPropsRef.current,
-    );
+    const instance = (BlocClass as any).resolve(instanceKey, {
+      props: initialPropsRef.current,
+    });
 
     return [instance, instanceKey] as const;
   }, [BlocClass]);
