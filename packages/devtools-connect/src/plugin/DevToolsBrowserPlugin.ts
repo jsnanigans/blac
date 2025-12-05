@@ -11,39 +11,16 @@
 import type { BlacPlugin, PluginContext, InstanceMetadata } from '@blac/core';
 import { safeSerialize } from '../serialization/serialize';
 import { DevToolsStateManager } from '../state/DevToolsStateManager';
-import type { InstanceState } from '../protocol/messages';
+import type {
+  InstanceState,
+  DevToolsEventType,
+  DevToolsEvent,
+  DevToolsCallback,
+  DevToolsBrowserPluginConfig,
+} from '../types';
 
-/**
- * Event types for DevTools
- */
-export type DevToolsEventType =
-  | 'init'
-  | 'instance-created'
-  | 'instance-updated'
-  | 'instance-disposed';
-
-export interface DevToolsEvent {
-  type: DevToolsEventType;
-  timestamp: number;
-  data: InstanceMetadata | InstanceMetadata[]; // Array for 'init', single for others
-}
-
-/**
- * Callback type for DevTools subscriptions
- */
-export type DevToolsCallback = (event: DevToolsEvent) => void;
-
-/**
- * Configuration for DevTools browser plugin
- */
-export interface DevToolsBrowserPluginConfig {
-  /** Enable/disable the plugin */
-  enabled?: boolean;
-  /** Max instances to track (default: 2000) */
-  maxInstances?: number;
-  /** Max snapshots per instance (default: 20) */
-  maxSnapshots?: number;
-}
+// Re-export types for backward compatibility
+export type { DevToolsEventType, DevToolsEvent, DevToolsCallback, DevToolsBrowserPluginConfig };
 
 /**
  * DevTools browser plugin for BlaC

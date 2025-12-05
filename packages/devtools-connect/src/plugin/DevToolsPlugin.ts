@@ -5,6 +5,28 @@ import { safeSerialize } from '../serialization/serialize';
 import type { SerializedEvent } from '../bridge/types';
 import type { DevToolsPluginConfig } from './types';
 
+/**
+ * Legacy DevTools Plugin
+ *
+ * @deprecated Use DevToolsBrowserPlugin instead for full Chrome extension support.
+ * This plugin uses the legacy message protocol and has limited functionality.
+ *
+ * Migration guide:
+ * ```typescript
+ * // Before (deprecated):
+ * import { DevToolsPlugin } from '@blac/devtools-connect';
+ * const plugin = new DevToolsPlugin({ enabled: true });
+ *
+ * // After (recommended):
+ * import { createDevToolsBrowserPlugin } from '@blac/devtools-connect';
+ * const plugin = createDevToolsBrowserPlugin({ enabled: true });
+ * ```
+ *
+ * Key differences:
+ * - DevToolsBrowserPlugin exposes a global API for the Chrome extension
+ * - DevToolsBrowserPlugin maintains state history with snapshots
+ * - DevToolsBrowserPlugin supports the full atomic message protocol
+ */
 export class DevToolsPlugin implements BlacPlugin {
   readonly name = 'DevToolsPlugin';
   readonly version = '0.1.0';
@@ -156,8 +178,15 @@ export class DevToolsPlugin implements BlacPlugin {
     return Object.keys(diff).length > 0 ? diff : null;
   }
 
+  /**
+   * Time-travel is not implemented in this legacy plugin.
+   * Use ReduxDevToolsAdapter for full time-travel support.
+   * @deprecated This method is a no-op. Use ReduxDevToolsAdapter instead.
+   */
   private handleTimeTravel(_eventIndex: number): void {
-    // Time-travel is experimental and only works with synchronous events
+    console.warn(
+      '[DevToolsPlugin] Time-travel is not implemented in legacy plugin. Use ReduxDevToolsAdapter instead.',
+    );
   }
 
   getEventHistory(): ReadonlyArray<SerializedEvent> {

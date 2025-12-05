@@ -88,6 +88,9 @@ type AuthEvent =
 
 Create a service to handle all auth-related API calls. This keeps network logic separate from state management:
 
+<details class="code-collapse">
+<summary>Show code</summary>
+
 ```typescript
 interface LoginRequest {
   email: string;
@@ -198,9 +201,14 @@ class AuthApi {
 export const authApi = new AuthApi();
 ```
 
+</details>
+
 ## Part 4: Token Storage
 
 Tokens need to persist across page refreshes. Use localStorage with proper error handling:
+
+<details class="code-collapse">
+<summary>Show code</summary>
 
 ```typescript
 const TOKEN_STORAGE_KEY = 'auth_tokens';
@@ -242,6 +250,8 @@ export const tokenStorage = {
 ```
 
 **Why the buffer?** Tokens might expire during an API request. A 60-second buffer ensures we refresh before that happens.
+
+</details>
 
 ## Part 5: The AuthVertex
 
@@ -738,6 +748,9 @@ function Dashboard() {
 
 Create a wrapper around fetch that automatically handles authentication:
 
+<details class="code-collapse">
+<summary>Show code</summary>
+
 ```typescript
 export function createAuthenticatedFetch(auth: AuthVertex) {
   return async function authFetch(
@@ -780,7 +793,12 @@ const response = await authFetch('/api/protected/data');
 const data = await response.json();
 ```
 
+</details>
+
 ## Part 8: Testing
+
+<details class="code-collapse">
+<summary>Show code</summary>
 
 ```typescript
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
@@ -935,6 +953,8 @@ describe('AuthVertex', () => {
   });
 });
 ```
+
+</details>
 
 ## Security Considerations
 

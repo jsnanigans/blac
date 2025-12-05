@@ -77,8 +77,6 @@ interface ActionMessage extends BaseReduxMessage {
     | string; // Can be string (JSON) or object
 }
 
-type _StrictReduxDevToolsMessage = DispatchMessage | ActionMessage;
-
 /**
  * Type guard to check if message is a DISPATCH message
  */
@@ -652,16 +650,28 @@ export class ReduxDevToolsAdapter {
       // Handle other dispatch types
       switch (message.payload.type) {
         case 'RESET':
+          // Clear all state and notify app
+          this.stateHistory = [];
+          this.recordStateSnapshot('[RESET]');
           window.dispatchEvent(new CustomEvent('blac-devtools-reset'));
           break;
 
         case 'COMMIT':
+          // Commit: clear history before current state (makes current state the new base)
+          this.stateHistory = this.stateHistory.slice(-1);
           break;
 
         case 'ROLLBACK':
+          // Rollback: restore to last committed state (first item in history)
+          if (this.stateHistory.length > 0) {
+            const firstSnapshot = this.stateHistory[0];
+            this.handleTimeTravel(JSON.stringify(Object.fromEntries(firstSnapshot.states)));
+          }
           break;
 
         case 'IMPORT_STATE':
+          // Import state is handled by Redux DevTools internally
+          // We receive the imported state through JUMP_TO_STATE
           break;
       }
       return;

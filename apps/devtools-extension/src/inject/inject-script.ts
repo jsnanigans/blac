@@ -24,7 +24,8 @@
 
       // Transform new format to panel format
       const history = inst.history || [];
-      const lastChange = history.length > 0 ? history[0] : null;
+      // Get the most recent change (last element in history array)
+      const lastChange = history.length > 0 ? history[history.length - 1] : null;
 
       return {
         id: inst.id,
@@ -112,7 +113,7 @@
         source: 'blac-devtools-inject',
         ...data,
       },
-      '*',
+      window.location.origin,
     );
   }
 

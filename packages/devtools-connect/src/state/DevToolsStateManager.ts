@@ -5,52 +5,15 @@
  * Acts as the "backend" that DevTools panels connect to for full state dumps.
  */
 
-export interface StateSnapshot {
-  /** Current state after change */
-  state: any;
-  /** Previous state before change */
-  previousState: any;
-  /** When this state change occurred */
-  timestamp: number;
-  /** Optional call stack trace for debugging */
-  callstack?: string;
-}
+import type {
+  StateSnapshot,
+  InstanceState,
+  DevToolsSnapshot,
+  DevToolsStateManagerConfig,
+} from '../types';
 
-export interface InstanceState {
-  // Identity
-  /** Unique instance ID (bloc.uid) */
-  id: string;
-  /** Class name (e.g., 'CounterCubit') */
-  className: string;
-  /** Custom name or instanceId */
-  name: string;
-  /** Whether this is an isolated instance */
-  isIsolated: boolean;
-
-  // State tracking
-  /** Most recent state */
-  currentState: any;
-  /** Last N state changes (circular buffer) */
-  history: StateSnapshot[];
-
-  // Metadata
-  /** Creation timestamp */
-  createdAt: number;
-}
-
-export interface DevToolsSnapshot {
-  /** All tracked instances */
-  instances: InstanceState[];
-  /** Snapshot timestamp */
-  timestamp: number;
-}
-
-export interface DevToolsStateManagerConfig {
-  /** Max instances to track (default: 2000) */
-  maxInstances?: number;
-  /** Max snapshots per instance (default: 20) */
-  maxSnapshots?: number;
-}
+// Re-export types for backward compatibility
+export type { StateSnapshot, InstanceState, DevToolsSnapshot, DevToolsStateManagerConfig };
 
 export interface StateManagerStats {
   /** Total number of tracked instances */

@@ -67,7 +67,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       ...message,
       source: 'blac-devtools-content',
     },
-    '*',
+    window.location.origin,
   );
 
   sendResponse({ received: true });

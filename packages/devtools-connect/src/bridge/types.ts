@@ -1,85 +1,20 @@
-export interface SerializedEvent {
-  id: string;
-  blocId: string;
-  blocName: string;
-  type: string;
-  payload: any;
-  timestamp: number;
-}
+/**
+ * Legacy Bridge Types
+ *
+ * Re-exports from the unified types module for backward compatibility.
+ * New code should import directly from '../types'.
+ *
+ * @deprecated Import from '../types' instead
+ */
 
-export interface BlocCreatedPayload {
-  id: string;
-  name: string;
-  state: any;
-  timestamp: number;
-}
-
-export interface StateChangedPayload {
-  blocId: string;
-  state: any;
-  diff?: any;
-  timestamp: number;
-}
-
-export interface BlocDisposedPayload {
-  id: string;
-  name: string;
-  timestamp: number;
-}
-
-export interface HeartbeatPayload {
-  timestamp: number;
-  connectedSince: number;
-}
-
-export interface ReconnectedPayload {
-  timestamp: number;
-  requestStateSync: boolean;
-}
-
-export type DevToolsMessage =
-  | {
-      type: 'BLOC_CREATED';
-      payload: BlocCreatedPayload;
-    }
-  | {
-      type: 'EVENT_DISPATCHED';
-      payload: SerializedEvent;
-    }
-  | {
-      type: 'STATE_CHANGED';
-      payload: StateChangedPayload;
-    }
-  | {
-      type: 'BLOC_DISPOSED';
-      payload: BlocDisposedPayload;
-    }
-  | {
-      type: 'HEARTBEAT';
-      payload: HeartbeatPayload;
-    }
-  | {
-      type: 'RECONNECTED';
-      payload: ReconnectedPayload;
-    };
-
-export type DevToolsCommand =
-  | {
-      type: 'TIME_TRAVEL';
-      payload: { eventIndex: number };
-    }
-  | {
-      type: 'REQUEST_STATE';
-      payload: { blocId: string };
-    }
-  | {
-      type: 'CLEAR_EVENTS';
-    }
-  | {
-      type: 'HEARTBEAT_ACK';
-    };
-
-export interface WindowMessage {
-  source: 'blac-devtools-app' | 'blac-devtools-extension';
-  payload: DevToolsMessage | DevToolsCommand;
-}
+export {
+  type SerializedEvent,
+  type LegacyBlocCreatedPayload as BlocCreatedPayload,
+  type LegacyStateChangedPayload as StateChangedPayload,
+  type LegacyBlocDisposedPayload as BlocDisposedPayload,
+  type HeartbeatPayload,
+  type ReconnectedPayload,
+  type DevToolsMessage,
+  type DevToolsCommand,
+  type WindowMessage,
+} from '../types';

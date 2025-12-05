@@ -44,18 +44,20 @@ class Comm {
     return this._tabId;
   }
 
-  postMessage = (message: MessageOut) => {
+  /**
+   * Send a message to the service worker
+   */
+  sendMessage = (message: MessageOut) => {
     this.port.postMessage(message);
   };
 
+  /**
+   * Subscribe to messages from the service worker
+   */
   onMessage = (
     callback: (message: MessageIn, sender: chrome.runtime.Port) => void,
   ) => {
     this.port.onMessage.addListener(callback);
-  };
-
-  sendMessage = (message: MessageOut) => {
-    this.postMessage(message);
   };
 
   disconnect = () => {
@@ -66,7 +68,7 @@ class Comm {
   };
 
   connect = () => {
-    this.postMessage({ type: 'GET_INSTANCES' });
+    this.sendMessage({ type: 'GET_INSTANCES' });
   };
 }
 

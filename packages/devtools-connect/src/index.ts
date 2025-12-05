@@ -1,44 +1,34 @@
-export { DevToolsPlugin } from './plugin/DevToolsPlugin';
-export type { DevToolsPluginConfig } from './plugin/types';
+// Unified types (single source of truth)
+export * from './types';
 
-// New plugin API (using @blac/core plugin system)
+// Plugins
+export { DevToolsPlugin } from './plugin/DevToolsPlugin';
 export {
   DevToolsBrowserPlugin,
   createDevToolsBrowserPlugin,
-  type DevToolsBrowserPluginConfig,
-  type DevToolsEvent as BrowserDevToolsEvent,
-  type DevToolsEventType,
-  type DevToolsCallback,
 } from './plugin/DevToolsBrowserPlugin';
+
+// Bridge
 export { DevToolsBridge } from './bridge/DevToolsBridge';
 export type { DevToolsBridgeConfig } from './bridge/DevToolsBridge';
-export type {
-  SerializedEvent,
-  DevToolsMessage,
-  DevToolsCommand,
-  WindowMessage,
-} from './bridge/types';
+
+// Serialization
 export {
   serialize,
   safeSerialize,
   SerializationError,
 } from './serialization/serialize';
+
+// Integrations
 export {
   ReduxDevToolsAdapter,
   type ReduxDevToolsAdapterConfig,
 } from './integrations/ReduxDevToolsAdapter';
 export {
   EventRegistry,
-  DevToolsEvent,
+  DevToolsEvent as RegisteredDevToolsEvent,
   type EventMetadata,
 } from './integrations/EventRegistry';
 
-// Protocol types (new atomic message protocol)
-export {
-  DevToolsMessageType,
-  type DevToolsMessage as ProtocolMessage,
-  type InstanceCreatedPayload,
-  type InstanceDisposedPayload,
-  type StateChangedPayload,
-  type WindowMessage as ProtocolWindowMessage,
-} from './protocol/messages';
+// State management
+export { DevToolsStateManager } from './state/DevToolsStateManager';

@@ -1,5 +1,6 @@
 import { Cubit, blac } from '@blac/core';
 import type { InstanceData } from '../types';
+import { debug } from '../utils/debug';
 
 type InstancesState = {
   instances: InstanceData[];
@@ -30,30 +31,26 @@ export class DevToolsInstancesBloc extends Cubit<InstancesState> {
    * Add a new instance to the list
    */
   addInstance = (instance: InstanceData) => {
-    console.log(
-      `[InstancesBloc] addInstance: ${instance.className}#${instance.id}`,
-    );
+    debug.log(`addInstance: ${instance.className}#${instance.id}`);
 
     // Check if instance already exists
     const existing = this.state.instances.find((i) => i.id === instance.id);
     if (existing) {
-      console.warn(
-        `[InstancesBloc] Instance already exists, updating instead: ${instance.id}`,
-      );
+      debug.warn(`Instance already exists, updating instead: ${instance.id}`);
       this.updateInstance(instance.id, instance);
       return;
     }
 
     const instances = [...this.state.instances, instance];
     this.patch({ instances });
-    console.log(`[InstancesBloc] Instance added (total: ${instances.length})`);
+    debug.log(`Instance added (total: ${instances.length})`);
   };
 
   /**
    * Remove an instance from the list
    */
   removeInstance = (instanceId: string) => {
-    console.log(`[InstancesBloc] removeInstance: ${instanceId}`);
+    debug.log(`removeInstance: ${instanceId}`);
 
     const instances = this.state.instances.filter((i) => i.id !== instanceId);
 
@@ -62,14 +59,14 @@ export class DevToolsInstancesBloc extends Cubit<InstancesState> {
     animationTriggers.delete(instanceId);
 
     this.patch({ instances, animationTriggers });
-    console.log(`[InstancesBloc] Instance removed (total: ${instances.length})`);
+    debug.log(`Instance removed (total: ${instances.length})`);
   };
 
   /**
    * Update an existing instance (used when duplicate is added)
    */
   updateInstance = (instanceId: string, updates: Partial<InstanceData>) => {
-    console.log(`[InstancesBloc] updateInstance: ${instanceId}`);
+    debug.log(`updateInstance: ${instanceId}`);
 
     const instances = this.state.instances.map((inst) => {
       if (inst.id === instanceId) {
@@ -88,7 +85,7 @@ export class DevToolsInstancesBloc extends Cubit<InstancesState> {
     instanceId: string,
     currentState: any,
   ) => {
-    console.log(`[InstancesBloc] updateInstanceState: ${instanceId}`);
+    debug.log(`updateInstanceState: ${instanceId}`);
 
     const instances = this.state.instances.map((inst) => {
       if (inst.id === instanceId) {
@@ -112,14 +109,14 @@ export class DevToolsInstancesBloc extends Cubit<InstancesState> {
     animationTriggers.set(instanceId, recentTriggers);
 
     this.patch({ instances, animationTriggers });
-    console.log(`[InstancesBloc] Instance state updated: ${instanceId}`);
+    debug.log(`Instance state updated: ${instanceId}`);
   };
 
   /**
    * Set all instances at once (used only for initial load)
    */
   setAllInstances = (instances: InstanceData[]) => {
-    console.log(`[InstancesBloc] setAllInstances: ${instances.length} instances`);
+    debug.log(`setAllInstances: ${instances.length} instances`);
     this.patch({ instances: instances.slice() });
   };
 
@@ -127,10 +124,7 @@ export class DevToolsInstancesBloc extends Cubit<InstancesState> {
    * Set connection status
    */
   setConnected = (connected: boolean) => {
-    console.log(
-      `[InstancesBloc] Connection status changed to:`,
-      connected ? 'CONNECTED' : 'DISCONNECTED',
-    );
+    debug.log(`Connection status: ${connected ? 'CONNECTED' : 'DISCONNECTED'}`);
     this.patch({ connected });
   };
 
