@@ -173,7 +173,7 @@ onInstanceDisposed?(instance: StateContainer<any>, context: PluginContext): void
 Called when state changes in a container instance
 
 ```typescript
-onStateChanged?<S>(instance: StateContainer<S>, previousState: S, currentState: S, callstack: string | undefined, context: PluginContext): void;
+onStateChanged?<S extends object = any>(instance: StateContainer<S>, previousState: S, currentState: S, callstack: string | undefined, context: PluginContext): void;
 ```
 
 #### `onUninstall`
@@ -252,7 +252,7 @@ getInstanceMetadata(instance: StateContainer<any>): InstanceMetadata;
 Get current state from a container
 
 ```typescript
-getState<S>(instance: StateContainer<S>): S;
+getState<S extends object = any>(instance: StateContainer<S>): S;
 ```
 
 #### `getStats`
@@ -289,7 +289,9 @@ export declare function createPluginManager(registry: StateContainerRegistry): P
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `registry` | `StateContainerRegistry` |  |
+| `registry` | `StateContainerRegistry` | The StateContainerRegistry to monitor for lifecycle events |
+
+**Returns:** A new PluginManager instance
 
 ---
 

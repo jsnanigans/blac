@@ -43,13 +43,13 @@ cleanup(): void;
 Update subscriptions to external bloc dependencies. Creates subscriptions to blocs accessed via getters.
 
 ```typescript
-updateSubscriptions(getterTracker: GetterTrackerState | null, rawInstance: StateContainer<any, any>, onGetterChange: () => void): boolean;
+updateSubscriptions(getterTracker: GetterTrackerState | null, rawInstance: StateContainerInstance, onGetterChange: () => void): boolean;
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `getterTracker` | `GetterTrackerState \| null` | The getter tracker state with external dependencies |
-| `rawInstance` | `StateContainer<any, any>` | The primary bloc instance (excluded from subscriptions) |
+| `rawInstance` | `StateContainerInstance` | The primary bloc instance (excluded from subscriptions) |
 | `onGetterChange` | `() => void` | Callback to invoke when external dependency changes |
 
 **Returns:** true if subscriptions were updated, false if unchanged
@@ -63,14 +63,14 @@ updateSubscriptions(getterTracker: GetterTrackerState | null, rawInstance: State
 Internal state for framework adapters, holding tracking and caching data.  @template TBloc - The state container type
 
 ```typescript
-export interface AdapterState<TBloc extends StateContainer<any, any>>
+export interface AdapterState<TBloc extends StateContainerConstructor>
 ```
 
 | Property | Type | Description |
 |----------|------|-------------|
 | `getterTracker` | `GetterTrackerState \| null` | Getter tracker for computed property tracking |
 | `manualDepsCache` | `unknown[] \| null` | Cached manual dependencies for comparison |
-| `proxiedBloc` | `TBloc \| null` | Proxied bloc instance for auto-tracking |
+| `proxiedBloc` | `InstanceState<TBloc> \| null` | Proxied bloc instance for auto-tracking |
 | `tracker` | `TrackerState<ExtractState<TBloc>> \| null` | Proxy tracker for state property access tracking |
 
 ---
@@ -80,12 +80,12 @@ export interface AdapterState<TBloc extends StateContainer<any, any>>
 Configuration for manual dependency tracking mode  @template TBloc - The state container type
 
 ```typescript
-export interface ManualDepsConfig<TBloc extends StateContainer<any, any>>
+export interface ManualDepsConfig<TBloc extends StateContainerConstructor>
 ```
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `dependencies` | `(state: any, bloc: TBloc) => unknown[]` | Function that returns dependency array from state and bloc |
+| `dependencies` | `(state: ExtractState<TBloc>, bloc: InstanceState<TBloc>) => any[]` | Function that returns dependency array from state and bloc |
 
 ---
 
@@ -96,12 +96,12 @@ export interface ManualDepsConfig<TBloc extends StateContainer<any, any>>
 Create a snapshot function for auto-tracking mode. Returns a proxied state that tracks property access.
 
 ```typescript
-export declare function createAutoTrackSnapshot<TBloc extends StateContainer<any, any>>(instance: TBloc, adapterState: AdapterState<TBloc>): SnapshotFunction<ExtractState<TBloc>>;
+export declare function createAutoTrackSnapshot<TBloc extends StateContainerConstructor>(instance: InstanceReadonlyState<TBloc>, adapterState: AdapterState<TBloc>): SnapshotFunction<ExtractState<TBloc>>;
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `instance` | `TBloc` | The state container instance |
+| `instance` | `InstanceReadonlyState<TBloc>` | The state container instance |
 | `adapterState` | `AdapterState<TBloc>` | The adapter state for tracking |
 
 **Returns:** Snapshot function for use with useSyncExternalStore
@@ -113,12 +113,12 @@ export declare function createAutoTrackSnapshot<TBloc extends StateContainer<any
 Create a subscribe function for auto-tracking mode. Only triggers callback when tracked properties change.
 
 ```typescript
-export declare function createAutoTrackSubscribe<TBloc extends StateContainer<any, any>>(instance: TBloc, adapterState: AdapterState<TBloc>): SubscribeFunction;
+export declare function createAutoTrackSubscribe<TBloc extends StateContainerConstructor>(instance: InstanceReadonlyState<TBloc>, adapterState: AdapterState<TBloc>): SubscribeFunction;
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `instance` | `TBloc` | The state container instance |
+| `instance` | `InstanceReadonlyState<TBloc>` | The state container instance |
 | `adapterState` | `AdapterState<TBloc>` | The adapter state for tracking |
 
 **Returns:** Subscribe function for use with useSyncExternalStore
@@ -130,12 +130,12 @@ export declare function createAutoTrackSubscribe<TBloc extends StateContainer<an
 Create a snapshot function for manual dependency tracking mode. Caches dependencies for comparison on next render.
 
 ```typescript
-export declare function createManualDepsSnapshot<TBloc extends StateContainer<any, any>>(instance: TBloc, adapterState: AdapterState<TBloc>, config: ManualDepsConfig<TBloc>): SnapshotFunction<ExtractState<TBloc>>;
+export declare function createManualDepsSnapshot<TBloc extends StateContainerConstructor>(instance: InstanceState<TBloc>, adapterState: AdapterState<TBloc>, config: ManualDepsConfig<TBloc>): SnapshotFunction<ExtractState<TBloc>>;
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `instance` | `TBloc` | The state container instance |
+| `instance` | `InstanceState<TBloc>` | The state container instance |
 | `adapterState` | `AdapterState<TBloc>` | The adapter state for caching |
 | `config` | `ManualDepsConfig<TBloc>` | Configuration with dependencies function |
 
@@ -148,12 +148,12 @@ export declare function createManualDepsSnapshot<TBloc extends StateContainer<an
 Create a subscribe function for manual dependency tracking mode. Only triggers callback when dependencies array changes.
 
 ```typescript
-export declare function createManualDepsSubscribe<TBloc extends StateContainer<any, any>>(instance: TBloc, adapterState: AdapterState<TBloc>, config: ManualDepsConfig<TBloc>): SubscribeFunction;
+export declare function createManualDepsSubscribe<TBloc extends StateContainerConstructor>(instance: InstanceState<TBloc>, adapterState: AdapterState<TBloc>, config: ManualDepsConfig<TBloc>): SubscribeFunction;
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `instance` | `TBloc` | The state container instance |
+| `instance` | `InstanceState<TBloc>` | The state container instance |
 | `adapterState` | `AdapterState<TBloc>` | The adapter state for caching |
 | `config` | `ManualDepsConfig<TBloc>` | Configuration with dependencies function |
 
@@ -166,12 +166,12 @@ export declare function createManualDepsSubscribe<TBloc extends StateContainer<a
 Create a snapshot function for no-tracking mode. Returns the raw state directly.
 
 ```typescript
-export declare function createNoTrackSnapshot<TBloc extends StateContainer<any, any>>(instance: TBloc): SnapshotFunction<ExtractState<TBloc>>;
+export declare function createNoTrackSnapshot<TBloc extends StateContainerConstructor>(instance: InstanceReadonlyState<TBloc>): SnapshotFunction<ExtractState<TBloc>>;
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `instance` | `TBloc` | The state container instance |
+| `instance` | `InstanceReadonlyState<TBloc>` | The state container instance |
 
 **Returns:** Snapshot function for use with useSyncExternalStore
 
@@ -182,7 +182,7 @@ export declare function createNoTrackSnapshot<TBloc extends StateContainer<any, 
 Create a subscribe function for no-tracking mode. Triggers callback on every state change.
 
 ```typescript
-export declare function createNoTrackSubscribe<TBloc extends StateContainer<any, any>>(instance: TBloc): SubscribeFunction;
+export declare function createNoTrackSubscribe<TBloc extends StateContainerInstance>(instance: TBloc): SubscribeFunction;
 ```
 
 | Parameter | Type | Description |
@@ -198,13 +198,13 @@ export declare function createNoTrackSubscribe<TBloc extends StateContainer<any,
 Disable getter tracking after render phase completes. Clears the active tracker to prevent tracking outside of render.
 
 ```typescript
-export declare function disableGetterTracking<TBloc extends StateContainer<any, any>>(adapterState: AdapterState<TBloc>, rawInstance: TBloc): void;
+export declare function disableGetterTracking<TBloc extends StateContainerConstructor>(adapterState: AdapterState<TBloc>, rawInstance: InstanceState<TBloc>): void;
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `adapterState` | `AdapterState<TBloc>` | The adapter state |
-| `rawInstance` | `TBloc` | The raw bloc instance |
+| `rawInstance` | `InstanceState<TBloc>` | The raw bloc instance |
 
 ---
 
@@ -213,12 +213,12 @@ export declare function disableGetterTracking<TBloc extends StateContainer<any, 
 Initialize adapter state for auto-tracking mode. Creates getter tracker and proxied bloc instance.
 
 ```typescript
-export declare function initAutoTrackState<TBloc extends StateContainer<any, any>>(instance: TBloc): AdapterState<TBloc>;
+export declare function initAutoTrackState<TBloc extends StateContainerConstructor>(instance: InstanceState<TBloc>): AdapterState<TBloc>;
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `instance` | `TBloc` | The state container instance |
+| `instance` | `InstanceState<TBloc>` | The state container instance |
 
 **Returns:** Initialized adapter state
 
@@ -229,12 +229,12 @@ export declare function initAutoTrackState<TBloc extends StateContainer<any, any
 Initialize adapter state for manual dependency tracking mode. No proxy is created; bloc is used directly.
 
 ```typescript
-export declare function initManualDepsState<TBloc extends StateContainer<any, any>>(instance: TBloc): AdapterState<TBloc>;
+export declare function initManualDepsState<TBloc extends StateContainerConstructor>(instance: InstanceState<TBloc>): AdapterState<TBloc>;
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `instance` | `TBloc` | The state container instance |
+| `instance` | `InstanceState<TBloc>` | The state container instance |
 
 **Returns:** Initialized adapter state
 
@@ -245,12 +245,12 @@ export declare function initManualDepsState<TBloc extends StateContainer<any, an
 Initialize adapter state for no-tracking mode. No tracking or proxy is created.
 
 ```typescript
-export declare function initNoTrackState<TBloc extends StateContainer<any, any>>(instance: TBloc): AdapterState<TBloc>;
+export declare function initNoTrackState<TBloc extends StateContainerConstructor>(instance: InstanceState<TBloc>): AdapterState<TBloc>;
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `instance` | `TBloc` | The state container instance |
+| `instance` | `InstanceState<TBloc>` | The state container instance |
 
 **Returns:** Initialized adapter state
 

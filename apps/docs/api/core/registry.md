@@ -30,15 +30,15 @@ export declare class StateContainerRegistry
 
 #### `clear`
 
-Clear all instances of a specific type
+Clear all instances of a specific type (disposes them).
 
 ```typescript
-clear<T extends StateContainer<any>>(Type: new (...args: any[]) => T): void;
+clear<T extends StateContainerConstructor>(Type: T): void;
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `Type` | `new (...args: any[]) => T` |  |
+| `Type` | `T` | The StateContainer class constructor |
 
 #### `clearAll`
 
@@ -52,107 +52,114 @@ clearAll(): void;
 
 #### `connect`
 
-Connect to an instance with borrowing semantics (for B2B communication) Gets existing instance OR creates it if it doesn't exist, without incrementing ref count. Tracks cross-bloc dependency for reactive updates.
+Connect to an instance with borrowing semantics (for B2B communication). Gets existing instance OR creates it if it doesn't exist, without incrementing ref count. Tracks cross-bloc dependency for reactive updates.
 
 Use this in bloc-to-bloc communication when you need to ensure an instance exists but don't want to claim ownership (no ref count increment).
 
 ```typescript
-connect<T extends StateContainer<any>>(Type: new (...args: any[]) => T, instanceKey?: string, constructorArgs?: any): T;
+connect<T extends StateContainerConstructor = StateContainerConstructor>(Type: T, instanceKey?: string): InstanceType<T>;
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `Type` | `new (...args: any[]) => T` | The bloc class constructor |
-| `instanceKey` | `string` | Optional instance key (defaults to 'default') |
-| `constructorArgs` | `any` | Constructor arguments (only used if creating new instance) |
+| `Type` | `T` | The StateContainer class constructor |
+| `instanceKey` | `string` | Instance key (defaults to 'default') |
 
-**Returns:** The bloc instance
+**Returns:** The state container instance
 
 #### `forEach`
 
-Safely iterate over all instances of a type
+Safely iterate over all instances of a type. Skips disposed instances and catches callback errors.
 
 ```typescript
-forEach<T extends StateContainer<any>>(Type: new (...args: any[]) => T, callback: (instance: T) => void): void;
+forEach<T extends StateContainerConstructor>(Type: T, callback: (instance: InstanceReadonlyState<T>) => void): void;
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `Type` | `new (...args: any[]) => T` |  |
-| `callback` | `(instance: T) => void` |  |
+| `Type` | `T` | The StateContainer class constructor |
+| `callback` | `(instance: InstanceReadonlyState<T>) => void` | Function to call for each instance |
 
 #### `get`
 
-Get an existing instance without ref counting (borrowing semantics)
+Get an existing instance without incrementing ref count (borrowing semantics). Tracks cross-bloc dependency for reactive updates.
 
 ```typescript
-get<T extends StateContainer<any>>(Type: new (...args: any[]) => T, instanceKey?: string): T;
+get<T extends StateContainerConstructor = StateContainerConstructor>(Type: T, instanceKey?: string): InstanceType<T>;
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `Type` | `new (...args: any[]) => T` |  |
-| `instanceKey` | `string` |  |
+| `Type` | `T` | The StateContainer class constructor |
+| `instanceKey` | `string` | Instance key (defaults to 'default') |
+
+**Returns:** The state container instance
 
 #### `getAll`
 
-Get all instances of a specific type
+Get all instances of a specific type.
 
 ```typescript
-getAll<T extends StateContainer<any>>(Type: new (...args: any[]) => T): T[];
+getAll<T extends StateContainerConstructor>(Type: T): InstanceReadonlyState<T>[];
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `Type` | `new (...args: any[]) => T` |  |
+| `Type` | `T` | The StateContainer class constructor |
+
+**Returns:** Array of all instances
 
 #### `getInstancesMap`
 
 Get the instances Map for a specific class (public API for stats/debugging)
 
 ```typescript
-getInstancesMap<T extends StateContainer<any>>(Type: new (...args: any[]) => T): Map<string, InstanceEntry>;
+getInstancesMap<T extends StateContainerConstructor>(Type: T): Map<string, InstanceEntry>;
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `Type` | `new (...args: any[]) => T` |  |
+| `Type` | `T` |  |
 
 #### `getRefCount`
 
-Get reference count for an instance
+Get reference count for an instance.
 
 ```typescript
-getRefCount<T extends StateContainer<any>>(Type: new (...args: any[]) => T, instanceKey?: string): number;
+getRefCount<T extends StateContainerConstructor>(Type: T, instanceKey?: string): number;
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `Type` | `new (...args: any[]) => T` |  |
-| `instanceKey` | `string` |  |
+| `Type` | `T` | The StateContainer class constructor |
+| `instanceKey` | `string` | Instance key (defaults to 'default') |
+
+**Returns:** Current ref count (0 if instance doesn't exist)
 
 #### `getSafe`
 
-Safely get an existing instance (borrowing semantics with error handling) Returns discriminated union for type-safe conditional access
+Safely get an existing instance (borrowing semantics with error handling). Returns discriminated union for type-safe conditional access.
 
 ```typescript
-getSafe<T extends StateContainer<any>>(Type: new (...args: any[]) => T, instanceKey?: string): {
+getSafe<T extends StateContainerConstructor = StateContainerConstructor>(Type: T, instanceKey?: string): {
         error: Error;
         instance: null;
     } | {
         error: null;
-        instance: T;
+        instance: InstanceType<T>;
     };
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `Type` | `new (...args: any[]) => T` |  |
-| `instanceKey` | `string` |  |
+| `Type` | `T` | The StateContainer class constructor |
+| `instanceKey` | `string` | Instance key (defaults to 'default') |
+
+**Returns:** Discriminated union with either the instance or an error
 
 #### `getStats`
 
-Get registry statistics (for debugging)
+Get registry statistics for debugging.
 
 ```typescript
 getStats(): {
@@ -162,26 +169,32 @@ getStats(): {
     };
 ```
 
+**Returns:** Object with registeredTypes, totalInstances, and typeBreakdown
+
 #### `getTypes`
 
-Get all registered types (for plugin system)
+Get all registered types (for plugin system).
 
 ```typescript
-getTypes(): Array<new (...args: any[]) => StateContainer<any>>;
+getTypes(): StateContainerConstructor[];
 ```
+
+**Returns:** Array of all registered StateContainer class constructors
 
 #### `hasInstance`
 
-Check if an instance exists
+Check if an instance exists.
 
 ```typescript
-hasInstance<T extends StateContainer<any>>(Type: new (...args: any[]) => T, instanceKey?: string): boolean;
+hasInstance<T extends StateContainerConstructor>(Type: T, instanceKey?: string): boolean;
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `Type` | `new (...args: any[]) => T` |  |
-| `instanceKey` | `string` |  |
+| `Type` | `T` | The StateContainer class constructor |
+| `instanceKey` | `string` | Instance key (defaults to 'default') |
+
+**Returns:** true if instance exists
 
 #### `on`
 
@@ -203,12 +216,12 @@ on<E extends LifecycleEvent>(event: E, listener: LifecycleListener<E>): () => vo
 Register a StateContainer class with configuration
 
 ```typescript
-register<T extends StateContainer<any>>(constructor: new (...args: any[]) => T, isolated?: boolean): void;
+register<T extends StateContainerConstructor>(constructor: T, isolated?: boolean): void;
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `constructor` | `new (...args: any[]) => T` | The StateContainer class constructor |
+| `constructor` | `T` | The StateContainer class constructor |
 | `isolated` | `boolean` | Whether instances should be isolated (component-scoped) |
 
 #### `registerType`
@@ -216,40 +229,52 @@ register<T extends StateContainer<any>>(constructor: new (...args: any[]) => T, 
 Register a type for lifecycle event tracking
 
 ```typescript
-registerType<T extends StateContainer<any>>(constructor: new (...args: any[]) => T): void;
+registerType<T extends StateContainerConstructor>(constructor: T): void;
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `constructor` | `new (...args: any[]) => T` | The StateContainer class constructor |
+| `constructor` | `T` | The StateContainer class constructor |
 
 #### `release`
 
-Release a reference to an instance
+Release a reference to an instance. Decrements ref count and disposes when it reaches 0 (unless keepAlive).
 
 ```typescript
-release<T extends StateContainer<any>>(Type: new (...args: any[]) => T, instanceKey?: string, forceDispose?: boolean): void;
+release<T extends StateContainerConstructor>(Type: T, instanceKey?: string, forceDispose?: boolean): void;
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `Type` | `new (...args: any[]) => T` |  |
-| `instanceKey` | `string` |  |
-| `forceDispose` | `boolean` |  |
+| `Type` | `T` | The StateContainer class constructor |
+| `instanceKey` | `string` | Instance key (defaults to 'default') |
+| `forceDispose` | `boolean` | Force immediate disposal regardless of ref count |
 
 #### `resolve`
 
-Resolve an instance with ref counting (ownership semantics)
+Resolve an instance with ref counting (ownership semantics). Creates a new instance if one doesn't exist, or returns existing and increments ref count.
 
 ```typescript
-resolve<T extends StateContainer<any>>(Type: new (...args: any[]) => T, instanceKey?: string, constructorArgs?: any): T;
+resolve<T extends StateContainerConstructor = StateContainerConstructor>(Type: T, instanceKey?: string, options?: {
+        canCreate?: boolean;
+        countRef?: boolean;
+        props?: ExtractProps<T>;
+        trackExecutionContext?: boolean;
+    }): InstanceType<T>;
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `Type` | `new (...args: any[]) => T` |  |
-| `instanceKey` | `string` |  |
-| `constructorArgs` | `any` |  |
+| `Type` | `T` | The StateContainer class constructor |
+| `instanceKey` | `string` | Instance key (defaults to 'default') |
+| `options` | `{
+        canCreate?: boolean;
+        countRef?: boolean;
+        props?: ExtractProps<T>;
+        trackExecutionContext?: boolean;
+    }` | Resolution options |
+
+**Returns:** The state container instance
 
 **Examples:**
 
@@ -312,15 +337,15 @@ export interface InstanceMetadata
 Constructor type for StateContainer classes with static registry methods. Used for type-safe hook parameters.  @template TBloc - The StateContainer instance type
 
 ```typescript
-export type BlocConstructor<TBloc extends StateContainer<any, any>> = (new (...args: any[]) => TBloc) & {
-    resolve(instanceKey?: string, ...args: any[]): TBloc;
-    get(instanceKey?: string): TBloc;
-    getSafe(instanceKey?: string): {
+export type BlocConstructor<S extends object = any, T extends new (...args: any[]) => StateContainer<S, any> = new (...args: any[]) => StateContainer<S, any>> = (new (...args: any[]) => InstanceType<T>) & {
+    resolve(instanceKey?: string, ...args: any[]): InstanceType<T>;
+    get(instanceKey?: string, ...args: any[]): InstanceType<T> | null;
+    getSafe(instanceKey?: string, ...args: any[]): {
         error: Error;
         instance: null;
     } | {
         error: null;
-        instance: TBloc;
+        instance: InstanceType<T>;
     };
     release(instanceKey?: string): void;
     isolated?: boolean;

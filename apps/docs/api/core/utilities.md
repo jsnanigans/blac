@@ -115,14 +115,14 @@ const id = generateSimpleId('CounterBloc');
 Get a static property from a class constructor Type-safe helper that avoids (Type as any) casts
 
 ```typescript
-export declare function getStaticProp<T>(Type: new (...args: any[]) => any, propName: string, defaultValue?: T): T | undefined;
+export declare function getStaticProp<V, T extends StateContainerConstructor = StateContainerConstructor>(Type: T, propName: string, defaultValue?: V): V | undefined;
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `Type` | `new (...args: any[]) => any` | The class constructor |
+| `Type` | `T` | The class constructor |
 | `propName` | `string` | The property name to access |
-| `defaultValue` | `T` | Optional default value if property is undefined |
+| `defaultValue` | `V` | Optional default value if property is undefined |
 
 **Returns:** The property value or default
 
@@ -130,29 +130,33 @@ export declare function getStaticProp<T>(Type: new (...args: any[]) => any, prop
 
 ### isExcludedFromDevTools
 
-Check if a class should be excluded from DevTools Used to prevent infinite loops when DevTools tracks itself
+Check if a class should be excluded from DevTools. Used to prevent infinite loops when DevTools tracks itself.
 
 ```typescript
-export declare function isExcludedFromDevTools(Type: new (...args: any[]) => any): boolean;
+export declare function isExcludedFromDevTools<T extends StateContainerConstructor>(Type: T): boolean;
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `Type` | `new (...args: any[]) => any` |  |
+| `Type` | `T` | The class constructor to check |
+
+**Returns:** true if the class has `static __excludeFromDevTools = true`
 
 ---
 
 ### isIsolatedClass
 
-Check if a class is marked as isolated Isolated classes create separate instances per component
+Check if a class is marked as isolated. Isolated classes create separate instances per component.
 
 ```typescript
-export declare function isIsolatedClass(Type: new (...args: any[]) => any): boolean;
+export declare function isIsolatedClass<T extends StateContainerConstructor>(Type: T): boolean;
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `Type` | `new (...args: any[]) => any` |  |
+| `Type` | `T` | The class constructor to check |
+
+**Returns:** true if the class has `static isolated = true`
 
 ---
 
@@ -174,15 +178,17 @@ export declare function isIsolatedKey(key: string): boolean;
 
 ### isKeepAliveClass
 
-Check if a class is marked as keepAlive KeepAlive classes are never auto-disposed when ref count reaches 0
+Check if a class is marked as keepAlive. KeepAlive classes are never auto-disposed when ref count reaches 0.
 
 ```typescript
-export declare function isKeepAliveClass(Type: new (...args: any[]) => any): boolean;
+export declare function isKeepAliveClass<T extends StateContainerConstructor>(Type: T): boolean;
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `Type` | `new (...args: any[]) => any` |  |
+| `Type` | `T` | The class constructor to check |
+
+**Returns:** true if the class has `static keepAlive = true`
 
 ---
 

@@ -25,7 +25,7 @@ Core state management primitives
 Simple state container with direct state emission. Extends StateContainer with public methods for emitting and updating state.
 
 ```typescript
-export declare abstract class Cubit<S, P = undefined> extends StateContainer<S, P>
+export declare abstract class Cubit<S extends object = any, P = undefined> extends StateContainer<S, P>
 ```
 
 **Type Parameters:**
@@ -84,7 +84,7 @@ update(updater: (current: S) => S): void;
 Abstract base class for all state containers in BlaC. Provides lifecycle management, subscription handling, ref counting, and integration with the global registry.
 
 ```typescript
-export declare abstract class StateContainer<S, P = undefined>
+export declare abstract class StateContainer<S extends object = any, P = any>
 ```
 
 **Type Parameters:**
@@ -115,7 +115,7 @@ constructor(initialState: S);
 | `name` | `string` | Display name for this instance |
 | `onSystemEvent` | `<E extends SystemEvent>(event: E, handler: SystemEventHandler<S, P, E>) => (() => void)` | Subscribe to system lifecycle events. |
 | `props` *(readonly)*  | `P \| undefined` | Current props value passed to this container |
-| `state` *(readonly)*  | `S` | Current state value |
+| `state` *(readonly)*  | `Readonly<S>` | Current state value |
 
 **Methods:**
 
@@ -124,12 +124,12 @@ constructor(initialState: S);
 Clear all instances of this class (disposes them)
 
 ```typescript
-static clear<T extends StateContainer<any>>(this: new (...args: any[]) => T): void;
+static clear<T extends StateContainerConstructor = StateContainerConstructor>(this: T): void;
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `this` | `new (...args: any[]) => T` |  |
+| `this` | `T` |  |
 
 #### `clearAllInstances` *(static)*
 
@@ -141,17 +141,16 @@ static clearAllInstances(): void;
 
 #### `connect` *(static)*
 
-Connect to an instance for bloc-to-bloc communication (borrowing semantics). Gets or creates instance without incrementing ref count.
+Connect to an instance for bloc-to-bloc communication (borrowing semantics). Gets or creates instance without incrementing ref count. Tracks cross-bloc dependency for reactive updates.  @template S - Optional state type override for generic StateContainers  @template T - The StateContainer type (inferred from class)
 
 ```typescript
-static connect<T extends StateContainer<any>>(this: new (...args: any[]) => T, instanceKey?: string, constructorArgs?: any): T;
+static connect<T extends StateContainerConstructor<any> = StateContainerConstructor<any>>(this: T, instanceKey?: string): InstanceType<T>;
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `this` | `new (...args: any[]) => T` |  |
+| `this` | `T` |  |
 | `instanceKey` | `string` | Optional instance key (defaults to 'default') |
-| `constructorArgs` | `any` | Arguments to pass to constructor if creating new instance |
 
 **Returns:** The state container instance
 
@@ -180,25 +179,25 @@ protected emit(newState: S): void;
 Iterate over all instances of this class
 
 ```typescript
-static forEach<T extends StateContainer<any>>(this: new (...args: any[]) => T, callback: (instance: T) => void): void;
+static forEach<T extends StateContainerConstructor = StateContainerConstructor>(this: T, callback: (instance: InstanceReadonlyState<T>) => void): void;
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `this` | `new (...args: any[]) => T` |  |
-| `callback` | `(instance: T) => void` | Function to call for each instance |
+| `this` | `T` |  |
+| `callback` | `(instance: InstanceReadonlyState<T>) => void` | Function to call for each instance |
 
 #### `get` *(static)*
 
-Get an existing instance without incrementing ref count (borrowing semantics).
+Get an existing instance without incrementing ref count (borrowing semantics).  @template S - Optional state type override for generic StateContainers  @template T - The StateContainer type (inferred from class)
 
 ```typescript
-static get<T extends StateContainer<any>>(this: new (...args: any[]) => T, instanceKey?: string): T;
+static get<T extends StateContainerConstructor<any> = StateContainerConstructor<any>>(this: T, instanceKey?: string): InstanceType<T>;
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `this` | `new (...args: any[]) => T` |  |
+| `this` | `T` |  |
 | `instanceKey` | `string` | Optional instance key (defaults to 'default') |
 
 **Returns:** The state container instance
@@ -208,12 +207,12 @@ static get<T extends StateContainer<any>>(this: new (...args: any[]) => T, insta
 Get all instances of this class
 
 ```typescript
-static getAll<T extends StateContainer<any>>(this: new (...args: any[]) => T): T[];
+static getAll<T extends StateContainerConstructor = StateContainerConstructor>(this: T): InstanceReadonlyState<T>[];
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `this` | `new (...args: any[]) => T` |  |
+| `this` | `T` |  |
 
 **Returns:** Array of all instances
 
@@ -222,12 +221,12 @@ static getAll<T extends StateContainer<any>>(this: new (...args: any[]) => T): T
 Get reference count for an instance
 
 ```typescript
-static getRefCount<T extends StateContainer<any>>(this: new (...args: any[]) => T, instanceKey?: string): number;
+static getRefCount<T extends StateContainerConstructor = StateContainerConstructor>(this: T, instanceKey?: string): number;
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `this` | `new (...args: any[]) => T` |  |
+| `this` | `T` |  |
 | `instanceKey` | `string` | Optional instance key (defaults to 'default') |
 
 **Returns:** Current ref count (0 if instance doesn't exist)
@@ -244,21 +243,21 @@ static getRegistry(): StateContainerRegistry;
 
 #### `getSafe` *(static)*
 
-Safely get an existing instance with error handling.
+Safely get an existing instance with error handling.  @template S - Optional state type override for generic StateContainers  @template T - The StateContainer type (inferred from class)
 
 ```typescript
-static getSafe<T extends StateContainer<any>>(this: new (...args: any[]) => T, instanceKey?: string): {
+static getSafe<T extends StateContainerConstructor<any> = StateContainerConstructor<any>>(this: T, instanceKey?: string): {
         error: Error;
         instance: null;
     } | {
         error: null;
-        instance: T;
+        instance: InstanceType<T>;
     };
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `this` | `new (...args: any[]) => T` |  |
+| `this` | `T` |  |
 | `instanceKey` | `string` | Optional instance key (defaults to 'default') |
 
 **Returns:** Discriminated union with either the instance or an error
@@ -282,12 +281,12 @@ static getStats(): {
 Check if an instance exists
 
 ```typescript
-static hasInstance<T extends StateContainer<any>>(this: new (...args: any[]) => T, instanceKey?: string): boolean;
+static hasInstance<T extends StateContainerConstructor = StateContainerConstructor>(this: T, instanceKey?: string): boolean;
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `this` | `new (...args: any[]) => T` |  |
+| `this` | `T` |  |
 | `instanceKey` | `string` | Optional instance key (defaults to 'default') |
 
 **Returns:** true if instance exists
@@ -309,12 +308,12 @@ initConfig(config: StateContainerConfig): void;
 Register this class with the global registry
 
 ```typescript
-static register<T extends StateContainer<any>>(this: new (...args: any[]) => T, isolated?: boolean): void;
+static register<T extends StateContainerConstructor>(this: T, isolated?: boolean): void;
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `this` | `new (...args: any[]) => T` |  |
+| `this` | `T` |  |
 | `isolated` | `boolean` | Whether instances should be isolated (component-scoped) |
 
 #### `release` *(static)*
@@ -322,28 +321,38 @@ static register<T extends StateContainer<any>>(this: new (...args: any[]) => T, 
 Release a reference to an instance. Decrements ref count and disposes when it reaches 0 (unless keepAlive).
 
 ```typescript
-static release<T extends StateContainer<any>>(this: new (...args: any[]) => T, instanceKey?: string, forceDispose?: boolean): void;
+static release<T extends StateContainerConstructor = StateContainerConstructor>(this: T, instanceKey?: string, forceDispose?: boolean): void;
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `this` | `new (...args: any[]) => T` |  |
+| `this` | `T` |  |
 | `instanceKey` | `string` | Optional instance key (defaults to 'default') |
 | `forceDispose` | `boolean` | Force immediate disposal regardless of ref count |
 
 #### `resolve` *(static)*
 
-Resolve an instance with ref counting (ownership semantics). Creates a new instance if one doesn't exist, or returns existing and increments ref count.
+Resolve an instance with ref counting (ownership semantics). Creates a new instance if one doesn't exist, or returns existing and increments ref count.  @template S - Optional state type override for generic StateContainers  @template T - The StateContainer type (inferred from class)
 
 ```typescript
-static resolve<T extends StateContainer<any>>(this: new (...args: any[]) => T, instanceKey?: string, constructorArgs?: any): T;
+static resolve<T extends StateContainerConstructor = StateContainerConstructor>(this: T, instanceKey?: string, options?: {
+        canCreate?: boolean;
+        countRef?: boolean;
+        props?: ExtractProps<T>;
+        trackExecutionContext?: boolean;
+    }): InstanceType<T>;
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `this` | `new (...args: any[]) => T` |  |
+| `this` | `T` |  |
 | `instanceKey` | `string` | Optional instance key (defaults to 'default') |
-| `constructorArgs` | `any` | Arguments to pass to constructor if creating new instance |
+| `options` | `{
+        canCreate?: boolean;
+        countRef?: boolean;
+        props?: ExtractProps<T>;
+        trackExecutionContext?: boolean;
+    }` | Resolution options (canCreate, countRef, props, trackExecutionContext) |
 
 **Returns:** The state container instance
 
@@ -420,7 +429,7 @@ class CounterBloc extends StateContainer<{ count: number }> {
 Event-driven state container that processes events to update state. Use with event handlers registered via the on() method.
 
 ```typescript
-export declare abstract class Vertex<S, E extends BaseEvent = BaseEvent, P = undefined> extends StateContainer<S, P>
+export declare abstract class Vertex<S extends object = any, E extends BaseEvent = BaseEvent, P = undefined> extends StateContainer<S, P>
 ```
 
 **Type Parameters:**
@@ -567,7 +576,7 @@ export type ExtractConstructorArgs<T> = T extends new (...args: infer P) => any 
 Extract the props type from a StateContainer  @template T - The StateContainer type
 
 ```typescript
-export type ExtractProps<T> = T extends StateContainer<any, infer P> ? P : undefined;
+export type ExtractProps<T> = T extends StateContainerConstructor<any, infer P> ? P : undefined;
 ```
 
 ### ExtractState
@@ -575,7 +584,7 @@ export type ExtractProps<T> = T extends StateContainer<any, infer P> ? P : undef
 Extract the state type from a StateContainer  @template T - The StateContainer type
 
 ```typescript
-export type ExtractState<T> = T extends StateContainer<infer S, any> ? S : never;
+export type ExtractState<T> = T extends StateContainerConstructor<infer S, any> ? Readonly<S> : never;
 ```
 
 ### SystemEvent
