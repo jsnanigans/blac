@@ -19,74 +19,31 @@ export default defineConfig({
       '/guide/': [
         {
           text: 'Introduction',
-          items: [
-            { text: 'What is BlaC?', link: '/guide/introduction' },
-            { text: 'Why BlaC?', link: '/guide/why-blac' },
-            { text: 'Core Concepts', link: '/guide/core-concepts' },
-            { text: 'Installation', link: '/guide/installation' },
-          ],
+          items: [{ text: 'What is BlaC?', link: '/guide/introduction' }],
         },
       ],
       '/core/': [
         {
-          text: 'Getting Started',
-          items: [
-            { text: 'Quick Start', link: '/core/getting-started' },
-            { text: 'Configuration', link: '/core/configuration' },
-          ],
-        },
-        {
           text: 'Essentials',
-          items: [
-            { text: 'Cubit', link: '/core/cubit' },
-            { text: 'Bloc', link: '/core/bloc' },
-            { text: 'State Management', link: '/core/state-management' },
-            { text: 'Events', link: '/core/events' },
-            { text: 'Lifecycle', link: '/core/lifecycle' },
-          ],
+          items: [],
         },
         {
           text: 'Advanced',
-          items: [
-            { text: 'Dependency Tracking', link: '/core/dependency-tracking' },
-            { text: 'Instance Management', link: '/core/instance-management' },
-            { text: 'Plugin System', link: '/core/plugins' },
-            { text: 'Logging', link: '/core/logging' },
-          ],
+          items: [],
         },
       ],
       '/react/': [
         {
           text: 'Getting Started',
-          items: [
-            { text: 'Quick Start', link: '/react/getting-started' },
-            { text: 'Installation', link: '/react/installation' },
-          ],
+          items: [{ text: 'Quick Start', link: '/react/getting-started' }],
         },
         {
           text: 'Essentials',
-          items: [
-            { text: 'useBloc Hook', link: '/react/use-bloc' },
-            { text: 'Selectors', link: '/react/selectors' },
-            { text: 'Lifecycle Callbacks', link: '/react/lifecycle' },
-          ],
+          items: [{ text: 'useBloc Hook', link: '/react/use-bloc' }],
         },
         {
           text: 'Patterns',
-          items: [
-            { text: 'Shared State', link: '/react/shared-state' },
-            { text: 'Isolated Instances', link: '/react/isolated-instances' },
-            { text: 'Props-Based Blocs', link: '/react/props-based-blocs' },
-            { text: 'Performance Optimization', link: '/react/performance' },
-          ],
-        },
-        {
-          text: 'Advanced',
-          items: [
-            { text: 'React 18 Features', link: '/react/react-18' },
-            { text: 'Adapter Pattern', link: '/react/adapter-pattern' },
-            { text: 'Memory Management', link: '/react/memory-management' },
-          ],
+          items: [{ text: 'Overview', link: '/react/overview' }],
         },
       ],
       '/api/': [
