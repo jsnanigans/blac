@@ -4,39 +4,39 @@ import { Cubit } from '@blac/core';
 import { useBloc } from '../useBloc';
 
 // Deep dependency chain blocs
-class DeepABloc extends Cubit<number> {
+class DeepABloc extends Cubit<{ value: number }> {
   constructor() {
-    super(1);
+    super({ value: 1 });
   }
 
-  increment = () => this.emit(this.state + 1);
+  increment = () => this.emit({ value: this.state.value + 1 });
 
-  get value() {
-    return this.state + DeepBBloc.get().value;
+  get computed() {
+    return this.state.value + DeepBBloc.get().computed;
   }
 }
 
-class DeepBBloc extends Cubit<number> {
+class DeepBBloc extends Cubit<{ value: number }> {
   constructor() {
-    super(10);
+    super({ value: 10 });
   }
 
-  increment = () => this.emit(this.state + 1);
+  increment = () => this.emit({ value: this.state.value + 1 });
 
-  get value() {
-    return this.state + DeepCBloc.get().value;
+  get computed() {
+    return this.state.value + DeepCBloc.get().computed;
   }
 }
 
-class DeepCBloc extends Cubit<number> {
+class DeepCBloc extends Cubit<{ value: number }> {
   constructor() {
-    super(100);
+    super({ value: 100 });
   }
 
-  increment = () => this.emit(this.state + 1);
+  increment = () => this.emit({ value: this.state.value + 1 });
 
-  get value() {
-    return this.state;
+  get computed() {
+    return this.state.value;
   }
 }
 
@@ -52,18 +52,18 @@ class DynamicDepBloc extends Cubit<{ useExternal: boolean; value: number }> {
 
   get computed() {
     if (this.state.useExternal) {
-      return this.state.value + ConditionalBloc.get().state;
+      return this.state.value + ConditionalBloc.get().state.count;
     }
     return this.state.value;
   }
 }
 
-class ConditionalBloc extends Cubit<number, number> {
+class ConditionalBloc extends Cubit<{ count: number }, number> {
   constructor() {
-    super(20);
+    super({ count: 20 });
   }
 
-  increment = () => this.emit(this.state + 1);
+  increment = () => this.emit({ count: this.state.count + 1 });
 }
 
 describe('useBloc - cross-bloc edge cases', () => {
@@ -77,7 +77,7 @@ describe('useBloc - cross-bloc edge cases', () => {
   });
 
   it('should cleanup external subscriptions on unmount', () => {
-    // Create external bloc
+    // Create external bloc with object state
     ConditionalBloc.resolve('default', { props: 20 });
 
     let renderCount = 0;
@@ -139,7 +139,7 @@ describe('useBloc - cross-bloc edge cases', () => {
       return (
         <div>
           <div data-testid="render-count">{renderCount}</div>
-          <div data-testid="value">{blocA.value}</div>
+          <div data-testid="value">{blocA.computed}</div>
         </div>
       );
     };

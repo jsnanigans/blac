@@ -5,13 +5,13 @@ import { Cubit } from '../core/Cubit';
 import { Vertex } from '../core/Vertex';
 import type { BlacPlugin } from './BlacPlugin';
 
-class CounterCubit extends Cubit<number, number> {
+class CounterCubit extends Cubit<{ count: number }, number> {
   constructor(p: number) {
-    super(p);
+    super({ count: p });
   }
 
   increment = () => {
-    this.emit(this.state + 1);
+    this.emit({ count: this.state.count + 1 });
   };
 }
 
@@ -19,16 +19,16 @@ type CounterEvent =
   | { type: 'increment'; timestamp: number }
   | { type: 'decrement'; timestamp: number };
 
-class CounterVertex extends Vertex<number, CounterEvent, number> {
+class CounterVertex extends Vertex<{ count: number }, CounterEvent, number> {
   constructor(prop: number = 0) {
-    super(prop);
+    super({ count: prop });
   }
 
   protected onEvent = (event: CounterEvent) => {
     if (event.type === 'increment') {
-      this.emit(this.state + 1);
+      this.emit({ count: this.state.count + 1 });
     } else {
-      this.emit(this.state - 1);
+      this.emit({ count: this.state.count - 1 });
     }
   };
 }
@@ -340,8 +340,8 @@ describe('PluginManager', () => {
 
         expect(onStateChanged).toHaveBeenCalledWith(
           counter,
-          0,
-          1,
+          { count: 0 },
+          { count: 1 },
           expect.any(String),
           expect.any(Object),
         );
@@ -429,7 +429,7 @@ describe('PluginManager', () => {
         className: 'CounterCubit',
         isDisposed: false,
         name: counter.name,
-        state: 0,
+        state: { count: 0 },
       });
       expect(metadata.lastStateChangeTimestamp).toBeGreaterThan(0);
       expect(metadata.createdAt).toBeGreaterThan(0);
@@ -451,7 +451,7 @@ describe('PluginManager', () => {
       counter.increment();
 
       const state = capturedContext.getState(counter);
-      expect(state).toBe(1);
+      expect(state).toEqual({ count: 1 });
     });
 
     it('should provide queryInstances', () => {

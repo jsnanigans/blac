@@ -23,9 +23,9 @@ beforeEach(() => {
 });
 
 describe('ReduxDevToolsAdapter - Action Dispatch (Cubit only)', () => {
-  class CounterCubit extends Cubit<number> {
+  class CounterCubit extends Cubit<{ count: number }> {
     constructor() {
-      super(0);
+      super({ count: 0 });
       this._name = 'CounterCubit';
     }
   }
@@ -50,11 +50,11 @@ describe('ReduxDevToolsAdapter - Action Dispatch (Cubit only)', () => {
         type: 'ACTION',
         payload: JSON.stringify({
           type: '[CounterCubit] emit',
-          payload: { state: 42 },
+          payload: { state: { count: 42 } },
         }),
       });
 
-      expect(cubit.state).toBe(42);
+      expect(cubit.state).toEqual({ count: 42 });
     });
 
     it('should emit object state for Cubit', () => {
@@ -89,7 +89,7 @@ describe('ReduxDevToolsAdapter - Action Dispatch (Cubit only)', () => {
         type: 'ACTION',
         payload: JSON.stringify({
           type: '[CounterCubit] emit',
-          payload: { state: 42 },
+          payload: { state: { count: 42 } },
         }),
       });
 
@@ -316,11 +316,11 @@ describe('ReduxDevToolsAdapter - Action Dispatch (Cubit only)', () => {
         type: 'ACTION',
         payload: {
           type: '[CounterCubit] emit',
-          payload: { state: 42 },
+          payload: { state: { count: 42 } },
         },
       });
 
-      expect(cubit.state).toBe(42);
+      expect(cubit.state).toEqual({ count: 42 });
     });
 
     it('should handle emoji prefixes in action types', () => {
@@ -336,11 +336,11 @@ describe('ReduxDevToolsAdapter - Action Dispatch (Cubit only)', () => {
         type: 'ACTION',
         payload: JSON.stringify({
           type: '⚡ [CounterCubit] emit',
-          payload: { state: 42 },
+          payload: { state: { count: 42 } },
         }),
       });
 
-      expect(cubit.state).toBe(42);
+      expect(cubit.state).toEqual({ count: 42 });
     });
   });
 });

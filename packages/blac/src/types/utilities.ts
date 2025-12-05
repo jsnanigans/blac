@@ -15,22 +15,19 @@ export type ExtractStateMutable<T> =
  * @template S - State type managed by the container
  * @template P - Props type passed to the container
  */
-export type StateContainerConstructor<
-  S extends object = object,
-  P = any,
-> = new (...args: any[]) => StateContainer<S, P>;
+export type StateContainerConstructor<S extends object = any, P = any> = new (
+  ...args: any[]
+) => StateContainer<S, P>;
 
-export type InstanceReadonlyState<T extends StateContainerConstructor> = Omit<
-  InstanceType<T>,
-  'state'
-> & { state: ExtractState<T> };
+export type InstanceReadonlyState<T extends StateContainerConstructor = any> =
+  Omit<InstanceType<T>, 'state'> & { state: ExtractState<T> };
 
-export type InstanceState<T extends StateContainerConstructor> = Omit<
+export type InstanceState<T extends StateContainerConstructor = any> = Omit<
   InstanceType<T>,
   'state'
 > & { state: ExtractStateMutable<T> };
 
-export type StateContainerInstance<S extends object = object, P = any> = Omit<
+export type StateContainerInstance<S extends object = any, P = any> = Omit<
   StateContainer<S, P>,
   'state'
 > & { state: Readonly<S> };
@@ -63,7 +60,7 @@ export type BlocInstanceType<T extends abstract new (...args: any) => any> =
  * @template TBloc - The StateContainer instance type
  */
 export type BlocConstructor<
-  S extends object = object,
+  S extends object = any,
   T extends new (...args: any[]) => StateContainer<S, any> = new (
     ...args: any[]
   ) => StateContainer<S, any>,

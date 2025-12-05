@@ -401,12 +401,12 @@ updateProps(newProps: P): void;
 
 
 ```ts
-class CounterBloc extends StateContainer<number> {
+class CounterBloc extends StateContainer<{ count: number }> {
   constructor() {
-    super(0);
+    super({ count: 0 });
   }
   increment() {
-    this.emit(this.state + 1);
+    this.emit({ count: this.state.count + 1 });
   }
 }
 ```

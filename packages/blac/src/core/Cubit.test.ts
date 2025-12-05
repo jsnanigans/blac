@@ -7,25 +7,25 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Cubit } from './Cubit';
 import { StateContainer } from './StateContainer';
 
-class CounterCubit extends Cubit<number> {
+class CounterCubit extends Cubit<{ count: number }> {
   constructor() {
-    super(0);
+    super({ count: 0 });
   }
 
   increment = (): void => {
-    this.emit(this.state + 1);
+    this.emit({ count: this.state.count + 1 });
   };
 
   decrement = (): void => {
-    this.emit(this.state - 1);
+    this.emit({ count: this.state.count - 1 });
   };
 
   reset = (): void => {
-    this.emit(0);
+    this.emit({ count: 0 });
   };
 
   addAmount = (amount: number): void => {
-    this.emit(this.state + amount);
+    this.emit({ count: this.state.count + amount });
   };
 }
 
@@ -137,18 +137,6 @@ class UserCubit extends Cubit<UserState> {
   };
 }
 
-// Cubit with primitive state (to test patch error)
-class PrimitiveCubit extends Cubit<number> {
-  constructor() {
-    super(0);
-  }
-
-  // Expose patch for testing error case
-  tryPatch(value: any): void {
-    (this.patch as any)(value);
-  }
-}
-
 describe('Cubit', () => {
   beforeEach(() => {
     StateContainer.clearAllInstances();
@@ -198,14 +186,6 @@ describe('Cubit', () => {
         expect(cubit.state.age).toBe(25);
         expect(cubit.state.id).toBe('1'); // Unchanged
         expect(cubit.state.email).toBe('john@example.com'); // Unchanged
-      });
-
-      it('should throw error for non-object state', () => {
-        const cubit = new PrimitiveCubit();
-
-        expect(() => cubit.tryPatch(5 as any)).toThrow(
-          'patch() is only available for object state types',
-        );
       });
 
       it('should maintain this binding (arrow function)', () => {
@@ -260,7 +240,7 @@ describe('Cubit', () => {
   describe('CounterCubit Example', () => {
     it('should initialize with zero', () => {
       const counter = new CounterCubit();
-      expect(counter.state).toBe(0);
+      expect(counter.state).toEqual({ count: 0 });
     });
 
     it('should increment correctly', () => {
@@ -270,8 +250,8 @@ describe('Cubit', () => {
 
       counter.increment();
 
-      expect(counter.state).toBe(1);
-      expect(listener).toHaveBeenCalledWith(1);
+      expect(counter.state).toEqual({ count: 1 });
+      expect(listener).toHaveBeenCalledWith({ count: 1 });
     });
 
     it('should decrement correctly', () => {
@@ -281,7 +261,7 @@ describe('Cubit', () => {
       counter.increment();
       counter.decrement();
 
-      expect(counter.state).toBe(1);
+      expect(counter.state).toEqual({ count: 1 });
     });
 
     it('should reset to zero', () => {
@@ -292,20 +272,20 @@ describe('Cubit', () => {
       counter.increment();
       counter.reset();
 
-      expect(counter.state).toBe(0);
+      expect(counter.state).toEqual({ count: 0 });
     });
 
     it('should add custom amount', () => {
       const counter = new CounterCubit();
 
       counter.addAmount(5);
-      expect(counter.state).toBe(5);
+      expect(counter.state).toEqual({ count: 5 });
 
       counter.addAmount(10);
-      expect(counter.state).toBe(15);
+      expect(counter.state).toEqual({ count: 15 });
 
       counter.addAmount(-3);
-      expect(counter.state).toBe(12);
+      expect(counter.state).toEqual({ count: 12 });
     });
 
     it('should handle rapid operations', () => {
@@ -315,13 +295,13 @@ describe('Cubit', () => {
         counter.increment();
       }
 
-      expect(counter.state).toBe(100);
+      expect(counter.state).toEqual({ count: 100 });
 
       for (let i = 0; i < 50; i++) {
         counter.decrement();
       }
 
-      expect(counter.state).toBe(50);
+      expect(counter.state).toEqual({ count: 50 });
     });
 
     it('should maintain this binding for arrow functions', () => {
@@ -332,10 +312,10 @@ describe('Cubit', () => {
       const addAmount = counter.addAmount;
 
       increment();
-      expect(counter.state).toBe(1);
+      expect(counter.state).toEqual({ count: 1 });
 
       addAmount(9);
-      expect(counter.state).toBe(10);
+      expect(counter.state).toEqual({ count: 10 });
     });
   });
 

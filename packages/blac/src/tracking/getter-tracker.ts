@@ -1,9 +1,5 @@
 import { BLAC_DEFAULTS, BLAC_ERROR_PREFIX } from '../constants';
-import {
-  InstanceReadonlyState,
-  StateContainerConstructor,
-  StateContainerInstance,
-} from '../types/utilities';
+import { StateContainerInstance } from '../types/utilities';
 
 /**
  * @internal
@@ -119,8 +115,8 @@ export function createGetterTracker(): GetterTrackerState {
 /**
  * @internal
  */
-export function setActiveTracker<TBloc extends StateContainerConstructor>(
-  bloc: InstanceReadonlyState<TBloc>,
+export function setActiveTracker<TBloc extends StateContainerInstance>(
+  bloc: TBloc,
   tracker: GetterTrackerState,
 ): void {
   activeTrackerMap.set(bloc, tracker);
@@ -129,8 +125,8 @@ export function setActiveTracker<TBloc extends StateContainerConstructor>(
 /**
  * @internal
  */
-export function clearActiveTracker<TBloc extends StateContainerConstructor>(
-  bloc: InstanceReadonlyState<TBloc>,
+export function clearActiveTracker<TBloc extends StateContainerInstance>(
+  bloc: TBloc,
 ): void {
   activeTrackerMap.delete(bloc);
 }
@@ -138,8 +134,8 @@ export function clearActiveTracker<TBloc extends StateContainerConstructor>(
 /**
  * @internal
  */
-export function getActiveTracker<TBloc extends StateContainerConstructor>(
-  bloc: InstanceReadonlyState<TBloc>,
+export function getActiveTracker<TBloc extends StateContainerInstance>(
+  bloc: TBloc,
 ): GetterTrackerState | undefined {
   return activeTrackerMap.get(bloc);
 }
@@ -157,9 +153,9 @@ export function commitTrackedGetters(tracker: GetterTrackerState): void {
 /**
  * @internal
  */
-export function createBlocProxy<TBloc extends StateContainerConstructor>(
-  bloc: InstanceReadonlyState<TBloc>,
-): InstanceType<TBloc> {
+export function createBlocProxy<TBloc extends StateContainerInstance>(
+  bloc: TBloc,
+): TBloc {
   // Check cache first - return existing proxy if available
   const cached = blocProxyCache.get(bloc);
   if (cached) {
@@ -247,8 +243,8 @@ export function createBlocProxy<TBloc extends StateContainerConstructor>(
 /**
  * @internal
  */
-export function hasGetterChanges<TBloc extends StateContainerConstructor>(
-  bloc: InstanceReadonlyState<TBloc>,
+export function hasGetterChanges<TBloc extends StateContainerInstance>(
+  bloc: TBloc,
   tracker: GetterTrackerState | null,
 ): boolean {
   // Early return if no tracker or no getters tracked

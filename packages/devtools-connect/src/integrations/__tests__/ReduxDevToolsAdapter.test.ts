@@ -25,14 +25,14 @@ beforeEach(() => {
 });
 
 describe('ReduxDevToolsAdapter - State Editing', () => {
-  class CounterCubit extends Cubit<number> {
+  class CounterCubit extends Cubit<{ count: number }> {
     constructor() {
-      super(0);
+      super({ count: 0 });
       this._name = 'CounterCubit';
     }
 
     increment = () => {
-      this.emit(this.state + 1);
+      this.emit({ count: this.state.count + 1 });
     };
   }
 
@@ -52,7 +52,7 @@ describe('ReduxDevToolsAdapter - State Editing', () => {
   }
 
   describe('handleStateEdit - simple state', () => {
-    it('should edit a simple numeric state', () => {
+    it('should edit a simple object state', () => {
       const adapter = new ReduxDevToolsAdapter({ enabled: true });
       const cubit = new CounterCubit();
 
@@ -67,12 +67,12 @@ describe('ReduxDevToolsAdapter - State Editing', () => {
         payload: {
           type: 'UPDATE_STATE',
           path: 'CounterCubit',
-          value: 42,
+          value: { count: 42 },
         },
       });
 
       // Verify state was updated
-      expect(cubit.state).toBe(42);
+      expect(cubit.state).toEqual({ count: 42 });
     });
 
     it('should edit a nested object property', () => {
@@ -234,7 +234,7 @@ describe('ReduxDevToolsAdapter - State Editing', () => {
         payload: {
           type: 'UPDATE_STATE',
           path: 'CounterCubit',
-          value: 42,
+          value: { count: 42 },
         },
       });
 
@@ -245,7 +245,7 @@ describe('ReduxDevToolsAdapter - State Editing', () => {
           detail: expect.objectContaining({
             blocType: 'CounterCubit',
             displayName: 'CounterCubit',
-            newValue: 42,
+            newValue: { count: 42 },
           }),
         }),
       );

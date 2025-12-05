@@ -22,18 +22,18 @@ Use Cubit for direct state mutations without events. Best for most use cases.
 ```typescript
 import { Cubit } from '@blac/core';
 
-class CounterCubit extends Cubit<number> {
+class CounterCubit extends Cubit<{ count: number }> {
   constructor() {
-    super(0); // initial state
+    super({ count: 0 }); // initial state (must be an object)
   }
 
   // IMPORTANT: Always use arrow functions for React compatibility
   increment = () => {
-    this.emit(this.state + 1);
+    this.emit({ count: this.state.count + 1 });
   };
 
   decrement = () => {
-    this.emit(this.state - 1);
+    this.emit({ count: this.state.count - 1 });
   };
 }
 ```
@@ -56,12 +56,12 @@ class IncrementEvent implements BaseEvent {
   constructor(public readonly amount: number = 1) {}
 }
 
-class CounterVertex extends Vertex<number> {
+class CounterVertex extends Vertex<{ count: number }> {
   constructor() {
-    super(0);
+    super({ count: 0 });
 
     this.on(IncrementEvent, (event, emit) => {
-      emit(this.state + event.amount);
+      emit({ count: this.state.count + event.amount });
     });
   }
 
@@ -96,12 +96,12 @@ const MyBloc = blac({ isolated: true })(class extends Cubit<State> {});
 import { useBloc } from '@blac/react';
 
 function Counter() {
-  const [count, cubit] = useBloc(CounterCubit);
+  const [state, cubit] = useBloc(CounterCubit);
 
-  // Only re-renders when 'count' changes
+  // Only re-renders when accessed properties change
   return (
     <div>
-      <p>Count: {count}</p>
+      <p>Count: {state.count}</p>
       <button onClick={cubit.increment}>+</button>
     </div>
   );

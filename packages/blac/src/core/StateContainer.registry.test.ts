@@ -7,25 +7,25 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { StateContainer } from './StateContainer';
 
 // Test implementations
-class CounterBloc extends StateContainer<number> {
+class CounterBloc extends StateContainer<{ count: number }> {
   constructor() {
-    super(0);
+    super({ count: 0 });
   }
 
   increment = () => {
-    this.update((state) => state + 1);
+    this.update((state) => ({ count: state.count + 1 }));
   };
 }
 
-class IsolatedCounterBloc extends StateContainer<number> {
+class IsolatedCounterBloc extends StateContainer<{ count: number }> {
   static isolated = true;
 
   constructor() {
-    super(0);
+    super({ count: 0 });
   }
 
   increment = () => {
-    this.update((state) => state + 1);
+    this.update((state) => ({ count: state.count + 1 }));
   };
 }
 
@@ -219,7 +219,7 @@ describe('StateContainer - Registry Features', () => {
 
       const states: number[] = [];
       CounterBloc.forEach((instance) => {
-        states.push(instance.state);
+        states.push(instance.state.count);
       });
 
       expect(states).toHaveLength(3);
@@ -241,10 +241,10 @@ describe('StateContainer - Registry Features', () => {
 
       const states: number[] = [];
       CounterBloc.forEach((instance) => {
-        states.push(instance.state);
+        states.push(instance.state.count);
 
         // Dispose middle instance during iteration
-        if (instance.state === 2) {
+        if (instance.state.count === 2) {
           CounterBloc.release('c2');
         }
       });
@@ -258,7 +258,7 @@ describe('StateContainer - Registry Features', () => {
       // Second forEach should skip the disposed one
       const secondStates: number[] = [];
       CounterBloc.forEach((instance) => {
-        secondStates.push(instance.state);
+        secondStates.push(instance.state.count);
       });
 
       expect(secondStates.sort()).toEqual([1, 3]);
@@ -275,7 +275,7 @@ describe('StateContainer - Registry Features', () => {
       expect(() => {
         CounterBloc.forEach((instance) => {
           visitedKeys.push(instance.instanceId);
-          if (instance.state === 0) {
+          if (instance.state.count === 0) {
             throw new Error('Test error');
           }
         });
@@ -300,7 +300,7 @@ describe('StateContainer - Registry Features', () => {
 
       let state: number | null = null;
       CounterBloc.forEach((inst) => {
-        state = inst.state;
+        state = inst.state.count;
       });
 
       expect(state).toBe(1);
@@ -332,7 +332,7 @@ describe('StateContainer - Registry Features', () => {
       // Verify all were incremented
       const states: number[] = [];
       CounterBloc.forEach((instance) => {
-        states.push(instance.state);
+        states.push(instance.state.count);
       });
 
       expect(states.every((s) => s === 1)).toBe(true);
@@ -353,8 +353,8 @@ describe('StateContainer - Registry Features', () => {
       let totalCount = 0;
       let maxCount = 0;
       CounterBloc.forEach((instance) => {
-        totalCount += instance.state;
-        maxCount = Math.max(maxCount, instance.state);
+        totalCount += instance.state.count;
+        maxCount = Math.max(maxCount, instance.state.count);
       });
 
       expect(totalCount).toBe(6); // 2 + 1 + 3
@@ -376,10 +376,10 @@ describe('StateContainer - Registry Features', () => {
       // Track which keys to release
       const keysToRelease: string[] = [];
       CounterBloc.forEach((instance) => {
-        if (instance.state > 1) {
+        if (instance.state.count > 1) {
           // Determine key based on state value
-          if (instance.state === 2) keysToRelease.push('c2');
-          if (instance.state === 3) keysToRelease.push('c3');
+          if (instance.state.count === 2) keysToRelease.push('c2');
+          if (instance.state.count === 3) keysToRelease.push('c3');
         }
       });
 
@@ -389,7 +389,7 @@ describe('StateContainer - Registry Features', () => {
       // Only c1 should remain
       const remaining = CounterBloc.getAll();
       expect(remaining).toHaveLength(1);
-      expect(remaining[0].state).toBe(1);
+      expect(remaining[0].state.count).toBe(1);
     });
   });
 
@@ -435,9 +435,9 @@ describe('StateContainer - Registry Features', () => {
     });
 
     it('should handle constructor errors gracefully', () => {
-      class ErrorBloc extends StateContainer<number> {
+      class ErrorBloc extends StateContainer<{ value: number }> {
         constructor() {
-          super(0);
+          super({ value: 0 });
           throw new Error('Constructor error');
         }
       }
@@ -454,7 +454,7 @@ describe('StateContainer - Registry Features', () => {
 
       // TypeScript should infer this is a CounterBloc
       instance.increment();
-      expect(instance.state).toBe(1);
+      expect(instance.state.count).toBe(1);
     });
 
     it('should work with different state types', () => {
@@ -494,11 +494,11 @@ describe('StateContainer - Registry Features', () => {
     });
 
     it('should respect static keepAlive property', () => {
-      class KeepAliveBloc extends StateContainer<number> {
+      class KeepAliveBloc extends StateContainer<{ value: number }> {
         static keepAlive = true;
 
         constructor() {
-          super(0);
+          super({ value: 0 });
         }
       }
 

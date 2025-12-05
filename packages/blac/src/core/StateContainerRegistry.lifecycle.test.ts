@@ -13,17 +13,17 @@ import {
 } from './StateContainerRegistry';
 
 // Test implementations
-class TestCubit extends StateContainer<number> {
+class TestCubit extends StateContainer<{ value: number }> {
   constructor(initialState = 0) {
-    super(initialState);
+    super({ value: initialState });
   }
 
   increment = () => {
-    this.update((state) => state + 1);
+    this.update((state) => ({ value: state.value + 1 }));
   };
 
   setValue = (value: number) => {
-    this.update(() => value);
+    this.update(() => ({ value }));
   };
 }
 
@@ -33,12 +33,12 @@ class TestEvent {
   constructor(public readonly value: number) {}
 }
 
-class TestVertex extends Vertex<number, TestEvent> {
+class TestVertex extends Vertex<{ value: number }, TestEvent> {
   constructor() {
-    super(0);
+    super({ value: 0 });
 
     this.on(TestEvent, (event, emit) => {
-      emit(this.state + event.value);
+      emit({ value: this.state.value + event.value });
     });
   }
 
@@ -78,7 +78,12 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       bloc.increment();
 
       expect(listener).toHaveBeenCalledTimes(1);
-      expect(listener).toHaveBeenCalledWith(bloc, 0, 1, expect.any(String));
+      expect(listener).toHaveBeenCalledWith(
+        bloc,
+        { value: 0 },
+        { value: 1 },
+        expect.any(String),
+      );
     });
 
     it('should subscribe to eventAdded events', () => {
@@ -221,14 +226,19 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
 
       const bloc = new TestCubit(0);
 
-      // Should not emit if state doesn't change (reference equality)
+      // Should emit when state changes (object state always creates new ref)
       bloc.setValue(0);
-      expect(listener).not.toHaveBeenCalled();
+      expect(listener).toHaveBeenCalledTimes(1);
 
       // Should emit when state changes
       bloc.increment();
-      expect(listener).toHaveBeenCalledTimes(1);
-      expect(listener).toHaveBeenCalledWith(bloc, 0, 1, expect.any(String));
+      expect(listener).toHaveBeenCalledTimes(2);
+      expect(listener).toHaveBeenCalledWith(
+        bloc,
+        { value: 0 },
+        { value: 1 },
+        expect.any(String),
+      );
     });
 
     it('should emit eventAdded before event processing', () => {
@@ -330,8 +340,8 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
 
       expect(actions).toHaveLength(2);
       expect(states).toEqual([
-        { prev: 0, next: 1 },
-        { prev: 1, next: 2 },
+        { prev: { value: 0 }, next: { value: 1 } },
+        { prev: { value: 1 }, next: { value: 2 } },
       ]);
     });
 
@@ -344,7 +354,9 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       });
 
       registry.on('stateChanged', (container, prev, next) => {
-        logs.push(`[STATE] ${container.name}: ${prev} -> ${next}`);
+        logs.push(
+          `[STATE] ${container.name}: ${JSON.stringify(prev)} -> ${JSON.stringify(next)}`,
+        );
       });
 
       registry.on('disposed', (container) => {
@@ -358,7 +370,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
 
       expect(logs).toHaveLength(3);
       expect(logs[0]).toMatch(/\[CREATED\] TestCubit/);
-      expect(logs[1]).toBe('[STATE] TestCubit: 0 -> 1');
+      expect(logs[1]).toBe('[STATE] TestCubit: {"value":0} -> {"value":1}');
       expect(logs[2]).toMatch(/\[DISPOSED\] TestCubit/);
     });
 
@@ -401,11 +413,15 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       bloc.increment();
 
       expect(history).toHaveLength(3);
-      expect(history.map((h) => h.state)).toEqual([1, 2, 3]);
+      expect(history.map((h) => h.state)).toEqual([
+        { value: 1 },
+        { value: 2 },
+        { value: 3 },
+      ]);
 
       // Could implement "go back in time" by replaying states
       const previousState = history[1].state;
-      expect(previousState).toBe(2);
+      expect(previousState).toEqual({ value: 2 });
     });
 
     it('should support performance monitoring plugin pattern', () => {

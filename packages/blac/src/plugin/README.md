@@ -404,8 +404,8 @@ describe('MyPlugin', () => {
 
     pluginManager.install(plugin);
 
-    class TestCubit extends Cubit<number> {}
-    const cubit = new TestCubit(0);
+    class TestCubit extends Cubit<{ value: number }> {}
+    const cubit = new TestCubit({ value: 0 });
 
     expect(spy).toHaveBeenCalledWith(cubit, expect.any(Object));
   });

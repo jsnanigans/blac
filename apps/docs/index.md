@@ -45,16 +45,16 @@ features:
 import { Cubit } from '@blac/core';
 import { useBloc } from '@blac/react';
 
-class CounterCubit extends Cubit<number> {
+class CounterCubit extends Cubit<{ count: number }> {
   constructor() {
-    super(0);
+    super({ count: 0 });
   }
-  increment = () => this.emit(this.state + 1);
+  increment = () => this.emit({ count: this.state.count + 1 });
 }
 
 function Counter() {
-  const [count, counter] = useBloc(CounterCubit);
-  return <button onClick={counter.increment}>{count}</button>;
+  const [state, counter] = useBloc(CounterCubit);
+  return <button onClick={counter.increment}>{state.count}</button>;
 }
 ```
 

@@ -8,7 +8,7 @@ import { StateContainer } from './StateContainer';
  * @template P - Props type (optional)
  */
 export abstract class Cubit<
-  S extends object = object,
+  S extends object = any,
   P = undefined,
 > extends StateContainer<S, P> {
   constructor(initialState: S) {

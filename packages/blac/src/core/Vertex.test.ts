@@ -25,20 +25,20 @@ class ResetEvent implements BaseEvent {
   readonly timestamp = Date.now();
 }
 
-class CounterVertex extends Vertex<number> {
+class CounterVertex extends Vertex<{ count: number }> {
   constructor() {
-    super(0);
+    super({ count: 0 });
 
     this.on(IncrementEvent, (event, emit) => {
-      emit(this.state + event.amount);
+      emit({ count: this.state.count + event.amount });
     });
 
     this.on(DecrementEvent, (event, emit) => {
-      emit(this.state - event.amount);
+      emit({ count: this.state.count - event.amount });
     });
 
     this.on(ResetEvent, (_, emit) => {
-      emit(0);
+      emit({ count: 0 });
     });
   }
 
@@ -149,23 +149,23 @@ class ErrorEvent implements BaseEvent {
 }
 
 // Test Vertex implementation
-class TestVertex extends Vertex<number> {
+class TestVertex extends Vertex<{ value: number }> {
   public errorCount = 0;
   public lastError: Error | null = null;
 
   constructor(initialValue = 0) {
-    super(initialValue);
+    super({ value: initialValue });
 
     this.on(AddEvent, (event, emit) => {
-      emit(this.state + event.amount);
+      emit({ value: this.state.value + event.amount });
     });
 
     this.on(MultiplyEvent, (event, emit) => {
-      emit(this.state * event.factor);
+      emit({ value: this.state.value * event.factor });
     });
 
     this.on(SetValueEvent, (event, emit) => {
-      emit(event.value);
+      emit({ value: event.value });
     });
 
     this.on(ErrorEvent, () => {
@@ -180,36 +180,36 @@ class TestVertex extends Vertex<number> {
 }
 
 // Test Vertex with multiple handlers for same event
-class MultiHandlerVertex extends Vertex<string[]> {
+class MultiHandlerVertex extends Vertex<{ items: string[] }> {
   public callOrder: string[] = [];
 
   constructor() {
-    super([]);
+    super({ items: [] });
 
     this.on(AddEvent, (event, emit) => {
       this.callOrder.push('handler1');
-      emit([...this.state, `handler1:${event.amount}`]);
+      emit({ items: [...this.state.items, `handler1:${event.amount}`] });
     });
 
     this.on(AddEvent, (event, emit) => {
       this.callOrder.push('handler2');
-      emit([...this.state, `handler2:${event.amount}`]);
+      emit({ items: [...this.state.items, `handler2:${event.amount}`] });
     });
 
     this.on(AddEvent, (event, emit) => {
       this.callOrder.push('handler3');
-      emit([...this.state, `handler3:${event.amount}`]);
+      emit({ items: [...this.state.items, `handler3:${event.amount}`] });
     });
   }
 }
 
 // Test Vertex for event queue testing
-class QueueTestVertex extends Vertex<number[]> {
+class QueueTestVertex extends Vertex<{ values: number[] }> {
   constructor() {
-    super([]);
+    super({ values: [] });
 
     this.on(AddEvent, (event, emit) => {
-      const newState = [...this.state, event.amount];
+      const newState = { values: [...this.state.values, event.amount] };
       emit(newState);
 
       // Trigger another event from within handler
@@ -235,7 +235,7 @@ describe('Vertex', () => {
         // Handler should be registered (we test by dispatching)
         vertex.add(new AddEvent(5));
 
-        expect(vertex.state).toBe(15);
+        expect(vertex.state).toEqual({ value: 15 });
       });
 
       it('should register multiple handlers for same event', () => {
@@ -243,8 +243,8 @@ describe('Vertex', () => {
 
         vertex.add(new AddEvent(1));
 
-        expect(vertex.state.length).toBe(3);
-        expect(vertex.state).toEqual([
+        expect(vertex.state.items.length).toBe(3);
+        expect(vertex.state.items).toEqual([
           'handler1:1',
           'handler2:1',
           'handler3:1',
@@ -269,9 +269,9 @@ describe('Vertex', () => {
         vertex.add(new AddEvent(5));
 
         // Should be processed immediately
-        expect(vertex.state).toBe(15);
+        expect(vertex.state).toEqual({ value: 15 });
         expect(listener).toHaveBeenCalledOnce();
-        expect(listener).toHaveBeenCalledWith(15);
+        expect(listener).toHaveBeenCalledWith({ value: 15 });
       });
 
       it('should handle multiple events in sequence', () => {
@@ -281,7 +281,7 @@ describe('Vertex', () => {
         vertex.add(new MultiplyEvent(2));
         vertex.add(new AddEvent(10));
 
-        expect(vertex.state).toBe(40); // (10 + 5) * 2 + 10 = 40
+        expect(vertex.state).toEqual({ value: 40 }); // (10 + 5) * 2 + 10 = 40
       });
 
       it('should process events with queuing', () => {
@@ -290,7 +290,7 @@ describe('Vertex', () => {
         vertex.add(new AddEvent(1));
 
         // Should process 1, then 2, then 3
-        expect(vertex.state).toEqual([1, 2, 3]);
+        expect(vertex.state).toEqual({ values: [1, 2, 3] });
       });
     });
 
@@ -300,18 +300,18 @@ describe('Vertex', () => {
 
         vertex.add(new SetValueEvent(42));
 
-        expect(vertex.state).toBe(42);
+        expect(vertex.state).toEqual({ value: 42 });
       });
 
       it('should allow multiple emissions in one handler', () => {
-        class MultiEmitVertex extends Vertex<number> {
+        class MultiEmitVertex extends Vertex<{ value: number }> {
           constructor() {
-            super(0);
+            super({ value: 0 });
 
             this.on(AddEvent, (event, emit) => {
-              emit(this.state + 1);
-              emit(this.state + 1);
-              emit(this.state + 1);
+              emit({ value: this.state.value + 1 });
+              emit({ value: this.state.value + 1 });
+              emit({ value: this.state.value + 1 });
             });
           }
         }
@@ -324,7 +324,7 @@ describe('Vertex', () => {
 
         // Each emit should trigger listener
         expect(listener).toHaveBeenCalledTimes(3);
-        expect(vertex.state).toBe(3);
+        expect(vertex.state).toEqual({ value: 3 });
       });
     });
 
@@ -351,7 +351,7 @@ describe('Vertex', () => {
         vertex.add(new ErrorEvent());
         vertex.add(new AddEvent(5));
 
-        expect(vertex.state).toBe(15);
+        expect(vertex.state).toEqual({ value: 15 });
       });
     });
 
@@ -412,29 +412,29 @@ describe('Vertex', () => {
     });
 
     it('should initialize with zero', () => {
-      expect(counter.state).toBe(0);
+      expect(counter.state).toEqual({ count: 0 });
     });
 
     it('should handle increment event', () => {
       counter.increment();
-      expect(counter.state).toBe(1);
+      expect(counter.state).toEqual({ count: 1 });
 
       counter.increment(5);
-      expect(counter.state).toBe(6);
+      expect(counter.state).toEqual({ count: 6 });
     });
 
     it('should handle decrement event', () => {
       counter.increment(10);
       counter.decrement(3);
 
-      expect(counter.state).toBe(7);
+      expect(counter.state).toEqual({ count: 7 });
     });
 
     it('should handle reset event', () => {
       counter.increment(100);
       counter.reset();
 
-      expect(counter.state).toBe(0);
+      expect(counter.state).toEqual({ count: 0 });
     });
 
     it('should notify listeners on events', () => {
@@ -446,9 +446,9 @@ describe('Vertex', () => {
       counter.decrement(2);
 
       expect(listener).toHaveBeenCalledTimes(3);
-      expect(listener).toHaveBeenNthCalledWith(1, 1);
-      expect(listener).toHaveBeenNthCalledWith(2, 6);
-      expect(listener).toHaveBeenNthCalledWith(3, 4);
+      expect(listener).toHaveBeenNthCalledWith(1, { count: 1 });
+      expect(listener).toHaveBeenNthCalledWith(2, { count: 6 });
+      expect(listener).toHaveBeenNthCalledWith(3, { count: 4 });
     });
 
     it('should maintain this binding for arrow functions', () => {
@@ -457,13 +457,13 @@ describe('Vertex', () => {
       const reset = counter.reset;
 
       increment(10);
-      expect(counter.state).toBe(10);
+      expect(counter.state).toEqual({ count: 10 });
 
       decrement(3);
-      expect(counter.state).toBe(7);
+      expect(counter.state).toEqual({ count: 7 });
 
       reset();
-      expect(counter.state).toBe(0);
+      expect(counter.state).toEqual({ count: 0 });
     });
 
     it('should handle rapid event dispatches', () => {
@@ -471,13 +471,13 @@ describe('Vertex', () => {
         counter.increment();
       }
 
-      expect(counter.state).toBe(100);
+      expect(counter.state).toEqual({ count: 100 });
 
       for (let i = 0; i < 50; i++) {
         counter.decrement();
       }
 
-      expect(counter.state).toBe(50);
+      expect(counter.state).toEqual({ count: 50 });
     });
   });
 
@@ -683,7 +683,7 @@ describe('Vertex', () => {
       vertex.add(new AddEvent(5));
 
       // State should not change, and error should be caught
-      expect(vertex.state).toBe(10);
+      expect(vertex.state).toEqual({ value: 10 });
       expect(vertex.errorCount).toBe(1);
       expect(vertex.lastError?.message).toContain(
         'Cannot emit state from disposed container',
@@ -697,7 +697,7 @@ describe('Vertex', () => {
       expect(vertex1).toBe(vertex2);
 
       vertex1.increment(5);
-      expect(vertex2.state).toBe(5);
+      expect(vertex2.state).toEqual({ count: 5 });
 
       CounterVertex.release();
       CounterVertex.release();
@@ -718,17 +718,17 @@ describe('Vertex', () => {
       const vertex = new TestVertex(10);
 
       expect(() => vertex.add(new NoHandlerEvent())).not.toThrow();
-      expect(vertex.state).toBe(10); // State unchanged
+      expect(vertex.state).toEqual({ value: 10 }); // State unchanged
     });
 
     it('should handle handler that emits multiple times', () => {
-      class MultiEmitVertex extends Vertex<number> {
+      class MultiEmitVertex extends Vertex<{ value: number }> {
         constructor() {
-          super(0);
+          super({ value: 0 });
 
           this.on(AddEvent, (event, emit) => {
             for (let i = 0; i < event.amount; i++) {
-              emit(this.state + 1);
+              emit({ value: this.state.value + 1 });
             }
           });
         }
@@ -737,16 +737,16 @@ describe('Vertex', () => {
       const vertex = new MultiEmitVertex();
       vertex.add(new AddEvent(5));
 
-      expect(vertex.state).toBe(5);
+      expect(vertex.state).toEqual({ value: 5 });
     });
 
     it('should handle complex event queue scenarios', () => {
-      class ComplexQueueVertex extends Vertex<number[]> {
+      class ComplexQueueVertex extends Vertex<{ values: number[] }> {
         constructor() {
-          super([]);
+          super({ values: [] });
 
           this.on(AddEvent, (event, emit) => {
-            emit([...this.state, event.amount]);
+            emit({ values: [...this.state.values, event.amount] });
 
             // Trigger other events
             if (event.amount === 1) {
@@ -760,7 +760,7 @@ describe('Vertex', () => {
       const vertex = new ComplexQueueVertex();
       vertex.add(new AddEvent(1));
 
-      expect(vertex.state).toEqual([1, 2, 3]);
+      expect(vertex.state).toEqual({ values: [1, 2, 3] });
     });
 
     it('should maintain correct state through rapid event dispatches', () => {
@@ -771,7 +771,7 @@ describe('Vertex', () => {
         vertex.add(new AddEvent(i));
       }
 
-      expect(vertex.state).toBe(expectedFinal);
+      expect(vertex.state).toEqual({ value: expectedFinal });
     });
 
     it('should handle event after disposal', () => {
@@ -783,7 +783,7 @@ describe('Vertex', () => {
       expect(() => vertex.add(new AddEvent(5))).not.toThrow();
 
       // State should remain unchanged
-      expect(vertex.state).toBe(10);
+      expect(vertex.state).toEqual({ value: 10 });
 
       // Error should be captured via onEventError
       expect(vertex.errorCount).toBe(1);

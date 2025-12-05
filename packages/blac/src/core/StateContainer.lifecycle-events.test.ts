@@ -15,9 +15,9 @@ describe('StateContainer Lifecycle Events', () => {
     const createdListener = vi.fn();
     StateContainer.getRegistry().on('created', createdListener);
 
-    class TestCubit extends Cubit<number> {
+    class TestCubit extends Cubit<{ count: number }> {
       constructor() {
-        super(0);
+        super({ count: 0 });
       }
     }
 
@@ -33,9 +33,9 @@ describe('StateContainer Lifecycle Events', () => {
     const disposedListener = vi.fn();
     StateContainer.getRegistry().on('disposed', disposedListener);
 
-    class TestCubit extends Cubit<number> {
+    class TestCubit extends Cubit<{ count: number }> {
       constructor() {
-        super(0);
+        super({ count: 0 });
       }
     }
 
@@ -52,9 +52,9 @@ describe('StateContainer Lifecycle Events', () => {
     const createdListener = vi.fn();
     StateContainer.getRegistry().on('created', createdListener);
 
-    class TestCubit extends Cubit<number> {
+    class TestCubit extends Cubit<{ count: number }> {
       constructor() {
-        super(0);
+        super({ count: 0 });
       }
     }
 
@@ -73,9 +73,9 @@ describe('StateContainer Lifecycle Events', () => {
     const disposedListener = vi.fn();
     StateContainer.getRegistry().on('disposed', disposedListener);
 
-    class TestCubit extends Cubit<number> {
+    class TestCubit extends Cubit<{ count: number }> {
       constructor() {
-        super(0);
+        super({ count: 0 });
       }
     }
 
@@ -98,11 +98,11 @@ describe('StateContainer Lifecycle Events', () => {
     StateContainer.getRegistry().on('created', createdListener);
     StateContainer.getRegistry().on('disposed', disposedListener);
 
-    class TestCubit extends Cubit<number> {
+    class TestCubit extends Cubit<{ count: number }> {
       static isolated = true;
 
       constructor() {
-        super(0);
+        super({ count: 0 });
       }
     }
 
@@ -127,13 +127,13 @@ describe('StateContainer Lifecycle Events', () => {
     const stateChangedListener = vi.fn();
     StateContainer.getRegistry().on('stateChanged', stateChangedListener);
 
-    class TestCubit extends Cubit<number> {
+    class TestCubit extends Cubit<{ count: number }> {
       constructor() {
-        super(0);
+        super({ count: 0 });
       }
 
       increment = () => {
-        this.emit(this.state + 1);
+        this.emit({ count: this.state.count + 1 });
       };
     }
 
@@ -146,8 +146,8 @@ describe('StateContainer Lifecycle Events', () => {
     expect(stateChangedListener).toHaveBeenCalledTimes(1);
     expect(stateChangedListener).toHaveBeenCalledWith(
       instance,
-      0,
-      1,
+      { count: 0 },
+      { count: 1 },
       expect.any(String), // callstack
     );
   });

@@ -64,17 +64,17 @@ type SystemEventHandler<S, P, E extends SystemEvent> = (
  *
  * @example
  * ```ts
- * class CounterBloc extends StateContainer<number> {
+ * class CounterBloc extends StateContainer<{ count: number }> {
  *   constructor() {
- *     super(0);
+ *     super({ count: 0 });
  *   }
  *   increment() {
- *     this.emit(this.state + 1);
+ *     this.emit({ count: this.state.count + 1 });
  *   }
  * }
  * ```
  */
-export abstract class StateContainer<S extends object = object, P = any> {
+export abstract class StateContainer<S extends object = any, P = any> {
   /** @internal Flag to exclude this class from DevTools tracking */
   static __excludeFromDevTools = false;
 

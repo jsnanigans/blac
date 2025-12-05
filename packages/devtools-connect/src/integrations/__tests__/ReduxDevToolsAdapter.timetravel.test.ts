@@ -23,15 +23,15 @@ beforeEach(() => {
 });
 
 describe('ReduxDevToolsAdapter - Time Travel', () => {
-  class CounterCubit extends Cubit<number> {
+  class CounterCubit extends Cubit<{ count: number }> {
     constructor() {
-      super(0);
+      super({ count: 0 });
       this._name = 'CounterCubit';
     }
 
-    increment = () => this.emit(this.state + 1);
-    decrement = () => this.emit(this.state - 1);
-    setValue = (value: number) => this.emit(value);
+    increment = () => this.emit({ count: this.state.count + 1 });
+    decrement = () => this.emit({ count: this.state.count - 1 });
+    setValue = (value: number) => this.emit({ count: value });
   }
 
   class UserCubit extends Cubit<{ name: string; age: number }> {
@@ -50,25 +50,25 @@ describe('ReduxDevToolsAdapter - Time Travel', () => {
       const cubit = new CounterCubit();
 
       adapter.onBlocCreated(cubit);
-      cubit.increment(); // state = 1
-      adapter.onStateChanged(cubit, 0, 1);
-      cubit.increment(); // state = 2
-      adapter.onStateChanged(cubit, 1, 2);
+      cubit.increment(); // state = { count: 1 }
+      adapter.onStateChanged(cubit, { count: 0 }, { count: 1 });
+      cubit.increment(); // state = { count: 2 }
+      adapter.onStateChanged(cubit, { count: 1 }, { count: 2 });
 
       const messageHandler = mockDevTools.subscribe.mock.calls[0][0];
 
-      // Jump back to state = 1
+      // Jump back to state = { count: 1 }
       messageHandler({
         type: 'DISPATCH',
         payload: {
           type: 'JUMP_TO_STATE',
         },
         state: JSON.stringify({
-          CounterCubit: 1,
+          CounterCubit: { count: 1 },
         }),
       });
 
-      expect(cubit.state).toBe(1);
+      expect(cubit.state).toEqual({ count: 1 });
     });
 
     it('should restore multiple bloc states simultaneously', () => {
@@ -80,7 +80,7 @@ describe('ReduxDevToolsAdapter - Time Travel', () => {
       adapter.onBlocCreated(user);
 
       counter.setValue(5);
-      adapter.onStateChanged(counter, 0, 5);
+      adapter.onStateChanged(counter, { count: 0 }, { count: 5 });
 
       user.setName('Bob');
       adapter.onStateChanged(
@@ -95,12 +95,12 @@ describe('ReduxDevToolsAdapter - Time Travel', () => {
         type: 'DISPATCH',
         payload: { type: 'JUMP_TO_STATE' },
         state: JSON.stringify({
-          CounterCubit: 10,
+          CounterCubit: { count: 10 },
           UserCubit: { name: 'Charlie', age: 25 },
         }),
       });
 
-      expect(counter.state).toBe(10);
+      expect(counter.state).toEqual({ count: 10 });
       expect(user.state.name).toBe('Charlie');
       expect(user.state.age).toBe(25);
     });
@@ -116,7 +116,7 @@ describe('ReduxDevToolsAdapter - Time Travel', () => {
       messageHandler({
         type: 'DISPATCH',
         payload: { type: 'JUMP_TO_STATE' },
-        state: JSON.stringify({ CounterCubit: 42 }),
+        state: JSON.stringify({ CounterCubit: { count: 42 } }),
       });
 
       expect(window.dispatchEvent).toHaveBeenCalledWith(
@@ -143,7 +143,7 @@ describe('ReduxDevToolsAdapter - Time Travel', () => {
       messageHandler({
         type: 'DISPATCH',
         payload: { type: 'JUMP_TO_STATE' },
-        state: JSON.stringify({ CounterCubit: 42 }),
+        state: JSON.stringify({ CounterCubit: { count: 42 } }),
       });
 
       // Should not have sent state change updates during time travel
@@ -164,10 +164,10 @@ describe('ReduxDevToolsAdapter - Time Travel', () => {
       messageHandler({
         type: 'DISPATCH',
         payload: { type: 'JUMP_TO_ACTION' },
-        state: JSON.stringify({ CounterCubit: 99 }),
+        state: JSON.stringify({ CounterCubit: { count: 99 } }),
       });
 
-      expect(cubit.state).toBe(99);
+      expect(cubit.state).toEqual({ count: 99 });
     });
   });
 
@@ -233,13 +233,13 @@ describe('ReduxDevToolsAdapter - Time Travel', () => {
         type: 'DISPATCH',
         payload: { type: 'JUMP_TO_STATE' },
         state: JSON.stringify({
-          CounterCubit: 1,
-          UnknownBloc: 42, // This bloc doesn't exist
+          CounterCubit: { count: 1 },
+          UnknownBloc: { value: 42 }, // This bloc doesn't exist
         }),
       });
 
       // Should still restore the known bloc
-      expect(cubit.state).toBe(1);
+      expect(cubit.state).toEqual({ count: 1 });
 
       // Should report one success
       expect(window.dispatchEvent).toHaveBeenCalledWith(

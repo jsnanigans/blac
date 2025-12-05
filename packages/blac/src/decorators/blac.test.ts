@@ -12,9 +12,9 @@ describe('blac decorator', () => {
   describe('decorator syntax', () => {
     it('should mark class as isolated using @ decorator', () => {
       @blac({ isolated: true })
-      class IsolatedCubit extends Cubit<number> {
+      class IsolatedCubit extends Cubit<{ count: number }> {
         constructor() {
-          super(0);
+          super({ count: 0 });
         }
       }
 
@@ -24,9 +24,9 @@ describe('blac decorator', () => {
 
     it('should mark class as keepAlive using @ decorator', () => {
       @blac({ keepAlive: true })
-      class KeepAliveCubit extends Cubit<number> {
+      class KeepAliveCubit extends Cubit<{ count: number }> {
         constructor() {
-          super(0);
+          super({ count: 0 });
         }
       }
 
@@ -36,9 +36,9 @@ describe('blac decorator', () => {
 
     it('should work with Vertex using @ decorator', () => {
       @blac({ isolated: true })
-      class IsolatedVertex extends Vertex<number> {
+      class IsolatedVertex extends Vertex<{ count: number }> {
         constructor() {
-          super(0);
+          super({ count: 0 });
         }
       }
 
@@ -47,28 +47,28 @@ describe('blac decorator', () => {
 
     it('should allow creating and using instances from decorated class', () => {
       @blac({ isolated: true })
-      class CounterBloc extends Cubit<number> {
+      class CounterBloc extends Cubit<{ count: number }> {
         constructor() {
-          super(0);
+          super({ count: 0 });
         }
         increment() {
-          this.emit(this.state + 1);
+          this.emit({ count: this.state.count + 1 });
         }
       }
 
       const instance = new CounterBloc();
-      expect(instance.state).toBe(0);
+      expect(instance.state).toEqual({ count: 0 });
       instance.increment();
-      expect(instance.state).toBe(1);
+      expect(instance.state).toEqual({ count: 1 });
     });
   });
 
   describe('isolated option', () => {
     it('should mark class as isolated using function syntax', () => {
       const IsolatedBloc = blac({ isolated: true })(
-        class extends Cubit<number> {
+        class extends Cubit<{ count: number }> {
           constructor() {
-            super(0);
+            super({ count: 0 });
           }
         },
       );
@@ -91,9 +91,9 @@ describe('blac decorator', () => {
 
     it('should work with Vertex classes', () => {
       const IsolatedVertex = blac({ isolated: true })(
-        class extends Vertex<number> {
+        class extends Vertex<{ count: number }> {
           constructor() {
-            super(0);
+            super({ count: 0 });
           }
         },
       );
@@ -105,9 +105,9 @@ describe('blac decorator', () => {
   describe('keepAlive option', () => {
     it('should mark class as keepAlive using function syntax', () => {
       const KeepAliveBloc = blac({ keepAlive: true })(
-        class extends Cubit<number> {
+        class extends Cubit<{ count: number }> {
           constructor() {
-            super(0);
+            super({ count: 0 });
           }
         },
       );
@@ -130,9 +130,9 @@ describe('blac decorator', () => {
 
     it('should work with Vertex classes', () => {
       const KeepAliveVertex = blac({ keepAlive: true })(
-        class extends Vertex<number> {
+        class extends Vertex<{ count: number }> {
           constructor() {
-            super(0);
+            super({ count: 0 });
           }
         },
       );
@@ -144,9 +144,9 @@ describe('blac decorator', () => {
   describe('excludeFromDevTools option', () => {
     it('should mark class as excluded from DevTools using @ decorator', () => {
       @blac({ excludeFromDevTools: true })
-      class InternalBloc extends Cubit<number> {
+      class InternalBloc extends Cubit<{ count: number }> {
         constructor() {
-          super(0);
+          super({ count: 0 });
         }
       }
 
@@ -157,9 +157,9 @@ describe('blac decorator', () => {
 
     it('should mark class as excluded from DevTools using function syntax', () => {
       const InternalBloc = blac({ excludeFromDevTools: true })(
-        class extends Cubit<number> {
+        class extends Cubit<{ count: number }> {
           constructor() {
-            super(0);
+            super({ count: 0 });
           }
         },
       );
@@ -171,38 +171,38 @@ describe('blac decorator', () => {
   describe('instance creation', () => {
     it('should allow creating instances of decorated isolated class', () => {
       const CounterBloc = blac({ isolated: true })(
-        class extends Cubit<number> {
+        class extends Cubit<{ count: number }> {
           constructor() {
-            super(0);
+            super({ count: 0 });
           }
           increment() {
-            this.emit(this.state + 1);
+            this.emit({ count: this.state.count + 1 });
           }
         },
       );
 
       const instance = new CounterBloc();
-      expect(instance.state).toBe(0);
+      expect(instance.state).toEqual({ count: 0 });
       instance.increment();
-      expect(instance.state).toBe(1);
+      expect(instance.state).toEqual({ count: 1 });
     });
 
     it('should allow creating instances of decorated keepAlive class', () => {
       const CounterBloc = blac({ keepAlive: true })(
-        class extends Cubit<number> {
+        class extends Cubit<{ count: number }> {
           constructor() {
-            super(0);
+            super({ count: 0 });
           }
           increment() {
-            this.emit(this.state + 1);
+            this.emit({ count: this.state.count + 1 });
           }
         },
       );
 
       const instance = new CounterBloc();
-      expect(instance.state).toBe(0);
+      expect(instance.state).toEqual({ count: 0 });
       instance.increment();
-      expect(instance.state).toBe(1);
+      expect(instance.state).toEqual({ count: 1 });
     });
   });
 });

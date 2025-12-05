@@ -35,7 +35,7 @@ interface EventHandlerRegistration<E extends BaseEvent, S> {
  * @template P - Props type (optional)
  */
 export abstract class Vertex<
-  S extends object = object,
+  S extends object = any,
   E extends BaseEvent = BaseEvent,
   P = undefined,
 > extends StateContainer<S, P> {

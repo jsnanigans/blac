@@ -224,16 +224,16 @@ The format is always: `[BlocName] EventName`
 
 ### Built-In State Actions (Blocs & Cubits)
 
-#### Simple Counter Cubit
+#### Counter Cubit
 
 ```typescript
-class CounterCubit extends Cubit<number> {
+class CounterCubit extends Cubit<{ count: number }> {
   constructor() {
-    super(0);
+    super({ count: 0 });
   }
 
-  increment = () => this.emit(this.state + 1);
-  decrement = () => this.emit(this.state - 1);
+  increment = () => this.emit({ count: this.state.count + 1 });
+  decrement = () => this.emit({ count: this.state.count - 1 });
 }
 ```
 
@@ -241,13 +241,13 @@ class CounterCubit extends Cubit<number> {
 
 ```json
 // Set counter to 100
-{ "type": "[CounterCubit] emit", "payload": { "state": 100 } }
+{ "type": "[CounterCubit] emit", "payload": { "state": { "count": 100 } } }
 
 // Set to -42
-{ "type": "[CounterCubit] emit", "payload": { "state": -42 } }
+{ "type": "[CounterCubit] emit", "payload": { "state": { "count": -42 } } }
 
 // Set to 0 (reset)
-{ "type": "[CounterCubit] emit", "payload": { "state": 0 } }
+{ "type": "[CounterCubit] emit", "payload": { "state": { "count": 0 } } }
 ```
 
 #### Object State Cubit

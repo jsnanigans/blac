@@ -19,9 +19,9 @@ describe('DevToolsBrowserPlugin Lifecycle Integration', () => {
     // Install plugin BEFORE creating instances
     getPluginManager().install(plugin);
 
-    class TestCubit extends Cubit<number> {
+    class TestCubit extends Cubit<{ count: number }> {
       constructor() {
-        super(0);
+        super({ count: 0 });
       }
     }
 
@@ -44,9 +44,9 @@ describe('DevToolsBrowserPlugin Lifecycle Integration', () => {
 
     getPluginManager().install(plugin);
 
-    class TestCubit extends Cubit<number> {
+    class TestCubit extends Cubit<{ count: number }> {
       constructor() {
-        super(0);
+        super({ count: 0 });
       }
     }
 
@@ -67,9 +67,9 @@ describe('DevToolsBrowserPlugin Lifecycle Integration', () => {
     const plugin = new DevToolsBrowserPlugin({ enabled: true });
     getPluginManager().install(plugin);
 
-    class CounterCubit extends Cubit<number> {
+    class CounterCubit extends Cubit<{ count: number }> {
       constructor() {
-        super(0);
+        super({ count: 0 });
       }
     }
 
@@ -93,9 +93,9 @@ describe('DevToolsBrowserPlugin Lifecycle Integration', () => {
     const subscriber = vi.fn();
     plugin.subscribe(subscriber);
 
-    class TestCubit extends Cubit<number> {
+    class TestCubit extends Cubit<{ count: number }> {
       constructor() {
-        super(0);
+        super({ count: 0 });
       }
     }
 
@@ -130,9 +130,9 @@ describe('DevToolsBrowserPlugin Lifecycle Integration', () => {
   });
 
   it('should scan existing instances on install', () => {
-    class TestCubit extends Cubit<number> {
+    class TestCubit extends Cubit<{ count: number }> {
       constructor() {
-        super(0);
+        super({ count: 0 });
       }
     }
 
@@ -153,15 +153,15 @@ describe('DevToolsBrowserPlugin Lifecycle Integration', () => {
     getPluginManager().install(plugin);
 
     @blac({ excludeFromDevTools: true })
-    class InternalCubit extends Cubit<number> {
+    class InternalCubit extends Cubit<{ count: number }> {
       constructor() {
-        super(0);
+        super({ count: 0 });
       }
     }
 
-    class NormalCubit extends Cubit<number> {
+    class NormalCubit extends Cubit<{ count: number }> {
       constructor() {
-        super(0);
+        super({ count: 0 });
       }
     }
 

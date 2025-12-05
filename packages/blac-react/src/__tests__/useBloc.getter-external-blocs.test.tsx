@@ -4,27 +4,27 @@ import { Cubit } from '@blac/core';
 import { useBloc } from '../useBloc';
 import { useBlocActions } from '../useBlocActions';
 
-class AlphaBloc extends Cubit<number> {
+class AlphaBloc extends Cubit<{ value: number }> {
   constructor() {
-    super(1);
+    super({ value: 1 });
   }
 
-  increment = () => this.emit(this.state + 1);
+  increment = () => this.emit({ value: this.state.value + 1 });
 
   get both() {
-    return this.state + BetaBloc.get().state;
+    return this.state.value + BetaBloc.get().state.value;
   }
 }
 
-class BetaBloc extends Cubit<number> {
+class BetaBloc extends Cubit<{ value: number }> {
   constructor() {
-    super(2);
+    super({ value: 2 });
   }
 
-  increment = () => this.emit(this.state + 1);
+  increment = () => this.emit({ value: this.state.value + 1 });
 
   get both() {
-    return this.state + AlphaBloc.get().state;
+    return this.state.value + AlphaBloc.get().state.value;
   }
 }
 
@@ -47,7 +47,7 @@ describe('useBloc - getter tracking with external blocs', () => {
         <div>
           <div data-testid="render-count">{renderCount}</div>
           <div data-testid="beta-both">{betaBlocInstance.both}</div>
-          <div data-testid="beta-state">{betaBlocState}</div>
+          <div data-testid="beta-state">{betaBlocState.value}</div>
           <button
             data-testid="increment-alpha"
             onClick={alphaBlocActions.increment}
@@ -102,16 +102,16 @@ describe('useBloc - getter tracking with external blocs', () => {
   });
 
   it('should track external bloc accessed via .getSafe()', () => {
-    class GammaBloc extends Cubit<number> {
+    class GammaBloc extends Cubit<{ value: number }> {
       constructor() {
-        super(10);
+        super({ value: 10 });
       }
-      increment = () => this.emit(this.state + 1);
+      increment = () => this.emit({ value: this.state.value + 1 });
 
       get gammaWithAlpha() {
         const result = AlphaBloc.getSafe();
-        if (result.error) return this.state;
-        return this.state + result.instance.state;
+        if (result.error) return this.state.value;
+        return this.state.value + result.instance.state.value;
       }
     }
 
@@ -153,23 +153,23 @@ describe('useBloc - getter tracking with external blocs', () => {
   });
 
   it('should track external bloc accessed via .connect()', () => {
-    class DeltaBloc extends Cubit<number> {
+    class DeltaBloc extends Cubit<{ value: number }> {
       constructor() {
-        super(100);
+        super({ value: 100 });
       }
-      increment = () => this.emit(this.state + 1);
+      increment = () => this.emit({ value: this.state.value + 1 });
     }
 
-    class EpsilonBloc extends Cubit<number> {
+    class EpsilonBloc extends Cubit<{ value: number }> {
       constructor() {
-        super(200);
+        super({ value: 200 });
       }
-      increment = () => this.emit(this.state + 1);
+      increment = () => this.emit({ value: this.state.value + 1 });
 
       get deltaSum() {
         // .connect() ensures DeltaBloc exists and tracks it
         const delta = DeltaBloc.connect();
-        return this.state + delta.state;
+        return this.state.value + delta.state.value;
       }
     }
 
@@ -219,19 +219,19 @@ describe('useBloc - getter tracking with external blocs', () => {
   });
 
   it('.connect() should not increment ref count', () => {
-    class ZetaBloc extends Cubit<number> {
+    class ZetaBloc extends Cubit<{ value: number }> {
       constructor() {
-        super(1);
+        super({ value: 1 });
       }
     }
 
-    class EtaBloc extends Cubit<number> {
+    class EtaBloc extends Cubit<{ value: number }> {
       constructor() {
-        super(2);
+        super({ value: 2 });
       }
 
       get zetaState() {
-        return ZetaBloc.connect().state;
+        return ZetaBloc.connect().state.value;
       }
     }
 

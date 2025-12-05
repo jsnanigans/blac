@@ -21,14 +21,14 @@ The foundation for all state containers in BlaC. Provides state storage, subscri
 ```typescript
 import { StateContainer } from '@blac/core';
 
-class CounterContainer extends StateContainer<number> {
+class CounterContainer extends StateContainer<{ count: number }> {
   constructor() {
-    super(0); // initial state
+    super({ count: 0 }); // initial state (must be an object)
   }
 
   // Methods use protected emit/update
   increment = () => {
-    this.update(state => state + 1);
+    this.update(state => ({ count: state.count + 1 }));
   };
 }
 ```
@@ -129,18 +129,18 @@ Extends `StateContainer` with **public** state mutation methods for direct state
 ```typescript
 import { Cubit } from '@blac/core';
 
-class CounterCubit extends Cubit<number> {
+class CounterCubit extends Cubit<{ count: number }> {
   constructor() {
-    super(0); // initial state
+    super({ count: 0 }); // initial state (must be an object)
   }
 
   // ✅ IMPORTANT: Always use arrow functions for React compatibility
   increment = () => {
-    this.emit(this.state + 1);
+    this.emit({ count: this.state.count + 1 });
   };
 
   decrement = () => {
-    this.emit(this.state - 1);
+    this.emit({ count: this.state.count - 1 });
   };
 }
 ```
@@ -249,17 +249,17 @@ class DecrementEvent implements BaseEvent {
 }
 
 // Create Vertex with event handlers
-class CounterVertex extends Vertex<number> {
+class CounterVertex extends Vertex<{ count: number }> {
   constructor() {
-    super(0);
+    super({ count: 0 });
 
     // Register event handlers in constructor
     this.on(IncrementEvent, (event, emit) => {
-      emit(this.state + event.amount);
+      emit({ count: this.state.count + event.amount });
     });
 
     this.on(DecrementEvent, (event, emit) => {
-      emit(this.state - event.amount);
+      emit({ count: this.state.count - event.amount });
     });
   }
 
@@ -842,23 +842,23 @@ const bloc = useBlocActions(CounterBloc, {
 
 ```typescript
 @blac({ isolated: true })
-class LocalCounter extends Cubit<number> {
+class LocalCounter extends Cubit<{ count: number }> {
   constructor() {
-    super(0);
+    super({ count: 0 });
   }
 
-  increment = () => this.emit(this.state + 1);
+  increment = () => this.emit({ count: this.state.count + 1 });
 }
 
 // ComponentA and ComponentB have SEPARATE instances
 function ComponentA() {
-  const [count] = useBloc(LocalCounter);
-  return <div>A: {count}</div>; // Independent count
+  const [state] = useBloc(LocalCounter);
+  return <div>A: {state.count}</div>; // Independent count
 }
 
 function ComponentB() {
-  const [count] = useBloc(LocalCounter);
-  return <div>B: {count}</div>; // Different count
+  const [state] = useBloc(LocalCounter);
+  return <div>B: {state.count}</div>; // Different count
 }
 ```
 The Bloc is tightly coupled 1:1 with the component.
@@ -866,20 +866,20 @@ The Bloc is tightly coupled 1:1 with the component.
 **Shared Instances** (Default) - Components share the same instance:
 
 ```typescript
-class SharedCounter extends Cubit<number> {
-  constructor() { super(0); }
-  increment = () => this.emit(this.state + 1);
+class SharedCounter extends Cubit<{ count: number }> {
+  constructor() { super({ count: 0 }); }
+  increment = () => this.emit({ count: this.state.count + 1 });
 }
 
 // Both components share the SAME instance
 function ComponentA() {
-  const [count, bloc] = useBloc(SharedCounter);
-  return <div onClick={bloc.increment}>A: {count}</div>;
+  const [state, bloc] = useBloc(SharedCounter);
+  return <div onClick={bloc.increment}>A: {state.count}</div>;
 }
 
 function ComponentB() {
-  const [count] = useBloc(SharedCounter);
-  return <div>B: {count}</div>; // Same count as A
+  const [state] = useBloc(SharedCounter);
+  return <div>B: {state.count}</div>; // Same count as A
 }
 ```
 
@@ -1463,16 +1463,16 @@ Always use arrow functions for methods in Cubit/Vertex classes:
 
 ```typescript
 // ✅ DO: Arrow functions for correct 'this' binding
-class CounterCubit extends Cubit<number> {
+class CounterCubit extends Cubit<{ count: number }> {
   increment = () => {
-    this.emit(this.state + 1);
+    this.emit({ count: this.state.count + 1 });
   };
 }
 
 // ❌ DON'T: Regular methods lose 'this' context in React
-class BadCubit extends Cubit<number> {
+class BadCubit extends Cubit<{ count: number }> {
   increment() { // Will break when passed to onClick
-    this.emit(this.state + 1);
+    this.emit({ count: this.state.count + 1 });
   }
 }
 ```
@@ -1797,10 +1797,10 @@ class AuthVertex extends Vertex<AuthState> {
 BlaC is fully typed with TypeScript. State types are inferred automatically:
 
 ```typescript
-// State type is inferred as number
-class CounterCubit extends Cubit<number> {
-  constructor() { super(0); }
-  increment = () => this.emit(this.state + 1);
+// State type must be an object
+class CounterCubit extends Cubit<{ count: number }> {
+  constructor() { super({ count: 0 }); }
+  increment = () => this.emit({ count: this.state.count + 1 });
 }
 
 // Complex types work seamlessly
@@ -2084,16 +2084,16 @@ const form = FormBloc.resolve();
 
 ```typescript
 // Before
-class Counter extends StateContainer<number> {
+class Counter extends StateContainer<{ count: number }> {
   increment = () => {
-    this.emit(this.state + 1); // Error: emit is protected
+    this.emit({ count: this.state.count + 1 }); // Error: emit is protected
   };
 }
 
 // After
-class Counter extends Cubit<number> {
+class Counter extends Cubit<{ count: number }> {
   increment = () => {
-    this.emit(this.state + 1); // ✅ Works: emit is public
+    this.emit({ count: this.state.count + 1 }); // ✅ Works: emit is public
   };
 }
 ```

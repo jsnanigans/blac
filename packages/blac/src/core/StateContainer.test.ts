@@ -7,30 +7,32 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { StateContainer } from './StateContainer';
 
 // Test implementation of StateContainer
-class TestContainer extends StateContainer<number> {
+class TestContainer extends StateContainer<{ value: number }> {
   constructor(initialState: number = 0) {
-    super(initialState);
+    super({ value: initialState });
   }
 
   // Expose protected methods for testing
-  public testEmit(state: number): void {
+  public testEmit(state: { value: number }): void {
     this.emit(state);
   }
 
-  public testUpdate(updater: (current: number) => number): void {
+  public testUpdate(
+    updater: (current: { value: number }) => { value: number },
+  ): void {
     this.update(updater);
   }
 }
 
 // Test container with lifecycle hooks using system events
-class LifecycleTestContainer extends StateContainer<string> {
+class LifecycleTestContainer extends StateContainer<{ text: string }> {
   public disposeCallCount = 0;
   public stateChangeCallCount = 0;
-  public lastPreviousState?: string;
-  public lastNewState?: string;
+  public lastPreviousState?: { text: string };
+  public lastNewState?: { text: string };
 
   constructor(initialState = 'initial') {
-    super(initialState);
+    super({ text: initialState });
 
     // Use system events for lifecycle hooks
     this.onSystemEvent('dispose', () => {
@@ -44,20 +46,20 @@ class LifecycleTestContainer extends StateContainer<string> {
     });
   }
 
-  public testEmit(state: string): void {
+  public testEmit(state: { text: string }): void {
     this.emit(state);
   }
 }
 
 // Test container with static keepAlive
-class KeepAliveTestContainer extends StateContainer<number> {
+class KeepAliveTestContainer extends StateContainer<{ value: number }> {
   static keepAlive = true;
 
   constructor(initialState: number = 0) {
-    super(initialState);
+    super({ value: initialState });
   }
 
-  public testEmit(state: number): void {
+  public testEmit(state: { value: number }): void {
     this.emit(state);
   }
 }
@@ -96,7 +98,7 @@ describe('StateContainer', () => {
         const instance = TestContainer.resolve();
 
         expect(instance).toBeInstanceOf(TestContainer);
-        expect(instance.state).toBe(0);
+        expect(instance.state).toEqual({ value: 0 });
         expect(TestContainer.getRefCount()).toBe(1);
       });
 
@@ -122,7 +124,7 @@ describe('StateContainer', () => {
       it('should pass constructor args correctly', () => {
         const instance = TestContainer.resolve(undefined, { props: 42 });
 
-        expect(instance.state).toBe(42);
+        expect(instance.state).toEqual({ value: 42 });
       });
     });
 
@@ -243,7 +245,7 @@ describe('StateContainer', () => {
     describe('Constructor', () => {
       it('should initialize state correctly', () => {
         const container = new TestContainer(42);
-        expect(container.state).toBe(42);
+        expect(container.state).toEqual({ value: 42 });
       });
 
       it('should initialize with default config', () => {
@@ -279,13 +281,13 @@ describe('StateContainer', () => {
     describe('state getter', () => {
       it('should return current state', () => {
         const container = new TestContainer(100);
-        expect(container.state).toBe(100);
+        expect(container.state).toEqual({ value: 100 });
       });
 
       it('should return updated state after emission', () => {
         const container = new TestContainer(10);
-        container.testEmit(20);
-        expect(container.state).toBe(20);
+        container.testEmit({ value: 20 });
+        expect(container.state).toEqual({ value: 20 });
       });
     });
 
@@ -297,8 +299,8 @@ describe('StateContainer', () => {
         const unsubscribe = container.subscribe(listener);
 
         expect(typeof unsubscribe).toBe('function');
-        container.testEmit(1);
-        expect(listener).toHaveBeenCalledWith(1);
+        container.testEmit({ value: 1 });
+        expect(listener).toHaveBeenCalledWith({ value: 1 });
       });
 
       it('should throw when container disposed', () => {
@@ -320,11 +322,11 @@ describe('StateContainer', () => {
         container.subscribe(listener2);
         container.subscribe(listener3);
 
-        container.testEmit(5);
+        container.testEmit({ value: 5 });
 
-        expect(listener1).toHaveBeenCalledWith(5);
-        expect(listener2).toHaveBeenCalledWith(5);
-        expect(listener3).toHaveBeenCalledWith(5);
+        expect(listener1).toHaveBeenCalledWith({ value: 5 });
+        expect(listener2).toHaveBeenCalledWith({ value: 5 });
+        expect(listener3).toHaveBeenCalledWith({ value: 5 });
       });
 
       it('should unsubscribe correctly', () => {
@@ -336,10 +338,10 @@ describe('StateContainer', () => {
         container.subscribe(listener2);
 
         unsubscribe1();
-        container.testEmit(1);
+        container.testEmit({ value: 1 });
 
         expect(listener1).not.toHaveBeenCalled();
-        expect(listener2).toHaveBeenCalledWith(1);
+        expect(listener2).toHaveBeenCalledWith({ value: 1 });
       });
 
       it('should handle multiple unsubscribes safely', () => {
@@ -350,7 +352,7 @@ describe('StateContainer', () => {
         unsubscribe();
         unsubscribe(); // Should not throw
 
-        container.testEmit(1);
+        container.testEmit({ value: 1 });
         expect(listener).not.toHaveBeenCalled();
       });
     });
@@ -364,7 +366,7 @@ describe('StateContainer', () => {
         container.dispose();
 
         // Attempt to emit should throw, but listener should not be called
-        expect(() => container.testEmit(1)).toThrow();
+        expect(() => container.testEmit({ value: 1 })).toThrow();
         expect(listener).not.toHaveBeenCalled();
       });
 
@@ -373,7 +375,7 @@ describe('StateContainer', () => {
 
         container.dispose();
 
-        expect(() => container.testEmit(1)).toThrow(
+        expect(() => container.testEmit({ value: 1 })).toThrow(
           'Cannot emit state from disposed container',
         );
       });
@@ -408,17 +410,17 @@ describe('StateContainer', () => {
         const listener = vi.fn();
         container.subscribe(listener);
 
-        container.testEmit(42);
+        container.testEmit({ value: 42 });
 
-        expect(container.state).toBe(42);
-        expect(listener).toHaveBeenCalledWith(42);
+        expect(container.state).toEqual({ value: 42 });
+        expect(listener).toHaveBeenCalledWith({ value: 42 });
       });
 
       it('should throw when disposed', () => {
         const container = new TestContainer(0);
         container.dispose();
 
-        expect(() => container.testEmit(1)).toThrow(
+        expect(() => container.testEmit({ value: 1 })).toThrow(
           'Cannot emit state from disposed container',
         );
       });
@@ -426,27 +428,27 @@ describe('StateContainer', () => {
       it('should call stateChanged system event hook', () => {
         const container = new LifecycleTestContainer('initial');
 
-        container.testEmit('updated');
+        container.testEmit({ text: 'updated' });
 
         expect(container.stateChangeCallCount).toBe(1);
-        expect(container.lastPreviousState).toBe('initial');
-        expect(container.lastNewState).toBe('updated');
+        expect(container.lastPreviousState).toEqual({ text: 'initial' });
+        expect(container.lastNewState).toEqual({ text: 'updated' });
       });
 
       it('should call stateChanged system event before notifying listeners', () => {
         // Create a container class that tracks call order
-        class OrderTrackingContainer extends StateContainer<string> {
+        class OrderTrackingContainer extends StateContainer<{ text: string }> {
           callOrder: string[] = [];
 
           constructor() {
-            super('initial');
+            super({ text: 'initial' });
 
             this.onSystemEvent('stateChanged', () => {
               this.callOrder.push('stateChanged');
             });
           }
 
-          public testEmit(state: string): void {
+          public testEmit(state: { text: string }): void {
             this.emit(state);
           }
         }
@@ -457,7 +459,7 @@ describe('StateContainer', () => {
           container.callOrder.push('listener');
         });
 
-        container.testEmit('updated');
+        container.testEmit({ text: 'updated' });
 
         expect(container.callOrder).toEqual(['stateChanged', 'listener']);
       });
@@ -467,18 +469,18 @@ describe('StateContainer', () => {
       it('should transform state correctly', () => {
         const container = new TestContainer(10);
 
-        container.testUpdate((current) => current * 2);
+        container.testUpdate((current) => ({ value: current.value * 2 }));
 
-        expect(container.state).toBe(20);
+        expect(container.state).toEqual({ value: 20 });
       });
 
       it('should throw when disposed', () => {
         const container = new TestContainer(0);
         container.dispose();
 
-        expect(() => container.testUpdate((n) => n + 1)).toThrow(
-          'Cannot update state from disposed container',
-        );
+        expect(() =>
+          container.testUpdate((s) => ({ value: s.value + 1 })),
+        ).toThrow('Cannot update state from disposed container');
       });
 
       it('should notify listeners', () => {
@@ -486,9 +488,9 @@ describe('StateContainer', () => {
         const listener = vi.fn();
         container.subscribe(listener);
 
-        container.testUpdate((n) => n + 10);
+        container.testUpdate((s) => ({ value: s.value + 10 }));
 
-        expect(listener).toHaveBeenCalledWith(15);
+        expect(listener).toHaveBeenCalledWith({ value: 15 });
       });
     });
 
@@ -510,11 +512,11 @@ describe('StateContainer', () => {
         container.subscribe(listener2);
         container.subscribe(listener3);
 
-        container.testEmit(1);
+        container.testEmit({ value: 1 });
 
-        expect(listener1).toHaveBeenCalledWith(1);
-        expect(listener2).toHaveBeenCalledWith(1);
-        expect(listener3).toHaveBeenCalledWith(1);
+        expect(listener1).toHaveBeenCalledWith({ value: 1 });
+        expect(listener2).toHaveBeenCalledWith({ value: 1 });
+        expect(listener3).toHaveBeenCalledWith({ value: 1 });
         expect(consoleErrorSpy).toHaveBeenCalled();
 
         consoleErrorSpy.mockRestore();
@@ -575,26 +577,26 @@ describe('StateContainer', () => {
       const container1 = new TestContainer(10);
       const container2 = new TestContainer(20);
 
-      container1.testEmit(15);
-      container2.testEmit(25);
+      container1.testEmit({ value: 15 });
+      container2.testEmit({ value: 25 });
 
-      expect(container1.state).toBe(15);
-      expect(container2.state).toBe(25);
+      expect(container1.state).toEqual({ value: 15 });
+      expect(container2.state).toEqual({ value: 25 });
     });
 
     it('should handle rapid state updates', () => {
       const container = new TestContainer(0);
-      const states: number[] = [];
+      const states: { value: number }[] = [];
       container.subscribe((state) => states.push(state));
 
       for (let i = 1; i <= 100; i++) {
-        container.testEmit(i);
+        container.testEmit({ value: i });
       }
 
       expect(states.length).toBe(100);
-      expect(states[0]).toBe(1);
-      expect(states[99]).toBe(100);
-      expect(container.state).toBe(100);
+      expect(states[0]).toEqual({ value: 1 });
+      expect(states[99]).toEqual({ value: 100 });
+      expect(container.state).toEqual({ value: 100 });
     });
 
     it('should work with attach lifecycle', () => {
@@ -605,8 +607,8 @@ describe('StateContainer', () => {
       const instance2 = TestContainer.resolve('shared');
       expect(instance1).toBe(instance2);
 
-      instance2.testEmit(42);
-      expect(listener).toHaveBeenCalledWith(42);
+      instance2.testEmit({ value: 42 });
+      expect(listener).toHaveBeenCalledWith({ value: 42 });
 
       TestContainer.release('shared');
       expect(TestContainer.getRefCount('shared')).toBe(1);
