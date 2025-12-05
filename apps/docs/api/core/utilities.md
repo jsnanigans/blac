@@ -12,7 +12,7 @@ Helper functions, ID generation, and type utilities
 
 **Functions:** [`createIdGenerator`](#createidgenerator), [`generateId`](#generateid), [`generateIsolatedKey`](#generateisolatedkey), [`generateSimpleId`](#generatesimpleid), [`getStaticProp`](#getstaticprop), [`isExcludedFromDevTools`](#isexcludedfromdevtools), [`isIsolatedClass`](#isisolatedclass), [`isIsolatedKey`](#isisolatedkey), [`isKeepAliveClass`](#iskeepaliveclass)
 
-**Types:** [`BlacOptions`](#blacoptions), [`Brand`](#brand), [`BrandedId`](#brandedid), [`EventConstructor`](#eventconstructor), [`EventHandler`](#eventhandler), [`InstanceId`](#instanceid)
+**Types:** [`BlacOptions`](#blacoptions), [`Brand`](#brand), [`BrandedId`](#brandedid), [`InstanceId`](#instanceid)
 
 **Constants:** [`BLAC_DEFAULTS`](#blac_defaults), [`BLAC_ERROR_PREFIX`](#blac_error_prefix), [`BLAC_ID_PATTERNS`](#blac_id_patterns), [`BLAC_STATIC_PROPS`](#blac_static_props), [`globalRegistry`](#globalregistry)
 
@@ -230,22 +230,6 @@ Branded string type for type-safe IDs.  @template B - The brand identifier
 
 ```typescript
 export type BrandedId<B> = Brand<string, B>;
-```
-
-### EventConstructor
-
-Constructor type for event classes  @template T - Event type
-
-```typescript
-export type EventConstructor<T extends BaseEvent = BaseEvent> = new (...args: never[]) => T;
-```
-
-### EventHandler
-
-Handler function for processing events in Vertex  @template E - Event type  @template S - State type
-
-```typescript
-export type EventHandler<E extends BaseEvent, S> = (event: E, emit: (state: S) => void) => void;
 ```
 
 ### InstanceId

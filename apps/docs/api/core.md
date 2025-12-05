@@ -426,10 +426,10 @@ class CounterBloc extends StateContainer<{ count: number }> {
 
 > **Abstract class**
 
-Event-driven state container that processes events to update state. Use with event handlers registered via the on() method.
+Event-driven state container using discriminated union events. Extends StateContainer with event-based state transitions and compile-time exhaustive checking for event handlers.
 
 ```typescript
-export declare abstract class Vertex<S extends object = any, E extends BaseEvent = BaseEvent, P = undefined> extends StateContainer<S, P>
+export declare abstract class Vertex<S extends object = object, E extends DiscriminatedEvent = DiscriminatedEvent, P = undefined> extends StateContainer<S, P>
 ```
 
 **Type Parameters:**
@@ -452,43 +452,67 @@ constructor(initialState: S);
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `add` | `(event: E) => void` | Add an event to the event stream for processing |
-| `on` | `<T extends E>(EventClass: EventConstructor<T>, handler: EventHandler<T, S>) => void` | Register a handler for a specific event type |
+| `add` | `(event: E) => void` | Dispatch an event for processing. Events are processed synchronously; if called during processing, the event is queued and processed after the current event completes. |
 
 **Methods:**
 
-#### `onEventError` *(protected)*
+#### `createHandlers` *(protected)*
 
-Handle errors that occur during event processing. Override this method to implement custom error handling.
+Register all event handlers with exhaustive type checking. TypeScript will error if any event type from the union is missing.
 
 ```typescript
-protected onEventError(_event: E, _error: Error): void;
+protected createHandlers(handlers: EventHandlerMap<E, S>): void;
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `_event` | `E` | The event that caused the error |
+| `handlers` | `EventHandlerMap<E, S>` | Map of event type to handler function |
+
+#### `onEventError` *(protected)*
+
+Called when an error occurs during event processing. Override to implement custom error handling.
+
+```typescript
+protected onEventError(_event: EventWithMetadata<E>, _error: Error): void;
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `_event` | `EventWithMetadata<E>` | The event that caused the error |
 | `_error` | `Error` | The error that occurred |
+
+**Examples:**
+
+
+```typescript
+type CounterEvent =
+  | { type: 'increment'; amount: number }
+  | { type: 'decrement' }
+  | { type: 'reset' };
+
+class CounterVertex extends Vertex<{ count: number }, CounterEvent> {
+  constructor() {
+    super({ count: 0 });
+    this.createHandlers({
+      increment: (event, emit) => {
+        emit({ count: this.state.count + event.amount });
+      },
+      decrement: (_, emit) => {
+        emit({ count: this.state.count - 1 });
+      },
+      reset: (_, emit) => {
+        emit({ count: 0 });
+      },
+    });
+  }
+
+  increment = (amount = 1) => this.add({ type: 'increment', amount });
+}
+```
 
 ---
 
 ## Interfaces
-
-### BaseEvent
-
-Base event interface Used by Vertex for event-driven state management
-
-```typescript
-export interface BaseEvent
-```
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `source` *(optional)* | `string` | Optional source identifier for debugging |
-| `timestamp` | `number` | Unix timestamp when the event was created |
-| `type` | `string` | Event type identifier (typically the class name) |
-
----
 
 ### StateContainerConfig
 

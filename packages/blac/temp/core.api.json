@@ -2673,7 +2673,7 @@
         {
           "kind": "Interface",
           "canonicalReference": "@blac/core!DiscriminatedEvent:interface",
-          "docComment": "/**\n * Base discriminated event type. All events must have a 'type' property as the discriminator.\n */\n",
+          "docComment": "/**\n * Base type for discriminated union events. All events must have a `type` property as the discriminator.\n *\n * @example\n * ```typescript\n * type MyEvent =\n *   | { type: 'increment'; amount: number }\n *   | { type: 'decrement' };\n * ```\n *\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -2791,7 +2791,7 @@
         {
           "kind": "TypeAlias",
           "canonicalReference": "@blac/core!EventHandlerMap:type",
-          "docComment": "/**\n * Exhaustive handler map type. Requires a handler for EVERY event type in the union. TypeScript will error if any handler is missing.\n *\n * @example\n *\n * type MyEvent = { type: 'increment'; amount: number } | { type: 'reset' };\n *\n * // This is valid - all types covered: const handlers: EventHandlerMap<MyEvent, State> = { increment: (e, emit) => { ... }, reset: (e, emit) => { ... }, };\n *\n * // This errors - 'reset' is missing: const handlers: EventHandlerMap<MyEvent, State> = { increment: (e, emit) => { ... }, };\n */\n",
+          "docComment": "/**\n * Map of event handlers requiring exhaustive coverage. TypeScript enforces that every event type in the union has a handler.\n *\n * @template E - The discriminated event union type  @template S - The state type\n *\n * @example\n * ```typescript\n * type CounterEvent =\n *   | { type: 'increment'; amount: number }\n *   | { type: 'reset' };\n *\n * // All event types must be handled:\n * const handlers: EventHandlerMap<CounterEvent, { count: number }> = {\n *   increment: (event, emit) => emit({ count: event.amount }),\n *   reset: (_, emit) => emit({ count: 0 }),\n * };\n * ```\n *\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -2830,7 +2830,7 @@
             {
               "kind": "Reference",
               "text": "VertexEventHandler",
-              "canonicalReference": "@blac/core!VertexEventHandler:type"
+              "canonicalReference": "@blac/core!~VertexEventHandler:type"
             },
             {
               "kind": "Content",
@@ -2883,81 +2883,9 @@
           }
         },
         {
-          "kind": "Interface",
-          "canonicalReference": "@blac/core!EventMetadata:interface",
-          "docComment": "/**\n * Optional metadata that can be attached to events. Timestamp is auto-added by Vertex when processing events.\n */\n",
-          "excerptTokens": [
-            {
-              "kind": "Content",
-              "text": "export interface EventMetadata "
-            }
-          ],
-          "fileUrlPath": "dist/.types/types/events.d.ts",
-          "releaseTag": "Public",
-          "name": "EventMetadata",
-          "preserveMemberOrder": false,
-          "members": [
-            {
-              "kind": "PropertySignature",
-              "canonicalReference": "@blac/core!EventMetadata#source:member",
-              "docComment": "",
-              "excerptTokens": [
-                {
-                  "kind": "Content",
-                  "text": "readonly source?: "
-                },
-                {
-                  "kind": "Content",
-                  "text": "string"
-                },
-                {
-                  "kind": "Content",
-                  "text": ";"
-                }
-              ],
-              "isReadonly": true,
-              "isOptional": true,
-              "releaseTag": "Public",
-              "name": "source",
-              "propertyTypeTokenRange": {
-                "startIndex": 1,
-                "endIndex": 2
-              }
-            },
-            {
-              "kind": "PropertySignature",
-              "canonicalReference": "@blac/core!EventMetadata#timestamp:member",
-              "docComment": "",
-              "excerptTokens": [
-                {
-                  "kind": "Content",
-                  "text": "readonly timestamp?: "
-                },
-                {
-                  "kind": "Content",
-                  "text": "number"
-                },
-                {
-                  "kind": "Content",
-                  "text": ";"
-                }
-              ],
-              "isReadonly": true,
-              "isOptional": true,
-              "releaseTag": "Public",
-              "name": "timestamp",
-              "propertyTypeTokenRange": {
-                "startIndex": 1,
-                "endIndex": 2
-              }
-            }
-          ],
-          "extendsTokenRanges": []
-        },
-        {
           "kind": "TypeAlias",
           "canonicalReference": "@blac/core!EventType:type",
-          "docComment": "/**\n * Extract the 'type' literal union from a discriminated event union.\n *\n * @example\n *\n * type MyEvent = { type: 'a' } | { type: 'b' }; type Types = EventType<MyEvent>; // 'a' | 'b'\n */\n",
+          "docComment": "/**\n * Extract the `type` literal union from a discriminated event union.\n *\n * @template E - The discriminated event union type\n *\n * @example\n * ```typescript\n * type MyEvent = { type: 'a' } | { type: 'b' };\n * type Types = EventType<MyEvent>; // 'a' | 'b'\n * ```\n *\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -3000,59 +2928,6 @@
           "typeTokenRange": {
             "startIndex": 3,
             "endIndex": 4
-          }
-        },
-        {
-          "kind": "TypeAlias",
-          "canonicalReference": "@blac/core!EventWithMetadata:type",
-          "docComment": "/**\n * Event with metadata attached (internal use after enrichment)\n */\n",
-          "excerptTokens": [
-            {
-              "kind": "Content",
-              "text": "export type EventWithMetadata<E extends "
-            },
-            {
-              "kind": "Reference",
-              "text": "DiscriminatedEvent",
-              "canonicalReference": "@blac/core!DiscriminatedEvent:interface"
-            },
-            {
-              "kind": "Content",
-              "text": "> = "
-            },
-            {
-              "kind": "Content",
-              "text": "E & "
-            },
-            {
-              "kind": "Reference",
-              "text": "EventMetadata",
-              "canonicalReference": "@blac/core!EventMetadata:interface"
-            },
-            {
-              "kind": "Content",
-              "text": ";"
-            }
-          ],
-          "fileUrlPath": "dist/.types/types/events.d.ts",
-          "releaseTag": "Public",
-          "name": "EventWithMetadata",
-          "typeParameters": [
-            {
-              "typeParameterName": "E",
-              "constraintTokenRange": {
-                "startIndex": 1,
-                "endIndex": 2
-              },
-              "defaultTypeTokenRange": {
-                "startIndex": 0,
-                "endIndex": 0
-              }
-            }
-          ],
-          "typeTokenRange": {
-            "startIndex": 3,
-            "endIndex": 5
           }
         },
         {
@@ -3233,7 +3108,7 @@
         {
           "kind": "TypeAlias",
           "canonicalReference": "@blac/core!ExtractEvent:type",
-          "docComment": "/**\n * Extract a specific event from a union by its type.\n *\n * @example\n *\n * type MyEvent = { type: 'a'; value: number } | { type: 'b' }; type EventA = ExtractEvent<MyEvent, 'a'>; // { type: 'a'; value: number }\n */\n",
+          "docComment": "/**\n * Extract a specific event variant from a union by its type.\n *\n * @template E - The discriminated event union type  @template T - The type literal to extract\n *\n * @example\n * ```typescript\n * type MyEvent = { type: 'a'; value: number } | { type: 'b' };\n * type EventA = ExtractEvent<MyEvent, 'a'>; // { type: 'a'; value: number }\n * ```\n *\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -10137,7 +10012,7 @@
         {
           "kind": "Class",
           "canonicalReference": "@blac/core!Vertex:class",
-          "docComment": "/**\n * Event-driven state container using discriminated union events. Provides compile-time exhaustive checking for event handlers.\n *\n * @template S - State type (must be an object)  @template E - Event union type (discriminated by 'type' property)  @template P - Props type (optional)\n *\n * @example\n * ```typescript\n * type CounterEvent =\n *   | { type: 'increment'; amount: number }\n *   | { type: 'decrement' }\n *   | { type: 'reset' };\n *\n * class CounterVertex extends Vertex<{ count: number }, CounterEvent> {\n *   constructor() {\n *     super({ count: 0 });\n *     this.createHandlers({\n *       increment: (event, emit) => {\n *         emit({ count: this.state.count + event.amount });\n *       },\n *       decrement: (_, emit) => {\n *         emit({ count: this.state.count - 1 });\n *       },\n *       reset: (_, emit) => {\n *         emit({ count: 0 });\n *       },\n *     });\n *   }\n * }\n *\n * const counter = CounterVertex.create();\n * counter.add({ type: 'increment', amount: 5 });\n * ```\n *\n */\n",
+          "docComment": "/**\n * Event-driven state container using discriminated union events. Extends StateContainer with event-based state transitions and compile-time exhaustive checking for event handlers.\n *\n * @template S - State type (must be an object)  @template E - Event union type (discriminated by 'type' property)  @template P - Props type (optional)\n *\n * @example\n * ```typescript\n * type CounterEvent =\n *   | { type: 'increment'; amount: number }\n *   | { type: 'decrement' }\n *   | { type: 'reset' };\n *\n * class CounterVertex extends Vertex<{ count: number }, CounterEvent> {\n *   constructor() {\n *     super({ count: 0 });\n *     this.createHandlers({\n *       increment: (event, emit) => {\n *         emit({ count: this.state.count + event.amount });\n *       },\n *       decrement: (_, emit) => {\n *         emit({ count: this.state.count - 1 });\n *       },\n *       reset: (_, emit) => {\n *         emit({ count: 0 });\n *       },\n *     });\n *   }\n *\n *   increment = (amount = 1) => this.add({ type: 'increment', amount });\n * }\n * ```\n *\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -10275,7 +10150,7 @@
             {
               "kind": "Property",
               "canonicalReference": "@blac/core!Vertex#add:member",
-              "docComment": "/**\n * Add an event to be processed. Event must match one of the types in the declared event union. Provides full autocomplete for event construction.\n *\n * @param event - The event to process\n *\n * @example\n * ```typescript\n * counter.add({ type: 'increment', amount: 5 });\n * // TypeScript autocomplete suggests: 'increment' | 'decrement' | 'reset'\n * ```\n *\n */\n",
+              "docComment": "/**\n * Dispatch an event for processing. Events are processed synchronously; if called during processing, the event is queued and processed after the current event completes.\n *\n * @param event - The event to process (must match the event union type)\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -10305,7 +10180,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!Vertex#createHandlers:member(1)",
-              "docComment": "/**\n * Create and register all event handlers with exhaustive type checking. TypeScript will error if any event type from the union is missing.\n *\n * @param handlers - Map of event type to handler function\n *\n * @example\n * ```typescript\n * this.createHandlers({\n *   increment: (event, emit) => {\n *     // event is narrowed to { type: 'increment'; amount: number }\n *     emit({ count: this.state.count + event.amount });\n *   },\n *   decrement: (_, emit) => {\n *     emit({ count: this.state.count - 1 });\n *   },\n * }); // TypeScript error if any handler is missing!\n * ```\n *\n */\n",
+              "docComment": "/**\n * Register all event handlers with exhaustive type checking. TypeScript will error if any event type from the union is missing.\n *\n * @param handlers - Map of event type to handler function\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -10358,7 +10233,7 @@
             {
               "kind": "Method",
               "canonicalReference": "@blac/core!Vertex#onEventError:member(1)",
-              "docComment": "/**\n * Handle errors that occur during event processing. Override this method to implement custom error handling.\n *\n * @param _event - The event that caused the error\n *\n * @param _error - The error that occurred\n */\n",
+              "docComment": "/**\n * Called when an error occurs during event processing. Override to implement custom error handling.\n *\n * @param _event - The event that caused the error\n *\n * @param _error - The error that occurred\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -10431,73 +10306,6 @@
             "endIndex": 13
           },
           "implementsTokenRanges": []
-        },
-        {
-          "kind": "TypeAlias",
-          "canonicalReference": "@blac/core!VertexEventHandler:type",
-          "docComment": "/**\n * Handler function signature for a specific event type.\n */\n",
-          "excerptTokens": [
-            {
-              "kind": "Content",
-              "text": "export type VertexEventHandler<E extends "
-            },
-            {
-              "kind": "Reference",
-              "text": "DiscriminatedEvent",
-              "canonicalReference": "@blac/core!DiscriminatedEvent:interface"
-            },
-            {
-              "kind": "Content",
-              "text": ", S extends "
-            },
-            {
-              "kind": "Content",
-              "text": "object"
-            },
-            {
-              "kind": "Content",
-              "text": "> = "
-            },
-            {
-              "kind": "Content",
-              "text": "(event: E, emit: (state: S) => void) => void"
-            },
-            {
-              "kind": "Content",
-              "text": ";"
-            }
-          ],
-          "fileUrlPath": "dist/.types/types/events.d.ts",
-          "releaseTag": "Public",
-          "name": "VertexEventHandler",
-          "typeParameters": [
-            {
-              "typeParameterName": "E",
-              "constraintTokenRange": {
-                "startIndex": 1,
-                "endIndex": 2
-              },
-              "defaultTypeTokenRange": {
-                "startIndex": 0,
-                "endIndex": 0
-              }
-            },
-            {
-              "typeParameterName": "S",
-              "constraintTokenRange": {
-                "startIndex": 3,
-                "endIndex": 4
-              },
-              "defaultTypeTokenRange": {
-                "startIndex": 0,
-                "endIndex": 0
-              }
-            }
-          ],
-          "typeTokenRange": {
-            "startIndex": 5,
-            "endIndex": 6
-          }
         },
         {
           "kind": "Function",
