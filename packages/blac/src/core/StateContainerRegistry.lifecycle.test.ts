@@ -27,23 +27,22 @@ class TestCubit extends StateContainer<{ value: number }> {
   };
 }
 
-class TestEvent {
-  readonly type = 'test';
-  readonly timestamp = Date.now();
-  constructor(public readonly value: number) {}
-}
+// Test event as discriminated union
+type TestEvent = { type: 'test'; value: number };
 
 class TestVertex extends Vertex<{ value: number }, TestEvent> {
   constructor() {
     super({ value: 0 });
 
-    this.on(TestEvent, (event, emit) => {
-      emit({ value: this.state.value + event.value });
+    this.createHandlers({
+      test: (event, emit) => {
+        emit({ value: this.state.value + event.value });
+      },
     });
   }
 
   addValue = (value: number) => {
-    this.add(new TestEvent(value));
+    this.add({ type: 'test', value });
   };
 }
 

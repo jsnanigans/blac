@@ -27,7 +27,13 @@ export * from './tracking';
 export * from './adapter';
 
 export type { Brand, BrandedId, InstanceId } from './types/branded';
-export type { BaseEvent } from './types/events';
+export type {
+  DiscriminatedEvent,
+  EventWithMetadata,
+  EventType,
+  ExtractEvent,
+  EventHandlerMap,
+} from './types/events';
 export * from './types/utilities';
 
 export {

@@ -248,59 +248,46 @@ For event-driven architectures with explicit state transitions.
 **Purpose**: Use Vertex when you want event-driven state management with explicit event handling.
 
 ```typescript
-import { Vertex, BaseEvent } from '@blac/core';
+import { Vertex } from '@blac/core';
 
-// Define events
-class IncrementEvent implements BaseEvent {
-  readonly type = 'increment';
-  readonly timestamp = Date.now();
-  constructor(public readonly amount: number = 1) {}
-}
-
-class DecrementEvent implements BaseEvent {
-  readonly type = 'decrement';
-  readonly timestamp = Date.now();
-  constructor(public readonly amount: number = 1) {}
-}
+// Define events as discriminated union
+type CounterEvent =
+  | { type: 'increment'; amount: number }
+  | { type: 'decrement'; amount: number };
 
 // Create Vertex with event handlers
-class CounterVertex extends Vertex<{ count: number }> {
+class CounterVertex extends Vertex<{ count: number }, CounterEvent> {
   constructor() {
     super({ count: 0 });
 
-    // Register event handlers in constructor
-    this.on(IncrementEvent, (event, emit) => {
-      emit({ count: this.state.count + event.amount });
-    });
-
-    this.on(DecrementEvent, (event, emit) => {
-      emit({ count: this.state.count - event.amount });
+    // TypeScript enforces exhaustive handling - all event types must be handled
+    this.createHandlers({
+      increment: (event, emit) => {
+        emit({ count: this.state.count + event.amount });
+      },
+      decrement: (event, emit) => {
+        emit({ count: this.state.count - event.amount });
+      },
     });
   }
 
   // ✅ IMPORTANT: Use arrow functions for React compatibility
-  increment = (amount = 1) => {
-    this.add(new IncrementEvent(amount));
-  };
-
-  decrement = (amount = 1) => {
-    this.add(new DecrementEvent(amount));
-  };
+  increment = (amount = 1) => this.add({ type: 'increment', amount });
+  decrement = (amount = 1) => this.add({ type: 'decrement', amount });
 }
 ```
 
-**BaseEvent Interface:**
+**Event Definition:**
+Events are defined as TypeScript discriminated unions for type safety and autocomplete:
 ```typescript
-interface BaseEvent {
-  readonly type: string;
-  readonly timestamp: number;
-  readonly source?: string;  // Optional source identifier
-}
+type MyEvent =
+  | { type: 'eventA'; payload: string }
+  | { type: 'eventB'; data: number };
 ```
 
 **Methods:**
 - `add(event)` - Add event to be processed (public)
-- `on(EventClass, handler)` - Register event handler (protected)
+- `createHandlers(map)` - Register all event handlers with exhaustive checking (protected)
 
 **Event Processing:**
 - Events are processed **synchronously**
@@ -665,20 +652,23 @@ class NotificationCubit extends Cubit<NotificationState> {
 }
 
 // Heavy channel state (created on-demand)
-class ChannelBloc extends Vertex<ChannelState> {
+type ChannelEvent = { type: 'receiveMessage'; message: Message };
+
+class ChannelBloc extends Vertex<ChannelState, ChannelEvent> {
   constructor(props: { channelId: string }) {
     super({ messages: [], typingUsers: new Set() });
 
-    // Register event handlers
-    this.on(ReceiveMessageEvent, (event, emit) => {
-      emit({
-        ...this.state,
-        messages: [...this.state.messages, event.message]
-      });
+    this.createHandlers({
+      receiveMessage: (event, emit) => {
+        emit({
+          ...this.state,
+          messages: [...this.state.messages, event.message]
+        });
 
-      // Update notification count (borrowing, not owning)
-      const notifications = NotificationCubit.get();
-      notifications.incrementUnread(props.channelId);
+        // Update notification count (borrowing, not owning)
+        const notifications = NotificationCubit.get();
+        notifications.incrementUnread(props.channelId);
+      },
     });
   }
 
@@ -687,6 +677,9 @@ class ChannelBloc extends Vertex<ChannelState> {
     const notifications = NotificationCubit.get();
     return notifications.state.unreadCounts.get(this.state.channel.id) || 0;
   }
+
+  // Convenience method
+  receiveMessage = (message: Message) => this.add({ type: 'receiveMessage', message });
 }
 
 // Sidebar shows unread counts WITHOUT creating ChannelBloc instances
@@ -993,30 +986,40 @@ class AppCubit extends Cubit<AppState> {
 Access other blocs in event handlers using `.get()` or `.getSafe()`. This is the most common pattern for bloc-to-bloc communication.
 
 ```typescript
-class ChannelBloc extends Vertex<ChannelState> {
+type ChannelEvent =
+  | { type: 'receiveMessage'; message: Message }
+  | { type: 'markAsRead' };
+
+class ChannelBloc extends Vertex<ChannelState, ChannelEvent> {
   constructor(props: { channelId: string }) {
     super({ messages: [], channelId: props.channelId });
 
-    this.on(ReceiveMessageEvent, (event, emit) => {
-      // Add message to state
-      emit({
-        ...this.state,
-        messages: [...this.state.messages, event.message]
-      });
+    this.createHandlers({
+      receiveMessage: (event, emit) => {
+        // Add message to state
+        emit({
+          ...this.state,
+          messages: [...this.state.messages, event.message]
+        });
 
-      // ✅ Borrow NotificationCubit to update unread count
-      const notifications = NotificationCubit.getSafe();
-      if (!notifications.error) {
-        notifications.instance.incrementUnread(this.state.channelId);
-      }
-    });
-
-    this.on(MarkAsReadEvent, (_event, emit) => {
-      // ✅ Use .get() when you know instance exists
-      const notifications = NotificationCubit.get();
-      notifications.clearUnread(this.state.channelId);
+        // ✅ Borrow NotificationCubit to update unread count
+        const notifications = NotificationCubit.getSafe();
+        if (!notifications.error) {
+          notifications.instance.incrementUnread(this.state.channelId);
+        }
+      },
+      markAsRead: (_, emit) => {
+        // ✅ Use .get() when you know instance exists
+        const notifications = NotificationCubit.get();
+        notifications.clearUnread(this.state.channelId);
+        emit(this.state);
+      },
     });
   }
+
+  // Convenience methods
+  receiveMessage = (message: Message) => this.add({ type: 'receiveMessage', message });
+  markAsRead = () => this.add({ type: 'markAsRead' });
 }
 ```
 
@@ -1221,34 +1224,43 @@ class ContactsCubit extends Cubit<ContactsState> {
 
 // === Per-Entity Instances ===
 
-class ChannelBloc extends Vertex<ChannelState> {
+type ChannelEvent =
+  | { type: 'receiveMessage'; message: Message }
+  | { type: 'markAsRead' };
+
+class ChannelBloc extends Vertex<ChannelState, ChannelEvent> {
   // One instance per channel (created on-demand)
   constructor(props: { channelId: string }) {
     super({ messages: [] });
 
-    this.on(ReceiveMessageEvent, (event, emit) => {
-      // Pattern 2: Event handler communication
-      const notifications = NotificationCubit.get();
-      notifications.incrementUnread(props.channelId);
+    this.createHandlers({
+      receiveMessage: (event, emit) => {
+        // Pattern 2: Event handler communication
+        const notifications = NotificationCubit.get();
+        notifications.incrementUnread(props.channelId);
 
-      emit({
-        ...this.state,
-        messages: [...this.state.messages, event.message]
-      });
+        emit({
+          ...this.state,
+          messages: [...this.state.messages, event.message]
+        });
+      },
+      markAsRead: (_, emit) => {
+        const notifications = NotificationCubit.get();
+        notifications.clearUnread(this.state.channelId);
+        emit(this.state);
+      },
     });
   }
 
   // Pattern 3: Getter-based (automatic tracking)
   get unreadCount(): number {
     const notifications = NotificationCubit.get();
-    return notifications.state.unreadCounts.get(this.channelId) || 0;
+    return notifications.state.unreadCounts.get(this.state.channelId) || 0;
   }
 
-  // Pattern 2: Method-based communication
-  markAsRead = () => {
-    const notifications = NotificationCubit.get();
-    notifications.clearUnread(this.channelId);
-  };
+  // Convenience methods
+  receiveMessage = (message: Message) => this.add({ type: 'receiveMessage', message });
+  markAsRead = () => this.add({ type: 'markAsRead' });
 }
 
 class UserCubit extends Cubit<User> {
@@ -1734,20 +1746,10 @@ function UserProfile({ userId }: { userId: string }) {
 ### Event-Driven Authentication
 
 ```typescript
-// Events
-class LoginEvent implements BaseEvent {
-  readonly type = 'login';
-  readonly timestamp = Date.now();
-  constructor(
-    public readonly email: string,
-    public readonly password: string,
-  ) {}
-}
-
-class LogoutEvent implements BaseEvent {
-  readonly type = 'logout';
-  readonly timestamp = Date.now();
-}
+// Define events as discriminated union
+type AuthEvent =
+  | { type: 'login'; email: string; password: string }
+  | { type: 'logout' };
 
 // State
 interface AuthState {
@@ -1759,7 +1761,7 @@ interface AuthState {
 
 // Vertex
 @blac({ keepAlive: true })
-class AuthVertex extends Vertex<AuthState> {
+class AuthVertex extends Vertex<AuthState, AuthEvent> {
   constructor() {
     super({
       user: null,
@@ -1768,43 +1770,39 @@ class AuthVertex extends Vertex<AuthState> {
       error: null
     });
 
-    this.on(LoginEvent, (event, emit) => {
-      emit({ ...this.state, isLoading: true, error: null });
+    this.createHandlers({
+      login: (event, emit) => {
+        emit({ ...this.state, isLoading: true, error: null });
 
-      // Simulate sync auth (in real app, async work would be done before dispatching event)
-      if (event.email === 'user@example.com' && event.password === 'password') {
+        // Simulate sync auth (in real app, async work would be done before dispatching event)
+        if (event.email === 'user@example.com' && event.password === 'password') {
+          emit({
+            user: { id: '123', name: 'Test User', email: 'user@example.com' },
+            isAuthenticated: true,
+            isLoading: false,
+            error: null
+          });
+        } else {
+          emit({
+            ...this.state,
+            isLoading: false,
+            error: 'Invalid credentials'
+          });
+        }
+      },
+      logout: (_, emit) => {
         emit({
-          user: { id: '123', name: 'Test User', email: 'user@example.com' },
-          isAuthenticated: true,
+          user: null,
+          isAuthenticated: false,
           isLoading: false,
           error: null
         });
-      } else {
-        emit({
-          ...this.state,
-          isLoading: false,
-          error: 'Invalid credentials'
-        });
-      }
-    });
-
-    this.on(LogoutEvent, (_, emit) => {
-      emit({
-        user: null,
-        isAuthenticated: false,
-        isLoading: false,
-        error: null
-      });
+      },
     });
   }
 
-  login = (email: string, password: string) => {
-    this.add(new LoginEvent(email, password));
-  };
-
-  logout = () => {
-    this.add(new LogoutEvent());
-  };
+  login = (email: string, password: string) => this.add({ type: 'login', email, password });
+  logout = () => this.add({ type: 'logout' });
 }
 ```
 

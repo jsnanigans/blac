@@ -1,10 +1,6 @@
 import { useRef, KeyboardEvent } from 'react';
 import { useBloc } from '@blac/react';
-import {
-  ChannelBloc,
-  SendMessageEvent,
-  UpdateDraftMessageEvent,
-} from '../blocs/ChannelBloc';
+import { ChannelBloc } from '../blocs/ChannelBloc';
 
 interface MessageInputProps {
   channelId: string;
@@ -29,7 +25,7 @@ export function MessageInput({ channelId, currentUserId }: MessageInputProps) {
 
   const handleSend = () => {
     // Add event to ChannelBloc
-    channelBloc.add(new SendMessageEvent(currentUserId));
+    channelBloc.sendMessage(currentUserId);
     inputRef.current?.focus();
   };
 
@@ -46,9 +42,7 @@ export function MessageInput({ channelId, currentUserId }: MessageInputProps) {
         ref={inputRef}
         type="text"
         value={draftMessage}
-        onChange={(e) =>
-          channelBloc.add(new UpdateDraftMessageEvent(e.target.value))
-        }
+        onChange={(e) => channelBloc.updateDraftMessage(e.target.value)}
         onKeyPress={handleKeyPress}
         placeholder={`Message #${channelId}`}
         className="message-input-field"

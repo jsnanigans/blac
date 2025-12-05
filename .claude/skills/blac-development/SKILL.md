@@ -48,26 +48,31 @@ class CounterCubit extends Cubit<{ count: number }> {
 Use Vertex for event-driven architectures with explicit state transitions.
 
 ```typescript
-import { Vertex, BaseEvent } from '@blac/core';
+import { Vertex } from '@blac/core';
 
-class IncrementEvent implements BaseEvent {
-  readonly type = 'increment';
-  readonly timestamp = Date.now();
-  constructor(public readonly amount: number = 1) {}
-}
+// Define events as discriminated union
+type CounterEvent =
+  | { type: 'increment'; amount: number }
+  | { type: 'decrement' };
 
-class CounterVertex extends Vertex<{ count: number }> {
+class CounterVertex extends Vertex<{ count: number }, CounterEvent> {
   constructor() {
     super({ count: 0 });
 
-    this.on(IncrementEvent, (event, emit) => {
-      emit({ count: this.state.count + event.amount });
+    // TypeScript enforces exhaustive handling - all event types must be handled
+    this.createHandlers({
+      increment: (event, emit) => {
+        emit({ count: this.state.count + event.amount });
+      },
+      decrement: (_, emit) => {
+        emit({ count: this.state.count - 1 });
+      },
     });
   }
 
-  increment = (amount = 1) => {
-    this.add(new IncrementEvent(amount));
-  };
+  // Convenience methods
+  increment = (amount = 1) => this.add({ type: 'increment', amount });
+  decrement = () => this.add({ type: 'decrement' });
 }
 ```
 

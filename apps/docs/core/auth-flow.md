@@ -60,71 +60,29 @@ interface AuthState {
 
 ## Part 2: Define Events
 
-Events represent everything that can happen in your auth system. Each event is a simple class with a unique `type` and relevant data:
+Events are defined as a discriminated union type. TypeScript enforces that all event types are handled:
 
 ```typescript
-import { BaseEvent } from '@blac/core';
-
-// Login flow events
-class LoginStartEvent implements BaseEvent {
-  readonly type = 'auth/loginStart';
-  readonly timestamp = Date.now();
-  constructor(public readonly email: string) {}
-}
-
-class LoginSuccessEvent implements BaseEvent {
-  readonly type = 'auth/loginSuccess';
-  readonly timestamp = Date.now();
-  constructor(
-    public readonly user: User,
-    public readonly tokens: AuthTokens,
-  ) {}
-}
-
-class LoginFailedEvent implements BaseEvent {
-  readonly type = 'auth/loginFailed';
-  readonly timestamp = Date.now();
-  constructor(public readonly error: AuthError) {}
-}
-
-// Logout with reason tracking (useful for analytics and debugging)
-class LogoutEvent implements BaseEvent {
-  readonly type = 'auth/logout';
-  readonly timestamp = Date.now();
-  constructor(
-    public readonly reason:
-      | 'user_initiated'
-      | 'session_expired'
-      | 'forced' = 'user_initiated',
-  ) {}
-}
-
-// Token refresh events (happens automatically in background)
-class TokenRefreshStartEvent implements BaseEvent {
-  readonly type = 'auth/tokenRefreshStart';
-  readonly timestamp = Date.now();
-}
-
-class TokenRefreshSuccessEvent implements BaseEvent {
-  readonly type = 'auth/tokenRefreshSuccess';
-  readonly timestamp = Date.now();
-  constructor(public readonly tokens: AuthTokens) {}
-}
-
-class TokenRefreshFailedEvent implements BaseEvent {
-  readonly type = 'auth/tokenRefreshFailed';
-  readonly timestamp = Date.now();
-  constructor(public readonly error: AuthError) {}
-}
-
-// Clear error (e.g., when user dismisses error message)
-class ClearErrorEvent implements BaseEvent {
-  readonly type = 'auth/clearError';
-  readonly timestamp = Date.now();
-}
+// Define all auth events as a discriminated union
+type AuthEvent =
+  // Login flow
+  | { type: 'loginStart'; email: string }
+  | { type: 'loginSuccess'; user: User; tokens: AuthTokens }
+  | { type: 'loginFailed'; error: AuthError }
+  // Logout with reason tracking (useful for analytics and debugging)
+  | { type: 'logout'; reason: 'user_initiated' | 'session_expired' | 'forced' }
+  // Token refresh events (happens automatically in background)
+  | { type: 'tokenRefreshStart' }
+  | { type: 'tokenRefreshSuccess'; tokens: AuthTokens }
+  | { type: 'tokenRefreshFailed'; error: AuthError }
+  // Clear error (e.g., when user dismisses error message)
+  | { type: 'clearError' };
 ```
 
-**Naming convention:** Using `auth/` prefix makes events easy to filter in logs and DevTools.
+**Benefits of discriminated unions:**
+- TypeScript enforces exhaustive handling - you'll get a compile-time error if you miss an event type
+- Full autocomplete when dispatching events
+- Type narrowing in handlers - TypeScript knows exactly which properties are available
 
 ## Part 3: API Service
 
@@ -292,7 +250,7 @@ Now combine everything into the Vertex. This is where state transitions and side
 ```typescript
 import { Vertex, blac } from '@blac/core';
 
-class AuthVertex extends Vertex<AuthState> {
+class AuthVertex extends Vertex<AuthState, AuthEvent> {
   private refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
@@ -313,86 +271,89 @@ class AuthVertex extends Vertex<AuthState> {
   // ─────────────────────────────────────────────────────────────────
 
   private registerEventHandlers() {
-    // Login flow
-    this.on(LoginStartEvent, (_, emit) => {
-      emit({
-        ...this.state,
-        isLoading: true,
-        error: null, // Clear any previous error
-      });
-    });
+    // TypeScript enforces that ALL event types are handled
+    this.createHandlers({
+      // Login flow
+      loginStart: (_, emit) => {
+        emit({
+          ...this.state,
+          isLoading: true,
+          error: null, // Clear any previous error
+        });
+      },
 
-    this.on(LoginSuccessEvent, (event, emit) => {
-      emit({
-        user: event.user,
-        tokens: event.tokens,
-        isLoading: false,
-        isRefreshing: false,
-        error: null,
-      });
+      loginSuccess: (event, emit) => {
+        emit({
+          user: event.user,
+          tokens: event.tokens,
+          isLoading: false,
+          isRefreshing: false,
+          error: null,
+        });
 
-      // Side effects after state update
-      tokenStorage.save(event.tokens);
-      this.scheduleTokenRefresh(event.tokens);
-    });
+        // Side effects after state update
+        tokenStorage.save(event.tokens);
+        this.scheduleTokenRefresh(event.tokens);
+      },
 
-    this.on(LoginFailedEvent, (event, emit) => {
-      emit({
-        ...this.state,
-        isLoading: false,
-        error: event.error,
-      });
-    });
+      loginFailed: (event, emit) => {
+        emit({
+          ...this.state,
+          isLoading: false,
+          error: event.error,
+        });
+      },
 
-    // Logout
-    this.on(LogoutEvent, (_, emit) => {
-      emit({
-        user: null,
-        tokens: null,
-        isLoading: false,
-        isRefreshing: false,
-        error: null,
-      });
+      // Logout
+      logout: (_, emit) => {
+        emit({
+          user: null,
+          tokens: null,
+          isLoading: false,
+          isRefreshing: false,
+          error: null,
+        });
 
-      tokenStorage.clear();
-      this.cancelTokenRefresh();
-    });
+        tokenStorage.clear();
+        this.cancelTokenRefresh();
+      },
 
-    // Token refresh flow
-    this.on(TokenRefreshStartEvent, (_, emit) => {
-      emit({ ...this.state, isRefreshing: true });
-    });
+      // Token refresh flow
+      tokenRefreshStart: (_, emit) => {
+        emit({ ...this.state, isRefreshing: true });
+      },
 
-    this.on(TokenRefreshSuccessEvent, (event, emit) => {
-      emit({
-        ...this.state,
-        tokens: event.tokens,
-        isRefreshing: false,
-      });
+      tokenRefreshSuccess: (event, emit) => {
+        emit({
+          ...this.state,
+          tokens: event.tokens,
+          isRefreshing: false,
+        });
 
-      tokenStorage.save(event.tokens);
-      this.scheduleTokenRefresh(event.tokens);
-    });
+        tokenStorage.save(event.tokens);
+        this.scheduleTokenRefresh(event.tokens);
+      },
 
-    this.on(TokenRefreshFailedEvent, (_, emit) => {
-      // Refresh failed = session is invalid, log user out
-      emit({
-        user: null,
-        tokens: null,
-        isLoading: false,
-        isRefreshing: false,
-        error: {
-          code: 'token_expired',
-          message: 'Your session has expired. Please sign in again.',
-        },
-      });
+      tokenRefreshFailed: (_, emit) => {
+        // Refresh failed = session is invalid, log user out
+        emit({
+          user: null,
+          tokens: null,
+          isLoading: false,
+          isRefreshing: false,
+          error: {
+            code: 'token_expired',
+            message: 'Your session has expired. Please sign in again.',
+          },
+        });
 
-      tokenStorage.clear();
-      this.cancelTokenRefresh();
-    });
+        tokenStorage.clear();
+        this.cancelTokenRefresh();
+      },
 
-    this.on(ClearErrorEvent, (_, emit) => {
-      emit({ ...this.state, error: null });
+      clearError: (_, emit) => {
+        emit({ ...this.state, error: null });
+      },
     });
   }
 
@@ -413,7 +374,7 @@ class AuthVertex extends Vertex<AuthState> {
     // Token looks valid, verify with server and get user data
     try {
       const user = await authApi.getProfile(tokens.accessToken);
-      this.add(new LoginSuccessEvent(user, tokens));
+      this.add({ type: 'loginSuccess', user, tokens });
     } catch {
       // Token was invalid, clear storage
       tokenStorage.clear();
@@ -449,47 +410,47 @@ class AuthVertex extends Vertex<AuthState> {
   // ─────────────────────────────────────────────────────────────────
 
   login = async (email: string, password: string): Promise<boolean> => {
-    this.add(new LoginStartEvent(email));
+    this.add({ type: 'loginStart', email });
 
     try {
       const { user, tokens } = await authApi.login({ email, password });
-      this.add(new LoginSuccessEvent(user, tokens));
+      this.add({ type: 'loginSuccess', user, tokens });
       return true;
     } catch (error) {
-      this.add(new LoginFailedEvent(error as AuthError));
+      this.add({ type: 'loginFailed', error: error as AuthError });
       return false;
     }
   };
 
   logout = async (
-    reason: LogoutEvent['reason'] = 'user_initiated',
+    reason: 'user_initiated' | 'session_expired' | 'forced' = 'user_initiated',
   ): Promise<void> => {
     // Notify server (best effort)
     if (this.state.tokens) {
       await authApi.logout(this.state.tokens.accessToken);
     }
 
-    this.add(new LogoutEvent(reason));
+    this.add({ type: 'logout', reason });
   };
 
   refreshToken = async (): Promise<boolean> => {
     const tokens = this.state.tokens ?? tokenStorage.load();
     if (!tokens?.refreshToken) return false;
 
-    this.add(new TokenRefreshStartEvent());
+    this.add({ type: 'tokenRefreshStart' });
 
     try {
       const newTokens = await authApi.refreshToken(tokens.refreshToken);
-      this.add(new TokenRefreshSuccessEvent(newTokens));
+      this.add({ type: 'tokenRefreshSuccess', tokens: newTokens });
       return true;
     } catch (error) {
-      this.add(new TokenRefreshFailedEvent(error as AuthError));
+      this.add({ type: 'tokenRefreshFailed', error: error as AuthError });
       return false;
     }
   };
 
   clearError = () => {
-    this.add(new ClearErrorEvent());
+    this.add({ type: 'clearError' });
   };
 
   // ─────────────────────────────────────────────────────────────────
@@ -544,7 +505,7 @@ class AuthVertex extends Vertex<AuthState> {
     this.cancelTokenRefresh();
   };
 
-  protected override onEventError = (event: BaseEvent, error: Error): void => {
+  protected override onEventError = (event: AuthEvent, error: Error): void => {
     console.error(`Auth error during ${event.type}:`, error);
   };
 }

@@ -183,30 +183,39 @@ class NotificationCubit extends Cubit<{ unreadCounts: Map<string, number> }> {
 
 // === Per-Entity Instances ===
 
-class ChannelBloc extends Vertex<ChannelState> {
+type ChannelEvent =
+  | { type: 'receiveMessage'; message: Message }
+  | { type: 'markAsRead' };
+
+class ChannelBloc extends Vertex<ChannelState, ChannelEvent> {
   constructor(props: { channelId: string }) {
     super({ messages: [], channelId: props.channelId });
 
-    // Pattern 1: Event handler borrowing
-    this.on(ReceiveMessageEvent, (event, emit) => {
-      emit({ ...this.state, messages: [...this.state.messages, event.message] });
+    this.createHandlers({
+      // Pattern 1: Event handler borrowing
+      receiveMessage: (event, emit) => {
+        emit({ ...this.state, messages: [...this.state.messages, event.message] });
 
-      const notifications = NotificationCubit.get();
-      notifications.incrementUnread(props.channelId);
+        const notifications = NotificationCubit.get();
+        notifications.incrementUnread(props.channelId);
+      },
+      markAsRead: (_, emit) => {
+        const notifications = NotificationCubit.get();
+        notifications.clearUnread(this.state.channelId);
+        emit(this.state);
+      },
     });
   }
 
   // Pattern 2: Getter with auto-tracking
   get unreadCount() {
     const notifications = NotificationCubit.get();
-    return notifications.state.unreadCounts.get(this.channelId) || 0;
+    return notifications.state.unreadCounts.get(this.state.channelId) || 0;
   }
 
-  // Pattern 1: Method borrowing
-  markAsRead = () => {
-    const notifications = NotificationCubit.get();
-    notifications.clearUnread(this.channelId);
-  };
+  // Convenience methods
+  receiveMessage = (message: Message) => this.add({ type: 'receiveMessage', message });
+  markAsRead = () => this.add({ type: 'markAsRead' });
 }
 
 // === Components ===

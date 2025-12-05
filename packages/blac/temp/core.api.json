@@ -361,105 +361,6 @@
           "extendsTokenRanges": []
         },
         {
-          "kind": "Interface",
-          "canonicalReference": "@blac/core!BaseEvent:interface",
-          "docComment": "/**\n * Base event interface Used by Vertex for event-driven state management\n */\n",
-          "excerptTokens": [
-            {
-              "kind": "Content",
-              "text": "export interface BaseEvent "
-            }
-          ],
-          "fileUrlPath": "dist/.types/types/events.d.ts",
-          "releaseTag": "Public",
-          "name": "BaseEvent",
-          "preserveMemberOrder": false,
-          "members": [
-            {
-              "kind": "PropertySignature",
-              "canonicalReference": "@blac/core!BaseEvent#source:member",
-              "docComment": "/**\n * Optional source identifier for debugging\n */\n",
-              "excerptTokens": [
-                {
-                  "kind": "Content",
-                  "text": "readonly source?: "
-                },
-                {
-                  "kind": "Content",
-                  "text": "string"
-                },
-                {
-                  "kind": "Content",
-                  "text": ";"
-                }
-              ],
-              "isReadonly": true,
-              "isOptional": true,
-              "releaseTag": "Public",
-              "name": "source",
-              "propertyTypeTokenRange": {
-                "startIndex": 1,
-                "endIndex": 2
-              }
-            },
-            {
-              "kind": "PropertySignature",
-              "canonicalReference": "@blac/core!BaseEvent#timestamp:member",
-              "docComment": "/**\n * Unix timestamp when the event was created\n */\n",
-              "excerptTokens": [
-                {
-                  "kind": "Content",
-                  "text": "readonly timestamp: "
-                },
-                {
-                  "kind": "Content",
-                  "text": "number"
-                },
-                {
-                  "kind": "Content",
-                  "text": ";"
-                }
-              ],
-              "isReadonly": true,
-              "isOptional": false,
-              "releaseTag": "Public",
-              "name": "timestamp",
-              "propertyTypeTokenRange": {
-                "startIndex": 1,
-                "endIndex": 2
-              }
-            },
-            {
-              "kind": "PropertySignature",
-              "canonicalReference": "@blac/core!BaseEvent#type:member",
-              "docComment": "/**\n * Event type identifier (typically the class name)\n */\n",
-              "excerptTokens": [
-                {
-                  "kind": "Content",
-                  "text": "readonly type: "
-                },
-                {
-                  "kind": "Content",
-                  "text": "string"
-                },
-                {
-                  "kind": "Content",
-                  "text": ";"
-                }
-              ],
-              "isReadonly": true,
-              "isOptional": false,
-              "releaseTag": "Public",
-              "name": "type",
-              "propertyTypeTokenRange": {
-                "startIndex": 1,
-                "endIndex": 2
-              }
-            }
-          ],
-          "extendsTokenRanges": []
-        },
-        {
           "kind": "Variable",
           "canonicalReference": "@blac/core!BLAC_DEFAULTS:var",
           "docComment": "/**\n * Default configuration constants for BlaC\n */\n",
@@ -685,8 +586,8 @@
                 },
                 {
                   "kind": "Reference",
-                  "text": "BaseEvent",
-                  "canonicalReference": "@blac/core!BaseEvent:interface"
+                  "text": "DiscriminatedEvent",
+                  "canonicalReference": "@blac/core!DiscriminatedEvent:interface"
                 },
                 {
                   "kind": "Content",
@@ -706,8 +607,13 @@
                   "text": ", event: "
                 },
                 {
+                  "kind": "Reference",
+                  "text": "EventWithMetadata",
+                  "canonicalReference": "@blac/core!EventWithMetadata:type"
+                },
+                {
                   "kind": "Content",
-                  "text": "E"
+                  "text": "<E>"
                 },
                 {
                   "kind": "Content",
@@ -733,8 +639,8 @@
               ],
               "isOptional": true,
               "returnTypeTokenRange": {
-                "startIndex": 10,
-                "endIndex": 11
+                "startIndex": 11,
+                "endIndex": 12
               },
               "releaseTag": "Public",
               "overloadIndex": 1,
@@ -751,15 +657,15 @@
                   "parameterName": "event",
                   "parameterTypeTokenRange": {
                     "startIndex": 6,
-                    "endIndex": 7
+                    "endIndex": 8
                   },
                   "isOptional": false
                 },
                 {
                   "parameterName": "context",
                   "parameterTypeTokenRange": {
-                    "startIndex": 8,
-                    "endIndex": 9
+                    "startIndex": 9,
+                    "endIndex": 10
                   },
                   "isOptional": false
                 }
@@ -2765,6 +2671,51 @@
           "name": "disableGetterTracking"
         },
         {
+          "kind": "Interface",
+          "canonicalReference": "@blac/core!DiscriminatedEvent:interface",
+          "docComment": "/**\n * Base discriminated event type. All events must have a 'type' property as the discriminator.\n */\n",
+          "excerptTokens": [
+            {
+              "kind": "Content",
+              "text": "export interface DiscriminatedEvent "
+            }
+          ],
+          "fileUrlPath": "dist/.types/types/events.d.ts",
+          "releaseTag": "Public",
+          "name": "DiscriminatedEvent",
+          "preserveMemberOrder": false,
+          "members": [
+            {
+              "kind": "PropertySignature",
+              "canonicalReference": "@blac/core!DiscriminatedEvent#type:member",
+              "docComment": "",
+              "excerptTokens": [
+                {
+                  "kind": "Content",
+                  "text": "readonly type: "
+                },
+                {
+                  "kind": "Content",
+                  "text": "string"
+                },
+                {
+                  "kind": "Content",
+                  "text": ";"
+                }
+              ],
+              "isReadonly": true,
+              "isOptional": false,
+              "releaseTag": "Public",
+              "name": "type",
+              "propertyTypeTokenRange": {
+                "startIndex": 1,
+                "endIndex": 2
+              }
+            }
+          ],
+          "extendsTokenRanges": []
+        },
+        {
           "kind": "Function",
           "canonicalReference": "@blac/core!error:function(1)",
           "docComment": "/**\n * Log an error message (tree-shakeable export)\n *\n * @param context - Context identifier (module or component name)\n *\n * @param message - Log message\n *\n * @param data - Optional structured data\n */\n",
@@ -2839,26 +2790,25 @@
         },
         {
           "kind": "TypeAlias",
-          "canonicalReference": "@blac/core!EventConstructor:type",
-          "docComment": "/**\n * Constructor type for event classes  @template T - Event type\n */\n",
+          "canonicalReference": "@blac/core!EventHandlerMap:type",
+          "docComment": "/**\n * Exhaustive handler map type. Requires a handler for EVERY event type in the union. TypeScript will error if any handler is missing.\n *\n * @example\n *\n * type MyEvent = { type: 'increment'; amount: number } | { type: 'reset' };\n *\n * // This is valid - all types covered: const handlers: EventHandlerMap<MyEvent, State> = { increment: (e, emit) => { ... }, reset: (e, emit) => { ... }, };\n *\n * // This errors - 'reset' is missing: const handlers: EventHandlerMap<MyEvent, State> = { increment: (e, emit) => { ... }, };\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
-              "text": "export type EventConstructor<T extends "
+              "text": "export type EventHandlerMap<E extends "
             },
             {
               "kind": "Reference",
-              "text": "BaseEvent",
-              "canonicalReference": "@blac/core!BaseEvent:interface"
+              "text": "DiscriminatedEvent",
+              "canonicalReference": "@blac/core!DiscriminatedEvent:interface"
             },
             {
               "kind": "Content",
-              "text": " = "
+              "text": ", S extends "
             },
             {
-              "kind": "Reference",
-              "text": "BaseEvent",
-              "canonicalReference": "@blac/core!BaseEvent:interface"
+              "kind": "Content",
+              "text": "object"
             },
             {
               "kind": "Content",
@@ -2866,64 +2816,43 @@
             },
             {
               "kind": "Content",
-              "text": "new (...args: never[]) => T"
-            },
-            {
-              "kind": "Content",
-              "text": ";"
-            }
-          ],
-          "fileUrlPath": "dist/.types/core/Vertex.d.ts",
-          "releaseTag": "Public",
-          "name": "EventConstructor",
-          "typeParameters": [
-            {
-              "typeParameterName": "T",
-              "constraintTokenRange": {
-                "startIndex": 1,
-                "endIndex": 2
-              },
-              "defaultTypeTokenRange": {
-                "startIndex": 3,
-                "endIndex": 4
-              }
-            }
-          ],
-          "typeTokenRange": {
-            "startIndex": 5,
-            "endIndex": 6
-          }
-        },
-        {
-          "kind": "TypeAlias",
-          "canonicalReference": "@blac/core!EventHandler:type",
-          "docComment": "/**\n * Handler function for processing events in Vertex  @template E - Event type  @template S - State type\n *\n * @param event - The event being handled\n *\n * @param emit - Function to emit new state\n */\n",
-          "excerptTokens": [
-            {
-              "kind": "Content",
-              "text": "export type EventHandler<E extends "
+              "text": "{\n    [K in "
             },
             {
               "kind": "Reference",
-              "text": "BaseEvent",
-              "canonicalReference": "@blac/core!BaseEvent:interface"
+              "text": "EventType",
+              "canonicalReference": "@blac/core!EventType:type"
             },
             {
               "kind": "Content",
-              "text": ", S> = "
+              "text": "<E>]: "
+            },
+            {
+              "kind": "Reference",
+              "text": "VertexEventHandler",
+              "canonicalReference": "@blac/core!VertexEventHandler:type"
             },
             {
               "kind": "Content",
-              "text": "(event: E, emit: (state: S) => void) => void"
+              "text": "<"
+            },
+            {
+              "kind": "Reference",
+              "text": "ExtractEvent",
+              "canonicalReference": "@blac/core!ExtractEvent:type"
+            },
+            {
+              "kind": "Content",
+              "text": "<E, K>, S>;\n}"
             },
             {
               "kind": "Content",
               "text": ";"
             }
           ],
-          "fileUrlPath": "dist/.types/core/Vertex.d.ts",
+          "fileUrlPath": "dist/.types/types/events.d.ts",
           "releaseTag": "Public",
-          "name": "EventHandler",
+          "name": "EventHandlerMap",
           "typeParameters": [
             {
               "typeParameterName": "E",
@@ -2939,8 +2868,128 @@
             {
               "typeParameterName": "S",
               "constraintTokenRange": {
+                "startIndex": 3,
+                "endIndex": 4
+              },
+              "defaultTypeTokenRange": {
                 "startIndex": 0,
                 "endIndex": 0
+              }
+            }
+          ],
+          "typeTokenRange": {
+            "startIndex": 5,
+            "endIndex": 12
+          }
+        },
+        {
+          "kind": "Interface",
+          "canonicalReference": "@blac/core!EventMetadata:interface",
+          "docComment": "/**\n * Optional metadata that can be attached to events. Timestamp is auto-added by Vertex when processing events.\n */\n",
+          "excerptTokens": [
+            {
+              "kind": "Content",
+              "text": "export interface EventMetadata "
+            }
+          ],
+          "fileUrlPath": "dist/.types/types/events.d.ts",
+          "releaseTag": "Public",
+          "name": "EventMetadata",
+          "preserveMemberOrder": false,
+          "members": [
+            {
+              "kind": "PropertySignature",
+              "canonicalReference": "@blac/core!EventMetadata#source:member",
+              "docComment": "",
+              "excerptTokens": [
+                {
+                  "kind": "Content",
+                  "text": "readonly source?: "
+                },
+                {
+                  "kind": "Content",
+                  "text": "string"
+                },
+                {
+                  "kind": "Content",
+                  "text": ";"
+                }
+              ],
+              "isReadonly": true,
+              "isOptional": true,
+              "releaseTag": "Public",
+              "name": "source",
+              "propertyTypeTokenRange": {
+                "startIndex": 1,
+                "endIndex": 2
+              }
+            },
+            {
+              "kind": "PropertySignature",
+              "canonicalReference": "@blac/core!EventMetadata#timestamp:member",
+              "docComment": "",
+              "excerptTokens": [
+                {
+                  "kind": "Content",
+                  "text": "readonly timestamp?: "
+                },
+                {
+                  "kind": "Content",
+                  "text": "number"
+                },
+                {
+                  "kind": "Content",
+                  "text": ";"
+                }
+              ],
+              "isReadonly": true,
+              "isOptional": true,
+              "releaseTag": "Public",
+              "name": "timestamp",
+              "propertyTypeTokenRange": {
+                "startIndex": 1,
+                "endIndex": 2
+              }
+            }
+          ],
+          "extendsTokenRanges": []
+        },
+        {
+          "kind": "TypeAlias",
+          "canonicalReference": "@blac/core!EventType:type",
+          "docComment": "/**\n * Extract the 'type' literal union from a discriminated event union.\n *\n * @example\n *\n * type MyEvent = { type: 'a' } | { type: 'b' }; type Types = EventType<MyEvent>; // 'a' | 'b'\n */\n",
+          "excerptTokens": [
+            {
+              "kind": "Content",
+              "text": "export type EventType<E extends "
+            },
+            {
+              "kind": "Reference",
+              "text": "DiscriminatedEvent",
+              "canonicalReference": "@blac/core!DiscriminatedEvent:interface"
+            },
+            {
+              "kind": "Content",
+              "text": "> = "
+            },
+            {
+              "kind": "Content",
+              "text": "E['type']"
+            },
+            {
+              "kind": "Content",
+              "text": ";"
+            }
+          ],
+          "fileUrlPath": "dist/.types/types/events.d.ts",
+          "releaseTag": "Public",
+          "name": "EventType",
+          "typeParameters": [
+            {
+              "typeParameterName": "E",
+              "constraintTokenRange": {
+                "startIndex": 1,
+                "endIndex": 2
               },
               "defaultTypeTokenRange": {
                 "startIndex": 0,
@@ -2951,6 +3000,59 @@
           "typeTokenRange": {
             "startIndex": 3,
             "endIndex": 4
+          }
+        },
+        {
+          "kind": "TypeAlias",
+          "canonicalReference": "@blac/core!EventWithMetadata:type",
+          "docComment": "/**\n * Event with metadata attached (internal use after enrichment)\n */\n",
+          "excerptTokens": [
+            {
+              "kind": "Content",
+              "text": "export type EventWithMetadata<E extends "
+            },
+            {
+              "kind": "Reference",
+              "text": "DiscriminatedEvent",
+              "canonicalReference": "@blac/core!DiscriminatedEvent:interface"
+            },
+            {
+              "kind": "Content",
+              "text": "> = "
+            },
+            {
+              "kind": "Content",
+              "text": "E & "
+            },
+            {
+              "kind": "Reference",
+              "text": "EventMetadata",
+              "canonicalReference": "@blac/core!EventMetadata:interface"
+            },
+            {
+              "kind": "Content",
+              "text": ";"
+            }
+          ],
+          "fileUrlPath": "dist/.types/types/events.d.ts",
+          "releaseTag": "Public",
+          "name": "EventWithMetadata",
+          "typeParameters": [
+            {
+              "typeParameterName": "E",
+              "constraintTokenRange": {
+                "startIndex": 1,
+                "endIndex": 2
+              },
+              "defaultTypeTokenRange": {
+                "startIndex": 0,
+                "endIndex": 0
+              }
+            }
+          ],
+          "typeTokenRange": {
+            "startIndex": 3,
+            "endIndex": 5
           }
         },
         {
@@ -3126,6 +3228,83 @@
           "typeTokenRange": {
             "startIndex": 1,
             "endIndex": 2
+          }
+        },
+        {
+          "kind": "TypeAlias",
+          "canonicalReference": "@blac/core!ExtractEvent:type",
+          "docComment": "/**\n * Extract a specific event from a union by its type.\n *\n * @example\n *\n * type MyEvent = { type: 'a'; value: number } | { type: 'b' }; type EventA = ExtractEvent<MyEvent, 'a'>; // { type: 'a'; value: number }\n */\n",
+          "excerptTokens": [
+            {
+              "kind": "Content",
+              "text": "export type ExtractEvent<E extends "
+            },
+            {
+              "kind": "Reference",
+              "text": "DiscriminatedEvent",
+              "canonicalReference": "@blac/core!DiscriminatedEvent:interface"
+            },
+            {
+              "kind": "Content",
+              "text": ", T extends "
+            },
+            {
+              "kind": "Reference",
+              "text": "EventType",
+              "canonicalReference": "@blac/core!EventType:type"
+            },
+            {
+              "kind": "Content",
+              "text": "<E>"
+            },
+            {
+              "kind": "Content",
+              "text": "> = "
+            },
+            {
+              "kind": "Reference",
+              "text": "Extract",
+              "canonicalReference": "!Extract:type"
+            },
+            {
+              "kind": "Content",
+              "text": "<E, {\n    type: T;\n}>"
+            },
+            {
+              "kind": "Content",
+              "text": ";"
+            }
+          ],
+          "fileUrlPath": "dist/.types/types/events.d.ts",
+          "releaseTag": "Public",
+          "name": "ExtractEvent",
+          "typeParameters": [
+            {
+              "typeParameterName": "E",
+              "constraintTokenRange": {
+                "startIndex": 1,
+                "endIndex": 2
+              },
+              "defaultTypeTokenRange": {
+                "startIndex": 0,
+                "endIndex": 0
+              }
+            },
+            {
+              "typeParameterName": "T",
+              "constraintTokenRange": {
+                "startIndex": 3,
+                "endIndex": 5
+              },
+              "defaultTypeTokenRange": {
+                "startIndex": 0,
+                "endIndex": 0
+              }
+            }
+          ],
+          "typeTokenRange": {
+            "startIndex": 6,
+            "endIndex": 8
           }
         },
         {
@@ -9958,7 +10137,7 @@
         {
           "kind": "Class",
           "canonicalReference": "@blac/core!Vertex:class",
-          "docComment": "/**\n * Event-driven state container that processes events to update state. Use with event handlers registered via the on() method.\n *\n * @template S - State type  @template E - Event type (extends BaseEvent)  @template P - Props type (optional)\n */\n",
+          "docComment": "/**\n * Event-driven state container using discriminated union events. Provides compile-time exhaustive checking for event handlers.\n *\n * @template S - State type (must be an object)  @template E - Event union type (discriminated by 'type' property)  @template P - Props type (optional)\n *\n * @example\n * ```typescript\n * type CounterEvent =\n *   | { type: 'increment'; amount: number }\n *   | { type: 'decrement' }\n *   | { type: 'reset' };\n *\n * class CounterVertex extends Vertex<{ count: number }, CounterEvent> {\n *   constructor() {\n *     super({ count: 0 });\n *     this.createHandlers({\n *       increment: (event, emit) => {\n *         emit({ count: this.state.count + event.amount });\n *       },\n *       decrement: (_, emit) => {\n *         emit({ count: this.state.count - 1 });\n *       },\n *       reset: (_, emit) => {\n *         emit({ count: 0 });\n *       },\n *     });\n *   }\n * }\n *\n * const counter = CounterVertex.create();\n * counter.add({ type: 'increment', amount: 5 });\n * ```\n *\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -9974,7 +10153,7 @@
             },
             {
               "kind": "Content",
-              "text": "any"
+              "text": "object"
             },
             {
               "kind": "Content",
@@ -9982,8 +10161,8 @@
             },
             {
               "kind": "Reference",
-              "text": "BaseEvent",
-              "canonicalReference": "@blac/core!BaseEvent:interface"
+              "text": "DiscriminatedEvent",
+              "canonicalReference": "@blac/core!DiscriminatedEvent:interface"
             },
             {
               "kind": "Content",
@@ -9991,8 +10170,8 @@
             },
             {
               "kind": "Reference",
-              "text": "BaseEvent",
-              "canonicalReference": "@blac/core!BaseEvent:interface"
+              "text": "DiscriminatedEvent",
+              "canonicalReference": "@blac/core!DiscriminatedEvent:interface"
             },
             {
               "kind": "Content",
@@ -10096,7 +10275,7 @@
             {
               "kind": "Property",
               "canonicalReference": "@blac/core!Vertex#add:member",
-              "docComment": "/**\n * Add an event to the event stream for processing\n *\n * @param event - The event to process\n */\n",
+              "docComment": "/**\n * Add an event to be processed. Event must match one of the types in the declared event union. Provides full autocomplete for event construction.\n *\n * @param event - The event to process\n *\n * @example\n * ```typescript\n * counter.add({ type: 'increment', amount: 5 });\n * // TypeScript autocomplete suggests: 'increment' | 'decrement' | 'reset'\n * ```\n *\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
@@ -10124,52 +10303,57 @@
               "isAbstract": false
             },
             {
-              "kind": "Property",
-              "canonicalReference": "@blac/core!Vertex#on:member",
-              "docComment": "/**\n * Register a handler for a specific event type\n *\n * @param EventClass - The event class constructor\n *\n * @param handler - Function to handle events of this type\n */\n",
+              "kind": "Method",
+              "canonicalReference": "@blac/core!Vertex#createHandlers:member(1)",
+              "docComment": "/**\n * Create and register all event handlers with exhaustive type checking. TypeScript will error if any event type from the union is missing.\n *\n * @param handlers - Map of event type to handler function\n *\n * @example\n * ```typescript\n * this.createHandlers({\n *   increment: (event, emit) => {\n *     // event is narrowed to { type: 'increment'; amount: number }\n *     emit({ count: this.state.count + event.amount });\n *   },\n *   decrement: (_, emit) => {\n *     emit({ count: this.state.count - 1 });\n *   },\n * }); // TypeScript error if any handler is missing!\n * ```\n *\n */\n",
               "excerptTokens": [
                 {
                   "kind": "Content",
-                  "text": "protected on: "
-                },
-                {
-                  "kind": "Content",
-                  "text": "<T extends E>(EventClass: "
+                  "text": "protected createHandlers(handlers: "
                 },
                 {
                   "kind": "Reference",
-                  "text": "EventConstructor",
-                  "canonicalReference": "@blac/core!EventConstructor:type"
+                  "text": "EventHandlerMap",
+                  "canonicalReference": "@blac/core!EventHandlerMap:type"
                 },
                 {
                   "kind": "Content",
-                  "text": "<T>, handler: "
-                },
-                {
-                  "kind": "Reference",
-                  "text": "EventHandler",
-                  "canonicalReference": "@blac/core!EventHandler:type"
+                  "text": "<E, S>"
                 },
                 {
                   "kind": "Content",
-                  "text": "<T, S>) => void"
+                  "text": "): "
+                },
+                {
+                  "kind": "Content",
+                  "text": "void"
                 },
                 {
                   "kind": "Content",
                   "text": ";"
                 }
               ],
-              "isReadonly": false,
-              "isOptional": false,
-              "releaseTag": "Public",
-              "name": "on",
-              "propertyTypeTokenRange": {
-                "startIndex": 1,
-                "endIndex": 6
-              },
               "isStatic": false,
+              "returnTypeTokenRange": {
+                "startIndex": 4,
+                "endIndex": 5
+              },
+              "releaseTag": "Public",
               "isProtected": true,
-              "isAbstract": false
+              "overloadIndex": 1,
+              "parameters": [
+                {
+                  "parameterName": "handlers",
+                  "parameterTypeTokenRange": {
+                    "startIndex": 1,
+                    "endIndex": 3
+                  },
+                  "isOptional": false
+                }
+              ],
+              "isOptional": false,
+              "isAbstract": false,
+              "name": "createHandlers"
             },
             {
               "kind": "Method",
@@ -10181,8 +10365,13 @@
                   "text": "protected onEventError(_event: "
                 },
                 {
+                  "kind": "Reference",
+                  "text": "EventWithMetadata",
+                  "canonicalReference": "@blac/core!EventWithMetadata:type"
+                },
+                {
                   "kind": "Content",
-                  "text": "E"
+                  "text": "<E>"
                 },
                 {
                   "kind": "Content",
@@ -10208,8 +10397,8 @@
               ],
               "isStatic": false,
               "returnTypeTokenRange": {
-                "startIndex": 5,
-                "endIndex": 6
+                "startIndex": 6,
+                "endIndex": 7
               },
               "releaseTag": "Public",
               "isProtected": true,
@@ -10219,15 +10408,15 @@
                   "parameterName": "_event",
                   "parameterTypeTokenRange": {
                     "startIndex": 1,
-                    "endIndex": 2
+                    "endIndex": 3
                   },
                   "isOptional": false
                 },
                 {
                   "parameterName": "_error",
                   "parameterTypeTokenRange": {
-                    "startIndex": 3,
-                    "endIndex": 4
+                    "startIndex": 4,
+                    "endIndex": 5
                   },
                   "isOptional": false
                 }
@@ -10242,6 +10431,73 @@
             "endIndex": 13
           },
           "implementsTokenRanges": []
+        },
+        {
+          "kind": "TypeAlias",
+          "canonicalReference": "@blac/core!VertexEventHandler:type",
+          "docComment": "/**\n * Handler function signature for a specific event type.\n */\n",
+          "excerptTokens": [
+            {
+              "kind": "Content",
+              "text": "export type VertexEventHandler<E extends "
+            },
+            {
+              "kind": "Reference",
+              "text": "DiscriminatedEvent",
+              "canonicalReference": "@blac/core!DiscriminatedEvent:interface"
+            },
+            {
+              "kind": "Content",
+              "text": ", S extends "
+            },
+            {
+              "kind": "Content",
+              "text": "object"
+            },
+            {
+              "kind": "Content",
+              "text": "> = "
+            },
+            {
+              "kind": "Content",
+              "text": "(event: E, emit: (state: S) => void) => void"
+            },
+            {
+              "kind": "Content",
+              "text": ";"
+            }
+          ],
+          "fileUrlPath": "dist/.types/types/events.d.ts",
+          "releaseTag": "Public",
+          "name": "VertexEventHandler",
+          "typeParameters": [
+            {
+              "typeParameterName": "E",
+              "constraintTokenRange": {
+                "startIndex": 1,
+                "endIndex": 2
+              },
+              "defaultTypeTokenRange": {
+                "startIndex": 0,
+                "endIndex": 0
+              }
+            },
+            {
+              "typeParameterName": "S",
+              "constraintTokenRange": {
+                "startIndex": 3,
+                "endIndex": 4
+              },
+              "defaultTypeTokenRange": {
+                "startIndex": 0,
+                "endIndex": 0
+              }
+            }
+          ],
+          "typeTokenRange": {
+            "startIndex": 5,
+            "endIndex": 6
+          }
         },
         {
           "kind": "Function",

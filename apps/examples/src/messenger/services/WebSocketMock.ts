@@ -1,10 +1,5 @@
 import type { OutgoingMessage, IncomingMessage, Message } from '../types';
-import {
-  ChannelBloc,
-  ReceiveMessageEvent,
-  UpdateMessageStatusEvent,
-  UserTypingEvent,
-} from '../blocs/ChannelBloc';
+import { ChannelBloc } from '../blocs/ChannelBloc';
 import { UserCubit } from '../blocs/UserCubit';
 import { NotificationCubit } from '../blocs/NotificationCubit';
 import { persistenceService } from './PersistenceService';
@@ -146,9 +141,7 @@ export class WebSocketMock {
         try {
           const channel = ChannelBloc.getSafe(outgoing.channelId);
           if (!channel.error) {
-            channel.instance.add(
-              new UpdateMessageStatusEvent(messageId, 'sent'),
-            );
+            channel.instance.updateMessageStatus(messageId, 'sent');
           }
         } catch (error) {
           console.error('[WebSocket] Failed to update message status:', error);
@@ -163,9 +156,7 @@ export class WebSocketMock {
         try {
           const channel = ChannelBloc.getSafe(outgoing.channelId);
           if (!channel.error) {
-            channel.instance.add(
-              new UpdateMessageStatusEvent(messageId, 'delivered'),
-            );
+            channel.instance.updateMessageStatus(messageId, 'delivered');
           }
 
           // Emit confirmation to callbacks
@@ -225,7 +216,7 @@ export class WebSocketMock {
       if (!channelResult.error) {
         // Channel is active - send event directly
         try {
-          channelResult.instance.add(new ReceiveMessageEvent(message));
+          channelResult.instance.receiveMessage(message);
         } catch (error) {
           console.error('[WebSocket] Failed to add incoming message:', error);
         }
@@ -277,7 +268,7 @@ export class WebSocketMock {
         activeChannels[Math.floor(Math.random() * activeChannels.length)];
 
       // Start typing
-      channel.add(new UserTypingEvent(botUserId, true));
+      channel.userTyping(botUserId, true);
 
       // Stop typing after 2-4 seconds
       setTimeout(
@@ -285,7 +276,7 @@ export class WebSocketMock {
           try {
             const ch = ChannelBloc.getSafe(channel.instanceId);
             if (!ch.error) {
-              ch.instance.add(new UserTypingEvent(botUserId, false));
+              ch.instance.userTyping(botUserId, false);
             }
           } catch (error) {
             // Channel might be disposed, ignore

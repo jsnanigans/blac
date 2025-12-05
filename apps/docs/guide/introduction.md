@@ -55,10 +55,14 @@ class CounterCubit extends Cubit<{ count: number }> {
 
 **Vertex** - Event-driven:
 ```typescript
-class CounterVertex extends Vertex<{ count: number }> {
+type CounterEvent = { type: 'increment' };
+
+class CounterVertex extends Vertex<{ count: number }, CounterEvent> {
   constructor() {
     super({ count: 0 });
-    this.on(IncrementEvent, (e, emit) => emit({ count: this.state.count + 1 }));
+    this.createHandlers({
+      increment: (_, emit) => emit({ count: this.state.count + 1 }),
+    });
   }
 }
 ```

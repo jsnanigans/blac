@@ -1,59 +1,53 @@
 /**
  * Vertex Tests
- * Testing event-driven state container (Bloc pattern)
+ * Testing event-driven state container with discriminated union events
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Vertex } from './Vertex';
 import { StateContainer } from './StateContainer';
-import type { BaseEvent } from '../types/events';
+import type { EventWithMetadata } from '../types/events';
 
-class IncrementEvent implements BaseEvent {
-  readonly type = 'increment';
-  readonly timestamp = Date.now();
-  constructor(public readonly amount: number = 1) {}
-}
+// Counter Events (discriminated union)
+type CounterEvent =
+  | { type: 'increment'; amount: number }
+  | { type: 'decrement'; amount: number }
+  | { type: 'reset' };
 
-class DecrementEvent implements BaseEvent {
-  readonly type = 'decrement';
-  readonly timestamp = Date.now();
-  constructor(public readonly amount: number = 1) {}
-}
-
-class ResetEvent implements BaseEvent {
-  readonly type = 'reset';
-  readonly timestamp = Date.now();
-}
-
-class CounterVertex extends Vertex<{ count: number }> {
+class CounterVertex extends Vertex<{ count: number }, CounterEvent> {
   constructor() {
     super({ count: 0 });
 
-    this.on(IncrementEvent, (event, emit) => {
-      emit({ count: this.state.count + event.amount });
-    });
-
-    this.on(DecrementEvent, (event, emit) => {
-      emit({ count: this.state.count - event.amount });
-    });
-
-    this.on(ResetEvent, (_, emit) => {
-      emit({ count: 0 });
+    this.createHandlers({
+      increment: (event, emit) => {
+        emit({ count: this.state.count + event.amount });
+      },
+      decrement: (event, emit) => {
+        emit({ count: this.state.count - event.amount });
+      },
+      reset: (_, emit) => {
+        emit({ count: 0 });
+      },
     });
   }
 
   increment = (amount = 1) => {
-    this.add(new IncrementEvent(amount));
+    this.add({ type: 'increment', amount });
   };
 
   decrement = (amount = 1) => {
-    this.add(new DecrementEvent(amount));
+    this.add({ type: 'decrement', amount });
   };
 
   reset = () => {
-    this.add(new ResetEvent());
+    this.add({ type: 'reset' });
   };
 }
+
+// Auth Events (discriminated union)
+type AuthEvent =
+  | { type: 'login'; email: string; password: string }
+  | { type: 'logout' };
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -62,21 +56,7 @@ interface AuthState {
   error: string | null;
 }
 
-class LoginEvent implements BaseEvent {
-  readonly type = 'login';
-  readonly timestamp = Date.now();
-  constructor(
-    public readonly email: string,
-    public readonly password: string,
-  ) {}
-}
-
-class LogoutEvent implements BaseEvent {
-  readonly type = 'logout';
-  readonly timestamp = Date.now();
-}
-
-class AuthVertex extends Vertex<AuthState> {
+class AuthVertex extends Vertex<AuthState, AuthEvent> {
   constructor() {
     super({
       isAuthenticated: false,
@@ -85,137 +65,105 @@ class AuthVertex extends Vertex<AuthState> {
       error: null,
     });
 
-    this.on(LoginEvent, (event, emit) => {
-      emit({ ...this.state, isLoading: true, error: null });
+    this.createHandlers({
+      login: (event, emit) => {
+        emit({ ...this.state, isLoading: true, error: null });
 
-      if (event.email === 'user@example.com' && event.password === 'password') {
-        emit({
-          isAuthenticated: true,
-          isLoading: false,
-          user: { id: '123', name: 'Test User', email: 'user@example.com' },
-          error: null,
-        });
-      } else {
+        if (
+          event.email === 'user@example.com' &&
+          event.password === 'password'
+        ) {
+          emit({
+            isAuthenticated: true,
+            isLoading: false,
+            user: { id: '123', name: 'Test User', email: 'user@example.com' },
+            error: null,
+          });
+        } else {
+          emit({
+            isAuthenticated: false,
+            isLoading: false,
+            user: null,
+            error: 'Invalid credentials',
+          });
+        }
+      },
+      logout: (_, emit) => {
         emit({
           isAuthenticated: false,
           isLoading: false,
           user: null,
-          error: 'Invalid credentials',
+          error: null,
         });
-      }
-    });
-
-    this.on(LogoutEvent, (_, emit) => {
-      emit({
-        isAuthenticated: false,
-        isLoading: false,
-        user: null,
-        error: null,
-      });
+      },
     });
   }
 
   login = (email: string, password: string) => {
-    this.add(new LoginEvent(email, password));
+    this.add({ type: 'login', email, password });
   };
 
   logout = () => {
-    this.add(new LogoutEvent());
+    this.add({ type: 'logout' });
   };
 }
 
-// Test events
-class AddEvent implements BaseEvent {
-  readonly type = 'add';
-  readonly timestamp = Date.now();
-  constructor(public readonly amount: number) {}
-}
+// Test Events (discriminated union)
+type TestEvent =
+  | { type: 'add'; amount: number }
+  | { type: 'multiply'; factor: number }
+  | { type: 'setValue'; value: number }
+  | { type: 'error' };
 
-class MultiplyEvent implements BaseEvent {
-  readonly type = 'multiply';
-  readonly timestamp = Date.now();
-  constructor(public readonly factor: number) {}
-}
-
-class SetValueEvent implements BaseEvent {
-  readonly type = 'setValue';
-  readonly timestamp = Date.now();
-  constructor(public readonly value: number) {}
-}
-
-class ErrorEvent implements BaseEvent {
-  readonly type = 'error';
-  readonly timestamp = Date.now();
-}
-
-// Test Vertex implementation
-class TestVertex extends Vertex<{ value: number }> {
+class TestVertex extends Vertex<{ value: number }, TestEvent> {
   public errorCount = 0;
   public lastError: Error | null = null;
 
   constructor(initialValue = 0) {
     super({ value: initialValue });
 
-    this.on(AddEvent, (event, emit) => {
-      emit({ value: this.state.value + event.amount });
-    });
-
-    this.on(MultiplyEvent, (event, emit) => {
-      emit({ value: this.state.value * event.factor });
-    });
-
-    this.on(SetValueEvent, (event, emit) => {
-      emit({ value: event.value });
-    });
-
-    this.on(ErrorEvent, () => {
-      throw new Error('Intentional error');
+    this.createHandlers({
+      add: (event, emit) => {
+        emit({ value: this.state.value + event.amount });
+      },
+      multiply: (event, emit) => {
+        emit({ value: this.state.value * event.factor });
+      },
+      setValue: (event, emit) => {
+        emit({ value: event.value });
+      },
+      error: () => {
+        throw new Error('Intentional error');
+      },
     });
   }
 
-  protected onEventError(event: BaseEvent, error: Error): void {
+  protected onEventError(
+    _event: EventWithMetadata<TestEvent>,
+    error: Error,
+  ): void {
     this.errorCount++;
     this.lastError = error;
   }
 }
 
-// Test Vertex with multiple handlers for same event
-class MultiHandlerVertex extends Vertex<{ items: string[] }> {
-  public callOrder: string[] = [];
+// Queue Test Events
+type QueueEvent = { type: 'add'; amount: number };
 
-  constructor() {
-    super({ items: [] });
-
-    this.on(AddEvent, (event, emit) => {
-      this.callOrder.push('handler1');
-      emit({ items: [...this.state.items, `handler1:${event.amount}`] });
-    });
-
-    this.on(AddEvent, (event, emit) => {
-      this.callOrder.push('handler2');
-      emit({ items: [...this.state.items, `handler2:${event.amount}`] });
-    });
-
-    this.on(AddEvent, (event, emit) => {
-      this.callOrder.push('handler3');
-      emit({ items: [...this.state.items, `handler3:${event.amount}`] });
-    });
-  }
-}
-
-// Test Vertex for event queue testing
-class QueueTestVertex extends Vertex<{ values: number[] }> {
+class QueueTestVertex extends Vertex<{ values: number[] }, QueueEvent> {
   constructor() {
     super({ values: [] });
 
-    this.on(AddEvent, (event, emit) => {
-      const newState = { values: [...this.state.values, event.amount] };
-      emit(newState);
+    this.createHandlers({
+      add: (event, emit) => {
+        const newState = { values: [...this.state.values, event.amount] };
+        emit(newState);
 
-      // Trigger another event from within handler
-      if (event.amount < 3) {
-        this.add(new AddEvent(event.amount + 1));
-      }
+        // Trigger another event from within handler
+        if (event.amount < 3) {
+          this.add({ type: 'add', amount: event.amount + 1 });
+        }
+      },
     });
   }
 }
@@ -228,35 +176,21 @@ describe('Vertex', () => {
   // Event System
 
   describe('Event System', () => {
-    describe('on() - Event Registration', () => {
-      it('should register event handlers', () => {
+    describe('createHandlers() - Event Registration', () => {
+      it('should register event handlers via createHandlers', () => {
         const vertex = new TestVertex(10);
 
         // Handler should be registered (we test by dispatching)
-        vertex.add(new AddEvent(5));
+        vertex.add({ type: 'add', amount: 5 });
 
         expect(vertex.state).toEqual({ value: 15 });
       });
 
-      it('should register multiple handlers for same event', () => {
-        const vertex = new MultiHandlerVertex();
-
-        vertex.add(new AddEvent(1));
-
-        expect(vertex.state.items.length).toBe(3);
-        expect(vertex.state.items).toEqual([
-          'handler1:1',
-          'handler2:1',
-          'handler3:1',
-        ]);
-      });
-
-      it('should execute handlers in registration order', () => {
-        const vertex = new MultiHandlerVertex();
-
-        vertex.add(new AddEvent(1));
-
-        expect(vertex.callOrder).toEqual(['handler1', 'handler2', 'handler3']);
+      it('should enforce exhaustive handler coverage at compile time', () => {
+        // This test is primarily for documentation - TypeScript enforces
+        // that all event types must have handlers in createHandlers()
+        const vertex = new CounterVertex();
+        expect(vertex.state).toEqual({ count: 0 });
       });
     });
 
@@ -266,7 +200,7 @@ describe('Vertex', () => {
         const listener = vi.fn();
         vertex.subscribe(listener);
 
-        vertex.add(new AddEvent(5));
+        vertex.add({ type: 'add', amount: 5 });
 
         // Should be processed immediately
         expect(vertex.state).toEqual({ value: 15 });
@@ -277,9 +211,9 @@ describe('Vertex', () => {
       it('should handle multiple events in sequence', () => {
         const vertex = new TestVertex(10);
 
-        vertex.add(new AddEvent(5));
-        vertex.add(new MultiplyEvent(2));
-        vertex.add(new AddEvent(10));
+        vertex.add({ type: 'add', amount: 5 });
+        vertex.add({ type: 'multiply', factor: 2 });
+        vertex.add({ type: 'add', amount: 10 });
 
         expect(vertex.state).toEqual({ value: 40 }); // (10 + 5) * 2 + 10 = 40
       });
@@ -287,10 +221,42 @@ describe('Vertex', () => {
       it('should process events with queuing', () => {
         const vertex = new QueueTestVertex();
 
-        vertex.add(new AddEvent(1));
+        vertex.add({ type: 'add', amount: 1 });
 
         // Should process 1, then 2, then 3
         expect(vertex.state).toEqual({ values: [1, 2, 3] });
+      });
+
+      it('should auto-add timestamp to events', () => {
+        const before = Date.now();
+
+        type TimestampEvent = { type: 'test' };
+
+        let capturedEvent: EventWithMetadata<TimestampEvent> | null = null;
+
+        class TimestampVertex extends Vertex<
+          { value: number },
+          TimestampEvent
+        > {
+          constructor() {
+            super({ value: 0 });
+            this.createHandlers({
+              test: (event, emit) => {
+                capturedEvent = event as EventWithMetadata<TimestampEvent>;
+                emit(this.state);
+              },
+            });
+          }
+        }
+
+        const vertex = new TimestampVertex();
+        vertex.add({ type: 'test' });
+
+        const after = Date.now();
+
+        expect(capturedEvent).not.toBeNull();
+        expect(capturedEvent!.timestamp).toBeGreaterThanOrEqual(before);
+        expect(capturedEvent!.timestamp).toBeLessThanOrEqual(after);
       });
     });
 
@@ -298,20 +264,27 @@ describe('Vertex', () => {
       it('should provide emit function that updates state', () => {
         const vertex = new TestVertex(0);
 
-        vertex.add(new SetValueEvent(42));
+        vertex.add({ type: 'setValue', value: 42 });
 
         expect(vertex.state).toEqual({ value: 42 });
       });
 
       it('should allow multiple emissions in one handler', () => {
-        class MultiEmitVertex extends Vertex<{ value: number }> {
+        type MultiEmitEvent = { type: 'add'; amount: number };
+
+        class MultiEmitVertex extends Vertex<
+          { value: number },
+          MultiEmitEvent
+        > {
           constructor() {
             super({ value: 0 });
 
-            this.on(AddEvent, (event, emit) => {
-              emit({ value: this.state.value + 1 });
-              emit({ value: this.state.value + 1 });
-              emit({ value: this.state.value + 1 });
+            this.createHandlers({
+              add: (_, emit) => {
+                emit({ value: this.state.value + 1 });
+                emit({ value: this.state.value + 1 });
+                emit({ value: this.state.value + 1 });
+              },
             });
           }
         }
@@ -320,7 +293,7 @@ describe('Vertex', () => {
         const listener = vi.fn();
         vertex.subscribe(listener);
 
-        vertex.add(new AddEvent(1));
+        vertex.add({ type: 'add', amount: 1 });
 
         // Each emit should trigger listener
         expect(listener).toHaveBeenCalledTimes(3);
@@ -332,7 +305,7 @@ describe('Vertex', () => {
       it('should call onEventError hook when handler throws', () => {
         const vertex = new TestVertex(10);
 
-        vertex.add(new ErrorEvent());
+        vertex.add({ type: 'error' });
 
         expect(vertex.errorCount).toBe(1);
         expect(vertex.lastError).toBeInstanceOf(Error);
@@ -342,14 +315,14 @@ describe('Vertex', () => {
       it('should not crash on handler error', () => {
         const vertex = new TestVertex(10);
 
-        expect(() => vertex.add(new ErrorEvent())).not.toThrow();
+        expect(() => vertex.add({ type: 'error' })).not.toThrow();
       });
 
       it('should continue processing after error', () => {
         const vertex = new TestVertex(10);
 
-        vertex.add(new ErrorEvent());
-        vertex.add(new AddEvent(5));
+        vertex.add({ type: 'error' });
+        vertex.add({ type: 'add', amount: 5 });
 
         expect(vertex.state).toEqual({ value: 15 });
       });
@@ -361,19 +334,27 @@ describe('Vertex', () => {
           .spyOn(console, 'warn')
           .mockImplementation(() => {});
 
-        class UnhandledEvent implements BaseEvent {
-          readonly type = 'unhandled';
-          readonly timestamp = Date.now();
+        // Create a vertex that doesn't handle all event types it receives
+        type PartialEvent = { type: 'handled' } | { type: 'unhandled' };
+
+        class PartialVertex extends Vertex<{ value: number }, PartialEvent> {
+          constructor() {
+            super({ value: 0 });
+            // Only register handler for 'handled', not 'unhandled'
+            // Note: In production, TypeScript would require all handlers
+            // This is simulated by casting to bypass type checking
+            (this as any).handlers = new Map([['handled', () => {}]]);
+          }
         }
 
-        const vertex = new TestVertex(10);
+        const vertex = new PartialVertex();
         vertex.initConfig({ debug: true });
 
-        vertex.add(new UnhandledEvent());
+        vertex.add({ type: 'unhandled' });
 
         expect(consoleWarnSpy).toHaveBeenCalledWith(
           expect.stringContaining(
-            'No handler registered for event: UnhandledEvent',
+            'No handler registered for event type: unhandled',
           ),
         );
 
@@ -385,15 +366,19 @@ describe('Vertex', () => {
           .spyOn(console, 'warn')
           .mockImplementation(() => {});
 
-        class UnhandledEvent implements BaseEvent {
-          readonly type = 'unhandled';
-          readonly timestamp = Date.now();
+        type PartialEvent = { type: 'handled' } | { type: 'unhandled' };
+
+        class PartialVertex extends Vertex<{ value: number }, PartialEvent> {
+          constructor() {
+            super({ value: 0 });
+            (this as any).handlers = new Map([['handled', () => {}]]);
+          }
         }
 
-        const vertex = new TestVertex(10);
+        const vertex = new PartialVertex();
         // debug mode is off by default
 
-        vertex.add(new UnhandledEvent());
+        vertex.add({ type: 'unhandled' });
 
         expect(consoleWarnSpy).not.toHaveBeenCalled();
 
@@ -680,7 +665,7 @@ describe('Vertex', () => {
       expect(vertex.isDisposed).toBe(true);
 
       // Add event after disposal - doesn't throw, but handler's emit will fail
-      vertex.add(new AddEvent(5));
+      vertex.add({ type: 'add', amount: 5 });
 
       // State should not change, and error should be caught
       expect(vertex.state).toEqual({ value: 10 });
@@ -690,7 +675,7 @@ describe('Vertex', () => {
       );
     });
 
-    it('should work with attach pattern', () => {
+    it('should work with resolve/release pattern', () => {
       const vertex1 = CounterVertex.resolve();
       const vertex2 = CounterVertex.resolve();
 
@@ -709,56 +694,55 @@ describe('Vertex', () => {
   // Edge Cases
 
   describe('Edge Cases', () => {
-    it('should handle event with no handlers gracefully', () => {
-      class NoHandlerEvent implements BaseEvent {
-        readonly type = 'noHandler';
-        readonly timestamp = Date.now();
-      }
-
-      const vertex = new TestVertex(10);
-
-      expect(() => vertex.add(new NoHandlerEvent())).not.toThrow();
-      expect(vertex.state).toEqual({ value: 10 }); // State unchanged
-    });
-
     it('should handle handler that emits multiple times', () => {
-      class MultiEmitVertex extends Vertex<{ value: number }> {
+      type MultiEmitEvent = { type: 'add'; amount: number };
+
+      class MultiEmitVertex extends Vertex<{ value: number }, MultiEmitEvent> {
         constructor() {
           super({ value: 0 });
 
-          this.on(AddEvent, (event, emit) => {
-            for (let i = 0; i < event.amount; i++) {
-              emit({ value: this.state.value + 1 });
-            }
+          this.createHandlers({
+            add: (event, emit) => {
+              for (let i = 0; i < event.amount; i++) {
+                emit({ value: this.state.value + 1 });
+              }
+            },
           });
         }
       }
 
       const vertex = new MultiEmitVertex();
-      vertex.add(new AddEvent(5));
+      vertex.add({ type: 'add', amount: 5 });
 
       expect(vertex.state).toEqual({ value: 5 });
     });
 
     it('should handle complex event queue scenarios', () => {
-      class ComplexQueueVertex extends Vertex<{ values: number[] }> {
+      type ComplexEvent = { type: 'add'; amount: number };
+
+      class ComplexQueueVertex extends Vertex<
+        { values: number[] },
+        ComplexEvent
+      > {
         constructor() {
           super({ values: [] });
 
-          this.on(AddEvent, (event, emit) => {
-            emit({ values: [...this.state.values, event.amount] });
+          this.createHandlers({
+            add: (event, emit) => {
+              emit({ values: [...this.state.values, event.amount] });
 
-            // Trigger other events
-            if (event.amount === 1) {
-              this.add(new AddEvent(2));
-              this.add(new AddEvent(3));
-            }
+              // Trigger other events
+              if (event.amount === 1) {
+                this.add({ type: 'add', amount: 2 });
+                this.add({ type: 'add', amount: 3 });
+              }
+            },
           });
         }
       }
 
       const vertex = new ComplexQueueVertex();
-      vertex.add(new AddEvent(1));
+      vertex.add({ type: 'add', amount: 1 });
 
       expect(vertex.state).toEqual({ values: [1, 2, 3] });
     });
@@ -768,7 +752,7 @@ describe('Vertex', () => {
       const expectedFinal = 5050; // Sum of 1..100
 
       for (let i = 1; i <= 100; i++) {
-        vertex.add(new AddEvent(i));
+        vertex.add({ type: 'add', amount: i });
       }
 
       expect(vertex.state).toEqual({ value: expectedFinal });
@@ -780,13 +764,79 @@ describe('Vertex', () => {
       vertex.dispose();
 
       // Adding event doesn't throw, but handler's emit will fail and be caught
-      expect(() => vertex.add(new AddEvent(5))).not.toThrow();
+      expect(() => vertex.add({ type: 'add', amount: 5 })).not.toThrow();
 
       // State should remain unchanged
       expect(vertex.state).toEqual({ value: 10 });
 
       // Error should be captured via onEventError
       expect(vertex.errorCount).toBe(1);
+    });
+  });
+
+  // Type Safety (compile-time tests documented here)
+
+  describe('Type Safety', () => {
+    it('should provide type narrowing in handlers', () => {
+      // This test verifies that TypeScript properly narrows event types
+      // in handlers. The actual type checking happens at compile time.
+
+      type NarrowingEvent =
+        | { type: 'withNumber'; value: number }
+        | { type: 'withString'; value: string }
+        | { type: 'noPayload' };
+
+      let capturedNumber: number | null = null;
+      let capturedString: string | null = null;
+
+      class NarrowingVertex extends Vertex<{ result: string }, NarrowingEvent> {
+        constructor() {
+          super({ result: '' });
+
+          this.createHandlers({
+            withNumber: (event, emit) => {
+              // event.value is typed as number here
+              capturedNumber = event.value;
+              emit({ result: `number: ${event.value}` });
+            },
+            withString: (event, emit) => {
+              // event.value is typed as string here
+              capturedString = event.value;
+              emit({ result: `string: ${event.value}` });
+            },
+            noPayload: (_, emit) => {
+              emit({ result: 'no payload' });
+            },
+          });
+        }
+      }
+
+      const vertex = new NarrowingVertex();
+
+      vertex.add({ type: 'withNumber', value: 42 });
+      expect(capturedNumber).toBe(42);
+      expect(vertex.state.result).toBe('number: 42');
+
+      vertex.add({ type: 'withString', value: 'hello' });
+      expect(capturedString).toBe('hello');
+      expect(vertex.state.result).toBe('string: hello');
+
+      vertex.add({ type: 'noPayload' });
+      expect(vertex.state.result).toBe('no payload');
+    });
+
+    it('should provide autocomplete for add() event types', () => {
+      // This test documents that add() accepts the full event union
+      // and provides autocomplete for event types and their payloads
+
+      const counter = new CounterVertex();
+
+      // All these should compile and work
+      counter.add({ type: 'increment', amount: 1 });
+      counter.add({ type: 'decrement', amount: 1 });
+      counter.add({ type: 'reset' });
+
+      expect(counter.state.count).toBe(0);
     });
   });
 });

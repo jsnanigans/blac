@@ -1,5 +1,5 @@
 import { useBloc } from '@blac/react';
-import { ChannelBloc, MarkAsReadEvent } from '../blocs/ChannelBloc';
+import { ChannelBloc } from '../blocs/ChannelBloc';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
 import { useEffect } from 'react';
@@ -26,7 +26,7 @@ export function ChannelView({ channelId, currentUserId }: ChannelViewProps) {
 
   // Mark channel as read when it's viewed
   useEffect(() => {
-    channelBloc.add(new MarkAsReadEvent());
+    channelBloc.markAsRead();
   }, [channelId, channelBloc]);
 
   if (!channelBloc.channelInfo) {

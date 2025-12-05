@@ -1,4 +1,4 @@
-import { Vertex, BaseEvent } from '@blac/core';
+import { Vertex } from '@blac/core';
 import type { Message, Channel } from '../types';
 import { persistenceService } from '../services/PersistenceService';
 import { NotificationCubit } from './NotificationCubit';
@@ -7,48 +7,14 @@ import { CURRENT_USER_ID, MOCK_USERS } from '../mockData';
 import { ContactsCubit } from './ContactsCubit';
 import { webSocket } from '../services/WebSocketMock';
 
-// Events
-export class SendMessageEvent implements BaseEvent {
-  readonly type = 'send_message';
-  readonly timestamp = Date.now();
-  constructor(public readonly userId: string) {}
-}
-
-export class UpdateDraftMessageEvent implements BaseEvent {
-  readonly type = 'update_draft_message';
-  readonly timestamp = Date.now();
-  constructor(public readonly draftText: string) {}
-}
-
-export class ReceiveMessageEvent implements BaseEvent {
-  readonly type = 'receive_message';
-  readonly timestamp = Date.now();
-  constructor(public readonly message: Message) {}
-}
-
-export class UserTypingEvent implements BaseEvent {
-  readonly type = 'user_typing';
-  readonly timestamp = Date.now();
-  constructor(
-    public readonly userId: string,
-    public readonly isTyping: boolean,
-  ) {}
-}
-
-export class MarkAsReadEvent implements BaseEvent {
-  readonly type = 'mark_as_read';
-  readonly timestamp = Date.now();
-  constructor() {}
-}
-
-export class UpdateMessageStatusEvent implements BaseEvent {
-  readonly type = 'update_message_status';
-  readonly timestamp = Date.now();
-  constructor(
-    public readonly messageId: string,
-    public readonly status: Message['status'],
-  ) {}
-}
+// Events as discriminated union
+export type ChannelEvent =
+  | { type: 'sendMessage'; userId: string }
+  | { type: 'updateDraftMessage'; draftText: string }
+  | { type: 'receiveMessage'; message: Message }
+  | { type: 'userTyping'; userId: string; isTyping: boolean }
+  | { type: 'markAsRead' }
+  | { type: 'updateMessageStatus'; messageId: string; status: Message['status'] };
 
 export interface ChannelState {
   channel: Channel;
@@ -66,7 +32,7 @@ export interface ChannelState {
  * the same channel instance using instanceId. Each channel is completely
  * independent with its own state and lifecycle.
  */
-export class ChannelBloc extends Vertex<ChannelState> {
+export class ChannelBloc extends Vertex<ChannelState, ChannelEvent> {
   /**
    * Ensure UserCubit exists for a given user (lazy creation)
    * This is called when messages are received to ensure we can render user info
@@ -106,94 +72,96 @@ export class ChannelBloc extends Vertex<ChannelState> {
       draftMessage: '',
     });
 
-    // Register event handlers in constructor per Vertex pattern
-    this.on(SendMessageEvent, (event, emit) => {
-      const draft = this.state.draftMessage?.trim() || '';
-      if (draft.length === 0) return; // Don't send empty messages
+    // Register all event handlers with exhaustive type checking
+    this.createHandlers({
+      sendMessage: (event, emit) => {
+        const draft = this.state.draftMessage?.trim() || '';
+        if (draft.length === 0) return; // Don't send empty messages
 
-      const newMessage: Message = {
-        id: Date.now().toString(),
-        channelId: this.state.channel.id,
-        userId: event.userId,
-        text: this.state.draftMessage.trim(),
-        timestamp: Date.now(),
-        status: 'sent',
-      };
+        const newMessage: Message = {
+          id: Date.now().toString(),
+          channelId: this.state.channel.id,
+          userId: event.userId,
+          text: this.state.draftMessage.trim(),
+          timestamp: Date.now(),
+          status: 'sent',
+        };
 
-      emit({
-        ...this.state,
-        messages: [...this.state.messages, newMessage],
-        draftMessage: '',
-      });
+        emit({
+          ...this.state,
+          messages: [...this.state.messages, newMessage],
+          draftMessage: '',
+        });
 
-      // Send to WebSocket mock
-      webSocket.send({
-        type: 'send_message',
-        channelId: this.state.channel.id,
-        userId: event.userId,
-        payload: newMessage,
-      });
-    });
+        // Send to WebSocket mock
+        webSocket.send({
+          type: 'send_message',
+          channelId: this.state.channel.id,
+          userId: event.userId,
+          payload: newMessage,
+        });
+      },
 
-    this.on(ReceiveMessageEvent, (event, emit) => {
-      // Check if message already exists (avoid duplicates)
-      const exists = this.state.messages.some((m) => m.id === event.message.id);
-      if (exists) return;
+      receiveMessage: (event, emit) => {
+        // Check if message already exists (avoid duplicates)
+        const exists = this.state.messages.some((m) => m.id === event.message.id);
+        if (exists) return;
 
-      // Ensure UserCubit exists for the message sender (lazy creation)
-      this.ensureUserCubit(event.message.userId);
+        // Ensure UserCubit exists for the message sender (lazy creation)
+        this.ensureUserCubit(event.message.userId);
 
-      emit({
-        ...this.state,
-        messages: [...this.state.messages, event.message],
-      });
+        emit({
+          ...this.state,
+          messages: [...this.state.messages, event.message],
+        });
 
-      // Update notification cubit with unread count
-      const notificationCubit = NotificationCubit.getSafe();
-      if (!notificationCubit.error) {
-        notificationCubit.instance.incrementUnread(this.state.channel.id);
-      }
-    });
+        // Update notification cubit with unread count
+        const notificationCubit = NotificationCubit.getSafe();
+        if (!notificationCubit.error) {
+          notificationCubit.instance.incrementUnread(this.state.channel.id);
+        }
+      },
 
-    this.on(UserTypingEvent, (event, emit) => {
-      const newTypingUsers = new Set(this.state.typingUsers);
+      userTyping: (event, emit) => {
+        const newTypingUsers = new Set(this.state.typingUsers);
 
-      if (event.isTyping) {
-        newTypingUsers.add(event.userId);
-      } else {
-        newTypingUsers.delete(event.userId);
-      }
+        if (event.isTyping) {
+          newTypingUsers.add(event.userId);
+        } else {
+          newTypingUsers.delete(event.userId);
+        }
 
-      emit({
-        ...this.state,
-        typingUsers: newTypingUsers,
-      });
-    });
+        emit({
+          ...this.state,
+          typingUsers: newTypingUsers,
+        });
+      },
 
-    this.on(MarkAsReadEvent, (_event, emit) => {
-      // Clear unread count in NotificationCubit
-      const notificationCubit = NotificationCubit.getSafe();
-      if (!notificationCubit.error) {
-        notificationCubit.instance.clearUnread(this.state.channel.id);
-      }
-    });
+      markAsRead: (_, _emit) => {
+        // Clear unread count in NotificationCubit
+        const notificationCubit = NotificationCubit.getSafe();
+        if (!notificationCubit.error) {
+          notificationCubit.instance.clearUnread(this.state.channel.id);
+        }
+      },
 
-    this.on(UpdateMessageStatusEvent, (event, emit) => {
-      const messages = this.state.messages.map((msg) =>
-        msg.id === event.messageId ? { ...msg, status: event.status } : msg,
-      );
+      updateMessageStatus: (event, emit) => {
+        const messages = this.state.messages.map((msg) =>
+          msg.id === event.messageId ? { ...msg, status: event.status } : msg,
+        );
 
-      emit({
-        ...this.state,
-        messages,
-      });
-    });
+        emit({
+          ...this.state,
+          messages,
+        });
+      },
 
-    this.on(UpdateDraftMessageEvent, (event, emit) => {
-      emit({
-        ...this.state,
-        draftMessage: event.draftText,
-      });
+      updateDraftMessage: (event, emit) => {
+        emit({
+          ...this.state,
+          draftMessage: event.draftText,
+        });
+      },
     });
 
     // Setup dispose handler
@@ -228,4 +196,29 @@ export class ChannelBloc extends Vertex<ChannelState> {
   get channelInfo(): Channel | null {
     return this.state.channel || null;
   }
+
+  // Convenience methods for dispatching events
+  sendMessage = (userId: string) => {
+    this.add({ type: 'sendMessage', userId });
+  };
+
+  updateDraftMessage = (draftText: string) => {
+    this.add({ type: 'updateDraftMessage', draftText });
+  };
+
+  receiveMessage = (message: Message) => {
+    this.add({ type: 'receiveMessage', message });
+  };
+
+  userTyping = (userId: string, isTyping: boolean) => {
+    this.add({ type: 'userTyping', userId, isTyping });
+  };
+
+  markAsRead = () => {
+    this.add({ type: 'markAsRead' });
+  };
+
+  updateMessageStatus = (messageId: string, status: Message['status']) => {
+    this.add({ type: 'updateMessageStatus', messageId, status });
+  };
 }

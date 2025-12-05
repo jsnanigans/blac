@@ -53,50 +53,36 @@ Once the playground is running, open Redux DevTools and dispatch these actions:
 ## Complete Counter Example
 
 ```typescript
-import { Bloc } from '@blac/core';
-import { EventRegistry } from '@blac/devtools-connect';
+import { Vertex } from '@blac/core';
 
-// Define events
-class IncrementEvent {
-  constructor(public amount: number = 1) {}
-}
+// Define events as discriminated union
+type CounterEvent =
+  | { type: 'increment'; amount: number }
+  | { type: 'decrement'; amount: number }
+  | { type: 'reset' };
 
-class DecrementEvent {
-  constructor(public amount: number = 1) {}
-}
-
-class ResetEvent {}
-
-// Register events for DevTools dispatch
-EventRegistry.register('IncrementEvent', IncrementEvent, {
-  parameterNames: ['amount'],
-});
-
-EventRegistry.register('DecrementEvent', DecrementEvent, {
-  parameterNames: ['amount'],
-});
-
-EventRegistry.register('ResetEvent', ResetEvent);
-
-// Define Bloc
-type CounterEvent = IncrementEvent | DecrementEvent | ResetEvent;
-
-class CounterBloc extends Bloc<number, CounterEvent> {
+class CounterVertex extends Vertex<{ count: number }, CounterEvent> {
   constructor() {
-    super(0);
+    super({ count: 0 });
 
-    this.on(IncrementEvent, (event, emit) => {
-      emit(this.state + event.amount);
-    });
-
-    this.on(DecrementEvent, (event, emit) => {
-      emit(this.state - event.amount);
-    });
-
-    this.on(ResetEvent, (_event, emit) => {
-      emit(0);
+    // TypeScript enforces exhaustive handling
+    this.createHandlers({
+      increment: (event, emit) => {
+        emit({ count: this.state.count + event.amount });
+      },
+      decrement: (event, emit) => {
+        emit({ count: this.state.count - event.amount });
+      },
+      reset: (_, emit) => {
+        emit({ count: 0 });
+      },
     });
   }
+
+  // Convenience methods
+  increment = (amount = 1) => this.add({ type: 'increment', amount });
+  decrement = (amount = 1) => this.add({ type: 'decrement', amount });
+  reset = () => this.add({ type: 'reset' });
 }
 ```
 
@@ -104,23 +90,16 @@ class CounterBloc extends Bloc<number, CounterEvent> {
 
 ```json
 // Increment by 1 (default)
-{ "type": "[CounterBloc] IncrementEvent" }
-
-// Increment by 10
-{ "type": "[CounterBloc] IncrementEvent", "payload": { "amount": 10 } }
-
-// Decrement by 5
-{ "type": "[CounterBloc] DecrementEvent", "payload": { "amount": 5 } }
+{ "type": "[CounterVertex] emit", "payload": { "state": { "count": 1 } } }
 
 // Reset to 0
-{ "type": "[CounterBloc] ResetEvent" }
+{ "type": "[CounterVertex] emit", "payload": { "state": { "count": 0 } } }
 ```
 
 ## User Profile Example (Complex Objects)
 
 ```typescript
-import { Bloc } from '@blac/core';
-import { EventRegistry } from '@blac/devtools-connect';
+import { Vertex } from '@blac/core';
 
 interface User {
   id: string;
@@ -135,32 +114,13 @@ interface UserState {
   error: string | null;
 }
 
-// Events
-class LoadUserEvent {
-  constructor(public userId: string) {}
-}
+// Define events as discriminated union
+type UserEvent =
+  | { type: 'loadUser'; userId: string }
+  | { type: 'updateUser'; user: Partial<User> }
+  | { type: 'clearUser' };
 
-class UpdateUserEvent {
-  constructor(public user: Partial<User>) {}
-}
-
-class ClearUserEvent {}
-
-// Register events
-EventRegistry.register('LoadUserEvent', LoadUserEvent, {
-  parameterNames: ['userId'],
-});
-
-EventRegistry.register('UpdateUserEvent', UpdateUserEvent, {
-  parameterNames: ['user'],
-});
-
-EventRegistry.register('ClearUserEvent', ClearUserEvent);
-
-// Bloc implementation
-type UserEvent = LoadUserEvent | UpdateUserEvent | ClearUserEvent;
-
-class UserBloc extends Bloc<UserState, UserEvent> {
+class UserVertex extends Vertex<UserState, UserEvent> {
   constructor() {
     super({
       user: null,
@@ -168,33 +128,32 @@ class UserBloc extends Bloc<UserState, UserEvent> {
       error: null,
     });
 
-    this.on(LoadUserEvent, async (event, emit) => {
-      emit({ ...this.state, loading: true, error: null });
+    this.createHandlers({
+      loadUser: async (event, emit) => {
+        emit({ ...this.state, loading: true, error: null });
 
-      try {
-        // Simulate API call
-        const user = await this.fetchUser(event.userId);
-        emit({ ...this.state, user, loading: false });
-      } catch (error) {
-        emit({
-          ...this.state,
-          loading: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        });
-      }
-    });
-
-    this.on(UpdateUserEvent, (event, emit) => {
-      if (this.state.user) {
-        emit({
-          ...this.state,
-          user: { ...this.state.user, ...event.user },
-        });
-      }
-    });
-
-    this.on(ClearUserEvent, (_event, emit) => {
-      emit({ user: null, loading: false, error: null });
+        try {
+          const user = await this.fetchUser(event.userId);
+          emit({ ...this.state, user, loading: false });
+        } catch (error) {
+          emit({
+            ...this.state,
+            loading: false,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+        }
+      },
+      updateUser: (event, emit) => {
+        if (this.state.user) {
+          emit({
+            ...this.state,
+            user: { ...this.state.user, ...event.user },
+          });
+        }
+      },
+      clearUser: (_, emit) => {
+        emit({ user: null, loading: false, error: null });
+      },
     });
   }
 
@@ -207,49 +166,52 @@ class UserBloc extends Bloc<UserState, UserEvent> {
       age: 30,
     };
   }
+
+  // Convenience methods
+  loadUser = (userId: string) => this.add({ type: 'loadUser', userId });
+  updateUser = (user: Partial<User>) => this.add({ type: 'updateUser', user });
+  clearUser = () => this.add({ type: 'clearUser' });
 }
 ```
 
 ### Test from Redux DevTools:
 
 ```json
-// Load user
+// Set user directly
 {
-  "type": "[UserBloc] LoadUserEvent",
-  "payload": { "userId": "user-123" }
-}
-
-// Update user name
-{
-  "type": "[UserBloc] UpdateUserEvent",
+  "type": "[UserVertex] emit",
   "payload": {
-    "user": {
-      "name": "Jane Doe"
+    "state": {
+      "user": { "id": "user-123", "name": "John Doe", "email": "john@example.com", "age": 30 },
+      "loading": false,
+      "error": null
     }
   }
 }
 
-// Update multiple fields
+// Update user name (partial state)
 {
-  "type": "[UserBloc] UpdateUserEvent",
+  "type": "[UserVertex] patch",
   "payload": {
-    "user": {
-      "name": "Bob Smith",
-      "email": "bob@example.com",
-      "age": 25
+    "state": {
+      "user": { "id": "user-123", "name": "Jane Doe", "email": "john@example.com", "age": 30 }
     }
   }
 }
 
 // Clear user
-{ "type": "[UserBloc] ClearUserEvent" }
+{
+  "type": "[UserVertex] emit",
+  "payload": {
+    "state": { "user": null, "loading": false, "error": null }
+  }
+}
 ```
 
 ## Shopping Cart Example
 
 ```typescript
-import { Bloc } from '@blac/core';
-import { EventRegistry } from '@blac/devtools-connect';
+import { Vertex } from '@blac/core';
 
 interface CartItem {
   id: string;
@@ -263,268 +225,222 @@ interface CartState {
   total: number;
 }
 
-// Events
-class AddItemEvent {
-  constructor(
-    public id: string,
-    public name: string,
-    public price: number,
-  ) {}
-}
-
-class RemoveItemEvent {
-  constructor(public id: string) {}
-}
-
-class UpdateQuantityEvent {
-  constructor(
-    public id: string,
-    public quantity: number,
-  ) {}
-}
-
-class ClearCartEvent {}
-
-// Register events
-EventRegistry.register('AddItemEvent', AddItemEvent, {
-  parameterNames: ['id', 'name', 'price'],
-});
-
-EventRegistry.register('RemoveItemEvent', RemoveItemEvent, {
-  parameterNames: ['id'],
-});
-
-EventRegistry.register('UpdateQuantityEvent', UpdateQuantityEvent, {
-  parameterNames: ['id', 'quantity'],
-});
-
-EventRegistry.register('ClearCartEvent', ClearCartEvent);
-
-// Bloc
+// Define events as discriminated union
 type CartEvent =
-  | AddItemEvent
-  | RemoveItemEvent
-  | UpdateQuantityEvent
-  | ClearCartEvent;
+  | { type: 'addItem'; id: string; name: string; price: number }
+  | { type: 'removeItem'; id: string }
+  | { type: 'updateQuantity'; id: string; quantity: number }
+  | { type: 'clearCart' };
 
-class CartBloc extends Bloc<CartState, CartEvent> {
+class CartVertex extends Vertex<CartState, CartEvent> {
   constructor() {
     super({ items: [], total: 0 });
 
-    this.on(AddItemEvent, (event, emit) => {
-      const existingItem = this.state.items.find(
-        (item) => item.id === event.id,
-      );
-
-      let newItems: CartItem[];
-      if (existingItem) {
-        newItems = this.state.items.map((item) =>
-          item.id === event.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item,
+    this.createHandlers({
+      addItem: (event, emit) => {
+        const existingItem = this.state.items.find(
+          (item) => item.id === event.id,
         );
-      } else {
-        newItems = [
-          ...this.state.items,
-          {
-            id: event.id,
-            name: event.name,
-            price: event.price,
-            quantity: 1,
-          },
-        ];
-      }
 
-      const total = this.calculateTotal(newItems);
-      emit({ items: newItems, total });
-    });
+        let newItems: CartItem[];
+        if (existingItem) {
+          newItems = this.state.items.map((item) =>
+            item.id === event.id
+              ? { ...item, quantity: item.quantity + 1 }
+              : item,
+          );
+        } else {
+          newItems = [
+            ...this.state.items,
+            {
+              id: event.id,
+              name: event.name,
+              price: event.price,
+              quantity: 1,
+            },
+          ];
+        }
 
-    this.on(RemoveItemEvent, (event, emit) => {
-      const newItems = this.state.items.filter((item) => item.id !== event.id);
-      const total = this.calculateTotal(newItems);
-      emit({ items: newItems, total });
-    });
+        const total = this.calculateTotal(newItems);
+        emit({ items: newItems, total });
+      },
+      removeItem: (event, emit) => {
+        const newItems = this.state.items.filter((item) => item.id !== event.id);
+        const total = this.calculateTotal(newItems);
+        emit({ items: newItems, total });
+      },
+      updateQuantity: (event, emit) => {
+        const newItems = this.state.items
+          .map((item) =>
+            item.id === event.id ? { ...item, quantity: event.quantity } : item,
+          )
+          .filter((item) => item.quantity > 0);
 
-    this.on(UpdateQuantityEvent, (event, emit) => {
-      const newItems = this.state.items
-        .map((item) =>
-          item.id === event.id ? { ...item, quantity: event.quantity } : item,
-        )
-        .filter((item) => item.quantity > 0);
-
-      const total = this.calculateTotal(newItems);
-      emit({ items: newItems, total });
-    });
-
-    this.on(ClearCartEvent, (_event, emit) => {
-      emit({ items: [], total: 0 });
+        const total = this.calculateTotal(newItems);
+        emit({ items: newItems, total });
+      },
+      clearCart: (_, emit) => {
+        emit({ items: [], total: 0 });
+      },
     });
   }
 
   private calculateTotal(items: CartItem[]): number {
     return items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   }
+
+  // Convenience methods
+  addItem = (id: string, name: string, price: number) =>
+    this.add({ type: 'addItem', id, name, price });
+  removeItem = (id: string) => this.add({ type: 'removeItem', id });
+  updateQuantity = (id: string, quantity: number) =>
+    this.add({ type: 'updateQuantity', id, quantity });
+  clearCart = () => this.add({ type: 'clearCart' });
 }
 ```
 
 ### Test from Redux DevTools:
 
 ```json
-// Add items
+// Set cart state with items
 {
-  "type": "[CartBloc] AddItemEvent",
+  "type": "[CartVertex] emit",
   "payload": {
-    "id": "item-1",
-    "name": "Laptop",
-    "price": 999.99
+    "state": {
+      "items": [
+        { "id": "item-1", "name": "Laptop", "price": 999.99, "quantity": 1 },
+        { "id": "item-2", "name": "Mouse", "price": 29.99, "quantity": 2 }
+      ],
+      "total": 1059.97
+    }
   }
-}
-
-{
-  "type": "[CartBloc] AddItemEvent",
-  "payload": {
-    "id": "item-2",
-    "name": "Mouse",
-    "price": 29.99
-  }
-}
-
-// Update quantity
-{
-  "type": "[CartBloc] UpdateQuantityEvent",
-  "payload": {
-    "id": "item-1",
-    "quantity": 2
-  }
-}
-
-// Remove item
-{
-  "type": "[CartBloc] RemoveItemEvent",
-  "payload": { "id": "item-2" }
 }
 
 // Clear cart
-{ "type": "[CartBloc] ClearCartEvent" }
+{
+  "type": "[CartVertex] emit",
+  "payload": {
+    "state": { "items": [], "total": 0 }
+  }
+}
 ```
 
 ## Tips & Tricks
 
-### 1. Find Available Blocs
+### 1. Find Available State Containers
 
-Look at the Redux DevTools state tree to see all active Bloc names:
+Look at the Redux DevTools state tree to see all active state container names:
 
 ```
 State:
-├─ TodoBloc
-├─ CounterBloc
-├─ UserBloc
-└─ CartBloc
+├─ TodoVertex
+├─ CounterVertex
+├─ UserCubit
+└─ CartVertex
 ```
 
-### 2. Check Registered Events
+### 2. Test State Transitions
 
-Open browser console:
-
-```javascript
-// List all registered events
-import { EventRegistry } from '@blac/devtools-connect';
-console.log(EventRegistry.getRegisteredEvents());
-```
-
-### 3. Create Event Sequences
-
-Test complex flows by dispatching multiple events:
+Use `emit` to test state transitions directly:
 
 ```json
-// Step 1: Add todo
-{ "type": "[TodoBloc] AddTodoAction", "payload": { "text": "Buy milk" } }
+// Test loading state
+{
+  "type": "[UserVertex] emit",
+  "payload": {
+    "state": { "user": null, "loading": true, "error": null }
+  }
+}
 
-// Step 2: Add another
-{ "type": "[TodoBloc] AddTodoAction", "payload": { "text": "Walk dog" } }
+// Test success state
+{
+  "type": "[UserVertex] emit",
+  "payload": {
+    "state": {
+      "user": { "id": "1", "name": "Test User", "email": "test@example.com", "age": 25 },
+      "loading": false,
+      "error": null
+    }
+  }
+}
 
-// Step 3: Toggle first
-{ "type": "[TodoBloc] ToggleTodoAction", "payload": { "id": 4 } }
+// Test error state
+{
+  "type": "[UserVertex] emit",
+  "payload": {
+    "state": { "user": null, "loading": false, "error": "Network error" }
+  }
+}
+```
 
-// Step 4: Filter to completed
-{ "type": "[TodoBloc] SetFilterAction", "payload": { "filter": "completed" } }
+### 3. Use Patch for Partial Updates
+
+For object states, use `patch` to update specific fields:
+
+```json
+// Only update loading status
+{
+  "type": "[UserVertex] patch",
+  "payload": {
+    "state": { "loading": false }
+  }
+}
 ```
 
 ### 4. Test Edge Cases
 
 ```json
-// Empty string
-{ "type": "[TodoBloc] AddTodoAction", "payload": { "text": "" } }
+// Empty array
+{ "type": "[CartVertex] emit", "payload": { "state": { "items": [], "total": 0 } } }
 
-// Very long text
-{ "type": "[TodoBloc] AddTodoAction", "payload": { "text": "A".repeat(1000) } }
-
-// Invalid ID
-{ "type": "[TodoBloc] ToggleTodoAction", "payload": { "id": 99999 } }
-
-// Negative quantity
-{ "type": "[CartBloc] UpdateQuantityEvent", "payload": { "id": "item-1", "quantity": -5 } }
+// Large quantity
+{
+  "type": "[CartVertex] emit",
+  "payload": {
+    "state": {
+      "items": [{ "id": "1", "name": "Item", "price": 10, "quantity": 1000 }],
+      "total": 10000
+    }
+  }
+}
 ```
-
-### 5. Debug Async Events
-
-Dispatch async events and watch state transitions:
-
-```json
-// This will show: loading: true → loading: false
-{ "type": "[UserBloc] LoadUserEvent", "payload": { "userId": "user-123" } }
-```
-
-Watch the Redux DevTools timeline to see:
-
-1. Initial dispatch
-2. Loading state
-3. Success/error state
 
 ## Common Issues
 
-### Event Not Registered
+### State Container Not Found
 
 **Error:**
 
 ```
-[ReduxDevToolsAdapter] Event "MyEvent" is not registered.
+[ReduxDevToolsAdapter] State container "MyVertex" not found.
 ```
 
 **Solution:**
+Ensure the state container is instantiated and mounted in a React component using `useBloc()`.
+
+### Invalid State Shape
+
+**Issue:** State doesn't update as expected
+
+**Solution:** Make sure the payload state shape matches your state type exactly:
 
 ```typescript
-import { EventRegistry } from '@blac/devtools-connect';
+// Your Vertex state type
+interface UserState {
+  user: User | null;
+  loading: boolean;
+  error: string | null;
+}
 
-EventRegistry.register('MyEvent', MyEvent, {
-  parameterNames: ['param1', 'param2'],
-});
-```
-
-### Bloc Not Found
-
-**Error:**
-
-```
-[ReduxDevToolsAdapter] Bloc "MyBloc" not found.
-```
-
-**Solution:**
-Ensure the Bloc is instantiated and mounted in a React component using `useBloc()`.
-
-### Wrong Parameter Names
-
-**Issue:** Event receives `undefined` values
-
-**Solution:** Check that parameter names match constructor exactly:
-
-```typescript
-// Constructor
-constructor(public userId: string, public name: string) {}
-
-// Registration - must match!
-EventRegistry.register('MyEvent', MyEvent, {
-  parameterNames: ['userId', 'name'], // ✅ Correct
-  // parameterNames: ['id', 'username'], // ❌ Wrong
-});
+// DevTools dispatch - must match exact shape
+{
+  "type": "[UserVertex] emit",
+  "payload": {
+    "state": {
+      "user": null,
+      "loading": false,
+      "error": null  // All fields required for emit
+    }
+  }
+}
 ```

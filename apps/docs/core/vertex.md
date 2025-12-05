@@ -5,95 +5,97 @@ Vertex is an event-driven state container. Use it when you need explicit event h
 ## Basic Structure
 
 ```typescript
-import { Vertex, BaseEvent } from '@blac/core';
+import { Vertex } from '@blac/core';
 
-// 1. Define events
-class IncrementEvent implements BaseEvent {
-  readonly type = 'increment';
-  readonly timestamp = Date.now();
-  constructor(public readonly amount: number = 1) {}
-}
+// 1. Define events as a discriminated union
+type CounterEvent =
+  | { type: 'increment'; amount: number }
+  | { type: 'decrement'; amount: number }
+  | { type: 'reset' };
 
-// 2. Create Vertex with handlers
-class CounterVertex extends Vertex<{ count: number }> {
+// 2. Create Vertex with handler map
+class CounterVertex extends Vertex<{ count: number }, CounterEvent> {
   constructor() {
     super({ count: 0 });
 
-    // Register handlers in constructor
-    this.on(IncrementEvent, (event, emit) => {
-      emit({ count: this.state.count + event.amount });
+    // Register all handlers - TypeScript ensures exhaustive coverage
+    this.createHandlers({
+      increment: (event, emit) => {
+        emit({ count: this.state.count + event.amount });
+      },
+      decrement: (event, emit) => {
+        emit({ count: this.state.count - event.amount });
+      },
+      reset: (_, emit) => {
+        emit({ count: 0 });
+      },
     });
   }
 
   // 3. Public methods dispatch events
   increment = (amount = 1) => {
-    this.add(new IncrementEvent(amount));
+    this.add({ type: 'increment', amount });
+  };
+
+  decrement = (amount = 1) => {
+    this.add({ type: 'decrement', amount });
+  };
+
+  reset = () => {
+    this.add({ type: 'reset' });
   };
 }
 ```
 
-## BaseEvent Interface
+## Discriminated Union Events
 
-All events must implement `BaseEvent`:
-
-```typescript
-interface BaseEvent {
-  readonly type: string;      // Event identifier
-  readonly timestamp: number; // When event was created
-  readonly source?: string;   // Optional source identifier
-}
-```
-
-Example events:
+Events are defined as a TypeScript discriminated union with a `type` property:
 
 ```typescript
-class LoginEvent implements BaseEvent {
-  readonly type = 'login';
-  readonly timestamp = Date.now();
-  constructor(
-    public readonly email: string,
-    public readonly password: string
-  ) {}
-}
-
-class LogoutEvent implements BaseEvent {
-  readonly type = 'logout';
-  readonly timestamp = Date.now();
-}
-
-class UpdateProfileEvent implements BaseEvent {
-  readonly type = 'updateProfile';
-  readonly timestamp = Date.now();
-  constructor(public readonly profile: Partial<Profile>) {}
-}
+type AuthEvent =
+  | { type: 'login'; email: string; password: string }
+  | { type: 'loginSuccess'; user: User }
+  | { type: 'loginFailed'; error: string }
+  | { type: 'logout' };
 ```
+
+Benefits over class-based events:
+- **Exhaustive checking**: TypeScript errors if you miss a handler
+- **Type narrowing**: Event payload types are automatically narrowed in handlers
+- **Autocomplete**: Full IDE support for event types and payloads
+- **Minification safe**: Uses string literals, not class names
 
 ## Event Handlers
 
-Register handlers with `on()` in the constructor:
+Register handlers with `createHandlers()` in the constructor:
 
 ```typescript
-class AuthVertex extends Vertex<AuthState> {
+class AuthVertex extends Vertex<AuthState, AuthEvent> {
   constructor() {
     super({ user: null, isLoading: false, error: null });
 
-    this.on(LoginEvent, (event, emit) => {
-      // emit() sets the new state
-      emit({ ...this.state, isLoading: true, error: null });
-
-      // Async work should be done before dispatching
-      // or in the public method that calls add()
-    });
-
-    this.on(LogoutEvent, (_, emit) => {
-      emit({ user: null, isLoading: false, error: null });
+    this.createHandlers({
+      login: (event, emit) => {
+        // event is narrowed to { type: 'login'; email: string; password: string }
+        emit({ ...this.state, isLoading: true, error: null });
+      },
+      loginSuccess: (event, emit) => {
+        // event is narrowed to { type: 'loginSuccess'; user: User }
+        emit({ user: event.user, isLoading: false, error: null });
+      },
+      loginFailed: (event, emit) => {
+        emit({ user: null, isLoading: false, error: event.error });
+      },
+      logout: (_, emit) => {
+        emit({ user: null, isLoading: false, error: null });
+      },
     });
   }
 }
 ```
 
 The handler receives:
-- `event` - The dispatched event with all its data
+- `event` - The dispatched event with narrowed type
 - `emit` - Function to emit new state
 
 ## Dispatching Events
@@ -101,21 +103,21 @@ The handler receives:
 Use `add()` to dispatch events:
 
 ```typescript
-class AuthVertex extends Vertex<AuthState> {
+class AuthVertex extends Vertex<AuthState, AuthEvent> {
   // Public methods dispatch events
   login = async (email: string, password: string) => {
-    this.add(new LoginStartEvent());
+    this.add({ type: 'login', email, password });
 
     try {
       const user = await api.login(email, password);
-      this.add(new LoginSuccessEvent(user));
+      this.add({ type: 'loginSuccess', user });
     } catch (error) {
-      this.add(new LoginFailedEvent(error.message));
+      this.add({ type: 'loginFailed', error: error.message });
     }
   };
 
   logout = () => {
-    this.add(new LogoutEvent());
+    this.add({ type: 'logout' });
   };
 }
 ```
@@ -125,30 +127,24 @@ class AuthVertex extends Vertex<AuthState> {
 Events are processed synchronously in order:
 
 ```typescript
-class CounterVertex extends Vertex<{ count: number }> {
-  constructor() {
-    super({ count: 0 });
-
-    this.on(IncrementEvent, (_, emit) => {
-      console.log('Processing increment');
-      emit({ count: this.state.count + 1 });
-    });
-  }
-}
-
-const counter = CounterVertex.resolve();
-counter.add(new IncrementEvent()); // Logs immediately
-console.log(counter.state.count);  // 1
+const counter = CounterVertex.create();
+counter.add({ type: 'increment', amount: 1 }); // Processed immediately
+console.log(counter.state.count); // 1
 ```
 
 If an event is added during processing, it's queued:
 
 ```typescript
-this.on(BatchEvent, (event, emit) => {
-  for (const item of event.items) {
-    this.add(new ProcessItemEvent(item)); // Queued
-  }
-  emit(this.state);
+this.createHandlers({
+  batch: (event, emit) => {
+    for (const item of event.items) {
+      this.add({ type: 'processItem', item }); // Queued
+    }
+    emit(this.state);
+  },
+  processItem: (event, emit) => {
+    // Processed after batch handler completes
+  },
 });
 ```
 
@@ -157,12 +153,11 @@ this.on(BatchEvent, (event, emit) => {
 Override `onEventError()` to handle errors:
 
 ```typescript
-class MyVertex extends Vertex<State> {
-  protected onEventError(event: BaseEvent, error: Error): void {
+class MyVertex extends Vertex<State, MyEvent> {
+  protected onEventError(event: EventWithMetadata<MyEvent>, error: Error): void {
     console.error(`Error processing ${event.type}:`, error);
-
-    // Optionally emit error state
-    this.add(new ErrorEvent(error.message));
+    // Optionally dispatch an error event
+    this.add({ type: 'error', message: error.message });
   }
 }
 ```
@@ -171,28 +166,11 @@ class MyVertex extends Vertex<State> {
 
 ```typescript
 // Events
-class LoginStartEvent implements BaseEvent {
-  readonly type = 'loginStart';
-  readonly timestamp = Date.now();
-  constructor(public readonly email: string) {}
-}
-
-class LoginSuccessEvent implements BaseEvent {
-  readonly type = 'loginSuccess';
-  readonly timestamp = Date.now();
-  constructor(public readonly user: User) {}
-}
-
-class LoginFailedEvent implements BaseEvent {
-  readonly type = 'loginFailed';
-  readonly timestamp = Date.now();
-  constructor(public readonly error: string) {}
-}
-
-class LogoutEvent implements BaseEvent {
-  readonly type = 'logout';
-  readonly timestamp = Date.now();
-}
+type AuthEvent =
+  | { type: 'loginStart'; email: string }
+  | { type: 'loginSuccess'; user: User }
+  | { type: 'loginFailed'; error: string }
+  | { type: 'logout' };
 
 // State
 interface AuthState {
@@ -202,40 +180,39 @@ interface AuthState {
 }
 
 // Vertex
-class AuthVertex extends Vertex<AuthState> {
+class AuthVertex extends Vertex<AuthState, AuthEvent> {
   constructor() {
     super({ user: null, isLoading: false, error: null });
 
-    this.on(LoginStartEvent, (_, emit) => {
-      emit({ user: null, isLoading: true, error: null });
-    });
-
-    this.on(LoginSuccessEvent, (event, emit) => {
-      emit({ user: event.user, isLoading: false, error: null });
-    });
-
-    this.on(LoginFailedEvent, (event, emit) => {
-      emit({ user: null, isLoading: false, error: event.error });
-    });
-
-    this.on(LogoutEvent, (_, emit) => {
-      emit({ user: null, isLoading: false, error: null });
+    this.createHandlers({
+      loginStart: (_, emit) => {
+        emit({ user: null, isLoading: true, error: null });
+      },
+      loginSuccess: (event, emit) => {
+        emit({ user: event.user, isLoading: false, error: null });
+      },
+      loginFailed: (event, emit) => {
+        emit({ user: null, isLoading: false, error: event.error });
+      },
+      logout: (_, emit) => {
+        emit({ user: null, isLoading: false, error: null });
+      },
     });
   }
 
   login = async (email: string, password: string) => {
-    this.add(new LoginStartEvent(email));
+    this.add({ type: 'loginStart', email });
 
     try {
       const user = await api.login(email, password);
-      this.add(new LoginSuccessEvent(user));
+      this.add({ type: 'loginSuccess', user });
     } catch (error) {
-      this.add(new LoginFailedEvent(error.message));
+      this.add({ type: 'loginFailed', error: error.message });
     }
   };
 
   logout = () => {
-    this.add(new LogoutEvent());
+    this.add({ type: 'logout' });
   };
 }
 ```

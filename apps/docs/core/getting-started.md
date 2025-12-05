@@ -63,44 +63,32 @@ CounterCubit.release();
 Vertex uses events for state transitions. Use it when you need explicit event handling.
 
 ```typescript
-import { Vertex, BaseEvent } from '@blac/core';
+import { Vertex } from '@blac/core';
 
-// Define events
-class IncrementEvent implements BaseEvent {
-  readonly type = 'increment';
-  readonly timestamp = Date.now();
-  constructor(public readonly amount: number = 1) {}
-}
-
-class DecrementEvent implements BaseEvent {
-  readonly type = 'decrement';
-  readonly timestamp = Date.now();
-  constructor(public readonly amount: number = 1) {}
-}
+// Define events as discriminated union
+type CounterEvent =
+  | { type: 'increment'; amount: number }
+  | { type: 'decrement'; amount: number };
 
 // Create Vertex
-class CounterVertex extends Vertex<{ count: number }> {
+class CounterVertex extends Vertex<{ count: number }, CounterEvent> {
   constructor() {
     super({ count: 0 });
 
-    // Register event handlers
-    this.on(IncrementEvent, (event, emit) => {
-      emit({ count: this.state.count + event.amount });
-    });
-
-    this.on(DecrementEvent, (event, emit) => {
-      emit({ count: this.state.count - event.amount });
+    // TypeScript enforces exhaustive handling
+    this.createHandlers({
+      increment: (event, emit) => {
+        emit({ count: this.state.count + event.amount });
+      },
+      decrement: (event, emit) => {
+        emit({ count: this.state.count - event.amount });
+      },
     });
   }
 
   // Public methods dispatch events
-  increment = (amount = 1) => {
-    this.add(new IncrementEvent(amount));
-  };
-
-  decrement = (amount = 1) => {
-    this.add(new DecrementEvent(amount));
-  };
+  increment = (amount = 1) => this.add({ type: 'increment', amount });
+  decrement = (amount = 1) => this.add({ type: 'decrement', amount });
 }
 ```
 

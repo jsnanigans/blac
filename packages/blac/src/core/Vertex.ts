@@ -1,80 +1,101 @@
 import { StateContainer } from './StateContainer';
-import { BaseEvent } from '../types/events';
+import type {
+  DiscriminatedEvent,
+  EventWithMetadata,
+  EventHandlerMap,
+  VertexEventHandler,
+} from '../types/events';
 
 /**
- * Handler function for processing events in Vertex
- * @template E - Event type
- * @template S - State type
- * @param event - The event being handled
- * @param emit - Function to emit new state
- */
-export type EventHandler<E extends BaseEvent, S> = (
-  event: E,
-  emit: (state: S) => void,
-) => void;
-
-/**
- * Constructor type for event classes
- * @template T - Event type
- */
-export type EventConstructor<T extends BaseEvent = BaseEvent> = new (
-  ...args: never[]
-) => T;
-
-interface EventHandlerRegistration<E extends BaseEvent, S> {
-  eventClass: EventConstructor<E>;
-  handler: EventHandler<E, S>;
-}
-
-/**
- * Event-driven state container that processes events to update state.
- * Use with event handlers registered via the on() method.
+ * Event-driven state container using discriminated union events.
+ * Extends StateContainer with event-based state transitions and
+ * compile-time exhaustive checking for event handlers.
  *
- * @template S - State type
- * @template E - Event type (extends BaseEvent)
+ * @template S - State type (must be an object)
+ * @template E - Event union type (discriminated by 'type' property)
  * @template P - Props type (optional)
+ *
+ * @example
+ * ```typescript
+ * type CounterEvent =
+ *   | { type: 'increment'; amount: number }
+ *   | { type: 'decrement' }
+ *   | { type: 'reset' };
+ *
+ * class CounterVertex extends Vertex<{ count: number }, CounterEvent> {
+ *   constructor() {
+ *     super({ count: 0 });
+ *     this.createHandlers({
+ *       increment: (event, emit) => {
+ *         emit({ count: this.state.count + event.amount });
+ *       },
+ *       decrement: (_, emit) => {
+ *         emit({ count: this.state.count - 1 });
+ *       },
+ *       reset: (_, emit) => {
+ *         emit({ count: 0 });
+ *       },
+ *     });
+ *   }
+ *
+ *   increment = (amount = 1) => this.add({ type: 'increment', amount });
+ * }
+ * ```
  */
 export abstract class Vertex<
-  S extends object = any,
-  E extends BaseEvent = BaseEvent,
+  S extends object = object,
+  E extends DiscriminatedEvent = DiscriminatedEvent,
   P = undefined,
 > extends StateContainer<S, P> {
-  private eventHandlers = new Map<string, EventHandlerRegistration<E, S>[]>();
+  /** @internal */
+  private handlers = new Map<string, VertexEventHandler<DiscriminatedEvent, S>>();
+  /** @internal */
   private isProcessing = false;
-  private eventQueue: E[] = [];
+  /** @internal */
+  private eventQueue: EventWithMetadata<E>[] = [];
 
   constructor(initialState: S) {
     super(initialState);
   }
 
   /**
-   * Register a handler for a specific event type
-   * @param EventClass - The event class constructor
-   * @param handler - Function to handle events of this type
+   * Register all event handlers with exhaustive type checking.
+   * TypeScript will error if any event type from the union is missing.
+   *
+   * @param handlers - Map of event type to handler function
    */
-  protected on = <T extends E>(
-    EventClass: EventConstructor<T>,
-    handler: EventHandler<T, S>,
-  ): void => {
-    const className = EventClass.name;
-    const registrations = this.eventHandlers.get(className) || [];
-    registrations.push({
-      eventClass: EventClass as EventConstructor<E>,
-      handler: handler as EventHandler<E, S>,
-    });
-    this.eventHandlers.set(className, registrations);
-  };
+  protected createHandlers(handlers: EventHandlerMap<E, S>): void {
+    for (const [eventType, handler] of Object.entries(handlers)) {
+      this.handlers.set(
+        eventType,
+        handler as VertexEventHandler<DiscriminatedEvent, S>,
+      );
+    }
+  }
 
   /**
-   * Add an event to the event stream for processing
-   * @param event - The event to process
+   * Dispatch an event for processing.
+   * Events are processed synchronously; if called during processing,
+   * the event is queued and processed after the current event completes.
+   *
+   * @param event - The event to process (must match the event union type)
    */
   public add = (event: E): void => {
-    StateContainer._registry.emit('eventAdded', this, event);
-    this.processEvent(event);
+    const enrichedEvent = this.enrichEvent(event);
+    StateContainer._registry.emit('eventAdded', this, enrichedEvent);
+    this.processEvent(enrichedEvent);
   };
 
-  private processEvent(event: E): void {
+  /** @internal */
+  private enrichEvent(event: E): EventWithMetadata<E> {
+    return {
+      ...event,
+      timestamp: Date.now(),
+    };
+  }
+
+  /** @internal */
+  private processEvent(event: EventWithMetadata<E>): void {
     if (this.isProcessing) {
       this.eventQueue.push(event);
       return;
@@ -94,13 +115,13 @@ export abstract class Vertex<
     }
   }
 
-  private handleEvent(event: E): void {
-    const className = event.constructor.name;
-    const registrations = this.eventHandlers.get(className);
+  /** @internal */
+  private handleEvent(event: EventWithMetadata<E>): void {
+    const handler = this.handlers.get(event.type);
 
-    if (!registrations || registrations.length === 0) {
+    if (!handler) {
       if (this.debug) {
-        console.warn(`No handler registered for event: ${className}`);
+        console.warn(`No handler registered for event type: ${event.type}`);
       }
       return;
     }
@@ -109,23 +130,25 @@ export abstract class Vertex<
       this.emit(state);
     };
 
-    for (const registration of registrations) {
-      try {
-        registration.handler(event, emitFn);
-      } catch (error) {
-        if (this.debug) {
-          console.error(`Error handling event ${className}:`, error);
-        }
-        this.onEventError(event, error as Error);
+    try {
+      handler(event, emitFn);
+    } catch (error) {
+      if (this.debug) {
+        console.error(`Error handling event ${event.type}:`, error);
       }
+      this.onEventError(event, error as Error);
     }
   }
 
   /**
-   * Handle errors that occur during event processing.
-   * Override this method to implement custom error handling.
+   * Called when an error occurs during event processing.
+   * Override to implement custom error handling.
+   *
    * @param _event - The event that caused the error
    * @param _error - The error that occurred
    */
-  protected onEventError(_event: E, _error: Error): void {}
+  protected onEventError(
+    _event: EventWithMetadata<E>,
+    _error: Error,
+  ): void {}
 }
