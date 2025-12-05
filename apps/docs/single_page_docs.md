@@ -77,6 +77,21 @@ class MyBloc extends StateContainer<State> {}
 // KeepAlive: Never auto-dispose when ref count reaches 0
 @blac({ keepAlive: true })
 class MyBloc extends StateContainer<State> {}
+
+// Exclude from DevTools (prevents infinite loops in DevTools UI)
+@blac({ excludeFromDevTools: true })
+class InternalBloc extends StateContainer<State> {}
+```
+
+**⚠️ Important:** `BlacOptions` is a **union type** - you can only specify ONE option at a time:
+```typescript
+// ✅ Valid - one option
+@blac({ isolated: true })
+@blac({ keepAlive: true })
+@blac({ excludeFromDevTools: true })
+
+// ❌ Invalid - cannot combine options
+@blac({ isolated: true, keepAlive: true }) // TypeScript error!
 ```
 
 **Function syntax** (for projects without decorator support):
@@ -720,6 +735,9 @@ const [state, bloc] = useBloc(MyBloc, {
 
   // Disable automatic tracking (all changes trigger re-render)
   autoTrack: false,
+
+  // Disable caching for getter tracking (advanced)
+  disableGetterCache: false,
 
   // Lifecycle callbacks
   onMount: (bloc) => bloc.fetchData(),
@@ -1923,7 +1941,8 @@ function createBloc<TBloc extends StateContainer<any>>(
   props?: any;                    // Constructor arguments
   instanceId?: string | number;   // Custom instance ID
   dependencies?: (state, bloc) => any[]; // Manual tracking
-  autoTrack?: boolean;            // Enable/disable auto tracking
+  autoTrack?: boolean;            // Enable/disable auto tracking (default: true)
+  disableGetterCache?: boolean;   // Disable getter value caching (default: false)
   onMount?: (bloc) => void;       // Mount callback
   onUnmount?: (bloc) => void;     // Unmount callback
 }
@@ -1957,6 +1976,8 @@ class InternalBloc extends Cubit<State> {}
 // Function syntax (no decorator support needed)
 const MyBloc = blac({ isolated: true })(class extends Cubit<State> {});
 ```
+
+**⚠️ Note:** `BlacOptions` is a union type - only ONE option can be specified at a time.
 
 ### System Events
 
@@ -2168,18 +2189,237 @@ class MyBloc extends Cubit<State> {
 
 ---
 
-## Performance Tips
+## React Performance Optimization
 
-1. **Use useBlocActions** for components that only dispatch actions
-2. **Access only needed properties** in render to minimize tracking
-3. **Use getters** for computed values - they're cached per render cycle
-4. **Use patch()** instead of update() for simple field updates
-5. **Mark isolated** blocs that don't need to be shared
-6. **Use keepAlive** for expensive-to-recreate singletons
-7. **Use `.get()` instead of `.resolve()`** in bloc-to-bloc communication to prevent memory leaks
-8. **Use `.forEach()` instead of `.getAll()`** when working with 100+ instances
-9. **Disable autoTrack** only if you have specific performance needs
-10. **Use system events** instead of lifecycle methods for cleaner cleanup
+BlaC's proxy-based dependency tracking is designed for optimal React performance. Follow these patterns to maximize efficiency.
+
+### Key Principles
+
+1. **Only access what you render** - Proxy tracking records property access during render
+2. **Prefer getters for computed values** - Cached per render cycle
+3. **Use `useBlocActions` for action-only components** - Zero state subscription overhead
+4. **Split large state objects** - Smaller granular blocs re-render fewer components
+
+### Optimal Property Access
+
+```typescript
+// ✅ OPTIMAL: Access only properties used in render
+function UserCard() {
+  const [user] = useBloc(UserBloc);
+  return (
+    <div>
+      <h2>{user.name}</h2>        {/* Only tracks 'name' */}
+      <img src={user.avatar} />   {/* Only tracks 'avatar' */}
+    </div>
+  );
+  // Changes to user.email, user.bio won't trigger re-render
+}
+
+// ❌ AVOID: Accessing entire state defeats tracking
+function UserCard() {
+  const [user] = useBloc(UserBloc);
+  const { name, email, avatar, bio, settings } = user; // Tracks everything!
+  return <h2>{name}</h2>; // Still re-renders on ANY change
+}
+
+// ❌ AVOID: Spreading state
+function UserCard() {
+  const [user] = useBloc(UserBloc);
+  return <UserProfile {...user} />; // Tracks everything!
+}
+```
+
+### Computed Values with Getters
+
+```typescript
+class TodoCubit extends Cubit<TodoState> {
+  // ✅ Getter is computed once per render cycle (cached)
+  get visibleTodos() {
+    return this.state.filter === 'active'
+      ? this.state.todos.filter(t => !t.done)
+      : this.state.todos;
+  }
+
+  // ✅ Accessing same getter multiple times = one computation
+  get stats() {
+    return {
+      total: this.visibleTodos.length,      // Same computation
+      hasItems: this.visibleTodos.length > 0 // Reuses cached result
+    };
+  }
+}
+
+function TodoList() {
+  const [, cubit] = useBloc(TodoCubit);
+
+  // Getter value tracked, re-renders only when result changes
+  return (
+    <ul>
+      {cubit.visibleTodos.map(todo => (
+        <li key={todo.id}>{todo.text}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+### Action-Only Components
+
+```typescript
+// ✅ OPTIMAL: Component never re-renders from state changes
+function TodoActions() {
+  const cubit = useBlocActions(TodoCubit);
+
+  return (
+    <div>
+      <button onClick={() => cubit.addTodo('New task')}>Add</button>
+      <button onClick={cubit.clearCompleted}>Clear Done</button>
+    </div>
+  );
+}
+
+// ❌ WASTEFUL: Subscribed to state but never uses it
+function TodoActions() {
+  const [_, cubit] = useBloc(TodoCubit); // Unnecessary subscription!
+  return <button onClick={cubit.addTodo}>Add</button>;
+}
+```
+
+### Component Splitting Pattern
+
+```typescript
+// ✅ OPTIMAL: Split into granular components
+function TodoApp() {
+  return (
+    <div>
+      <TodoCount />      {/* Only re-renders on count change */}
+      <TodoList />       {/* Only re-renders on todos change */}
+      <TodoActions />    {/* Never re-renders */}
+    </div>
+  );
+}
+
+function TodoCount() {
+  const [state] = useBloc(TodoCubit);
+  return <span>{state.todos.length} items</span>; // Tracks todos.length
+}
+
+function TodoList() {
+  const [, cubit] = useBloc(TodoCubit);
+  return <ul>{cubit.visibleTodos.map(...)}</ul>; // Tracks getter result
+}
+
+function TodoActions() {
+  const cubit = useBlocActions(TodoCubit);
+  return <button onClick={cubit.addTodo}>Add</button>; // No subscription
+}
+
+// ❌ AVOID: One big component that accesses everything
+function TodoApp() {
+  const [state, cubit] = useBloc(TodoCubit);
+  return (
+    <div>
+      <span>{state.todos.length}</span>
+      <ul>{cubit.visibleTodos.map(...)}</ul>
+      <button onClick={cubit.addTodo}>Add</button>
+    </div>
+  );
+  // Entire component re-renders on ANY state change
+}
+```
+
+### Avoiding Unnecessary Re-renders
+
+```typescript
+// ✅ Access nested properties directly
+function UserAvatar() {
+  const [user] = useBloc(UserBloc);
+  return <img src={user.profile.avatar} />; // Tracks profile.avatar
+}
+
+// ✅ Conditional access is fine
+function UserStatus() {
+  const [user] = useBloc(UserBloc);
+  return user.isOnline ? <span>Online</span> : null;
+  // Tracks only 'isOnline'
+}
+
+// ✅ Array element access tracks the specific index
+function FirstTodo() {
+  const [state] = useBloc(TodoCubit);
+  return <div>{state.todos[0]?.text}</div>;
+  // Re-renders only when todos[0] changes
+}
+
+// ❌ Array iteration tracks the entire array
+function AllTodos() {
+  const [state] = useBloc(TodoCubit);
+  return <div>{state.todos.map(t => t.text).join(', ')}</div>;
+  // Re-renders on ANY change to todos array
+}
+```
+
+### Manual Dependencies (Advanced)
+
+Use when you know exactly what to track:
+
+```typescript
+// For predictable, known dependencies
+const [state] = useBloc(UserBloc, {
+  dependencies: (state) => [state.name, state.email]
+});
+
+// For derived values that shouldn't trigger re-render
+const [state] = useBloc(AnalyticsBloc, {
+  dependencies: (state) => [state.displayMetrics]
+  // Ignores internal tracking data changes
+});
+```
+
+### Memory-Efficient Patterns
+
+```typescript
+// ✅ Use .get() in bloc-to-bloc communication (no ref count)
+class UserBloc extends Cubit<UserState> {
+  loadProfile = () => {
+    const analytics = AnalyticsCubit.get(); // Borrow, don't own
+    analytics.trackEvent('profile_loaded');
+    // No cleanup needed - not incrementing ref count
+  };
+}
+
+// ✅ Use .forEach() for large instance sets
+function cleanupStaleSessions() {
+  // Memory efficient - doesn't create array copy
+  UserSessionBloc.forEach((session) => {
+    if (session.state.isStale) {
+      UserSessionBloc.release(session.instanceId);
+    }
+  });
+}
+
+// ❌ Avoid .getAll() for large sets
+const allSessions = UserSessionBloc.getAll(); // Creates array copy
+```
+
+### Performance Summary
+
+| Pattern | Re-renders | Use When |
+|---------|------------|----------|
+| Auto-tracking (default) | On tracked property change | Most cases |
+| `useBlocActions` | Never | Action-only components |
+| Manual `dependencies` | On dependency change | Known fixed dependencies |
+| `autoTrack: false` | On any state change | Simple state, debugging |
+| Getters | On computed value change | Derived/computed state |
+
+### Common Performance Mistakes
+
+1. **Destructuring state** - `const { a, b, c } = state` tracks all properties
+2. **Spreading props** - `<Child {...state} />` defeats tracking
+3. **Using `.resolve()` in methods** - Causes ref count leaks
+4. **Large monolithic components** - Split into smaller, focused components
+5. **Iterating arrays when accessing single element** - Use index access instead
+6. **Not using `useBlocActions`** - Creates unnecessary subscriptions
 
 ---
 

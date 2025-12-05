@@ -84,9 +84,15 @@ class FormBloc extends Cubit<FormState> {}
 @blac({ keepAlive: true })
 class AuthBloc extends Cubit<AuthState> {}
 
+// Exclude from DevTools (prevents infinite loops)
+@blac({ excludeFromDevTools: true })
+class InternalBloc extends Cubit<State> {}
+
 // Function syntax (no decorator support)
 const MyBloc = blac({ isolated: true })(class extends Cubit<State> {});
 ```
+
+**Note:** `BlacOptions` is a union type - only ONE option can be specified at a time.
 
 ## React Integration
 
@@ -118,6 +124,7 @@ const [state, bloc] = useBloc(MyBloc, {
   instanceId: 'main',                  // Custom instance ID for shared blocs
   dependencies: (state, bloc) => [state.count], // Manual dependency tracking
   autoTrack: false,                    // Disable automatic tracking
+  disableGetterCache: false,           // Disable getter value caching (advanced)
   onMount: (bloc) => bloc.fetchData(), // Lifecycle callbacks
   onUnmount: (bloc) => bloc.cleanup(),
 });
@@ -272,5 +279,56 @@ class AnalyticsService extends Cubit<AnalyticsState> {
 **Shared state not working?**
 - Check if bloc is marked `@blac({ isolated: true })`
 - Verify same `instanceId` if using custom IDs
+
+## Performance Optimization
+
+### Optimal Property Access
+
+```typescript
+// ✅ OPTIMAL: Access only what you render
+function UserCard() {
+  const [user] = useBloc(UserBloc);
+  return <h2>{user.name}</h2>; // Only tracks 'name'
+}
+
+// ❌ AVOID: Destructuring tracks everything
+const { name, email, bio } = user; // Re-renders on ANY change
+```
+
+### Component Splitting
+
+```typescript
+// ✅ Split into granular components
+function TodoApp() {
+  return (
+    <>
+      <TodoCount />    {/* Only re-renders on count change */}
+      <TodoList />     {/* Only re-renders on todos change */}
+      <TodoActions />  {/* Never re-renders (uses useBlocActions) */}
+    </>
+  );
+}
+
+function TodoActions() {
+  const cubit = useBlocActions(TodoCubit); // No state subscription
+  return <button onClick={cubit.addTodo}>Add</button>;
+}
+```
+
+### Performance Summary
+
+| Pattern | Re-renders | Use When |
+|---------|------------|----------|
+| Auto-tracking (default) | On tracked property change | Most cases |
+| `useBlocActions` | Never | Action-only components |
+| Manual `dependencies` | On dependency change | Known fixed dependencies |
+| Getters | On computed value change | Derived/computed state |
+
+### Common Mistakes
+
+1. **Destructuring state** - Tracks all destructured properties
+2. **Spreading props** - `<Child {...state} />` defeats tracking
+3. **Using `.resolve()` in methods** - Use `.get()` for bloc-to-bloc calls
+4. **Not using `useBlocActions`** - Creates unnecessary subscriptions
 
 For complete API reference, see [REFERENCE.md](REFERENCE.md).

@@ -1,5 +1,15 @@
 # examples
 
+## 1.0.1-rc.12
+
+### Patch Changes
+
+- Updated dependencies
+  - @blac/core@2.0.0-rc.15
+  - @blac/react@2.0.0-rc.15
+  - @blac/devtools-connect@2.0.0-rc.15
+  - @blac/devtools-ui@2.0.0-rc.15
+
 ## 1.0.1-rc.11
 
 ### Patch Changes

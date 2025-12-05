@@ -1,5 +1,14 @@
 # @blac/devtools-connect
 
+## 2.0.0-rc.15
+
+### Patch Changes
+
+- - Refine type inference
+  - Only allow object types for state, no more support for primitives
+- Updated dependencies
+  - @blac/core@2.0.0-rc.15
+
 ## 2.0.0-rc.14
 
 ### Patch Changes

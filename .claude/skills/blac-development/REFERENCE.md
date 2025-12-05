@@ -99,12 +99,20 @@ class MyVertex extends Vertex<State> {
 
 ## @blac() Decorator Options
 
+`BlacOptions` is a **union type** - only ONE option can be specified at a time:
+
 ```typescript
-interface BlacConfig {
-  isolated?: boolean;        // Each component gets its own instance
-  keepAlive?: boolean;       // Never auto-dispose when ref count reaches 0
-  excludeFromDevTools?: boolean; // Hide from DevTools panels
-}
+type BlacOptions =
+  | { isolated: true }           // Each component gets its own instance
+  | { keepAlive: true }          // Never auto-dispose when ref count reaches 0
+  | { excludeFromDevTools: true }; // Hide from DevTools panels
+
+// ✅ Valid
+@blac({ isolated: true })
+@blac({ keepAlive: true })
+
+// ❌ Invalid - cannot combine
+@blac({ isolated: true, keepAlive: true }) // TypeScript error!
 ```
 
 ## useBloc Hook
@@ -123,6 +131,7 @@ function useBloc<T extends StateContainer<S, P>, S, P>(
 | `instanceId` | `string \| number` | Custom instance ID for shared blocs |
 | `dependencies` | `(state, bloc) => any[]` | Manual dependency tracking |
 | `autoTrack` | `boolean` | Enable/disable auto tracking (default: true) |
+| `disableGetterCache` | `boolean` | Disable getter value caching (default: false) |
 | `onMount` | `(bloc) => void` | Mount callback |
 | `onUnmount` | `(bloc) => void` | Unmount callback |
 
@@ -226,6 +235,51 @@ import type { ExtractState, ExtractProps, BlocConstructor } from '@blac/core';
 
 type CounterState = ExtractState<CounterCubit>; // number
 type UserProps = ExtractProps<UserCubit>; // { userId: string }
+```
+
+## Performance Patterns
+
+### Tracking Modes Comparison
+
+| Mode | Re-renders | Setup | Best For |
+|------|-----------|-------|----------|
+| Auto-tracking (default) | Tracked properties | None | Most cases |
+| Manual `dependencies` | Dependency array | Explicit list | Known patterns |
+| `autoTrack: false` | Any state change | Set option | Simple state |
+| `useBlocActions` | Never | Use different hook | Action-only |
+
+### Optimal Access Patterns
+
+```typescript
+// ✅ Direct property access - tracks only what's used
+const [user] = useBloc(UserBloc);
+return <h2>{user.name}</h2>; // Only tracks 'name'
+
+// ✅ Nested access works
+return <img src={user.profile.avatar} />; // Tracks 'profile.avatar'
+
+// ✅ Conditional access is fine
+return user.isAdmin ? <AdminPanel /> : null; // Tracks 'isAdmin'
+
+// ❌ Destructuring tracks everything accessed
+const { name, email } = user; // Tracks both!
+
+// ❌ Spreading defeats tracking
+return <Profile {...user} />; // Tracks everything!
+```
+
+### Getter Caching
+
+Getters are cached per render cycle:
+```typescript
+class MyBloc extends Cubit<State> {
+  get computed() {
+    return expensiveComputation(this.state);
+  }
+}
+
+// Same getter accessed multiple times = one computation
+{cubit.computed} {cubit.computed} // Computed once, reused
 ```
 
 ## Source Code Locations
