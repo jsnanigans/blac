@@ -665,7 +665,7 @@ describe('Vertex', () => {
       const unsubscribe = vertex.subscribe(listener);
 
       vertex.increment();
-      expect(listener).toHaveBeenCalledWith(1);
+      expect(listener).toHaveBeenCalledWith({ count: 1 });
 
       unsubscribe();
       vertex.increment();

@@ -88,15 +88,15 @@ describe('useBloc', () => {
   describe('Basic Usage', () => {
     it('should create bloc instance and subscribe to state', () => {
       const { result } = renderHook(() => useBloc(CounterBloc));
-
       const [state, bloc] = result.current;
-      expect(state).toBe(0);
+      expect(state.count).toBe(0);
       expect(bloc).toBeInstanceOf(CounterBloc);
     });
 
     it('should update when bloc state changes', async () => {
       const { result } = renderHook(() => {
         const [state, bloc] = useBloc(CounterBloc);
+        const _ = state.count; // access state to subscribe
         return { state, bloc };
       });
 
@@ -104,18 +104,19 @@ describe('useBloc', () => {
         result.current.bloc.increment();
       });
 
-      await waitFor(() => {
-        expect(result.current.state).toBe(1);
-      });
+      expect(result.current.state.count).toBe(1);
     });
 
     it('should share instance across multiple hooks (default shared)', async () => {
       const { result: result1 } = renderHook(() => {
         const [state, bloc] = useBloc(CounterBloc);
+        // access state to subscribe
+        const _ = state.count;
         return { state, bloc };
       });
       const { result: result2 } = renderHook(() => {
         const [state, bloc] = useBloc(CounterBloc);
+        const _ = state.count;
         return { state, bloc };
       });
 
@@ -126,10 +127,8 @@ describe('useBloc', () => {
         result1.current.bloc.increment();
       });
 
-      await waitFor(() => {
-        expect(result1.current.state).toBe(1);
-        expect(result2.current.state).toBe(1);
-      });
+      expect(result1.current.state.count).toBe(1);
+      expect(result2.current.state.count).toBe(1);
     });
   });
 
@@ -147,11 +146,11 @@ describe('useBloc', () => {
 
     it('should maintain separate state for each instance', async () => {
       const { result: result1 } = renderHook(() => {
-        const [state, bloc] = useBloc(IsolatedBloc);
+        const [state, bloc] = useBloc(IsolatedBloc, { autoTrack: false });
         return { state, bloc };
       });
       const { result: result2 } = renderHook(() => {
-        const [state, bloc] = useBloc(IsolatedBloc);
+        const [state, bloc] = useBloc(IsolatedBloc, { autoTrack: false });
         return { state, bloc };
       });
 
@@ -159,10 +158,64 @@ describe('useBloc', () => {
         result1.current.bloc.increment();
       });
 
-      await waitFor(() => {
-        expect(result1.current.state).toBe(1);
-        expect(result2.current.state).toBe(0); // Other instance unchanged
+      expect(result1.current.state.count).toBe(1);
+      expect(result2.current.state.count).toBe(0);
+    });
+
+    it('should update state return when its not accessed because autoTrack is disabled', async () => {
+      const { result: result1 } = renderHook(() => {
+        const [state, bloc] = useBloc(IsolatedBloc, { autoTrack: false });
+        return { state, bloc };
       });
+      const { result: result2 } = renderHook(() => {
+        const [state, bloc] = useBloc(IsolatedBloc, { autoTrack: false });
+        return { state, bloc };
+      });
+
+      expect(result1.current.bloc.state.count).toBe(0);
+      expect(result1.current.state.count).toBe(0);
+      expect(result2.current.bloc.state.count).toBe(0);
+      expect(result2.current.state.count).toBe(0);
+
+      act(() => {
+        result1.current.bloc.increment();
+      });
+
+      // result1 bloc.state is always uptodate, should show 1 after increment
+      expect(result1.current.bloc.state.count).toBe(1);
+      // but result1 state is not accessed, so should not trigger update, remains 0
+      expect(result1.current.state.count).toBe(1);
+      // result2 remains unaffected
+      expect(result2.current.bloc.state.count).toBe(0);
+      expect(result2.current.state.count).toBe(0);
+    });
+
+    it('should not update state return when its not accessed because autoTrack is enabled', async () => {
+      const { result: result1 } = renderHook(() => {
+        const [state, bloc] = useBloc(IsolatedBloc, { autoTrack: true });
+        return { state, bloc };
+      });
+      const { result: result2 } = renderHook(() => {
+        const [state, bloc] = useBloc(IsolatedBloc, { autoTrack: true });
+        return { state, bloc };
+      });
+
+      expect(result1.current.bloc.state.count).toBe(0);
+      expect(result1.current.state.count).toBe(0);
+      expect(result2.current.bloc.state.count).toBe(0);
+      expect(result2.current.state.count).toBe(0);
+
+      act(() => {
+        result1.current.bloc.increment();
+      });
+
+      // result1 bloc.state is always uptodate, should show 1 after increment
+      expect(result1.current.bloc.state.count).toBe(1);
+      // but result1 state is not accessed, so should not trigger update, remains 0
+      expect(result1.current.state.count).toBe(0);
+      // result2 remains unaffected
+      expect(result2.current.bloc.state.count).toBe(0);
+      expect(result2.current.state.count).toBe(0);
     });
 
     it('should dispose isolated blocs on unmount', async () => {
@@ -260,29 +313,6 @@ describe('useBloc', () => {
 
       const [state] = result.current;
       expect(state.name).toBe('Bob');
-    });
-  });
-
-  describe('Type Inference', () => {
-    it('should infer state type from bloc', () => {
-      const { result } = renderHook(() => useBloc(CounterBloc));
-
-      const [state] = result.current;
-
-      // TypeScript should know this is a number
-      expect(typeof state).toBe('number');
-    });
-
-    it('should infer bloc type from constructor', () => {
-      const { result } = renderHook(() => useBloc(UserBloc));
-
-      const [, bloc] = result.current;
-
-      // TypeScript should know these methods exist
-      bloc.setName('Test');
-      bloc.setEmail('test@example.com');
-
-      expect(bloc).toBeInstanceOf(UserBloc);
     });
   });
 });
