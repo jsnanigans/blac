@@ -24,12 +24,37 @@ export default defineConfig({
       ],
       '/core/': [
         {
-          text: 'Essentials',
-          items: [],
+          text: 'Getting Started',
+          items: [{ text: 'Quick Start', link: '/core/getting-started' }],
+        },
+        {
+          text: 'State Containers',
+          items: [
+            { text: 'Cubit', link: '/core/cubit' },
+            { text: 'Vertex', link: '/core/vertex' },
+          ],
+        },
+        {
+          text: 'Configuration',
+          items: [
+            { text: '@blac() Decorator', link: '/core/configuration' },
+            { text: 'Instance Management', link: '/core/instance-management' },
+            { text: 'System Events', link: '/core/system-events' },
+          ],
         },
         {
           text: 'Advanced',
-          items: [],
+          items: [
+            { text: 'Logging', link: '/core/logging' },
+            { text: 'Plugins', link: '/core/plugins' },
+          ],
+        },
+        {
+          text: 'Examples',
+          items: [
+            { text: 'Form Validation', link: '/core/form-validation' },
+            { text: 'Authentication Flow', link: '/core/auth-flow' },
+          ],
         },
       ],
       '/react/': [
@@ -38,12 +63,21 @@ export default defineConfig({
           items: [{ text: 'Quick Start', link: '/react/getting-started' }],
         },
         {
-          text: 'Essentials',
-          items: [{ text: 'useBloc Hook', link: '/react/use-bloc' }],
+          text: 'Hooks',
+          items: [
+            { text: 'useBloc', link: '/react/use-bloc' },
+            { text: 'useBlocActions', link: '/react/use-bloc-actions' },
+          ],
         },
         {
           text: 'Patterns',
-          items: [{ text: 'Overview', link: '/react/overview' }],
+          items: [
+            { text: 'Overview', link: '/react/overview' },
+            { text: 'Dependency Tracking', link: '/react/dependency-tracking' },
+            { text: 'Shared vs Isolated', link: '/react/shared-vs-isolated' },
+            { text: 'Bloc Communication', link: '/react/bloc-communication' },
+            { text: 'Performance', link: '/react/performance' },
+          ],
         },
       ],
       '/api/': [

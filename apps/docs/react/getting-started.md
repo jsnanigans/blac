@@ -1,51 +1,113 @@
-# React Quick Start
+# React Getting Started
 
 ## Installation
 
-<!-- TODO: Add installation instructions -->
+```bash
+npm install @blac/core @blac/react
+# or
+pnpm add @blac/core @blac/react
+```
 
 ## Basic Usage
 
-### 1. Create a Cubit
+```tsx
+import { Cubit } from '@blac/core';
+import { useBloc } from '@blac/react';
 
-<!-- TODO: Add Cubit creation example -->
+// 1. Define a Cubit
+class CounterCubit extends Cubit<{ count: number }> {
+  constructor() {
+    super({ count: 0 });
+  }
 
-### 2. Use in React Component
+  increment = () => {
+    this.patch({ count: this.state.count + 1 });
+  };
 
-<!-- TODO: Add React component example -->
+  decrement = () => {
+    this.patch({ count: this.state.count - 1 });
+  };
+}
 
-## With Selectors
+// 2. Use in React
+function Counter() {
+  const [state, cubit] = useBloc(CounterCubit);
 
-<!-- TODO: Add selector example -->
+  return (
+    <div>
+      <span>{state.count}</span>
+      <button onClick={cubit.decrement}>-</button>
+      <button onClick={cubit.increment}>+</button>
+    </div>
+  );
+}
+```
 
-## Multiple State Selections
+## Auto-Tracking
 
-<!-- TODO: Add multiple field selection -->
+BlaC automatically tracks which state properties you access during render. Components only re-render when those specific properties change:
 
-## Lifecycle Callbacks
+```tsx
+function UserProfile() {
+  const [user] = useBloc(UserCubit);
 
-<!-- TODO: Add lifecycle callbacks example -->
+  // Only re-renders when name or avatar changes
+  // Changes to email, bio, settings won't trigger re-render
+  return (
+    <div>
+      <img src={user.avatar} />
+      <h2>{user.name}</h2>
+    </div>
+  );
+}
+```
 
-## Event-Driven Blocs
+No selectors needed. No manual memoization. Just access what you need.
 
-<!-- TODO: Add event-driven Bloc example -->
+## Multiple Components, Shared State
 
-## Shared State
+By default, all components using the same Cubit share state:
 
-<!-- TODO: Add shared state example -->
+```tsx
+function DisplayCount() {
+  const [state] = useBloc(CounterCubit);
+  return <div>Count: {state.count}</div>;
+}
 
-## Isolated Instances
+function IncrementButton() {
+  const [, cubit] = useBloc(CounterCubit);
+  return <button onClick={cubit.increment}>+</button>;
+}
 
-<!-- TODO: Add isolated instances example -->
+function App() {
+  return (
+    <>
+      <DisplayCount />     {/* Shows count */}
+      <IncrementButton />  {/* Updates count */}
+      <DisplayCount />     {/* Also shows updated count */}
+    </>
+  );
+}
+```
 
-## Props-Based Blocs
+## Actions Without State
 
-<!-- TODO: Add props-based Blocs example -->
+When you only need to call methods (no state reading), use `useBlocActions`:
 
-## Loading States
+```tsx
+import { useBlocActions } from '@blac/react';
 
-<!-- TODO: Add loading states pattern -->
+function ResetButton() {
+  const cubit = useBlocActions(CounterCubit);
+
+  // This component NEVER re-renders from state changes
+  return <button onClick={cubit.reset}>Reset</button>;
+}
+```
 
 ## Next Steps
 
-<!-- TODO: Add navigation links -->
+- [useBloc Hook](/react/use-bloc) - Complete hook documentation
+- [Dependency Tracking](/react/dependency-tracking) - How auto-tracking works
+- [Shared vs Isolated](/react/shared-vs-isolated) - Instance patterns
+- [Performance](/react/performance) - Optimization tips

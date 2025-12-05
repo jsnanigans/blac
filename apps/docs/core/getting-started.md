@@ -1,29 +1,127 @@
-# Quick Start
+# Getting Started
+
+## Installation
+
+```bash
+npm install @blac/core
+# or
+pnpm add @blac/core
+```
 
 ## Basic Cubit
 
-<!-- TODO: Add basic Cubit example -->
+Cubit is the simplest state container. Use it for direct state mutations.
 
-## Using a Cubit
+```typescript
+import { Cubit } from '@blac/core';
 
-<!-- TODO: Show how to use a Cubit -->
+class CounterCubit extends Cubit<{ count: number }> {
+  constructor() {
+    super({ count: 0 }); // Initial state (must be an object)
+  }
 
-## Event-Driven Bloc
+  // Always use arrow functions for React compatibility
+  increment = () => {
+    this.patch({ count: this.state.count + 1 });
+  };
 
-<!-- TODO: Add Bloc example with events -->
+  decrement = () => {
+    this.patch({ count: this.state.count - 1 });
+  };
 
-## Complex State Example
+  reset = () => {
+    this.emit({ count: 0 });
+  };
+}
+```
 
-<!-- TODO: Add complex state management example -->
+### Using a Cubit
 
-## Async Operations
+```typescript
+// Get or create instance
+const counter = CounterCubit.resolve();
 
-<!-- TODO: Show async operations in Blocs -->
+// Read state
+console.log(counter.state.count); // 0
 
-## Subscribing to State Changes
+// Call methods
+counter.increment();
+console.log(counter.state.count); // 1
 
-<!-- TODO: Explain subscription methods -->
+// Subscribe to changes
+const unsubscribe = counter.subscribe((state) => {
+  console.log('State changed:', state);
+});
+
+// Clean up
+unsubscribe();
+CounterCubit.release();
+```
+
+## Event-Driven Vertex
+
+Vertex uses events for state transitions. Use it when you need explicit event handling.
+
+```typescript
+import { Vertex, BaseEvent } from '@blac/core';
+
+// Define events
+class IncrementEvent implements BaseEvent {
+  readonly type = 'increment';
+  readonly timestamp = Date.now();
+  constructor(public readonly amount: number = 1) {}
+}
+
+class DecrementEvent implements BaseEvent {
+  readonly type = 'decrement';
+  readonly timestamp = Date.now();
+  constructor(public readonly amount: number = 1) {}
+}
+
+// Create Vertex
+class CounterVertex extends Vertex<{ count: number }> {
+  constructor() {
+    super({ count: 0 });
+
+    // Register event handlers
+    this.on(IncrementEvent, (event, emit) => {
+      emit({ count: this.state.count + event.amount });
+    });
+
+    this.on(DecrementEvent, (event, emit) => {
+      emit({ count: this.state.count - event.amount });
+    });
+  }
+
+  // Public methods dispatch events
+  increment = (amount = 1) => {
+    this.add(new IncrementEvent(amount));
+  };
+
+  decrement = (amount = 1) => {
+    this.add(new DecrementEvent(amount));
+  };
+}
+```
+
+## State Must Be an Object
+
+State must always be an object, not a primitive:
+
+```typescript
+// ✅ Correct
+class Counter extends Cubit<{ count: number }> {
+  constructor() { super({ count: 0 }); }
+}
+
+// ❌ Wrong - primitives not allowed
+class Counter extends Cubit<number> {
+  constructor() { super(0); }
+}
+```
 
 ## Next Steps
 
-<!-- TODO: Add links to detailed guides -->
+- [Cubit](/core/cubit) - Complete Cubit documentation
+- [Vertex](/core/vertex) - Event-driven state management
+- [React Integration](/react/getting-started) - Using BlaC with React

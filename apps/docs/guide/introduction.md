@@ -1,29 +1,69 @@
 # What is BlaC?
 
-<!-- TODO: Add introduction content -->
-
-## Overview
-
-<!-- TODO: Add overview -->
-
-## The BLoC Pattern
-
-<!-- TODO: Describe the BLoC pattern -->
+BlaC is a TypeScript state management library implementing the BLoC (Business Logic Component) pattern for React applications. It provides type-safe state containers with automatic dependency tracking for optimal re-renders.
 
 ## Key Features
 
-### Type-Safe State Management
+- **Type-Safe**: Full TypeScript support with inferred state and props types
+- **Auto-Tracking**: Proxy-based dependency tracking - only re-render when accessed properties change
+- **Event-Driven**: Vertex pattern for complex state flows with explicit event handling
+- **Simple API**: Cubit pattern for straightforward state management
+- **DevTools**: Built-in Chrome extension for debugging
 
-<!-- TODO: Add type safety content -->
+## More Than State Management
 
-### Event-Driven Architecture
+BlaC is a pattern that lets you forget about state management so you can focus on building features.
 
-<!-- TODO: Add event-driven architecture content -->
+**Separation of Concerns**
 
-### React Integration
+```
+┌─────────────────┐
+│   UI (React)    │  Components only render and dispatch actions
+├─────────────────┤
+│ Business Logic  │  Cubits/Vertices handle all logic
+│    (BlaC)       │
+├─────────────────┤
+│   Data Layer    │  APIs, databases, storage
+└─────────────────┘
+```
 
-<!-- TODO: Add React integration example -->
+**Testability**
 
-## V2 Architecture
+Business logic lives in plain TypeScript classes. Test without React, without hooks, without rendering:
 
-<!-- TODO: Describe V2 improvements -->
+```typescript
+// No React testing library needed
+const counter = new CounterCubit();
+counter.increment();
+expect(counter.state.count).toBe(1);
+```
+
+## Cubit vs Vertex
+
+| | Cubit | Vertex |
+|---|-------|--------|
+| **State Updates** | Direct via `emit()`, `update()`, `patch()` | Event-driven via `add()` |
+| **Complexity** | Simple | More structure |
+| **Use When** | Most cases | Complex flows, audit trails, undo/redo |
+
+**Cubit** - Direct state mutations:
+```typescript
+class CounterCubit extends Cubit<{ count: number }> {
+  increment = () => this.patch({ count: this.state.count + 1 });
+}
+```
+
+**Vertex** - Event-driven:
+```typescript
+class CounterVertex extends Vertex<{ count: number }> {
+  constructor() {
+    super({ count: 0 });
+    this.on(IncrementEvent, (e, emit) => emit({ count: this.state.count + 1 }));
+  }
+}
+```
+
+## Next Steps
+
+- [Core Getting Started](/core/getting-started) - Installation and basic usage
+- [React Getting Started](/react/getting-started) - React integration
