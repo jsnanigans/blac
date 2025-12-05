@@ -4,7 +4,11 @@ import { createPluginManager } from '../plugin/PluginManager';
 import { getGetterExecutionContext } from '../tracking/getter-tracker';
 import { BLAC_DEFAULTS, BLAC_ERROR_PREFIX } from '../constants';
 import { isIsolatedClass, isKeepAliveClass } from '../utils/static-props';
-import { ExtractProps, StateContainerConstructor } from '../types/utilities';
+import {
+  ExtractProps,
+  InstanceReadonlyState,
+  StateContainerConstructor,
+} from '../types/utilities';
 
 /**
  * Internal configuration for registered types
@@ -345,9 +349,11 @@ export class StateContainerRegistry {
    * @param Type - The StateContainer class constructor
    * @returns Array of all instances
    */
-  getAll<T extends StateContainerConstructor>(Type: T): InstanceType<T>[] {
+  getAll<T extends StateContainerConstructor>(
+    Type: T,
+  ): InstanceReadonlyState<T>[] {
     const instances = this.ensureInstancesMap(Type);
-    const result: InstanceType<T>[] = [];
+    const result: InstanceReadonlyState<T>[] = [];
     for (const entry of instances.values()) {
       result.push(entry.instance);
     }
@@ -362,7 +368,7 @@ export class StateContainerRegistry {
    */
   forEach<T extends StateContainerConstructor>(
     Type: T,
-    callback: (instance: InstanceType<T>) => void,
+    callback: (instance: InstanceReadonlyState<T>) => void,
   ): void {
     const instances = this.ensureInstancesMap(Type);
     for (const entry of instances.values()) {
@@ -491,7 +497,14 @@ export class StateContainerRegistry {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, new Set());
     }
-    this.listeners.get(event)!.add(listener as (...args: any[]) => void);
+    const instance = this.listeners.get(event);
+    if (!instance) {
+      throw new Error(
+        `${BLAC_ERROR_PREFIX} Failed to register listener for event '${event}'`,
+      );
+    }
+
+    instance.add(listener as (...args: any[]) => void);
 
     // Return unsubscribe function
     return () => {

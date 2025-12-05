@@ -21,6 +21,7 @@ import {
   disableGetterTracking,
   isIsolatedClass,
   StateContainerConstructor,
+  InstanceState,
 } from '@blac/core';
 import type { UseBlocOptions, UseBlocReturn, ComponentRef } from './types';
 import { generateInstanceKey } from './utils/instance-keys';
@@ -79,15 +80,12 @@ function determineTrackingMode<TBloc extends StateContainerConstructor>(
  * ```
  */
 export function useBloc<
-  T extends StateContainerConstructor<any, any> = StateContainerConstructor<
-    any,
-    any
-  >,
+  T extends StateContainerConstructor = StateContainerConstructor,
 >(
   BlocClass: T,
   options?: UseBlocOptions<T>,
 ): UseBlocReturn<T, ExtractState<T>> {
-  type TBloc = InstanceType<T>;
+  type TBloc = InstanceState<T>;
   const componentRef = useRef<ComponentRef>({});
   const isIsolated = isIsolatedClass(BlocClass);
 
@@ -98,9 +96,9 @@ export function useBloc<
       readonly [
         TBloc,
         (callback: () => void) => () => void,
-        () => ExtractState<TBloc>,
+        () => ExtractState<T>,
         string | undefined,
-        AdapterState<TBloc>,
+        AdapterState<T>,
         TBloc,
       ]
     >(() => {
@@ -122,15 +120,15 @@ export function useBloc<
         determineTrackingMode(options);
 
       let subscribeFn: (callback: () => void) => () => void;
-      let getSnapshotFn: () => ExtractState<TBloc>;
-      let adapterState: AdapterState<TBloc>;
+      let getSnapshotFn: () => ExtractState<T>;
+      let adapterState: AdapterState<T>;
 
       if (useManualDeps && options?.dependencies) {
         adapterState = initManualDepsState(instance);
-        subscribeFn = createManualDepsSubscribe<any>(instance, adapterState, {
+        subscribeFn = createManualDepsSubscribe(instance, adapterState, {
           dependencies: options.dependencies,
         });
-        getSnapshotFn = createManualDepsSnapshot<any>(instance, adapterState, {
+        getSnapshotFn = createManualDepsSnapshot(instance, adapterState, {
           dependencies: options.dependencies,
         });
       } else if (!autoTrackEnabled) {
@@ -176,14 +174,14 @@ export function useBloc<
 
   useEffect(() => {
     if (options?.onMount) {
-      options.onMount(bloc);
+      options.onMount(bloc as InstanceType<T>);
     }
 
     return () => {
       externalDepsManager.current.cleanup();
 
       if (options?.onUnmount) {
-        options.onUnmount(bloc);
+        options.onUnmount(bloc as InstanceType<T>);
       }
 
       (BlocClass as any).release(instanceKey);
@@ -194,5 +192,5 @@ export function useBloc<
     };
   }, []);
 
-  return [state, bloc, componentRef] as UseBlocReturn<T, ExtractState<T>>;
+  return [state, bloc, componentRef];
 }

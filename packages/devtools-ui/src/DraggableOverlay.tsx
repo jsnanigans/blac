@@ -5,7 +5,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { DevToolsPanel } from './DevToolsPanel';
-import { DevToolsInstancesBloc, DevToolsDiffBloc, DevToolsLogsBloc } from './blocs';
+import {
+  DevToolsInstancesBloc,
+  DevToolsDiffBloc,
+  DevToolsLogsBloc,
+} from './blocs';
 
 export interface DraggableOverlayProps {
   /**
@@ -26,13 +30,9 @@ function processEventIntoLogs(event: any, logsBloc: DevToolsLogsBloc): void {
     case 'init': {
       // Log init with instance count
       const instances = Array.isArray(event.data) ? event.data : [];
-      logsBloc.addLog(
-        'init',
-        '__system__',
-        'System',
-        'DevTools',
-        { instanceCount: instances.length },
-      );
+      logsBloc.addLog('init', '__system__', 'System', 'DevTools', {
+        instanceCount: instances.length,
+      });
       break;
     }
 
@@ -95,6 +95,7 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
 
   const diffBloc = DevToolsDiffBloc.resolve();
   const logsBloc = DevToolsLogsBloc.resolve();
+  const state = logsBloc.state;
 
   const initialInstances = api.getInstances();
   instancesBloc.setConnected(true);
@@ -124,13 +125,9 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
           }),
         );
         instancesBloc.setAllInstances(initInstances);
-        logsBloc.addLog(
-          'init',
-          '__system__',
-          'System',
-          'DevTools',
-          { instanceCount: initInstances.length },
-        );
+        logsBloc.addLog('init', '__system__', 'System', 'DevTools', {
+          instanceCount: initInstances.length,
+        });
         break;
       }
 
@@ -154,7 +151,9 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
         break;
 
       case 'instance-disposed': {
-        const disposedInstance = instancesBloc.getInstance((event.data as any).id);
+        const disposedInstance = instancesBloc.getInstance(
+          (event.data as any).id,
+        );
         instancesBloc.removeInstance((event.data as any).id);
         diffBloc.clearPreviousState((event.data as any).id);
         if (disposedInstance) {
@@ -169,7 +168,9 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
       }
 
       case 'instance-updated': {
-        const currentInstance = instancesBloc.getInstance((event.data as any).id);
+        const currentInstance = instancesBloc.getInstance(
+          (event.data as any).id,
+        );
         if (currentInstance) {
           diffBloc.storePreviousState(
             (event.data as any).id,
@@ -177,7 +178,10 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
             (event.data as any).callstack,
           );
         }
-        instancesBloc.updateInstanceState((event.data as any).id, (event.data as any).state);
+        instancesBloc.updateInstanceState(
+          (event.data as any).id,
+          (event.data as any).state,
+        );
         logsBloc.addLog(
           'state-changed',
           (event.data as any).id,

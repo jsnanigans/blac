@@ -1,6 +1,7 @@
 import { generateSimpleId } from '../utils/idGenerator';
 import type {
   ExtractProps,
+  InstanceReadonlyState,
   StateContainerConstructor,
 } from '../types/utilities';
 import {
@@ -73,7 +74,7 @@ type SystemEventHandler<S, P, E extends SystemEvent> = (
  * }
  * ```
  */
-export abstract class StateContainer<S = any, P = any> {
+export abstract class StateContainer<S extends object = object, P = any> {
   /** @internal Flag to exclude this class from DevTools tracking */
   static __excludeFromDevTools = false;
 
@@ -197,7 +198,7 @@ export abstract class StateContainer<S = any, P = any> {
    */
   static getAll<
     T extends StateContainerConstructor = StateContainerConstructor,
-  >(this: T): InstanceType<T>[] {
+  >(this: T): InstanceReadonlyState<T>[] {
     return StateContainer._registry.getAll(this);
   }
 
@@ -207,7 +208,7 @@ export abstract class StateContainer<S = any, P = any> {
    */
   static forEach<
     T extends StateContainerConstructor = StateContainerConstructor,
-  >(this: T, callback: (instance: InstanceType<T>) => void): void {
+  >(this: T, callback: (instance: InstanceReadonlyState<T>) => void): void {
     StateContainer._registry.forEach(this, callback);
   }
 
@@ -307,7 +308,7 @@ export abstract class StateContainer<S = any, P = any> {
   }
 
   /** Current state value */
-  get state(): S {
+  get state(): Readonly<S> {
     return this._state;
   }
 

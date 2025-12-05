@@ -7,7 +7,10 @@ import { StateContainer } from './StateContainer';
  * @template S - State type
  * @template P - Props type (optional)
  */
-export abstract class Cubit<S, P = undefined> extends StateContainer<S, P> {
+export abstract class Cubit<
+  S extends object = object,
+  P = undefined,
+> extends StateContainer<S, P> {
   constructor(initialState: S) {
     super(initialState);
   }

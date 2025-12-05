@@ -9,29 +9,29 @@ import { StateContainer } from '@blac/core';
 import { useBloc } from '../useBloc';
 
 // Test implementations
-class CounterBloc extends StateContainer<number> {
+class CounterBloc extends StateContainer<{ count: number }> {
   constructor() {
-    super(0);
+    super({ count: 0 });
   }
 
   increment = () => {
-    this.update((state) => state + 1);
+    this.update((state) => ({ count: state.count + 1 }));
   };
 
   reset = () => {
-    this.update(() => 0);
+    this.update(() => ({ count: 0 }));
   };
 }
 
-class IsolatedBloc extends StateContainer<number> {
+class IsolatedBloc extends StateContainer<{ count: number }> {
   static isolated = true;
 
   constructor() {
-    super(0);
+    super({ count: 0 });
   }
 
   increment = () => {
-    this.update((state) => state + 1);
+    this.update((state) => ({ count: state.count + 1 }));
   };
 }
 

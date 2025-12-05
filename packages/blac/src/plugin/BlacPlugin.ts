@@ -42,7 +42,7 @@ export interface PluginContext {
   /**
    * Get current state from a container
    */
-  getState<S>(instance: StateContainer<S>): S;
+  getState<S extends object = object>(instance: StateContainer<S>): S;
 
   /**
    * Get all instances of a specific type
@@ -96,7 +96,7 @@ export interface BlacPlugin {
   /**
    * Called when state changes in a container instance
    */
-  onStateChanged?<S>(
+  onStateChanged?<S extends object = object>(
     instance: StateContainer<S>,
     previousState: S,
     currentState: S,

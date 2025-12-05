@@ -3,6 +3,7 @@ import type {
   ExtractState,
   StateContainerConstructor,
 } from '@blac/core';
+import { InstanceReadonlyState } from '@blac/core';
 import type { RefObject } from 'react';
 
 /**
@@ -21,7 +22,7 @@ export interface UseBlocOptions<
   /** Manual dependency array like useEffect (disables autoTrack) */
   dependencies?: (
     state: ExtractState<TBloc>,
-    bloc: InstanceType<TBloc>,
+    bloc: InstanceReadonlyState<TBloc>,
   ) => unknown[];
   /** Enable automatic property tracking via Proxy (default: true) */
   autoTrack?: boolean;
@@ -57,9 +58,9 @@ export interface UseBlocOptions<
  * @template TBloc - The state container type
  */
 export type UseBlocReturn<
-  TBloc extends StateContainerConstructor<any, any>,
+  TBloc extends StateContainerConstructor,
   S = ExtractState<TBloc>,
-> = [S, InstanceType<TBloc>, RefObject<ComponentRef>];
+> = [S, InstanceReadonlyState<TBloc>, RefObject<ComponentRef>];
 
 /**
  * Internal ref structure for component-bloc binding

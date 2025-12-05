@@ -234,7 +234,7 @@ export class PluginManager {
         };
       },
 
-      getState: <S>(instance: StateContainer<S>): S => {
+      getState: <S extends object = object>(instance: StateContainer<S>): S => {
         return instance.state;
       },
 

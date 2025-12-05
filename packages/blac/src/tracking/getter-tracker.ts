@@ -1,5 +1,9 @@
-import type { StateContainer } from '../core/StateContainer';
 import { BLAC_DEFAULTS, BLAC_ERROR_PREFIX } from '../constants';
+import {
+  InstanceReadonlyState,
+  StateContainerConstructor,
+  StateContainerInstance,
+} from '../types/utilities';
 
 /**
  * @internal
@@ -11,7 +15,7 @@ export interface GetterTrackerState {
   isTracking: boolean;
   renderCache: Map<string | symbol, unknown>;
   cacheValid: boolean;
-  externalDependencies: Set<StateContainer<any>>; // Track external blocs accessed in getters
+  externalDependencies: Set<StateContainerInstance>; // Track external blocs accessed in getters
 }
 
 const descriptorCache = new WeakMap<
@@ -20,16 +24,19 @@ const descriptorCache = new WeakMap<
   Map<string | symbol, PropertyDescriptor | undefined>
 >();
 
-const blocProxyCache = new WeakMap<StateContainer<any>, any>();
+const blocProxyCache = new WeakMap<StateContainerInstance>();
 
-const activeTrackerMap = new WeakMap<StateContainer<any>, GetterTrackerState>();
+const activeTrackerMap = new WeakMap<
+  StateContainerInstance,
+  GetterTrackerState
+>();
 
 // Global execution context for tracking getter execution
 interface GetterExecutionContext {
   tracker: GetterTrackerState | null;
-  currentBloc: StateContainer<any> | null;
+  currentBloc: StateContainerInstance | null;
   depth: number; // Track nesting depth to detect circular dependencies
-  visitedBlocs: Set<StateContainer<any>>; // Track visited blocs in current call stack
+  visitedBlocs: Set<StateContainerInstance>; // Track visited blocs in current call stack
 }
 
 const getterExecutionContext: GetterExecutionContext = {
@@ -112,8 +119,8 @@ export function createGetterTracker(): GetterTrackerState {
 /**
  * @internal
  */
-export function setActiveTracker<TBloc extends StateContainer<any>>(
-  bloc: TBloc,
+export function setActiveTracker<TBloc extends StateContainerConstructor>(
+  bloc: InstanceReadonlyState<TBloc>,
   tracker: GetterTrackerState,
 ): void {
   activeTrackerMap.set(bloc, tracker);
@@ -122,8 +129,8 @@ export function setActiveTracker<TBloc extends StateContainer<any>>(
 /**
  * @internal
  */
-export function clearActiveTracker<TBloc extends StateContainer<any>>(
-  bloc: TBloc,
+export function clearActiveTracker<TBloc extends StateContainerConstructor>(
+  bloc: InstanceReadonlyState<TBloc>,
 ): void {
   activeTrackerMap.delete(bloc);
 }
@@ -131,8 +138,8 @@ export function clearActiveTracker<TBloc extends StateContainer<any>>(
 /**
  * @internal
  */
-export function getActiveTracker<TBloc extends StateContainer<any>>(
-  bloc: TBloc,
+export function getActiveTracker<TBloc extends StateContainerConstructor>(
+  bloc: InstanceReadonlyState<TBloc>,
 ): GetterTrackerState | undefined {
   return activeTrackerMap.get(bloc);
 }
@@ -150,9 +157,9 @@ export function commitTrackedGetters(tracker: GetterTrackerState): void {
 /**
  * @internal
  */
-export function createBlocProxy<TBloc extends StateContainer<any>>(
-  bloc: TBloc,
-): TBloc {
+export function createBlocProxy<TBloc extends StateContainerConstructor>(
+  bloc: InstanceReadonlyState<TBloc>,
+): InstanceType<TBloc> {
   // Check cache first - return existing proxy if available
   const cached = blocProxyCache.get(bloc);
   if (cached) {
@@ -240,8 +247,8 @@ export function createBlocProxy<TBloc extends StateContainer<any>>(
 /**
  * @internal
  */
-export function hasGetterChanges<TBloc extends StateContainer<any>>(
-  bloc: TBloc,
+export function hasGetterChanges<TBloc extends StateContainerConstructor>(
+  bloc: InstanceReadonlyState<TBloc>,
   tracker: GetterTrackerState | null,
 ): boolean {
   // Early return if no tracker or no getters tracked

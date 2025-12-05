@@ -16,7 +16,12 @@ import {
   DevToolsLayoutBloc,
   DevToolsLogsBloc,
 } from './blocs';
-import { DevToolsHeader, InstanceList, StateViewer, LogsView } from './components';
+import {
+  DevToolsHeader,
+  InstanceList,
+  StateViewer,
+  LogsView,
+} from './components';
 import type { DevToolsUIProps } from './types';
 
 /**
