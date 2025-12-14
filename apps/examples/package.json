@@ -1,6 +1,6 @@
 {
   "name": "examples",
-  "version": "1.0.1-rc.12",
+  "version": "1.0.1-rc.13",
   "private": true,
   "publishConfig": {
     "access": "restricted"

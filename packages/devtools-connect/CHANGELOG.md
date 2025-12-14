@@ -1,5 +1,13 @@
 # @blac/devtools-connect
 
+## 2.0.0-rc.16
+
+### Patch Changes
+
+- add config options global
+- Updated dependencies
+  - @blac/core@2.0.0-rc.16
+
 ## 2.0.0-rc.15
 
 ### Patch Changes
