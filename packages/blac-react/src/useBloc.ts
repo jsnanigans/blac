@@ -8,6 +8,7 @@ import {
 import {
   type ExtractState,
   type AdapterState,
+  type IsStatelessContainer,
   ExternalDependencyManager,
   createAutoTrackSubscribe,
   createManualDepsSubscribe,
@@ -20,6 +21,7 @@ import {
   initNoTrackState,
   disableGetterTracking,
   isIsolatedClass,
+  isStatelessClass,
   StateContainerConstructor,
   InstanceState,
 } from '@blac/core';
@@ -48,6 +50,13 @@ function determineTrackingMode<TBloc extends StateContainerConstructor>(
 }
 
 /**
+ * Type that produces a TypeScript error when a stateless container is used.
+ * Evaluates to `never` for stateless containers, causing a type mismatch.
+ */
+type StatefulContainer<T extends StateContainerConstructor> =
+  IsStatelessContainer<T> extends true ? never : T;
+
+/**
  * React hook that connects a component to a state container with automatic re-render on state changes.
  *
  * Supports three tracking modes:
@@ -55,9 +64,11 @@ function determineTrackingMode<TBloc extends StateContainerConstructor>(
  * - **Manual dependencies**: Explicit dependency array like useEffect
  * - **No tracking**: Returns full state without optimization
  *
- * @template S - Optional state type override for generic StateContainers (defaults to never)
+ * **Note:** This hook does NOT support stateless containers (StatelessCubit, StatelessVertex).
+ * Use `useBlocActions()` instead for stateless containers.
+ *
  * @template T - The state container constructor type (inferred from BlocClass)
- * @param BlocClass - The state container class to connect to
+ * @param BlocClass - The state container class to connect to (must not be stateless)
  * @param options - Configuration options for tracking mode and instance management
  * @returns Tuple with [state, bloc instance, ref]
  *
@@ -79,21 +90,32 @@ function determineTrackingMode<TBloc extends StateContainerConstructor>(
  *   instanceId: 'unique-id'
  * });
  * ```
- *
- * @example With generic bloc and explicit state type
- * ```ts
- * const [state, myBloc] = useBloc<MyStateType>(GenericBloc);
- * // state is typed as MyStateType
- * ```
  */
 export function useBloc<
   T extends StateContainerConstructor = StateContainerConstructor,
 >(
-  BlocClass: T,
+  BlocClass: StatefulContainer<T>,
   options?: UseBlocOptions<T>,
 ): UseBlocReturn<T, ExtractState<T>> {
-  type TBloc = InstanceState<T>;
   const componentRef = useRef<ComponentRef>({});
+
+  // Runtime check for stateless containers - log error but don't crash
+  if (isStatelessClass(BlocClass)) {
+    console.error(
+      `[BlaC] useBloc() does not support stateless containers. ` +
+        `"${BlocClass.name}" is a StatelessCubit or StatelessVertex. ` +
+        `Use useBlocActions() instead for stateless containers.`,
+    );
+    // Return a minimal working result to avoid crashing the app
+    const instance = (BlocClass as any).resolve('default', {}) as InstanceType<T>;
+    return [
+      {} as ExtractState<T>,
+      instance as any,
+      componentRef,
+    ] as UseBlocReturn<T, ExtractState<T>>;
+  }
+
+  type TBloc = InstanceState<T>;
   const isIsolated = isIsolatedClass(BlocClass);
 
   const initialPropsRef = useRef(options?.props);
@@ -199,5 +221,5 @@ export function useBloc<
     };
   }, []);
 
-  return [state, bloc, componentRef];
+  return [state, bloc, componentRef] as UseBlocReturn<T, ExtractState<T>>;
 }

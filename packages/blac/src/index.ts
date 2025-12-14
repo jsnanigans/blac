@@ -3,6 +3,8 @@ export type { SystemEvent, SystemEventPayloads } from './core/StateContainer';
 export * from './core/StateContainerRegistry';
 export * from './core/Cubit';
 export * from './core/Vertex';
+export * from './core/StatelessCubit';
+export * from './core/StatelessVertex';
 
 export {
   globalRegistry,
@@ -35,6 +37,11 @@ export type {
   EventHandlerMap,
 } from './types/events';
 export * from './types/utilities';
+export type {
+  IsStatelessContainer,
+  StatefulContainerOnly,
+  ExtractStatefulState,
+} from './types/utilities';
 
 export {
   createLogger,
@@ -77,6 +84,7 @@ export {
   isIsolatedClass,
   isKeepAliveClass,
   isExcludedFromDevTools,
+  isStatelessClass,
 } from './utils/static-props';
 
 export { blac, type BlacOptions } from './decorators';
