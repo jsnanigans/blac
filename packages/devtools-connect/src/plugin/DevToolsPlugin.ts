@@ -124,14 +124,10 @@ export class DevToolsPlugin implements BlacPlugin {
       type: DevToolsMessageType.STATE_CHANGED,
       payload: {
         id: bloc.instanceId,
-        blocId: bloc.instanceId,
         previousState: prevStateResult.success
           ? prevStateResult.data
           : { error: prevStateResult.error },
         currentState: currStateResult.success
-          ? currStateResult.data
-          : { error: currStateResult.error },
-        state: currStateResult.success
           ? currStateResult.data
           : { error: currStateResult.error },
         diff: diffResult,

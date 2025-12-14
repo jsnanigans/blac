@@ -508,6 +508,92 @@
           "name": "blac"
         },
         {
+          "kind": "Interface",
+          "canonicalReference": "@blac/core!BlacConfig:interface",
+          "docComment": "/**\n * Global configuration for @blac/core\n */\n",
+          "excerptTokens": [
+            {
+              "kind": "Content",
+              "text": "export interface BlacConfig "
+            }
+          ],
+          "fileUrlPath": "dist/.types/config.d.ts",
+          "releaseTag": "Public",
+          "name": "BlacConfig",
+          "preserveMemberOrder": false,
+          "members": [
+            {
+              "kind": "PropertySignature",
+              "canonicalReference": "@blac/core!BlacConfig#devMode:member",
+              "docComment": "/**\n * Enable development mode (enables additional warnings and checks)\n */\n",
+              "excerptTokens": [
+                {
+                  "kind": "Content",
+                  "text": "devMode: "
+                },
+                {
+                  "kind": "Content",
+                  "text": "boolean"
+                },
+                {
+                  "kind": "Content",
+                  "text": ";"
+                }
+              ],
+              "isReadonly": false,
+              "isOptional": false,
+              "releaseTag": "Public",
+              "name": "devMode",
+              "propertyTypeTokenRange": {
+                "startIndex": 1,
+                "endIndex": 2
+              }
+            },
+            {
+              "kind": "PropertySignature",
+              "canonicalReference": "@blac/core!BlacConfig#logger:member",
+              "docComment": "/**\n * Logger configuration\n */\n",
+              "excerptTokens": [
+                {
+                  "kind": "Content",
+                  "text": "logger: "
+                },
+                {
+                  "kind": "Reference",
+                  "text": "Partial",
+                  "canonicalReference": "!Partial:type"
+                },
+                {
+                  "kind": "Content",
+                  "text": "<"
+                },
+                {
+                  "kind": "Reference",
+                  "text": "LogConfig",
+                  "canonicalReference": "@blac/core!LogConfig:interface"
+                },
+                {
+                  "kind": "Content",
+                  "text": ">"
+                },
+                {
+                  "kind": "Content",
+                  "text": ";"
+                }
+              ],
+              "isReadonly": false,
+              "isOptional": false,
+              "releaseTag": "Public",
+              "name": "logger",
+              "propertyTypeTokenRange": {
+                "startIndex": 1,
+                "endIndex": 5
+              }
+            }
+          ],
+          "extendsTokenRanges": []
+        },
+        {
           "kind": "TypeAlias",
           "canonicalReference": "@blac/core!BlacOptions:type",
           "docComment": "/**\n * Configuration options for the  @blac decorator. Only one option can be specified at a time (union type).\n */\n",
@@ -1439,6 +1525,65 @@
             "startIndex": 1,
             "endIndex": 3
           }
+        },
+        {
+          "kind": "Function",
+          "canonicalReference": "@blac/core!configureBlac:function(1)",
+          "docComment": "/**\n * Configure global defaults for @blac/core.\n *\n * @param config - Partial configuration to merge with defaults\n *\n * @example\n * ```ts\n * import { configureBlac, LogLevel } from '@blac/core';\n *\n * configureBlac({\n *   devMode: true,\n *   logger: {\n *     enabled: true,\n *     level: LogLevel.DEBUG\n *   }\n * });\n * ```\n *\n */\n",
+          "excerptTokens": [
+            {
+              "kind": "Content",
+              "text": "export declare function configureBlac(config: "
+            },
+            {
+              "kind": "Reference",
+              "text": "Partial",
+              "canonicalReference": "!Partial:type"
+            },
+            {
+              "kind": "Content",
+              "text": "<"
+            },
+            {
+              "kind": "Reference",
+              "text": "BlacConfig",
+              "canonicalReference": "@blac/core!BlacConfig:interface"
+            },
+            {
+              "kind": "Content",
+              "text": ">"
+            },
+            {
+              "kind": "Content",
+              "text": "): "
+            },
+            {
+              "kind": "Content",
+              "text": "void"
+            },
+            {
+              "kind": "Content",
+              "text": ";"
+            }
+          ],
+          "fileUrlPath": "dist/.types/config.d.ts",
+          "returnTypeTokenRange": {
+            "startIndex": 6,
+            "endIndex": 7
+          },
+          "releaseTag": "Public",
+          "overloadIndex": 1,
+          "parameters": [
+            {
+              "parameterName": "config",
+              "parameterTypeTokenRange": {
+                "startIndex": 1,
+                "endIndex": 5
+              },
+              "isOptional": false
+            }
+          ],
+          "name": "configureBlac"
         },
         {
           "kind": "Function",
@@ -4596,6 +4741,34 @@
             "startIndex": 5,
             "endIndex": 11
           }
+        },
+        {
+          "kind": "Function",
+          "canonicalReference": "@blac/core!isDevMode:function(1)",
+          "docComment": "/**\n * Check if development mode is enabled.\n */\n",
+          "excerptTokens": [
+            {
+              "kind": "Content",
+              "text": "export declare function isDevMode(): "
+            },
+            {
+              "kind": "Content",
+              "text": "boolean"
+            },
+            {
+              "kind": "Content",
+              "text": ";"
+            }
+          ],
+          "fileUrlPath": "dist/.types/config.d.ts",
+          "returnTypeTokenRange": {
+            "startIndex": 1,
+            "endIndex": 2
+          },
+          "releaseTag": "Public",
+          "overloadIndex": 1,
+          "parameters": [],
+          "name": "isDevMode"
         },
         {
           "kind": "Function",

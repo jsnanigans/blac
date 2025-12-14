@@ -189,6 +189,110 @@
       "preserveMemberOrder": false,
       "members": [
         {
+          "kind": "Interface",
+          "canonicalReference": "@blac/react!BlacReactConfig:interface",
+          "docComment": "/**\n * Global configuration for @blac/react\n */\n",
+          "excerptTokens": [
+            {
+              "kind": "Content",
+              "text": "export interface BlacReactConfig "
+            }
+          ],
+          "fileUrlPath": "dist/.types/config.d.ts",
+          "releaseTag": "Public",
+          "name": "BlacReactConfig",
+          "preserveMemberOrder": false,
+          "members": [
+            {
+              "kind": "PropertySignature",
+              "canonicalReference": "@blac/react!BlacReactConfig#autoTrack:member",
+              "docComment": "/**\n * Enable automatic property tracking via Proxy (default: true)\n */\n",
+              "excerptTokens": [
+                {
+                  "kind": "Content",
+                  "text": "autoTrack: "
+                },
+                {
+                  "kind": "Content",
+                  "text": "boolean"
+                },
+                {
+                  "kind": "Content",
+                  "text": ";"
+                }
+              ],
+              "isReadonly": false,
+              "isOptional": false,
+              "releaseTag": "Public",
+              "name": "autoTrack",
+              "propertyTypeTokenRange": {
+                "startIndex": 1,
+                "endIndex": 2
+              }
+            }
+          ],
+          "extendsTokenRanges": []
+        },
+        {
+          "kind": "Function",
+          "canonicalReference": "@blac/react!configureBlacReact:function(1)",
+          "docComment": "/**\n * Configure global defaults for @blac/react hooks.\n *\n * @param config - Partial configuration to merge with defaults\n *\n * @example\n * ```ts\n * import { configureBlacReact } from '@blac/react';\n *\n * // Disable auto-tracking globally\n * configureBlacReact({\n *   autoTrack: false\n * });\n * ```\n *\n */\n",
+          "excerptTokens": [
+            {
+              "kind": "Content",
+              "text": "export declare function configureBlacReact(config: "
+            },
+            {
+              "kind": "Reference",
+              "text": "Partial",
+              "canonicalReference": "!Partial:type"
+            },
+            {
+              "kind": "Content",
+              "text": "<"
+            },
+            {
+              "kind": "Reference",
+              "text": "BlacReactConfig",
+              "canonicalReference": "@blac/react!BlacReactConfig:interface"
+            },
+            {
+              "kind": "Content",
+              "text": ">"
+            },
+            {
+              "kind": "Content",
+              "text": "): "
+            },
+            {
+              "kind": "Content",
+              "text": "void"
+            },
+            {
+              "kind": "Content",
+              "text": ";"
+            }
+          ],
+          "fileUrlPath": "dist/.types/config.d.ts",
+          "returnTypeTokenRange": {
+            "startIndex": 6,
+            "endIndex": 7
+          },
+          "releaseTag": "Public",
+          "overloadIndex": 1,
+          "parameters": [
+            {
+              "parameterName": "config",
+              "parameterTypeTokenRange": {
+                "startIndex": 1,
+                "endIndex": 5
+              },
+              "isOptional": false
+            }
+          ],
+          "name": "configureBlacReact"
+        },
+        {
           "kind": "Function",
           "canonicalReference": "@blac/react!useBloc:function(1)",
           "docComment": "/**\n * React hook that connects a component to a state container with automatic re-render on state changes.\n *\n * Supports three tracking modes: - **Auto-tracking** (default): Automatically detects accessed state properties via Proxy - **Manual dependencies**: Explicit dependency array like useEffect - **No tracking**: Returns full state without optimization\n *\n * @template S - Optional state type override for generic StateContainers (defaults to never)  @template T - The state container constructor type (inferred from BlocClass)\n *\n * @param BlocClass - The state container class to connect to\n *\n * @param options - Configuration options for tracking mode and instance management\n *\n * @returns Tuple with [state, bloc instance, ref]\n *\n * @example\n *\n * Basic usage\n * ```ts\n * const [state, myBloc, ref] = useBloc(MyBloc);\n * ```\n *\n * @example\n *\n * With manual dependencies\n * ```ts\n * const [state, myBloc] = useBloc(MyBloc, {\n *   dependencies: (state) => [state.count]\n * });\n * ```\n *\n * @example\n *\n * With isolated instance\n * ```ts\n * const [state, myBloc] = useBloc(MyBloc, {\n *   instanceId: 'unique-id'\n * });\n * ```\n *\n * @example\n *\n * With generic bloc and explicit state type\n * ```ts\n * const [state, myBloc] = useBloc<MyStateType>(GenericBloc);\n * // state is typed as MyStateType\n * ```\n *\n */\n",
