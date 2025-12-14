@@ -49,6 +49,14 @@ export {
 } from './logging/Logger';
 
 export {
+  configureBlac,
+  getBlacConfig,
+  isDevMode,
+  resetBlacConfig,
+  type BlacConfig,
+} from './config';
+
+export {
   BLAC_DEFAULTS,
   BLAC_STATIC_PROPS,
   BLAC_ID_PATTERNS,

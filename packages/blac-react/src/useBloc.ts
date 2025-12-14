@@ -25,6 +25,7 @@ import {
 } from '@blac/core';
 import type { UseBlocOptions, UseBlocReturn, ComponentRef } from './types';
 import { generateInstanceKey } from './utils/instance-keys';
+import { getBlacReactConfig } from './config';
 
 interface TrackingMode {
   useManualDeps: boolean;
@@ -34,9 +35,15 @@ interface TrackingMode {
 function determineTrackingMode<TBloc extends StateContainerConstructor>(
   options?: UseBlocOptions<TBloc>,
 ): TrackingMode {
+  const globalConfig = getBlacReactConfig();
+  const autoTrackEnabled =
+    options?.autoTrack !== undefined
+      ? options.autoTrack
+      : globalConfig.autoTrack;
+
   return {
     useManualDeps: options?.dependencies !== undefined,
-    autoTrackEnabled: options?.autoTrack !== false,
+    autoTrackEnabled,
   };
 }
 
