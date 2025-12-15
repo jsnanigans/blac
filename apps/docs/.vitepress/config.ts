@@ -4,6 +4,7 @@ export default defineConfig({
   title: 'BlaC',
   description:
     'A sophisticated TypeScript state management library implementing the BLoC pattern',
+  base: process.env.BASE_URL || '/',
 
   themeConfig: {
     logo: '/logo.svg',

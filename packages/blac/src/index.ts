@@ -88,3 +88,11 @@ export {
 } from './utils/static-props';
 
 export { blac, type BlacOptions } from './decorators';
+
+export {
+  waitUntil,
+  type WaitUntilOptions,
+  WaitUntilTimeoutError,
+  WaitUntilAbortedError,
+  WaitUntilDisposedError,
+} from './waitUntil';

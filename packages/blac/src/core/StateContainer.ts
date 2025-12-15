@@ -8,6 +8,10 @@ import {
   StateContainerRegistry,
   globalRegistry,
 } from './StateContainerRegistry';
+import {
+  waitUntil as waitUntilFn,
+  type WaitUntilOptions,
+} from '../waitUntil';
 
 /**
  * Configuration options for initializing a StateContainer instance
@@ -260,6 +264,66 @@ export abstract class StateContainer<S extends object = any, P = any> {
     T extends StateContainerConstructor = StateContainerConstructor,
   >(this: T, instanceKey?: string): boolean {
     return StateContainer._registry.hasInstance(this, instanceKey);
+  }
+
+  /**
+   * Wait until a condition is met on this bloc.
+   * Returns the bloc instance when the predicate returns true.
+   *
+   * @example
+   * ```ts
+   * const userBloc = await UserBloc.waitUntil((bloc) => bloc.state.isAuthenticated);
+   * ```
+   */
+  static waitUntil<T extends StateContainerConstructor>(
+    this: T,
+    predicate: (bloc: InstanceType<T>) => boolean,
+    options?: WaitUntilOptions,
+  ): Promise<InstanceType<T>>;
+
+  /**
+   * Wait until a condition is met on a selected value from this bloc.
+   * Returns the selected value when the predicate returns true.
+   *
+   * @example
+   * ```ts
+   * const layout = await LayoutBloc.waitUntil(
+   *   (bloc) => bloc.state.currentLayout,
+   *   (layout) => layout !== null
+   * );
+   * ```
+   */
+  static waitUntil<T extends StateContainerConstructor, TSelected>(
+    this: T,
+    selector: (bloc: InstanceType<T>) => TSelected,
+    predicate: (selected: TSelected) => boolean,
+    options?: WaitUntilOptions,
+  ): Promise<TSelected>;
+
+  static waitUntil<T extends StateContainerConstructor, TSelected>(
+    this: T,
+    selectorOrPredicate:
+      | ((bloc: InstanceType<T>) => TSelected)
+      | ((bloc: InstanceType<T>) => boolean),
+    predicateOrOptions?: ((selected: TSelected) => boolean) | WaitUntilOptions,
+    maybeOptions?: WaitUntilOptions,
+  ): Promise<InstanceType<T> | TSelected> {
+    const isSimpleForm = typeof predicateOrOptions !== 'function';
+
+    if (isSimpleForm) {
+      return waitUntilFn(
+        this,
+        selectorOrPredicate as (bloc: InstanceType<T>) => boolean,
+        predicateOrOptions as WaitUntilOptions | undefined,
+      );
+    } else {
+      return waitUntilFn(
+        this,
+        selectorOrPredicate as (bloc: InstanceType<T>) => TSelected,
+        predicateOrOptions as (selected: TSelected) => boolean,
+        maybeOptions,
+      );
+    }
   }
 
   private _state: S;
