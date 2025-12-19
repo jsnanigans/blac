@@ -6,6 +6,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Cubit } from './Cubit';
 import { StateContainer } from './StateContainer';
+import { clearAll } from '../registry';
 
 class CounterCubit extends Cubit<{ count: number }> {
   constructor() {
@@ -139,7 +140,7 @@ class UserCubit extends Cubit<UserState> {
 
 describe('Cubit', () => {
   beforeEach(() => {
-    StateContainer.clearAllInstances();
+    clearAll();
   });
 
   // Basic Functionality
@@ -325,7 +326,7 @@ describe('Cubit', () => {
     let todoCubit: TodoCubit;
 
     beforeEach(() => {
-      StateContainer.clearAllInstances();
+      clearAll();
       todoCubit = new TodoCubit();
     });
 

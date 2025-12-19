@@ -1,4 +1,4 @@
-import { Cubit, blac } from '@blac/core';
+import { Cubit, blac, borrow } from '@blac/core';
 import { DevToolsInstancesBloc } from './DevToolsInstancesBloc';
 
 const MAX_HISTORY_SIZE = 50;
@@ -106,7 +106,7 @@ export class DevToolsDiffBloc extends Cubit<DiffState> {
     const previousSnapshot = history[0];
 
     // Borrow instance data without ownership
-    const instancesBloc = DevToolsInstancesBloc.get();
+    const instancesBloc = borrow(DevToolsInstancesBloc);
     const instance = instancesBloc.getInstance(instanceId);
     if (!instance) return null;
 

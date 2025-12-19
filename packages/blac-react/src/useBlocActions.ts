@@ -1,5 +1,5 @@
 import { useMemo, useEffect, useRef } from 'react';
-import { StateContainerConstructor, isIsolatedClass } from '@blac/core';
+import { StateContainerConstructor, isIsolatedClass, acquire, release } from '@blac/core';
 import type { ComponentRef } from './types';
 import { generateInstanceKey } from './utils/instance-keys';
 
@@ -72,7 +72,7 @@ export function useBlocActions<
       options?.instanceId,
     );
 
-    const instance = (BlocClass as any).resolve(instanceKey, {
+    const instance = acquire(BlocClass, instanceKey, {
       props: initialPropsRef.current,
     });
 
@@ -89,7 +89,7 @@ export function useBlocActions<
         options.onUnmount(bloc);
       }
 
-      (BlocClass as any).release(instanceKey);
+      release(BlocClass, instanceKey);
 
       if (isIsolatedClass(BlocClass) && !bloc.isDisposed) {
         bloc.dispose();

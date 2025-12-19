@@ -3,12 +3,12 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { StateContainer, Cubit, getPluginManager, blac } from '@blac/core';
+import { Cubit, getPluginManager, blac, acquire, release, clearAll } from '@blac/core';
 import { DevToolsBrowserPlugin } from './DevToolsBrowserPlugin';
 
 describe('DevToolsBrowserPlugin Lifecycle Integration', () => {
   beforeEach(() => {
-    StateContainer.clearAllInstances();
+    clearAll();
     getPluginManager().clear();
   });
 
@@ -26,7 +26,7 @@ describe('DevToolsBrowserPlugin Lifecycle Integration', () => {
     }
 
     // Create instance
-    const instance = TestCubit.resolve();
+    const instance = acquire(TestCubit);
 
     // Verify plugin received the event
     expect(spy).toHaveBeenCalledTimes(1);
@@ -50,8 +50,8 @@ describe('DevToolsBrowserPlugin Lifecycle Integration', () => {
       }
     }
 
-    const instance = TestCubit.resolve();
-    TestCubit.release(); // Triggers dispose (refCount = 0)
+    const instance = acquire(TestCubit);
+    release(TestCubit); // Triggers dispose (refCount = 0)
 
     // Verify plugin received the event
     expect(spy).toHaveBeenCalledTimes(1);
@@ -77,12 +77,12 @@ describe('DevToolsBrowserPlugin Lifecycle Integration', () => {
     expect(plugin.getInstances()).toHaveLength(0);
 
     // Create instance
-    CounterCubit.resolve();
+    acquire(CounterCubit);
     expect(plugin.getInstances()).toHaveLength(1);
     expect(plugin.getInstances()[0].className).toBe('CounterCubit');
 
     // Dispose instance
-    CounterCubit.release();
+    release(CounterCubit);
     expect(plugin.getInstances()).toHaveLength(0);
   });
 
@@ -100,7 +100,7 @@ describe('DevToolsBrowserPlugin Lifecycle Integration', () => {
     }
 
     // Create instance
-    TestCubit.resolve();
+    acquire(TestCubit);
 
     // Verify subscriber received the event
     expect(subscriber).toHaveBeenCalledWith(
@@ -114,7 +114,7 @@ describe('DevToolsBrowserPlugin Lifecycle Integration', () => {
     );
 
     // Dispose instance
-    TestCubit.release();
+    release(TestCubit);
 
     // Verify subscriber received disposal event
     expect(subscriber).toHaveBeenCalledWith(
@@ -137,7 +137,7 @@ describe('DevToolsBrowserPlugin Lifecycle Integration', () => {
     }
 
     // Create instance BEFORE plugin is installed
-    TestCubit.resolve();
+    acquire(TestCubit);
 
     // Now install plugin
     const plugin = new DevToolsBrowserPlugin({ enabled: true });
@@ -166,8 +166,8 @@ describe('DevToolsBrowserPlugin Lifecycle Integration', () => {
     }
 
     // Create both instances
-    InternalCubit.resolve();
-    NormalCubit.resolve();
+    acquire(InternalCubit);
+    acquire(NormalCubit);
 
     // Only normal instance should be tracked
     expect(plugin.getInstances()).toHaveLength(1);

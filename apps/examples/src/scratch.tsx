@@ -68,15 +68,16 @@ const result2 = await once(
 
 // less magic
 const f = async () => {
-  const reqA = waitFor(LayoutBloc, (bloc) => bloc.state.currentLayout !== null);
-  const reqB = waitFor(
+  const layoutMatch = waitUntil(LayoutBloc, (bloc) => bloc.state.currentLayout, (selected) => selected !== null);
+  const channelMatch = waitUntil(
     ChannelBloc,
-    (bloc) => bloc.state.currentChannel !== null,
+    (bloc) => bloc.state.currentChannel,
+    (selected) => selected !== null,
   );
 
-  const [layoutResult, channelResult] = await Promise.all([reqA, reqB]);
+  const [currLay, currChan] = await Promise.all([layoutMatch, channelMatch]);
 
-  const layout2 = layoutResult.state.currentLayout;
+  const  = layoutResult.state.currentLayout;
   const channel2 = channelResult.state.currentChannel;
 
   console.log({ layout2, channel2 });
@@ -84,8 +85,8 @@ const f = async () => {
 
 // listen
 const removeListener2 = await watch(() => {
-  const layout = LayoutBloc.connect().state.currentLayout;
-  const channel = ChannelBloc.connect().state.currentChannel;
+  const layout = connect(LayoutBloc).state.currentLayout;
+  const channel = connect(ChannelBloc).state.currentChannel;
 
   if (layout || channel) {
     return 'done';
@@ -103,14 +104,14 @@ const removeListener2 = await watch(
   },
   [LayoutBloc, ChannelBloc],
 );
-
-watch(() => {
-  const layout = LayoutBloc.connect().state.currentLayout;
-  const channel = ChannelBloc.connect().state.currentChannel;
-
-  if (layout || channel) {
-    return 'done';
-  }
-}).then(() => {
-  // will run when the watch returns a non-undefined value
-});
+//
+// watch(() => {
+//   const layout = LayoutBloc.connect().state.currentLayout;
+//   const channel = ChannelBloc.connect().state.currentChannel;
+//
+//   if (layout || channel) {
+//     return 'done';
+//   }
+// }).then(() => {
+//   // will run when the watch returns a non-undefined value
+// });

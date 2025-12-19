@@ -96,3 +96,22 @@ export {
   WaitUntilAbortedError,
   WaitUntilDisposedError,
 } from './waitUntil';
+
+export {
+  acquire,
+  borrow,
+  borrowSafe,
+  ensure,
+  release,
+  hasInstance,
+  getRefCount,
+  getAll,
+  forEach,
+  clear,
+  clearAll,
+  register,
+  getRegistry,
+  setRegistry,
+  getStats,
+  type AcquireOptions,
+} from './registry';

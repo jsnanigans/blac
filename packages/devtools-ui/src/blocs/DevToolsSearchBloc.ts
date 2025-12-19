@@ -1,4 +1,4 @@
-import { Cubit, blac } from '@blac/core';
+import { Cubit, blac, borrow } from '@blac/core';
 import type { InstanceData } from '../types';
 import { fuzzyMatch } from '../utils/fuzzyMatch';
 import { DevToolsInstancesBloc } from './DevToolsInstancesBloc';
@@ -40,7 +40,7 @@ export class DevToolsSearchBloc extends Cubit<SearchState> {
     const { query } = this.state;
 
     // Borrow instances without ownership (no memory leak)
-    const instancesBloc = DevToolsInstancesBloc.get();
+    const instancesBloc = borrow(DevToolsInstancesBloc);
     const instances = instancesBloc.sortedInstances;
 
     if (!query.trim()) {

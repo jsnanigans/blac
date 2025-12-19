@@ -7,6 +7,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Vertex } from './Vertex';
 import { StateContainer } from './StateContainer';
 import type { EventWithMetadata } from '../types/events';
+import { acquire, release, getAll, clearAll } from '../registry';
 
 // Counter Events (discriminated union)
 type CounterEvent =
@@ -170,7 +171,7 @@ class QueueTestVertex extends Vertex<{ values: number[] }, QueueEvent> {
 
 describe('Vertex', () => {
   beforeEach(() => {
-    StateContainer.clearAllInstances();
+    clearAll();
   });
 
   // Event System
@@ -676,18 +677,18 @@ describe('Vertex', () => {
     });
 
     it('should work with resolve/release pattern', () => {
-      const vertex1 = CounterVertex.resolve();
-      const vertex2 = CounterVertex.resolve();
+      const vertex1 = acquire(CounterVertex);
+      const vertex2 = acquire(CounterVertex);
 
       expect(vertex1).toBe(vertex2);
 
       vertex1.increment(5);
       expect(vertex2.state).toEqual({ count: 5 });
 
-      CounterVertex.release();
-      CounterVertex.release();
+      release(CounterVertex);
+      release(CounterVertex);
 
-      expect(CounterVertex.getAll()).toHaveLength(0);
+      expect(getAll(CounterVertex)).toHaveLength(0);
     });
   });
 

@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { acquire } from '@blac/core';
 import { DevToolsPanel } from './DevToolsPanel';
 import {
   DevToolsInstancesBloc,
@@ -93,8 +94,8 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
     return;
   }
 
-  const diffBloc = DevToolsDiffBloc.resolve();
-  const logsBloc = DevToolsLogsBloc.resolve();
+  const diffBloc = acquire(DevToolsDiffBloc);
+  const logsBloc = acquire(DevToolsLogsBloc);
   const state = logsBloc.state;
 
   const initialInstances = api.getInstances();

@@ -1,17 +1,5 @@
 import { generateSimpleId } from '../utils/idGenerator';
-import type {
-  ExtractProps,
-  InstanceReadonlyState,
-  StateContainerConstructor,
-} from '../types/utilities';
-import {
-  StateContainerRegistry,
-  globalRegistry,
-} from './StateContainerRegistry';
-import {
-  waitUntil as waitUntilFn,
-  type WaitUntilOptions,
-} from '../waitUntil';
+import { globalRegistry } from './StateContainerRegistry';
 
 /**
  * Configuration options for initializing a StateContainer instance
@@ -79,252 +67,8 @@ type SystemEventHandler<S, P, E extends SystemEvent> = (
  * ```
  */
 export abstract class StateContainer<S extends object = any, P = any> {
-  /** @internal Flag to exclude this class from DevTools tracking */
   static __excludeFromDevTools = false;
-
-  /** @internal Global registry for all state container instances */
-  protected static _registry = globalRegistry;
-
-  /**
-   * Get the global StateContainerRegistry
-   * @returns The registry managing all state container instances
-   */
-  static getRegistry(): StateContainerRegistry {
-    return StateContainer._registry;
-  }
-
-  /**
-   * Replace the global registry (clears existing instances)
-   * @param registry - The new registry to use
-   */
-  static setRegistry(registry: StateContainerRegistry): void {
-    StateContainer._registry.clearAll();
-    StateContainer._registry = registry;
-  }
-
-  /**
-   * Register this class with the global registry
-   * @param isolated - Whether instances should be isolated (component-scoped)
-   */
-  static register<T extends StateContainerConstructor>(
-    this: T,
-    isolated = false,
-  ): void {
-    StateContainer._registry.register(this, isolated);
-  }
-
-  /**
-   * Resolve an instance with ref counting (ownership semantics).
-   * Creates a new instance if one doesn't exist, or returns existing and increments ref count.
-   * @template S - Optional state type override for generic StateContainers
-   * @template T - The StateContainer type (inferred from class)
-   * @param instanceKey - Optional instance key (defaults to 'default')
-   * @param options - Resolution options (canCreate, countRef, props, trackExecutionContext)
-   * @returns The state container instance
-   */
-  static resolve<
-    T extends StateContainerConstructor = StateContainerConstructor,
-  >(
-    this: T,
-    instanceKey?: string,
-    options?: {
-      canCreate?: boolean;
-      countRef?: boolean;
-      props?: ExtractProps<T>;
-      trackExecutionContext?: boolean;
-    },
-  ): InstanceType<T> {
-    return StateContainer._registry.resolve(this, instanceKey, options);
-  }
-
-  /**
-   * Get an existing instance without incrementing ref count (borrowing semantics).
-   * @template S - Optional state type override for generic StateContainers
-   * @template T - The StateContainer type (inferred from class)
-   * @param instanceKey - Optional instance key (defaults to 'default')
-   * @returns The state container instance
-   * @throws Error if instance doesn't exist
-   */
-  static get<
-    T extends StateContainerConstructor<any> = StateContainerConstructor<any>,
-  >(this: T, instanceKey?: string): InstanceType<T> {
-    return StateContainer._registry.get(this, instanceKey);
-  }
-
-  /**
-   * Safely get an existing instance with error handling.
-   * @template S - Optional state type override for generic StateContainers
-   * @template T - The StateContainer type (inferred from class)
-   * @param instanceKey - Optional instance key (defaults to 'default')
-   * @returns Discriminated union with either the instance or an error
-   */
-  static getSafe<
-    T extends StateContainerConstructor<any> = StateContainerConstructor<any>,
-  >(
-    this: T,
-    instanceKey?: string,
-  ):
-    | { error: Error; instance: null }
-    | { error: null; instance: InstanceType<T> } {
-    return StateContainer._registry.getSafe(this, instanceKey);
-  }
-
-  /**
-   * Connect to an instance for bloc-to-bloc communication (borrowing semantics).
-   * Gets or creates instance without incrementing ref count.
-   * Tracks cross-bloc dependency for reactive updates.
-   * @template S - Optional state type override for generic StateContainers
-   * @template T - The StateContainer type (inferred from class)
-   * @param instanceKey - Optional instance key (defaults to 'default')
-   * @returns The state container instance
-   */
-  static connect<
-    T extends StateContainerConstructor<any> = StateContainerConstructor<any>,
-  >(this: T, instanceKey?: string): InstanceType<T> {
-    return StateContainer._registry.connect(this, instanceKey);
-  }
-
-  /**
-   * Release a reference to an instance.
-   * Decrements ref count and disposes when it reaches 0 (unless keepAlive).
-   * @param instanceKey - Optional instance key (defaults to 'default')
-   * @param forceDispose - Force immediate disposal regardless of ref count
-   */
-  static release<
-    T extends StateContainerConstructor = StateContainerConstructor,
-  >(this: T, instanceKey?: string, forceDispose = false): void {
-    StateContainer._registry.release(this, instanceKey, forceDispose);
-  }
-
-  /**
-   * Get all instances of this class
-   * @returns Array of all instances
-   */
-  static getAll<
-    T extends StateContainerConstructor = StateContainerConstructor,
-  >(this: T): InstanceReadonlyState<T>[] {
-    return StateContainer._registry.getAll(this);
-  }
-
-  /**
-   * Iterate over all instances of this class
-   * @param callback - Function to call for each instance
-   */
-  static forEach<
-    T extends StateContainerConstructor = StateContainerConstructor,
-  >(this: T, callback: (instance: InstanceReadonlyState<T>) => void): void {
-    StateContainer._registry.forEach(this, callback);
-  }
-
-  /**
-   * Clear all instances of this class (disposes them)
-   */
-  static clear<T extends StateContainerConstructor = StateContainerConstructor>(
-    this: T,
-  ): void {
-    StateContainer._registry.clear(this);
-  }
-
-  /**
-   * Clear all instances from all registered types
-   */
-  static clearAllInstances(): void {
-    StateContainer._registry.clearAll();
-  }
-
-  /**
-   * Get registry statistics for debugging
-   * @returns Object with registeredTypes, totalInstances, and typeBreakdown
-   */
-  static getStats(): {
-    registeredTypes: number;
-    totalInstances: number;
-    typeBreakdown: Record<string, number>;
-  } {
-    return StateContainer._registry.getStats();
-  }
-
-  /**
-   * Get reference count for an instance
-   * @param instanceKey - Optional instance key (defaults to 'default')
-   * @returns Current ref count (0 if instance doesn't exist)
-   */
-  static getRefCount<
-    T extends StateContainerConstructor = StateContainerConstructor,
-  >(this: T, instanceKey?: string): number {
-    return StateContainer._registry.getRefCount(this, instanceKey);
-  }
-
-  /**
-   * Check if an instance exists
-   * @param instanceKey - Optional instance key (defaults to 'default')
-   * @returns true if instance exists
-   */
-  static hasInstance<
-    T extends StateContainerConstructor = StateContainerConstructor,
-  >(this: T, instanceKey?: string): boolean {
-    return StateContainer._registry.hasInstance(this, instanceKey);
-  }
-
-  /**
-   * Wait until a condition is met on this bloc.
-   * Returns the bloc instance when the predicate returns true.
-   *
-   * @example
-   * ```ts
-   * const userBloc = await UserBloc.waitUntil((bloc) => bloc.state.isAuthenticated);
-   * ```
-   */
-  static waitUntil<T extends StateContainerConstructor>(
-    this: T,
-    predicate: (bloc: InstanceType<T>) => boolean,
-    options?: WaitUntilOptions,
-  ): Promise<InstanceType<T>>;
-
-  /**
-   * Wait until a condition is met on a selected value from this bloc.
-   * Returns the selected value when the predicate returns true.
-   *
-   * @example
-   * ```ts
-   * const layout = await LayoutBloc.waitUntil(
-   *   (bloc) => bloc.state.currentLayout,
-   *   (layout) => layout !== null
-   * );
-   * ```
-   */
-  static waitUntil<T extends StateContainerConstructor, TSelected>(
-    this: T,
-    selector: (bloc: InstanceType<T>) => TSelected,
-    predicate: (selected: TSelected) => boolean,
-    options?: WaitUntilOptions,
-  ): Promise<TSelected>;
-
-  static waitUntil<T extends StateContainerConstructor, TSelected>(
-    this: T,
-    selectorOrPredicate:
-      | ((bloc: InstanceType<T>) => TSelected)
-      | ((bloc: InstanceType<T>) => boolean),
-    predicateOrOptions?: ((selected: TSelected) => boolean) | WaitUntilOptions,
-    maybeOptions?: WaitUntilOptions,
-  ): Promise<InstanceType<T> | TSelected> {
-    const isSimpleForm = typeof predicateOrOptions !== 'function';
-
-    if (isSimpleForm) {
-      return waitUntilFn(
-        this,
-        selectorOrPredicate as (bloc: InstanceType<T>) => boolean,
-        predicateOrOptions as WaitUntilOptions | undefined,
-      );
-    } else {
-      return waitUntilFn(
-        this,
-        selectorOrPredicate as (bloc: InstanceType<T>) => TSelected,
-        predicateOrOptions as (selected: TSelected) => boolean,
-        maybeOptions,
-      );
-    }
-  }
+  static enableStackTrace = true;
 
   private _state: S;
   private readonly listeners = new Set<StateListener<S>>();
@@ -368,7 +112,7 @@ export abstract class StateContainer<S extends object = any, P = any> {
       this.config.instanceId,
     );
 
-    StateContainer._registry.emit('created', this);
+    globalRegistry.emit('created', this);
   }
 
   /** Current state value */
@@ -413,7 +157,7 @@ export abstract class StateContainer<S extends object = any, P = any> {
     this.listeners.clear();
     this.systemEventHandlers.clear();
 
-    StateContainer._registry.emit('disposed', this);
+    globalRegistry.emit('disposed', this);
 
     if (this.debug) {
       console.log(`[${this.name}] Disposed successfully`);
@@ -450,7 +194,7 @@ export abstract class StateContainer<S extends object = any, P = any> {
 
     const stackTrace = this.captureStackTrace();
 
-    StateContainer._registry.emit(
+    globalRegistry.emit(
       'stateChanged',
       this,
       previousState,
@@ -459,9 +203,6 @@ export abstract class StateContainer<S extends object = any, P = any> {
     );
     this.lastUpdateTimestamp = Date.now();
   }
-
-  /** Whether to capture stack traces on state changes (disabled in production) */
-  static enableStackTrace = true;
 
   private captureStackTrace(): string {
     if (

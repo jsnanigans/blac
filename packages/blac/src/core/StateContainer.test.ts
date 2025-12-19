@@ -5,6 +5,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { StateContainer } from './StateContainer';
+import { acquire, release, hasInstance, getRefCount, clearAll } from '../registry';
 
 // Test implementation of StateContainer
 class TestContainer extends StateContainer<{ value: number }> {
@@ -87,42 +88,42 @@ class ObjectStateContainer extends StateContainer<ObjectState> {
 describe('StateContainer', () => {
   beforeEach(() => {
     // Clear all instances before each test
-    StateContainer.clearAllInstances();
+    clearAll();
   });
 
   // Static Instance Management
 
-  describe('Static Instance Management', () => {
-    describe('resolve()', () => {
+  describe('Registry Functions', () => {
+    describe('acquire()', () => {
       it('should create new instance on first call', () => {
-        const instance = TestContainer.resolve();
+        const instance = acquire(TestContainer);
 
         expect(instance).toBeInstanceOf(TestContainer);
         expect(instance.state).toEqual({ value: 0 });
-        expect(TestContainer.getRefCount()).toBe(1);
+        expect(getRefCount(TestContainer)).toBe(1);
       });
 
       it('should return existing instance with ref count increment', () => {
-        const instance1 = TestContainer.resolve();
-        const instance2 = TestContainer.resolve();
+        const instance1 = acquire(TestContainer);
+        const instance2 = acquire(TestContainer);
 
         expect(instance1).toBe(instance2);
-        expect(TestContainer.getRefCount()).toBe(2);
+        expect(getRefCount(TestContainer)).toBe(2);
       });
 
       it('should handle custom instance keys', () => {
-        const instance1 = TestContainer.resolve('key1');
-        const instance2 = TestContainer.resolve('key2');
-        const instance3 = TestContainer.resolve('key1');
+        const instance1 = acquire(TestContainer, 'key1');
+        const instance2 = acquire(TestContainer, 'key2');
+        const instance3 = acquire(TestContainer, 'key1');
 
         expect(instance1).not.toBe(instance2);
         expect(instance1).toBe(instance3);
-        expect(TestContainer.getRefCount('key1')).toBe(2);
-        expect(TestContainer.getRefCount('key2')).toBe(1);
+        expect(getRefCount(TestContainer, 'key1')).toBe(2);
+        expect(getRefCount(TestContainer, 'key2')).toBe(1);
       });
 
       it('should pass constructor args correctly', () => {
-        const instance = TestContainer.resolve(undefined, { props: 42 });
+        const instance = acquire(TestContainer, undefined, { props: 42 });
 
         expect(instance.state).toEqual({ value: 42 });
       });
@@ -130,111 +131,111 @@ describe('StateContainer', () => {
 
     describe('release()', () => {
       it('should decrement ref count', () => {
-        TestContainer.resolve();
-        TestContainer.resolve();
-        expect(TestContainer.getRefCount()).toBe(2);
+        acquire(TestContainer);
+        acquire(TestContainer);
+        expect(getRefCount(TestContainer)).toBe(2);
 
-        TestContainer.release();
-        expect(TestContainer.getRefCount()).toBe(1);
+        release(TestContainer);
+        expect(getRefCount(TestContainer)).toBe(1);
       });
 
       it('should dispose when ref count reaches zero (non-keepAlive)', () => {
-        const instance = TestContainer.resolve();
+        const instance = acquire(TestContainer);
         const disposeSpy = vi.spyOn(instance, 'dispose');
 
-        TestContainer.release();
+        release(TestContainer);
 
         expect(disposeSpy).toHaveBeenCalledOnce();
-        expect(TestContainer.hasInstance()).toBe(false);
+        expect(hasInstance(TestContainer)).toBe(false);
         expect(instance.isDisposed).toBe(true);
       });
 
       it('should respect static keepAlive property', () => {
-        const instance = KeepAliveTestContainer.resolve(undefined, {
+        const instance = acquire(KeepAliveTestContainer, undefined, {
           props: 0,
         });
         const disposeSpy = vi.spyOn(instance, 'dispose');
 
-        KeepAliveTestContainer.release();
+        release(KeepAliveTestContainer);
 
         expect(disposeSpy).not.toHaveBeenCalled();
-        expect(KeepAliveTestContainer.hasInstance()).toBe(true);
-        expect(KeepAliveTestContainer.getRefCount()).toBe(0);
+        expect(hasInstance(KeepAliveTestContainer)).toBe(true);
+        expect(getRefCount(KeepAliveTestContainer)).toBe(0);
       });
 
       it('should force dispose option works', () => {
-        TestContainer.resolve();
-        TestContainer.resolve();
-        expect(TestContainer.getRefCount()).toBe(2);
+        acquire(TestContainer);
+        acquire(TestContainer);
+        expect(getRefCount(TestContainer)).toBe(2);
 
-        TestContainer.release(undefined, true);
+        release(TestContainer, undefined, true);
 
-        expect(TestContainer.hasInstance()).toBe(false);
-        expect(TestContainer.getRefCount()).toBe(0);
+        expect(hasInstance(TestContainer)).toBe(false);
+        expect(getRefCount(TestContainer)).toBe(0);
       });
 
       it('should handle release of non-existent instance', () => {
-        expect(() => TestContainer.release()).not.toThrow();
-        expect(TestContainer.getRefCount()).toBe(0);
+        expect(() => release(TestContainer)).not.toThrow();
+        expect(getRefCount(TestContainer)).toBe(0);
       });
     });
 
     describe('getRefCount()', () => {
       it('should return correct count', () => {
-        expect(TestContainer.getRefCount()).toBe(0);
+        expect(getRefCount(TestContainer)).toBe(0);
 
-        TestContainer.resolve();
-        expect(TestContainer.getRefCount()).toBe(1);
+        acquire(TestContainer);
+        expect(getRefCount(TestContainer)).toBe(1);
 
-        TestContainer.resolve();
-        expect(TestContainer.getRefCount()).toBe(2);
+        acquire(TestContainer);
+        expect(getRefCount(TestContainer)).toBe(2);
 
-        TestContainer.release();
-        expect(TestContainer.getRefCount()).toBe(1);
+        release(TestContainer);
+        expect(getRefCount(TestContainer)).toBe(1);
       });
 
       it('should return 0 for non-existent instance', () => {
-        expect(TestContainer.getRefCount('nonexistent')).toBe(0);
+        expect(getRefCount(TestContainer, 'nonexistent')).toBe(0);
       });
     });
 
     describe('hasInstance()', () => {
       it('should correctly identify existing instances', () => {
-        expect(TestContainer.hasInstance()).toBe(false);
+        expect(hasInstance(TestContainer)).toBe(false);
 
-        TestContainer.resolve();
-        expect(TestContainer.hasInstance()).toBe(true);
+        acquire(TestContainer);
+        expect(hasInstance(TestContainer)).toBe(true);
 
-        TestContainer.release();
-        expect(TestContainer.hasInstance()).toBe(false);
+        release(TestContainer);
+        expect(hasInstance(TestContainer)).toBe(false);
       });
 
       it('should work with custom instance keys', () => {
-        TestContainer.resolve('key1');
+        acquire(TestContainer, 'key1');
 
-        expect(TestContainer.hasInstance('key1')).toBe(true);
-        expect(TestContainer.hasInstance('key2')).toBe(false);
+        expect(hasInstance(TestContainer, 'key1')).toBe(true);
+        expect(hasInstance(TestContainer, 'key2')).toBe(false);
       });
     });
 
-    describe('clearAllInstances()', () => {
+    describe('clearAll()', () => {
       it('should dispose all instances and clear registry', () => {
-        const instance1 = TestContainer.resolve('key1');
-        const instance2 = TestContainer.resolve('key2');
-        const instance3 = ObjectStateContainer.resolve();
+        const instance1 = acquire(TestContainer, 'key1');
+        const instance2 = acquire(TestContainer, 'key2');
+        const instance3 = acquire(ObjectStateContainer);
 
         const spy1 = vi.spyOn(instance1, 'dispose');
         const spy2 = vi.spyOn(instance2, 'dispose');
         const spy3 = vi.spyOn(instance3, 'dispose');
 
-        StateContainer.clearAllInstances();
+        clearAll();
 
         expect(spy1).toHaveBeenCalledOnce();
         expect(spy2).toHaveBeenCalledOnce();
         expect(spy3).toHaveBeenCalledOnce();
-        expect(TestContainer.hasInstance('key1')).toBe(false);
-        expect(TestContainer.hasInstance('key2')).toBe(false);
-        expect(ObjectStateContainer.hasInstance()).toBe(false);
+        expect(hasInstance(TestContainer, 'key1')).toBe(false);
+        expect(hasInstance(TestContainer, 'key2')).toBe(false);
+        expect(hasInstance(ObjectStateContainer)).toBe(false);
       });
     });
   });
@@ -600,21 +601,21 @@ describe('StateContainer', () => {
     });
 
     it('should work with attach lifecycle', () => {
-      const instance1 = TestContainer.resolve('shared');
+      const instance1 = acquire(TestContainer, 'shared');
       const listener = vi.fn();
       instance1.subscribe(listener);
 
-      const instance2 = TestContainer.resolve('shared');
+      const instance2 = acquire(TestContainer, 'shared');
       expect(instance1).toBe(instance2);
 
       instance2.testEmit({ value: 42 });
       expect(listener).toHaveBeenCalledWith({ value: 42 });
 
-      TestContainer.release('shared');
-      expect(TestContainer.getRefCount('shared')).toBe(1);
+      release(TestContainer, 'shared');
+      expect(getRefCount(TestContainer, 'shared')).toBe(1);
 
-      TestContainer.release('shared');
-      expect(TestContainer.hasInstance('shared')).toBe(false);
+      release(TestContainer, 'shared');
+      expect(hasInstance(TestContainer, 'shared')).toBe(false);
     });
   });
 });

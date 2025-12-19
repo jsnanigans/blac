@@ -64,7 +64,8 @@ export type LifecycleListener<E extends LifecycleEvent> = E extends 'created'
  * @example
  * ```ts
  * const registry = new StateContainerRegistry();
- * const instance = registry.resolve(MyBloc);
+ * const instance = registry.acquire(MyBloc);  // ownership, must release
+ * const other = registry.ensure(OtherBloc);   // no ownership, bloc-to-bloc
  * registry.on('stateChanged', (container, prev, next) => {
  *   console.log('State changed:', prev, '->', next);
  * });
@@ -153,18 +154,19 @@ export class StateContainerRegistry {
   }
 
   /**
-   * Resolve an instance with ref counting (ownership semantics).
+   * Acquire an instance with ref counting (ownership semantics).
    * Creates a new instance if one doesn't exist, or returns existing and increments ref count.
+   * You must call `release()` when done to decrement the ref count.
    * @param Type - The StateContainer class constructor
    * @param instanceKey - Instance key (defaults to 'default')
-   * @param options - Resolution options
+   * @param options - Acquisition options
    * @param options.canCreate - Whether to create new instance if not found (default: true)
    * @param options.countRef - Whether to increment ref count (default: true)
    * @param options.props - Props to pass to constructor if creating new instance
    * @param options.trackExecutionContext - Whether to track cross-bloc dependency (default: false)
    * @returns The state container instance
    */
-  resolve<T extends StateContainerConstructor = StateContainerConstructor>(
+  acquire<T extends StateContainerConstructor = StateContainerConstructor>(
     Type: T,
     instanceKey: string = BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
     options: {
@@ -243,38 +245,38 @@ export class StateContainerRegistry {
   }
 
   /**
-   * Get an existing instance without incrementing ref count (borrowing semantics).
+   * Borrow an existing instance without incrementing ref count (borrowing semantics).
    * Tracks cross-bloc dependency for reactive updates.
    * @param Type - The StateContainer class constructor
    * @param instanceKey - Instance key (defaults to 'default')
    * @returns The state container instance
    * @throws Error if instance doesn't exist
    */
-  get<T extends StateContainerConstructor = StateContainerConstructor>(
+  borrow<T extends StateContainerConstructor = StateContainerConstructor>(
     Type: T,
     instanceKey: string = BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
   ): InstanceType<T> {
-    return this.resolve(Type, instanceKey, {
+    return this.acquire(Type, instanceKey, {
       canCreate: false,
       trackExecutionContext: true,
     });
   }
 
   /**
-   * Safely get an existing instance (borrowing semantics with error handling).
+   * Safely borrow an existing instance (borrowing semantics with error handling).
    * Returns discriminated union for type-safe conditional access.
    * @param Type - The StateContainer class constructor
    * @param instanceKey - Instance key (defaults to 'default')
    * @returns Discriminated union with either the instance or an error
    */
-  getSafe<T extends StateContainerConstructor = StateContainerConstructor>(
+  borrowSafe<T extends StateContainerConstructor = StateContainerConstructor>(
     Type: T,
     instanceKey: string = BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
   ):
     | { error: Error; instance: null }
     | { error: null; instance: InstanceType<T> } {
     try {
-      const instance = this.get(Type, instanceKey);
+      const instance = this.borrow(Type, instanceKey);
       return { error: null, instance };
     } catch (error: any) {
       return { error, instance: null };
@@ -282,7 +284,7 @@ export class StateContainerRegistry {
   }
 
   /**
-   * Connect to an instance with borrowing semantics (for B2B communication).
+   * Ensure an instance exists without taking ownership (for bloc-to-bloc communication).
    * Gets existing instance OR creates it if it doesn't exist, without incrementing ref count.
    * Tracks cross-bloc dependency for reactive updates.
    *
@@ -292,11 +294,11 @@ export class StateContainerRegistry {
    * @param instanceKey - Instance key (defaults to 'default')
    * @returns The state container instance
    */
-  connect<T extends StateContainerConstructor = StateContainerConstructor>(
+  ensure<T extends StateContainerConstructor = StateContainerConstructor>(
     Type: T,
     instanceKey: string = BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
   ): InstanceType<T> {
-    return this.resolve(Type, instanceKey, {
+    return this.acquire(Type, instanceKey, {
       canCreate: true,
       countRef: false,
       trackExecutionContext: true,

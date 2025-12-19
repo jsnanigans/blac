@@ -24,6 +24,8 @@ import {
   isStatelessClass,
   StateContainerConstructor,
   InstanceState,
+  acquire,
+  release,
 } from '@blac/core';
 import type { UseBlocOptions, UseBlocReturn, ComponentRef } from './types';
 import { generateInstanceKey } from './utils/instance-keys';
@@ -107,7 +109,7 @@ export function useBloc<
         `Use useBlocActions() instead for stateless containers.`,
     );
     // Return a minimal working result to avoid crashing the app
-    const instance = (BlocClass as any).resolve('default', {}) as InstanceType<T>;
+    const instance = acquire(BlocClass, 'default') as InstanceType<T>;
     return [
       {} as ExtractState<T>,
       instance as any,
@@ -137,7 +139,7 @@ export function useBloc<
         options?.instanceId,
       );
 
-      const instance = (BlocClass as any).resolve(instanceKey, {
+      const instance = acquire(BlocClass, instanceKey, {
         props: initialPropsRef.current,
       }) as TBloc;
 
@@ -213,7 +215,7 @@ export function useBloc<
         options.onUnmount(bloc as InstanceType<T>);
       }
 
-      (BlocClass as any).release(instanceKey);
+      release(BlocClass, instanceKey);
 
       if (isIsolated && !rawInstance.isDisposed) {
         rawInstance.dispose();

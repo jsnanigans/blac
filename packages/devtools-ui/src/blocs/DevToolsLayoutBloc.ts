@@ -1,4 +1,4 @@
-import { Cubit, blac } from '@blac/core';
+import { Cubit, blac, borrow } from '@blac/core';
 import type { InstanceData } from '../types';
 import { DevToolsInstancesBloc } from './DevToolsInstancesBloc';
 import { DevToolsDiffBloc, type DiffResult, type StateSnapshot } from './DevToolsDiffBloc';
@@ -66,7 +66,7 @@ export class DevToolsLayoutBloc extends Cubit<LayoutState> {
   get selectedInstance(): InstanceData | null {
     if (!this.state.selectedId) return null;
 
-    const instancesBloc = DevToolsInstancesBloc.get();
+    const instancesBloc = borrow(DevToolsInstancesBloc);
     return instancesBloc.getInstance(this.state.selectedId);
   }
 
@@ -77,7 +77,7 @@ export class DevToolsLayoutBloc extends Cubit<LayoutState> {
   get selectedDiff(): DiffResult {
     if (!this.state.selectedId) return null;
 
-    const diffBloc = DevToolsDiffBloc.get();
+    const diffBloc = borrow(DevToolsDiffBloc);
     return diffBloc.getDiff(this.state.selectedId);
   }
 
@@ -88,7 +88,7 @@ export class DevToolsLayoutBloc extends Cubit<LayoutState> {
   get selectedHistory(): StateSnapshot[] {
     if (!this.state.selectedId) return [];
 
-    const diffBloc = DevToolsDiffBloc.get();
+    const diffBloc = borrow(DevToolsDiffBloc);
     return diffBloc.getHistory(this.state.selectedId);
   }
 }

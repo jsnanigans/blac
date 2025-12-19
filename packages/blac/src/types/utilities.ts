@@ -100,14 +100,15 @@ export type BlocConstructor<
     ...args: any[]
   ) => StateContainer<S, any>,
 > = (new (...args: any[]) => InstanceType<T>) & {
-  resolve(instanceKey?: string, ...args: any[]): InstanceType<T>;
-  get(instanceKey?: string, ...args: any[]): InstanceType<T> | null;
-  getSafe(
+  acquire(instanceKey?: string, ...args: any[]): InstanceType<T>;
+  borrow(instanceKey?: string, ...args: any[]): InstanceType<T> | null;
+  borrowSafe(
     instanceKey?: string,
     ...args: any[]
   ):
     | { error: Error; instance: null }
     | { error: null; instance: InstanceType<T> };
+  ensure(instanceKey?: string): InstanceType<T>;
   release(instanceKey?: string): void;
   isolated?: boolean;
   keepAlive?: boolean;

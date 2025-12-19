@@ -1,5 +1,5 @@
-import { globalRegistry } from '../core/StateContainerRegistry';
-import type { StateContainerConstructor, ExtractState } from '../types/utilities';
+import { ensure } from '../registry';
+import type { StateContainerConstructor } from '../types/utilities';
 import { BLAC_DEFAULTS } from '../constants';
 import {
   WaitUntilTimeoutError,
@@ -83,10 +83,7 @@ function waitUntilSimple<T extends StateContainerConstructor>(
       return;
     }
 
-    const bloc = globalRegistry.resolve(BlocClass, instanceId, {
-      canCreate: true,
-      countRef: false,
-    });
+    const bloc = ensure(BlocClass, instanceId);
 
     if (bloc.isDisposed) {
       reject(new WaitUntilDisposedError(BlocClass.name));
@@ -160,10 +157,7 @@ function waitUntilSelector<T extends StateContainerConstructor, TSelected>(
       return;
     }
 
-    const bloc = globalRegistry.resolve(BlocClass, instanceId, {
-      canCreate: true,
-      countRef: false,
-    });
+    const bloc = ensure(BlocClass, instanceId);
 
     if (bloc.isDisposed) {
       reject(new WaitUntilDisposedError(BlocClass.name));
