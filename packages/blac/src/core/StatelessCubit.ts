@@ -102,9 +102,9 @@ export abstract class StatelessCubit<P = undefined> extends Cubit<
 
   /**
    * patch() is not available on StatelessCubit.
-   * TypeScript will show an error if you try to call this method.
+   * @throws Error always - StatelessCubit does not support state changes
    */
-  public override patch: (partial: never) => never = () => {
+  public override patch = (_partial: Partial<EmptyState>): void => {
     throw new Error(
       `${this.name} is a StatelessCubit and does not support patch(). ` +
         'Use a regular Cubit if you need state management.',

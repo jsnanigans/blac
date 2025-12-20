@@ -1,4 +1,5 @@
 import { StateContainer } from './StateContainer';
+import { globalRegistry } from './StateContainerRegistry';
 import { STATELESS_MARKER } from './StatelessCubit';
 import type {
   DiscriminatedEvent,
@@ -141,7 +142,7 @@ export abstract class StatelessVertex<
    */
   public add = (event: E): void => {
     const enrichedEvent = this.enrichEvent(event);
-    StateContainer['_registry'].emit('eventAdded', this, enrichedEvent);
+    globalRegistry.emit('eventAdded', this, enrichedEvent);
     this.processEvent(enrichedEvent);
   };
 

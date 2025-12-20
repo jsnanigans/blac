@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import { Cubit } from '@blac/core';
+import { Cubit, clear } from '@blac/core';
 import { useBloc } from '../useBloc';
 
 interface Profile {
@@ -45,7 +45,7 @@ describe('useBloc - filtered list with getter', () => {
 
   beforeEach(() => {
     // Clear any existing instances
-    ProfileCubit.clear();
+    clear(ProfileCubit);
   });
 
   it('should return filtered profiles through getter', () => {

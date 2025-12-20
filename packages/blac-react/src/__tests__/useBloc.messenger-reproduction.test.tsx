@@ -14,7 +14,7 @@
  */
 
 import { render, screen, act } from '@testing-library/react';
-import { Cubit, StateContainer } from '@blac/core';
+import { Cubit, clearAll, acquire, borrow } from '@blac/core';
 import { useBloc } from '../useBloc';
 import { describe, it, expect, afterEach } from 'vitest';
 
@@ -193,7 +193,7 @@ function MessageList({ channelId, currentUserId }: MessageListProps) {
 // ============================================================================
 
 afterEach(() => {
-  StateContainer.clearAllInstances();
+  clearAll();
   messageListRenderCount = 0;
   _messageItemRenderCount = 0;
 });
@@ -204,7 +204,7 @@ describe('Messenger Reproduction - Array Tracking', () => {
     const currentUserId = 'user-me';
 
     // Setup: Add initial messages
-    const channel = ChannelBloc.resolve(channelId, { props: channelId });
+    const channel = acquire(ChannelBloc, channelId, { props: channelId });
     const msg1Id = channel.addMessage('Hello World', currentUserId);
     const msg2Id = channel.addMessage('this is that', currentUserId);
     const msg3Id = channel.addMessage('Good thanks', currentUserId);
@@ -243,13 +243,13 @@ describe('Messenger Reproduction - Array Tracking', () => {
     const channelId = 'channel-2';
     const currentUserId = 'user-me';
 
-    const channel = ChannelBloc.resolve(channelId, { props: channelId });
+    const channel = acquire(ChannelBloc, channelId, { props: channelId });
     const msg1Id = channel.addMessage('Test message', currentUserId);
 
     render(<MessageList channelId={channelId} currentUserId={currentUserId} />);
 
     // Debug: Check what paths are being tracked
-    const instance = ChannelBloc.get(channelId);
+    const instance = borrow(ChannelBloc, channelId);
     const adapterStates = (instance as any).__blac__adapterStates;
     if (adapterStates && adapterStates.size > 0) {
       const firstAdapter = Array.from(adapterStates.values())[0] as any;
@@ -290,7 +290,7 @@ describe('Messenger Reproduction - Array Tracking', () => {
     const channelId = 'channel-3';
     const currentUserId = 'user-me';
 
-    const channel = ChannelBloc.resolve(channelId, { props: channelId });
+    const channel = acquire(ChannelBloc, channelId, { props: channelId });
     const msg1Id = channel.addMessage('Message 1', currentUserId);
     const msg2Id = channel.addMessage('Message 2', currentUserId);
     const msg3Id = channel.addMessage('Message 3', currentUserId);
@@ -321,7 +321,7 @@ describe('Messenger Reproduction - Array Tracking', () => {
     const channelId = 'channel-4';
     const currentUserId = 'user-me';
 
-    const channel = ChannelBloc.resolve(channelId, { props: channelId });
+    const channel = acquire(ChannelBloc, channelId, { props: channelId });
     channel.addMessage('Message 1', currentUserId);
     channel.addMessage('Message 2', currentUserId);
     const lastMsgId = channel.addMessage('Message 3', currentUserId);
@@ -344,7 +344,7 @@ describe('Messenger Reproduction - Array Tracking', () => {
     const channelId = 'channel-5';
     const currentUserId = 'user-me';
 
-    const channel = ChannelBloc.resolve(channelId, { props: channelId });
+    const channel = acquire(ChannelBloc, channelId, { props: channelId });
     channel.addMessage('Hello', currentUserId);
 
     render(<MessageList channelId={channelId} currentUserId={currentUserId} />);

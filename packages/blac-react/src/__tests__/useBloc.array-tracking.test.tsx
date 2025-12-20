@@ -7,7 +7,7 @@
  */
 
 import { render, screen } from '@testing-library/react';
-import { Cubit, StateContainer } from '@blac/core';
+import { Cubit, clearAll, acquire } from '@blac/core';
 import { useBloc } from '../useBloc';
 import { describe, it, expect } from 'vitest';
 
@@ -60,7 +60,7 @@ class MessageListCubit extends Cubit<MessageListState> {
 
 afterEach(() => {
   // Clear all bloc instances between tests
-  StateContainer.clearAllInstances();
+  clearAll();
 });
 
 describe('useBloc - Array Tracking (MessageList Use Case)', () => {
@@ -91,7 +91,7 @@ describe('useBloc - Array Tracking (MessageList Use Case)', () => {
     expect(screen.getByTestId('message-count')).toHaveTextContent('0');
 
     // Add first message
-    const cubit = MessageListCubit.resolve();
+    const cubit = acquire(MessageListCubit);
     const msg1Id = cubit.addMessage('Hello', 'user-1');
 
     rerender(<MessageList />);
@@ -134,7 +134,7 @@ describe('useBloc - Array Tracking (MessageList Use Case)', () => {
     }
 
     // Setup: Add initial messages
-    const cubit = MessageListCubit.resolve();
+    const cubit = acquire(MessageListCubit);
     const msg1Id = cubit.addMessage('Hello', 'user-1');
     const msg2Id = cubit.addMessage('World', 'user-2');
     const msg3Id = cubit.addMessage('Test', 'user-3');
@@ -186,7 +186,7 @@ describe('useBloc - Array Tracking (MessageList Use Case)', () => {
     }
 
     // Setup: Add initial messages
-    const cubit = MessageListCubit.resolve();
+    const cubit = acquire(MessageListCubit);
     cubit.addMessage('Message 1', 'user-1');
     cubit.addMessage('Message 2', 'user-2');
     const msg3Id = cubit.addMessage('Message 3', 'user-3');
@@ -230,7 +230,7 @@ describe('useBloc - Array Tracking (MessageList Use Case)', () => {
     }
 
     // Setup: Add initial messages
-    const cubit = MessageListCubit.resolve();
+    const cubit = acquire(MessageListCubit);
     const msg1Id = cubit.addMessage('Message 1', 'user-1');
     const msg2Id = cubit.addMessage('Message 2', 'user-2');
     const msg3Id = cubit.addMessage('Message 3', 'user-3');
@@ -268,7 +268,7 @@ describe('useBloc - Array Tracking (MessageList Use Case)', () => {
     }
 
     // Setup: Add initial messages
-    const cubit = MessageListCubit.resolve();
+    const cubit = acquire(MessageListCubit);
     cubit.addMessage('Message 1', 'user-1');
     cubit.addMessage('Message 2', 'user-2');
     cubit.addMessage('Message 3', 'user-3');

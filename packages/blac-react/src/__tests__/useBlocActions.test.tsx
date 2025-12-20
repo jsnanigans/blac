@@ -5,7 +5,7 @@
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { StateContainer } from '@blac/core';
+import { StateContainer, clearAll, release } from '@blac/core';
 import { useBlocActions } from '../useBlocActions';
 
 // Test implementations
@@ -55,7 +55,7 @@ class UserBloc extends StateContainer<
 describe('useBlocActions', () => {
   afterEach(() => {
     // Clear all bloc instances between tests
-    StateContainer.clearAllInstances();
+    clearAll();
   });
 
   describe('Basic Usage', () => {
@@ -237,14 +237,16 @@ describe('useBlocActions', () => {
       });
     });
 
-    it('should release bloc reference on unmount', () => {
-      const { unmount } = renderHook(() => useBlocActions(CounterBloc));
-
-      const releaseSpy = vi.spyOn(CounterBloc as any, 'release');
+    it('should release bloc reference on unmount', async () => {
+      const { result, unmount } = renderHook(() => useBlocActions(CounterBloc));
+      const bloc = result.current;
+      const disposeSpy = vi.spyOn(bloc, 'dispose');
 
       unmount();
 
-      expect(releaseSpy).toHaveBeenCalled();
+      await waitFor(() => {
+        expect(disposeSpy).toHaveBeenCalled();
+      });
     });
   });
 

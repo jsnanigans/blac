@@ -5,7 +5,7 @@
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { StateContainer } from '@blac/core';
+import { StateContainer, clearAll } from '@blac/core';
 import { useBloc } from '../useBloc';
 
 // Test implementations
@@ -62,7 +62,7 @@ class UserBloc extends StateContainer<{ name: string; email: string }> {
 describe('useBloc', () => {
   afterEach(() => {
     // Clear all bloc instances between tests
-    StateContainer.clearAllInstances();
+    clearAll();
   });
 
   // describe('Generic Bloc', () => {

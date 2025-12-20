@@ -5,7 +5,7 @@
  */
 
 import { render, screen, act } from '@testing-library/react';
-import { Cubit, StateContainer } from '@blac/core';
+import { Cubit, clearAll, acquire } from '@blac/core';
 import { useBloc } from '../useBloc';
 import { describe, it, expect, afterEach } from 'vitest';
 
@@ -24,7 +24,7 @@ class ArrayMethodCubit extends Cubit<TestState> {
 }
 
 afterEach(() => {
-  StateContainer.clearAllInstances();
+  clearAll();
 });
 
 describe('Array Methods Tracking', () => {
@@ -45,7 +45,7 @@ describe('Array Methods Tracking', () => {
     expect(screen.getByTestId('result')).toHaveTextContent('2,4,6,8,10');
 
     act(() => {
-      ArrayMethodCubit.resolve().updateItems();
+      acquire(ArrayMethodCubit).updateItems();
     });
 
     expect(renderCount).toBe(2); // Should re-render
@@ -67,7 +67,7 @@ describe('Array Methods Tracking', () => {
     expect(renderCount).toBe(1);
 
     act(() => {
-      ArrayMethodCubit.resolve().updateItems();
+      acquire(ArrayMethodCubit).updateItems();
     });
 
     expect(renderCount).toBe(2); // Should re-render
@@ -88,7 +88,7 @@ describe('Array Methods Tracking', () => {
     expect(renderCount).toBe(1);
 
     act(() => {
-      ArrayMethodCubit.resolve().updateItems();
+      acquire(ArrayMethodCubit).updateItems();
     });
 
     expect(renderCount).toBe(2); // Should re-render
@@ -110,7 +110,7 @@ describe('Array Methods Tracking', () => {
     expect(renderCount).toBe(1);
 
     act(() => {
-      ArrayMethodCubit.resolve().updateItems();
+      acquire(ArrayMethodCubit).updateItems();
     });
 
     expect(renderCount).toBe(2); // Should re-render
@@ -131,7 +131,7 @@ describe('Array Methods Tracking', () => {
     expect(renderCount).toBe(1);
 
     act(() => {
-      ArrayMethodCubit.resolve().updateItems();
+      acquire(ArrayMethodCubit).updateItems();
     });
 
     expect(renderCount).toBe(2); // Should re-render
@@ -152,7 +152,7 @@ describe('Array Methods Tracking', () => {
     expect(renderCount).toBe(1);
 
     act(() => {
-      ArrayMethodCubit.resolve().updateItems();
+      acquire(ArrayMethodCubit).updateItems();
     });
 
     expect(renderCount).toBe(2); // Should re-render
@@ -173,7 +173,7 @@ describe('Array Methods Tracking', () => {
     expect(renderCount).toBe(1);
 
     act(() => {
-      ArrayMethodCubit.resolve().updateItems();
+      acquire(ArrayMethodCubit).updateItems();
     });
 
     expect(renderCount).toBe(2); // Should re-render
@@ -194,7 +194,7 @@ describe('Array Methods Tracking', () => {
     expect(renderCount).toBe(1);
 
     act(() => {
-      ArrayMethodCubit.resolve().updateItems();
+      acquire(ArrayMethodCubit).updateItems();
     });
 
     expect(renderCount).toBe(2); // Should re-render
@@ -215,7 +215,7 @@ describe('Array Methods Tracking', () => {
     expect(renderCount).toBe(1);
 
     act(() => {
-      ArrayMethodCubit.resolve().updateItems();
+      acquire(ArrayMethodCubit).updateItems();
     });
 
     expect(renderCount).toBe(2); // Should re-render
@@ -236,7 +236,7 @@ describe('Array Methods Tracking', () => {
     expect(renderCount).toBe(1);
 
     act(() => {
-      ArrayMethodCubit.resolve().updateItems();
+      acquire(ArrayMethodCubit).updateItems();
     });
 
     expect(renderCount).toBe(2); // Should re-render

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
-import { Cubit } from '@blac/core';
+import { Cubit, acquire, borrow, clear } from '@blac/core';
 import { useBloc } from '../useBloc';
 
 // Deep dependency chain blocs
@@ -12,7 +12,7 @@ class DeepABloc extends Cubit<{ value: number }> {
   increment = () => this.emit({ value: this.state.value + 1 });
 
   get computed() {
-    return this.state.value + DeepBBloc.get().computed;
+    return this.state.value + borrow(DeepBBloc).computed;
   }
 }
 
@@ -24,7 +24,7 @@ class DeepBBloc extends Cubit<{ value: number }> {
   increment = () => this.emit({ value: this.state.value + 1 });
 
   get computed() {
-    return this.state.value + DeepCBloc.get().computed;
+    return this.state.value + borrow(DeepCBloc).computed;
   }
 }
 
@@ -52,7 +52,7 @@ class DynamicDepBloc extends Cubit<{ useExternal: boolean; value: number }> {
 
   get computed() {
     if (this.state.useExternal) {
-      return this.state.value + ConditionalBloc.get().state.count;
+      return this.state.value + borrow(ConditionalBloc).state.count;
     }
     return this.state.value;
   }
@@ -69,16 +69,16 @@ class ConditionalBloc extends Cubit<{ count: number }, number> {
 describe('useBloc - cross-bloc edge cases', () => {
   beforeEach(() => {
     // Clear all instances before each test
-    DeepABloc.clear();
-    DeepBBloc.clear();
-    DeepCBloc.clear();
-    DynamicDepBloc.clear();
-    ConditionalBloc.clear();
+    clear(DeepABloc);
+    clear(DeepBBloc);
+    clear(DeepCBloc);
+    clear(DynamicDepBloc);
+    clear(ConditionalBloc);
   });
 
   it('should cleanup external subscriptions on unmount', () => {
     // Create external bloc with object state
-    ConditionalBloc.resolve('default', { props: 20 });
+    acquire(ConditionalBloc, 'default', { props: 20 });
 
     let renderCount = 0;
 
@@ -108,7 +108,7 @@ describe('useBloc - cross-bloc edge cases', () => {
 
     // Change ConditionalBloc - should trigger re-render
     act(() => {
-      ConditionalBloc.get().increment();
+      borrow(ConditionalBloc).increment();
     });
 
     expect(renderCount).toBeGreaterThan(initialRenderCount);
@@ -119,7 +119,7 @@ describe('useBloc - cross-bloc edge cases', () => {
     // Change ConditionalBloc again - should NOT trigger re-render now
     const renderCountBeforeUnmount = renderCount;
     act(() => {
-      ConditionalBloc.get().increment();
+      borrow(ConditionalBloc).increment();
     });
 
     // Render count should not change after unmount
@@ -152,7 +152,7 @@ describe('useBloc - cross-bloc edge cases', () => {
 
     // Change DeepCBloc (deepest in chain)
     act(() => {
-      DeepCBloc.get().increment();
+      borrow(DeepCBloc).increment();
     });
 
     // Should trigger re-render through the chain
@@ -163,7 +163,7 @@ describe('useBloc - cross-bloc edge cases', () => {
   it('should handle dynamically changing dependencies', () => {
     // Create ConditionalBloc instance WITHOUT subscribing to it
     // This way we can test that only the getter dependency triggers re-renders
-    ConditionalBloc.resolve('default', { props: 20 });
+    acquire(ConditionalBloc, 'default', { props: 20 });
 
     let renderCount = 0;
 
@@ -202,7 +202,7 @@ describe('useBloc - cross-bloc edge cases', () => {
 
     // Now change ConditionalBloc - should trigger re-render
     act(() => {
-      ConditionalBloc.get().increment();
+      borrow(ConditionalBloc).increment();
     });
 
     expect(renderCount).toBe(3);
@@ -220,7 +220,7 @@ describe('useBloc - cross-bloc edge cases', () => {
     // Change ConditionalBloc again - should NOT trigger re-render now
     const prevRenderCount = renderCount;
     act(() => {
-      ConditionalBloc.get().increment();
+      borrow(ConditionalBloc).increment();
     });
 
     // Render count should not change because we're no longer using external dependency

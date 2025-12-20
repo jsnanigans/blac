@@ -1,4 +1,5 @@
 import { StateContainer } from './StateContainer';
+import { globalRegistry } from './StateContainerRegistry';
 import type {
   DiscriminatedEvent,
   EventWithMetadata,
@@ -82,7 +83,7 @@ export abstract class Vertex<
    */
   public add = (event: E): void => {
     const enrichedEvent = this.enrichEvent(event);
-    StateContainer._registry.emit('eventAdded', this, enrichedEvent);
+    globalRegistry.emit('eventAdded', this, enrichedEvent);
     this.processEvent(enrichedEvent);
   };
 

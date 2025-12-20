@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
-import { Cubit } from '@blac/core';
+import { Cubit, borrow, borrowSafe, clear, ensure, getRefCount, hasInstance } from '@blac/core';
 import { useBloc } from '../useBloc';
 import { useBlocActions } from '../useBlocActions';
 
@@ -12,7 +12,7 @@ class AlphaBloc extends Cubit<{ value: number }> {
   increment = () => this.emit({ value: this.state.value + 1 });
 
   get both() {
-    return this.state.value + BetaBloc.get().state.value;
+    return this.state.value + borrow(BetaBloc).state.value;
   }
 }
 
@@ -24,15 +24,15 @@ class BetaBloc extends Cubit<{ value: number }> {
   increment = () => this.emit({ value: this.state.value + 1 });
 
   get both() {
-    return this.state.value + AlphaBloc.get().state.value;
+    return this.state.value + borrow(AlphaBloc).state.value;
   }
 }
 
 describe('useBloc - getter tracking with external blocs', () => {
   beforeEach(() => {
     // Clear any existing instances before each test
-    AlphaBloc.clear();
-    BetaBloc.clear();
+    clear(AlphaBloc);
+    clear(BetaBloc);
   });
 
   it('should re-render when external bloc accessed through getter changes', () => {
@@ -109,7 +109,7 @@ describe('useBloc - getter tracking with external blocs', () => {
       increment = () => this.emit({ value: this.state.value + 1 });
 
       get gammaWithAlpha() {
-        const result = AlphaBloc.getSafe();
+        const result = borrowSafe(AlphaBloc);
         if (result.error) return this.state.value;
         return this.state.value + result.instance.state.value;
       }
@@ -149,7 +149,7 @@ describe('useBloc - getter tracking with external blocs', () => {
     expect(renderCount).toBe(2);
     expect(screen.getByTestId('gamma-with-alpha').textContent).toBe('12'); // 10 + 2
 
-    GammaBloc.clear();
+    clear(GammaBloc);
   });
 
   it('should track external bloc accessed via .connect()', () => {
@@ -167,8 +167,8 @@ describe('useBloc - getter tracking with external blocs', () => {
       increment = () => this.emit({ value: this.state.value + 1 });
 
       get deltaSum() {
-        // .connect() ensures DeltaBloc exists and tracks it
-        const delta = DeltaBloc.connect();
+        // ensure() ensures DeltaBloc exists and tracks it
+        const delta = ensure(DeltaBloc);
         return this.state.value + delta.state.value;
       }
     }
@@ -187,8 +187,8 @@ describe('useBloc - getter tracking with external blocs', () => {
           <button
             data-testid="increment-delta"
             onClick={() => {
-              // Now we know DeltaBloc exists because .connect() was called
-              const delta = DeltaBloc.get();
+              // Now we know DeltaBloc exists because ensure() was called
+              const delta = borrow(DeltaBloc);
               delta.increment();
             }}
           >
@@ -200,11 +200,11 @@ describe('useBloc - getter tracking with external blocs', () => {
 
     render(<Component />);
 
-    // Initial render: .connect() creates DeltaBloc
+    // Initial render: ensure() creates DeltaBloc
     expect(renderCount).toBe(1);
     expect(screen.getByTestId('epsilon-delta-sum').textContent).toBe('300'); // 200 + 100
-    // Verify DeltaBloc was created by .connect()
-    expect(DeltaBloc.hasInstance()).toBe(true);
+    // Verify DeltaBloc was created by ensure()
+    expect(hasInstance(DeltaBloc)).toBe(true);
 
     // Increment DeltaBloc - should cause re-render due to tracking
     act(() => {
@@ -214,8 +214,8 @@ describe('useBloc - getter tracking with external blocs', () => {
     expect(renderCount).toBe(2);
     expect(screen.getByTestId('epsilon-delta-sum').textContent).toBe('301'); // 200 + 101
 
-    DeltaBloc.clear();
-    EpsilonBloc.clear();
+    clear(DeltaBloc);
+    clear(EpsilonBloc);
   });
 
   it('.connect() should not increment ref count', () => {
@@ -231,7 +231,7 @@ describe('useBloc - getter tracking with external blocs', () => {
       }
 
       get zetaState() {
-        return ZetaBloc.connect().state.value;
+        return ensure(ZetaBloc).state.value;
       }
     }
 
@@ -242,11 +242,11 @@ describe('useBloc - getter tracking with external blocs', () => {
 
     render(<Component />);
 
-    // ZetaBloc was created by .connect() with refCount=1
-    expect(ZetaBloc.getRefCount()).toBe(1);
+    // ZetaBloc was created by ensure() with refCount=1
+    expect(getRefCount(ZetaBloc)).toBe(1);
     expect(screen.getByTestId('zeta-state').textContent).toBe('1');
 
-    ZetaBloc.clear();
-    EtaBloc.clear();
+    clear(ZetaBloc);
+    clear(EtaBloc);
   });
 });

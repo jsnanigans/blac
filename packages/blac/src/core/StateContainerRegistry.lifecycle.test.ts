@@ -11,6 +11,7 @@ import {
   globalRegistry,
   type LifecycleEvent,
 } from './StateContainerRegistry';
+import { setRegistry, acquire, release } from '../registry';
 
 // Test implementations
 class TestCubit extends StateContainer<{ value: number }> {
@@ -52,7 +53,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
   beforeEach(() => {
     // Use a fresh registry for isolation
     registry = new StateContainerRegistry();
-    StateContainer.setRegistry(registry);
+    setRegistry(registry);
   });
 
   describe('Event Subscription', () => {
@@ -466,7 +467,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
   describe('Global Registry Integration', () => {
     it('should work with globalRegistry singleton', () => {
       // Reset to use global registry
-      StateContainer.setRegistry(globalRegistry);
+      setRegistry(globalRegistry);
       globalRegistry.clearAll();
 
       const listener = vi.fn();
@@ -482,7 +483,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
     });
 
     it('should isolate custom registry from global', () => {
-      StateContainer.setRegistry(globalRegistry);
+      setRegistry(globalRegistry);
       globalRegistry.clearAll();
 
       const customRegistry = new StateContainerRegistry();
@@ -561,7 +562,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
     it('should check if instance exists with hasInstance()', () => {
       expect(registry.hasInstance(TestCubit, 'test')).toBe(false);
 
-      TestCubit.resolve('test');
+      acquire(TestCubit, 'test');
 
       expect(registry.hasInstance(TestCubit, 'test')).toBe(true);
     });
@@ -569,29 +570,29 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
     it('should get ref count with getRefCount()', () => {
       expect(registry.getRefCount(TestCubit, 'test')).toBe(0);
 
-      const instance1 = TestCubit.resolve('test');
+      const instance1 = acquire(TestCubit, 'test');
       expect(registry.getRefCount(TestCubit, 'test')).toBe(1);
 
-      const instance2 = TestCubit.resolve('test');
+      const instance2 = acquire(TestCubit, 'test');
       expect(instance1).toBe(instance2);
       expect(registry.getRefCount(TestCubit, 'test')).toBe(2);
 
-      TestCubit.release('test');
+      release(TestCubit, 'test');
       expect(registry.getRefCount(TestCubit, 'test')).toBe(1);
 
-      TestCubit.release('test');
+      release(TestCubit, 'test');
       expect(registry.getRefCount(TestCubit, 'test')).toBe(0);
     });
 
     it('should force dispose with release(forceDispose=true)', () => {
-      const instance1 = TestCubit.resolve('test');
-      const _instance2 = TestCubit.resolve('test');
+      const instance1 = acquire(TestCubit, 'test');
+      const _instance2 = acquire(TestCubit, 'test');
 
       expect(registry.getRefCount(TestCubit, 'test')).toBe(2);
       expect(instance1.isDisposed).toBe(false);
 
       // Force dispose regardless of ref count
-      TestCubit.release('test', true);
+      release(TestCubit, 'test', true);
 
       expect(instance1.isDisposed).toBe(true);
       expect(registry.hasInstance(TestCubit, 'test')).toBe(false);
@@ -600,7 +601,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
 
     it('should handle release() on non-existent instance gracefully', () => {
       expect(() => {
-        TestCubit.release('nonexistent');
+        release(TestCubit, 'nonexistent');
       }).not.toThrow();
     });
 
@@ -608,8 +609,8 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       const listener = vi.fn();
       registry.on('disposed', listener);
 
-      const instance = TestCubit.resolve('test');
-      TestCubit.release('test', true);
+      const instance = acquire(TestCubit, 'test');
+      release(TestCubit, 'test', true);
 
       expect(listener).toHaveBeenCalledTimes(1);
       expect(listener).toHaveBeenCalledWith(instance);

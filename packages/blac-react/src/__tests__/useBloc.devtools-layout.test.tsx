@@ -4,7 +4,7 @@
 import { render, screen, waitFor, act, cleanup } from '@testing-library/react';
 import { describe, it, expect, afterEach } from 'vitest';
 import { useBloc } from '../useBloc';
-import { Cubit, StateContainer, blac } from '@blac/core';
+import { Cubit, blac, clearAll, acquire } from '@blac/core';
 import React from 'react';
 
 // Simplified types
@@ -110,7 +110,7 @@ const SimpleDevToolsPanel: React.FC = () => {
 describe('DevTools Layout - Instance Management', () => {
   afterEach(() => {
     cleanup();
-    StateContainer.clearAllInstances();
+    clearAll();
   });
 
   it('should start with empty instances', () => {
@@ -120,7 +120,7 @@ describe('DevTools Layout - Instance Management', () => {
 
   it('should add instances and maintain order', async () => {
     render(<SimpleDevToolsPanel />);
-    const bloc = LayoutBloc.resolve('default');
+    const bloc = acquire(LayoutBloc);
 
     act(() => {
       bloc.addInstance({
@@ -159,7 +159,7 @@ describe('DevTools Layout - Instance Management', () => {
 
   it('should sort instances by className', async () => {
     render(<SimpleDevToolsPanel />);
-    const bloc = LayoutBloc.resolve('default');
+    const bloc = acquire(LayoutBloc);
 
     act(() => {
       bloc.addInstance({
@@ -200,7 +200,7 @@ describe('DevTools Layout - Instance Management', () => {
 
   it('should remove instances correctly', async () => {
     render(<SimpleDevToolsPanel />);
-    const bloc = LayoutBloc.resolve('default');
+    const bloc = acquire(LayoutBloc);
 
     act(() => {
       bloc.addInstance({
@@ -236,7 +236,7 @@ describe('DevTools Layout - Instance Management', () => {
 
   it('should handle instance selection', async () => {
     render(<SimpleDevToolsPanel />);
-    const bloc = LayoutBloc.resolve('default');
+    const bloc = acquire(LayoutBloc);
 
     act(() => {
       bloc.addInstance({
@@ -266,7 +266,7 @@ describe('DevTools Layout - Instance Management', () => {
 
   it('should clear selection when removing selected instance', async () => {
     render(<SimpleDevToolsPanel />);
-    const bloc = LayoutBloc.resolve('default');
+    const bloc = acquire(LayoutBloc);
 
     act(() => {
       bloc.addInstance({
@@ -300,7 +300,7 @@ describe('DevTools Layout - Instance Management', () => {
 
   it('should update instance data', async () => {
     render(<SimpleDevToolsPanel />);
-    const bloc = LayoutBloc.resolve('default');
+    const bloc = acquire(LayoutBloc);
 
     act(() => {
       bloc.addInstance({
@@ -329,7 +329,7 @@ describe('DevTools Layout - Instance Management', () => {
 
   it('should handle setAllInstances for bulk updates', async () => {
     render(<SimpleDevToolsPanel />);
-    const bloc = LayoutBloc.resolve('default');
+    const bloc = acquire(LayoutBloc);
 
     const instances: InstanceData[] = [
       { id: 'bulk-1', className: 'BulkCubit', state: {}, isDisposed: false },
@@ -352,7 +352,7 @@ describe('DevTools Layout - Instance Management', () => {
 
   it('should prevent duplicate instances', async () => {
     render(<SimpleDevToolsPanel />);
-    const bloc = LayoutBloc.resolve('default');
+    const bloc = acquire(LayoutBloc);
 
     act(() => {
       bloc.addInstance({

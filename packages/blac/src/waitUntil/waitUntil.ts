@@ -1,4 +1,4 @@
-import { ensure } from '../registry';
+import { ensure, getRegistry } from '../registry';
 import type { StateContainerConstructor } from '../types/utilities';
 import { BLAC_DEFAULTS } from '../constants';
 import {
@@ -121,9 +121,11 @@ function waitUntilSimple<T extends StateContainerConstructor>(
       }
     });
 
-    unsubscribeDispose = bloc.onSystemEvent('dispose', () => {
-      cleanup();
-      reject(new WaitUntilDisposedError(BlocClass.name));
+    unsubscribeDispose = getRegistry().on('disposed', (instance) => {
+      if (instance === bloc) {
+        cleanup();
+        reject(new WaitUntilDisposedError(BlocClass.name));
+      }
     });
 
     if (timeout !== undefined) {
@@ -197,9 +199,11 @@ function waitUntilSelector<T extends StateContainerConstructor, TSelected>(
       }
     });
 
-    unsubscribeDispose = bloc.onSystemEvent('dispose', () => {
-      cleanup();
-      reject(new WaitUntilDisposedError(BlocClass.name));
+    unsubscribeDispose = getRegistry().on('disposed', (instance) => {
+      if (instance === bloc) {
+        cleanup();
+        reject(new WaitUntilDisposedError(BlocClass.name));
+      }
     });
 
     if (timeout !== undefined) {
