@@ -97,6 +97,8 @@ export {
   WaitUntilDisposedError,
 } from './waitUntil';
 
+export { watch, instance, type WatchFn, type BlocRef } from './watch';
+
 export {
   acquire,
   borrow,
