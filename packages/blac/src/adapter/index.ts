@@ -12,6 +12,7 @@ export {
   type SubscribeFunction,
   type SnapshotFunction,
   ExternalDependencyManager,
+  DependencySubscriptionManager,
   createAutoTrackSubscribe,
   createManualDepsSubscribe,
   createNoTrackSubscribe,

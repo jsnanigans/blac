@@ -3,7 +3,7 @@
  */
 
 import { BLAC_STATIC_PROPS } from '../constants';
-import { STATELESS_MARKER } from '../core/StatelessCubit';
+import { STATELESS_MARKER } from '../core/markers';
 import { StateContainerConstructor } from '../types/utilities';
 
 /**

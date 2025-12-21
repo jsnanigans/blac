@@ -1,11 +1,22 @@
 import { ensure, getRegistry } from '../registry';
-import type { StateContainerConstructor } from '../types/utilities';
+import type {
+  StateContainerConstructor,
+  StateContainerInstance,
+} from '../types/utilities';
 import { BLAC_DEFAULTS } from '../constants';
 import {
   WaitUntilTimeoutError,
   WaitUntilAbortedError,
   WaitUntilDisposedError,
 } from './errors';
+import {
+  createUnifiedTrackerState,
+  startUnifiedTracking,
+  stopUnifiedTracking,
+  createTrackingProxy,
+  type UnifiedTrackerState,
+} from '../tracking/create-tracking-proxy';
+import { DependencySubscriptionManager } from '../tracking/dependency-subscription-manager';
 
 export interface WaitUntilOptions {
   instanceId?: string;
@@ -16,11 +27,15 @@ export interface WaitUntilOptions {
 /**
  * Wait until a condition is met on a bloc instance.
  * Returns the bloc instance when the predicate returns true.
+ * Automatically tracks dependencies accessed in the predicate.
  *
  * @example
  * ```ts
- * // Wait for bloc to be ready
+ * // Wait for bloc state to be ready
  * const userBloc = await waitUntil(UserBloc, (bloc) => bloc.state.isAuthenticated);
+ *
+ * // Wait using a getter
+ * const userBloc = await waitUntil(UserBloc, (bloc) => bloc.isReady);
  * ```
  */
 export function waitUntil<T extends StateContainerConstructor>(
@@ -32,6 +47,7 @@ export function waitUntil<T extends StateContainerConstructor>(
 /**
  * Wait until a condition is met on a selected value from a bloc.
  * Returns the selected value when the predicate returns true.
+ * Automatically tracks dependencies accessed in selector and predicate.
  *
  * @example
  * ```ts
@@ -40,6 +56,13 @@ export function waitUntil<T extends StateContainerConstructor>(
  *   LayoutBloc,
  *   (bloc) => bloc.state.currentLayout,
  *   (layout) => layout !== null
+ * );
+ *
+ * // Using a getter as selector
+ * const user = await waitUntil(
+ *   UserBloc,
+ *   (bloc) => bloc.currentUser,
+ *   (user) => user !== null
  * );
  * ```
  */
@@ -52,7 +75,9 @@ export function waitUntil<T extends StateContainerConstructor, TSelected>(
 
 export function waitUntil<T extends StateContainerConstructor, TSelected>(
   BlocClass: T,
-  selectorOrPredicate: ((bloc: InstanceType<T>) => TSelected) | ((bloc: InstanceType<T>) => boolean),
+  selectorOrPredicate:
+    | ((bloc: InstanceType<T>) => TSelected)
+    | ((bloc: InstanceType<T>) => boolean),
   predicateOrOptions?: ((selected: TSelected) => boolean) | WaitUntilOptions,
   maybeOptions?: WaitUntilOptions,
 ): Promise<InstanceType<T> | TSelected> {
@@ -75,7 +100,11 @@ function waitUntilSimple<T extends StateContainerConstructor>(
   predicate: (bloc: InstanceType<T>) => boolean,
   options?: WaitUntilOptions,
 ): Promise<InstanceType<T>> {
-  const { instanceId = BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY, timeout, signal } = options ?? {};
+  const {
+    instanceId = BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
+    timeout,
+    signal,
+  } = options ?? {};
 
   return new Promise((resolve, reject) => {
     if (signal?.aborted) {
@@ -83,14 +112,32 @@ function waitUntilSimple<T extends StateContainerConstructor>(
       return;
     }
 
-    const bloc = ensure(BlocClass, instanceId);
+    const bloc = ensure(BlocClass, instanceId) as InstanceType<T>;
 
     if (bloc.isDisposed) {
       reject(new WaitUntilDisposedError(BlocClass.name));
       return;
     }
 
-    if (predicate(bloc)) {
+    const tracker: UnifiedTrackerState = createUnifiedTrackerState();
+    const proxiedBloc = createTrackingProxy(bloc, tracker);
+    const externalDepsManager = new DependencySubscriptionManager();
+
+    const runPredicate = (): boolean => {
+      startUnifiedTracking(tracker);
+      try {
+        return predicate(proxiedBloc);
+      } finally {
+        const deps = stopUnifiedTracking(tracker, bloc);
+        for (const dep of tracker.getterTracker.externalDependencies) {
+          deps.add(dep);
+        }
+        deps.delete(bloc);
+        externalDepsManager.sync(deps, checkCondition, bloc);
+      }
+    };
+
+    if (runPredicate()) {
       resolve(bloc);
       return;
     }
@@ -103,15 +150,16 @@ function waitUntilSimple<T extends StateContainerConstructor>(
     const cleanup = () => {
       unsubscribe?.();
       unsubscribeDispose?.();
+      externalDepsManager.cleanup();
       if (timeoutId) clearTimeout(timeoutId);
       if (abortHandler && signal) {
         signal.removeEventListener('abort', abortHandler);
       }
     };
 
-    unsubscribe = bloc.subscribe(() => {
+    function checkCondition() {
       try {
-        if (predicate(bloc)) {
+        if (runPredicate()) {
           cleanup();
           resolve(bloc);
         }
@@ -119,7 +167,9 @@ function waitUntilSimple<T extends StateContainerConstructor>(
         cleanup();
         reject(error);
       }
-    });
+    }
+
+    unsubscribe = bloc.subscribe(checkCondition);
 
     unsubscribeDispose = getRegistry().on('disposed', (instance) => {
       if (instance === bloc) {
@@ -151,7 +201,11 @@ function waitUntilSelector<T extends StateContainerConstructor, TSelected>(
   predicate: (selected: TSelected) => boolean,
   options?: WaitUntilOptions,
 ): Promise<TSelected> {
-  const { instanceId = BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY, timeout, signal } = options ?? {};
+  const {
+    instanceId = BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
+    timeout,
+    signal,
+  } = options ?? {};
 
   return new Promise((resolve, reject) => {
     if (signal?.aborted) {
@@ -159,16 +213,36 @@ function waitUntilSelector<T extends StateContainerConstructor, TSelected>(
       return;
     }
 
-    const bloc = ensure(BlocClass, instanceId);
+    const bloc = ensure(BlocClass, instanceId) as InstanceType<T>;
 
     if (bloc.isDisposed) {
       reject(new WaitUntilDisposedError(BlocClass.name));
       return;
     }
 
-    const selected = selector(bloc);
-    if (predicate(selected)) {
-      resolve(selected);
+    const tracker: UnifiedTrackerState = createUnifiedTrackerState();
+    const proxiedBloc = createTrackingProxy(bloc, tracker);
+    const externalDepsManager = new DependencySubscriptionManager();
+
+    const runSelector = (): { value: TSelected; matches: boolean } => {
+      startUnifiedTracking(tracker);
+      try {
+        const value = selector(proxiedBloc);
+        const matches = predicate(value);
+        return { value, matches };
+      } finally {
+        const deps = stopUnifiedTracking(tracker, bloc);
+        for (const dep of tracker.getterTracker.externalDependencies) {
+          deps.add(dep);
+        }
+        deps.delete(bloc);
+        externalDepsManager.sync(deps, checkCondition, bloc);
+      }
+    };
+
+    const initial = runSelector();
+    if (initial.matches) {
+      resolve(initial.value);
       return;
     }
 
@@ -180,24 +254,27 @@ function waitUntilSelector<T extends StateContainerConstructor, TSelected>(
     const cleanup = () => {
       unsubscribe?.();
       unsubscribeDispose?.();
+      externalDepsManager.cleanup();
       if (timeoutId) clearTimeout(timeoutId);
       if (abortHandler && signal) {
         signal.removeEventListener('abort', abortHandler);
       }
     };
 
-    unsubscribe = bloc.subscribe(() => {
+    function checkCondition() {
       try {
-        const value = selector(bloc);
-        if (predicate(value)) {
+        const result = runSelector();
+        if (result.matches) {
           cleanup();
-          resolve(value);
+          resolve(result.value);
         }
       } catch (error) {
         cleanup();
         reject(error);
       }
-    });
+    }
+
+    unsubscribe = bloc.subscribe(checkCondition);
 
     unsubscribeDispose = getRegistry().on('disposed', (instance) => {
       if (instance === bloc) {

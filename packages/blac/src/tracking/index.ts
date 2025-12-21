@@ -8,27 +8,22 @@
  * ## Usage
  *
  * ```typescript
- * import {
- *   createTrackerState,
- *   startTracking,
- *   createProxy,
- *   captureTrackedPaths,
- *   hasChanges
- * } from '@blac/core';
+ * import { tracked, watch, waitUntil } from '@blac/core';
  *
- * // Create tracker state
- * const tracker = createTrackerState<MyState>();
+ * // Watch a bloc with automatic dependency tracking
+ * const unwatch = watch(UserBloc, (userBloc) => {
+ *   console.log(userBloc.state.name);
+ *   console.log(userBloc.fullName); // getter also tracked
+ * });
  *
- * // During render:
- * startTracking(tracker);
- * const proxy = createProxy(tracker, state);
- * // ... render with proxy ...
- * captureTrackedPaths(tracker, state);
+ * // Wait for a condition with automatic tracking
+ * const bloc = await waitUntil(UserBloc, (bloc) => bloc.isReady);
  *
- * // On state change:
- * if (hasChanges(tracker, newState)) {
- *   // Trigger re-render
- * }
+ * // Standalone tracked execution
+ * const { result, dependencies } = tracked(() => {
+ *   const user = ensure(UserBloc);
+ *   return user.fullName;
+ * });
  * ```
  */
 
@@ -76,3 +71,25 @@ export {
   clearExternalDependencies,
   getGetterExecutionContext,
 } from './getter-tracker';
+
+// Unified tracking
+export {
+  type UnifiedTrackerState,
+  createUnifiedTrackerState,
+  startUnifiedTracking,
+  stopUnifiedTracking,
+  createTrackingProxy,
+  hasUnifiedChanges,
+} from './create-tracking-proxy';
+
+// Tracked execution primitive
+export {
+  tracked,
+  createTrackedContext,
+  TrackedContext,
+  type TrackedResult,
+  type TrackedOptions,
+} from './tracked';
+
+// Dependency subscription management
+export { DependencySubscriptionManager } from './dependency-subscription-manager';

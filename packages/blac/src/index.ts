@@ -100,6 +100,15 @@ export {
 export { watch, instance, type WatchFn, type BlocRef } from './watch';
 
 export {
+  tracked,
+  createTrackedContext,
+  TrackedContext,
+  DependencySubscriptionManager,
+  type TrackedResult,
+  type TrackedOptions,
+} from './tracking';
+
+export {
   acquire,
   borrow,
   borrowSafe,

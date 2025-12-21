@@ -1,5 +1,5 @@
 import type { StateContainer } from '../core/StateContainer';
-import type { STATELESS_MARKER } from '../core/StatelessCubit';
+import type { STATELESS_MARKER } from '../core/markers';
 
 /**
  * Empty state type used by stateless containers.

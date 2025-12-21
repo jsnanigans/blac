@@ -1,4 +1,7 @@
 import { Cubit } from './Cubit';
+import { STATELESS_MARKER } from './markers';
+
+export { STATELESS_MARKER };
 
 /**
  * Empty state type used internally by stateless containers.
@@ -6,12 +9,6 @@ import { Cubit } from './Cubit';
  * @internal
  */
 type EmptyState = Record<never, never>;
-
-/**
- * Marker symbol to identify stateless containers at the type level.
- * Used by React hooks to prevent `useBloc` from accepting stateless containers.
- */
-export const STATELESS_MARKER = Symbol('STATELESS_CONTAINER');
 
 /**
  * A Cubit without state management capabilities.

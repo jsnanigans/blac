@@ -73,27 +73,18 @@ export type SubscribeFunction = (callback: SubscriptionCallback) => () => void;
  */
 export type SnapshotFunction<TState> = () => TState;
 
+import { DependencySubscriptionManager } from '../tracking/dependency-subscription-manager';
+
 /**
  * Manages subscriptions to external bloc dependencies for getter tracking.
  * When a getter accesses another bloc's state, this manager ensures
  * re-renders occur when those external dependencies change.
+ *
+ * @deprecated Use DependencySubscriptionManager from tracking module instead.
+ * This class is kept for backward compatibility.
  */
 export class ExternalDependencyManager {
-  private subscriptions: (() => void)[] = [];
-  private previousDeps = new Set<StateContainerInstance>();
-
-  private areDependenciesEqual(
-    oldDeps: Set<StateContainerInstance>,
-    newDeps: Set<StateContainerInstance>,
-  ): boolean {
-    if (oldDeps.size !== newDeps.size) return false;
-
-    for (const dep of newDeps) {
-      if (!oldDeps.has(dep)) return false;
-    }
-
-    return true;
-  }
+  private manager = new DependencySubscriptionManager();
 
   /**
    * Update subscriptions to external bloc dependencies.
@@ -114,42 +105,30 @@ export class ExternalDependencyManager {
 
     const currentDeps = getterTracker.externalDependencies;
 
-    if (this.areDependenciesEqual(this.previousDeps, currentDeps)) {
-      clearExternalDependencies(getterTracker);
-      return false;
-    }
+    const onExternalChange = () => {
+      invalidateRenderCache(getterTracker);
 
-    this.cleanup();
+      if (hasGetterChanges(rawInstance, getterTracker)) {
+        onGetterChange();
+      }
+    };
 
-    for (const externalBloc of currentDeps) {
-      if (externalBloc === rawInstance) continue;
-
-      const unsub = externalBloc.subscribe(() => {
-        invalidateRenderCache(getterTracker);
-
-        if (hasGetterChanges(rawInstance, getterTracker)) {
-          onGetterChange();
-        }
-      });
-
-      this.subscriptions.push(unsub);
-    }
-
-    this.previousDeps = new Set(currentDeps);
+    const changed = this.manager.sync(currentDeps, onExternalChange, rawInstance);
 
     clearExternalDependencies(getterTracker);
 
-    return true;
+    return changed;
   }
 
   /**
    * Clean up all active subscriptions
    */
   cleanup(): void {
-    this.subscriptions.forEach((unsub) => unsub());
-    this.subscriptions = [];
+    this.manager.cleanup();
   }
 }
+
+export { DependencySubscriptionManager };
 
 /**
  * Create a subscribe function for auto-tracking mode.

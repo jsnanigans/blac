@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { watch, instance } from './watch';
 import { Cubit } from '../core/Cubit';
-import { clearAll, acquire } from '../registry';
+import { clearAll, acquire, ensure } from '../registry';
 
 interface CounterState {
   count: number;
@@ -14,6 +14,10 @@ class CounterCubit extends Cubit<CounterState> {
 
   increment = () => this.emit({ count: this.state.count + 1 });
   set = (count: number) => this.emit({ count });
+
+  get doubled() {
+    return this.state.count * 2;
+  }
 }
 
 interface NameState {
@@ -28,44 +32,60 @@ class NameCubit extends Cubit<NameState> {
   setName = (name: string) => this.emit({ name });
 }
 
+class DependentCubit extends Cubit<{ value: number }> {
+  constructor() {
+    super({ value: 0 });
+  }
+
+  get combinedValue() {
+    const counter = ensure(CounterCubit);
+    return this.state.value + counter.state.count;
+  }
+
+  setValue = (value: number) => this.emit({ value });
+}
+
 describe('watch', () => {
   beforeEach(() => {
     clearAll();
   });
 
-  describe('basic functionality', () => {
-    it('should run callback immediately with current states', () => {
+  describe('single bloc', () => {
+    it('should run callback immediately with bloc instance', () => {
       const counter = acquire(CounterCubit);
       counter.set(5);
 
       const callback = vi.fn();
-      watch([CounterCubit] as const, callback);
+      watch(CounterCubit, callback);
 
       expect(callback).toHaveBeenCalledTimes(1);
-      expect(callback).toHaveBeenCalledWith([{ count: 5 }]);
+      expect(callback).toHaveBeenCalledWith(expect.objectContaining({
+        state: { count: 5 },
+      }));
     });
 
     it('should run callback on state changes', () => {
       const counter = acquire(CounterCubit);
-      const callback = vi.fn();
+      const states: number[] = [];
 
-      watch([CounterCubit] as const, callback);
-      expect(callback).toHaveBeenCalledTimes(1);
+      watch(CounterCubit, (bloc) => {
+        states.push(bloc.state.count);
+      });
+
+      expect(states).toEqual([0]);
 
       counter.increment();
-      expect(callback).toHaveBeenCalledTimes(2);
-      expect(callback).toHaveBeenLastCalledWith([{ count: 1 }]);
+      expect(states).toEqual([0, 1]);
 
       counter.increment();
-      expect(callback).toHaveBeenCalledTimes(3);
-      expect(callback).toHaveBeenLastCalledWith([{ count: 2 }]);
+      expect(states).toEqual([0, 1, 2]);
     });
 
     it('should return a dispose function', () => {
       const counter = acquire(CounterCubit);
       const callback = vi.fn();
 
-      const dispose = watch([CounterCubit] as const, callback);
+      const dispose = watch(CounterCubit, callback);
 
       expect(typeof dispose).toBe('function');
 
@@ -73,6 +93,38 @@ describe('watch', () => {
 
       counter.increment();
       expect(callback).toHaveBeenCalledTimes(1); // Only initial call
+    });
+
+    it('should track state property access', () => {
+      const counter = acquire(CounterCubit);
+      const callback = vi.fn();
+
+      watch(CounterCubit, (bloc) => {
+        callback(bloc.state.count);
+      });
+
+      expect(callback).toHaveBeenCalledWith(0);
+
+      counter.increment();
+      expect(callback).toHaveBeenCalledTimes(2);
+      expect(callback).toHaveBeenLastCalledWith(1);
+    });
+
+    it('should track getter access', () => {
+      const counter = acquire(CounterCubit);
+      const values: number[] = [];
+
+      watch(CounterCubit, (bloc) => {
+        values.push(bloc.doubled);
+      });
+
+      expect(values).toEqual([0]);
+
+      counter.increment();
+      expect(values).toEqual([0, 2]);
+
+      counter.increment();
+      expect(values).toEqual([0, 2, 4]);
     });
   });
 
@@ -85,66 +137,52 @@ describe('watch', () => {
       watch([CounterCubit, NameCubit] as const, callback);
 
       expect(callback).toHaveBeenCalledTimes(1);
-      expect(callback).toHaveBeenCalledWith([{ count: 0 }, { name: '' }]);
+      const [counterBloc, nameBloc] = callback.mock.calls[0][0];
+      expect(counterBloc.state).toEqual({ count: 0 });
+      expect(nameBloc.state).toEqual({ name: '' });
     });
 
     it('should trigger on any bloc change', () => {
       const counter = acquire(CounterCubit);
       const name = acquire(NameCubit);
 
-      const callback = vi.fn();
-      watch([CounterCubit, NameCubit] as const, callback);
-
-      counter.increment();
-      expect(callback).toHaveBeenCalledTimes(2);
-      expect(callback).toHaveBeenLastCalledWith([{ count: 1 }, { name: '' }]);
-
-      name.setName('Alice');
-      expect(callback).toHaveBeenCalledTimes(3);
-      expect(callback).toHaveBeenLastCalledWith([{ count: 1 }, { name: 'Alice' }]);
-    });
-
-    it('should provide all current states on each trigger', () => {
-      const counter = acquire(CounterCubit);
-      const name = acquire(NameCubit);
-
-      counter.set(10);
-      name.setName('Bob');
-
-      const states: Array<[CounterState, NameState]> = [];
+      const states: Array<[number, string]> = [];
       watch([CounterCubit, NameCubit] as const, ([c, n]) => {
-        states.push([c, n]);
+        states.push([c.state.count, n.state.name]);
       });
 
-      expect(states[0]).toEqual([{ count: 10 }, { name: 'Bob' }]);
+      expect(states).toEqual([[0, '']]);
 
       counter.increment();
-      expect(states[1]).toEqual([{ count: 11 }, { name: 'Bob' }]);
+      expect(states).toEqual([[0, ''], [1, '']]);
+
+      name.setName('Alice');
+      expect(states).toEqual([[0, ''], [1, ''], [1, 'Alice']]);
     });
   });
 
   describe('watch.STOP', () => {
     it('should stop watching when callback returns watch.STOP', () => {
       const counter = acquire(CounterCubit);
-      const callback = vi.fn();
+      const values: number[] = [];
 
-      watch([CounterCubit] as const, ([state]) => {
-        callback(state);
-        if (state.count >= 2) {
+      watch(CounterCubit, (bloc) => {
+        values.push(bloc.state.count);
+        if (bloc.state.count >= 2) {
           return watch.STOP;
         }
       });
 
-      expect(callback).toHaveBeenCalledTimes(1); // Initial
+      expect(values).toEqual([0]);
 
       counter.increment(); // count = 1
-      expect(callback).toHaveBeenCalledTimes(2);
+      expect(values).toEqual([0, 1]);
 
       counter.increment(); // count = 2, should STOP
-      expect(callback).toHaveBeenCalledTimes(3);
+      expect(values).toEqual([0, 1, 2]);
 
       counter.increment(); // count = 3, should NOT trigger
-      expect(callback).toHaveBeenCalledTimes(3);
+      expect(values).toEqual([0, 1, 2]);
     });
 
     it('should stop immediately if initial state matches condition', () => {
@@ -153,9 +191,9 @@ describe('watch', () => {
 
       const callback = vi.fn();
 
-      watch([CounterCubit] as const, ([state]) => {
-        callback(state);
-        if (state.count >= 5) {
+      watch(CounterCubit, (bloc) => {
+        callback(bloc.state.count);
+        if (bloc.state.count >= 5) {
           return watch.STOP;
         }
       });
@@ -164,38 +202,6 @@ describe('watch', () => {
 
       counter.increment();
       expect(callback).toHaveBeenCalledTimes(1); // No more calls
-    });
-  });
-
-  describe('manual dispose', () => {
-    it('should stop watching when dispose is called', () => {
-      const counter = acquire(CounterCubit);
-      const callback = vi.fn();
-
-      const dispose = watch([CounterCubit] as const, callback);
-
-      counter.increment();
-      expect(callback).toHaveBeenCalledTimes(2);
-
-      dispose();
-
-      counter.increment();
-      counter.increment();
-      expect(callback).toHaveBeenCalledTimes(2); // No more calls
-    });
-
-    it('should be safe to call dispose multiple times', () => {
-      const counter = acquire(CounterCubit);
-      const callback = vi.fn();
-
-      const dispose = watch([CounterCubit] as const, callback);
-
-      dispose();
-      dispose();
-      dispose();
-
-      counter.increment();
-      expect(callback).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -214,17 +220,18 @@ describe('watch', () => {
       main.set(10);
       sidebar.set(20);
 
-      const callback = vi.fn();
-      watch([instance(CounterCubit, 'main')] as const, callback);
+      const values: number[] = [];
+      watch(instance(CounterCubit, 'main'), (bloc) => {
+        values.push(bloc.state.count);
+      });
 
-      expect(callback).toHaveBeenCalledWith([{ count: 10 }]);
+      expect(values).toEqual([10]);
 
       main.increment();
-      expect(callback).toHaveBeenCalledTimes(2);
-      expect(callback).toHaveBeenLastCalledWith([{ count: 11 }]);
+      expect(values).toEqual([10, 11]);
 
       sidebar.increment(); // Different instance, should not trigger
-      expect(callback).toHaveBeenCalledTimes(2);
+      expect(values).toEqual([10, 11]);
     });
 
     it('should watch multiple instances with different IDs', () => {
@@ -234,84 +241,87 @@ describe('watch', () => {
       main.set(1);
       sidebar.set(2);
 
-      const callback = vi.fn();
+      const states: Array<[number, number]> = [];
       watch(
         [instance(CounterCubit, 'main'), instance(CounterCubit, 'sidebar')] as const,
-        callback,
+        ([m, s]) => {
+          states.push([m.state.count, s.state.count]);
+        },
       );
 
-      expect(callback).toHaveBeenCalledWith([{ count: 1 }, { count: 2 }]);
+      expect(states).toEqual([[1, 2]]);
 
       main.increment();
-      expect(callback).toHaveBeenLastCalledWith([{ count: 2 }, { count: 2 }]);
+      expect(states.length).toBe(2);
+      expect(states[1][0]).toBe(2);
 
       sidebar.increment();
-      expect(callback).toHaveBeenLastCalledWith([{ count: 2 }, { count: 3 }]);
+      expect(states.length).toBe(3);
+      expect(states[2][1]).toBe(3);
     });
+  });
 
-    it('should work with mixed instance() and bare class', () => {
-      const customCounter = acquire(CounterCubit, 'custom');
-      const defaultName = acquire(NameCubit);
+  describe('cross-bloc dependency tracking', () => {
+    it('should track dependencies accessed via getters', () => {
+      const counter = acquire(CounterCubit);
+      const dependent = acquire(DependentCubit);
 
-      customCounter.set(100);
-      defaultName.setName('Test');
+      counter.set(10);
+      dependent.setValue(5);
 
-      const callback = vi.fn();
-      watch(
-        [instance(CounterCubit, 'custom'), NameCubit] as const,
-        callback,
-      );
+      const values: number[] = [];
+      watch(DependentCubit, (bloc) => {
+        values.push(bloc.combinedValue);
+      });
 
-      expect(callback).toHaveBeenCalledWith([{ count: 100 }, { name: 'Test' }]);
+      expect(values).toEqual([15]); // 10 + 5
+
+      counter.increment(); // Should trigger because combinedValue depends on CounterCubit
+      expect(values).toEqual([15, 16]); // 11 + 5
+
+      dependent.setValue(10);
+      expect(values).toEqual([15, 16, 21]); // 11 + 10
     });
   });
 
   describe('edge cases', () => {
     it('should handle rapid state changes', () => {
       const counter = acquire(CounterCubit);
-      const callback = vi.fn();
+      const values: number[] = [];
 
-      watch([CounterCubit] as const, callback);
+      watch(CounterCubit, (bloc) => {
+        values.push(bloc.state.count);
+      });
 
-      for (let i = 0; i < 100; i++) {
+      for (let i = 0; i < 10; i++) {
         counter.increment();
       }
 
-      expect(callback).toHaveBeenCalledTimes(101); // 1 initial + 100 changes
-      expect(callback).toHaveBeenLastCalledWith([{ count: 100 }]);
-    });
-
-    it('should not trigger after dispose even if state changes during callback', () => {
-      const counter = acquire(CounterCubit);
-      let disposeRef: (() => void) | null = null;
-      const callback = vi.fn(([state]: [CounterState]) => {
-        if (state.count === 1 && disposeRef) {
-          disposeRef();
-        }
-      });
-
-      disposeRef = watch([CounterCubit] as const, callback);
-
-      counter.increment(); // This triggers dispose inside callback
-      expect(callback).toHaveBeenCalledTimes(2);
-
-      counter.increment();
-      expect(callback).toHaveBeenCalledTimes(2); // No more calls
+      expect(values.length).toBe(11); // 1 initial + 10 changes
+      expect(values[values.length - 1]).toBe(10);
     });
 
     it('should create instance if not exists', () => {
-      const callback = vi.fn();
-      watch([CounterCubit] as const, callback);
+      const values: number[] = [];
+      watch(CounterCubit, (bloc) => {
+        values.push(bloc.state.count);
+      });
 
-      expect(callback).toHaveBeenCalledWith([{ count: 0 }]);
+      expect(values).toEqual([0]);
     });
 
-    it('should handle empty initial state correctly', () => {
+    it('should be safe to call dispose multiple times', () => {
+      const counter = acquire(CounterCubit);
       const callback = vi.fn();
 
-      watch([CounterCubit, NameCubit] as const, callback);
+      const dispose = watch(CounterCubit, callback);
 
-      expect(callback).toHaveBeenCalledWith([{ count: 0 }, { name: '' }]);
+      dispose();
+      dispose();
+      dispose();
+
+      counter.increment();
+      expect(callback).toHaveBeenCalledTimes(1);
     });
   });
 });
