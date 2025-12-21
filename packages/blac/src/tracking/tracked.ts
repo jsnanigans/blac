@@ -1,13 +1,13 @@
 import type { StateContainerInstance } from '../types/utilities';
 import {
-  createUnifiedTrackerState,
-  startUnifiedTracking,
-  stopUnifiedTracking,
+  createState,
+  startTracking,
+  stopTracking,
   createTrackingProxy,
-  hasUnifiedChanges,
-  type UnifiedTrackerState,
-} from './create-tracking-proxy';
-import { DependencySubscriptionManager } from './dependency-subscription-manager';
+  hasChanges,
+  type TrackingProxyState,
+} from './tracking-proxy';
+import { DependencyManager } from './dependency-manager';
 
 /**
  * Result of running a tracked callback.
@@ -41,18 +41,18 @@ export function tracked<T>(
   callback: () => T,
   options?: TrackedOptions,
 ): TrackedResult<T> {
-  const tracker = createUnifiedTrackerState();
-  startUnifiedTracking(tracker);
+  const tracker = createState();
+  startTracking(tracker);
 
   let result: T;
   try {
     result = callback();
   } finally {
-    stopUnifiedTracking(tracker, { state: null } as any);
+    stopTracking(tracker, { state: null } as any);
   }
 
   const dependencies = new Set(tracker.dependencies);
-  for (const dep of tracker.getterTracker.externalDependencies) {
+  for (const dep of tracker.getterState.externalDependencies) {
     dependencies.add(dep);
   }
 
@@ -68,12 +68,12 @@ export function tracked<T>(
  * Provides methods to create proxies and check for changes.
  */
 export class TrackedContext {
-  private tracker: UnifiedTrackerState;
+  private tracker: TrackingProxyState;
   private proxiedBlocs = new WeakMap<StateContainerInstance, StateContainerInstance>();
   private primaryBlocs = new Set<StateContainerInstance>();
 
   constructor() {
-    this.tracker = createUnifiedTrackerState();
+    this.tracker = createState();
   }
 
   /**
@@ -95,19 +95,19 @@ export class TrackedContext {
   /**
    * Start tracking for a new callback execution.
    */
-  startTracking(): void {
-    startUnifiedTracking(this.tracker);
+  start(): void {
+    startTracking(this.tracker);
   }
 
   /**
    * Stop tracking and get discovered dependencies.
    * Excludes primary blocs (those explicitly proxied via proxy()).
    */
-  stopTracking(): Set<StateContainerInstance> {
+  stop(): Set<StateContainerInstance> {
     const allDeps = new Set<StateContainerInstance>();
 
     for (const bloc of this.primaryBlocs) {
-      const deps = stopUnifiedTracking(this.tracker, bloc);
+      const deps = stopTracking(this.tracker, bloc);
       for (const dep of deps) {
         if (!this.primaryBlocs.has(dep)) {
           allDeps.add(dep);
@@ -115,7 +115,7 @@ export class TrackedContext {
       }
     }
 
-    for (const dep of this.tracker.getterTracker.externalDependencies) {
+    for (const dep of this.tracker.getterState.externalDependencies) {
       if (!this.primaryBlocs.has(dep)) {
         allDeps.add(dep);
       }
@@ -127,9 +127,9 @@ export class TrackedContext {
   /**
    * Check if any tracked state or getters have changed.
    */
-  hasChanges(): boolean {
+  changed(): boolean {
     for (const bloc of this.primaryBlocs) {
-      if (hasUnifiedChanges(this.tracker, bloc)) {
+      if (hasChanges(this.tracker, bloc)) {
         return true;
       }
     }
@@ -147,7 +147,7 @@ export class TrackedContext {
    * Reset the context for reuse.
    */
   reset(): void {
-    this.tracker = createUnifiedTrackerState();
+    this.tracker = createState();
     this.proxiedBlocs = new WeakMap();
     this.primaryBlocs.clear();
   }
@@ -160,4 +160,4 @@ export function createTrackedContext(): TrackedContext {
   return new TrackedContext();
 }
 
-export { DependencySubscriptionManager };
+export { DependencyManager };

@@ -1,15 +1,15 @@
 import type { StateContainerInstance } from '../types/utilities';
-import type { TrackerState } from './dependency-tracker';
-import type { GetterTrackerState } from './getter-tracker';
+import type { DependencyState } from './dependency-tracker';
+import type { GetterState } from './getter-tracker';
 import {
-  createTrackerState,
-  startTracking,
-  createProxy,
-  captureTrackedPaths,
-  hasChanges,
+  createDependencyState,
+  startDependency,
+  createDependencyProxy,
+  capturePaths,
+  hasDependencyChanges,
 } from './dependency-tracker';
 import {
-  createGetterTracker,
+  createGetterState,
   isGetter,
   getDescriptor,
   hasGetterChanges,
@@ -22,55 +22,55 @@ import { BLAC_DEFAULTS, BLAC_ERROR_PREFIX } from '../constants';
 /**
  * State for tracking both state property access and getter access.
  */
-export interface UnifiedTrackerState {
-  stateTracker: TrackerState<any>;
-  getterTracker: GetterTrackerState;
+export interface TrackingProxyState {
+  dependencyState: DependencyState<any>;
+  getterState: GetterState;
   dependencies: Set<StateContainerInstance>;
   isTracking: boolean;
 }
 
 /**
- * Create a new unified tracker state.
+ * Create a new tracking proxy state.
  */
-export function createUnifiedTrackerState(): UnifiedTrackerState {
+export function createState(): TrackingProxyState {
   return {
-    stateTracker: createTrackerState(),
-    getterTracker: createGetterTracker(),
+    dependencyState: createDependencyState(),
+    getterState: createGetterState(),
     dependencies: new Set(),
     isTracking: false,
   };
 }
 
 /**
- * Start tracking on a unified tracker.
+ * Start tracking on a tracking proxy.
  */
-export function startUnifiedTracking(tracker: UnifiedTrackerState): void {
+export function startTracking(tracker: TrackingProxyState): void {
   tracker.isTracking = true;
   tracker.dependencies.clear();
-  tracker.getterTracker.isTracking = true;
-  tracker.getterTracker.externalDependencies.clear();
-  startTracking(tracker.stateTracker);
+  tracker.getterState.isTracking = true;
+  tracker.getterState.externalDependencies.clear();
+  startDependency(tracker.dependencyState);
 }
 
 /**
  * Stop tracking and collect all dependencies.
  */
-export function stopUnifiedTracking(
-  tracker: UnifiedTrackerState,
+export function stopTracking(
+  tracker: TrackingProxyState,
   bloc: StateContainerInstance,
 ): Set<StateContainerInstance> {
   tracker.isTracking = false;
-  tracker.getterTracker.isTracking = false;
+  tracker.getterState.isTracking = false;
 
-  captureTrackedPaths(tracker.stateTracker, bloc.state);
-  commitTrackedGetters(tracker.getterTracker);
+  capturePaths(tracker.dependencyState, bloc.state);
+  commitTrackedGetters(tracker.getterState);
 
   const allDeps = new Set(tracker.dependencies);
-  for (const dep of tracker.getterTracker.externalDependencies) {
+  for (const dep of tracker.getterState.externalDependencies) {
     allDeps.add(dep);
   }
 
-  tracker.getterTracker.externalDependencies.clear();
+  tracker.getterState.externalDependencies.clear();
 
   return allDeps;
 }
@@ -78,14 +78,14 @@ export function stopUnifiedTracking(
 /**
  * Check if tracked state or getters have changed.
  */
-export function hasUnifiedChanges(
-  tracker: UnifiedTrackerState,
+export function hasChanges(
+  tracker: TrackingProxyState,
   bloc: StateContainerInstance,
 ): boolean {
-  invalidateRenderCache(tracker.getterTracker);
+  invalidateRenderCache(tracker.getterState);
 
-  const stateChanged = hasChanges(tracker.stateTracker, bloc.state);
-  const getterChanged = hasGetterChanges(bloc, tracker.getterTracker);
+  const stateChanged = hasDependencyChanges(tracker.dependencyState, bloc.state);
+  const getterChanged = hasGetterChanges(bloc, tracker.getterState);
 
   return stateChanged || getterChanged;
 }
@@ -98,7 +98,7 @@ const MAX_GETTER_DEPTH = BLAC_DEFAULTS.MAX_GETTER_DEPTH;
  */
 export function createTrackingProxy<T extends StateContainerInstance>(
   bloc: T,
-  tracker: UnifiedTrackerState,
+  tracker: TrackingProxyState,
 ): T {
   tracker.dependencies.add(bloc);
 
@@ -120,7 +120,7 @@ export function createTrackingProxy<T extends StateContainerInstance>(
           return stateProxyCache.get(rawState);
         }
 
-        const stateProxy = createProxy(tracker.stateTracker, rawState);
+        const stateProxy = createDependencyProxy(tracker.dependencyState, rawState);
         stateProxyCache.set(rawState, stateProxy);
         return stateProxy;
       }
@@ -136,11 +136,11 @@ export function createTrackingProxy<T extends StateContainerInstance>(
       }
 
       if (tracker.isTracking && isGetter(target, prop)) {
-        tracker.getterTracker.currentlyAccessing.add(prop);
+        tracker.getterState.currentlyAccessing.add(prop);
 
-        if (tracker.getterTracker.cacheValid && tracker.getterTracker.renderCache.has(prop)) {
-          const cachedValue = tracker.getterTracker.renderCache.get(prop);
-          tracker.getterTracker.trackedValues.set(prop, cachedValue);
+        if (tracker.getterState.cacheValid && tracker.getterState.renderCache.has(prop)) {
+          const cachedValue = tracker.getterState.renderCache.get(prop);
+          tracker.getterState.trackedValues.set(prop, cachedValue);
           return cachedValue;
         }
 
@@ -167,7 +167,7 @@ export function createTrackingProxy<T extends StateContainerInstance>(
           visitedBlocs: new Set(context.visitedBlocs),
         };
 
-        context.tracker = tracker.getterTracker;
+        context.tracker = tracker.getterState;
         context.currentBloc = target;
         context.depth++;
         context.visitedBlocs.add(target);
@@ -175,10 +175,10 @@ export function createTrackingProxy<T extends StateContainerInstance>(
         try {
           const descriptor = getDescriptor(target, prop);
           const getterValue = descriptor!.get!.call(target);
-          tracker.getterTracker.trackedValues.set(prop, getterValue);
+          tracker.getterState.trackedValues.set(prop, getterValue);
           return getterValue;
         } catch (error) {
-          tracker.getterTracker.currentlyAccessing.delete(prop);
+          tracker.getterState.currentlyAccessing.delete(prop);
           throw error;
         } finally {
           context.tracker = prevContext.tracker;

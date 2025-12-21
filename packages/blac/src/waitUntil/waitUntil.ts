@@ -10,13 +10,13 @@ import {
   WaitUntilDisposedError,
 } from './errors';
 import {
-  createUnifiedTrackerState,
-  startUnifiedTracking,
-  stopUnifiedTracking,
+  createState,
+  startTracking,
+  stopTracking,
   createTrackingProxy,
-  type UnifiedTrackerState,
-} from '../tracking/create-tracking-proxy';
-import { DependencySubscriptionManager } from '../tracking/dependency-subscription-manager';
+  type TrackingProxyState,
+} from '../tracking/tracking-proxy';
+import { DependencyManager } from '../tracking/dependency-manager';
 
 export interface WaitUntilOptions {
   instanceId?: string;
@@ -119,16 +119,16 @@ function waitUntilSimple<T extends StateContainerConstructor>(
       return;
     }
 
-    const tracker: UnifiedTrackerState = createUnifiedTrackerState();
+    const tracker: TrackingProxyState = createState();
     const proxiedBloc = createTrackingProxy(bloc, tracker);
-    const externalDepsManager = new DependencySubscriptionManager();
+    const externalDepsManager = new DependencyManager();
 
     const runPredicate = (): boolean => {
-      startUnifiedTracking(tracker);
+      startTracking(tracker);
       try {
         return predicate(proxiedBloc);
       } finally {
-        const deps = stopUnifiedTracking(tracker, bloc);
+        const deps = stopTracking(tracker, bloc);
         for (const dep of tracker.getterTracker.externalDependencies) {
           deps.add(dep);
         }
@@ -220,18 +220,18 @@ function waitUntilSelector<T extends StateContainerConstructor, TSelected>(
       return;
     }
 
-    const tracker: UnifiedTrackerState = createUnifiedTrackerState();
+    const tracker: TrackingProxyState = createState();
     const proxiedBloc = createTrackingProxy(bloc, tracker);
-    const externalDepsManager = new DependencySubscriptionManager();
+    const externalDepsManager = new DependencyManager();
 
     const runSelector = (): { value: TSelected; matches: boolean } => {
-      startUnifiedTracking(tracker);
+      startTracking(tracker);
       try {
         const value = selector(proxiedBloc);
         const matches = predicate(value);
         return { value, matches };
       } finally {
-        const deps = stopUnifiedTracking(tracker, bloc);
+        const deps = stopTracking(tracker, bloc);
         for (const dep of tracker.getterTracker.externalDependencies) {
           deps.add(dep);
         }

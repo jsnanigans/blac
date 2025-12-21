@@ -1,9 +1,9 @@
 import {
-  type ProxyTrackerState,
-  createProxyTrackerState,
-  startProxyTracking,
-  stopProxyTracking,
-  createProxyForTarget,
+  type ProxyState,
+  createProxyState,
+  startProxy,
+  stopProxy,
+  createForTarget,
 } from './proxy-tracker';
 import { parsePath, getValueAtPath } from './path-utils';
 
@@ -18,8 +18,8 @@ export interface PathInfo {
 /**
  * @internal
  */
-export interface TrackerState<T> {
-  proxyTrackerState: ProxyTrackerState<T>;
+export interface DependencyState<T> {
+  proxyState: ProxyState<T>;
   previousRenderPaths: Set<string>;
   currentRenderPaths: Set<string>;
   pathCache: Map<string, PathInfo>;
@@ -113,9 +113,9 @@ export function optimizeTrackedPaths(paths: Set<string>): Set<string> {
 /**
  * @internal
  */
-export function createTrackerState<T>(): TrackerState<T> {
+export function createDependencyState<T>(): DependencyState<T> {
   return {
-    proxyTrackerState: createProxyTrackerState<T>(),
+    proxyState: createProxyState<T>(),
     previousRenderPaths: new Set<string>(),
     currentRenderPaths: new Set<string>(),
     pathCache: new Map<string, PathInfo>(),
@@ -127,28 +127,28 @@ export function createTrackerState<T>(): TrackerState<T> {
 /**
  * @internal
  */
-export function startTracking<T>(tracker: TrackerState<T>): void {
-  startProxyTracking(tracker.proxyTrackerState);
+export function startDependency<T>(tracker: DependencyState<T>): void {
+  startProxy(tracker.proxyState);
 }
 
 /**
  * @internal
  */
-export function createProxy<T>(tracker: TrackerState<T>, state: T): T {
-  return createProxyForTarget(tracker.proxyTrackerState, state);
+export function createDependencyProxy<T>(tracker: DependencyState<T>, state: T): T {
+  return createForTarget(tracker.proxyState, state);
 }
 
 /**
  * @internal
  */
-export function captureTrackedPaths<T>(
-  tracker: TrackerState<T>,
+export function capturePaths<T>(
+  tracker: DependencyState<T>,
   state: T,
 ): void {
   tracker.previousRenderPaths = tracker.currentRenderPaths;
 
   // Get raw tracked paths and optimize them (remove redundant parents)
-  const rawPaths = stopProxyTracking(tracker.proxyTrackerState);
+  const rawPaths = stopProxy(tracker.proxyState);
   tracker.currentRenderPaths = optimizeTrackedPaths(rawPaths);
 
   if (
@@ -189,7 +189,7 @@ export function captureTrackedPaths<T>(
 /**
  * @internal
  */
-export function hasChanges<T>(tracker: TrackerState<T>, state: T): boolean {
+export function hasDependencyChanges<T>(tracker: DependencyState<T>, state: T): boolean {
   if (tracker.pathCache.size === 0) {
     return true;
   }
@@ -213,9 +213,9 @@ export function hasChanges<T>(tracker: TrackerState<T>, state: T): boolean {
 /**
  * @internal
  */
-export function hasTrackedData<T>(tracker: TrackerState<T>): boolean {
+export function hasTrackedData<T>(tracker: DependencyState<T>): boolean {
   return (
-    tracker.proxyTrackerState.trackedPaths.size > 0 ||
+    tracker.proxyState.trackedPaths.size > 0 ||
     tracker.pathCache.size > 0 ||
     tracker.previousRenderPaths.size > 0
   );

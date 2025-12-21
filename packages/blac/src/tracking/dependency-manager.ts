@@ -5,7 +5,7 @@ import type { StateContainerInstance } from '../types/utilities';
  * Provides efficient sync mechanism to add/remove subscriptions
  * as dependencies change between callback invocations.
  */
-export class DependencySubscriptionManager {
+export class DependencyManager {
   private subscriptions = new Map<StateContainerInstance, () => void>();
   private currentDeps = new Set<StateContainerInstance>();
 

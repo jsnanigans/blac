@@ -5,14 +5,13 @@ import type {
 } from '../types/utilities';
 import { BLAC_DEFAULTS } from '../constants';
 import {
-  createUnifiedTrackerState,
-  startUnifiedTracking,
-  stopUnifiedTracking,
+  createState,
+  startTracking,
+  stopTracking,
   createTrackingProxy,
-  hasUnifiedChanges,
-  type UnifiedTrackerState,
-} from '../tracking/create-tracking-proxy';
-import { DependencySubscriptionManager } from '../tracking/dependency-subscription-manager';
+  type TrackingProxyState,
+} from '../tracking/tracking-proxy';
+import { DependencyManager } from '../tracking/dependency-manager';
 
 const STOP: unique symbol = Symbol('watch.STOP');
 
@@ -175,12 +174,12 @@ function watchImpl(
 
   const instances = inputs.map(resolveBloc);
 
-  const tracker: UnifiedTrackerState = createUnifiedTrackerState();
+  const tracker: TrackingProxyState = createState();
   const proxiedInstances = instances.map((inst) =>
     createTrackingProxy(inst, tracker),
   );
 
-  const externalDepsManager = new DependencySubscriptionManager();
+  const externalDepsManager = new DependencyManager();
 
   let disposed = false;
   const primarySubscriptions: (() => void)[] = [];
@@ -195,7 +194,7 @@ function watchImpl(
   const runCallback = () => {
     if (disposed) return;
 
-    startUnifiedTracking(tracker);
+    startTracking(tracker);
 
     let result: void | StopSymbol;
     try {
@@ -204,13 +203,13 @@ function watchImpl(
     } finally {
       const externalDeps = new Set<StateContainerInstance>();
       for (const inst of instances) {
-        const deps = stopUnifiedTracking(tracker, inst);
+        const deps = stopTracking(tracker, inst);
         for (const dep of deps) {
           externalDeps.add(dep);
         }
       }
 
-      for (const dep of tracker.getterTracker.externalDependencies) {
+      for (const dep of tracker.getterState.externalDependencies) {
         externalDeps.add(dep);
       }
 

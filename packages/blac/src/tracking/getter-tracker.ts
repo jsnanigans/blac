@@ -4,7 +4,7 @@ import { StateContainerInstance } from '../types/utilities';
 /**
  * @internal
  */
-export interface GetterTrackerState {
+export interface GetterState {
   trackedValues: Map<string | symbol, unknown>;
   currentlyAccessing: Set<string | symbol>;
   trackedGetters: Set<string | symbol>;
@@ -24,12 +24,12 @@ const blocProxyCache = new WeakMap<StateContainerInstance>();
 
 const activeTrackerMap = new WeakMap<
   StateContainerInstance,
-  GetterTrackerState
+  GetterState
 >();
 
 // Global execution context for tracking getter execution
 interface GetterExecutionContext {
-  tracker: GetterTrackerState | null;
+  tracker: GetterState | null;
   currentBloc: StateContainerInstance | null;
   depth: number; // Track nesting depth to detect circular dependencies
   visitedBlocs: Set<StateContainerInstance>; // Track visited blocs in current call stack
@@ -100,7 +100,7 @@ export function isGetter(obj: any, prop: string | symbol): boolean {
 /**
  * @internal
  */
-export function createGetterTracker(): GetterTrackerState {
+export function createGetterState(): GetterState {
   return {
     trackedValues: new Map(),
     currentlyAccessing: new Set(),
@@ -117,7 +117,7 @@ export function createGetterTracker(): GetterTrackerState {
  */
 export function setActiveTracker<TBloc extends StateContainerInstance>(
   bloc: TBloc,
-  tracker: GetterTrackerState,
+  tracker: GetterState,
 ): void {
   activeTrackerMap.set(bloc, tracker);
 }
@@ -136,14 +136,14 @@ export function clearActiveTracker<TBloc extends StateContainerInstance>(
  */
 export function getActiveTracker<TBloc extends StateContainerInstance>(
   bloc: TBloc,
-): GetterTrackerState | undefined {
+): GetterState | undefined {
   return activeTrackerMap.get(bloc);
 }
 
 /**
  * @internal
  */
-export function commitTrackedGetters(tracker: GetterTrackerState): void {
+export function commitTrackedGetters(tracker: GetterState): void {
   if (tracker.currentlyAccessing.size > 0) {
     tracker.trackedGetters = new Set(tracker.currentlyAccessing);
   }
@@ -245,7 +245,7 @@ export function createBlocProxy<TBloc extends StateContainerInstance>(
  */
 export function hasGetterChanges<TBloc extends StateContainerInstance>(
   bloc: TBloc,
-  tracker: GetterTrackerState | null,
+  tracker: GetterState | null,
 ): boolean {
   // Early return if no tracker or no getters tracked
   if (!tracker || tracker.trackedGetters.size === 0) {
@@ -307,21 +307,21 @@ export function hasGetterChanges<TBloc extends StateContainerInstance>(
 /**
  * @internal
  */
-export function invalidateRenderCache(tracker: GetterTrackerState): void {
+export function invalidateRenderCache(tracker: GetterState): void {
   tracker.cacheValid = false;
 }
 
 /**
  * @internal
  */
-export function clearExternalDependencies(tracker: GetterTrackerState): void {
+export function clearExternalDependencies(tracker: GetterState): void {
   tracker.externalDependencies.clear();
 }
 
 /**
  * @internal
  */
-export function resetGetterTracker(tracker: GetterTrackerState): void {
+export function resetGetterState(tracker: GetterState): void {
   tracker.trackedValues.clear();
   tracker.currentlyAccessing.clear();
   tracker.trackedGetters.clear();

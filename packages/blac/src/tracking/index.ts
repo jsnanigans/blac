@@ -29,25 +29,25 @@
 
 // High-level dependency tracking
 export {
-  type TrackerState,
+  type DependencyState,
   type PathInfo,
-  createTrackerState,
-  startTracking,
-  createProxy,
-  captureTrackedPaths,
-  hasChanges,
+  createDependencyState,
+  startDependency,
+  createDependencyProxy,
+  capturePaths,
+  hasDependencyChanges,
   hasTrackedData,
 } from './dependency-tracker';
 
 // Low-level proxy tracking
 export {
-  type ProxyTrackerState,
-  createProxyTrackerState,
-  startProxyTracking,
-  stopProxyTracking,
-  createProxyInternal,
+  type ProxyState,
+  createProxyState,
+  startProxy,
+  stopProxy,
+  createInternal,
   createArrayProxy,
-  createProxyForTarget,
+  createForTarget,
   isProxyable,
 } from './proxy-tracker';
 
@@ -56,8 +56,8 @@ export { parsePath, getValueAtPath, shallowEqual } from './path-utils';
 
 // Getter tracking
 export {
-  type GetterTrackerState,
-  createGetterTracker,
+  type GetterState,
+  createGetterState,
   createBlocProxy,
   hasGetterChanges,
   isGetter,
@@ -67,20 +67,20 @@ export {
   getActiveTracker,
   commitTrackedGetters,
   invalidateRenderCache,
-  resetGetterTracker,
+  resetGetterState,
   clearExternalDependencies,
   getGetterExecutionContext,
 } from './getter-tracker';
 
-// Unified tracking
+// Tracking proxy
 export {
-  type UnifiedTrackerState,
-  createUnifiedTrackerState,
-  startUnifiedTracking,
-  stopUnifiedTracking,
+  type TrackingProxyState,
+  createState as createTrackingProxyState,
+  startTracking as startTrackingProxy,
+  stopTracking as stopTrackingProxy,
   createTrackingProxy,
-  hasUnifiedChanges,
-} from './create-tracking-proxy';
+  hasChanges as hasTrackingProxyChanges,
+} from './tracking-proxy';
 
 // Tracked execution primitive
 export {
@@ -91,5 +91,5 @@ export {
   type TrackedOptions,
 } from './tracked';
 
-// Dependency subscription management
-export { DependencySubscriptionManager } from './dependency-subscription-manager';
+// Dependency management
+export { DependencyManager } from './dependency-manager';

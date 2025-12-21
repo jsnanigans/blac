@@ -26,7 +26,7 @@ export function isProxyable(value: unknown): value is object {
  * State container for proxy tracking
  * @internal
  */
-export interface ProxyTrackerState<T> {
+export interface ProxyState<T> {
   /** Set of all tracked property paths */
   trackedPaths: Set<string>;
   /** Whether tracking is currently active */
@@ -56,7 +56,7 @@ export interface ProxyTrackerState<T> {
  *
  * @internal
  */
-export function createProxyTrackerState<T>(): ProxyTrackerState<T> {
+export function createProxyState<T>(): ProxyState<T> {
   return {
     trackedPaths: new Set<string>(),
     isTracking: false,
@@ -75,7 +75,7 @@ export function createProxyTrackerState<T>(): ProxyTrackerState<T> {
  *
  * @internal
  */
-export function startProxyTracking<T>(state: ProxyTrackerState<T>): void {
+export function startProxy<T>(state: ProxyState<T>): void {
   state.isTracking = true;
   state.trackedPaths.clear();
 }
@@ -87,7 +87,7 @@ export function startProxyTracking<T>(state: ProxyTrackerState<T>): void {
  *
  * @internal
  */
-export function stopProxyTracking<T>(state: ProxyTrackerState<T>): Set<string> {
+export function stopProxy<T>(state: ProxyState<T>): Set<string> {
   state.isTracking = false;
   return new Set(state.trackedPaths);
 }
@@ -103,7 +103,7 @@ export function stopProxyTracking<T>(state: ProxyTrackerState<T>): Set<string> {
  * @internal
  */
 export function createArrayProxy<T, U>(
-  state: ProxyTrackerState<T>,
+  state: ProxyState<T>,
   target: U[],
   path: string,
   depth: number = 0,
@@ -154,7 +154,7 @@ export function createArrayProxy<T, U>(
       }
 
       if (isProxyable(value)) {
-        return createProxyInternal(state, value as T, fullPath, depth + 1);
+        return createInternal(state, value as T, fullPath, depth + 1);
       }
 
       if (state.isTracking) {
@@ -183,8 +183,8 @@ export function createArrayProxy<T, U>(
  *
  * @internal
  */
-export function createProxyInternal<T>(
-  state: ProxyTrackerState<T>,
+export function createInternal<T>(
+  state: ProxyState<T>,
   target: T,
   path: string = '',
   depth: number = 0,
@@ -244,7 +244,7 @@ export function createProxyInternal<T>(
 
       // If the value is an object/array, create a nested proxy for deeper tracking
       if (isProxyable(value)) {
-        const proxiedValue = createProxyInternal(
+        const proxiedValue = createInternal(
           state,
           value as T,
           fullPath,
@@ -286,8 +286,8 @@ export function createProxyInternal<T>(
  *
  * @internal
  */
-export function createProxyForTarget<T>(
-  state: ProxyTrackerState<T>,
+export function createForTarget<T>(
+  state: ProxyState<T>,
   target: T,
 ): T {
   if (state.lastProxiedState === target && state.lastProxy) {
@@ -299,7 +299,7 @@ export function createProxyForTarget<T>(
   state.proxyCache = new WeakMap<object, any>();
   state.boundFunctionsCache = null;
 
-  const proxy = createProxyInternal(state, target, '', 0);
+  const proxy = createInternal(state, target, '', 0);
   state.lastProxiedState = target;
   state.lastProxy = proxy;
   return proxy;

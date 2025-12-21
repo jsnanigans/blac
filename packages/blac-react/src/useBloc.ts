@@ -9,16 +9,16 @@ import {
   type ExtractState,
   type AdapterState,
   type IsStatelessContainer,
-  ExternalDependencyManager,
-  createAutoTrackSubscribe,
-  createManualDepsSubscribe,
-  createNoTrackSubscribe,
-  createAutoTrackSnapshot,
-  createManualDepsSnapshot,
-  createNoTrackSnapshot,
-  initAutoTrackState,
-  initManualDepsState,
-  initNoTrackState,
+  ExternalDepsManager,
+  autoTrackSubscribe,
+  manualDepsSubscribe,
+  noTrackSubscribe,
+  autoTrackSnapshot,
+  manualDepsSnapshot,
+  noTrackSnapshot,
+  autoTrackInit,
+  manualDepsInit,
+  noTrackInit,
   disableGetterTracking,
   isIsolatedClass,
   isStatelessClass,
@@ -155,21 +155,21 @@ export function useBloc<
       let adapterState: AdapterState<T>;
 
       if (useManualDeps && options?.dependencies) {
-        adapterState = initManualDepsState(instance);
-        subscribeFn = createManualDepsSubscribe(instance, adapterState, {
+        adapterState = manualDepsInit(instance);
+        subscribeFn = manualDepsSubscribe(instance, adapterState, {
           dependencies: options.dependencies,
         });
-        getSnapshotFn = createManualDepsSnapshot(instance, adapterState, {
+        getSnapshotFn = manualDepsSnapshot(instance, adapterState, {
           dependencies: options.dependencies,
         });
       } else if (!autoTrackEnabled) {
-        adapterState = initNoTrackState(instance);
-        subscribeFn = createNoTrackSubscribe(instance);
-        getSnapshotFn = createNoTrackSnapshot(instance);
+        adapterState = noTrackInit(instance);
+        subscribeFn = noTrackSubscribe(instance);
+        getSnapshotFn = noTrackSnapshot(instance);
       } else {
-        adapterState = initAutoTrackState(instance);
-        subscribeFn = createAutoTrackSubscribe(instance, adapterState);
-        getSnapshotFn = createAutoTrackSnapshot(instance, adapterState);
+        adapterState = autoTrackInit(instance);
+        subscribeFn = autoTrackSubscribe(instance, adapterState);
+        getSnapshotFn = autoTrackSnapshot(instance, adapterState);
       }
 
       return [
@@ -186,7 +186,7 @@ export function useBloc<
 
   const [, forceUpdate] = useReducer((x: number) => x + 1, 0);
 
-  const externalDepsManager = useRef(new ExternalDependencyManager());
+  const externalDepsManager = useRef(new ExternalDepsManager());
 
   useEffect(() => {
     if (options?.props !== initialPropsRef.current) {
@@ -197,7 +197,7 @@ export function useBloc<
   useEffect(() => {
     disableGetterTracking(adapterState, rawInstance);
     externalDepsManager.current.updateSubscriptions(
-      adapterState.getterTracker,
+      adapterState.getterState,
       rawInstance,
       forceUpdate,
     );
