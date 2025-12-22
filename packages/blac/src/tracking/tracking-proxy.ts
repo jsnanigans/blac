@@ -15,8 +15,8 @@ import {
   hasGetterChanges,
   invalidateRenderCache,
   commitTrackedGetters,
+  getGetterExecutionContext,
 } from './getter-tracker';
-import { getGetterExecutionContext } from './getter-tracker';
 import { BLAC_DEFAULTS, BLAC_ERROR_PREFIX } from '../constants';
 
 /**
@@ -84,7 +84,10 @@ export function hasChanges(
 ): boolean {
   invalidateRenderCache(tracker.getterState);
 
-  const stateChanged = hasDependencyChanges(tracker.dependencyState, bloc.state);
+  const stateChanged = hasDependencyChanges(
+    tracker.dependencyState,
+    bloc.state,
+  );
   const getterChanged = hasGetterChanges(bloc, tracker.getterState);
 
   return stateChanged || getterChanged;
@@ -120,7 +123,10 @@ export function createTrackingProxy<T extends StateContainerInstance>(
           return stateProxyCache.get(rawState);
         }
 
-        const stateProxy = createDependencyProxy(tracker.dependencyState, rawState);
+        const stateProxy = createDependencyProxy(
+          tracker.dependencyState,
+          rawState,
+        );
         stateProxyCache.set(rawState, stateProxy);
         return stateProxy;
       }
@@ -138,7 +144,10 @@ export function createTrackingProxy<T extends StateContainerInstance>(
       if (tracker.isTracking && isGetter(target, prop)) {
         tracker.getterState.currentlyAccessing.add(prop);
 
-        if (tracker.getterState.cacheValid && tracker.getterState.renderCache.has(prop)) {
+        if (
+          tracker.getterState.cacheValid &&
+          tracker.getterState.renderCache.has(prop)
+        ) {
           const cachedValue = tracker.getterState.renderCache.get(prop);
           tracker.getterState.trackedValues.set(prop, cachedValue);
           return cachedValue;

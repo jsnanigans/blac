@@ -103,7 +103,6 @@ export {
   tracked,
   createTrackedContext,
   TrackedContext,
-  DependencySubscriptionManager,
   type TrackedResult,
   type TrackedOptions,
 } from './tracking';

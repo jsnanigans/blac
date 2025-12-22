@@ -1,8 +1,5 @@
 import { ensure, getRegistry } from '../registry';
-import type {
-  StateContainerConstructor,
-  StateContainerInstance,
-} from '../types/utilities';
+import type { StateContainerConstructor } from '../types/utilities';
 import { BLAC_DEFAULTS } from '../constants';
 import {
   WaitUntilTimeoutError,
@@ -88,7 +85,9 @@ export function waitUntil<T extends StateContainerConstructor, TSelected>(
     const options = predicateOrOptions as WaitUntilOptions | undefined;
     return waitUntilSimple(BlocClass, predicate, options);
   } else {
-    const selector = selectorOrPredicate as (bloc: InstanceType<T>) => TSelected;
+    const selector = selectorOrPredicate as (
+      bloc: InstanceType<T>,
+    ) => TSelected;
     const predicate = predicateOrOptions as (selected: TSelected) => boolean;
     const options = maybeOptions;
     return waitUntilSelector(BlocClass, selector, predicate, options);
@@ -129,7 +128,7 @@ function waitUntilSimple<T extends StateContainerConstructor>(
         return predicate(proxiedBloc);
       } finally {
         const deps = stopTracking(tracker, bloc);
-        for (const dep of tracker.getterTracker.externalDependencies) {
+        for (const dep of tracker.getterState.externalDependencies) {
           deps.add(dep);
         }
         deps.delete(bloc);
@@ -232,7 +231,7 @@ function waitUntilSelector<T extends StateContainerConstructor, TSelected>(
         return { value, matches };
       } finally {
         const deps = stopTracking(tracker, bloc);
-        for (const dep of tracker.getterTracker.externalDependencies) {
+        for (const dep of tracker.getterState.externalDependencies) {
           deps.add(dep);
         }
         deps.delete(bloc);

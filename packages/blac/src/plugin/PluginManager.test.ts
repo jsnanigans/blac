@@ -1,10 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { PluginManager } from './PluginManager';
-import { StateContainerRegistry } from '../core/StateContainerRegistry';
+import {
+  StateContainerRegistry,
+  globalRegistry,
+} from '../core/StateContainerRegistry';
 import { Cubit } from '../core/Cubit';
 import { Vertex } from '../core/Vertex';
 import type { BlacPlugin } from './BlacPlugin';
-import { setRegistry, acquire, release } from '../registry';
+import { acquire, release } from '../registry';
 
 class CounterCubit extends Cubit<{ count: number }, number> {
   constructor(p: number) {
@@ -35,22 +38,20 @@ class CounterVertex extends Vertex<{ count: number }, CounterEvent, number> {
 }
 
 describe('PluginManager', () => {
-  let registry: StateContainerRegistry;
   let manager: PluginManager;
 
   beforeEach(() => {
-    // Create new registry and set it globally for test isolation
-    registry = new StateContainerRegistry();
-    setRegistry(registry);
+    // Clear global registry for test isolation
+    globalRegistry.clearAll();
 
-    // Create plugin manager with this registry
-    manager = new PluginManager(registry);
+    // Create plugin manager with global registry
+    manager = new PluginManager(globalRegistry);
   });
 
   afterEach(() => {
     // Clean up all instances after each test
     manager.clear();
-    registry.clearAll();
+    globalRegistry.clearAll();
   });
 
   describe('install', () => {

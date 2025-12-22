@@ -5,11 +5,11 @@
 
 import { describe, it, expect } from 'vitest';
 import {
-  createTrackerState,
-  startTracking,
-  createProxy,
-  captureTrackedPaths,
-  hasChanges,
+  createDependencyState,
+  startDependency,
+  createDependencyProxy,
+  capturePaths,
+  hasDependencyChanges,
   hasTrackedData,
   optimizeTrackedPaths,
 } from './dependency-tracker';
@@ -56,11 +56,11 @@ describe('Dependency Tracker', () => {
   // Core Tracking
 
   describe('Core Tracking', () => {
-    describe('createTrackerState()', () => {
+    describe('createDependencyState()', () => {
       it('should initialize properly', () => {
-        const tracker = createTrackerState<SimpleState>();
+        const tracker = createDependencyState<SimpleState>();
 
-        expect(tracker.proxyTrackerState).toBeDefined();
+        expect(tracker.proxyState).toBeDefined();
         expect(tracker.previousRenderPaths).toBeInstanceOf(Set);
         expect(tracker.currentRenderPaths).toBeInstanceOf(Set);
         expect(tracker.pathCache).toBeInstanceOf(Map);
@@ -69,89 +69,89 @@ describe('Dependency Tracker', () => {
       });
 
       it('should create independent tracker instances', () => {
-        const tracker1 = createTrackerState<SimpleState>();
-        const tracker2 = createTrackerState<SimpleState>();
+        const tracker1 = createDependencyState<SimpleState>();
+        const tracker2 = createDependencyState<SimpleState>();
 
         expect(tracker1).not.toBe(tracker2);
         expect(tracker1.pathCache).not.toBe(tracker2.pathCache);
       });
     });
 
-    describe('startTracking()', () => {
+    describe('startDependency()', () => {
       it('should enable tracking mode', () => {
-        const tracker = createTrackerState<SimpleState>();
+        const tracker = createDependencyState<SimpleState>();
         const state = { count: 0, name: 'test' };
 
-        startTracking(tracker);
-        const proxy = createProxy(tracker, state);
+        startDependency(tracker);
+        const proxy = createDependencyProxy(tracker, state);
 
         // Access a property
         const _ = proxy.count;
 
-        captureTrackedPaths(tracker, state);
+        capturePaths(tracker, state);
 
         expect(tracker.currentRenderPaths.has('count')).toBe(true);
       });
 
       it('should allow multiple tracking sessions', () => {
-        const tracker = createTrackerState<SimpleState>();
+        const tracker = createDependencyState<SimpleState>();
         const state = { count: 0, name: 'test' };
 
         // First session
-        startTracking(tracker);
-        const proxy1 = createProxy(tracker, state);
+        startDependency(tracker);
+        const proxy1 = createDependencyProxy(tracker, state);
         const _ = proxy1.count;
-        captureTrackedPaths(tracker, state);
+        capturePaths(tracker, state);
 
         // Second session
-        startTracking(tracker);
-        const proxy2 = createProxy(tracker, state);
+        startDependency(tracker);
+        const proxy2 = createDependencyProxy(tracker, state);
         const __ = proxy2.name;
-        captureTrackedPaths(tracker, state);
+        capturePaths(tracker, state);
 
         expect(tracker.currentRenderPaths.has('name')).toBe(true);
       });
     });
 
-    describe('createProxy()', () => {
+    describe('createDependencyProxy()', () => {
       it('should wrap objects correctly', () => {
-        const tracker = createTrackerState<SimpleState>();
+        const tracker = createDependencyState<SimpleState>();
         const state = { count: 5, name: 'test' };
 
-        startTracking(tracker);
-        const proxy = createProxy(tracker, state);
+        startDependency(tracker);
+        const proxy = createDependencyProxy(tracker, state);
 
         expect(proxy.count).toBe(5);
         expect(proxy.name).toBe('test');
       });
 
       it('should track property access paths', () => {
-        const tracker = createTrackerState<SimpleState>();
+        const tracker = createDependencyState<SimpleState>();
         const state = { count: 5, name: 'test' };
 
-        startTracking(tracker);
-        const proxy = createProxy(tracker, state);
+        startDependency(tracker);
+        const proxy = createDependencyProxy(tracker, state);
 
         const _ = proxy.count;
         const __ = proxy.name;
 
-        captureTrackedPaths(tracker, state);
+        capturePaths(tracker, state);
 
         expect(tracker.currentRenderPaths.has('count')).toBe(true);
         expect(tracker.currentRenderPaths.has('name')).toBe(true);
       });
 
       it('should not track unaccessed properties', () => {
-        const tracker = createTrackerState<SimpleState>();
+        const tracker = createDependencyState<SimpleState>();
         const state = { count: 5, name: 'test' };
 
-        startTracking(tracker);
-        const proxy = createProxy(tracker, state);
+        startDependency(tracker);
+        const proxy = createDependencyProxy(tracker, state);
 
         const _ = proxy.count;
         // Don't access name
 
-        captureTrackedPaths(tracker, state);
+        capturePaths(tracker, state);
 
         expect(tracker.currentRenderPaths.has('count')).toBe(true);
         expect(tracker.currentRenderPaths.has('name')).toBe(false);
@@ -160,7 +160,7 @@ describe('Dependency Tracker', () => {
 
     describe('Nested object access tracking', () => {
       it('should track nested property access', () => {
-        const tracker = createTrackerState<NestedState>();
+        const tracker = createDependencyState<NestedState>();
         const state: NestedState = {
           user: {
             name: 'John',
@@ -175,20 +175,20 @@ describe('Dependency Tracker', () => {
           },
         };
 
-        startTracking(tracker);
-        const proxy = createProxy(tracker, state);
+        startDependency(tracker);
+        const proxy = createDependencyProxy(tracker, state);
 
         const _ = proxy.user.name;
         const __ = proxy.user.profile.age;
 
-        captureTrackedPaths(tracker, state);
+        capturePaths(tracker, state);
 
         expect(tracker.currentRenderPaths.has('user.name')).toBe(true);
         expect(tracker.currentRenderPaths.has('user.profile.age')).toBe(true);
       });
 
       it('should track deep nested paths', () => {
-        const tracker = createTrackerState<ComplexState>();
+        const tracker = createDependencyState<ComplexState>();
         const state: ComplexState = {
           id: '123',
           data: {
@@ -206,13 +206,13 @@ describe('Dependency Tracker', () => {
           },
         };
 
-        startTracking(tracker);
-        const proxy = createProxy(tracker, state);
+        startDependency(tracker);
+        const proxy = createDependencyProxy(tracker, state);
 
         const _ = proxy.data.nested.value;
         const __ = proxy.data.nested.list[0].name;
 
-        captureTrackedPaths(tracker, state);
+        capturePaths(tracker, state);
 
         expect(tracker.currentRenderPaths.has('data.nested.value')).toBe(true);
         expect(tracker.currentRenderPaths.has('data.nested.list[0].name')).toBe(
@@ -223,20 +223,20 @@ describe('Dependency Tracker', () => {
 
     describe('Array access tracking', () => {
       it('should track array index access', () => {
-        const tracker = createTrackerState<ArrayState>();
+        const tracker = createDependencyState<ArrayState>();
         const state: ArrayState = {
           items: [1, 2, 3, 4, 5],
           tags: ['a', 'b', 'c'],
         };
 
-        startTracking(tracker);
-        const proxy = createProxy(tracker, state);
+        startDependency(tracker);
+        const proxy = createDependencyProxy(tracker, state);
 
         const _ = proxy.items[0];
         const __ = proxy.items[2];
         const ___ = proxy.tags[1];
 
-        captureTrackedPaths(tracker, state);
+        capturePaths(tracker, state);
 
         expect(tracker.currentRenderPaths.has('items[0]')).toBe(true);
         expect(tracker.currentRenderPaths.has('items[2]')).toBe(true);
@@ -244,57 +244,57 @@ describe('Dependency Tracker', () => {
       });
 
       it('should track array property access', () => {
-        const tracker = createTrackerState<ArrayState>();
+        const tracker = createDependencyState<ArrayState>();
         const state: ArrayState = {
           items: [1, 2, 3],
           tags: ['a', 'b'],
         };
 
-        startTracking(tracker);
-        const proxy = createProxy(tracker, state);
+        startDependency(tracker);
+        const proxy = createDependencyProxy(tracker, state);
 
         const _ = proxy.items.length;
 
-        captureTrackedPaths(tracker, state);
+        capturePaths(tracker, state);
 
         expect(tracker.currentRenderPaths.has('items.length')).toBe(true);
       });
     });
 
-    describe('captureTrackedPaths()', () => {
+    describe('capturePaths()', () => {
       it('should store accessed paths with values', () => {
-        const tracker = createTrackerState<SimpleState>();
+        const tracker = createDependencyState<SimpleState>();
         const state = { count: 10, name: 'test' };
 
-        startTracking(tracker);
-        const proxy = createProxy(tracker, state);
+        startDependency(tracker);
+        const proxy = createDependencyProxy(tracker, state);
 
         const _ = proxy.count;
 
-        captureTrackedPaths(tracker, state);
+        capturePaths(tracker, state);
 
         expect(tracker.pathCache.has('count')).toBe(true);
         expect(tracker.pathCache.get('count')?.value).toBe(10);
       });
 
       it('should move current paths to previous paths', () => {
-        const tracker = createTrackerState<SimpleState>();
+        const tracker = createDependencyState<SimpleState>();
         const state = { count: 10, name: 'test' };
 
         // First render
-        startTracking(tracker);
-        const proxy = createProxy(tracker, state);
+        startDependency(tracker);
+        const proxy = createDependencyProxy(tracker, state);
         const _ = proxy.count;
-        captureTrackedPaths(tracker, state);
+        capturePaths(tracker, state);
 
         // After first capture, tracked paths are in currentRenderPaths
         expect(tracker.currentRenderPaths.has('count')).toBe(true);
 
         // Second render
-        startTracking(tracker);
-        const proxy2 = createProxy(tracker, state);
+        startDependency(tracker);
+        const proxy2 = createDependencyProxy(tracker, state);
         const __ = proxy2.name;
-        captureTrackedPaths(tracker, state);
+        capturePaths(tracker, state);
 
         // Now previousRenderPaths should have 'count' from first render
         expect(tracker.previousRenderPaths.has('count')).toBe(true);
@@ -302,13 +302,13 @@ describe('Dependency Tracker', () => {
       });
 
       it('should store newly tracked paths in currentRenderPaths', () => {
-        const tracker = createTrackerState<SimpleState>();
+        const tracker = createDependencyState<SimpleState>();
         const state = { count: 10, name: 'test' };
 
-        startTracking(tracker);
-        const proxy = createProxy(tracker, state);
+        startDependency(tracker);
+        const proxy = createDependencyProxy(tracker, state);
         const _ = proxy.count;
-        captureTrackedPaths(tracker, state);
+        capturePaths(tracker, state);
 
         // After capture, current paths should contain what was just tracked
         expect(tracker.currentRenderPaths.has('count')).toBe(true);
@@ -316,22 +316,22 @@ describe('Dependency Tracker', () => {
       });
 
       it('should update cache with new values', () => {
-        const tracker = createTrackerState<SimpleState>();
+        const tracker = createDependencyState<SimpleState>();
         let state = { count: 10, name: 'test' };
 
-        startTracking(tracker);
-        let proxy = createProxy(tracker, state);
+        startDependency(tracker);
+        let proxy = createDependencyProxy(tracker, state);
         const _ = proxy.count;
-        captureTrackedPaths(tracker, state);
+        capturePaths(tracker, state);
 
         expect(tracker.pathCache.get('count')?.value).toBe(10);
 
         // Update state
         state = { count: 20, name: 'test' };
-        startTracking(tracker);
-        proxy = createProxy(tracker, state);
+        startDependency(tracker);
+        proxy = createDependencyProxy(tracker, state);
         const __ = proxy.count;
-        captureTrackedPaths(tracker, state);
+        capturePaths(tracker, state);
 
         expect(tracker.pathCache.get('count')?.value).toBe(20);
       });
@@ -341,66 +341,66 @@ describe('Dependency Tracker', () => {
   // Change Detection
 
   describe('Change Detection', () => {
-    describe('hasChanges()', () => {
+    describe('hasDependencyChanges()', () => {
       it('should detect value changes at tracked paths', () => {
-        const tracker = createTrackerState<SimpleState>();
+        const tracker = createDependencyState<SimpleState>();
         const state = { count: 10, name: 'test' };
 
         // Track initial render
-        startTracking(tracker);
-        const proxy = createProxy(tracker, state);
+        startDependency(tracker);
+        const proxy = createDependencyProxy(tracker, state);
         const _ = proxy.count;
-        captureTrackedPaths(tracker, state);
+        capturePaths(tracker, state);
 
         // Check changes with updated state
         const newState = { count: 20, name: 'test' };
-        expect(hasChanges(tracker, newState)).toBe(true);
+        expect(hasDependencyChanges(tracker, newState)).toBe(true);
       });
 
       it('should return false when no changes detected', () => {
-        const tracker = createTrackerState<SimpleState>();
+        const tracker = createDependencyState<SimpleState>();
         const state = { count: 10, name: 'test' };
 
-        startTracking(tracker);
-        const proxy = createProxy(tracker, state);
+        startDependency(tracker);
+        const proxy = createDependencyProxy(tracker, state);
         const _ = proxy.count;
-        captureTrackedPaths(tracker, state);
+        capturePaths(tracker, state);
 
         // Same state, no changes
-        expect(hasChanges(tracker, state)).toBe(false);
+        expect(hasDependencyChanges(tracker, state)).toBe(false);
       });
 
       it('should ignore changes in untracked paths', () => {
-        const tracker = createTrackerState<SimpleState>();
+        const tracker = createDependencyState<SimpleState>();
         const state = { count: 10, name: 'test' };
 
-        startTracking(tracker);
-        const proxy = createProxy(tracker, state);
+        startDependency(tracker);
+        const proxy = createDependencyProxy(tracker, state);
         const _ = proxy.count; // Only track count
-        captureTrackedPaths(tracker, state);
+        capturePaths(tracker, state);
 
         // Change untracked field
         const newState = { count: 10, name: 'updated' };
-        expect(hasChanges(tracker, newState)).toBe(false);
+        expect(hasDependencyChanges(tracker, newState)).toBe(false);
       });
 
       it('should use shallow equality for primitive values', () => {
-        const tracker = createTrackerState<SimpleState>();
+        const tracker = createDependencyState<SimpleState>();
         const state = { count: 10, name: 'test' };
 
-        startTracking(tracker);
-        const proxy = createProxy(tracker, state);
+        startDependency(tracker);
+        const proxy = createDependencyProxy(tracker, state);
         const _ = proxy.count;
         const __ = proxy.name;
-        captureTrackedPaths(tracker, state);
+        capturePaths(tracker, state);
 
         // Same primitive values
         const newState = { count: 10, name: 'test' };
-        expect(hasChanges(tracker, newState)).toBe(false);
+        expect(hasDependencyChanges(tracker, newState)).toBe(false);
       });
 
       it('should detect deep path changes', () => {
-        const tracker = createTrackerState<NestedState>();
+        const tracker = createDependencyState<NestedState>();
         const state: NestedState = {
           user: {
             name: 'John',
@@ -409,10 +409,10 @@ describe('Dependency Tracker', () => {
           settings: { theme: 'light', notifications: true },
         };
 
-        startTracking(tracker);
-        const proxy = createProxy(tracker, state);
+        startDependency(tracker);
+        const proxy = createDependencyProxy(tracker, state);
         const _ = proxy.user.profile.age;
-        captureTrackedPaths(tracker, state);
+        capturePaths(tracker, state);
 
         // Change deep nested value
         const newState: NestedState = {
@@ -423,21 +423,21 @@ describe('Dependency Tracker', () => {
           settings: { theme: 'light', notifications: true },
         };
 
-        expect(hasChanges(tracker, newState)).toBe(true);
+        expect(hasDependencyChanges(tracker, newState)).toBe(true);
       });
 
       it('should handle array mutations', () => {
-        const tracker = createTrackerState<ArrayState>();
+        const tracker = createDependencyState<ArrayState>();
         const state: ArrayState = {
           items: [1, 2, 3],
           tags: ['a', 'b'],
         };
 
-        startTracking(tracker);
-        const proxy = createProxy(tracker, state);
+        startDependency(tracker);
+        const proxy = createDependencyProxy(tracker, state);
         const _ = proxy.items[0];
         const __ = proxy.items.length;
-        captureTrackedPaths(tracker, state);
+        capturePaths(tracker, state);
 
         // Array mutation - length changed
         const newState: ArrayState = {
@@ -445,15 +445,15 @@ describe('Dependency Tracker', () => {
           tags: ['a', 'b'],
         };
 
-        expect(hasChanges(tracker, newState)).toBe(true);
+        expect(hasDependencyChanges(tracker, newState)).toBe(true);
       });
 
       it('should return true when no paths are tracked', () => {
-        const tracker = createTrackerState<SimpleState>();
+        const tracker = createDependencyState<SimpleState>();
         const state = { count: 10, name: 'test' };
 
         // No tracking, so hasChanges should return true (first render)
-        expect(hasChanges(tracker, state)).toBe(true);
+        expect(hasDependencyChanges(tracker, state)).toBe(true);
       });
 
       it('should handle null and undefined values', () => {
@@ -462,34 +462,34 @@ describe('Dependency Tracker', () => {
           optional?: number;
         }
 
-        const tracker = createTrackerState<NullableState>();
+        const tracker = createDependencyState<NullableState>();
         const state: NullableState = { value: 'test', optional: 10 };
 
-        startTracking(tracker);
-        const proxy = createProxy(tracker, state);
+        startDependency(tracker);
+        const proxy = createDependencyProxy(tracker, state);
         const _ = proxy.value;
         const __ = proxy.optional;
-        captureTrackedPaths(tracker, state);
+        capturePaths(tracker, state);
 
         // Change to null
         const newState: NullableState = { value: null, optional: undefined };
-        expect(hasChanges(tracker, newState)).toBe(true);
+        expect(hasDependencyChanges(tracker, newState)).toBe(true);
       });
     });
 
     describe('hasTrackedData()', () => {
       it('should return false when no data is tracked', () => {
-        const tracker = createTrackerState<SimpleState>();
+        const tracker = createDependencyState<SimpleState>();
 
         expect(hasTrackedData(tracker)).toBe(false);
       });
 
       it('should return true when paths are tracked', () => {
-        const tracker = createTrackerState<SimpleState>();
+        const tracker = createDependencyState<SimpleState>();
         const state = { count: 10, name: 'test' };
 
-        startTracking(tracker);
-        const proxy = createProxy(tracker, state);
+        startDependency(tracker);
+        const proxy = createDependencyProxy(tracker, state);
         const _ = proxy.count;
 
         // Before capture, tracking is active
@@ -497,32 +497,32 @@ describe('Dependency Tracker', () => {
       });
 
       it('should return true when cache has paths', () => {
-        const tracker = createTrackerState<SimpleState>();
+        const tracker = createDependencyState<SimpleState>();
         const state = { count: 10, name: 'test' };
 
-        startTracking(tracker);
-        const proxy = createProxy(tracker, state);
+        startDependency(tracker);
+        const proxy = createDependencyProxy(tracker, state);
         const _ = proxy.count;
-        captureTrackedPaths(tracker, state);
+        capturePaths(tracker, state);
 
         expect(hasTrackedData(tracker)).toBe(true);
       });
 
       it('should return true when previous render paths exist', () => {
-        const tracker = createTrackerState<SimpleState>();
+        const tracker = createDependencyState<SimpleState>();
         const state = { count: 10, name: 'test' };
 
         // First render
-        startTracking(tracker);
-        const proxy = createProxy(tracker, state);
+        startDependency(tracker);
+        const proxy = createDependencyProxy(tracker, state);
         const _ = proxy.count;
-        captureTrackedPaths(tracker, state);
+        capturePaths(tracker, state);
 
         // Second render
-        startTracking(tracker);
-        const proxy2 = createProxy(tracker, state);
+        startDependency(tracker);
+        const proxy2 = createDependencyProxy(tracker, state);
         const __ = proxy2.name;
-        captureTrackedPaths(tracker, state);
+        capturePaths(tracker, state);
 
         // Previous render paths should exist now (from first render)
         expect(tracker.previousRenderPaths.size).toBeGreaterThan(0);
@@ -539,7 +539,7 @@ describe('Dependency Tracker', () => {
         [key: string]: number;
       }
 
-      const tracker = createTrackerState<LargeState>();
+      const tracker = createDependencyState<LargeState>();
       const state: LargeState = {};
 
       // Create large state with many properties
@@ -547,41 +547,41 @@ describe('Dependency Tracker', () => {
         state[`field${i}`] = i;
       }
 
-      startTracking(tracker);
-      const proxy = createProxy(tracker, state);
+      startDependency(tracker);
+      const proxy = createDependencyProxy(tracker, state);
 
       // Access many properties
       for (let i = 0; i < 100; i++) {
         const _ = proxy[`field${i}`];
       }
 
-      captureTrackedPaths(tracker, state);
+      capturePaths(tracker, state);
 
       expect(tracker.pathCache.size).toBe(100);
 
       // Check changes with updated state
       const newState = { ...state, field50: 999 };
-      expect(hasChanges(tracker, newState)).toBe(true);
+      expect(hasDependencyChanges(tracker, newState)).toBe(true);
     });
 
     it('should cleanup unused paths periodically', () => {
-      const tracker = createTrackerState<SimpleState>();
+      const tracker = createDependencyState<SimpleState>();
       const state = { count: 10, name: 'test' };
 
       // First render - track count
-      startTracking(tracker);
-      let proxy = createProxy(tracker, state);
+      startDependency(tracker);
+      let proxy = createDependencyProxy(tracker, state);
       const _ = proxy.count;
-      captureTrackedPaths(tracker, state);
+      capturePaths(tracker, state);
 
       expect(tracker.pathCache.has('count')).toBe(true);
 
       // Next 10 renders - track only name
       for (let i = 0; i < 10; i++) {
-        startTracking(tracker);
-        proxy = createProxy(tracker, state);
+        startDependency(tracker);
+        proxy = createDependencyProxy(tracker, state);
         const __ = proxy.name;
-        captureTrackedPaths(tracker, state);
+        capturePaths(tracker, state);
       }
 
       // After cleanup interval, 'count' should be removed
@@ -595,15 +595,15 @@ describe('Dependency Tracker', () => {
         arr: number[];
       }
 
-      const tracker = createTrackerState<RefState>();
+      const tracker = createDependencyState<RefState>();
       const obj = { value: 10 };
       const arr = [1, 2, 3];
       const state: RefState = { obj, arr };
 
-      startTracking(tracker);
-      const proxy = createProxy(tracker, state);
+      startDependency(tracker);
+      const proxy = createDependencyProxy(tracker, state);
       const _ = proxy.obj.value;
-      captureTrackedPaths(tracker, state);
+      capturePaths(tracker, state);
 
       // Fine-grained tracking: only 'obj.value' is tracked, not 'obj'
       expect(tracker.currentRenderPaths.has('obj.value')).toBe(true);
@@ -611,20 +611,20 @@ describe('Dependency Tracker', () => {
 
       // Same reference, no change
       const newState: RefState = { obj, arr };
-      expect(hasChanges(tracker, newState)).toBe(false);
+      expect(hasDependencyChanges(tracker, newState)).toBe(false);
 
       // Different reference, same value - should NOT trigger change
       // because only 'obj.value' is tracked (fine-grained), and value is same
       const newState2: RefState = { obj: { value: 10 }, arr };
-      expect(hasChanges(tracker, newState2)).toBe(false);
+      expect(hasDependencyChanges(tracker, newState2)).toBe(false);
 
       // Different value - WILL trigger change
       const newState3: RefState = { obj: { value: 20 }, arr };
-      expect(hasChanges(tracker, newState3)).toBe(true);
+      expect(hasDependencyChanges(tracker, newState3)).toBe(true);
     });
 
     it('should handle rapid tracking sessions', () => {
-      const tracker = createTrackerState<SimpleState>();
+      const tracker = createDependencyState<SimpleState>();
       const states: SimpleState[] = [];
 
       // Create many states
@@ -634,15 +634,15 @@ describe('Dependency Tracker', () => {
 
       // Rapid tracking sessions
       for (let i = 0; i < 50; i++) {
-        startTracking(tracker);
-        const proxy = createProxy(tracker, states[i]);
+        startDependency(tracker);
+        const proxy = createDependencyProxy(tracker, states[i]);
         const _ = proxy.count;
-        captureTrackedPaths(tracker, states[i]);
+        capturePaths(tracker, states[i]);
       }
 
       // Should still work correctly
       const finalState = { count: 999, name: 'final' };
-      expect(hasChanges(tracker, finalState)).toBe(true);
+      expect(hasDependencyChanges(tracker, finalState)).toBe(true);
     });
 
     it('should handle empty objects', () => {
@@ -651,20 +651,20 @@ describe('Dependency Tracker', () => {
         empty: Record<string, never>;
       }
 
-      const tracker = createTrackerState<EmptyState>();
+      const tracker = createDependencyState<EmptyState>();
       const state: EmptyState = { value: 10, empty: {} };
 
-      startTracking(tracker);
-      const proxy = createProxy(tracker, state);
+      startDependency(tracker);
+      const proxy = createDependencyProxy(tracker, state);
       const _ = proxy.value; // Track a primitive instead
-      captureTrackedPaths(tracker, state);
+      capturePaths(tracker, state);
 
       // No changes - same state reference
-      expect(hasChanges(tracker, state)).toBe(false);
+      expect(hasDependencyChanges(tracker, state)).toBe(false);
 
       // Different state, same value
       const newState: EmptyState = { value: 10, empty: {} };
-      expect(hasChanges(tracker, newState)).toBe(false);
+      expect(hasDependencyChanges(tracker, newState)).toBe(false);
     });
 
     it('should handle circular references gracefully', () => {
@@ -673,15 +673,15 @@ describe('Dependency Tracker', () => {
         self?: CircularState;
       }
 
-      const tracker = createTrackerState<CircularState>();
+      const tracker = createDependencyState<CircularState>();
       const state: CircularState = { value: 10 };
       // Don't create circular reference for this test
       // as it may cause issues
 
-      startTracking(tracker);
-      const proxy = createProxy(tracker, state);
+      startDependency(tracker);
+      const proxy = createDependencyProxy(tracker, state);
       const _ = proxy.value;
-      captureTrackedPaths(tracker, state);
+      capturePaths(tracker, state);
 
       expect(tracker.pathCache.has('value')).toBe(true);
     });
@@ -691,32 +691,32 @@ describe('Dependency Tracker', () => {
 
   describe('Integration Scenarios', () => {
     it('should work through complete render cycle', () => {
-      const tracker = createTrackerState<SimpleState>();
+      const tracker = createDependencyState<SimpleState>();
       let state = { count: 0, name: 'initial' };
 
       // First render
-      startTracking(tracker);
-      let proxy = createProxy(tracker, state);
+      startDependency(tracker);
+      let proxy = createDependencyProxy(tracker, state);
       expect(proxy.count).toBe(0);
       expect(proxy.name).toBe('initial');
-      captureTrackedPaths(tracker, state);
+      capturePaths(tracker, state);
 
       // State update - should detect changes
       state = { count: 1, name: 'updated' };
-      expect(hasChanges(tracker, state)).toBe(true);
+      expect(hasDependencyChanges(tracker, state)).toBe(true);
 
       // Second render
-      startTracking(tracker);
-      proxy = createProxy(tracker, state);
+      startDependency(tracker);
+      proxy = createDependencyProxy(tracker, state);
       expect(proxy.count).toBe(1);
-      captureTrackedPaths(tracker, state);
+      capturePaths(tracker, state);
 
       // No changes
-      expect(hasChanges(tracker, state)).toBe(false);
+      expect(hasDependencyChanges(tracker, state)).toBe(false);
     });
 
     it('should handle partial state updates', () => {
-      const tracker = createTrackerState<NestedState>();
+      const tracker = createDependencyState<NestedState>();
       let state: NestedState = {
         user: {
           name: 'John',
@@ -726,17 +726,17 @@ describe('Dependency Tracker', () => {
       };
 
       // Render - only access user.name
-      startTracking(tracker);
-      const proxy = createProxy(tracker, state);
+      startDependency(tracker);
+      const proxy = createDependencyProxy(tracker, state);
       expect(proxy.user.name).toBe('John');
-      captureTrackedPaths(tracker, state);
+      capturePaths(tracker, state);
 
       // Update untracked field - should not trigger re-render
       state = {
         ...state,
         settings: { theme: 'dark', notifications: false },
       };
-      expect(hasChanges(tracker, state)).toBe(false);
+      expect(hasDependencyChanges(tracker, state)).toBe(false);
 
       // Update tracked field - should trigger re-render
       state = {
@@ -746,20 +746,20 @@ describe('Dependency Tracker', () => {
           name: 'Jane',
         },
       };
-      expect(hasChanges(tracker, state)).toBe(true);
+      expect(hasDependencyChanges(tracker, state)).toBe(true);
     });
 
     it('should support conditional rendering logic', () => {
-      const tracker = createTrackerState<SimpleState>();
+      const tracker = createDependencyState<SimpleState>();
       let state = { count: 0, name: 'test' };
 
       // First render - conditionally access count
-      startTracking(tracker);
-      let proxy = createProxy(tracker, state);
+      startDependency(tracker);
+      let proxy = createDependencyProxy(tracker, state);
       if (proxy.count > 0) {
         const _ = proxy.name; // Won't be accessed since count is 0
       }
-      captureTrackedPaths(tracker, state);
+      capturePaths(tracker, state);
 
       // Only count should be tracked
       expect(tracker.pathCache.has('count')).toBe(true);
@@ -767,15 +767,15 @@ describe('Dependency Tracker', () => {
 
       // Update count
       state = { count: 1, name: 'test' };
-      expect(hasChanges(tracker, state)).toBe(true);
+      expect(hasDependencyChanges(tracker, state)).toBe(true);
 
       // Second render - now name is accessed
-      startTracking(tracker);
-      proxy = createProxy(tracker, state);
+      startDependency(tracker);
+      proxy = createDependencyProxy(tracker, state);
       if (proxy.count > 0) {
         const _ = proxy.name; // Will be accessed now
       }
-      captureTrackedPaths(tracker, state);
+      capturePaths(tracker, state);
 
       // Both should be tracked now
       expect(tracker.pathCache.has('count')).toBe(true);
@@ -902,7 +902,7 @@ describe('Dependency Tracker', () => {
         stats: { count: number };
       }
 
-      const tracker = createTrackerState<TestState>();
+      const tracker = createDependencyState<TestState>();
       const state: TestState = {
         user: {
           personal: { name: 'John', age: 30 },
@@ -912,11 +912,11 @@ describe('Dependency Tracker', () => {
       };
 
       // Access nested properties
-      startTracking(tracker);
-      const proxy = createProxy(tracker, state);
+      startDependency(tracker);
+      const proxy = createDependencyProxy(tracker, state);
       const _ = proxy.user.personal.name;
       const __ = proxy.user.preferences.theme;
-      captureTrackedPaths(tracker, state);
+      capturePaths(tracker, state);
 
       // Should only track leaf paths
       expect(tracker.currentRenderPaths.has('user.personal.name')).toBe(true);
@@ -936,7 +936,7 @@ describe('Dependency Tracker', () => {
           personal: { ...state.user.personal, age: 31 }, // Changed age, not name
         },
       };
-      expect(hasChanges(tracker, newState1)).toBe(false);
+      expect(hasDependencyChanges(tracker, newState1)).toBe(false);
 
       // Update tracked field - should detect change
       const newState2: TestState = {
@@ -946,7 +946,7 @@ describe('Dependency Tracker', () => {
           personal: { ...state.user.personal, name: 'Jane' },
         },
       };
-      expect(hasChanges(tracker, newState2)).toBe(true);
+      expect(hasDependencyChanges(tracker, newState2)).toBe(true);
     });
   });
 });

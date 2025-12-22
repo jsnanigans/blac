@@ -1,6 +1,5 @@
 import type { StateContainer } from '../core/StateContainer';
 import type { StateContainerRegistry } from '../core/StateContainerRegistry';
-import { getAll } from '../registry';
 import type {
   BlacPlugin,
   PluginContext,
@@ -242,7 +241,7 @@ export class PluginManager {
       queryInstances: <T extends StateContainer<any>>(
         typeClass: new (...args: any[]) => T,
       ): T[] => {
-        return getAll(typeClass as any);
+        return this.registry.getAll(typeClass as any);
       },
 
       getAllTypes: () => {

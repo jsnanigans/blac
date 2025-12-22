@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Cubit } from '../core/Cubit';
 import {
-  createGetterTracker,
+  createGetterState,
   setActiveTracker,
   clearActiveTracker,
   getActiveTracker,
@@ -10,7 +10,7 @@ import {
   hasGetterChanges,
   invalidateRenderCache,
   clearExternalDependencies,
-  resetGetterTracker,
+  resetGetterState,
   isGetter,
   getDescriptor,
 } from './getter-tracker';
@@ -92,9 +92,9 @@ describe('getter-tracker', () => {
     });
   });
 
-  describe('createGetterTracker', () => {
+  describe('createGetterState', () => {
     it('should create tracker with correct initial state', () => {
-      const tracker = createGetterTracker();
+      const tracker = createGetterState();
       expect(tracker.trackedValues).toBeInstanceOf(Map);
       expect(tracker.trackedValues.size).toBe(0);
       expect(tracker.currentlyAccessing).toBeInstanceOf(Set);
@@ -112,13 +112,13 @@ describe('getter-tracker', () => {
 
   describe('tracker management', () => {
     it('should set and get active tracker', () => {
-      const tracker = createGetterTracker();
+      const tracker = createGetterState();
       setActiveTracker(bloc, tracker);
       expect(getActiveTracker(bloc)).toBe(tracker);
     });
 
     it('should clear active tracker', () => {
-      const tracker = createGetterTracker();
+      const tracker = createGetterState();
       setActiveTracker(bloc, tracker);
       clearActiveTracker(bloc);
       expect(getActiveTracker(bloc)).toBeUndefined();
@@ -131,7 +131,7 @@ describe('getter-tracker', () => {
 
   describe('commitTrackedGetters', () => {
     it('should commit currently accessing getters to tracked getters', () => {
-      const tracker = createGetterTracker();
+      const tracker = createGetterState();
       tracker.currentlyAccessing.add('doubled');
       tracker.currentlyAccessing.add('tripled');
 
@@ -144,7 +144,7 @@ describe('getter-tracker', () => {
     });
 
     it('should clear currently accessing set', () => {
-      const tracker = createGetterTracker();
+      const tracker = createGetterState();
       tracker.currentlyAccessing.add('doubled');
 
       commitTrackedGetters(tracker);
@@ -153,7 +153,7 @@ describe('getter-tracker', () => {
     });
 
     it('should not clear trackedGetters if nothing was accessing', () => {
-      const tracker = createGetterTracker();
+      const tracker = createGetterState();
       tracker.trackedGetters.add('doubled');
 
       commitTrackedGetters(tracker);
@@ -164,7 +164,7 @@ describe('getter-tracker', () => {
 
   describe('createBlocProxy', () => {
     it('should create a proxy that tracks getter access', () => {
-      const tracker = createGetterTracker();
+      const tracker = createGetterState();
       tracker.isTracking = true;
       setActiveTracker(bloc, tracker);
 
@@ -177,7 +177,7 @@ describe('getter-tracker', () => {
     });
 
     it('should not track when isTracking is false', () => {
-      const tracker = createGetterTracker();
+      const tracker = createGetterState();
       tracker.isTracking = false;
       setActiveTracker(bloc, tracker);
 
@@ -189,7 +189,7 @@ describe('getter-tracker', () => {
     });
 
     it('should not track non-getter properties', () => {
-      const tracker = createGetterTracker();
+      const tracker = createGetterState();
       tracker.isTracking = true;
       setActiveTracker(bloc, tracker);
 
@@ -207,7 +207,7 @@ describe('getter-tracker', () => {
     });
 
     it('should use render cache when available', () => {
-      const tracker = createGetterTracker();
+      const tracker = createGetterState();
       tracker.isTracking = true;
       tracker.cacheValid = true;
       tracker.renderCache.set('doubled', 999);
@@ -222,7 +222,7 @@ describe('getter-tracker', () => {
 
   describe('hasGetterChanges', () => {
     it('should detect when getter value changes', () => {
-      const tracker = createGetterTracker();
+      const tracker = createGetterState();
       tracker.trackedGetters.add('doubled');
       tracker.trackedValues.set('doubled', 0);
 
@@ -234,7 +234,7 @@ describe('getter-tracker', () => {
     });
 
     it('should return false when getter value unchanged', () => {
-      const tracker = createGetterTracker();
+      const tracker = createGetterState();
       tracker.trackedGetters.add('doubled');
       tracker.trackedValues.set('doubled', 0);
 
@@ -243,7 +243,7 @@ describe('getter-tracker', () => {
     });
 
     it('should return false when no getters tracked', () => {
-      const tracker = createGetterTracker();
+      const tracker = createGetterState();
       const hasChanges = hasGetterChanges(bloc, tracker);
       expect(hasChanges).toBe(false);
     });
@@ -254,7 +254,7 @@ describe('getter-tracker', () => {
     });
 
     it('should populate render cache for all tracked getters', () => {
-      const tracker = createGetterTracker();
+      const tracker = createGetterState();
       tracker.trackedGetters.add('doubled');
       tracker.trackedGetters.add('tripled');
       tracker.trackedValues.set('doubled', 0);
@@ -281,7 +281,7 @@ describe('getter-tracker', () => {
       }
 
       const objBloc = new ObjectBloc();
-      const tracker = createGetterTracker();
+      const tracker = createGetterState();
       const sameRef = objBloc.state.data;
       tracker.trackedGetters.add('obj');
       tracker.trackedValues.set('obj', sameRef);
@@ -305,7 +305,7 @@ describe('getter-tracker', () => {
       }
 
       const errorBloc = new ErrorBloc();
-      const tracker = createGetterTracker();
+      const tracker = createGetterState();
       tracker.trackedGetters.add('throwing');
 
       // Should not throw, should return true and stop tracking the getter
@@ -318,7 +318,7 @@ describe('getter-tracker', () => {
 
   describe('invalidateRenderCache', () => {
     it('should invalidate render cache', () => {
-      const tracker = createGetterTracker();
+      const tracker = createGetterState();
       tracker.cacheValid = true;
       tracker.renderCache.set('doubled', 999);
 
@@ -332,7 +332,7 @@ describe('getter-tracker', () => {
 
   describe('clearExternalDependencies', () => {
     it('should clear external dependencies set', () => {
-      const tracker = createGetterTracker();
+      const tracker = createGetterState();
       const externalBloc = new TestBloc();
       tracker.externalDependencies.add(externalBloc);
 
@@ -344,7 +344,7 @@ describe('getter-tracker', () => {
 
   describe('resetGetterTracker', () => {
     it('should reset all tracker state', () => {
-      const tracker = createGetterTracker();
+      const tracker = createGetterState();
       tracker.trackedValues.set('doubled', 10);
       tracker.currentlyAccessing.add('tripled');
       tracker.trackedGetters.add('doubled');
@@ -353,7 +353,7 @@ describe('getter-tracker', () => {
       tracker.isTracking = true;
       tracker.externalDependencies.add(new TestBloc());
 
-      resetGetterTracker(tracker);
+      resetGetterState(tracker);
 
       expect(tracker.trackedValues.size).toBe(0);
       expect(tracker.currentlyAccessing.size).toBe(0);
@@ -380,7 +380,7 @@ describe('getter-tracker', () => {
       }
 
       const circularBloc = new CircularBloc();
-      const tracker = createGetterTracker();
+      const tracker = createGetterState();
       tracker.isTracking = true;
       setActiveTracker(circularBloc, tracker);
 
@@ -411,7 +411,7 @@ describe('getter-tracker', () => {
       }
 
       const deepBloc = new DeepBloc();
-      const tracker = createGetterTracker();
+      const tracker = createGetterState();
       tracker.isTracking = true;
       setActiveTracker(deepBloc, tracker);
 
@@ -424,7 +424,7 @@ describe('getter-tracker', () => {
 
   describe('complex getter scenarios', () => {
     it('should handle getters that access other getters', () => {
-      const tracker = createGetterTracker();
+      const tracker = createGetterState();
       tracker.isTracking = true;
       setActiveTracker(bloc, tracker);
 
@@ -442,7 +442,7 @@ describe('getter-tracker', () => {
     });
 
     it('should detect changes in complex getters', () => {
-      const tracker = createGetterTracker();
+      const tracker = createGetterState();
       tracker.trackedGetters.add('complex');
       const initialValue = {
         doubled: 0,

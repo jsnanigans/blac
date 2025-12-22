@@ -225,4 +225,3 @@ const debugPlugin: BlacPlugin = {
 
 - [System Events](/core/system-events) - Instance-level events
 - [Logging](/core/logging) - Built-in logging
-- [DevTools](/api/core#devtools) - Official DevTools plugin

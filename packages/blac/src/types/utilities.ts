@@ -2,12 +2,6 @@ import type { StateContainer } from '../core/StateContainer';
 import type { STATELESS_MARKER } from '../core/markers';
 
 /**
- * Empty state type used by stateless containers.
- * @internal
- */
-type EmptyState = Record<never, never>;
-
-/**
  * Check if a StateContainer constructor is a stateless container.
  * Returns true for StatelessCubit and StatelessVertex classes.
  */
@@ -22,18 +16,14 @@ export type IsStatelessContainer<T> = T extends {
  * Use this to reject stateless containers at the type level.
  */
 export type StatefulContainerOnly<T extends StateContainerConstructor> =
-  IsStatelessContainer<T> extends true
-    ? never
-    : T;
+  IsStatelessContainer<T> extends true ? never : T;
 
 /**
  * Constrain a type to extract state only from stateful containers.
  * Returns `never` for stateless containers.
  */
 export type ExtractStatefulState<T extends StateContainerConstructor> =
-  IsStatelessContainer<T> extends true
-    ? never
-    : ExtractState<T>;
+  IsStatelessContainer<T> extends true ? never : ExtractState<T>;
 
 /**
  * Extract the state type from a StateContainer

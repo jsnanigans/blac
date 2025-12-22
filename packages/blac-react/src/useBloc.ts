@@ -99,28 +99,12 @@ export function useBloc<
   BlocClass: StatefulContainer<T>,
   options?: UseBlocOptions<T>,
 ): UseBlocReturn<T, ExtractState<T>> {
-  const componentRef = useRef<ComponentRef>({});
-
-  // Runtime check for stateless containers - log error but don't crash
-  if (isStatelessClass(BlocClass)) {
-    console.error(
-      `[BlaC] useBloc() does not support stateless containers. ` +
-        `"${BlocClass.name}" is a StatelessCubit or StatelessVertex. ` +
-        `Use useBlocActions() instead for stateless containers.`,
-    );
-    // Return a minimal working result to avoid crashing the app
-    const instance = acquire(BlocClass, 'default') as InstanceType<T>;
-    return [
-      {} as ExtractState<T>,
-      instance as any,
-      componentRef,
-    ] as UseBlocReturn<T, ExtractState<T>>;
-  }
-
   type TBloc = InstanceState<T>;
-  const isIsolated = isIsolatedClass(BlocClass);
 
+  const componentRef = useRef<ComponentRef>({});
   const initialPropsRef = useRef(options?.props);
+  const isStateless = isStatelessClass(BlocClass);
+  const isIsolated = isIsolatedClass(BlocClass);
 
   const [bloc, subscribe, getSnapshot, instanceKey, adapterState, rawInstance] =
     useMemo<
@@ -129,10 +113,29 @@ export function useBloc<
         (callback: () => void) => () => void,
         () => ExtractState<T>,
         string | undefined,
-        AdapterState<T>,
+        AdapterState<T> | null,
         TBloc,
       ]
     >(() => {
+      // Runtime check for stateless containers - log error but don't crash
+      if (isStateless) {
+        console.error(
+          `[BlaC] useBloc() does not support stateless containers. ` +
+            `"${BlocClass.name}" is a StatelessCubit or StatelessVertex. ` +
+            `Use useBlocActions() instead for stateless containers.`,
+        );
+        const instance = acquire(BlocClass, 'default') as TBloc;
+        // Return minimal working functions that won't subscribe to anything
+        return [
+          instance,
+          () => () => {},
+          () => ({}) as ExtractState<T>,
+          undefined,
+          null,
+          instance,
+        ];
+      }
+
       const instanceKey = generateInstanceKey(
         componentRef.current,
         isIsolated,
@@ -173,14 +176,14 @@ export function useBloc<
       }
 
       return [
-        adapterState.proxiedBloc!,
+        adapterState.proxiedBloc as TBloc,
         subscribeFn,
         getSnapshotFn,
         instanceKey,
         adapterState,
         instance,
       ];
-    }, [BlocClass, options?.instanceId]);
+    }, [BlocClass, isStateless, isIsolated, options?.instanceId]);
 
   const state = useSyncExternalStore(subscribe, getSnapshot);
 
@@ -189,12 +192,14 @@ export function useBloc<
   const externalDepsManager = useRef(new ExternalDepsManager());
 
   useEffect(() => {
+    if (isStateless) return;
     if (options?.props !== initialPropsRef.current) {
       rawInstance.updateProps(options?.props);
     }
-  }, [options?.props, rawInstance]);
+  }, [options?.props, rawInstance, isStateless]);
 
   useEffect(() => {
+    if (isStateless || !adapterState) return;
     disableGetterTracking(adapterState, rawInstance);
     externalDepsManager.current.updateSubscriptions(
       adapterState.getterState,
@@ -204,6 +209,8 @@ export function useBloc<
   });
 
   useEffect(() => {
+    if (isStateless) return;
+
     if (options?.onMount) {
       options.onMount(bloc as InstanceType<T>);
     }
@@ -221,6 +228,7 @@ export function useBloc<
         rawInstance.dispose();
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return [state, bloc, componentRef] as UseBlocReturn<T, ExtractState<T>>;

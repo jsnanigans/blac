@@ -4,6 +4,7 @@
 
 import ReactDOM from 'react-dom/client';
 import { flushSync } from 'react-dom';
+import { acquire } from '@blac/core';
 import {
   DevToolsPanel,
   DevToolsInstancesBloc,
@@ -17,12 +18,10 @@ function App() {
     <DevToolsPanel
       onMount={(instancesBloc: DevToolsInstancesBloc) => {
         // Get the DiffBloc for storing previous states
-        // Safe to use .get() here because DevToolsPanel initializes it via useBloc
-        const diffBloc = DevToolsDiffBloc.get();
+        const diffBloc = acquire(DevToolsDiffBloc);
 
         // Get the LogsBloc for logging events
-        // Safe to use .get() here because DevToolsPanel initializes it via useBloc
-        const logsBloc = DevToolsLogsBloc.get();
+        const logsBloc = acquire(DevToolsLogsBloc);
 
         comm.connect();
         comm.onMessage((message) => {
@@ -64,7 +63,11 @@ function App() {
                         '__system__',
                         'System',
                         'DevTools',
-                        { instanceCount: Array.isArray(event.data) ? event.data.length : 0 },
+                        {
+                          instanceCount: Array.isArray(event.data)
+                            ? event.data.length
+                            : 0,
+                        },
                       );
                     } else if (event.type === 'instance-created') {
                       logsBloc.addLog(
