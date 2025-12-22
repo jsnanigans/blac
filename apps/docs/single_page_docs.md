@@ -28,12 +28,13 @@ class CounterContainer extends StateContainer<{ count: number }> {
 
   // Methods use protected emit/update
   increment = () => {
-    this.update(state => ({ count: state.count + 1 }));
+    this.update((state) => ({ count: state.count + 1 }));
   };
 }
 ```
 
 **Core Properties:**
+
 - `state` - Get current state (readonly)
 - `isDisposed` - Check if disposed
 - `name` - Debug name
@@ -44,11 +45,13 @@ class CounterContainer extends StateContainer<{ count: number }> {
 - `props` - Get current props (readonly, for props-enabled containers)
 
 **Core Methods:**
+
 - `subscribe(callback)` - Subscribe to state changes, returns unsubscribe function
 - `dispose()` - Clean up the container
 - `updateProps(newProps)` - Update props (triggers `propsUpdated` system event)
 
 **Protected Methods** (for subclasses):
+
 - `emit(newState)` - Emit new state directly (with change detection via `===`)
 - `update(fn)` - Update state with function `(current) => next`
 - `onSystemEvent(event, handler)` - Subscribe to system lifecycle events
@@ -59,9 +62,9 @@ Configuration is applied via `initConfig()` which is called automatically by the
 
 ```typescript
 interface StateContainerConfig {
-  name?: string;        // Debug name
-  debug?: boolean;      // Enable debug logging
-  instanceId?: string;  // Custom instance ID
+  name?: string; // Debug name
+  debug?: boolean; // Enable debug logging
+  instanceId?: string; // Custom instance ID
 }
 ```
 
@@ -84,6 +87,7 @@ class InternalBloc extends StateContainer<State> {}
 ```
 
 **⚠️ Important:** `BlacOptions` is a **union type** - you can only specify ONE option at a time:
+
 ```typescript
 // ✅ Valid - one option
 @blac({ isolated: true })
@@ -95,10 +99,9 @@ class InternalBloc extends StateContainer<State> {}
 ```
 
 **Function syntax** (for projects without decorator support):
+
 ```typescript
-const MyBloc = blac({ isolated: true })(
-  class extends StateContainer<State> {}
-);
+const MyBloc = blac({ isolated: true })(class extends StateContainer<State> {});
 ```
 
 **System Events:**
@@ -129,6 +132,7 @@ class MyBloc extends StateContainer<State, Props> {
 ```
 
 Available system events:
+
 - `stateChanged` - Fired after state changes, payload: `{ state, previousState }`
 - `propsUpdated` - Fired when props are updated, payload: `{ props, previousProps }`
 - `dispose` - Fired when dispose() is called, payload: `void`
@@ -161,6 +165,7 @@ class CounterCubit extends Cubit<{ count: number }> {
 ```
 
 **Public Methods:**
+
 - `emit(newState)` - Emit new state directly
 - `update(fn)` - Update with function `(current) => next`
 - `patch(partial)` - Shallow merge partial state (object state only)
@@ -205,9 +210,9 @@ interface AppState {
 class AppCubit extends Cubit<AppState> {
   updateTheme = (theme: string) => {
     // ✅ DO: Use update for nested changes
-    this.update(state => ({
+    this.update((state) => ({
       ...state,
-      settings: { ...state.settings, theme }
+      settings: { ...state.settings, theme },
     }));
 
     // ❌ DON'T: This replaces entire settings object
@@ -225,12 +230,12 @@ class TodoCubit extends Cubit<TodoState> {
   // Computed getter - automatically tracked by useBloc
   get visibleTodos() {
     return this.state.filter === 'active'
-      ? this.state.todos.filter(t => !t.done)
+      ? this.state.todos.filter((t) => !t.done)
       : this.state.todos;
   }
 
   get activeTodoCount() {
-    return this.state.todos.filter(t => !t.done).length;
+    return this.state.todos.filter((t) => !t.done).length;
   }
 
   get fullInventory(): boolean {
@@ -279,6 +284,7 @@ class CounterVertex extends Vertex<{ count: number }, CounterEvent> {
 
 **Event Definition:**
 Events are defined as TypeScript discriminated unions for type safety and autocomplete:
+
 ```typescript
 type MyEvent =
   | { type: 'eventA'; payload: string }
@@ -286,16 +292,19 @@ type MyEvent =
 ```
 
 **Methods:**
+
 - `add(event)` - Add event to be processed (public)
 - `createHandlers(map)` - Register all event handlers with exhaustive checking (protected)
 
 **Event Processing:**
+
 - Events are processed **synchronously**
 - If an event is added while processing, it's queued
 - Queued events are processed in order
 - Error handling via `onEventError` hook
 
 **Error Handling:**
+
 ```typescript
 class MyVertex extends Vertex<State> {
   protected onEventError(event: BaseEvent, error: Error): void {
@@ -304,6 +313,76 @@ class MyVertex extends Vertex<State> {
   }
 }
 ```
+
+---
+
+### StatelessCubit - Action-Only Container
+
+A Cubit without state management. Use for action-only logic like analytics, logging, or API calls.
+
+```typescript
+import { StatelessCubit } from '@blac/core';
+
+class AnalyticsService extends StatelessCubit {
+  trackPageView(page: string) {
+    analytics.track('page_view', { page });
+  }
+
+  trackClick(element: string) {
+    analytics.track('click', { element });
+  }
+}
+```
+
+**Characteristics:**
+
+- No `emit()`, `update()`, `patch()` methods (throws error)
+- No accessible `state` property (throws error)
+- Cannot be subscribed to (throws error)
+- Must use `useBlocActions` in React (not `useBloc`)
+
+---
+
+### StatelessVertex - Event-Only Container
+
+An event-driven container without state. Handlers receive only the event (no `emit` function).
+
+```typescript
+import { StatelessVertex } from '@blac/core';
+
+type LogEvent =
+  | { type: 'info'; message: string }
+  | { type: 'error'; message: string; error: Error }
+  | { type: 'warn'; message: string };
+
+class LoggingVertex extends StatelessVertex<LogEvent> {
+  constructor() {
+    super();
+    this.createHandlers({
+      info: (event) => console.log('[INFO]', event.message),
+      error: (event) => console.error('[ERROR]', event.message, event.error),
+      warn: (event) => console.warn('[WARN]', event.message),
+    });
+  }
+
+  info = (message: string) => this.add({ type: 'info', message });
+  error = (message: string, error: Error) =>
+    this.add({ type: 'error', message, error });
+  warn = (message: string) => this.add({ type: 'warn', message });
+}
+```
+
+**React Usage:**
+
+```tsx
+const analytics = useBlocActions(AnalyticsService);
+const logger = useBlocActions(LoggingVertex);
+
+analytics.trackClick('submit-button');
+logger.info('Button clicked');
+```
+
+**⚠️ Warning:** Using `useBloc` with a stateless container throws an error. Always use `useBlocActions`.
 
 ---
 
@@ -332,6 +411,7 @@ CounterCubit.release('main', true);
 ```
 
 **Use `.resolve()` when:**
+
 - React components need to manage instance lifetime (used internally by `useBloc`/`useBlocActions`)
 - You want to ensure the instance stays alive during usage
 - You need ownership semantics with automatic cleanup
@@ -352,12 +432,14 @@ counter.increment();
 ```
 
 **Use `.get()` when:**
+
 - Bloc-to-bloc communication (calling methods on other blocs)
 - Event handlers where component already owns the instance via `.resolve()`
 - Accessing keepAlive singleton instances
 - You know the instance exists and is being managed elsewhere
 
 **Common pattern - Prevents memory leaks:**
+
 ```typescript
 class UserBloc extends Cubit<UserState> {
   loadProfile = () => {
@@ -387,6 +469,7 @@ result.instance.markAsRead();
 ```
 
 **Use `.getSafe()` when:**
+
 - Instance existence is conditional/uncertain
 - You want type-safe error handling without try/catch
 - Checking if another component has created an instance
@@ -416,6 +499,7 @@ class DashboardCubit extends Cubit<DashboardState> {
 ```
 
 **Use `.connect()` when:**
+
 - B2B communication where the instance might not exist yet
 - You want to lazily create shared instances on first access
 - You need to ensure an instance exists without claiming ownership
@@ -425,6 +509,7 @@ class DashboardCubit extends Cubit<DashboardState> {
 **⚠️ Important:** Cannot use `.connect()` with isolated blocs (throws error).
 
 **Comparison:**
+
 - **`.get()`**: Borrow existing (throws if missing) - use when you know it exists
 - **`.getSafe()`**: Borrow existing (returns error) - use for conditional access
 - **`.connect()`**: Get or create (no ref count change) - use to ensure existence
@@ -463,17 +548,20 @@ const stats = StateContainer.getStats();
 Both methods let you access all instances of a type, but with different trade-offs:
 
 **`.getAll()`** - Returns an array of all instances
+
 ```typescript
 const allSessions = UserSessionBloc.getAll();
-const activeSessions = allSessions.filter(s => s.state.isActive);
+const activeSessions = allSessions.filter((s) => s.state.isActive);
 ```
 
 **Use `.getAll()` when:**
+
 - You need array operations (filter, map, reduce)
 - Working with small numbers of instances (<100)
 - You need to iterate multiple times
 
 **`.forEach(callback)`** - Iterates with a callback function
+
 ```typescript
 // Broadcast to all sessions
 UserSessionBloc.forEach((session) => {
@@ -489,6 +577,7 @@ UserSessionBloc.forEach((session) => {
 ```
 
 **Use `.forEach()` when:**
+
 - Working with large numbers of instances (100+) - more memory efficient
 - You might dispose instances during iteration (automatically skips disposed)
 - You only need to iterate once
@@ -521,6 +610,7 @@ function Counter() {
 ```
 
 **Returns:** `[state, blocInstance, componentRef]`
+
 - `state` - Current state (may be a Proxy for tracking)
 - `blocInstance` - The bloc instance with all methods (may be a Proxy for getter tracking)
 - `componentRef` - Internal reference (rarely needed)
@@ -697,6 +787,7 @@ function ChannelListItem({ channelId }: Props) {
 ```
 
 **Benefits:**
+
 - ✅ Sidebar can show unread counts without loading heavy ChannelBloc instances
 - ✅ Automatic re-rendering when notification state changes
 - ✅ No manual subscription management needed
@@ -741,6 +832,7 @@ const [state, bloc] = useBloc(MyBloc, {
 **Options Details:**
 
 **`props`**: Constructor arguments passed to the bloc
+
 ```typescript
 class UserBloc extends StateContainer<State, { userId: string }> {
   constructor(props?: { userId: string }) {
@@ -750,14 +842,16 @@ class UserBloc extends StateContainer<State, { userId: string }> {
 
 // Pass props
 const [state, bloc] = useBloc(UserBloc, {
-  props: { userId: '123' }
+  props: { userId: '123' },
 });
 ```
+
 Always make constructor parameters optional to avoid runtime errors, the type of the constructor props is not enforced.
 
 Props are also updated when they change via `updateProps()` internally.
 
 **`instanceId`**: Custom instance ID for shared blocs
+
 ```typescript
 // Both components share same bloc instance
 function ComponentA() {
@@ -770,27 +864,33 @@ function ComponentB() {
   return <div>{state}</div>; // Same state as ComponentA
 }
 ```
+
 This enables shared state across specific components with their own instance of the Bloc. Useful when you need multiple instances or the same Components or Component-Trees at the same time, each with their own state.
 
 **`dependencies`**: Manual dependency tracking
+
 ```typescript
 // Only re-renders when count or name change
 const [state, bloc] = useBloc(UserBloc, {
-  dependencies: (state, bloc) => [state.count, state.name]
+  dependencies: (state, bloc) => [state.count, state.name],
 });
 ```
+
 Use this to overwrite the automatic dependency tracking or to fine tune to avoid unwanted re-renders that the automatic tracking cannot detect.
 
 **`autoTrack`**: Control automatic tracking
+
 ```typescript
 // Disable automatic tracking - all state changes trigger re-render
 const [state, bloc] = useBloc(UserBloc, {
-  autoTrack: false
+  autoTrack: false,
 });
 ```
+
 When the `dependencies` option is defined, automatic tracking is also disabled.
 
 **`onMount` / `onUnmount`**: Lifecycle callbacks
+
 ```typescript
 const [state, bloc] = useBloc(UserBloc, {
   onMount: (bloc) => {
@@ -800,7 +900,7 @@ const [state, bloc] = useBloc(UserBloc, {
   onUnmount: (bloc) => {
     console.log('Component unmounting');
     bloc.cleanup();
-  }
+  },
 });
 ```
 
@@ -828,18 +928,20 @@ function ActionsOnly() {
 ```
 
 **Benefits:**
+
 - No state subscription overhead
 - No proxy tracking
 - Never re-renders from bloc state changes
 - Lighter weight for action-only components
 
 **Options:**
+
 ```typescript
 const bloc = useBlocActions(CounterBloc, {
   props: { initialValue: 0 },
   instanceId: 'shared',
   onMount: (bloc) => console.log('Mounted'),
-  onUnmount: (bloc) => console.log('Unmounting')
+  onUnmount: (bloc) => console.log('Unmounting'),
 });
 ```
 
@@ -872,6 +974,7 @@ function ComponentB() {
   return <div>B: {state.count}</div>; // Different count
 }
 ```
+
 The Bloc is tightly coupled 1:1 with the component.
 
 **Shared Instances** (Default) - Components share the same instance:
@@ -897,11 +1000,13 @@ function ComponentB() {
 **When to Use Each:**
 
 ✅ **Use Isolated** for:
+
 - Form state (each form instance independent)
 - Local UI state (modals, dropdowns)
 - Component-specific state
 
 ✅ **Use Shared** (default) for:
+
 - Global state (user auth, theme)
 - Cross-component communication
 - Singleton services
@@ -928,11 +1033,13 @@ function Login() {
 ```
 
 **Default Behavior (keepAlive = false):**
+
 - Reference counting: each `useBloc` increments ref count
 - When ref count reaches 0, instance is disposed
 - Next `useBloc` creates fresh instance
 
 **With keepAlive = true:**
+
 - Instance persists regardless of ref count
 - Useful for global singletons
 - Must manually dispose or use `release(key, true)`
@@ -973,6 +1080,7 @@ class AppCubit extends Cubit<AppState> {
 ```
 
 **When to use:**
+
 - ✅ Bloc needs dependency throughout its lifetime
 - ✅ You want to ensure dependency stays alive
 - ✅ You'll clean up via `onSystemEvent('dispose', ...)`
@@ -999,7 +1107,7 @@ class ChannelBloc extends Vertex<ChannelState, ChannelEvent> {
         // Add message to state
         emit({
           ...this.state,
-          messages: [...this.state.messages, event.message]
+          messages: [...this.state.messages, event.message],
         });
 
         // ✅ Borrow NotificationCubit to update unread count
@@ -1018,17 +1126,20 @@ class ChannelBloc extends Vertex<ChannelState, ChannelEvent> {
   }
 
   // Convenience methods
-  receiveMessage = (message: Message) => this.add({ type: 'receiveMessage', message });
+  receiveMessage = (message: Message) =>
+    this.add({ type: 'receiveMessage', message });
   markAsRead = () => this.add({ type: 'markAsRead' });
 }
 ```
 
 **When to use:**
+
 - ✅ One-off interactions between blocs
 - ✅ Event handling that triggers side effects
 - ✅ You don't want to create ownership (no ref count increment)
 
 **Benefits:**
+
 - No memory leaks (borrowing, not owning)
 - No cleanup needed
 - Clear, explicit dependencies
@@ -1077,11 +1188,13 @@ function CheckoutSummary() {
 ```
 
 **When to use:**
+
 - ✅ Computed values that depend on multiple blocs
 - ✅ You want automatic re-rendering when dependencies change
 - ✅ Creating derived/aggregate state
 
 **How it works:**
+
 1. Component accesses getter during render
 2. BlaC records all `.get()`, `.getSafe()`, and `.connect()` calls
 3. Automatically subscribes to all accessed blocs
@@ -1089,6 +1202,7 @@ function CheckoutSummary() {
 5. Triggers component re-render if getter value changed
 
 **⚠️ Important:**
+
 - Only use `.get()`, `.getSafe()`, or `.connect()` in getters
 - Never use `.resolve()` in getters (causes memory leaks)
 - Keep getters pure (no side effects)
@@ -1128,6 +1242,7 @@ class UserProfileCubit extends Cubit<UserProfileState> {
 ```
 
 **When to use:**
+
 - ✅ Optional dependencies (may or may not exist)
 - ✅ Conditional logic based on other bloc existence
 - ✅ Creating dependencies on-demand
@@ -1149,7 +1264,7 @@ class AnalyticsService extends Cubit<AnalyticsState> {
   trackEvent = (name: string, data: Record<string, any>) => {
     this.emit({
       ...this.state,
-      events: [...this.state.events, { name, data, timestamp: Date.now() }]
+      events: [...this.state.events, { name, data, timestamp: Date.now() }],
     });
   };
 }
@@ -1159,7 +1274,7 @@ class TodoCubit extends Cubit<TodoState> {
   addTodo = (text: string) => {
     this.emit({
       ...this.state,
-      todos: [...this.state.todos, { text, done: false }]
+      todos: [...this.state.todos, { text, done: false }],
     });
 
     // ✅ Borrow service (no cleanup needed)
@@ -1181,11 +1296,13 @@ class UserCubit extends Cubit<UserState> {
 ```
 
 **When to use:**
+
 - ✅ Logging, analytics, monitoring services
 - ✅ Feature flags, configuration
 - ✅ Shared utilities accessed by many blocs
 
 **Benefits:**
+
 - Single source of truth
 - No ownership complexity
 - Always available (keepAlive)
@@ -1195,13 +1312,13 @@ class UserCubit extends Cubit<UserState> {
 
 ### Choosing the Right Pattern
 
-| Pattern | Use When | Ownership | Memory |
-|---------|----------|-----------|--------|
-| **Constructor** | Essential lifetime dependency | Yes (must release) | High |
-| **Event Handler** | Event-driven side effects | No (borrowing) | Low |
-| **Getter** | Computed multi-bloc values | No (auto-tracked) | Low |
-| **Lazy/On-Demand** | Optional/conditional dependencies | No | Very Low |
-| **Service** | Shared utilities/services | No (keepAlive) | Persistent |
+| Pattern            | Use When                          | Ownership          | Memory     |
+| ------------------ | --------------------------------- | ------------------ | ---------- |
+| **Constructor**    | Essential lifetime dependency     | Yes (must release) | High       |
+| **Event Handler**  | Event-driven side effects         | No (borrowing)     | Low        |
+| **Getter**         | Computed multi-bloc values        | No (auto-tracked)  | Low        |
+| **Lazy/On-Demand** | Optional/conditional dependencies | No                 | Very Low   |
+| **Service**        | Shared utilities/services         | No (keepAlive)     | Persistent |
 
 ---
 
@@ -1319,6 +1436,7 @@ function ChannelView({ channelId }: Props) {
 ```
 
 **Architecture Benefits:**
+
 - ✅ Lightweight NotificationCubit is always alive (small memory footprint)
 - ✅ Heavy ChannelBloc instances created only when viewing channels
 - ✅ Sidebar shows unread counts without loading all channels
@@ -1343,6 +1461,7 @@ class InternalBloc extends Cubit<InternalState> {
 ```
 
 **Use cases:**
+
 - Internal DevTools state management
 - Meta-level application state
 - Debug utilities
@@ -1372,7 +1491,7 @@ import { createLogger, LogLevel } from '@blac/core';
 const logger = createLogger({
   enabled: true,
   level: LogLevel.DEBUG,
-  output: (entry) => console.log(entry)
+  output: (entry) => console.log(entry),
 });
 
 logger.debug('MyComponent', 'Rendering', { props });
@@ -1407,10 +1526,13 @@ const unsubscribe = globalRegistry.on('created', (container) => {
 });
 
 // Listen to state changes
-globalRegistry.on('stateChanged', (container, prevState, newState, callstack) => {
-  console.log('State changed:', container.name, prevState, newState);
-  if (callstack) console.log('Callstack:', callstack);
-});
+globalRegistry.on(
+  'stateChanged',
+  (container, prevState, newState, callstack) => {
+    console.log('State changed:', container.name, prevState, newState);
+    if (callstack) console.log('Callstack:', callstack);
+  },
+);
 
 // Listen to events (Vertex only)
 globalRegistry.on('eventAdded', (vertex, event) => {
@@ -1427,6 +1549,7 @@ unsubscribe();
 ```
 
 **Available Lifecycle Events:**
+
 - `'created'` - Container instantiated
 - `'stateChanged'` - State updated (after emit), includes optional callstack
 - `'eventAdded'` - Event added to Vertex (before processing)
@@ -1465,11 +1588,12 @@ const myPlugin: BlacPlugin = {
 
   onUninstall() {
     console.log('Plugin uninstalled');
-  }
+  },
 };
 ```
 
 **PluginContext Methods:**
+
 - `getInstanceMetadata(instance)` - Get metadata about an instance
 - `getState(instance)` - Get current state
 - `queryInstances(TypeClass)` - Get all instances of a type
@@ -1477,11 +1601,203 @@ const myPlugin: BlacPlugin = {
 - `getStats()` - Get registry statistics
 
 **Use Cases:**
+
 - DevTools integration
 - Performance monitoring
 - State persistence
 - Debug logging
 - Analytics
+
+---
+
+## Reactive Utilities
+
+### waitUntil - Async State Waiting
+
+Wait for a bloc's state to meet a condition. Returns a Promise that resolves when the predicate is true.
+
+**Basic Usage:**
+
+```typescript
+import { waitUntil } from '@blac/core';
+
+// Wait for condition on bloc, returns bloc instance
+const userBloc = await waitUntil(
+  UserBloc,
+  (bloc) => bloc.state.isAuthenticated,
+);
+
+// Wait with selector, returns selected value
+const layout = await waitUntil(
+  LayoutBloc,
+  (bloc) => bloc.state.currentLayout, // selector
+  (layout) => layout !== null, // predicate
+);
+```
+
+**With Options:**
+
+```typescript
+interface WaitUntilOptions {
+  instanceId?: string; // Target specific instance
+  timeout?: number; // Timeout in milliseconds
+  signal?: AbortSignal; // Abort signal for cancellation
+}
+
+// With timeout
+try {
+  const bloc = await waitUntil(UserBloc, (bloc) => bloc.state.isReady, {
+    timeout: 5000,
+  });
+} catch (error) {
+  if (error instanceof WaitUntilTimeoutError) {
+    console.log('Timed out');
+  }
+}
+
+// With abort signal
+const controller = new AbortController();
+const promise = waitUntil(UserBloc, (bloc) => bloc.state.isReady, {
+  signal: controller.signal,
+});
+controller.abort(); // Cancel
+```
+
+**Error Types:**
+
+- `WaitUntilTimeoutError` - Timeout exceeded
+- `WaitUntilAbortedError` - AbortSignal triggered
+- `WaitUntilDisposedError` - Bloc disposed while waiting
+
+---
+
+### watch - Reactive Watching
+
+Watch blocs for state changes outside of React. Automatically tracks state and getter accesses.
+
+**Single Bloc:**
+
+```typescript
+import { watch } from '@blac/core';
+
+const unwatch = watch(UserBloc, (userBloc) => {
+  console.log(userBloc.state.name);
+  console.log(userBloc.fullName); // getters tracked too
+});
+
+unwatch(); // Stop watching
+```
+
+**Multiple Blocs:**
+
+```typescript
+const unwatch = watch(
+  [UserBloc, SettingsBloc] as const,
+  ([userBloc, settingsBloc]) => {
+    console.log(userBloc.state.name, settingsBloc.state.theme);
+  },
+);
+```
+
+**Specific Instance:**
+
+```typescript
+import { watch, instance } from '@blac/core';
+
+const unwatch = watch(instance(UserBloc, 'user-123'), (userBloc) =>
+  console.log(userBloc.state.name),
+);
+```
+
+**Stop from Callback:**
+
+```typescript
+const unwatch = watch(UserBloc, (userBloc) => {
+  if (userBloc.state.status === 'complete') {
+    return watch.STOP; // Stop watching
+  }
+});
+```
+
+---
+
+### tracked - Manual Dependency Tracking
+
+Low-level utilities for manual dependency tracking. Useful for custom integrations.
+
+**tracked() Function:**
+
+```typescript
+import { tracked, ensure } from '@blac/core';
+
+const { result, dependencies } = tracked(() => {
+  const user = ensure(UserBloc);
+  return user.fullName; // getter may access other blocs
+});
+// result: return value
+// dependencies: Set of all blocs accessed
+```
+
+**TrackedContext Class:**
+
+```typescript
+import { createTrackedContext, ensure } from '@blac/core';
+
+const ctx = createTrackedContext();
+const userBloc = ensure(UserBloc);
+const proxiedUser = ctx.proxy(userBloc);
+
+ctx.start();
+const value = proxiedUser.state.name;
+const externalDeps = ctx.stop();
+```
+
+**TrackedContext Methods:**
+
+- `proxy(bloc)` - Create tracking proxy
+- `start()` - Start tracking
+- `stop()` - Stop and return external dependencies
+- `changed()` - Check if tracked values changed
+- `reset()` - Reset for reuse
+
+---
+
+## Global Configuration
+
+### configureBlac
+
+Configure global defaults for `@blac/core`.
+
+```typescript
+import { configureBlac, LogLevel } from '@blac/core';
+
+configureBlac({
+  devMode: true,
+  logger: {
+    enabled: true,
+    level: LogLevel.DEBUG,
+  },
+});
+```
+
+**Options:**
+
+```typescript
+interface BlacConfig {
+  devMode: boolean; // Enable dev mode (default: NODE_ENV !== 'production')
+  logger: Partial<LogConfig>; // Logger configuration
+}
+```
+
+**Helper Functions:**
+
+```typescript
+import { isDevMode } from '@blac/core';
+
+if (isDevMode()) {
+  console.log('Running in dev mode');
+}
+```
 
 ---
 
@@ -1501,7 +1817,8 @@ class CounterCubit extends Cubit<{ count: number }> {
 
 // ❌ DON'T: Regular methods lose 'this' context in React
 class BadCubit extends Cubit<{ count: number }> {
-  increment() { // Will break when passed to onClick
+  increment() {
+    // Will break when passed to onClick
     this.emit({ count: this.state.count + 1 });
   }
 }
@@ -1514,9 +1831,9 @@ Always create new objects/arrays when updating:
 ```typescript
 // ✅ DO: Create new array
 addTodo = (text: string) => {
-  this.update(state => ({
+  this.update((state) => ({
     ...state,
-    todos: [...state.todos, newTodo]
+    todos: [...state.todos, newTodo],
   }));
 };
 
@@ -1537,7 +1854,7 @@ setName = (name: string) => {
 
 // ❌ DON'T: Use update for simple field updates
 setName = (name: string) => {
-  this.update(state => ({ ...state, name })); // Verbose
+  this.update((state) => ({ ...state, name })); // Verbose
 };
 ```
 
@@ -1546,9 +1863,9 @@ setName = (name: string) => {
 ```typescript
 // ✅ DO: Use update for nested changes
 updateTheme = (theme: string) => {
-  this.update(state => ({
+  this.update((state) => ({
     ...state,
-    settings: { ...state.settings, theme }
+    settings: { ...state.settings, theme },
   }));
 };
 
@@ -1767,7 +2084,7 @@ class AuthVertex extends Vertex<AuthState, AuthEvent> {
       user: null,
       isAuthenticated: false,
       isLoading: false,
-      error: null
+      error: null,
     });
 
     this.createHandlers({
@@ -1775,18 +2092,21 @@ class AuthVertex extends Vertex<AuthState, AuthEvent> {
         emit({ ...this.state, isLoading: true, error: null });
 
         // Simulate sync auth (in real app, async work would be done before dispatching event)
-        if (event.email === 'user@example.com' && event.password === 'password') {
+        if (
+          event.email === 'user@example.com' &&
+          event.password === 'password'
+        ) {
           emit({
             user: { id: '123', name: 'Test User', email: 'user@example.com' },
             isAuthenticated: true,
             isLoading: false,
-            error: null
+            error: null,
           });
         } else {
           emit({
             ...this.state,
             isLoading: false,
-            error: 'Invalid credentials'
+            error: 'Invalid credentials',
           });
         }
       },
@@ -1795,13 +2115,14 @@ class AuthVertex extends Vertex<AuthState, AuthEvent> {
           user: null,
           isAuthenticated: false,
           isLoading: false,
-          error: null
+          error: null,
         });
       },
     });
   }
 
-  login = (email: string, password: string) => this.add({ type: 'login', email, password });
+  login = (email: string, password: string) =>
+    this.add({ type: 'login', email, password });
   logout = () => this.add({ type: 'logout' });
 }
 ```
@@ -1815,7 +2136,9 @@ BlaC is fully typed with TypeScript. State types are inferred automatically:
 ```typescript
 // State type must be an object
 class CounterCubit extends Cubit<{ count: number }> {
-  constructor() { super({ count: 0 }); }
+  constructor() {
+    super({ count: 0 });
+  }
   increment = () => this.emit({ count: this.state.count + 1 });
 }
 
@@ -1831,7 +2154,7 @@ class AppCubit extends Cubit<AppState> {
     super({
       user: null,
       settings: defaultSettings,
-      todos: []
+      todos: [],
     });
   }
 }
@@ -1877,7 +2200,7 @@ type UserProps = ExtractProps<UserCubit>; // { userId: string }
 
 // BlocConstructor type for generic constraints
 function createBloc<TBloc extends StateContainer<any>>(
-  Class: BlocConstructor<TBloc>
+  Class: BlocConstructor<TBloc>,
 ): TBloc {
   return Class.resolve();
 }
@@ -1890,6 +2213,7 @@ function createBloc<TBloc extends StateContainer<any>>(
 ### Core Methods
 
 **StateContainer:**
+
 - `state` - Current state (readonly)
 - `props` - Current props (readonly)
 - `subscribe(callback)` - Subscribe to changes
@@ -1903,20 +2227,34 @@ function createBloc<TBloc extends StateContainer<any>>(
 - `onSystemEvent(event, handler)` - Subscribe to system events (protected)
 
 **Cubit:**
+
 - All StateContainer methods
 - `emit(state)` - Emit new state (public)
 - `update(fn)` - Update with function (public)
 - `patch(partial)` - Shallow merge (public, object state only)
 
 **Vertex:**
+
 - All StateContainer methods
 - `add(event)` - Add event (public)
-- `on(EventClass, handler)` - Register handler (protected)
+- `createHandlers(map)` - Register all handlers (protected)
 - `onEventError(event, error)` - Error hook (protected)
+
+**StatelessCubit:**
+
+- Action-only container, no state
+- Use with `useBlocActions` only
+
+**StatelessVertex:**
+
+- Event-only container, no state
+- Handlers receive event only (no emit)
+- Use with `useBlocActions` only
 
 ### Static Container Methods
 
 **Instance Access:**
+
 - `Class.resolve(id?, ...args)` - Get/create instance with ownership (increments ref count)
 - `Class.get(id?)` - Get existing instance without ownership (throws if not found)
 - `Class.getSafe(id?)` - Get existing instance without ownership (returns discriminated union)
@@ -1924,6 +2262,7 @@ function createBloc<TBloc extends StateContainer<any>>(
 - `Class.release(id?, force?)` - Release reference
 
 **Instance Info:**
+
 - `Class.hasInstance(id?)` - Check existence
 - `Class.getRefCount(id?)` - Get reference count
 - `Class.getAll()` - Get all instances (returns array)
@@ -1962,10 +2301,10 @@ function createBloc<TBloc extends StateContainer<any>>(
 ```typescript
 import { blac } from '@blac/core';
 
-@blac({ isolated: true })          // Each instance unique per component
+@blac({ isolated: true }) // Each instance unique per component
 class MyBloc extends Cubit<State> {}
 
-@blac({ keepAlive: true })         // Persist without consumers
+@blac({ keepAlive: true }) // Persist without consumers
 class MyBloc extends Cubit<State> {}
 
 @blac({ excludeFromDevTools: true }) // Hide from DevTools panels
@@ -1999,10 +2338,75 @@ type LifecycleEvent = 'created' | 'stateChanged' | 'eventAdded' | 'disposed';
 ### Log Levels
 
 ```typescript
-LogLevel.ERROR = 0
-LogLevel.WARN = 1
-LogLevel.INFO = 2
-LogLevel.DEBUG = 3
+LogLevel.ERROR = 0;
+LogLevel.WARN = 1;
+LogLevel.INFO = 2;
+LogLevel.DEBUG = 3;
+```
+
+### Reactive Utilities
+
+**waitUntil:**
+
+```typescript
+// Wait for condition
+const bloc = await waitUntil(UserBloc, (bloc) => bloc.state.isReady);
+
+// Wait with selector
+const value = await waitUntil(
+  Bloc,
+  (b) => b.state.value,
+  (v) => v !== null,
+);
+
+// With options
+await waitUntil(Bloc, predicate, {
+  timeout: 5000,
+  signal: abortController.signal,
+});
+```
+
+**watch:**
+
+```typescript
+// Single bloc
+const unwatch = watch(UserBloc, (bloc) => console.log(bloc.state));
+
+// Multiple blocs
+const unwatch = watch([A, B] as const, ([a, b]) =>
+  console.log(a.state, b.state),
+);
+
+// Specific instance
+const unwatch = watch(instance(Bloc, 'id'), (bloc) => {});
+
+// Stop from callback
+watch(Bloc, (bloc) => (bloc.done ? watch.STOP : undefined));
+```
+
+**tracked:**
+
+```typescript
+// Track dependencies
+const { result, dependencies } = tracked(() => someBloc.computedValue);
+
+// TrackedContext for manual control
+const ctx = createTrackedContext();
+ctx.start();
+// ... access proxied blocs
+const deps = ctx.stop();
+```
+
+### Global Configuration
+
+```typescript
+// Configure
+configureBlac({ devMode: true, logger: { enabled: true } });
+
+// Check dev mode
+if (isDevMode()) {
+  /* ... */
+}
 ```
 
 ---
@@ -2122,7 +2526,7 @@ class Counter extends Cubit<{ count: number }> {
 ```typescript
 // Before
 const [state, bloc] = useBloc(UserBloc, {
-  dependencies: (s) => [s.name, s.email]
+  dependencies: (s) => [s.name, s.email],
 });
 
 // After (simpler, automatic)
@@ -2154,12 +2558,14 @@ if (!result.error) {
 ```
 
 **Why the change:**
+
 - `.resolve()` is familiar from DI containers and clearly indicates instance resolution
 - `.get()` prevents memory leaks in bloc-to-bloc communication
 - `.getSafe()` provides type-safe conditional access
 - Avoids React linter issues (methods starting with "use" are flagged as hooks)
 
 **Migration tips:**
+
 - React components: Use `.resolve()` (handled automatically by `useBloc`/`useBlocActions`)
 - Bloc methods calling other blocs: Use `.get()` (prevents memory leaks)
 - Conditional instance access: Use `.getSafe()` (type-safe error handling)
@@ -2364,12 +2770,12 @@ Use when you know exactly what to track:
 ```typescript
 // For predictable, known dependencies
 const [state] = useBloc(UserBloc, {
-  dependencies: (state) => [state.name, state.email]
+  dependencies: (state) => [state.name, state.email],
 });
 
 // For derived values that shouldn't trigger re-render
 const [state] = useBloc(AnalyticsBloc, {
-  dependencies: (state) => [state.displayMetrics]
+  dependencies: (state) => [state.displayMetrics],
   // Ignores internal tracking data changes
 });
 ```
@@ -2402,13 +2808,13 @@ const allSessions = UserSessionBloc.getAll(); // Creates array copy
 
 ### Performance Summary
 
-| Pattern | Re-renders | Use When |
-|---------|------------|----------|
-| Auto-tracking (default) | On tracked property change | Most cases |
-| `useBlocActions` | Never | Action-only components |
-| Manual `dependencies` | On dependency change | Known fixed dependencies |
-| `autoTrack: false` | On any state change | Simple state, debugging |
-| Getters | On computed value change | Derived/computed state |
+| Pattern                 | Re-renders                 | Use When                 |
+| ----------------------- | -------------------------- | ------------------------ |
+| Auto-tracking (default) | On tracked property change | Most cases               |
+| `useBlocActions`        | Never                      | Action-only components   |
+| Manual `dependencies`   | On dependency change       | Known fixed dependencies |
+| `autoTrack: false`      | On any state change        | Simple state, debugging  |
+| Getters                 | On computed value change   | Derived/computed state   |
 
 ### Common Performance Mistakes
 

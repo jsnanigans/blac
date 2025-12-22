@@ -33,6 +33,10 @@ export default defineConfig({
           items: [
             { text: 'Cubit', link: '/core/cubit' },
             { text: 'Vertex', link: '/core/vertex' },
+            {
+              text: 'Stateless Containers',
+              link: '/core/stateless-containers',
+            },
           ],
         },
         {
@@ -44,8 +48,17 @@ export default defineConfig({
           ],
         },
         {
+          text: 'Utilities',
+          items: [
+            { text: 'waitUntil', link: '/core/wait-until' },
+            { text: 'watch', link: '/core/watch' },
+            { text: 'tracked', link: '/core/tracked' },
+          ],
+        },
+        {
           text: 'Advanced',
           items: [
+            { text: 'Global Configuration', link: '/core/global-config' },
             { text: 'Logging', link: '/core/logging' },
             { text: 'Plugins', link: '/core/plugins' },
           ],
@@ -104,7 +117,7 @@ export default defineConfig({
     },
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/yourusername/blac' },
+      { icon: 'github', link: 'https://github.com/jsnanigans/blac' },
     ],
 
     search: {

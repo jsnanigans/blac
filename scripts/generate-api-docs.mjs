@@ -22,7 +22,12 @@ const CORE_TOPICS = {
     classes: ['StateContainer', 'Cubit', 'Vertex'],
     interfaces: ['StateContainerConfig', 'BaseEvent', 'SystemEventPayloads'],
     functions: ['blac'],
-    types: ['SystemEvent', 'ExtractState', 'ExtractProps', 'ExtractConstructorArgs'],
+    types: [
+      'SystemEvent',
+      'ExtractState',
+      'ExtractProps',
+      'ExtractConstructorArgs',
+    ],
   },
   registry: {
     title: 'Registry',
@@ -36,25 +41,30 @@ const CORE_TOPICS = {
     title: 'Plugins',
     description: 'Plugin system for extending BlaC',
     classes: ['PluginManager'],
-    interfaces: ['BlacPlugin', 'BlacPluginWithInit', 'PluginConfig', 'PluginContext'],
+    interfaces: [
+      'BlacPlugin',
+      'BlacPluginWithInit',
+      'PluginConfig',
+      'PluginContext',
+    ],
     functions: ['createPluginManager', 'getPluginManager', 'hasInitHook'],
     types: [],
   },
   adapter: {
     title: 'Framework Adapter',
-    description: 'React integration and dependency tracking',
-    classes: ['ExternalDependencyManager'],
+    description: 'Utilities for building framework integrations',
+    classes: ['ExternalDepsManager', 'DependencyManager'],
     interfaces: ['AdapterState', 'ManualDepsConfig'],
     functions: [
-      'initAutoTrackState',
-      'initManualDepsState',
-      'initNoTrackState',
-      'createAutoTrackSnapshot',
-      'createAutoTrackSubscribe',
-      'createManualDepsSnapshot',
-      'createManualDepsSubscribe',
-      'createNoTrackSnapshot',
-      'createNoTrackSubscribe',
+      'autoTrackInit',
+      'manualDepsInit',
+      'noTrackInit',
+      'autoTrackSubscribe',
+      'manualDepsSubscribe',
+      'noTrackSubscribe',
+      'autoTrackSnapshot',
+      'manualDepsSnapshot',
+      'noTrackSnapshot',
       'disableGetterTracking',
     ],
     types: ['SnapshotFunction', 'SubscribeFunction', 'SubscriptionCallback'],
@@ -64,7 +74,14 @@ const CORE_TOPICS = {
     description: 'Logging utilities for debugging',
     classes: [],
     interfaces: ['LogConfig', 'LogEntry'],
-    functions: ['createLogger', 'configureLogger', 'debug', 'info', 'warn', 'error'],
+    functions: [
+      'createLogger',
+      'configureLogger',
+      'debug',
+      'info',
+      'warn',
+      'error',
+    ],
     types: [],
     enums: ['LogLevel'],
   },
@@ -83,9 +100,23 @@ const CORE_TOPICS = {
       'isIsolatedKey',
       'isKeepAliveClass',
       'isExcludedFromDevTools',
+      'isStatelessClass',
     ],
-    types: ['BlacOptions', 'Brand', 'BrandedId', 'InstanceId', 'EventConstructor', 'EventHandler'],
-    variables: ['BLAC_DEFAULTS', 'BLAC_ERROR_PREFIX', 'BLAC_ID_PATTERNS', 'BLAC_STATIC_PROPS', 'globalRegistry'],
+    types: [
+      'BlacOptions',
+      'Brand',
+      'BrandedId',
+      'InstanceId',
+      'EventConstructor',
+      'EventHandler',
+    ],
+    variables: [
+      'BLAC_DEFAULTS',
+      'BLAC_ERROR_PREFIX',
+      'BLAC_ID_PATTERNS',
+      'BLAC_STATIC_PROPS',
+      'globalRegistry',
+    ],
   },
 };
 
@@ -142,7 +173,10 @@ function parseDocComment(docComment) {
   while ((match = exampleRegex.exec(cleaned)) !== null) {
     let example = match[1].trim();
     // Restore code blocks in example
-    example = example.replace(new RegExp(`${codeBlockPlaceholder}(\\d+)${codeBlockPlaceholder}`, 'g'), (_, idx) => codeBlocks[parseInt(idx)]);
+    example = example.replace(
+      new RegExp(`${codeBlockPlaceholder}(\\d+)${codeBlockPlaceholder}`, 'g'),
+      (_, idx) => codeBlocks[parseInt(idx)],
+    );
 
     if (example) {
       // Check for title + code block pattern
@@ -155,7 +189,12 @@ function parseDocComment(docComment) {
         // No code block - check if first line is a title
         const lines = example.split('\n');
         const firstLine = lines[0];
-        if (lines.length > 1 && !firstLine.includes('(') && !firstLine.includes('{') && !firstLine.includes('=')) {
+        if (
+          lines.length > 1 &&
+          !firstLine.includes('(') &&
+          !firstLine.includes('{') &&
+          !firstLine.includes('=')
+        ) {
           const title = firstLine.trim();
           const code = lines.slice(1).join('\n').trim();
           example = `**${title}**\n\n\`\`\`typescript\n${code}\n\`\`\``;
@@ -166,7 +205,10 @@ function parseDocComment(docComment) {
   }
 
   // Restore code blocks for description extraction
-  cleaned = cleaned.replace(new RegExp(`${codeBlockPlaceholder}(\\d+)${codeBlockPlaceholder}`, 'g'), (_, idx) => codeBlocks[parseInt(idx)]);
+  cleaned = cleaned.replace(
+    new RegExp(`${codeBlockPlaceholder}(\\d+)${codeBlockPlaceholder}`, 'g'),
+    (_, idx) => codeBlocks[parseInt(idx)],
+  );
 
   // Find first @tag that's at the start of a line
   const firstTagMatch = cleaned.match(/^@\w/m);
@@ -236,7 +278,9 @@ function generateClassMarkdown(cls, headingLevel = 3) {
   }
 
   const properties = sortByName(
-    cls.members.filter((m) => m.kind === 'Property' || m.kind === 'PropertySignature'),
+    cls.members.filter(
+      (m) => m.kind === 'Property' || m.kind === 'PropertySignature',
+    ),
   );
   if (properties.length > 0) {
     md += '**Properties:**\n\n';
@@ -246,12 +290,15 @@ function generateClassMarkdown(cls, headingLevel = 3) {
       const propDoc = parseDocComment(prop.docComment);
       const signature = extractExcerpt(prop.excerptTokens);
       const typeMatch = signature.match(/:\s*(.+?)(?:;|$)/);
-      const typeStr = typeMatch ? typeMatch[1].trim().replace(/\|/g, '\\|') : '';
+      const typeStr = typeMatch
+        ? typeMatch[1].trim().replace(/\|/g, '\\|')
+        : '';
       const modifiers = [];
       if (prop.isStatic) modifiers.push('static');
       if (prop.isReadonly) modifiers.push('readonly');
       if (prop.isOptional) modifiers.push('optional');
-      const modStr = modifiers.length > 0 ? ` *(${modifiers.join(', ')})* ` : '';
+      const modStr =
+        modifiers.length > 0 ? ` *(${modifiers.join(', ')})* ` : '';
       md += `| \`${prop.name}\`${modStr} | \`${typeStr}\` | ${propDoc.description} |\n`;
     }
     md += '\n';
@@ -321,7 +368,9 @@ function generateInterfaceMarkdown(iface, headingLevel = 3) {
   md += '```typescript\n' + signature.trim() + '\n```\n\n';
 
   const properties = sortByName(
-    (iface.members || []).filter((m) => m.kind === 'Property' || m.kind === 'PropertySignature'),
+    (iface.members || []).filter(
+      (m) => m.kind === 'Property' || m.kind === 'PropertySignature',
+    ),
   );
   if (properties.length > 0) {
     md += '| Property | Type | Description |\n';
@@ -330,7 +379,9 @@ function generateInterfaceMarkdown(iface, headingLevel = 3) {
       const propDoc = parseDocComment(prop.docComment);
       const signature = extractExcerpt(prop.excerptTokens);
       const typeMatch = signature.match(/:\s*(.+?)(?:;|$)/);
-      const typeStr = typeMatch ? typeMatch[1].trim().replace(/\|/g, '\\|') : '';
+      const typeStr = typeMatch
+        ? typeMatch[1].trim().replace(/\|/g, '\\|')
+        : '';
       const optional = prop.isOptional ? ' *(optional)*' : '';
       md += `| \`${prop.name}\`${optional} | \`${typeStr}\` | ${propDoc.description} |\n`;
     }
@@ -338,7 +389,9 @@ function generateInterfaceMarkdown(iface, headingLevel = 3) {
   }
 
   const methods = sortByName(
-    (iface.members || []).filter((m) => m.kind === 'Method' || m.kind === 'MethodSignature'),
+    (iface.members || []).filter(
+      (m) => m.kind === 'Method' || m.kind === 'MethodSignature',
+    ),
   );
   if (methods.length > 0) {
     md += '**Methods:**\n\n';
@@ -473,14 +526,27 @@ function filterByNames(items, names) {
   return items.filter((item) => names.includes(item.name));
 }
 
-function generateTopicPage(topic, topicKey, allMembers, packageName, isMainPage = false) {
-  const { classes, interfaces, functions, typeAliases, variables, enums } = allMembers;
+function generateTopicPage(
+  topic,
+  topicKey,
+  allMembers,
+  packageName,
+  isMainPage = false,
+) {
+  const { classes, interfaces, functions, typeAliases, variables, enums } =
+    allMembers;
 
   const topicClasses = sortByName(filterByNames(classes, topic.classes || []));
-  const topicInterfaces = sortByName(filterByNames(interfaces, topic.interfaces || []));
-  const topicFunctions = sortByName(filterByNames(functions, topic.functions || []));
+  const topicInterfaces = sortByName(
+    filterByNames(interfaces, topic.interfaces || []),
+  );
+  const topicFunctions = sortByName(
+    filterByNames(functions, topic.functions || []),
+  );
   const topicTypes = sortByName(filterByNames(typeAliases, topic.types || []));
-  const topicVariables = sortByName(filterByNames(variables, topic.variables || []));
+  const topicVariables = sortByName(
+    filterByNames(variables, topic.variables || []),
+  );
   const topicEnums = sortByName(filterByNames(enums, topic.enums || []));
 
   let md = '';
@@ -516,7 +582,10 @@ function generateTopicPage(topic, topicKey, allMembers, packageName, isMainPage 
       grouped[item.type].push(item.name);
     }
     for (const [type, names] of Object.entries(grouped)) {
-      const label = type.charAt(0).toUpperCase() + type.slice(1) + (names.length > 1 ? 's' : '');
+      const label =
+        type.charAt(0).toUpperCase() +
+        type.slice(1) +
+        (names.length > 1 ? 's' : '');
       md += `**${label}:** ${names.map((n) => `[\`${n}\`](#${n.toLowerCase()})`).join(', ')}\n\n`;
     }
   }
@@ -604,7 +673,9 @@ function parseApiJson(apiJson) {
 function generateCorePackageDocs(apiJson) {
   const allMembers = parseApiJson(apiJson);
   if (!allMembers) {
-    return [{ path: 'core.md', content: '# @blac/core\n\nNo API members found.\n' }];
+    return [
+      { path: 'core.md', content: '# @blac/core\n\nNo API members found.\n' },
+    ];
   }
 
   const pages = [];
@@ -612,7 +683,13 @@ function generateCorePackageDocs(apiJson) {
   // Main page
   pages.push({
     path: 'core.md',
-    content: generateTopicPage(CORE_TOPICS.main, 'main', allMembers, '@blac/core', true),
+    content: generateTopicPage(
+      CORE_TOPICS.main,
+      'main',
+      allMembers,
+      '@blac/core',
+      true,
+    ),
   });
 
   // Sub-pages
@@ -630,11 +707,14 @@ function generateCorePackageDocs(apiJson) {
 function generateReactPackageDocs(apiJson) {
   const allMembers = parseApiJson(apiJson);
   if (!allMembers) {
-    return [{ path: 'react.md', content: '# @blac/react\n\nNo API members found.\n' }];
+    return [
+      { path: 'react.md', content: '# @blac/react\n\nNo API members found.\n' },
+    ];
   }
 
   // For react, keep it simpler - single page for now
-  const { classes, interfaces, functions, typeAliases, variables, enums } = allMembers;
+  const { classes, interfaces, functions, typeAliases, variables, enums } =
+    allMembers;
 
   // Filter out example/internal items
   const importantClasses = sortByName(
@@ -648,8 +728,14 @@ function generateReactPackageDocs(apiJson) {
     ),
   );
 
-  const importantInterfaces = sortByName(interfaces.filter((i) => !i.name.includes('Example') && !i.name.startsWith('_')));
-  const importantFunctions = sortByName(functions.filter((f) => !f.name.startsWith('_')));
+  const importantInterfaces = sortByName(
+    interfaces.filter(
+      (i) => !i.name.includes('Example') && !i.name.startsWith('_'),
+    ),
+  );
+  const importantFunctions = sortByName(
+    functions.filter((f) => !f.name.startsWith('_')),
+  );
   const importantTypes = sortByName(typeAliases);
   const importantVariables = sortByName(variables);
   const importantEnums = sortByName(enums);
@@ -670,7 +756,10 @@ function generateReactPackageDocs(apiJson) {
     md += `**Interfaces:** ${importantInterfaces.map((i) => `[\`${i.name}\`](#${i.name.toLowerCase()})`).join(', ')}\n\n`;
   }
   if (importantTypes.length > 0) {
-    md += `**Types:** ${importantTypes.slice(0, 8).map((t) => `\`${t.name}\``).join(', ')}${importantTypes.length > 8 ? ', ...' : ''}\n\n`;
+    md += `**Types:** ${importantTypes
+      .slice(0, 8)
+      .map((t) => `\`${t.name}\``)
+      .join(', ')}${importantTypes.length > 8 ? ', ...' : ''}\n\n`;
   }
 
   if (importantClasses.length > 0) {
@@ -775,7 +864,9 @@ async function main() {
 
   for (const pkg of packages) {
     if (!fs.existsSync(pkg.inputPath)) {
-      console.warn(`Warning: ${pkg.inputPath} not found, skipping ${pkg.title}`);
+      console.warn(
+        `Warning: ${pkg.inputPath} not found, skipping ${pkg.title}`,
+      );
       continue;
     }
 

@@ -11,7 +11,7 @@ hero:
       link: /guide/introduction
     - theme: alt
       text: View on GitHub
-      link: https://github.com/yourusername/blac
+      link: https://github.com/jsnanigans/blac
 
 features:
   - icon: 🎯
