@@ -13,7 +13,12 @@ import type {
 } from '../types';
 
 // Re-export types for backward compatibility
-export type { StateSnapshot, InstanceState, DevToolsSnapshot, DevToolsStateManagerConfig };
+export type {
+  StateSnapshot,
+  InstanceState,
+  DevToolsSnapshot,
+  DevToolsStateManagerConfig,
+};
 
 export interface StateManagerStats {
   /** Total number of tracked instances */

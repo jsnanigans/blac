@@ -11,6 +11,8 @@ export function borrow<T extends StateContainerConstructor>(
 export function borrowSafe<T extends StateContainerConstructor>(
   BlocClass: T,
   instanceKey?: string,
-): { error: Error; instance: null } | { error: null; instance: InstanceType<T> } {
+):
+  | { error: Error; instance: null }
+  | { error: null; instance: InstanceType<T> } {
   return globalRegistry.borrowSafe(BlocClass, instanceKey);
 }

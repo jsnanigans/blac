@@ -1,5 +1,8 @@
 import { globalRegistry } from '../core/StateContainerRegistry';
-import type { StateContainerConstructor, InstanceReadonlyState } from '../types/utilities';
+import type {
+  StateContainerConstructor,
+  InstanceReadonlyState,
+} from '../types/utilities';
 
 export function hasInstance<T extends StateContainerConstructor>(
   BlocClass: T,

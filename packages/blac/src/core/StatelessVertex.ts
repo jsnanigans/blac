@@ -1,10 +1,7 @@
 import { StateContainer } from './StateContainer';
 import { globalRegistry } from './StateContainerRegistry';
 import { STATELESS_MARKER } from './StatelessCubit';
-import type {
-  DiscriminatedEvent,
-  EventWithMetadata,
-} from '../types/events';
+import type { DiscriminatedEvent, EventWithMetadata } from '../types/events';
 
 /**
  * Empty state type used internally by stateless containers.
@@ -203,10 +200,7 @@ export abstract class StatelessVertex<
    * @param _event - The event that caused the error
    * @param _error - The error that occurred
    */
-  protected onEventError(
-    _event: EventWithMetadata<E>,
-    _error: Error,
-  ): void {}
+  protected onEventError(_event: EventWithMetadata<E>, _error: Error): void {}
 
   /**
    * emit() is not available on StatelessVertex.

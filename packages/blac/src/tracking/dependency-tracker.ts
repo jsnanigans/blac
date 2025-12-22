@@ -134,17 +134,17 @@ export function startDependency<T>(tracker: DependencyState<T>): void {
 /**
  * @internal
  */
-export function createDependencyProxy<T>(tracker: DependencyState<T>, state: T): T {
+export function createDependencyProxy<T>(
+  tracker: DependencyState<T>,
+  state: T,
+): T {
   return createForTarget(tracker.proxyState, state);
 }
 
 /**
  * @internal
  */
-export function capturePaths<T>(
-  tracker: DependencyState<T>,
-  state: T,
-): void {
+export function capturePaths<T>(tracker: DependencyState<T>, state: T): void {
   tracker.previousRenderPaths = tracker.currentRenderPaths;
 
   // Get raw tracked paths and optimize them (remove redundant parents)
@@ -189,7 +189,10 @@ export function capturePaths<T>(
 /**
  * @internal
  */
-export function hasDependencyChanges<T>(tracker: DependencyState<T>, state: T): boolean {
+export function hasDependencyChanges<T>(
+  tracker: DependencyState<T>,
+  state: T,
+): boolean {
   if (tracker.pathCache.size === 0) {
     return true;
   }

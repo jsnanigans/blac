@@ -286,10 +286,7 @@ export function createInternal<T>(
  *
  * @internal
  */
-export function createForTarget<T>(
-  state: ProxyState<T>,
-  target: T,
-): T {
+export function createForTarget<T>(state: ProxyState<T>, target: T): T {
   if (state.lastProxiedState === target && state.lastProxy) {
     return state.lastProxy;
   }

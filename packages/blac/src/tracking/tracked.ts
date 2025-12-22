@@ -69,7 +69,10 @@ export function tracked<T>(
  */
 export class TrackedContext {
   private tracker: TrackingProxyState;
-  private proxiedBlocs = new WeakMap<StateContainerInstance, StateContainerInstance>();
+  private proxiedBlocs = new WeakMap<
+    StateContainerInstance,
+    StateContainerInstance
+  >();
   private primaryBlocs = new Set<StateContainerInstance>();
 
   constructor() {

@@ -665,7 +665,9 @@ export class ReduxDevToolsAdapter {
           // Rollback: restore to last committed state (first item in history)
           if (this.stateHistory.length > 0) {
             const firstSnapshot = this.stateHistory[0];
-            this.handleTimeTravel(JSON.stringify(Object.fromEntries(firstSnapshot.states)));
+            this.handleTimeTravel(
+              JSON.stringify(Object.fromEntries(firstSnapshot.states)),
+            );
           }
           break;
 

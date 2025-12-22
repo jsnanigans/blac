@@ -14,7 +14,11 @@ export type ChannelEvent =
   | { type: 'receiveMessage'; message: Message }
   | { type: 'userTyping'; userId: string; isTyping: boolean }
   | { type: 'markAsRead' }
-  | { type: 'updateMessageStatus'; messageId: string; status: Message['status'] };
+  | {
+      type: 'updateMessageStatus';
+      messageId: string;
+      status: Message['status'];
+    };
 
 export interface ChannelState {
   channel: Channel;
@@ -104,7 +108,9 @@ export class ChannelBloc extends Vertex<ChannelState, ChannelEvent> {
 
       receiveMessage: (event, emit) => {
         // Check if message already exists (avoid duplicates)
-        const exists = this.state.messages.some((m) => m.id === event.message.id);
+        const exists = this.state.messages.some(
+          (m) => m.id === event.message.id,
+        );
         if (exists) return;
 
         // Ensure UserCubit exists for the message sender (lazy creation)

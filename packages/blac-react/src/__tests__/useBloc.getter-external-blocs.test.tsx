@@ -1,6 +1,14 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
-import { Cubit, borrow, borrowSafe, clear, ensure, getRefCount, hasInstance } from '@blac/core';
+import {
+  Cubit,
+  borrow,
+  borrowSafe,
+  clear,
+  ensure,
+  getRefCount,
+  hasInstance,
+} from '@blac/core';
 import { useBloc } from '../useBloc';
 import { useBlocActions } from '../useBlocActions';
 

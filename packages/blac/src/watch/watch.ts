@@ -47,21 +47,22 @@ export function instance<T extends StateContainerConstructor>(
   };
 }
 
-function isBlocRef(input: unknown): input is BlocRef<StateContainerConstructor> {
+function isBlocRef(
+  input: unknown,
+): input is BlocRef<StateContainerConstructor> {
   return (
-    typeof input === 'object' &&
-    input !== null &&
-    BLOC_REF_MARKER in input
+    typeof input === 'object' && input !== null && BLOC_REF_MARKER in input
   );
 }
 
 type BlocInput = StateContainerConstructor | BlocRef<StateContainerConstructor>;
 
-type ExtractInstance<T> = T extends BlocRef<infer C>
-  ? InstanceType<C>
-  : T extends StateContainerConstructor
-    ? InstanceType<T>
-    : never;
+type ExtractInstance<T> =
+  T extends BlocRef<infer C>
+    ? InstanceType<C>
+    : T extends StateContainerConstructor
+      ? InstanceType<T>
+      : never;
 
 type ExtractInstances<T extends readonly BlocInput[]> = {
   [K in keyof T]: ExtractInstance<T[K]>;

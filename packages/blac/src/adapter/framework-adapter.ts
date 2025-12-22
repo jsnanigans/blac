@@ -113,7 +113,11 @@ export class ExternalDepsManager {
       }
     };
 
-    const changed = this.manager.sync(currentDeps, onExternalChange, rawInstance);
+    const changed = this.manager.sync(
+      currentDeps,
+      onExternalChange,
+      rawInstance,
+    );
 
     clearExternalDependencies(getterState);
 
@@ -137,9 +141,7 @@ export { DependencyManager };
  * @param adapterState - The adapter state for tracking
  * @returns Subscribe function for use with useSyncExternalStore
  */
-export function autoTrackSubscribe<
-  TBloc extends StateContainerConstructor,
->(
+export function autoTrackSubscribe<TBloc extends StateContainerConstructor>(
   instance: InstanceReadonlyState<TBloc>,
   adapterState: AdapterState<TBloc>,
 ): SubscribeFunction {
@@ -194,9 +196,7 @@ export function autoTrackSubscribe<
  * @param config - Configuration with dependencies function
  * @returns Subscribe function for use with useSyncExternalStore
  */
-export function manualDepsSubscribe<
-  TBloc extends StateContainerConstructor,
->(
+export function manualDepsSubscribe<TBloc extends StateContainerConstructor>(
   instance: InstanceState<TBloc>,
   adapterState: AdapterState<TBloc>,
   config: ManualDepsConfig<TBloc>,
@@ -234,9 +234,7 @@ export function noTrackSubscribe<TBloc extends StateContainerInstance>(
  * @param adapterState - The adapter state for tracking
  * @returns Snapshot function for use with useSyncExternalStore
  */
-export function autoTrackSnapshot<
-  TBloc extends StateContainerConstructor,
->(
+export function autoTrackSnapshot<TBloc extends StateContainerConstructor>(
   instance: InstanceReadonlyState<TBloc>,
   adapterState: AdapterState<TBloc>,
 ): SnapshotFunction<ExtractState<TBloc>> {
@@ -272,9 +270,7 @@ export function autoTrackSnapshot<
  * @param config - Configuration with dependencies function
  * @returns Snapshot function for use with useSyncExternalStore
  */
-export function manualDepsSnapshot<
-  TBloc extends StateContainerConstructor,
->(
+export function manualDepsSnapshot<TBloc extends StateContainerConstructor>(
   instance: InstanceState<TBloc>,
   adapterState: AdapterState<TBloc>,
   config: ManualDepsConfig<TBloc>,

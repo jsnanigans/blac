@@ -169,17 +169,29 @@ export interface SerializedEvent {
 // =============================================================================
 
 export type DevToolsMessage =
-  | { type: DevToolsMessageType.INSTANCE_CREATED; payload: InstanceCreatedPayload }
-  | { type: DevToolsMessageType.INSTANCE_DISPOSED; payload: InstanceDisposedPayload }
+  | {
+      type: DevToolsMessageType.INSTANCE_CREATED;
+      payload: InstanceCreatedPayload;
+    }
+  | {
+      type: DevToolsMessageType.INSTANCE_DISPOSED;
+      payload: InstanceDisposedPayload;
+    }
   | { type: DevToolsMessageType.STATE_CHANGED; payload: StateChangedPayload }
   | { type: DevToolsMessageType.PANEL_CONNECT; payload: PanelConnectPayload }
   | { type: DevToolsMessageType.FULL_STATE_DUMP; payload: FullStateDumpPayload }
   | { type: DevToolsMessageType.HEARTBEAT; payload: HeartbeatPayload }
   | { type: DevToolsMessageType.RECONNECTED; payload: ReconnectedPayload }
   // Legacy messages
-  | { type: DevToolsMessageType.BLOC_CREATED; payload: LegacyBlocCreatedPayload }
+  | {
+      type: DevToolsMessageType.BLOC_CREATED;
+      payload: LegacyBlocCreatedPayload;
+    }
   | { type: DevToolsMessageType.EVENT_DISPATCHED; payload: SerializedEvent }
-  | { type: DevToolsMessageType.BLOC_DISPOSED; payload: LegacyBlocDisposedPayload };
+  | {
+      type: DevToolsMessageType.BLOC_DISPOSED;
+      payload: LegacyBlocDisposedPayload;
+    };
 
 // =============================================================================
 // Command Types (DevTools Panel -> App)

@@ -59,9 +59,11 @@ describe('watch', () => {
       watch(CounterCubit, callback);
 
       expect(callback).toHaveBeenCalledTimes(1);
-      expect(callback).toHaveBeenCalledWith(expect.objectContaining({
-        state: { count: 5 },
-      }));
+      expect(callback).toHaveBeenCalledWith(
+        expect.objectContaining({
+          state: { count: 5 },
+        }),
+      );
     });
 
     it('should run callback on state changes', () => {
@@ -154,10 +156,17 @@ describe('watch', () => {
       expect(states).toEqual([[0, '']]);
 
       counter.increment();
-      expect(states).toEqual([[0, ''], [1, '']]);
+      expect(states).toEqual([
+        [0, ''],
+        [1, ''],
+      ]);
 
       name.setName('Alice');
-      expect(states).toEqual([[0, ''], [1, ''], [1, 'Alice']]);
+      expect(states).toEqual([
+        [0, ''],
+        [1, ''],
+        [1, 'Alice'],
+      ]);
     });
   });
 
@@ -243,7 +252,10 @@ describe('watch', () => {
 
       const states: Array<[number, number]> = [];
       watch(
-        [instance(CounterCubit, 'main'), instance(CounterCubit, 'sidebar')] as const,
+        [
+          instance(CounterCubit, 'main'),
+          instance(CounterCubit, 'sidebar'),
+        ] as const,
         ([m, s]) => {
           states.push([m.state.count, s.state.count]);
         },

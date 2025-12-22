@@ -265,7 +265,9 @@ class CartVertex extends Vertex<CartState, CartEvent> {
         emit({ items: newItems, total });
       },
       removeItem: (event, emit) => {
-        const newItems = this.state.items.filter((item) => item.id !== event.id);
+        const newItems = this.state.items.filter(
+          (item) => item.id !== event.id,
+        );
         const total = this.calculateTotal(newItems);
         emit({ items: newItems, total });
       },

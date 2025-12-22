@@ -1,5 +1,10 @@
 import { useMemo, useEffect, useRef } from 'react';
-import { StateContainerConstructor, isIsolatedClass, acquire, release } from '@blac/core';
+import {
+  StateContainerConstructor,
+  isIsolatedClass,
+  acquire,
+  release,
+} from '@blac/core';
 import type { ComponentRef } from './types';
 import { generateInstanceKey } from './utils/instance-keys';
 

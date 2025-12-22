@@ -3,7 +3,14 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { Cubit, getPluginManager, blac, acquire, release, clearAll } from '@blac/core';
+import {
+  Cubit,
+  getPluginManager,
+  blac,
+  acquire,
+  release,
+  clearAll,
+} from '@blac/core';
 import { DevToolsBrowserPlugin } from './DevToolsBrowserPlugin';
 
 describe('DevToolsBrowserPlugin Lifecycle Integration', () => {

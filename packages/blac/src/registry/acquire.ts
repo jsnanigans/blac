@@ -1,5 +1,8 @@
 import { globalRegistry } from '../core/StateContainerRegistry';
-import type { StateContainerConstructor, ExtractProps } from '../types/utilities';
+import type {
+  StateContainerConstructor,
+  ExtractProps,
+} from '../types/utilities';
 
 export interface AcquireOptions<T extends StateContainerConstructor> {
   props?: ExtractProps<T>;

@@ -5,7 +5,13 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { StateContainer } from './StateContainer';
-import { acquire, release, hasInstance, getRefCount, clearAll } from '../registry';
+import {
+  acquire,
+  release,
+  hasInstance,
+  getRefCount,
+  clearAll,
+} from '../registry';
 
 // Test implementation of StateContainer
 class TestContainer extends StateContainer<{ value: number }> {

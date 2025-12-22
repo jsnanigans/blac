@@ -62,10 +62,10 @@ export type ExtractEvent<
  * Handler function for processing a specific event type.
  * @internal
  */
-export type VertexEventHandler<E extends DiscriminatedEvent, S extends object> = (
-  event: E,
-  emit: (state: S) => void,
-) => void;
+export type VertexEventHandler<
+  E extends DiscriminatedEvent,
+  S extends object,
+> = (event: E, emit: (state: S) => void) => void;
 
 /**
  * Map of event handlers requiring exhaustive coverage.

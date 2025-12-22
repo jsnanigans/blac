@@ -22,10 +22,7 @@ const descriptorCache = new WeakMap<
 
 const blocProxyCache = new WeakMap<StateContainerInstance>();
 
-const activeTrackerMap = new WeakMap<
-  StateContainerInstance,
-  GetterState
->();
+const activeTrackerMap = new WeakMap<StateContainerInstance, GetterState>();
 
 // Global execution context for tracking getter execution
 interface GetterExecutionContext {

@@ -20,7 +20,12 @@ import type {
 } from '../types';
 
 // Re-export types for backward compatibility
-export type { DevToolsEventType, DevToolsEvent, DevToolsCallback, DevToolsBrowserPluginConfig };
+export type {
+  DevToolsEventType,
+  DevToolsEvent,
+  DevToolsCallback,
+  DevToolsBrowserPluginConfig,
+};
 
 /**
  * DevTools browser plugin for BlaC

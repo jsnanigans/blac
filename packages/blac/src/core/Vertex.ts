@@ -49,7 +49,10 @@ export abstract class Vertex<
   P = undefined,
 > extends StateContainer<S, P> {
   /** @internal */
-  private handlers = new Map<string, VertexEventHandler<DiscriminatedEvent, S>>();
+  private handlers = new Map<
+    string,
+    VertexEventHandler<DiscriminatedEvent, S>
+  >();
   /** @internal */
   private isProcessing = false;
   /** @internal */
@@ -148,8 +151,5 @@ export abstract class Vertex<
    * @param _event - The event that caused the error
    * @param _error - The error that occurred
    */
-  protected onEventError(
-    _event: EventWithMetadata<E>,
-    _error: Error,
-  ): void {}
+  protected onEventError(_event: EventWithMetadata<E>, _error: Error): void {}
 }
