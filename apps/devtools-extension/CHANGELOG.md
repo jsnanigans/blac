@@ -1,5 +1,14 @@
 # @blac/devtools-extension
 
+## 2.0.0-rc.17
+
+### Patch Changes
+
+- Updated dependencies
+  - @blac/core@2.0.0-rc.17
+  - @blac/react@2.0.0-rc.17
+  - @blac/devtools-ui@2.0.0-rc.17
+
 ## 2.0.0-rc.16
 
 ### Patch Changes

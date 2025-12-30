@@ -6,7 +6,7 @@ outline: [2, 3]
 
 Logging utilities for debugging
 
-<small>[← Back to @blac/core](./index.md)</small>
+<small>[← Back to @blac/core](../core.md)</small>
 
 ## Quick Reference
 
@@ -26,11 +26,11 @@ Configuration for the logger
 export interface LogConfig
 ```
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `enabled` | `boolean` | Whether logging is enabled |
-| `level` | `LogLevel` | Minimum log level to output |
-| `output` | `(entry: LogEntry) => void` | Function called to output log entries |
+| Property  | Type                        | Description                           |
+| --------- | --------------------------- | ------------------------------------- |
+| `enabled` | `boolean`                   | Whether logging is enabled            |
+| `level`   | `LogLevel`                  | Minimum log level to output           |
+| `output`  | `(entry: LogEntry) => void` | Function called to output log entries |
 
 ---
 
@@ -42,13 +42,13 @@ Structure of a log entry passed to output handlers
 export interface LogEntry
 ```
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `context` | `string` | Context identifier (typically component or module name) |
-| `data` *(optional)* | `any` | Optional structured data |
-| `level` | `string` | Log level as string (DEBUG, INFO, WARN, ERROR) |
-| `message` | `string` | Log message |
-| `timestamp` | `number` | Unix timestamp in milliseconds |
+| Property            | Type     | Description                                             |
+| ------------------- | -------- | ------------------------------------------------------- |
+| `context`           | `string` | Context identifier (typically component or module name) |
+| `data` _(optional)_ | `any`    | Optional structured data                                |
+| `level`             | `string` | Log level as string (DEBUG, INFO, WARN, ERROR)          |
+| `message`           | `string` | Log message                                             |
+| `timestamp`         | `number` | Unix timestamp in milliseconds                          |
 
 ---
 
@@ -62,9 +62,9 @@ Configuration function that recreates the default logger
 export declare function configureLogger(opts: Partial<LogConfig>): void;
 ```
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `opts` | `Partial<LogConfig>` | Partial logger configuration |
+| Parameter | Type                 | Description                  |
+| --------- | -------------------- | ---------------------------- |
+| `opts`    | `Partial<LogConfig>` | Partial logger configuration |
 
 **Examples:**
 
@@ -80,17 +80,17 @@ Creates a logger instance with given configuration
 
 ```typescript
 export declare function createLogger(config: LogConfig): {
-    debug: (context: string, message: string, data?: any) => void;
-    info: (context: string, message: string, data?: any) => void;
-    warn: (context: string, message: string, data?: any) => void;
-    error: (context: string, message: string, data?: any) => void;
-    configure: (opts: Partial<LogConfig>) => void;
+  debug: (context: string, message: string, data?: any) => void;
+  info: (context: string, message: string, data?: any) => void;
+  warn: (context: string, message: string, data?: any) => void;
+  error: (context: string, message: string, data?: any) => void;
+  configure: (opts: Partial<LogConfig>) => void;
 };
 ```
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `config` | `LogConfig` | Logger configuration |
+| Parameter | Type        | Description          |
+| --------- | ----------- | -------------------- |
+| `config`  | `LogConfig` | Logger configuration |
 
 **Returns:** Logger instance with debug, info, warn, error, and configure methods
 
@@ -100,7 +100,7 @@ export declare function createLogger(config: LogConfig): {
 const logger = createLogger({
   enabled: true,
   level: LogLevel.DEBUG,
-  output: (entry) => console.log(JSON.stringify(entry))
+  output: (entry) => console.log(JSON.stringify(entry)),
 });
 logger.debug('MyComponent', 'Rendering', { props: { foo: 'bar' } });
 ```
@@ -115,11 +115,11 @@ Log a debug message (tree-shakeable export)
 debug: (context: string, message: string, data?: any) => void
 ```
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
+| Parameter | Type     | Description                                   |
+| --------- | -------- | --------------------------------------------- |
 | `context` | `string` | Context identifier (module or component name) |
-| `message` | `string` | Log message |
-| `data` | `any` | Optional structured data |
+| `message` | `string` | Log message                                   |
+| `data`    | `any`    | Optional structured data                      |
 
 ---
 
@@ -131,11 +131,11 @@ Log an error message (tree-shakeable export)
 error: (context: string, message: string, data?: any) => void
 ```
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
+| Parameter | Type     | Description                                   |
+| --------- | -------- | --------------------------------------------- |
 | `context` | `string` | Context identifier (module or component name) |
-| `message` | `string` | Log message |
-| `data` | `any` | Optional structured data |
+| `message` | `string` | Log message                                   |
+| `data`    | `any`    | Optional structured data                      |
 
 ---
 
@@ -147,11 +147,11 @@ Log an info message (tree-shakeable export)
 info: (context: string, message: string, data?: any) => void
 ```
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
+| Parameter | Type     | Description                                   |
+| --------- | -------- | --------------------------------------------- |
 | `context` | `string` | Context identifier (module or component name) |
-| `message` | `string` | Log message |
-| `data` | `any` | Optional structured data |
+| `message` | `string` | Log message                                   |
+| `data`    | `any`    | Optional structured data                      |
 
 ---
 
@@ -163,11 +163,11 @@ Log a warning message (tree-shakeable export)
 warn: (context: string, message: string, data?: any) => void
 ```
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
+| Parameter | Type     | Description                                   |
+| --------- | -------- | --------------------------------------------- |
 | `context` | `string` | Context identifier (module or component name) |
-| `message` | `string` | Log message |
-| `data` | `any` | Optional structured data |
+| `message` | `string` | Log message                                   |
+| `data`    | `any`    | Optional structured data                      |
 
 ---
 
@@ -177,10 +177,9 @@ warn: (context: string, message: string, data?: any) => void
 
 Log severity levels (lower number = higher severity)
 
-| Member | Value | Description |
-|--------|-------|-------------|
-| `DEBUG` | `3` | Detailed debugging information |
-| `ERROR` | `0` | Critical errors that may cause application failure |
-| `INFO` | `2` | Informational messages about application state |
-| `WARN` | `1` | Warning conditions that should be addressed |
-
+| Member  | Value | Description                                        |
+| ------- | ----- | -------------------------------------------------- |
+| `DEBUG` | `3`   | Detailed debugging information                     |
+| `ERROR` | `0`   | Critical errors that may cause application failure |
+| `INFO`  | `2`   | Informational messages about application state     |
+| `WARN`  | `1`   | Warning conditions that should be addressed        |

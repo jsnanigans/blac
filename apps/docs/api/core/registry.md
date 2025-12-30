@@ -6,7 +6,7 @@ outline: [2, 3]
 
 Instance management and lifecycle
 
-<small>[← Back to @blac/core](./index.md)</small>
+<small>[← Back to @blac/core](../core.md)</small>
 
 ## Quick Reference
 

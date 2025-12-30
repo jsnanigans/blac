@@ -6,7 +6,7 @@ outline: [2, 3]
 
 Plugin system for extending BlaC
 
-<small>[← Back to @blac/core](./index.md)</small>
+<small>[← Back to @blac/core](../core.md)</small>
 
 ## Quick Reference
 
@@ -32,8 +32,8 @@ export declare class PluginManager
 constructor(registry: StateContainerRegistry);
 ```
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
+| Parameter  | Type                     | Description                                                |
+| ---------- | ------------------------ | ---------------------------------------------------------- |
 | `registry` | `StateContainerRegistry` | The StateContainerRegistry to monitor for lifecycle events |
 
 **Methods:**
@@ -64,8 +64,8 @@ Get an installed plugin by name
 getPlugin(pluginName: string): BlacPlugin | undefined;
 ```
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
+| Parameter    | Type     | Description                        |
+| ------------ | -------- | ---------------------------------- |
 | `pluginName` | `string` | The name of the plugin to retrieve |
 
 **Returns:** The plugin instance or undefined if not found
@@ -78,8 +78,8 @@ Check if a plugin is installed
 hasPlugin(pluginName: string): boolean;
 ```
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
+| Parameter    | Type     | Description                     |
+| ------------ | -------- | ------------------------------- |
 | `pluginName` | `string` | The name of the plugin to check |
 
 **Returns:** true if the plugin is installed
@@ -92,10 +92,10 @@ Install a plugin with optional configuration
 install(plugin: BlacPlugin, config?: PluginConfig): void;
 ```
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `plugin` | `BlacPlugin` | The plugin to install |
-| `config` | `PluginConfig` | Optional plugin configuration |
+| Parameter | Type           | Description                   |
+| --------- | -------------- | ----------------------------- |
+| `plugin`  | `BlacPlugin`   | The plugin to install         |
+| `config`  | `PluginConfig` | Optional plugin configuration |
 
 #### `uninstall`
 
@@ -105,12 +105,11 @@ Uninstall a plugin by name
 uninstall(pluginName: string): void;
 ```
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
+| Parameter    | Type     | Description                         |
+| ------------ | -------- | ----------------------------------- |
 | `pluginName` | `string` | The name of the plugin to uninstall |
 
 **Examples:**
-
 
 ```ts
 const manager = createPluginManager(registry);
@@ -129,9 +128,9 @@ Interface for plugins that extend BlaC functionality
 export interface BlacPlugin
 ```
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `name` | `string` | Unique plugin identifier |
+| Property  | Type     | Description               |
+| --------- | -------- | ------------------------- |
+| `name`    | `string` | Unique plugin identifier  |
 | `version` | `string` | Plugin version identifier |
 
 **Methods:**
@@ -214,10 +213,10 @@ Configuration options for plugin installation
 export interface PluginConfig
 ```
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `enabled` *(optional)* | `boolean` | Enable or disable the plugin |
-| `environment` *(optional)* | `'development' \| 'production' \| 'test' \| 'all'` | Environments where plugin runs |
+| Property                   | Type                                               | Description                    |
+| -------------------------- | -------------------------------------------------- | ------------------------------ |
+| `enabled` _(optional)_     | `boolean`                                          | Enable or disable the plugin   |
+| `environment` _(optional)_ | `'development' \| 'production' \| 'test' \| 'all'` | Environments where plugin runs |
 
 ---
 
@@ -284,11 +283,13 @@ queryInstances<T extends StateContainer<any>>(typeClass: new (...args: any[]) =>
 Create a plugin manager instance
 
 ```typescript
-export declare function createPluginManager(registry: StateContainerRegistry): PluginManager;
+export declare function createPluginManager(
+  registry: StateContainerRegistry,
+): PluginManager;
 ```
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
+| Parameter  | Type                     | Description                                                |
+| ---------- | ------------------------ | ---------------------------------------------------------- |
 | `registry` | `StateContainerRegistry` | The StateContainerRegistry to monitor for lifecycle events |
 
 **Returns:** A new PluginManager instance
@@ -310,14 +311,15 @@ export declare function getPluginManager(): any;
 Type guard to check if a plugin has a required onInstall hook
 
 ```typescript
-export declare function hasInitHook(plugin: BlacPlugin): plugin is BlacPluginWithInit;
+export declare function hasInitHook(
+  plugin: BlacPlugin,
+): plugin is BlacPluginWithInit;
 ```
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `plugin` | `BlacPlugin` | The plugin to check |
+| Parameter | Type         | Description         |
+| --------- | ------------ | ------------------- |
+| `plugin`  | `BlacPlugin` | The plugin to check |
 
 **Returns:** true if the plugin implements BlacPluginWithInit
 
 ---
-
