@@ -386,55 +386,72 @@ logger.info('Button clicked');
 
 ---
 
-### Static Instance Management
+### Instance Management Functions
 
-All state containers (StateContainer, Cubit, Vertex) support static instance management with these access patterns:
+BlaC provides standalone functions for managing instances. Import them from `@blac/core`:
 
-#### `.resolve()` - Ownership Semantics (Instance Resolution)
+```typescript
+import {
+  acquire,
+  borrow,
+  borrowSafe,
+  ensure,
+  release,
+  hasInstance,
+  getRefCount,
+  getAll,
+  forEach,
+  clear,
+  clearAll,
+  getStats,
+} from '@blac/core';
+```
+
+#### `acquire()` - Ownership Semantics (Instance Resolution)
 
 Get or create an instance with ref counting. Used when you "own" the instance lifetime.
 
 ```typescript
 // Get or create shared instance (increments ref count)
-const counter = CounterCubit.resolve();
-const named = CounterCubit.resolve('main');
+const counter = acquire(CounterCubit);
+const named = acquire(CounterCubit, 'main');
 
 // With constructor arguments
-const user = UserCubit.resolve('user-123', { userId: '123' });
+const user = acquire(UserCubit, 'user-123', { props: { userId: '123' } });
 
 // Release reference (disposes when ref count reaches zero)
-CounterCubit.release();
-CounterCubit.release('main');
+release(CounterCubit);
+release(CounterCubit, 'main');
 
 // Force dispose (ignores ref count and keepAlive)
-CounterCubit.release('main', true);
+release(CounterCubit, 'main', true);
 ```
 
-**Use `.resolve()` when:**
+**Use `acquire()` when:**
 
 - React components need to manage instance lifetime (used internally by `useBloc`/`useBlocActions`)
 - You want to ensure the instance stays alive during usage
 - You need ownership semantics with automatic cleanup
 
-#### `.get()` - Borrowing Semantics (Strict)
+#### `borrow()` - Borrowing Semantics (Strict)
 
 Get an existing instance WITHOUT incrementing ref count. Throws if instance doesn't exist.
 
 ```typescript
 // Borrow existing instance (no ref count change)
-const counter = CounterCubit.get('main');
+const counter = borrow(CounterCubit, 'main');
 counter.increment();
-// No .release() needed - we're just borrowing!
+// No release() needed - we're just borrowing!
 
 // Throws error if instance doesn't exist:
 // [BlaC] CounterCubit instance "main" not found.
-// Use .resolve() to create and claim ownership, or .getSafe() for conditional access.
+// Use acquire() to create and claim ownership, or borrowSafe() for conditional access.
 ```
 
-**Use `.get()` when:**
+**Use `borrow()` when:**
 
 - Bloc-to-bloc communication (calling methods on other blocs)
-- Event handlers where component already owns the instance via `.resolve()`
+- Event handlers where component already owns the instance via `acquire()`
 - Accessing keepAlive singleton instances
 - You know the instance exists and is being managed elsewhere
 
@@ -444,20 +461,20 @@ counter.increment();
 class UserBloc extends Cubit<UserState> {
   loadProfile = () => {
     // ✅ Just borrow - no memory leak!
-    const analytics = AnalyticsCubit.get('main');
+    const analytics = borrow(AnalyticsCubit, 'main');
     analytics.trackEvent('profile_loaded');
-    // No .release() needed
+    // No release() needed
   };
 }
 ```
 
-#### `.getSafe()` - Borrowing Semantics (Safe)
+#### `borrowSafe()` - Borrowing Semantics (Safe)
 
 Get an existing instance WITHOUT incrementing ref count. Returns discriminated union instead of throwing.
 
 ```typescript
 // Safe borrowing with error handling
-const result = NotificationCubit.getSafe('user-123');
+const result = borrowSafe(NotificationCubit, 'user-123');
 
 if (result.error) {
   console.log('Instance not found:', result.error.message);
@@ -468,14 +485,14 @@ if (result.error) {
 result.instance.markAsRead();
 ```
 
-**Use `.getSafe()` when:**
+**Use `borrowSafe()` when:**
 
 - Instance existence is conditional/uncertain
 - You want type-safe error handling without try/catch
 - Checking if another component has created an instance
-- **Note:** Like `.get()`, this method tracks cross-bloc dependencies when used in getters
+- **Note:** Like `borrow()`, this function tracks cross-bloc dependencies when used in getters
 
-#### `.connect()` - Get or Create (B2B Communication)
+#### `ensure()` - Get or Create (B2B Communication)
 
 Get existing instance OR create it if it doesn't exist, without incrementing ref count. Ideal for bloc-to-bloc communication when you need to ensure an instance exists.
 
@@ -483,7 +500,7 @@ Get existing instance OR create it if it doesn't exist, without incrementing ref
 class StatsCubit extends Cubit<StatsState> {
   get totalWithAnalytics() {
     // ✅ Ensures AnalyticsCubit exists, doesn't increment ref count
-    const analytics = AnalyticsCubit.connect();
+    const analytics = ensure(AnalyticsCubit);
     return this.state.total + analytics.state.bonus;
   }
 }
@@ -491,14 +508,14 @@ class StatsCubit extends Cubit<StatsState> {
 // In another bloc, access the auto-created instance
 class DashboardCubit extends Cubit<DashboardState> {
   loadData = () => {
-    // AnalyticsCubit already exists from StatsCubit.connect()
-    const analytics = AnalyticsCubit.get();
+    // AnalyticsCubit already exists from ensure() call
+    const analytics = borrow(AnalyticsCubit);
     analytics.trackEvent('dashboard_loaded');
   };
 }
 ```
 
-**Use `.connect()` when:**
+**Use `ensure()` when:**
 
 - B2B communication where the instance might not exist yet
 - You want to lazily create shared instances on first access
@@ -506,77 +523,77 @@ class DashboardCubit extends Cubit<DashboardState> {
 - Accessing services/utilities that should exist but aren't tied to specific components
 - **Note:** Always tracks cross-bloc dependencies when used in getters
 
-**⚠️ Important:** Cannot use `.connect()` with isolated blocs (throws error).
+**⚠️ Important:** Cannot use `ensure()` with isolated blocs (throws error).
 
 **Comparison:**
 
-- **`.get()`**: Borrow existing (throws if missing) - use when you know it exists
-- **`.getSafe()`**: Borrow existing (returns error) - use for conditional access
-- **`.connect()`**: Get or create (no ref count change) - use to ensure existence
-- **`.resolve()`**: Get or create (increments ref count) - use in components for ownership
+- **`borrow()`**: Borrow existing (throws if missing) - use when you know it exists
+- **`borrowSafe()`**: Borrow existing (returns error) - use for conditional access
+- **`ensure()`**: Get or create (no ref count change) - use to ensure existence
+- **`acquire()`**: Get or create (increments ref count) - use in components for ownership
 
-#### Other Static Methods
+#### Other Instance Functions
 
 ```typescript
 // Check if instance exists
-const exists = CounterCubit.hasInstance('main');
+const exists = hasInstance(CounterCubit, 'main');
 
 // Get reference count
-const refCount = CounterCubit.getRefCount('main');
+const refCount = getRefCount(CounterCubit, 'main');
 
 // Get all instances of a type (returns array)
-const allCounters = CounterCubit.getAll();
+const allCounters = getAll(CounterCubit);
 
 // Iterate over all instances safely (disposal-safe, memory-efficient)
-CounterCubit.forEach((instance) => {
+forEach(CounterCubit, (instance) => {
   console.log(instance.state);
 });
 
 // Clear all instances of a type
-CounterCubit.clear();
+clear(CounterCubit);
 
 // Clear all instances from all types (mainly for testing)
-StateContainer.clearAllInstances();
+clearAll();
 
 // Get registry statistics
-const stats = StateContainer.getStats();
+const stats = getStats();
 // { registeredTypes: 5, totalInstances: 12, typeBreakdown: { ... } }
 ```
 
-**`.getAll()` vs `.forEach()`:**
+**`getAll()` vs `forEach()`:**
 
-Both methods let you access all instances of a type, but with different trade-offs:
+Both functions let you access all instances of a type, but with different trade-offs:
 
-**`.getAll()`** - Returns an array of all instances
+**`getAll()`** - Returns an array of all instances
 
 ```typescript
-const allSessions = UserSessionBloc.getAll();
+const allSessions = getAll(UserSessionBloc);
 const activeSessions = allSessions.filter((s) => s.state.isActive);
 ```
 
-**Use `.getAll()` when:**
+**Use `getAll()` when:**
 
 - You need array operations (filter, map, reduce)
 - Working with small numbers of instances (<100)
 - You need to iterate multiple times
 
-**`.forEach(callback)`** - Iterates with a callback function
+**`forEach(callback)`** - Iterates with a callback function
 
 ```typescript
 // Broadcast to all sessions
-UserSessionBloc.forEach((session) => {
+forEach(UserSessionBloc, (session) => {
   session.notify('Server maintenance in 5 minutes');
 });
 
 // Cleanup stale sessions (disposal-safe!)
-UserSessionBloc.forEach((session) => {
+forEach(UserSessionBloc, (session) => {
   if (session.state.lastActivity < threshold) {
-    UserSessionBloc.release(session.instanceId); // Safe during iteration
+    release(UserSessionBloc, session.instanceId); // Safe during iteration
   }
 });
 ```
 
-**Use `.forEach()` when:**
+**Use `forEach()` when:**
 
 - Working with large numbers of instances (100+) - more memory efficient
 - You might dispose instances during iteration (automatically skips disposed)
@@ -685,15 +702,17 @@ function TodoList() {
 
 **Cross-Bloc Dependencies:**
 
-Getters can access other blocs, and BlaC will **automatically track those dependencies** when using `.get()`, `.getSafe()`, or `.connect()`:
+Getters can access other blocs, and BlaC will **automatically track those dependencies** when using `borrow()`, `borrowSafe()`, or `ensure()`:
 
 ```typescript
+import { borrow, borrowSafe, ensure } from '@blac/core';
+
 class StatsCubit extends Cubit<StatsState> {
   get totalWithBonus() {
-    // ✅ All three methods automatically track CounterBloc changes!
-    const counter = CounterBloc.get();        // Borrow (throws if missing)
-    // const counter = CounterBloc.getSafe(); // Borrow (returns error)
-    // const counter = CounterBloc.connect(); // Get or create
+    // ✅ All three functions automatically track CounterBloc changes!
+    const counter = borrow(CounterBloc);        // Borrow (throws if missing)
+    // const counter = borrowSafe(CounterBloc); // Borrow (returns error)
+    // const counter = ensure(CounterBloc);     // Get or create
     return this.state.total + counter.state;
   }
 }
@@ -705,11 +724,11 @@ function StatsDisplay() {
 }
 ```
 
-**Important:** Only `.get()`, `.getSafe()`, and `.connect()` enable automatic tracking. Do NOT use `.resolve()` in getters as it increments ref count and causes memory leaks.
+**Important:** Only `borrow()`, `borrowSafe()`, and `ensure()` enable automatic tracking. Do NOT use `acquire()` in getters as it increments ref count and causes memory leaks.
 
 **How Cross-Bloc Tracking Works:**
 
-When you access a getter that uses `.get()`, `.getSafe()`, or `.connect()` to access another bloc:
+When you access a getter that uses `borrow()`, `borrowSafe()`, or `ensure()` to access another bloc:
 
 1. **During render**: BlaC records which external blocs are accessed
 2. **Subscription setup**: BlaC automatically subscribes to all accessed blocs
@@ -720,6 +739,8 @@ When you access a getter that uses `.get()`, `.getSafe()`, or `.connect()` to ac
 **Real-World Example - Notification System:**
 
 ```typescript
+import { borrow } from '@blac/core';
+
 // Lightweight notification tracker (always alive)
 @blac({ keepAlive: true })
 class NotificationCubit extends Cubit<NotificationState> {
@@ -756,7 +777,7 @@ class ChannelBloc extends Vertex<ChannelState, ChannelEvent> {
         });
 
         // Update notification count (borrowing, not owning)
-        const notifications = NotificationCubit.get();
+        const notifications = borrow(NotificationCubit);
         notifications.incrementUnread(props.channelId);
       },
     });
@@ -764,7 +785,7 @@ class ChannelBloc extends Vertex<ChannelState, ChannelEvent> {
 
   // Computed getter - tracks message state
   get unreadCount(): number {
-    const notifications = NotificationCubit.get();
+    const notifications = borrow(NotificationCubit);
     return notifications.state.unreadCounts.get(this.state.channel.id) || 0;
   }
 
@@ -800,7 +821,7 @@ function ChannelListItem({ channelId }: Props) {
 3. On state change, all tracked getters are re-computed and compared
 4. If any getter value changed (via `Object.is`), component re-renders
 5. Getter values are cached per render cycle for performance - the getter will only execute once per render cycle even if used multiple times
-6. Cross-bloc dependencies are automatically tracked and subscribed to
+6. Cross-bloc dependencies are automatically tracked and subscribed to (when using `borrow()`, `borrowSafe()`, or `ensure()`)
 
 ---
 
@@ -1055,9 +1076,11 @@ BlaC supports multiple patterns for blocs to communicate with each other. Choose
 Resolve dependencies when the bloc is created. Use this for essential dependencies that the bloc needs throughout its lifetime.
 
 ```typescript
+import { acquire, release } from '@blac/core';
+
 class AppCubit extends Cubit<AppState> {
   // Resolve dependencies in constructor - increments ref count
-  notificationCubit = NotificationCubit.resolve();
+  notificationCubit = acquire(NotificationCubit);
 
   constructor(props: { userId: string }) {
     super({ userId: props.userId, isReady: false });
@@ -1073,7 +1096,7 @@ class AppCubit extends Cubit<AppState> {
   constructor() {
     super(initialState);
     this.onSystemEvent('dispose', () => {
-      NotificationCubit.release();
+      release(NotificationCubit);
     });
   }
 }
@@ -1085,15 +1108,17 @@ class AppCubit extends Cubit<AppState> {
 - ✅ You want to ensure dependency stays alive
 - ✅ You'll clean up via `onSystemEvent('dispose', ...)`
 
-**⚠️ Warning:** Must call `.release()` on dispose to prevent memory leaks.
+**⚠️ Warning:** Must call `release()` on dispose to prevent memory leaks.
 
 ---
 
 ### Pattern 2: Event Handler-Based Communication
 
-Access other blocs in event handlers using `.get()` or `.getSafe()`. This is the most common pattern for bloc-to-bloc communication.
+Access other blocs in event handlers using `borrow()` or `borrowSafe()`. This is the most common pattern for bloc-to-bloc communication.
 
 ```typescript
+import { borrow, borrowSafe } from '@blac/core';
+
 type ChannelEvent =
   | { type: 'receiveMessage'; message: Message }
   | { type: 'markAsRead' };
@@ -1111,14 +1136,14 @@ class ChannelBloc extends Vertex<ChannelState, ChannelEvent> {
         });
 
         // ✅ Borrow NotificationCubit to update unread count
-        const notifications = NotificationCubit.getSafe();
+        const notifications = borrowSafe(NotificationCubit);
         if (!notifications.error) {
           notifications.instance.incrementUnread(this.state.channelId);
         }
       },
       markAsRead: (_, emit) => {
-        // ✅ Use .get() when you know instance exists
-        const notifications = NotificationCubit.get();
+        // ✅ Use borrow() when you know instance exists
+        const notifications = borrow(NotificationCubit);
         notifications.clearUnread(this.state.channelId);
         emit(this.state);
       },
@@ -1151,6 +1176,8 @@ class ChannelBloc extends Vertex<ChannelState, ChannelEvent> {
 Access other blocs in **getters** for computed values that depend on multiple blocs. BlaC automatically tracks and subscribes to these dependencies.
 
 ```typescript
+import { borrow } from '@blac/core';
+
 class CartCubit extends Cubit<CartState> {
   constructor() {
     super({ items: [] });
@@ -1161,14 +1188,14 @@ class CartCubit extends Cubit<CartState> {
     const itemTotal = this.state.items.reduce((sum, item) => sum + item.price, 0);
 
     // Automatic tracking - component re-renders when ShippingCubit changes!
-    const shipping = ShippingCubit.get();
+    const shipping = borrow(ShippingCubit);
     return itemTotal + shipping.state.cost;
   }
 
   // ✅ Multi-bloc dependencies automatically tracked
   get orderSummary(): string {
-    const shipping = ShippingCubit.get();
-    const tax = TaxCubit.get();
+    const shipping = borrow(ShippingCubit);
+    const tax = borrow(TaxCubit);
 
     return `Items: ${this.state.items.length}, Shipping: $${shipping.state.cost}, Tax: $${tax.state.amount}`;
   }
@@ -1196,24 +1223,26 @@ function CheckoutSummary() {
 **How it works:**
 
 1. Component accesses getter during render
-2. BlaC records all `.get()`, `.getSafe()`, and `.connect()` calls
+2. BlaC records all `borrow()`, `borrowSafe()`, and `ensure()` calls
 3. Automatically subscribes to all accessed blocs
 4. Re-evaluates getter when any dependency changes
 5. Triggers component re-render if getter value changed
 
 **⚠️ Important:**
 
-- Only use `.get()`, `.getSafe()`, or `.connect()` in getters
-- Never use `.resolve()` in getters (causes memory leaks)
+- Only use `borrow()`, `borrowSafe()`, or `ensure()` in getters
+- Never use `acquire()` in getters (causes memory leaks)
 - Keep getters pure (no side effects)
 
 ---
 
 ### Pattern 4: Lazy/On-Demand Dependencies
 
-Create dependencies only when needed using `.connect()` or conditional `.getSafe()` checks.
+Create dependencies only when needed using `ensure()` or conditional `borrowSafe()` checks.
 
 ```typescript
+import { ensure, borrowSafe } from '@blac/core';
+
 class UserProfileCubit extends Cubit<UserProfileState> {
   constructor(props: { userId: string }) {
     super({ userId: props.userId, profile: null });
@@ -1224,13 +1253,13 @@ class UserProfileCubit extends Cubit<UserProfileState> {
     this.patch({ profile });
 
     // ✅ Create analytics bloc only when profile is loaded
-    const analytics = AnalyticsCubit.connect();
+    const analytics = ensure(AnalyticsCubit);
     analytics.trackEvent('profile_loaded', { userId: this.state.userId });
   };
 
   get premiumFeatures(): string[] {
     // ✅ Check if feature flag bloc exists
-    const featureFlags = FeatureFlagCubit.getSafe();
+    const featureFlags = borrowSafe(FeatureFlagCubit);
 
     if (featureFlags.error) {
       return []; // Feature flags not available
@@ -1254,6 +1283,8 @@ class UserProfileCubit extends Cubit<UserProfileState> {
 Use `keepAlive` singletons for shared services accessed by many blocs.
 
 ```typescript
+import { borrow } from '@blac/core';
+
 // Global service - always alive
 @blac({ keepAlive: true })
 class AnalyticsService extends Cubit<AnalyticsState> {
@@ -1278,7 +1309,7 @@ class TodoCubit extends Cubit<TodoState> {
     });
 
     // ✅ Borrow service (no cleanup needed)
-    const analytics = AnalyticsService.get();
+    const analytics = borrow(AnalyticsService);
     analytics.trackEvent('todo_added', { text });
   };
 }
@@ -1289,7 +1320,7 @@ class UserCubit extends Cubit<UserState> {
     this.patch({ user });
 
     // ✅ All blocs can access same analytics instance
-    const analytics = AnalyticsService.get();
+    const analytics = borrow(AnalyticsService);
     analytics.trackEvent('user_login', { email });
   };
 }
@@ -1327,6 +1358,8 @@ class UserCubit extends Cubit<UserState> {
 Here's how a real messenger app coordinates multiple blocs:
 
 ```typescript
+import { acquire, release, borrow } from '@blac/core';
+
 // === Shared Singletons ===
 
 @blac({ keepAlive: true })
@@ -1353,7 +1386,7 @@ class ChannelBloc extends Vertex<ChannelState, ChannelEvent> {
     this.createHandlers({
       receiveMessage: (event, emit) => {
         // Pattern 2: Event handler communication
-        const notifications = NotificationCubit.get();
+        const notifications = borrow(NotificationCubit);
         notifications.incrementUnread(props.channelId);
 
         emit({
@@ -1362,7 +1395,7 @@ class ChannelBloc extends Vertex<ChannelState, ChannelEvent> {
         });
       },
       markAsRead: (_, emit) => {
-        const notifications = NotificationCubit.get();
+        const notifications = borrow(NotificationCubit);
         notifications.clearUnread(this.state.channelId);
         emit(this.state);
       },
@@ -1371,7 +1404,7 @@ class ChannelBloc extends Vertex<ChannelState, ChannelEvent> {
 
   // Pattern 3: Getter-based (automatic tracking)
   get unreadCount(): number {
-    const notifications = NotificationCubit.get();
+    const notifications = borrow(NotificationCubit);
     return notifications.state.unreadCounts.get(this.state.channelId) || 0;
   }
 
@@ -1388,19 +1421,19 @@ class UserCubit extends Cubit<User> {
 
 class AppCubit extends Cubit<AppState> {
   // Pattern 1: Constructor-based (owns dependency)
-  notificationCubit = NotificationCubit.resolve();
+  notificationCubit = acquire(NotificationCubit);
 
   constructor(props: { userId: string }) {
     super({ userId: props.userId, activeChannelId: null });
 
     this.onSystemEvent('dispose', () => {
-      NotificationCubit.release();
+      release(NotificationCubit);
     });
   }
 
   setActiveChannel = (channelId: string) => {
     // Pattern 2: Borrow to coordinate
-    const notifications = NotificationCubit.get();
+    const notifications = borrow(NotificationCubit);
     notifications.clearUnread(channelId);
 
     this.patch({ activeChannelId: channelId });
@@ -2202,7 +2235,7 @@ type UserProps = ExtractProps<UserCubit>; // { userId: string }
 function createBloc<TBloc extends StateContainer<any>>(
   Class: BlocConstructor<TBloc>,
 ): TBloc {
-  return Class.resolve();
+  return acquire(Class);
 }
 ```
 
@@ -2251,25 +2284,25 @@ function createBloc<TBloc extends StateContainer<any>>(
 - Handlers receive event only (no emit)
 - Use with `useBlocActions` only
 
-### Static Container Methods
+### Instance Management Functions
 
-**Instance Access:**
+**Instance Access (import from `@blac/core`):**
 
-- `Class.resolve(id?, ...args)` - Get/create instance with ownership (increments ref count)
-- `Class.get(id?)` - Get existing instance without ownership (throws if not found)
-- `Class.getSafe(id?)` - Get existing instance without ownership (returns discriminated union)
-- `Class.connect(id?, ...args)` - Get/create instance for B2B (no ref count change, tracks dependencies)
-- `Class.release(id?, force?)` - Release reference
+- `acquire(Class, id?, options?)` - Get/create instance with ownership (increments ref count)
+- `borrow(Class, id?)` - Get existing instance without ownership (throws if not found)
+- `borrowSafe(Class, id?)` - Get existing instance without ownership (returns discriminated union)
+- `ensure(Class, id?)` - Get/create instance for B2B (no ref count change, tracks dependencies)
+- `release(Class, id?, force?)` - Release reference
 
-**Instance Info:**
+**Instance Info (import from `@blac/core`):**
 
-- `Class.hasInstance(id?)` - Check existence
-- `Class.getRefCount(id?)` - Get reference count
-- `Class.getAll()` - Get all instances (returns array)
-- `Class.forEach(callback)` - Iterate over instances safely (disposal-safe, memory-efficient)
-- `Class.clear()` - Clear all instances of type
-- `StateContainer.clearAllInstances()` - Clear everything
-- `StateContainer.getStats()` - Get registry statistics
+- `hasInstance(Class, id?)` - Check existence
+- `getRefCount(Class, id?)` - Get reference count
+- `getAll(Class)` - Get all instances (returns array)
+- `forEach(Class, callback)` - Iterate over instances safely (disposal-safe, memory-efficient)
+- `clear(Class)` - Clear all instances of type
+- `clearAll()` - Clear everything
+- `getStats()` - Get registry statistics
 
 ### useBloc Options
 
@@ -2483,20 +2516,22 @@ class MyBloc extends Cubit<State> {
 class MyBloc extends Cubit<State> {} // Persists after unmount
 ```
 
-### Cannot Use .connect() with Isolated Blocs
+### Cannot Use ensure() with Isolated Blocs
 
-**Problem**: Error when calling `.connect()` on isolated bloc.
+**Problem**: Error when calling `ensure()` on isolated bloc.
 
-**Solution**: Isolated blocs are component-scoped. Use `.resolve()` in components:
+**Solution**: Isolated blocs are component-scoped. Use `acquire()` in components:
 
 ```typescript
-// ❌ DON'T: connect() with isolated
+import { ensure, acquire } from '@blac/core';
+
+// ❌ DON'T: ensure() with isolated
 @blac({ isolated: true })
 class FormBloc extends Cubit<FormState> {}
-FormBloc.connect(); // Throws error!
+ensure(FormBloc); // Throws error!
 
-// ✅ DO: Use resolve() for isolated blocs
-const form = FormBloc.resolve();
+// ✅ DO: Use acquire() for isolated blocs
+const form = acquire(FormBloc);
 ```
 
 ---
@@ -2534,24 +2569,33 @@ const [state, bloc] = useBloc(UserBloc);
 // Automatically tracks accessed properties
 ```
 
-### From getOrCreate to resolve/get/getSafe
+### From static methods to standalone functions
 
-The instance management API has been redesigned to make ownership semantics explicit:
+The instance management API has been redesigned to use standalone functions instead of static class methods:
 
 ```typescript
-// Before: .getOrCreate() (always incremented ref count)
-const counter = CounterCubit.getOrCreate('main', 0);
+import { acquire, borrow, borrowSafe, release } from '@blac/core';
 
-// After: Choose based on ownership needs
+// Before: Static methods on class
+const counter = CounterCubit.resolve('main');
+const analytics = AnalyticsCubit.get('main');
+CounterCubit.release('main');
 
-// 1. Ownership (replaces most .getOrCreate() usage)
-const counter = CounterCubit.resolve('main', 0);
+// After: Standalone functions
+const counter = acquire(CounterCubit, 'main');
+const analytics = borrow(AnalyticsCubit, 'main');
+release(CounterCubit, 'main');
+
+// Choose based on ownership needs:
+
+// 1. Ownership (for components that manage instance lifetime)
+const counter = acquire(CounterCubit, 'main');
 
 // 2. Borrowing - strict (for bloc-to-bloc communication)
-const analytics = AnalyticsCubit.get('main');
+const analytics = borrow(AnalyticsCubit, 'main');
 
 // 3. Borrowing - safe (for conditional access)
-const result = NotificationCubit.getSafe('user-123');
+const result = borrowSafe(NotificationCubit, 'user-123');
 if (!result.error) {
   result.instance.markAsRead();
 }
@@ -2559,16 +2603,16 @@ if (!result.error) {
 
 **Why the change:**
 
-- `.resolve()` is familiar from DI containers and clearly indicates instance resolution
-- `.get()` prevents memory leaks in bloc-to-bloc communication
-- `.getSafe()` provides type-safe conditional access
-- Avoids React linter issues (methods starting with "use" are flagged as hooks)
+- Standalone functions are tree-shakeable
+- Cleaner imports and better IDE autocomplete
+- `borrow()` prevents memory leaks in bloc-to-bloc communication
+- `borrowSafe()` provides type-safe conditional access
 
 **Migration tips:**
 
-- React components: Use `.resolve()` (handled automatically by `useBloc`/`useBlocActions`)
-- Bloc methods calling other blocs: Use `.get()` (prevents memory leaks)
-- Conditional instance access: Use `.getSafe()` (type-safe error handling)
+- React components: Use `acquire()` (handled automatically by `useBloc`/`useBlocActions`)
+- Bloc methods calling other blocs: Use `borrow()` (prevents memory leaks)
+- Conditional instance access: Use `borrowSafe()` (type-safe error handling)
 
 ### From onDispose to onSystemEvent
 
@@ -2783,27 +2827,29 @@ const [state] = useBloc(AnalyticsBloc, {
 ### Memory-Efficient Patterns
 
 ```typescript
-// ✅ Use .get() in bloc-to-bloc communication (no ref count)
+import { borrow, forEach, release, getAll } from '@blac/core';
+
+// ✅ Use borrow() in bloc-to-bloc communication (no ref count)
 class UserBloc extends Cubit<UserState> {
   loadProfile = () => {
-    const analytics = AnalyticsCubit.get(); // Borrow, don't own
+    const analytics = borrow(AnalyticsCubit); // Borrow, don't own
     analytics.trackEvent('profile_loaded');
     // No cleanup needed - not incrementing ref count
   };
 }
 
-// ✅ Use .forEach() for large instance sets
+// ✅ Use forEach() for large instance sets
 function cleanupStaleSessions() {
   // Memory efficient - doesn't create array copy
-  UserSessionBloc.forEach((session) => {
+  forEach(UserSessionBloc, (session) => {
     if (session.state.isStale) {
-      UserSessionBloc.release(session.instanceId);
+      release(UserSessionBloc, session.instanceId);
     }
   });
 }
 
-// ❌ Avoid .getAll() for large sets
-const allSessions = UserSessionBloc.getAll(); // Creates array copy
+// ❌ Avoid getAll() for large sets
+const allSessions = getAll(UserSessionBloc); // Creates array copy
 ```
 
 ### Performance Summary
@@ -2820,7 +2866,7 @@ const allSessions = UserSessionBloc.getAll(); // Creates array copy
 
 1. **Destructuring state** - `const { a, b, c } = state` tracks all properties
 2. **Spreading props** - `<Child {...state} />` defeats tracking
-3. **Using `.resolve()` in methods** - Causes ref count leaks
+3. **Using `acquire()` in methods** - Causes ref count leaks
 4. **Large monolithic components** - Split into smaller, focused components
 5. **Iterating arrays when accessing single element** - Use index access instead
 6. **Not using `useBlocActions`** - Creates unnecessary subscriptions

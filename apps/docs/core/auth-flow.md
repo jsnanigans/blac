@@ -80,6 +80,7 @@ type AuthEvent =
 ```
 
 **Benefits of discriminated unions:**
+
 - TypeScript enforces exhaustive handling - you'll get a compile-time error if you miss an event type
 - Full autocomplete when dispatching events
 - Type narrowing in handlers - TypeScript knows exactly which properties are available
@@ -785,7 +786,9 @@ export function createAuthenticatedFetch(auth: AuthVertex) {
 }
 
 // Usage
-const auth = AuthVertex.resolve();
+import { acquire } from '@blac/core';
+
+const auth = acquire(AuthVertex);
 const authFetch = createAuthenticatedFetch(auth);
 
 // Now use authFetch instead of fetch for protected endpoints

@@ -4,16 +4,18 @@ Patterns for blocs to communicate with each other.
 
 ## Pattern 1: Event Handler Borrowing
 
-Access other blocs in methods using `.get()`. Most common pattern.
+Access other blocs in methods using `borrow()`. Most common pattern.
 
 ```typescript
+import { borrow } from '@blac/core';
+
 class UserCubit extends Cubit<UserState> {
   login = async (email: string, password: string) => {
     const user = await api.login(email, password);
     this.patch({ user });
 
     // Borrow analytics - no memory leak, no cleanup needed
-    const analytics = AnalyticsCubit.get();
+    const analytics = borrow(AnalyticsCubit);
     analytics.trackEvent('user_login', { email });
   };
 }
@@ -32,16 +34,18 @@ Access other blocs in getters. Dependencies are automatically tracked separately
 Avoid circular dependencies between getters, the tracker will stop at a reasonable depth but it can lead to unexpected behavior and memory leaks.
 
 ```typescript
+import { borrow } from '@blac/core';
+
 class CartCubit extends Cubit<CartState> {
   get totalWithShipping() {
-    // .get() in getter = auto-tracked for React
-    const shipping = ShippingCubit.get();
+    // borrow() in getter = auto-tracked for React
+    const shipping = borrow(ShippingCubit);
     return this.itemTotal + shipping.state.cost;
   }
 
   get orderSummary() {
-    const shipping = ShippingCubit.get();
-    const tax = TaxCubit.get();
+    const shipping = borrow(ShippingCubit);
+    const tax = borrow(TaxCubit);
     return {
       subtotal: this.itemTotal,
       shipping: shipping.state.cost,
@@ -63,25 +67,27 @@ function CheckoutTotal() {
 - Computed values depend on multiple blocs
 - You want automatic re-rendering when dependencies change
 
-**Important:** Use `.get()`, `.getSafe()`, or `.connect()` in getters. Never `.resolve()`.
+**Important:** Use `borrow()`, `borrowSafe()`, or `ensure()` in getters. Never `acquire()`.
 
 ## Pattern 3: Constructor Dependencies
 
 Own dependencies for the bloc's lifetime. Must release on dispose.
 
 ```typescript
+import { acquire, release } from '@blac/core';
+
 class AppCubit extends Cubit<AppState> {
   // Own these dependencies
-  private auth = AuthCubit.resolve();
-  private notifications = NotificationCubit.resolve();
+  private auth = acquire(AuthCubit);
+  private notifications = acquire(NotificationCubit);
 
   constructor() {
     super(initialState);
 
     // Must release on dispose
     this.onSystemEvent('dispose', () => {
-      AuthCubit.release();
-      NotificationCubit.release();
+      release(AuthCubit);
+      release(NotificationCubit);
     });
   }
 }
@@ -92,26 +98,28 @@ class AppCubit extends Cubit<AppState> {
 - Bloc needs dependency throughout its lifetime
 - You want to ensure dependency stays alive
 
-**Warning:** Must call `.release()` on dispose to prevent memory leaks.
+**Warning:** Must call `release()` on dispose to prevent memory leaks.
 
 ## Pattern 4: Lazy/On-Demand
 
-Create dependencies only when needed using `.connect()`.
+Create dependencies only when needed using `ensure()`.
 
 ```typescript
+import { ensure, borrowSafe } from '@blac/core';
+
 class UserProfileCubit extends Cubit<ProfileState> {
   loadProfile = async () => {
     const profile = await api.getProfile();
     this.patch({ profile });
 
     // Create analytics only when profile loads
-    const analytics = AnalyticsCubit.connect();
+    const analytics = ensure(AnalyticsCubit);
     analytics.trackEvent('profile_loaded');
   };
 
   get premiumFeatures() {
     // Check if feature flags exist
-    const result = FeatureFlagCubit.getSafe();
+    const result = borrowSafe(FeatureFlagCubit);
     if (result.error) return [];
     return result.instance.state.premiumFeatures;
   }
@@ -129,6 +137,8 @@ class UserProfileCubit extends Cubit<ProfileState> {
 Use `keepAlive` for services accessed by many blocs.
 
 ```typescript
+import { borrow } from '@blac/core';
+
 @blac({ keepAlive: true })
 class AnalyticsService extends Cubit<AnalyticsState> {
   trackEvent = (name: string, data: Record<string, any>) => {
@@ -148,7 +158,7 @@ class TodoCubit extends Cubit<TodoState> {
     }));
 
     // Service is always available
-    const analytics = AnalyticsService.get();
+    const analytics = borrow(AnalyticsService);
     analytics.trackEvent('todo_added', { text });
   };
 }
@@ -164,15 +174,17 @@ class TodoCubit extends Cubit<TodoState> {
 
 | Pattern                  | Creates? | Ref Count | Cleanup  | Auto-tracked |
 | ------------------------ | -------- | --------- | -------- | ------------ |
-| Event Handler `.get()`   | No       | No change | None     | No           |
-| Getter `.get()`          | No       | No change | None     | Yes          |
-| Constructor `.resolve()` | Yes      | +1        | Required | No           |
-| Lazy `.connect()`        | Yes      | No change | None     | In getters   |
-| Service `.get()`         | No       | No change | None     | No           |
+| Event Handler `borrow()` | No       | No change | None     | No           |
+| Getter `borrow()`        | No       | No change | None     | Yes          |
+| Constructor `acquire()`  | Yes      | +1        | Required | No           |
+| Lazy `ensure()`          | Yes      | No change | None     | In getters   |
+| Service `borrow()`       | No       | No change | None     | No           |
 
 ## Real-World Example: Messenger App
 
 ```typescript
+import { borrow } from '@blac/core';
+
 // === Shared Services (keepAlive) ===
 
 @blac({ keepAlive: true })
@@ -196,11 +208,11 @@ class ChannelBloc extends Vertex<ChannelState, ChannelEvent> {
       receiveMessage: (event, emit) => {
         emit({ ...this.state, messages: [...this.state.messages, event.message] });
 
-        const notifications = NotificationCubit.get();
+        const notifications = borrow(NotificationCubit);
         notifications.incrementUnread(props.channelId);
       },
       markAsRead: (_, emit) => {
-        const notifications = NotificationCubit.get();
+        const notifications = borrow(NotificationCubit);
         notifications.clearUnread(this.state.channelId);
         emit(this.state);
       },
@@ -209,7 +221,7 @@ class ChannelBloc extends Vertex<ChannelState, ChannelEvent> {
 
   // Pattern 2: Getter with auto-tracking
   get unreadCount() {
-    const notifications = NotificationCubit.get();
+    const notifications = borrow(NotificationCubit);
     return notifications.state.unreadCounts.get(this.state.channelId) || 0;
   }
 
@@ -246,6 +258,6 @@ function ChannelView({ channelId }) {
 
 ## See Also
 
-- [Instance Management](/core/instance-management) - Static method details
+- [Instance Management](/core/instance-management) - Function details
 - [Shared vs Isolated](/react/shared-vs-isolated) - Instance patterns
 - [Configuration](/core/configuration) - `@blac()` options

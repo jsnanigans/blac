@@ -180,27 +180,29 @@ function TodoApp() {
 ## Memory-Efficient Patterns
 
 ```tsx
-// ✅ Use .get() in bloc-to-bloc (no ref count)
+import { borrow, forEach, release, getAll } from '@blac/core';
+
+// ✅ Use borrow() in bloc-to-bloc (no ref count)
 class UserCubit extends Cubit<UserState> {
   loadProfile = () => {
-    const analytics = AnalyticsCubit.get(); // Borrow
+    const analytics = borrow(AnalyticsCubit); // Borrow
     analytics.trackEvent('profile_loaded');
     // No cleanup needed
   };
 }
 
-// ✅ Use .forEach() for large instance sets
+// ✅ Use forEach() for large instance sets
 function cleanupStaleSessions() {
   // Memory efficient, safe to dispose during iteration
-  UserSessionCubit.forEach((session) => {
+  forEach(UserSessionCubit, (session) => {
     if (session.state.isStale) {
-      UserSessionCubit.release(session.instanceId);
+      release(UserSessionCubit, session.instanceId);
     }
   });
 }
 
-// ❌ Avoid .getAll() for large sets
-const sessions = UserSessionCubit.getAll(); // Creates array copy
+// ❌ Avoid getAll() for large sets
+const sessions = getAll(UserSessionCubit); // Creates array copy
 ```
 
 ## Manual Dependencies
@@ -245,7 +247,7 @@ const [state] = useBloc(AnalyticsCubit, {
 | ------------------------------- | ------------------------- | ------------------- |
 | Destructuring state             | Tracks all destructured   | Access directly     |
 | Spreading props `{...state}`    | Tracks everything         | Pass specific props |
-| `.resolve()` in methods         | Memory leaks              | Use `.get()`        |
+| `acquire()` in methods          | Memory leaks              | Use `borrow()`      |
 | Not using `useBlocActions`      | Unnecessary subscriptions | Split components    |
 | Single large component          | Over-rendering            | Split into smaller  |
 | Array iteration for single item | Tracks whole array        | Use index access    |

@@ -74,14 +74,14 @@ Class configuration with `@blac()` decorator.
 
 ### `/core/instance-management`
 
-Static methods for instance access.
+Standalone functions for instance access.
 
-- `.resolve()` - ownership semantics
-- `.get()` - borrowing (throws)
-- `.getSafe()` - borrowing (returns result)
-- `.connect()` - B2B communication
-- `.release()` - releasing ownership
-- Utility methods: `hasInstance`, `getRefCount`, `getAll`, `forEach`, `clear`
+- `acquire()` - ownership semantics
+- `borrow()` - borrowing (throws)
+- `borrowSafe()` - borrowing (returns result)
+- `ensure()` - B2B communication
+- `release()` - releasing ownership
+- Utility functions: `hasInstance`, `getRefCount`, `getAll`, `forEach`, `clear`, `clearAll`, `getStats`
 - Comparison table
 
 ### `/core/system-events`
@@ -139,7 +139,7 @@ How auto-tracking works and optimization.
 - Proxy-based tracking explanation
 - State property tracking
 - Getter tracking
-- Cross-bloc dependency tracking (`.get()` in getters)
+- Cross-bloc dependency tracking (`borrow()` in getters)
 - Tracking modes: auto, manual, none
 - Code examples for each mode
 
@@ -166,10 +166,10 @@ Instance sharing patterns.
 
 Patterns for inter-bloc communication.
 
-- Pattern 1: Constructor dependencies (resolve + release)
-- Pattern 2: Event handler borrowing (.get())
+- Pattern 1: Constructor dependencies (acquire + release)
+- Pattern 2: Event handler borrowing (borrow())
 - Pattern 3: Getter dependencies (auto-tracked)
-- Pattern 4: Lazy/on-demand (.connect())
+- Pattern 4: Lazy/on-demand (ensure())
 - Pattern 5: Shared services (keepAlive)
 - Comparison table
 - Real-world example: messenger app

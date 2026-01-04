@@ -1,58 +1,77 @@
 # Instance Management
 
-All state containers have static methods for managing instances.
+BlaC provides standalone functions for managing instances. Import them from `@blac/core`:
 
-## Instance Access Methods
+```typescript
+import {
+  acquire,
+  borrow,
+  borrowSafe,
+  ensure,
+  release,
+  hasInstance,
+  getRefCount,
+  getAll,
+  forEach,
+  clear,
+  clearAll,
+  getStats,
+} from '@blac/core';
+```
 
-### `.resolve(id?, ...args)` - Ownership
+## Instance Access Functions
+
+### `acquire(Class, id?, options?)` - Ownership
 
 Get or create an instance. Increments reference count.
 
 ```typescript
 // Get or create default instance
-const counter = CounterCubit.resolve();
+const counter = acquire(CounterCubit);
 
 // Named instance
-const mainCounter = CounterCubit.resolve('main');
+const mainCounter = acquire(CounterCubit, 'main');
 
 // With constructor arguments
-const user = UserCubit.resolve('user-123', { userId: '123' });
+const user = acquire(UserCubit, 'user-123', { props: { userId: '123' } });
 
 // Must release when done
-CounterCubit.release();
-CounterCubit.release('main');
+release(CounterCubit);
+release(CounterCubit, 'main');
 ```
 
 **Use when:**
+
 - React components need instances (handled internally by `useBloc`)
 - You want the instance to stay alive during usage
 - You need ownership semantics
 
-### `.get(id?)` - Borrowing (Strict)
+### `borrow(Class, id?)` - Borrowing (Strict)
 
 Get existing instance. Does NOT increment ref count. Throws if not found.
 
 ```typescript
 // Borrow existing instance
-const counter = CounterCubit.get();
+const counter = borrow(CounterCubit);
 counter.increment();
 // No release needed - we're borrowing
 
 // Throws if instance doesn't exist
-const missing = MissingCubit.get(); // Error!
+const missing = borrow(MissingCubit); // Error!
 ```
 
 **Use when:**
+
 - Bloc-to-bloc communication
 - You know the instance exists
 - You don't want to affect lifecycle
 
-### `.getSafe(id?)` - Borrowing (Safe)
+### `borrowSafe(Class, id?)` - Borrowing (Safe)
 
 Get existing instance. Returns result object instead of throwing.
 
 ```typescript
-const result = NotificationCubit.getSafe('user-123');
+const result = borrowSafe(NotificationCubit, 'user-123');
 
 if (result.error) {
   console.log('Not found:', result.error.message);
@@ -64,11 +83,12 @@ result.instance.markAsRead();
 ```
 
 **Use when:**
+
 - Instance might not exist
 - You want type-safe error handling
 - Conditional access patterns
 
-### `.connect(id?, ...args)` - Get or Create (B2B)
+### `ensure(Class, id?)` - Get or Create (B2B)
 
 Get existing OR create new instance. Does NOT increment ref count.
 
@@ -76,86 +96,89 @@ Get existing OR create new instance. Does NOT increment ref count.
 class StatsCubit extends Cubit<StatsState> {
   get totalWithBonus() {
     // Ensures AnalyticsCubit exists, doesn't own it
-    const analytics = AnalyticsCubit.connect();
+    const analytics = ensure(AnalyticsCubit);
     return this.state.total + analytics.state.bonus;
   }
 }
 ```
 
 **Use when:**
+
 - B2B communication where instance might not exist
 - Lazily creating shared instances
 - You need instance but don't want ownership
 
 **Cannot use with isolated blocs** - throws error.
 
-### `.release(id?, force?)` - Release Ownership
+### `release(Class, id?, force?)` - Release Ownership
 
 Release a reference. Disposes when ref count reaches 0.
 
 ```typescript
 // Release default instance
-CounterCubit.release();
+release(CounterCubit);
 
 // Release named instance
-CounterCubit.release('main');
+release(CounterCubit, 'main');
 
 // Force dispose (ignores ref count and keepAlive)
-CounterCubit.release('main', true);
+release(CounterCubit, 'main', true);
 ```
 
 ## Comparison Table
 
-| Method | Creates? | Ref Count | On Missing |
-|--------|----------|-----------|------------|
-| `.resolve()` | Yes | +1 | Creates |
-| `.get()` | No | No change | Throws |
-| `.getSafe()` | No | No change | Returns error |
-| `.connect()` | Yes | No change | Creates |
-| `.release()` | No | -1 | No-op |
+| Function       | Creates? | Ref Count | On Missing    |
+| -------------- | -------- | --------- | ------------- |
+| `acquire()`    | Yes      | +1        | Creates       |
+| `borrow()`     | No       | No change | Throws        |
+| `borrowSafe()` | No       | No change | Returns error |
+| `ensure()`     | Yes      | No change | Creates       |
+| `release()`    | No       | -1        | No-op         |
 
-## Utility Methods
+## Utility Functions
 
 ```typescript
 // Check if instance exists
-const exists = CounterCubit.hasInstance('main');
+const exists = hasInstance(CounterCubit, 'main');
 
 // Get reference count
-const refCount = CounterCubit.getRefCount('main');
+const refCount = getRefCount(CounterCubit, 'main');
 
 // Get all instances (returns array)
-const allCounters = CounterCubit.getAll();
+const allCounters = getAll(CounterCubit);
 
 // Iterate safely (disposal-safe, memory-efficient)
-CounterCubit.forEach((instance) => {
+forEach(CounterCubit, (instance) => {
   console.log(instance.state);
 });
 
 // Clear all instances of a type
-CounterCubit.clear();
+clear(CounterCubit);
 
 // Clear everything (mainly for testing)
-StateContainer.clearAllInstances();
+clearAll();
 
 // Get registry statistics
-const stats = StateContainer.getStats();
+const stats = getStats();
 // { registeredTypes: 5, totalInstances: 12, typeBreakdown: { ... } }
 ```
 
-### `.getAll()` vs `.forEach()`
+### `getAll()` vs `forEach()`
 
-**`.getAll()`** - Returns array, good for small sets:
+**`getAll()`** - Returns array, good for small sets:
+
 ```typescript
-const sessions = UserSessionCubit.getAll();
-const active = sessions.filter(s => s.state.isActive);
+const sessions = getAll(UserSessionCubit);
+const active = sessions.filter((s) => s.state.isActive);
 ```
 
-**`.forEach()`** - Callback, good for large sets or disposal during iteration:
+**`forEach()`** - Callback, good for large sets or disposal during iteration:
+
 ```typescript
 // Memory efficient, safe to dispose during iteration
-UserSessionCubit.forEach((session) => {
+forEach(UserSessionCubit, (session) => {
   if (session.state.isStale) {
-    UserSessionCubit.release(session.instanceId);
+    release(UserSessionCubit, session.instanceId);
   }
 });
 ```
@@ -171,7 +194,7 @@ class UserCubit extends Cubit<UserState> {
     this.patch({ profile: data });
 
     // Borrow analytics - no memory leak
-    const analytics = AnalyticsCubit.get();
+    const analytics = borrow(AnalyticsCubit);
     analytics.trackEvent('profile_loaded');
   };
 }
@@ -182,7 +205,7 @@ class UserCubit extends Cubit<UserState> {
 ```typescript
 class CartCubit extends Cubit<CartState> {
   get totalWithShipping() {
-    const shipping = ShippingCubit.get(); // Auto-tracked in React
+    const shipping = borrow(ShippingCubit); // Auto-tracked in React
     return this.itemTotal + shipping.state.cost;
   }
 }
@@ -193,14 +216,14 @@ class CartCubit extends Cubit<CartState> {
 ```typescript
 class AppCubit extends Cubit<AppState> {
   // Own a dependency
-  notificationCubit = NotificationCubit.resolve();
+  notificationCubit = acquire(NotificationCubit);
 
   constructor() {
     super(initialState);
 
     // Release on dispose
     this.onSystemEvent('dispose', () => {
-      NotificationCubit.release();
+      release(NotificationCubit);
     });
   }
 }

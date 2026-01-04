@@ -4,11 +4,11 @@ State containers emit system events for lifecycle management. Subscribe with `on
 
 ## Available Events
 
-| Event | Payload | When |
-|-------|---------|------|
-| `stateChanged` | `{ state, previousState }` | After state changes |
-| `propsUpdated` | `{ props, previousProps }` | After props update |
-| `dispose` | `void` | When `dispose()` is called |
+| Event          | Payload                    | When                       |
+| -------------- | -------------------------- | -------------------------- |
+| `stateChanged` | `{ state, previousState }` | After state changes        |
+| `propsUpdated` | `{ props, previousProps }` | After props update         |
+| `dispose`      | `void`                     | When `dispose()` is called |
 
 ## Usage
 
@@ -116,16 +116,18 @@ class WebSocketCubit extends Cubit<SocketState> {
 ### Releasing Owned Dependencies
 
 ```typescript
+import { acquire, release } from '@blac/core';
+
 class AppCubit extends Cubit<AppState> {
   // Own a dependency
-  private notifications = NotificationCubit.resolve();
+  private notifications = acquire(NotificationCubit);
 
   constructor() {
     super(initialState);
 
     // Release on dispose
     this.onSystemEvent('dispose', () => {
-      NotificationCubit.release();
+      release(NotificationCubit);
     });
   }
 }

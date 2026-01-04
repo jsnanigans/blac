@@ -38,8 +38,10 @@ class CounterCubit extends Cubit<{ count: number }> {
 ### Using a Cubit
 
 ```typescript
+import { acquire } from '@blac/core';
+
 // Get or create instance
-const counter = CounterCubit.resolve();
+const counter = acquire(CounterCubit);
 
 // Read state
 console.log(counter.state.count); // 0
@@ -99,12 +101,16 @@ State must always be an object, not a primitive:
 ```typescript
 // ✅ Correct
 class Counter extends Cubit<{ count: number }> {
-  constructor() { super({ count: 0 }); }
+  constructor() {
+    super({ count: 0 });
+  }
 }
 
 // ❌ Wrong - primitives not allowed
 class Counter extends Cubit<number> {
-  constructor() { super(0); }
+  constructor() {
+    super(0);
+  }
 }
 ```
 

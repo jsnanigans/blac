@@ -4,10 +4,10 @@ Quick reference for BlaC React patterns.
 
 ## Hooks
 
-| Hook | Returns | Use When |
-|------|---------|----------|
-| `useBloc` | `[state, instance]` | Need state and/or methods |
-| `useBlocActions` | `instance` | Only need methods, no state |
+| Hook             | Returns             | Use When                    |
+| ---------------- | ------------------- | --------------------------- |
+| `useBloc`        | `[state, instance]` | Need state and/or methods   |
+| `useBlocActions` | `instance`          | Only need methods, no state |
 
 ```tsx
 // State and methods
@@ -19,11 +19,11 @@ const cubit = useBlocActions(CounterCubit);
 
 ## Instance Modes
 
-| Mode | Config | Behavior |
-|------|--------|----------|
-| Shared (default) | None | One instance, all components share |
-| Isolated | `@blac({ isolated: true })` | One instance per component |
-| Keep Alive | `@blac({ keepAlive: true })` | Persists without consumers |
+| Mode             | Config                       | Behavior                           |
+| ---------------- | ---------------------------- | ---------------------------------- |
+| Shared (default) | None                         | One instance, all components share |
+| Isolated         | `@blac({ isolated: true })`  | One instance per component         |
+| Keep Alive       | `@blac({ keepAlive: true })` | Persists without consumers         |
 
 ```tsx
 // Shared - all components share
@@ -40,11 +40,11 @@ class AuthCubit extends Cubit<State> {}
 
 ## Tracking Modes
 
-| Mode | Config | Re-renders When |
-|------|--------|-----------------|
-| Auto-tracking | Default | Accessed properties change |
-| Manual | `dependencies: (s) => [...]` | Dependency array changes |
-| None | `autoTrack: false` | Any state change |
+| Mode          | Config                       | Re-renders When            |
+| ------------- | ---------------------------- | -------------------------- |
+| Auto-tracking | Default                      | Accessed properties change |
+| Manual        | `dependencies: (s) => [...]` | Dependency array changes   |
+| None          | `autoTrack: false`           | Any state change           |
 
 ```tsx
 // Auto-tracking (default)
@@ -53,7 +53,7 @@ return <div>{state.name}</div>; // Tracks 'name'
 
 // Manual dependencies
 const [state] = useBloc(UserCubit, {
-  dependencies: (s) => [s.name, s.email]
+  dependencies: (s) => [s.name, s.email],
 });
 
 // No tracking
@@ -64,25 +64,27 @@ const [state] = useBloc(UserCubit, { autoTrack: false });
 
 ```tsx
 useBloc(MyCubit, {
-  props: { userId: '123' },        // Constructor args
-  instanceId: 'main',              // Named instance
-  onMount: (c) => c.load(),        // Mount callback
-  onUnmount: (c) => c.cleanup(),   // Unmount callback
+  props: { userId: '123' }, // Constructor args
+  instanceId: 'main', // Named instance
+  onMount: (c) => c.load(), // Mount callback
+  onUnmount: (c) => c.cleanup(), // Unmount callback
 });
 ```
 
 ## Best Practices
 
 **DO:**
+
 - Access only properties you render
 - Use `useBlocActions` for action-only components
 - Use getters for computed values
 - Split large components
 
 **DON'T:**
+
 - Destructure entire state object
 - Spread state as props `{...state}`
-- Use `.resolve()` in bloc methods (use `.get()`)
+- Use `acquire()` in bloc methods (use `borrow()`)
 - Subscribe to state you don't display
 
 ## Quick Links

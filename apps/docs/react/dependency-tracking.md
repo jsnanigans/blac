@@ -129,10 +129,12 @@ function TodoStats() {
 Getters can access other blocs. Dependencies are automatically tracked:
 
 ```tsx
+import { borrow } from '@blac/core';
+
 class CartCubit extends Cubit<CartState> {
   get totalWithShipping() {
-    // .get() in getter = auto-tracked
-    const shipping = ShippingCubit.get();
+    // borrow() in getter = auto-tracked
+    const shipping = borrow(ShippingCubit);
     return this.itemTotal + shipping.state.cost;
   }
 }
@@ -146,7 +148,7 @@ function CheckoutTotal() {
 }
 ```
 
-Use `.get()`, `.getSafe()`, or `.connect()` in getters. Never `.resolve()` (causes memory leaks).
+Use `borrow()`, `borrowSafe()`, or `ensure()` in getters. Never `acquire()` (causes memory leaks).
 
 ## Tracking Modes
 
