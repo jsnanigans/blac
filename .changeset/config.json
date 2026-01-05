@@ -5,7 +5,7 @@
   "fixed": [],
   "linked": [["@blac/*"]],
   "access": "public",
-  "baseBranch": "v1",
+  "baseBranch": "rewrite",
   "updateInternalDependencies": "patch",
   "ignore": ["perf"]
 }

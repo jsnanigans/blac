@@ -1,4 +1,14 @@
 import { defineConfig } from 'vitepress';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
+
+const pkg = JSON.parse(
+  readFileSync(
+    resolve(__dirname, '../../../packages/blac/package.json'),
+    'utf-8',
+  ),
+);
+const version = pkg.version;
 
 export default defineConfig({
   title: 'BlaC',
@@ -14,6 +24,17 @@ export default defineConfig({
       { text: 'Core', link: '/core/getting-started' },
       { text: 'React', link: '/react/getting-started' },
       { text: 'API Reference', link: '/api/core' },
+      {
+        text: `v${version}`,
+        items: [
+          { text: 'Changelog', link: '/changelog' },
+          { text: 'npm', link: 'https://www.npmjs.com/package/@blac/core' },
+          {
+            text: 'GitHub Releases',
+            link: 'https://github.com/jsnanigans/blac/releases',
+          },
+        ],
+      },
     ],
 
     sidebar: {

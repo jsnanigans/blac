@@ -17,7 +17,9 @@
     "docs:preview": "pnpm --filter @blac/docs preview",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "pnpm build && pnpm test && pnpm typecheck && changeset publish --no-git-tag"
+    "release": "pnpm build && pnpm test && pnpm typecheck && changeset publish",
+    "release:helper": "./scripts/release.sh",
+    "docs:changelog": "node scripts/generate-changelog.mjs"
   },
   "pnpm": {},
   "engines": {

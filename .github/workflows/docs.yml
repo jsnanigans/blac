@@ -39,6 +39,9 @@ jobs:
       - name: Generate API docs
         run: pnpm docs:api
 
+      - name: Generate changelog
+        run: pnpm docs:changelog
+
       - name: Build docs
         run: pnpm --filter @blac/docs build
         env:
