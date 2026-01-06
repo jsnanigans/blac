@@ -20,7 +20,10 @@ export function UserAvatar({
   size = 'medium',
   showStatus = true,
 }: UserAvatarProps) {
-  const [user] = useBloc(UserCubit, { instanceId: userId });
+  const [user] = useBloc(UserCubit, {
+    instanceId: userId,
+    props: { userId },
+  });
 
   const sizeClasses = {
     small: 'avatar-small',

@@ -1,4 +1,4 @@
-import { Vertex } from '@blac/core';
+import { Vertex, borrowSafe, borrow, acquire } from '@blac/core';
 import type { Message, Channel } from '../types';
 import { persistenceService } from '../services/PersistenceService';
 import { NotificationCubit } from './NotificationCubit';
@@ -36,7 +36,11 @@ export interface ChannelState {
  * the same channel instance using instanceId. Each channel is completely
  * independent with its own state and lifecycle.
  */
-export class ChannelBloc extends Vertex<ChannelState, ChannelEvent> {
+export class ChannelBloc extends Vertex<
+  ChannelState,
+  ChannelEvent,
+  { channelId: string }
+> {
   /**
    * Ensure UserCubit exists for a given user (lazy creation)
    * This is called when messages are received to ensure we can render user info
@@ -46,20 +50,20 @@ export class ChannelBloc extends Vertex<ChannelState, ChannelEvent> {
     if (userId === CURRENT_USER_ID) return;
 
     // Check if UserCubit already exists
-    const result = UserCubit.getSafe(userId);
+    const result = borrowSafe(UserCubit, userId);
     if (!result.error) return; // Already exists
 
     // Create UserCubit on-demand
     const user = MOCK_USERS.find((u) => u.id === userId);
     if (user) {
-      UserCubit.resolve(userId, { props: { user } });
+      acquire(UserCubit, userId, { props: { user, userId } });
       console.log(`[ChannelBloc] Created UserCubit for ${userId} on-demand`);
     }
   }
 
   constructor(props?: { channelId: string }) {
-    const channelInfo = ContactsCubit.get().state.channels.find(
-      (c) => c.id === props?.channelId,
+    const channelInfo = borrow(ContactsCubit).state.channels.find(
+      (c: Channel) => c.id === props?.channelId,
     );
     if (!channelInfo) {
       throw new Error('ChannelBloc requires a channel to be passed via props');
@@ -122,9 +126,9 @@ export class ChannelBloc extends Vertex<ChannelState, ChannelEvent> {
         });
 
         // Update notification cubit with unread count
-        const notificationCubit = NotificationCubit.getSafe();
-        if (!notificationCubit.error) {
-          notificationCubit.instance.incrementUnread(this.state.channel.id);
+        const notificationResult = borrowSafe(NotificationCubit);
+        if (!notificationResult.error) {
+          notificationResult.instance.incrementUnread(this.state.channel.id);
         }
       },
 
@@ -145,9 +149,9 @@ export class ChannelBloc extends Vertex<ChannelState, ChannelEvent> {
 
       markAsRead: (_, _emit) => {
         // Clear unread count in NotificationCubit
-        const notificationCubit = NotificationCubit.getSafe();
-        if (!notificationCubit.error) {
-          notificationCubit.instance.clearUnread(this.state.channel.id);
+        const notificationResult = borrowSafe(NotificationCubit);
+        if (!notificationResult.error) {
+          notificationResult.instance.clearUnread(this.state.channel.id);
         }
       },
 

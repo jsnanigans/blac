@@ -1,4 +1,4 @@
-import { Cubit } from '@blac/core';
+import { Cubit, acquire } from '@blac/core';
 import { NotificationCubit } from './NotificationCubit';
 import { getWelcomeMessages, MOCK_CHANNELS } from '../mockData';
 import { persistenceService } from '../services/PersistenceService';
@@ -15,7 +15,7 @@ export interface AppState {
  * Manages current user, active channel/thread, and UI state
  */
 export class AppCubit extends Cubit<AppState, { currentUserId: string }> {
-  notificationCubit = NotificationCubit.resolve();
+  notificationCubit = acquire(NotificationCubit);
 
   constructor(props?: { currentUserId: string }) {
     if (!props?.currentUserId) {

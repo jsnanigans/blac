@@ -1,4 +1,5 @@
 import type { OutgoingMessage, IncomingMessage, Message } from '../types';
+import { borrowSafe, getAll } from '@blac/core';
 import { ChannelBloc } from '../blocs/ChannelBloc';
 import { UserCubit } from '../blocs/UserCubit';
 import { NotificationCubit } from '../blocs/NotificationCubit';
@@ -139,7 +140,7 @@ export class WebSocketMock {
     setTimeout(
       () => {
         try {
-          const channel = ChannelBloc.getSafe(outgoing.channelId);
+          const channel = borrowSafe(ChannelBloc, outgoing.channelId);
           if (!channel.error) {
             channel.instance.updateMessageStatus(messageId, 'sent');
           }
@@ -154,7 +155,7 @@ export class WebSocketMock {
     setTimeout(
       () => {
         try {
-          const channel = ChannelBloc.getSafe(outgoing.channelId);
+          const channel = borrowSafe(ChannelBloc, outgoing.channelId);
           if (!channel.error) {
             channel.instance.updateMessageStatus(messageId, 'delivered');
           }
@@ -211,7 +212,7 @@ export class WebSocketMock {
       );
 
       // Try to send to active ChannelBloc, otherwise save to persistence
-      const channelResult = ChannelBloc.getSafe(channelId);
+      const channelResult = borrowSafe(ChannelBloc, channelId);
 
       if (!channelResult.error) {
         // Channel is active - send event directly
@@ -225,16 +226,15 @@ export class WebSocketMock {
         const persisted = persistenceService.loadChannel(channelId);
         const existingMessages = persisted?.messages || [];
 
-        persistenceService.saveChannel(
-          channelId,
-          [...existingMessages, message],
-          (persisted?.unreadCount || 0) + 1,
-        );
+        persistenceService.saveChannel(channelId, [
+          ...existingMessages,
+          message,
+        ]);
 
         // Update notification cubit
-        const notificationCubit = NotificationCubit.getSafe();
-        if (!notificationCubit.error) {
-          notificationCubit.instance.incrementUnread(channelId);
+        const notificationResult = borrowSafe(NotificationCubit);
+        if (!notificationResult.error) {
+          notificationResult.instance.incrementUnread(channelId);
         }
 
         console.log(
@@ -261,7 +261,7 @@ export class WebSocketMock {
         this.BOT_USERS[Math.floor(Math.random() * this.BOT_USERS.length)];
 
       // Get active channels only
-      const activeChannels = ChannelBloc.getAll();
+      const activeChannels = getAll(ChannelBloc);
       if (activeChannels.length === 0) return;
 
       const channel =
@@ -274,7 +274,7 @@ export class WebSocketMock {
       setTimeout(
         () => {
           try {
-            const ch = ChannelBloc.getSafe(channel.instanceId);
+            const ch = borrowSafe(ChannelBloc, channel.instanceId);
             if (!ch.error) {
               ch.instance.userTyping(botUserId, false);
             }
@@ -298,7 +298,7 @@ export class WebSocketMock {
       if (!this.connected) return;
 
       // Get all active UserCubit instances
-      const activeUsers = UserCubit.getAll();
+      const activeUsers = getAll(UserCubit);
 
       this.BOT_USERS.forEach((userId) => {
         // Only update if this bot user is currently active
@@ -306,7 +306,7 @@ export class WebSocketMock {
         if (!isActive) return;
 
         try {
-          const result = UserCubit.getSafe(userId);
+          const result = borrowSafe(UserCubit, userId);
           if (!result.error) {
             const statuses: Array<'online' | 'away' | 'offline'> = [
               'online',

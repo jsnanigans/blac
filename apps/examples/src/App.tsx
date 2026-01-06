@@ -1,9 +1,11 @@
-import { RouterBloc, Link, Route } from './router';
+import { Link, Route } from './router';
+import { RouterBloc } from './router/RouterBloc';
 import { Home } from './Home';
 import { CounterDemo } from './examples/01-counter/CounterDemo';
 import { MessengerApp } from './messenger';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BlacDevtoolsUi } from '@blac/devtools-ui';
+import { useBlocActions } from '@blac/react';
 import './messenger/messenger.css';
 
 const Logo = () => {
@@ -106,9 +108,9 @@ const DevToolsBanner = () => {
  * not just component state.
  */
 export function App() {
-  // Initialize the router - it will be shared across the app
-  // Using .resolve() to claim ownership and increment ref count
-  RouterBloc.resolve();
+  // Initialize the router - using useBlocActions since we don't need state here
+  // The hook manages lifecycle (acquire on mount, release on unmount)
+  useBlocActions(RouterBloc);
 
   return (
     <>
