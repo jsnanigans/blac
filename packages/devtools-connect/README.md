@@ -14,22 +14,21 @@ yarn add @blac/devtools-connect
 
 ## Quick Start
 
-### Option 1: Redux DevTools (Recommended - 2 Minutes Setup)
+### Option 1: Redux DevTools (Recommended)
 
-The fastest way to get DevTools support. Use the existing Redux DevTools extension!
+The fastest way to get DevTools support using the existing Redux DevTools extension.
 
 **Step 1:** Install [Redux DevTools Extension](https://chrome.google.com/webstore/detail/redux-devtools/lmhkpmbekcpmknklioeibfkpmmfibljd)
 
 **Step 2:** Add the adapter to your app:
 
 ```typescript
-import { Blac } from '@blac/core';
+import { getPluginManager } from '@blac/core';
 import { ReduxDevToolsAdapter } from '@blac/devtools-connect';
 
-// Add Redux DevTools integration
-Blac.instance.plugins.add(
+getPluginManager().register(
   new ReduxDevToolsAdapter({
-    enabled: import.meta.env.DEV, // Only in development
+    enabled: import.meta.env.DEV,
     name: 'My App State',
   }),
 );
@@ -37,31 +36,29 @@ Blac.instance.plugins.add(
 
 **Step 3:** Open Redux DevTools and start debugging!
 
-✅ **Benefits:**
+**Benefits:**
 
-- ⚡ Works immediately - no custom extension needed
-- 🔄 Time-travel debugging built-in
-- 📊 State inspection with JSON tree
-- 📝 Action logging
-- 🎯 Proven UX from Redux ecosystem
+- Works immediately with existing extension
+- Time-travel debugging built-in
+- State inspection with JSON tree
+- Action logging
 
-### Option 2: Custom BlaC DevTools Extension
+### Option 2: BlaC DevTools UI
 
-For advanced BlaC-specific features (coming soon).
+For in-app debugging with the `@blac/devtools-ui` package:
 
 ```typescript
-import { Blac } from '@blac/core';
-import { DevToolsPlugin } from '@blac/devtools-connect';
+import { getPluginManager } from '@blac/core';
+import { createDevToolsBrowserPlugin } from '@blac/devtools-connect';
 
-Blac.instance.plugins.add(
-  new DevToolsPlugin({
+getPluginManager().register(
+  createDevToolsBrowserPlugin({
     enabled: import.meta.env.DEV,
-    maxEvents: 500,
   }),
 );
 ```
 
-Install the **BlaC DevTools** extension from Chrome Web Store (coming soon).
+Then add the UI component (see `@blac/devtools-ui` package).
 
 ## Features
 
@@ -73,13 +70,12 @@ Install the **BlaC DevTools** extension from Chrome Web Store (coming soon).
 - ✅ **Export/Import** - Save debugging sessions
 - ✅ **Zero Setup** - Works with existing extension
 
-### Custom BlaC DevTools (Coming Soon)
+### BlaC DevTools UI
 
-- 📝 **Enhanced Event Log** - BlaC-specific event details
-- 🔍 **Bloc Inspector** - Lifecycle and status tracking
-- ⚛️ **React Integration** - Component re-render tracking
-- 📊 **Performance Profiling** - Identify slow operations
-- 🎛️ **Proxy Tracking** - See actual property access vs subscriptions
+- **Enhanced Event Log** - BlaC-specific event details
+- **Bloc Inspector** - Lifecycle and status tracking
+- **State Diff View** - See what changed between states
+- **Search & Filter** - Find instances by name or class
 
 ## Configuration
 
@@ -114,23 +110,24 @@ new ReduxDevToolsAdapter({
 });
 ```
 
-### DevToolsPlugin (Custom Extension)
+### DevToolsBrowserPlugin
 
 ```typescript
-new DevToolsPlugin({
+import { createDevToolsBrowserPlugin } from '@blac/devtools-connect';
+
+createDevToolsBrowserPlugin({
   // Enable/disable the plugin (default: true)
   enabled: import.meta.env.DEV,
 
-  // Maximum events to keep in history (default: 500)
-  maxEvents: 500,
+  // Maximum instances to track (default: 2000)
+  maxInstances: 2000,
 
-  // Maximum message size in bytes (default: 10MB)
-  maxMessageSize: 10_000_000,
-
-  // Maximum messages per second (default: 100)
-  maxMessagesPerSecond: 100,
+  // Maximum state snapshots per instance (default: 20)
+  maxSnapshots: 20,
 });
 ```
+
+This plugin exposes a global `window.__BLAC_DEVTOOLS__` API for the DevTools UI.
 
 ## API
 
@@ -146,22 +143,29 @@ const connected = adapter.isConnected();
 adapter.disconnect();
 ```
 
-### DevToolsPlugin
+### DevToolsBrowserPlugin API
+
+The plugin exposes a global API at `window.__BLAC_DEVTOOLS__`:
 
 ```typescript
-const plugin = new DevToolsPlugin(config);
+const api = window.__BLAC_DEVTOOLS__;
+
+// Check if enabled
+api.isEnabled();
+
+// Get all current instances
+api.getInstances();
 
 // Get event history
-const history = plugin.getEventHistory();
+api.getEventHistory();
 
-// Clear event history
-plugin.clearEventHistory();
+// Subscribe to events
+const unsubscribe = api.subscribe((event) => {
+  console.log(event.type, event.data);
+});
 
-// Disable plugin at runtime
-plugin.disable();
-
-// Re-enable plugin
-plugin.enable();
+// Cleanup
+unsubscribe();
 ```
 
 ## How It Works
