@@ -82,7 +82,7 @@ describe('cloneDeep', () => {
 
   describe('Date', () => {
     it('should clone Date objects', () => {
-      const original = new Date('2024-01-01');
+      const original = new Date(2024, 0, 1);
       const cloned = cloneDeep(original);
       expect(cloned).toEqual(original);
       expect(cloned).not.toBe(original);
@@ -90,7 +90,7 @@ describe('cloneDeep', () => {
     });
 
     it('should allow modification without affecting original', () => {
-      const original = new Date('2024-01-01');
+      const original = new Date(2024, 0, 1);
       const cloned = cloneDeep(original);
       cloned.setFullYear(2025);
       expect(original.getFullYear()).toBe(2024);
@@ -209,7 +209,7 @@ describe('cloneDeep', () => {
           { name: 'Bob', tags: new Set(['user']) },
         ],
         settings: new Map([['theme', 'dark']]),
-        createdAt: new Date('2024-01-01'),
+        createdAt: new Date(2024, 0, 1),
       };
 
       const cloned = cloneDeep(original);
