@@ -177,6 +177,9 @@ importers:
       '@blac/devtools-ui':
         specifier: workspace:*
         version: link:../../packages/devtools-ui
+      '@blac/logging-plugin':
+        specifier: workspace:*
+        version: link:../../packages/logging-plugin
       '@blac/react':
         specifier: workspace:*
         version: link:../../packages/blac-react
@@ -390,6 +393,24 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.9.2
+
+  packages/logging-plugin:
+    devDependencies:
+      '@blac/core':
+        specifier: workspace:*
+        version: link:../blac
+      prettier:
+        specifier: 'catalog:'
+        version: 3.6.2
+      tsdown:
+        specifier: 'catalog:'
+        version: 0.15.7(typescript@5.9.2)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.2
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.1.0)(@vitest/browser@3.2.4)(happy-dom@18.0.1)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.30.1)(msw@2.7.3(@types/node@24.1.0)(typescript@5.9.2))(terser@5.39.0)(tsx@4.20.6)(yaml@2.7.0)
 
 packages:
 

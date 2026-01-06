@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { App } from './src/App';
 import './src/styles.css';
 import { getPluginManager } from '@blac/core';
+import { LoggingPlugin } from '@blac/logging-plugin';
 import { createDevToolsBrowserPlugin } from '@blac/devtools-connect';
 
 // Install DevTools plugin (new plugin API)
@@ -16,6 +17,10 @@ if (import.meta.env.DEV) {
 
   getPluginManager().install(devToolsPlugin);
   console.log('[BlaC Examples] DevTools plugin installed');
+
+  getPluginManager().install(new LoggingPlugin(), {
+    environment: 'development',
+  });
 }
 
 const container = document.getElementById('root');
