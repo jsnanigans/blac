@@ -24,8 +24,7 @@ export function MessengerApp() {
     webSocket.connect(CURRENT_USER_ID);
 
     // Handle incoming messages
-    const unsubscribe = webSocket.onMessage((msg) => {
-      console.log('[App] Received message:', msg);
+    const unsubscribe = webSocket.onMessage((_msg) => {
       // Messages are handled directly by ChannelBloc through WebSocketMock
     });
 

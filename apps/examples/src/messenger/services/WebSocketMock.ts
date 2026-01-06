@@ -61,7 +61,6 @@ export class WebSocketMock {
 
     this.connected = true;
     this.currentUserId = userId;
-    console.log(`[WebSocket] Connected as user: ${userId}`);
 
     // Start simulations
     this.startIncomingMessageSimulation();
@@ -78,8 +77,6 @@ export class WebSocketMock {
     // Clear all simulation intervals
     this.simulationIntervals.forEach((id) => clearInterval(id));
     this.simulationIntervals = [];
-
-    console.log('[WebSocket] Disconnected');
   }
 
   /**
@@ -90,8 +87,6 @@ export class WebSocketMock {
       console.error('[WebSocket] Cannot send - not connected');
       return;
     }
-
-    console.log('[WebSocket] Sending:', message);
 
     // Simulate different message types
     switch (message.type) {
@@ -206,11 +201,6 @@ export class WebSocketMock {
         status: 'delivered',
       };
 
-      console.log(
-        `[WebSocket] Incoming message from ${botUserId} to ${channelId}:`,
-        messageText,
-      );
-
       // Try to send to active ChannelBloc, otherwise save to persistence
       const channelResult = borrowSafe(ChannelBloc, channelId);
 
@@ -236,10 +226,6 @@ export class WebSocketMock {
         if (!notificationResult.error) {
           notificationResult.instance.incrementUnread(channelId);
         }
-
-        console.log(
-          `[WebSocket] Saved message to persistence for inactive channel ${channelId}`,
-        );
       }
     }, 5000); // Check every 5 seconds
 

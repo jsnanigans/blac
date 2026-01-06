@@ -17,10 +17,6 @@ interface CounterStatsProps {
 export function CounterStats({ instanceKey }: CounterStatsProps) {
   const [state] = useBloc(CounterBloc, { instanceId: instanceKey });
 
-  console.log(
-    `[CounterStats] Rendering - increments: ${state.incrementCount}, decrements: ${state.decrementCount}`,
-  );
-
   return (
     <Card>
       <h4>Statistics</h4>

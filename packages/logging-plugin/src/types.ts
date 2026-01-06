@@ -67,12 +67,6 @@ export interface LoggingPluginConfig {
 
   /** Log prefix (default: '[BlaC]') */
   prefix?: string;
-
-  /** Debounce rapid state changes and group them (default: true) */
-  debounceStateChanges?: boolean;
-
-  /** Debounce window in ms (default: 100) */
-  debounceWindowMs?: number;
 }
 
 export interface ResolvedConfig {
@@ -91,8 +85,6 @@ export interface ResolvedConfig {
   rapidLifecycleWindowMs: number;
   rapidLifecycleThreshold: number;
   prefix: string;
-  debounceStateChanges: boolean;
-  debounceWindowMs: number;
 }
 
 export function resolveConfig(
@@ -114,7 +106,5 @@ export function resolveConfig(
     rapidLifecycleWindowMs: config.rapidLifecycleWindowMs ?? 1000,
     rapidLifecycleThreshold: config.rapidLifecycleThreshold ?? 5,
     prefix: config.prefix ?? '[BlaC]',
-    debounceStateChanges: config.debounceStateChanges ?? true,
-    debounceWindowMs: config.debounceWindowMs ?? 100,
   };
 }

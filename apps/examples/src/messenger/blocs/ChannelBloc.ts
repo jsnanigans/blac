@@ -57,7 +57,6 @@ export class ChannelBloc extends Vertex<
     const user = MOCK_USERS.find((u) => u.id === userId);
     if (user) {
       acquire(UserCubit, userId, { props: { user, userId } });
-      console.log(`[ChannelBloc] Created UserCubit for ${userId} on-demand`);
     }
   }
 
@@ -195,10 +194,6 @@ export class ChannelBloc extends Vertex<
       persistenceService.saveChannel(
         this.state.channel.id,
         this.state.messages,
-      );
-
-      console.log(
-        `[ChannelBloc] Persisted ${this.state.messages.length} messages for channel ${this.state.channel.id}`,
       );
     });
   }

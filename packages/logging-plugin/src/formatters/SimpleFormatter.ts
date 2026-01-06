@@ -56,21 +56,6 @@ export class SimpleFormatter {
     }
   }
 
-  logBatchedStateChanges(
-    metadata: InstanceMetadata,
-    initialState: unknown,
-    finalState: unknown,
-    changeCount: number,
-    _includeCallstack: boolean,
-  ): void {
-    const instanceId = this.formatInstanceId(metadata.className, metadata.id);
-    const initial = this.formatState(initialState);
-    const final = this.formatState(finalState);
-    this.logger.log(
-      `${this.prefix} ${instanceId} state: ${initial} → ${final} (${changeCount} changes batched)`,
-    );
-  }
-
   logEventAdded(
     className: string,
     instanceId: string,

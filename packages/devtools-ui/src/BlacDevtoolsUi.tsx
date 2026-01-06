@@ -56,11 +56,8 @@ let overlayContainer: HTMLElement | null = null;
 function initOverlay(onMount?: DraggableOverlayProps['onMount']) {
   // Check if already initialized
   if (overlayContainer) {
-    console.log('[BlaC DevTools] Already initialized');
     return;
   }
-
-  console.log('[BlaC DevTools] Initializing overlay...');
 
   // Create a container for the overlay
   overlayContainer = document.createElement('div');
@@ -78,9 +75,9 @@ function initOverlay(onMount?: DraggableOverlayProps['onMount']) {
 
   // Mount the overlay
   overlayRoot = ReactDOM.createRoot(overlayContainer);
-  overlayRoot.render(<DraggableOverlay onMount={onMount ?? defaultDevToolsMount} />);
-
-  console.log('[BlaC DevTools] Ready! Press Alt+D to toggle');
+  overlayRoot.render(
+    <DraggableOverlay onMount={onMount ?? defaultDevToolsMount} />,
+  );
 }
 
 /**
@@ -88,7 +85,6 @@ function initOverlay(onMount?: DraggableOverlayProps['onMount']) {
  */
 function cleanupOverlay() {
   if (overlayRoot) {
-    console.log('[BlaC DevTools] Cleaning up overlay...');
     overlayRoot.unmount();
     overlayRoot = null;
   }
@@ -139,23 +135,18 @@ export function BlacDevtoolsUi({
     if (mode === 'pip') {
       if (!isPiPSupported()) {
         console.error(
-          '[BlaC DevTools] PiP mode forced but Document Picture-in-Picture API is not supported'
+          '[BlaC DevTools] PiP mode forced but Document Picture-in-Picture API is not supported',
         );
         throw new Error(
-          'Document Picture-in-Picture API is not supported in this browser'
+          'Document Picture-in-Picture API is not supported in this browser',
         );
       }
       shouldUsePiP = true;
-      console.log('[BlaC DevTools] Using Picture-in-Picture mode (forced)');
     } else if (mode === 'overlay') {
       shouldUsePiP = false;
-      console.log('[BlaC DevTools] Using overlay mode (forced)');
     } else {
       // Auto mode - detect support
       shouldUsePiP = isPiPSupported();
-      console.log(
-        `[BlaC DevTools] Auto-detected mode: ${shouldUsePiP ? 'Picture-in-Picture' : 'overlay'}`
-      );
     }
 
     setUsePiP(shouldUsePiP);

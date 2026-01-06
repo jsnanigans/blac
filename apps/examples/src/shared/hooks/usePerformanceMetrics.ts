@@ -101,7 +101,6 @@ export function usePerformanceMetrics(enabled = true): PerformanceMetrics {
 
     rafIdRef.current = requestAnimationFrame(measurePerformance);
     renderCountRef.current++;
-    console.log('Render count:', renderCountRef.current);
 
     return () => {
       if (rafIdRef.current !== undefined) {

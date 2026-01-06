@@ -28,7 +28,6 @@ export class DevToolsSearchBloc extends Cubit<SearchState> {
    * Update search query
    */
   setQuery = (query: string) => {
-    console.log(`[SearchBloc] Search query changed to: "${query}"`);
     this.patch({ query });
   };
 

@@ -18,7 +18,6 @@ interface ChannelViewProps {
  * - Side effects (marking as read when channel is viewed)
  */
 export function ChannelView({ channelId, currentUserId }: ChannelViewProps) {
-  console.log(`[ChannelView] Rendering channel ${channelId}`);
   const [channel, channelBloc] = useBloc(ChannelBloc, {
     instanceId: channelId,
     props: { channelId },

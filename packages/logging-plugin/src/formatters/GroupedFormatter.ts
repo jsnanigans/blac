@@ -85,34 +85,6 @@ export class GroupedFormatter {
     this.groupEnd();
   }
 
-  logBatchedStateChanges(
-    metadata: InstanceMetadata,
-    initialState: unknown,
-    finalState: unknown,
-    changes: Array<{ previous: unknown; current: unknown; callstack?: string }>,
-    includeCallstack: boolean,
-  ): void {
-    const instanceId = this.formatInstanceId(metadata.className, metadata.id);
-    this.group(
-      `${this.prefix} ${instanceId} state changed (${changes.length} batched)`,
-    );
-    this.logger.log('Initial:', initialState);
-    this.logger.log('Final:', finalState);
-
-    if (changes.length > 1) {
-      this.group('All changes', true);
-      changes.forEach((change, i) => {
-        this.logger.log(`${i + 1}.`, change.previous, '→', change.current);
-        if (includeCallstack && change.callstack) {
-          this.logger.log('   Callstack:', change.callstack);
-        }
-      });
-      this.groupEnd();
-    }
-
-    this.groupEnd();
-  }
-
   logEventAdded(
     className: string,
     instanceId: string,

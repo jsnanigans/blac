@@ -37,9 +37,11 @@ export class DevToolsDiffBloc extends Cubit<DiffState> {
    * Store a state snapshot in the history
    * Maintains up to MAX_HISTORY_SIZE snapshots (newest first)
    */
-  storePreviousState = (instanceId: string, previousState: any, callstack?: string) => {
-    console.log(`[DiffBloc] Storing state snapshot for: ${instanceId}${callstack ? ' (with callstack)' : ''}`);
-
+  storePreviousState = (
+    instanceId: string,
+    previousState: any,
+    callstack?: string,
+  ) => {
     const stateHistory = new Map(this.state.stateHistory);
     const history = stateHistory.get(instanceId) || [];
 
@@ -59,18 +61,12 @@ export class DevToolsDiffBloc extends Cubit<DiffState> {
 
     stateHistory.set(instanceId, updatedHistory);
     this.patch({ stateHistory });
-
-    console.log(
-      `[DiffBloc] State history updated (${updatedHistory.length} snapshots)`,
-    );
   };
 
   /**
    * Clear state history for an instance
    */
   clearPreviousState = (instanceId: string) => {
-    console.log(`[DiffBloc] Clearing state history for: ${instanceId}`);
-
     const stateHistory = new Map(this.state.stateHistory);
     stateHistory.delete(instanceId);
 
@@ -81,7 +77,6 @@ export class DevToolsDiffBloc extends Cubit<DiffState> {
    * Clear all state histories
    */
   clearAllPreviousStates = () => {
-    console.log(`[DiffBloc] Clearing all state histories`);
     this.patch({ stateHistory: new Map() });
   };
 

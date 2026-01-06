@@ -1,7 +1,11 @@
 import { Cubit, blac, borrow } from '@blac/core';
 import type { InstanceData } from '../types';
 import { DevToolsInstancesBloc } from './DevToolsInstancesBloc';
-import { DevToolsDiffBloc, type DiffResult, type StateSnapshot } from './DevToolsDiffBloc';
+import {
+  DevToolsDiffBloc,
+  type DiffResult,
+  type StateSnapshot,
+} from './DevToolsDiffBloc';
 
 export type TabName = 'Instances' | 'Logs';
 
@@ -31,7 +35,6 @@ export class DevToolsLayoutBloc extends Cubit<LayoutState> {
    * Set active tab
    */
   setActiveTab = (tab: TabName) => {
-    console.log(`[LayoutBloc] Active tab changed to:`, tab);
     this.patch({ activeTab: tab });
   };
 
@@ -39,7 +42,6 @@ export class DevToolsLayoutBloc extends Cubit<LayoutState> {
    * Set selected instance ID
    */
   setSelectedId = (instanceId: string | null) => {
-    console.log(`[LayoutBloc] Selected instance changed to:`, instanceId);
     this.patch({ selectedId: instanceId });
   };
 
@@ -47,7 +49,6 @@ export class DevToolsLayoutBloc extends Cubit<LayoutState> {
    * Toggle current state panel expansion
    */
   toggleCurrentStateExpanded = () => {
-    console.log(`[LayoutBloc] Toggling current state expanded`);
     this.patch({ isCurrentStateExpanded: !this.state.isCurrentStateExpanded });
   };
 
@@ -55,7 +56,6 @@ export class DevToolsLayoutBloc extends Cubit<LayoutState> {
    * Toggle history panel expansion
    */
   toggleHistoryExpanded = () => {
-    console.log(`[LayoutBloc] Toggling history expanded`);
     this.patch({ isHistoryExpanded: !this.state.isHistoryExpanded });
   };
 

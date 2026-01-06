@@ -4,19 +4,19 @@ import type {
   StateContainer,
   Vertex,
   DiscriminatedEvent,
-  InstanceMetadata,
 } from '@blac/core';
 import { SimpleFormatter } from './formatters/SimpleFormatter';
 import { GroupedFormatter } from './formatters/GroupedFormatter';
 import { InstanceCountMonitor } from './monitors/InstanceCountMonitor';
 import { LifecycleMonitor } from './monitors/LifecycleMonitor';
-import { StateChangeBuffer } from './monitors/StateChangeBuffer';
 import type {
   LoggingPluginConfig,
   ResolvedConfig,
   FilterContext,
 } from './types';
 import { resolveConfig } from './types';
+
+const STATE_CHANGE_RATE_LIMIT = 1000; // max state changes per second
 
 export class LoggingPlugin implements BlacPlugin {
   readonly name = 'LoggingPlugin';
@@ -28,7 +28,11 @@ export class LoggingPlugin implements BlacPlugin {
   private groupedFormatter: GroupedFormatter;
   private instanceCountMonitor: InstanceCountMonitor;
   private lifecycleMonitor: LifecycleMonitor;
-  private stateChangeBuffer: StateChangeBuffer;
+
+  // Rate limiting for state changes
+  private stateChangeCount = 0;
+  private stateChangeWindowStart = Date.now();
+  private stateChangeLoggingDisabled = false;
 
   constructor(config: LoggingPluginConfig = {}) {
     this.config = resolveConfig(config);
@@ -47,55 +51,6 @@ export class LoggingPlugin implements BlacPlugin {
       warningHandler,
     );
     this.lifecycleMonitor = new LifecycleMonitor(this.config, warningHandler);
-    this.stateChangeBuffer = new StateChangeBuffer(
-      this.config,
-      this.flushStateChanges.bind(this),
-    );
-  }
-
-  private flushStateChanges(
-    metadata: InstanceMetadata,
-    initialState: unknown,
-    finalState: unknown,
-    changes: Array<{ previous: unknown; current: unknown; callstack?: string }>,
-  ): void {
-    if (changes.length === 1) {
-      if (this.config.format === 'simple') {
-        this.simpleFormatter.logStateChanged(
-          metadata,
-          initialState,
-          finalState,
-          changes[0].callstack,
-          this.config.includeCallstack,
-        );
-      } else {
-        this.groupedFormatter.logStateChanged(
-          metadata,
-          initialState,
-          finalState,
-          changes[0].callstack,
-          this.config.includeCallstack,
-        );
-      }
-    } else {
-      if (this.config.format === 'simple') {
-        this.simpleFormatter.logBatchedStateChanges(
-          metadata,
-          initialState,
-          finalState,
-          changes.length,
-          this.config.includeCallstack,
-        );
-      } else {
-        this.groupedFormatter.logBatchedStateChanges(
-          metadata,
-          initialState,
-          finalState,
-          changes,
-          this.config.includeCallstack,
-        );
-      }
-    }
   }
 
   onInstall(context: PluginContext): void {
@@ -110,8 +65,6 @@ export class LoggingPlugin implements BlacPlugin {
   }
 
   onUninstall(): void {
-    this.stateChangeBuffer.flushAll();
-
     if (this.config.format === 'simple') {
       this.simpleFormatter.logUninstall();
     } else {
@@ -120,7 +73,9 @@ export class LoggingPlugin implements BlacPlugin {
 
     this.instanceCountMonitor.reset();
     this.lifecycleMonitor.reset();
-    this.stateChangeBuffer.reset();
+    this.stateChangeCount = 0;
+    this.stateChangeWindowStart = Date.now();
+    this.stateChangeLoggingDisabled = false;
     this.context = undefined;
   }
 
@@ -180,31 +135,42 @@ export class LoggingPlugin implements BlacPlugin {
 
     if (!this.shouldLogStateChanges()) return;
 
-    const buffered = this.stateChangeBuffer.add(
-      metadata,
-      previousState,
-      currentState,
-      callstack,
-    );
+    // Check rate limit
+    if (this.stateChangeLoggingDisabled) return;
 
-    if (!buffered) {
-      if (this.config.format === 'simple') {
-        this.simpleFormatter.logStateChanged(
-          metadata,
-          previousState,
-          currentState,
-          callstack,
-          this.config.includeCallstack,
-        );
-      } else {
-        this.groupedFormatter.logStateChanged(
-          metadata,
-          previousState,
-          currentState,
-          callstack,
-          this.config.includeCallstack,
-        );
-      }
+    const now = Date.now();
+    if (now - this.stateChangeWindowStart >= 1000) {
+      // Reset window
+      this.stateChangeCount = 0;
+      this.stateChangeWindowStart = now;
+    }
+
+    this.stateChangeCount++;
+
+    if (this.stateChangeCount > STATE_CHANGE_RATE_LIMIT) {
+      this.stateChangeLoggingDisabled = true;
+      this.logWarning(
+        `State change logging disabled: exceeded ${STATE_CHANGE_RATE_LIMIT} changes/second`,
+      );
+      return;
+    }
+
+    if (this.config.format === 'simple') {
+      this.simpleFormatter.logStateChanged(
+        metadata,
+        previousState,
+        currentState,
+        callstack,
+        this.config.includeCallstack,
+      );
+    } else {
+      this.groupedFormatter.logStateChanged(
+        metadata,
+        previousState,
+        currentState,
+        callstack,
+        this.config.includeCallstack,
+      );
     }
   }
 
@@ -263,8 +229,6 @@ export class LoggingPlugin implements BlacPlugin {
     ) {
       return;
     }
-
-    this.stateChangeBuffer.flushInstance(metadata.id);
 
     const info = this.lifecycleMonitor.getInstanceInfo(metadata.id);
     const lifespanMs = info ? Date.now() - info.createdAt : 0;
@@ -331,7 +295,11 @@ export class LoggingPlugin implements BlacPlugin {
 
   private shouldLogStateChanges(): boolean {
     if (!this.config.logStateChanges) return false;
-    return this.config.level === 'debug' || this.config.level === 'verbose';
+    return (
+      this.config.level === 'info' ||
+      this.config.level === 'debug' ||
+      this.config.level === 'verbose'
+    );
   }
 
   private shouldLogEvents(): boolean {

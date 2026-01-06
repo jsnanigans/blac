@@ -22,7 +22,6 @@ export class RouterBloc extends Cubit<RouterState> {
     // Cleanup on dispose
     this.onSystemEvent('dispose', () => {
       window.removeEventListener('popstate', this.handlePopState);
-      console.log('[RouterBloc] Disposed - cleaned up listeners');
     });
   }
 
@@ -32,7 +31,6 @@ export class RouterBloc extends Cubit<RouterState> {
   navigate = (path: string, params: Record<string, string> = {}) => {
     window.history.pushState({}, '', path);
     this.emit({ path, params });
-    console.log(`[RouterBloc] Navigated to: ${path}`, params);
   };
 
   /**
@@ -41,6 +39,5 @@ export class RouterBloc extends Cubit<RouterState> {
   private handlePopState = () => {
     const path = window.location.pathname;
     this.emit({ ...this.state, path });
-    console.log(`[RouterBloc] Browser navigation to: ${path}`);
   };
 }

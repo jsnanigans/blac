@@ -47,18 +47,6 @@ export class LifecycleMonitor {
   onInstanceDisposed(className: string, instanceId: string): void {
     if (!this.enabled) return;
 
-    const info = this.instanceInfo.get(instanceId);
-    if (info && info.stateChangeCount === 0) {
-      this.onWarning(
-        `Unused instance: ${className}#${instanceId.slice(0, 8)} disposed without state changes`,
-        {
-          className,
-          instanceId,
-          lifespan: Date.now() - info.createdAt,
-        },
-      );
-    }
-
     this.instanceInfo.delete(instanceId);
     this.recordEvent(className, 'disposed');
     this.checkRapidLifecycle(className);

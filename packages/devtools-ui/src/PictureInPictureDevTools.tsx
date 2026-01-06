@@ -13,10 +13,7 @@ import type { DraggableOverlayProps } from './DraggableOverlay';
 
 // Type declaration for Document PiP API
 interface DocumentPictureInPictureAPI {
-  requestWindow(options?: {
-    width?: number;
-    height?: number;
-  }): Promise<Window>;
+  requestWindow(options?: { width?: number; height?: number }): Promise<Window>;
   window: Window | null;
 }
 
@@ -45,11 +42,8 @@ export function isPiPSupported(): boolean {
  * Copy all stylesheets from main document to PiP window
  */
 function copyStylesToPiP(pipWindow: Window) {
-  console.log('[BlaC PiP] Copying styles to PiP window...');
-
   // Copy all stylesheets
   const styleSheets = Array.from(document.styleSheets);
-  let copiedCount = 0;
 
   for (const styleSheet of styleSheets) {
     try {
@@ -61,7 +55,6 @@ function copyStylesToPiP(pipWindow: Window) {
       const style = pipWindow.document.createElement('style');
       style.textContent = cssRules;
       pipWindow.document.head.appendChild(style);
-      copiedCount++;
     } catch (e) {
       // If we can't access cssRules (CORS), create a link to the external stylesheet
       if (styleSheet.href) {
@@ -69,7 +62,6 @@ function copyStylesToPiP(pipWindow: Window) {
         link.rel = 'stylesheet';
         link.href = styleSheet.href;
         pipWindow.document.head.appendChild(link);
-        copiedCount++;
       } else {
         console.warn('[BlaC PiP] Could not copy stylesheet:', e);
       }
@@ -89,8 +81,6 @@ function copyStylesToPiP(pipWindow: Window) {
     }
   `;
   pipWindow.document.head.appendChild(pipStyles);
-
-  console.log(`[BlaC PiP] Copied ${copiedCount} stylesheets to PiP window`);
 }
 
 /**
@@ -112,18 +102,15 @@ export function PictureInPictureDevTools({
 
     // Check if already open
     if (window.documentPictureInPicture!.window) {
-      console.log('[BlaC PiP] PiP window already open');
       return;
     }
 
     try {
-      console.log('[BlaC PiP] Requesting PiP window...');
       const pip = await window.documentPictureInPicture!.requestWindow({
         width: 800,
         height: 600,
       });
 
-      console.log('[BlaC PiP] PiP window opened');
       setPipWindow(pip);
 
       // Copy styles to PiP window
@@ -146,11 +133,8 @@ export function PictureInPictureDevTools({
       setPipRoot(root);
       root.render(<DevToolsPanel onMount={onMount ?? defaultDevToolsMount} />);
 
-      console.log('[BlaC PiP] DevTools rendered in PiP window');
-
       // Handle PiP window closing
       pip.addEventListener('pagehide', () => {
-        console.log('[BlaC PiP] PiP window closed by user');
         setVisible(false);
         closePiP();
       });
@@ -164,13 +148,11 @@ export function PictureInPictureDevTools({
   // Close PiP window
   const closePiP = () => {
     if (pipRoot) {
-      console.log('[BlaC PiP] Unmounting React from PiP window');
       pipRoot.unmount();
       setPipRoot(null);
     }
 
     if (pipWindow && !pipWindow.closed) {
-      console.log('[BlaC PiP] Closing PiP window');
       pipWindow.close();
     }
 
@@ -192,21 +174,17 @@ export function PictureInPictureDevTools({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.altKey && (e.key === 'd' || e.key === 'D')) {
         e.preventDefault();
-        console.log('[BlaC PiP] Alt+D pressed, toggling PiP');
         togglePiP();
       }
     };
 
     // Listen for custom toggle event
     const handleToggleEvent = () => {
-      console.log('[BlaC PiP] Toggle event received');
       togglePiP();
     };
 
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('blac-devtools-toggle', handleToggleEvent);
-
-    console.log('[BlaC PiP] Event listeners attached');
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
@@ -241,7 +219,6 @@ export function PictureInPictureDevTools({
           pointerEvents: 'auto',
         }}
         onClick={() => {
-          console.log('[BlaC PiP] Toggle button clicked');
           openPiP();
         }}
         title="Open BlaC DevTools in Picture-in-Picture (Alt+D)"

@@ -38,7 +38,6 @@ export const DevToolsPanel: FC<DevToolsUIProps> = React.memo(
     // Initialize core blocs needed for the panel
     useBloc(DevToolsInstancesBloc, {
       onMount: (instancesBloc) => {
-        console.log('[DevToolsPanel] DevToolsInstancesBloc created');
         onMount(instancesBloc);
       },
       onUnmount: () => {
@@ -47,25 +46,13 @@ export const DevToolsPanel: FC<DevToolsUIProps> = React.memo(
     });
 
     // Initialize diff bloc for state comparison
-    useBloc(DevToolsDiffBloc, {
-      onMount: () => {
-        console.log('[DevToolsPanel] DevToolsDiffBloc created');
-      },
-    });
+    useBloc(DevToolsDiffBloc);
 
     // Initialize logs bloc for event logging
-    useBloc(DevToolsLogsBloc, {
-      onMount: () => {
-        console.log('[DevToolsPanel] DevToolsLogsBloc created');
-      },
-    });
+    useBloc(DevToolsLogsBloc);
 
     // Initialize layout bloc for tab management
-    const [{ activeTab }] = useBloc(DevToolsLayoutBloc, {
-      onMount: () => {
-        console.log('[DevToolsPanel] DevToolsLayoutBloc created');
-      },
-    });
+    const [{ activeTab }] = useBloc(DevToolsLayoutBloc);
 
     return (
       <div
