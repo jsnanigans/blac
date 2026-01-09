@@ -4,7 +4,7 @@ layout: home
 hero:
   name: Blac
   text: Business Logic Component
-  tagline: A TypeScript + React state management library inspired by the BLoC pattern
+  tagline: More than State Management
   actions:
     - theme: brand
       text: Get Started
