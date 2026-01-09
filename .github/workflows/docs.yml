@@ -2,7 +2,14 @@ name: Deploy Docs
 
 on:
   push:
-    branches: [rewrite]
+    branches: [main, rewrite]
+    paths:
+      - 'apps/docs/**'
+      - 'packages/blac/**'
+      - 'packages/blac-react/**'
+      - '.github/workflows/docs.yml'
+      - 'scripts/generate-api-docs.mjs'
+      - 'scripts/generate-changelog.mjs'
   workflow_dispatch:
 
 permissions:
