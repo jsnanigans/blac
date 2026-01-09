@@ -6,7 +6,7 @@ outline: [2, 3]
 
 Plugin system for extending BlaC
 
-<small>[← Back to @blac/core](../core.md)</small>
+<small>[← Back to @blac/core](./index.md)</small>
 
 ## Quick Reference
 

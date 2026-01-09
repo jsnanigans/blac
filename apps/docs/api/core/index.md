@@ -10,11 +10,11 @@ Core state management primitives
 
 | Section | Description |
 |---------|-------------|
-| [Registry](./core/registry.md) | Instance management and lifecycle |
-| [Plugins](./core/plugins.md) | Plugin system for extending BlaC |
-| [Framework Adapter](./core/adapter.md) | React integration and dependency tracking |
-| [Logging](./core/logging.md) | Logging utilities for debugging |
-| [Utilities](./core/utilities.md) | Helper functions, ID generation, and type utilities |
+| [Registry](./registry.md) | Instance management and lifecycle |
+| [Plugins](./plugins.md) | Plugin system for extending BlaC |
+| [Framework Adapter](./adapter.md) | React integration and dependency tracking |
+| [Logging](./logging.md) | Logging utilities for debugging |
+| [Utilities](./utilities.md) | Helper functions, ID generation, and type utilities |
 
 ## Classes
 
@@ -402,4 +402,3 @@ System events emitted by StateContainer lifecycle
 ```typescript
 export type SystemEvent = 'propsUpdated' | 'stateChanged' | 'dispose';
 ```
-

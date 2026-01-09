@@ -6,7 +6,7 @@ outline: [2, 3]
 
 Helper functions, ID generation, and type utilities
 
-<small>[← Back to @blac/core](../core.md)</small>
+<small>[← Back to @blac/core](./index.md)</small>
 
 ## Quick Reference
 

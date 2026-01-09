@@ -6,7 +6,7 @@ outline: [2, 3]
 
 Utilities for building framework integrations (React, Vue, Svelte, etc.)
 
-<small>[← Back to @blac/core](../core.md)</small>
+<small>[← Back to @blac/core](./index.md)</small>
 
 ::: warning Advanced API
 This API is intended for authors building framework integrations. Most users should use `@blac/react` directly.
