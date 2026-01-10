@@ -1,12 +1,24 @@
 # @blac/react
 
-## 2.0.0
+## 2.0.1
 
 ### Patch Changes
 
-- Create logging plugin
+- 2.0.0 release
 - Updated dependencies
-  - @blac/core@2.0.0
+  - @blac/core@2.0.1
+
+## 2.0.0
+
+BlaC React bindings v2 - complete rewrite with improved hooks and performance.
+
+### Highlights
+
+- **useBloc hook**: Integrates state containers with React using `useSyncExternalStore` for concurrent mode compatibility
+- **Auto-tracking**: Automatic dependency detection via Proxy - only re-renders when accessed properties change
+- **Manual dependencies**: Explicit dependency array support like useEffect
+- **Isolated & Shared instances**: Per-component or singleton instances with ref counting
+- **React 18 & 19 support**: Full compatibility with React 18 and 19
 
 ## 2.0.0-rc.17
 

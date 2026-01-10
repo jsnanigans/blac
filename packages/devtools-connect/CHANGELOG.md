@@ -1,12 +1,22 @@
 # @blac/devtools-connect
 
-## 2.0.0
+## 2.0.1
 
 ### Patch Changes
 
-- Create logging plugin
+- 2.0.0 release
 - Updated dependencies
-  - @blac/core@2.0.0
+  - @blac/core@2.0.1
+
+## 2.0.0
+
+BlaC DevTools connection plugin for v2.
+
+### Highlights
+
+- **DevTools Bridge**: Connect BlaC state containers to browser DevTools extension
+- **State Inspection**: Real-time state viewing and time-travel debugging
+- **Plugin Architecture**: Implemented as a BlaC plugin with lifecycle hooks
 
 ## 2.0.0-rc.17
 

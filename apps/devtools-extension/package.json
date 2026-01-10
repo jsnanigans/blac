@@ -1,6 +1,6 @@
 {
   "name": "@blac/devtools-extension",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Chrome DevTools extension for BlaC state management",
   "private": true,
   "scripts": {
@@ -13,9 +13,9 @@
     "package:webstore": "pnpm build && rm -f webstore.zip && zip -r webstore.zip manifest.json icons dist -x '*.map'"
   },
   "dependencies": {
-    "@blac/react": "workspace:2.0.0",
-    "@blac/core": "workspace:2.0.0",
-    "@blac/devtools-ui": "workspace:2.0.0"
+    "@blac/react": "workspace:2.0.1",
+    "@blac/core": "workspace:2.0.1",
+    "@blac/devtools-ui": "workspace:2.0.1"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.254",

@@ -1,19 +1,18 @@
 {
-  "name": "@blac/devtools-connect",
+  "name": "@blac/preact",
   "version": "2.0.1",
   "license": "MIT",
   "author": "Brendan Mullins <jsnanigans@gmail.com>",
-  "description": "DevTools connection plugin for BlaC state management",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/jsnanigans/blac.git",
-    "directory": "packages/devtools-connect"
+    "directory": "packages/blac-preact"
   },
   "homepage": "https://github.com/jsnanigans/blac#readme",
   "bugs": {
     "url": "https://github.com/jsnanigans/blac/issues"
   },
-  "main": "./dist/index.js",
+  "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -29,40 +28,58 @@
     }
   },
   "files": [
-    "dist/**/*.js",
-    "dist/**/*.cjs",
-    "dist/**/*.d.ts",
-    "dist/**/*.d.cts",
+    "dist/index.js",
+    "dist/index.cjs",
+    "dist/index.d.ts",
+    "dist/index.d.cts",
+    "dist/*.map",
     "README.md",
     "LICENSE"
   ],
   "sideEffects": false,
   "keywords": [
-    "blac",
-    "devtools",
-    "debugging",
+    "preact",
+    "typescript",
     "state-management",
-    "time-travel"
+    "preactjs",
+    "observer-pattern",
+    "bloc",
+    "bloc-pattern"
   ],
   "scripts": {
     "dev": "tsdown --watch",
-    "build": "tsdown && tsc -p tsconfig.build.json && cp dist/index.d.ts dist/index.d.cts",
+    "build": "pnpm build:js && pnpm build:types && pnpm build:dts",
+    "build:js": "tsdown",
+    "build:types": "tsc -p tsconfig.build.json",
+    "build:dts": "api-extractor run --local && cp dist/index.d.ts dist/index.d.cts && rm -rf dist/.types",
     "clean": "rm -rf dist",
     "format": "prettier --write \".\"",
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "test": "vitest run --config vitest.config.ts",
+    "test:watch": "vitest --watch --config vitest.config.ts",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "echo 'Skipping prepublishOnly - build should be done at root level'",
     "deploy": "pnpm publish --access public"
   },
   "peerDependencies": {
-    "@blac/core": "workspace:*"
+    "@blac/core": "workspace:*",
+    "preact": "^10.17.0"
   },
   "devDependencies": {
     "@blac/core": "workspace:*",
+    "@preact/preset-vite": "^2.9.4",
+    "@testing-library/dom": "catalog:",
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/preact": "^3.2.4",
+    "@testing-library/user-event": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "happy-dom": "catalog:",
+    "preact": "^10.26.5",
     "prettier": "catalog:",
+    "tsdown": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:",
-    "tsdown": "catalog:"
+    "vite": "catalog:",
+    "vitest": "catalog:"
   }
 }
