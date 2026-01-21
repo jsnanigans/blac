@@ -1,0 +1,31 @@
+{
+  "name": "preact-examples",
+  "version": "1.0.0",
+  "private": true,
+  "publishConfig": {
+    "access": "restricted"
+  },
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "format": "prettier --write \".\"",
+    "dev": "vite",
+    "build:app": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "Blac Preact examples app showcasing state management features",
+  "dependencies": {
+    "@blac/core": "workspace:*",
+    "@blac/preact": "workspace:*",
+    "preact": "^10.26.5"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.9.4",
+    "prettier": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:"
+  }
+}

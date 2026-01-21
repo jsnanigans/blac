@@ -5,12 +5,12 @@
   "private": true,
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build:app": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc --project tsconfig.typecheck.json --noEmit",
     "typecheck:all": "tsc --noEmit",
     "clean": "rm -rf dist",
-    "package:webstore": "pnpm build && rm -f webstore.zip && zip -r webstore.zip manifest.json icons dist -x '*.map'"
+    "package:webstore": "pnpm build:app && rm -f webstore.zip && zip -r webstore.zip manifest.json icons dist -x '*.map'"
   },
   "dependencies": {
     "@blac/react": "workspace:2.0.1",

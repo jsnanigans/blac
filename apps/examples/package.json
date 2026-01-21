@@ -13,7 +13,7 @@
     "_lint:fix": "eslint . --ext .ts,.tsx --fix",
     "_typecheck": "tsc --noEmit",
     "dev": "vite",
-    "_build": "vite build",
+    "build:app": "vite build",
     "preview": "vite preview"
   },
   "keywords": [],
