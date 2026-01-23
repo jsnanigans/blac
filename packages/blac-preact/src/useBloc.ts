@@ -15,11 +15,11 @@ import {
   noTrackInit,
   disableGetterTracking,
   isIsolatedClass,
-  StateContainerConstructor,
-  InstanceState,
+  type StateContainerConstructor,
+  type InstanceState,
   acquire,
   release,
-} from '@blac/core';
+} from '@blac/adapter';
 import type { UseBlocOptions, UseBlocReturn, ComponentRef } from './types';
 import { generateInstanceKey } from './utils/instance-keys';
 import { getBlacPreactConfig } from './config';

@@ -8,16 +8,13 @@
  * ## Usage
  *
  * ```typescript
- * import { tracked, watch, waitUntil } from '@blac/core';
+ * import { tracked, watch } from '@blac/core';
  *
  * // Watch a bloc with automatic dependency tracking
  * const unwatch = watch(UserBloc, (userBloc) => {
  *   console.log(userBloc.state.name);
  *   console.log(userBloc.fullName); // getter also tracked
  * });
- *
- * // Wait for a condition with automatic tracking
- * const bloc = await waitUntil(UserBloc, (bloc) => bloc.isReady);
  *
  * // Standalone tracked execution
  * const { result, dependencies } = tracked(() => {

@@ -52,11 +52,14 @@
     "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "@blac/core": "workspace:*"
+  },
   "peerDependencies": {
-    "@blac/core": "workspace:*",
     "vitest": ">=1.0.0"
   },
   "devDependencies": {
+    "@blac/core": "workspace:*",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

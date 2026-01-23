@@ -1,14 +1,12 @@
 # Action Dispatch from Redux DevTools
 
-This document explains how to use the Action Dispatch feature to control Cubits and Vertices from Redux DevTools UI.
+This document explains how to use the Action Dispatch feature to control Cubits from Redux DevTools UI.
 
 ## Overview
 
 The Action Dispatch feature allows you to control your state directly from the Redux DevTools interface, without clicking UI buttons or writing test code.
 
 ### What You Can Do
-
-**For Both Cubits AND Vertices:**
 
 - **Update state directly** with `emit` (replace entire state)
 - **Partially update state** with `patch` (merge properties)
@@ -24,7 +22,7 @@ This is extremely useful for:
 
 ## Quick Start
 
-### Direct State Updates (Works for Both Cubits & Vertices)
+### Direct State Updates
 
 No setup needed! Just dispatch `emit` or `patch` actions:
 
@@ -43,11 +41,11 @@ No setup needed! Just dispatch `emit` or `patch` actions:
   }
 }
 
-// For a Vertex
+// For a Cubit with primitive state
 {
-  "type": "[CounterVertex] emit",
+  "type": "[CounterCubit] emit",
   "payload": {
-    "state": { "count": 42 }
+    "state": 42
   }
 }
 ```
@@ -79,27 +77,24 @@ No setup needed! Just dispatch `emit` or `patch` actions:
 
 **When to use:**
 
-- ✅ Quick testing of different state values
-- ✅ Testing UI with edge case states
-- ✅ Debugging state-specific issues
-- ✅ Works with **both** Cubits and Vertices
+- Quick testing of different state values
+- Testing UI with edge case states
+- Debugging state-specific issues
 
 ## Examples
 
-### Cubit Examples
-
-#### Counter Cubit
+### Counter Cubit
 
 ```typescript
 import { Cubit } from '@blac/core';
 
-class CounterCubit extends Cubit<{ count: number }> {
+class CounterCubit extends Cubit<number> {
   constructor() {
-    super({ count: 0 });
+    super(0);
   }
 
-  increment = () => this.emit({ count: this.state.count + 1 });
-  decrement = () => this.emit({ count: this.state.count - 1 });
+  increment = () => this.emit(this.state + 1);
+  decrement = () => this.emit(this.state - 1);
 }
 ```
 
@@ -107,16 +102,16 @@ class CounterCubit extends Cubit<{ count: number }> {
 
 ```json
 // Set counter to 100
-{ "type": "[CounterCubit] emit", "payload": { "state": { "count": 100 } } }
+{ "type": "[CounterCubit] emit", "payload": { "state": 100 } }
 
 // Set to -42
-{ "type": "[CounterCubit] emit", "payload": { "state": { "count": -42 } } }
+{ "type": "[CounterCubit] emit", "payload": { "state": -42 } }
 
 // Set to 0 (reset)
-{ "type": "[CounterCubit] emit", "payload": { "state": { "count": 0 } } }
+{ "type": "[CounterCubit] emit", "payload": { "state": 0 } }
 ```
 
-#### Object State Cubit
+### Object State Cubit
 
 ```typescript
 import { Cubit } from '@blac/core';
@@ -186,56 +181,6 @@ class UserCubit extends Cubit<UserState> {
     "state": { "isActive": false }
   }
 }
-```
-
----
-
-### Vertex Examples
-
-Vertex uses discriminated union events with exhaustive type checking:
-
-```typescript
-import { Vertex } from '@blac/core';
-
-// Define events as discriminated union
-type CounterEvent =
-  | { type: 'increment'; amount: number }
-  | { type: 'decrement'; amount: number }
-  | { type: 'reset' };
-
-class CounterVertex extends Vertex<{ count: number }, CounterEvent> {
-  constructor() {
-    super({ count: 0 });
-
-    // TypeScript enforces exhaustive handling
-    this.createHandlers({
-      increment: (event, emit) => {
-        emit({ count: this.state.count + event.amount });
-      },
-      decrement: (event, emit) => {
-        emit({ count: this.state.count - event.amount });
-      },
-      reset: (_, emit) => {
-        emit({ count: 0 });
-      },
-    });
-  }
-
-  // Convenience methods
-  increment = (amount = 1) => this.add({ type: 'increment', amount });
-  decrement = (amount = 1) => this.add({ type: 'decrement', amount });
-  reset = () => this.add({ type: 'reset' });
-}
-```
-
-**Dispatch from DevTools:**
-
-```json
-// Set counter to 100
-{ "type": "[CounterVertex] emit", "payload": { "state": { "count": 100 } } }
-
-// Set to 0 (reset)
-{ "type": "[CounterVertex] emit", "payload": { "state": { "count": 0 } } }
 ```
 
 ---

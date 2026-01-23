@@ -56,11 +56,10 @@
     "prepublishOnly": "echo 'Skipping prepublishOnly - build should be done at root level'",
     "deploy": "pnpm publish --access public"
   },
-  "peerDependencies": {
+  "dependencies": {
     "@blac/core": "workspace:*"
   },
   "devDependencies": {
-    "@blac/core": "workspace:*",
     "prettier": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",

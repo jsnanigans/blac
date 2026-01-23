@@ -5,7 +5,7 @@ import { CounterDemo } from './examples/01-counter/CounterDemo';
 import { MessengerApp } from './messenger';
 import { useState, useEffect } from 'react';
 import { BlacDevtoolsUi } from '@blac/devtools-ui';
-import { useBlocActions } from '@blac/react';
+import { useBloc } from '@blac/react';
 import './messenger/messenger.css';
 
 const Logo = () => {
@@ -108,9 +108,8 @@ const DevToolsBanner = () => {
  * not just component state.
  */
 export function App() {
-  // Initialize the router - using useBlocActions since we don't need state here
-  // The hook manages lifecycle (acquire on mount, release on unmount)
-  useBlocActions(RouterBloc);
+  // Initialize the router - the hook manages lifecycle (acquire on mount, release on unmount)
+  useBloc(RouterBloc);
 
   return (
     <>

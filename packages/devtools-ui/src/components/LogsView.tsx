@@ -28,10 +28,6 @@ function getEventTypeColor(eventType: LogEventType): string {
       return '#f44336'; // Red
     case 'state-changed':
       return '#FF9800'; // Orange
-    case 'event-added':
-      return '#9C27B0'; // Purple
-    default:
-      return '#888';
   }
 }
 
@@ -48,8 +44,6 @@ function getEventTypeLabel(eventType: LogEventType): string {
       return 'DISPOSED';
     case 'state-changed':
       return 'STATE';
-    case 'event-added':
-      return 'EVENT';
   }
 }
 

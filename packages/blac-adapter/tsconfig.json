@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "es2021",
+    "module": "esnext",
+    "lib": ["esnext", "dom"],
+    "sourceMap": true,
+    "outDir": "dist",
+    "strict": true,
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "experimentalDecorators": true,
+    "resolveJsonModule": true
+  },
+  "include": ["src"],
+  "exclude": []
+}

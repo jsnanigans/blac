@@ -25,6 +25,26 @@
         "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
       }
+    },
+    "./types": {
+      "import": {
+        "types": "./dist/types.d.ts",
+        "default": "./dist/types.js"
+      },
+      "require": {
+        "types": "./dist/types.d.cts",
+        "default": "./dist/types.cjs"
+      }
+    },
+    "./tracking": {
+      "import": {
+        "types": "./dist/tracking.d.ts",
+        "default": "./dist/tracking.js"
+      },
+      "require": {
+        "types": "./dist/tracking.d.cts",
+        "default": "./dist/tracking.cjs"
+      }
     }
   },
   "files": [
@@ -32,6 +52,15 @@
     "dist/index.cjs",
     "dist/index.d.ts",
     "dist/index.d.cts",
+    "dist/types.js",
+    "dist/types.cjs",
+    "dist/types.d.ts",
+    "dist/types.d.cts",
+    "dist/tracking.js",
+    "dist/tracking.cjs",
+    "dist/tracking.d.ts",
+    "dist/tracking.d.cts",
+    "dist/tracking/**/*.d.ts",
     "dist/*.map",
     "README.md",
     "LICENSE"
@@ -49,7 +78,7 @@
     "build": "pnpm build:js && pnpm build:types && pnpm build:dts",
     "build:js": "tsdown",
     "build:types": "tsc -p tsconfig.build.json",
-    "build:dts": "api-extractor run --local && cp dist/index.d.ts dist/index.d.cts && rm -rf dist/.types",
+    "build:dts": "api-extractor run --local && cp dist/index.d.ts dist/index.d.cts && cp -r dist/.types/tracking dist/tracking && cp dist/.types/tracking.d.ts dist/tracking.d.ts && cp dist/.types/tracking.d.ts dist/tracking.d.cts && cp dist/.types/types.d.ts dist/types.d.ts && cp dist/.types/types.d.ts dist/types.d.cts && rm -rf dist/.types",
     "clean": "rm -rf dist",
     "format": "prettier --write \".\"",
     "lint": "eslint src --ext .ts,.tsx",

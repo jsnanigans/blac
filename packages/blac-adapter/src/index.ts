@@ -1,17 +1,38 @@
 /**
- * Framework Adapter
+ * @blac/adapter - Framework Adapter
  *
  * Reusable utilities for integrating BlaC with any reactive framework.
  * Provides subscription and snapshot functions for different tracking modes.
+ *
+ * This package provides the building blocks for React, Preact, Vue, and other
+ * framework integrations.
  */
-import type { DependencyState, GetterState } from '../tracking';
 import type {
   ExtractState,
   InstanceReadonlyState,
   InstanceState,
   StateContainerConstructor,
   StateContainerInstance,
-} from '../types/utilities';
+} from '@blac/core';
+
+// Re-export types needed by framework integrations
+export type {
+  ExtractState,
+  InstanceReadonlyState,
+  InstanceState,
+  StateContainerConstructor,
+  StateContainerInstance,
+} from '@blac/core';
+
+// Re-export registry functions needed by hooks
+export { acquire, release, isIsolatedClass, generateIsolatedKey } from '@blac/core';
+
+// Import tracking types and functions from @blac/core/tracking subpath
+import type {
+  DependencyState,
+  GetterState,
+} from '@blac/core/tracking';
+
 import {
   createDependencyState,
   startDependency,
@@ -28,7 +49,8 @@ import {
   commitTrackedGetters,
   invalidateRenderCache,
   clearExternalDependencies,
-} from '../tracking';
+  DependencyManager,
+} from '@blac/core/tracking';
 
 /**
  * Internal state for framework adapters, holding tracking and caching data.
@@ -73,15 +95,10 @@ export type SubscribeFunction = (callback: SubscriptionCallback) => () => void;
  */
 export type SnapshotFunction<TState> = () => TState;
 
-import { DependencyManager } from '../tracking/dependency-manager';
-
 /**
  * Manages subscriptions to external bloc dependencies for getter tracking.
  * When a getter accesses another bloc's state, this manager ensures
  * re-renders occur when those external dependencies change.
- *
- * @deprecated Use DependencyManager from tracking module instead.
- * This class is kept for backward compatibility.
  */
 export class ExternalDepsManager {
   private manager = new DependencyManager();
@@ -89,7 +106,7 @@ export class ExternalDepsManager {
   /**
    * Update subscriptions to external bloc dependencies.
    * Creates subscriptions to blocs accessed via getters.
-   * @param getterTracker - The getter tracker state with external dependencies
+   * @param getterState - The getter tracker state with external dependencies
    * @param rawInstance - The primary bloc instance (excluded from subscriptions)
    * @param onGetterChange - Callback to invoke when external dependency changes
    * @returns true if subscriptions were updated, false if unchanged

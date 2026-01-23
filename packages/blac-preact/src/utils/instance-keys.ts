@@ -2,7 +2,7 @@
  * Instance key generation utilities for Preact integration
  */
 
-import { generateIsolatedKey } from '@blac/core';
+import { generateIsolatedKey } from '@blac/adapter';
 import type { ComponentRef } from '../types';
 
 /**

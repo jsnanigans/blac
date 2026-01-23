@@ -2,7 +2,7 @@
 
 ## Quick Reference
 
-### Built-In Actions (Work for Both Blocs & Cubits)
+### Built-In Actions
 
 ```json
 // Replace entire state
@@ -12,94 +12,36 @@
 { "type": "[UserCubit] patch", "payload": { "state": { "name": "Alice" } } }
 ```
 
-### Custom Events (Blocs Only - Requires Registration)
-
-Once the playground is running, open Redux DevTools and dispatch these actions:
-
-```json
-{
-  "type": "[TodoBloc] AddTodoAction",
-  "payload": { "text": "Test from DevTools" }
-}
-```
-
-```json
-{
-  "type": "[TodoBloc] ToggleTodoAction",
-  "payload": { "id": 1 }
-}
-```
-
-```json
-{
-  "type": "[TodoBloc] RemoveTodoAction",
-  "payload": { "id": 2 }
-}
-```
-
-```json
-{
-  "type": "[TodoBloc] SetFilterAction",
-  "payload": { "filter": "completed" }
-}
-```
-
-```json
-{
-  "type": "[TodoBloc] ClearCompletedAction"
-}
-```
-
 ## Complete Counter Example
 
 ```typescript
-import { Vertex } from '@blac/core';
+import { Cubit } from '@blac/core';
 
-// Define events as discriminated union
-type CounterEvent =
-  | { type: 'increment'; amount: number }
-  | { type: 'decrement'; amount: number }
-  | { type: 'reset' };
-
-class CounterVertex extends Vertex<{ count: number }, CounterEvent> {
+class CounterCubit extends Cubit<number> {
   constructor() {
-    super({ count: 0 });
-
-    // TypeScript enforces exhaustive handling
-    this.createHandlers({
-      increment: (event, emit) => {
-        emit({ count: this.state.count + event.amount });
-      },
-      decrement: (event, emit) => {
-        emit({ count: this.state.count - event.amount });
-      },
-      reset: (_, emit) => {
-        emit({ count: 0 });
-      },
-    });
+    super(0);
   }
 
-  // Convenience methods
-  increment = (amount = 1) => this.add({ type: 'increment', amount });
-  decrement = (amount = 1) => this.add({ type: 'decrement', amount });
-  reset = () => this.add({ type: 'reset' });
+  increment = (amount = 1) => this.emit(this.state + amount);
+  decrement = (amount = 1) => this.emit(this.state - amount);
+  reset = () => this.emit(0);
 }
 ```
 
 ### Test from Redux DevTools:
 
 ```json
-// Increment by 1 (default)
-{ "type": "[CounterVertex] emit", "payload": { "state": { "count": 1 } } }
+// Set count to 1
+{ "type": "[CounterCubit] emit", "payload": { "state": 1 } }
 
 // Reset to 0
-{ "type": "[CounterVertex] emit", "payload": { "state": { "count": 0 } } }
+{ "type": "[CounterCubit] emit", "payload": { "state": 0 } }
 ```
 
 ## User Profile Example (Complex Objects)
 
 ```typescript
-import { Vertex } from '@blac/core';
+import { Cubit } from '@blac/core';
 
 interface User {
   id: string;
@@ -114,48 +56,29 @@ interface UserState {
   error: string | null;
 }
 
-// Define events as discriminated union
-type UserEvent =
-  | { type: 'loadUser'; userId: string }
-  | { type: 'updateUser'; user: Partial<User> }
-  | { type: 'clearUser' };
-
-class UserVertex extends Vertex<UserState, UserEvent> {
+class UserCubit extends Cubit<UserState> {
   constructor() {
     super({
       user: null,
       loading: false,
       error: null,
     });
-
-    this.createHandlers({
-      loadUser: async (event, emit) => {
-        emit({ ...this.state, loading: true, error: null });
-
-        try {
-          const user = await this.fetchUser(event.userId);
-          emit({ ...this.state, user, loading: false });
-        } catch (error) {
-          emit({
-            ...this.state,
-            loading: false,
-            error: error instanceof Error ? error.message : 'Unknown error',
-          });
-        }
-      },
-      updateUser: (event, emit) => {
-        if (this.state.user) {
-          emit({
-            ...this.state,
-            user: { ...this.state.user, ...event.user },
-          });
-        }
-      },
-      clearUser: (_, emit) => {
-        emit({ user: null, loading: false, error: null });
-      },
-    });
   }
+
+  loadUser = async (userId: string) => {
+    this.emit({ ...this.state, loading: true, error: null });
+
+    try {
+      const user = await this.fetchUser(userId);
+      this.emit({ ...this.state, user, loading: false });
+    } catch (error) {
+      this.emit({
+        ...this.state,
+        loading: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  };
 
   private async fetchUser(userId: string): Promise<User> {
     // Mock API call
@@ -167,10 +90,18 @@ class UserVertex extends Vertex<UserState, UserEvent> {
     };
   }
 
-  // Convenience methods
-  loadUser = (userId: string) => this.add({ type: 'loadUser', userId });
-  updateUser = (user: Partial<User>) => this.add({ type: 'updateUser', user });
-  clearUser = () => this.add({ type: 'clearUser' });
+  updateUser = (user: Partial<User>) => {
+    if (this.state.user) {
+      this.emit({
+        ...this.state,
+        user: { ...this.state.user, ...user },
+      });
+    }
+  };
+
+  clearUser = () => {
+    this.emit({ user: null, loading: false, error: null });
+  };
 }
 ```
 
@@ -179,7 +110,7 @@ class UserVertex extends Vertex<UserState, UserEvent> {
 ```json
 // Set user directly
 {
-  "type": "[UserVertex] emit",
+  "type": "[UserCubit] emit",
   "payload": {
     "state": {
       "user": { "id": "user-123", "name": "John Doe", "email": "john@example.com", "age": 30 },
@@ -191,7 +122,7 @@ class UserVertex extends Vertex<UserState, UserEvent> {
 
 // Update user name (partial state)
 {
-  "type": "[UserVertex] patch",
+  "type": "[UserCubit] patch",
   "payload": {
     "state": {
       "user": { "id": "user-123", "name": "Jane Doe", "email": "john@example.com", "age": 30 }
@@ -201,7 +132,7 @@ class UserVertex extends Vertex<UserState, UserEvent> {
 
 // Clear user
 {
-  "type": "[UserVertex] emit",
+  "type": "[UserCubit] emit",
   "payload": {
     "state": { "user": null, "loading": false, "error": null }
   }
@@ -211,7 +142,7 @@ class UserVertex extends Vertex<UserState, UserEvent> {
 ## Shopping Cart Example
 
 ```typescript
-import { Vertex } from '@blac/core';
+import { Cubit } from '@blac/core';
 
 interface CartItem {
   id: string;
@@ -225,79 +156,52 @@ interface CartState {
   total: number;
 }
 
-// Define events as discriminated union
-type CartEvent =
-  | { type: 'addItem'; id: string; name: string; price: number }
-  | { type: 'removeItem'; id: string }
-  | { type: 'updateQuantity'; id: string; quantity: number }
-  | { type: 'clearCart' };
-
-class CartVertex extends Vertex<CartState, CartEvent> {
+class CartCubit extends Cubit<CartState> {
   constructor() {
     super({ items: [], total: 0 });
-
-    this.createHandlers({
-      addItem: (event, emit) => {
-        const existingItem = this.state.items.find(
-          (item) => item.id === event.id,
-        );
-
-        let newItems: CartItem[];
-        if (existingItem) {
-          newItems = this.state.items.map((item) =>
-            item.id === event.id
-              ? { ...item, quantity: item.quantity + 1 }
-              : item,
-          );
-        } else {
-          newItems = [
-            ...this.state.items,
-            {
-              id: event.id,
-              name: event.name,
-              price: event.price,
-              quantity: 1,
-            },
-          ];
-        }
-
-        const total = this.calculateTotal(newItems);
-        emit({ items: newItems, total });
-      },
-      removeItem: (event, emit) => {
-        const newItems = this.state.items.filter(
-          (item) => item.id !== event.id,
-        );
-        const total = this.calculateTotal(newItems);
-        emit({ items: newItems, total });
-      },
-      updateQuantity: (event, emit) => {
-        const newItems = this.state.items
-          .map((item) =>
-            item.id === event.id ? { ...item, quantity: event.quantity } : item,
-          )
-          .filter((item) => item.quantity > 0);
-
-        const total = this.calculateTotal(newItems);
-        emit({ items: newItems, total });
-      },
-      clearCart: (_, emit) => {
-        emit({ items: [], total: 0 });
-      },
-    });
   }
 
   private calculateTotal(items: CartItem[]): number {
     return items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   }
 
-  // Convenience methods
-  addItem = (id: string, name: string, price: number) =>
-    this.add({ type: 'addItem', id, name, price });
-  removeItem = (id: string) => this.add({ type: 'removeItem', id });
-  updateQuantity = (id: string, quantity: number) =>
-    this.add({ type: 'updateQuantity', id, quantity });
-  clearCart = () => this.add({ type: 'clearCart' });
+  addItem = (id: string, name: string, price: number) => {
+    const existingItem = this.state.items.find((item) => item.id === id);
+
+    let newItems: CartItem[];
+    if (existingItem) {
+      newItems = this.state.items.map((item) =>
+        item.id === id ? { ...item, quantity: item.quantity + 1 } : item,
+      );
+    } else {
+      newItems = [
+        ...this.state.items,
+        { id, name, price, quantity: 1 },
+      ];
+    }
+
+    const total = this.calculateTotal(newItems);
+    this.emit({ items: newItems, total });
+  };
+
+  removeItem = (id: string) => {
+    const newItems = this.state.items.filter((item) => item.id !== id);
+    const total = this.calculateTotal(newItems);
+    this.emit({ items: newItems, total });
+  };
+
+  updateQuantity = (id: string, quantity: number) => {
+    const newItems = this.state.items
+      .map((item) => (item.id === id ? { ...item, quantity } : item))
+      .filter((item) => item.quantity > 0);
+
+    const total = this.calculateTotal(newItems);
+    this.emit({ items: newItems, total });
+  };
+
+  clearCart = () => {
+    this.emit({ items: [], total: 0 });
+  };
 }
 ```
 
@@ -306,7 +210,7 @@ class CartVertex extends Vertex<CartState, CartEvent> {
 ```json
 // Set cart state with items
 {
-  "type": "[CartVertex] emit",
+  "type": "[CartCubit] emit",
   "payload": {
     "state": {
       "items": [
@@ -320,7 +224,7 @@ class CartVertex extends Vertex<CartState, CartEvent> {
 
 // Clear cart
 {
-  "type": "[CartVertex] emit",
+  "type": "[CartCubit] emit",
   "payload": {
     "state": { "items": [], "total": 0 }
   }
@@ -335,10 +239,10 @@ Look at the Redux DevTools state tree to see all active state container names:
 
 ```
 State:
-├─ TodoVertex
-├─ CounterVertex
+├─ TodoCubit
+├─ CounterCubit
 ├─ UserCubit
-└─ CartVertex
+└─ CartCubit
 ```
 
 ### 2. Test State Transitions
@@ -348,7 +252,7 @@ Use `emit` to test state transitions directly:
 ```json
 // Test loading state
 {
-  "type": "[UserVertex] emit",
+  "type": "[UserCubit] emit",
   "payload": {
     "state": { "user": null, "loading": true, "error": null }
   }
@@ -356,7 +260,7 @@ Use `emit` to test state transitions directly:
 
 // Test success state
 {
-  "type": "[UserVertex] emit",
+  "type": "[UserCubit] emit",
   "payload": {
     "state": {
       "user": { "id": "1", "name": "Test User", "email": "test@example.com", "age": 25 },
@@ -368,7 +272,7 @@ Use `emit` to test state transitions directly:
 
 // Test error state
 {
-  "type": "[UserVertex] emit",
+  "type": "[UserCubit] emit",
   "payload": {
     "state": { "user": null, "loading": false, "error": "Network error" }
   }
@@ -382,7 +286,7 @@ For object states, use `patch` to update specific fields:
 ```json
 // Only update loading status
 {
-  "type": "[UserVertex] patch",
+  "type": "[UserCubit] patch",
   "payload": {
     "state": { "loading": false }
   }
@@ -393,11 +297,11 @@ For object states, use `patch` to update specific fields:
 
 ```json
 // Empty array
-{ "type": "[CartVertex] emit", "payload": { "state": { "items": [], "total": 0 } } }
+{ "type": "[CartCubit] emit", "payload": { "state": { "items": [], "total": 0 } } }
 
 // Large quantity
 {
-  "type": "[CartVertex] emit",
+  "type": "[CartCubit] emit",
   "payload": {
     "state": {
       "items": [{ "id": "1", "name": "Item", "price": 10, "quantity": 1000 }],
@@ -414,7 +318,7 @@ For object states, use `patch` to update specific fields:
 **Error:**
 
 ```
-[ReduxDevToolsAdapter] State container "MyVertex" not found.
+[ReduxDevToolsAdapter] State container "MyCubit" not found.
 ```
 
 **Solution:**
@@ -427,7 +331,7 @@ Ensure the state container is instantiated and mounted in a React component usin
 **Solution:** Make sure the payload state shape matches your state type exactly:
 
 ```typescript
-// Your Vertex state type
+// Your Cubit state type
 interface UserState {
   user: User | null;
   loading: boolean;
@@ -436,7 +340,7 @@ interface UserState {
 
 // DevTools dispatch - must match exact shape
 {
-  "type": "[UserVertex] emit",
+  "type": "[UserCubit] emit",
   "payload": {
     "state": {
       "user": null,
