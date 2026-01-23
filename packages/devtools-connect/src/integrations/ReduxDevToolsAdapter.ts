@@ -1,7 +1,6 @@
 import { globalRegistry } from '@blac/core';
 import type { StateContainer } from '@blac/core';
 import { safeSerialize } from '../serialization/serialize';
-import { EventRegistry } from './EventRegistry';
 
 interface ReduxDevToolsExtension {
   connect(options?: ReduxDevToolsOptions): ReduxDevToolsInstance;

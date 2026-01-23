@@ -53,9 +53,9 @@ export type BlocInstanceType<T extends abstract new (...args: any) => any> =
  */
 export type BlocConstructor<
   S extends object = any,
-  T extends new (...args: any[]) => StateContainer<S, any> = new (
+  T extends new (...args: any[]) => StateContainer<S> = new (
     ...args: any[]
-  ) => StateContainer<S, any>,
+  ) => StateContainer<S>,
 > = (new (...args: any[]) => InstanceType<T>) & {
   acquire(instanceKey?: string, ...args: any[]): InstanceType<T>;
   borrow(instanceKey?: string, ...args: any[]): InstanceType<T> | null;

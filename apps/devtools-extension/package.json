@@ -13,6 +13,7 @@
     "package:webstore": "pnpm build:app && rm -f webstore.zip && zip -r webstore.zip manifest.json icons dist -x '*.map'"
   },
   "dependencies": {
+    "@blac/core": "workspace:*",
     "@blac/react": "workspace:*",
     "@blac/devtools-ui": "workspace:*"
   },

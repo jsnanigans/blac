@@ -110,6 +110,9 @@ importers:
 
   apps/devtools-extension:
     dependencies:
+      '@blac/core':
+        specifier: workspace:*
+        version: link:../../packages/blac
       '@blac/devtools-ui':
         specifier: workspace:*
         version: link:../../packages/devtools-ui
