@@ -209,5 +209,4 @@ describe('useBloc', () => {
       expect(onUnmount).toHaveBeenCalledWith(bloc);
     });
   });
-
 });

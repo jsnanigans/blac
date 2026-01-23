@@ -174,10 +174,7 @@ class CartCubit extends Cubit<CartState> {
         item.id === id ? { ...item, quantity: item.quantity + 1 } : item,
       );
     } else {
-      newItems = [
-        ...this.state.items,
-        { id, name, price, quantity: 1 },
-      ];
+      newItems = [...this.state.items, { id, name, price, quantity: 1 }];
     }
 
     const total = this.calculateTotal(newItems);

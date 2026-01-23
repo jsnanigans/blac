@@ -162,7 +162,6 @@ export function useBloc<
   });
 
   useEffect(() => {
-
     if (options?.onMount) {
       options.onMount(bloc as InstanceType<T>);
     }

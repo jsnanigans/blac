@@ -252,11 +252,11 @@ function useBlocActions<T extends StateContainerConstructor>(
 
 ### UseBlocActionsOptions
 
-| Option       | Type               | Description                      |
-| ------------ | ------------------ | -------------------------------- |
-| `instanceId` | `string \| number` | Custom instance identifier       |
-| `onMount`    | `(bloc) => void`   | Called when component mounts     |
-| `onUnmount`  | `(bloc) => void`   | Called when component unmounts   |
+| Option       | Type               | Description                    |
+| ------------ | ------------------ | ------------------------------ |
+| `instanceId` | `string \| number` | Custom instance identifier     |
+| `onMount`    | `(bloc) => void`   | Called when component mounts   |
+| `onUnmount`  | `(bloc) => void`   | Called when component unmounts |
 
 ## Compatibility
 

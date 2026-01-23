@@ -127,7 +127,6 @@ describe('StateContainer', () => {
         expect(getRefCount(TestContainer, 'key1')).toBe(2);
         expect(getRefCount(TestContainer, 'key2')).toBe(1);
       });
-
     });
 
     describe('release()', () => {

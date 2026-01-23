@@ -12,7 +12,10 @@ export { Cubit } from './core/Cubit';
 // ============================================================================
 // Registry - Global Instance Management
 // ============================================================================
-export { globalRegistry, getPluginManager } from './core/StateContainerRegistry';
+export {
+  globalRegistry,
+  getPluginManager,
+} from './core/StateContainerRegistry';
 export type {
   LifecycleEvent,
   LifecycleListener,

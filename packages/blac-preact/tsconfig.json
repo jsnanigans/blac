@@ -20,10 +20,6 @@
       "@blac/core": ["../blac/src/index.ts"]
     }
   },
-  "include": [
-    "src",
-    "vitest.config.ts",
-    "vitest-setup.ts"
-  ],
+  "include": ["src", "vitest.config.ts", "vitest-setup.ts"],
   "exclude": ["src/__archived__/**/*"]
 }

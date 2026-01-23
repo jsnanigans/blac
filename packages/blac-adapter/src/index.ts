@@ -25,13 +25,15 @@ export type {
 } from '@blac/core';
 
 // Re-export registry functions needed by hooks
-export { acquire, release, isIsolatedClass, generateIsolatedKey } from '@blac/core';
+export {
+  acquire,
+  release,
+  isIsolatedClass,
+  generateIsolatedKey,
+} from '@blac/core';
 
 // Import tracking types and functions from @blac/core/tracking subpath
-import type {
-  DependencyState,
-  GetterState,
-} from '@blac/core/tracking';
+import type { DependencyState, GetterState } from '@blac/core/tracking';
 
 import {
   createDependencyState,

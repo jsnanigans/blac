@@ -137,7 +137,10 @@ export function TodoDemo() {
                 />
                 <span>{todo.text}</span>
               </label>
-              <button className="ghost" onClick={() => todos.removeTodo(todo.id)}>
+              <button
+                className="ghost"
+                onClick={() => todos.removeTodo(todo.id)}
+              >
                 ×
               </button>
             </li>

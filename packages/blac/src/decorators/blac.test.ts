@@ -76,7 +76,6 @@ describe('blac decorator', () => {
       expect(isIsolatedClass(DecoratedFormBloc)).toBe(true);
       expect(DecoratedFormBloc.name).toBe('FormBloc');
     });
-
   });
 
   describe('keepAlive option', () => {
@@ -104,7 +103,6 @@ describe('blac decorator', () => {
       expect(isKeepAliveClass(DecoratedAuthBloc)).toBe(true);
       expect(DecoratedAuthBloc.name).toBe('AuthBloc');
     });
-
   });
 
   describe('excludeFromDevTools option', () => {

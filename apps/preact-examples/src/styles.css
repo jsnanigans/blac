@@ -74,7 +74,11 @@ body {
 .nav-brand {
   font-weight: 800;
   font-size: 1.5rem;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  background: linear-gradient(
+    135deg,
+    var(--color-primary),
+    var(--color-secondary)
+  );
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -164,7 +168,11 @@ button {
 }
 
 button.primary {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
+  background: linear-gradient(
+    135deg,
+    var(--color-primary),
+    var(--color-primary-hover)
+  );
   color: white;
   box-shadow: var(--shadow-md);
 }
@@ -301,7 +309,7 @@ input:focus {
   flex: 1;
 }
 
-.todo-list input[type="checkbox"] {
+.todo-list input[type='checkbox'] {
   width: auto;
 }
 
