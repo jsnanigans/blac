@@ -6,13 +6,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { StrictMode } from 'react';
 import { useBloc } from '../useBloc';
-import {
-  Cubit,
-  StateContainer,
-  configureLogger,
-  LogLevel,
-  clearAll,
-} from '@blac/core';
+import { Cubit, clearAll } from '@blac/core';
 
 // Test state shape
 interface TestState {
@@ -116,12 +110,6 @@ describe('useBloc with Proxy Tracking', () => {
     // Clear any cached bloc instances between tests to ensure isolation
     clearAll();
     vi.clearAllMocks();
-  });
-
-  afterEach(() => {
-    configureLogger({
-      enabled: false,
-    });
   });
 
   it('should only re-render when accessed properties change', async () => {
@@ -351,16 +339,6 @@ describe('useBloc with Proxy Tracking', () => {
   });
 
   it('should handle array property access', async () => {
-    configureLogger({
-      enabled: true,
-      level: LogLevel.DEBUG,
-      output: (entry) => {
-        console.log(
-          `[${entry.level}] [${entry.context}] ${entry.message}`,
-          entry.data || '',
-        );
-      },
-    });
     // Create a Cubit with array state
     class ArrayCubit extends Cubit<{ items: string[]; other: number }> {
       constructor() {
@@ -397,12 +375,10 @@ describe('useBloc with Proxy Tracking', () => {
     expect(renderCount).toBe(1);
     expect(result.current.itemCount).toBe(3);
 
-    console.log('--- Adding item to array ---');
     // Add item - should re-render (length changes)
     act(() => {
       result.current.bloc.addItem('d');
     });
-    console.log('--- Item added ---');
     act(() => {
       result.current.bloc.updateOther(42);
     });
@@ -411,12 +387,7 @@ describe('useBloc with Proxy Tracking', () => {
     expect(renderCount).toBe(2);
     expect(result.current.itemCount).toBe(4);
 
-    console.log('--- Updating other property ---');
-    console.log('--- Other property updated ---');
-
-    // await new Promise((resolve) => setTimeout(resolve, 50));
     expect(renderCount).toBe(2); // No re-render
-    console.log('--- Test complete ---');
   });
 
   it('should clean up properly on unmount', () => {
