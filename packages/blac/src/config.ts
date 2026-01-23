@@ -1,21 +1,13 @@
-import { configureLogger, LogLevel, type LogConfig } from './logging/Logger';
-
 /**
  * Global configuration for @blac/core
  */
 export interface BlacConfig {
   /** Enable development mode (enables additional warnings and checks) */
   devMode: boolean;
-  /** Logger configuration */
-  logger: Partial<LogConfig>;
 }
 
 const defaultConfig: BlacConfig = {
   devMode: process.env.NODE_ENV !== 'production',
-  logger: {
-    enabled: false,
-    level: LogLevel.INFO,
-  },
 };
 
 let globalConfig: BlacConfig = { ...defaultConfig };
@@ -25,14 +17,10 @@ let globalConfig: BlacConfig = { ...defaultConfig };
  *
  * @example
  * ```ts
- * import { configureBlac, LogLevel } from '@blac/core';
+ * import { configureBlac } from '@blac/core';
  *
  * configureBlac({
- *   devMode: true,
- *   logger: {
- *     enabled: true,
- *     level: LogLevel.DEBUG
- *   }
+ *   devMode: true
  * });
  * ```
  *
@@ -42,16 +30,7 @@ export function configureBlac(config: Partial<BlacConfig>): void {
   globalConfig = {
     ...globalConfig,
     ...config,
-    logger: {
-      ...globalConfig.logger,
-      ...config.logger,
-    },
   };
-
-  // Apply logger configuration
-  if (config.logger) {
-    configureLogger(config.logger);
-  }
 }
 
 /**
@@ -75,5 +54,4 @@ export function isDevMode(): boolean {
  */
 export function resetBlacConfig(): void {
   globalConfig = { ...defaultConfig };
-  configureLogger(defaultConfig.logger);
 }

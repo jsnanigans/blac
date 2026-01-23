@@ -13,7 +13,7 @@ import {
   resetGetterState,
   isGetter,
   getDescriptor,
-} from './getter-tracker';
+} from './tracking-proxy';
 
 class TestBloc extends Cubit<{ count: number }> {
   constructor() {

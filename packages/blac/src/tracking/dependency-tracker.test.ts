@@ -12,7 +12,7 @@ import {
   hasDependencyChanges,
   hasTrackedData,
   optimizeTrackedPaths,
-} from './dependency-tracker';
+} from './tracking-proxy';
 
 interface SimpleState {
   count: number;

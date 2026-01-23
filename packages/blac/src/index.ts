@@ -29,18 +29,6 @@ export type { Brand, BrandedId, InstanceId } from './types/branded';
 export * from './types/utilities';
 
 export {
-  createLogger,
-  configureLogger,
-  debug,
-  info,
-  warn,
-  error,
-  LogLevel,
-  type LogConfig,
-  type LogEntry,
-} from './logging/Logger';
-
-export {
   configureBlac,
   getBlacConfig,
   isDevMode,

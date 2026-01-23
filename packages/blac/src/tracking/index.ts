@@ -27,20 +27,9 @@
  * ```
  */
 
-// High-level dependency tracking
+// Consolidated tracking system (proxy, dependency, getter tracking)
 export {
-  type DependencyState,
-  type PathInfo,
-  createDependencyState,
-  startDependency,
-  createDependencyProxy,
-  capturePaths,
-  hasDependencyChanges,
-  hasTrackedData,
-} from './dependency-tracker';
-
-// Low-level proxy tracking
-export {
+  // Proxy tracking (low-level)
   type ProxyState,
   createProxyState,
   startProxy,
@@ -49,13 +38,16 @@ export {
   createArrayProxy,
   createForTarget,
   isProxyable,
-} from './proxy-tracker';
-
-// Path utilities
-export { parsePath, getValueAtPath, shallowEqual } from './path-utils';
-
-// Getter tracking
-export {
+  // Dependency tracking
+  type DependencyState,
+  type PathInfo,
+  createDependencyState,
+  startDependency,
+  createDependencyProxy,
+  capturePaths,
+  hasDependencyChanges,
+  hasTrackedData,
+  // Getter tracking
   type GetterState,
   createGetterState,
   createBlocProxy,
@@ -70,10 +62,7 @@ export {
   resetGetterState,
   clearExternalDependencies,
   getGetterExecutionContext,
-} from './getter-tracker';
-
-// Tracking proxy
-export {
+  // Combined tracking proxy
   type TrackingProxyState,
   createState as createTrackingProxyState,
   startTracking as startTrackingProxy,
@@ -81,6 +70,9 @@ export {
   createTrackingProxy,
   hasChanges as hasTrackingProxyChanges,
 } from './tracking-proxy';
+
+// Path utilities
+export { parsePath, getValueAtPath, shallowEqual } from './path-utils';
 
 // Tracked execution primitive
 export {

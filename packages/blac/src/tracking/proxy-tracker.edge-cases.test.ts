@@ -4,7 +4,7 @@ import {
   startProxy,
   createForTarget,
   stopProxy,
-} from './proxy-tracker';
+} from './tracking-proxy';
 
 describe('proxy-tracker edge cases', () => {
   describe('Arrays', () => {

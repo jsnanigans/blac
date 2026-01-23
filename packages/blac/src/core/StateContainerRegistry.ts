@@ -1,6 +1,6 @@
 import type { StateContainer, StateContainerConfig } from './StateContainer';
 import { createPluginManager } from '../plugin/PluginManager';
-import { getGetterExecutionContext } from '../tracking/getter-tracker';
+import { getGetterExecutionContext } from '../tracking/tracking-proxy';
 import { BLAC_DEFAULTS, BLAC_ERROR_PREFIX } from '../constants';
 import { isIsolatedClass, isKeepAliveClass } from '../utils/static-props';
 import {
