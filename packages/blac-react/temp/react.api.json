@@ -406,7 +406,7 @@
         {
           "kind": "Interface",
           "canonicalReference": "@blac/react!UseBlocOptions:interface",
-          "docComment": "/**\n * Configuration options for useBloc hook  @template TBloc - The state container type  @template TProps - Props type passed to the container\n */\n",
+          "docComment": "/**\n * Configuration options for useBloc hook  @template TBloc - The state container type\n */\n",
           "excerptTokens": [
             {
               "kind": "Content",
@@ -416,19 +416,6 @@
               "kind": "Reference",
               "text": "StateContainerConstructor",
               "canonicalReference": "@blac/core!StateContainerConstructor:type"
-            },
-            {
-              "kind": "Content",
-              "text": ", TProps = "
-            },
-            {
-              "kind": "Reference",
-              "text": "ExtractProps",
-              "canonicalReference": "@blac/core!ExtractProps:type"
-            },
-            {
-              "kind": "Content",
-              "text": "<TBloc>"
             },
             {
               "kind": "Content",
@@ -447,17 +434,6 @@
               "defaultTypeTokenRange": {
                 "startIndex": 0,
                 "endIndex": 0
-              }
-            },
-            {
-              "typeParameterName": "TProps",
-              "constraintTokenRange": {
-                "startIndex": 0,
-                "endIndex": 0
-              },
-              "defaultTypeTokenRange": {
-                "startIndex": 3,
-                "endIndex": 5
               }
             }
           ],
@@ -660,33 +636,6 @@
               "propertyTypeTokenRange": {
                 "startIndex": 1,
                 "endIndex": 4
-              }
-            },
-            {
-              "kind": "PropertySignature",
-              "canonicalReference": "@blac/react!UseBlocOptions#props:member",
-              "docComment": "/**\n * Props passed to bloc constructor or updateProps\n */\n",
-              "excerptTokens": [
-                {
-                  "kind": "Content",
-                  "text": "props?: "
-                },
-                {
-                  "kind": "Content",
-                  "text": "TProps"
-                },
-                {
-                  "kind": "Content",
-                  "text": ";"
-                }
-              ],
-              "isReadonly": false,
-              "isOptional": true,
-              "releaseTag": "Public",
-              "name": "props",
-              "propertyTypeTokenRange": {
-                "startIndex": 1,
-                "endIndex": 2
               }
             }
           ],
