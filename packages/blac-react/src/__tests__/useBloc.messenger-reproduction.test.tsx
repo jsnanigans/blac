@@ -47,14 +47,21 @@ interface UserState {
 // Blocs - Similar to messenger example
 // ============================================================================
 
-class ChannelBloc extends Cubit<ChannelState, string> {
-  constructor(channelId: string) {
+class ChannelBloc extends Cubit<ChannelState> {
+  constructor() {
     super({
-      channelId,
+      channelId: '',
       messages: [],
       typingUsers: [],
     });
   }
+
+  initialize = (channelId: string) => {
+    this.emit({
+      ...this.state,
+      channelId,
+    });
+  };
 
   addMessage = (text: string, userId: string) => {
     const newMessage: Message = {
@@ -84,15 +91,23 @@ class ChannelBloc extends Cubit<ChannelState, string> {
   };
 }
 
-class UserCubit extends Cubit<UserState, string> {
-  constructor(userId: string) {
+class UserCubit extends Cubit<UserState> {
+  constructor() {
     super({
-      id: userId,
-      name: `User ${userId}`,
+      id: '',
+      name: '',
       avatar: '👤',
       status: 'online',
     });
   }
+
+  initialize = (userId: string) => {
+    this.emit({
+      ...this.state,
+      id: userId,
+      name: `User ${userId}`,
+    });
+  };
 }
 
 // ============================================================================
@@ -119,7 +134,7 @@ function MessageItem({ message, isOwn }: MessageItemProps) {
 
   const [user] = useBloc(UserCubit, {
     instanceId: message.userId,
-    props: message.userId,
+    onMount: (cubit) => cubit.initialize(message.userId),
   });
 
   const statusIcons = {
@@ -164,7 +179,6 @@ function MessageList({ channelId, currentUserId }: MessageListProps) {
   // This is what determines dependency tracking
   const [{ messages }] = useBloc(ChannelBloc, {
     instanceId: channelId,
-    props: channelId,
   });
 
   if (messages.length === 0) {
@@ -204,7 +218,8 @@ describe('Messenger Reproduction - Array Tracking', () => {
     const currentUserId = 'user-me';
 
     // Setup: Add initial messages
-    const channel = acquire(ChannelBloc, channelId, { props: channelId });
+    const channel = acquire(ChannelBloc, channelId);
+    channel.initialize(channelId);
     const msg1Id = channel.addMessage('Hello World', currentUserId);
     const msg2Id = channel.addMessage('this is that', currentUserId);
     const msg3Id = channel.addMessage('Good thanks', currentUserId);
@@ -243,7 +258,8 @@ describe('Messenger Reproduction - Array Tracking', () => {
     const channelId = 'channel-2';
     const currentUserId = 'user-me';
 
-    const channel = acquire(ChannelBloc, channelId, { props: channelId });
+    const channel = acquire(ChannelBloc, channelId);
+    channel.initialize(channelId);
     const msg1Id = channel.addMessage('Test message', currentUserId);
 
     render(<MessageList channelId={channelId} currentUserId={currentUserId} />);
@@ -290,7 +306,8 @@ describe('Messenger Reproduction - Array Tracking', () => {
     const channelId = 'channel-3';
     const currentUserId = 'user-me';
 
-    const channel = acquire(ChannelBloc, channelId, { props: channelId });
+    const channel = acquire(ChannelBloc, channelId);
+    channel.initialize(channelId);
     const msg1Id = channel.addMessage('Message 1', currentUserId);
     const msg2Id = channel.addMessage('Message 2', currentUserId);
     const msg3Id = channel.addMessage('Message 3', currentUserId);
@@ -321,7 +338,8 @@ describe('Messenger Reproduction - Array Tracking', () => {
     const channelId = 'channel-4';
     const currentUserId = 'user-me';
 
-    const channel = acquire(ChannelBloc, channelId, { props: channelId });
+    const channel = acquire(ChannelBloc, channelId);
+    channel.initialize(channelId);
     channel.addMessage('Message 1', currentUserId);
     channel.addMessage('Message 2', currentUserId);
     const lastMsgId = channel.addMessage('Message 3', currentUserId);
@@ -344,7 +362,8 @@ describe('Messenger Reproduction - Array Tracking', () => {
     const channelId = 'channel-5';
     const currentUserId = 'user-me';
 
-    const channel = acquire(ChannelBloc, channelId, { props: channelId });
+    const channel = acquire(ChannelBloc, channelId);
+    channel.initialize(channelId);
     channel.addMessage('Hello', currentUserId);
 
     render(<MessageList channelId={channelId} currentUserId={currentUserId} />);

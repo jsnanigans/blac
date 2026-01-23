@@ -78,16 +78,6 @@ function MyComponent() {
 
 ## Options
 
-### `props`
-
-Pass constructor arguments:
-
-```tsx
-const cubit = useBlocActions(UserCubit, {
-  props: { userId: '123' }
-});
-```
-
 ### `instanceId`
 
 Named shared instance:
@@ -122,7 +112,6 @@ const cubit = useBlocActions(DataCubit, {
 
 | Option | Type | Description |
 |--------|------|-------------|
-| `props` | `object` | Constructor arguments |
 | `instanceId` | `string \| number` | Named shared instance |
 | `onMount` | `(bloc) => void` | Mount callback |
 | `onUnmount` | `(bloc) => void` | Unmount callback |

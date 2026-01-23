@@ -58,7 +58,7 @@ class DynamicDepBloc extends Cubit<{ useExternal: boolean; value: number }> {
   }
 }
 
-class ConditionalBloc extends Cubit<{ count: number }, number> {
+class ConditionalBloc extends Cubit<{ count: number }> {
   constructor() {
     super({ count: 20 });
   }
@@ -78,7 +78,7 @@ describe('useBloc - cross-bloc edge cases', () => {
 
   it('should cleanup external subscriptions on unmount', () => {
     // Create external bloc with object state
-    acquire(ConditionalBloc, 'default', { props: 20 });
+    acquire(ConditionalBloc);
 
     let renderCount = 0;
 
@@ -163,7 +163,7 @@ describe('useBloc - cross-bloc edge cases', () => {
   it('should handle dynamically changing dependencies', () => {
     // Create ConditionalBloc instance WITHOUT subscribing to it
     // This way we can test that only the getter dependency triggers re-renders
-    acquire(ConditionalBloc, 'default', { props: 20 });
+    acquire(ConditionalBloc);
 
     let renderCount = 0;
 

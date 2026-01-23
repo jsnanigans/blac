@@ -22,16 +22,13 @@ type StateListener<S> = (state: S) => void;
 /**
  * System events emitted by StateContainer lifecycle
  */
-export type SystemEvent = 'propsUpdated' | 'stateChanged' | 'dispose';
+export type SystemEvent = 'stateChanged' | 'dispose';
 
 /**
  * Payload types for each system event
  * @template S - State type
- * @template P - Props type
  */
-export interface SystemEventPayloads<S, P> {
-  /** Emitted when props are updated via updateProps() */
-  propsUpdated: { props: P; previousProps: P | undefined };
+export interface SystemEventPayloads<S> {
   /** Emitted when state changes via emit() or update() */
   stateChanged: { state: S; previousState: S };
   /** Emitted when the instance is disposed */
@@ -42,8 +39,8 @@ export interface SystemEventPayloads<S, P> {
  * Handler function for system events
  * @internal
  */
-type SystemEventHandler<S, P, E extends SystemEvent> = (
-  payload: SystemEventPayloads<S, P>[E],
+type SystemEventHandler<S, E extends SystemEvent> = (
+  payload: SystemEventPayloads<S>[E],
 ) => void;
 
 /**
@@ -52,7 +49,6 @@ type SystemEventHandler<S, P, E extends SystemEvent> = (
  * and integration with the global registry.
  *
  * @template S - State type managed by this container
- * @template P - Props type passed to the container (optional)
  *
  * @example
  * ```ts
@@ -66,7 +62,7 @@ type SystemEventHandler<S, P, E extends SystemEvent> = (
  * }
  * ```
  */
-export abstract class StateContainer<S extends object = any, P = any> {
+export abstract class StateContainer<S extends object = any> {
   static __excludeFromDevTools = false;
   static enableStackTrace = true;
 
@@ -74,10 +70,9 @@ export abstract class StateContainer<S extends object = any, P = any> {
   private readonly listeners = new Set<StateListener<S>>();
   private _disposed = false;
   private config: StateContainerConfig = {};
-  private _props: P | undefined = undefined;
   private readonly systemEventHandlers = new Map<
     SystemEvent,
-    Set<SystemEventHandler<S, P, any>>
+    Set<SystemEventHandler<S, any>>
   >();
 
   /** Display name for this instance */
@@ -88,11 +83,6 @@ export abstract class StateContainer<S extends object = any, P = any> {
   instanceId: string = generateSimpleId(this.constructor.name, 'main');
   /** Timestamp when this instance was created */
   createdAt: number = Date.now();
-
-  /** Current props value passed to this container */
-  get props(): P | undefined {
-    return this._props;
-  }
 
   constructor(initialState: S) {
     this._state = initialState;
@@ -323,23 +313,23 @@ export abstract class StateContainer<S extends object = any, P = any> {
    */
   protected onSystemEvent = <E extends SystemEvent>(
     event: E,
-    handler: SystemEventHandler<S, P, E>,
+    handler: SystemEventHandler<S, E>,
   ): (() => void) => {
     let handlers = this.systemEventHandlers.get(event);
     if (!handlers) {
       handlers = new Set();
       this.systemEventHandlers.set(event, handlers);
     }
-    handlers.add(handler as SystemEventHandler<S, P, any>);
+    handlers.add(handler as SystemEventHandler<S, any>);
 
     return () => {
-      handlers?.delete(handler as SystemEventHandler<S, P, any>);
+      handlers?.delete(handler as SystemEventHandler<S, any>);
     };
   };
 
   private emitSystemEvent<E extends SystemEvent>(
     event: E,
-    payload: SystemEventPayloads<S, P>[E],
+    payload: SystemEventPayloads<S>[E],
   ): void {
     const handlers = this.systemEventHandlers.get(event);
     if (!handlers) return;
@@ -350,29 +340,6 @@ export abstract class StateContainer<S extends object = any, P = any> {
       } catch (error) {
         console.error(`[${this.name}] Error in system event handler:`, error);
       }
-    }
-  }
-
-  /**
-   * Update the props for this container.
-   * Emits the 'propsUpdated' system event.
-   * @param newProps - The new props value
-   */
-  updateProps(newProps: P): void {
-    if (this._disposed) {
-      throw new Error(`Cannot update props on disposed container ${this.name}`);
-    }
-
-    const previousProps = this._props;
-    this._props = newProps;
-
-    this.emitSystemEvent('propsUpdated', {
-      props: newProps,
-      previousProps,
-    });
-
-    if (this.debug) {
-      console.log(`[${this.name}] Props updated:`, { newProps, previousProps });
     }
   }
 }

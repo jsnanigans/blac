@@ -32,7 +32,6 @@ export {
   forEach,
   clear,
   clearAll,
-  type AcquireOptions,
 } from './registry';
 
 // ============================================================================
@@ -64,7 +63,6 @@ export type {
   StateContainerConstructor,
   ExtractState,
   ExtractStateMutable,
-  ExtractProps,
   ExtractConstructorArgs,
   BlocInstanceType,
   BlocConstructor,

@@ -128,11 +128,6 @@ describe('StateContainer', () => {
         expect(getRefCount(TestContainer, 'key2')).toBe(1);
       });
 
-      it('should pass constructor args correctly', () => {
-        const instance = acquire(TestContainer, undefined, { props: 42 });
-
-        expect(instance.state).toEqual({ value: 42 });
-      });
     });
 
     describe('release()', () => {
@@ -157,9 +152,7 @@ describe('StateContainer', () => {
       });
 
       it('should respect static keepAlive property', () => {
-        const instance = acquire(KeepAliveTestContainer, undefined, {
-          props: 0,
-        });
+        const instance = acquire(KeepAliveTestContainer);
         const disposeSpy = vi.spyOn(instance, 'dispose');
 
         release(KeepAliveTestContainer);

@@ -35,8 +35,8 @@ class IsolatedBloc extends StateContainer<{ count: number }> {
 }
 
 class UserBloc extends StateContainer<{ name: string; email: string }> {
-  constructor(props?: { initialName?: string }) {
-    super({ name: props?.initialName || '', email: '' });
+  constructor() {
+    super({ name: '', email: '' });
   }
 
   setName = (name: string) => {
@@ -210,16 +210,4 @@ describe('useBloc', () => {
     });
   });
 
-  describe('Static Props', () => {
-    it('should pass static props to constructor', () => {
-      const { result } = renderHook(() =>
-        useBloc(UserBloc, {
-          props: { initialName: 'Bob' },
-        }),
-      );
-
-      const [state] = result.current;
-      expect(state.name).toBe('Bob');
-    });
-  });
 });

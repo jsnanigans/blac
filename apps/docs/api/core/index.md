@@ -25,13 +25,12 @@ Core state management primitives
 Simple state container with direct state emission. Extends StateContainer with public methods for emitting and updating state.
 
 ```typescript
-export declare abstract class Cubit<S extends object = any, P = undefined> extends StateContainer<S, P>
+export declare abstract class Cubit<S extends object = any> extends StateContainer<S>
 ```
 
 **Type Parameters:**
 
-- `S`
-- `P`
+- `S` - State type
 
 **Constructor:**
 
@@ -84,13 +83,12 @@ update(updater: (current: S) => S): void;
 Abstract base class for all state containers in BlaC. Provides lifecycle management, subscription handling, ref counting, and integration with the global registry.
 
 ```typescript
-export declare abstract class StateContainer<S extends object = any, P = any>
+export declare abstract class StateContainer<S extends object = any>
 ```
 
 **Type Parameters:**
 
-- `S`
-- `P`
+- `S` - State type
 
 **Constructor:**
 
@@ -114,8 +112,7 @@ constructor(initialState: S);
 | `isDisposed` *(readonly)*  | `boolean` | Whether this instance has been disposed |
 | `lastUpdateTimestamp` | `number` | Timestamp of the last state update |
 | `name` | `string` | Display name for this instance |
-| `onSystemEvent` | `<E extends SystemEvent>(event: E, handler: SystemEventHandler<S, P, E>) => (() => void)` | Subscribe to system lifecycle events. |
-| `props` *(readonly)*  | `P \| undefined` | Current props value passed to this container |
+| `onSystemEvent` | `<E extends SystemEvent>(event: E, handler: SystemEventHandler<S, E>) => (() => void)` | Subscribe to system lifecycle events. |
 | `state` *(readonly)*  | `Readonly<S>` | Current state value |
 
 **Methods:**
@@ -178,18 +175,6 @@ protected update(updater: (current: S) => S): void;
 |-----------|------|-------------|
 | `updater` | `(current: S) => S` | Function that receives current state and returns new state |
 
-#### `updateProps`
-
-Update the props for this container. Emits the 'propsUpdated' system event.
-
-```typescript
-updateProps(newProps: P): void;
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `newProps` | `P` | The new props value |
-
 **Examples:**
 
 
@@ -226,17 +211,16 @@ export interface StateContainerConfig
 
 ### SystemEventPayloads
 
-Payload types for each system event  @template S - State type  @template P - Props type
+Payload types for each system event  @template S - State type
 
 ```typescript
-export interface SystemEventPayloads<S, P>
+export interface SystemEventPayloads<S>
 ```
 
 | Property | Type | Description |
 |----------|------|-------------|
 | `dispose` | `void` | Emitted when the instance is disposed |
-| `propsUpdated` | `P` | Emitted when props are updated via updateProps() |
-| `stateChanged` | `S` | Emitted when state changes via emit() or update() |
+| `stateChanged` | `{ state: S; previousState: S }` | Emitted when state changes via emit() or update() |
 
 ---
 
@@ -289,20 +273,12 @@ Extract constructor argument types from a class  @template T - The class type
 export type ExtractConstructorArgs<T> = T extends new (...args: infer P) => any ? P : never[];
 ```
 
-### ExtractProps
-
-Extract the props type from a StateContainer  @template T - The StateContainer type
-
-```typescript
-export type ExtractProps<T> = T extends StateContainerConstructor<any, infer P> ? P : undefined;
-```
-
 ### ExtractState
 
 Extract the state type from a StateContainer  @template T - The StateContainer type
 
 ```typescript
-export type ExtractState<T> = T extends StateContainerConstructor<infer S, any> ? Readonly<S> : never;
+export type ExtractState<T> = T extends StateContainerConstructor<infer S> ? Readonly<S> : never;
 ```
 
 ### SystemEvent
@@ -310,5 +286,5 @@ export type ExtractState<T> = T extends StateContainerConstructor<infer S, any> 
 System events emitted by StateContainer lifecycle
 
 ```typescript
-export type SystemEvent = 'propsUpdated' | 'stateChanged' | 'dispose';
+export type SystemEvent = 'stateChanged' | 'dispose';
 ```

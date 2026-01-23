@@ -1,22 +1,12 @@
-import type {
-  ExtractProps,
-  ExtractState,
-  StateContainerConstructor,
-} from '@blac/core';
+import type { ExtractState, StateContainerConstructor } from '@blac/core';
 import { InstanceReadonlyState } from '@blac/core';
 import type { RefObject } from 'preact';
 
 /**
  * Configuration options for useBloc hook
  * @template TBloc - The state container type
- * @template TProps - Props type passed to the container
  */
-export interface UseBlocOptions<
-  TBloc extends StateContainerConstructor,
-  TProps = ExtractProps<TBloc>,
-> {
-  /** Props passed to bloc constructor or updateProps */
-  props?: TProps;
+export interface UseBlocOptions<TBloc extends StateContainerConstructor> {
   /** Custom instance identifier for shared or isolated instances */
   instanceId?: string | number;
   /** Manual dependency array like useEffect (disables autoTrack) */

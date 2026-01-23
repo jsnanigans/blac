@@ -169,16 +169,15 @@ export interface UseBlocActionsOptions<TBloc, TProps = any>
 | `instanceId` _(optional)_ | `string \| number`      | Custom instance identifier for shared or isolated instances |
 | `onMount` _(optional)_    | `(bloc: TBloc) => void` | Callback invoked when bloc instance mounts                  |
 | `onUnmount` _(optional)_  | `(bloc: TBloc) => void` | Callback invoked when bloc instance unmounts                |
-| `props` _(optional)_      | `TProps`                | Props passed to bloc constructor or updateProps             |
 
 ---
 
 ### UseBlocOptions
 
-Configuration options for useBloc hook @template TBloc - The state container type @template TProps - Props type passed to the container
+Configuration options for useBloc hook @template TBloc - The state container type
 
 ```typescript
-export interface UseBlocOptions<TBloc extends StateContainerConstructor, TProps = ExtractProps<TBloc>>
+export interface UseBlocOptions<TBloc extends StateContainerConstructor>
 ```
 
 | Property                          | Type                                                                            | Description                                                  |
@@ -189,7 +188,6 @@ export interface UseBlocOptions<TBloc extends StateContainerConstructor, TProps 
 | `instanceId` _(optional)_         | `string \| number`                                                              | Custom instance identifier for shared or isolated instances  |
 | `onMount` _(optional)_            | `(bloc: InstanceType<TBloc>) => void`                                           | Callback invoked when bloc instance mounts                   |
 | `onUnmount` _(optional)_          | `(bloc: InstanceType<TBloc>) => void`                                           | Callback invoked when bloc instance unmounts                 |
-| `props` _(optional)_              | `TProps`                                                                        | Props passed to bloc constructor or updateProps              |
 
 ---
 

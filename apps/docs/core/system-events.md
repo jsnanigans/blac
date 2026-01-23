@@ -7,24 +7,18 @@ State containers emit system events for lifecycle management. Subscribe with `on
 | Event          | Payload                    | When                       |
 | -------------- | -------------------------- | -------------------------- |
 | `stateChanged` | `{ state, previousState }` | After state changes        |
-| `propsUpdated` | `{ props, previousProps }` | After props update         |
 | `dispose`      | `void`                     | When `dispose()` is called |
 
 ## Usage
 
 ```typescript
-class UserCubit extends Cubit<UserState, UserProps> {
+class UserCubit extends Cubit<UserState> {
   constructor() {
     super({ name: '', email: '' });
 
     // Subscribe to state changes
     this.onSystemEvent('stateChanged', ({ state, previousState }) => {
       console.log('State:', previousState, '->', state);
-    });
-
-    // Subscribe to props updates
-    this.onSystemEvent('propsUpdated', ({ props, previousProps }) => {
-      console.log('Props:', previousProps, '->', props);
     });
 
     // Subscribe to disposal
@@ -55,31 +49,6 @@ class AnalyticsTrackingCubit extends Cubit<AppState> {
       }
     });
   }
-}
-```
-
-## Props Updated
-
-Fired when `updateProps()` is called (typically by `useBloc` when props change):
-
-```typescript
-class UserProfileCubit extends Cubit<ProfileState, { userId: string }> {
-  constructor() {
-    super({ profile: null, isLoading: false });
-
-    this.onSystemEvent('propsUpdated', ({ props, previousProps }) => {
-      // Reload when userId changes
-      if (props.userId !== previousProps?.userId) {
-        this.loadProfile(props.userId);
-      }
-    });
-  }
-
-  loadProfile = async (userId: string) => {
-    this.patch({ isLoading: true });
-    const profile = await api.getProfile(userId);
-    this.patch({ profile, isLoading: false });
-  };
 }
 ```
 

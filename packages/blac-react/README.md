@@ -102,7 +102,6 @@ useBloc(MyBloc, {
 
   // Instance management
   instanceId: 'unique-id', // Custom instance identifier
-  props: { userId: 123 }, // Props passed to bloc
 
   // Lifecycle callbacks
   onMount: (bloc) => console.log('Mounted', bloc),
@@ -143,7 +142,6 @@ function IncrementButton() {
 ```tsx
 useBlocActions(MyBloc, {
   instanceId: 'unique-id', // Custom instance identifier
-  props: { config: value }, // Props passed to bloc
   onMount: (bloc) => bloc.initialize(),
   onUnmount: (bloc) => bloc.cleanup(),
 });
@@ -249,7 +247,6 @@ function useBlocActions<T extends StateContainerConstructor>(
 | `autoTrack`    | `boolean`          | Enable auto-tracking (default: true) |
 | `dependencies` | `(state) => any[]` | Manual dependency selector           |
 | `instanceId`   | `string \| number` | Custom instance identifier           |
-| `props`        | `P`                | Props passed to bloc constructor     |
 | `onMount`      | `(bloc) => void`   | Called when component mounts         |
 | `onUnmount`    | `(bloc) => void`   | Called when component unmounts       |
 
@@ -258,7 +255,6 @@ function useBlocActions<T extends StateContainerConstructor>(
 | Option       | Type               | Description                      |
 | ------------ | ------------------ | -------------------------------- |
 | `instanceId` | `string \| number` | Custom instance identifier       |
-| `props`      | `P`                | Props passed to bloc constructor |
 | `onMount`    | `(bloc) => void`   | Called when component mounts     |
 | `onUnmount`  | `(bloc) => void`   | Called when component unmounts   |
 

@@ -5,19 +5,18 @@ import type { StateContainer } from '../core/StateContainer';
  * @template T - The StateContainer type
  */
 export type ExtractState<T> =
-  T extends StateContainerConstructor<infer S, any> ? Readonly<S> : never;
+  T extends StateContainerConstructor<infer S> ? Readonly<S> : never;
 
 export type ExtractStateMutable<T> =
-  T extends StateContainerConstructor<infer S, any> ? S : never;
+  T extends StateContainerConstructor<infer S> ? S : never;
 
 /**
  * Constructor type for StateContainer classes
  * @template S - State type managed by the container
- * @template P - Props type passed to the container
  */
-export type StateContainerConstructor<S extends object = any, P = any> = new (
+export type StateContainerConstructor<S extends object = any> = new (
   ...args: any[]
-) => StateContainer<S, P>;
+) => StateContainer<S>;
 
 export type InstanceReadonlyState<T extends StateContainerConstructor = any> =
   Omit<InstanceType<T>, 'state'> & { state: ExtractState<T> };
@@ -27,17 +26,10 @@ export type InstanceState<T extends StateContainerConstructor = any> = Omit<
   'state'
 > & { state: ExtractStateMutable<T> };
 
-export type StateContainerInstance<S extends object = any, P = any> = Omit<
-  StateContainer<S, P>,
+export type StateContainerInstance<S extends object = any> = Omit<
+  StateContainer<S>,
   'state'
 > & { state: Readonly<S> };
-
-/**
- * Extract the props type from a StateContainer
- * @template T - The StateContainer type
- */
-export type ExtractProps<T> =
-  T extends StateContainerConstructor<any, infer P> ? P : undefined;
 
 /**
  * Extract constructor argument types from a class

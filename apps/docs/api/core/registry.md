@@ -53,7 +53,6 @@ Acquire an instance with ref counting (ownership semantics). Creates a new insta
 acquire<T extends StateContainerConstructor = StateContainerConstructor>(Type: T, instanceKey?: string, options?: {
         canCreate?: boolean;
         countRef?: boolean;
-        props?: ExtractProps<T>;
         trackExecutionContext?: boolean;
     }): InstanceType<T>;
 ```
@@ -66,7 +65,6 @@ acquire<T extends StateContainerConstructor = StateContainerConstructor>(Type: T
 
         canCreate?: boolean;
         countRef?: boolean;
-        props?: ExtractProps<T>;
         trackExecutionContext?: boolean;
     }` | Acquisition options |
 

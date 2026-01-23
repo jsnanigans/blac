@@ -1,22 +1,12 @@
-import type {
-  ExtractProps,
-  ExtractState,
-  StateContainerConstructor,
-} from '@blac/core';
+import type { ExtractState, StateContainerConstructor } from '@blac/core';
 import { InstanceReadonlyState } from '@blac/core';
 import type { RefObject } from 'react';
 
 /**
  * Configuration options for useBloc hook
  * @template TBloc - The state container type
- * @template TProps - Props type passed to the container
  */
-export interface UseBlocOptions<
-  TBloc extends StateContainerConstructor,
-  TProps = ExtractProps<TBloc>,
-> {
-  /** Props passed to bloc constructor or updateProps */
-  props?: TProps;
+export interface UseBlocOptions<TBloc extends StateContainerConstructor> {
   /** Custom instance identifier for shared or isolated instances */
   instanceId?: string | number;
   /** Manual dependency array like useEffect (disables autoTrack) */
@@ -33,21 +23,6 @@ export interface UseBlocOptions<
   /** Callback invoked when bloc instance unmounts */
   onUnmount?: (bloc: InstanceType<TBloc>) => void;
 }
-
-// /**
-//  * UseBlocOptions variant with required manual dependencies
-//  * @template TBloc - The state container type
-//  * @template TProps - Props type passed to the container
-//  */
-// export interface UseBlocOptionsWithDependencies<
-//   TBloc extends StateContainerConstructor,
-//   TProps = ExtractProps<TBloc>,
-// > extends UseBlocOptions<TBloc, TProps> {
-//   /** Required manual dependency array */
-//   dependencies: (state: ExtractState<TBloc>, bloc: TBloc) => unknown[];
-//   /** autoTrack is not allowed when dependencies are provided */
-//   autoTrack?: never;
-// }
 
 /**
  * Tuple return type from useBloc hook containing state, bloc instance, and ref

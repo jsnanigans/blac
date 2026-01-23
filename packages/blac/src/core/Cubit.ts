@@ -5,12 +5,8 @@ import { StateContainer } from './StateContainer';
  * Extends StateContainer with public methods for emitting and updating state.
  *
  * @template S - State type
- * @template P - Props type (optional)
  */
-export abstract class Cubit<
-  S extends object = any,
-  P = undefined,
-> extends StateContainer<S, P> {
+export abstract class Cubit<S extends object = any> extends StateContainer<S> {
   constructor(initialState: S) {
     super(initialState);
   }

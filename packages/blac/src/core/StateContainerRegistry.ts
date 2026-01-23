@@ -4,7 +4,6 @@ import { getGetterExecutionContext } from '../tracking/tracking-proxy';
 import { BLAC_DEFAULTS, BLAC_ERROR_PREFIX } from '../constants';
 import { isIsolatedClass, isKeepAliveClass } from '../utils/static-props';
 import {
-  ExtractProps,
   InstanceReadonlyState,
   StateContainerConstructor,
 } from '../types/utilities';
@@ -155,7 +154,6 @@ export class StateContainerRegistry {
    * @param options - Acquisition options
    * @param options.canCreate - Whether to create new instance if not found (default: true)
    * @param options.countRef - Whether to increment ref count (default: true)
-   * @param options.props - Props to pass to constructor if creating new instance
    * @param options.trackExecutionContext - Whether to track cross-bloc dependency (default: false)
    * @returns The state container instance
    */
@@ -165,14 +163,12 @@ export class StateContainerRegistry {
     options: {
       canCreate?: boolean;
       countRef?: boolean;
-      props?: ExtractProps<T>;
       trackExecutionContext?: boolean;
     } = {},
   ): InstanceType<T> {
     const {
       canCreate = true,
       countRef = true,
-      props,
       trackExecutionContext = false,
     } = options;
     // Check if this is an isolated type
@@ -191,7 +187,7 @@ export class StateContainerRegistry {
 
     // Isolated: always create new instance (not tracked)
     if (isolated) {
-      const instance = new Type(props) as InstanceType<T>;
+      const instance = new Type() as InstanceType<T>;
       instance.initConfig(config);
       // Register type for lifecycle coordination
       this.registerType(Type);
@@ -224,7 +220,7 @@ export class StateContainerRegistry {
     }
 
     // Create new shared instance
-    const instance = new Type(props) as InstanceType<T>;
+    const instance = new Type() as InstanceType<T>;
     instance.initConfig(config);
     instances.set(instanceKey, { instance, refCount: 1 });
 

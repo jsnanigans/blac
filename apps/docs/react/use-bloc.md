@@ -35,29 +35,6 @@ function Counter() {
 
 ## Options
 
-### `props`
-
-Pass constructor arguments to the Cubit:
-
-```tsx
-class UserCubit extends Cubit<UserState, { userId: string }> {
-  constructor(props?: { userId: string }) {
-    super({ user: null });
-    if (props?.userId) this.loadUser(props.userId);
-  }
-}
-
-function UserProfile({ userId }: { userId: string }) {
-  const [state] = useBloc(UserCubit, {
-    props: { userId }
-  });
-
-  return <div>{state.user?.name}</div>;
-}
-```
-
-Props are updated when they change (calls `updateProps()` internally).
-
 ### `instanceId`
 
 Custom instance ID for named shared instances:
@@ -153,7 +130,6 @@ const [state, cubit] = useBloc(DataCubit, {
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `props` | `object` | - | Constructor arguments |
 | `instanceId` | `string \| number` | - | Named shared instance |
 | `dependencies` | `(state, bloc) => any[]` | - | Manual tracking |
 | `autoTrack` | `boolean` | `true` | Enable auto-tracking |
@@ -166,9 +142,8 @@ const [state, cubit] = useBloc(DataCubit, {
 ### Fetch on Mount
 
 ```tsx
-function UserProfile({ userId }: { userId: string }) {
+function UserProfile() {
   const [state, cubit] = useBloc(UserCubit, {
-    props: { userId },
     onMount: (cubit) => cubit.loadProfile()
   });
 

@@ -90,7 +90,6 @@ export function useBloc<
   type TBloc = InstanceState<T>;
 
   const componentRef = useRef<ComponentRef>({});
-  const initialPropsRef = useRef(options?.props);
   const isIsolated = isIsolatedClass(BlocClass);
 
   const [bloc, subscribe, getSnapshot, instanceKey, adapterState, rawInstance] =
@@ -110,13 +109,7 @@ export function useBloc<
         options?.instanceId,
       );
 
-      const instance = acquire(BlocClass, instanceKey, {
-        props: initialPropsRef.current,
-      }) as TBloc;
-
-      if (initialPropsRef.current !== undefined) {
-        instance.updateProps(initialPropsRef.current);
-      }
+      const instance = acquire(BlocClass, instanceKey) as TBloc;
 
       const { useManualDeps, autoTrackEnabled } =
         determineTrackingMode(options);
@@ -158,12 +151,6 @@ export function useBloc<
   const [, forceUpdate] = useReducer((x: number) => x + 1, 0);
 
   const externalDepsManager = useRef(new ExternalDepsManager());
-
-  useEffect(() => {
-    if (options?.props !== initialPropsRef.current) {
-      rawInstance.updateProps(options?.props);
-    }
-  }, [options?.props, rawInstance]);
 
   useEffect(() => {
     disableGetterTracking(adapterState, rawInstance);

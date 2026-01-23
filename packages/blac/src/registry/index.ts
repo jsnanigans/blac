@@ -1,4 +1,4 @@
-export { acquire, type AcquireOptions } from './acquire';
+export { acquire } from './acquire';
 export { borrow, borrowSafe } from './borrow';
 export { ensure } from './ensure';
 export { release } from './release';
