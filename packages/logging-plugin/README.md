@@ -30,14 +30,13 @@ new LoggingPlugin({
   format: 'grouped',
 
   // Filtering
-  include: ['CounterCubit', 'CartVertex'], // Only log these classes
+  include: ['CounterCubit', 'CartCubit'], // Only log these classes
   exclude: ['AnalyticsCubit'], // Exclude these classes
   filter: ({ className, isIsolated }) => !isIsolated, // Custom filter
 
   // Feature toggles
   logLifecycle: true, // Log create/dispose
   logStateChanges: true, // Log state transitions
-  logEvents: true, // Log Vertex events
   includeCallstack: false, // Include callstack in logs
 
   // Memory monitoring
@@ -62,7 +61,7 @@ new LoggingPlugin({
 | --------- | -------------------------------------------------- |
 | `minimal` | Warnings only (memory issues, suspicious activity) |
 | `info`    | Lifecycle + warnings                               |
-| `debug`   | + state changes + events                           |
+| `debug`   | + state changes                                    |
 | `verbose` | + callstacks + full state objects                  |
 
 ## Output Examples

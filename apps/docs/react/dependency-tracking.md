@@ -76,7 +76,7 @@ function Bad() {
 
 ## Getter Tracking
 
-Getters on Cubit/Vertex classes are automatically tracked:
+Getters on Cubit classes are automatically tracked:
 
 ```tsx
 class TodoCubit extends Cubit<TodoState> {

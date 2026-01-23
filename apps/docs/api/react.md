@@ -59,8 +59,6 @@ React hook that connects a component to a state container with automatic re-rend
 
 Supports three tracking modes: - **Auto-tracking** (default): Automatically detects accessed state properties via Proxy - **Manual dependencies**: Explicit dependency array like useEffect - **No tracking**: Returns full state without optimization
 
-**Note:** This hook does NOT support stateless containers (StatelessCubit, StatelessVertex). Use `useBlocActions()` instead for stateless containers.
-
 ```typescript
 export declare function useBloc<
   T extends StateContainerConstructor = StateContainerConstructor,
@@ -107,8 +105,6 @@ const [state, myBloc] = useBloc(MyBloc, {
 
 React hook that connects to a state container instance without triggering re-renders. Use this when you only need to call actions on the bloc without subscribing to state changes.
 
-**This is the recommended hook for stateless containers** (StatelessCubit, StatelessVertex). It also works with regular Cubit/Vertex when you don't need state subscriptions.
-
 ```typescript
 export declare function useBlocActions<
   T extends StateContainerConstructor = StateContainerConstructor,
@@ -127,18 +123,7 @@ export declare function useBlocActions<
 
 **Examples:**
 
-**Basic usage with stateless container**
-
-```ts
-class AnalyticsService extends StatelessCubit {
-  trackEvent(name: string) { ... }
-}
-
-const analytics = useBlocActions(AnalyticsService);
-analytics.trackEvent('page_view');
-```
-
-**With stateful container (no re-renders)**
+**Basic usage (no re-renders)**
 
 ```ts
 const myBloc = useBlocActions(MyBloc);

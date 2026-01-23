@@ -390,7 +390,6 @@ Lifecycle events emitted by the registry
 export type LifecycleEvent =
   | 'created'
   | 'stateChanged'
-  | 'eventAdded'
   | 'disposed';
 ```
 
@@ -408,9 +407,7 @@ export type LifecycleListener<E extends LifecycleEvent> = E extends 'created'
         currentState: any,
         callstack?: string,
       ) => void
-    : E extends 'eventAdded'
-      ? (container: Vertex<any, any>, event: any) => void
-      : E extends 'disposed'
-        ? (container: StateContainer<any>) => void
-        : never;
+    : E extends 'disposed'
+      ? (container: StateContainer<any>) => void
+      : never;
 ```

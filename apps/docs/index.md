@@ -23,8 +23,8 @@ features:
     details: Auto-tracking proxy system ensures components only re-render when their dependencies change.
 
   - icon: 🔄
-    title: Event-Driven Architecture
-    details: Vertex pattern provides structured event handling with type-safe event classes.
+    title: Simple State Management
+    details: Cubit pattern provides straightforward state mutations with emit(), update(), and patch() methods.
 
   - icon: 🧩
     title: Extensible Plugin System

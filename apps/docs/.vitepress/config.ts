@@ -51,14 +51,7 @@ export default defineConfig({
         },
         {
           text: 'State Containers',
-          items: [
-            { text: 'Cubit', link: '/core/cubit' },
-            { text: 'Vertex', link: '/core/vertex' },
-            {
-              text: 'Stateless Containers',
-              link: '/core/stateless-containers',
-            },
-          ],
+          items: [{ text: 'Cubit', link: '/core/cubit' }],
         },
         {
           text: 'Configuration',
@@ -86,10 +79,7 @@ export default defineConfig({
         },
         {
           text: 'Examples',
-          items: [
-            { text: 'Form Validation', link: '/core/form-validation' },
-            { text: 'Authentication Flow', link: '/core/auth-flow' },
-          ],
+          items: [{ text: 'Form Validation', link: '/core/form-validation' }],
         },
       ],
       '/react/': [

@@ -22,7 +22,7 @@ What is BlaC and why use it.
 - Not just a state manager: its a Pattern that allows you to forget about state management so that you can focus on building features.
 - React integration: great performance, DX and flexibility. Enables complete separation of concerns in layers: [UI (react) | Business Logic (Blac) | Data (API/DB)]
 - Focus on Testability: business logic can be tested in isolation without UI (no more react component or react hooks testing nightmares)
-- When to use Cubit vs Vertex (quick comparison)
+- Cubit pattern overview
 - Link to getting started
 
 ---
@@ -35,7 +35,6 @@ Installation and first steps with @blac/core.
 
 - Installation (`pnpm add @blac/core`)
 - Basic Cubit example (counter)
-- Basic Vertex example (counter with events)
 - Link to React integration
 
 ### `/core/cubit`
@@ -49,19 +48,6 @@ Complete Cubit documentation.
 - `patch()` shallow merge warning with example
 - Computed getters
 - Code example: form state
-
-### `/core/vertex`
-
-Complete Vertex documentation.
-
-- Purpose: event-driven state transitions
-- BaseEvent interface
-- Defining event classes
-- `on()` handler registration
-- `add()` event dispatch
-- Event processing (sync, queued)
-- `onEventError()` hook
-- Code example: auth flow
 
 ### `/core/configuration`
 
@@ -107,7 +93,7 @@ Debugging and logging configuration.
 Plugin system for extending BlaC.
 
 - `BlacPlugin` interface
-- Lifecycle hooks: `onInstall`, `onInstanceCreated`, `onStateChanged`, `onEventAdded`, `onInstanceDisposed`, `onUninstall`
+- Lifecycle hooks: `onInstall`, `onInstanceCreated`, `onStateChanged`, `onInstanceDisposed`, `onUninstall`
 - `PluginContext` methods
 - `globalRegistry.on()` for simple listeners
 - Use cases: devtools, analytics, persistence

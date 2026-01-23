@@ -20,11 +20,6 @@ globalRegistry.on('stateChanged', (container, prevState, newState, callstack) =>
   if (callstack) console.log('Callstack:', callstack);
 });
 
-// Listen to events (Vertex only)
-globalRegistry.on('eventAdded', (vertex, event) => {
-  console.log('Event:', event.type);
-});
-
 // Listen to disposal
 globalRegistry.on('disposed', (container) => {
   console.log('Disposed:', container.name);
@@ -40,7 +35,6 @@ unsubscribe();
 |-------|-------------------|
 | `created` | `(container)` |
 | `stateChanged` | `(container, prevState, newState, callstack?)` |
-| `eventAdded` | `(vertex, event)` |
 | `disposed` | `(container)` |
 
 ## BlacPlugin Interface
@@ -67,10 +61,6 @@ const myPlugin: BlacPlugin = {
     console.log('State changed:', instance.name);
   },
 
-  onEventAdded(vertex, event, context) {
-    console.log('Event:', event.type);
-  },
-
   onInstanceDisposed(instance, context) {
     console.log('Disposed:', instance.name);
   },
@@ -88,7 +78,6 @@ const myPlugin: BlacPlugin = {
 | `onInstall` | Plugin is registered |
 | `onInstanceCreated` | State container created |
 | `onStateChanged` | State emitted |
-| `onEventAdded` | Event added to Vertex |
 | `onInstanceDisposed` | Instance disposed |
 | `onUninstall` | Plugin is removed |
 
@@ -200,10 +189,6 @@ const debugPlugin: BlacPlugin = {
     console.log('Current:', newState);
     if (callstack) console.log('Callstack:', callstack);
     console.groupEnd();
-  },
-
-  onEventAdded(vertex, event) {
-    console.log(`[BlaC] ${vertex.name} event:`, event.type, event);
   },
 
   onInstanceDisposed(instance) {

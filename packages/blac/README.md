@@ -40,54 +40,6 @@ class CounterCubit extends Cubit<{ count: number }> {
 }
 ```
 
-### Vertex
-
-Event-driven state container using discriminated union events. Use when you need structured event handling with type-safe exhaustive checking.
-
-```typescript
-import { Vertex } from '@blac/core';
-
-type CounterEvent =
-  | { type: 'increment'; amount: number }
-  | { type: 'decrement' }
-  | { type: 'reset' };
-
-class CounterVertex extends Vertex<{ count: number }, CounterEvent> {
-  constructor() {
-    super({ count: 0 });
-    this.createHandlers({
-      increment: (event, emit) => {
-        emit({ count: this.state.count + event.amount });
-      },
-      decrement: (_, emit) => {
-        emit({ count: this.state.count - 1 });
-      },
-      reset: (_, emit) => {
-        emit({ count: 0 });
-      },
-    });
-  }
-
-  increment = (amount = 1) => this.add({ type: 'increment', amount });
-  decrement = () => this.add({ type: 'decrement' });
-  reset = () => this.add({ type: 'reset' });
-}
-```
-
-### StatelessCubit & StatelessVertex
-
-Stateless containers for services that don't need state tracking. Use for actions-only functionality like analytics, API calls, or navigation.
-
-```typescript
-import { StatelessCubit } from '@blac/core';
-
-class AnalyticsService extends StatelessCubit {
-  trackEvent(name: string, data?: Record<string, unknown>) {
-    // Send to analytics provider
-  }
-}
-```
-
 ## Registry API
 
 Manage state container instances with the registry functions:
@@ -207,12 +159,9 @@ configureBlac({
 
 ### State Containers
 
-| Class                | Description                                                 |
-| -------------------- | ----------------------------------------------------------- |
-| `Cubit<S, P>`        | Simple state container with `emit()`, `update()`, `patch()` |
-| `Vertex<S, E, P>`    | Event-driven container with `add()` and `createHandlers()`  |
-| `StatelessCubit`     | Stateless service container                                 |
-| `StatelessVertex<E>` | Stateless event-driven container                            |
+| Class         | Description                                                 |
+| ------------- | ----------------------------------------------------------- |
+| `Cubit<S, P>` | Simple state container with `emit()`, `update()`, `patch()` |
 
 ### Registry Functions
 
@@ -232,7 +181,7 @@ configureBlac({
 
 ```typescript
 // Core classes
-export { Cubit, Vertex, StatelessCubit, StatelessVertex } from '@blac/core';
+export { Cubit } from '@blac/core';
 
 // Registry
 export {

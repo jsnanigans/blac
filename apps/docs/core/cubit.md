@@ -217,6 +217,5 @@ class LoginFormCubit extends Cubit<FormState> {
 
 ## See Also
 
-- [Vertex](/core/vertex) - Event-driven alternative
 - [Configuration](/core/configuration) - `@blac()` decorator options
 - [Instance Management](/core/instance-management) - Static methods

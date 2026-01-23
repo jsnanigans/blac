@@ -4,10 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-BlaC is a TypeScript-based state management library for React applications. It provides a clean, type-safe state container architecture inspired by the BLoC pattern with three main patterns:
+BlaC is a TypeScript-based state management library for React applications. It provides a clean, type-safe state container architecture inspired by the BLoC pattern:
 - **StateContainer**: Abstract base class for all state containers
 - **Cubit**: Simple state container with direct state emission
-- **Vertex**: Event-driven state container following the BLoC pattern
 
 The project is a pnpm workspace monorepo with packages, apps, and plugin architecture.
 
@@ -45,11 +44,6 @@ All state containers inherit from `StateContainer<S>` (packages/blac/src/core/St
 - Extends StateContainer with public `emit()`, `update()`, and `patch()` methods
 - For simple state management with direct mutations
 
-**Vertex** (packages/blac/src/core/Vertex.ts):
-- Extends StateContainer with event-driven architecture
-- Uses `on()` to register event handlers and `add()` to process events
-- Events implement `BaseEvent` interface
-
 ### React Integration
 
 The `useBloc` hook (packages/blac-react/src/useBloc.ts) integrates state containers with React:
@@ -77,7 +71,7 @@ The `useBloc` hook (packages/blac-react/src/useBloc.ts) integrates state contain
 ### Plugin System
 
 Plugins extend BlaC functionality via lifecycle hooks (packages/blac/src/plugin/):
-- `BlacPlugin` interface defines lifecycle methods: `onInstall`, `onInstanceCreated`, `onStateChanged`, `onEventAdded`, `onInstanceDisposed`, `onUninstall`
+- `BlacPlugin` interface defines lifecycle methods: `onInstall`, `onInstanceCreated`, `onStateChanged`, `onInstanceDisposed`, `onUninstall`
 - `PluginContext` provides safe access to registry data
 - `PluginManager` handles plugin registration and environment filtering
 - DevTools connection is implemented as a plugin
@@ -167,8 +161,8 @@ pnpm --filter @blac/core clean
 
 ### Adding New Features
 1. Check `spec/` directory for existing specifications
-2. Understand the three-layer architecture:
-   - Core: StateContainer, Cubit, Vertex in `packages/blac/src/core/`
+2. Understand the two-layer architecture:
+   - Core: StateContainer, Cubit in `packages/blac/src/core/`
    - Tracking: Proxy tracking and adapters in `packages/blac/src/proxy/` and `packages/blac/src/adapter/`
    - React: Integration hooks in `packages/blac-react/src/`
 3. Write tests alongside implementation

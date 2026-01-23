@@ -135,14 +135,6 @@ export interface BlacPlugin
 
 **Methods:**
 
-#### `onEventAdded`
-
-Called when an event is added to a Vertex instance
-
-```typescript
-onEventAdded?<E extends DiscriminatedEvent>(vertex: Vertex<any, E>, event: EventWithMetadata<E>, context: PluginContext): void;
-```
-
 #### `onInstall`
 
 Called when the plugin is installed (optional)

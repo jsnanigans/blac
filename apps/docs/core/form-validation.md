@@ -8,7 +8,7 @@ Forms are a natural fit for Cubit because:
 
 - **Direct state updates** - Form fields change frequently; Cubit's `patch()` and `update()` methods make this simple
 - **Derived state** - Computed getters like `isValid` or `isDirty` are automatically tracked
-- **No event overhead** - Unlike Vertex, you don't need to define events for every field change
+- **Simple API** - No need to define events for every field change
 - **Isolated instances** - Each form component gets its own Cubit instance by default
 
 ## Step 1: Define the Schema

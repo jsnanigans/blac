@@ -6,7 +6,6 @@ BlaC is a TypeScript state management library implementing the BLoC (Business Lo
 
 - **Type-Safe**: Full TypeScript support with inferred state and props types
 - **Auto-Tracking**: Proxy-based dependency tracking - only re-render when accessed properties change
-- **Event-Driven**: Vertex pattern for complex state flows with explicit event handling
 - **Simple API**: Cubit pattern for straightforward state management
 - **DevTools**: Built-in Chrome extension for debugging
 
@@ -20,7 +19,7 @@ BlaC is a pattern that lets you forget about state management so you can focus o
 ┌─────────────────┐
 │   UI (React)    │  Components only render and dispatch actions
 ├─────────────────┤
-│ Business Logic  │  Cubits/Vertices handle all logic
+│ Business Logic  │  Cubits handle all logic
 │    (BlaC)       │
 ├─────────────────┤
 │   Data Layer    │  APIs, databases, storage
@@ -38,34 +37,25 @@ counter.increment();
 expect(counter.state.count).toBe(1);
 ```
 
-## Cubit vs Vertex
+## Cubit Pattern
 
-| | Cubit | Vertex |
-|---|-------|--------|
-| **State Updates** | Direct via `emit()`, `update()`, `patch()` | Event-driven via `add()` |
-| **Complexity** | Simple | More structure |
-| **Use When** | Most cases | Complex flows, audit trails, undo/redo |
+Cubit provides direct state mutations with a simple API:
 
-**Cubit** - Direct state mutations:
 ```typescript
 class CounterCubit extends Cubit<{ count: number }> {
-  increment = () => this.patch({ count: this.state.count + 1 });
-}
-```
-
-**Vertex** - Event-driven:
-```typescript
-type CounterEvent = { type: 'increment' };
-
-class CounterVertex extends Vertex<{ count: number }, CounterEvent> {
   constructor() {
     super({ count: 0 });
-    this.createHandlers({
-      increment: (_, emit) => emit({ count: this.state.count + 1 }),
-    });
   }
+
+  increment = () => this.patch({ count: this.state.count + 1 });
+  decrement = () => this.patch({ count: this.state.count - 1 });
 }
 ```
+
+**State Update Methods:**
+- `emit(newState)` - Replace entire state
+- `update(fn)` - Update via function `(current) => next`
+- `patch(partial)` - Shallow merge partial state
 
 ## Next Steps
 

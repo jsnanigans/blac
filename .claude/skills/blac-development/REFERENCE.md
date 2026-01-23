@@ -69,34 +69,6 @@ this.update(state => ({
 }));
 ```
 
-## Vertex
-
-Extends StateContainer with event-driven architecture.
-
-### BaseEvent Interface
-```typescript
-interface BaseEvent {
-  readonly type: string;
-  readonly timestamp: number;
-  readonly source?: string;
-}
-```
-
-### Methods
-| Method | Description |
-|--------|-------------|
-| `add(event)` | Add event to be processed (public) |
-| `on(EventClass, handler)` | Register event handler (protected) |
-
-### Error Handling
-```typescript
-class MyVertex extends Vertex<State> {
-  protected onEventError(event: BaseEvent, error: Error): void {
-    console.error('Event error:', event, error);
-  }
-}
-```
-
 ## @blac() Decorator Options
 
 `BlacOptions` is a **union type** - only ONE option can be specified at a time:
@@ -195,7 +167,6 @@ interface BlacPlugin {
   onInstall?(context: PluginContext): void;
   onInstanceCreated?(instance, context): void;
   onStateChanged?(instance, previousState, currentState, callstack, context): void;
-  onEventAdded?(vertex, event, context): void;
   onInstanceDisposed?(instance, context): void;
   onUninstall?(): void;
 }
@@ -207,7 +178,6 @@ import { globalRegistry } from '@blac/core';
 
 globalRegistry.on('created', (container) => { });
 globalRegistry.on('stateChanged', (container, prevState, newState, callstack) => { });
-globalRegistry.on('eventAdded', (vertex, event) => { });
 globalRegistry.on('disposed', (container) => { });
 ```
 
@@ -288,7 +258,6 @@ Key files in the repository:
 - Core: `packages/blac/src/core/`
   - `StateContainer.ts` - Base class
   - `Cubit.ts` - Cubit implementation
-  - `Vertex.ts` - Vertex implementation
 - React: `packages/blac-react/src/`
   - `useBloc.ts` - Main hook
   - `useBlocActions.ts` - Actions-only hook

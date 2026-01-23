@@ -1,6 +1,6 @@
-import { Cubit } from '@blac/core';
-import { useBloc, useBlocActions } from '@blac/react';
-import React, { memo } from 'react';
+import { Cubit, borrow } from '@blac/core';
+import { useBloc } from '@blac/react';
+import React, { memo, useMemo } from 'react';
 
 /**
  * JS Framework Benchmark style test
@@ -171,7 +171,7 @@ interface RowProps {
 }
 
 const Row: React.FC<RowProps> = memo(({ item, isSelected }) => {
-  const bloc = useBlocActions(DemoBloc);
+  const bloc = useMemo(() => borrow(DemoBloc), []);
 
   return (
     <tr className={isSelected ? 'danger' : ''}>
@@ -209,7 +209,7 @@ const Button: React.FC<ButtonProps> = ({ id, cb, title }) => (
 );
 
 const Jumbotron: React.FC = () => {
-  const bloc = useBlocActions(DemoBloc);
+  const bloc = useMemo(() => borrow(DemoBloc), []);
 
   return (
     <div className="jumbotron">

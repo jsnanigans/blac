@@ -11,7 +11,7 @@ function useBlocActions<C extends StateContainerConstructor>(
 ): Instance
 ```
 
-**Returns:** The Cubit/Vertex instance (no state tuple).
+**Returns:** The Cubit instance (no state tuple).
 
 ## Why Use It
 

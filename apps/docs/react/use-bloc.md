@@ -13,7 +13,7 @@ function useBloc<C extends StateContainerConstructor>(
 
 **Returns:**
 - `state` - Current state (tracked via Proxy)
-- `instance` - The Cubit/Vertex instance
+- `instance` - The Cubit instance
 - `componentRef` - Internal reference (rarely needed)
 
 ## Basic Usage
@@ -37,7 +37,7 @@ function Counter() {
 
 ### `props`
 
-Pass constructor arguments to the Cubit/Vertex:
+Pass constructor arguments to the Cubit:
 
 ```tsx
 class UserCubit extends Cubit<UserState, { userId: string }> {

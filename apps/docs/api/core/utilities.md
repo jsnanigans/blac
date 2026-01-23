@@ -10,7 +10,7 @@ Helper functions, ID generation, and type utilities
 
 ## Quick Reference
 
-**Functions:** [`createIdGenerator`](#createidgenerator), [`generateId`](#generateid), [`generateIsolatedKey`](#generateisolatedkey), [`generateSimpleId`](#generatesimpleid), [`getStaticProp`](#getstaticprop), [`isExcludedFromDevTools`](#isexcludedfromdevtools), [`isIsolatedClass`](#isisolatedclass), [`isIsolatedKey`](#isisolatedkey), [`isKeepAliveClass`](#iskeepaliveclass), [`isStatelessClass`](#isstatelessclass)
+**Functions:** [`createIdGenerator`](#createidgenerator), [`generateId`](#generateid), [`generateIsolatedKey`](#generateisolatedkey), [`generateSimpleId`](#generatesimpleid), [`getStaticProp`](#getstaticprop), [`isExcludedFromDevTools`](#isexcludedfromdevtools), [`isIsolatedClass`](#isisolatedclass), [`isIsolatedKey`](#isisolatedkey), [`isKeepAliveClass`](#iskeepaliveclass)
 
 **Types:** [`BlacOptions`](#blacoptions), [`Brand`](#brand), [`BrandedId`](#brandedid), [`InstanceId`](#instanceid)
 
@@ -201,24 +201,6 @@ export declare function isKeepAliveClass<T extends StateContainerConstructor>(
 | `Type`    | `T`  | The class constructor to check |
 
 **Returns:** true if the class has `static keepAlive = true`
-
----
-
-### isStatelessClass
-
-Check if a class is a stateless container (StatelessCubit or StatelessVertex).
-
-```typescript
-export declare function isStatelessClass<T extends StateContainerConstructor>(
-  Type: T,
-): boolean;
-```
-
-| Parameter | Type | Description                    |
-| --------- | ---- | ------------------------------ |
-| `Type`    | `T`  | The class constructor to check |
-
-**Returns:** true if the class extends StatelessCubit or StatelessVertex
 
 ---
 

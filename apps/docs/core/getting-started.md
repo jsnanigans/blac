@@ -60,40 +60,6 @@ unsubscribe();
 CounterCubit.release();
 ```
 
-## Event-Driven Vertex
-
-Vertex uses events for state transitions. Use it when you need explicit event handling.
-
-```typescript
-import { Vertex } from '@blac/core';
-
-// Define events as discriminated union
-type CounterEvent =
-  | { type: 'increment'; amount: number }
-  | { type: 'decrement'; amount: number };
-
-// Create Vertex
-class CounterVertex extends Vertex<{ count: number }, CounterEvent> {
-  constructor() {
-    super({ count: 0 });
-
-    // TypeScript enforces exhaustive handling
-    this.createHandlers({
-      increment: (event, emit) => {
-        emit({ count: this.state.count + event.amount });
-      },
-      decrement: (event, emit) => {
-        emit({ count: this.state.count - event.amount });
-      },
-    });
-  }
-
-  // Public methods dispatch events
-  increment = (amount = 1) => this.add({ type: 'increment', amount });
-  decrement = (amount = 1) => this.add({ type: 'decrement', amount });
-}
-```
-
 ## State Must Be an Object
 
 State must always be an object, not a primitive:
@@ -117,5 +83,4 @@ class Counter extends Cubit<number> {
 ## Next Steps
 
 - [Cubit](/core/cubit) - Complete Cubit documentation
-- [Vertex](/core/vertex) - Event-driven state management
 - [React Integration](/react/getting-started) - Using BlaC with React

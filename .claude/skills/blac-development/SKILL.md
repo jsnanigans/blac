@@ -1,6 +1,6 @@
 ---
 name: blac-development
-description: Develop with BlaC state management library for React. Use when creating Cubits, Vertices, using useBloc/useBlocActions hooks, managing state containers, or implementing inter-bloc communication patterns.
+description: Develop with BlaC state management library for React. Use when creating Cubits, using useBloc/useBlocActions hooks, managing state containers, or implementing inter-bloc communication patterns.
 ---
 
 # BlaC Development Skill
@@ -42,39 +42,6 @@ class CounterCubit extends Cubit<{ count: number }> {
 - `emit(newState)` - Emit new state directly
 - `update(fn)` - Update with function `(current) => next`
 - `patch(partial)` - Shallow merge partial state (object state only)
-
-### Vertex - Event-Driven State Container
-
-Use Vertex for event-driven architectures with explicit state transitions.
-
-```typescript
-import { Vertex } from '@blac/core';
-
-// Define events as discriminated union
-type CounterEvent =
-  | { type: 'increment'; amount: number }
-  | { type: 'decrement' };
-
-class CounterVertex extends Vertex<{ count: number }, CounterEvent> {
-  constructor() {
-    super({ count: 0 });
-
-    // TypeScript enforces exhaustive handling - all event types must be handled
-    this.createHandlers({
-      increment: (event, emit) => {
-        emit({ count: this.state.count + event.amount });
-      },
-      decrement: (_, emit) => {
-        emit({ count: this.state.count - 1 });
-      },
-    });
-  }
-
-  // Convenience methods
-  increment = (amount = 1) => this.add({ type: 'increment', amount });
-  decrement = () => this.add({ type: 'decrement' });
-}
-```
 
 ### Class Configuration with `@blac()` Decorator
 

@@ -91,11 +91,6 @@ interface BlacPlugin {
     currentState: S,
     context: PluginContext,
   ): void;
-  onEventAdded?<E>(
-    vertex: Vertex<any, E>,
-    event: E,
-    context: PluginContext,
-  ): void;
   onInstanceDisposed?(
     instance: StateContainer<any>,
     context: PluginContext,

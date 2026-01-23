@@ -195,39 +195,37 @@ class NotificationCubit extends Cubit<{ unreadCounts: Map<string, number> }> {
 
 // === Per-Entity Instances ===
 
-type ChannelEvent =
-  | { type: 'receiveMessage'; message: Message }
-  | { type: 'markAsRead' };
+interface ChannelState {
+  messages: Message[];
+  channelId: string;
+}
 
-class ChannelBloc extends Vertex<ChannelState, ChannelEvent> {
+class ChannelCubit extends Cubit<ChannelState> {
   constructor(props: { channelId: string }) {
     super({ messages: [], channelId: props.channelId });
-
-    this.createHandlers({
-      // Pattern 1: Event handler borrowing
-      receiveMessage: (event, emit) => {
-        emit({ ...this.state, messages: [...this.state.messages, event.message] });
-
-        const notifications = borrow(NotificationCubit);
-        notifications.incrementUnread(props.channelId);
-      },
-      markAsRead: (_, emit) => {
-        const notifications = borrow(NotificationCubit);
-        notifications.clearUnread(this.state.channelId);
-        emit(this.state);
-      },
-    });
   }
+
+  // Pattern 1: Event handler borrowing
+  receiveMessage = (message: Message) => {
+    this.update((state) => ({
+      ...state,
+      messages: [...state.messages, message],
+    }));
+
+    const notifications = borrow(NotificationCubit);
+    notifications.incrementUnread(this.state.channelId);
+  };
+
+  markAsRead = () => {
+    const notifications = borrow(NotificationCubit);
+    notifications.clearUnread(this.state.channelId);
+  };
 
   // Pattern 2: Getter with auto-tracking
   get unreadCount() {
     const notifications = borrow(NotificationCubit);
     return notifications.state.unreadCounts.get(this.state.channelId) || 0;
   }
-
-  // Convenience methods
-  receiveMessage = (message: Message) => this.add({ type: 'receiveMessage', message });
-  markAsRead = () => this.add({ type: 'markAsRead' });
 }
 
 // === Components ===
@@ -239,9 +237,9 @@ function ChannelListItem({ channelId }) {
   return <div>#{channelId} {count > 0 && <Badge>{count}</Badge>}</div>;
 }
 
-// Channel view uses full ChannelBloc
+// Channel view uses full ChannelCubit
 function ChannelView({ channelId }) {
-  const [, bloc] = useBloc(ChannelBloc, {
+  const [, bloc] = useBloc(ChannelCubit, {
     instanceId: channelId,
     props: { channelId }
   });

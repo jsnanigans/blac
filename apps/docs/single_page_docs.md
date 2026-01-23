@@ -14,9 +14,9 @@ pnpm add @blac/core @blac/react
 
 The foundation for all state containers in BlaC. Provides state storage, subscriptions, and lifecycle management.
 
-**Purpose**: Used internally as a base class for the [[Cubit]] and [[Vertex]].
+**Purpose**: Used internally as a base class for the [[Cubit]].
 
-**Note:** Its not recommended to use the StateContainer directly; use a [[Cubit]] or a [[Vertex]], they both extend the [[StateContainer]]
+**Note:** Its not recommended to use the StateContainer directly; use a [[Cubit]], which extends the [[StateContainer]]
 
 ```typescript
 import { StateContainer } from '@blac/core';
@@ -243,146 +243,6 @@ class TodoCubit extends Cubit<TodoState> {
   }
 }
 ```
-
----
-
-### Vertex - Event-Driven State Container (Bloc Pattern)
-
-For event-driven architectures with explicit state transitions.
-
-**Purpose**: Use Vertex when you want event-driven state management with explicit event handling.
-
-```typescript
-import { Vertex } from '@blac/core';
-
-// Define events as discriminated union
-type CounterEvent =
-  | { type: 'increment'; amount: number }
-  | { type: 'decrement'; amount: number };
-
-// Create Vertex with event handlers
-class CounterVertex extends Vertex<{ count: number }, CounterEvent> {
-  constructor() {
-    super({ count: 0 });
-
-    // TypeScript enforces exhaustive handling - all event types must be handled
-    this.createHandlers({
-      increment: (event, emit) => {
-        emit({ count: this.state.count + event.amount });
-      },
-      decrement: (event, emit) => {
-        emit({ count: this.state.count - event.amount });
-      },
-    });
-  }
-
-  // ✅ IMPORTANT: Use arrow functions for React compatibility
-  increment = (amount = 1) => this.add({ type: 'increment', amount });
-  decrement = (amount = 1) => this.add({ type: 'decrement', amount });
-}
-```
-
-**Event Definition:**
-Events are defined as TypeScript discriminated unions for type safety and autocomplete:
-
-```typescript
-type MyEvent =
-  | { type: 'eventA'; payload: string }
-  | { type: 'eventB'; data: number };
-```
-
-**Methods:**
-
-- `add(event)` - Add event to be processed (public)
-- `createHandlers(map)` - Register all event handlers with exhaustive checking (protected)
-
-**Event Processing:**
-
-- Events are processed **synchronously**
-- If an event is added while processing, it's queued
-- Queued events are processed in order
-- Error handling via `onEventError` hook
-
-**Error Handling:**
-
-```typescript
-class MyVertex extends Vertex<State> {
-  protected onEventError(event: BaseEvent, error: Error): void {
-    // Handle event processing errors
-    console.error('Event error:', event, error);
-  }
-}
-```
-
----
-
-### StatelessCubit - Action-Only Container
-
-A Cubit without state management. Use for action-only logic like analytics, logging, or API calls.
-
-```typescript
-import { StatelessCubit } from '@blac/core';
-
-class AnalyticsService extends StatelessCubit {
-  trackPageView(page: string) {
-    analytics.track('page_view', { page });
-  }
-
-  trackClick(element: string) {
-    analytics.track('click', { element });
-  }
-}
-```
-
-**Characteristics:**
-
-- No `emit()`, `update()`, `patch()` methods (throws error)
-- No accessible `state` property (throws error)
-- Cannot be subscribed to (throws error)
-- Must use `useBlocActions` in React (not `useBloc`)
-
----
-
-### StatelessVertex - Event-Only Container
-
-An event-driven container without state. Handlers receive only the event (no `emit` function).
-
-```typescript
-import { StatelessVertex } from '@blac/core';
-
-type LogEvent =
-  | { type: 'info'; message: string }
-  | { type: 'error'; message: string; error: Error }
-  | { type: 'warn'; message: string };
-
-class LoggingVertex extends StatelessVertex<LogEvent> {
-  constructor() {
-    super();
-    this.createHandlers({
-      info: (event) => console.log('[INFO]', event.message),
-      error: (event) => console.error('[ERROR]', event.message, event.error),
-      warn: (event) => console.warn('[WARN]', event.message),
-    });
-  }
-
-  info = (message: string) => this.add({ type: 'info', message });
-  error = (message: string, error: Error) =>
-    this.add({ type: 'error', message, error });
-  warn = (message: string) => this.add({ type: 'warn', message });
-}
-```
-
-**React Usage:**
-
-```tsx
-const analytics = useBlocActions(AnalyticsService);
-const logger = useBlocActions(LoggingVertex);
-
-analytics.trackClick('submit-button');
-logger.info('Button clicked');
-```
-
-**⚠️ Warning:** Using `useBloc` with a stateless container throws an error. Always use `useBlocActions`.
 
 ---
 
@@ -763,34 +623,27 @@ class NotificationCubit extends Cubit<NotificationState> {
 }
 
 // Heavy channel state (created on-demand)
-type ChannelEvent = { type: 'receiveMessage'; message: Message };
-
-class ChannelBloc extends Vertex<ChannelState, ChannelEvent> {
+class ChannelCubit extends Cubit<ChannelState> {
   constructor(props: { channelId: string }) {
-    super({ messages: [], typingUsers: new Set() });
-
-    this.createHandlers({
-      receiveMessage: (event, emit) => {
-        emit({
-          ...this.state,
-          messages: [...this.state.messages, event.message]
-        });
-
-        // Update notification count (borrowing, not owning)
-        const notifications = borrow(NotificationCubit);
-        notifications.incrementUnread(props.channelId);
-      },
-    });
+    super({ messages: [], channelId: props.channelId, typingUsers: new Set() });
   }
+
+  receiveMessage = (message: Message) => {
+    this.update((state) => ({
+      ...state,
+      messages: [...state.messages, message],
+    }));
+
+    // Update notification count (borrowing, not owning)
+    const notifications = borrow(NotificationCubit);
+    notifications.incrementUnread(this.state.channelId);
+  };
 
   // Computed getter - tracks message state
   get unreadCount(): number {
     const notifications = borrow(NotificationCubit);
-    return notifications.state.unreadCounts.get(this.state.channel.id) || 0;
+    return notifications.state.unreadCounts.get(this.state.channelId) || 0;
   }
-
-  // Convenience method
-  receiveMessage = (message: Message) => this.add({ type: 'receiveMessage', message });
 }
 
 // Sidebar shows unread counts WITHOUT creating ChannelBloc instances
@@ -1112,55 +965,44 @@ class AppCubit extends Cubit<AppState> {
 
 ---
 
-### Pattern 2: Event Handler-Based Communication
+### Pattern 2: Method-Based Communication
 
-Access other blocs in event handlers using `borrow()` or `borrowSafe()`. This is the most common pattern for bloc-to-bloc communication.
+Access other blocs in methods using `borrow()` or `borrowSafe()`. This is the most common pattern for bloc-to-bloc communication.
 
 ```typescript
 import { borrow, borrowSafe } from '@blac/core';
 
-type ChannelEvent =
-  | { type: 'receiveMessage'; message: Message }
-  | { type: 'markAsRead' };
-
-class ChannelBloc extends Vertex<ChannelState, ChannelEvent> {
+class ChannelCubit extends Cubit<ChannelState> {
   constructor(props: { channelId: string }) {
     super({ messages: [], channelId: props.channelId });
-
-    this.createHandlers({
-      receiveMessage: (event, emit) => {
-        // Add message to state
-        emit({
-          ...this.state,
-          messages: [...this.state.messages, event.message],
-        });
-
-        // ✅ Borrow NotificationCubit to update unread count
-        const notifications = borrowSafe(NotificationCubit);
-        if (!notifications.error) {
-          notifications.instance.incrementUnread(this.state.channelId);
-        }
-      },
-      markAsRead: (_, emit) => {
-        // ✅ Use borrow() when you know instance exists
-        const notifications = borrow(NotificationCubit);
-        notifications.clearUnread(this.state.channelId);
-        emit(this.state);
-      },
-    });
   }
 
-  // Convenience methods
-  receiveMessage = (message: Message) =>
-    this.add({ type: 'receiveMessage', message });
-  markAsRead = () => this.add({ type: 'markAsRead' });
+  receiveMessage = (message: Message) => {
+    // Add message to state
+    this.update((state) => ({
+      ...state,
+      messages: [...state.messages, message],
+    }));
+
+    // ✅ Borrow NotificationCubit to update unread count
+    const notifications = borrowSafe(NotificationCubit);
+    if (!notifications.error) {
+      notifications.instance.incrementUnread(this.state.channelId);
+    }
+  };
+
+  markAsRead = () => {
+    // ✅ Use borrow() when you know instance exists
+    const notifications = borrow(NotificationCubit);
+    notifications.clearUnread(this.state.channelId);
+  };
 }
 ```
 
 **When to use:**
 
 - ✅ One-off interactions between blocs
-- ✅ Event handling that triggers side effects
+- ✅ Method calls that trigger side effects
 - ✅ You don't want to create ownership (no ref count increment)
 
 **Benefits:**
@@ -1374,43 +1216,33 @@ class ContactsCubit extends Cubit<ContactsState> {
 
 // === Per-Entity Instances ===
 
-type ChannelEvent =
-  | { type: 'receiveMessage'; message: Message }
-  | { type: 'markAsRead' };
-
-class ChannelBloc extends Vertex<ChannelState, ChannelEvent> {
+class ChannelCubit extends Cubit<ChannelState> {
   // One instance per channel (created on-demand)
   constructor(props: { channelId: string }) {
-    super({ messages: [] });
-
-    this.createHandlers({
-      receiveMessage: (event, emit) => {
-        // Pattern 2: Event handler communication
-        const notifications = borrow(NotificationCubit);
-        notifications.incrementUnread(props.channelId);
-
-        emit({
-          ...this.state,
-          messages: [...this.state.messages, event.message]
-        });
-      },
-      markAsRead: (_, emit) => {
-        const notifications = borrow(NotificationCubit);
-        notifications.clearUnread(this.state.channelId);
-        emit(this.state);
-      },
-    });
+    super({ messages: [], channelId: props.channelId });
   }
+
+  receiveMessage = (message: Message) => {
+    // Pattern 2: Method-based communication
+    const notifications = borrow(NotificationCubit);
+    notifications.incrementUnread(this.state.channelId);
+
+    this.update((state) => ({
+      ...state,
+      messages: [...state.messages, message],
+    }));
+  };
+
+  markAsRead = () => {
+    const notifications = borrow(NotificationCubit);
+    notifications.clearUnread(this.state.channelId);
+  };
 
   // Pattern 3: Getter-based (automatic tracking)
   get unreadCount(): number {
     const notifications = borrow(NotificationCubit);
     return notifications.state.unreadCounts.get(this.state.channelId) || 0;
   }
-
-  // Convenience methods
-  receiveMessage = (message: Message) => this.add({ type: 'receiveMessage', message });
-  markAsRead = () => this.add({ type: 'markAsRead' });
 }
 
 class UserCubit extends Cubit<User> {
@@ -1452,7 +1284,7 @@ function ChannelListItem({ channelId }: Props) {
 
 // Channel view: Accesses full channel state
 function ChannelView({ channelId }: Props) {
-  const [channel, bloc] = useBloc(ChannelBloc, {
+  const [channel, cubit] = useBloc(ChannelCubit, {
     instanceId: channelId,
     props: { channelId }
   });
@@ -1462,7 +1294,7 @@ function ChannelView({ channelId }: Props) {
     <div>
       <h2>Messages</h2>
       {channel.messages.map(msg => <Message key={msg.id} {...msg} />)}
-      {bloc.unreadCount > 0 && <div>{bloc.unreadCount} unread</div>}
+      {cubit.unreadCount > 0 && <div>{cubit.unreadCount} unread</div>}
     </div>
   );
 }
@@ -1471,7 +1303,7 @@ function ChannelView({ channelId }: Props) {
 **Architecture Benefits:**
 
 - ✅ Lightweight NotificationCubit is always alive (small memory footprint)
-- ✅ Heavy ChannelBloc instances created only when viewing channels
+- ✅ Heavy ChannelCubit instances created only when viewing channels
 - ✅ Sidebar shows unread counts without loading all channels
 - ✅ Automatic cross-bloc re-rendering via getters
 - ✅ Clear ownership and lifecycle management
@@ -1567,11 +1399,6 @@ globalRegistry.on(
   },
 );
 
-// Listen to events (Vertex only)
-globalRegistry.on('eventAdded', (vertex, event) => {
-  console.log('Event added:', event);
-});
-
 // Listen to disposal
 globalRegistry.on('disposed', (container) => {
   console.log('Container disposed:', container.name);
@@ -1585,7 +1412,6 @@ unsubscribe();
 
 - `'created'` - Container instantiated
 - `'stateChanged'` - State updated (after emit), includes optional callstack
-- `'eventAdded'` - Event added to Vertex (before processing)
 - `'disposed'` - Container disposed
 
 ### BlacPlugin Interface
@@ -1609,10 +1435,6 @@ const myPlugin: BlacPlugin = {
 
   onStateChanged(instance, previousState, currentState, callstack, context) {
     console.log('State changed');
-  },
-
-  onEventAdded(vertex, event, context) {
-    console.log('Event added:', event);
   },
 
   onInstanceDisposed(instance, context) {
@@ -1838,7 +1660,7 @@ if (isDevMode()) {
 
 ### ✅ DO: Use Arrow Functions
 
-Always use arrow functions for methods in Cubit/Vertex classes:
+Always use arrow functions for methods in Cubit classes:
 
 ```typescript
 // ✅ DO: Arrow functions for correct 'this' binding
@@ -2093,73 +1915,6 @@ function UserProfile({ userId }: { userId: string }) {
 }
 ```
 
-### Event-Driven Authentication
-
-```typescript
-// Define events as discriminated union
-type AuthEvent =
-  | { type: 'login'; email: string; password: string }
-  | { type: 'logout' };
-
-// State
-interface AuthState {
-  user: User | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  error: string | null;
-}
-
-// Vertex
-@blac({ keepAlive: true })
-class AuthVertex extends Vertex<AuthState, AuthEvent> {
-  constructor() {
-    super({
-      user: null,
-      isAuthenticated: false,
-      isLoading: false,
-      error: null,
-    });
-
-    this.createHandlers({
-      login: (event, emit) => {
-        emit({ ...this.state, isLoading: true, error: null });
-
-        // Simulate sync auth (in real app, async work would be done before dispatching event)
-        if (
-          event.email === 'user@example.com' &&
-          event.password === 'password'
-        ) {
-          emit({
-            user: { id: '123', name: 'Test User', email: 'user@example.com' },
-            isAuthenticated: true,
-            isLoading: false,
-            error: null,
-          });
-        } else {
-          emit({
-            ...this.state,
-            isLoading: false,
-            error: 'Invalid credentials',
-          });
-        }
-      },
-      logout: (_, emit) => {
-        emit({
-          user: null,
-          isAuthenticated: false,
-          isLoading: false,
-          error: null,
-        });
-      },
-    });
-  }
-
-  login = (email: string, password: string) =>
-    this.add({ type: 'login', email, password });
-  logout = () => this.add({ type: 'logout' });
-}
-```
-
 ---
 
 ## TypeScript Support
@@ -2266,24 +2021,6 @@ function createBloc<TBloc extends StateContainer<any>>(
 - `update(fn)` - Update with function (public)
 - `patch(partial)` - Shallow merge (public, object state only)
 
-**Vertex:**
-
-- All StateContainer methods
-- `add(event)` - Add event (public)
-- `createHandlers(map)` - Register all handlers (protected)
-- `onEventError(event, error)` - Error hook (protected)
-
-**StatelessCubit:**
-
-- Action-only container, no state
-- Use with `useBlocActions` only
-
-**StatelessVertex:**
-
-- Event-only container, no state
-- Handlers receive event only (no emit)
-- Use with `useBlocActions` only
-
 ### Instance Management Functions
 
 **Instance Access (import from `@blac/core`):**
@@ -2365,7 +2102,7 @@ interface SystemEventPayloads<S, P> {
 ### Lifecycle Events (Registry)
 
 ```typescript
-type LifecycleEvent = 'created' | 'stateChanged' | 'eventAdded' | 'disposed';
+type LifecycleEvent = 'created' | 'stateChanged' | 'disposed';
 ```
 
 ### Log Levels
