@@ -1,4 +1,4 @@
-import type { BlacPlugin, StateContainer, Vertex } from '@blac/core';
+import type { BlacPlugin, StateContainer } from '@blac/core';
 import { DevToolsBridge } from '../bridge/DevToolsBridge';
 import { DevToolsMessageType } from '../protocol/messages';
 import { safeSerialize } from '../serialization/serialize';
@@ -79,33 +79,6 @@ export class DevToolsPlugin implements BlacPlugin {
         state: result.success ? result.data : { error: result.error },
         timestamp: Date.now(),
       },
-    });
-  }
-
-  onEventAdded(bloc: Vertex<any, any>, event: any): void {
-    if (!this.enabled) return;
-
-    const eventResult = safeSerialize(event);
-    const serializedEvent: SerializedEvent = {
-      id: this.generateEventId(),
-      blocId: bloc.instanceId,
-      blocName: bloc.name,
-      type: event.constructor?.name || 'UnknownEvent',
-      payload: eventResult.success
-        ? eventResult.data
-        : { error: eventResult.error },
-      timestamp: Date.now(),
-    };
-
-    this.eventHistory.push(serializedEvent);
-
-    if (this.eventHistory.length > this.maxEvents) {
-      this.eventHistory.shift();
-    }
-
-    this.bridge.send({
-      type: DevToolsMessageType.EVENT_DISPATCHED,
-      payload: serializedEvent,
     });
   }
 

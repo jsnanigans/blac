@@ -2,9 +2,6 @@ export * from './core/StateContainer';
 export type { SystemEvent, SystemEventPayloads } from './core/StateContainer';
 export * from './core/StateContainerRegistry';
 export * from './core/Cubit';
-export * from './core/Vertex';
-export * from './core/StatelessCubit';
-export * from './core/StatelessVertex';
 
 export {
   globalRegistry,
@@ -29,19 +26,7 @@ export * from './tracking';
 export * from './adapter';
 
 export type { Brand, BrandedId, InstanceId } from './types/branded';
-export type {
-  DiscriminatedEvent,
-  EventWithMetadata,
-  EventType,
-  ExtractEvent,
-  EventHandlerMap,
-} from './types/events';
 export * from './types/utilities';
-export type {
-  IsStatelessContainer,
-  StatefulContainerOnly,
-  ExtractStatefulState,
-} from './types/utilities';
 
 export {
   createLogger,
@@ -84,7 +69,6 @@ export {
   isIsolatedClass,
   isKeepAliveClass,
   isExcludedFromDevTools,
-  isStatelessClass,
 } from './utils/static-props';
 
 export { blac, type BlacOptions } from './decorators';

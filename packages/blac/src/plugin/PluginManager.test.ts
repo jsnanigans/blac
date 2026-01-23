@@ -5,7 +5,6 @@ import {
   globalRegistry,
 } from '../core/StateContainerRegistry';
 import { Cubit } from '../core/Cubit';
-import { Vertex } from '../core/Vertex';
 import type { BlacPlugin } from './BlacPlugin';
 import { acquire, release } from '../registry';
 
@@ -16,24 +15,6 @@ class CounterCubit extends Cubit<{ count: number }, number> {
 
   increment = () => {
     this.emit({ count: this.state.count + 1 });
-  };
-}
-
-type CounterEvent =
-  | { type: 'increment'; timestamp: number }
-  | { type: 'decrement'; timestamp: number };
-
-class CounterVertex extends Vertex<{ count: number }, CounterEvent, number> {
-  constructor(prop: number = 0) {
-    super({ count: prop });
-  }
-
-  protected onEvent = (event: CounterEvent) => {
-    if (event.type === 'increment') {
-      this.emit({ count: this.state.count + 1 });
-    } else {
-      this.emit({ count: this.state.count - 1 });
-    }
   };
 }
 
@@ -349,28 +330,6 @@ describe('PluginManager', () => {
       });
     });
 
-    describe('onEventAdded', () => {
-      it('should call onEventAdded when event is added', () => {
-        const onEventAdded = vi.fn();
-        const plugin: BlacPlugin = {
-          name: 'test-plugin',
-          version: '1.0.0',
-          onEventAdded,
-        };
-
-        manager.install(plugin);
-
-        const counter = acquire(CounterVertex, 'main', { props: 0 });
-        counter.add({ type: 'increment', timestamp: Date.now() });
-
-        expect(onEventAdded).toHaveBeenCalledWith(
-          counter,
-          expect.objectContaining({ type: 'increment' }),
-          expect.any(Object),
-        );
-      });
-    });
-
     describe('onInstanceDisposed', () => {
       it('should call onInstanceDisposed when instance is disposed', () => {
         const onInstanceDisposed = vi.fn();
@@ -489,12 +448,11 @@ describe('PluginManager', () => {
       manager.install(plugin);
 
       acquire(CounterCubit, 'types-test-1', { props: 0 });
-      acquire(CounterVertex, 'types-test-2', { props: 0 });
+      acquire(CounterCubit, 'types-test-2', { props: 0 });
 
       const types = capturedContext.getAllTypes();
-      expect(types.length).toBeGreaterThanOrEqual(2);
+      expect(types.length).toBeGreaterThanOrEqual(1);
       expect(types).toContain(CounterCubit);
-      expect(types).toContain(CounterVertex);
     });
 
     it('should provide getStats', () => {

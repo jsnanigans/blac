@@ -85,18 +85,6 @@ export class GroupedFormatter {
     this.groupEnd();
   }
 
-  logEventAdded(
-    className: string,
-    instanceId: string,
-    eventType: string,
-    event: unknown,
-  ): void {
-    const id = this.formatInstanceId(className, instanceId);
-    this.group(`${this.prefix} ${id} event: ${eventType}`);
-    this.logger.log('Event:', event);
-    this.groupEnd();
-  }
-
   logWarning(message: string, details?: Record<string, unknown>): void {
     if (details) {
       this.group(`${this.prefix} ⚠️ ${message}`, false);

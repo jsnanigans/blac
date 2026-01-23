@@ -172,11 +172,6 @@ export class PluginManager {
       },
     );
 
-    // Event added
-    this.registry.on('eventAdded', (vertex, event) => {
-      this.notifyPlugins('onEventAdded', vertex, event);
-    });
-
     // Instance disposed
     this.registry.on('disposed', (instance) => {
       this.notifyPlugins('onInstanceDisposed', instance);

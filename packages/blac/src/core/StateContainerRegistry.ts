@@ -1,5 +1,4 @@
 import type { StateContainer, StateContainerConfig } from './StateContainer';
-import type { Vertex } from './Vertex';
 import { createPluginManager } from '../plugin/PluginManager';
 import { getGetterExecutionContext } from '../tracking/getter-tracker';
 import { BLAC_DEFAULTS, BLAC_ERROR_PREFIX } from '../constants';
@@ -32,11 +31,7 @@ export interface InstanceEntry<T = any> {
 /**
  * Lifecycle events emitted by the registry
  */
-export type LifecycleEvent =
-  | 'created'
-  | 'stateChanged'
-  | 'eventAdded'
-  | 'disposed';
+export type LifecycleEvent = 'created' | 'stateChanged' | 'disposed';
 
 /**
  * Listener function type for each lifecycle event
@@ -51,11 +46,9 @@ export type LifecycleListener<E extends LifecycleEvent> = E extends 'created'
         currentState: any,
         callstack?: string,
       ) => void
-    : E extends 'eventAdded'
-      ? (container: Vertex<any, any>, event: any) => void
-      : E extends 'disposed'
-        ? (container: StateContainer<any>) => void
-        : never;
+    : E extends 'disposed'
+      ? (container: StateContainer<any>) => void
+      : never;
 
 /**
  * Central registry for managing StateContainer instances.
@@ -516,7 +509,7 @@ export class StateContainerRegistry {
 
   /**
    * Emit lifecycle event to all listeners
-   * @internal - Called by StateContainer/Vertex lifecycle methods
+   * @internal - Called by StateContainer lifecycle methods
    */
   emit(event: LifecycleEvent, ...args: any[]): void {
     const listeners = this.listeners.get(event);

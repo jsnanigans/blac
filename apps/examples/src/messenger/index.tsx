@@ -4,7 +4,6 @@
  * A Slack-like messenger that demonstrates:
  * - Instance management (shared vs isolated instances)
  * - Fine-grained dependency tracking
- * - Event-driven architecture with Vertex
  * - WebSocket-like real-time updates
  * - Bloc-to-bloc communication patterns
  *

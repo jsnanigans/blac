@@ -8,7 +8,6 @@ import {
 import {
   type ExtractState,
   type AdapterState,
-  type IsStatelessContainer,
   ExternalDepsManager,
   autoTrackSubscribe,
   manualDepsSubscribe,
@@ -21,7 +20,6 @@ import {
   noTrackInit,
   disableGetterTracking,
   isIsolatedClass,
-  isStatelessClass,
   StateContainerConstructor,
   InstanceState,
   acquire,
@@ -52,13 +50,6 @@ function determineTrackingMode<TBloc extends StateContainerConstructor>(
 }
 
 /**
- * Type that produces a TypeScript error when a stateless container is used.
- * Evaluates to `never` for stateless containers, causing a type mismatch.
- */
-type StatefulContainer<T extends StateContainerConstructor> =
-  IsStatelessContainer<T> extends true ? never : T;
-
-/**
  * React hook that connects a component to a state container with automatic re-render on state changes.
  *
  * Supports three tracking modes:
@@ -66,11 +57,8 @@ type StatefulContainer<T extends StateContainerConstructor> =
  * - **Manual dependencies**: Explicit dependency array like useEffect
  * - **No tracking**: Returns full state without optimization
  *
- * **Note:** This hook does NOT support stateless containers (StatelessCubit, StatelessVertex).
- * Use `useBlocActions()` instead for stateless containers.
- *
  * @template T - The state container constructor type (inferred from BlocClass)
- * @param BlocClass - The state container class to connect to (must not be stateless)
+ * @param BlocClass - The state container class to connect to
  * @param options - Configuration options for tracking mode and instance management
  * @returns Tuple with [state, bloc instance, ref]
  *
@@ -96,14 +84,13 @@ type StatefulContainer<T extends StateContainerConstructor> =
 export function useBloc<
   T extends StateContainerConstructor = StateContainerConstructor,
 >(
-  BlocClass: StatefulContainer<T>,
+  BlocClass: T,
   options?: UseBlocOptions<T>,
 ): UseBlocReturn<T, ExtractState<T>> {
   type TBloc = InstanceState<T>;
 
   const componentRef = useRef<ComponentRef>({});
   const initialPropsRef = useRef(options?.props);
-  const isStateless = isStatelessClass(BlocClass);
   const isIsolated = isIsolatedClass(BlocClass);
 
   const [bloc, subscribe, getSnapshot, instanceKey, adapterState, rawInstance] =
@@ -113,29 +100,10 @@ export function useBloc<
         (callback: () => void) => () => void,
         () => ExtractState<T>,
         string | undefined,
-        AdapterState<T> | null,
+        AdapterState<T>,
         TBloc,
       ]
     >(() => {
-      // Runtime check for stateless containers - log error but don't crash
-      if (isStateless) {
-        console.error(
-          `[BlaC] useBloc() does not support stateless containers. ` +
-            `"${BlocClass.name}" is a StatelessCubit or StatelessVertex. ` +
-            `Use useBlocActions() instead for stateless containers.`,
-        );
-        const instance = acquire(BlocClass, 'default') as TBloc;
-        // Return minimal working functions that won't subscribe to anything
-        return [
-          instance,
-          () => () => {},
-          () => ({}) as ExtractState<T>,
-          undefined,
-          null,
-          instance,
-        ];
-      }
-
       const instanceKey = generateInstanceKey(
         componentRef.current,
         isIsolated,
@@ -183,7 +151,7 @@ export function useBloc<
         adapterState,
         instance,
       ];
-    }, [BlocClass, isStateless, isIsolated, options?.instanceId]);
+    }, [BlocClass, isIsolated, options?.instanceId]);
 
   const state = useSyncExternalStore(subscribe, getSnapshot);
 
@@ -192,14 +160,12 @@ export function useBloc<
   const externalDepsManager = useRef(new ExternalDepsManager());
 
   useEffect(() => {
-    if (isStateless) return;
     if (options?.props !== initialPropsRef.current) {
       rawInstance.updateProps(options?.props);
     }
-  }, [options?.props, rawInstance, isStateless]);
+  }, [options?.props, rawInstance]);
 
   useEffect(() => {
-    if (isStateless || !adapterState) return;
     disableGetterTracking(adapterState, rawInstance);
     externalDepsManager.current.updateSubscriptions(
       adapterState.getterState,
@@ -209,7 +175,6 @@ export function useBloc<
   });
 
   useEffect(() => {
-    if (isStateless) return;
 
     if (options?.onMount) {
       options.onMount(bloc as InstanceType<T>);

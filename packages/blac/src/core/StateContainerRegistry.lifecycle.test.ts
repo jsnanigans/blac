@@ -5,7 +5,6 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { StateContainer } from './StateContainer';
-import { Vertex } from './Vertex';
 import {
   StateContainerRegistry,
   globalRegistry,
@@ -25,25 +24,6 @@ class TestCubit extends StateContainer<{ value: number }> {
 
   setValue = (value: number) => {
     this.update(() => ({ value }));
-  };
-}
-
-// Test event as discriminated union
-type TestEvent = { type: 'test'; value: number };
-
-class TestVertex extends Vertex<{ value: number }, TestEvent> {
-  constructor() {
-    super({ value: 0 });
-
-    this.createHandlers({
-      test: (event, emit) => {
-        emit({ value: this.state.value + event.value });
-      },
-    });
-  }
-
-  addValue = (value: number) => {
-    this.add({ type: 'test', value });
   };
 }
 
@@ -80,23 +60,6 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
         { value: 0 },
         { value: 1 },
         expect.any(String),
-      );
-    });
-
-    it('should subscribe to eventAdded events', () => {
-      const listener = vi.fn();
-      globalRegistry.on('eventAdded', listener);
-
-      const vertex = new TestVertex();
-      vertex.addValue(5);
-
-      expect(listener).toHaveBeenCalledTimes(1);
-      expect(listener).toHaveBeenCalledWith(
-        vertex,
-        expect.objectContaining({
-          value: 5,
-          type: 'test',
-        }),
       );
     });
 
@@ -238,21 +201,6 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       );
     });
 
-    it('should emit eventAdded before event processing', () => {
-      const eventAddedListener = vi.fn();
-      const stateChangedListener = vi.fn();
-
-      globalRegistry.on('eventAdded', eventAddedListener);
-      globalRegistry.on('stateChanged', stateChangedListener);
-
-      const vertex = new TestVertex();
-      vertex.addValue(5);
-
-      // eventAdded should be called before stateChanged
-      expect(eventAddedListener).toHaveBeenCalledTimes(1);
-      expect(stateChangedListener).toHaveBeenCalledTimes(1);
-    });
-
     it('should emit disposed after cleanup', () => {
       const listener = vi.fn();
       globalRegistry.on('disposed', listener);
@@ -371,29 +319,6 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       expect(logs[2]).toMatch(/\[DISPOSED\] TestCubit/);
     });
 
-    it('should support analytics plugin pattern', () => {
-      const events: any[] = [];
-
-      // Simulate analytics plugin
-      globalRegistry.on('eventAdded', (container, event) => {
-        events.push({
-          containerName: container.name,
-          eventType: event.type,
-          timestamp: event.timestamp,
-        });
-      });
-
-      const vertex = new TestVertex();
-      vertex.addValue(5);
-      vertex.addValue(10);
-
-      expect(events).toHaveLength(2);
-      expect(events[0]).toMatchObject({
-        containerName: 'TestVertex',
-        eventType: 'test',
-      });
-    });
-
     it('should support time-travel debugging plugin pattern', () => {
       const history: Array<{ state: any; timestamp: number }> = [];
       let _currentIndex = -1;
@@ -424,7 +349,6 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
     it('should support performance monitoring plugin pattern', () => {
       const metrics = {
         stateChanges: 0,
-        eventsProcessed: 0,
         averageStateChangeTime: 0,
       };
 
@@ -441,23 +365,13 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
           metrics.stateChanges;
       });
 
-      globalRegistry.on('eventAdded', () => {
-        metrics.eventsProcessed++;
-      });
-
       const bloc = new TestCubit(0);
       startTimes.set(bloc, Date.now());
 
       bloc.increment();
       bloc.increment();
 
-      const vertex = new TestVertex();
-      startTimes.set(vertex, Date.now());
-
-      vertex.addValue(5);
-
-      expect(metrics.stateChanges).toBe(3);
-      expect(metrics.eventsProcessed).toBe(1);
+      expect(metrics.stateChanges).toBe(2);
     });
   });
 
@@ -500,12 +414,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
 
   describe('API Stability Tests', () => {
     it('should maintain consistent event names', () => {
-      const events: LifecycleEvent[] = [
-        'created',
-        'stateChanged',
-        'eventAdded',
-        'disposed',
-      ];
+      const events: LifecycleEvent[] = ['created', 'stateChanged', 'disposed'];
 
       // Ensure all events can be subscribed to
       events.forEach((event) => {
@@ -528,12 +437,6 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
         expect(container).toBeDefined();
         expect(prev).toBeDefined();
         expect(next).toBeDefined();
-      });
-
-      // EventAdded listener
-      globalRegistry.on('eventAdded', (container, event) => {
-        expect(container).toBeDefined();
-        expect(event).toBeDefined();
       });
 
       // Disposed listener

@@ -26,7 +26,6 @@ export function captureStackTrace(): string {
       line.includes('StateContainer.emit') ||
       line.includes('StateContainer.update') ||
       line.includes('Cubit.patch') ||
-      line.includes('Vertex.') ||
       line.includes('captureStackTrace')
     ) {
       return false;

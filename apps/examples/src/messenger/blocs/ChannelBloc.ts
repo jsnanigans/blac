@@ -1,4 +1,4 @@
-import { Vertex, borrowSafe, borrow, acquire } from '@blac/core';
+import { Cubit, borrowSafe, borrow, acquire } from '@blac/core';
 import type { Message, Channel } from '../types';
 import { persistenceService } from '../services/PersistenceService';
 import { NotificationCubit } from './NotificationCubit';
@@ -6,19 +6,6 @@ import { UserCubit } from './UserCubit';
 import { CURRENT_USER_ID, MOCK_USERS } from '../mockData';
 import { ContactsCubit } from './ContactsCubit';
 import { webSocket } from '../services/WebSocketMock';
-
-// Events as discriminated union
-export type ChannelEvent =
-  | { type: 'sendMessage'; userId: string }
-  | { type: 'updateDraftMessage'; draftText: string }
-  | { type: 'receiveMessage'; message: Message }
-  | { type: 'userTyping'; userId: string; isTyping: boolean }
-  | { type: 'markAsRead' }
-  | {
-      type: 'updateMessageStatus';
-      messageId: string;
-      status: Message['status'];
-    };
 
 export interface ChannelState {
   channel: Channel;
@@ -36,11 +23,7 @@ export interface ChannelState {
  * the same channel instance using instanceId. Each channel is completely
  * independent with its own state and lifecycle.
  */
-export class ChannelBloc extends Vertex<
-  ChannelState,
-  ChannelEvent,
-  { channelId: string }
-> {
+export class ChannelBloc extends Cubit<ChannelState, { channelId: string }> {
   /**
    * Ensure UserCubit exists for a given user (lazy creation)
    * This is called when messages are received to ensure we can render user info
@@ -79,100 +62,6 @@ export class ChannelBloc extends Vertex<
       draftMessage: '',
     });
 
-    // Register all event handlers with exhaustive type checking
-    this.createHandlers({
-      sendMessage: (event, emit) => {
-        const draft = this.state.draftMessage?.trim() || '';
-        if (draft.length === 0) return; // Don't send empty messages
-
-        const newMessage: Message = {
-          id: Date.now().toString(),
-          channelId: this.state.channel.id,
-          userId: event.userId,
-          text: this.state.draftMessage.trim(),
-          timestamp: Date.now(),
-          status: 'sent',
-        };
-
-        emit({
-          ...this.state,
-          messages: [...this.state.messages, newMessage],
-          draftMessage: '',
-        });
-
-        // Send to WebSocket mock
-        webSocket.send({
-          type: 'send_message',
-          channelId: this.state.channel.id,
-          userId: event.userId,
-          payload: newMessage,
-        });
-      },
-
-      receiveMessage: (event, emit) => {
-        // Check if message already exists (avoid duplicates)
-        const exists = this.state.messages.some(
-          (m) => m.id === event.message.id,
-        );
-        if (exists) return;
-
-        // Ensure UserCubit exists for the message sender (lazy creation)
-        this.ensureUserCubit(event.message.userId);
-
-        emit({
-          ...this.state,
-          messages: [...this.state.messages, event.message],
-        });
-
-        // Update notification cubit with unread count
-        const notificationResult = borrowSafe(NotificationCubit);
-        if (!notificationResult.error) {
-          notificationResult.instance.incrementUnread(this.state.channel.id);
-        }
-      },
-
-      userTyping: (event, emit) => {
-        const newTypingUsers = new Set(this.state.typingUsers);
-
-        if (event.isTyping) {
-          newTypingUsers.add(event.userId);
-        } else {
-          newTypingUsers.delete(event.userId);
-        }
-
-        emit({
-          ...this.state,
-          typingUsers: newTypingUsers,
-        });
-      },
-
-      markAsRead: (_, _emit) => {
-        // Clear unread count in NotificationCubit
-        const notificationResult = borrowSafe(NotificationCubit);
-        if (!notificationResult.error) {
-          notificationResult.instance.clearUnread(this.state.channel.id);
-        }
-      },
-
-      updateMessageStatus: (event, emit) => {
-        const messages = this.state.messages.map((msg) =>
-          msg.id === event.messageId ? { ...msg, status: event.status } : msg,
-        );
-
-        emit({
-          ...this.state,
-          messages,
-        });
-      },
-
-      updateDraftMessage: (event, emit) => {
-        emit({
-          ...this.state,
-          draftMessage: event.draftText,
-        });
-      },
-    });
-
     // Setup dispose handler
     this.setupDispose();
   }
@@ -202,28 +91,93 @@ export class ChannelBloc extends Vertex<
     return this.state.channel || null;
   }
 
-  // Convenience methods for dispatching events
+  // Action methods
   sendMessage = (userId: string) => {
-    this.add({ type: 'sendMessage', userId });
+    const draft = this.state.draftMessage?.trim() || '';
+    if (draft.length === 0) return; // Don't send empty messages
+
+    const newMessage: Message = {
+      id: Date.now().toString(),
+      channelId: this.state.channel.id,
+      userId: userId,
+      text: this.state.draftMessage.trim(),
+      timestamp: Date.now(),
+      status: 'sent',
+    };
+
+    this.emit({
+      ...this.state,
+      messages: [...this.state.messages, newMessage],
+      draftMessage: '',
+    });
+
+    // Send to WebSocket mock
+    webSocket.send({
+      type: 'send_message',
+      channelId: this.state.channel.id,
+      userId: userId,
+      payload: newMessage,
+    });
   };
 
   updateDraftMessage = (draftText: string) => {
-    this.add({ type: 'updateDraftMessage', draftText });
+    this.emit({
+      ...this.state,
+      draftMessage: draftText,
+    });
   };
 
   receiveMessage = (message: Message) => {
-    this.add({ type: 'receiveMessage', message });
+    // Check if message already exists (avoid duplicates)
+    const exists = this.state.messages.some((m) => m.id === message.id);
+    if (exists) return;
+
+    // Ensure UserCubit exists for the message sender (lazy creation)
+    this.ensureUserCubit(message.userId);
+
+    this.emit({
+      ...this.state,
+      messages: [...this.state.messages, message],
+    });
+
+    // Update notification cubit with unread count
+    const notificationResult = borrowSafe(NotificationCubit);
+    if (!notificationResult.error) {
+      notificationResult.instance.incrementUnread(this.state.channel.id);
+    }
   };
 
   userTyping = (userId: string, isTyping: boolean) => {
-    this.add({ type: 'userTyping', userId, isTyping });
+    const newTypingUsers = new Set(this.state.typingUsers);
+
+    if (isTyping) {
+      newTypingUsers.add(userId);
+    } else {
+      newTypingUsers.delete(userId);
+    }
+
+    this.emit({
+      ...this.state,
+      typingUsers: newTypingUsers,
+    });
   };
 
   markAsRead = () => {
-    this.add({ type: 'markAsRead' });
+    // Clear unread count in NotificationCubit
+    const notificationResult = borrowSafe(NotificationCubit);
+    if (!notificationResult.error) {
+      notificationResult.instance.clearUnread(this.state.channel.id);
+    }
   };
 
   updateMessageStatus = (messageId: string, status: Message['status']) => {
-    this.add({ type: 'updateMessageStatus', messageId, status });
+    const messages = this.state.messages.map((msg) =>
+      msg.id === messageId ? { ...msg, status: status } : msg,
+    );
+
+    this.emit({
+      ...this.state,
+      messages,
+    });
   };
 }

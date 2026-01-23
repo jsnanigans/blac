@@ -56,17 +56,6 @@ export class SimpleFormatter {
     }
   }
 
-  logEventAdded(
-    className: string,
-    instanceId: string,
-    eventType: string,
-    payload: unknown,
-  ): void {
-    const id = this.formatInstanceId(className, instanceId);
-    const payloadStr = this.formatState(payload);
-    this.logger.log(`${this.prefix} ${id} event: ${eventType} ${payloadStr}`);
-  }
-
   logWarning(message: string): void {
     this.logger.warn(`${this.prefix} ⚠️ ${message}`);
   }

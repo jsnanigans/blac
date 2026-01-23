@@ -28,25 +28,12 @@ export interface UseBlocActionsOptions<TBloc, TProps = any> {
  * Preact hook that connects to a state container instance without triggering re-renders.
  * Use this when you only need to call actions on the bloc without subscribing to state changes.
  *
- * **This is the recommended hook for stateless containers** (StatelessCubit, StatelessVertex).
- * It also works with regular Cubit/Vertex when you don't need state subscriptions.
- *
  * @template T - The state container constructor type (inferred from BlocClass)
- * @param BlocClass - The state container class to connect to (supports both stateful and stateless)
+ * @param BlocClass - The state container class to connect to
  * @param options - Configuration options for instance management and lifecycle
  * @returns The state container instance for calling actions
  *
- * @example Basic usage with stateless container
- * ```ts
- * class AnalyticsService extends StatelessCubit {
- *   trackEvent(name: string) { ... }
- * }
- *
- * const analytics = useBlocActions(AnalyticsService);
- * analytics.trackEvent('page_view');
- * ```
- *
- * @example With stateful container (no re-renders)
+ * @example Basic usage
  * ```ts
  * const myBloc = useBlocActions(MyBloc);
  * myBloc.someMethod(); // Won't cause re-renders

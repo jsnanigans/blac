@@ -39,17 +39,16 @@ Granular dependency tracking and persistence.
 
 ### 3. Shopping Cart (Advanced)
 
-Event-driven architecture with complex state.
+Complex state management with coordinated blocs.
 
 **Showcases:**
 
-- Event-driven Vertex pattern
 - Complex nested state (array of objects)
 - Multiple coordinated Blocs
 - Async operations with loading states
 - Error handling
 
-**Key Learning:** Event-driven architecture keeps business logic clean and testable. Deep object tracking works automatically.
+**Key Learning:** Deep object tracking works automatically. Multiple blocs can coordinate state changes cleanly.
 
 ### 4. Real-time Dashboard (Power Demo)
 
@@ -97,7 +96,7 @@ src/
 ├── examples/
 │   ├── 01-counter/      # Simple Cubit example
 │   ├── 02-todos/        # Intermediate with filtering
-│   ├── 03-shopping-cart/ # Advanced Vertex example
+│   ├── 03-shopping-cart/ # Advanced Cubit example
 │   └── 04-dashboard/    # Power demo - automatic optimization
 ├── shared/
 │   └── ExampleLayout.tsx # Shared layout component
@@ -125,10 +124,10 @@ Components only re-render when properties they access change. No manual optimiza
 - `onDispose` - Called when instance is disposed
 - Perfect for subscriptions, timers, persistence
 
-### Event-Driven Architecture (Vertex)
+### Cubit State Management
 
-- All state changes go through typed events
-- Handlers are pure functions
+- Direct state mutations with `emit()`, `update()`, and `patch()`
+- Clear action methods for state changes
 - Easy to test and reason about
 - Great for complex workflows
 
@@ -167,7 +166,7 @@ Both modes show the same data and work simultaneously!
 
 **What You Can See:**
 
-- All Cubit/Vertex instances (RouterBloc, CounterCubit, etc.)
+- All Cubit instances (RouterBloc, CounterCubit, etc.)
 - Current state for each instance
 - State changes with diff highlighting
 - Instance lifecycle (disposed instances marked in red)

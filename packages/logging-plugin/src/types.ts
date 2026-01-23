@@ -47,9 +47,6 @@ export interface LoggingPluginConfig {
   /** Log state changes (default: true) */
   logStateChanges?: boolean;
 
-  /** Log Vertex events (default: true) */
-  logEvents?: boolean;
-
   /** Include callstack in state change logs (default: false) */
   includeCallstack?: boolean;
 
@@ -78,7 +75,6 @@ export interface ResolvedConfig {
   exclude: string[] | undefined;
   logLifecycle: boolean;
   logStateChanges: boolean;
-  logEvents: boolean;
   includeCallstack: boolean;
   instanceCountWarningThreshold: number;
   detectRapidLifecycles: boolean;
@@ -99,7 +95,6 @@ export function resolveConfig(
     exclude: config.exclude,
     logLifecycle: config.logLifecycle ?? true,
     logStateChanges: config.logStateChanges ?? true,
-    logEvents: config.logEvents ?? true,
     includeCallstack: config.includeCallstack ?? false,
     instanceCountWarningThreshold: config.instanceCountWarningThreshold ?? 50,
     detectRapidLifecycles: config.detectRapidLifecycles ?? true,

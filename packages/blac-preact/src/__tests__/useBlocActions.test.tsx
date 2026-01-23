@@ -5,7 +5,7 @@
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/preact';
-import { StateContainer, StatelessCubit, clearAll } from '@blac/core';
+import { StateContainer, clearAll } from '@blac/core';
 import { useBlocActions } from '../useBlocActions';
 
 class CounterBloc extends StateContainer<{ count: number }> {
@@ -18,12 +18,18 @@ class CounterBloc extends StateContainer<{ count: number }> {
   };
 }
 
-class AnalyticsService extends StatelessCubit {
-  events: string[] = [];
+class AnalyticsService extends StateContainer<{ events: string[] }> {
+  constructor() {
+    super({ events: [] });
+  }
 
   trackEvent = (name: string) => {
-    this.events.push(name);
+    this.update((state) => ({ events: [...state.events, name] }));
   };
+
+  get events(): string[] {
+    return this.state.events;
+  }
 }
 
 class IsolatedBloc extends StateContainer<{ count: number }> {
@@ -50,7 +56,7 @@ describe('useBlocActions', () => {
       expect(result.current).toBeInstanceOf(CounterBloc);
     });
 
-    it('should work with stateless containers', () => {
+    it('should work with service-style containers', () => {
       const { result } = renderHook(() => useBlocActions(AnalyticsService));
 
       expect(result.current).toBeInstanceOf(AnalyticsService);

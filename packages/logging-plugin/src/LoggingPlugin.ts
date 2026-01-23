@@ -1,10 +1,4 @@
-import type {
-  BlacPlugin,
-  PluginContext,
-  StateContainer,
-  Vertex,
-  DiscriminatedEvent,
-} from '@blac/core';
+import type { BlacPlugin, PluginContext, StateContainer } from '@blac/core';
 import { SimpleFormatter } from './formatters/SimpleFormatter';
 import { GroupedFormatter } from './formatters/GroupedFormatter';
 import { InstanceCountMonitor } from './monitors/InstanceCountMonitor';
@@ -174,45 +168,6 @@ export class LoggingPlugin implements BlacPlugin {
     }
   }
 
-  onEventAdded<E extends DiscriminatedEvent>(
-    vertex: Vertex<any, E>,
-    event: E & { timestamp?: number; source?: string },
-    context: PluginContext,
-  ): void {
-    const metadata = context.getInstanceMetadata(vertex);
-
-    if (
-      !this.shouldLog(
-        vertex,
-        metadata.className,
-        metadata.id,
-        metadata.isIsolated,
-      )
-    ) {
-      return;
-    }
-
-    if (!this.shouldLogEvents()) return;
-
-    const eventType = event.type ?? 'UnknownEvent';
-
-    if (this.config.format === 'simple') {
-      this.simpleFormatter.logEventAdded(
-        metadata.className,
-        metadata.id,
-        eventType,
-        event,
-      );
-    } else {
-      this.groupedFormatter.logEventAdded(
-        metadata.className,
-        metadata.id,
-        eventType,
-        event,
-      );
-    }
-  }
-
   onInstanceDisposed(
     instance: StateContainer<any>,
     context: PluginContext,
@@ -300,11 +255,6 @@ export class LoggingPlugin implements BlacPlugin {
       this.config.level === 'debug' ||
       this.config.level === 'verbose'
     );
-  }
-
-  private shouldLogEvents(): boolean {
-    if (!this.config.logEvents) return false;
-    return this.config.level === 'debug' || this.config.level === 'verbose';
   }
 
   private logWarning(message: string, details?: Record<string, unknown>): void {

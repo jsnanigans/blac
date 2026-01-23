@@ -226,8 +226,7 @@ export abstract class StateContainer<S extends object = any, P = any> {
           line.includes('StateContainer.emit') ||
           line.includes('StateContainer.update') ||
           line.includes('StateContainer.captureStackTrace') ||
-          line.includes('Cubit.patch') ||
-          line.includes('Vertex.')
+          line.includes('Cubit.patch')
         ) {
           continue;
         }

@@ -40,8 +40,7 @@ export type LogEventType =
   | 'init' // Initial state load
   | 'created' // Instance created
   | 'disposed' // Instance disposed
-  | 'state-changed' // State changed
-  | 'event-added'; // Event added (for Vertex/Bloc)
+  | 'state-changed'; // State changed
 
 /**
  * Single log entry

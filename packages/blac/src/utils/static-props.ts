@@ -3,7 +3,6 @@
  */
 
 import { BLAC_STATIC_PROPS } from '../constants';
-import { STATELESS_MARKER } from '../core/markers';
 import { StateContainerConstructor } from '../types/utilities';
 
 /**
@@ -59,16 +58,4 @@ export function isExcludedFromDevTools<T extends StateContainerConstructor>(
     getStaticProp<boolean>(Type, BLAC_STATIC_PROPS.EXCLUDE_FROM_DEVTOOLS) ===
     true
   );
-}
-
-/**
- * Check if a class is a stateless container (StatelessCubit or StatelessVertex).
- * Stateless containers don't have state, emit, update, or subscribe methods.
- * @param Type - The class constructor to check
- * @returns true if the class is a stateless container
- */
-export function isStatelessClass<T extends StateContainerConstructor>(
-  Type: T,
-): boolean {
-  return (Type as any)[STATELESS_MARKER] === true;
 }

@@ -1,6 +1,4 @@
 import type { StateContainer } from '../core/StateContainer';
-import type { Vertex } from '../core/Vertex';
-import type { DiscriminatedEvent, EventWithMetadata } from '../types/events';
 
 /**
  * Metadata information about a state container instance for debugging and inspection
@@ -101,15 +99,6 @@ export interface BlacPlugin {
     previousState: S,
     currentState: S,
     callstack: string | undefined,
-    context: PluginContext,
-  ): void;
-
-  /**
-   * Called when an event is added to a Vertex instance
-   */
-  onEventAdded?<E extends DiscriminatedEvent>(
-    vertex: Vertex<any, E>,
-    event: EventWithMetadata<E>,
     context: PluginContext,
   ): void;
 

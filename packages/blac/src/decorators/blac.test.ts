@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { blac } from './blac';
 import { Cubit } from '../core/Cubit';
-import { Vertex } from '../core/Vertex';
 import {
   isIsolatedClass,
   isKeepAliveClass,
@@ -32,17 +31,6 @@ describe('blac decorator', () => {
 
       expect(isKeepAliveClass(KeepAliveCubit)).toBe(true);
       expect(isIsolatedClass(KeepAliveCubit)).toBe(false);
-    });
-
-    it('should work with Vertex using @ decorator', () => {
-      @blac({ isolated: true })
-      class IsolatedVertex extends Vertex<{ count: number }> {
-        constructor() {
-          super({ count: 0 });
-        }
-      }
-
-      expect(isIsolatedClass(IsolatedVertex)).toBe(true);
     });
 
     it('should allow creating and using instances from decorated class', () => {
@@ -89,17 +77,6 @@ describe('blac decorator', () => {
       expect(DecoratedFormBloc.name).toBe('FormBloc');
     });
 
-    it('should work with Vertex classes', () => {
-      const IsolatedVertex = blac({ isolated: true })(
-        class extends Vertex<{ count: number }> {
-          constructor() {
-            super({ count: 0 });
-          }
-        },
-      );
-
-      expect(isIsolatedClass(IsolatedVertex)).toBe(true);
-    });
   });
 
   describe('keepAlive option', () => {
@@ -128,17 +105,6 @@ describe('blac decorator', () => {
       expect(DecoratedAuthBloc.name).toBe('AuthBloc');
     });
 
-    it('should work with Vertex classes', () => {
-      const KeepAliveVertex = blac({ keepAlive: true })(
-        class extends Vertex<{ count: number }> {
-          constructor() {
-            super({ count: 0 });
-          }
-        },
-      );
-
-      expect(isKeepAliveClass(KeepAliveVertex)).toBe(true);
-    });
   });
 
   describe('excludeFromDevTools option', () => {

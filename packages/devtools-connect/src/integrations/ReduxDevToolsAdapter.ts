@@ -1,5 +1,5 @@
 import { globalRegistry } from '@blac/core';
-import type { StateContainer, Vertex } from '@blac/core';
+import type { StateContainer } from '@blac/core';
 import { safeSerialize } from '../serialization/serialize';
 import { EventRegistry } from './EventRegistry';
 
@@ -297,12 +297,6 @@ export class ReduxDevToolsAdapter {
       );
 
       this.cleanupFunctions.push(
-        globalRegistry.on('eventAdded', (vertex, event) => {
-          this.handleEventAdded(vertex, event);
-        }),
-      );
-
-      this.cleanupFunctions.push(
         globalRegistry.on('disposed', (container) => {
           this.handleContainerDisposed(container);
         }),
@@ -359,36 +353,6 @@ export class ReduxDevToolsAdapter {
 
     // Record state snapshot
     this.recordStateSnapshot(action);
-  }
-
-  private handleEventAdded(vertex: Vertex<any, any>, event: any): void {
-    if (!this.devTools) return;
-
-    // Skip Redux DevTools updates during time-travel
-    if (this.isTimeTraveling) return;
-
-    const displayName = this.getInstanceDisplayName(vertex);
-    const eventName = event.constructor?.name || 'UnknownEvent';
-    const eventResult = safeSerialize(event);
-
-    const metadata = this.extractMetadata(vertex);
-    const action = `📨 [${displayName}] ${eventName}`;
-    this.devTools.send(
-      {
-        type: action,
-        payload: eventResult.success ? eventResult.data : eventResult.error,
-        meta: {
-          uid: metadata.uid,
-          blocType: metadata.blocType,
-          instanceId: metadata.instanceId,
-          timestamp: Date.now(),
-        },
-      },
-      this.getGlobalState(),
-    );
-
-    // Note: Don't record snapshot here - wait for STATE_CHANGED
-    // This prevents duplicate snapshots for event → state change flow
   }
 
   private handleStateChanged(
@@ -734,7 +698,7 @@ export class ReduxDevToolsAdapter {
 
         if (container) {
           try {
-            // Restore state using emit if available (Cubit/Vertex) or protected update
+            // Restore state using emit if available (Cubit) or protected update
             // The isTimeTraveling flag prevents these state changes from
             // being sent back to Redux DevTools (preventing timeline pollution)
             if (
@@ -899,7 +863,7 @@ export class ReduxDevToolsAdapter {
         return;
       }
 
-      // Handle built-in state actions (work for both Cubits and Vertices)
+      // Handle built-in state actions
       if (actionName === 'emit') {
         this.handleEmitAction(container, displayName, action);
         return;
@@ -910,8 +874,13 @@ export class ReduxDevToolsAdapter {
         return;
       }
 
-      // Handle custom events (Vertices only)
-      this.handleCustomEvent(container, displayName, actionName, action);
+      // Unknown action type
+      console.error(
+        `[ReduxDevToolsAdapter] Unknown action "${actionName}" for "${displayName}".`,
+        '\n\nSupported actions:',
+        `\n  - { type: "[${displayName}] emit", payload: { state: newState } }`,
+        `\n  - { type: "[${displayName}] patch", payload: { state: partialState } }`,
+      );
     } catch (error) {
       console.error('[ReduxDevToolsAdapter] Failed to dispatch action:', error);
 
@@ -943,7 +912,7 @@ export class ReduxDevToolsAdapter {
 
     const newState = action.payload.state;
 
-    // Use emit to update state (available on Cubit/Vertex)
+    // Use emit to update state (available on Cubit)
     if ('emit' in container && typeof (container as any).emit === 'function') {
       (container as any).emit(newState);
     } else {
@@ -999,61 +968,6 @@ export class ReduxDevToolsAdapter {
         `[ReduxDevToolsAdapter] Container "${containerName}" does not have a patch method. Use emit instead.`,
       );
     }
-  }
-
-  /**
-   * Handle custom registered events (Vertices only)
-   */
-  private handleCustomEvent(
-    container: StateContainer<any>,
-    containerName: string,
-    eventName: string,
-    action: any,
-  ): void {
-    // Check if container supports events (is a Vertex, not just a Cubit)
-    if (!('add' in container) || typeof container.add !== 'function') {
-      console.error(
-        `[ReduxDevToolsAdapter] "${containerName}" is a Cubit and does not support custom events.`,
-        '\n\nCubits only support built-in actions:',
-        `\n  - { type: "[${containerName}] emit", payload: { state: newState } }`,
-        `\n  - { type: "[${containerName}] patch", payload: { state: partialState } }`,
-        '\n\nTo dispatch custom events, use a Vertex instead of a Cubit.',
-      );
-      return;
-    }
-
-    // Check if event is registered
-    if (!EventRegistry.has(eventName)) {
-      console.error(
-        `[ReduxDevToolsAdapter] Event "${eventName}" is not registered. Available events: ${EventRegistry.getRegisteredEvents().join(', ') || 'none'}`,
-        '\n\nTo register an event:',
-        "\n\nEventRegistry.register('IncrementEvent', IncrementEvent, {",
-        "\n  parameterNames: ['amount'],",
-        '\n});',
-      );
-      return;
-    }
-
-    // Deserialize and dispatch the event
-    const event = EventRegistry.deserializeEvent(
-      eventName,
-      action.payload || {},
-    );
-
-    // Dispatch the event
-    (container as Vertex<any, any>).add(event);
-
-    // Dispatch custom event for user notification
-    window.dispatchEvent(
-      new CustomEvent('blac-devtools-action-dispatched', {
-        detail: {
-          blocName: containerName,
-          eventName,
-          payload: action.payload,
-          event,
-        },
-      }),
-    );
   }
 
   /**
