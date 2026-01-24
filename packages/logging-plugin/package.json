@@ -1,6 +1,6 @@
 {
   "name": "@blac/logging-plugin",
-  "version": "2.0.1",
+  "version": "2.0.3",
   "type": "module",
   "license": "MIT",
   "author": "Brendan Mullins <jsnanigans@gmail.com>",

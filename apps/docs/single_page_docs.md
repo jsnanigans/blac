@@ -42,13 +42,11 @@ class CounterContainer extends StateContainer<{ count: number }> {
 - `instanceId` - Unique instance identifier
 - `createdAt` - Timestamp when instance was created
 - `lastUpdateTimestamp` - Timestamp of last state update
-- `props` - Get current props (readonly, for props-enabled containers)
 
 **Core Methods:**
 
 - `subscribe(callback)` - Subscribe to state changes, returns unsubscribe function
 - `dispose()` - Clean up the container
-- `updateProps(newProps)` - Update props (triggers `propsUpdated` system event)
 
 **Protected Methods** (for subclasses):
 
@@ -109,18 +107,13 @@ const MyBloc = blac({ isolated: true })(class extends StateContainer<State> {});
 StateContainer provides system events for lifecycle management. Use `onSystemEvent` to subscribe:
 
 ```typescript
-class MyBloc extends StateContainer<State, Props> {
+class MyBloc extends StateContainer<State> {
   constructor() {
     super(initialState);
 
     // Subscribe to state changes
     this.onSystemEvent('stateChanged', ({ state, previousState }) => {
       console.log('State changed from', previousState, 'to', state);
-    });
-
-    // Subscribe to props updates
-    this.onSystemEvent('propsUpdated', ({ props, previousProps }) => {
-      console.log('Props updated from', previousProps, 'to', props);
     });
 
     // Subscribe to disposal
@@ -134,7 +127,6 @@ class MyBloc extends StateContainer<State, Props> {
 Available system events:
 
 - `stateChanged` - Fired after state changes, payload: `{ state, previousState }`
-- `propsUpdated` - Fired when props are updated, payload: `{ props, previousProps }`
 - `dispose` - Fired when dispose() is called, payload: `void`
 
 ---
@@ -263,7 +255,6 @@ import {
   forEach,
   clear,
   clearAll,
-  getStats,
 } from '@blac/core';
 ```
 
@@ -276,9 +267,6 @@ Get or create an instance with ref counting. Used when you "own" the instance li
 const counter = acquire(CounterCubit);
 const named = acquire(CounterCubit, 'main');
 
-// With constructor arguments
-const user = acquire(UserCubit, 'user-123', { props: { userId: '123' } });
-
 // Release reference (disposes when ref count reaches zero)
 release(CounterCubit);
 release(CounterCubit, 'main');
@@ -289,7 +277,7 @@ release(CounterCubit, 'main', true);
 
 **Use `acquire()` when:**
 
-- React components need to manage instance lifetime (used internally by `useBloc`/`useBlocActions`)
+- React components need to manage instance lifetime (used internally by `useBloc`)
 - You want to ensure the instance stays alive during usage
 - You need ownership semantics with automatic cleanup
 
@@ -414,10 +402,6 @@ clear(CounterCubit);
 
 // Clear all instances from all types (mainly for testing)
 clearAll();
-
-// Get registry statistics
-const stats = getStats();
-// { registeredTypes: 5, totalInstances: 12, typeBreakdown: { ... } }
 ```
 
 **`getAll()` vs `forEach()`:**
@@ -624,8 +608,8 @@ class NotificationCubit extends Cubit<NotificationState> {
 
 // Heavy channel state (created on-demand)
 class ChannelCubit extends Cubit<ChannelState> {
-  constructor(props: { channelId: string }) {
-    super({ messages: [], channelId: props.channelId, typingUsers: new Set() });
+  constructor() {
+    super({ messages: [], channelId: '', typingUsers: new Set() });
   }
 
   receiveMessage = (message: Message) => {
@@ -682,9 +666,6 @@ function ChannelListItem({ channelId }: Props) {
 
 ```typescript
 const [state, bloc] = useBloc(MyBloc, {
-  // Pass constructor arguments
-  props: { userId: '123' },
-
   // Custom instance ID for shared blocs
   instanceId: 'main',
 
@@ -704,25 +685,6 @@ const [state, bloc] = useBloc(MyBloc, {
 ```
 
 **Options Details:**
-
-**`props`**: Constructor arguments passed to the bloc
-
-```typescript
-class UserBloc extends StateContainer<State, { userId: string }> {
-  constructor(props?: { userId: string }) {
-    super(initialState);
-  }
-}
-
-// Pass props
-const [state, bloc] = useBloc(UserBloc, {
-  props: { userId: '123' },
-});
-```
-
-Always make constructor parameters optional to avoid runtime errors, the type of the constructor props is not enforced.
-
-Props are also updated when they change via `updateProps()` internally.
 
 **`instanceId`**: Custom instance ID for shared blocs
 
@@ -775,47 +737,6 @@ const [state, bloc] = useBloc(UserBloc, {
     console.log('Component unmounting');
     bloc.cleanup();
   },
-});
-```
-
----
-
-### useBlocActions Hook - Actions Only
-
-Use when you only need to call methods **without subscribing to state**.
-
-```typescript
-import { useBlocActions } from '@blac/react';
-
-function ActionsOnly() {
-  const bloc = useBlocActions(CounterBloc);
-
-  // Never re-renders due to state changes
-  return (
-    <div>
-      <button onClick={bloc.increment}>+</button>
-      <button onClick={bloc.decrement}>-</button>
-      <button onClick={bloc.reset}>Reset</button>
-    </div>
-  );
-}
-```
-
-**Benefits:**
-
-- No state subscription overhead
-- No proxy tracking
-- Never re-renders from bloc state changes
-- Lighter weight for action-only components
-
-**Options:**
-
-```typescript
-const bloc = useBlocActions(CounterBloc, {
-  props: { initialValue: 0 },
-  instanceId: 'shared',
-  onMount: (bloc) => console.log('Mounted'),
-  onUnmount: (bloc) => console.log('Unmounting'),
 });
 ```
 
@@ -935,22 +856,19 @@ class AppCubit extends Cubit<AppState> {
   // Resolve dependencies in constructor - increments ref count
   notificationCubit = acquire(NotificationCubit);
 
-  constructor(props: { userId: string }) {
-    super({ userId: props.userId, isReady: false });
+  constructor() {
+    super({ isReady: false });
     this.setupApp();
+
+    // Must clean up owned references using system events
+    this.onSystemEvent('dispose', () => {
+      release(NotificationCubit);
+    });
   }
 
   private setupApp() {
     // Can safely use resolved dependencies
     this.notificationCubit.clearAll();
-  }
-
-  // Must clean up owned references using system events
-  constructor() {
-    super(initialState);
-    this.onSystemEvent('dispose', () => {
-      release(NotificationCubit);
-    });
   }
 }
 ```
@@ -973,8 +891,8 @@ Access other blocs in methods using `borrow()` or `borrowSafe()`. This is the mo
 import { borrow, borrowSafe } from '@blac/core';
 
 class ChannelCubit extends Cubit<ChannelState> {
-  constructor(props: { channelId: string }) {
-    super({ messages: [], channelId: props.channelId });
+  constructor() {
+    super({ messages: [], channelId: '' });
   }
 
   receiveMessage = (message: Message) => {
@@ -1086,8 +1004,8 @@ Create dependencies only when needed using `ensure()` or conditional `borrowSafe
 import { ensure, borrowSafe } from '@blac/core';
 
 class UserProfileCubit extends Cubit<UserProfileState> {
-  constructor(props: { userId: string }) {
-    super({ userId: props.userId, profile: null });
+  constructor() {
+    super({ userId: '', profile: null });
   }
 
   loadProfile = async () => {
@@ -1188,7 +1106,7 @@ class UserCubit extends Cubit<UserState> {
 | Pattern            | Use When                          | Ownership          | Memory     |
 | ------------------ | --------------------------------- | ------------------ | ---------- |
 | **Constructor**    | Essential lifetime dependency     | Yes (must release) | High       |
-| **Event Handler**  | Event-driven side effects         | No (borrowing)     | Low        |
+| **Method-Based**   | Event-driven side effects         | No (borrowing)     | Low        |
 | **Getter**         | Computed multi-bloc values        | No (auto-tracked)  | Low        |
 | **Lazy/On-Demand** | Optional/conditional dependencies | No                 | Very Low   |
 | **Service**        | Shared utilities/services         | No (keepAlive)     | Persistent |
@@ -1218,8 +1136,8 @@ class ContactsCubit extends Cubit<ContactsState> {
 
 class ChannelCubit extends Cubit<ChannelState> {
   // One instance per channel (created on-demand)
-  constructor(props: { channelId: string }) {
-    super({ messages: [], channelId: props.channelId });
+  constructor() {
+    super({ messages: [], channelId: '' });
   }
 
   receiveMessage = (message: Message) => {
@@ -1255,8 +1173,8 @@ class AppCubit extends Cubit<AppState> {
   // Pattern 1: Constructor-based (owns dependency)
   notificationCubit = acquire(NotificationCubit);
 
-  constructor(props: { userId: string }) {
-    super({ userId: props.userId, activeChannelId: null });
+  constructor() {
+    super({ userId: '', activeChannelId: null });
 
     this.onSystemEvent('dispose', () => {
       release(NotificationCubit);
@@ -1286,7 +1204,6 @@ function ChannelListItem({ channelId }: Props) {
 function ChannelView({ channelId }: Props) {
   const [channel, cubit] = useBloc(ChannelCubit, {
     instanceId: channelId,
-    props: { channelId }
   });
 
   // Pattern 3: Getter automatically tracks NotificationCubit
@@ -1331,50 +1248,6 @@ class InternalBloc extends Cubit<InternalState> {
 - Meta-level application state
 - Debug utilities
 - Preventing infinite loops (DevTools tracking itself)
-
----
-
-## Logging and Debugging
-
-### Configure Global Logger
-
-```typescript
-import { configureLogger, LogLevel } from '@blac/core';
-
-configureLogger({
-  enabled: true,
-  level: LogLevel.DEBUG, // ERROR, WARN, INFO, DEBUG
-  output: (entry) => console.log(JSON.stringify(entry)),
-});
-```
-
-### Create Custom Logger
-
-```typescript
-import { createLogger, LogLevel } from '@blac/core';
-
-const logger = createLogger({
-  enabled: true,
-  level: LogLevel.DEBUG,
-  output: (entry) => console.log(entry),
-});
-
-logger.debug('MyComponent', 'Rendering', { props });
-logger.info('MyBloc', 'State updated', { newState });
-logger.warn('MyService', 'Slow operation', { duration: 1000 });
-logger.error('MyBloc', 'Failed to fetch', { error });
-```
-
-### Use Individual Log Functions
-
-```typescript
-import { debug, info, warn, error } from '@blac/core';
-
-debug('Context', 'Debug message', { data });
-info('Context', 'Info message', { data });
-warn('Context', 'Warning message', { data });
-error('Context', 'Error message', { data });
-```
 
 ---
 
@@ -1467,65 +1340,6 @@ const myPlugin: BlacPlugin = {
 
 ## Reactive Utilities
 
-### waitUntil - Async State Waiting
-
-Wait for a bloc's state to meet a condition. Returns a Promise that resolves when the predicate is true.
-
-**Basic Usage:**
-
-```typescript
-import { waitUntil } from '@blac/core';
-
-// Wait for condition on bloc, returns bloc instance
-const userBloc = await waitUntil(
-  UserBloc,
-  (bloc) => bloc.state.isAuthenticated,
-);
-
-// Wait with selector, returns selected value
-const layout = await waitUntil(
-  LayoutBloc,
-  (bloc) => bloc.state.currentLayout, // selector
-  (layout) => layout !== null, // predicate
-);
-```
-
-**With Options:**
-
-```typescript
-interface WaitUntilOptions {
-  instanceId?: string; // Target specific instance
-  timeout?: number; // Timeout in milliseconds
-  signal?: AbortSignal; // Abort signal for cancellation
-}
-
-// With timeout
-try {
-  const bloc = await waitUntil(UserBloc, (bloc) => bloc.state.isReady, {
-    timeout: 5000,
-  });
-} catch (error) {
-  if (error instanceof WaitUntilTimeoutError) {
-    console.log('Timed out');
-  }
-}
-
-// With abort signal
-const controller = new AbortController();
-const promise = waitUntil(UserBloc, (bloc) => bloc.state.isReady, {
-  signal: controller.signal,
-});
-controller.abort(); // Cancel
-```
-
-**Error Types:**
-
-- `WaitUntilTimeoutError` - Timeout exceeded
-- `WaitUntilAbortedError` - AbortSignal triggered
-- `WaitUntilDisposedError` - Bloc disposed while waiting
-
----
-
 ### watch - Reactive Watching
 
 Watch blocs for state changes outside of React. Automatically tracks state and getter accesses.
@@ -1578,12 +1392,12 @@ const unwatch = watch(UserBloc, (userBloc) => {
 
 ### tracked - Manual Dependency Tracking
 
-Low-level utilities for manual dependency tracking. Useful for custom integrations.
+Low-level utilities for manual dependency tracking. Useful for custom integrations. Import from `@blac/core/watch`:
 
 **tracked() Function:**
 
 ```typescript
-import { tracked, ensure } from '@blac/core';
+import { tracked, ensure } from '@blac/core/watch';
 
 const { result, dependencies } = tracked(() => {
   const user = ensure(UserBloc);
@@ -1596,7 +1410,7 @@ const { result, dependencies } = tracked(() => {
 **TrackedContext Class:**
 
 ```typescript
-import { createTrackedContext, ensure } from '@blac/core';
+import { createTrackedContext, ensure } from '@blac/core/watch';
 
 const ctx = createTrackedContext();
 const userBloc = ensure(UserBloc);
@@ -1614,45 +1428,6 @@ const externalDeps = ctx.stop();
 - `stop()` - Stop and return external dependencies
 - `changed()` - Check if tracked values changed
 - `reset()` - Reset for reuse
-
----
-
-## Global Configuration
-
-### configureBlac
-
-Configure global defaults for `@blac/core`.
-
-```typescript
-import { configureBlac, LogLevel } from '@blac/core';
-
-configureBlac({
-  devMode: true,
-  logger: {
-    enabled: true,
-    level: LogLevel.DEBUG,
-  },
-});
-```
-
-**Options:**
-
-```typescript
-interface BlacConfig {
-  devMode: boolean; // Enable dev mode (default: NODE_ENV !== 'production')
-  logger: Partial<LogConfig>; // Logger configuration
-}
-```
-
-**Helper Functions:**
-
-```typescript
-import { isDevMode } from '@blac/core';
-
-if (isDevMode()) {
-  console.log('Running in dev mode');
-}
-```
 
 ---
 
@@ -1774,22 +1549,6 @@ function UserName() {
   const [user] = useBloc(UserBloc);
   const { name, email, age, address } = user; // Tracks everything!
   return <div>{name}</div>;
-}
-```
-
-### ✅ DO: Use useBlocActions for Action-Only Components
-
-```typescript
-// ✅ DO: Use useBlocActions when not reading state
-function Actions() {
-  const bloc = useBlocActions(CounterBloc);
-  return <button onClick={bloc.increment}>+</button>;
-}
-
-// ❌ DON'T: Use useBloc when not accessing state
-function Actions() {
-  const [_, bloc] = useBloc(CounterBloc); // Unnecessary subscription
-  return <button onClick={bloc.increment}>+</button>;
 }
 ```
 
@@ -1958,37 +1717,17 @@ function App() {
 }
 ```
 
-**Props Type Parameter:**
-
-StateContainer supports a second generic parameter for props:
-
-```typescript
-interface UserProps {
-  userId: string;
-  initialData?: User;
-}
-
-class UserCubit extends Cubit<UserState, UserProps> {
-  constructor(props?: UserProps) {
-    super({ user: props?.initialData ?? null });
-  }
-}
-```
-
 **Generic Type Utilities:**
 
 ```typescript
-import type { ExtractState, ExtractProps, BlocConstructor } from '@blac/core';
+import type { ExtractState, StateContainerConstructor } from '@blac/core';
 
 // Extract state type from a bloc
-type CounterState = ExtractState<CounterCubit>; // number
+type CounterState = ExtractState<CounterCubit>; // { count: number }
 
-// Extract props type from a bloc
-type UserProps = ExtractProps<UserCubit>; // { userId: string }
-
-// BlocConstructor type for generic constraints
+// StateContainerConstructor type for generic constraints
 function createBloc<TBloc extends StateContainer<any>>(
-  Class: BlocConstructor<TBloc>,
+  Class: StateContainerConstructor<TBloc>,
 ): TBloc {
   return acquire(Class);
 }
@@ -2003,10 +1742,8 @@ function createBloc<TBloc extends StateContainer<any>>(
 **StateContainer:**
 
 - `state` - Current state (readonly)
-- `props` - Current props (readonly)
 - `subscribe(callback)` - Subscribe to changes
 - `dispose()` - Clean up
-- `updateProps(newProps)` - Update props
 - `isDisposed` - Check disposal status
 - `createdAt` - Creation timestamp
 - `lastUpdateTimestamp` - Last state update timestamp
@@ -2025,7 +1762,7 @@ function createBloc<TBloc extends StateContainer<any>>(
 
 **Instance Access (import from `@blac/core`):**
 
-- `acquire(Class, id?, options?)` - Get/create instance with ownership (increments ref count)
+- `acquire(Class, id?)` - Get/create instance with ownership (increments ref count)
 - `borrow(Class, id?)` - Get existing instance without ownership (throws if not found)
 - `borrowSafe(Class, id?)` - Get existing instance without ownership (returns discriminated union)
 - `ensure(Class, id?)` - Get/create instance for B2B (no ref count change, tracks dependencies)
@@ -2039,28 +1776,20 @@ function createBloc<TBloc extends StateContainer<any>>(
 - `forEach(Class, callback)` - Iterate over instances safely (disposal-safe, memory-efficient)
 - `clear(Class)` - Clear all instances of type
 - `clearAll()` - Clear everything
+
+**Debug utilities (import from `@blac/core/debug`):**
+
 - `getStats()` - Get registry statistics
+- `globalRegistry` - Direct registry access
 
 ### useBloc Options
 
 ```typescript
 {
-  props?: any;                    // Constructor arguments
   instanceId?: string | number;   // Custom instance ID
   dependencies?: (state, bloc) => any[]; // Manual tracking
   autoTrack?: boolean;            // Enable/disable auto tracking (default: true)
   disableGetterCache?: boolean;   // Disable getter value caching (default: false)
-  onMount?: (bloc) => void;       // Mount callback
-  onUnmount?: (bloc) => void;     // Unmount callback
-}
-```
-
-### useBlocActions Options
-
-```typescript
-{
-  props?: any;                    // Constructor arguments
-  instanceId?: string | number;   // Custom instance ID
   onMount?: (bloc) => void;       // Mount callback
   onUnmount?: (bloc) => void;     // Unmount callback
 }
@@ -2089,11 +1818,10 @@ const MyBloc = blac({ isolated: true })(class extends Cubit<State> {});
 ### System Events
 
 ```typescript
-type SystemEvent = 'propsUpdated' | 'stateChanged' | 'dispose';
+type SystemEvent = 'stateChanged' | 'dispose';
 
 // Payloads
-interface SystemEventPayloads<S, P> {
-  propsUpdated: { props: P; previousProps: P | undefined };
+interface SystemEventPayloads<S> {
   stateChanged: { state: S; previousState: S };
   dispose: void;
 }
@@ -2105,36 +1833,7 @@ interface SystemEventPayloads<S, P> {
 type LifecycleEvent = 'created' | 'stateChanged' | 'disposed';
 ```
 
-### Log Levels
-
-```typescript
-LogLevel.ERROR = 0;
-LogLevel.WARN = 1;
-LogLevel.INFO = 2;
-LogLevel.DEBUG = 3;
-```
-
 ### Reactive Utilities
-
-**waitUntil:**
-
-```typescript
-// Wait for condition
-const bloc = await waitUntil(UserBloc, (bloc) => bloc.state.isReady);
-
-// Wait with selector
-const value = await waitUntil(
-  Bloc,
-  (b) => b.state.value,
-  (v) => v !== null,
-);
-
-// With options
-await waitUntil(Bloc, predicate, {
-  timeout: 5000,
-  signal: abortController.signal,
-});
-```
 
 **watch:**
 
@@ -2154,7 +1853,7 @@ const unwatch = watch(instance(Bloc, 'id'), (bloc) => {});
 watch(Bloc, (bloc) => (bloc.done ? watch.STOP : undefined));
 ```
 
-**tracked:**
+**tracked (from @blac/core/watch):**
 
 ```typescript
 // Track dependencies
@@ -2165,18 +1864,6 @@ const ctx = createTrackedContext();
 ctx.start();
 // ... access proxied blocs
 const deps = ctx.stop();
-```
-
-### Global Configuration
-
-```typescript
-// Configure
-configureBlac({ devMode: true, logger: { enabled: true } });
-
-// Check dev mode
-if (isDevMode()) {
-  /* ... */
-}
 ```
 
 ---
@@ -2347,7 +2034,7 @@ if (!result.error) {
 
 **Migration tips:**
 
-- React components: Use `acquire()` (handled automatically by `useBloc`/`useBlocActions`)
+- React components: Use `acquire()` (handled automatically by `useBloc`)
 - Bloc methods calling other blocs: Use `borrow()` (prevents memory leaks)
 - Conditional instance access: Use `borrowSafe()` (type-safe error handling)
 
@@ -2382,8 +2069,7 @@ BlaC's proxy-based dependency tracking is designed for optimal React performance
 
 1. **Only access what you render** - Proxy tracking records property access during render
 2. **Prefer getters for computed values** - Cached per render cycle
-3. **Use `useBlocActions` for action-only components** - Zero state subscription overhead
-4. **Split large state objects** - Smaller granular blocs re-render fewer components
+3. **Split large state objects** - Smaller granular blocs re-render fewer components
 
 ### Optimal Property Access
 
@@ -2448,28 +2134,6 @@ function TodoList() {
 }
 ```
 
-### Action-Only Components
-
-```typescript
-// ✅ OPTIMAL: Component never re-renders from state changes
-function TodoActions() {
-  const cubit = useBlocActions(TodoCubit);
-
-  return (
-    <div>
-      <button onClick={() => cubit.addTodo('New task')}>Add</button>
-      <button onClick={cubit.clearCompleted}>Clear Done</button>
-    </div>
-  );
-}
-
-// ❌ WASTEFUL: Subscribed to state but never uses it
-function TodoActions() {
-  const [_, cubit] = useBloc(TodoCubit); // Unnecessary subscription!
-  return <button onClick={cubit.addTodo}>Add</button>;
-}
-```
-
 ### Component Splitting Pattern
 
 ```typescript
@@ -2495,8 +2159,8 @@ function TodoList() {
 }
 
 function TodoActions() {
-  const cubit = useBlocActions(TodoCubit);
-  return <button onClick={cubit.addTodo}>Add</button>; // No subscription
+  const [, cubit] = useBloc(TodoCubit);
+  return <button onClick={cubit.addTodo}>Add</button>;
 }
 
 // ❌ AVOID: One big component that accesses everything
@@ -2594,7 +2258,6 @@ const allSessions = getAll(UserSessionBloc); // Creates array copy
 | Pattern                 | Re-renders                 | Use When                 |
 | ----------------------- | -------------------------- | ------------------------ |
 | Auto-tracking (default) | On tracked property change | Most cases               |
-| `useBlocActions`        | Never                      | Action-only components   |
 | Manual `dependencies`   | On dependency change       | Known fixed dependencies |
 | `autoTrack: false`      | On any state change        | Simple state, debugging  |
 | Getters                 | On computed value change   | Derived/computed state   |
@@ -2606,7 +2269,6 @@ const allSessions = getAll(UserSessionBloc); // Creates array copy
 3. **Using `acquire()` in methods** - Causes ref count leaks
 4. **Large monolithic components** - Split into smaller, focused components
 5. **Iterating arrays when accessing single element** - Use index access instead
-6. **Not using `useBlocActions`** - Creates unnecessary subscriptions
 
 ---
 
