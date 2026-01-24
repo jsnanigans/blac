@@ -10,36 +10,41 @@ export type {
 export { Cubit } from './core/Cubit';
 
 // ============================================================================
-// Registry - Global Instance Management
+// Registry - Core Functions
 // ============================================================================
-export {
-  globalRegistry,
-  getPluginManager,
-} from './core/StateContainerRegistry';
-export type {
-  LifecycleEvent,
-  LifecycleListener,
-  InstanceEntry,
-} from './core/StateContainerRegistry';
 
-// Registry functions (convenience exports)
+// Primary registry functions (commonly used)
 export {
   acquire,
   borrow,
   borrowSafe,
   ensure,
   release,
-  hasInstance,
-  getRefCount,
-  getAll,
-  forEach,
   clear,
   clearAll,
 } from './registry';
 
 // ============================================================================
-// Plugin System
+// Registry - Debug/Introspection (import from '@blac/core/debug' for tree-shaking)
 // ============================================================================
+export { globalRegistry } from './core/StateContainerRegistry';
+export type {
+  LifecycleEvent,
+  LifecycleListener,
+  InstanceEntry,
+} from './core/StateContainerRegistry';
+
+export { hasInstance, getRefCount, getAll, forEach } from './registry';
+
+// ============================================================================
+// Decorator
+// ============================================================================
+export { blac, type BlacOptions } from './decorators';
+
+// ============================================================================
+// Plugin System - import from '@blac/core/plugins' for tree-shaking
+// ============================================================================
+export { getPluginManager } from './core/StateContainerRegistry';
 export type {
   BlacPlugin,
   BlacPluginWithInit,
@@ -50,12 +55,7 @@ export type {
 export { PluginManager } from './plugin/PluginManager';
 
 // ============================================================================
-// Decorator
-// ============================================================================
-export { blac, type BlacOptions } from './decorators';
-
-// ============================================================================
-// Watch - Reactive Subscriptions
+// Watch - import from '@blac/core/watch' for tree-shaking
 // ============================================================================
 export { watch, instance, type WatchFn, type BlocRef } from './watch';
 

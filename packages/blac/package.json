@@ -45,6 +45,36 @@
         "types": "./dist/tracking.d.cts",
         "default": "./dist/tracking.cjs"
       }
+    },
+    "./watch": {
+      "import": {
+        "types": "./dist/watch-entry.d.ts",
+        "default": "./dist/watch-entry.js"
+      },
+      "require": {
+        "types": "./dist/watch-entry.d.cts",
+        "default": "./dist/watch-entry.cjs"
+      }
+    },
+    "./plugins": {
+      "import": {
+        "types": "./dist/plugins.d.ts",
+        "default": "./dist/plugins.js"
+      },
+      "require": {
+        "types": "./dist/plugins.d.cts",
+        "default": "./dist/plugins.cjs"
+      }
+    },
+    "./debug": {
+      "import": {
+        "types": "./dist/debug.d.ts",
+        "default": "./dist/debug.js"
+      },
+      "require": {
+        "types": "./dist/debug.d.cts",
+        "default": "./dist/debug.cjs"
+      }
     }
   },
   "files": [
@@ -61,6 +91,18 @@
     "dist/tracking.d.ts",
     "dist/tracking.d.cts",
     "dist/tracking/**/*.d.ts",
+    "dist/watch-entry.js",
+    "dist/watch-entry.cjs",
+    "dist/watch-entry.d.ts",
+    "dist/watch-entry.d.cts",
+    "dist/plugins.js",
+    "dist/plugins.cjs",
+    "dist/plugins.d.ts",
+    "dist/plugins.d.cts",
+    "dist/debug.js",
+    "dist/debug.cjs",
+    "dist/debug.d.ts",
+    "dist/debug.d.cts",
     "dist/*.map",
     "README.md",
     "LICENSE"

@@ -1,16 +1,11 @@
 /**
  * Tracking Subpath Export
  *
- * Advanced dependency tracking utilities for framework integrations.
+ * Dependency tracking utilities for framework adapters (React, Vue, etc.).
  * Import from '@blac/core/tracking'
+ *
+ * @packageDocumentation
  */
-export {
-  tracked,
-  createTrackedContext,
-  TrackedContext,
-  type TrackedResult,
-  type TrackedOptions,
-} from './tracking/tracked';
 
-// Re-export all tracking internals for framework adapters
+// Re-export tracking internals for framework adapters
 export * from './tracking/index';

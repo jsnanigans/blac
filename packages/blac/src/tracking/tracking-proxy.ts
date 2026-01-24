@@ -599,6 +599,67 @@ export function commitTrackedGetters(tracker: GetterState): void {
 }
 
 /**
+ * Execute a tracked getter with depth/circular dependency checks and context management.
+ * @internal
+ */
+function executeTrackedGetter<T extends StateContainerInstance>(
+  target: T,
+  prop: string | symbol,
+  tracker: GetterState,
+  context: GetterExecutionContext,
+): unknown {
+  tracker.currentlyAccessing.add(prop);
+
+  if (tracker.cacheValid && tracker.renderCache.has(prop)) {
+    const cachedValue = tracker.renderCache.get(prop);
+    tracker.trackedValues.set(prop, cachedValue);
+    return cachedValue;
+  }
+
+  if (context.depth >= MAX_GETTER_DEPTH) {
+    console.warn(
+      `${BLAC_ERROR_PREFIX} Maximum getter depth (${MAX_GETTER_DEPTH}) exceeded. ` +
+        `Possible circular dependency in getter "${String(prop)}" on ${target.constructor.name}.`,
+    );
+    return undefined;
+  }
+
+  if (context.visitedBlocs.has(target)) {
+    console.warn(
+      `${BLAC_ERROR_PREFIX} Circular dependency detected: getter "${String(prop)}" on ${target.constructor.name}.`,
+    );
+    return undefined;
+  }
+
+  const prevContext = {
+    tracker: context.tracker,
+    currentBloc: context.currentBloc,
+    depth: context.depth,
+    visitedBlocs: new Set(context.visitedBlocs),
+  };
+
+  context.tracker = tracker;
+  context.currentBloc = target;
+  context.depth++;
+  context.visitedBlocs.add(target);
+
+  try {
+    const descriptor = getDescriptor(target, prop);
+    const value = descriptor!.get!.call(target);
+    tracker.trackedValues.set(prop, value);
+    return value;
+  } catch (error) {
+    tracker.currentlyAccessing.delete(prop);
+    throw error;
+  } finally {
+    context.tracker = prevContext.tracker;
+    context.currentBloc = prevContext.currentBloc;
+    context.depth = prevContext.depth;
+    context.visitedBlocs = prevContext.visitedBlocs;
+  }
+}
+
+/**
  * @internal
  */
 export function createBlocProxy<TBloc extends StateContainerInstance>(
@@ -614,57 +675,12 @@ export function createBlocProxy<TBloc extends StateContainerInstance>(
       const tracker = activeTrackerMap.get(target);
 
       if (tracker?.isTracking && isGetter(target, prop)) {
-        tracker.currentlyAccessing.add(prop);
-
-        if (tracker.cacheValid && tracker.renderCache.has(prop)) {
-          const cachedValue = tracker.renderCache.get(prop);
-          tracker.trackedValues.set(prop, cachedValue);
-          return cachedValue;
-        }
-
-        if (getterExecutionContext.depth >= MAX_GETTER_DEPTH) {
-          console.warn(
-            `${BLAC_ERROR_PREFIX} Maximum getter depth (${MAX_GETTER_DEPTH}) exceeded. ` +
-              `Possible circular dependency in getter "${String(prop)}" on ${target.constructor.name}. ` +
-              `Returning undefined to prevent stack overflow.`,
-          );
-          return undefined;
-        }
-
-        if (getterExecutionContext.visitedBlocs.has(target)) {
-          console.warn(
-            `${BLAC_ERROR_PREFIX} Circular dependency detected: getter "${String(prop)}" on ${target.constructor.name} ` +
-              `is calling back into itself. Returning undefined to prevent infinite recursion.`,
-          );
-          return undefined;
-        }
-
-        const prevContext = {
-          tracker: getterExecutionContext.tracker,
-          currentBloc: getterExecutionContext.currentBloc,
-          depth: getterExecutionContext.depth,
-          visitedBlocs: new Set(getterExecutionContext.visitedBlocs),
-        };
-
-        getterExecutionContext.tracker = tracker;
-        getterExecutionContext.currentBloc = target;
-        getterExecutionContext.depth++;
-        getterExecutionContext.visitedBlocs.add(target);
-
-        try {
-          const descriptor = getDescriptor(target, prop);
-          const value = descriptor!.get!.call(target);
-          tracker.trackedValues.set(prop, value);
-          return value;
-        } catch (error) {
-          tracker.currentlyAccessing.delete(prop);
-          throw error;
-        } finally {
-          getterExecutionContext.tracker = prevContext.tracker;
-          getterExecutionContext.currentBloc = prevContext.currentBloc;
-          getterExecutionContext.depth = prevContext.depth;
-          getterExecutionContext.visitedBlocs = prevContext.visitedBlocs;
-        }
+        return executeTrackedGetter(
+          target,
+          prop,
+          tracker,
+          getterExecutionContext,
+        );
       }
 
       return Reflect.get(target, prop, receiver);
@@ -876,59 +892,12 @@ export function createTrackingProxy<T extends StateContainerInstance>(
       }
 
       if (tracker.isTracking && isGetter(target, prop)) {
-        tracker.getterState.currentlyAccessing.add(prop);
-
-        if (
-          tracker.getterState.cacheValid &&
-          tracker.getterState.renderCache.has(prop)
-        ) {
-          const cachedValue = tracker.getterState.renderCache.get(prop);
-          tracker.getterState.trackedValues.set(prop, cachedValue);
-          return cachedValue;
-        }
-
-        const context = getGetterExecutionContext();
-        if (context.depth >= MAX_GETTER_DEPTH) {
-          console.warn(
-            `${BLAC_ERROR_PREFIX} Maximum getter depth (${MAX_GETTER_DEPTH}) exceeded. ` +
-              `Possible circular dependency in getter "${String(prop)}" on ${target.constructor.name}.`,
-          );
-          return undefined;
-        }
-
-        if (context.visitedBlocs.has(target)) {
-          console.warn(
-            `${BLAC_ERROR_PREFIX} Circular dependency detected: getter "${String(prop)}" on ${target.constructor.name}.`,
-          );
-          return undefined;
-        }
-
-        const prevContext = {
-          tracker: context.tracker,
-          currentBloc: context.currentBloc,
-          depth: context.depth,
-          visitedBlocs: new Set(context.visitedBlocs),
-        };
-
-        context.tracker = tracker.getterState;
-        context.currentBloc = target;
-        context.depth++;
-        context.visitedBlocs.add(target);
-
-        try {
-          const descriptor = getDescriptor(target, prop);
-          const getterValue = descriptor!.get!.call(target);
-          tracker.getterState.trackedValues.set(prop, getterValue);
-          return getterValue;
-        } catch (error) {
-          tracker.getterState.currentlyAccessing.delete(prop);
-          throw error;
-        } finally {
-          context.tracker = prevContext.tracker;
-          context.currentBloc = prevContext.currentBloc;
-          context.depth = prevContext.depth;
-          context.visitedBlocs = prevContext.visitedBlocs;
-        }
+        return executeTrackedGetter(
+          target,
+          prop,
+          tracker.getterState,
+          getGetterExecutionContext(),
+        );
       }
 
       return value;
