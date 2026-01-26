@@ -12,6 +12,7 @@ import {
   type TrackingProxyState,
 } from '../tracking/tracking-proxy';
 import { DependencyManager } from '../tracking/dependency-manager';
+import { resolveDependencies } from '../tracking/resolve-dependencies';
 
 const STOP: unique symbol = Symbol('watch.STOP');
 
@@ -206,6 +207,9 @@ function watchImpl(
       for (const inst of instances) {
         const deps = stopTracking(tracker, inst);
         for (const dep of deps) {
+          externalDeps.add(dep);
+        }
+        for (const dep of resolveDependencies(inst)) {
           externalDeps.add(dep);
         }
       }

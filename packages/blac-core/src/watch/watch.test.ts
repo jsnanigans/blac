@@ -33,13 +33,14 @@ class NameCubit extends Cubit<NameState> {
 }
 
 class DependentCubit extends Cubit<{ value: number }> {
+  private counterDep = this.depend(CounterCubit);
+
   constructor() {
     super({ value: 0 });
   }
 
   get combinedValue() {
-    const counter = ensure(CounterCubit);
-    return this.state.value + counter.state.count;
+    return this.state.value + this.counterDep().state.count;
   }
 
   setValue = (value: number) => this.emit({ value });
