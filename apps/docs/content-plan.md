@@ -125,7 +125,7 @@ How auto-tracking works and optimization.
 - Proxy-based tracking explanation
 - State property tracking
 - Getter tracking
-- Cross-bloc dependency tracking (`borrow()` in getters)
+- Cross-bloc dependency tracking (`this.depend()` for getters)
 - Tracking modes: auto, manual, none
 - Code examples for each mode
 
@@ -154,7 +154,7 @@ Patterns for inter-bloc communication.
 
 - Pattern 1: Constructor dependencies (acquire + release)
 - Pattern 2: Event handler borrowing (borrow())
-- Pattern 3: Getter dependencies (auto-tracked)
+- Pattern 3: Getter dependencies (depend())
 - Pattern 4: Lazy/on-demand (ensure())
 - Pattern 5: Shared services (keepAlive)
 - Comparison table

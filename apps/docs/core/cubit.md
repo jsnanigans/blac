@@ -136,6 +136,39 @@ class TodoCubit extends Cubit<{ todos: Todo[]; filter: string }> {
 }
 ```
 
+## Cross-Bloc Dependencies with `depend()`
+
+When getters need to access other blocs, declare the dependency using `this.depend()`:
+
+```typescript
+class CartCubit extends Cubit<{ items: CartItem[] }> {
+  // Declare dependencies in the class body
+  private getShipping = this.depend(ShippingCubit);
+  private getTax = this.depend(TaxCubit);
+
+  constructor() {
+    super({ items: [] });
+  }
+
+  get totalWithShipping() {
+    const shipping = this.getShipping();
+    const itemTotal = this.state.items.reduce((sum, i) => sum + i.price, 0);
+    return itemTotal + shipping.state.cost;
+  }
+
+  get orderSummary() {
+    const shipping = this.getShipping();
+    const tax = this.getTax();
+    return `Shipping: $${shipping.state.cost}, Tax: $${tax.state.amount}`;
+  }
+}
+```
+
+- `this.depend(BlocClass)` returns a getter function that lazily resolves via `ensure()`
+- BlaC automatically subscribes to all declared dependencies and re-renders when they change
+- Use `borrow()` in regular methods for one-off access (no auto-tracking)
+- See [Bloc Communication](/react/bloc-communication) for full patterns
+
 ## Arrow Functions Requirement
 
 Always use arrow functions for methods. Regular methods lose `this` context when passed to React:

@@ -53,6 +53,11 @@ class CounterContainer extends StateContainer<{ count: number }> {
 - `emit(newState)` - Emit new state directly (with change detection via `===`)
 - `update(fn)` - Update state with function `(current) => next`
 - `onSystemEvent(event, handler)` - Subscribe to system lifecycle events
+- `depend(Type, instanceKey?)` - Declare a cross-bloc dependency; returns a lazy getter function (see [Inter-Bloc Communication](#inter-bloc-communication-patterns))
+
+**Read-only Properties:**
+
+- `dependencies` - `ReadonlyMap<StateContainerConstructor, string>` of declared cross-bloc dependencies
 
 **Configuration:**
 
@@ -338,26 +343,16 @@ result.instance.markAsRead();
 - Instance existence is conditional/uncertain
 - You want type-safe error handling without try/catch
 - Checking if another component has created an instance
-- **Note:** Like `borrow()`, this function tracks cross-bloc dependencies when used in getters
 
 #### `ensure()` - Get or Create (B2B Communication)
 
 Get existing instance OR create it if it doesn't exist, without incrementing ref count. Ideal for bloc-to-bloc communication when you need to ensure an instance exists.
 
 ```typescript
-class StatsCubit extends Cubit<StatsState> {
-  get totalWithAnalytics() {
-    // ✅ Ensures AnalyticsCubit exists, doesn't increment ref count
-    const analytics = ensure(AnalyticsCubit);
-    return this.state.total + analytics.state.bonus;
-  }
-}
-
-// In another bloc, access the auto-created instance
 class DashboardCubit extends Cubit<DashboardState> {
   loadData = () => {
-    // AnalyticsCubit already exists from ensure() call
-    const analytics = borrow(AnalyticsCubit);
+    // ✅ Ensures AnalyticsCubit exists, doesn't increment ref count
+    const analytics = ensure(AnalyticsCubit);
     analytics.trackEvent('dashboard_loaded');
   };
 }
@@ -369,7 +364,8 @@ class DashboardCubit extends Cubit<DashboardState> {
 - You want to lazily create shared instances on first access
 - You need to ensure an instance exists without claiming ownership
 - Accessing services/utilities that should exist but aren't tied to specific components
-- **Note:** Always tracks cross-bloc dependencies when used in getters
+
+**Note:** For cross-bloc dependencies in getters, use `this.depend()` instead — it uses `ensure()` internally and enables automatic tracking.
 
 **⚠️ Important:** Cannot use `ensure()` with isolated blocs (throws error).
 
@@ -546,18 +542,16 @@ function TodoList() {
 
 **Cross-Bloc Dependencies:**
 
-Getters can access other blocs, and BlaC will **automatically track those dependencies** when using `borrow()`, `borrowSafe()`, or `ensure()`:
+Getters can depend on other blocs. Declare dependencies using `this.depend()` in the class body:
 
 ```typescript
-import { borrow, borrowSafe, ensure } from '@blac/core';
-
 class StatsCubit extends Cubit<StatsState> {
+  // Declare dependency — returns a getter function
+  private getCounter = this.depend(CounterBloc);
+
   get totalWithBonus() {
-    // ✅ All three functions automatically track CounterBloc changes!
-    const counter = borrow(CounterBloc);        // Borrow (throws if missing)
-    // const counter = borrowSafe(CounterBloc); // Borrow (returns error)
-    // const counter = ensure(CounterBloc);     // Get or create
-    return this.state.total + counter.state;
+    const counter = this.getCounter();
+    return this.state.total + counter.state.count;
   }
 }
 
@@ -568,17 +562,16 @@ function StatsDisplay() {
 }
 ```
 
-**Important:** Only `borrow()`, `borrowSafe()`, and `ensure()` enable automatic tracking. Do NOT use `acquire()` in getters as it increments ref count and causes memory leaks.
+**Important:** Use `this.depend()` for cross-bloc dependencies in getters. Do NOT use `acquire()` in getters as it increments ref count and causes memory leaks. `borrow()` in getters does **not** auto-track — use it only in regular methods for one-off access.
 
 **How Cross-Bloc Tracking Works:**
 
-When you access a getter that uses `borrow()`, `borrowSafe()`, or `ensure()` to access another bloc:
-
-1. **During render**: BlaC records which external blocs are accessed
-2. **Subscription setup**: BlaC automatically subscribes to all accessed blocs
-3. **Change detection**: When any accessed bloc's state changes, BlaC re-evaluates the getter
-4. **Comparison**: If the getter's return value changed, component re-renders
-5. **Cleanup**: Subscriptions are automatically cleaned up when component unmounts
+1. **Declaration**: `this.depend(BlocClass)` registers the dependency and returns a lazy getter function
+2. **Resolution**: BlaC resolves all transitive dependencies via BFS over `depend()` declarations
+3. **Subscription**: BlaC automatically subscribes to all resolved dependencies
+4. **Change detection**: When any dependency's state changes, BlaC re-evaluates tracked getters
+5. **Comparison**: If the getter's return value changed, component re-renders
+6. **Cleanup**: Subscriptions are automatically cleaned up when component unmounts
 
 **Real-World Example - Notification System:**
 
@@ -608,6 +601,9 @@ class NotificationCubit extends Cubit<NotificationState> {
 
 // Heavy channel state (created on-demand)
 class ChannelCubit extends Cubit<ChannelState> {
+  // Declare dependency for getter tracking
+  private getNotifications = this.depend(NotificationCubit);
+
   constructor() {
     super({ messages: [], channelId: '', typingUsers: new Set() });
   }
@@ -618,14 +614,14 @@ class ChannelCubit extends Cubit<ChannelState> {
       messages: [...state.messages, message],
     }));
 
-    // Update notification count (borrowing, not owning)
+    // borrow() in methods — one-off access, no auto-tracking
     const notifications = borrow(NotificationCubit);
     notifications.incrementUnread(this.state.channelId);
   };
 
-  // Computed getter - tracks message state
+  // Computed getter — uses depend() for auto-tracking
   get unreadCount(): number {
-    const notifications = borrow(NotificationCubit);
+    const notifications = this.getNotifications();
     return notifications.state.unreadCounts.get(this.state.channelId) || 0;
   }
 }
@@ -658,7 +654,7 @@ function ChannelListItem({ channelId }: Props) {
 3. On state change, all tracked getters are re-computed and compared
 4. If any getter value changed (via `Object.is`), component re-renders
 5. Getter values are cached per render cycle for performance - the getter will only execute once per render cycle even if used multiple times
-6. Cross-bloc dependencies are automatically tracked and subscribed to (when using `borrow()`, `borrowSafe()`, or `ensure()`)
+6. Cross-bloc dependencies declared via `this.depend()` are automatically resolved and subscribed to
 
 ---
 
@@ -931,31 +927,31 @@ class ChannelCubit extends Cubit<ChannelState> {
 
 ---
 
-### Pattern 3: Getter-Based Dependencies (with Automatic Tracking)
+### Pattern 3: Getter-Based Dependencies (with `depend()`)
 
-Access other blocs in **getters** for computed values that depend on multiple blocs. BlaC automatically tracks and subscribes to these dependencies.
+Declare cross-bloc dependencies using `this.depend()` in the class body, then use them in getters. BlaC automatically resolves and subscribes to all declared dependencies.
 
 ```typescript
-import { borrow } from '@blac/core';
-
 class CartCubit extends Cubit<CartState> {
+  // Declare dependencies in the class body
+  private getShipping = this.depend(ShippingCubit);
+  private getTax = this.depend(TaxCubit);
+
   constructor() {
     super({ items: [] });
   }
 
-  // ✅ Computed getter with cross-bloc dependency
+  // ✅ Computed getter using declared dependency
   get totalWithShipping(): number {
     const itemTotal = this.state.items.reduce((sum, item) => sum + item.price, 0);
-
-    // Automatic tracking - component re-renders when ShippingCubit changes!
-    const shipping = borrow(ShippingCubit);
+    const shipping = this.getShipping();
     return itemTotal + shipping.state.cost;
   }
 
-  // ✅ Multi-bloc dependencies automatically tracked
+  // ✅ Multi-bloc dependencies
   get orderSummary(): string {
-    const shipping = borrow(ShippingCubit);
-    const tax = borrow(TaxCubit);
+    const shipping = this.getShipping();
+    const tax = this.getTax();
 
     return `Items: ${this.state.items.length}, Shipping: $${shipping.state.cost}, Tax: $${tax.state.amount}`;
   }
@@ -982,28 +978,32 @@ function CheckoutSummary() {
 
 **How it works:**
 
-1. Component accesses getter during render
-2. BlaC records all `borrow()`, `borrowSafe()`, and `ensure()` calls
-3. Automatically subscribes to all accessed blocs
-4. Re-evaluates getter when any dependency changes
+1. `this.depend(BlocClass)` declares the dependency and returns a lazy getter function
+2. BlaC resolves all transitive dependencies via BFS over `depend()` declarations
+3. Automatically subscribes to all resolved dependencies
+4. Re-evaluates getters when any dependency changes
 5. Triggers component re-render if getter value changed
 
 **⚠️ Important:**
 
-- Only use `borrow()`, `borrowSafe()`, or `ensure()` in getters
+- Use `this.depend()` for cross-bloc dependencies in getters
 - Never use `acquire()` in getters (causes memory leaks)
 - Keep getters pure (no side effects)
+- `borrow()` in getters does **not** auto-track — use it only in regular methods
 
 ---
 
 ### Pattern 4: Lazy/On-Demand Dependencies
 
-Create dependencies only when needed using `ensure()` or conditional `borrowSafe()` checks.
+Create dependencies only when needed using `ensure()` in methods, or use `this.depend()` for getter-based access.
 
 ```typescript
-import { ensure, borrowSafe } from '@blac/core';
+import { ensure } from '@blac/core';
 
 class UserProfileCubit extends Cubit<UserProfileState> {
+  // Use depend() if you need the dependency in getters
+  private getFeatureFlags = this.depend(FeatureFlagCubit);
+
   constructor() {
     super({ userId: '', profile: null });
   }
@@ -1012,20 +1012,14 @@ class UserProfileCubit extends Cubit<UserProfileState> {
     const profile = await api.getProfile(this.state.userId);
     this.patch({ profile });
 
-    // ✅ Create analytics bloc only when profile is loaded
+    // ✅ ensure() in methods — lazily creates the instance
     const analytics = ensure(AnalyticsCubit);
     analytics.trackEvent('profile_loaded', { userId: this.state.userId });
   };
 
   get premiumFeatures(): string[] {
-    // ✅ Check if feature flag bloc exists
-    const featureFlags = borrowSafe(FeatureFlagCubit);
-
-    if (featureFlags.error) {
-      return []; // Feature flags not available
-    }
-
-    return featureFlags.instance.state.premiumFeatures;
+    // ✅ depend() resolves via ensure() internally
+    return this.getFeatureFlags().state.premiumFeatures;
   }
 }
 ```
@@ -1107,7 +1101,7 @@ class UserCubit extends Cubit<UserState> {
 | ------------------ | --------------------------------- | ------------------ | ---------- |
 | **Constructor**    | Essential lifetime dependency     | Yes (must release) | High       |
 | **Method-Based**   | Event-driven side effects         | No (borrowing)     | Low        |
-| **Getter**         | Computed multi-bloc values        | No (auto-tracked)  | Low        |
+| **Getter+depend**  | Computed multi-bloc values        | No (auto-tracked)  | Low        |
 | **Lazy/On-Demand** | Optional/conditional dependencies | No                 | Very Low   |
 | **Service**        | Shared utilities/services         | No (keepAlive)     | Persistent |
 
@@ -1135,13 +1129,16 @@ class ContactsCubit extends Cubit<ContactsState> {
 // === Per-Entity Instances ===
 
 class ChannelCubit extends Cubit<ChannelState> {
+  // Declare dependency for getter tracking
+  private getNotifications = this.depend(NotificationCubit);
+
   // One instance per channel (created on-demand)
   constructor() {
     super({ messages: [], channelId: '' });
   }
 
   receiveMessage = (message: Message) => {
-    // Pattern 2: Method-based communication
+    // Pattern 2: Method-based communication (borrow, no auto-tracking)
     const notifications = borrow(NotificationCubit);
     notifications.incrementUnread(this.state.channelId);
 
@@ -1156,9 +1153,9 @@ class ChannelCubit extends Cubit<ChannelState> {
     notifications.clearUnread(this.state.channelId);
   };
 
-  // Pattern 3: Getter-based (automatic tracking)
+  // Pattern 3: Getter using declared dependency
   get unreadCount(): number {
-    const notifications = borrow(NotificationCubit);
+    const notifications = this.getNotifications();
     return notifications.state.unreadCounts.get(this.state.channelId) || 0;
   }
 }
@@ -1206,7 +1203,7 @@ function ChannelView({ channelId }: Props) {
     instanceId: channelId,
   });
 
-  // Pattern 3: Getter automatically tracks NotificationCubit
+  // Getter automatically tracked via depend() declaration
   return (
     <div>
       <h2>Messages</h2>
@@ -1742,6 +1739,7 @@ function createBloc<TBloc extends StateContainer<any>>(
 **StateContainer:**
 
 - `state` - Current state (readonly)
+- `dependencies` - Map of declared cross-bloc dependencies (readonly)
 - `subscribe(callback)` - Subscribe to changes
 - `dispose()` - Clean up
 - `isDisposed` - Check disposal status
@@ -1749,6 +1747,7 @@ function createBloc<TBloc extends StateContainer<any>>(
 - `lastUpdateTimestamp` - Last state update timestamp
 - `emit(state)` - Emit new state (protected)
 - `update(fn)` - Update with function (protected)
+- `depend(Type, instanceKey?)` - Declare cross-bloc dependency; returns getter function (protected)
 - `onSystemEvent(event, handler)` - Subscribe to system events (protected)
 
 **Cubit:**
@@ -2038,6 +2037,42 @@ if (!result.error) {
 - Bloc methods calling other blocs: Use `borrow()` (prevents memory leaks)
 - Conditional instance access: Use `borrowSafe()` (type-safe error handling)
 
+### From `borrow()` in getters to `depend()`
+
+Cross-bloc dependencies in getters are now declared explicitly via `this.depend()`:
+
+```typescript
+// Before: borrow() in getters auto-tracked
+class CartCubit extends Cubit<CartState> {
+  get totalWithShipping() {
+    const shipping = borrow(ShippingCubit);
+    return this.itemTotal + shipping.state.cost;
+  }
+}
+
+// After: declare dependencies with depend()
+class CartCubit extends Cubit<CartState> {
+  private getShipping = this.depend(ShippingCubit);
+
+  get totalWithShipping() {
+    const shipping = this.getShipping();
+    return this.itemTotal + shipping.state.cost;
+  }
+}
+```
+
+**Why the change:**
+
+- Explicit dependency declarations enable static analysis and introspection via `.dependencies`
+- Transitive dependencies are resolved automatically via BFS
+- Clearer mental model — `borrow()` is for one-off method access, `depend()` is for tracked getter dependencies
+
+**Migration tips:**
+
+- Replace `borrow(BlocClass)` in getters with a class-level `private getFoo = this.depend(BlocClass)` and call `this.getFoo()` in the getter
+- `borrow()` in regular methods (not getters) remains unchanged
+- `depend()` uses `ensure()` internally, so it creates the instance if it doesn't exist
+
 ### From onDispose to onSystemEvent
 
 ```typescript
@@ -2266,7 +2301,7 @@ const allSessions = getAll(UserSessionBloc); // Creates array copy
 
 1. **Destructuring state** - `const { a, b, c } = state` tracks all properties
 2. **Spreading props** - `<Child {...state} />` defeats tracking
-3. **Using `acquire()` in methods** - Causes ref count leaks
+3. **Using `acquire()` in methods/getters** - Causes ref count leaks (use `borrow()` in methods, `this.depend()` in getters)
 4. **Large monolithic components** - Split into smaller, focused components
 5. **Iterating arrays when accessing single element** - Use index access instead
 

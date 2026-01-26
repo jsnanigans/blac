@@ -247,7 +247,7 @@ const [state] = useBloc(AnalyticsCubit, {
 | ------------------------------- | ------------------------- | ------------------- |
 | Destructuring state             | Tracks all destructured   | Access directly     |
 | Spreading props `{...state}`    | Tracks everything         | Pass specific props |
-| `acquire()` in methods          | Memory leaks              | Use `borrow()`      |
+| `acquire()` in methods/getters  | Memory leaks              | Use `borrow()` / `depend()` |
 | Not using `useBlocActions`      | Unnecessary subscriptions | Split components    |
 | Single large component          | Over-rendering            | Split into smaller  |
 | Array iteration for single item | Tracks whole array        | Use index access    |

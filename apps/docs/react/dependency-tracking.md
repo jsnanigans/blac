@@ -126,15 +126,15 @@ function TodoStats() {
 
 ## Cross-Bloc Dependencies
 
-Getters can access other blocs. Dependencies are automatically tracked:
+Getters can depend on other blocs. Declare dependencies using `this.depend()` in the class body:
 
 ```tsx
-import { borrow } from '@blac/core';
-
 class CartCubit extends Cubit<CartState> {
+  // Declare dependency — returns a getter function
+  private getShipping = this.depend(ShippingCubit);
+
   get totalWithShipping() {
-    // borrow() in getter = auto-tracked
-    const shipping = borrow(ShippingCubit);
+    const shipping = this.getShipping();
     return this.itemTotal + shipping.state.cost;
   }
 }
@@ -142,13 +142,20 @@ class CartCubit extends Cubit<CartState> {
 function CheckoutTotal() {
   const [, cart] = useBloc(CartCubit);
 
-  // Re-renders when the result of `totalWithShipping` changes,
-  // Blac will check for changes when state on CartCubit OR ShippingCubit changes
+  // Re-renders when the result of `totalWithShipping` changes.
+  // BlaC checks for changes when state on CartCubit OR ShippingCubit changes.
   return <span>Total: ${cart.totalWithShipping}</span>;
 }
 ```
 
-Use `borrow()`, `borrowSafe()`, or `ensure()` in getters. Never `acquire()` (causes memory leaks).
+**How it works:**
+
+1. `this.depend(ShippingCubit)` declares a dependency and returns a lazy getter function
+2. BlaC resolves all transitive dependencies via BFS over `depend()` declarations
+3. When any dependency's state changes, tracked getters are re-evaluated
+4. Component re-renders only if the getter's return value changed
+
+**Note:** `borrow()` and `ensure()` in getters do **not** auto-track. Use `this.depend()` for cross-bloc getter dependencies.
 
 ## Tracking Modes
 

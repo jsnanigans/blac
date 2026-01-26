@@ -93,20 +93,22 @@ result.instance.markAsRead();
 Get existing OR create new instance. Does NOT increment ref count.
 
 ```typescript
-class StatsCubit extends Cubit<StatsState> {
-  get totalWithBonus() {
+class AppCubit extends Cubit<AppState> {
+  setupAnalytics = () => {
     // Ensures AnalyticsCubit exists, doesn't own it
     const analytics = ensure(AnalyticsCubit);
-    return this.state.total + analytics.state.bonus;
-  }
+    analytics.trackEvent('app_started');
+  };
 }
 ```
 
 **Use when:**
 
 - B2B communication where instance might not exist
-- Lazily creating shared instances
+- Lazily creating shared instances in methods
 - You need instance but don't want ownership
+
+**Note:** For cross-bloc dependencies in getters, use `this.depend()` instead — it uses `ensure()` internally and enables automatic tracking.
 
 **Cannot use with isolated blocs** - throws error.
 
@@ -204,8 +206,10 @@ class UserCubit extends Cubit<UserState> {
 
 ```typescript
 class CartCubit extends Cubit<CartState> {
+  private getShipping = this.depend(ShippingCubit);
+
   get totalWithShipping() {
-    const shipping = borrow(ShippingCubit); // Auto-tracked in React
+    const shipping = this.getShipping(); // Auto-tracked in React via depend()
     return this.itemTotal + shipping.state.cost;
   }
 }

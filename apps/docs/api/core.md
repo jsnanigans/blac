@@ -107,6 +107,7 @@ constructor(initialState: S);
 | `__excludeFromDevTools` *(static)*  | `boolean` |  |
 | `createdAt` | `number` | Timestamp when this instance was created |
 | `debug` | `boolean` | Whether debug logging is enabled |
+| `dependencies` *(readonly)* | `ReadonlyMap<StateContainerConstructor, string>` | Map of declared cross-bloc dependencies (Type → instanceKey) |
 | `enableStackTrace` *(static)*  | `boolean` |  |
 | `instanceId` | `string` | Unique identifier for this instance |
 | `isDisposed` *(readonly)*  | `boolean` | Whether this instance has been disposed |
@@ -116,6 +117,33 @@ constructor(initialState: S);
 | `state` *(readonly)*  | `Readonly<S>` | Current state value |
 
 **Methods:**
+
+#### `depend` *(protected)*
+
+Declare a cross-bloc dependency. Returns a getter function that lazily resolves the dependency via `ensure()`. Dependencies are tracked in the `dependencies` map for automatic subscription management.
+
+```typescript
+protected depend<T extends StateContainerConstructor>(Type: T, instanceKey?: string): () => InstanceType<T>;
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `Type` | `StateContainerConstructor` | The dependency's class |
+| `instanceKey` | `string` *(optional)* | Instance key for named instances |
+
+**Returns:** A function that resolves and returns the dependency instance
+
+**Examples:**
+
+```ts
+class CartCubit extends Cubit<CartState> {
+  private getShipping = this.depend(ShippingCubit);
+
+  get totalWithShipping() {
+    return this.itemTotal + this.getShipping().state.cost;
+  }
+}
+```
 
 #### `dispose`
 
