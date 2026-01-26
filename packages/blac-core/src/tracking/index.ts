@@ -27,7 +27,6 @@ export {
   clearActiveTracker,
   commitTrackedGetters,
   invalidateRenderCache,
-  clearExternalDependencies,
 } from './tracking-proxy';
 
 // Path utilities (only shallowEqual is used by adapters)
@@ -35,3 +34,6 @@ export { shallowEqual } from './path-utils';
 
 // Dependency management
 export { DependencyManager } from './dependency-manager';
+
+// Dependency resolution
+export { resolveDependencies } from './resolve-dependencies';

@@ -1,5 +1,7 @@
 # @blac/react
 
+> ⚠️ **Warning:** This project is currently under active development. The API may change in future releases. Use with caution in production environments.
+
 React integration for the BlaC state management library with automatic re-render optimization.
 
 ## Installation

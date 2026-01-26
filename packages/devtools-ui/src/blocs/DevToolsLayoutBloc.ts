@@ -1,4 +1,4 @@
-import { Cubit, blac, borrow } from '@blac/core';
+import { Cubit, blac } from '@blac/core';
 import type { InstanceData } from '../types';
 import { DevToolsInstancesBloc } from './DevToolsInstancesBloc';
 import {
@@ -22,6 +22,9 @@ type LayoutState = {
  */
 @blac({ excludeFromDevTools: true })
 export class DevToolsLayoutBloc extends Cubit<LayoutState> {
+  private instancesBloc = this.depend(DevToolsInstancesBloc);
+  private diffBloc = this.depend(DevToolsDiffBloc);
+
   constructor() {
     super({
       activeTab: 'Instances', // Default: Instances tab
@@ -59,36 +62,18 @@ export class DevToolsLayoutBloc extends Cubit<LayoutState> {
     this.patch({ isHistoryExpanded: !this.state.isHistoryExpanded });
   };
 
-  /**
-   * Get currently selected instance
-   * Borrows data from DevToolsInstancesBloc
-   */
   get selectedInstance(): InstanceData | null {
     if (!this.state.selectedId) return null;
-
-    const instancesBloc = borrow(DevToolsInstancesBloc);
-    return instancesBloc.getInstance(this.state.selectedId);
+    return this.instancesBloc().getInstance(this.state.selectedId);
   }
 
-  /**
-   * Get diff for selected instance
-   * Borrows data from DevToolsDiffBloc
-   */
   get selectedDiff(): DiffResult {
     if (!this.state.selectedId) return null;
-
-    const diffBloc = borrow(DevToolsDiffBloc);
-    return diffBloc.getDiff(this.state.selectedId);
+    return this.diffBloc().getDiff(this.state.selectedId);
   }
 
-  /**
-   * Get state history for selected instance
-   * Borrows data from DevToolsDiffBloc
-   */
   get selectedHistory(): StateSnapshot[] {
     if (!this.state.selectedId) return [];
-
-    const diffBloc = borrow(DevToolsDiffBloc);
-    return diffBloc.getHistory(this.state.selectedId);
+    return this.diffBloc().getHistory(this.state.selectedId);
   }
 }

@@ -1,5 +1,7 @@
 import { generateSimpleId } from '../utils/idGenerator';
+import { BLAC_DEFAULTS } from '../constants';
 import { globalRegistry } from './StateContainerRegistry';
+import type { StateContainerConstructor } from '../types/utilities';
 
 /**
  * Configuration options for initializing a StateContainer instance
@@ -43,6 +45,8 @@ type SystemEventHandler<S, E extends SystemEvent> = (
   payload: SystemEventPayloads<S>[E],
 ) => void;
 
+const EMPTY_DEPS: ReadonlyMap<any, any> = new Map();
+
 /**
  * Abstract base class for all state containers in BlaC.
  * Provides lifecycle management, subscription handling, ref counting,
@@ -83,6 +87,26 @@ export abstract class StateContainer<S extends object = any> {
   instanceId: string = generateSimpleId(this.constructor.name, 'main');
   /** Timestamp when this instance was created */
   createdAt: number = Date.now();
+
+  private _dependencies: Map<StateContainerConstructor, string> | null = null;
+
+  get dependencies(): ReadonlyMap<StateContainerConstructor, string> {
+    return this._dependencies ?? EMPTY_DEPS;
+  }
+
+  protected depend<T extends StateContainerConstructor>(
+    Type: T,
+    instanceKey?: string,
+  ): () => InstanceType<T> {
+    if (!this._dependencies) {
+      this._dependencies = new Map();
+    }
+    this._dependencies.set(
+      Type,
+      instanceKey ?? BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
+    );
+    return () => globalRegistry.ensure(Type, instanceKey);
+  }
 
   constructor(initialState: S) {
     this._state = initialState;

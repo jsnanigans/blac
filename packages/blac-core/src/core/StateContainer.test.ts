@@ -12,6 +12,7 @@ import {
   getRefCount,
   clearAll,
 } from '../registry';
+import { Cubit } from './Cubit';
 
 // Test implementation of StateContainer
 class TestContainer extends StateContainer<{ value: number }> {
@@ -614,6 +615,89 @@ describe('StateContainer', () => {
 
       release(TestContainer, 'shared');
       expect(hasInstance(TestContainer, 'shared')).toBe(false);
+    });
+  });
+
+  describe('depend()', () => {
+    class DepTarget extends StateContainer<{ value: number }> {
+      constructor() {
+        super({ value: 0 });
+      }
+    }
+
+    class DepOwner extends StateContainer<{ x: number }> {
+      getTarget = this.depend(DepTarget);
+
+      constructor() {
+        super({ x: 1 });
+      }
+    }
+
+    it('does not resolve at declaration time', () => {
+      new DepOwner();
+      expect(hasInstance(DepTarget)).toBe(false);
+    });
+
+    it('resolves on accessor call', () => {
+      const owner = new DepOwner();
+      const target = owner.getTarget();
+
+      expect(target).toBeInstanceOf(DepTarget);
+      expect(hasInstance(DepTarget)).toBe(true);
+    });
+
+    it('returns same instance on repeated calls', () => {
+      const owner = new DepOwner();
+      const a = owner.getTarget();
+      const b = owner.getTarget();
+
+      expect(a).toBe(b);
+    });
+
+    it('does not increment refCount (ensure semantics)', () => {
+      const owner = new DepOwner();
+      owner.getTarget();
+      owner.getTarget();
+
+      expect(getRefCount(DepTarget)).toBe(1);
+    });
+
+    it('exposes declared dependencies via getter', () => {
+      const owner = new DepOwner();
+
+      expect(owner.dependencies.size).toBe(1);
+      expect(owner.dependencies.get(DepTarget)).toBe('default');
+    });
+
+    it('supports custom instance key', () => {
+      class CustomKeyOwner extends StateContainer<{ x: number }> {
+        getTarget = this.depend(DepTarget, 'custom');
+        constructor() {
+          super({ x: 1 });
+        }
+      }
+
+      const owner = new CustomKeyOwner();
+      expect(owner.dependencies.get(DepTarget)).toBe('custom');
+    });
+
+    it('works on Cubit subclasses', () => {
+      class MyCubit extends Cubit<{ count: number }> {
+        getTarget = this.depend(DepTarget);
+        constructor() {
+          super({ count: 0 });
+        }
+      }
+
+      const cubit = new MyCubit();
+      const target = cubit.getTarget();
+
+      expect(target).toBeInstanceOf(DepTarget);
+    });
+
+    it('returns empty map when no dependencies declared', () => {
+      const container = new TestContainer();
+      expect(container.dependencies.size).toBe(0);
     });
   });
 });

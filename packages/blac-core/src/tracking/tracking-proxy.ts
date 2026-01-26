@@ -467,7 +467,8 @@ export interface GetterState {
   isTracking: boolean;
   renderCache: Map<string | symbol, unknown>;
   cacheValid: boolean;
-  externalDependencies: Set<StateContainerInstance>;
+  depth: number;
+  visitedBlocs: Set<StateContainerInstance>;
 }
 
 const descriptorCache = new WeakMap<
@@ -480,28 +481,7 @@ const blocProxyCache = new WeakMap<StateContainerInstance>();
 
 const activeTrackerMap = new WeakMap<StateContainerInstance, GetterState>();
 
-interface GetterExecutionContext {
-  tracker: GetterState | null;
-  currentBloc: StateContainerInstance | null;
-  depth: number;
-  visitedBlocs: Set<StateContainerInstance>;
-}
-
-const getterExecutionContext: GetterExecutionContext = {
-  tracker: null,
-  currentBloc: null,
-  depth: 0,
-  visitedBlocs: new Set(),
-};
-
 const MAX_GETTER_DEPTH = BLAC_DEFAULTS.MAX_GETTER_DEPTH;
-
-/**
- * @internal
- */
-export function getGetterExecutionContext(): GetterExecutionContext {
-  return getterExecutionContext;
-}
 
 /**
  * @internal
@@ -556,7 +536,8 @@ export function createGetterState(): GetterState {
     isTracking: false,
     renderCache: new Map(),
     cacheValid: false,
-    externalDependencies: new Set(),
+    depth: 0,
+    visitedBlocs: new Set(),
   };
 }
 
@@ -606,7 +587,6 @@ function executeTrackedGetter<T extends StateContainerInstance>(
   target: T,
   prop: string | symbol,
   tracker: GetterState,
-  context: GetterExecutionContext,
 ): unknown {
   tracker.currentlyAccessing.add(prop);
 
@@ -616,7 +596,7 @@ function executeTrackedGetter<T extends StateContainerInstance>(
     return cachedValue;
   }
 
-  if (context.depth >= MAX_GETTER_DEPTH) {
+  if (tracker.depth >= MAX_GETTER_DEPTH) {
     console.warn(
       `${BLAC_ERROR_PREFIX} Maximum getter depth (${MAX_GETTER_DEPTH}) exceeded. ` +
         `Possible circular dependency in getter "${String(prop)}" on ${target.constructor.name}.`,
@@ -624,24 +604,18 @@ function executeTrackedGetter<T extends StateContainerInstance>(
     return undefined;
   }
 
-  if (context.visitedBlocs.has(target)) {
+  if (tracker.visitedBlocs.has(target)) {
     console.warn(
       `${BLAC_ERROR_PREFIX} Circular dependency detected: getter "${String(prop)}" on ${target.constructor.name}.`,
     );
     return undefined;
   }
 
-  const prevContext = {
-    tracker: context.tracker,
-    currentBloc: context.currentBloc,
-    depth: context.depth,
-    visitedBlocs: new Set(context.visitedBlocs),
-  };
+  const prevDepth = tracker.depth;
+  const prevVisited = new Set(tracker.visitedBlocs);
 
-  context.tracker = tracker;
-  context.currentBloc = target;
-  context.depth++;
-  context.visitedBlocs.add(target);
+  tracker.depth++;
+  tracker.visitedBlocs.add(target);
 
   try {
     const descriptor = getDescriptor(target, prop);
@@ -652,10 +626,8 @@ function executeTrackedGetter<T extends StateContainerInstance>(
     tracker.currentlyAccessing.delete(prop);
     throw error;
   } finally {
-    context.tracker = prevContext.tracker;
-    context.currentBloc = prevContext.currentBloc;
-    context.depth = prevContext.depth;
-    context.visitedBlocs = prevContext.visitedBlocs;
+    tracker.depth = prevDepth;
+    tracker.visitedBlocs = prevVisited;
   }
 }
 
@@ -675,12 +647,7 @@ export function createBlocProxy<TBloc extends StateContainerInstance>(
       const tracker = activeTrackerMap.get(target);
 
       if (tracker?.isTracking && isGetter(target, prop)) {
-        return executeTrackedGetter(
-          target,
-          prop,
-          tracker,
-          getterExecutionContext,
-        );
+        return executeTrackedGetter(target, prop, tracker);
       }
 
       return Reflect.get(target, prop, receiver);
@@ -750,13 +717,6 @@ export function invalidateRenderCache(tracker: GetterState): void {
 /**
  * @internal
  */
-export function clearExternalDependencies(tracker: GetterState): void {
-  tracker.externalDependencies.clear();
-}
-
-/**
- * @internal
- */
 export function resetGetterState(tracker: GetterState): void {
   tracker.trackedValues.clear();
   tracker.currentlyAccessing.clear();
@@ -764,7 +724,8 @@ export function resetGetterState(tracker: GetterState): void {
   tracker.renderCache.clear();
   tracker.cacheValid = false;
   tracker.isTracking = false;
-  tracker.externalDependencies.clear();
+  tracker.depth = 0;
+  tracker.visitedBlocs.clear();
 }
 
 // =============================================================================
@@ -800,7 +761,6 @@ export function startTracking(tracker: TrackingProxyState): void {
   tracker.isTracking = true;
   tracker.dependencies.clear();
   tracker.getterState.isTracking = true;
-  tracker.getterState.externalDependencies.clear();
   startDependency(tracker.dependencyState);
 }
 
@@ -817,14 +777,7 @@ export function stopTracking(
   capturePaths(tracker.dependencyState, bloc.state);
   commitTrackedGetters(tracker.getterState);
 
-  const allDeps = new Set(tracker.dependencies);
-  for (const dep of tracker.getterState.externalDependencies) {
-    allDeps.add(dep);
-  }
-
-  tracker.getterState.externalDependencies.clear();
-
-  return allDeps;
+  return new Set(tracker.dependencies);
 }
 
 /**
@@ -892,12 +845,7 @@ export function createTrackingProxy<T extends StateContainerInstance>(
       }
 
       if (tracker.isTracking && isGetter(target, prop)) {
-        return executeTrackedGetter(
-          target,
-          prop,
-          tracker.getterState,
-          getGetterExecutionContext(),
-        );
+        return executeTrackedGetter(target, prop, tracker.getterState);
       }
 
       return value;

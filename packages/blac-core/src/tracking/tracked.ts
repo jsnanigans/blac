@@ -52,9 +52,6 @@ export function tracked<T>(
   }
 
   const dependencies = new Set(tracker.dependencies);
-  for (const dep of tracker.getterState.externalDependencies) {
-    dependencies.add(dep);
-  }
 
   if (options?.exclude) {
     dependencies.delete(options.exclude);
@@ -115,12 +112,6 @@ export class TrackedContext {
         if (!this.primaryBlocs.has(dep)) {
           allDeps.add(dep);
         }
-      }
-    }
-
-    for (const dep of this.tracker.getterState.externalDependencies) {
-      if (!this.primaryBlocs.has(dep)) {
-        allDeps.add(dep);
       }
     }
 

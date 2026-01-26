@@ -1,6 +1,5 @@
 import type { StateContainer, StateContainerConfig } from './StateContainer';
 import { createPluginManager } from '../plugin/PluginManager';
-import { getGetterExecutionContext } from '../tracking/tracking-proxy';
 import { BLAC_DEFAULTS, BLAC_ERROR_PREFIX } from '../constants';
 import { isIsolatedClass, isKeepAliveClass } from '../utils/static-props';
 import {
@@ -132,19 +131,6 @@ export class StateContainerRegistry {
     return this.instancesByConstructor.get(Type) || new Map();
   }
 
-  private trackExecutionContext(instance: StateContainer<any>): void {
-    // Track cross-bloc dependency if we're inside a getter execution
-    const context = getGetterExecutionContext();
-    if (
-      context.tracker &&
-      context.currentBloc &&
-      context.currentBloc !== instance
-    ) {
-      // Add this bloc as an external dependency
-      context.tracker.externalDependencies.add(instance);
-    }
-  }
-
   /**
    * Acquire an instance with ref counting (ownership semantics).
    * Creates a new instance if one doesn't exist, or returns existing and increments ref count.
@@ -154,7 +140,6 @@ export class StateContainerRegistry {
    * @param options - Acquisition options
    * @param options.canCreate - Whether to create new instance if not found (default: true)
    * @param options.countRef - Whether to increment ref count (default: true)
-   * @param options.trackExecutionContext - Whether to track cross-bloc dependency (default: false)
    * @returns The state container instance
    */
   acquire<T extends StateContainerConstructor = StateContainerConstructor>(
@@ -163,14 +148,9 @@ export class StateContainerRegistry {
     options: {
       canCreate?: boolean;
       countRef?: boolean;
-      trackExecutionContext?: boolean;
     } = {},
   ): InstanceType<T> {
-    const {
-      canCreate = true,
-      countRef = true,
-      trackExecutionContext = false,
-    } = options;
+    const { canCreate = true, countRef = true } = options;
     // Check if this is an isolated type
     const registryConfig = this.typeConfigs.get(Type.name);
     const isolated = isIsolatedClass(Type) || registryConfig?.isolated === true;
@@ -191,25 +171,24 @@ export class StateContainerRegistry {
       instance.initConfig(config);
       // Register type for lifecycle coordination
       this.registerType(Type);
-      if (trackExecutionContext) {
-        this.trackExecutionContext(instance);
-      }
       return instance;
     }
 
     // Shared: singleton pattern with ref counting
     const instances = this.ensureInstancesMap(Type);
-    const entry = instances.get(instanceKey);
+    let entry = instances.get(instanceKey);
 
-    // Increment ref count if found, only if counting is enabled or refCount is 0
-    if (entry && (countRef || entry.refCount === 0)) {
+    // Detect stale disposed entries (disposed directly, not through release)
+    if (entry?.instance.isDisposed) {
+      instances.delete(instanceKey);
+      entry = undefined;
+    }
+
+    if (entry && countRef) {
       entry.refCount++;
     }
 
     if (entry) {
-      if (trackExecutionContext) {
-        this.trackExecutionContext(entry.instance);
-      }
       return entry.instance;
     }
 
@@ -227,9 +206,6 @@ export class StateContainerRegistry {
     // Register type for lifecycle coordination
     this.registerType(Type);
 
-    if (trackExecutionContext) {
-      this.trackExecutionContext(instance);
-    }
     return instance;
   }
 
@@ -247,7 +223,7 @@ export class StateContainerRegistry {
   ): InstanceType<T> {
     return this.acquire(Type, instanceKey, {
       canCreate: false,
-      trackExecutionContext: true,
+      countRef: false,
     });
   }
 
@@ -290,7 +266,6 @@ export class StateContainerRegistry {
     return this.acquire(Type, instanceKey, {
       canCreate: true,
       countRef: false,
-      trackExecutionContext: true,
     });
   }
 

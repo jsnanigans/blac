@@ -1,4 +1,4 @@
-import { Cubit, blac, borrow } from '@blac/core';
+import { Cubit, blac } from '@blac/core';
 import { DevToolsInstancesBloc } from './DevToolsInstancesBloc';
 
 const MAX_HISTORY_SIZE = 50;
@@ -27,6 +27,8 @@ export type DiffResult = {
  */
 @blac({ excludeFromDevTools: true })
 export class DevToolsDiffBloc extends Cubit<DiffState> {
+  private instancesBloc = this.depend(DevToolsInstancesBloc);
+
   constructor() {
     super({
       stateHistory: new Map(),
@@ -100,9 +102,7 @@ export class DevToolsDiffBloc extends Cubit<DiffState> {
     // Get most recent snapshot (first in array)
     const previousSnapshot = history[0];
 
-    // Borrow instance data without ownership
-    const instancesBloc = borrow(DevToolsInstancesBloc);
-    const instance = instancesBloc.getInstance(instanceId);
+    const instance = this.instancesBloc().getInstance(instanceId);
     if (!instance) return null;
 
     const previous = previousSnapshot.state;

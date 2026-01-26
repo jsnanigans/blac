@@ -50,7 +50,7 @@ import {
   clearActiveTracker,
   commitTrackedGetters,
   invalidateRenderCache,
-  clearExternalDependencies,
+  resolveDependencies,
   DependencyManager,
 } from '@blac/core/tracking';
 
@@ -107,8 +107,8 @@ export class ExternalDepsManager {
 
   /**
    * Update subscriptions to external bloc dependencies.
-   * Creates subscriptions to blocs accessed via getters.
-   * @param getterState - The getter tracker state with external dependencies
+   * Resolves transitive dependencies via depend() declarations.
+   * @param getterState - The getter tracker state (needed for change detection)
    * @param rawInstance - The primary bloc instance (excluded from subscriptions)
    * @param onGetterChange - Callback to invoke when external dependency changes
    * @returns true if subscriptions were updated, false if unchanged
@@ -118,11 +118,11 @@ export class ExternalDepsManager {
     rawInstance: StateContainerInstance,
     onGetterChange: () => void,
   ): boolean {
-    if (!getterState?.externalDependencies) {
+    if (!getterState) {
       return false;
     }
 
-    const currentDeps = getterState.externalDependencies;
+    const currentDeps = resolveDependencies(rawInstance);
 
     const onExternalChange = () => {
       invalidateRenderCache(getterState);
@@ -132,15 +132,7 @@ export class ExternalDepsManager {
       }
     };
 
-    const changed = this.manager.sync(
-      currentDeps,
-      onExternalChange,
-      rawInstance,
-    );
-
-    clearExternalDependencies(getterState);
-
-    return changed;
+    return this.manager.sync(currentDeps, onExternalChange, rawInstance);
   }
 
   /**
@@ -379,5 +371,6 @@ export function disableGetterTracking<TBloc extends StateContainerConstructor>(
   if (adapterState.getterState) {
     adapterState.getterState.isTracking = false;
     clearActiveTracker(rawInstance);
+    commitTrackedGetters(adapterState.getterState);
   }
 }

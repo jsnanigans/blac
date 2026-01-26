@@ -1,5 +1,7 @@
 # @blac/core
 
+> ⚠️ **Warning:** This project is currently under active development. The API may change in future releases. Use with caution in production environments.
+
 Core state management library implementing the BloC pattern for TypeScript applications.
 
 ## Installation

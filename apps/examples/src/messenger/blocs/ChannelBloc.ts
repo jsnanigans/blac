@@ -24,10 +24,9 @@ export interface ChannelState {
  * independent with its own state and lifecycle.
  */
 export class ChannelBloc extends Cubit<ChannelState, { channelId: string }> {
-  /**
-   * Ensure UserCubit exists for a given user (lazy creation)
-   * This is called when messages are received to ensure we can render user info
-   */
+  private _contactsDep = this.depend(ContactsCubit);
+  private _notificationsDep = this.depend(NotificationCubit);
+
   private ensureUserCubit(userId: string): void {
     // Skip current user (always exists)
     if (userId === CURRENT_USER_ID) return;

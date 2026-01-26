@@ -9,11 +9,12 @@ import {
   createBlocProxy,
   hasGetterChanges,
   invalidateRenderCache,
-  clearExternalDependencies,
   resetGetterState,
   isGetter,
   getDescriptor,
 } from './tracking-proxy';
+import { resolveDependencies } from './resolve-dependencies';
+import { globalRegistry } from '../core/StateContainerRegistry';
 
 class TestBloc extends Cubit<{ count: number }> {
   constructor() {
@@ -105,8 +106,9 @@ describe('getter-tracker', () => {
       expect(tracker.renderCache).toBeInstanceOf(Map);
       expect(tracker.renderCache.size).toBe(0);
       expect(tracker.cacheValid).toBe(false);
-      expect(tracker.externalDependencies).toBeInstanceOf(Set);
-      expect(tracker.externalDependencies.size).toBe(0);
+      expect(tracker.depth).toBe(0);
+      expect(tracker.visitedBlocs).toBeInstanceOf(Set);
+      expect(tracker.visitedBlocs.size).toBe(0);
     });
   });
 
@@ -330,18 +332,6 @@ describe('getter-tracker', () => {
     });
   });
 
-  describe('clearExternalDependencies', () => {
-    it('should clear external dependencies set', () => {
-      const tracker = createGetterState();
-      const externalBloc = new TestBloc();
-      tracker.externalDependencies.add(externalBloc);
-
-      clearExternalDependencies(tracker);
-
-      expect(tracker.externalDependencies.size).toBe(0);
-    });
-  });
-
   describe('resetGetterTracker', () => {
     it('should reset all tracker state', () => {
       const tracker = createGetterState();
@@ -351,7 +341,8 @@ describe('getter-tracker', () => {
       tracker.renderCache.set('doubled', 20);
       tracker.cacheValid = true;
       tracker.isTracking = true;
-      tracker.externalDependencies.add(new TestBloc());
+      tracker.depth = 3;
+      tracker.visitedBlocs.add(new TestBloc());
 
       resetGetterState(tracker);
 
@@ -361,7 +352,8 @@ describe('getter-tracker', () => {
       expect(tracker.renderCache.size).toBe(0);
       expect(tracker.cacheValid).toBe(false);
       expect(tracker.isTracking).toBe(false);
-      expect(tracker.externalDependencies.size).toBe(0);
+      expect(tracker.depth).toBe(0);
+      expect(tracker.visitedBlocs.size).toBe(0);
     });
   });
 
@@ -461,5 +453,116 @@ describe('getter-tracker', () => {
         sum: 5,
       });
     });
+  });
+});
+
+describe('resolveDependencies', () => {
+  beforeEach(() => {
+    globalRegistry.clearAll();
+  });
+
+  it('should return empty set for bloc with no dependencies', () => {
+    class NoDepsBloc extends Cubit<{ value: number }> {
+      constructor() {
+        super({ value: 0 });
+      }
+    }
+
+    const bloc = new NoDepsBloc();
+    const deps = resolveDependencies(bloc);
+    expect(deps.size).toBe(0);
+  });
+
+  it('should resolve direct dependencies', () => {
+    class DepBloc extends Cubit<{ value: number }> {
+      constructor() {
+        super({ value: 0 });
+      }
+    }
+
+    class ParentBloc extends Cubit<{ value: number }> {
+      dep = this.depend(DepBloc);
+      constructor() {
+        super({ value: 0 });
+      }
+    }
+
+    globalRegistry.acquire(DepBloc);
+    const parent = new ParentBloc();
+    const deps = resolveDependencies(parent);
+
+    expect(deps.size).toBe(1);
+    const depInstance = globalRegistry.ensure(DepBloc);
+    expect(deps.has(depInstance)).toBe(true);
+  });
+
+  it('should resolve transitive dependencies (A→B→C)', () => {
+    class CBloc extends Cubit<{ value: number }> {
+      constructor() {
+        super({ value: 0 });
+      }
+    }
+
+    class BBloc extends Cubit<{ value: number }> {
+      c = this.depend(CBloc);
+      constructor() {
+        super({ value: 0 });
+      }
+    }
+
+    class ABloc extends Cubit<{ value: number }> {
+      b = this.depend(BBloc);
+      constructor() {
+        super({ value: 0 });
+      }
+    }
+
+    globalRegistry.acquire(CBloc);
+    globalRegistry.acquire(BBloc);
+    const a = new ABloc();
+    const deps = resolveDependencies(a);
+
+    expect(deps.size).toBe(2);
+    expect(deps.has(globalRegistry.ensure(BBloc))).toBe(true);
+    expect(deps.has(globalRegistry.ensure(CBloc))).toBe(true);
+  });
+
+  it('should handle cycles (A→B→A)', () => {
+    class CycleBBloc extends Cubit<{ value: number }> {
+      constructor() {
+        super({ value: 0 });
+      }
+    }
+
+    class CycleABloc extends Cubit<{ value: number }> {
+      b = this.depend(CycleBBloc);
+      constructor() {
+        super({ value: 0 });
+      }
+    }
+
+    // Manually add CycleABloc as dependency of CycleBBloc after creation
+    globalRegistry.acquire(CycleBBloc);
+    globalRegistry.acquire(CycleABloc);
+    const bInst = globalRegistry.ensure(CycleBBloc);
+    (bInst as any)._dependencies = new Map([[CycleABloc, 'default']]);
+
+    const a = globalRegistry.ensure(CycleABloc);
+    const deps = resolveDependencies(a);
+
+    // Should resolve both without infinite loop
+    expect(deps.has(bInst)).toBe(true);
+  });
+
+  it('should exclude self from result', () => {
+    class SelfBloc extends Cubit<{ value: number }> {
+      constructor() {
+        super({ value: 0 });
+      }
+    }
+
+    const bloc = globalRegistry.acquire(SelfBloc);
+    const deps = resolveDependencies(bloc);
+    expect(deps.has(bloc)).toBe(false);
   });
 });

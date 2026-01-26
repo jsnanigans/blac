@@ -9,6 +9,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@blac/core': path.resolve(__dirname, '../blac-core/src'),
+      '@blac/adapter': path.resolve(__dirname, '../blac-adapter/src'),
       '@blac/react': path.resolve(__dirname, './src'),
       '@blac/devtools-connect': path.resolve(
         __dirname,

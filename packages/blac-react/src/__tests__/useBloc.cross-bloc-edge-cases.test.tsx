@@ -5,6 +5,8 @@ import { useBloc } from '../useBloc';
 
 // Deep dependency chain blocs
 class DeepABloc extends Cubit<{ value: number }> {
+  private deepB = this.depend(DeepBBloc);
+
   constructor() {
     super({ value: 1 });
   }
@@ -12,11 +14,13 @@ class DeepABloc extends Cubit<{ value: number }> {
   increment = () => this.emit({ value: this.state.value + 1 });
 
   get computed() {
-    return this.state.value + borrow(DeepBBloc).computed;
+    return this.state.value + this.deepB().computed;
   }
 }
 
 class DeepBBloc extends Cubit<{ value: number }> {
+  private deepC = this.depend(DeepCBloc);
+
   constructor() {
     super({ value: 10 });
   }
@@ -24,7 +28,7 @@ class DeepBBloc extends Cubit<{ value: number }> {
   increment = () => this.emit({ value: this.state.value + 1 });
 
   get computed() {
-    return this.state.value + borrow(DeepCBloc).computed;
+    return this.state.value + this.deepC().computed;
   }
 }
 
@@ -42,6 +46,8 @@ class DeepCBloc extends Cubit<{ value: number }> {
 
 // Dynamic dependency blocs
 class DynamicDepBloc extends Cubit<{ useExternal: boolean; value: number }> {
+  private conditionalBloc = this.depend(ConditionalBloc);
+
   constructor() {
     super({ useExternal: false, value: 5 });
   }
@@ -52,7 +58,7 @@ class DynamicDepBloc extends Cubit<{ useExternal: boolean; value: number }> {
 
   get computed() {
     if (this.state.useExternal) {
-      return this.state.value + borrow(ConditionalBloc).state.count;
+      return this.state.value + this.conditionalBloc().state.count;
     }
     return this.state.value;
   }

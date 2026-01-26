@@ -7,6 +7,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { StateContainer } from './StateContainer';
 import {
   acquire,
+  borrow,
+  ensure,
   release,
   getAll,
   forEach,
@@ -14,6 +16,7 @@ import {
   clear,
   clearAll,
   getStats,
+  getRefCount,
 } from '../registry';
 
 // Test implementations
@@ -506,6 +509,41 @@ describe('StateContainer - Registry Features', () => {
 
       expect(instance.isDisposed).toBe(false);
       expect(getAll(KeepAliveBloc)).toHaveLength(1);
+    });
+
+    it('borrow does not increment refCount', () => {
+      acquire(CounterBloc, 'test');
+      const before = getRefCount(CounterBloc, 'test');
+
+      borrow(CounterBloc, 'test');
+      const after = getRefCount(CounterBloc, 'test');
+
+      expect(after).toBe(before);
+    });
+
+    it('ensure does not increment keepAlive at refCount 0', () => {
+      class KeepAliveBloc extends StateContainer<{ value: number }> {
+        static keepAlive = true;
+        constructor() {
+          super({ value: 0 });
+        }
+      }
+
+      acquire(KeepAliveBloc, 'test');
+      release(KeepAliveBloc, 'test');
+      expect(getRefCount(KeepAliveBloc, 'test')).toBe(0);
+
+      ensure(KeepAliveBloc, 'test');
+      expect(getRefCount(KeepAliveBloc, 'test')).toBe(0);
+    });
+
+    it('acquire replaces disposed entry', () => {
+      const instance1 = acquire(CounterBloc, 'test');
+      instance1.dispose();
+
+      const instance2 = acquire(CounterBloc, 'test');
+      expect(instance2).not.toBe(instance1);
+      expect(instance2.isDisposed).toBe(false);
     });
   });
 });

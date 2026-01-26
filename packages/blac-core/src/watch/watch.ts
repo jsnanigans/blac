@@ -210,10 +210,6 @@ function watchImpl(
         }
       }
 
-      for (const dep of tracker.getterState.externalDependencies) {
-        externalDeps.add(dep);
-      }
-
       for (const inst of instances) {
         externalDeps.delete(inst);
       }
