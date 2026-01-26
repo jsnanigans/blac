@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-BlaC is a TypeScript-based state management library for React applications. It provides a clean, type-safe state container architecture inspired by the BLoC pattern:
+BlaC is a TypeScript-based state management library for React and Preact applications. It provides a clean, type-safe state container architecture inspired by the BLoC pattern:
 - **StateContainer**: Abstract base class for all state containers
 - **Cubit**: Simple state container with direct state emission
 
@@ -14,39 +14,53 @@ The project is a pnpm workspace monorepo with packages, apps, and plugin archite
 
 ```
 packages/
-  blac/                  - Core state management library (@blac/core)
+  blac-core/             - Core state management library (@blac/core)
+  blac-adapter/          - Framework-agnostic adapter layer (@blac/adapter)
   blac-react/            - React integration hooks (@blac/react)
+  blac-preact/           - Preact integration hooks (@blac/preact)
+  blac-test/             - Test utilities for BlaC (@blac/test)
+  logging-plugin/        - Logging and debugging plugin (@blac/logging-plugin)
   devtools-connect/      - DevTools plugin and bridge (@blac/devtools-connect)
   devtools-ui/           - DevTools UI components
-  plugins/
-    bloc/                - BLoC-specific plugins
-    system/              - System-level plugins
 
 apps/
   devtools-extension/    - Chrome DevTools extension
   docs/                  - Documentation site
   examples/              - Example applications
   perf/                  - Performance testing
-
-spec/                    - Feature specifications and design documents
 ```
 
 ## Core Architecture
 
+The library follows a three-layer architecture:
+
+1. **Core** (`@blac/core`) - State containers, registry, tracking, plugins
+2. **Adapter** (`@blac/adapter`) - Framework-agnostic subscription/snapshot strategies
+3. **Framework** (`@blac/react`, `@blac/preact`) - Framework-specific hooks
+
 ### State Containers
 
-All state containers inherit from `StateContainer<S>` (packages/blac/src/core/StateContainer.ts):
+All state containers inherit from `StateContainer<S>` (packages/blac-core/src/core/StateContainer.ts):
 - Provides lifecycle management, subscription handling, and ref counting
 - Uses a global registry (`StateContainerRegistry`) for instance management
 - Supports isolated (component-scoped) and shared (singleton) instances
 
-**Cubit** (packages/blac/src/core/Cubit.ts):
+**Cubit** (packages/blac-core/src/core/Cubit.ts):
 - Extends StateContainer with public `emit()`, `update()`, and `patch()` methods
 - For simple state management with direct mutations
 
-### React Integration
+### Adapter Layer
 
-The `useBloc` hook (packages/blac-react/src/useBloc.ts) integrates state containers with React:
+The adapter package (packages/blac-adapter/src/) bridges state containers with framework subscription models:
+- Provides subscribe, snapshot, and init functions for each tracking mode:
+  - `autoTrackSubscribe` / `autoTrackSnapshot` / `autoTrackInit`
+  - `manualDepsSubscribe` / `manualDepsSnapshot` / `manualDepsInit`
+  - `noTrackSubscribe` / `noTrackSnapshot` / `noTrackInit`
+- `ExternalDepsManager` manages inter-bloc dependency tracking
+
+### Framework Integration
+
+The `useBloc` hook (packages/blac-react/src/useBloc.ts, packages/blac-preact/src/useBloc.ts):
 - Uses `useSyncExternalStore` for concurrent mode compatibility
 - Supports three tracking modes:
   - **Auto-tracking**: Automatic dependency detection via Proxy (default)
@@ -57,24 +71,19 @@ The `useBloc` hook (packages/blac-react/src/useBloc.ts) integrates state contain
 
 ### Dependency Tracking System
 
-**Proxy Tracker** (packages/blac/src/tracking/proxy-tracker.ts):
+**Proxy Tracker** (packages/blac-core/src/tracking/tracking-proxy.ts):
 - Functional API for creating proxies that track property access paths
 - Used by auto-tracking mode to detect which state properties are accessed during render
 - Only triggers re-renders when tracked properties change
 - Only proxies plain objects `{}` and arrays `[]` (not custom class instances)
 
-**Adapter** (packages/blac/src/adapter/framework-adapter.ts):
-- Bridges state containers with React's subscription model
-- Provides `createAutoTrackSubscribe`, `createManualDepsSubscribe`, `createNoTrackSubscribe`
-- Manages external dependency tracking via `ExternalDependencyManager`
-
 ### Plugin System
 
-Plugins extend BlaC functionality via lifecycle hooks (packages/blac/src/plugin/):
+Plugins extend BlaC functionality via lifecycle hooks (packages/blac-core/src/plugin/):
 - `BlacPlugin` interface defines lifecycle methods: `onInstall`, `onInstanceCreated`, `onStateChanged`, `onInstanceDisposed`, `onUninstall`
 - `PluginContext` provides safe access to registry data
 - `PluginManager` handles plugin registration and environment filtering
-- DevTools connection is implemented as a plugin
+- DevTools connection and logging are implemented as plugins
 
 ## Common Commands
 
@@ -161,12 +170,12 @@ pnpm --filter @blac/core clean
 
 ### Adding New Features
 1. Check `spec/` directory for existing specifications
-2. Understand the two-layer architecture:
-   - Core: StateContainer, Cubit in `packages/blac/src/core/`
-   - Tracking: Proxy tracking and adapters in `packages/blac/src/proxy/` and `packages/blac/src/adapter/`
-   - React: Integration hooks in `packages/blac-react/src/`
+2. Understand the three-layer architecture:
+   - Core: StateContainer, Cubit in `packages/blac-core/src/core/`, tracking in `packages/blac-core/src/tracking/`
+   - Adapter: Subscription strategies in `packages/blac-adapter/src/`
+   - Framework: Integration hooks in `packages/blac-react/src/` and `packages/blac-preact/src/`
 3. Write tests alongside implementation
-4. Ensure both `@blac/core` and `@blac/react` tests pass if changes affect React integration
+4. Ensure `@blac/core`, `@blac/adapter`, and framework package tests pass if changes affect integration
 
 ### Running Tests During Development
 - Run specific test files, never run all tests at once in monorepo
@@ -175,8 +184,12 @@ pnpm --filter @blac/core clean
 - For React tests: be aware of React Compiler compatibility tests
 
 ### Package Dependencies
-- `@blac/react` depends on `@blac/core`
+- `@blac/adapter` depends on `@blac/core`
+- `@blac/react` depends on `@blac/adapter` (and transitively `@blac/core`)
+- `@blac/preact` depends on `@blac/adapter`
 - `@blac/devtools-connect` depends on `@blac/core`
+- `@blac/test` depends on `@blac/core`
+- `@blac/logging-plugin` depends on `@blac/core`
 - Apps depend on published packages via workspace protocol (`workspace:*`)
 - Build order is managed by Turbo via `turbo.json`
 
@@ -201,9 +214,8 @@ pnpm --filter @blac/core clean
 - State manager in `packages/devtools-connect/src/state/DevToolsStateManager.ts`
 
 ### Logging
-- Core logging system in `packages/blac/src/logging/Logger.ts`
-- Configure via `BLAC_LOG_LEVEL` environment variable
-- Levels: debug, info, warn, error
+- Logging plugin in `packages/logging-plugin/` (`@blac/logging-plugin`)
+- Implements `BlacPlugin` interface with monitors (InstanceCountMonitor, LifecycleMonitor) and formatters (SimpleFormatter, GroupedFormatter)
 
 ### Common Issues
 - **Ref counting**: Check `StateContainerRegistry` for ref count leaks
@@ -217,7 +229,7 @@ pnpm --filter @blac/core clean
 - Use explicit return types for public APIs
 - Document complex logic with inline comments explaining "why" not "what"
 - Test files should mirror source file structure
-- Use branded types for IDs (packages/blac/src/types/branded.ts)
+- Use branded types for IDs (packages/blac-core/src/types/branded.ts)
 
 ## Publishing
 
@@ -231,9 +243,9 @@ pnpm release
 
 Packages published to npm:
 - `@blac/core`
+- `@blac/adapter`
 - `@blac/react`
+- `@blac/preact`
+- `@blac/test`
+- `@blac/logging-plugin`
 - `@blac/devtools-connect`
-
-## Chrome Web Store (DevTools Extension)
-
-Chrome Web Store submission guide: `TempDoc/blac/2025-11/11/chrome-webstore-submission-guide.md`

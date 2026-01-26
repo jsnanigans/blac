@@ -16,7 +16,7 @@ show_status() {
   echo -e "${BLUE}Current status:${NC}"
   
   # Show current version
-  version=$(node -p "require('./packages/blac/package.json').version")
+  version=$(node -p "require('./packages/blac-core/package.json').version")
   echo -e "  Version: ${GREEN}$version${NC}"
   
   # Count pending changesets

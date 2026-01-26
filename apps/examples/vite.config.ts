@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   // resolve: {
   //   alias: {
-  //     '@blac/core': path.resolve(__dirname, '../../packages/blac/src'),
+  //     '@blac/core': path.resolve(__dirname, '../../packages/blac-core/src'),
   //     '@blac/react': path.resolve(__dirname, '../../packages/blac-react/src'),
   //     '@blac/devtools-ui': path.resolve(
   //       __dirname,

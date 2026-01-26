@@ -3,7 +3,7 @@
   "compilerOptions": {
     "outDir": "./dist",
     "paths": {
-      "@blac/core": ["../blac/src/index.ts"]
+      "@blac/core": ["../blac-core/src/index.ts"]
     }
   },
   "include": ["src/**/*"],

@@ -161,7 +161,7 @@ export default tseslint.config(
     }
   },
   {
-    files: ["packages/blac/**/*.ts", "packages/blac/**/*.tsx", "packages/blac-react/**/*.ts", "packages/blac-react/**/*.tsx"],
+    files: ["packages/blac-core/**/*.ts", "packages/blac-core/**/*.tsx", "packages/blac-react/**/*.ts", "packages/blac-react/**/*.tsx"],
     rules: {
       "@typescript-eslint/no-explicit-any": "off"
     }

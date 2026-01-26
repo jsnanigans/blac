@@ -812,7 +812,7 @@ function generateReactPackageDocs(apiJson) {
 
 const packages = [
   {
-    inputPath: path.join(ROOT_DIR, 'packages/blac/temp/core.api.json'),
+    inputPath: path.join(ROOT_DIR, 'packages/blac-core/temp/core.api.json'),
     shortName: 'core',
     title: '@blac/core',
     generator: generateCorePackageDocs,

@@ -173,5 +173,5 @@ Both modes show the same data and work simultaneously!
 
 ## Learn More
 
-- [Blac Documentation](../../packages/blac/README.md)
+- [Blac Documentation](../../packages/blac-core/README.md)
 - [React Integration](../../packages/blac-react/README.md)

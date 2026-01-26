@@ -4,7 +4,7 @@ import path from 'path';
 export default defineConfig({
   resolve: {
     alias: {
-      '@blac/core': path.resolve(__dirname, '../blac/src'),
+      '@blac/core': path.resolve(__dirname, '../blac-core/src'),
       '@blac/adapter': path.resolve(__dirname, './src'),
     },
   },

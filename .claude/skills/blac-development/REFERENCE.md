@@ -255,13 +255,13 @@ class MyBloc extends Cubit<State> {
 ## Source Code Locations
 
 Key files in the repository:
-- Core: `packages/blac/src/core/`
+- Core: `packages/blac-core/src/core/`
   - `StateContainer.ts` - Base class
   - `Cubit.ts` - Cubit implementation
 - React: `packages/blac-react/src/`
   - `useBloc.ts` - Main hook
   - `useBlocActions.ts` - Actions-only hook
-- Tracking: `packages/blac/src/tracking/`
+- Tracking: `packages/blac-core/src/tracking/`
   - `proxy-tracker.ts` - Proxy-based dependency tracking
-- Adapter: `packages/blac/src/adapter/`
+- Adapter: `packages/blac-core/src/adapter/`
   - `framework-adapter.ts` - React subscription bridge

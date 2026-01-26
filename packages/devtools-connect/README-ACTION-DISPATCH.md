@@ -234,5 +234,5 @@ window.addEventListener('blac-devtools-action-dispatched', (e) => {
 ## See Also
 
 - [Redux DevTools Extension](https://github.com/reduxjs/redux-devtools)
-- [BlaC Core Documentation](../blac/README.md)
+- [BlaC Core Documentation](../blac-core/README.md)
 - [Redux DevTools Adapter](./src/integrations/ReduxDevToolsAdapter.ts)

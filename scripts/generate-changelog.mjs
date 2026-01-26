@@ -14,7 +14,7 @@ const packages = [
 ];
 
 function getVersion() {
-  const pkgPath = join(rootDir, 'packages/blac/package.json');
+  const pkgPath = join(rootDir, 'packages/blac-core/package.json');
   const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
   return pkg.version;
 }

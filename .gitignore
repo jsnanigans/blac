@@ -45,7 +45,7 @@ Thumbs.db
 
 apps/react-demo/site
 packages/react/dist
-packages/blac/dist
+packages/blac-core/dist
 
 apps/docs/.vitepress/cache
 apps/docs/.vitepress/dist

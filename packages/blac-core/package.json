@@ -6,7 +6,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/jsnanigans/blac.git",
-    "directory": "packages/blac"
+    "directory": "packages/blac-core"
   },
   "homepage": "https://github.com/jsnanigans/blac#readme",
   "bugs": {

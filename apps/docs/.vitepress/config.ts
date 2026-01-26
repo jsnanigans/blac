@@ -4,7 +4,7 @@ import { resolve } from 'path';
 
 const pkg = JSON.parse(
   readFileSync(
-    resolve(__dirname, '../../../packages/blac/package.json'),
+    resolve(__dirname, '../../../packages/blac-core/package.json'),
     'utf-8',
   ),
 );

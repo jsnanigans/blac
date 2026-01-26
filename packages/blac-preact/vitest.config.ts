@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [preact()],
   resolve: {
     alias: {
-      '@blac/core': path.resolve(__dirname, '../blac/src'),
+      '@blac/core': path.resolve(__dirname, '../blac-core/src'),
       '@blac/preact': path.resolve(__dirname, './src'),
     },
   },

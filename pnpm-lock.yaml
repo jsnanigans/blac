@@ -112,7 +112,7 @@ importers:
     dependencies:
       '@blac/core':
         specifier: workspace:*
-        version: link:../../packages/blac
+        version: link:../../packages/blac-core
       '@blac/devtools-ui':
         specifier: workspace:*
         version: link:../../packages/devtools-ui
@@ -170,7 +170,7 @@ importers:
     dependencies:
       '@blac/core':
         specifier: workspace:*
-        version: link:../../packages/blac
+        version: link:../../packages/blac-core
       '@blac/devtools-connect':
         specifier: workspace:*
         version: link:../../packages/devtools-connect
@@ -213,7 +213,7 @@ importers:
     dependencies:
       '@blac/core':
         specifier: workspace:*
-        version: link:../../packages/blac
+        version: link:../../packages/blac-core
       '@blac/react':
         specifier: workspace:*
         version: link:../../packages/blac-react
@@ -247,7 +247,7 @@ importers:
     dependencies:
       '@blac/core':
         specifier: workspace:*
-        version: link:../../packages/blac
+        version: link:../../packages/blac-core
       '@blac/preact':
         specifier: workspace:*
         version: link:../../packages/blac-preact
@@ -268,7 +268,29 @@ importers:
         specifier: 'catalog:'
         version: 7.1.10(@types/node@24.1.0)(jiti@2.6.1)(lightningcss@1.30.1)(terser@5.39.0)(tsx@4.20.6)(yaml@2.7.0)
 
-  packages/blac:
+  packages/blac-adapter:
+    dependencies:
+      '@blac/core':
+        specifier: workspace:*
+        version: link:../blac-core
+    devDependencies:
+      jsdom:
+        specifier: 'catalog:'
+        version: 26.1.0
+      prettier:
+        specifier: 'catalog:'
+        version: 3.6.2
+      tsdown:
+        specifier: 'catalog:'
+        version: 0.15.7(typescript@5.9.2)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.2
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.1.0)(@vitest/browser@3.2.4)(happy-dom@18.0.1)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.30.1)(msw@2.7.3(@types/node@24.1.0)(typescript@5.9.2))(terser@5.39.0)(tsx@4.20.6)(yaml@2.7.0)
+
+  packages/blac-core:
     devDependencies:
       '@testing-library/jest-dom':
         specifier: 'catalog:'
@@ -307,28 +329,6 @@ importers:
         specifier: ^4.1.12
         version: 4.1.12
 
-  packages/blac-adapter:
-    dependencies:
-      '@blac/core':
-        specifier: workspace:*
-        version: link:../blac
-    devDependencies:
-      jsdom:
-        specifier: 'catalog:'
-        version: 26.1.0
-      prettier:
-        specifier: 'catalog:'
-        version: 3.6.2
-      tsdown:
-        specifier: 'catalog:'
-        version: 0.15.7(typescript@5.9.2)
-      typescript:
-        specifier: 'catalog:'
-        version: 5.9.2
-      vitest:
-        specifier: 'catalog:'
-        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.1.0)(@vitest/browser@3.2.4)(happy-dom@18.0.1)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.30.1)(msw@2.7.3(@types/node@24.1.0)(typescript@5.9.2))(terser@5.39.0)(tsx@4.20.6)(yaml@2.7.0)
-
   packages/blac-preact:
     dependencies:
       '@blac/adapter':
@@ -337,7 +337,7 @@ importers:
     devDependencies:
       '@blac/core':
         specifier: workspace:*
-        version: link:../blac
+        version: link:../blac-core
       '@preact/preset-vite':
         specifier: ^2.9.4
         version: 2.10.2(@babel/core@7.28.0)(preact@10.27.2)(vite@7.1.10(@types/node@24.1.0)(jiti@2.6.1)(lightningcss@1.30.1)(terser@5.39.0)(tsx@4.20.6)(yaml@2.7.0))
@@ -386,7 +386,7 @@ importers:
     devDependencies:
       '@blac/core':
         specifier: workspace:*
-        version: link:../blac
+        version: link:../blac-core
       '@testing-library/dom':
         specifier: 'catalog:'
         version: 10.4.1
@@ -446,7 +446,7 @@ importers:
     dependencies:
       '@blac/core':
         specifier: workspace:*
-        version: link:../blac
+        version: link:../blac-core
     devDependencies:
       tsdown:
         specifier: 'catalog:'
@@ -462,7 +462,7 @@ importers:
     dependencies:
       '@blac/core':
         specifier: workspace:*
-        version: link:../blac
+        version: link:../blac-core
     devDependencies:
       prettier:
         specifier: 'catalog:'
@@ -488,7 +488,7 @@ importers:
     devDependencies:
       '@blac/core':
         specifier: workspace:*
-        version: link:../blac
+        version: link:../blac-core
       '@blac/react':
         specifier: workspace:*
         version: link:../blac-react
@@ -515,7 +515,7 @@ importers:
     dependencies:
       '@blac/core':
         specifier: workspace:*
-        version: link:../blac
+        version: link:../blac-core
     devDependencies:
       prettier:
         specifier: 'catalog:'
@@ -1394,9 +1394,6 @@ packages:
 
   '@jridgewell/source-map@0.3.6':
     resolution: {integrity: sha512-1ZJTZebgqllO79ue2bm3rIGud/bOe0pP5BjSRCRxxYkEZS8STV7zN84UBbiYu7jy+eCKSnVIUgoWWE/tt+shMQ==}
-
-  '@jridgewell/sourcemap-codec@1.5.0':
-    resolution: {integrity: sha512-gv3ZRaISU3fjPAgNsriBRqGWQL6quFx04YMPW/zD8XMLsU32mhCCbfbO6KZFLjvYpCZ8zyDEgqsgf+PwPaM7GQ==}
 
   '@jridgewell/sourcemap-codec@1.5.5':
     resolution: {integrity: sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og==}
@@ -3683,9 +3680,6 @@ packages:
   lz-string@1.5.0:
     resolution: {integrity: sha512-h5bgJWpxJNswbU7qCrV0tIKQCaS3blPDrqKWx+QxzuzL1zGUzij9XCWLrSLsJPu5t+eWA/ycetzYAO5IOMcWAQ==}
     hasBin: true
-
-  magic-string@0.30.17:
-    resolution: {integrity: sha512-sNPKHvyjVf7gyjwS4xGTaW/mCnF8wnjtifKBEhxfZ7E/S8tQ0rssrwGNn6q8JH/ohItJfSQp9mBtQYuTlH5QnA==}
 
   magic-string@0.30.19:
     resolution: {integrity: sha512-2N21sPY9Ws53PZvsEpVtNuSW+ScYbQdp4b9qUaL+9QkHUrGFKo56Lg9Emg5s9V/qrtNBmiR01sYhUOwu3H+VOw==}
@@ -6077,8 +6071,6 @@ snapshots:
       '@jridgewell/trace-mapping': 0.3.29
     optional: true
 
-  '@jridgewell/sourcemap-codec@1.5.0': {}
-
   '@jridgewell/sourcemap-codec@1.5.5': {}
 
   '@jridgewell/trace-mapping@0.3.25':
@@ -6901,7 +6893,7 @@ snapshots:
       '@testing-library/user-event': 14.6.1(@testing-library/dom@10.4.1)
       '@vitest/mocker': 3.2.4(msw@2.7.3(@types/node@24.1.0)(typescript@5.9.2))(vite@7.1.10(@types/node@24.1.0)(jiti@2.6.1)(lightningcss@1.30.1)(terser@5.39.0)(tsx@4.20.6)(yaml@2.7.0))
       '@vitest/utils': 3.2.4
-      magic-string: 0.30.17
+      magic-string: 0.30.19
       sirv: 3.0.1
       tinyrainbow: 2.0.0
       vitest: 3.2.4(@types/debug@4.1.12)(@types/node@24.1.0)(@vitest/browser@3.2.4)(happy-dom@18.0.1)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.30.1)(msw@2.7.3(@types/node@24.1.0)(typescript@5.9.2))(terser@5.39.0)(tsx@4.20.6)(yaml@2.7.0)
@@ -8645,10 +8637,6 @@ snapshots:
       yallist: 4.0.0
 
   lz-string@1.5.0: {}
-
-  magic-string@0.30.17:
-    dependencies:
-      '@jridgewell/sourcemap-codec': 1.5.0
 
   magic-string@0.30.19:
     dependencies:
