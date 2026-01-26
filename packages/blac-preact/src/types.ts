@@ -16,8 +16,6 @@ export interface UseBlocOptions<TBloc extends StateContainerConstructor> {
   ) => unknown[];
   /** Enable automatic property tracking via Proxy (default: true) */
   autoTrack?: boolean;
-  /** Disable caching for getter tracking */
-  disableGetterCache?: boolean;
   /** Callback invoked when bloc instance mounts */
   onMount?: (bloc: InstanceType<TBloc>) => void;
   /** Callback invoked when bloc instance unmounts */
@@ -44,6 +42,4 @@ export type UseBlocReturn<
 export type ComponentRef = {
   /** Cached bloc instance ID for this component */
   __blocInstanceId?: string;
-  /** Bridge connection for DevTools (if available) */
-  __bridge?: any;
 };

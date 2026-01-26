@@ -207,16 +207,6 @@ export class PluginManager {
       getInstanceMetadata: (
         instance: StateContainer<any>,
       ): InstanceMetadata => {
-        // const TypeClass = instance.constructor as any;
-
-        // if (TypeClass.instances) {
-        //   for (const [key, entry] of TypeClass.instances) {
-        //     if (entry.instance === instance) {
-        //       break;
-        //     }
-        //   }
-        // }
-
         return {
           id: instance.instanceId,
           className: instance.constructor.name,

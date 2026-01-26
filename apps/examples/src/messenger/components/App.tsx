@@ -15,9 +15,12 @@ import { CURRENT_USER_ID } from '../mockData';
  * - Clean separation of concerns
  */
 export function MessengerApp() {
-  const [appState] = useBloc(AppCubit, {
-    props: { currentUserId: CURRENT_USER_ID },
-  });
+  const [appState, { setCurrentUserId: setUserId }] = useBloc(AppCubit);
+
+  // Set current user ID in AppCubit
+  useEffect(() => {
+    setUserId({ currentUserId: CURRENT_USER_ID });
+  }, [setUserId]);
 
   // Connect to WebSocket
   useEffect(() => {

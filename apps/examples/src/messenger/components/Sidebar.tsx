@@ -17,14 +17,15 @@ interface SidebarProps {
  * - Fine-grained dependency tracking on channel list
  */
 export function Sidebar({ currentUserId }: SidebarProps) {
-  const [appState, { setActiveChannel }] = useBloc(AppCubit, {
-    props: { currentUserId },
-  });
+  const [appState, { setActiveChannel, setCurrentUserId }] = useBloc(AppCubit);
+
+  setCurrentUserId({ currentUserId });
+
   const [contacts] = useBloc(ContactsCubit);
-  const [currentUser] = useBloc(UserCubit, {
+  const [currentUser, { setUserId }] = useBloc(UserCubit, {
     instanceId: currentUserId,
-    props: { userId: currentUserId },
   });
+  setUserId(currentUserId);
 
   return (
     <div className="sidebar">

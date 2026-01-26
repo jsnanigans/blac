@@ -9,17 +9,28 @@ import { MOCK_USERS } from '../mockData';
  * Demonstrates shared instance pattern - multiple components can share
  * the same user instance without duplication
  */
-export class UserCubit extends Cubit<User, { user?: User; userId?: string }> {
-  constructor(props?: { user?: User; userId?: string }) {
-    // Try to find user from props.user, or lookup by userId from mock data
-    const user = props?.user ?? MOCK_USERS.find((u) => u.id === props?.userId);
-    if (!user) {
-      throw new Error(
-        'UserCubit requires either user object or userId to be passed via props',
-      );
-    }
-    super(user);
+export class UserCubit extends Cubit<User> {
+  constructor() {
+    super({
+      id: '',
+      name: '',
+      avatar: '',
+      status: 'offline',
+      customStatus: undefined,
+    });
   }
+
+  setUserId = (userId: string) => {
+    // No-op if same userId
+    if (this.state.id === userId) return;
+
+    // Lookup user from mock data
+    const user = MOCK_USERS.find((u) => u.id === userId);
+    if (!user) {
+      throw new Error(`User with ID ${userId} not found in mock data`);
+    }
+    this.patch(user);
+  };
 
   setStatus = (status: User['status']) => {
     this.patch({ status });

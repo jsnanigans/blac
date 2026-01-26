@@ -7,6 +7,6 @@
  */
 
 export { useBloc } from './useBloc';
-export { configureBlacReact, resetBlacReactConfig } from './config';
+export { configureBlacReact } from './config';
 export type { BlacReactConfig } from './config';
 export type { UseBlocOptions, UseBlocReturn } from './types';

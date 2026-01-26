@@ -4,7 +4,7 @@ import { getWelcomeMessages, MOCK_CHANNELS } from '../mockData';
 import { persistenceService } from '../services/PersistenceService';
 
 export interface AppState {
-  currentUserId: string;
+  currentUserId: string | null;
   activeChannelId: string | null;
   activeThreadId: string | null;
   sidebarOpen: boolean;
@@ -14,16 +14,12 @@ export interface AppState {
  * Global app state - shared single instance
  * Manages current user, active channel/thread, and UI state
  */
-export class AppCubit extends Cubit<AppState, { currentUserId: string }> {
+export class AppCubit extends Cubit<AppState> {
   notificationCubit = acquire(NotificationCubit);
 
-  constructor(props?: { currentUserId: string }) {
-    if (!props?.currentUserId) {
-      throw new Error('AppCubit requires currentUserId to be passed via props');
-    }
-
+  constructor() {
     super({
-      currentUserId: props.currentUserId,
+      currentUserId: null,
       activeChannelId: null,
       activeThreadId: null,
       sidebarOpen: true,
@@ -31,6 +27,10 @@ export class AppCubit extends Cubit<AppState, { currentUserId: string }> {
 
     this.setupApp();
   }
+
+  setCurrentUserId = (data: { currentUserId: string }) => {
+    this.patch({ currentUserId: data.currentUserId });
+  };
 
   private setupApp() {
     MOCK_CHANNELS.forEach((channel) => {
