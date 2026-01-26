@@ -1,4 +1,5 @@
 import { useBloc } from '@blac/react';
+import { useEffect } from 'react';
 import { AppCubit } from '../blocs/AppCubit';
 import { ContactsCubit } from '../blocs/ContactsCubit';
 import { NotificationCubit } from '../blocs/NotificationCubit';
@@ -18,14 +19,18 @@ interface SidebarProps {
  */
 export function Sidebar({ currentUserId }: SidebarProps) {
   const [appState, { setActiveChannel, setCurrentUserId }] = useBloc(AppCubit);
-
-  setCurrentUserId({ currentUserId });
-
   const [contacts] = useBloc(ContactsCubit);
   const [currentUser, { setUserId }] = useBloc(UserCubit, {
     instanceId: currentUserId,
   });
-  setUserId(currentUserId);
+
+  useEffect(() => {
+    setCurrentUserId({ currentUserId });
+  }, [currentUserId, setCurrentUserId]);
+
+  useEffect(() => {
+    setUserId(currentUserId);
+  }, [currentUserId, setUserId]);
 
   return (
     <div className="sidebar">

@@ -1,5 +1,14 @@
 # @blac/devtools-ui
 
+## 2.0.4
+
+### Patch Changes
+
+- add depend system
+- Updated dependencies
+  - @blac/react@2.0.4
+  - @blac/core@2.0.4
+
 ## 2.0.3
 
 ### Patch Changes

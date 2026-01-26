@@ -1,5 +1,11 @@
 # @blac/core
 
+## 2.0.4
+
+### Patch Changes
+
+- add depend system
+
 ## 2.0.3
 
 ### Patch Changes

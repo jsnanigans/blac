@@ -140,10 +140,7 @@ export class ChannelBloc extends Cubit<ChannelState, { channelId: string }> {
     });
 
     // Update notification cubit with unread count
-    const notificationResult = borrowSafe(NotificationCubit);
-    if (!notificationResult.error) {
-      notificationResult.instance.incrementUnread(this.state.channel.id);
-    }
+    this._notificationsDep().incrementUnread(this.state.channel.id);
   };
 
   userTyping = (userId: string, isTyping: boolean) => {
@@ -163,10 +160,7 @@ export class ChannelBloc extends Cubit<ChannelState, { channelId: string }> {
 
   markAsRead = () => {
     // Clear unread count in NotificationCubit
-    const notificationResult = borrowSafe(NotificationCubit);
-    if (!notificationResult.error) {
-      notificationResult.instance.clearUnread(this.state.channel.id);
-    }
+    this._notificationsDep().clearUnread(this.state.channel.id);
   };
 
   updateMessageStatus = (messageId: string, status: Message['status']) => {
