@@ -8,6 +8,8 @@
  * framework integrations.
  */
 import type {
+  DependencyState,
+  GetterState,
   ExtractState,
   InstanceReadonlyState,
   InstanceState,
@@ -15,27 +17,11 @@ import type {
   StateContainerInstance,
 } from '@blac/core';
 
-// Re-export types needed by framework integrations
-export type {
-  ExtractState,
-  InstanceReadonlyState,
-  InstanceState,
-  StateContainerConstructor,
-  StateContainerInstance,
-} from '@blac/core';
-
-// Re-export registry functions needed by hooks
-export {
+import {
   acquire,
   release,
   isIsolatedClass,
   generateIsolatedKey,
-} from '@blac/core';
-
-// Import tracking types and functions from @blac/core/tracking subpath
-import type { DependencyState, GetterState } from '@blac/core/tracking';
-
-import {
   createDependencyState,
   startDependency,
   createDependencyProxy,
@@ -52,7 +38,22 @@ import {
   invalidateRenderCache,
   resolveDependencies,
   DependencyManager,
-} from '@blac/core/tracking';
+} from '@blac/core';
+
+export type {
+  ExtractState,
+  InstanceReadonlyState,
+  InstanceState,
+  StateContainerConstructor,
+  StateContainerInstance,
+} from '@blac/core';
+
+export {
+  acquire,
+  release,
+  isIsolatedClass,
+  generateIsolatedKey,
+} from '@blac/core';
 
 /**
  * Internal state for framework adapters, holding tracking and caching data.

@@ -1,7 +1,6 @@
 {
   "name": "@blac/logging-plugin",
   "version": "2.0.4",
-  "type": "module",
   "license": "MIT",
   "author": "Brendan Mullins <jsnanigans@gmail.com>",
   "description": "Logging and debugging plugin for BlaC state management",
@@ -14,7 +13,7 @@
   "bugs": {
     "url": "https://github.com/jsnanigans/blac/issues"
   },
-  "main": "./dist/index.js",
+  "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -30,10 +29,7 @@
     }
   },
   "files": [
-    "dist/**/*.js",
-    "dist/**/*.cjs",
-    "dist/**/*.d.ts",
-    "dist/**/*.d.cts",
+    "dist",
     "README.md",
     "LICENSE"
   ],

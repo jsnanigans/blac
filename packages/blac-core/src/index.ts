@@ -1,6 +1,4 @@
-// ============================================================================
 // Core Classes
-// ============================================================================
 export { StateContainer } from './core/StateContainer';
 export type {
   StateContainerConfig,
@@ -9,11 +7,7 @@ export type {
 } from './core/StateContainer';
 export { Cubit } from './core/Cubit';
 
-// ============================================================================
-// Registry - Core Functions
-// ============================================================================
-
-// Primary registry functions (commonly used)
+// Registry
 export {
   acquire,
   borrow,
@@ -22,11 +16,16 @@ export {
   release,
   clear,
   clearAll,
+  register,
+  hasInstance,
+  getRefCount,
+  getAll,
+  forEach,
+  getRegistry,
+  setRegistry,
+  getStats,
 } from './registry';
 
-// ============================================================================
-// Registry - Debug/Introspection (import from '@blac/core/debug' for tree-shaking)
-// ============================================================================
 export { globalRegistry } from './core/StateContainerRegistry';
 export type {
   LifecycleEvent,
@@ -34,16 +33,10 @@ export type {
   InstanceEntry,
 } from './core/StateContainerRegistry';
 
-export { hasInstance, getRefCount, getAll, forEach } from './registry';
-
-// ============================================================================
 // Decorator
-// ============================================================================
 export { blac, type BlacOptions } from './decorators';
 
-// ============================================================================
-// Plugin System - import from '@blac/core/plugins' for tree-shaking
-// ============================================================================
+// Plugin System
 export { getPluginManager } from './core/StateContainerRegistry';
 export type {
   BlacPlugin,
@@ -54,14 +47,19 @@ export type {
 } from './plugin/BlacPlugin';
 export { PluginManager } from './plugin/PluginManager';
 
-// ============================================================================
-// Watch - import from '@blac/core/watch' for tree-shaking
-// ============================================================================
+// Watch
 export { watch, instance, type WatchFn, type BlocRef } from './watch';
 
-// ============================================================================
+// Tracked
+export {
+  tracked,
+  createTrackedContext,
+  TrackedContext,
+  type TrackedResult,
+  type TrackedOptions,
+} from './tracking/tracked';
+
 // Types
-// ============================================================================
 export type {
   StateContainerConstructor,
   ExtractState,
@@ -74,13 +72,12 @@ export type {
   StateContainerInstance,
 } from './types/utilities';
 
-// ============================================================================
-// Tracking (exported for @blac/adapter)
-// ============================================================================
+export type { Brand, BrandedId, InstanceId } from './types/branded';
+export { instanceId } from './types/branded';
+
+// Tracking
 export * from './tracking';
 
-// ============================================================================
-// Utilities (exported for @blac/adapter)
-// ============================================================================
+// Utilities
 export { isIsolatedClass } from './utils/static-props';
 export { generateIsolatedKey } from './utils/idGenerator';
