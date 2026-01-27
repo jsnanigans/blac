@@ -104,6 +104,24 @@ export type SnapshotFunction<TState> = () => TState;
  */
 export class ExternalDepsManager {
   private manager = new DependencyManager();
+  private cachedDeps: Set<StateContainerInstance> | null = null;
+
+  private resolveCached(
+    rawInstance: StateContainerInstance,
+  ): Set<StateContainerInstance> {
+    if (this.cachedDeps) {
+      let allValid = true;
+      for (const dep of this.cachedDeps) {
+        if (dep.isDisposed) {
+          allValid = false;
+          break;
+        }
+      }
+      if (allValid) return this.cachedDeps;
+    }
+    this.cachedDeps = resolveDependencies(rawInstance);
+    return this.cachedDeps;
+  }
 
   /**
    * Update subscriptions to external bloc dependencies.
@@ -118,11 +136,11 @@ export class ExternalDepsManager {
     rawInstance: StateContainerInstance,
     onGetterChange: () => void,
   ): boolean {
-    if (!getterState) {
+    if (!getterState || rawInstance.dependencies.size === 0) {
       return false;
     }
 
-    const currentDeps = resolveDependencies(rawInstance);
+    const currentDeps = this.resolveCached(rawInstance);
 
     const onExternalChange = () => {
       invalidateRenderCache(getterState);
@@ -140,6 +158,7 @@ export class ExternalDepsManager {
    */
   cleanup(): void {
     this.manager.cleanup();
+    this.cachedDeps = null;
   }
 }
 

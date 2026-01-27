@@ -622,6 +622,99 @@ describe('Cubit', () => {
     });
   });
 
+  describe('patch() change detection', () => {
+    it('should not emit when patching with identical primitive values', () => {
+      const cubit = new UserCubit();
+      const listener = vi.fn();
+      cubit.subscribe(listener);
+
+      cubit.patch({ name: 'John Doe', age: 30 });
+
+      expect(listener).not.toHaveBeenCalled();
+    });
+
+    it('should not emit when patching with empty object', () => {
+      const cubit = new UserCubit();
+      const listener = vi.fn();
+      cubit.subscribe(listener);
+
+      cubit.patch({});
+
+      expect(listener).not.toHaveBeenCalled();
+    });
+
+    it('should emit when at least one value changes', () => {
+      const cubit = new UserCubit();
+      const listener = vi.fn();
+      cubit.subscribe(listener);
+
+      cubit.patch({ name: 'Jane Doe', age: 30 });
+
+      expect(listener).toHaveBeenCalledTimes(1);
+      expect(cubit.state.name).toBe('Jane Doe');
+      expect(cubit.state.age).toBe(30);
+    });
+
+    it('should preserve state reference when no values change', () => {
+      const cubit = new UserCubit();
+      const stateBefore = cubit.state;
+
+      cubit.patch({ name: 'John Doe' });
+
+      expect(cubit.state).toBe(stateBefore);
+    });
+
+    it('should handle NaN correctly (Object.is semantics)', () => {
+      class NanCubit extends Cubit<{ value: number }> {
+        constructor() {
+          super({ value: NaN });
+        }
+      }
+      const cubit = new NanCubit();
+      const listener = vi.fn();
+      cubit.subscribe(listener);
+
+      cubit.patch({ value: NaN });
+
+      expect(listener).not.toHaveBeenCalled();
+    });
+
+    it('should detect change from null to a value', () => {
+      class NullCubit extends Cubit<{ value: string | null }> {
+        constructor() {
+          super({ value: null });
+        }
+      }
+      const cubit = new NullCubit();
+      const listener = vi.fn();
+      cubit.subscribe(listener);
+
+      cubit.patch({ value: 'hello' });
+      expect(listener).toHaveBeenCalledTimes(1);
+
+      cubit.patch({ value: 'hello' });
+      expect(listener).toHaveBeenCalledTimes(1);
+    });
+
+    it('should detect change when object reference changes', () => {
+      class ObjCubit extends Cubit<{ items: number[] }> {
+        constructor() {
+          super({ items: [1, 2, 3] });
+        }
+      }
+      const cubit = new ObjCubit();
+      const listener = vi.fn();
+      cubit.subscribe(listener);
+
+      cubit.patch({ items: [1, 2, 3] });
+      expect(listener).toHaveBeenCalledTimes(1);
+
+      const sameRef = cubit.state.items;
+      cubit.patch({ items: sameRef });
+      expect(listener).toHaveBeenCalledTimes(1);
+    });
+  });
+
   // Edge Cases
 
   describe('Edge Cases', () => {

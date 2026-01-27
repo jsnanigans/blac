@@ -232,4 +232,82 @@ describe('useBloc - cross-bloc edge cases', () => {
     // Render count should not change because we're no longer using external dependency
     expect(renderCount).toBe(prevRenderCount);
   });
+
+  it('should work with getter tracking when bloc has no dependencies', () => {
+    class NoDepsBloc extends Cubit<{ value: number; label: string }> {
+      constructor() {
+        super({ value: 10, label: 'hello' });
+      }
+
+      increment = () =>
+        this.emit({ ...this.state, value: this.state.value + 1 });
+
+      get formatted() {
+        return `${this.state.label}: ${this.state.value}`;
+      }
+    }
+
+    let renderCount = 0;
+
+    const Component = () => {
+      renderCount++;
+      const [, bloc] = useBloc(NoDepsBloc);
+
+      return <div data-testid="value">{bloc.formatted}</div>;
+    };
+
+    render(<Component />);
+
+    expect(renderCount).toBe(1);
+    expect(screen.getByTestId('value').textContent).toBe('hello: 10');
+
+    act(() => {
+      borrow(NoDepsBloc).increment();
+    });
+
+    expect(renderCount).toBe(2);
+    expect(screen.getByTestId('value').textContent).toBe('hello: 11');
+
+    clear(NoDepsBloc);
+  });
+
+  it('should propagate multiple dependency changes through cached deps', () => {
+    let renderCount = 0;
+
+    const Component = () => {
+      renderCount++;
+      useBloc(DeepCBloc);
+      useBloc(DeepBBloc);
+      const [, blocA] = useBloc(DeepABloc);
+
+      return <div data-testid="value">{blocA.computed}</div>;
+    };
+
+    render(<Component />);
+    expect(screen.getByTestId('value').textContent).toBe('111'); // 1 + 10 + 100
+
+    // Multiple sequential changes on the deepest dependency
+    act(() => {
+      borrow(DeepCBloc).increment(); // 101
+    });
+    expect(screen.getByTestId('value').textContent).toBe('112');
+
+    act(() => {
+      borrow(DeepCBloc).increment(); // 102
+    });
+    expect(screen.getByTestId('value').textContent).toBe('113');
+
+    // Change a mid-level dependency
+    act(() => {
+      borrow(DeepBBloc).increment(); // 11
+    });
+    expect(screen.getByTestId('value').textContent).toBe('114'); // 1 + 11 + 102
+
+    // Change both in same act
+    act(() => {
+      borrow(DeepCBloc).increment(); // 103
+      borrow(DeepBBloc).increment(); // 12
+    });
+    expect(screen.getByTestId('value').textContent).toBe('116'); // 1 + 12 + 103
+  });
 });
