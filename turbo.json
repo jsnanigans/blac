@@ -22,6 +22,9 @@
     "typecheck": {
       "dependsOn": ["^typecheck"]
     },
+    "verify": {
+      "dependsOn": ["build"]
+    },
     "lint": {},
     "lint:fix": {
       "outputs": []

@@ -1,5 +1,14 @@
 # @blac/devtools-ui
 
+## 2.0.5
+
+### Patch Changes
+
+- Fix build output
+- Updated dependencies
+  - @blac/react@2.0.5
+  - @blac/core@2.0.5
+
 ## 2.0.4
 
 ### Patch Changes

@@ -9,6 +9,7 @@
     "test:watch": "turbo run test:watch",
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint:fix",
+    "verify": "turbo run verify",
     "typecheck": "turbo run typecheck",
     "format": "turbo run format",
     "docs:api": "node scripts/generate-api-docs.mjs",
@@ -17,7 +18,7 @@
     "docs:preview": "pnpm --filter @blac/docs preview",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "pnpm build && pnpm test && pnpm typecheck && changeset publish",
+    "release": "pnpm build && pnpm verify && pnpm test && pnpm typecheck && changeset publish",
     "release:helper": "./scripts/release.sh",
     "docs:changelog": "node scripts/generate-changelog.mjs"
   },

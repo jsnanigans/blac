@@ -1,6 +1,6 @@
 {
   "name": "@blac/core",
-  "version": "2.0.4",
+  "version": "2.0.5",
   "license": "MIT",
   "author": "Brendan Mullins <jsnanigans@gmail.com>",
   "repository": {
@@ -50,6 +50,7 @@
     "test": "vitest run",
     "test:watch": "vitest --watch",
     "coverage": "vitest run --coverage",
+    "verify": "publint",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "echo 'Skipping prepublishOnly - build should be done at root level'",
     "deploy": "pnpm publish --access public"
@@ -66,6 +67,7 @@
     "typescript": "catalog:",
     "valibot": "^1.1.0",
     "vitest": "catalog:",
+    "publint": "catalog:",
     "zod": "^4.1.12"
   }
 }

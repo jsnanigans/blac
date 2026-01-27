@@ -36,6 +36,9 @@ catalogs:
     prettier:
       specifier: ^3.6.2
       version: 3.6.2
+    publint:
+      specifier: ^0.3.12
+      version: 0.3.17
     tsdown:
       specifier: ^0.15.7
       version: 0.15.7
@@ -97,7 +100,7 @@ importers:
         version: 3.6.2
       tsdown:
         specifier: 'catalog:'
-        version: 0.15.7(typescript@5.9.2)
+        version: 0.15.7(publint@0.3.17)(typescript@5.9.2)
       turbo:
         specifier: ^2.5.5
         version: 2.5.5
@@ -280,9 +283,12 @@ importers:
       prettier:
         specifier: 'catalog:'
         version: 3.6.2
+      publint:
+        specifier: 'catalog:'
+        version: 0.3.17
       tsdown:
         specifier: 'catalog:'
-        version: 0.15.7(typescript@5.9.2)
+        version: 0.15.7(publint@0.3.17)(typescript@5.9.2)
       typescript:
         specifier: 'catalog:'
         version: 5.9.2
@@ -313,9 +319,12 @@ importers:
       prettier:
         specifier: 'catalog:'
         version: 3.6.2
+      publint:
+        specifier: 'catalog:'
+        version: 0.3.17
       tsdown:
         specifier: 'catalog:'
-        version: 0.15.7(typescript@5.9.2)
+        version: 0.15.7(publint@0.3.17)(typescript@5.9.2)
       typescript:
         specifier: 'catalog:'
         version: 5.9.2
@@ -365,9 +374,12 @@ importers:
       prettier:
         specifier: 'catalog:'
         version: 3.6.2
+      publint:
+        specifier: 'catalog:'
+        version: 0.3.17
       tsdown:
         specifier: 'catalog:'
-        version: 0.15.7(typescript@5.9.2)
+        version: 0.15.7(publint@0.3.17)(typescript@5.9.2)
       typescript:
         specifier: 'catalog:'
         version: 5.9.2
@@ -426,6 +438,9 @@ importers:
       prettier:
         specifier: 'catalog:'
         version: 3.6.2
+      publint:
+        specifier: 'catalog:'
+        version: 0.3.17
       react:
         specifier: ^19.1.1
         version: 19.1.1
@@ -434,7 +449,7 @@ importers:
         version: 19.1.1(react@19.1.1)
       tsdown:
         specifier: 'catalog:'
-        version: 0.15.7(typescript@5.9.2)
+        version: 0.15.7(publint@0.3.17)(typescript@5.9.2)
       typescript:
         specifier: 'catalog:'
         version: 5.9.2
@@ -448,9 +463,12 @@ importers:
         specifier: workspace:*
         version: link:../blac-core
     devDependencies:
+      publint:
+        specifier: 'catalog:'
+        version: 0.3.17
       tsdown:
         specifier: 'catalog:'
-        version: 0.15.7(typescript@5.9.2)
+        version: 0.15.7(publint@0.3.17)(typescript@5.9.2)
       typescript:
         specifier: 'catalog:'
         version: 5.9.2
@@ -467,9 +485,12 @@ importers:
       prettier:
         specifier: 'catalog:'
         version: 3.6.2
+      publint:
+        specifier: 'catalog:'
+        version: 0.3.17
       tsdown:
         specifier: 'catalog:'
-        version: 0.15.7(typescript@5.9.2)
+        version: 0.15.7(publint@0.3.17)(typescript@5.9.2)
       typescript:
         specifier: 'catalog:'
         version: 5.9.2
@@ -506,7 +527,7 @@ importers:
         version: 19.1.1(react@19.1.1)
       tsdown:
         specifier: 'catalog:'
-        version: 0.15.7(typescript@5.9.2)
+        version: 0.15.7(publint@0.3.17)(typescript@5.9.2)
       typescript:
         specifier: 'catalog:'
         version: 5.9.2
@@ -520,9 +541,12 @@ importers:
       prettier:
         specifier: 'catalog:'
         version: 3.6.2
+      publint:
+        specifier: 'catalog:'
+        version: 0.3.17
       tsdown:
         specifier: 'catalog:'
-        version: 0.15.7(typescript@5.9.2)
+        version: 0.15.7(publint@0.3.17)(typescript@5.9.2)
       typescript:
         specifier: 'catalog:'
         version: 5.9.2
@@ -1490,6 +1514,10 @@ packages:
     peerDependencies:
       preact: ^10.4.0 || ^11.0.0-0
       vite: '>=2.0.0'
+
+  '@publint/pack@0.1.3':
+    resolution: {integrity: sha512-dHDWeutAerz+Z2wFYAce7Y51vd4rbLBfUh0BNnyul4xKoVsPUVJBrOAFsJvtvYBwGFJSqKsxyyHf/7evZ8+Q5Q==}
+    engines: {node: '>=18'}
 
   '@quansync/fs@0.1.5':
     resolution: {integrity: sha512-lNS9hL2aS2NZgNW7BBj+6EBl4rOf8l+tQ0eRY6JWCI8jI2kc53gSoqbjojU0OnAWhzoXiOjFyGsHcDGePB3lhA==}
@@ -3921,6 +3949,9 @@ packages:
   package-manager-detector@0.2.11:
     resolution: {integrity: sha512-BEnLolu+yuz22S56CU1SUKq3XC3PkwD5wv4ikR4MfGvnRVcmzXR9DwSlW2fEamyTPyXHomBJRzgapeuBvRNzJQ==}
 
+  package-manager-detector@1.6.0:
+    resolution: {integrity: sha512-61A5ThoTiDG/C8s8UMZwSorAGwMJ0ERVGj2OjoW5pAalsNOg15+iQiPzrLJ4jhZ1HJzmC2PIHT2oEiH3R5fzNA==}
+
   parent-module@1.0.1:
     resolution: {integrity: sha512-GQ2EWRpQV8/o+Aw8YqtfZZPfNRWZYkbidE9k5rpl/hC3vtHHBfGm2Ifi6qWV+coDGkrUKZAxE3Lot5kcsRlh+g==}
     engines: {node: '>=6'}
@@ -4081,6 +4112,11 @@ packages:
 
   psl@1.9.0:
     resolution: {integrity: sha512-E/ZsdU4HLs/68gYzgGTkMicWTLPdAftJLfJFlLUAAKZGkStNU72sZjT66SnMDVOfOWY/YAoiD7Jxa9iHvngcag==}
+
+  publint@0.3.17:
+    resolution: {integrity: sha512-Q3NLegA9XM6usW+dYQRG1g9uEHiYUzcCVBJDJ7yMcWRqVU9LYZUWdqbwMZfmTCFC5PZLQpLAmhvRcQRl3exqkw==}
+    engines: {node: '>=18'}
+    hasBin: true
 
   punycode@2.3.1:
     resolution: {integrity: sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==}
@@ -4245,6 +4281,10 @@ packages:
 
   run-parallel@1.2.0:
     resolution: {integrity: sha512-5l4VyZR86LZ/lDxZTR6jqL8AFE2S0IFLMP26AbjsLVADxHdhB/c0GUsH+y39UfCi3dzz8OlQuPmnaJOMoDHQBA==}
+
+  sade@1.8.1:
+    resolution: {integrity: sha512-xal3CZX1Xlo/k4ApwCFrHVACi9fBqJ7V+mwhBsuf/1IOKbBy098Fex+Wa/5QMubw09pSZ/u8EY8PWgevJsXp1A==}
+    engines: {node: '>=6'}
 
   safe-array-concat@1.1.3:
     resolution: {integrity: sha512-AURm5f0jYEOydBj7VQlVvDrjeFgthDdEF5H1dP+6mNpoXOMo1quQqJ4wvJDyRZ9+pO3kGWoOdmV08cSv2aJV6Q==}
@@ -6237,6 +6277,8 @@ snapshots:
       vite: 7.1.10(@types/node@24.1.0)(jiti@2.6.1)(lightningcss@1.30.1)(terser@5.39.0)(tsx@4.20.6)(yaml@2.7.0)
     transitivePeerDependencies:
       - supports-color
+
+  '@publint/pack@0.1.3': {}
 
   '@quansync/fs@0.1.5':
     dependencies:
@@ -8904,6 +8946,8 @@ snapshots:
     dependencies:
       quansync: 0.2.8
 
+  package-manager-detector@1.6.0: {}
+
   parent-module@1.0.1:
     dependencies:
       callsites: 3.1.0
@@ -9029,6 +9073,13 @@ snapshots:
 
   psl@1.9.0:
     optional: true
+
+  publint@0.3.17:
+    dependencies:
+      '@publint/pack': 0.1.3
+      package-manager-detector: 1.6.0
+      picocolors: 1.1.1
+      sade: 1.8.1
 
   punycode@2.3.1: {}
 
@@ -9248,6 +9299,10 @@ snapshots:
   run-parallel@1.2.0:
     dependencies:
       queue-microtask: 1.2.3
+
+  sade@1.8.1:
+    dependencies:
+      mri: 1.2.0
 
   safe-array-concat@1.1.3:
     dependencies:
@@ -9682,7 +9737,7 @@ snapshots:
       minimist: 1.2.8
       strip-bom: 3.0.0
 
-  tsdown@0.15.7(typescript@5.9.2):
+  tsdown@0.15.7(publint@0.3.17)(typescript@5.9.2):
     dependencies:
       ansis: 4.2.0
       cac: 6.7.14
@@ -9699,6 +9754,7 @@ snapshots:
       tree-kill: 1.2.2
       unconfig: 7.3.3
     optionalDependencies:
+      publint: 0.3.17
       typescript: 5.9.2
     transitivePeerDependencies:
       - '@ts-macro/tsc'

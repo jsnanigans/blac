@@ -1,6 +1,6 @@
 {
   "name": "@blac/devtools-connect",
-  "version": "2.0.4",
+  "version": "2.0.5",
   "license": "MIT",
   "author": "Brendan Mullins <jsnanigans@gmail.com>",
   "description": "DevTools connection plugin for BlaC state management",
@@ -48,6 +48,7 @@
     "format": "prettier --write \".\"",
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "verify": "publint",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "echo 'Skipping prepublishOnly - build should be done at root level'",
     "deploy": "pnpm publish --access public"
@@ -59,6 +60,7 @@
     "prettier": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
+    "publint": "catalog:",
     "tsdown": "catalog:"
   }
 }
