@@ -8,8 +8,6 @@
  * framework integrations.
  */
 import type {
-  DependencyState,
-  GetterState,
   ExtractState,
   InstanceReadonlyState,
   InstanceState,
@@ -22,6 +20,11 @@ import {
   release,
   isIsolatedClass,
   generateIsolatedKey,
+} from '@blac/core';
+
+import type { DependencyState, GetterState } from '@blac/core/tracking';
+
+import {
   createDependencyState,
   startDependency,
   createDependencyProxy,
@@ -38,7 +41,7 @@ import {
   invalidateRenderCache,
   resolveDependencies,
   DependencyManager,
-} from '@blac/core';
+} from '@blac/core/tracking';
 
 export type {
   ExtractState,
