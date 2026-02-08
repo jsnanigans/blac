@@ -198,7 +198,8 @@ export abstract class StateContainer<S extends object = any> {
       previousState,
     });
 
-    for (const listener of this.listeners) {
+    const listeners = Array.from(this.listeners);
+    for (const listener of listeners) {
       try {
         listener(newState);
       } catch (error) {

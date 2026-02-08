@@ -1,8 +1,5 @@
 import { globalRegistry } from '../core/StateContainerRegistry';
-import type {
-  StateContainerConstructor,
-  StateContainerInstance,
-} from '../types/utilities';
+import type { StateContainerInstance } from '../types/utilities';
 
 /**
  * Resolve all transitive dependencies of a bloc via BFS over `dependencies` maps.
@@ -13,14 +10,15 @@ export function resolveDependencies(
   bloc: StateContainerInstance,
 ): Set<StateContainerInstance> {
   const result = new Set<StateContainerInstance>();
-  const visited = new Set<StateContainerConstructor>();
+  const visited = new Set<string>();
   const queue: StateContainerInstance[] = [bloc];
 
   while (queue.length > 0) {
     const current = queue.shift()!;
     for (const [Type, key] of current.dependencies) {
-      if (visited.has(Type)) continue;
-      visited.add(Type);
+      const visitKey = `${Type.name}::${key}`;
+      if (visited.has(visitKey)) continue;
+      visited.add(visitKey);
       const dep = globalRegistry.ensure(Type, key);
       result.add(dep);
       if (dep.dependencies.size > 0) {

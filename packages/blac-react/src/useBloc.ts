@@ -91,6 +91,8 @@ export function useBloc<
 
   const componentRef = useRef<ComponentRef>({});
   const isIsolated = isIsolatedClass(BlocClass);
+  const depsRef = useRef(options?.dependencies);
+  depsRef.current = options?.dependencies;
 
   const [bloc, subscribe, getSnapshot, instanceKey, adapterState, rawInstance] =
     useMemo<
@@ -120,12 +122,18 @@ export function useBloc<
 
       if (useManualDeps && options?.dependencies) {
         adapterState = manualDepsInit(instance);
-        subscribeFn = manualDepsSubscribe(instance, adapterState, {
-          dependencies: options.dependencies,
-        });
-        getSnapshotFn = manualDepsSnapshot(instance, adapterState, {
-          dependencies: options.dependencies,
-        });
+        const stableConfig = {
+          dependencies: (
+            state: ExtractState<T>,
+            bloc: InstanceState<T>,
+          ) => depsRef.current!(state, bloc),
+        };
+        subscribeFn = manualDepsSubscribe(instance, adapterState, stableConfig);
+        getSnapshotFn = manualDepsSnapshot(
+          instance,
+          adapterState,
+          stableConfig,
+        );
       } else if (!autoTrackEnabled) {
         adapterState = noTrackInit(instance);
         subscribeFn = noTrackSubscribe(instance);

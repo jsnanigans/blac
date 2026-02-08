@@ -158,6 +158,10 @@ export function createInternal<T>(
   }
 
   if (depth >= state.maxDepth) {
+    console.warn(
+      `${BLAC_ERROR_PREFIX} Proxy depth limit (${state.maxDepth}) reached at path "${path}". ` +
+        `Deeper property accesses won't be tracked for re-renders.`,
+    );
     return target;
   }
 
@@ -477,7 +481,7 @@ const descriptorCache = new WeakMap<
   Map<string | symbol, PropertyDescriptor | undefined>
 >();
 
-const blocProxyCache = new WeakMap<StateContainerInstance>();
+const blocProxyCache = new WeakMap<StateContainerInstance, StateContainerInstance>();
 
 const activeTrackerMap = new WeakMap<StateContainerInstance, GetterState>();
 
@@ -597,18 +601,16 @@ function executeTrackedGetter<T extends StateContainerInstance>(
   }
 
   if (tracker.depth >= MAX_GETTER_DEPTH) {
-    console.warn(
+    throw new Error(
       `${BLAC_ERROR_PREFIX} Maximum getter depth (${MAX_GETTER_DEPTH}) exceeded. ` +
         `Possible circular dependency in getter "${String(prop)}" on ${target.constructor.name}.`,
     );
-    return undefined;
   }
 
   if (tracker.visitedBlocs.has(target)) {
-    console.warn(
+    throw new Error(
       `${BLAC_ERROR_PREFIX} Circular dependency detected: getter "${String(prop)}" on ${target.constructor.name}.`,
     );
-    return undefined;
   }
 
   const prevDepth = tracker.depth;
