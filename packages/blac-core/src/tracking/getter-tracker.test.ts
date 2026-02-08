@@ -377,10 +377,11 @@ describe('getter-tracker', () => {
       setActiveTracker(circularBloc, tracker);
 
       const proxy = createBlocProxy(circularBloc);
-      const value = proxy.circular;
 
-      // Should return undefined instead of causing stack overflow
-      expect(value).toBeUndefined();
+      // Should throw a circular dependency error instead of causing stack overflow
+      expect(() => proxy.circular).toThrowError(
+        /Circular dependency detected/,
+      );
     });
 
     it('should handle deeply nested getter calls', () => {

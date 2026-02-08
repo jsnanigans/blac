@@ -27,6 +27,7 @@ apps/
   devtools-extension/    - Chrome DevTools extension
   docs/                  - Documentation site
   examples/              - Example applications
+  preact-examples/       - Preact example applications
   perf/                  - Performance testing
 ```
 
@@ -169,13 +170,12 @@ pnpm --filter @blac/core clean
 ## Development Workflow
 
 ### Adding New Features
-1. Check `spec/` directory for existing specifications
-2. Understand the three-layer architecture:
+1. Understand the three-layer architecture:
    - Core: StateContainer, Cubit in `packages/blac-core/src/core/`, tracking in `packages/blac-core/src/tracking/`
    - Adapter: Subscription strategies in `packages/blac-adapter/src/`
    - Framework: Integration hooks in `packages/blac-react/src/` and `packages/blac-preact/src/`
-3. Write tests alongside implementation
-4. Ensure `@blac/core`, `@blac/adapter`, and framework package tests pass if changes affect integration
+2. Write tests alongside implementation
+3. Ensure `@blac/core`, `@blac/adapter`, and framework package tests pass if changes affect integration
 
 ### Running Tests During Development
 - Run specific test files, never run all tests at once in monorepo
