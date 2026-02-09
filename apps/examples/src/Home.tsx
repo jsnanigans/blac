@@ -30,14 +30,16 @@ export function Home() {
             <div className="row-xs flex-wrap">
               <span className="tag">Cubit</span>
               <span className="tag">useBloc</span>
-              <span className="tag">Dependency Tracking</span>
+              <span className="tag">emit / patch</span>
+              <span className="tag">Auto-Tracking</span>
+              <span className="tag">Shared vs Isolated</span>
             </div>
           </div>
         </Link>
 
         <Link to="/messenger" className="example-card">
           <div className="stack-xs">
-            <span className="badge secondary">02</span>
+            <span className="badge primary">02</span>
             <h3>Messenger</h3>
           </div>
           <p className="text-small text-muted">
@@ -49,9 +51,78 @@ export function Home() {
               <span className="text-bold">Key Concepts:</span>
             </div>
             <div className="row-xs flex-wrap">
-              <span className="tag">Complex State</span>
-              <span className="tag">Event Driven</span>
-              <span className="tag">Optimistic UI</span>
+              <span className="tag">instanceKey</span>
+              <span className="tag">acquire / borrow</span>
+              <span className="tag">depend()</span>
+              <span className="tag">Persistence</span>
+              <span className="tag">Real-Time Events</span>
+            </div>
+          </div>
+        </Link>
+
+        <Link to="/todo" className="example-card">
+          <div className="stack-xs">
+            <span className="badge primary">03</span>
+            <h3>Todo List</h3>
+          </div>
+          <p className="text-small text-muted">
+            A full-featured todo app with localStorage persistence via watch(),
+            lifecycle hooks, and manual dependency optimization.
+          </p>
+          <div className="stack-xs text-xs text-muted">
+            <div className="row-xs">
+              <span className="text-bold">Key Concepts:</span>
+            </div>
+            <div className="row-xs flex-wrap">
+              <span className="tag">watch()</span>
+              <span className="tag">onMount / onUnmount</span>
+              <span className="tag">Manual Dependencies</span>
+              <span className="tag">Action-Only</span>
+              <span className="tag">localStorage</span>
+            </div>
+          </div>
+        </Link>
+
+        <Link to="/form" className="example-card">
+          <div className="stack-xs">
+            <span className="badge primary">04</span>
+            <h3>Form Validation</h3>
+          </div>
+          <p className="text-small text-muted">
+            Two independent forms side by side, each with its own state via
+            instanceId. Getter-based tracking for computed validation.
+          </p>
+          <div className="stack-xs text-xs text-muted">
+            <div className="row-xs">
+              <span className="text-bold">Key Concepts:</span>
+            </div>
+            <div className="row-xs flex-wrap">
+              <span className="tag">Getter Tracking</span>
+              <span className="tag">instanceId</span>
+              <span className="tag">Computed State</span>
+              <span className="tag">Validation</span>
+            </div>
+          </div>
+        </Link>
+
+        <Link to="/dashboard" className="example-card">
+          <div className="stack-xs">
+            <span className="badge primary">05</span>
+            <h3>Dashboard</h3>
+          </div>
+          <p className="text-small text-muted">
+            A widget-based dashboard with a custom plugin for analytics, cross-bloc
+            dependencies, and state that persists across navigations.
+          </p>
+          <div className="stack-xs text-xs text-muted">
+            <div className="row-xs">
+              <span className="text-bold">Key Concepts:</span>
+            </div>
+            <div className="row-xs flex-wrap">
+              <span className="tag">Custom Plugin</span>
+              <span className="tag">depend()</span>
+              <span className="tag">blac({'{ keepAlive }'})</span>
+              <span className="tag">Cross-Bloc Deps</span>
             </div>
           </div>
         </Link>

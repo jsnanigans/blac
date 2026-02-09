@@ -3,9 +3,13 @@ import { RouterBloc } from './router/RouterBloc';
 import { Home } from './Home';
 import { CounterDemo } from './examples/01-counter/CounterDemo';
 import { MessengerApp } from './messenger';
-import { useState, useEffect } from 'react';
+import { TodoDemo } from './examples/03-todo/TodoDemo';
+import { FormDemo } from './examples/04-form/FormDemo';
+import { DashboardDemo } from './examples/05-dashboard/DashboardDemo';
+import { useState } from 'react';
 import { BlacDevtoolsUi } from '@blac/devtools-ui';
 import { useBloc } from '@blac/react';
+import { PerformanceOverlay } from './shared/components';
 import './messenger/messenger.css';
 
 const Logo = () => {
@@ -102,18 +106,16 @@ const DevToolsBanner = () => {
   );
 };
 
-/**
- * Main app component with custom Blac-based routing.
- * This demonstrates using Blac for general application state,
- * not just component state.
- */
 export function App() {
+  const [showPerf, setShowPerf] = useState(false);
+
   // Initialize the router - the hook manages lifecycle (acquire on mount, release on unmount)
   useBloc(RouterBloc);
 
   return (
     <>
       <BlacDevtoolsUi />
+      {showPerf && <PerformanceOverlay position="bottom-right" detailed />}
       <div className="app-container">
         <DevToolsBanner />
 
@@ -130,6 +132,25 @@ export function App() {
               <li>
                 <Link to="/messenger">Messenger</Link>
               </li>
+              <li>
+                <Link to="/todo">Todo</Link>
+              </li>
+              <li>
+                <Link to="/form">Form</Link>
+              </li>
+              <li>
+                <Link to="/dashboard">Dashboard</Link>
+              </li>
+              <li>
+                <button
+                  className="ghost"
+                  onClick={() => setShowPerf((p) => !p)}
+                  style={{ fontSize: '0.8125rem', padding: '0.375rem 0.75rem' }}
+                  title="Toggle Performance Overlay"
+                >
+                  {showPerf ? 'Perf: ON' : 'Perf: OFF'}
+                </button>
+              </li>
             </ul>
           </div>
         </nav>
@@ -144,6 +165,15 @@ export function App() {
             </Route>
             <Route path="/messenger">
               <MessengerApp />
+            </Route>
+            <Route path="/todo">
+              <TodoDemo />
+            </Route>
+            <Route path="/form">
+              <FormDemo />
+            </Route>
+            <Route path="/dashboard">
+              <DashboardDemo />
             </Route>
           </div>
         </main>
