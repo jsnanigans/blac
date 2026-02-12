@@ -64,7 +64,6 @@ export default defineConfig({
         {
           text: 'Utilities',
           items: [
-            { text: 'waitUntil', link: '/core/wait-until' },
             { text: 'watch', link: '/core/watch' },
             { text: 'tracked', link: '/core/tracked' },
           ],
@@ -72,7 +71,6 @@ export default defineConfig({
         {
           text: 'Advanced',
           items: [
-            { text: 'Global Configuration', link: '/core/global-config' },
             { text: 'Logging', link: '/core/logging' },
             { text: 'Plugins', link: '/core/plugins' },
           ],
@@ -91,7 +89,6 @@ export default defineConfig({
           text: 'Hooks',
           items: [
             { text: 'useBloc', link: '/react/use-bloc' },
-            { text: 'useBlocActions', link: '/react/use-bloc-actions' },
           ],
         },
         {
@@ -117,7 +114,6 @@ export default defineConfig({
                 { text: 'Registry', link: '/api/core/registry' },
                 { text: 'Plugins', link: '/api/core/plugins' },
                 { text: 'Framework Adapter', link: '/api/core/adapter' },
-                { text: 'Logging', link: '/api/core/logging' },
                 { text: 'Utilities', link: '/api/core/utilities' },
               ],
             },

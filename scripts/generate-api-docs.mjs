@@ -840,7 +840,6 @@ function printSidebarConfig() {
               { text: 'Registry', link: '/api/core/registry' },
               { text: 'Plugins', link: '/api/core/plugins' },
               { text: 'Framework Adapter', link: '/api/core/adapter' },
-              { text: 'Logging', link: '/api/core/logging' },
               { text: 'Utilities', link: '/api/core/utilities' },
             ],
           },

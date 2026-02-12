@@ -8,9 +8,3 @@ Focus areas:
 - Plugins and `PluginContext`
 - Watch and tracking utilities
 - React integration with `useBloc`
-
-Out of scope for current packages:
-
-- `useBlocActions`
-- `waitUntil`
-- Core global configuration API
