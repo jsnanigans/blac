@@ -15,7 +15,10 @@ export function TodoStats() {
         <div className="stats-grid">
           <StatCard label="Active" value={bloc.activeCount} />
           <StatCard label="Completed" value={bloc.completedCount} />
-          <StatCard label="Total" value={bloc.activeCount + bloc.completedCount} />
+          <StatCard
+            label="Total"
+            value={bloc.activeCount + bloc.completedCount}
+          />
         </div>
       </div>
     </Card>

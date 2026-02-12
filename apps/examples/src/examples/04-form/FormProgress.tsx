@@ -22,7 +22,8 @@ export function FormProgress({ instanceId }: { instanceId: string }) {
           <div className="progress-fill" style={{ width: `${percent}%` }} />
         </div>
         <p className="text-xs text-muted">
-          Only re-renders when the completion percentage changes, not on every keystroke.
+          Only re-renders when the completion percentage changes, not on every
+          keystroke.
         </p>
       </div>
     </div>

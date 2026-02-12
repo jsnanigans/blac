@@ -111,8 +111,8 @@ export function Home() {
             <h3>Dashboard</h3>
           </div>
           <p className="text-small text-muted">
-            A widget-based dashboard with a custom plugin for analytics, cross-bloc
-            dependencies, and state that persists across navigations.
+            A widget-based dashboard with a custom plugin for analytics,
+            cross-bloc dependencies, and state that persists across navigations.
           </p>
           <div className="stack-xs text-xs text-muted">
             <div className="row-xs">

@@ -46,7 +46,8 @@ export function AnalyticsWidget() {
         </div>
       </div>
       <p className="text-xs text-muted">
-        Real-time log from the custom <code>AnalyticsPlugin</code> — tracks instance creation, state changes, and disposal.
+        Real-time log from the custom <code>AnalyticsPlugin</code> — tracks
+        instance creation, state changes, and disposal.
       </p>
       <div className="analytics-log">
         {entries.length === 0 && (

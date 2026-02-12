@@ -14,7 +14,11 @@ export class ActivityCubit extends Cubit<ActivityState> {
   constructor() {
     super({
       entries: [
-        { id: '1', message: 'Dashboard initialized', time: new Date().toLocaleTimeString() },
+        {
+          id: '1',
+          message: 'Dashboard initialized',
+          time: new Date().toLocaleTimeString(),
+        },
       ],
     });
   }

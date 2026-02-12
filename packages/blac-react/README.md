@@ -100,13 +100,13 @@ useBloc(MyBloc, {
 });
 ```
 
-| Option         | Type                                        | Description                                |
-| -------------- | ------------------------------------------- | ------------------------------------------ |
-| `autoTrack`    | `boolean`                                   | Enable auto-tracking (default: true)       |
-| `dependencies` | `(state, bloc) => unknown[]`                | Manual dependency selector                 |
-| `instanceId`   | `string \| number`                          | Custom instance identifier                 |
-| `onMount`      | `(bloc) => void`                            | Called when component mounts               |
-| `onUnmount`    | `(bloc) => void`                            | Called when component unmounts             |
+| Option         | Type                         | Description                          |
+| -------------- | ---------------------------- | ------------------------------------ |
+| `autoTrack`    | `boolean`                    | Enable auto-tracking (default: true) |
+| `dependencies` | `(state, bloc) => unknown[]` | Manual dependency selector           |
+| `instanceId`   | `string \| number`           | Custom instance identifier           |
+| `onMount`      | `(bloc) => void`             | Called when component mounts         |
+| `onUnmount`    | `(bloc) => void`             | Called when component unmounts       |
 
 ## Instance Management
 

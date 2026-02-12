@@ -482,7 +482,10 @@ const descriptorCache = new WeakMap<
   Map<string | symbol, PropertyDescriptor | undefined>
 >();
 
-const blocProxyCache = new WeakMap<StateContainerInstance, StateContainerInstance>();
+const blocProxyCache = new WeakMap<
+  StateContainerInstance,
+  StateContainerInstance
+>();
 
 const activeTrackerMap = new WeakMap<StateContainerInstance, GetterState>();
 

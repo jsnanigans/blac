@@ -17,7 +17,11 @@ export function ThemeWidget() {
       <div className="theme-controls">
         <label>
           Mode
-          <Button variant={state.mode === 'dark' ? 'primary' : 'ghost'} onClick={bloc.toggleMode} style={{ padding: '4px 12px', fontSize: '0.8125rem' }}>
+          <Button
+            variant={state.mode === 'dark' ? 'primary' : 'ghost'}
+            onClick={bloc.toggleMode}
+            style={{ padding: '4px 12px', fontSize: '0.8125rem' }}
+          >
             {state.mode === 'light' ? 'Light' : 'Dark'}
           </Button>
         </label>
@@ -32,7 +36,10 @@ export function ThemeWidget() {
                 style={{
                   backgroundColor: color,
                   borderColor: state.accentColor === color ? color : undefined,
-                  boxShadow: state.accentColor === color ? `0 0 0 2px ${color}40` : undefined,
+                  boxShadow:
+                    state.accentColor === color
+                      ? `0 0 0 2px ${color}40`
+                      : undefined,
                 }}
                 onClick={() => bloc.setAccentColor(color)}
               />
@@ -48,7 +55,11 @@ export function ThemeWidget() {
                 key={size}
                 variant={state.fontSize === size ? 'primary' : 'ghost'}
                 onClick={() => bloc.setFontSize(size)}
-                style={{ padding: '4px 10px', fontSize: '0.75rem', textTransform: 'capitalize' }}
+                style={{
+                  padding: '4px 10px',
+                  fontSize: '0.75rem',
+                  textTransform: 'capitalize',
+                }}
               >
                 {size}
               </Button>

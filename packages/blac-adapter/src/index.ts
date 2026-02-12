@@ -15,7 +15,6 @@ import type {
   StateContainerInstance,
 } from '@blac/core';
 
-
 import type { DependencyState, GetterState } from '@blac/core/tracking';
 
 import {
@@ -268,10 +267,10 @@ export function autoTrackSnapshot<TBloc extends StateContainerConstructor>(
   adapterState: AdapterState<TBloc>,
 ): SnapshotFunction<ExtractState<TBloc>> {
   return () => {
-      const depState =
-        adapterState.dependencyState ||
-        (adapterState.dependencyState =
-          createDependencyState<ExtractState<TBloc>>());
+    const depState =
+      adapterState.dependencyState ||
+      (adapterState.dependencyState =
+        createDependencyState<ExtractState<TBloc>>());
 
     if (hasTrackedData(depState)) {
       capturePaths(depState, instance.state);

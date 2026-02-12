@@ -967,7 +967,11 @@ select:focus {
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-primary) 0%,
+    var(--color-secondary) 100%
+  );
   border-radius: var(--border-radius-full);
   transition: width 0.3s ease;
 }

@@ -1,11 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Cubit } from './Cubit';
-import {
-  acquire,
-  clearAll,
-  hasInstance,
-  getRefCount,
-} from '../registry';
+import { acquire, clearAll, hasInstance, getRefCount } from '../registry';
 
 // --- Test blocs ---
 
@@ -90,9 +85,7 @@ describe('StateContainer.depend()', () => {
       refresh() {
         const auth = this.getAuth();
         this.emit({
-          display: auth.state.loggedIn
-            ? `User: ${auth.state.userId}`
-            : 'Guest',
+          display: auth.state.loggedIn ? `User: ${auth.state.userId}` : 'Guest',
         });
       }
     }
@@ -413,9 +406,7 @@ describe('StateContainer.depend()', () => {
           return;
         }
 
-        notifications.push(
-          `Order placed: ${cart.state.items.length} item(s)`,
-        );
+        notifications.push(`Order placed: ${cart.state.items.length} item(s)`);
         this.emit({ status: 'completed' });
       }
     }

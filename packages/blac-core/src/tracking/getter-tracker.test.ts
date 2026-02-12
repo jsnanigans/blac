@@ -379,9 +379,7 @@ describe('getter-tracker', () => {
       const proxy = createBlocProxy(circularBloc);
 
       // Should throw a circular dependency error instead of causing stack overflow
-      expect(() => proxy.circular).toThrowError(
-        /Circular dependency detected/,
-      );
+      expect(() => proxy.circular).toThrowError(/Circular dependency detected/);
     });
 
     it('should handle deeply nested getter calls', () => {

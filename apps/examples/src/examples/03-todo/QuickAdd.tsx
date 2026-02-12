@@ -30,7 +30,8 @@ export function QuickAdd() {
         </Button>
       </form>
       <p className="text-xs text-muted" style={{ marginTop: '4px' }}>
-        Action-only: this component never reads TodoCubit state, so it only re-renders from its own local input state.
+        Action-only: this component never reads TodoCubit state, so it only
+        re-renders from its own local input state.
       </p>
     </div>
   );

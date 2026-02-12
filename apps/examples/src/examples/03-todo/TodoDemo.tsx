@@ -79,7 +79,11 @@ export function TodoDemo() {
                     ))}
                   </div>
                   {bloc.completedCount > 0 && (
-                    <Button variant="ghost" onClick={bloc.clearCompleted} style={{ fontSize: '0.8125rem' }}>
+                    <Button
+                      variant="ghost"
+                      onClick={bloc.clearCompleted}
+                      style={{ fontSize: '0.8125rem' }}
+                    >
                       Clear completed
                     </Button>
                   )}
@@ -96,11 +100,14 @@ export function TodoDemo() {
             <Card>
               <h4>Lifecycle Log</h4>
               <p className="text-xs text-muted">
-                Live log of <code>watch()</code>, <code>onMount</code>, and <code>onUnmount</code> events
+                Live log of <code>watch()</code>, <code>onMount</code>, and{' '}
+                <code>onUnmount</code> events
               </p>
               <div className="lifecycle-log" ref={logRef}>
                 {logs.map((log, i) => (
-                  <div key={i} className="log-entry">{log}</div>
+                  <div key={i} className="log-entry">
+                    {log}
+                  </div>
                 ))}
                 {logs.length === 0 && (
                   <span className="text-muted">Waiting for events...</span>
@@ -112,16 +119,25 @@ export function TodoDemo() {
               <h4>Key Concepts</h4>
               <div className="stack-xs text-small text-muted">
                 <p>
-                  <strong>watch()</strong> observes a Cubit from outside React. Here it auto-saves items to localStorage on every state change.
+                  <strong>watch()</strong> observes a Cubit from outside React.
+                  Here it auto-saves items to localStorage on every state
+                  change.
                 </p>
                 <p>
-                  <strong>Manual dependencies</strong> let you explicitly define what triggers a re-render, like <code>useEffect</code> deps. TodoList only re-renders when filtered results change.
+                  <strong>Manual dependencies</strong> let you explicitly define
+                  what triggers a re-render, like <code>useEffect</code> deps.
+                  TodoList only re-renders when filtered results change.
                 </p>
                 <p>
-                  <strong>Action-only</strong> pattern: QuickAdd never reads TodoCubit state, so it's immune to state changes. Watch its render counter — it only increments from its own local input state.
+                  <strong>Action-only</strong> pattern: QuickAdd never reads
+                  TodoCubit state, so it's immune to state changes. Watch its
+                  render counter — it only increments from its own local input
+                  state.
                 </p>
                 <p>
-                  <strong>onMount / onUnmount</strong> hooks fire when a component first connects to (or disconnects from) a Cubit instance.
+                  <strong>onMount / onUnmount</strong> hooks fire when a
+                  component first connects to (or disconnects from) a Cubit
+                  instance.
                 </p>
               </div>
             </Card>

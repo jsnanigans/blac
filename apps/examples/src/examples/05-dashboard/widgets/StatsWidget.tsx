@@ -15,9 +15,14 @@ export function StatsWidget() {
         <StatCard label="Orders" value={state.orders.toLocaleString()} />
       </div>
       <p className="text-xs text-muted">
-        <code>formattedRevenue</code> uses <code>depend(ThemeCubit)</code> — changes when theme mode changes
+        <code>formattedRevenue</code> uses <code>depend(ThemeCubit)</code> —
+        changes when theme mode changes
       </p>
-      <Button variant="ghost" onClick={bloc.simulateUpdate} style={{ alignSelf: 'flex-start' }}>
+      <Button
+        variant="ghost"
+        onClick={bloc.simulateUpdate}
+        style={{ alignSelf: 'flex-start' }}
+      >
         Simulate Update
       </Button>
     </div>

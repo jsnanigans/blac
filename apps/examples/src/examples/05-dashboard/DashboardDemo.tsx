@@ -47,22 +47,25 @@ export function DashboardDemo() {
           <h4>Key Concepts</h4>
           <div className="stack-xs text-small text-muted">
             <p>
-              <strong>Custom Plugin:</strong> The <code>AnalyticsPlugin</code> implements the{' '}
-              <code>BlacPlugin</code> interface. It hooks into <code>onInstanceCreated</code>,{' '}
-              <code>onStateChanged</code>, and <code>onInstanceDisposed</code> to build a
-              real-time event log. The plugin is installed when this page mounts and uninstalled
-              when you navigate away.
+              <strong>Custom Plugin:</strong> The <code>AnalyticsPlugin</code>{' '}
+              implements the <code>BlacPlugin</code> interface. It hooks into{' '}
+              <code>onInstanceCreated</code>, <code>onStateChanged</code>, and{' '}
+              <code>onInstanceDisposed</code> to build a real-time event log.
+              The plugin is installed when this page mounts and uninstalled when
+              you navigate away.
             </p>
             <p>
               <strong>depend():</strong> <code>StatsCubit</code> calls{' '}
               <code>this.depend(ThemeCubit)</code> to access theme state. The{' '}
-              <code>formattedRevenue</code> getter formats currency using the theme's mode.
-              Changing the theme triggers a re-render in StatsWidget.
+              <code>formattedRevenue</code> getter formats currency using the
+              theme's mode. Changing the theme triggers a re-render in
+              StatsWidget.
             </p>
             <p>
               <strong>keepAlive:</strong> <code>ThemeCubit</code> uses{' '}
-              <code>blac({'{ keepAlive: true }'})</code> so its instance is never disposed. Navigate
-              to another page and back — theme settings are preserved.
+              <code>blac({'{ keepAlive: true }'})</code> so its instance is
+              never disposed. Navigate to another page and back — theme settings
+              are preserved.
             </p>
           </div>
         </Card>

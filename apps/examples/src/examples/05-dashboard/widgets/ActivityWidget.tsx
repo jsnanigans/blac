@@ -16,7 +16,8 @@ export function ActivityWidget() {
   const [state, bloc] = useBloc(ActivityCubit);
 
   const addSample = () => {
-    const msg = sampleMessages[Math.floor(Math.random() * sampleMessages.length)];
+    const msg =
+      sampleMessages[Math.floor(Math.random() * sampleMessages.length)];
     bloc.addEntry(msg);
   };
 
@@ -24,7 +25,11 @@ export function ActivityWidget() {
     <div className="widget">
       <div className="flex-between">
         <h3>Activity Feed</h3>
-        <Button variant="ghost" onClick={addSample} style={{ padding: '4px 10px', fontSize: '0.75rem' }}>
+        <Button
+          variant="ghost"
+          onClick={addSample}
+          style={{ padding: '4px 10px', fontSize: '0.75rem' }}
+        >
           + Add Entry
         </Button>
       </div>

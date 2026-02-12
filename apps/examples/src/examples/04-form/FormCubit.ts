@@ -57,15 +57,19 @@ export class FormCubit extends Cubit<FormState> {
     const errs: Record<string, string> = {};
 
     if (!s.name.value.trim()) errs.name = 'Name is required';
-    else if (s.name.value.trim().length < 2) errs.name = 'Name must be at least 2 characters';
+    else if (s.name.value.trim().length < 2)
+      errs.name = 'Name must be at least 2 characters';
 
     if (!s.email.value.trim()) errs.email = 'Email is required';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.email.value)) errs.email = 'Invalid email address';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.email.value))
+      errs.email = 'Invalid email address';
 
     if (!s.password.value) errs.password = 'Password is required';
-    else if (s.password.value.length < 8) errs.password = 'Password must be at least 8 characters';
+    else if (s.password.value.length < 8)
+      errs.password = 'Password must be at least 8 characters';
 
-    if (s.confirmPassword.value !== s.password.value) errs.confirmPassword = 'Passwords do not match';
+    if (s.confirmPassword.value !== s.password.value)
+      errs.confirmPassword = 'Passwords do not match';
 
     if (!s.agreeToTerms) errs.terms = 'You must agree to the terms';
 

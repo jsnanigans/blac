@@ -15,12 +15,18 @@ export function TodoList() {
       <RenderCounter name="TodoList" />
       <div className="stack-sm">
         {items.length === 0 && (
-          <p className="text-muted text-small" style={{ padding: '1rem', textAlign: 'center' }}>
+          <p
+            className="text-muted text-small"
+            style={{ padding: '1rem', textAlign: 'center' }}
+          >
             No items to show
           </p>
         )}
         {items.map((item) => (
-          <div key={item.id} className={`todo-item ${item.completed ? 'completed' : ''}`}>
+          <div
+            key={item.id}
+            className={`todo-item ${item.completed ? 'completed' : ''}`}
+          >
             <input
               type="checkbox"
               className="todo-checkbox"
@@ -28,7 +34,11 @@ export function TodoList() {
               onChange={() => bloc.toggleTodo(item.id)}
             />
             <span className="todo-text">{item.text}</span>
-            <Button variant="ghost" onClick={() => bloc.removeTodo(item.id)} style={{ padding: '4px 8px', fontSize: '0.75rem' }}>
+            <Button
+              variant="ghost"
+              onClick={() => bloc.removeTodo(item.id)}
+              style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+            >
               x
             </Button>
           </div>

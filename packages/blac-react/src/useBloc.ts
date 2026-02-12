@@ -116,8 +116,10 @@ export function useBloc<
 
       const instance = acquire(BlocClass, instanceKey) as TBloc;
 
-      const { useManualDeps, autoTrackEnabled } =
-        determineTrackingMode({ autoTrack, dependencies });
+      const { useManualDeps, autoTrackEnabled } = determineTrackingMode({
+        autoTrack,
+        dependencies,
+      });
 
       let subscribeFn: (callback: () => void) => () => void;
       let getSnapshotFn: () => ExtractState<T>;
@@ -126,10 +128,7 @@ export function useBloc<
       if (useManualDeps && dependencies) {
         adapterState = manualDepsInit(instance);
         const stableConfig = {
-          dependencies: (
-            state: ExtractState<T>,
-            bloc: InstanceState<T>,
-          ) => {
+          dependencies: (state: ExtractState<T>, bloc: InstanceState<T>) => {
             const deps = depsRef.current;
             return deps ? deps(state, bloc) : [];
           },
@@ -158,7 +157,7 @@ export function useBloc<
         adapterState,
         instance,
       ];
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [BlocClass, isIsolated, instanceId]);
 
   const state = useSyncExternalStore(subscribe, getSnapshot);

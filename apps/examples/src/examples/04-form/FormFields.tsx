@@ -5,7 +5,9 @@ import { Input, Textarea, RenderCounter } from '../../shared/components';
 export function FormFields({ instanceId }: { instanceId: string }) {
   const [state, bloc] = useBloc(FormCubit, { instanceId });
 
-  const fieldError = (field: 'name' | 'email' | 'password' | 'confirmPassword' | 'bio') => {
+  const fieldError = (
+    field: 'name' | 'email' | 'password' | 'confirmPassword' | 'bio',
+  ) => {
     const s = state[field];
     if (!s.touched) return undefined;
     return bloc.errors[field];
@@ -58,7 +60,14 @@ export function FormFields({ instanceId }: { instanceId: string }) {
           placeholder="Tell us about yourself"
           rows={3}
         />
-        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.875rem' }}>
+        <label
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontSize: '0.875rem',
+          }}
+        >
           <input
             type="checkbox"
             checked={state.agreeToTerms}

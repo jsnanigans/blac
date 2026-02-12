@@ -4,7 +4,13 @@ import { FormFields } from './FormFields';
 import { FormProgress } from './FormProgress';
 import { FormSummary } from './FormSummary';
 
-function SingleForm({ label, instanceId }: { label: string; instanceId: string }) {
+function SingleForm({
+  label,
+  instanceId,
+}: {
+  label: string;
+  instanceId: string;
+}) {
   return (
     <Card>
       <div className="stack-md">
@@ -41,21 +47,24 @@ export function FormDemo() {
           <h4>Key Concepts</h4>
           <div className="stack-xs text-small text-muted">
             <p>
-              <strong>Instance isolation via instanceId:</strong> Each form passes a unique{' '}
-              <code>instanceId</code> to <code>useBloc(FormCubit)</code>, so Form A and Form B
-              get completely independent state. All components within the same form share one
-              instance.
+              <strong>Instance isolation via instanceId:</strong> Each form
+              passes a unique <code>instanceId</code> to{' '}
+              <code>useBloc(FormCubit)</code>, so Form A and Form B get
+              completely independent state. All components within the same form
+              share one instance.
             </p>
             <p>
-              <strong>Getter tracking:</strong> Getters like <code>completionPercent</code>,{' '}
-              <code>isValid</code>, and <code>errors</code> are computed from state. BlaC tracks
-              which getters a component accesses and only re-renders when the getter return value
-              changes.
+              <strong>Getter tracking:</strong> Getters like{' '}
+              <code>completionPercent</code>, <code>isValid</code>, and{' '}
+              <code>errors</code> are computed from state. BlaC tracks which
+              getters a component accesses and only re-renders when the getter
+              return value changes.
             </p>
             <p>
-              <strong>Granular updates:</strong> Watch the RenderCounter badges — FormProgress only
-              updates when the percentage crosses a boundary, not on every keystroke. FormSummary
-              only updates when the set of validation errors changes.
+              <strong>Granular updates:</strong> Watch the RenderCounter badges
+              — FormProgress only updates when the percentage crosses a
+              boundary, not on every keystroke. FormSummary only updates when
+              the set of validation errors changes.
             </p>
           </div>
         </Card>
