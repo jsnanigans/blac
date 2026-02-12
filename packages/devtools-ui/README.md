@@ -20,7 +20,7 @@ yarn add @blac/devtools-ui @blac/devtools-connect @blac/react @blac/core
 import { getPluginManager } from '@blac/core';
 import { createDevToolsBrowserPlugin } from '@blac/devtools-connect';
 
-getPluginManager().register(
+getPluginManager().install(
   createDevToolsBrowserPlugin({
     enabled: import.meta.env.DEV,
   }),

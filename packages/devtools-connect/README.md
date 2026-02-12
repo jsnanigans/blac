@@ -26,7 +26,7 @@ The fastest way to get DevTools support using the existing Redux DevTools extens
 import { getPluginManager } from '@blac/core';
 import { ReduxDevToolsAdapter } from '@blac/devtools-connect';
 
-getPluginManager().register(
+getPluginManager().install(
   new ReduxDevToolsAdapter({
     enabled: import.meta.env.DEV,
     name: 'My App State',
@@ -51,7 +51,7 @@ For in-app debugging with the `@blac/devtools-ui` package:
 import { getPluginManager } from '@blac/core';
 import { createDevToolsBrowserPlugin } from '@blac/devtools-connect';
 
-getPluginManager().register(
+getPluginManager().install(
   createDevToolsBrowserPlugin({
     enabled: import.meta.env.DEV,
   }),

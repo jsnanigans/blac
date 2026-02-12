@@ -35,7 +35,7 @@ interface TrackingMode {
 }
 
 function determineTrackingMode<TBloc extends StateContainerConstructor>(
-  options?: UseBlocOptions<TBloc>,
+  options?: Pick<UseBlocOptions<TBloc>, 'autoTrack' | 'dependencies'>,
 ): TrackingMode {
   const globalConfig = getBlacReactConfig();
   const autoTrackEnabled =
@@ -93,6 +93,9 @@ export function useBloc<
   const isIsolated = isIsolatedClass(BlocClass);
   const depsRef = useRef(options?.dependencies);
   depsRef.current = options?.dependencies;
+  const instanceId = options?.instanceId;
+  const autoTrack = options?.autoTrack;
+  const dependencies = options?.dependencies;
 
   const [bloc, subscribe, getSnapshot, instanceKey, adapterState, rawInstance] =
     useMemo<
@@ -108,25 +111,28 @@ export function useBloc<
       const instanceKey = generateInstanceKey(
         componentRef.current,
         isIsolated,
-        options?.instanceId,
+        instanceId,
       );
 
       const instance = acquire(BlocClass, instanceKey) as TBloc;
 
       const { useManualDeps, autoTrackEnabled } =
-        determineTrackingMode(options);
+        determineTrackingMode({ autoTrack, dependencies });
 
       let subscribeFn: (callback: () => void) => () => void;
       let getSnapshotFn: () => ExtractState<T>;
       let adapterState: AdapterState<T>;
 
-      if (useManualDeps && options?.dependencies) {
+      if (useManualDeps && dependencies) {
         adapterState = manualDepsInit(instance);
         const stableConfig = {
           dependencies: (
             state: ExtractState<T>,
             bloc: InstanceState<T>,
-          ) => depsRef.current!(state, bloc),
+          ) => {
+            const deps = depsRef.current;
+            return deps ? deps(state, bloc) : [];
+          },
         };
         subscribeFn = manualDepsSubscribe(instance, adapterState, stableConfig);
         getSnapshotFn = manualDepsSnapshot(
@@ -152,7 +158,8 @@ export function useBloc<
         adapterState,
         instance,
       ];
-    }, [BlocClass, isIsolated, options?.instanceId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [BlocClass, isIsolated, instanceId]);
 
   const state = useSyncExternalStore(subscribe, getSnapshot);
 
@@ -161,8 +168,9 @@ export function useBloc<
   const externalDepsManager = useRef(new ExternalDepsManager());
 
   useEffect(() => {
+    const manager = externalDepsManager.current;
     disableGetterTracking(adapterState, rawInstance);
-    externalDepsManager.current.updateSubscriptions(
+    manager.updateSubscriptions(
       adapterState.getterState,
       rawInstance,
       forceUpdate,
@@ -170,12 +178,13 @@ export function useBloc<
   });
 
   useEffect(() => {
+    const manager = externalDepsManager.current;
     if (options?.onMount) {
       options.onMount(bloc as InstanceType<T>);
     }
 
     return () => {
-      externalDepsManager.current.cleanup();
+      manager.cleanup();
 
       if (options?.onUnmount) {
         options.onUnmount(bloc as InstanceType<T>);

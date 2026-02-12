@@ -6,7 +6,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".tsbuildinfo"]
+      "outputs": ["dist/**", ".tsbuildinfo", ".vitepress/dist/**"]
     },
     "build:esm": {
       "dependsOn": ["^build"],

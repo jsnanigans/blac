@@ -1,10 +1,3 @@
----
-outline: [2, 3]
----
-
 # Logging
 
-Logging utilities for debugging
-
-<small>[← Back to @blac/core](./index.md)</small>
-
+`@blac/core` does not provide a logging API. Implement logging via the plugin system.

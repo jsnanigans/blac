@@ -15,12 +15,6 @@ import type {
   StateContainerInstance,
 } from '@blac/core';
 
-import {
-  acquire,
-  release,
-  isIsolatedClass,
-  generateIsolatedKey,
-} from '@blac/core';
 
 import type { DependencyState, GetterState } from '@blac/core/tracking';
 
@@ -82,7 +76,7 @@ export interface ManualDepsConfig<TBloc extends StateContainerConstructor> {
   dependencies: (
     state: ExtractState<TBloc>,
     bloc: InstanceState<TBloc>,
-  ) => any[];
+  ) => unknown[];
 }
 
 /**
@@ -183,7 +177,8 @@ export function autoTrackSubscribe<TBloc extends StateContainerConstructor>(
     return instance.subscribe(() => {
       const depState =
         adapterState.dependencyState ||
-        (adapterState.dependencyState = createDependencyState<any>());
+        (adapterState.dependencyState =
+          createDependencyState<ExtractState<TBloc>>());
 
       const hasStateDeps = depState.pathCache && depState.pathCache.size > 0;
       const hasGetterDeps =
@@ -273,9 +268,10 @@ export function autoTrackSnapshot<TBloc extends StateContainerConstructor>(
   adapterState: AdapterState<TBloc>,
 ): SnapshotFunction<ExtractState<TBloc>> {
   return () => {
-    const depState =
-      adapterState.dependencyState ||
-      (adapterState.dependencyState = createDependencyState<any>());
+      const depState =
+        adapterState.dependencyState ||
+        (adapterState.dependencyState =
+          createDependencyState<ExtractState<TBloc>>());
 
     if (hasTrackedData(depState)) {
       capturePaths(depState, instance.state);

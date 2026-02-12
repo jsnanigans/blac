@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import { Cubit, clear } from '@blac/core';
 import { useBloc } from '../useBloc';
 
@@ -107,7 +107,9 @@ describe('useBloc - filtered list with getter', () => {
     expect(screen.getByTestId('filtered-count').textContent).toBe('2');
 
     // Add profiles (1 active, 1 inactive)
-    screen.getByText('Add Profiles').click();
+    act(() => {
+      screen.getByText('Add Profiles').click();
+    });
 
     await waitFor(() => {
       expect(screen.getByTestId('total-count').textContent).toBe('5');
@@ -160,7 +162,9 @@ describe('useBloc - filtered list with getter', () => {
     expect(screen.queryByTestId('profile-3')).not.toBeInTheDocument(); // Charlie is inactive
 
     // Add profiles
-    screen.getByText('Add Profiles').click();
+    act(() => {
+      screen.getByText('Add Profiles').click();
+    });
 
     await waitFor(() => {
       // Should now show 3 active profiles
@@ -212,7 +216,9 @@ describe('useBloc - filtered list with getter', () => {
 
     // Add inactive profile - will trigger re-render since profiles array changed
     // Note: Getter tracking tracks the result, but re-renders when input changes
-    screen.getByText('Add Inactive').click();
+    act(() => {
+      screen.getByText('Add Inactive').click();
+    });
 
     await waitFor(() => {
       // Getter result is still 2 (only active profiles)
@@ -220,7 +226,9 @@ describe('useBloc - filtered list with getter', () => {
     });
 
     // Add active profile - should trigger re-render
-    screen.getByText('Add Active').click();
+    act(() => {
+      screen.getByText('Add Active').click();
+    });
 
     await waitFor(() => {
       expect(screen.getByTestId('filtered-count').textContent).toBe('3');
@@ -265,7 +273,9 @@ describe('useBloc - filtered list with getter', () => {
     expect(screen.getByTestId('filtered-count').textContent).toBe('2');
 
     // Activate Charlie - getter result changes from 2 to 3
-    screen.getByText('Activate Charlie').click();
+    act(() => {
+      screen.getByText('Activate Charlie').click();
+    });
 
     await waitFor(() => {
       expect(screen.getByTestId('filtered-count').textContent).toBe('3');

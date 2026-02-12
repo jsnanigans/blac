@@ -34,20 +34,6 @@ class IsolatedBloc extends StateContainer<{ count: number }> {
   };
 }
 
-class UserBloc extends StateContainer<{ name: string; email: string }> {
-  constructor() {
-    super({ name: '', email: '' });
-  }
-
-  setName = (name: string) => {
-    this.update((state) => ({ ...state, name }));
-  };
-
-  setEmail = (email: string) => {
-    this.update((state) => ({ ...state, email }));
-  };
-}
-
 describe('useBloc', () => {
   afterEach(() => {
     clearAll();

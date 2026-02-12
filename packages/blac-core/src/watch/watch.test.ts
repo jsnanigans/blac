@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { watch, instance } from './watch';
 import { Cubit } from '../core/Cubit';
-import { clearAll, acquire, ensure } from '../registry';
+import { clearAll, acquire } from '../registry';
 
 interface CounterState {
   count: number;
@@ -133,8 +133,8 @@ describe('watch', () => {
 
   describe('multiple blocs', () => {
     it('should watch multiple blocs', () => {
-      const counter = acquire(CounterCubit);
-      const name = acquire(NameCubit);
+      const _counter = acquire(CounterCubit);
+      const _name = acquire(NameCubit);
 
       const callback = vi.fn();
       watch([CounterCubit, NameCubit] as const, callback);

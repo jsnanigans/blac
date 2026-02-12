@@ -4,287 +4,115 @@ outline: [2, 3]
 
 # @blac/core
 
-Core state management primitives
+Core state management primitives for BlaC: state containers, registry helpers, plugin system, and tracking utilities.
 
-## API Sections
+## Key Exports
 
-| Section | Description |
-|---------|-------------|
-| [Registry](./registry.md) | Instance management and lifecycle |
-| [Plugins](./plugins.md) | Plugin system for extending BlaC |
-| [Framework Adapter](./adapter.md) | React integration and dependency tracking |
-| [Logging](./logging.md) | Logging utilities for debugging |
-| [Utilities](./utilities.md) | Helper functions, ID generation, and type utilities |
+- `StateContainer` - Abstract base class for state containers
+- `Cubit` - Simple state container with `emit`, `update`, `patch`
+- Registry helpers: `acquire`, `release`, `borrow`, `borrowSafe`, `ensure`, `clear`, `clearAll`
+- Plugins: `PluginManager`, `getPluginManager`, `BlacPlugin`
+- Watch + tracking: `watch`, `instance`, `tracked`, `createTrackedContext`
+
+## Subpath Exports
+
+- `@blac/core/watch` - `watch`, `instance`, `tracked`
+- `@blac/core/tracking` - dependency tracking utilities for framework adapters
+- `@blac/core/plugins` - plugin system exports
+- `@blac/core/debug` - advanced registry introspection helpers
 
 ## Classes
 
-### Cubit
-
-> **Abstract class**
-
-Simple state container with direct state emission. Extends StateContainer with public methods for emitting and updating state.
-
-```typescript
-export declare abstract class Cubit<S extends object = any> extends StateContainer<S>
-```
-
-**Type Parameters:**
-
-- `S` - State type
-
-**Constructor:**
-
-```typescript
-constructor(initialState: S);
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `initialState` | `S` |  |
-
-**Properties:**
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `patch` | `S extends object ? (partial: Partial<S>) => void : never` | Merge partial state changes into current state (only for object states) |
-
-**Methods:**
-
-#### `emit`
-
-Replace state with a new value and notify all listeners
-
-```typescript
-emit(newState: S): void;
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `newState` | `S` | The new state value |
-
-#### `update`
-
-Transform current state using an updater function and emit the new state
-
-```typescript
-update(updater: (current: S) => S): void;
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `updater` | `(current: S) => S` | Function that receives current state and returns new state |
-
----
-
 ### StateContainer
 
-> **Abstract class**
+Abstract base class that stores state, exposes subscriptions, and integrates with the registry.
 
-Abstract base class for all state containers in BlaC. Provides lifecycle management, subscription handling, ref counting, and integration with the global registry.
+Public API:
 
-```typescript
-export declare abstract class StateContainer<S extends object = any>
-```
+- `state` (readonly)
+- `subscribe(listener)` -> `unsubscribe`
+- `dispose()`
+- `isDisposed`, `name`, `debug`, `instanceId`, `createdAt`, `lastUpdateTimestamp`
 
-**Type Parameters:**
+Protected API for subclasses:
 
-- `S` - State type
+- `emit(newState)`
+- `update(fn)`
+- `onSystemEvent(event, handler)` for `stateChanged` and `dispose`
+- `depend(BlocClass, instanceKey?)` for cross-bloc dependencies
 
-**Constructor:**
+### Cubit
 
-```typescript
-constructor(initialState: S);
-```
+Extends `StateContainer` and exposes public mutation methods:
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `initialState` | `S` |  |
+- `emit(newState)`
+- `update(fn)`
+- `patch(partial)` (shallow merge for object state)
 
-**Properties:**
+## Registry Helpers
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `__excludeFromDevTools` *(static)*  | `boolean` |  |
-| `createdAt` | `number` | Timestamp when this instance was created |
-| `debug` | `boolean` | Whether debug logging is enabled |
-| `enableStackTrace` *(static)*  | `boolean` |  |
-| `instanceId` | `string` | Unique identifier for this instance |
-| `isDisposed` *(readonly)*  | `boolean` | Whether this instance has been disposed |
-| `lastUpdateTimestamp` | `number` | Timestamp of the last state update |
-| `name` | `string` | Display name for this instance |
-| `onSystemEvent` | `<E extends SystemEvent>(event: E, handler: SystemEventHandler<S, E>) => (() => void)` | Subscribe to system lifecycle events. |
-| `state` *(readonly)*  | `Readonly<S>` | Current state value |
+The registry manages instance lifecycle and ref counting.
 
-**Methods:**
+- `acquire(BlocClass, instanceKey?, options?)`
+- `ensure(BlocClass, instanceKey?)`
+- `borrow(BlocClass, instanceKey?)`
+- `borrowSafe(BlocClass, instanceKey?)` -> `{ error, instance }`
+- `release(BlocClass, instanceKey?, forceDispose?)`
+- `hasInstance(BlocClass, instanceKey?)`
+- `getRefCount(BlocClass, instanceKey?)`
+- `getAll(BlocClass)`
+- `forEach(BlocClass, cb)`
+- `clear(BlocClass)` / `clearAll()`
 
-#### `dispose`
+## Decorators
 
-Dispose this instance and clean up resources. Clears all listeners and emits the 'dispose' system event.
-
-```typescript
-dispose(): void;
-```
-
-#### `emit` *(protected)*
-
-Emit a new state value and notify all listeners.
-
-```typescript
-protected emit(newState: S): void;
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `newState` | `S` | The new state value |
-
-#### `initConfig`
-
-Initialize configuration for this instance. Called by the registry after construction.
-
-```typescript
-initConfig(config: StateContainerConfig): void;
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `config` | `StateContainerConfig` | Configuration options |
-
-#### `subscribe`
-
-Subscribe to state changes
-
-```typescript
-subscribe(listener: StateListener<S>): () => void;
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `listener` | `StateListener<S>` | Function called when state changes |
-
-**Returns:** Unsubscribe function
-
-#### `update` *(protected)*
-
-Update state using a transform function.
-
-```typescript
-protected update(updater: (current: S) => S): void;
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `updater` | `(current: S) => S` | Function that receives current state and returns new state |
-
-**Examples:**
-
+`@blac(options)` configures static behavior for a container class.
 
 ```ts
-class CounterBloc extends StateContainer<{ count: number }> {
-  constructor() {
-    super({ count: 0 });
-  }
-  increment() {
-    this.emit({ count: this.state.count + 1 });
-  }
-}
-```
+import { Cubit, blac } from '@blac/core';
 
----
-
-## Interfaces
-
-### StateContainerConfig
-
-Configuration options for initializing a StateContainer instance
-
-```typescript
-export interface StateContainerConfig
-```
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `debug` *(optional)* | `boolean` | Enable debug logging for this instance |
-| `instanceId` *(optional)* | `string` | Custom instance identifier |
-| `name` *(optional)* | `string` | Display name for the instance (defaults to class name) |
-
----
-
-### SystemEventPayloads
-
-Payload types for each system event  @template S - State type
-
-```typescript
-export interface SystemEventPayloads<S>
-```
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `dispose` | `void` | Emitted when the instance is disposed |
-| `stateChanged` | `{ state: S; previousState: S }` | Emitted when state changes via emit() or update() |
-
----
-
-## Functions
-
-### blac
-
-Decorator to configure StateContainer classes.
-
-```typescript
-export declare function blac(options: BlacOptions): <T extends new (...args: any[]) => any>(target: T, _context?: ClassDecoratorContext) => T;
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `options` | `BlacOptions` |  |
-
-**Examples:**
-
-**Decorator syntax (requires experimentalDecorators or TC39 decorators)**
-
-```ts
 @blac({ isolated: true })
-class FormBloc extends Cubit<FormState> {}
-
-@blac({ keepAlive: true })
-class AuthBloc extends Cubit<AuthState> {}
-
-@blac({ excludeFromDevTools: true })
-class InternalBloc extends Cubit<InternalState> {}
+class FormCubit extends Cubit<FormState> {}
 ```
 
-**Function syntax (no decorator support needed)**
+`BlacOptions` is a union type. Only one of:
+
+- `{ isolated: true }`
+- `{ keepAlive: true }`
+- `{ excludeFromDevTools: true }`
+
+## Watch + Tracking
 
 ```ts
-const FormBloc = blac({ isolated: true })(
-  class extends Cubit<FormState> {}
-);
+import { watch, instance, tracked } from '@blac/core';
+
+const stop = watch(UserCubit, (user) => {
+  console.log(user.state.name);
+});
+
+const stopSpecific = watch(instance(UserCubit, 'user-123'), (user) => {
+  console.log(user.state.name);
+});
+
+const { result, dependencies } = tracked(() => {
+  const user = ensure(UserCubit);
+  return user.state.name;
+});
 ```
 
----
+## Plugins
 
-## Types
+```ts
+import { getPluginManager, type BlacPlugin } from '@blac/core';
 
-### ExtractConstructorArgs
+const plugin: BlacPlugin = {
+  name: 'logger',
+  version: '1.0.0',
+  onStateChanged(instance, previousState, currentState, callstack) {
+    console.log(instance.constructor.name, previousState, currentState);
+    if (callstack) console.log(callstack);
+  },
+};
 
-Extract constructor argument types from a class  @template T - The class type
-
-```typescript
-export type ExtractConstructorArgs<T> = T extends new (...args: infer P) => any ? P : never[];
-```
-
-### ExtractState
-
-Extract the state type from a StateContainer  @template T - The StateContainer type
-
-```typescript
-export type ExtractState<T> = T extends StateContainerConstructor<infer S> ? Readonly<S> : never;
-```
-
-### SystemEvent
-
-System events emitted by StateContainer lifecycle
-
-```typescript
-export type SystemEvent = 'stateChanged' | 'dispose';
+getPluginManager().install(plugin, { environment: 'development' });
 ```

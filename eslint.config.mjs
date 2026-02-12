@@ -165,5 +165,16 @@ export default tseslint.config(
     rules: {
       "@typescript-eslint/no-explicit-any": "off"
     }
+  },
+  {
+    files: [
+      "packages/devtools-connect/**/*.ts",
+      "packages/devtools-connect/**/*.tsx",
+      "packages/logging-plugin/**/*.ts",
+      "packages/logging-plugin/**/*.tsx"
+    ],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off"
+    }
   }
 );

@@ -1,259 +1,55 @@
 # Performance
 
-Optimize BlaC applications for best performance.
+BlaC optimizes re-renders by tracking accessed properties and getters. For best performance:
 
-## Key Principles
+- Prefer auto-tracking for fine-grained updates.
+- Use manual dependencies for computed render conditions.
+- Split large components so each only reads the state it needs.
 
-1. **Access only what you render** - Proxy tracking records property access
-2. **Use getters for computed values** - Cached per render cycle
-3. **Use `useBlocActions` for action-only components** - No subscription overhead
-4. **Split large components** - Smaller components re-render independently
-
-## Optimal Property Access
+## Manual Dependencies
 
 ```tsx
-// ✅ OPTIMAL: Access only rendered properties
-function UserCard() {
-  const [user] = useBloc(UserCubit);
-  return (
-    <div>
-      <img src={user.avatar} />
-      <h2>{user.name}</h2>
-    </div>
-  );
-  // Only tracks 'avatar' and 'name'
-  // Changes to email, bio won't trigger re-render
-}
-
-// ❌ AVOID: Destructuring tracks all destructured
-function UserCard() {
-  const [user] = useBloc(UserCubit);
-  const { name, email, avatar, bio } = user;
-  return <h2>{name}</h2>;
-  // Tracks ALL four properties even though only name is rendered
-}
-
-// ❌ AVOID: Spreading defeats tracking
-function UserCard() {
-  const [user] = useBloc(UserCubit);
-  return <Profile {...user} />;
-  // Tracks everything!
+function CountOnly() {
+  const [state] = useBloc(CounterCubit, {
+    dependencies: (state) => [state.count],
+  });
+  return <span>{state.count}</span>;
 }
 ```
 
-## Nested Access
+## No Tracking (Use Carefully)
 
 ```tsx
-// ✅ Direct nested access works
-function UserAvatar() {
-  const [user] = useBloc(UserCubit);
-  return <img src={user.profile.avatar} />;
-  // Tracks 'profile.avatar'
-}
-
-// ✅ Conditional access
-function UserStatus() {
-  const [user] = useBloc(UserCubit);
-  return user.isOnline ? <span>Online</span> : null;
-  // Tracks 'isOnline'
-}
-
-// ✅ Array index access
-function FirstTodo() {
-  const [state] = useBloc(TodoCubit);
-  return <div>{state.todos[0]?.text}</div>;
-  // Tracks todos[0]
+function FullState() {
+  const [state] = useBloc(CounterCubit, { autoTrack: false });
+  return <pre>{JSON.stringify(state)}</pre>;
 }
 ```
 
-## Computed Values with Getters
+## Split Components
 
 ```tsx
-class TodoCubit extends Cubit<TodoState> {
-  // Getter computed once per render (cached)
-  get visibleTodos() {
-    return this.state.filter === 'active'
-      ? this.state.todos.filter((t) => !t.done)
-      : this.state.todos;
-  }
-
-  get activeCount() {
-    return this.state.todos.filter((t) => !t.done).length;
-  }
-}
-
-function TodoList() {
-  const [, cubit] = useBloc(TodoCubit);
-
-  // Multiple accesses = one computation
-  return (
-    <div>
-      <h2>{cubit.visibleTodos.length} visible</h2>
-      <ul>
-        {cubit.visibleTodos.map((todo) => (
-          <li key={todo.id}>{todo.text}</li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-```
-
-## Action-Only Components
-
-```tsx
-// ✅ OPTIMAL: No state subscription
-function TodoActions() {
-  const cubit = useBlocActions(TodoCubit);
-
-  return (
-    <div>
-      <button onClick={() => cubit.addTodo('New')}>Add</button>
-      <button onClick={cubit.clearCompleted}>Clear</button>
-    </div>
-  );
-  // Never re-renders from TodoCubit state changes
-}
-
-// ❌ WASTEFUL: Subscribes but never uses state
-function TodoActions() {
-  const [_, cubit] = useBloc(TodoCubit);
-  return <button onClick={cubit.addTodo}>Add</button>;
-}
-```
-
-## Component Splitting
-
-```tsx
-// ✅ OPTIMAL: Split into focused components
-function TodoApp() {
+function Counter() {
   return (
     <>
-      <TodoCount />    {/* Re-renders on count change */}
-      <TodoList />     {/* Re-renders on todos change */}
-      <TodoFilter />   {/* Re-renders on filter change */}
-      <TodoActions />  {/* Never re-renders */}
+      <CountLabel />
+      <CountButtons />
     </>
   );
 }
 
-function TodoCount() {
-  const [, cubit] = useBloc(TodoCubit);
-  return <span>Active: {cubit.activeCount}</span>;
+function CountLabel() {
+  const [state] = useBloc(CounterCubit);
+  return <span>{state.count}</span>;
 }
 
-function TodoList() {
-  const [, cubit] = useBloc(TodoCubit);
-  return <ul>{cubit.visibleTodos.map(...)}</ul>;
-}
-
-function TodoFilter() {
-  const [state, cubit] = useBloc(TodoCubit);
+function CountButtons() {
+  const [, counter] = useBloc(CounterCubit, { autoTrack: false });
   return (
-    <select value={state.filter} onChange={e => cubit.setFilter(e.target.value)}>
-      <option value="all">All</option>
-      <option value="active">Active</option>
-    </select>
+    <>
+      <button onClick={counter.increment}>+</button>
+      <button onClick={counter.decrement}>-</button>
+    </>
   );
 }
-
-function TodoActions() {
-  const cubit = useBlocActions(TodoCubit);
-  return <button onClick={() => cubit.addTodo('New')}>Add</button>;
-}
-
-// ❌ AVOID: One big component
-function TodoApp() {
-  const [state, cubit] = useBloc(TodoCubit);
-  return (
-    <div>
-      <span>{cubit.activeCount}</span>
-      <ul>{cubit.visibleTodos.map(...)}</ul>
-      <select value={state.filter} onChange={...} />
-      <button onClick={cubit.addTodo}>Add</button>
-    </div>
-  );
-  // Entire component re-renders on ANY state change
-}
 ```
-
-## Memory-Efficient Patterns
-
-```tsx
-import { borrow, forEach, release, getAll } from '@blac/core';
-
-// ✅ Use borrow() in bloc-to-bloc (no ref count)
-class UserCubit extends Cubit<UserState> {
-  loadProfile = () => {
-    const analytics = borrow(AnalyticsCubit); // Borrow
-    analytics.trackEvent('profile_loaded');
-    // No cleanup needed
-  };
-}
-
-// ✅ Use forEach() for large instance sets
-function cleanupStaleSessions() {
-  // Memory efficient, safe to dispose during iteration
-  forEach(UserSessionCubit, (session) => {
-    if (session.state.isStale) {
-      release(UserSessionCubit, session.instanceId);
-    }
-  });
-}
-
-// ❌ Avoid getAll() for large sets
-const sessions = getAll(UserSessionCubit); // Creates array copy
-```
-
-## Manual Dependencies
-
-When you know exactly what to track:
-
-```tsx
-// Override auto-tracking for specific cases
-const [state] = useBloc(UserCubit, {
-  dependencies: (state) => [state.name, state.email],
-});
-
-// Ignore internal tracking data
-const [state] = useBloc(AnalyticsCubit, {
-  dependencies: (state) => [state.displayMetrics],
-});
-
-// Custom re-render logic for complex cases
-const [state] = useBloc(AnalyticsCubit, {
-  dependencies: (state) => [state.dataPoints.length],
-});
-
-// use a getter in the dependencies
-const [state] = useBloc(AnalyticsCubit, {
-  dependencies: (state, bloc) => [bloc.computedValue],
-});
-```
-
-## Performance Summary
-
-| Pattern                 | Re-renders When            | Use When                |
-| ----------------------- | -------------------------- | ----------------------- |
-| Auto-tracking (default) | Accessed properties change | Most cases              |
-| `useBlocActions`        | Never                      | Action-only components  |
-| Manual `dependencies`   | Dependency array changes   | Known patterns          |
-| `autoTrack: false`      | Any state change           | Simple state, debugging |
-| Getters                 | Computed value changes     | Derived state           |
-
-## Common Mistakes
-
-| Mistake                         | Impact                    | Fix                 |
-| ------------------------------- | ------------------------- | ------------------- |
-| Destructuring state             | Tracks all destructured   | Access directly     |
-| Spreading props `{...state}`    | Tracks everything         | Pass specific props |
-| `acquire()` in methods/getters  | Memory leaks              | Use `borrow()` / `depend()` |
-| Not using `useBlocActions`      | Unnecessary subscriptions | Split components    |
-| Single large component          | Over-rendering            | Split into smaller  |
-| Array iteration for single item | Tracks whole array        | Use index access    |
-
-## See Also
-
-- [Dependency Tracking](/react/dependency-tracking) - How tracking works
-- [useBloc Hook](/react/use-bloc) - Hook options
-- [useBlocActions](/react/use-bloc-actions) - Actions-only hook

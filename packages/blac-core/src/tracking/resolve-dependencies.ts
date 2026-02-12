@@ -14,7 +14,10 @@ export function resolveDependencies(
   const queue: StateContainerInstance[] = [bloc];
 
   while (queue.length > 0) {
-    const current = queue.shift()!;
+    const current = queue.shift();
+    if (!current) {
+      break;
+    }
     for (const [Type, key] of current.dependencies) {
       const visitKey = `${Type.name}::${key}`;
       if (visited.has(visitKey)) continue;

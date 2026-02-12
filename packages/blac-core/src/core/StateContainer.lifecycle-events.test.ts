@@ -3,7 +3,6 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { StateContainer } from './StateContainer';
 import { Cubit } from './Cubit';
 import { acquire, release, clearAll, getRegistry } from '../registry';
 

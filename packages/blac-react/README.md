@@ -2,7 +2,7 @@
 
 > ⚠️ **Warning:** This project is currently under active development. The API may change in future releases. Use with caution in production environments.
 
-React integration for the BlaC state management library with automatic re-render optimization.
+React integration for BlaC with automatic re-render optimization.
 
 ## Installation
 
@@ -42,9 +42,7 @@ function Counter() {
 }
 ```
 
-## Hooks
-
-### useBloc
+## useBloc
 
 Connects a component to a state container with automatic re-renders on state changes.
 
@@ -54,29 +52,26 @@ const [state, bloc, ref] = useBloc(MyBloc);
 
 **Returns:** `[state, bloc, ref]`
 
-- `state` - Current state (reactive)
-- `bloc` - The bloc instance for calling methods
-- `ref` - Component reference for isolated instances
+- `state` - Current state snapshot
+- `bloc` - Bloc instance (proxied for tracking; call methods on it)
+- `ref` - Internal component ref (advanced usage)
 
-#### Tracking Modes
+### Tracking Modes
 
-**Auto-tracking (default):** Automatically detects which properties you access and only re-renders when those change.
+**Auto-tracking (default):** Tracks accessed properties and getters.
 
 ```tsx
 function UserProfile() {
-  const [state, user] = useBloc(UserBloc);
-
-  // Only re-renders when state.name changes
-  // (state.email changes won't cause re-render)
+  const [state] = useBloc(UserBloc);
   return <h1>{state.name}</h1>;
 }
 ```
 
-**Manual dependencies:** Explicit dependency array like `useEffect`.
+**Manual dependencies:** Provide a dependency selector (disables auto-tracking).
 
 ```tsx
 function Counter() {
-  const [state] = useBloc(CounterBloc, {
+  const [state] = useBloc(CounterCubit, {
     dependencies: (state) => [state.count],
   });
 
@@ -84,187 +79,85 @@ function Counter() {
 }
 ```
 
-**No tracking:** Returns full state, re-renders on any change.
+**No tracking:** Re-render on any state change.
 
 ```tsx
 function FullState() {
   const [state] = useBloc(MyBloc, { autoTrack: false });
-
   return <pre>{JSON.stringify(state)}</pre>;
 }
 ```
 
-#### Options
+### Options
 
 ```tsx
 useBloc(MyBloc, {
-  // Tracking mode
-  autoTrack: true, // Enable/disable auto-tracking (default: true)
-  dependencies: (state) => [state.prop], // Manual dependencies
-
-  // Instance management
-  instanceId: 'unique-id', // Custom instance identifier
-
-  // Lifecycle callbacks
+  autoTrack: true,
+  dependencies: (state, bloc) => [state.count, bloc],
+  instanceId: 'editor-1',
   onMount: (bloc) => console.log('Mounted', bloc),
   onUnmount: (bloc) => console.log('Unmounted', bloc),
 });
 ```
 
-### useBlocActions
-
-Connects to a state container without subscribing to state changes. Use for calling actions without re-renders, or for stateless containers.
-
-```tsx
-const bloc = useBlocActions(MyBloc);
-```
-
-**Use cases:**
-
-```tsx
-// Stateless services (analytics, navigation, etc.)
-function TrackButton() {
-  const analytics = useBlocActions(AnalyticsService);
-
-  return (
-    <button onClick={() => analytics.trackClick('button')}>Click me</button>
-  );
-}
-
-// Actions-only (no state subscription)
-function IncrementButton() {
-  const counter = useBlocActions(CounterCubit);
-
-  return <button onClick={counter.increment}>+</button>;
-}
-```
-
-#### Options
-
-```tsx
-useBlocActions(MyBloc, {
-  instanceId: 'unique-id', // Custom instance identifier
-  onMount: (bloc) => bloc.initialize(),
-  onUnmount: (bloc) => bloc.cleanup(),
-});
-```
+| Option         | Type                                        | Description                                |
+| -------------- | ------------------------------------------- | ------------------------------------------ |
+| `autoTrack`    | `boolean`                                   | Enable auto-tracking (default: true)       |
+| `dependencies` | `(state, bloc) => unknown[]`                | Manual dependency selector                 |
+| `instanceId`   | `string \| number`                          | Custom instance identifier                 |
+| `onMount`      | `(bloc) => void`                            | Called when component mounts               |
+| `onUnmount`    | `(bloc) => void`                            | Called when component unmounts             |
 
 ## Instance Management
 
 ### Shared Instances (Default)
 
-By default, all components using the same bloc class share one instance:
-
 ```tsx
-function ComponentA() {
-  const [state] = useBloc(CounterCubit);
-  // Uses shared instance
+function A() {
+  useBloc(CounterCubit); // shared instance
 }
 
-function ComponentB() {
-  const [state] = useBloc(CounterCubit);
-  // Uses same shared instance
+function B() {
+  useBloc(CounterCubit); // same shared instance
 }
 ```
 
 ### Isolated Instances
 
-For component-scoped state, use the `@blac({ isolated: true })` decorator:
-
 ```tsx
 import { Cubit, blac } from '@blac/core';
 
 @blac({ isolated: true })
-class FormCubit extends Cubit<FormState> {
-  // ...
-}
+class FormCubit extends Cubit<FormState> {}
 
 function FormA() {
-  const [state] = useBloc(FormCubit);
-  // Gets its own instance
-}
-
-function FormB() {
-  const [state] = useBloc(FormCubit);
-  // Gets a different instance
+  useBloc(FormCubit); // unique instance per component
 }
 ```
 
 ### Named Instances
 
-Share instances across specific components with `instanceId`:
-
 ```tsx
-function EditorA() {
-  const [state] = useBloc(EditorCubit, { instanceId: 'editor-1' });
-}
-
-function EditorB() {
-  const [state] = useBloc(EditorCubit, { instanceId: 'editor-1' });
-  // Same instance as EditorA
-}
-
-function EditorC() {
-  const [state] = useBloc(EditorCubit, { instanceId: 'editor-2' });
-  // Different instance
-}
+useBloc(EditorCubit, { instanceId: 'editor-1' });
+useBloc(EditorCubit, { instanceId: 'editor-1' }); // same instance
+useBloc(EditorCubit, { instanceId: 'editor-2' }); // different instance
 ```
 
 ## Configuration
 
-Configure global behavior:
+Configure global defaults:
 
 ```tsx
 import { configureBlacReact } from '@blac/react';
 
 configureBlacReact({
-  autoTrack: true, // Enable auto-tracking by default (default: true)
+  autoTrack: true,
 });
 ```
 
-## API Reference
-
-### useBloc
-
-```tsx
-function useBloc<T extends StateContainerConstructor>(
-  BlocClass: T,
-  options?: UseBlocOptions<T>,
-): [ExtractState<T>, InstanceType<T>, ComponentRef];
-```
-
-### useBlocActions
-
-```tsx
-function useBlocActions<T extends StateContainerConstructor>(
-  BlocClass: T,
-  options?: UseBlocActionsOptions<InstanceType<T>>,
-): InstanceType<T>;
-```
-
-### UseBlocOptions
-
-| Option         | Type               | Description                          |
-| -------------- | ------------------ | ------------------------------------ |
-| `autoTrack`    | `boolean`          | Enable auto-tracking (default: true) |
-| `dependencies` | `(state) => any[]` | Manual dependency selector           |
-| `instanceId`   | `string \| number` | Custom instance identifier           |
-| `onMount`      | `(bloc) => void`   | Called when component mounts         |
-| `onUnmount`    | `(bloc) => void`   | Called when component unmounts       |
-
-### UseBlocActionsOptions
-
-| Option       | Type               | Description                    |
-| ------------ | ------------------ | ------------------------------ |
-| `instanceId` | `string \| number` | Custom instance identifier     |
-| `onMount`    | `(bloc) => void`   | Called when component mounts   |
-| `onUnmount`  | `(bloc) => void`   | Called when component unmounts |
-
 ## Compatibility
 
-- React 18.0+ or React 19.0+
-- Works with React Compiler
-- Supports concurrent rendering via `useSyncExternalStore`
+- React 18+ (uses `useSyncExternalStore`)
 
 ## License
 

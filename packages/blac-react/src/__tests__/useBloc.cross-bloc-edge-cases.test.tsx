@@ -272,10 +272,7 @@ describe('useBloc - cross-bloc edge cases', () => {
   });
 
   it('should propagate multiple dependency changes through cached deps', () => {
-    let renderCount = 0;
-
     const Component = () => {
-      renderCount++;
       useBloc(DeepCBloc);
       useBloc(DeepBBloc);
       const [, blocA] = useBloc(DeepABloc);

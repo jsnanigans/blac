@@ -186,10 +186,13 @@ describe('@blac/adapter', () => {
       const bloc = new CounterCubit();
       const adapterState = autoTrackInit(bloc);
 
-      adapterState.getterState!.isTracking = true;
+      if (!adapterState.getterState) {
+        throw new Error('Expected getterState to be initialized');
+      }
+      adapterState.getterState.isTracking = true;
       disableGetterTracking(adapterState, bloc);
 
-      expect(adapterState.getterState!.isTracking).toBe(false);
+      expect(adapterState.getterState.isTracking).toBe(false);
     });
 
     it('should handle null getter state', () => {

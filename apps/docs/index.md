@@ -3,8 +3,8 @@ layout: home
 
 hero:
   name: Blac
-  text: Business Logic Component
-  tagline: More than State Management
+  text: Business Logic Components
+  tagline: Type-safe state containers with React integration
   actions:
     - theme: brand
       text: Get Started
@@ -15,33 +15,33 @@ hero:
 
 features:
   - icon: 🎯
-    title: Type-Safe State Management
-    details: Full TypeScript support with inferred types for state, events, and props.
+    title: Type-Safe State Containers
+    details: Strong TypeScript inference for state, instances, and registry helpers.
 
   - icon: ⚡
-    title: Fine-Grained Reactivity
-    details: Auto-tracking proxy system ensures components only re-render when their dependencies change.
+    title: Proxy-Based Tracking
+    details: Auto-tracking proxies detect accessed state and getters for precise re-renders.
 
-  - icon: 🔄
-    title: Simple State Management
-    details: Cubit pattern provides straightforward state mutations with emit(), update(), and patch() methods.
+  - icon: ♻️
+    title: Registry + Ref Counting
+    details: Acquire/release instances with automatic disposal when ref counts drop to zero.
 
   - icon: 🧩
-    title: Extensible Plugin System
-    details: Add functionality through plugins for persistence, logging, devtools, and more.
+    title: Extensible Plugins
+    details: Observe lifecycle and state changes with a safe plugin API.
 
-  - icon: 🎨
-    title: React 18+ Integration
-    details: Built for Concurrent Mode with useSyncExternalStore, Suspense, and useTransition support.
+  - icon: ⚛️
+    title: React 18+ Hook
+    details: "useBloc is built on useSyncExternalStore for concurrent-safe updates."
 
-  - icon: 🛡️
-    title: Memory Safe
-    details: Automatic ref counting and disposal prevents memory leaks in component lifecycles.
+  - icon: 👀
+    title: Watch Utilities
+    details: "watch and tracked let you react to state and getter dependencies outside React."
 ---
 
 ## Quick Example
 
-```typescript
+```tsx
 import { Cubit } from '@blac/core';
 import { useBloc } from '@blac/react';
 

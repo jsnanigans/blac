@@ -1,9 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { PluginManager } from './PluginManager';
-import {
-  StateContainerRegistry,
-  globalRegistry,
-} from '../core/StateContainerRegistry';
+import { globalRegistry } from '../core/StateContainerRegistry';
 import { Cubit } from '../core/Cubit';
 import type { BlacPlugin } from './BlacPlugin';
 import { acquire, release } from '../registry';

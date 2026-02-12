@@ -4,24 +4,18 @@ This directory contains the VitePress documentation site for BlaC.
 
 ## Development
 
-<!-- TODO: Add development commands -->
+```bash
+pnpm dev
+```
 
 ## Building
 
-<!-- TODO: Add build commands -->
+```bash
+pnpm build
+```
 
 ## Preview
 
-<!-- TODO: Add preview commands -->
-
-## Documentation Structure
-
-<!-- TODO: Add structure overview -->
-
-## Writing Documentation
-
-<!-- TODO: Add writing guidelines -->
-
-## Contributing
-
-<!-- TODO: Add contribution guidelines -->
+```bash
+pnpm preview
+```

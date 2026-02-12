@@ -408,7 +408,8 @@ export function capturePaths<T>(tracker: DependencyState<T>, state: T): void {
 
       tracker.pathCache.set(path, { segments, value });
     } else {
-      const info = tracker.pathCache.get(path)!;
+      const info = tracker.pathCache.get(path);
+      if (!info) continue;
       info.value =
         canReuseCache && tracker.lastCheckedValues.has(path)
           ? tracker.lastCheckedValues.get(path)
@@ -621,7 +622,10 @@ function executeTrackedGetter<T extends StateContainerInstance>(
 
   try {
     const descriptor = getDescriptor(target, prop);
-    const value = descriptor!.get!.call(target);
+    if (!descriptor?.get) {
+      return (target as Record<PropertyKey, unknown>)[prop];
+    }
+    const value = descriptor.get.call(target);
     tracker.trackedValues.set(prop, value);
     return value;
   } catch (error) {
@@ -641,7 +645,7 @@ export function createBlocProxy<TBloc extends StateContainerInstance>(
 ): TBloc {
   const cached = blocProxyCache.get(bloc);
   if (cached) {
-    return cached;
+    return cached as TBloc;
   }
 
   const proxy = new Proxy(bloc, {
@@ -657,7 +661,7 @@ export function createBlocProxy<TBloc extends StateContainerInstance>(
   });
 
   blocProxyCache.set(bloc, proxy);
-  return proxy;
+  return proxy as TBloc;
 }
 
 /**

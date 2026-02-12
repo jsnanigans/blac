@@ -2,7 +2,7 @@
 
 > ⚠️ **Warning:** This project is currently under active development. The API may change in future releases. Use with caution in production environments.
 
-Core state management library implementing the BloC pattern for TypeScript applications.
+Core state management primitives for BlaC: state containers, registry, plugins, and tracking utilities.
 
 ## Installation
 
@@ -16,11 +16,43 @@ yarn add @blac/core
 
 ## Core Concepts
 
+### StateContainer
+
+`StateContainer` is the abstract base class. It provides state storage, subscriptions, lifecycle events, and registry integration.
+
+```ts
+import { StateContainer } from '@blac/core';
+
+class CounterContainer extends StateContainer<{ count: number }> {
+  constructor() {
+    super({ count: 0 });
+  }
+
+  increment() {
+    this.update((state) => ({ count: state.count + 1 }));
+  }
+}
+```
+
+Key public API:
+
+- `state` (readonly)
+- `subscribe(listener)` -> `unsubscribe`
+- `dispose()`
+- `isDisposed`, `name`, `debug`, `instanceId`, `createdAt`, `lastUpdateTimestamp`
+
+Protected API for subclasses:
+
+- `emit(newState)`
+- `update(fn)`
+- `onSystemEvent(event, handler)` for `stateChanged` and `dispose`
+- `depend(BlocClass, instanceKey?)` for cross-bloc dependencies
+
 ### Cubit
 
-Simple state container with direct state emission. Use when you need straightforward state updates.
+`Cubit` extends `StateContainer` with public mutation methods.
 
-```typescript
+```ts
 import { Cubit } from '@blac/core';
 
 class CounterCubit extends Cubit<{ count: number }> {
@@ -28,186 +60,126 @@ class CounterCubit extends Cubit<{ count: number }> {
     super({ count: 0 });
   }
 
-  increment() {
-    this.emit({ count: this.state.count + 1 });
-  }
-
-  decrement() {
-    this.update((state) => ({ count: state.count - 1 }));
-  }
-
-  reset() {
-    this.patch({ count: 0 });
-  }
+  increment = () => this.emit({ count: this.state.count + 1 });
+  decrement = () => this.update((state) => ({ count: state.count - 1 }));
+  reset = () => this.patch({ count: 0 });
 }
 ```
 
+`patch()` performs a shallow merge for object state and is only available when `S extends object`.
+
 ## Registry API
 
-Manage state container instances with the registry functions:
+The registry manages instance lifecycles and ref counting.
 
-```typescript
-import { acquire, release, borrow, hasInstance, clear } from '@blac/core';
+```ts
+import {
+  acquire,
+  ensure,
+  borrow,
+  borrowSafe,
+  release,
+  hasInstance,
+  getRefCount,
+  getAll,
+  forEach,
+  clear,
+  clearAll,
+} from '@blac/core';
 
-// Acquire an instance (creates if needed, increments ref count)
-const counter = acquire(CounterCubit);
+const counter = acquire(CounterCubit); // increments ref count
 
-// Release when done (decrements ref count, disposes when 0)
-release(CounterCubit);
+const shared = ensure(CounterCubit); // no ref count increment
+const existing = borrow(CounterCubit); // no create, no ref count
+const maybe = borrowSafe(CounterCubit); // { error, instance }
 
-// Borrow without affecting ref count
-const instance = borrow(CounterCubit);
+release(CounterCubit); // decrements ref count, auto-dispose at 0 unless keepAlive
 
-// Check if instance exists
 if (hasInstance(CounterCubit)) {
-  // ...
+  console.log(getRefCount(CounterCubit));
 }
 
-// Clear a specific class
+forEach(CounterCubit, (inst) => console.log(inst.state));
 clear(CounterCubit);
-
-// Clear all instances
 clearAll();
 ```
 
 ## Decorators
 
-Use the `@blac` decorator to configure container behavior:
+Configure container behavior with `@blac`.
 
-```typescript
+```ts
 import { Cubit, blac } from '@blac/core';
 
-@blac({ isolated: true }) // Each consumer gets its own instance
+@blac({ isolated: true })
 class FormCubit extends Cubit<FormState> {}
 
-@blac({ keepAlive: true }) // Never auto-dispose
+@blac({ keepAlive: true })
 class AuthCubit extends Cubit<AuthState> {}
 
-@blac({ excludeFromDevTools: true }) // Hide from DevTools
+@blac({ excludeFromDevTools: true })
 class InternalCubit extends Cubit<State> {}
 ```
 
-## Utilities
+`BlacOptions` is a union type, so only one option can be specified at a time.
 
-### waitUntil
-
-Wait for a specific state condition:
-
-```typescript
-import { waitUntil } from '@blac/core';
-
-const counter = acquire(CounterCubit);
-
-// Wait until count reaches 10
-await waitUntil(counter, (state) => state.count >= 10);
-
-// With timeout
-await waitUntil(counter, (state) => state.count >= 10, {
-  timeout: 5000,
-});
-```
+## Watch and Tracking
 
 ### watch
 
-Create computed values that react to state changes:
-
-```typescript
+```ts
 import { watch, instance } from '@blac/core';
 
-class DashboardCubit extends Cubit<DashboardState> {
-  constructor() {
-    super({ items: [] });
+const stop = watch(CounterCubit, (counter) => {
+  console.log(counter.state.count);
 
-    // Watch another bloc's state
-    watch(
-      instance(UserCubit),
-      (userState) => userState.preferences,
-      (preferences) => this.onPreferencesChanged(preferences),
-    );
+  if (counter.state.count >= 10) {
+    return watch.STOP; // stop from inside the callback
   }
-}
+});
+
+const stopSpecific = watch(instance(CounterCubit, 'counter-1'), (counter) => {
+  console.log(counter.state.count);
+});
+```
+
+### tracked
+
+```ts
+import { tracked } from '@blac/core';
+
+const { result, dependencies } = tracked(() => {
+  const user = ensure(UserCubit);
+  return user.state.name;
+});
 ```
 
 ## Plugins
 
-Extend functionality with plugins:
-
-```typescript
+```ts
 import { getPluginManager, type BlacPlugin } from '@blac/core';
 
 const loggingPlugin: BlacPlugin = {
   name: 'logging',
-  onStateChange: (container, prevState, newState) => {
-    console.log(`[${container.constructor.name}]`, prevState, '->', newState);
+  version: '1.0.0',
+  onStateChanged(instance, previousState, currentState, callstack) {
+    console.log(instance.constructor.name, previousState, currentState);
+    if (callstack) console.log(callstack);
   },
 };
 
-getPluginManager().register(loggingPlugin);
-```
-
-## Configuration
-
-Configure global behavior:
-
-```typescript
-import { configureBlac } from '@blac/core';
-
-configureBlac({
-  devMode: import.meta.env.DEV,
+getPluginManager().install(loggingPlugin, {
+  enabled: true,
+  environment: 'development',
 });
 ```
 
-## API Reference
+## Subpath Exports
 
-### State Containers
-
-| Class         | Description                                                 |
-| ------------- | ----------------------------------------------------------- |
-| `Cubit<S, P>` | Simple state container with `emit()`, `update()`, `patch()` |
-
-### Registry Functions
-
-| Function                         | Description                                 |
-| -------------------------------- | ------------------------------------------- |
-| `acquire(Class, key?, options?)` | Get or create instance, increment ref count |
-| `release(Class, key?)`           | Decrement ref count, dispose when 0         |
-| `borrow(Class, key?)`            | Get instance without affecting ref count    |
-| `borrowSafe(Class, key?)`        | Borrow or return undefined                  |
-| `ensure(Class, key?, options?)`  | Acquire without incrementing ref count      |
-| `hasInstance(Class, key?)`       | Check if instance exists                    |
-| `getRefCount(Class, key?)`       | Get current reference count                 |
-| `clear(Class)`                   | Remove all instances of a class             |
-| `clearAll()`                     | Remove all instances                        |
-
-### Exports
-
-```typescript
-// Core classes
-export { Cubit } from '@blac/core';
-
-// Registry
-export {
-  acquire,
-  release,
-  borrow,
-  ensure,
-  hasInstance,
-  clear,
-  clearAll,
-} from '@blac/core';
-
-// Utilities
-export { waitUntil, watch, instance } from '@blac/core';
-
-// Decorators
-export { blac } from '@blac/core';
-
-// Plugin system
-export { getPluginManager, type BlacPlugin } from '@blac/core';
-
-// Configuration
-export { configureBlac, getBlacConfig, isDevMode } from '@blac/core';
-```
+- `@blac/core/watch` -> `watch`, `instance`, `tracked` utilities
+- `@blac/core/tracking` -> dependency tracking utilities for framework adapters
+- `@blac/core/plugins` -> plugin system exports
+- `@blac/core/debug` -> advanced registry introspection helpers
 
 ## License
 
