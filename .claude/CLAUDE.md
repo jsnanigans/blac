@@ -67,7 +67,7 @@ The `useBloc` hook (packages/blac-react/src/useBloc.ts, packages/blac-preact/src
   - **Auto-tracking**: Automatic dependency detection via Proxy (default)
   - **Manual dependencies**: Explicit dependency array like useEffect
   - **No tracking**: Returns full state without optimization
-- Handles instance lifecycle (resolve/release) with ref counting
+- Handles instance lifecycle (acquire/release) with ref counting
 - Supports isolated (per-component) and shared instances
 
 ### Dependency Tracking System
@@ -197,7 +197,7 @@ pnpm --filter @blac/core clean
 - Isolated instances: scoped to component lifecycle (one instance per component)
 - Shared instances: singleton per instance key (multiple components share)
 - Instance keys generated via `generateInstanceKey()` (packages/blac-react/src/utils/instance-keys.ts)
-- Ref counting: `resolve()` increments, `release()` decrements, auto-disposed at 0
+- Ref counting: `acquire()` increments, `release()` decrements, auto-disposed at 0
 
 ### TypeScript Configuration
 - Uses shared `tsconfig.base.json` at root

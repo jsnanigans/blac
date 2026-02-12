@@ -2,13 +2,12 @@
 
 ## StateContainer (Base Class)
 
-All state containers inherit from `StateContainer<S, P>` where `S` is state type and `P` is props type.
+All state containers inherit from `StateContainer<S>` where `S` is the state type.
 
 ### Properties
 | Property | Type | Description |
 |----------|------|-------------|
 | `state` | `S` | Current state (readonly) |
-| `props` | `P` | Current props (readonly) |
 | `isDisposed` | `boolean` | Check if disposed |
 | `name` | `string` | Debug name |
 | `debug` | `boolean` | Debug mode flag |
@@ -21,7 +20,6 @@ All state containers inherit from `StateContainer<S, P>` where `S` is state type
 |--------|-------------|
 | `subscribe(callback)` | Subscribe to state changes, returns unsubscribe function |
 | `dispose()` | Clean up the container |
-| `updateProps(newProps)` | Update props (triggers `propsUpdated` event) |
 
 ### Protected Methods (for subclasses)
 | Method | Description |
@@ -30,21 +28,21 @@ All state containers inherit from `StateContainer<S, P>` where `S` is state type
 | `update(fn)` | Update state with function `(current) => next` |
 | `onSystemEvent(event, handler)` | Subscribe to system lifecycle events |
 
-### Static Methods
-| Method | Description |
-|--------|-------------|
-| `.resolve(id?, ...args)` | Get/create instance with ownership (increments ref count) |
-| `.get(id?)` | Get existing instance (throws if not found) |
-| `.getSafe(id?)` | Get existing instance (returns `{ instance }` or `{ error }`) |
-| `.connect(id?, ...args)` | Get/create for B2B (no ref count change, tracks deps) |
-| `.release(id?, force?)` | Release reference (force=true ignores keepAlive) |
-| `.hasInstance(id?)` | Check if instance exists |
-| `.getRefCount(id?)` | Get reference count |
-| `.getAll()` | Get all instances (returns array) |
-| `.forEach(callback)` | Iterate safely (disposal-safe, memory-efficient) |
-| `.clear()` | Clear all instances of this type |
-| `StateContainer.clearAllInstances()` | Clear all instances from all types |
-| `StateContainer.getStats()` | Get registry statistics |
+### Registry Helpers
+| Function | Description |
+|----------|-------------|
+| `acquire(BlocClass, instanceKey?)` | Get/create instance with ownership (increments ref count) |
+| `release(BlocClass, instanceKey?)` | Release reference (decrements ref count) |
+| `ensure(BlocClass, instanceKey?)` | Get/create instance without ownership |
+| `borrow(BlocClass, instanceKey?)` | Get existing instance (throws if not found) |
+| `borrowSafe(BlocClass, instanceKey?)` | Get existing instance (returns `{ error, instance }`) |
+| `hasInstance(BlocClass, instanceKey?)` | Check if instance exists |
+| `getRefCount(BlocClass, instanceKey?)` | Get reference count |
+| `getAll(BlocClass)` | Get all instances (returns array) |
+| `forEach(BlocClass, callback)` | Iterate safely (disposal-safe, memory-efficient) |
+| `clear(BlocClass)` | Clear all instances of this type |
+| `clearAll()` | Clear all instances from all types |
+| `getStats()` | Get registry statistics |
 
 ## Cubit
 
@@ -90,20 +88,18 @@ type BlacOptions =
 ## useBloc Hook
 
 ```typescript
-function useBloc<T extends StateContainer<S, P>, S, P>(
-  BlocClass: BlocConstructor<T>,
-  options?: UseBlocOptions<T, S, P>
-): [S, T, ComponentRef]
+function useBloc<T extends StateContainerConstructor>(
+  BlocClass: T,
+  options?: UseBlocOptions<T>
+): [ExtractState<T>, InstanceReadonlyState<T>, RefObject<ComponentRef>]
 ```
 
 ### Options
 | Option | Type | Description |
 |--------|------|-------------|
-| `props` | `P` | Constructor arguments |
 | `instanceId` | `string \| number` | Custom instance ID for shared blocs |
 | `dependencies` | `(state, bloc) => any[]` | Manual dependency tracking |
 | `autoTrack` | `boolean` | Enable/disable auto tracking (default: true) |
-| `disableGetterCache` | `boolean` | Disable getter value caching (default: false) |
 | `onMount` | `(bloc) => void` | Mount callback |
 | `onUnmount` | `(bloc) => void` | Unmount callback |
 
@@ -128,25 +124,6 @@ const [state] = useBloc(UserBloc, { autoTrack: false });
 // Re-renders on any state change
 ```
 
-## useBlocActions Hook
-
-```typescript
-function useBlocActions<T extends StateContainer<S, P>, S, P>(
-  BlocClass: BlocConstructor<T>,
-  options?: UseBlocActionsOptions<T, P>
-): T
-```
-
-Returns bloc instance without state subscription. Component never re-renders from bloc state changes.
-
-### Options
-| Option | Type | Description |
-|--------|------|-------------|
-| `props` | `P` | Constructor arguments |
-| `instanceId` | `string \| number` | Custom instance ID |
-| `onMount` | `(bloc) => void` | Mount callback |
-| `onUnmount` | `(bloc) => void` | Unmount callback |
-
 ## System Events
 
 Available events for `onSystemEvent()`:
@@ -154,7 +131,6 @@ Available events for `onSystemEvent()`:
 | Event | Payload | Description |
 |-------|---------|-------------|
 | `stateChanged` | `{ state, previousState }` | Fired after state changes |
-| `propsUpdated` | `{ props, previousProps }` | Fired when props are updated |
 | `dispose` | `void` | Fired when dispose() is called |
 
 ## Plugin System
@@ -183,28 +159,15 @@ globalRegistry.on('disposed', (container) => { });
 
 ## Logging
 
-```typescript
-import { configureLogger, LogLevel, createLogger } from '@blac/core';
-
-// Global configuration
-configureLogger({
-  enabled: true,
-  level: LogLevel.DEBUG, // ERROR=0, WARN=1, INFO=2, DEBUG=3
-  output: (entry) => console.log(JSON.stringify(entry)),
-});
-
-// Create custom logger
-const logger = createLogger({ enabled: true, level: LogLevel.DEBUG });
-logger.debug('Context', 'Message', { data });
-```
+Logging is provided via the plugin system. Use `@blac/logging-plugin` (or a custom plugin) and install it with `getPluginManager()` from `@blac/core`.
 
 ## TypeScript Utilities
 
 ```typescript
-import type { ExtractState, ExtractProps, BlocConstructor } from '@blac/core';
+import type { ExtractState, ExtractConstructorArgs } from '@blac/core';
 
-type CounterState = ExtractState<CounterCubit>; // number
-type UserProps = ExtractProps<UserCubit>; // { userId: string }
+type CounterState = ExtractState<CounterCubit>; // { count: number }
+type UserCtorArgs = ExtractConstructorArgs<UserCubit>; // Constructor args tuple
 ```
 
 ## Performance Patterns
@@ -216,7 +179,7 @@ type UserProps = ExtractProps<UserCubit>; // { userId: string }
 | Auto-tracking (default) | Tracked properties | None | Most cases |
 | Manual `dependencies` | Dependency array | Explicit list | Known patterns |
 | `autoTrack: false` | Any state change | Set option | Simple state |
-| `useBlocActions` | Never | Use different hook | Action-only |
+| Action-only (no state reads) | Never | Ignore state tuple | Buttons/handlers |
 
 ### Optimal Access Patterns
 
@@ -260,8 +223,7 @@ Key files in the repository:
   - `Cubit.ts` - Cubit implementation
 - React: `packages/blac-react/src/`
   - `useBloc.ts` - Main hook
-  - `useBlocActions.ts` - Actions-only hook
 - Tracking: `packages/blac-core/src/tracking/`
-  - `proxy-tracker.ts` - Proxy-based dependency tracking
-- Adapter: `packages/blac-core/src/adapter/`
-  - `framework-adapter.ts` - React subscription bridge
+  - `tracking-proxy.ts` - Proxy-based dependency tracking
+- Adapter: `packages/blac-adapter/src/`
+  - `index.ts` - Framework adapter utilities

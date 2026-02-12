@@ -1,6 +1,6 @@
 ---
 name: blac-development
-description: Develop with BlaC state management library for React. Use when creating Cubits, using useBloc/useBlocActions hooks, managing state containers, or implementing inter-bloc communication patterns.
+description: Develop with BlaC state management library for React. Use when creating Cubits, using the useBloc hook, managing state containers, or implementing inter-bloc communication patterns.
 ---
 
 # BlaC Development Skill
@@ -92,49 +92,49 @@ function Counter() {
 
 ```typescript
 const [state, bloc] = useBloc(MyBloc, {
-  props: { userId: '123' },           // Constructor arguments
   instanceId: 'main',                  // Custom instance ID for shared blocs
   dependencies: (state, bloc) => [state.count], // Manual dependency tracking
   autoTrack: false,                    // Disable automatic tracking
-  disableGetterCache: false,           // Disable getter value caching (advanced)
   onMount: (bloc) => bloc.fetchData(), // Lifecycle callbacks
   onUnmount: (bloc) => bloc.cleanup(),
 });
 ```
 
-### useBlocActions Hook - Actions Only (No State Subscription)
+### Actions-Only Components (No State Subscription)
 
 ```typescript
-import { useBlocActions } from '@blac/react';
+import { useBloc } from '@blac/react';
 
 function ActionsOnly() {
-  const bloc = useBlocActions(CounterBloc);
+  const [, bloc] = useBloc(CounterBloc);
 
-  // Never re-renders due to state changes
+  // Avoid reading state to keep renders minimal
   return <button onClick={bloc.increment}>+</button>;
 }
 ```
 
 ## Instance Management
 
-### Static Methods
+### Registry Helpers
 
-| Method | Purpose | Ref Count |
-|--------|---------|-----------|
-| `.resolve(id?, ...args)` | Get/create with ownership | Increments |
-| `.get(id?)` | Borrow existing (throws if missing) | No change |
-| `.getSafe(id?)` | Borrow existing (returns error) | No change |
-| `.connect(id?, ...args)` | Get/create for B2B communication | No change |
-| `.release(id?, force?)` | Release reference | Decrements |
+| Function | Purpose | Ref Count |
+|----------|---------|-----------|
+| `acquire(BlocClass, instanceKey?)` | Get/create with ownership | Increments |
+| `release(BlocClass, instanceKey?)` | Release ownership | Decrements |
+| `ensure(BlocClass, instanceKey?)` | Get/create without ownership | No change |
+| `borrow(BlocClass, instanceKey?)` | Borrow existing (throws if missing) | No change |
+| `borrowSafe(BlocClass, instanceKey?)` | Borrow existing (returns error) | No change |
 
 ### Bloc-to-Bloc Communication
 
-**In event handlers or methods (borrowing):**
+**In event handlers or methods (no ownership):**
 ```typescript
+import { ensure } from '@blac/core';
+
 class UserBloc extends Cubit<UserState> {
   loadProfile = () => {
-    // Borrow - no memory leak, no cleanup needed
-    const analytics = AnalyticsCubit.get();
+    // No ownership - no cleanup needed
+    const analytics = ensure(AnalyticsCubit);
     analytics.trackEvent('profile_loaded');
   };
 }
@@ -142,9 +142,11 @@ class UserBloc extends Cubit<UserState> {
 
 **In getters (automatic tracking):**
 ```typescript
+import { ensure } from '@blac/core';
+
 class CartCubit extends Cubit<CartState> {
   get totalWithShipping(): number {
-    const shipping = ShippingCubit.get(); // Auto-tracked!
+    const shipping = ensure(ShippingCubit); // Auto-tracked!
     return this.itemTotal + shipping.state.cost;
   }
 }
@@ -161,10 +163,6 @@ class MyBloc extends Cubit<State> {
       console.log('State changed');
     });
 
-    this.onSystemEvent('propsUpdated', ({ props, previousProps }) => {
-      console.log('Props updated');
-    });
-
     this.onSystemEvent('dispose', () => {
       console.log('Disposing - cleanup here');
     });
@@ -178,14 +176,14 @@ class MyBloc extends Cubit<State> {
 - Use arrow functions for methods (correct `this` binding in React)
 - Keep state immutable (create new objects/arrays)
 - Use `patch()` for simple field updates, `update()` for nested changes
-- Use `useBlocActions` when only calling methods (no state reading)
+- For action-only components, call `useBloc` and avoid reading state
 - Use getters for computed values (cached per render cycle)
-- Use `.get()` instead of `.resolve()` in bloc-to-bloc communication
+- Use `ensure()` or `borrow()` for bloc-to-bloc communication
 
 ### DON'T:
 - Mutate state directly (`this.state.todos.push(...)`)
 - Destructure entire state when you only need specific properties
-- Use `.resolve()` in getters (causes memory leaks)
+- Use `acquire()` without a matching `release()`
 - Use `patch()` for nested object updates (shallow merge only)
 
 ## Common Patterns
@@ -232,7 +230,7 @@ class UserBloc extends Cubit<DataState<User>> {
 @blac({ keepAlive: true })
 class AnalyticsService extends Cubit<AnalyticsState> {
   trackEvent = (name: string, data: Record<string, any>) => {
-    // Other blocs can safely call: AnalyticsService.get().trackEvent(...)
+    // Other blocs can safely call: ensure(AnalyticsService).trackEvent(...)
   };
 }
 ```
@@ -246,7 +244,7 @@ class AnalyticsService extends Cubit<AnalyticsState> {
 **Too many re-renders?**
 - Access only the properties you need
 - Don't destructure entire state object
-- Consider `useBlocActions` for action-only components
+- Consider manual `dependencies` or `autoTrack: false` for coarse updates
 
 **Shared state not working?**
 - Check if bloc is marked `@blac({ isolated: true })`
@@ -276,13 +274,13 @@ function TodoApp() {
     <>
       <TodoCount />    {/* Only re-renders on count change */}
       <TodoList />     {/* Only re-renders on todos change */}
-      <TodoActions />  {/* Never re-renders (uses useBlocActions) */}
+      <TodoActions />  {/* Avoids state reads */}
     </>
   );
 }
 
 function TodoActions() {
-  const cubit = useBlocActions(TodoCubit); // No state subscription
+  const [, cubit] = useBloc(TodoCubit); // Avoid reading state
   return <button onClick={cubit.addTodo}>Add</button>;
 }
 ```
@@ -292,7 +290,7 @@ function TodoActions() {
 | Pattern | Re-renders | Use When |
 |---------|------------|----------|
 | Auto-tracking (default) | On tracked property change | Most cases |
-| `useBlocActions` | Never | Action-only components |
+| Action-only (no state reads) | Never | Buttons/handlers |
 | Manual `dependencies` | On dependency change | Known fixed dependencies |
 | Getters | On computed value change | Derived/computed state |
 
@@ -300,7 +298,7 @@ function TodoActions() {
 
 1. **Destructuring state** - Tracks all destructured properties
 2. **Spreading props** - `<Child {...state} />` defeats tracking
-3. **Using `.resolve()` in methods** - Use `.get()` for bloc-to-bloc calls
-4. **Not using `useBlocActions`** - Creates unnecessary subscriptions
+3. **Using `acquire()` without `release()`** - Use `ensure()`/`borrow()` for one-off access
+4. **Reading extra state** - Avoid unnecessary property access in render
 
 For complete API reference, see [REFERENCE.md](REFERENCE.md).
