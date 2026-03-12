@@ -1,4 +1,7 @@
-import type { StateContainer } from '../core/StateContainer';
+import type {
+  HydrationStatus,
+  StateContainer,
+} from '../core/StateContainer';
 
 /**
  * Metadata information about a state container instance for debugging and inspection
@@ -26,6 +29,14 @@ export interface InstanceMetadata {
   previousState?: any;
   /** Current state value */
   currentState?: any;
+  /** Current hydration status */
+  hydrationStatus: HydrationStatus;
+  /** Whether hydration completed successfully */
+  isHydrated: boolean;
+  /** Hydration error, if present */
+  hydrationError?: Error;
+  /** Whether state changed while hydration was pending */
+  changedWhileHydrating: boolean;
 }
 
 /**
@@ -41,6 +52,40 @@ export interface PluginContext {
    * Get current state from a container
    */
   getState<S extends object = any>(instance: StateContainer<S>): S;
+
+  /**
+   * Get hydration status from a container
+   */
+  getHydrationStatus(instance: StateContainer<any>): HydrationStatus;
+
+  /**
+   * Mark a container as hydrating
+   */
+  startHydration(instance: StateContainer<any>): void;
+
+  /**
+   * Apply hydrated state if the container has not been mutated while hydrating
+   * @returns true when the state was applied
+   */
+  applyHydratedState<S extends object = any>(
+    instance: StateContainer<S>,
+    state: S,
+  ): boolean;
+
+  /**
+   * Mark hydration as finished
+   */
+  finishHydration(instance: StateContainer<any>): void;
+
+  /**
+   * Mark hydration as failed
+   */
+  failHydration(instance: StateContainer<any>, error: Error): void;
+
+  /**
+   * Wait for hydration to settle
+   */
+  waitForHydration(instance: StateContainer<any>): Promise<void>;
 
   /**
    * Get all instances of a specific type

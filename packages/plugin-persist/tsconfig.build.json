@@ -7,7 +7,9 @@
     "declaration": true,
     "declarationMap": true,
     "emitDeclarationOnly": true,
-    "paths": {}
+    "paths": {
+      "@blac/core": ["../blac-core/dist/index.d.ts"]
+    }
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "**/__tests__/**"]

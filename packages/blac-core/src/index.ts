@@ -1,6 +1,7 @@
 // Core Classes
 export { StateContainer } from './core/StateContainer';
 export type {
+  HydrationStatus,
   StateContainerConfig,
   SystemEvent,
   SystemEventPayloads,

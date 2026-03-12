@@ -60,6 +60,12 @@ describe('PluginManager', () => {
         expect.objectContaining({
           getInstanceMetadata: expect.any(Function),
           getState: expect.any(Function),
+          getHydrationStatus: expect.any(Function),
+          startHydration: expect.any(Function),
+          applyHydratedState: expect.any(Function),
+          finishHydration: expect.any(Function),
+          failHydration: expect.any(Function),
+          waitForHydration: expect.any(Function),
           queryInstances: expect.any(Function),
           getAllTypes: expect.any(Function),
           getStats: expect.any(Function),
@@ -387,6 +393,9 @@ describe('PluginManager', () => {
         isDisposed: false,
         name: counter.name,
         state: { count: 0 },
+        hydrationStatus: 'idle',
+        isHydrated: false,
+        changedWhileHydrating: false,
       });
       expect(metadata.lastStateChangeTimestamp).toBeGreaterThan(0);
       expect(metadata.createdAt).toBeGreaterThan(0);
@@ -471,6 +480,62 @@ describe('PluginManager', () => {
       expect(stats.registeredTypes).toBeGreaterThanOrEqual(1);
       expect(stats.totalInstances).toBeGreaterThanOrEqual(2);
       expect(stats.typeBreakdown).toBeDefined();
+    });
+
+    it('should provide hydration controls', async () => {
+      let capturedContext: any;
+      const plugin: BlacPlugin = {
+        name: 'test-plugin',
+        version: '1.0.0',
+        onInstall: (context) => {
+          capturedContext = context;
+        },
+      };
+
+      manager.install(plugin);
+
+      const counter = acquire(CounterCubit, 'hydrate-test');
+
+      capturedContext.startHydration(counter);
+      expect(capturedContext.getHydrationStatus(counter)).toBe('hydrating');
+
+      const applied = capturedContext.applyHydratedState(counter, { count: 5 });
+      expect(applied).toBe(true);
+
+      capturedContext.finishHydration(counter);
+
+      await expect(capturedContext.waitForHydration(counter)).resolves.toBeUndefined();
+      expect(counter.state).toEqual({ count: 5 });
+      expect(capturedContext.getInstanceMetadata(counter)).toMatchObject({
+        hydrationStatus: 'hydrated',
+        isHydrated: true,
+      });
+    });
+
+    it('should prevent hydrated state from overwriting user changes', () => {
+      let capturedContext: any;
+      const plugin: BlacPlugin = {
+        name: 'test-plugin',
+        version: '1.0.0',
+        onInstall: (context) => {
+          capturedContext = context;
+        },
+      };
+
+      manager.install(plugin);
+
+      const counter = acquire(CounterCubit, 'dirty-hydration-test');
+
+      capturedContext.startHydration(counter);
+      counter.increment();
+
+      const applied = capturedContext.applyHydratedState(counter, { count: 99 });
+
+      expect(applied).toBe(false);
+      expect(counter.state).toEqual({ count: 1 });
+      expect(capturedContext.getInstanceMetadata(counter)).toMatchObject({
+        changedWhileHydrating: true,
+      });
     });
   });
 

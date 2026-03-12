@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { getPluginManager } from '@blac/core';
+import { useEffect, useMemo, useState } from 'react';
+import { ensure, getPluginManager } from '@blac/core';
 import { useBloc } from '@blac/react';
 import { ExampleLayout } from '../../shared/ExampleLayout';
 import { Button, Card } from '../../shared/components';
@@ -14,13 +14,18 @@ function DraftEditor() {
   const [state, bloc] = useBloc(PersistedDraftCubit, {
     instanceId: DRAFT_INSTANCE_ID,
   });
+  const actualBloc = useMemo(
+    () => ensure(PersistedDraftCubit, DRAFT_INSTANCE_ID),
+    [],
+  );
   const [persistStatus, setPersistStatus] = useState('hydrating');
   const [savedAt, setSavedAt] = useState<string>('not saved yet');
+  const [hydrationReady, setHydrationReady] = useState('pending');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = draftPersistPlugin.subscribe((event) => {
-      if (event.instance !== bloc) return;
+      if (event.instance !== actualBloc) return;
 
       setPersistStatus(event.status.phase);
       setSavedAt(
@@ -31,7 +36,7 @@ function DraftEditor() {
       setError(event.status.error?.message ?? null);
     });
 
-    const currentStatus = draftPersistPlugin.getStatus(bloc);
+    const currentStatus = draftPersistPlugin.getStatus(actualBloc);
     if (currentStatus) {
       setPersistStatus(currentStatus.phase);
       setSavedAt(
@@ -43,7 +48,32 @@ function DraftEditor() {
     }
 
     return unsubscribe;
-  }, [bloc]);
+  }, [actualBloc]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    setHydrationReady('pending');
+    void actualBloc
+      .waitForHydration()
+      .then(() => {
+        if (!cancelled) {
+          setHydrationReady('ready');
+        }
+      })
+      .catch((nextError) => {
+        if (!cancelled) {
+          setHydrationReady('error');
+          setError(
+            nextError instanceof Error ? nextError.message : String(nextError),
+          );
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [actualBloc]);
 
   return (
     <div className="grid grid-cols-2 gap-md">
@@ -97,7 +127,19 @@ function DraftEditor() {
           <h4>Persistence Status</h4>
           <div className="stack-xs text-small text-muted">
             <p>
-              <strong>Phase:</strong> <code>{persistStatus}</code>
+              <strong>Plugin phase:</strong> <code>{persistStatus}</code>
+            </p>
+            <p>
+              <strong>Core hydration:</strong>{' '}
+              <code>{actualBloc.hydrationStatus}</code>
+            </p>
+            <p>
+              <strong>waitForHydration():</strong>{' '}
+              <code>{hydrationReady}</code>
+            </p>
+            <p>
+              <strong>Hydrated:</strong>{' '}
+              <code>{actualBloc.isHydrated ? 'true' : 'false'}</code>
             </p>
             <p>
               <strong>Last saved:</strong> <code>{savedAt}</code>

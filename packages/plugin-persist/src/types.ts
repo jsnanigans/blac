@@ -1,4 +1,4 @@
-import type { BlacPlugin, StateContainer } from '@blac/core';
+import type { BlacPlugin, Cubit, StateContainer } from '@blac/core';
 
 export interface PersistedRecord<TPayload = unknown> {
   id: string;
@@ -81,7 +81,7 @@ export interface IndexedDbPersistPlugin extends BlacPlugin {
   persist<
     S extends object,
     TPayload = unknown,
-    TContainer extends StateContainer<S> = StateContainer<S>,
+    TContainer extends Cubit<S> = Cubit<S>,
   >(
     Type: new (...args: any[]) => TContainer,
     config?: PersistRegistration<S, TPayload, TContainer>,

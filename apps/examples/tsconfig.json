@@ -18,6 +18,7 @@
     "baseUrl": ".",
     "types": ["vite/client"],
     "paths": {
+      "@blac/core": ["../../packages/blac-core/src/index.ts"],
       "@blac/plugin-persist": ["../../packages/plugin-persist/src/index.ts"]
     }
   },

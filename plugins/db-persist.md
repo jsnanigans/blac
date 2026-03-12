@@ -268,6 +268,165 @@ Why still keep an adapter boundary:
 - Dexie would improve schema upgrades, transactions, and future reactive sync work
 - the public plugin API should not need to change if storage is swapped later
 
+## Improvements For Current `packages/plugin-persist`
+
+After reviewing the current implementation, the highest-value improvements are
+in the runtime contract and failure handling rather than the basic IndexedDB
+shape.
+
+### 1. Register By Constructor, Not `Type.name`
+
+Current code stores persistence registrations keyed by `Type.name`.
+
+Why this should change:
+
+- class names are not a stable runtime identifier under minification
+- different classes can share the same name
+- subclassing and refactors become more fragile than necessary
+
+Recommended change:
+
+- store registrations in a `Map<constructor, definition>`
+- resolve registrations by the actual constructor reference instead of
+  `instance.constructor.name`
+
+This makes plugin behavior more robust without changing the public API.
+
+### 2. Tighten The Supported Instance Contract
+
+The current plugin API accepts any `StateContainer`, but hydration is applied by
+calling `emit()` through an `any` cast.
+
+That means the real contract is narrower than the type surface suggests.
+
+Recommended change:
+
+- either restrict `persist()` to `Cubit` types explicitly
+- or add a small core-level hydration/apply-state primitive that plugins can use
+  without reaching through `any`
+
+For now, restricting the plugin to `Cubit` is the cleaner v1 stance because it
+matches the intended design and avoids pretending all `StateContainer`
+instances are safely hydratable.
+
+### 3. Add `waitForHydration(instance)`
+
+`getStatus()` and `subscribe()` are useful for debugging, but they are weak for
+real control flow.
+
+Recommended change:
+
+- expose `waitForHydration(instance): Promise<PersistPluginStatus>`
+- resolve when hydration finishes, whether from storage or by a safe skip
+- reject only on terminal hydration failure if that distinction is needed
+
+This improves:
+
+- integration tests
+- app bootstrap flows
+- UI code that needs to react after hydration settles
+
+### 4. Harden The Hydration/Save State Machine
+
+The current implementation already handles the key v1 race:
+
+- if state changes before hydration finishes, do not apply stale persisted data
+
+That part is aligned with the intended design, but the internal state machine
+should still be tightened.
+
+Recommended changes:
+
+- guard `applyingHydration` with `try/finally` so thrown transforms do not leave
+  the runtime stuck in hydration mode
+- track in-flight hydration and save promises per instance
+- ignore stale async completions after disposal or replacement work
+- make status transitions deterministic under rapid consecutive writes
+
+This reduces the risk of misleading status output and subtle save ordering bugs.
+
+### 5. Make The Native Adapter Recover Better
+
+The current adapter caches `dbPromise` permanently. If opening the database
+fails once, the adapter can remain poisoned for the rest of the session.
+
+Recommended changes:
+
+- clear the cached open promise on rejection so later operations can retry
+- handle IndexedDB `onblocked`
+- handle `onversionchange` and close old connections
+
+These are small changes with disproportionate value for real browser behavior,
+especially with multiple tabs or schema changes.
+
+### 6. Add Versioning To The Persisted Envelope Early
+
+The current record shape is:
+
+```ts
+type PersistedRecord = {
+  id: string;
+  className: string;
+  instanceId: string;
+  savedAt: number;
+  payload: unknown;
+};
+```
+
+This is fine for proving the flow, but version metadata should be introduced
+before consumers rely on the unversioned shape.
+
+Recommended change:
+
+```ts
+type PersistedRecord = {
+  id: string;
+  className: string;
+  instanceId: string;
+  version: number;
+  savedAt: number;
+  payload: unknown;
+};
+```
+
+That gives the plugin a clear path to:
+
+- payload migrations
+- compatibility checks
+- safer long-lived persisted data
+
+### 7. Add Tests Before Broadening The API
+
+This package currently needs direct test coverage. The core behavior is async,
+stateful, and race-prone, so test gaps are meaningful.
+
+Recommended coverage:
+
+- hydrates successfully from an existing record
+- skips hydration when the instance becomes dirty first
+- debounces writes correctly
+- does not apply stale async work after disposal
+- reports status transitions in the expected order
+- recovers cleanly from adapter failures
+
+The plugin is small enough that these tests should be straightforward and would
+materially improve confidence in future API additions.
+
+### 8. Improve Docs And Example Coverage
+
+The package README is currently minimal.
+
+Recommended changes:
+
+- document the full `persist()` API
+- state clearly that hydration is async
+- state clearly that the plugin is intended for `Cubit`-style mutable state
+- add an example app demo that shows hydration, debounced persistence, and
+  status updates in the UI
+
+This would align the package docs with the intended design and make the plugin
+easier to evaluate in practice.
+
 ## Example App Plan
 
 Add a new examples app demo that:

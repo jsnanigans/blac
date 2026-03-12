@@ -15,6 +15,8 @@ export interface StateContainerConfig {
   instanceId?: string;
 }
 
+export type HydrationStatus = 'idle' | 'hydrating' | 'hydrated' | 'error';
+
 /**
  * Listener function for state changes
  * @internal
@@ -24,7 +26,7 @@ type StateListener<S> = (state: S) => void;
 /**
  * System events emitted by StateContainer lifecycle
  */
-export type SystemEvent = 'stateChanged' | 'dispose';
+export type SystemEvent = 'stateChanged' | 'dispose' | 'hydrationChanged';
 
 /**
  * Payload types for each system event
@@ -35,6 +37,13 @@ export interface SystemEventPayloads<S> {
   stateChanged: { state: S; previousState: S };
   /** Emitted when the instance is disposed */
   dispose: void;
+  /** Emitted when hydration status changes */
+  hydrationChanged: {
+    status: HydrationStatus;
+    previousStatus: HydrationStatus;
+    error?: Error;
+    changedWhileHydrating: boolean;
+  };
 }
 
 /**
@@ -73,6 +82,13 @@ export abstract class StateContainer<S extends object = any> {
   private _state: S;
   private readonly listeners = new Set<StateListener<S>>();
   private _disposed = false;
+  private _hydrationStatus: HydrationStatus = 'idle';
+  private _hydrationError?: Error;
+  private _changedWhileHydrating = false;
+  private hydrationPromise: Promise<void> | null = null;
+  private resolveHydrationPromise?: () => void;
+  private rejectHydrationPromise?: (error: Error) => void;
+  private hydrationPromiseSettled = false;
   private config: StateContainerConfig = {};
   private readonly systemEventHandlers = new Map<
     SystemEvent,
@@ -139,6 +155,26 @@ export abstract class StateContainer<S extends object = any> {
     return this._disposed;
   }
 
+  /** Current hydration status for this instance */
+  get hydrationStatus(): HydrationStatus {
+    return this._hydrationStatus;
+  }
+
+  /** Error from the latest failed hydration, if any */
+  get hydrationError(): Error | undefined {
+    return this._hydrationError;
+  }
+
+  /** Whether this instance has completed hydration successfully */
+  get isHydrated(): boolean {
+    return this._hydrationStatus === 'hydrated';
+  }
+
+  /** Whether user state changes happened while hydration was pending */
+  get changedWhileHydrating(): boolean {
+    return this._changedWhileHydrating;
+  }
+
   /**
    * Subscribe to state changes
    * @param listener - Function called when state changes
@@ -166,6 +202,12 @@ export abstract class StateContainer<S extends object = any> {
 
     this._disposed = true;
 
+    if (this._hydrationStatus === 'hydrating') {
+      this.failHydration(
+        new Error(`Hydration cancelled because ${this.name} was disposed`),
+      );
+    }
+
     this.emitSystemEvent('dispose', undefined as void);
 
     this.listeners.clear();
@@ -184,39 +226,92 @@ export abstract class StateContainer<S extends object = any> {
    * @protected
    */
   protected emit(newState: S): void {
+    this.applyState(newState, 'default');
+  }
+
+  /**
+   * Mark this instance as hydrating. Plugins should call this before starting
+   * asynchronous rehydration work.
+   */
+  beginHydration(): void {
     if (this._disposed) {
-      throw new Error(`Cannot emit state from disposed container ${this.name}`);
+      throw new Error(
+        `Cannot begin hydration for disposed container ${this.name}`,
+      );
     }
 
-    if (this._state === newState) return;
+    this._changedWhileHydrating = false;
+    this._hydrationError = undefined;
+    this.hydrationPromise = null;
+    this.resolveHydrationPromise = undefined;
+    this.rejectHydrationPromise = undefined;
+    this.hydrationPromiseSettled = false;
+    this.ensureHydrationPromise();
+    this.setHydrationStatus('hydrating');
+  }
 
-    const previousState = this._state;
-    this._state = newState;
+  /**
+   * Apply hydrated state if no user writes happened since hydration started.
+   * Returns false when hydration should be skipped.
+   */
+  applyHydratedState(newState: S): boolean {
+    if (this._disposed) {
+      return false;
+    }
 
-    this.emitSystemEvent('stateChanged', {
-      state: newState,
-      previousState,
-    });
+    if (this._hydrationStatus !== 'hydrating' || this._changedWhileHydrating) {
+      return false;
+    }
 
-    const listeners = Array.from(this.listeners);
-    for (const listener of listeners) {
-      try {
-        listener(newState);
-      } catch (error) {
-        console.error(`[${this.name}] Error in listener:`, error);
+    this.applyState(newState, 'hydration');
+    return true;
+  }
+
+  /**
+   * Mark hydration as completed.
+   */
+  finishHydration(): void {
+    if (this._hydrationStatus !== 'hydrating') {
+      if (this._hydrationStatus === 'hydrated') {
+        return;
+      }
+      if (this._hydrationStatus === 'error') {
+        this.ensureHydrationPromise();
       }
     }
 
-    const stackTrace = this.captureStackTrace();
+    this.setHydrationStatus('hydrated');
+    this.resolveHydration();
+  }
 
-    globalRegistry.emit(
-      'stateChanged',
-      this,
-      previousState,
-      newState,
-      stackTrace,
-    );
-    this.lastUpdateTimestamp = Date.now();
+  /**
+   * Mark hydration as failed.
+   */
+  failHydration(error: Error): void {
+    const err =
+      error instanceof Error ? error : new Error(`Hydration failed: ${error}`);
+
+    this._hydrationError = err;
+    this.setHydrationStatus('error', err);
+    this.rejectHydration(err);
+  }
+
+  /**
+   * Wait until the current hydration cycle finishes.
+   */
+  waitForHydration(): Promise<void> {
+    if (this._hydrationStatus === 'idle' || this._hydrationStatus === 'hydrated') {
+      return Promise.resolve();
+    }
+
+    if (this._hydrationStatus === 'error') {
+      return Promise.reject(
+        this._hydrationError ??
+          new Error(`Hydration failed for container ${this.name}`),
+      );
+    }
+
+    return this.ensureHydrationPromise();
   }
 
   private captureStackTrace(): string {
@@ -327,6 +422,89 @@ export abstract class StateContainer<S extends object = any> {
       );
     }
     this.emit(updater(this._state));
+  }
+
+  private applyState(newState: S, source: 'default' | 'hydration'): void {
+    if (this._disposed) {
+      throw new Error(`Cannot emit state from disposed container ${this.name}`);
+    }
+
+    if (this._state === newState) return;
+
+    if (this._hydrationStatus === 'hydrating' && source !== 'hydration') {
+      this._changedWhileHydrating = true;
+    }
+
+    const previousState = this._state;
+    this._state = newState;
+
+    this.emitSystemEvent('stateChanged', {
+      state: newState,
+      previousState,
+    });
+
+    const listeners = Array.from(this.listeners);
+    for (const listener of listeners) {
+      try {
+        listener(newState);
+      } catch (error) {
+        console.error(`[${this.name}] Error in listener:`, error);
+      }
+    }
+
+    const stackTrace = this.captureStackTrace();
+
+    globalRegistry.emit(
+      'stateChanged',
+      this,
+      previousState,
+      newState,
+      stackTrace,
+    );
+    this.lastUpdateTimestamp = Date.now();
+  }
+
+  private setHydrationStatus(status: HydrationStatus, error?: Error): void {
+    const previousStatus = this._hydrationStatus;
+    this._hydrationStatus = status;
+    this._hydrationError = error;
+
+    this.emitSystemEvent('hydrationChanged', {
+      status,
+      previousStatus,
+      error,
+      changedWhileHydrating: this._changedWhileHydrating,
+    });
+  }
+
+  private ensureHydrationPromise(): Promise<void> {
+    if (!this.hydrationPromise || this.hydrationPromiseSettled) {
+      this.hydrationPromiseSettled = false;
+      this.hydrationPromise = new Promise<void>((resolve, reject) => {
+        this.resolveHydrationPromise = () => {
+          if (this.hydrationPromiseSettled) return;
+          this.hydrationPromiseSettled = true;
+          resolve();
+        };
+        this.rejectHydrationPromise = (error: Error) => {
+          if (this.hydrationPromiseSettled) return;
+          this.hydrationPromiseSettled = true;
+          reject(error);
+        };
+      });
+      this.hydrationPromise.catch(() => {});
+    }
+
+    return this.hydrationPromise;
+  }
+
+  private resolveHydration(): void {
+    this.resolveHydrationPromise?.();
+  }
+
+  private rejectHydration(error: Error): void {
+    this.ensureHydrationPromise();
+    this.rejectHydrationPromise?.(error);
   }
 
   /**

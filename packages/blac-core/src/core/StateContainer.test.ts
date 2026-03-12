@@ -259,6 +259,14 @@ describe('StateContainer', () => {
         expect(container.instanceId).toBe('TestContainer:main');
       });
 
+      it('should initialize hydration state as idle', () => {
+        const container = new TestContainer(0);
+
+        expect(container.hydrationStatus).toBe('idle');
+        expect(container.isHydrated).toBe(false);
+        expect(container.changedWhileHydrating).toBe(false);
+      });
+
       it('should respect custom instanceId', () => {
         const container = new TestContainer(0);
         container.initConfig({ instanceId: 'custom-id' });
@@ -275,6 +283,68 @@ describe('StateContainer', () => {
         const container1 = new TestContainer();
         const container2 = new TestContainer();
         expect(container1.instanceId).toBe(container2.instanceId);
+      });
+    });
+
+    describe('Hydration', () => {
+      it('should resolve waitForHydration immediately when idle', async () => {
+        const container = new TestContainer(0);
+
+        await expect(container.waitForHydration()).resolves.toBeUndefined();
+      });
+
+      it('should complete hydration successfully', async () => {
+        const container = new TestContainer(0);
+
+        container.beginHydration();
+        expect(container.hydrationStatus).toBe('hydrating');
+
+        expect(container.applyHydratedState({ value: 10 })).toBe(true);
+        container.finishHydration();
+
+        await expect(container.waitForHydration()).resolves.toBeUndefined();
+        expect(container.state).toEqual({ value: 10 });
+        expect(container.hydrationStatus).toBe('hydrated');
+        expect(container.isHydrated).toBe(true);
+      });
+
+      it('should reject hydrated state after user mutation during hydration', async () => {
+        const container = new TestContainer(0);
+
+        container.beginHydration();
+        container.testEmit({ value: 1 });
+
+        expect(container.changedWhileHydrating).toBe(true);
+        expect(container.applyHydratedState({ value: 99 })).toBe(false);
+
+        container.finishHydration();
+
+        await expect(container.waitForHydration()).resolves.toBeUndefined();
+        expect(container.state).toEqual({ value: 1 });
+      });
+
+      it('should reject waitForHydration on hydration failure', async () => {
+        const container = new TestContainer(0);
+
+        container.beginHydration();
+        container.failHydration(new Error('hydrate failed'));
+
+        await expect(container.waitForHydration()).rejects.toThrow(
+          'hydrate failed',
+        );
+        expect(container.hydrationStatus).toBe('error');
+        expect(container.hydrationError?.message).toBe('hydrate failed');
+      });
+
+      it('should cancel hydration when disposed', async () => {
+        const container = acquire(TestContainer, 'hydration-dispose');
+        container.beginHydration();
+
+        release(TestContainer, 'hydration-dispose', true);
+
+        await expect(container.waitForHydration()).rejects.toThrow(
+          'Hydration cancelled',
+        );
       });
     });
 

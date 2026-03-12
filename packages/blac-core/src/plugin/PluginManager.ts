@@ -216,11 +216,42 @@ export class PluginManager {
           createdAt: instance.createdAt,
           state: instance.state,
           isIsolated: instance.instanceId.startsWith('isolated-'),
+          hydrationStatus: instance.hydrationStatus,
+          isHydrated: instance.isHydrated,
+          hydrationError: instance.hydrationError,
+          changedWhileHydrating: instance.changedWhileHydrating,
         };
       },
 
       getState: <S extends object = any>(instance: StateContainer<S>): S => {
         return instance.state;
+      },
+
+      getHydrationStatus: (instance: StateContainer<any>) => {
+        return instance.hydrationStatus;
+      },
+
+      startHydration: (instance: StateContainer<any>) => {
+        instance.beginHydration();
+      },
+
+      applyHydratedState: <S extends object = any>(
+        instance: StateContainer<S>,
+        state: S,
+      ): boolean => {
+        return instance.applyHydratedState(state);
+      },
+
+      finishHydration: (instance: StateContainer<any>) => {
+        instance.finishHydration();
+      },
+
+      failHydration: (instance: StateContainer<any>, error: Error) => {
+        instance.failHydration(error);
+      },
+
+      waitForHydration: (instance: StateContainer<any>) => {
+        return instance.waitForHydration();
       },
 
       queryInstances: <T extends StateContainer<any>>(

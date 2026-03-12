@@ -1,4 +1,4 @@
-import type { BlacPlugin, PluginContext, StateContainer } from '@blac/core';
+import type { Cubit, PluginContext, StateContainer } from '@blac/core';
 import {
   createNativeIndexedDbAdapter,
   NativeIndexedDbAdapter,
@@ -31,13 +31,22 @@ export class IndexedDbPersistPluginImpl implements IndexedDbPersistPlugin {
   readonly version = '0.0.1';
 
   private readonly adapter: IndexedDbPersistAdapter;
-  private readonly registrations = new Map<string, InternalDefinition>();
-  private readonly runtimes = new WeakMap<StateContainer<any>, InstanceRuntime>();
+  private readonly registrations = new Map<
+    new (...args: any[]) => StateContainer<any>,
+    InternalDefinition
+  >();
+  private readonly runtimes = new WeakMap<
+    StateContainer<any>,
+    InstanceRuntime
+  >();
   private readonly timers = new Map<
     StateContainer<any>,
     ReturnType<typeof setTimeout>
   >();
-  private readonly statuses = new WeakMap<StateContainer<any>, PersistPluginStatus>();
+  private readonly statuses = new WeakMap<
+    StateContainer<any>,
+    PersistPluginStatus
+  >();
   private readonly listeners = new Set<
     (event: PersistPluginStatusEvent) => void
   >();
@@ -52,8 +61,11 @@ export class IndexedDbPersistPluginImpl implements IndexedDbPersistPlugin {
       });
   }
 
-  persist(Type: new (...args: any[]) => StateContainer<any>, config: InternalDefinition = {}): IndexedDbPersistPlugin {
-    this.registrations.set(Type.name, config);
+  persist(
+    Type: new (...args: any[]) => Cubit<any>,
+    config: InternalDefinition = {},
+  ): IndexedDbPersistPlugin {
+    this.registrations.set(Type, config);
     return this;
   }
 
@@ -76,7 +88,9 @@ export class IndexedDbPersistPluginImpl implements IndexedDbPersistPlugin {
 
   onInstall(_context: PluginContext): void {
     if (!this.adapter.isAvailable()) {
-      console.warn(`[BlaC] Plugin "${this.name}" disabled: IndexedDB unavailable`);
+      console.warn(
+        `[BlaC] Plugin "${this.name}" disabled: IndexedDB unavailable`,
+      );
     }
   }
 
@@ -88,8 +102,13 @@ export class IndexedDbPersistPluginImpl implements IndexedDbPersistPlugin {
     this.listeners.clear();
   }
 
-  onInstanceCreated(instance: StateContainer<any>, context: PluginContext): void {
-    const definition = this.registrations.get(instance.constructor.name);
+  onInstanceCreated(
+    instance: StateContainer<any>,
+    context: PluginContext,
+  ): void {
+    const definition = this.registrations.get(
+      instance.constructor as new (...args: any[]) => StateContainer<any>,
+    );
     if (!definition || !this.adapter.isAvailable()) {
       return;
     }
@@ -106,6 +125,7 @@ export class IndexedDbPersistPluginImpl implements IndexedDbPersistPlugin {
     };
 
     this.runtimes.set(instance, runtime);
+    context.startHydration(instance);
     this.updateStatus(instance, {
       key: runtime.key,
       className: runtime.className,
@@ -124,9 +144,16 @@ export class IndexedDbPersistPluginImpl implements IndexedDbPersistPlugin {
     _callstack: string | undefined,
     context: PluginContext,
   ): void {
-    const definition = this.registrations.get(instance.constructor.name);
+    const definition = this.registrations.get(
+      instance.constructor as new (...args: any[]) => StateContainer<any>,
+    );
     const runtime = this.runtimes.get(instance);
-    if (!definition || !runtime || runtime.disposed || !this.adapter.isAvailable()) {
+    if (
+      !definition ||
+      !runtime ||
+      runtime.disposed ||
+      !this.adapter.isAvailable()
+    ) {
       return;
     }
 
@@ -173,11 +200,15 @@ export class IndexedDbPersistPluginImpl implements IndexedDbPersistPlugin {
     try {
       const record = await this.adapter.get(runtime.key);
 
-      if (runtime.disposed || this.runtimes.get(instance)?.hydrationToken !== runtime.hydrationToken) {
+      if (
+        runtime.disposed ||
+        this.runtimes.get(instance)?.hydrationToken !== runtime.hydrationToken
+      ) {
         return;
       }
 
       if (!record) {
+        context.finishHydration(instance);
         this.updateStatus(instance, {
           key: runtime.key,
           className: runtime.className,
@@ -189,6 +220,7 @@ export class IndexedDbPersistPluginImpl implements IndexedDbPersistPlugin {
       }
 
       if (runtime.dirtyBeforeHydration) {
+        context.finishHydration(instance);
         this.updateStatus(instance, {
           key: runtime.key,
           className: runtime.className,
@@ -211,9 +243,26 @@ export class IndexedDbPersistPluginImpl implements IndexedDbPersistPlugin {
           })
         : (record.payload as any);
 
+      let applied = false;
       runtime.applyingHydration = true;
-      (instance as any).emit(nextState);
-      runtime.applyingHydration = false;
+      try {
+        applied = context.applyHydratedState(instance, nextState);
+      } finally {
+        runtime.applyingHydration = false;
+      }
+      context.finishHydration(instance);
+
+      if (!applied) {
+        this.updateStatus(instance, {
+          key: runtime.key,
+          className: runtime.className,
+          instanceId: runtime.instanceId,
+          phase: 'hydrated',
+          hydratedFromStorage: false,
+          savedAt: record.savedAt,
+        });
+        return;
+      }
 
       this.updateStatus(instance, {
         key: runtime.key,
@@ -245,7 +294,12 @@ export class IndexedDbPersistPluginImpl implements IndexedDbPersistPlugin {
     currentState: any,
   ): Promise<void> {
     try {
-      const ctx = this.createDefinitionContext(instance, context, runtime.key, currentState);
+      const ctx = this.createDefinitionContext(
+        instance,
+        context,
+        runtime.key,
+        currentState,
+      );
       const payload = definition.stateToDb
         ? definition.stateToDb(currentState, ctx)
         : currentState;
@@ -255,7 +309,8 @@ export class IndexedDbPersistPluginImpl implements IndexedDbPersistPlugin {
         className: runtime.className,
         instanceId: runtime.instanceId,
         phase: 'saving',
-        hydratedFromStorage: this.getStatus(instance)?.hydratedFromStorage ?? false,
+        hydratedFromStorage:
+          this.getStatus(instance)?.hydratedFromStorage ?? false,
         savedAt: this.getStatus(instance)?.savedAt,
       });
 
@@ -274,7 +329,8 @@ export class IndexedDbPersistPluginImpl implements IndexedDbPersistPlugin {
         className: runtime.className,
         instanceId: runtime.instanceId,
         phase: 'saved',
-        hydratedFromStorage: this.getStatus(instance)?.hydratedFromStorage ?? false,
+        hydratedFromStorage:
+          this.getStatus(instance)?.hydratedFromStorage ?? false,
         savedAt: record.savedAt,
       });
     } catch (error) {
@@ -291,12 +347,16 @@ export class IndexedDbPersistPluginImpl implements IndexedDbPersistPlugin {
     const runtime = this.runtimes.get(instance);
     const err = error instanceof Error ? error : new Error(String(error));
     if (runtime) {
+      if (context.getHydrationStatus(instance) === 'hydrating') {
+        context.failHydration(instance, err);
+      }
       this.updateStatus(instance, {
         key: runtime.key,
         className: runtime.className,
         instanceId: runtime.instanceId,
         phase: 'error',
-        hydratedFromStorage: this.getStatus(instance)?.hydratedFromStorage ?? false,
+        hydratedFromStorage:
+          this.getStatus(instance)?.hydratedFromStorage ?? false,
         savedAt: this.getStatus(instance)?.savedAt,
         error: err,
       });
