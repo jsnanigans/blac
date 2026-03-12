@@ -6,6 +6,7 @@ import { MessengerApp } from './messenger';
 import { TodoDemo } from './examples/03-todo/TodoDemo';
 import { FormDemo } from './examples/04-form/FormDemo';
 import { DashboardDemo } from './examples/05-dashboard/DashboardDemo';
+import { DbPersistDemo } from './examples/06-db-persist/DbPersistDemo';
 import { useState } from 'react';
 import { BlacDevtoolsUi } from '@blac/devtools-ui';
 import { useBloc } from '@blac/react';
@@ -142,6 +143,9 @@ export function App() {
                 <Link to="/dashboard">Dashboard</Link>
               </li>
               <li>
+                <Link to="/db-persist">DB Persist</Link>
+              </li>
+              <li>
                 <button
                   className="ghost"
                   onClick={() => setShowPerf((p) => !p)}
@@ -174,6 +178,9 @@ export function App() {
             </Route>
             <Route path="/dashboard">
               <DashboardDemo />
+            </Route>
+            <Route path="/db-persist">
+              <DbPersistDemo />
             </Route>
           </div>
         </main>

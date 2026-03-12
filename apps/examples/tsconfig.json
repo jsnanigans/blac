@@ -16,7 +16,10 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "baseUrl": ".",
-    "types": ["vite/client"]
+    "types": ["vite/client"],
+    "paths": {
+      "@blac/plugin-persist": ["../../packages/plugin-persist/src/index.ts"]
+    }
   },
   "include": ["src", "main.tsx", "vite.config.ts"]
 }

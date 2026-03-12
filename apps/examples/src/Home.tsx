@@ -126,6 +126,29 @@ export function Home() {
             </div>
           </div>
         </Link>
+
+        <Link to="/db-persist" className="example-card">
+          <div className="stack-xs">
+            <span className="badge primary">06</span>
+            <h3>DB Persist</h3>
+          </div>
+          <p className="text-small text-muted">
+            A basic IndexedDB persistence plugin example with async hydration,
+            debounced saves, and custom state parsing.
+          </p>
+          <div className="stack-xs text-xs text-muted">
+            <div className="row-xs">
+              <span className="text-bold">Key Concepts:</span>
+            </div>
+            <div className="row-xs flex-wrap">
+              <span className="tag">IndexedDB</span>
+              <span className="tag">BlacPlugin</span>
+              <span className="tag">Hydration</span>
+              <span className="tag">stateToDb</span>
+              <span className="tag">dbToState</span>
+            </div>
+          </div>
+        </Link>
       </div>
     </div>
   );

@@ -24,6 +24,7 @@
     "@blac/core": "workspace:*",
     "@blac/devtools-connect": "workspace:*",
     "@blac/devtools-ui": "workspace:*",
+    "@blac/plugin-persist": "workspace:*",
     "@blac/react": "workspace:*",
     "@blac/logging-plugin": "workspace:*",
     "react": "^19.1.1",
