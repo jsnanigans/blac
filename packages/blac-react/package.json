@@ -1,6 +1,6 @@
 {
   "name": "@blac/react",
-  "version": "2.0.5",
+  "version": "2.0.6",
   "license": "MIT",
   "author": "Brendan Mullins <jsnanigans@gmail.com>",
   "repository": {
@@ -12,6 +12,7 @@
   "bugs": {
     "url": "https://github.com/jsnanigans/blac/issues"
   },
+  "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -32,6 +33,9 @@
     "README.md",
     "LICENSE"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "sideEffects": false,
   "keywords": [
     "react",
@@ -56,15 +60,16 @@
     "test:compiler": "vitest run --config vitest.config.compiler.ts",
     "test:watch:compiler": "vitest --watch --config vitest.config.compiler.ts",
     "test:both": "pnpm test && echo '\n\n=== Running tests WITH React Compiler ===\n' && pnpm test:compiler",
-    "verify": "publint",
+    "verify": "node ../../scripts/run-workspace-bin.mjs publint",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "echo 'Skipping prepublishOnly - build should be done at root level'",
     "deploy": "pnpm publish --access public"
   },
   "dependencies": {
-    "@blac/adapter": "workspace:*"
+    "@blac/adapter": "workspace:^"
   },
   "peerDependencies": {
+    "@blac/core": "workspace:^",
     "@types/react": "^18.0.0 || ^19.0.0",
     "react": "^18.0.0 || ^19.0.0"
   },
@@ -95,6 +100,7 @@
     "react-dom": "^19.1.1",
     "tsdown": "catalog:",
     "typescript": "catalog:",
+    "vite": "catalog:",
     "publint": "catalog:",
     "vitest": "catalog:"
   }

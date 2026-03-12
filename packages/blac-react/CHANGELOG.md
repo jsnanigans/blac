@@ -1,5 +1,14 @@
 # @blac/react
 
+## 2.0.6
+
+### Patch Changes
+
+- Reconfigure release for compatibility
+- Updated dependencies
+  - @blac/adapter@2.0.6
+  - @blac/core@2.0.6
+
 ## 2.0.5
 
 ### Patch Changes

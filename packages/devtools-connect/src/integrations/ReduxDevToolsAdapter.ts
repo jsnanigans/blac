@@ -193,6 +193,8 @@ interface InstanceMetadata {
  * ```
  */
 export class ReduxDevToolsAdapter {
+  private static activeAdapter: ReduxDevToolsAdapter | null = null;
+
   readonly name = 'ReduxDevToolsAdapter';
   readonly version = '0.3.0';
 
@@ -221,6 +223,14 @@ export class ReduxDevToolsAdapter {
     if (!this.enabled) {
       return;
     }
+
+    if (
+      ReduxDevToolsAdapter.activeAdapter &&
+      ReduxDevToolsAdapter.activeAdapter !== this
+    ) {
+      ReduxDevToolsAdapter.activeAdapter.disconnect();
+    }
+    ReduxDevToolsAdapter.activeAdapter = this;
 
     // Warn if DevTools is enabled in production
     if (
@@ -304,6 +314,19 @@ export class ReduxDevToolsAdapter {
       console.error('[ReduxDevToolsAdapter] Failed to connect:', error);
       this.devTools = null;
     }
+  }
+
+  // Backward-compatible lifecycle hooks used by older tests and integrations.
+  onBlocCreated(container: StateContainer<any>): void {
+    this.handleContainerCreated(container);
+  }
+
+  onStateChanged(
+    container: StateContainer<any>,
+    previousState: any,
+    currentState: any,
+  ): void {
+    this.handleStateChanged(container, previousState, currentState);
   }
 
   private handleContainerCreated(container: StateContainer<any>): void {
@@ -464,6 +487,13 @@ export class ReduxDevToolsAdapter {
    */
   private getInstanceDisplayName(container: StateContainer<any>): string {
     const metadata = this.extractMetadata(container);
+    const defaultSharedIds = new Set([
+      undefined,
+      'main',
+      `${metadata.blocType}:main`,
+    ]);
+    const hasDefaultSharedId =
+      defaultSharedIds.has(metadata.instanceId);
 
     // Isolated instances MUST have unique display names since there can be many at once
     if (metadata.isolated) {
@@ -474,7 +504,7 @@ export class ReduxDevToolsAdapter {
 
     // For shared/keepAlive instances, use custom ID if provided
     const hasCustomId =
-      metadata.instanceId !== undefined &&
+      !hasDefaultSharedId &&
       String(metadata.instanceId) !== container.name;
     return hasCustomId
       ? `${container.name}:${metadata.instanceId}`
@@ -492,11 +522,18 @@ export class ReduxDevToolsAdapter {
   private getStateKey(container: StateContainer<any>): string {
     const displayName = this.getInstanceDisplayName(container);
     const metadata = this.extractMetadata(container);
+    const defaultSharedIds = new Set([
+      undefined,
+      'main',
+      `${metadata.blocType}:main`,
+    ]);
+    const hasDefaultSharedId =
+      defaultSharedIds.has(metadata.instanceId);
 
     if (metadata.isolated) {
       return displayName; // Already includes instanceId for uniqueness
     } else if (
-      metadata.instanceId !== undefined &&
+      !hasDefaultSharedId &&
       metadata.instanceId !== metadata.blocType
     ) {
       return `${metadata.blocType}#${metadata.instanceId}`;
@@ -857,7 +894,7 @@ export class ReduxDevToolsAdapter {
           this.containerRegistry.values(),
         ).map((c) => this.getInstanceDisplayName(c));
         console.error(
-          `[ReduxDevToolsAdapter] Container "${displayName}" not found. Available: ${availableContainers.join(', ')}`,
+          `[ReduxDevToolsAdapter] Bloc/Cubit "${displayName}" not found. Available: ${availableContainers.join(', ') || 'none'}`,
         );
         return;
       }
@@ -1024,7 +1061,7 @@ export class ReduxDevToolsAdapter {
           (c) => this.getStateKey(c),
         );
         console.error(
-          `[ReduxDevToolsAdapter] Container "${stateKey}" not found. Available: ${availableKeys.join(', ') || 'none'}`,
+          `[ReduxDevToolsAdapter] Bloc "${stateKey}" not found. Available: ${availableKeys.join(', ') || 'none'}`,
         );
         return;
       }
@@ -1155,6 +1192,10 @@ export class ReduxDevToolsAdapter {
     this.instanceMetadata.clear();
     this.containerRegistry.clear();
     this.enabled = false;
+
+    if (ReduxDevToolsAdapter.activeAdapter === this) {
+      ReduxDevToolsAdapter.activeAdapter = null;
+    }
   }
 
   /**

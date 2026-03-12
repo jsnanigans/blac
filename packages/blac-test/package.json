@@ -1,6 +1,6 @@
 {
   "name": "@blac/test",
-  "version": "2.0.5",
+  "version": "2.0.6",
   "license": "MIT",
   "author": "Brendan Mullins <jsnanigans@gmail.com>",
   "repository": {
@@ -12,6 +12,7 @@
   "bugs": {
     "url": "https://github.com/jsnanigans/blac/issues"
   },
+  "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -32,6 +33,9 @@
     "README.md",
     "LICENSE"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "sideEffects": false,
   "keywords": [
     "typescript",
@@ -44,13 +48,12 @@
     "dev": "tsdown --watch",
     "build": "tsdown && tsc -p tsconfig.build.json && cp dist/index.d.ts dist/index.d.cts",
     "clean": "rm -rf dist",
-    "verify": "publint",
+    "test": "node ../../scripts/run-workspace-bin.mjs vitest run --passWithNoTests",
+    "verify": "node ../../scripts/run-workspace-bin.mjs publint",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {
-    "@blac/core": "workspace:*"
-  },
   "peerDependencies": {
+    "@blac/core": "workspace:^",
     "vitest": ">=1.0.0"
   },
   "devDependencies": {

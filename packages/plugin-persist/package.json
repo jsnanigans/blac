@@ -1,6 +1,6 @@
 {
   "name": "@blac/plugin-persist",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "license": "MIT",
   "author": "Brendan Mullins <jsnanigans@gmail.com>",
   "description": "IndexedDB persistence plugin for BlaC state management",
@@ -13,6 +13,7 @@
   "bugs": {
     "url": "https://github.com/jsnanigans/blac/issues"
   },
+  "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -33,6 +34,9 @@
     "README.md",
     "LICENSE"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "sideEffects": false,
   "keywords": [
     "blac",
@@ -48,15 +52,17 @@
     "format": "prettier --write \".\"",
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
-    "verify": "publint",
+    "test": "node ../../scripts/run-workspace-bin.mjs vitest run --passWithNoTests",
+    "verify": "node ../../scripts/run-workspace-bin.mjs publint",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "echo 'Skipping prepublishOnly - build should be done at root level'",
     "deploy": "pnpm publish --access public"
   },
-  "dependencies": {
-    "@blac/core": "workspace:*"
+  "peerDependencies": {
+    "@blac/core": "workspace:^"
   },
   "devDependencies": {
+    "@blac/core": "workspace:*",
     "prettier": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",

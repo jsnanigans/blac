@@ -1,5 +1,11 @@
 # @blac/core
 
+## 2.0.6
+
+### Patch Changes
+
+- Reconfigure release for compatibility
+
 ## 2.0.5
 
 ### Patch Changes

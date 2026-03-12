@@ -18,7 +18,10 @@
     "docs:preview": "pnpm --filter @blac/docs preview",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "pnpm build && pnpm verify && pnpm test && pnpm typecheck && changeset publish",
+    "release:check": "pnpm build && pnpm verify && pnpm test && pnpm typecheck",
+    "release:version": "changeset version",
+    "release:publish": "pnpm release:check && changeset publish",
+    "release": "./scripts/release.sh",
     "release:helper": "./scripts/release.sh",
     "docs:changelog": "node scripts/generate-changelog.mjs"
   },

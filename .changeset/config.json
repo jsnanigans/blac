@@ -3,9 +3,8 @@
   "changelog": "@changesets/cli/changelog",
   "commit": false,
   "fixed": [],
-  "linked": [["@blac/*"]],
-  "access": "public",
-  "baseBranch": "rewrite",
+  "linked": [],
+  "baseBranch": "main",
   "updateInternalDependencies": "patch",
   "ignore": [
     "@blac/devtools-extension",

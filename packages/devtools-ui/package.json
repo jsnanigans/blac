@@ -1,6 +1,6 @@
 {
   "name": "@blac/devtools-ui",
-  "version": "2.0.5",
+  "version": "2.0.6",
   "license": "MIT",
   "author": "Brendan Mullins <jsnanigans@gmail.com>",
   "description": "DevTools UI components for BlaC state management",
@@ -34,17 +34,24 @@
     "dist/**/*.cjs",
     "dist/**/*.d.ts",
     "dist/**/*.d.cts",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "sideEffects": false,
   "scripts": {
     "dev": "tsdown --watch",
     "build": "tsdown && tsc -p tsconfig.build.json && cp dist/index.d.ts dist/index.d.cts",
     "clean": "rm -rf dist",
+    "test": "node ../../scripts/run-workspace-bin.mjs vitest run --passWithNoTests",
+    "verify": "node ../../scripts/run-workspace-bin.mjs publint",
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
-    "@blac/core": "workspace:*",
-    "@blac/react": "workspace:*",
+    "@blac/core": "workspace:^",
+    "@blac/react": "workspace:^",
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0"
   },
