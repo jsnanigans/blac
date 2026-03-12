@@ -59,6 +59,27 @@ class LifecycleTestContainer extends StateContainer<{ text: string }> {
   }
 }
 
+class HydrationEventTestContainer extends StateContainer<{ value: number }> {
+  public hydrationEvents: Array<{
+    status: string;
+    previousStatus: string;
+    error?: Error;
+    changedWhileHydrating: boolean;
+  }> = [];
+
+  constructor(initialState = 0) {
+    super({ value: initialState });
+
+    this.onSystemEvent('hydrationChanged', (event) => {
+      this.hydrationEvents.push(event);
+    });
+  }
+
+  public testEmit(state: { value: number }): void {
+    this.emit(state);
+  }
+}
+
 // Test container with static keepAlive
 class KeepAliveTestContainer extends StateContainer<{ value: number }> {
   static keepAlive = true;
@@ -334,6 +355,60 @@ describe('StateContainer', () => {
         );
         expect(container.hydrationStatus).toBe('error');
         expect(container.hydrationError?.message).toBe('hydrate failed');
+      });
+
+      it('should allow a new hydration cycle after a failure', async () => {
+        const container = new TestContainer(0);
+
+        container.beginHydration();
+        const firstHydration = container.waitForHydration();
+        container.failHydration(new Error('hydrate failed'));
+
+        await expect(firstHydration).rejects.toThrow('hydrate failed');
+        expect(container.hydrationStatus).toBe('error');
+        expect(container.hydrationError?.message).toBe('hydrate failed');
+
+        container.beginHydration();
+        expect(container.hydrationStatus).toBe('hydrating');
+        expect(container.hydrationError).toBeUndefined();
+        expect(container.changedWhileHydrating).toBe(false);
+
+        const secondHydration = container.waitForHydration();
+        expect(secondHydration).not.toBe(firstHydration);
+
+        expect(container.applyHydratedState({ value: 42 })).toBe(true);
+        container.finishHydration();
+
+        await expect(secondHydration).resolves.toBeUndefined();
+        expect(container.state).toEqual({ value: 42 });
+        expect(container.hydrationStatus).toBe('hydrated');
+      });
+
+      it('should emit hydration lifecycle events with dirty and error state', async () => {
+        const container = new HydrationEventTestContainer(0);
+
+        container.beginHydration();
+        container.testEmit({ value: 1 });
+        container.failHydration(new Error('hydrate failed'));
+
+        await expect(container.waitForHydration()).rejects.toThrow(
+          'hydrate failed',
+        );
+
+        expect(container.hydrationEvents).toEqual([
+          {
+            status: 'hydrating',
+            previousStatus: 'idle',
+            error: undefined,
+            changedWhileHydrating: false,
+          },
+          {
+            status: 'error',
+            previousStatus: 'hydrating',
+            error: expect.objectContaining({ message: 'hydrate failed' }),
+            changedWhileHydrating: true,
+          },
+        ]);
       });
 
       it('should cancel hydration when disposed', async () => {
