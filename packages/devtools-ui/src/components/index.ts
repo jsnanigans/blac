@@ -7,3 +7,4 @@ export { CurrentStateView } from './CurrentStateView';
 export { StateDiffView } from './StateDiffView';
 export { StateHistoryView } from './StateHistoryView';
 export { LogsView } from './LogsView';
+export { CallStackView } from './CallStackView';

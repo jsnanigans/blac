@@ -2,7 +2,7 @@
 
 Type-safe state management for React with automatic re-render optimization.
 
-**[Documentation](https://jsnanigans.github.io/blac/)** · **[npm](https://www.npmjs.com/package/@blac/core)** · **[Changelog](https://jsnanigans.github.io/blac/changelog)**
+**[Documentation](https://blac-docs.pages.dev)** · **[npm](https://www.npmjs.com/package/@blac/core)**
 
 ## Features
 

@@ -32,10 +32,12 @@
         className: inst.className,
         name: inst.name,
         isDisposed: inst.isDisposed || false,
+        isIsolated: inst.isIsolated || false,
         state: inst.currentState !== undefined ? inst.currentState : inst.state,
         lastStateChangeTimestamp: lastChange?.timestamp || inst.createdAt || Date.now(),
         createdAt: inst.createdAt || Date.now(),
-        // Include history for future use (panel doesn't use it yet, but no harm including it)
+        hydrationStatus: inst.hydrationStatus,
+        hydrationError: inst.hydrationError,
         history: inst.history,
       };
     });
@@ -146,6 +148,10 @@
             timestamp: fullState.timestamp,
           },
         });
+        break;
+
+      case 'TIME_TRAVEL':
+        api.timeTravel?.(command.instanceId, command.state);
         break;
 
       default:

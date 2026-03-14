@@ -83,6 +83,25 @@ export class DevToolsDiffBloc extends Cubit<DiffState> {
   };
 
   /**
+   * Load history snapshots from the backend (on initial connect).
+   * Snapshots are expected oldest-first; they will be stored newest-first internally.
+   */
+  loadInstanceHistory = (
+    instanceId: string,
+    snapshots: Array<{ state: any; timestamp: number; callstack?: string }>,
+  ) => {
+    if (!snapshots.length) return;
+    const stateHistory = new Map(this.state.stateHistory);
+    // Reverse so newest is first, cap at MAX_HISTORY_SIZE
+    const normalized: StateSnapshot[] = [...snapshots]
+      .reverse()
+      .slice(0, MAX_HISTORY_SIZE)
+      .map((s) => ({ state: s.state, timestamp: s.timestamp, callstack: s.callstack }));
+    stateHistory.set(instanceId, normalized);
+    this.patch({ stateHistory });
+  };
+
+  /**
    * Get state history for an instance
    * Returns array of snapshots (newest first)
    */

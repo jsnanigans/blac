@@ -14,6 +14,11 @@ export interface DevToolsUIProps {
    * Callback when the DevTools panel unmounts
    */
   onUnmount?: () => void;
+
+  /**
+   * Callback to restore an instance to a specific state (time-travel / state editing)
+   */
+  onTimeTravel?: (instanceId: string, state: any) => void;
 }
 
 export interface InstanceData {
@@ -31,6 +36,12 @@ export interface InstanceData {
   state: any;
   /** Creation timestamp */
   createdAt: number;
+  /** Whether this is an isolated (component-scoped) instance */
+  isIsolated?: boolean;
+  /** Current hydration status */
+  hydrationStatus?: 'idle' | 'hydrating' | 'hydrated' | 'error';
+  /** Hydration error message if present */
+  hydrationError?: string;
 }
 
 /**

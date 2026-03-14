@@ -50,6 +50,12 @@ function App() {
                 flushSync(() => {
                   instancesBloc.setAllInstances(message.payload.instances);
                   instancesBloc.setConnected(true);
+                  // Load backend history into DiffBloc
+                  for (const inst of message.payload.instances) {
+                    if (inst.history?.length) {
+                      diffBloc.loadInstanceHistory(inst.id, inst.history);
+                    }
+                  }
                 });
               }
               // Process event history to populate logs
@@ -224,6 +230,9 @@ function App() {
       onUnmount={() => {
         comm.disconnect();
       }}
+      onTimeTravel={(instanceId: string, state: any) =>
+        comm.sendMessage({ type: 'TIME_TRAVEL', instanceId, state })
+      }
     />
   );
 }

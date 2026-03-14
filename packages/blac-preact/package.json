@@ -3,6 +3,7 @@
   "version": "2.0.6",
   "license": "MIT",
   "author": "Brendan Mullins <jsnanigans@gmail.com>",
+  "description": "Preact bindings for BlaC — useBloc hook with automatic re-render optimization",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/jsnanigans/blac.git",

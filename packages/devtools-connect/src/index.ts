@@ -1,16 +1,11 @@
-// Unified types (single source of truth)
+// Types
 export * from './types';
 
-// Plugins
-export { DevToolsPlugin } from './plugin/DevToolsPlugin';
+// Plugin
 export {
   DevToolsBrowserPlugin,
   createDevToolsBrowserPlugin,
 } from './plugin/DevToolsBrowserPlugin';
-
-// Bridge
-export { DevToolsBridge } from './bridge/DevToolsBridge';
-export type { DevToolsBridgeConfig } from './bridge/DevToolsBridge';
 
 // Serialization
 export {

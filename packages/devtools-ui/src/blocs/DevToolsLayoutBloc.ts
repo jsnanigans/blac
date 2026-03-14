@@ -14,6 +14,8 @@ type LayoutState = {
   selectedId: string | null;
   isCurrentStateExpanded: boolean;
   isHistoryExpanded: boolean;
+  isDiffExpanded: boolean;
+  leftPanelWidth: number;
 };
 
 /**
@@ -27,10 +29,12 @@ export class DevToolsLayoutBloc extends Cubit<LayoutState> {
 
   constructor() {
     super({
-      activeTab: 'Instances', // Default: Instances tab
+      activeTab: 'Instances',
       selectedId: null,
-      isCurrentStateExpanded: true, // Default: expanded
-      isHistoryExpanded: false, // Default: collapsed
+      isCurrentStateExpanded: true,
+      isHistoryExpanded: false,
+      isDiffExpanded: false,
+      leftPanelWidth: 300,
     });
   }
 
@@ -60,6 +64,20 @@ export class DevToolsLayoutBloc extends Cubit<LayoutState> {
    */
   toggleHistoryExpanded = () => {
     this.patch({ isHistoryExpanded: !this.state.isHistoryExpanded });
+  };
+
+  /**
+   * Toggle diff panel expansion
+   */
+  toggleDiffExpanded = () => {
+    this.patch({ isDiffExpanded: !this.state.isDiffExpanded });
+  };
+
+  /**
+   * Set left panel width (clamped between 150 and 600)
+   */
+  setLeftPanelWidth = (width: number) => {
+    this.patch({ leftPanelWidth: Math.max(150, Math.min(600, width)) });
   };
 
   get selectedInstance(): InstanceData | null {

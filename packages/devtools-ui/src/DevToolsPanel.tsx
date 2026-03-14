@@ -1,11 +1,5 @@
 /**
  * DevTools Panel - Reusable UI component for both Chrome DevTools and in-app overlay
- *
- * This component has been refactored into smaller, focused components:
- * - Blocs: DevToolsInstancesBloc, DevToolsSearchBloc, DevToolsDiffBloc, DevToolsLayoutBloc
- * - Components: DevToolsHeader, InstanceList, StateViewer
- *
- * Each component subscribes only to the bloc(s) it needs, optimizing re-renders.
  */
 
 import React, { FC } from 'react';
@@ -24,18 +18,53 @@ import {
 } from './components';
 import type { DevToolsUIProps } from './types';
 
-/**
- * Main DevTools Panel component
- *
- * Coordinates multiple blocs:
- * - DevToolsInstancesBloc: Manages instance list and connection
- * - DevToolsSearchBloc: Manages search query and filtering
- * - DevToolsDiffBloc: Manages state history for diffs
- * - DevToolsLayoutBloc: Manages UI layout (selection, expansion)
- */
+function ResizeDivider({
+  onResize,
+  currentWidth,
+}: {
+  onResize: (width: number) => void;
+  currentWidth: number;
+}) {
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = currentWidth;
+
+    const handleMove = (e: MouseEvent) => {
+      onResize(startWidth + (e.clientX - startX));
+    };
+
+    const handleUp = () => {
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseup', handleUp);
+    };
+
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleUp);
+  };
+
+  return (
+    <div
+      onMouseDown={handleMouseDown}
+      style={{
+        width: '4px',
+        cursor: 'col-resize',
+        background: '#333',
+        flexShrink: 0,
+        transition: 'background 0.15s',
+      }}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLDivElement).style.background = '#569cd6';
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLDivElement).style.background = '#333';
+      }}
+    />
+  );
+}
+
 export const DevToolsPanel: FC<DevToolsUIProps> = React.memo(
-  ({ onMount, onUnmount }) => {
-    // Initialize core blocs needed for the panel
+  ({ onMount, onUnmount, onTimeTravel }) => {
     useBloc(DevToolsInstancesBloc, {
       onMount: (instancesBloc) => {
         onMount(instancesBloc);
@@ -45,14 +74,10 @@ export const DevToolsPanel: FC<DevToolsUIProps> = React.memo(
       },
     });
 
-    // Initialize diff bloc for state comparison
     useBloc(DevToolsDiffBloc);
-
-    // Initialize logs bloc for event logging
     useBloc(DevToolsLogsBloc);
 
-    // Initialize layout bloc for tab management
-    const [{ activeTab }] = useBloc(DevToolsLayoutBloc);
+    const [{ activeTab, leftPanelWidth }, layoutBloc] = useBloc(DevToolsLayoutBloc);
 
     return (
       <div
@@ -63,17 +88,16 @@ export const DevToolsPanel: FC<DevToolsUIProps> = React.memo(
           flexDirection: 'column',
         }}
       >
-        {/* Compact Header with tabs integrated */}
         <DevToolsHeader />
 
-        {/* Main Content - conditionally render based on active tab */}
         {activeTab === 'Instances' ? (
           <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-            {/* Left Panel: Instance List */}
-            <InstanceList />
-
-            {/* Right Panel: State Viewer */}
-            <StateViewer />
+            <InstanceList width={leftPanelWidth} />
+            <ResizeDivider
+              onResize={layoutBloc.setLeftPanelWidth}
+              currentWidth={leftPanelWidth}
+            />
+            <StateViewer onTimeTravel={onTimeTravel} />
           </div>
         ) : (
           <LogsView />
@@ -85,7 +109,6 @@ export const DevToolsPanel: FC<DevToolsUIProps> = React.memo(
 
 DevToolsPanel.displayName = 'DevToolsPanel';
 
-// Re-export the blocs for external use (e.g., in plugin communication)
 export {
   DevToolsInstancesBloc,
   DevToolsSearchBloc,

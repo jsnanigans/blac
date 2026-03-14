@@ -325,6 +325,8 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
         ? safeSerialize(previousState).data
         : undefined,
       currentState: currentState ? safeSerialize(currentState).data : undefined,
+      hydrationStatus: context.getHydrationStatus(instance),
+      hydrationError: metadata.hydrationError?.message,
     };
   }
 
@@ -338,6 +340,33 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
   }
 
   /**
+   * Restore a specific instance to a given state (time-travel)
+   * Works with Cubit (emit) and Bloc (update)
+   */
+  timeTravel(instanceId: string, state: unknown): boolean {
+    if (!this.context) return false;
+
+    const types = this.context.getAllTypes();
+    for (const TypeClass of types) {
+      const instances = this.context.queryInstances(TypeClass);
+      for (const instance of instances) {
+        const metadata = this.context.getInstanceMetadata(instance);
+        if (metadata.id === instanceId) {
+          if (typeof (instance as any).emit === 'function') {
+            (instance as any).emit(state);
+          } else if (typeof (instance as any).update === 'function') {
+            (instance as any).update(() => state);
+          } else {
+            return false;
+          }
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  /**
    * Expose global API for browser extension
    */
   private exposeGlobalAPI(): void {
@@ -346,10 +375,11 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     (window as any).__BLAC_DEVTOOLS__ = {
       getInstances: () => this.getInstances(),
       getEventHistory: () => this.getEventHistory(),
-      getFullState: () => this.getFullState(), // NEW: Backend API for panels
+      getFullState: () => this.getFullState(),
       subscribe: (callback: DevToolsCallback) => this.subscribe(callback),
       getVersion: () => this.getVersion(),
       isEnabled: () => this.enabled,
+      timeTravel: (instanceId: string, state: unknown) => this.timeTravel(instanceId, state),
     };
   }
 }

@@ -3,6 +3,7 @@
   "version": "2.0.6",
   "license": "MIT",
   "author": "Brendan Mullins <jsnanigans@gmail.com>",
+  "description": "Test utilities for BlaC state containers",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/jsnanigans/blac.git",

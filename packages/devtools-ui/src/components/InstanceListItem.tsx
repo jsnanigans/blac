@@ -64,18 +64,48 @@ export const InstanceListItem: FC<InstanceListItemProps> = React.memo(
           }}
         >
           <InstanceId id={instance.id} />
-          {instance.isDisposed && (
-            <span
-              style={{
-                fontSize: '10px',
-                padding: '2px 6px',
-                background: '#f44336',
-                borderRadius: '3px',
-              }}
-            >
-              DISPOSED
-            </span>
-          )}
+          <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+            {instance.hydrationStatus === 'hydrating' && (
+              <span
+                style={{
+                  fontSize: '10px',
+                  padding: '2px 6px',
+                  background: '#854d0e',
+                  color: '#fde68a',
+                  borderRadius: '3px',
+                }}
+              >
+                HYDRATING
+              </span>
+            )}
+            {instance.hydrationStatus === 'error' && (
+              <span
+                title={instance.hydrationError}
+                style={{
+                  fontSize: '10px',
+                  padding: '2px 6px',
+                  background: '#7f1d1d',
+                  color: '#fca5a5',
+                  borderRadius: '3px',
+                  cursor: 'help',
+                }}
+              >
+                HYDRATION ERROR
+              </span>
+            )}
+            {instance.isDisposed && (
+              <span
+                style={{
+                  fontSize: '10px',
+                  padding: '2px 6px',
+                  background: '#f44336',
+                  borderRadius: '3px',
+                }}
+              >
+                DISPOSED
+              </span>
+            )}
+          </div>
         </div>
       </div>
     );

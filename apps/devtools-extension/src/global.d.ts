@@ -41,6 +41,11 @@ interface BlacDevToolsAPI {
    * Get full state dump with complete history
    */
   getFullState(): { instances: any[]; timestamp: number };
+
+  /**
+   * Restore an instance to a specific state (time-travel)
+   */
+  timeTravel?(instanceId: string, state: unknown): boolean;
 }
 
 /**

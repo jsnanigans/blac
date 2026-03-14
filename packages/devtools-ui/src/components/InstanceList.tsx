@@ -11,7 +11,7 @@ import { InstanceListItem } from './InstanceListItem';
 /**
  * Left panel containing search and instance list
  */
-export const InstanceList: FC = React.memo(() => {
+export const InstanceList: FC<{ width?: number }> = React.memo(({ width = 300 }) => {
   const [{ instances, animationTriggers }] = useBloc(DevToolsInstancesBloc);
   const [, searchBloc] = useBloc(DevToolsSearchBloc);
   const [{ selectedId }, layoutBloc] = useBloc(DevToolsLayoutBloc);
@@ -21,7 +21,7 @@ export const InstanceList: FC = React.memo(() => {
   return (
     <div
       style={{
-        width: '300px',
+        width: `${width}px`,
         borderRight: '1px solid #444',
         display: 'flex',
         flexDirection: 'column',

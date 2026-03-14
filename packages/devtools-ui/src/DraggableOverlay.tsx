@@ -98,9 +98,17 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
   const logsBloc = acquire(DevToolsLogsBloc);
   const state = logsBloc.state;
 
-  const initialInstances = api.getInstances();
+  const fullState = api.getFullState?.();
+  const initialInstances = fullState?.instances ?? api.getInstances();
   instancesBloc.setConnected(true);
   instancesBloc.setAllInstances(initialInstances);
+
+  // Load backend state history into DiffBloc
+  for (const inst of initialInstances) {
+    if (inst.history?.length) {
+      diffBloc.loadInstanceHistory(inst.id, inst.history);
+    }
+  }
 
   const eventHistory = api.getEventHistory();
   eventHistory.forEach((event: any) => {
@@ -369,7 +377,12 @@ export function DraggableOverlay({ onMount }: DraggableOverlayProps = {}) {
 
       {/* DevTools Panel */}
       <div style={{ flex: 1, overflow: 'hidden' }}>
-        <DevToolsPanel onMount={onMount ?? defaultDevToolsMount} />
+        <DevToolsPanel
+          onMount={onMount ?? defaultDevToolsMount}
+          onTimeTravel={(instanceId, state) =>
+            (window as any).__BLAC_DEVTOOLS__?.timeTravel?.(instanceId, state)
+          }
+        />
       </div>
 
       {/* Resize Handle */}
