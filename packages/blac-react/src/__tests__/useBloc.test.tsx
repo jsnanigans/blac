@@ -5,6 +5,7 @@
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
+import { renderToString } from 'react-dom/server';
 import { StateContainer, clearAll } from '@blac/core';
 import { useBloc } from '../useBloc';
 
@@ -49,6 +50,7 @@ describe('useBloc', () => {
   afterEach(() => {
     // Clear all bloc instances between tests
     clearAll();
+    vi.unstubAllGlobals();
   });
 
   // describe('Generic Bloc', () => {
@@ -115,6 +117,22 @@ describe('useBloc', () => {
 
       expect(result1.current.state.count).toBe(1);
       expect(result2.current.state.count).toBe(1);
+    });
+  });
+
+  describe('SSR', () => {
+    it('should render on the server without proxy-based tracking', () => {
+      vi.stubGlobal('window', undefined);
+      vi.stubGlobal('document', undefined);
+
+      function TestComponent() {
+        const [state] = useBloc(CounterBloc);
+        return <span>{state.count}</span>;
+      }
+
+      const html = renderToString(<TestComponent />);
+
+      expect(html).toContain('0');
     });
   });
 

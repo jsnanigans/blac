@@ -2,11 +2,20 @@
 
 ## Installation
 
-```bash
-pnpm add @blac/react @blac/core
+::: code-group
+```bash [pnpm]
+pnpm add @blac/core @blac/react
 ```
+```bash [npm]
+npm install @blac/core @blac/react
+```
+:::
 
-## Basic Usage
+Requires React 18+ and TypeScript is recommended.
+
+## Basic usage
+
+Define a Cubit for your state, then connect it to a component with `useBloc`:
 
 ```tsx
 import { Cubit } from '@blac/core';
@@ -18,15 +27,15 @@ class CounterCubit extends Cubit<{ count: number }> {
   }
 
   increment = () => this.emit({ count: this.state.count + 1 });
-  decrement = () => this.emit({ count: this.state.count - 1 });
+  decrement = () => this.update((s) => ({ count: s.count - 1 }));
 }
 
-export function Counter() {
+function Counter() {
   const [state, counter] = useBloc(CounterCubit);
 
   return (
     <div>
-      <p>{state.count}</p>
+      <p>Count: {state.count}</p>
       <button onClick={counter.increment}>+</button>
       <button onClick={counter.decrement}>-</button>
     </div>
@@ -34,23 +43,44 @@ export function Counter() {
 }
 ```
 
-## Manual Dependencies
+`useBloc` returns `[state, bloc]`:
+- **state** — current state, tracked for re-renders (only properties you read trigger updates)
+- **bloc** — the Cubit instance (call methods on it)
 
-```tsx
-function CountOnly() {
-  const [state] = useBloc(CounterCubit, {
-    dependencies: (state) => [state.count],
-  });
+## Global configuration
 
-  return <p>{state.count}</p>;
-}
+Optionally configure defaults for all `useBloc` calls:
+
+```ts
+import { configureBlacReact } from '@blac/react';
+
+configureBlacReact({
+  autoTrack: true, // default: true
+});
 ```
 
-## No Tracking
+## Tracking modes at a glance
 
-```tsx
-function FullState() {
-  const [state] = useBloc(CounterCubit, { autoTrack: false });
-  return <pre>{JSON.stringify(state)}</pre>;
-}
-```
+| Mode | How to enable | Re-renders when |
+|------|--------------|-----------------|
+| Auto-tracking | Default | Tracked properties change |
+| Manual deps | `dependencies: (s) => [s.count]` | Dependency values change |
+| No tracking | `autoTrack: false` | Any state change |
+
+See [Dependency Tracking](/react/dependency-tracking) for details.
+
+## Instance modes at a glance
+
+| Mode | How to enable | Behavior |
+|------|--------------|----------|
+| Shared | Default | All components share one instance |
+| Isolated | `@blac({ isolated: true })` | Each `useBloc` call gets a new instance |
+| Named | `{ instanceId: 'key' }` | Shared within same key |
+
+See [Shared vs Isolated](/react/shared-vs-isolated) for details.
+
+## What's next?
+
+- [useBloc](/react/use-bloc) — Full hook reference
+- [Dependency Tracking](/react/dependency-tracking) — Understanding re-render optimization
+- [Performance](/react/performance) — Patterns and anti-patterns

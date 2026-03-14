@@ -1,8 +1,8 @@
 # @blac/core
 
-> ⚠️ **Warning:** This project is currently under active development. The API may change in future releases. Use with caution in production environments.
-
 Core state management primitives for BlaC: state containers, registry, plugins, and tracking utilities.
+
+**[Full documentation](https://jsnanigans.github.io/blac/guide/introduction)**
 
 ## Installation
 

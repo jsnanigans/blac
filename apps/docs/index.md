@@ -2,41 +2,41 @@
 layout: home
 
 hero:
-  name: Blac
+  name: BlaC
   text: Business Logic Components
-  tagline: Type-safe state containers with React integration
+  tagline: Type-safe state management for React with automatic re-render optimization
   actions:
     - theme: brand
       text: Get Started
-      link: /guide/introduction
+      link: /guide/getting-started
     - theme: alt
-      text: View on GitHub
-      link: https://github.com/jsnanigans/blac
+      text: API Reference
+      link: /api/core
 
 features:
   - icon: 🎯
-    title: Type-Safe State Containers
-    details: Strong TypeScript inference for state, instances, and registry helpers.
+    title: Type-Safe by Default
+    details: Full TypeScript inference from your state type through the hook return value. No manual type annotations needed.
 
   - icon: ⚡
-    title: Proxy-Based Tracking
-    details: Auto-tracking proxies detect accessed state and getters for precise re-renders.
+    title: Smart Re-renders
+    details: Auto-tracking proxies detect which state properties you read. Components only re-render when those specific properties change.
+
+  - icon: 🔌
+    title: Zero Providers
+    details: No context providers or component wrappers. Import a class, call useBloc, and state is shared automatically.
 
   - icon: ♻️
-    title: Registry + Ref Counting
-    details: Acquire/release instances with automatic disposal when ref counts drop to zero.
+    title: Automatic Lifecycle
+    details: The registry manages instance creation, sharing, and disposal with ref counting. Instances clean up when no longer needed.
 
   - icon: 🧩
-    title: Extensible Plugins
-    details: Observe lifecycle and state changes with a safe plugin API.
+    title: Plugin Ecosystem
+    details: Official plugins for DevTools integration, console logging, and IndexedDB persistence. Or build your own.
 
   - icon: ⚛️
-    title: React 18+ Hook
-    details: "useBloc is built on useSyncExternalStore for concurrent-safe updates."
-
-  - icon: 👀
-    title: Watch Utilities
-    details: "watch and tracked let you react to state and getter dependencies outside React."
+    title: Concurrent-Safe
+    details: "Built on useSyncExternalStore for React 18+ concurrent mode, Suspense, and transitions."
 ---
 
 ## Quick Example
@@ -45,6 +45,7 @@ features:
 import { Cubit } from '@blac/core';
 import { useBloc } from '@blac/react';
 
+// 1. Define your state in a class
 class CounterCubit extends Cubit<{ count: number }> {
   constructor() {
     super({ count: 0 });
@@ -52,6 +53,7 @@ class CounterCubit extends Cubit<{ count: number }> {
   increment = () => this.emit({ count: this.state.count + 1 });
 }
 
+// 2. Use it in any component — state is shared automatically
 function Counter() {
   const [state, counter] = useBloc(CounterCubit);
   return <button onClick={counter.increment}>{state.count}</button>;
@@ -60,6 +62,14 @@ function Counter() {
 
 ## Installation
 
-```bash
+::: code-group
+```bash [pnpm]
+pnpm add @blac/core @blac/react
+```
+```bash [npm]
 npm install @blac/core @blac/react
 ```
+```bash [yarn]
+yarn add @blac/core @blac/react
+```
+:::

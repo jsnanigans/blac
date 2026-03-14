@@ -160,7 +160,7 @@ export function useBloc<
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [BlocClass, isIsolated, instanceId]);
 
-  const state = useSyncExternalStore(subscribe, getSnapshot);
+  const state = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
   const [, forceUpdate] = useReducer((x: number) => x + 1, 0);
 

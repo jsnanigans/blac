@@ -2,6 +2,8 @@
 
 DevTools connection plugin for [BlaC](https://github.com/jsnanigans/blac) state management library.
 
+**[Full documentation](https://jsnanigans.github.io/blac/plugins/devtools)**
+
 ## Installation
 
 ```bash

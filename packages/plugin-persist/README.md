@@ -1,12 +1,28 @@
 # @blac/plugin-persist
 
-IndexedDB persistence plugin for BlaC.
+IndexedDB persistence plugin for BlaC state management.
 
-This package provides a basic native IndexedDB-backed plugin that can:
+**[Full documentation](https://jsnanigans.github.io/blac/plugins/persistence)**
 
-- hydrate Cubit state after creation
-- persist state changes automatically
-- debounce writes
-- transform state to and from persisted records
+## Features
 
-The first version hydrates asynchronously, so it does not yet block `acquire()`.
+- Hydrate Cubit state from IndexedDB on instance creation
+- Persist state changes automatically with optional debouncing
+- Transform state to/from persisted records
+- Track persistence status (hydrating, hydrated, saving, saved, error)
+- Custom storage adapters
+
+## Quick Start
+
+```ts
+import { createIndexedDbPersistPlugin } from '@blac/plugin-persist';
+import { getPluginManager } from '@blac/core';
+
+const persist = createIndexedDbPersistPlugin();
+persist.persist(UserSettingsCubit);
+getPluginManager().install(persist);
+```
+
+## License
+
+MIT

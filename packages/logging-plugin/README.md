@@ -2,6 +2,8 @@
 
 Logging and debugging plugin for BlaC state management. Logs instance lifecycle, state changes, events, and monitors for potential memory issues.
 
+**[Full documentation](https://jsnanigans.github.io/blac/plugins/logging)**
+
 ## Installation
 
 ```bash

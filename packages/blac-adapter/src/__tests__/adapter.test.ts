@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Cubit, clearAll } from '@blac/core';
 import {
   autoTrackInit,
@@ -34,6 +34,10 @@ describe('@blac/adapter', () => {
     clearAll();
   });
 
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   describe('autoTrackInit', () => {
     it('should initialize adapter state with getter state and proxied bloc', () => {
       const bloc = new CounterCubit();
@@ -43,6 +47,18 @@ describe('@blac/adapter', () => {
       expect(state.manualDepsCache).toBeNull();
       expect(state.getterState).not.toBeNull();
       expect(state.proxiedBloc).not.toBeNull();
+    });
+
+    it('should fall back to no tracking during SSR', () => {
+      vi.stubGlobal('window', undefined);
+
+      const bloc = new CounterCubit();
+      const state = autoTrackInit(bloc);
+
+      expect(state.dependencyState).toBeNull();
+      expect(state.manualDepsCache).toBeNull();
+      expect(state.getterState).toBeNull();
+      expect(state.proxiedBloc).toBe(bloc);
     });
   });
 
@@ -166,6 +182,22 @@ describe('@blac/adapter', () => {
       expect(typeof unsubscribe).toBe('function');
       unsubscribe();
     });
+
+    it('should behave like no tracking during SSR', () => {
+      vi.stubGlobal('window', undefined);
+
+      const bloc = new CounterCubit();
+      const adapterState = autoTrackInit(bloc);
+      const callback = vi.fn();
+
+      const unsubscribe = autoTrackSubscribe(bloc, adapterState)(callback);
+
+      bloc.increment();
+      bloc.setName('updated');
+
+      expect(callback).toHaveBeenCalledTimes(2);
+      unsubscribe();
+    });
   });
 
   describe('autoTrackSnapshot', () => {
@@ -178,6 +210,18 @@ describe('@blac/adapter', () => {
 
       expect(state.count).toBe(0);
       expect(state.name).toBe('test');
+    });
+
+    it('should return raw state during SSR', () => {
+      vi.stubGlobal('window', undefined);
+
+      const bloc = new CounterCubit();
+      const adapterState = autoTrackInit(bloc);
+      const getSnapshot = autoTrackSnapshot(bloc, adapterState);
+      const state = getSnapshot();
+
+      expect(state).toBe(bloc.state);
+      expect(adapterState.dependencyState).toBeNull();
     });
   });
 

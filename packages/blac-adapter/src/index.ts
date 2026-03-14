@@ -161,6 +161,10 @@ export class ExternalDepsManager {
 
 export { DependencyManager };
 
+function isSsrEnvironment(): boolean {
+  return typeof window === 'undefined' || typeof document === 'undefined';
+}
+
 /**
  * Create a subscribe function for auto-tracking mode.
  * Only triggers callback when tracked properties change.
@@ -172,6 +176,10 @@ export function autoTrackSubscribe<TBloc extends StateContainerConstructor>(
   instance: InstanceReadonlyState<TBloc>,
   adapterState: AdapterState<TBloc>,
 ): SubscribeFunction {
+  if (isSsrEnvironment()) {
+    return noTrackSubscribe(instance);
+  }
+
   return (callback: SubscriptionCallback) => {
     return instance.subscribe(() => {
       const depState =
@@ -266,6 +274,10 @@ export function autoTrackSnapshot<TBloc extends StateContainerConstructor>(
   instance: InstanceReadonlyState<TBloc>,
   adapterState: AdapterState<TBloc>,
 ): SnapshotFunction<ExtractState<TBloc>> {
+  if (isSsrEnvironment()) {
+    return noTrackSnapshot(instance);
+  }
+
   return () => {
     const depState =
       adapterState.dependencyState ||
@@ -334,6 +346,10 @@ export function noTrackSnapshot<TBloc extends StateContainerConstructor>(
 export function autoTrackInit<TBloc extends StateContainerConstructor>(
   instance: InstanceState<TBloc>,
 ): AdapterState<TBloc> {
+  if (isSsrEnvironment()) {
+    return noTrackInit(instance);
+  }
+
   return {
     dependencyState: null,
     manualDepsCache: null,

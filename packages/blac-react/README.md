@@ -1,8 +1,8 @@
 # @blac/react
 
-> ⚠️ **Warning:** This project is currently under active development. The API may change in future releases. Use with caution in production environments.
-
 React integration for BlaC with automatic re-render optimization.
+
+**[Full documentation](https://jsnanigans.github.io/blac/react/getting-started)**
 
 ## Installation
 

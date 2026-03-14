@@ -10,10 +10,36 @@ const pkg = JSON.parse(
 );
 const version = pkg.version;
 
+const referenceSidebar = [
+  {
+    text: 'Core',
+    items: [
+      { text: 'Cubit', link: '/core/cubit' },
+      { text: 'Configuration', link: '/core/configuration' },
+      { text: 'Instance Management', link: '/core/instance-management' },
+      { text: 'System Events', link: '/core/system-events' },
+      { text: 'Bloc Communication', link: '/core/bloc-communication' },
+      { text: 'watch', link: '/core/watch' },
+      { text: 'tracked', link: '/core/tracked' },
+      { text: 'Plugin Authoring', link: '/core/plugins' },
+    ],
+  },
+  {
+    text: 'React',
+    items: [
+      { text: 'Getting Started', link: '/react/getting-started' },
+      { text: 'useBloc', link: '/react/use-bloc' },
+      { text: 'Dependency Tracking', link: '/react/dependency-tracking' },
+      { text: 'Shared vs Isolated', link: '/react/shared-vs-isolated' },
+      { text: 'Performance', link: '/react/performance' },
+    ],
+  },
+];
+
 export default defineConfig({
   title: 'BlaC',
   description:
-    'A sophisticated TypeScript state management library implementing the BLoC pattern',
+    'Type-safe state management for React with automatic re-render optimization',
   base: process.env.BASE_URL || '/',
 
   themeConfig: {
@@ -21,9 +47,9 @@ export default defineConfig({
 
     nav: [
       { text: 'Guide', link: '/guide/introduction' },
-      { text: 'Core', link: '/core/getting-started' },
-      { text: 'React', link: '/react/getting-started' },
-      { text: 'API Reference', link: '/api/core' },
+      { text: 'Reference', link: '/core/cubit' },
+      { text: 'Plugins', link: '/plugins/overview' },
+      { text: 'API', link: '/api/core' },
       {
         text: `v${version}`,
         items: [
@@ -40,65 +66,24 @@ export default defineConfig({
     sidebar: {
       '/guide/': [
         {
-          text: 'Introduction',
-          items: [{ text: 'What is BlaC?', link: '/guide/introduction' }],
+          text: 'Getting Started',
+          items: [
+            { text: 'What is BlaC?', link: '/guide/introduction' },
+            { text: 'Quick Start', link: '/guide/getting-started' },
+            { text: 'Core Concepts', link: '/guide/concepts' },
+          ],
         },
       ],
-      '/core/': [
+      '/core/': referenceSidebar,
+      '/react/': referenceSidebar,
+      '/plugins/': [
         {
-          text: 'Getting Started',
-          items: [{ text: 'Quick Start', link: '/core/getting-started' }],
-        },
-        {
-          text: 'State Containers',
-          items: [{ text: 'Cubit', link: '/core/cubit' }],
-        },
-        {
-          text: 'Configuration',
+          text: 'Plugins',
           items: [
-            { text: '@blac() Decorator', link: '/core/configuration' },
-            { text: 'Instance Management', link: '/core/instance-management' },
-            { text: 'System Events', link: '/core/system-events' },
-          ],
-        },
-        {
-          text: 'Utilities',
-          items: [
-            { text: 'watch', link: '/core/watch' },
-            { text: 'tracked', link: '/core/tracked' },
-          ],
-        },
-        {
-          text: 'Advanced',
-          items: [
-            { text: 'Logging', link: '/core/logging' },
-            { text: 'Plugins', link: '/core/plugins' },
-          ],
-        },
-        {
-          text: 'Examples',
-          items: [{ text: 'Form Validation', link: '/core/form-validation' }],
-        },
-      ],
-      '/react/': [
-        {
-          text: 'Getting Started',
-          items: [{ text: 'Quick Start', link: '/react/getting-started' }],
-        },
-        {
-          text: 'Hooks',
-          items: [
-            { text: 'useBloc', link: '/react/use-bloc' },
-          ],
-        },
-        {
-          text: 'Patterns',
-          items: [
-            { text: 'Overview', link: '/react/overview' },
-            { text: 'Dependency Tracking', link: '/react/dependency-tracking' },
-            { text: 'Shared vs Isolated', link: '/react/shared-vs-isolated' },
-            { text: 'Bloc Communication', link: '/react/bloc-communication' },
-            { text: 'Performance', link: '/react/performance' },
+            { text: 'Overview', link: '/plugins/overview' },
+            { text: 'Logging', link: '/plugins/logging' },
+            { text: 'DevTools', link: '/plugins/devtools' },
+            { text: 'Persistence', link: '/plugins/persistence' },
           ],
         },
       ],
