@@ -326,7 +326,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
         : undefined,
       currentState: currentState ? safeSerialize(currentState).data : undefined,
       hydrationStatus: context.getHydrationStatus(instance),
-      hydrationError: metadata.hydrationError?.message,
+      hydrationError: metadata.hydrationError,
     };
   }
 

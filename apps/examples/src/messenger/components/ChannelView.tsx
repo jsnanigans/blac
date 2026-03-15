@@ -20,16 +20,16 @@ interface ChannelViewProps {
 export function ChannelView({ channelId, currentUserId }: ChannelViewProps) {
   const [channel, channelBloc] = useBloc(ChannelBloc, {
     instanceId: channelId,
-    props: { channelId },
   });
 
-  // Mark channel as read when it's viewed
   useEffect(() => {
+    channelBloc.init({ channelId });
     channelBloc.markAsRead();
   }, [channelId, channelBloc]);
 
-  if (!channelBloc.channelInfo) {
-    return <div>Channel not found</div>;
+  const channelInfo = channelBloc.channelInfo;
+  if (!channelInfo) {
+    return null;
   }
 
   return (
@@ -37,14 +37,14 @@ export function ChannelView({ channelId, currentUserId }: ChannelViewProps) {
       {/* Channel Header */}
       <div className="channel-header">
         <div className="channel-info">
-          <h2 className="channel-name">#{channel.channel.name}</h2>
-          {channel.channel.description && (
-            <p className="channel-description">{channel.channel.description}</p>
+          <h2 className="channel-name">#{channelInfo.name}</h2>
+          {channelInfo.description && (
+            <p className="channel-description">{channelInfo.description}</p>
           )}
         </div>
         <div className="channel-meta">
           <span className="channel-members">
-            {channel.channel.members.length} members
+            {channelInfo.members.length} members
           </span>
         </div>
       </div>

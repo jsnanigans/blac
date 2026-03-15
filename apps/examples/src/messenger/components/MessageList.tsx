@@ -19,7 +19,6 @@ interface MessageListProps {
 export function MessageList({ channelId, currentUserId }: MessageListProps) {
   const [{ messages }] = useBloc(ChannelBloc, {
     instanceId: channelId,
-    props: { channelId },
   });
   const messagesEndRef = useRef<HTMLDivElement>(null);
 

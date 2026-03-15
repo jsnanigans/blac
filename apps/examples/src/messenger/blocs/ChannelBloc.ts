@@ -1,4 +1,4 @@
-import { Cubit, borrowSafe, borrow, acquire } from '@blac/core';
+import { Cubit, borrowSafe, acquire } from '@blac/core';
 import type { Message, Channel } from '../types';
 import { persistenceService } from '../services/PersistenceService';
 import { NotificationCubit } from './NotificationCubit';
@@ -8,7 +8,7 @@ import { ContactsCubit } from './ContactsCubit';
 import { webSocket } from '../services/WebSocketMock';
 
 export interface ChannelState {
-  channel: Channel;
+  channel: Channel | null;
   messages: Message[];
   typingUsers: Set<string>;
   unreadCount: number;
@@ -23,7 +23,7 @@ export interface ChannelState {
  * the same channel instance using instanceId. Each channel is completely
  * independent with its own state and lifecycle.
  */
-export class ChannelBloc extends Cubit<ChannelState, { channelId: string }> {
+export class ChannelBloc extends Cubit<ChannelState> {
   private _contactsDep = this.depend(ContactsCubit);
   private _notificationsDep = this.depend(NotificationCubit);
 
@@ -38,32 +38,37 @@ export class ChannelBloc extends Cubit<ChannelState, { channelId: string }> {
     // Create UserCubit on-demand
     const user = MOCK_USERS.find((u) => u.id === userId);
     if (user) {
-      acquire(UserCubit, userId, { props: { user, userId } });
+      acquire(UserCubit, userId).setUserId(userId);
     }
   }
 
-  constructor(props?: { channelId: string }) {
-    const channelInfo = borrow(ContactsCubit).state.channels.find(
-      (c: Channel) => c.id === props?.channelId,
-    );
-    if (!channelInfo) {
-      throw new Error('ChannelBloc requires a channel to be passed via props');
-    }
-
-    // Try to load persisted data
-    const persisted = persistenceService.loadChannel(channelInfo.id);
-
+  constructor() {
     super({
-      channel: channelInfo,
-      messages: persisted?.messages || [],
+      channel: null,
+      messages: [],
       typingUsers: new Set(),
-      unreadCount: 0, // Unread count is managed by NotificationCubit now
+      unreadCount: 0,
       draftMessage: '',
     });
 
-    // Setup dispose handler
     this.setupDispose();
   }
+
+  init = ({ channelId }: { channelId: string }) => {
+    const channelInfo = this._contactsDep().state.channels.find(
+      (c: Channel) => c.id === channelId,
+    );
+    if (!channelInfo) return;
+
+    const persisted = persistenceService.loadChannel(channelInfo.id);
+    this.emit({
+      channel: channelInfo,
+      messages: persisted?.messages || [],
+      typingUsers: new Set(),
+      unreadCount: 0,
+      draftMessage: '',
+    });
+  };
 
   // Getter for typing indicator text
   get typingIndicator(): string {
@@ -78,7 +83,7 @@ export class ChannelBloc extends Cubit<ChannelState, { channelId: string }> {
    */
   private setupDispose() {
     this.onSystemEvent('dispose', () => {
-      // Save messages to sessionStorage so they can be restored later
+      if (!this.state.channel) return;
       persistenceService.saveChannel(
         this.state.channel.id,
         this.state.messages,
@@ -87,11 +92,12 @@ export class ChannelBloc extends Cubit<ChannelState, { channelId: string }> {
   }
 
   get channelInfo(): Channel | null {
-    return this.state.channel || null;
+    return this.state.channel;
   }
 
   // Action methods
   sendMessage = (userId: string) => {
+    if (!this.state.channel) return;
     const draft = this.state.draftMessage?.trim() || '';
     if (draft.length === 0) return; // Don't send empty messages
 
@@ -140,7 +146,9 @@ export class ChannelBloc extends Cubit<ChannelState, { channelId: string }> {
     });
 
     // Update notification cubit with unread count
-    this._notificationsDep().incrementUnread(this.state.channel.id);
+    if (this.state.channel) {
+      this._notificationsDep().incrementUnread(this.state.channel.id);
+    }
   };
 
   userTyping = (userId: string, isTyping: boolean) => {
@@ -159,7 +167,7 @@ export class ChannelBloc extends Cubit<ChannelState, { channelId: string }> {
   };
 
   markAsRead = () => {
-    // Clear unread count in NotificationCubit
+    if (!this.state.channel) return;
     this._notificationsDep().clearUnread(this.state.channel.id);
   };
 
