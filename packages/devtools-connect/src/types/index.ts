@@ -26,8 +26,6 @@ export interface InstanceState {
   className: string;
   /** Custom name or instanceId */
   name: string;
-  /** Whether this is an isolated instance */
-  isIsolated: boolean;
   /** Most recent state */
   currentState: unknown;
   /** Last N state changes (circular buffer) */

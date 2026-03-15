@@ -7,14 +7,6 @@ interface MessageInputProps {
   currentUserId: string;
 }
 
-/**
- * MessageInput component - Input for sending messages
- *
- * Demonstrates:
- * - Using ChannelBloc to send events
- * - Accessing the bloc instance directly for actions (not tracking state)
- * - Integration with WebSocket mock service
- */
 export function MessageInput({ channelId, currentUserId }: MessageInputProps) {
   const [{ draftMessage }, channelBloc] = useBloc(ChannelBloc, {
     instanceId: channelId,
@@ -23,12 +15,11 @@ export function MessageInput({ channelId, currentUserId }: MessageInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleSend = () => {
-    // Add event to ChannelBloc
     channelBloc.sendMessage(currentUserId);
     inputRef.current?.focus();
   };
 
-  const handleKeyPress = (e: KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -42,7 +33,7 @@ export function MessageInput({ channelId, currentUserId }: MessageInputProps) {
         type="text"
         value={draftMessage}
         onChange={(e) => channelBloc.updateDraftMessage(e.target.value)}
-        onKeyPress={handleKeyPress}
+        onKeyDown={handleKeyDown}
         placeholder={`Message #${channelId}`}
         className="message-input-field"
       />

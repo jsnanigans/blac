@@ -122,19 +122,6 @@ function B() {
 }
 ```
 
-### Isolated Instances
-
-```tsx
-import { Cubit, blac } from '@blac/core';
-
-@blac({ isolated: true })
-class FormCubit extends Cubit<FormState> {}
-
-function FormA() {
-  useBloc(FormCubit); // unique instance per component
-}
-```
-
 ### Named Instances
 
 ```tsx

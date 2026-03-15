@@ -60,11 +60,6 @@ export const BLAC_DEFAULTS = {
  */
 export const BLAC_STATIC_PROPS = {
   /**
-   * Mark a bloc as isolated (each component gets its own instance)
-   */
-  ISOLATED: 'isolated',
-
-  /**
    * Mark a bloc to never be auto-disposed (kept alive permanently)
    */
   KEEP_ALIVE: 'keepAlive',
@@ -79,11 +74,6 @@ export const BLAC_STATIC_PROPS = {
  * ID generation patterns and constants
  */
 export const BLAC_ID_PATTERNS = {
-  /**
-   * Prefix for isolated instance keys
-   */
-  ISOLATED_PREFIX: 'isolated-',
-
   /**
    * Length of generated ID portion (9 characters from base36)
    */

@@ -109,4 +109,4 @@ console.log(counter.state.count);
 release(CounterCubit);
 ```
 
-See also: [Configuration](/core/configuration), [Shared vs Isolated](/react/shared-vs-isolated), [API Reference](/api/core/registry)
+See also: [Configuration](/core/configuration), [API Reference](/api/core/registry)

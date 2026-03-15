@@ -84,25 +84,3 @@ export function __resetIdCounters(): void {
   globalCounters.clear();
 }
 
-/**
- * Generate a unique isolated instance key
- * Uses base36 encoding for compact, URL-safe identifiers
- *
- * Format: "isolated-{9-char-random-string}"
- * Example: "isolated-k7x2m9p4q"
- *
- * @returns A unique isolated instance key
- */
-export function generateIsolatedKey(): string {
-  const randomPart = Math.random().toString(36).slice(2, 11);
-  return `isolated-${randomPart}`;
-}
-
-/**
- * Check if a key is an isolated instance key
- * @param key - The instance key to check
- * @returns true if the key is an isolated instance key
- */
-export function isIsolatedKey(key: string): boolean {
-  return key.startsWith('isolated-');
-}

@@ -7,14 +7,6 @@ interface CounterViewProps {
   instanceKey?: string;
 }
 
-/**
- * Counter display component.
- *
- * Demonstrates:
- * - Using useBloc to access state
- * - Automatic dependency tracking (only re-renders when accessed props change)
- * - Instance management via instanceKey
- */
 export function CounterView({ label, instanceKey }: CounterViewProps) {
   const [state, counter] = useBloc(CounterBloc, { instanceId: instanceKey });
 

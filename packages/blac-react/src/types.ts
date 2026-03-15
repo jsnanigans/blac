@@ -7,7 +7,7 @@ import type { RefObject } from 'react';
  * @template TBloc - The state container type
  */
 export interface UseBlocOptions<TBloc extends StateContainerConstructor> {
-  /** Custom instance identifier for shared or isolated instances */
+  /** Custom instance identifier */
   instanceId?: string | number;
   /** Manual dependency array like useEffect (disables autoTrack) */
   dependencies?: (
@@ -39,7 +39,4 @@ export type UseBlocReturn<
  * Internal ref structure for component-bloc binding
  * @internal
  */
-export type ComponentRef = {
-  /** Cached bloc instance ID for this component */
-  __blocInstanceId?: string;
-};
+export type ComponentRef = Record<string, never>;

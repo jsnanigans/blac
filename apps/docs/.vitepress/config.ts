@@ -30,7 +30,6 @@ const referenceSidebar = [
       { text: 'Getting Started', link: '/react/getting-started' },
       { text: 'useBloc', link: '/react/use-bloc' },
       { text: 'Dependency Tracking', link: '/react/dependency-tracking' },
-      { text: 'Shared vs Isolated', link: '/react/shared-vs-isolated' },
       { text: 'Performance', link: '/react/performance' },
     ],
   },

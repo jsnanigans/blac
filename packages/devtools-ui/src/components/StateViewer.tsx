@@ -96,23 +96,6 @@ export const StateViewer: FC<StateViewerProps> = ({ onTimeTravel }) => {
         <span>{history.length} change{history.length !== 1 ? 's' : ''}</span>
         <span>·</span>
         <span>last {formatRelative(selectedInstance.lastStateChangeTimestamp)}</span>
-        {selectedInstance.isIsolated && (
-          <>
-            <span>·</span>
-            <span
-              style={{
-                color: '#d97706',
-                background: '#1c1208',
-                padding: '1px 5px',
-                borderRadius: '3px',
-                fontSize: '9px',
-                fontWeight: 600,
-              }}
-            >
-              isolated
-            </span>
-          </>
-        )}
       </div>
 
       {/* Scrollable Content */}

@@ -27,8 +27,7 @@ export class SimpleFormatter {
 
   logInstanceCreated(metadata: InstanceMetadata): void {
     const instanceId = this.formatInstanceId(metadata.className, metadata.id);
-    const isolated = metadata.isIsolated ? ' (isolated)' : '';
-    this.logger.log(`${this.prefix} Created ${instanceId}${isolated}`);
+    this.logger.log(`${this.prefix} Created ${instanceId}`);
   }
 
   logInstanceDisposed(metadata: InstanceMetadata, lifespanMs: number): void {

@@ -1,6 +1,5 @@
 /**
  * Tests for StateContainer Registry Features
- * Tests the isolated/shared instance management
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -21,18 +20,6 @@ import {
 
 // Test implementations
 class CounterBloc extends StateContainer<{ count: number }> {
-  constructor() {
-    super({ count: 0 });
-  }
-
-  increment = () => {
-    this.update((state) => ({ count: state.count + 1 }));
-  };
-}
-
-class IsolatedCounterBloc extends StateContainer<{ count: number }> {
-  static isolated = true;
-
   constructor() {
     super({ count: 0 });
   }
@@ -83,21 +70,6 @@ describe('StateContainer - Registry Features', () => {
       expect(stats.registeredTypes).toBe(2);
     });
 
-    it('should auto-detect isolated from static property', () => {
-      register(IsolatedCounterBloc);
-
-      const stats = getStats();
-      expect(stats.registeredTypes).toBe(1);
-    });
-
-    it('should allow setting isolated mode explicitly', () => {
-      register(CounterBloc, true);
-
-      const instance1 = acquire(CounterBloc);
-      const instance2 = acquire(CounterBloc);
-
-      expect(instance1).not.toBe(instance2);
-    });
   });
 
   describe('Shared Instances (Default)', () => {
@@ -140,33 +112,6 @@ describe('StateContainer - Registry Features', () => {
     });
   });
 
-  describe('Isolated Instances', () => {
-    it('should create new instance on each get (static isolated)', () => {
-      const instance1 = acquire(IsolatedCounterBloc);
-      const instance2 = acquire(IsolatedCounterBloc);
-
-      expect(instance1).not.toBe(instance2);
-      expect(instance1).toBeInstanceOf(IsolatedCounterBloc);
-      expect(instance2).toBeInstanceOf(IsolatedCounterBloc);
-    });
-
-    it('should create new instance even with same key', () => {
-      const instance1 = acquire(IsolatedCounterBloc, 'same-key');
-      const instance2 = acquire(IsolatedCounterBloc, 'same-key');
-
-      expect(instance1).not.toBe(instance2);
-    });
-
-    it('should respect isolated mode set via register', () => {
-      register(CounterBloc, true);
-
-      const instance1 = acquire(CounterBloc);
-      const instance2 = acquire(CounterBloc);
-
-      expect(instance1).not.toBe(instance2);
-    });
-  });
-
   describe('Query Operations', () => {
     it('should return all shared instances of a type', () => {
       acquire(CounterBloc, 'c1');
@@ -185,16 +130,6 @@ describe('StateContainer - Registry Features', () => {
 
     it('should return empty array for non-registered type', () => {
       const instances = getAll(CounterBloc);
-      expect(instances).toEqual([]);
-    });
-
-    it('should not track isolated instances in getAll', () => {
-      acquire(IsolatedCounterBloc);
-      acquire(IsolatedCounterBloc);
-      acquire(IsolatedCounterBloc);
-
-      // Isolated instances are not tracked in registry
-      const instances = getAll(IsolatedCounterBloc);
       expect(instances).toEqual([]);
     });
 
@@ -314,19 +249,6 @@ describe('StateContainer - Registry Features', () => {
       });
 
       expect(state).toBe(1);
-    });
-
-    it('should not iterate over isolated instances', () => {
-      acquire(IsolatedCounterBloc);
-      acquire(IsolatedCounterBloc);
-      acquire(IsolatedCounterBloc);
-
-      let callCount = 0;
-      forEach(IsolatedCounterBloc, () => {
-        callCount++;
-      });
-
-      expect(callCount).toBe(0);
     });
 
     it('should allow state mutation during iteration', () => {

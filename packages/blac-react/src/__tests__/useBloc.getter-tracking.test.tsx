@@ -14,17 +14,20 @@
  * 10. Memory cleanup
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, waitFor, renderHook } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Cubit } from '@blac/core';
+import { Cubit, clearAll } from '@blac/core';
 import { useBloc } from '../useBloc';
 import React, { StrictMode } from 'react';
+
+afterEach(() => {
+  clearAll();
+});
 
 // Test Blocs
 
 class CounterBloc extends Cubit<{ count: number; other: string }> {
-  static isolated = true;
 
   constructor() {
     super({ count: 0, other: 'initial' });
@@ -44,7 +47,6 @@ class CounterBloc extends Cubit<{ count: number; other: string }> {
 }
 
 class MultiGetterBloc extends Cubit<{ a: number; b: number }> {
-  static isolated = true;
 
   constructor() {
     super({ a: 1, b: 2 });
@@ -68,7 +70,6 @@ class MultiGetterBloc extends Cubit<{ a: number; b: number }> {
 }
 
 class NestedGetterBloc extends Cubit<{ value: number }> {
-  static isolated = true;
 
   constructor() {
     super({ value: 5 });
@@ -88,7 +89,6 @@ class NestedGetterBloc extends Cubit<{ value: number }> {
 }
 
 class ComplexReturnBloc extends Cubit<{ items: string[] }> {
-  static isolated = true;
 
   constructor() {
     super({ items: ['a', 'b', 'c'] });
@@ -120,7 +120,6 @@ class ComplexReturnBloc extends Cubit<{ items: string[] }> {
 }
 
 class ErrorBloc extends Cubit<{ value: number }> {
-  static isolated = true;
 
   constructor() {
     super({ value: 5 });
@@ -139,7 +138,6 @@ class ErrorBloc extends Cubit<{ value: number }> {
 }
 
 class StateAndGetterBloc extends Cubit<{ count: number; name: string }> {
-  static isolated = true;
 
   constructor() {
     super({ count: 0, name: 'initial' });
@@ -226,8 +224,7 @@ describe('useBloc - Basic Getter Tracking', () => {
     const renderSpy = vi.fn();
 
     class SameValueBloc extends Cubit<{ value: number }> {
-      static isolated = true;
-      constructor() {
+          constructor() {
         super({ value: 5 });
       }
       get ten() {
@@ -625,10 +622,7 @@ describe('useBloc - autoTrack: false Mode', () => {
 
 describe('useBloc - React Strict Mode', () => {
   it('should work correctly in Strict Mode (double-invocation)', async () => {
-    // Note: Using a shared (non-isolated) bloc for Strict Mode test
-    // because isolated blocs get disposed during Strict Mode's double-mount
     class SharedCounterBloc extends Cubit<{ count: number }> {
-      // NOT isolated - shared across instances
       constructor() {
         super({ count: 0 });
       }
@@ -705,7 +699,7 @@ describe('useBloc - Memory Cleanup', () => {
     // Unmount component
     unmount();
 
-    // Bloc should be disposed (isolated mode)
+    // Bloc should be disposed (ref count reaches 0)
     // No way to directly test memory cleanup, but we verify no errors
     expect(true).toBe(true);
   });
@@ -716,8 +710,7 @@ describe('useBloc - Memory Cleanup', () => {
 describe('useBloc - Getter Tracking Edge Cases', () => {
   it('should handle Object.is edge cases (NaN, +0, -0)', async () => {
     class EdgeCaseBloc extends Cubit<{ value: number }> {
-      static isolated = true;
-      constructor() {
+          constructor() {
         super({ value: NaN });
       }
       get computed() {
@@ -769,8 +762,7 @@ describe('useBloc - Getter Tracking Edge Cases', () => {
 
   it('should not track methods (only getters)', async () => {
     class MethodBloc extends Cubit<{ count: number }> {
-      static isolated = true;
-      constructor() {
+          constructor() {
         super({ count: 0 });
       }
       // This is a method, not a getter
@@ -815,8 +807,7 @@ describe('useBloc - Getter Tracking Edge Cases', () => {
     const mySymbol = Symbol('myGetter');
 
     class SymbolBloc extends Cubit<{ value: number }> {
-      static isolated = true;
-      constructor() {
+          constructor() {
         super({ value: 5 });
       }
       get [mySymbol]() {

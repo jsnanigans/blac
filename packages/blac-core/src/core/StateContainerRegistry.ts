@@ -1,19 +1,11 @@
 import type { StateContainer, StateContainerConfig } from './StateContainer';
 import { createPluginManager } from '../plugin/PluginManager';
 import { BLAC_DEFAULTS, BLAC_ERROR_PREFIX } from '../constants';
-import { isIsolatedClass, isKeepAliveClass } from '../utils/static-props';
+import { isKeepAliveClass } from '../utils/static-props';
 import {
   InstanceReadonlyState,
   StateContainerConstructor,
 } from '../types/utilities';
-
-/**
- * Internal configuration for registered types
- * @internal
- */
-interface TypeConfig {
-  isolated: boolean;
-}
 
 /**
  * Entry in the instance registry, tracking the instance and its reference count
@@ -70,7 +62,7 @@ export class StateContainerRegistry {
 
   private readonly types = new Set<StateContainerConstructor>();
 
-  private readonly typeConfigs = new Map<string, TypeConfig>();
+  private readonly registeredTypeNames = new Set<string>();
 
   private readonly listeners = new Map<
     LifecycleEvent,
@@ -88,26 +80,18 @@ export class StateContainerRegistry {
   /**
    * Register a StateContainer class with configuration
    * @param constructor - The StateContainer class constructor
-   * @param isolated - Whether instances should be isolated (component-scoped)
    * @throws Error if type is already registered
    */
-  register<T extends StateContainerConstructor>(
-    constructor: T,
-    isolated = false,
-  ): void {
+  register<T extends StateContainerConstructor>(constructor: T): void {
     const className = constructor.name;
 
-    if (!isolated && isIsolatedClass(constructor)) {
-      isolated = true;
-    }
-
-    if (this.typeConfigs.has(className)) {
+    if (this.registeredTypeNames.has(className)) {
       throw new Error(
         `${BLAC_ERROR_PREFIX} Type "${className}" is already registered`,
       );
     }
 
-    this.typeConfigs.set(className, { isolated });
+    this.registeredTypeNames.add(className);
     this.registerType(constructor);
   }
 
@@ -151,30 +135,11 @@ export class StateContainerRegistry {
     } = {},
   ): InstanceType<T> {
     const { canCreate = true, countRef = true } = options;
-    // Check if this is an isolated type
-    const registryConfig = this.typeConfigs.get(Type.name);
-    const isolated = isIsolatedClass(Type) || registryConfig?.isolated === true;
 
     const config: StateContainerConfig = {
       instanceId: instanceKey,
     };
 
-    if (isolated && !canCreate) {
-      throw new Error(
-        `${BLAC_ERROR_PREFIX} Cannot get isolated instance "${instanceKey}" of ${Type.name} when creation is disabled.`,
-      );
-    }
-
-    // Isolated: always create new instance (not tracked)
-    if (isolated) {
-      const instance = new Type() as InstanceType<T>;
-      instance.initConfig(config);
-      // Register type for lifecycle coordination
-      this.registerType(Type);
-      return instance;
-    }
-
-    // Shared: singleton pattern with ref counting
     const instances = this.ensureInstancesMap(Type);
     let entry = instances.get(instanceKey);
 
@@ -410,7 +375,7 @@ export class StateContainerRegistry {
     }
     // Step 2: Now clear type tracking (resets registry state for tests)
     this.types.clear();
-    this.typeConfigs.clear();
+    this.registeredTypeNames.clear();
   }
 
   /**

@@ -9,14 +9,6 @@ interface ChannelViewProps {
   currentUserId: string;
 }
 
-/**
- * ChannelView component - Main view for a channel
- *
- * Demonstrates:
- * - Using ChannelBloc for channel-specific state
- * - Dependency tracking on specific properties (channel.name, typingIndicator)
- * - Side effects (marking as read when channel is viewed)
- */
 export function ChannelView({ channelId, currentUserId }: ChannelViewProps) {
   const [channel, channelBloc] = useBloc(ChannelBloc, {
     instanceId: channelId,

@@ -11,7 +11,6 @@ export function clearAll(): void {
 
 export function register<T extends StateContainerConstructor>(
   BlocClass: T,
-  isolated = false,
 ): void {
-  globalRegistry.register(BlocClass, isolated);
+  globalRegistry.register(BlocClass);
 }

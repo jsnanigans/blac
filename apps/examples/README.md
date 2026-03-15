@@ -19,7 +19,7 @@ Introduction to Blac fundamentals.
 
 - Basic Cubit state container
 - Lifecycle hooks (onMount/onUnmount)
-- Instance management (shared vs isolated)
+- Instance management (shared vs named)
 - Automatic dependency tracking
 
 **Key Learning:** Components automatically re-render only when their accessed properties change.
@@ -114,7 +114,7 @@ Components only re-render when properties they access change. No manual optimiza
 ### Instance Management
 
 - Default instances are shared across all uses
-- Use `instanceKey` for isolated instances
+- Use `instanceId` for named instances
 - Named instances for multiple independent state containers
 
 ### Lifecycle Hooks

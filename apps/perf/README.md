@@ -59,7 +59,7 @@ A full suite of BlaC-specific performance tests:
 #### Memory Leak Detection
 
 - Mount/unmount cycle testing
-- Shared vs isolated bloc comparison
+- Shared vs named bloc comparison
 - Memory usage tracking (Chrome/Edge only)
 - Subscription cleanup verification
 
@@ -212,7 +212,7 @@ Blac.setConfig({
 
 Each benchmark has configurable parameters:
 
-- **Memory Leak**: Component count, cycle count, isolated vs shared
+- **Memory Leak**: Component count, cycle count, shared vs named
 - **Dependency Tracking**: Number of updates, component types
 - **Large State**: Tree depth and breadth
 - **Concurrent Updates**: Component count, update interval

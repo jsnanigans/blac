@@ -21,8 +21,6 @@ export interface InstanceMetadata {
   state: any;
   /** Timestamp when instance was created (milliseconds) */
   createdAt: number;
-  /** Whether this is an isolated (component-scoped) instance */
-  isIsolated: boolean;
   /** Stack trace from when instance was created (for debugging) */
   callstack?: string;
   /** Previous state value */

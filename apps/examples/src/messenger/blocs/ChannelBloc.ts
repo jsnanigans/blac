@@ -15,14 +15,6 @@ export interface ChannelState {
   draftMessage: string;
 }
 
-/**
- * Channel state - shared instances (one per channel)
- * instanceKey: channelId
- *
- * Demonstrates shared instance pattern - multiple components can access
- * the same channel instance using instanceId. Each channel is completely
- * independent with its own state and lifecycle.
- */
 export class ChannelBloc extends Cubit<ChannelState> {
   private _contactsDep = this.depend(ContactsCubit);
   private _notificationsDep = this.depend(NotificationCubit);
@@ -70,7 +62,6 @@ export class ChannelBloc extends Cubit<ChannelState> {
     });
   };
 
-  // Getter for typing indicator text
   get typingIndicator(): string {
     const typingCount = this.state.typingUsers.size;
     if (typingCount === 0) return '';
@@ -78,9 +69,6 @@ export class ChannelBloc extends Cubit<ChannelState> {
     return `${typingCount} people are typing...`;
   }
 
-  /**
-   * Persist channel data before disposal
-   */
   private setupDispose() {
     this.onSystemEvent('dispose', () => {
       if (!this.state.channel) return;
@@ -95,7 +83,6 @@ export class ChannelBloc extends Cubit<ChannelState> {
     return this.state.channel;
   }
 
-  // Action methods
   sendMessage = (userId: string) => {
     if (!this.state.channel) return;
     const draft = this.state.draftMessage?.trim() || '';

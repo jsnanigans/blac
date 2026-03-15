@@ -7,14 +7,6 @@ export interface CounterState {
   lastAction: string;
 }
 
-/**
- * Simple counter Cubit demonstrating basic Blac patterns.
- *
- * Key features:
- * - Direct state emission with this.emit()
- * - Lifecycle hooks for logging
- * - Multiple properties to demonstrate dependency tracking
- */
 export class CounterBloc extends Cubit<CounterState> {
   constructor(initialCount: number = 0) {
     super({
@@ -25,10 +17,6 @@ export class CounterBloc extends Cubit<CounterState> {
     });
   }
 
-  /**
-   * Increment the counter.
-   * Arrow function ensures correct 'this' binding in React.
-   */
   increment = () => {
     this.patch({
       count: this.state.count + 1,
@@ -37,9 +25,6 @@ export class CounterBloc extends Cubit<CounterState> {
     });
   };
 
-  /**
-   * Decrement the counter
-   */
   decrement = () => {
     this.patch({
       count: this.state.count - 1,
@@ -48,9 +33,6 @@ export class CounterBloc extends Cubit<CounterState> {
     });
   };
 
-  /**
-   * Reset the counter to zero
-   */
   reset = () => {
     this.emit({
       count: 0,
@@ -60,9 +42,6 @@ export class CounterBloc extends Cubit<CounterState> {
     });
   };
 
-  /**
-   * Set the counter to a specific value
-   */
   setValue = (value: number) => {
     this.patch({
       count: value,

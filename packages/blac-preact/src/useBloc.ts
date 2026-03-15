@@ -14,14 +14,12 @@ import {
   manualDepsInit,
   noTrackInit,
   disableGetterTracking,
-  isIsolatedClass,
   type StateContainerConstructor,
   type InstanceState,
   acquire,
   release,
 } from '@blac/adapter';
 import type { UseBlocOptions, UseBlocReturn, ComponentRef } from './types';
-import { generateInstanceKey } from './utils/instance-keys';
 import { getBlacPreactConfig } from './config';
 
 interface TrackingMode {
@@ -69,7 +67,7 @@ function determineTrackingMode<TBloc extends StateContainerConstructor>(
  * });
  * ```
  *
- * @example With isolated instance
+ * @example With named instance
  * ```ts
  * const [state, myBloc] = useBloc(MyBloc, {
  *   instanceId: 'unique-id'
@@ -85,7 +83,6 @@ export function useBloc<
   type TBloc = InstanceState<T>;
 
   const componentRef = useRef<ComponentRef>({});
-  const isIsolated = isIsolatedClass(BlocClass);
   const depsRef = useRef(options?.dependencies);
   depsRef.current = options?.dependencies;
   const instanceId = options?.instanceId;
@@ -103,11 +100,8 @@ export function useBloc<
         TBloc,
       ]
     >(() => {
-      const instanceKey = generateInstanceKey(
-        componentRef.current,
-        isIsolated,
-        instanceId,
-      );
+      const instanceKey =
+        instanceId !== undefined ? String(instanceId) : undefined;
 
       const instance = acquire(BlocClass, instanceKey) as TBloc;
 
@@ -144,16 +138,21 @@ export function useBloc<
         getSnapshotFn = autoTrackSnapshot(instance, adapterState);
       }
 
+      const safeSubscribeFn = (callback: () => void) => {
+        if (instance.isDisposed) return () => {};
+        return subscribeFn(callback);
+      };
+
       return [
         adapterState.proxiedBloc as TBloc,
-        subscribeFn,
+        safeSubscribeFn,
         getSnapshotFn,
         instanceKey,
         adapterState,
         instance,
       ];
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [BlocClass, isIsolated, instanceId]);
+    }, [BlocClass, instanceId]);
 
   const state = useSyncExternalStore(subscribe, getSnapshot);
 
@@ -183,10 +182,6 @@ export function useBloc<
       }
 
       release(BlocClass, instanceKey);
-
-      if (isIsolated && !rawInstance.isDisposed) {
-        rawInstance.dispose();
-      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

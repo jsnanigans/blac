@@ -67,6 +67,5 @@ export type BlocConstructor<
     | { error: null; instance: InstanceType<T> };
   ensure(instanceKey?: string): InstanceType<T>;
   release(instanceKey?: string): void;
-  isolated?: boolean;
   keepAlive?: boolean;
 };

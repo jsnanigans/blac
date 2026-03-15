@@ -57,19 +57,6 @@ Each `acquire` increments the ref count. Each `release` decrements it. When it r
 
 All calls to `useBloc(CounterCubit)` return the same instance. This is the common case for app-wide state like auth, theme, or cart.
 
-### Isolated
-
-With `@blac({ isolated: true })`, each `useBloc` call creates a **new instance** that is disposed when the component unmounts. Use this for per-component state like forms or modals.
-
-```ts
-@blac({ isolated: true })
-class FormCubit extends Cubit<FormState> { ... }
-```
-
-::: warning
-Isolated means per-`useBloc`-call, not per-component-subtree. If three sibling components each call `useBloc(FormCubit)` on an isolated cubit, they get three different instances.
-:::
-
 ### Named
 
 Pass `instanceId` to share an instance within a specific key. Different keys get different instances.

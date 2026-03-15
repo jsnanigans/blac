@@ -1126,6 +1126,126 @@ select:focus {
   font-size: 0.75rem;
 }
 
+/* ==================== Alert ==================== */
+
+.alert {
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--border-radius);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.alert.info {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.alert.success {
+  background-color: var(--color-success-light);
+  color: var(--color-success);
+}
+
+.alert.warning {
+  background-color: var(--color-warning-light);
+  color: var(--color-warning);
+}
+
+.alert.danger {
+  background-color: var(--color-danger-light);
+  color: var(--color-danger);
+}
+
+/* ==================== Async / Feed Example ==================== */
+
+.author-tabs {
+  display: flex;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.author-tab {
+  font-size: 0.9375rem;
+  padding: 0.5rem 1rem;
+}
+
+.author-tab.active {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.article-card {
+  display: flex;
+  gap: var(--space-md);
+  align-items: flex-start;
+  padding: var(--space-md);
+  background-color: var(--color-bg);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--border-radius);
+  transition: var(--transition-base);
+}
+
+.article-card:hover {
+  border-color: var(--color-primary-light);
+  background-color: var(--color-surface);
+}
+
+.article-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.article-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.3;
+  margin: 0;
+}
+
+.article-preview {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.article-read-time {
+  font-size: 0.75rem;
+  color: var(--color-text-light);
+  white-space: nowrap;
+  padding-top: 2px;
+}
+
+/* ==================== Registry Example ==================== */
+
+.instances-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--space-sm);
+}
+
+.shared-counter-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
+  background-color: var(--color-bg);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--border-radius);
+}
+
+.registry-stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-xs) var(--space-sm);
+  background-color: var(--color-bg);
+  border-radius: var(--border-radius-sm);
+}
+
 /* ==================== Responsive ==================== */
 
 @media (max-width: 768px) {

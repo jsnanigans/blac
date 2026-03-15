@@ -22,18 +22,6 @@ class CounterBloc extends StateContainer<{ count: number }> {
   };
 }
 
-class IsolatedBloc extends StateContainer<{ count: number }> {
-  static isolated = true;
-
-  constructor() {
-    super({ count: 0 });
-  }
-
-  increment = () => {
-    this.update((state) => ({ count: state.count + 1 }));
-  };
-}
-
 describe('useBloc', () => {
   afterEach(() => {
     clearAll();
@@ -113,18 +101,6 @@ describe('useBloc', () => {
       expect(result2.current.state.count).toBe(0);
     });
 
-    it('should dispose isolated blocs on unmount', async () => {
-      const { result, unmount } = renderHook(() => useBloc(IsolatedBloc));
-
-      const [, bloc] = result.current;
-      const disposeSpy = vi.spyOn(bloc, 'dispose');
-
-      unmount();
-
-      await waitFor(() => {
-        expect(disposeSpy).toHaveBeenCalled();
-      });
-    });
   });
 
   describe('Custom Instance IDs', () => {

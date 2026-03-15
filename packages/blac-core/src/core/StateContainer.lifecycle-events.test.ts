@@ -92,37 +92,6 @@ describe('StateContainer Lifecycle Events', () => {
     expect(disposedListener).toHaveBeenCalledTimes(1);
   });
 
-  it('should emit "created" and "disposed" for isolated instances', () => {
-    const createdListener = vi.fn();
-    const disposedListener = vi.fn();
-    getRegistry().on('created', createdListener);
-    getRegistry().on('disposed', disposedListener);
-
-    class TestCubit extends Cubit<{ count: number }> {
-      static isolated = true;
-
-      constructor() {
-        super({ count: 0 });
-      }
-    }
-
-    // Create isolated instance
-    const instance1 = acquire(TestCubit, 'key1');
-    expect(createdListener).toHaveBeenCalledTimes(1);
-
-    // Create another isolated instance (different instance)
-    const instance2 = acquire(TestCubit, 'key2');
-    expect(createdListener).toHaveBeenCalledTimes(2);
-    expect(instance1).not.toBe(instance2);
-
-    // Dispose isolated instances manually
-    instance1.dispose();
-    expect(disposedListener).toHaveBeenCalledTimes(1);
-
-    instance2.dispose();
-    expect(disposedListener).toHaveBeenCalledTimes(2);
-  });
-
   it('should emit "stateChanged" event when state changes', () => {
     const stateChangedListener = vi.fn();
     getRegistry().on('stateChanged', stateChangedListener);

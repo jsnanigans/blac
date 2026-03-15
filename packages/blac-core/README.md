@@ -111,9 +111,6 @@ Configure container behavior with `@blac`.
 ```ts
 import { Cubit, blac } from '@blac/core';
 
-@blac({ isolated: true })
-class FormCubit extends Cubit<FormState> {}
-
 @blac({ keepAlive: true })
 class AuthCubit extends Cubit<AuthState> {}
 

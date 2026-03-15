@@ -21,7 +21,7 @@ function useBloc<T extends StateContainerConstructor>(
 |-------|------|-------------|
 | 0 | `state` | Current state snapshot. In auto-tracking mode, this is a Proxy that records property access. |
 | 1 | `bloc` | The Cubit instance. Call methods on it (`bloc.increment()`). Also proxied for getter tracking. |
-| 2 | `ref` | Internal component ref. Rarely needed — used internally for isolated instance key generation. |
+| 2 | `ref` | Internal component ref. Rarely needed outside of advanced use cases. |
 
 Typically you destructure just the first two:
 
@@ -103,10 +103,8 @@ const [state] = useBloc(StreamCubit, {
 3. **Re-render:** Only triggered when tracked state properties or dependency values change
 4. **Unmount:** `release(BlocClass)` decrements the ref count. At zero, the instance is disposed (unless `keepAlive`)
 
-For isolated instances, the instance is also explicitly disposed on unmount regardless of ref count.
-
 ## Concurrent mode
 
 `useBloc` is built on React's `useSyncExternalStore`, making it safe for concurrent features like Suspense and transitions. State reads are consistent within a single render.
 
-See also: [Dependency Tracking](/react/dependency-tracking), [Shared vs Isolated](/react/shared-vs-isolated), [API Reference](/api/react)
+See also: [Dependency Tracking](/react/dependency-tracking), [API Reference](/api/react)

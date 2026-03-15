@@ -12,7 +12,7 @@ This changelog summarizes the current documentation scope for `@blac/core` and `
 
 - `StateContainer` and `Cubit`
 - Registry helpers (`acquire`, `ensure`, `borrow`, `borrowSafe`, `release`, `clear`, `clearAll`)
-- `@blac` decorator options: `isolated`, `keepAlive`, `excludeFromDevTools`
+- `@blac` decorator options: `keepAlive`, `excludeFromDevTools`
 - `watch`, `instance`, `tracked`, `createTrackedContext`
 - Plugin system (`BlacPlugin`, `PluginContext`, `PluginConfig`)
 

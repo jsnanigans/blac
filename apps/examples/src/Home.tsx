@@ -8,8 +8,8 @@ export function Home() {
         <h1>State Management Reimagined</h1>
         <p>
           Explore the power of BlaC through these interactive examples. From
-          simple counters to complex event-driven architectures, see how BlaC
-          makes state management predictable and type-safe.
+          simple counters to complex real-world apps, each example is focused on
+          a specific set of patterns.
         </p>
       </header>
 
@@ -20,8 +20,8 @@ export function Home() {
             <h3>Counter</h3>
           </div>
           <p className="text-small text-muted">
-            The classic counter example, reimagined. Demonstrates the basics of
-            Cubit, state streams, and automatic dependency tracking.
+            The classic counter, reimagined. Start here to understand Cubits,
+            auto-tracking, and how shared vs named instances work.
           </p>
           <div className="stack-xs text-xs text-muted">
             <div className="row-xs">
@@ -37,25 +37,26 @@ export function Home() {
           </div>
         </Link>
 
-        <Link to="/messenger" className="example-card">
+        <Link to="/async" className="example-card">
           <div className="stack-xs">
             <span className="badge primary">02</span>
-            <h3>Messenger</h3>
+            <h3>Async Data</h3>
           </div>
           <p className="text-small text-muted">
-            A complex chat application featuring multiple users, real-time-like
-            updates, and cross-component communication.
+            Loading, error, and retry patterns for async operations. Three
+            components share one Cubit but re-render independently based on
+            what each one reads.
           </p>
           <div className="stack-xs text-xs text-muted">
             <div className="row-xs">
               <span className="text-bold">Key Concepts:</span>
             </div>
             <div className="row-xs flex-wrap">
-              <span className="tag">instanceKey</span>
-              <span className="tag">acquire / borrow</span>
-              <span className="tag">depend()</span>
-              <span className="tag">Persistence</span>
-              <span className="tag">Real-Time Events</span>
+              <span className="tag">Async Methods</span>
+              <span className="tag">Loading State</span>
+              <span className="tag">Error + Retry</span>
+              <span className="tag">Request Cancellation</span>
+              <span className="tag">autoTrack: false</span>
             </div>
           </div>
         </Link>
@@ -67,7 +68,7 @@ export function Home() {
           </div>
           <p className="text-small text-muted">
             A full-featured todo app with localStorage persistence via watch(),
-            lifecycle hooks, and manual dependency optimization.
+            lifecycle hooks, and the action-only pattern.
           </p>
           <div className="stack-xs text-xs text-muted">
             <div className="row-xs">
@@ -77,8 +78,7 @@ export function Home() {
               <span className="tag">watch()</span>
               <span className="tag">onMount / onUnmount</span>
               <span className="tag">Manual Dependencies</span>
-              <span className="tag">Action-Only</span>
-              <span className="tag">localStorage</span>
+              <span className="tag">Action-Only Pattern</span>
             </div>
           </div>
         </Link>
@@ -89,8 +89,9 @@ export function Home() {
             <h3>Form Validation</h3>
           </div>
           <p className="text-small text-muted">
-            Two independent forms side by side, each with its own state via
-            instanceId. Getter-based tracking for computed validation.
+            Two independent forms using instanceId, with getter-based tracking
+            for computed validation so components only re-render when computed
+            values change.
           </p>
           <div className="stack-xs text-xs text-muted">
             <div className="row-xs">
@@ -112,7 +113,8 @@ export function Home() {
           </div>
           <p className="text-small text-muted">
             A widget-based dashboard with a custom plugin for analytics,
-            cross-bloc dependencies, and state that persists across navigations.
+            cross-bloc dependencies via depend(), and keepAlive state that
+            persists across navigations.
           </p>
           <div className="stack-xs text-xs text-muted">
             <div className="row-xs">
@@ -121,7 +123,7 @@ export function Home() {
             <div className="row-xs flex-wrap">
               <span className="tag">Custom Plugin</span>
               <span className="tag">depend()</span>
-              <span className="tag">blac({'{ keepAlive }'})</span>
+              <span className="tag">keepAlive</span>
               <span className="tag">Cross-Bloc Deps</span>
             </div>
           </div>
@@ -133,8 +135,8 @@ export function Home() {
             <h3>DB Persist</h3>
           </div>
           <p className="text-small text-muted">
-            A basic IndexedDB persistence plugin example with async hydration,
-            debounced saves, and custom state parsing.
+            IndexedDB persistence plugin with async hydration, debounced saves,
+            and stateToDb / dbToState transforms for custom record shapes.
           </p>
           <div className="stack-xs text-xs text-muted">
             <div className="row-xs">
@@ -144,8 +146,53 @@ export function Home() {
               <span className="tag">IndexedDB</span>
               <span className="tag">BlacPlugin</span>
               <span className="tag">Hydration</span>
-              <span className="tag">stateToDb</span>
-              <span className="tag">dbToState</span>
+              <span className="tag">stateToDb / dbToState</span>
+            </div>
+          </div>
+        </Link>
+
+        <Link to="/registry" className="example-card">
+          <div className="stack-xs">
+            <span className="badge primary">07</span>
+            <h3>Instance Registry</h3>
+          </div>
+          <p className="text-small text-muted">
+            Instance lifecycle management. See per-component vs shared instances in
+            action, with a live registry inspector powered by getStats() and a
+            plugin event log.
+          </p>
+          <div className="stack-xs text-xs text-muted">
+            <div className="row-xs">
+              <span className="text-bold">Key Concepts:</span>
+            </div>
+            <div className="row-xs flex-wrap">
+              <span className="tag">instanceId</span>
+              <span className="tag">getStats()</span>
+              <span className="tag">Lifecycle Events</span>
+            </div>
+          </div>
+        </Link>
+
+        <Link to="/messenger" className="example-card">
+          <div className="stack-xs">
+            <span className="badge">Advanced</span>
+            <h3>Messenger</h3>
+          </div>
+          <p className="text-small text-muted">
+            A full chat application showcasing advanced patterns: named
+            instances per channel, cross-bloc dependencies, on-demand instance
+            creation, and persistence on dispose.
+          </p>
+          <div className="stack-xs text-xs text-muted">
+            <div className="row-xs">
+              <span className="text-bold">Key Concepts:</span>
+            </div>
+            <div className="row-xs flex-wrap">
+              <span className="tag">Named Instances</span>
+              <span className="tag">acquire / borrow</span>
+              <span className="tag">depend()</span>
+              <span className="tag">onSystemEvent</span>
+              <span className="tag">Persistence</span>
             </div>
           </div>
         </Link>

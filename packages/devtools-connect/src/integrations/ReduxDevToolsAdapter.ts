@@ -164,7 +164,6 @@ interface InstanceMetadata {
   blocType: string;
   instanceId: string;
   instanceRef: string | undefined;
-  isolated: boolean;
   keepAlive: boolean;
   createdAt: number;
   lifecycleState: string;
@@ -352,9 +351,8 @@ export class ReduxDevToolsAdapter {
     // Skip Redux DevTools updates during time-travel
     if (this.isTimeTraveling) return;
 
-    const isolatedIcon = metadata.isolated ? '🔒' : '🔗';
-    const keepAliveIcon = metadata.keepAlive ? '📌' : '';
-    const action = `${isolatedIcon}${keepAliveIcon} [${displayName}] CREATED`;
+    const keepAliveIcon = metadata.keepAlive ? '📌' : '🔗';
+    const action = `${keepAliveIcon} [${displayName}] CREATED`;
 
     this.devTools.send(
       {
@@ -364,7 +362,6 @@ export class ReduxDevToolsAdapter {
           blocType: metadata.blocType,
           instanceId: metadata.instanceId,
           instanceRef: metadata.instanceRef,
-          isolated: metadata.isolated,
           keepAlive: metadata.keepAlive,
           lifecycle: metadata.lifecycleState,
           subscribers: metadata.subscriberCount,
@@ -436,15 +433,6 @@ export class ReduxDevToolsAdapter {
     const key = this.getInstanceKey(container);
     const displayName = this.getInstanceDisplayName(container);
     const metadata = this.extractMetadata(container);
-    const isIsolated = metadata.isolated;
-
-    // Isolated containers should ALWAYS be removed immediately
-    // They are tightly coupled to a single component and cannot be keepAlive
-    if (isIsolated && metadata.keepAlive) {
-      console.warn(
-        `[ReduxDevToolsAdapter] Isolated container "${displayName}" has keepAlive=true. This is invalid - isolated containers are always disposed with their component.`,
-      );
-    }
 
     // Unregister container - this removes it from the state tree
     this.containerRegistry.delete(key);
@@ -454,8 +442,7 @@ export class ReduxDevToolsAdapter {
     // Skip Redux DevTools updates during time-travel
     if (this.isTimeTraveling) return;
 
-    const isolatedIcon = isIsolated ? '🔒' : '';
-    const action = `${isolatedIcon}🗑️ [${displayName}] DISPOSED`;
+    const action = `🗑️ [${displayName}] DISPOSED`;
     this.devTools.send(
       {
         type: action,
@@ -463,7 +450,6 @@ export class ReduxDevToolsAdapter {
           uid: metadata.uid,
           blocType: metadata.blocType,
           instanceId: metadata.instanceId,
-          isolated: isIsolated,
           timestamp: Date.now(),
         },
       },
@@ -483,7 +469,6 @@ export class ReduxDevToolsAdapter {
 
   /**
    * Get instance display name with ID suffix if different from type name.
-   * For isolated instances, always include instanceId to ensure uniqueness in DevTools.
    */
   private getInstanceDisplayName(container: StateContainer<any>): string {
     const metadata = this.extractMetadata(container);
@@ -492,17 +477,7 @@ export class ReduxDevToolsAdapter {
       'main',
       `${metadata.blocType}:main`,
     ]);
-    const hasDefaultSharedId =
-      defaultSharedIds.has(metadata.instanceId);
-
-    // Isolated instances MUST have unique display names since there can be many at once
-    if (metadata.isolated) {
-      // Use instanceId suffix for isolated instances (e.g., "CounterCubit:abc123")
-      const shortId = container.instanceId.substring(0, 8);
-      return `${container.name}:${shortId}`;
-    }
-
-    // For shared/keepAlive instances, use custom ID if provided
+    const hasDefaultSharedId = defaultSharedIds.has(metadata.instanceId);
     const hasCustomId =
       !hasDefaultSharedId &&
       String(metadata.instanceId) !== container.name;
@@ -513,11 +488,6 @@ export class ReduxDevToolsAdapter {
 
   /**
    * Get the state key used in Redux DevTools state tree.
-   * This is the key that appears in the DevTools state viewer.
-   *
-   * - Isolated instances: Use displayName (includes instanceId for uniqueness)
-   * - Shared with custom ID: Use "Type#instanceId" pattern
-   * - Default shared: Use displayName
    */
   private getStateKey(container: StateContainer<any>): string {
     const displayName = this.getInstanceDisplayName(container);
@@ -527,19 +497,12 @@ export class ReduxDevToolsAdapter {
       'main',
       `${metadata.blocType}:main`,
     ]);
-    const hasDefaultSharedId =
-      defaultSharedIds.has(metadata.instanceId);
+    const hasDefaultSharedId = defaultSharedIds.has(metadata.instanceId);
 
-    if (metadata.isolated) {
-      return displayName; // Already includes instanceId for uniqueness
-    } else if (
-      !hasDefaultSharedId &&
-      metadata.instanceId !== metadata.blocType
-    ) {
+    if (!hasDefaultSharedId && metadata.instanceId !== metadata.blocType) {
       return `${metadata.blocType}#${metadata.instanceId}`;
-    } else {
-      return displayName;
     }
+    return displayName;
   }
 
   /**
@@ -553,7 +516,6 @@ export class ReduxDevToolsAdapter {
       blocType: container.name,
       instanceId: container.instanceId,
       instanceRef: undefined, // Not used in new architecture
-      isolated: constructor.isolated === true,
       keepAlive: constructor.keepAlive === true,
       createdAt:
         this.instanceMetadata.get(this.getInstanceKey(container))?.createdAt ||
@@ -584,7 +546,6 @@ export class ReduxDevToolsAdapter {
         continue;
       }
 
-      // Get the state key for this container (handles isolated/shared/custom ID logic)
       const stateKey = this.getStateKey(container);
 
       // Just use the actual state (metadata is available in action payloads)

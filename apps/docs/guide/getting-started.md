@@ -146,4 +146,3 @@ When you call `useBloc(CounterCubit)`:
 - [Core Concepts](/guide/concepts) — Registry, tracking, and lifecycle
 - [Cubit](/core/cubit) — Full Cubit API
 - [useBloc](/react/use-bloc) — Hook options and tracking modes
-- [Shared vs Isolated](/react/shared-vs-isolated) — Instance management patterns

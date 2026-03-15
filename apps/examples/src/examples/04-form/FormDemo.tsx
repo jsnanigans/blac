@@ -29,7 +29,7 @@ export function FormDemo() {
       title="Form Validation"
       description="Two independent forms side by side using instanceId to create separate state per form. Getter-based tracking ensures components only re-render when computed values actually change."
       features={[
-        'instanceId — each form gets its own isolated Cubit instance',
+        'instanceId — each form gets its own independent Cubit instance',
         'Getter tracking: completionPercent, isValid, errors',
         'FormProgress only re-renders when percentage changes',
         'FormSummary only re-renders when validation result changes',

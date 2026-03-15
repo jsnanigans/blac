@@ -71,7 +71,7 @@ new LoggingPlugin({
 **Simple format:**
 
 ```
-[BlaC] Created CounterCubit#abc12345 (isolated)
+[BlaC] Created CounterCubit#abc12345
 [BlaC] CounterCubit#abc12345 state: 0 → 1
 [BlaC] Disposed CounterCubit#abc12345 (lived 5.2s)
 ```

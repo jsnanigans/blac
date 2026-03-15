@@ -11,7 +11,7 @@ BlaC takes a different approach:
 - **State logic lives in classes, not components.** Define your state shape and mutations in a `Cubit` class. Components just read state and call methods.
 - **No providers or context wrappers.** Import your class, call `useBloc(MyClass)`, and you're connected. The registry handles instance creation and sharing automatically.
 - **Re-renders are precise by default.** Auto-tracking proxies detect which state properties your component reads during render. Only changes to those properties trigger re-renders.
-- **Lifecycle is declarative.** Instances are shared by default. Add `@blac({ isolated: true })` for per-component instances or `@blac({ keepAlive: true })` for persistent singletons.
+- **Lifecycle is declarative.** Instances are shared by default. Use `instanceId` for named per-component instances or `@blac({ keepAlive: true })` for persistent singletons.
 - **Built for TypeScript.** State types flow from your class definition through the hook return value with zero type annotations needed.
 
 ## Architecture

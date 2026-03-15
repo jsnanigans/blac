@@ -215,7 +215,6 @@ export class PluginManager {
           lastStateChangeTimestamp: instance.lastUpdateTimestamp,
           createdAt: instance.createdAt,
           state: instance.state,
-          isIsolated: instance.instanceId.startsWith('isolated-'),
           hydrationStatus: instance.hydrationStatus,
           isHydrated: instance.isHydrated,
           hydrationError: instance.hydrationError,

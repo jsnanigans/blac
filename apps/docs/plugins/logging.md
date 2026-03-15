@@ -83,8 +83,8 @@ new LoggingPlugin({
 ```ts
 new LoggingPlugin({
   filter: (ctx) => {
-    // ctx: { instance, className, instanceId, isIsolated }
-    return !ctx.isIsolated; // skip isolated instances
+    // ctx: { instance, className, instanceId }
+    return ctx.className !== 'InternalCubit'; // skip specific types
   },
 })
 ```

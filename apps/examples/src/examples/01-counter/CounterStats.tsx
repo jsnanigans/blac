@@ -6,14 +6,6 @@ interface CounterStatsProps {
   instanceKey?: string;
 }
 
-/**
- * Component that shows counter statistics.
- *
- * Demonstrates granular dependency tracking:
- * - This component accesses incrementCount, decrementCount, and lastAction
- * - It will NOT re-render when count changes (only CounterView will)
- * - This is automatic - no manual optimization needed!
- */
 export function CounterStats({ instanceKey }: CounterStatsProps) {
   const [state] = useBloc(CounterBloc, { instanceId: instanceKey });
 

@@ -4,9 +4,7 @@ import { TodoCubit } from './TodoCubit';
 import { Button, RenderCounter } from '../../shared/components';
 
 export function QuickAdd() {
-  // Action-only pattern: never reads state, so this component
-  // never re-renders from TodoCubit state changes.
-  const [, bloc] = useBloc(TodoCubit);
+  const [, bloc] = useBloc(TodoCubit, { autoTrack: false });
   const [text, setText] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {

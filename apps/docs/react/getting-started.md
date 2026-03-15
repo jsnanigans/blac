@@ -74,10 +74,7 @@ See [Dependency Tracking](/react/dependency-tracking) for details.
 | Mode | How to enable | Behavior |
 |------|--------------|----------|
 | Shared | Default | All components share one instance |
-| Isolated | `@blac({ isolated: true })` | Each `useBloc` call gets a new instance |
 | Named | `{ instanceId: 'key' }` | Shared within same key |
-
-See [Shared vs Isolated](/react/shared-vs-isolated) for details.
 
 ## What's next?
 

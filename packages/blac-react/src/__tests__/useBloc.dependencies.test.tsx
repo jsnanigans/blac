@@ -30,7 +30,6 @@ class CounterCubit extends Cubit<CounterState> {
     this.emit({ ...this.state, name: value });
   };
 
-  static isolated = true;
 }
 
 describe('useBloc with dependencies', () => {
@@ -206,8 +205,7 @@ describe('useBloc with dependencies', () => {
         this.emit({ ...this.state, count: this.state.count + 1 });
       };
 
-      static isolated = true;
-    }
+        }
 
     const renderSpy = vi.fn();
 
@@ -253,8 +251,7 @@ describe('useBloc with dependencies', () => {
         this.emit({ value: newValue });
       };
 
-      static isolated = true;
-    }
+        }
 
     function TestComponent() {
       const [state, bloc] = useBloc(RefCubit, {

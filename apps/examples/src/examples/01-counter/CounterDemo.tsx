@@ -2,15 +2,6 @@ import { ExampleLayout } from '../../shared/ExampleLayout';
 import { CounterView } from './CounterView';
 import { CounterStats } from './CounterStats';
 
-/**
- * Counter example demonstrating BlaC fundamentals.
- *
- * This example shows:
- * 1. Basic Cubit usage
- * 2. Automatic dependency tracking
- * 3. Instance management (shared vs isolated)
- * 4. Lifecycle hooks
- */
 export function CounterDemo() {
   return (
     <ExampleLayout
@@ -19,7 +10,7 @@ export function CounterDemo() {
       features={[
         'Basic Cubit state container',
         'Automatic dependency tracking',
-        'Shared vs isolated instances',
+        'Shared vs named instances',
         'Lifecycle hooks (check console)',
       ]}
     >
@@ -42,7 +33,7 @@ export function CounterDemo() {
 
       <section className="stack-lg">
         <div className="stack-sm">
-          <h2>Isolated Instances</h2>
+          <h2>Named Instances</h2>
           <p className="text-muted">
             Each counter has its own independent state using instanceId.
           </p>
@@ -75,7 +66,7 @@ export function CounterDemo() {
           </p>
           <p>
             • <strong>Instance management:</strong> Default instances are
-            shared. Use <code>instanceId</code> for isolated state.
+            shared. Use <code>instanceId</code> for separate state per component.
           </p>
           <p>
             • <strong>Lifecycle hooks:</strong> Open browser console to see

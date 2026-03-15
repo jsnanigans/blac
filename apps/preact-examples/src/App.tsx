@@ -1,9 +1,8 @@
 import { useState } from 'preact/hooks';
 import { CounterDemo } from './examples/CounterDemo';
 import { TodoDemo } from './examples/TodoDemo';
-import { IsolatedDemo } from './examples/IsolatedDemo';
 
-type Example = 'counter' | 'todo' | 'isolated';
+type Example = 'counter' | 'todo';
 
 export function App() {
   const [activeExample, setActiveExample] = useState<Example>('counter');
@@ -40,18 +39,6 @@ export function App() {
                 Todo List
               </a>
             </li>
-            <li>
-              <a
-                href="#isolated"
-                className={activeExample === 'isolated' ? 'active' : ''}
-                onClick={(e) => {
-                  e.preventDefault();
-                  setActiveExample('isolated');
-                }}
-              >
-                Isolated
-              </a>
-            </li>
           </ul>
         </div>
       </nav>
@@ -59,7 +46,6 @@ export function App() {
       <main className="view-wrapper">
         {activeExample === 'counter' && <CounterDemo />}
         {activeExample === 'todo' && <TodoDemo />}
-        {activeExample === 'isolated' && <IsolatedDemo />}
       </main>
     </div>
   );

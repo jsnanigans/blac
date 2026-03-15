@@ -2,11 +2,13 @@ import { Link, Route } from './router';
 import { RouterBloc } from './router/RouterBloc';
 import { Home } from './Home';
 import { CounterDemo } from './examples/01-counter/CounterDemo';
+import { FeedDemo } from './examples/02-async/FeedDemo';
 import { MessengerApp } from './messenger';
 import { TodoDemo } from './examples/03-todo/TodoDemo';
 import { FormDemo } from './examples/04-form/FormDemo';
 import { DashboardDemo } from './examples/05-dashboard/DashboardDemo';
 import { DbPersistDemo } from './examples/06-db-persist/DbPersistDemo';
+import { RegistryDemo } from './examples/07-registry/RegistryDemo';
 import { useState } from 'react';
 import { BlacDevtoolsUi } from '@blac/devtools-ui';
 import { useBloc } from '@blac/react';
@@ -131,7 +133,7 @@ export function App() {
                 <Link to="/counter">Counter</Link>
               </li>
               <li>
-                <Link to="/messenger">Messenger</Link>
+                <Link to="/async">Async</Link>
               </li>
               <li>
                 <Link to="/todo">Todo</Link>
@@ -144,6 +146,12 @@ export function App() {
               </li>
               <li>
                 <Link to="/db-persist">DB Persist</Link>
+              </li>
+              <li>
+                <Link to="/registry">Registry</Link>
+              </li>
+              <li>
+                <Link to="/messenger">Messenger</Link>
               </li>
               <li>
                 <button
@@ -167,8 +175,8 @@ export function App() {
             <Route path="/counter">
               <CounterDemo />
             </Route>
-            <Route path="/messenger">
-              <MessengerApp />
+            <Route path="/async">
+              <FeedDemo />
             </Route>
             <Route path="/todo">
               <TodoDemo />
@@ -181,6 +189,12 @@ export function App() {
             </Route>
             <Route path="/db-persist">
               <DbPersistDemo />
+            </Route>
+            <Route path="/registry">
+              <RegistryDemo />
+            </Route>
+            <Route path="/messenger">
+              <MessengerApp />
             </Route>
           </div>
         </main>

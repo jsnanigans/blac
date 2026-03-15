@@ -44,12 +44,7 @@ export type {
   StateContainerInstance,
 } from '@blac/core';
 
-export {
-  acquire,
-  release,
-  isIsolatedClass,
-  generateIsolatedKey,
-} from '@blac/core';
+export { acquire, release } from '@blac/core';
 
 /**
  * Internal state for framework adapters, holding tracking and caching data.

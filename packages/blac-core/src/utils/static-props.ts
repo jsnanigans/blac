@@ -22,18 +22,6 @@ export function getStaticProp<
 }
 
 /**
- * Check if a class is marked as isolated.
- * Isolated classes create separate instances per component.
- * @param Type - The class constructor to check
- * @returns true if the class has `static isolated = true`
- */
-export function isIsolatedClass<T extends StateContainerConstructor>(
-  Type: T,
-): boolean {
-  return getStaticProp<boolean>(Type, BLAC_STATIC_PROPS.ISOLATED) === true;
-}
-
-/**
  * Check if a class is marked as keepAlive.
  * KeepAlive classes are never auto-disposed when ref count reaches 0.
  * @param Type - The class constructor to check

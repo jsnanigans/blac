@@ -36,8 +36,6 @@ export interface InstanceData {
   state: any;
   /** Creation timestamp */
   createdAt: number;
-  /** Whether this is an isolated (component-scoped) instance */
-  isIsolated?: boolean;
   /** Current hydration status */
   hydrationStatus?: 'idle' | 'hydrating' | 'hydrated' | 'error';
   /** Hydration error message if present */
