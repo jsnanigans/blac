@@ -1,4 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
+import { Component, type ReactNode } from 'react';
 import { render, act, screen } from '@testing-library/react';
 import { Cubit, clearAll } from '@blac/core';
 import { useBloc } from '../useBloc';
@@ -113,7 +114,11 @@ describe('useBloc — getter advanced', () => {
   });
 
   it('getter that throws logs warning and does not crash component', () => {
+    // executeTrackedGetter re-throws errors during render, so the component WILL crash.
+    // The warning is logged in hasGetterChanges (subscribe phase) before the re-render.
+    // An ErrorBoundary is required to prevent the crash from propagating out of act().
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     class ThrowingBloc extends Cubit<{ safe: boolean; value: number }> {
       constructor() { super({ safe: true, value: 5 }); }
       get risky() {
@@ -122,15 +127,29 @@ describe('useBloc — getter advanced', () => {
       }
       makeUnsafe() { this.emit({ ...this.state, safe: false }); }
     }
+    class ErrorBoundary extends Component<{ children: ReactNode }, { caught: boolean }> {
+      state = { caught: false };
+      static getDerivedStateFromError() { return { caught: true }; }
+      render() {
+        return this.state.caught
+          ? <div data-testid="error-caught" />
+          : <>{this.props.children}</>;
+      }
+    }
     let bloc!: ThrowingBloc;
     function Comp() {
       const [, b] = useBloc(ThrowingBloc);
       bloc = b as ThrowingBloc;
       return <span>{b.risky}</span>;
     }
-    render(<Comp />);
+    render(<ErrorBoundary><Comp /></ErrorBoundary>);
     expect(() => act(() => { bloc.makeUnsafe(); })).not.toThrow();
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('risky'),
+      expect.any(Error),
+    );
     warnSpy.mockRestore();
+    errorSpy.mockRestore();
   });
 
   it('conditional getter access — deps update dynamically as accessed getters change', () => {

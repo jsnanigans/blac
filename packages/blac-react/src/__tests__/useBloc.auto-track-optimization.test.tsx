@@ -211,13 +211,17 @@ describe('useBloc — auto-track optimization', () => {
   });
 
   it('tracking state across multiple renderHook re-renders stays consistent', () => {
-    const { result, rerender } = renderHook(() => useBloc(MultiFieldBloc));
+    // state.a must be accessed inside the render callback — accessing result.current[0].a
+    // outside render only populates trackedPaths, not pathCache; the subscribe callback
+    // checks pathCache, so out-of-render accesses never register tracking.
+    const { result, rerender } = renderHook(() => {
+      const ret = useBloc(MultiFieldBloc);
+      void ret[0].a; // access during render so React's stale-check flushes it into pathCache
+      return ret;
+    });
     const bloc = result.current[1] as MultiFieldBloc;
 
-    // Read state.a to register the tracked path
-    void result.current[0].a;
-
-    // Changing b should not cause hook to update
+    // Changing b should not cause hook to update (only a is tracked)
     act(() => { bloc.setB('changed'); });
     expect(result.current[0].a).toBe(0);
 
