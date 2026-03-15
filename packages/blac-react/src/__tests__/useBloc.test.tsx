@@ -34,6 +34,16 @@ class CounterBloc extends StateContainer<{ count: number }> {
 //   };
 // }
 
+class IsolatedBloc extends StateContainer<{ count: number }> {
+  constructor() {
+    super({ count: 0 });
+  }
+
+  increment = () => {
+    this.update((state) => ({ count: state.count + 1 }));
+  };
+}
+
 describe('useBloc', () => {
   afterEach(() => {
     // Clear all bloc instances between tests
@@ -126,8 +136,8 @@ describe('useBloc', () => {
 
   describe('Isolated Instances', () => {
     it('should create new instance for each hook', () => {
-      const { result: result1 } = renderHook(() => useBloc(IsolatedBloc));
-      const { result: result2 } = renderHook(() => useBloc(IsolatedBloc));
+      const { result: result1 } = renderHook(() => useBloc(IsolatedBloc, { instanceId: 'iso-a' }));
+      const { result: result2 } = renderHook(() => useBloc(IsolatedBloc, { instanceId: 'iso-b' }));
 
       const [, bloc1] = result1.current;
       const [, bloc2] = result2.current;
@@ -138,11 +148,11 @@ describe('useBloc', () => {
 
     it('should maintain separate state for each instance', async () => {
       const { result: result1 } = renderHook(() => {
-        const [state, bloc] = useBloc(IsolatedBloc, { autoTrack: false });
+        const [state, bloc] = useBloc(IsolatedBloc, { instanceId: 'iso-c', autoTrack: false });
         return { state, bloc };
       });
       const { result: result2 } = renderHook(() => {
-        const [state, bloc] = useBloc(IsolatedBloc, { autoTrack: false });
+        const [state, bloc] = useBloc(IsolatedBloc, { instanceId: 'iso-d', autoTrack: false });
         return { state, bloc };
       });
 
@@ -156,11 +166,11 @@ describe('useBloc', () => {
 
     it('should update state return when its not accessed because autoTrack is disabled', async () => {
       const { result: result1 } = renderHook(() => {
-        const [state, bloc] = useBloc(IsolatedBloc, { autoTrack: false });
+        const [state, bloc] = useBloc(IsolatedBloc, { instanceId: 'iso-e', autoTrack: false });
         return { state, bloc };
       });
       const { result: result2 } = renderHook(() => {
-        const [state, bloc] = useBloc(IsolatedBloc, { autoTrack: false });
+        const [state, bloc] = useBloc(IsolatedBloc, { instanceId: 'iso-f', autoTrack: false });
         return { state, bloc };
       });
 
@@ -184,11 +194,11 @@ describe('useBloc', () => {
 
     it('should not update state return when its not accessed because autoTrack is enabled', async () => {
       const { result: result1 } = renderHook(() => {
-        const [state, bloc] = useBloc(IsolatedBloc, { autoTrack: true });
+        const [state, bloc] = useBloc(IsolatedBloc, { instanceId: 'iso-g', autoTrack: true });
         return { state, bloc };
       });
       const { result: result2 } = renderHook(() => {
-        const [state, bloc] = useBloc(IsolatedBloc, { autoTrack: true });
+        const [state, bloc] = useBloc(IsolatedBloc, { instanceId: 'iso-h', autoTrack: true });
         return { state, bloc };
       });
 

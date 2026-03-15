@@ -2,9 +2,9 @@
  * Tests for useBloc with dependencies option
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
-import { Cubit } from '@blac/core';
+import { Cubit, clearAll } from '@blac/core';
 import { useBloc } from '../useBloc';
 
 interface CounterState {
@@ -31,6 +31,10 @@ class CounterCubit extends Cubit<CounterState> {
   };
 
 }
+
+afterEach(() => {
+  clearAll();
+});
 
 describe('useBloc with dependencies', () => {
   it('should only re-render when dependencies change', () => {

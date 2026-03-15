@@ -14,7 +14,7 @@
  */
 
 import { render, screen, act } from '@testing-library/react';
-import { Cubit, clearAll, acquire, borrow } from '@blac/core';
+import { Cubit, clearAll, acquire } from '@blac/core';
 import { useBloc } from '../useBloc';
 import { describe, it, expect, afterEach } from 'vitest';
 
@@ -229,7 +229,6 @@ describe('Messenger Reproduction - Array Tracking', () => {
 
     // Initial render
     expect(messageListRenderCount).toBe(1);
-    screen.debug();
     expect(screen.getByTestId('message-count')).toHaveTextContent('3');
 
     // All messages should show 'sending' status
@@ -264,34 +263,12 @@ describe('Messenger Reproduction - Array Tracking', () => {
 
     render(<MessageList channelId={channelId} currentUserId={currentUserId} />);
 
-    // Debug: Check what paths are being tracked
-    const instance = borrow(ChannelBloc, channelId);
-    const adapterStates = (instance as any).__blac__adapterStates;
-    if (adapterStates && adapterStates.size > 0) {
-      const firstAdapter = Array.from(adapterStates.values())[0] as any;
-      console.log('\n=== TRACKED PATHS AFTER FIRST RENDER ===');
-      console.log(
-        'Current paths:',
-        Array.from(firstAdapter.tracker.currentRenderPaths),
-      );
-      console.log(
-        'Path cache:',
-        Array.from(firstAdapter.tracker.pathCache.keys()),
-      );
-    }
-
     expect(screen.getByTestId(`status-${msg1Id}`)).toHaveTextContent('⏳');
 
     // sending → sent
     act(() => {
       channel.updateMessageStatus(msg1Id, 'sent');
     });
-
-    console.log('\n=== AFTER STATUS UPDATE ===');
-    console.log(
-      'New messages:',
-      JSON.stringify(channel.state.messages, null, 2),
-    );
 
     expect(screen.getByTestId(`status-${msg1Id}`)).toHaveTextContent('✓');
 

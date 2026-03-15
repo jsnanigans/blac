@@ -290,14 +290,5 @@ describe('@blac/adapter', () => {
       expect(typeof release).toBe('function');
     });
 
-    it('should export isIsolatedClass', async () => {
-      const { isIsolatedClass } = await import('../index');
-      expect(typeof isIsolatedClass).toBe('function');
-    });
-
-    it('should export generateIsolatedKey', async () => {
-      const { generateIsolatedKey } = await import('../index');
-      expect(typeof generateIsolatedKey).toBe('function');
-    });
   });
 });

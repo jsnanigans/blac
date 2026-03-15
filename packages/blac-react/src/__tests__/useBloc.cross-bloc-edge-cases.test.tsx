@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
-import { Cubit, acquire, borrow, clear } from '@blac/core';
+import { Cubit, acquire, borrow, clearAll } from '@blac/core';
 import { useBloc } from '../useBloc';
 
 // Deep dependency chain blocs
@@ -73,13 +73,8 @@ class ConditionalBloc extends Cubit<{ count: number }> {
 }
 
 describe('useBloc - cross-bloc edge cases', () => {
-  beforeEach(() => {
-    // Clear all instances before each test
-    clear(DeepABloc);
-    clear(DeepBBloc);
-    clear(DeepCBloc);
-    clear(DynamicDepBloc);
-    clear(ConditionalBloc);
+  afterEach(() => {
+    clearAll();
   });
 
   it('should cleanup external subscriptions on unmount', () => {
@@ -267,8 +262,6 @@ describe('useBloc - cross-bloc edge cases', () => {
 
     expect(renderCount).toBe(2);
     expect(screen.getByTestId('value').textContent).toBe('hello: 11');
-
-    clear(NoDepsBloc);
   });
 
   it('should propagate multiple dependency changes through cached deps', () => {
