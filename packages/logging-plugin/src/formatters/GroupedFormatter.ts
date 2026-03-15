@@ -47,7 +47,6 @@ export class GroupedFormatter {
     this.group(`${this.prefix} Created ${instanceId}`);
     this.logger.log('Class:', metadata.className);
     this.logger.log('Instance ID:', metadata.id);
-    this.logger.log('Isolated:', metadata.isIsolated);
     this.logger.log('Initial state:', initialState);
     if (metadata.callstack) {
       this.logger.log('Callstack:', metadata.callstack);

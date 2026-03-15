@@ -17,7 +17,6 @@ export interface FilterContext {
   instance: StateContainer<any>;
   className: string;
   instanceId: string;
-  isIsolated: boolean;
 }
 
 export type FilterFn = (ctx: FilterContext) => boolean;

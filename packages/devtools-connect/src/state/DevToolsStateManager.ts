@@ -60,7 +60,6 @@ export class DevToolsStateManager {
     className: string;
     name: string;
     state: any;
-    isIsolated: boolean;
     createdAt: number;
   }): void {
     // Check if we need to evict oldest instance
@@ -75,7 +74,6 @@ export class DevToolsStateManager {
       id: instance.id,
       className: instance.className,
       name: instance.name,
-      isIsolated: instance.isIsolated,
       currentState: instance.state,
       history: [
         {

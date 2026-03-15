@@ -79,14 +79,7 @@ export class LoggingPlugin implements BlacPlugin {
   ): void {
     const metadata = context.getInstanceMetadata(instance);
 
-    if (
-      !this.shouldLog(
-        instance,
-        metadata.className,
-        metadata.id,
-        metadata.isIsolated,
-      )
-    ) {
+    if (!this.shouldLog(instance, metadata.className, metadata.id)) {
       return;
     }
 
@@ -114,14 +107,7 @@ export class LoggingPlugin implements BlacPlugin {
   ): void {
     const metadata = context.getInstanceMetadata(instance);
 
-    if (
-      !this.shouldLog(
-        instance,
-        metadata.className,
-        metadata.id,
-        metadata.isIsolated,
-      )
-    ) {
+    if (!this.shouldLog(instance, metadata.className, metadata.id)) {
       return;
     }
 
@@ -174,14 +160,7 @@ export class LoggingPlugin implements BlacPlugin {
   ): void {
     const metadata = context.getInstanceMetadata(instance);
 
-    if (
-      !this.shouldLog(
-        instance,
-        metadata.className,
-        metadata.id,
-        metadata.isIsolated,
-      )
-    ) {
+    if (!this.shouldLog(instance, metadata.className, metadata.id)) {
       return;
     }
 
@@ -220,7 +199,6 @@ export class LoggingPlugin implements BlacPlugin {
     instance: StateContainer<any>,
     className: string,
     instanceId: string,
-    isIsolated: boolean,
   ): boolean {
     if (this.config.include && !this.config.include.includes(className)) {
       return false;
@@ -235,7 +213,6 @@ export class LoggingPlugin implements BlacPlugin {
         instance,
         className,
         instanceId,
-        isIsolated,
       };
       return this.config.filter(ctx);
     }

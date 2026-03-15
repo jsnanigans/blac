@@ -1,8 +1,0 @@
-{
-  "type": "[CounterCubit] patch",
-  "payload": {
-    "state": {
-      "count": 200
-    }
-  }
-}

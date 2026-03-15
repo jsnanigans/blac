@@ -112,7 +112,6 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       className: data.className,
       name: data.name || data.id,
       state: data.state,
-      isIsolated: data.isIsolated,
       createdAt,
     });
 
@@ -259,7 +258,6 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
           className: data.className,
           name: data.name || data.id,
           state: data.state,
-          isIsolated: data.isIsolated,
           createdAt,
         });
       }
