@@ -1,8 +1,4 @@
-/**
- * Test DevTools plugin integration with lifecycle events
- */
-
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   Cubit,
   getPluginManager,
@@ -13,29 +9,63 @@ import {
 } from '@blac/core';
 import { DevToolsBrowserPlugin } from './DevToolsBrowserPlugin';
 
+// ============ Test Implementations ============
+
+class TestCubit extends Cubit<{ count: number }> {
+  constructor() {
+    super({ count: 0 });
+  }
+}
+
+class CounterCubit extends Cubit<{ count: number }> {
+  constructor() {
+    super({ count: 0 });
+  }
+}
+
+@blac({ excludeFromDevTools: true })
+class InternalCubit extends Cubit<{ count: number }> {
+  constructor() {
+    super({ count: 0 });
+  }
+}
+
+class NormalCubit extends Cubit<{ count: number }> {
+  constructor() {
+    super({ count: 0 });
+  }
+}
+
+// ============ Test Helpers ============
+
+const resetState = () => {
+  clearAll();
+  getPluginManager().clear();
+};
+
+const withPluginInstalled = (plugin: DevToolsBrowserPlugin) => {
+  getPluginManager().install(plugin);
+};
+
+// ============ Fixtures ============
+
+const fixture = {
+  plugin: (enabled = true) => new DevToolsBrowserPlugin({ enabled }),
+};
+
+// ============ Tests ============
+
 describe('DevToolsBrowserPlugin Lifecycle Integration', () => {
-  beforeEach(() => {
-    clearAll();
-    getPluginManager().clear();
-  });
+  beforeEach(resetState);
+  afterEach(resetState);
 
   it('should receive onInstanceCreated when bloc is resolved', () => {
-    const plugin = new DevToolsBrowserPlugin({ enabled: true });
+    const plugin = fixture.plugin();
     const spy = vi.spyOn(plugin, 'onInstanceCreated');
+    withPluginInstalled(plugin);
 
-    // Install plugin BEFORE creating instances
-    getPluginManager().install(plugin);
-
-    class TestCubit extends Cubit<{ count: number }> {
-      constructor() {
-        super({ count: 0 });
-      }
-    }
-
-    // Create instance
     const instance = acquire(TestCubit);
 
-    // Verify plugin received the event
     expect(spy).toHaveBeenCalledTimes(1);
     expect(spy).toHaveBeenCalledWith(
       instance,
@@ -46,21 +76,13 @@ describe('DevToolsBrowserPlugin Lifecycle Integration', () => {
   });
 
   it('should receive onInstanceDisposed when bloc is disposed', () => {
-    const plugin = new DevToolsBrowserPlugin({ enabled: true });
+    const plugin = fixture.plugin();
     const spy = vi.spyOn(plugin, 'onInstanceDisposed');
-
-    getPluginManager().install(plugin);
-
-    class TestCubit extends Cubit<{ count: number }> {
-      constructor() {
-        super({ count: 0 });
-      }
-    }
+    withPluginInstalled(plugin);
 
     const instance = acquire(TestCubit);
-    release(TestCubit); // Triggers dispose (refCount = 0)
+    release(TestCubit);
 
-    // Verify plugin received the event
     expect(spy).toHaveBeenCalledTimes(1);
     expect(spy).toHaveBeenCalledWith(
       instance,
@@ -71,59 +93,38 @@ describe('DevToolsBrowserPlugin Lifecycle Integration', () => {
   });
 
   it('should track instances in cache', () => {
-    const plugin = new DevToolsBrowserPlugin({ enabled: true });
-    getPluginManager().install(plugin);
+    const plugin = fixture.plugin();
+    withPluginInstalled(plugin);
 
-    class CounterCubit extends Cubit<{ count: number }> {
-      constructor() {
-        super({ count: 0 });
-      }
-    }
-
-    // Initially no instances
     expect(plugin.getInstances()).toHaveLength(0);
 
-    // Create instance
     acquire(CounterCubit);
     expect(plugin.getInstances()).toHaveLength(1);
     expect(plugin.getInstances()[0].className).toBe('CounterCubit');
 
-    // Dispose instance
     release(CounterCubit);
     expect(plugin.getInstances()).toHaveLength(0);
   });
 
   it('should emit events to subscribers', () => {
-    const plugin = new DevToolsBrowserPlugin({ enabled: true });
-    getPluginManager().install(plugin);
+    const plugin = fixture.plugin();
+    withPluginInstalled(plugin);
 
     const subscriber = vi.fn();
     plugin.subscribe(subscriber);
 
-    class TestCubit extends Cubit<{ count: number }> {
-      constructor() {
-        super({ count: 0 });
-      }
-    }
-
-    // Create instance
     acquire(TestCubit);
 
-    // Verify subscriber received the event
     expect(subscriber).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'instance-created',
         timestamp: expect.any(Number),
-        data: expect.objectContaining({
-          className: 'TestCubit',
-        }),
+        data: expect.objectContaining({ className: 'TestCubit' }),
       }),
     );
 
-    // Dispose instance
     release(TestCubit);
 
-    // Verify subscriber received disposal event
     expect(subscriber).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'instance-disposed',
@@ -137,46 +138,22 @@ describe('DevToolsBrowserPlugin Lifecycle Integration', () => {
   });
 
   it('should scan existing instances on install', () => {
-    class TestCubit extends Cubit<{ count: number }> {
-      constructor() {
-        super({ count: 0 });
-      }
-    }
-
-    // Create instance BEFORE plugin is installed
     acquire(TestCubit);
 
-    // Now install plugin
-    const plugin = new DevToolsBrowserPlugin({ enabled: true });
-    getPluginManager().install(plugin);
+    const plugin = fixture.plugin();
+    withPluginInstalled(plugin);
 
-    // Plugin should have found the existing instance
     expect(plugin.getInstances()).toHaveLength(1);
     expect(plugin.getInstances()[0].className).toBe('TestCubit');
   });
 
   it('should exclude instances marked with excludeFromDevTools', () => {
-    const plugin = new DevToolsBrowserPlugin({ enabled: true });
-    getPluginManager().install(plugin);
+    const plugin = fixture.plugin();
+    withPluginInstalled(plugin);
 
-    @blac({ excludeFromDevTools: true })
-    class InternalCubit extends Cubit<{ count: number }> {
-      constructor() {
-        super({ count: 0 });
-      }
-    }
-
-    class NormalCubit extends Cubit<{ count: number }> {
-      constructor() {
-        super({ count: 0 });
-      }
-    }
-
-    // Create both instances
     acquire(InternalCubit);
     acquire(NormalCubit);
 
-    // Only normal instance should be tracked
     expect(plugin.getInstances()).toHaveLength(1);
     expect(plugin.getInstances()[0].className).toBe('NormalCubit');
   });

@@ -1,8 +1,4 @@
-/**
- * ID Generator Tests
- */
-
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   generateId,
   generateSimpleId,
@@ -10,10 +6,13 @@ import {
   __resetIdCounters,
 } from './idGenerator';
 
+const resetState = () => {
+  __resetIdCounters();
+};
+
 describe('idGenerator', () => {
-  beforeEach(() => {
-    __resetIdCounters();
-  });
+  beforeEach(resetState);
+  afterEach(resetState);
 
   describe('generateId()', () => {
     it('should create unique IDs', () => {
@@ -99,7 +98,6 @@ describe('idGenerator', () => {
       const id1 = generateSimpleId('test');
       const id2 = generateSimpleId('test');
 
-      // Both should have same structure but different random parts
       const parts1 = id1.split(':')[1].split('_');
       const parts2 = id2.split(':')[1].split('_');
       expect(parts1.length).toBe(2); // timestamp_random

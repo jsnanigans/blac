@@ -1,9 +1,4 @@
-/**
- * Tests for StateContainerRegistry Lifecycle Events (Plugin System)
- * Ensures the plugin API remains stable and functional
- */
-
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { StateContainer } from './StateContainer';
 import {
   StateContainerRegistry,
@@ -12,7 +7,8 @@ import {
 } from './StateContainerRegistry';
 import { acquire, release } from '../registry';
 
-// Test implementations
+// ============ Test Implementations ============
+
 class TestCubit extends StateContainer<{ value: number }> {
   constructor(initialState = 0) {
     super({ value: initialState });
@@ -27,18 +23,47 @@ class TestCubit extends StateContainer<{ value: number }> {
   };
 }
 
+// ============ Test Helpers ============
+
+const resetState = () => {
+  globalRegistry.clearAll();
+};
+
+const withCreatedListener = () => {
+  const listener = vi.fn();
+  const unsubscribe = globalRegistry.on('created', listener);
+  return { listener, unsubscribe };
+};
+
+const withStateChangedListener = () => {
+  const listener = vi.fn();
+  const unsubscribe = globalRegistry.on('stateChanged', listener);
+  return { listener, unsubscribe };
+};
+
+const withDisposedListener = () => {
+  const listener = vi.fn();
+  const unsubscribe = globalRegistry.on('disposed', listener);
+  return { listener, unsubscribe };
+};
+
+// ============ Fixtures ============
+
+const fixture = {
+  cubit: (initialState = 0) => new TestCubit(initialState),
+};
+
+// ============ Tests ============
+
 describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
-  beforeEach(() => {
-    // Clear all instances for isolation
-    globalRegistry.clearAll();
-  });
+  beforeEach(resetState);
+  afterEach(resetState);
 
   describe('Event Subscription', () => {
     it('should subscribe to created events', () => {
-      const listener = vi.fn();
-      const unsubscribe = globalRegistry.on('created', listener);
+      const { listener, unsubscribe } = withCreatedListener();
 
-      const bloc = new TestCubit();
+      const bloc = fixture.cubit();
       bloc.initConfig({});
 
       expect(listener).toHaveBeenCalledTimes(1);
@@ -48,10 +73,9 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
     });
 
     it('should subscribe to stateChanged events', () => {
-      const listener = vi.fn();
-      globalRegistry.on('stateChanged', listener);
+      const { listener } = withStateChangedListener();
 
-      const bloc = new TestCubit(0);
+      const bloc = fixture.cubit(0);
       bloc.increment();
 
       expect(listener).toHaveBeenCalledTimes(1);
@@ -64,10 +88,9 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
     });
 
     it('should subscribe to disposed events', () => {
-      const listener = vi.fn();
-      globalRegistry.on('disposed', listener);
+      const { listener } = withDisposedListener();
 
-      const bloc = new TestCubit();
+      const bloc = fixture.cubit();
       bloc.dispose();
 
       expect(listener).toHaveBeenCalledTimes(1);
@@ -75,15 +98,11 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
     });
 
     it('should allow multiple listeners for same event', () => {
-      const listener1 = vi.fn();
-      const listener2 = vi.fn();
-      const listener3 = vi.fn();
+      const { listener: listener1 } = withCreatedListener();
+      const { listener: listener2 } = withCreatedListener();
+      const { listener: listener3 } = withCreatedListener();
 
-      globalRegistry.on('created', listener1);
-      globalRegistry.on('created', listener2);
-      globalRegistry.on('created', listener3);
-
-      const bloc = new TestCubit();
+      const bloc = fixture.cubit();
       bloc.initConfig({});
 
       expect(listener1).toHaveBeenCalledTimes(1);
@@ -92,15 +111,11 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
     });
 
     it('should allow subscribing to multiple event types', () => {
-      const createdListener = vi.fn();
-      const stateChangedListener = vi.fn();
-      const disposedListener = vi.fn();
+      const { listener: createdListener } = withCreatedListener();
+      const { listener: stateChangedListener } = withStateChangedListener();
+      const { listener: disposedListener } = withDisposedListener();
 
-      globalRegistry.on('created', createdListener);
-      globalRegistry.on('stateChanged', stateChangedListener);
-      globalRegistry.on('disposed', disposedListener);
-
-      const bloc = new TestCubit();
+      const bloc = fixture.cubit();
       bloc.initConfig({});
       bloc.increment();
       bloc.dispose();
@@ -113,54 +128,49 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
 
   describe('Event Unsubscription', () => {
     it('should unsubscribe from created events', () => {
-      const listener = vi.fn();
-      const unsubscribe = globalRegistry.on('created', listener);
+      const { listener, unsubscribe } = withCreatedListener();
 
-      const bloc = new TestCubit();
+      const bloc = fixture.cubit();
       bloc.initConfig({});
       expect(listener).toHaveBeenCalledTimes(1);
 
       unsubscribe();
-      const bloc2 = new TestCubit();
+
+      const bloc2 = fixture.cubit();
       bloc2.initConfig({});
-      expect(listener).toHaveBeenCalledTimes(1); // Should not increase
+      expect(listener).toHaveBeenCalledTimes(1);
     });
 
     it('should unsubscribe from stateChanged events', () => {
-      const listener = vi.fn();
-
-      const bloc = new TestCubit(0);
-      const unsubscribe = globalRegistry.on('stateChanged', listener);
+      const bloc = fixture.cubit(0);
+      const { listener, unsubscribe } = withStateChangedListener();
 
       bloc.increment();
       expect(listener).toHaveBeenCalledTimes(1);
 
       unsubscribe();
       bloc.increment();
-      expect(listener).toHaveBeenCalledTimes(1); // Should not increase
+      expect(listener).toHaveBeenCalledTimes(1);
     });
 
     it('should handle multiple unsubscribes safely', () => {
-      const listener = vi.fn();
-      const unsubscribe = globalRegistry.on('created', listener);
+      const { listener, unsubscribe } = withCreatedListener();
 
       unsubscribe();
-      unsubscribe(); // Should not throw
-      unsubscribe(); // Should not throw
+      unsubscribe();
+      unsubscribe();
 
       new TestCubit();
       expect(listener).not.toHaveBeenCalled();
     });
 
     it('should only unsubscribe specific listener', () => {
-      const listener1 = vi.fn();
-      const listener2 = vi.fn();
-
-      const unsubscribe1 = globalRegistry.on('created', listener1);
-      globalRegistry.on('created', listener2);
+      const { listener: listener1, unsubscribe: unsubscribe1 } = withCreatedListener();
+      const { listener: listener2 } = withCreatedListener();
 
       unsubscribe1();
-      const bloc = new TestCubit();
+
+      const bloc = fixture.cubit();
       bloc.initConfig({});
 
       expect(listener1).not.toHaveBeenCalled();
@@ -170,10 +180,9 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
 
   describe('Event Emission Timing', () => {
     it('should emit created event immediately on construction', () => {
-      const listener = vi.fn();
-      globalRegistry.on('created', listener);
+      const { listener } = withCreatedListener();
 
-      const bloc = new TestCubit();
+      const bloc = fixture.cubit();
       bloc.initConfig({});
 
       expect(listener).toHaveBeenCalledTimes(1);
@@ -181,16 +190,13 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
     });
 
     it('should emit stateChanged after state actually changes', () => {
-      const listener = vi.fn();
-      globalRegistry.on('stateChanged', listener);
+      const { listener } = withStateChangedListener();
 
-      const bloc = new TestCubit(0);
+      const bloc = fixture.cubit(0);
 
-      // Should emit when state changes (object state always creates new ref)
       bloc.setValue(0);
       expect(listener).toHaveBeenCalledTimes(1);
 
-      // Should emit when state changes
       bloc.increment();
       expect(listener).toHaveBeenCalledTimes(2);
       expect(listener).toHaveBeenCalledWith(
@@ -202,10 +208,9 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
     });
 
     it('should emit disposed after cleanup', () => {
-      const listener = vi.fn();
-      globalRegistry.on('disposed', listener);
+      const { listener } = withDisposedListener();
 
-      const bloc = new TestCubit();
+      const bloc = fixture.cubit();
       bloc.initConfig({});
       bloc.dispose();
 
@@ -216,18 +221,14 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
 
   describe('Error Handling', () => {
     it('should handle listener errors without breaking other listeners', () => {
-      const listener1 = vi.fn(() => {
-        throw new Error('Listener 1 error');
-      });
-      const listener2 = vi.fn();
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {});
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
+      const listener1 = vi.fn(() => { throw new Error('Listener 1 error'); });
+      const listener2 = vi.fn();
       globalRegistry.on('created', listener1);
       globalRegistry.on('created', listener2);
 
-      const bloc = new TestCubit();
+      const bloc = fixture.cubit();
       bloc.initConfig({});
 
       expect(listener1).toHaveBeenCalledTimes(1);
@@ -247,18 +248,11 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
     });
 
     it('should handle async errors in listeners', async () => {
-      const listener = vi.fn(async () => {
-        throw new Error('Async error');
-      });
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {});
-
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const listener = vi.fn(async () => { throw new Error('Async error'); });
       globalRegistry.on('created', listener);
 
-      expect(() => {
-        new TestCubit();
-      }).not.toThrow();
+      expect(() => { new TestCubit(); }).not.toThrow();
 
       consoleErrorSpy.mockRestore();
     });
@@ -269,7 +263,6 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       const actions: any[] = [];
       const states: any[] = [];
 
-      // Simulate DevTools plugin
       globalRegistry.on('stateChanged', (container, prevState, nextState) => {
         actions.push({
           type: 'STATE_CHANGE',
@@ -279,7 +272,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
         states.push({ prev: prevState, next: nextState });
       });
 
-      const bloc = new TestCubit(0);
+      const bloc = fixture.cubit(0);
       bloc.increment();
       bloc.increment();
 
@@ -293,7 +286,6 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
     it('should support logging plugin pattern', () => {
       const logs: string[] = [];
 
-      // Simulate logging plugin
       globalRegistry.on('created', (container) => {
         logs.push(`[CREATED] ${container.name} (${container.instanceId})`);
       });
@@ -308,7 +300,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
         logs.push(`[DISPOSED] ${container.name}`);
       });
 
-      const bloc = new TestCubit(0);
+      const bloc = fixture.cubit(0);
       bloc.initConfig({});
       bloc.increment();
       bloc.dispose();
@@ -323,13 +315,12 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       const history: Array<{ state: any; timestamp: number }> = [];
       let _currentIndex = -1;
 
-      // Simulate time-travel plugin
       globalRegistry.on('stateChanged', (container, prev, next) => {
         _currentIndex++;
         history.push({ state: next, timestamp: Date.now() });
       });
 
-      const bloc = new TestCubit(0);
+      const bloc = fixture.cubit(0);
       bloc.increment();
       bloc.increment();
       bloc.increment();
@@ -341,33 +332,25 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
         { value: 3 },
       ]);
 
-      // Could implement "go back in time" by replaying states
       const previousState = history[1].state;
       expect(previousState).toEqual({ value: 2 });
     });
 
     it('should support performance monitoring plugin pattern', () => {
-      const metrics = {
-        stateChanges: 0,
-        averageStateChangeTime: 0,
-      };
-
+      const metrics = { stateChanges: 0, averageStateChangeTime: 0 };
       const startTimes = new Map<any, number>();
 
       globalRegistry.on('stateChanged', (container) => {
         const start = startTimes.get(container) || Date.now();
         const duration = Date.now() - start;
-
         metrics.stateChanges++;
         metrics.averageStateChangeTime =
-          (metrics.averageStateChangeTime * (metrics.stateChanges - 1) +
-            duration) /
+          (metrics.averageStateChangeTime * (metrics.stateChanges - 1) + duration) /
           metrics.stateChanges;
       });
 
-      const bloc = new TestCubit(0);
+      const bloc = fixture.cubit(0);
       startTimes.set(bloc, Date.now());
-
       bloc.increment();
       bloc.increment();
 
@@ -377,38 +360,27 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
 
   describe('Global Registry Integration', () => {
     it('should work with globalRegistry singleton', () => {
-      globalRegistry.clearAll();
+      const { listener, unsubscribe } = withCreatedListener();
 
-      const listener = vi.fn();
-      const unsubscribe = globalRegistry.on('created', listener);
-
-      const bloc = new TestCubit();
+      const bloc = fixture.cubit();
       bloc.initConfig({});
 
       expect(listener).toHaveBeenCalledTimes(1);
 
       unsubscribe();
-      globalRegistry.clearAll();
     });
 
     it('should isolate custom registry from global', () => {
-      globalRegistry.clearAll();
-
       const customRegistry = new StateContainerRegistry();
-      const globalListener = vi.fn();
+      const { listener: globalListener } = withCreatedListener();
       const customListener = vi.fn();
-
-      globalRegistry.on('created', globalListener);
       customRegistry.on('created', customListener);
 
-      // Events only go to the active registry
-      const bloc = new TestCubit();
+      const bloc = fixture.cubit();
       bloc.initConfig({});
 
       expect(globalListener).toHaveBeenCalledTimes(1);
       expect(customListener).not.toHaveBeenCalled();
-
-      globalRegistry.clearAll();
     });
   });
 
@@ -416,7 +388,6 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
     it('should maintain consistent event names', () => {
       const events: LifecycleEvent[] = ['created', 'stateChanged', 'disposed'];
 
-      // Ensure all events can be subscribed to
       events.forEach((event) => {
         expect(() => {
           globalRegistry.on(event, () => {});
@@ -425,21 +396,16 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
     });
 
     it('should maintain consistent listener signatures', () => {
-      // Type checking - these should compile without errors
-
-      // Created listener
       globalRegistry.on('created', (container: StateContainer<any>) => {
         expect(container).toBeDefined();
       });
 
-      // StateChanged listener
       globalRegistry.on('stateChanged', (container, prev, next) => {
         expect(container).toBeDefined();
         expect(prev).toBeDefined();
         expect(next).toBeDefined();
       });
 
-      // Disposed listener
       globalRegistry.on('disposed', (container) => {
         expect(container).toBeDefined();
       });
@@ -488,7 +454,6 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       expect(globalRegistry.getRefCount(TestCubit, 'test')).toBe(2);
       expect(instance1.isDisposed).toBe(false);
 
-      // Force dispose regardless of ref count
       release(TestCubit, 'test', true);
 
       expect(instance1.isDisposed).toBe(true);
@@ -503,8 +468,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
     });
 
     it('should emit disposed event on force dispose', () => {
-      const listener = vi.fn();
-      globalRegistry.on('disposed', listener);
+      const { listener } = withDisposedListener();
 
       const instance = acquire(TestCubit, 'test');
       release(TestCubit, 'test', true);

@@ -1,12 +1,9 @@
-/**
- * Cubit Tests
- * Testing simple state container pattern with patch support
- */
-
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Cubit } from './Cubit';
 import { StateContainer } from './StateContainer';
 import { clearAll } from '../registry';
+
+// ============ Test Implementations ============
 
 class CounterCubit extends Cubit<{ count: number }> {
   constructor() {
@@ -83,8 +80,7 @@ class TodoCubit extends Cubit<TodoState> {
   };
 
   get visibleTodos() {
-    const todos = this.state.todos;
-    const filter = this.state.filter;
+    const { todos, filter } = this.state;
 
     switch (filter) {
       case 'active':
@@ -102,7 +98,6 @@ class TodoCubit extends Cubit<TodoState> {
   }
 }
 
-// Test implementations
 interface UserState {
   id: string;
   name: string;
@@ -132,22 +127,34 @@ class UserCubit extends Cubit<UserState> {
     this.patch({ name, age });
   };
 
-  // Test that emit is still accessible
   replaceUser = (user: UserState): void => {
     this.emit(user);
   };
 }
 
-describe('Cubit', () => {
-  beforeEach(() => {
-    clearAll();
-  });
+// ============ Test Helpers ============
 
-  // Basic Functionality
+const resetState = () => {
+  clearAll();
+};
+
+// ============ Fixtures ============
+
+const fixture = {
+  counter: () => new CounterCubit(),
+  user: () => new UserCubit(),
+  todo: () => new TodoCubit(),
+};
+
+// ============ Tests ============
+
+describe('Cubit', () => {
+  beforeEach(resetState);
+  afterEach(resetState);
 
   describe('Basic Functionality', () => {
     it('should extend StateContainer properly', () => {
-      const cubit = new UserCubit();
+      const cubit = fixture.user();
 
       expect(cubit).toBeInstanceOf(Cubit);
       expect(cubit).toBeInstanceOf(StateContainer);
@@ -161,14 +168,14 @@ describe('Cubit', () => {
 
     describe('patch()', () => {
       it('should merge partial state for object types', () => {
-        const cubit = new UserCubit();
+        const cubit = fixture.user();
         const listener = vi.fn();
         cubit.subscribe(listener);
 
         cubit.updateName('Jane Doe');
 
         expect(cubit.state.name).toBe('Jane Doe');
-        expect(cubit.state.email).toBe('john@example.com'); // Other fields preserved
+        expect(cubit.state.email).toBe('john@example.com');
         expect(cubit.state.age).toBe(30);
         expect(listener).toHaveBeenCalledWith({
           id: '1',
@@ -179,20 +186,19 @@ describe('Cubit', () => {
       });
 
       it('should update multiple fields at once', () => {
-        const cubit = new UserCubit();
+        const cubit = fixture.user();
 
         cubit.updateMultiple('Alice', 25);
 
         expect(cubit.state.name).toBe('Alice');
         expect(cubit.state.age).toBe(25);
-        expect(cubit.state.id).toBe('1'); // Unchanged
-        expect(cubit.state.email).toBe('john@example.com'); // Unchanged
+        expect(cubit.state.id).toBe('1');
+        expect(cubit.state.email).toBe('john@example.com');
       });
 
       it('should maintain this binding (arrow function)', () => {
-        const cubit = new UserCubit();
+        const cubit = fixture.user();
 
-        // Extract method and call it without context
         const updateName = cubit.updateName;
         updateName('Bob');
 
@@ -200,7 +206,7 @@ describe('Cubit', () => {
       });
 
       it('should notify listeners on patch', () => {
-        const cubit = new UserCubit();
+        const cubit = fixture.user();
         const listener = vi.fn();
         cubit.subscribe(listener);
 
@@ -208,44 +214,32 @@ describe('Cubit', () => {
 
         expect(listener).toHaveBeenCalledOnce();
         expect(listener).toHaveBeenCalledWith(
-          expect.objectContaining({
-            email: 'newemail@example.com',
-          }),
+          expect.objectContaining({ email: 'newemail@example.com' }),
         );
       });
 
       it('should work alongside emit method', () => {
-        const cubit = new UserCubit();
+        const cubit = fixture.user();
         const listener = vi.fn();
         cubit.subscribe(listener);
 
-        // Use patch
         cubit.updateName('First Update');
         expect(listener).toHaveBeenCalledTimes(1);
 
-        // Use emit (full replacement)
-        cubit.replaceUser({
-          id: '2',
-          name: 'Replaced',
-          email: 'new@example.com',
-          age: 40,
-        });
+        cubit.replaceUser({ id: '2', name: 'Replaced', email: 'new@example.com', age: 40 });
         expect(listener).toHaveBeenCalledTimes(2);
         expect(cubit.state.id).toBe('2');
       });
     });
   });
 
-  // CounterCubit Tests
-
   describe('CounterCubit Example', () => {
     it('should initialize with zero', () => {
-      const counter = new CounterCubit();
-      expect(counter.state).toEqual({ count: 0 });
+      expect(fixture.counter().state).toEqual({ count: 0 });
     });
 
     it('should increment correctly', () => {
-      const counter = new CounterCubit();
+      const counter = fixture.counter();
       const listener = vi.fn();
       counter.subscribe(listener);
 
@@ -256,7 +250,7 @@ describe('Cubit', () => {
     });
 
     it('should decrement correctly', () => {
-      const counter = new CounterCubit();
+      const counter = fixture.counter();
 
       counter.increment();
       counter.increment();
@@ -266,7 +260,7 @@ describe('Cubit', () => {
     });
 
     it('should reset to zero', () => {
-      const counter = new CounterCubit();
+      const counter = fixture.counter();
 
       counter.increment();
       counter.increment();
@@ -277,7 +271,7 @@ describe('Cubit', () => {
     });
 
     it('should add custom amount', () => {
-      const counter = new CounterCubit();
+      const counter = fixture.counter();
 
       counter.addAmount(5);
       expect(counter.state).toEqual({ count: 5 });
@@ -290,25 +284,22 @@ describe('Cubit', () => {
     });
 
     it('should handle rapid operations', () => {
-      const counter = new CounterCubit();
+      const counter = fixture.counter();
 
       for (let i = 0; i < 100; i++) {
         counter.increment();
       }
-
       expect(counter.state).toEqual({ count: 100 });
 
       for (let i = 0; i < 50; i++) {
         counter.decrement();
       }
-
       expect(counter.state).toEqual({ count: 50 });
     });
 
     it('should maintain this binding for arrow functions', () => {
-      const counter = new CounterCubit();
+      const counter = fixture.counter();
 
-      // Extract methods and call without context
       const increment = counter.increment;
       const addAmount = counter.addAmount;
 
@@ -320,14 +311,11 @@ describe('Cubit', () => {
     });
   });
 
-  // TodoCubit Tests
-
   describe('TodoCubit Example', () => {
     let todoCubit: TodoCubit;
 
     beforeEach(() => {
-      clearAll();
-      todoCubit = new TodoCubit();
+      todoCubit = fixture.todo();
     });
 
     describe('Basic Todo Operations', () => {
@@ -345,7 +333,6 @@ describe('Cubit', () => {
         expect(todoCubit.state.todos[0].text).toBe('First todo');
         expect(todoCubit.state.todos[1].text).toBe('Second todo');
 
-        // IDs should be unique
         const ids = todoCubit.state.todos.map((t) => t.id);
         expect(new Set(ids).size).toBe(2);
       });
@@ -375,7 +362,6 @@ describe('Cubit', () => {
         todoCubit.addTodo('Third');
 
         const secondId = todoCubit.state.todos[1].id;
-
         todoCubit.toggleTodo(secondId);
 
         expect(todoCubit.state.todos[0].done).toBe(false);
@@ -389,7 +375,6 @@ describe('Cubit', () => {
         todoCubit.addTodo('Third');
 
         const secondId = todoCubit.state.todos[1].id;
-
         todoCubit.removeTodo(secondId);
 
         expect(todoCubit.state.todos.length).toBe(2);
@@ -414,7 +399,6 @@ describe('Cubit', () => {
         todoCubit.setFilter('active');
 
         expect(todoCubit.state.filter).toBe('active');
-        // Should preserve other state
         expect(todoCubit.state.todos).toEqual([]);
         expect(todoCubit.state.isLoading).toBe(false);
       });
@@ -436,7 +420,6 @@ describe('Cubit', () => {
         todoCubit.setLoading(true);
 
         expect(todoCubit.state.isLoading).toBe(true);
-        // Should preserve other state
         expect(todoCubit.state.todos).toEqual([]);
         expect(todoCubit.state.filter).toBe('all');
       });
@@ -456,7 +439,6 @@ describe('Cubit', () => {
         todoCubit.addTodo('Todo 2');
         todoCubit.addTodo('Todo 3');
 
-        // Toggle second todo to done
         const secondId = todoCubit.state.todos[1].id;
         todoCubit.toggleTodo(secondId);
       });
@@ -465,8 +447,7 @@ describe('Cubit', () => {
         it('should return all todos when filter is "all"', () => {
           todoCubit.setFilter('all');
 
-          const visible = todoCubit.visibleTodos;
-          expect(visible.length).toBe(3);
+          expect(todoCubit.visibleTodos.length).toBe(3);
         });
 
         it('should return only active todos when filter is "active"', () => {
@@ -489,11 +470,8 @@ describe('Cubit', () => {
           todoCubit.setFilter('active');
           expect(todoCubit.visibleTodos.length).toBe(2);
 
-          // Mark all as done
           todoCubit.state.todos.forEach((todo) => {
-            if (!todo.done) {
-              todoCubit.toggleTodo(todo.id);
-            }
+            if (!todo.done) todoCubit.toggleTodo(todo.id);
           });
 
           expect(todoCubit.visibleTodos.length).toBe(0);
@@ -510,7 +488,6 @@ describe('Cubit', () => {
 
           const firstId = todoCubit.state.todos[0].id;
           todoCubit.toggleTodo(firstId);
-
           expect(todoCubit.activeTodoCount).toBe(1);
 
           todoCubit.toggleTodo(firstId);
@@ -519,9 +496,7 @@ describe('Cubit', () => {
 
         it('should be zero when all todos are completed', () => {
           todoCubit.state.todos.forEach((todo) => {
-            if (!todo.done) {
-              todoCubit.toggleTodo(todo.id);
-            }
+            if (!todo.done) todoCubit.toggleTodo(todo.id);
           });
 
           expect(todoCubit.activeTodoCount).toBe(0);
@@ -543,7 +518,6 @@ describe('Cubit', () => {
         todoCubit.subscribe(listener);
         let callCount = 0;
 
-        // Add todos
         todoCubit.addTodo('Buy groceries');
         callCount++;
         todoCubit.addTodo('Write tests');
@@ -555,7 +529,6 @@ describe('Cubit', () => {
         expect(todoCubit.state.todos.length).toBe(3);
         expect(todoCubit.activeTodoCount).toBe(3);
 
-        // Complete first todo
         const firstId = todoCubit.state.todos[0].id;
         todoCubit.toggleTodo(firstId);
         callCount++;
@@ -563,17 +536,14 @@ describe('Cubit', () => {
         expect(listener).toHaveBeenCalledTimes(callCount);
         expect(todoCubit.activeTodoCount).toBe(2);
 
-        // Filter to active only
         todoCubit.setFilter('active');
         callCount++;
         expect(todoCubit.visibleTodos.length).toBe(2);
 
-        // Filter to completed
         todoCubit.setFilter('completed');
         callCount++;
         expect(todoCubit.visibleTodos.length).toBe(1);
 
-        // Remove completed todo
         todoCubit.removeTodo(firstId);
         callCount++;
 
@@ -583,12 +553,10 @@ describe('Cubit', () => {
       });
 
       it('should maintain state consistency across operations', () => {
-        // Add and manipulate many todos
         for (let i = 0; i < 10; i++) {
           todoCubit.addTodo(`Todo ${i}`);
         }
 
-        // Toggle some
         [0, 2, 4, 6, 8].forEach((index) => {
           const id = todoCubit.state.todos[index].id;
           todoCubit.toggleTodo(id);
@@ -603,11 +571,7 @@ describe('Cubit', () => {
         todoCubit.setFilter('active');
         expect(todoCubit.visibleTodos.length).toBe(5);
 
-        // Remove all completed
-        const completedIds = todoCubit.state.todos
-          .filter((t) => t.done)
-          .map((t) => t.id);
-
+        const completedIds = todoCubit.state.todos.filter((t) => t.done).map((t) => t.id);
         completedIds.forEach((id) => todoCubit.removeTodo(id));
 
         expect(todoCubit.state.todos.length).toBe(5);
@@ -624,7 +588,7 @@ describe('Cubit', () => {
 
   describe('patch() change detection', () => {
     it('should not emit when patching with identical primitive values', () => {
-      const cubit = new UserCubit();
+      const cubit = fixture.user();
       const listener = vi.fn();
       cubit.subscribe(listener);
 
@@ -634,7 +598,7 @@ describe('Cubit', () => {
     });
 
     it('should not emit when patching with empty object', () => {
-      const cubit = new UserCubit();
+      const cubit = fixture.user();
       const listener = vi.fn();
       cubit.subscribe(listener);
 
@@ -644,7 +608,7 @@ describe('Cubit', () => {
     });
 
     it('should emit when at least one value changes', () => {
-      const cubit = new UserCubit();
+      const cubit = fixture.user();
       const listener = vi.fn();
       cubit.subscribe(listener);
 
@@ -656,7 +620,7 @@ describe('Cubit', () => {
     });
 
     it('should preserve state reference when no values change', () => {
-      const cubit = new UserCubit();
+      const cubit = fixture.user();
       const stateBefore = cubit.state;
 
       cubit.patch({ name: 'John Doe' });
@@ -715,11 +679,9 @@ describe('Cubit', () => {
     });
   });
 
-  // Edge Cases
-
   describe('Edge Cases', () => {
     it('should handle patching with empty object', () => {
-      const cubit = new UserCubit();
+      const cubit = fixture.user();
       const originalState = { ...cubit.state };
 
       cubit.patch({});
@@ -728,7 +690,7 @@ describe('Cubit', () => {
     });
 
     it('should handle state after disposal', () => {
-      const cubit = new UserCubit();
+      const cubit = fixture.user();
 
       cubit.dispose();
 
