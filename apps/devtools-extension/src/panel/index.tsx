@@ -10,34 +10,43 @@ import {
   DevToolsInstancesBloc,
   DevToolsDiffBloc,
   DevToolsLogsBloc,
+  DevToolsDependencyBloc,
+  DevToolsMetricsBloc,
 } from '@blac/devtools-ui';
 import comm from './comm';
+
+function estimateStateSize(state: unknown): number {
+  try {
+    return JSON.stringify(state)?.length ?? 0;
+  } catch {
+    return 0;
+  }
+}
 
 function App() {
   return (
     <DevToolsPanel
       onMount={(instancesBloc: DevToolsInstancesBloc) => {
-        // Get the DiffBloc for storing previous states
         const diffBloc = acquire(DevToolsDiffBloc);
-
-        // Get the LogsBloc for logging events
         const logsBloc = acquire(DevToolsLogsBloc);
+        const dependencyBloc = acquire(DevToolsDependencyBloc);
+        const metricsBloc = acquire(DevToolsMetricsBloc);
 
         comm.connect();
         comm.onMessage((message) => {
           switch (message.type) {
             case 'PAGE_RELOAD':
-              // Page is reloading - clear all state
               flushSync(() => {
                 instancesBloc.setConnected(false);
                 instancesBloc.setAllInstances([]);
                 diffBloc.clearAllPreviousStates();
                 logsBloc.clearLogs();
+                dependencyBloc.setEdges([]);
+                metricsBloc.clearAll();
               });
               break;
 
             case 'BLAC_NOT_AVAILABLE':
-              // BlaC is not on this page
               flushSync(() => {
                 instancesBloc.setConnected(false);
                 instancesBloc.setAllInstances([]);
@@ -45,62 +54,46 @@ function App() {
               break;
 
             case 'INITIAL_STATE':
-              // Initial load - set all instances at once
               if (message.payload?.instances) {
                 flushSync(() => {
                   instancesBloc.setAllInstances(message.payload.instances);
                   instancesBloc.setConnected(true);
-                  // Load backend history into DiffBloc
                   for (const inst of message.payload.instances) {
                     if (inst.history?.length) {
                       diffBloc.loadInstanceHistory(inst.id, inst.history);
                     }
+                    if (inst.dependencies?.length) {
+                      dependencyBloc.addEdgesForInstance(inst.id, inst.dependencies);
+                    }
+                  }
+                  // Load dependency graph edges from initial state dump
+                  if (message.payload.dependencyGraph?.edges?.length) {
+                    dependencyBloc.setEdges(message.payload.dependencyGraph.edges);
                   }
                 });
               }
-              // Process event history to populate logs
               if (message.payload?.eventHistory) {
-                const eventHistory = message.payload.eventHistory;
                 flushSync(() => {
-                  eventHistory.forEach((event: any) => {
+                  message.payload.eventHistory!.forEach((event: any) => {
                     if (event.type === 'init') {
-                      logsBloc.addLog(
-                        'init',
-                        '__system__',
-                        'System',
-                        'DevTools',
-                        {
-                          instanceCount: Array.isArray(event.data)
-                            ? event.data.length
-                            : 0,
-                        },
-                      );
+                      logsBloc.addLog('init', '__system__', 'System', 'DevTools', {
+                        instanceCount: Array.isArray(event.data) ? event.data.length : 0,
+                      });
                     } else if (event.type === 'instance-created') {
-                      logsBloc.addLog(
-                        'created',
-                        event.data.id,
-                        event.data.className,
-                        event.data.name,
-                        { initialState: event.data.state },
-                      );
+                      logsBloc.addLog('created', event.data.id, event.data.className, event.data.name, {
+                        initialState: event.data.state,
+                      });
                     } else if (event.type === 'instance-disposed') {
-                      logsBloc.addLog(
-                        'disposed',
-                        event.data.id,
-                        event.data.className,
-                        event.data.name,
-                      );
+                      logsBloc.addLog('disposed', event.data.id, event.data.className, event.data.name);
                     } else if (event.type === 'instance-updated') {
                       logsBloc.addLog(
                         'state-changed',
                         event.data.id,
                         event.data.className,
                         event.data.name,
-                        {
-                          previousState: event.data.previousState,
-                          newState: event.data.state || event.data.currentState,
-                        },
+                        { previousState: event.data.previousState, newState: event.data.state || event.data.currentState },
                         event.data.callstack,
+                        event.data.trigger?.name,
                       );
                     }
                   });
@@ -109,7 +102,6 @@ function App() {
               break;
 
             case 'CACHED_STATE':
-              // Cached state on reconnect - set all instances
               if (message.payload?.instances) {
                 flushSync(() => {
                   instancesBloc.setAllInstances(message.payload.instances);
@@ -117,113 +109,92 @@ function App() {
               }
               break;
 
-            case 'ATOMIC_UPDATE':
-              // Atomic update - handle specific change
+            case 'ATOMIC_UPDATE': {
               if (!message.payload) break;
               const event = message.payload;
 
               flushSync(() => {
                 switch (event.type) {
-                  case 'init':
-                    // Clear all existing state
+                  case 'init': {
                     diffBloc.clearAllPreviousStates();
                     logsBloc.clearLogs();
-                    // Set new instances from init event
-                    const initInstances = (
-                      Array.isArray(event.data) ? event.data : []
-                    ).map((inst: any) => ({
-                      id: inst.id,
-                      className: inst.className,
-                      name: inst.name,
-                      isDisposed: inst.isDisposed,
-                      state: inst.state,
-                      lastStateChangeTimestamp: event.timestamp,
-                      createdAt: event.timestamp,
-                    }));
+                    dependencyBloc.setEdges([]);
+                    metricsBloc.clearAll();
+                    const initInstances = (Array.isArray(event.data) ? event.data : []).map(
+                      (inst: any) => ({
+                        id: inst.id,
+                        className: inst.className,
+                        name: inst.name,
+                        isDisposed: inst.isDisposed,
+                        state: inst.state,
+                        lastStateChangeTimestamp: event.timestamp,
+                        createdAt: event.timestamp,
+                      }),
+                    );
                     instancesBloc.setAllInstances(initInstances);
-                    // Log init event
-                    logsBloc.addLog(
-                      'init',
-                      '__system__',
-                      'System',
-                      'DevTools',
-                      { instanceCount: initInstances.length },
-                    );
+                    logsBloc.addLog('init', '__system__', 'System', 'DevTools', {
+                      instanceCount: initInstances.length,
+                    });
                     break;
+                  }
 
-                  case 'instance-created':
+                  case 'instance-created': {
+                    const d = event.data;
                     instancesBloc.addInstance({
-                      id: event.data.id,
-                      className: event.data.className,
-                      name: event.data.name,
-                      isDisposed: event.data.isDisposed,
-                      state: event.data.state,
+                      id: d.id,
+                      className: d.className,
+                      name: d.name,
+                      isDisposed: d.isDisposed,
+                      state: d.state,
                       lastStateChangeTimestamp: event.timestamp,
                       createdAt: event.timestamp,
+                      dependencies: d.dependencies,
                     });
-                    // Log instance creation
-                    logsBloc.addLog(
-                      'created',
-                      event.data.id,
-                      event.data.className,
-                      event.data.name,
-                      { initialState: event.data.state },
-                    );
+                    if (d.dependencies?.length) {
+                      dependencyBloc.addEdgesForInstance(d.id, d.dependencies);
+                    }
+                    logsBloc.addLog('created', d.id, d.className, d.name, {
+                      initialState: d.state,
+                    });
                     break;
+                  }
 
-                  case 'instance-disposed':
-                    // Get instance info before removing for the log
-                    const disposedInstance = instancesBloc.getInstance(
-                      event.data.id,
-                    );
-                    instancesBloc.removeInstance(event.data.id);
-                    // Clear previous state as well
-                    diffBloc.clearPreviousState(event.data.id);
-                    // Log disposal
-                    if (disposedInstance) {
-                      logsBloc.addLog(
-                        'disposed',
-                        event.data.id,
-                        disposedInstance.className,
-                        disposedInstance.name,
-                      );
+                  case 'instance-disposed': {
+                    const d = event.data;
+                    const disposedInst = instancesBloc.getInstance(d.id);
+                    instancesBloc.removeInstance(d.id);
+                    diffBloc.clearPreviousState(d.id);
+                    dependencyBloc.removeEdgesForInstance(d.id);
+                    metricsBloc.removeInstance(d.id);
+                    if (disposedInst) {
+                      logsBloc.addLog('disposed', d.id, disposedInst.className, disposedInst.name);
                     }
                     break;
+                  }
 
-                  case 'instance-updated':
-                    // Get current instance to capture previous state
-                    const currentInstance = instancesBloc.getInstance(
-                      event.data.id,
-                    );
-                    if (currentInstance) {
-                      // Store previous state in DiffBloc with callstack
-                      diffBloc.storePreviousState(
-                        event.data.id,
-                        currentInstance.state,
-                        event.data.callstack,
-                      );
+                  case 'instance-updated': {
+                    const d = event.data;
+                    const current = instancesBloc.getInstance(d.id);
+                    if (current) {
+                      diffBloc.storePreviousState(d.id, current.state, d.callstack, d.trigger?.name);
                     }
-                    // Update instance with new state
-                    instancesBloc.updateInstanceState(
-                      event.data.id,
-                      event.data.state,
-                    );
-                    // Log state change
+                    instancesBloc.updateInstanceState(d.id, d.state);
+                    metricsBloc.recordUpdate(d.id, d.className, estimateStateSize(d.state));
                     logsBloc.addLog(
                       'state-changed',
-                      event.data.id,
-                      event.data.className,
-                      event.data.name,
-                      {
-                        previousState: currentInstance?.state,
-                        newState: event.data.state,
-                      },
-                      event.data.callstack,
+                      d.id,
+                      d.className,
+                      d.name,
+                      { previousState: current?.state, newState: d.state },
+                      d.callstack,
+                      d.trigger?.name,
                     );
                     break;
+                  }
                 }
               });
               break;
+            }
           }
         });
       }}
@@ -237,6 +208,5 @@ function App() {
   );
 }
 
-// Mount the app
 const root = ReactDOM.createRoot(document.getElementById('root')!);
 root.render(<App />);

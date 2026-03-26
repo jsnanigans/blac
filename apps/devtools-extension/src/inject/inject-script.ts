@@ -38,7 +38,10 @@
         createdAt: inst.createdAt || Date.now(),
         hydrationStatus: inst.hydrationStatus,
         hydrationError: inst.hydrationError,
+        callstack: inst.callstack,
+        trigger: inst.trigger,
         history: inst.history,
+        dependencies: inst.dependencies,
       };
     });
   }
@@ -79,6 +82,7 @@
     const fullState = api.getFullState?.() || { instances: api.getInstances(), timestamp: Date.now() };
     const transformedInstances = transformInstancesForPanel(fullState.instances);
     const eventHistory = api.getEventHistory?.() || [];
+    const dependencyGraph = api.getDependencyGraph?.() || { nodes: [], edges: [] };
     sendMessage({
       type: 'INITIAL_STATE',
       payload: {
@@ -86,6 +90,7 @@
         eventHistory: eventHistory,
         version: api.getVersion(),
         timestamp: fullState.timestamp,
+        dependencyGraph,
       },
     });
 
@@ -134,11 +139,12 @@
     }
 
     switch (command.type) {
-      case 'GET_INSTANCES':
+      case 'GET_INSTANCES': {
         // Send full state dump with history (for late panel connections)
         const fullState = api.getFullState?.() || { instances: api.getInstances(), timestamp: Date.now() };
         const transformedInstances = transformInstancesForPanel(fullState.instances);
         const eventHistory = api.getEventHistory?.() || [];
+        const dependencyGraph = api.getDependencyGraph?.() || { nodes: [], edges: [] };
         sendMessage({
           type: 'INITIAL_STATE',
           payload: {
@@ -146,9 +152,11 @@
             eventHistory: eventHistory,
             version: api.getVersion(),
             timestamp: fullState.timestamp,
+            dependencyGraph,
           },
         });
         break;
+      }
 
       case 'TIME_TRAVEL':
         api.timeTravel?.(command.instanceId, command.state);

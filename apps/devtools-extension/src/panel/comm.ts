@@ -1,3 +1,19 @@
+export interface Trigger {
+  name: string;
+}
+
+export interface DependencyEdge {
+  fromId: string;
+  fromClass: string;
+  toClass: string;
+  toKey: string;
+}
+
+export interface DependencyGraph {
+  nodes: Array<{ id: string; className: string; name: string }>;
+  edges: DependencyEdge[];
+}
+
 /**
  * Panel-format instance (transformed by inject-script from backend format)
  */
@@ -13,7 +29,15 @@ export interface PanelInstance {
   hydrationStatus?: 'idle' | 'hydrating' | 'hydrated' | 'error';
   hydrationError?: string;
   callstack?: string;
-  history?: Array<{ state: any; previousState: any; timestamp: number; callstack?: string }>;
+  trigger?: Trigger;
+  dependencies?: DependencyEdge[];
+  history?: Array<{
+    state: any;
+    previousState: any;
+    timestamp: number;
+    callstack?: string;
+    trigger?: Trigger;
+  }>;
 }
 
 /**
@@ -21,10 +45,11 @@ export interface PanelInstance {
  */
 export type AtomicEvent =
   | { type: 'init'; timestamp: number; data: PanelInstance[] }
-  | { type: 'instance-created' | 'instance-updated' | 'instance-disposed'; timestamp: number; data: PanelInstance };
+  | { type: 'instance-created' | 'instance-updated' | 'instance-disposed'; timestamp: number; data: PanelInstance }
+  | { type: 'performance-warning'; timestamp: number; data: unknown };
 
 export type MessageIn =
-  | { type: 'INITIAL_STATE'; payload: { instances: PanelInstance[]; eventHistory?: AtomicEvent[]; version?: string; timestamp?: number } }
+  | { type: 'INITIAL_STATE'; payload: { instances: PanelInstance[]; eventHistory?: AtomicEvent[]; version?: string; timestamp?: number; dependencyGraph?: DependencyGraph } }
   | { type: 'ATOMIC_UPDATE'; payload: AtomicEvent }
   | { type: 'CACHED_STATE'; payload: { instances: PanelInstance[] } }
   | { type: 'BLAC_NOT_AVAILABLE'; payload: { reason: string } }
@@ -52,16 +77,10 @@ class Comm {
     return this._tabId;
   }
 
-  /**
-   * Send a message to the service worker
-   */
   sendMessage = (message: MessageOut) => {
     this.port.postMessage(message);
   };
 
-  /**
-   * Subscribe to messages from the service worker
-   */
   onMessage = (
     callback: (message: MessageIn, sender: chrome.runtime.Port) => void,
   ) => {
