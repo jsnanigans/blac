@@ -19,6 +19,11 @@ function classColor(className: string): string {
   return `hsl(${Math.abs(hash) % 360}, 60%, 55%)`;
 }
 
+function instanceKey(id: string): string {
+  const i = id.indexOf(':');
+  return i !== -1 ? id.slice(i + 1) : id;
+}
+
 interface DependenciesViewProps {
   instanceId: string;
   className: string;
@@ -30,64 +35,58 @@ interface DependenciesViewProps {
 const DepCard: FC<{
   color: string;
   className: string;
-  instanceName?: string;
+  instanceKey: string;
   navigable: boolean;
   onClick?: () => void;
-}> = ({ color, className, instanceName, navigable, onClick }) => {
-  const [hovered, setHovered] = useState(false);
-  return (
-    <div
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+}> = ({ color, className, instanceKey: key, navigable, onClick }) => (
+  <div
+    onClick={onClick}
+    onMouseEnter={(e) => {
+      if (navigable) e.currentTarget.style.background = T.bgHover;
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.background = T.bg2;
+    }}
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      padding: '5px 10px',
+      background: T.bg2,
+      border: `1px solid ${T.border1}`,
+      borderLeft: `3px solid ${color}`,
+      borderRadius: T.radius,
+      cursor: navigable ? 'pointer' : 'default',
+      gap: '6px',
+    }}
+  >
+    <span
       style={{
-        display: 'flex',
-        alignItems: 'center',
-        padding: '5px 10px',
-        background: hovered && navigable ? T.bgHover : T.bg2,
-        border: `1px solid ${hovered && navigable ? T.border2 : T.border1}`,
-        borderLeft: `3px solid ${color}`,
-        borderRadius: T.radius,
-        cursor: navigable ? 'pointer' : 'default',
-        gap: '6px',
-        flexShrink: 0,
+        fontSize: '11px',
+        fontWeight: 600,
+        color,
+        fontFamily: T.fontMono,
+        whiteSpace: 'nowrap',
       }}
     >
-      <span
-        style={{
-          fontSize: '11px',
-          fontWeight: 600,
-          color,
-          fontFamily: T.fontMono,
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-        }}
-      >
-        {className}
+      {className}
+    </span>
+    <span
+      style={{
+        fontSize: '10px',
+        color: T.text2,
+        fontFamily: T.fontMono,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      : {key}
+    </span>
+    {navigable && (
+      <span style={{ color: T.textAccent, fontSize: '10px', marginLeft: 'auto', flexShrink: 0 }}>
+        →
       </span>
-      {instanceName && (
-        <span
-          style={{
-            fontSize: '10px',
-            color: T.text2,
-            fontFamily: T.fontMono,
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
-        >
-          {instanceName}
-        </span>
-      )}
-      {navigable && (
-        <span style={{ color: T.textAccent, fontSize: '10px', marginLeft: 'auto', flexShrink: 0 }}>
-          →
-        </span>
-      )}
-    </div>
-  );
-};
+    )}
+  </div>
+);
 
 const DependenciesView: FC<DependenciesViewProps> = React.memo(
   ({ instanceId, className, edges, instances, onNavigate }) => {
@@ -178,7 +177,7 @@ const DependenciesView: FC<DependenciesViewProps> = React.memo(
                         key={i}
                         color={color}
                         className={edge.toClass}
-                        instanceName={edge.toKey}
+                        instanceKey={target ? instanceKey(target.id) : edge.toKey}
                         navigable={!!target}
                         onClick={target ? () => onNavigate(target.id) : undefined}
                       />
@@ -211,7 +210,7 @@ const DependenciesView: FC<DependenciesViewProps> = React.memo(
                         key={i}
                         color={color}
                         className={edge.fromClass}
-                        instanceName={source?.name}
+                        instanceKey={source ? instanceKey(source.id) : edge.fromClass}
                         navigable={!!source}
                         onClick={source ? () => onNavigate(source.id) : undefined}
                       />
@@ -310,7 +309,7 @@ export const StateViewer: FC<StateViewerProps> = ({ onTimeTravel }) => {
           {selectedInstance.className}
         </span>
         <span style={{ fontSize: '12px', color: T.text2, fontFamily: T.fontMono }}>
-          : {selectedInstance.name}
+          : {instanceKey(selectedInstance.id)}
         </span>
       </div>
 
