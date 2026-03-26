@@ -1,5 +1,6 @@
 import React, { FC, useState } from 'react';
 import JsonView from '@uiw/react-json-view';
+import { T } from '../theme';
 
 interface CurrentStateViewProps {
   state: any;
@@ -65,10 +66,10 @@ export const CurrentStateView: FC<CurrentStateViewProps> = React.memo(
               padding: '3px 0',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.color = '#569cd6';
+              e.currentTarget.style.color = T.textAccent;
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.color = '#fff';
+              e.currentTarget.style.color = T.text0;
             }}
           >
             <span
@@ -87,19 +88,21 @@ export const CurrentStateView: FC<CurrentStateViewProps> = React.memo(
             <button
               onClick={handleEdit}
               style={{
-                fontSize: '10px',
+                fontSize: '11px',
                 padding: '2px 8px',
                 background: 'transparent',
-                border: '1px solid #444',
-                color: '#888',
-                borderRadius: '3px',
+                border: `1px solid ${T.border2}`,
+                color: T.text1,
+                borderRadius: T.radius,
                 cursor: 'pointer',
               }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.color = '#d4d4d4';
+                (e.currentTarget as HTMLButtonElement).style.color = T.text0;
+                (e.currentTarget as HTMLButtonElement).style.background = T.bgHover;
               }}
               onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.color = '#888';
+                (e.currentTarget as HTMLButtonElement).style.color = T.text1;
+                (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
               }}
             >
               Edit
@@ -115,19 +118,19 @@ export const CurrentStateView: FC<CurrentStateViewProps> = React.memo(
               style={{
                 width: '100%',
                 height: '200px',
-                background: '#252526',
+                background: T.bg3,
                 color: '#d4d4d4',
-                border: '1px solid #444',
-                borderRadius: '3px',
+                border: `1px solid ${T.border2}`,
+                borderRadius: T.radius,
                 padding: '8px',
                 fontSize: '12px',
-                fontFamily: 'Monaco, Consolas, monospace',
+                fontFamily: T.fontMono,
                 resize: 'vertical',
                 boxSizing: 'border-box',
               }}
             />
             {editError && (
-              <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px' }}>
+              <div style={{ color: T.error, fontSize: '11px', marginTop: '4px' }}>
                 {editError}
               </div>
             )}
@@ -140,7 +143,7 @@ export const CurrentStateView: FC<CurrentStateViewProps> = React.memo(
                   background: '#10b981',
                   border: 'none',
                   color: '#fff',
-                  borderRadius: '3px',
+                  borderRadius: T.radius,
                   cursor: 'pointer',
                 }}
               >
@@ -152,9 +155,9 @@ export const CurrentStateView: FC<CurrentStateViewProps> = React.memo(
                   fontSize: '11px',
                   padding: '3px 10px',
                   background: 'transparent',
-                  border: '1px solid #444',
-                  color: '#888',
-                  borderRadius: '3px',
+                  border: `1px solid ${T.border2}`,
+                  color: T.text1,
+                  borderRadius: T.radius,
                   cursor: 'pointer',
                 }}
               >
@@ -166,11 +169,11 @@ export const CurrentStateView: FC<CurrentStateViewProps> = React.memo(
           isExpanded && (
             <div
               style={{
-                background: '#252526',
+                background: T.bg3,
                 padding: '10px',
-                borderRadius: '3px',
+                borderRadius: T.radius,
                 overflow: 'auto',
-                border: '1px solid #333',
+                border: `1px solid ${T.border1}`,
               }}
             >
               <JsonView

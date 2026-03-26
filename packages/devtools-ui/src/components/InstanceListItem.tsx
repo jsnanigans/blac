@@ -2,6 +2,7 @@ import React, { FC } from 'react';
 import type { InstanceData } from '../types';
 import InstanceId from './InstanceId';
 import { stringToColor } from '../utils/stringToColor';
+import { T } from '../theme';
 
 interface InstanceListItemProps {
   instance: InstanceData;
@@ -10,33 +11,29 @@ interface InstanceListItemProps {
   onSelect: () => void;
 }
 
-/**
- * Individual instance list item with animation effects
- */
 export const InstanceListItem: FC<InstanceListItemProps> = React.memo(
   ({ instance, isSelected, animationTriggers, onSelect }) => {
     const borderColor = stringToColor(instance.className);
     const now = Date.now();
 
-    // Only show lines for triggers within 300ms
     const activeTriggers = animationTriggers.filter((t) => now - t < 300);
 
     return (
       <div
         onClick={onSelect}
         style={{
-          padding: '6px 8px',
-          borderBottom: '1px solid #333',
+          padding: '6px 10px',
+          borderBottom: `1px solid ${T.border0}`,
           borderLeft: `3px solid ${borderColor}`,
           cursor: 'pointer',
-          background: isSelected ? '#094771' : 'transparent',
-          transition: 'background 0.2s',
+          background: isSelected ? T.bgSelected : 'transparent',
+          transition: 'background 0.15s',
           position: 'relative',
           overflow: 'hidden',
         }}
         onMouseEnter={(e) => {
           if (!isSelected) {
-            e.currentTarget.style.background = '#252526';
+            e.currentTarget.style.background = T.bg3;
           }
         }}
         onMouseLeave={(e) => {
@@ -45,14 +42,11 @@ export const InstanceListItem: FC<InstanceListItemProps> = React.memo(
           }
         }}
       >
-        {/* Render animated lines for each trigger */}
         {activeTriggers.map((triggerTime) => (
           <div
             key={triggerTime}
             className="sweep-line"
-            style={{
-              background: borderColor,
-            }}
+            style={{ background: borderColor }}
           />
         ))}
 
@@ -61,18 +55,20 @@ export const InstanceListItem: FC<InstanceListItemProps> = React.memo(
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            gap: '6px',
           }}
         >
           <InstanceId id={instance.id} />
-          <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '3px', alignItems: 'center', flexShrink: 0 }}>
             {instance.hydrationStatus === 'hydrating' && (
               <span
                 style={{
-                  fontSize: '10px',
-                  padding: '2px 6px',
-                  background: '#854d0e',
-                  color: '#fde68a',
-                  borderRadius: '3px',
+                  fontSize: '9px',
+                  padding: '1px 5px',
+                  background: T.warningBg,
+                  color: T.warningText,
+                  borderRadius: T.radiusSm,
+                  letterSpacing: '0.3px',
                 }}
               >
                 HYDRATING
@@ -82,24 +78,27 @@ export const InstanceListItem: FC<InstanceListItemProps> = React.memo(
               <span
                 title={instance.hydrationError}
                 style={{
-                  fontSize: '10px',
-                  padding: '2px 6px',
-                  background: '#7f1d1d',
-                  color: '#fca5a5',
-                  borderRadius: '3px',
+                  fontSize: '9px',
+                  padding: '1px 5px',
+                  background: T.errorBg,
+                  color: T.errorText,
+                  borderRadius: T.radiusSm,
                   cursor: 'help',
+                  letterSpacing: '0.3px',
                 }}
               >
-                HYDRATION ERROR
+                ERR
               </span>
             )}
             {instance.isDisposed && (
               <span
                 style={{
-                  fontSize: '10px',
-                  padding: '2px 6px',
-                  background: '#f44336',
-                  borderRadius: '3px',
+                  fontSize: '9px',
+                  padding: '1px 5px',
+                  background: '#3a1a1a',
+                  color: T.error,
+                  borderRadius: T.radiusSm,
+                  letterSpacing: '0.3px',
                 }}
               >
                 DISPOSED

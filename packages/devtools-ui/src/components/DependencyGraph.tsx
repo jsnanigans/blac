@@ -2,6 +2,7 @@ import React, { FC, useMemo, useState } from 'react';
 import { useBloc } from '@blac/react';
 import { DevToolsInstancesBloc, DevToolsDependencyBloc, DevToolsLayoutBloc } from '../blocs';
 import type { DependencyEdge } from '../types';
+import { T } from '../theme';
 
 interface GraphNode {
   id: string;
@@ -101,7 +102,7 @@ function classColor(className: string): string {
     hash = className.charCodeAt(i) + ((hash << 5) - hash);
   }
   const hue = Math.abs(hash) % 360;
-  return `hsl(${hue}, 60%, 45%)`;
+  return `hsl(${hue}, 45%, 55%)`;
 }
 
 export const DependencyGraph: FC = React.memo(() => {
@@ -170,33 +171,45 @@ export const DependencyGraph: FC = React.memo(() => {
           style={{
             marginBottom: '12px',
             fontSize: '11px',
-            color: '#888',
+            color: T.text1,
           }}
         >
-          No dependencies detected. Use <code style={{ color: '#569cd6' }}>this.depend(OtherBloc)</code> in your blocs to track dependencies.
+          No dependencies detected. Use <code style={{ color: T.textAccent }}>this.depend(OtherBloc)</code> in your blocs to track dependencies.
         </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-          {instances.map((inst) => (
-            <div
-              key={inst.id}
-              style={{
-                padding: '6px 10px',
-                background: '#252526',
-                border: `1px solid ${classColor(inst.className)}`,
-                borderRadius: '4px',
-                fontSize: '11px',
-                color: '#ccc',
-                cursor: 'pointer',
-              }}
-              onClick={() => {
-                layoutBloc.setActiveTab('Instances');
-                layoutBloc.setSelectedId(inst.id);
-              }}
-            >
-              <span style={{ color: classColor(inst.className) }}>{inst.className}</span>
-              <span style={{ color: '#666', marginLeft: '6px', fontSize: '10px' }}>{inst.name}</span>
-            </div>
-          ))}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+          {instances.map((inst) => {
+            const color = classColor(inst.className);
+            return (
+              <div
+                key={inst.id}
+                style={{
+                  padding: '5px 10px',
+                  background: T.bg3,
+                  border: `1px solid ${T.border1}`,
+                  borderLeft: `3px solid ${color}`,
+                  borderRadius: T.radius,
+                  fontSize: '11px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+                onClick={() => {
+                  layoutBloc.setActiveTab('Instances');
+                  layoutBloc.setSelectedId(inst.id);
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.background = T.bgHover;
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.background = T.bg3;
+                }}
+              >
+                <span style={{ color }}>{inst.className}</span>
+                <span style={{ color: T.text2, fontSize: '10px' }}>{inst.name}</span>
+              </div>
+            );
+          })}
         </div>
       </div>
     );

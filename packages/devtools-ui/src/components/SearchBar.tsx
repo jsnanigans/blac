@@ -1,10 +1,8 @@
 import React, { FC } from 'react';
 import { useBloc } from '@blac/react';
 import { DevToolsSearchBloc } from '../blocs';
+import { T } from '../theme';
 
-/**
- * Search input for filtering instances
- */
 export const SearchBar: FC = React.memo(() => {
   const [{ query }, bloc] = useBloc(DevToolsSearchBloc);
 
@@ -12,30 +10,32 @@ export const SearchBar: FC = React.memo(() => {
     <div
       style={{
         padding: '6px 8px',
-        borderBottom: '1px solid #444',
-        background: '#252526',
+        borderBottom: `1px solid ${T.border1}`,
+        background: T.bg3,
+        flexShrink: 0,
       }}
     >
       <input
         type="text"
-        placeholder="Search instances..."
+        placeholder="Search instances…"
         value={query}
         onChange={(e) => bloc.setQuery(e.target.value)}
         style={{
           width: '100%',
           padding: '4px 8px',
-          background: '#1e1e1e',
-          border: '1px solid #444',
-          borderRadius: '3px',
-          color: '#fff',
+          background: T.bg2,
+          border: `1px solid ${T.border2}`,
+          borderRadius: T.radius,
+          color: T.text0,
           fontSize: '11px',
           outline: 'none',
+          boxSizing: 'border-box',
         }}
         onFocus={(e) => {
-          e.currentTarget.style.borderColor = '#007acc';
+          e.currentTarget.style.borderColor = T.borderAccent;
         }}
         onBlur={(e) => {
-          e.currentTarget.style.borderColor = '#444';
+          e.currentTarget.style.borderColor = T.border2;
         }}
       />
     </div>

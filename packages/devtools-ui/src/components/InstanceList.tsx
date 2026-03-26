@@ -7,6 +7,7 @@ import {
 } from '../blocs';
 import { SearchBar } from './SearchBar';
 import { InstanceListItem } from './InstanceListItem';
+import { T } from '../theme';
 
 /**
  * Left panel containing search and instance list
@@ -22,10 +23,10 @@ export const InstanceList: FC<{ width?: number }> = React.memo(({ width = 300 })
     <div
       style={{
         width: `${width}px`,
-        borderRight: '1px solid #444',
+        borderRight: `1px solid ${T.border1}`,
         display: 'flex',
         flexDirection: 'column',
-        background: '#1e1e1e',
+        background: T.bg2,
       }}
     >
       {/* Sweep line animation CSS */}

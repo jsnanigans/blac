@@ -6,6 +6,7 @@ import InstanceId from './InstanceId';
 import { CurrentStateView } from './CurrentStateView';
 import { StateHistoryView } from './StateHistoryView';
 import { StateDiffView } from './StateDiffView';
+import { T } from '../theme';
 
 interface StateViewerProps {
   onTimeTravel?: (instanceId: string, state: any) => void;
@@ -58,8 +59,8 @@ const DependenciesView: FC<DependenciesViewProps> = React.memo(
             userSelect: 'none',
             padding: '3px 0',
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = '#569cd6'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = '#fff'; }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = T.textAccent; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = T.text0; }}
         >
           <span
             style={{
@@ -263,8 +264,8 @@ export const StateViewer: FC<StateViewerProps> = ({ onTimeTravel }) => {
           position: 'sticky',
           top: 0,
           zIndex: 10,
-          background: '#1e1e1e',
-          borderBottom: '1px solid #444',
+          background: T.bg2,
+          borderBottom: `1px solid ${T.border1}`,
           padding: '8px 12px',
         }}
       >
@@ -280,9 +281,9 @@ export const StateViewer: FC<StateViewerProps> = ({ onTimeTravel }) => {
           alignItems: 'center',
           gap: '8px',
           padding: '4px 12px',
-          borderBottom: '1px solid #333',
+          borderBottom: `1px solid ${T.border1}`,
           fontSize: '10px',
-          color: '#555',
+          color: T.text2,
           flexWrap: 'wrap',
         }}
       >
