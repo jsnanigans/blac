@@ -98,7 +98,9 @@ describe('Dependency Tracker', () => {
         const tracker = fixture.tracker<SimpleState>();
         const state = { count: 0, name: 'test' };
 
-        runSession(tracker, state, (proxy) => { void proxy.count; });
+        runSession(tracker, state, (proxy) => {
+          void proxy.count;
+        });
 
         expect(tracker.currentRenderPaths.has('count')).toBe(true);
       });
@@ -107,8 +109,12 @@ describe('Dependency Tracker', () => {
         const tracker = fixture.tracker<SimpleState>();
         const state = { count: 0, name: 'test' };
 
-        runSession(tracker, state, (proxy) => { void proxy.count; });
-        runSession(tracker, state, (proxy) => { void proxy.name; });
+        runSession(tracker, state, (proxy) => {
+          void proxy.count;
+        });
+        runSession(tracker, state, (proxy) => {
+          void proxy.name;
+        });
 
         expect(tracker.currentRenderPaths.has('name')).toBe(true);
       });
@@ -143,7 +149,9 @@ describe('Dependency Tracker', () => {
         const tracker = fixture.tracker<SimpleState>();
         const state = { count: 5, name: 'test' };
 
-        runSession(tracker, state, (proxy) => { void proxy.count; });
+        runSession(tracker, state, (proxy) => {
+          void proxy.count;
+        });
 
         expect(tracker.currentRenderPaths.has('count')).toBe(true);
         expect(tracker.currentRenderPaths.has('name')).toBe(false);
@@ -192,7 +200,9 @@ describe('Dependency Tracker', () => {
         });
 
         expect(tracker.currentRenderPaths.has('data.nested.value')).toBe(true);
-        expect(tracker.currentRenderPaths.has('data.nested.list[0].name')).toBe(true);
+        expect(tracker.currentRenderPaths.has('data.nested.list[0].name')).toBe(
+          true,
+        );
       });
     });
 
@@ -219,7 +229,9 @@ describe('Dependency Tracker', () => {
         const tracker = fixture.tracker<ArrayState>();
         const state: ArrayState = { items: [1, 2, 3], tags: ['a', 'b'] };
 
-        runSession(tracker, state, (proxy) => { void proxy.items.length; });
+        runSession(tracker, state, (proxy) => {
+          void proxy.items.length;
+        });
 
         expect(tracker.currentRenderPaths.has('items.length')).toBe(true);
       });
@@ -230,7 +242,9 @@ describe('Dependency Tracker', () => {
         const tracker = fixture.tracker<SimpleState>();
         const state = { count: 10, name: 'test' };
 
-        runSession(tracker, state, (proxy) => { void proxy.count; });
+        runSession(tracker, state, (proxy) => {
+          void proxy.count;
+        });
 
         expect(tracker.pathCache.has('count')).toBe(true);
         expect(tracker.pathCache.get('count')?.value).toBe(10);
@@ -240,10 +254,14 @@ describe('Dependency Tracker', () => {
         const tracker = fixture.tracker<SimpleState>();
         const state = { count: 10, name: 'test' };
 
-        runSession(tracker, state, (proxy) => { void proxy.count; });
+        runSession(tracker, state, (proxy) => {
+          void proxy.count;
+        });
         expect(tracker.currentRenderPaths.has('count')).toBe(true);
 
-        runSession(tracker, state, (proxy) => { void proxy.name; });
+        runSession(tracker, state, (proxy) => {
+          void proxy.name;
+        });
         expect(tracker.previousRenderPaths.has('count')).toBe(true);
         expect(tracker.currentRenderPaths.has('name')).toBe(true);
       });
@@ -252,7 +270,9 @@ describe('Dependency Tracker', () => {
         const tracker = fixture.tracker<SimpleState>();
         const state = { count: 10, name: 'test' };
 
-        runSession(tracker, state, (proxy) => { void proxy.count; });
+        runSession(tracker, state, (proxy) => {
+          void proxy.count;
+        });
 
         expect(tracker.currentRenderPaths.has('count')).toBe(true);
         expect(tracker.currentRenderPaths.size).toBe(1);
@@ -261,10 +281,14 @@ describe('Dependency Tracker', () => {
       it('should update cache with new values', () => {
         const tracker = fixture.tracker<SimpleState>();
 
-        runSession(tracker, { count: 10, name: 'test' }, (proxy) => { void proxy.count; });
+        runSession(tracker, { count: 10, name: 'test' }, (proxy) => {
+          void proxy.count;
+        });
         expect(tracker.pathCache.get('count')?.value).toBe(10);
 
-        runSession(tracker, { count: 20, name: 'test' }, (proxy) => { void proxy.count; });
+        runSession(tracker, { count: 20, name: 'test' }, (proxy) => {
+          void proxy.count;
+        });
         expect(tracker.pathCache.get('count')?.value).toBe(20);
       });
     });
@@ -276,16 +300,22 @@ describe('Dependency Tracker', () => {
         const tracker = fixture.tracker<SimpleState>();
         const state = { count: 10, name: 'test' };
 
-        runSession(tracker, state, (proxy) => { void proxy.count; });
+        runSession(tracker, state, (proxy) => {
+          void proxy.count;
+        });
 
-        expect(hasDependencyChanges(tracker, { count: 20, name: 'test' })).toBe(true);
+        expect(hasDependencyChanges(tracker, { count: 20, name: 'test' })).toBe(
+          true,
+        );
       });
 
       it('should return false when no changes detected', () => {
         const tracker = fixture.tracker<SimpleState>();
         const state = { count: 10, name: 'test' };
 
-        runSession(tracker, state, (proxy) => { void proxy.count; });
+        runSession(tracker, state, (proxy) => {
+          void proxy.count;
+        });
 
         expect(hasDependencyChanges(tracker, state)).toBe(false);
       });
@@ -294,9 +324,13 @@ describe('Dependency Tracker', () => {
         const tracker = fixture.tracker<SimpleState>();
         const state = { count: 10, name: 'test' };
 
-        runSession(tracker, state, (proxy) => { void proxy.count; });
+        runSession(tracker, state, (proxy) => {
+          void proxy.count;
+        });
 
-        expect(hasDependencyChanges(tracker, { count: 10, name: 'updated' })).toBe(false);
+        expect(
+          hasDependencyChanges(tracker, { count: 10, name: 'updated' }),
+        ).toBe(false);
       });
 
       it('should use shallow equality for primitive values', () => {
@@ -308,20 +342,30 @@ describe('Dependency Tracker', () => {
           void proxy.name;
         });
 
-        expect(hasDependencyChanges(tracker, { count: 10, name: 'test' })).toBe(false);
+        expect(hasDependencyChanges(tracker, { count: 10, name: 'test' })).toBe(
+          false,
+        );
       });
 
       it('should detect deep path changes', () => {
         const tracker = fixture.tracker<NestedState>();
         const state: NestedState = {
-          user: { name: 'John', profile: { age: 30, email: 'john@example.com' } },
+          user: {
+            name: 'John',
+            profile: { age: 30, email: 'john@example.com' },
+          },
           settings: { theme: 'light', notifications: true },
         };
 
-        runSession(tracker, state, (proxy) => { void proxy.user.profile.age; });
+        runSession(tracker, state, (proxy) => {
+          void proxy.user.profile.age;
+        });
 
         const newState: NestedState = {
-          user: { name: 'John', profile: { age: 31, email: 'john@example.com' } },
+          user: {
+            name: 'John',
+            profile: { age: 31, email: 'john@example.com' },
+          },
           settings: { theme: 'light', notifications: true },
         };
         expect(hasDependencyChanges(tracker, newState)).toBe(true);
@@ -336,7 +380,12 @@ describe('Dependency Tracker', () => {
           void proxy.items.length;
         });
 
-        expect(hasDependencyChanges(tracker, { items: [1, 2, 3, 4], tags: ['a', 'b'] })).toBe(true);
+        expect(
+          hasDependencyChanges(tracker, {
+            items: [1, 2, 3, 4],
+            tags: ['a', 'b'],
+          }),
+        ).toBe(true);
       });
 
       it('should return true when no paths are tracked', () => {
@@ -360,7 +409,9 @@ describe('Dependency Tracker', () => {
           void proxy.optional;
         });
 
-        expect(hasDependencyChanges(tracker, { value: null, optional: undefined })).toBe(true);
+        expect(
+          hasDependencyChanges(tracker, { value: null, optional: undefined }),
+        ).toBe(true);
       });
     });
 
@@ -386,7 +437,9 @@ describe('Dependency Tracker', () => {
         const tracker = fixture.tracker<SimpleState>();
         const state = { count: 10, name: 'test' };
 
-        runSession(tracker, state, (proxy) => { void proxy.count; });
+        runSession(tracker, state, (proxy) => {
+          void proxy.count;
+        });
 
         expect(hasTrackedData(tracker)).toBe(true);
       });
@@ -395,8 +448,12 @@ describe('Dependency Tracker', () => {
         const tracker = fixture.tracker<SimpleState>();
         const state = { count: 10, name: 'test' };
 
-        runSession(tracker, state, (proxy) => { void proxy.count; });
-        runSession(tracker, state, (proxy) => { void proxy.name; });
+        runSession(tracker, state, (proxy) => {
+          void proxy.count;
+        });
+        runSession(tracker, state, (proxy) => {
+          void proxy.name;
+        });
 
         expect(tracker.previousRenderPaths.size).toBeGreaterThan(0);
         expect(hasTrackedData(tracker)).toBe(true);
@@ -424,18 +481,24 @@ describe('Dependency Tracker', () => {
       });
 
       expect(tracker.pathCache.size).toBe(100);
-      expect(hasDependencyChanges(tracker, { ...state, field50: 999 })).toBe(true);
+      expect(hasDependencyChanges(tracker, { ...state, field50: 999 })).toBe(
+        true,
+      );
     });
 
     it('should cleanup unused paths periodically', () => {
       const tracker = fixture.tracker<SimpleState>();
       const state = { count: 10, name: 'test' };
 
-      runSession(tracker, state, (proxy) => { void proxy.count; });
+      runSession(tracker, state, (proxy) => {
+        void proxy.count;
+      });
       expect(tracker.pathCache.has('count')).toBe(true);
 
       for (let i = 0; i < 10; i++) {
-        runSession(tracker, state, (proxy) => { void proxy.name; });
+        runSession(tracker, state, (proxy) => {
+          void proxy.name;
+        });
       }
 
       expect(tracker.pathCache.has('name')).toBe(true);
@@ -452,14 +515,20 @@ describe('Dependency Tracker', () => {
       const state: RefState = { obj, arr };
 
       const tracker = fixture.tracker<RefState>();
-      runSession(tracker, state, (proxy) => { void proxy.obj.value; });
+      runSession(tracker, state, (proxy) => {
+        void proxy.obj.value;
+      });
 
       expect(tracker.currentRenderPaths.has('obj.value')).toBe(true);
       expect(tracker.currentRenderPaths.has('obj')).toBe(false);
 
       expect(hasDependencyChanges(tracker, { obj, arr })).toBe(false);
-      expect(hasDependencyChanges(tracker, { obj: { value: 10 }, arr })).toBe(false);
-      expect(hasDependencyChanges(tracker, { obj: { value: 20 }, arr })).toBe(true);
+      expect(hasDependencyChanges(tracker, { obj: { value: 10 }, arr })).toBe(
+        false,
+      );
+      expect(hasDependencyChanges(tracker, { obj: { value: 20 }, arr })).toBe(
+        true,
+      );
     });
 
     it('should handle rapid tracking sessions', () => {
@@ -471,10 +540,14 @@ describe('Dependency Tracker', () => {
       }
 
       for (let i = 0; i < 50; i++) {
-        runSession(tracker, states[i], (proxy) => { void proxy.count; });
+        runSession(tracker, states[i], (proxy) => {
+          void proxy.count;
+        });
       }
 
-      expect(hasDependencyChanges(tracker, { count: 999, name: 'final' })).toBe(true);
+      expect(hasDependencyChanges(tracker, { count: 999, name: 'final' })).toBe(
+        true,
+      );
     });
 
     it('should handle empty objects', () => {
@@ -486,10 +559,14 @@ describe('Dependency Tracker', () => {
       const tracker = fixture.tracker<EmptyState>();
       const state: EmptyState = { value: 10, empty: {} };
 
-      runSession(tracker, state, (proxy) => { void proxy.value; });
+      runSession(tracker, state, (proxy) => {
+        void proxy.value;
+      });
 
       expect(hasDependencyChanges(tracker, state)).toBe(false);
-      expect(hasDependencyChanges(tracker, { value: 10, empty: {} })).toBe(false);
+      expect(hasDependencyChanges(tracker, { value: 10, empty: {} })).toBe(
+        false,
+      );
     });
 
     it('should handle circular references gracefully', () => {
@@ -501,7 +578,9 @@ describe('Dependency Tracker', () => {
       const tracker = fixture.tracker<CircularState>();
       const state: CircularState = { value: 10 };
 
-      runSession(tracker, state, (proxy) => { void proxy.value; });
+      runSession(tracker, state, (proxy) => {
+        void proxy.value;
+      });
 
       expect(tracker.pathCache.has('value')).toBe(true);
     });
@@ -575,7 +654,9 @@ describe('Dependency Tracker', () => {
   describe('Fine-Grained Path Optimization', () => {
     describe('optimizeTrackedPaths()', () => {
       it('should remove parent when only leaf accessed', () => {
-        const optimized = optimizeTrackedPaths(new Set(['user', 'user.profile', 'user.profile.bio']));
+        const optimized = optimizeTrackedPaths(
+          new Set(['user', 'user.profile', 'user.profile.bio']),
+        );
 
         expect(optimized.has('user.profile.bio')).toBe(true);
         expect(optimized.has('user.profile')).toBe(false);
@@ -584,7 +665,9 @@ describe('Dependency Tracker', () => {
       });
 
       it('should keep siblings without parent', () => {
-        const optimized = optimizeTrackedPaths(new Set(['user', 'user.name', 'user.age']));
+        const optimized = optimizeTrackedPaths(
+          new Set(['user', 'user.name', 'user.age']),
+        );
 
         expect(optimized.has('user.name')).toBe(true);
         expect(optimized.has('user.age')).toBe(true);
@@ -605,7 +688,9 @@ describe('Dependency Tracker', () => {
       });
 
       it('should handle array indices separately but keep parent', () => {
-        const optimized = optimizeTrackedPaths(new Set(['items', 'items[0]', 'items[1]']));
+        const optimized = optimizeTrackedPaths(
+          new Set(['items', 'items[0]', 'items[1]']),
+        );
 
         expect(optimized.has('items[0]')).toBe(true);
         expect(optimized.has('items[1]')).toBe(true);
@@ -614,7 +699,9 @@ describe('Dependency Tracker', () => {
       });
 
       it('should handle array properties and restore parent', () => {
-        const optimized = optimizeTrackedPaths(new Set(['items', 'items.length', 'items[0]']));
+        const optimized = optimizeTrackedPaths(
+          new Set(['items', 'items.length', 'items[0]']),
+        );
 
         expect(optimized.has('items.length')).toBe(true);
         expect(optimized.has('items[0]')).toBe(true);
@@ -636,7 +723,9 @@ describe('Dependency Tracker', () => {
       });
 
       it('should handle top-level properties', () => {
-        const optimized = optimizeTrackedPaths(new Set(['count', 'name', 'theme']));
+        const optimized = optimizeTrackedPaths(
+          new Set(['count', 'name', 'theme']),
+        );
 
         expect(optimized.has('count')).toBe(true);
         expect(optimized.has('name')).toBe(true);
@@ -694,7 +783,9 @@ describe('Dependency Tracker', () => {
       });
 
       expect(tracker.currentRenderPaths.has('user.personal.name')).toBe(true);
-      expect(tracker.currentRenderPaths.has('user.preferences.theme')).toBe(true);
+      expect(tracker.currentRenderPaths.has('user.preferences.theme')).toBe(
+        true,
+      );
       expect(tracker.currentRenderPaths.has('user')).toBe(false);
       expect(tracker.currentRenderPaths.has('user.personal')).toBe(false);
       expect(tracker.currentRenderPaths.has('user.preferences')).toBe(false);
@@ -708,7 +799,10 @@ describe('Dependency Tracker', () => {
 
       const newState2: TestState = {
         ...state,
-        user: { ...state.user, personal: { ...state.user.personal, name: 'Jane' } },
+        user: {
+          ...state.user,
+          personal: { ...state.user.personal, name: 'Jane' },
+        },
       };
       expect(hasDependencyChanges(tracker, newState2)).toBe(true);
     });

@@ -32,7 +32,9 @@ export class NativeIndexedDbAdapter implements IndexedDbPersistAdapter {
     return result ?? null;
   }
 
-  async put<TPayload = unknown>(record: PersistedRecord<TPayload>): Promise<void> {
+  async put<TPayload = unknown>(
+    record: PersistedRecord<TPayload>,
+  ): Promise<void> {
     const db = await this.open();
     const tx = db.transaction(this.storeName, 'readwrite');
     tx.objectStore(this.storeName).put(record);

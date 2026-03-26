@@ -47,11 +47,17 @@ describe('@blac/adapter edge cases', () => {
   it('manualDepsSubscribe with equal array deps prevents callback', () => {
     const bloc = new SimpleBloc();
     const adapterState = manualDepsInit(bloc);
-    const config = { dependencies: (s: { count: number; name: string }) => [s.count] };
+    const config = {
+      dependencies: (s: { count: number; name: string }) => [s.count],
+    };
     const callback = vi.fn();
 
     manualDepsSnapshot(bloc, adapterState, config)();
-    const unsubscribe = manualDepsSubscribe(bloc, adapterState, config)(callback);
+    const unsubscribe = manualDepsSubscribe(
+      bloc,
+      adapterState,
+      config,
+    )(callback);
 
     bloc.setName('changed');
 
@@ -62,11 +68,17 @@ describe('@blac/adapter edge cases', () => {
   it('manualDepsSubscribe with changed deps triggers callback', () => {
     const bloc = new SimpleBloc();
     const adapterState = manualDepsInit(bloc);
-    const config = { dependencies: (s: { count: number; name: string }) => [s.count] };
+    const config = {
+      dependencies: (s: { count: number; name: string }) => [s.count],
+    };
     const callback = vi.fn();
 
     manualDepsSnapshot(bloc, adapterState, config)();
-    const unsubscribe = manualDepsSubscribe(bloc, adapterState, config)(callback);
+    const unsubscribe = manualDepsSubscribe(
+      bloc,
+      adapterState,
+      config,
+    )(callback);
 
     bloc.increment();
 

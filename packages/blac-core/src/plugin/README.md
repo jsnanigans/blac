@@ -13,11 +13,11 @@ const myPlugin: BlacPlugin = {
   name: 'my-plugin',
   version: '1.0.0',
 
-  onInstall(context) { },
-  onUninstall() { },
-  onInstanceCreated(instance, context) { },
-  onStateChanged(instance, previousState, currentState, callstack, context) { },
-  onInstanceDisposed(instance, context) { },
+  onInstall(context) {},
+  onUninstall() {},
+  onInstanceCreated(instance, context) {},
+  onStateChanged(instance, previousState, currentState, callstack, context) {},
+  onInstanceDisposed(instance, context) {},
 };
 
 getPluginManager().install(myPlugin, {

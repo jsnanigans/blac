@@ -289,6 +289,5 @@ describe('@blac/adapter', () => {
       const { release } = await import('../index');
       expect(typeof release).toBe('function');
     });
-
   });
 });

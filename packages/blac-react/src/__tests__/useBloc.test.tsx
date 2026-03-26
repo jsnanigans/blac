@@ -6,11 +6,11 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { renderToString } from 'react-dom/server';
-import { StateContainer, clearAll } from '@blac/core';
+import { Cubit, clearAll } from '@blac/core';
 import { useBloc } from '../useBloc';
 
 // Test implementations
-class CounterBloc extends StateContainer<{ count: number }> {
+class CounterBloc extends Cubit<{ count: number }> {
   constructor() {
     super({ count: 0 });
   }
@@ -24,17 +24,7 @@ class CounterBloc extends StateContainer<{ count: number }> {
   };
 }
 
-// class GenericBloc<T> extends StateContainer<T> {
-//   constructor(initialState: T) {
-//     super(initialState);
-//   }
-//
-//   setState = (newState: T) => {
-//     this.update(() => newState);
-//   };
-// }
-
-class IsolatedBloc extends StateContainer<{ count: number }> {
+class IsolatedBloc extends Cubit<{ count: number }> {
   constructor() {
     super({ count: 0 });
   }
@@ -136,8 +126,12 @@ describe('useBloc', () => {
 
   describe('Isolated Instances', () => {
     it('should create new instance for each hook', () => {
-      const { result: result1 } = renderHook(() => useBloc(IsolatedBloc, { instanceId: 'iso-a' }));
-      const { result: result2 } = renderHook(() => useBloc(IsolatedBloc, { instanceId: 'iso-b' }));
+      const { result: result1 } = renderHook(() =>
+        useBloc(IsolatedBloc, { instanceId: 'iso-a' }),
+      );
+      const { result: result2 } = renderHook(() =>
+        useBloc(IsolatedBloc, { instanceId: 'iso-b' }),
+      );
 
       const [, bloc1] = result1.current;
       const [, bloc2] = result2.current;
@@ -148,11 +142,17 @@ describe('useBloc', () => {
 
     it('should maintain separate state for each instance', async () => {
       const { result: result1 } = renderHook(() => {
-        const [state, bloc] = useBloc(IsolatedBloc, { instanceId: 'iso-c', autoTrack: false });
+        const [state, bloc] = useBloc(IsolatedBloc, {
+          instanceId: 'iso-c',
+          autoTrack: false,
+        });
         return { state, bloc };
       });
       const { result: result2 } = renderHook(() => {
-        const [state, bloc] = useBloc(IsolatedBloc, { instanceId: 'iso-d', autoTrack: false });
+        const [state, bloc] = useBloc(IsolatedBloc, {
+          instanceId: 'iso-d',
+          autoTrack: false,
+        });
         return { state, bloc };
       });
 
@@ -166,11 +166,17 @@ describe('useBloc', () => {
 
     it('should update state return when its not accessed because autoTrack is disabled', async () => {
       const { result: result1 } = renderHook(() => {
-        const [state, bloc] = useBloc(IsolatedBloc, { instanceId: 'iso-e', autoTrack: false });
+        const [state, bloc] = useBloc(IsolatedBloc, {
+          instanceId: 'iso-e',
+          autoTrack: false,
+        });
         return { state, bloc };
       });
       const { result: result2 } = renderHook(() => {
-        const [state, bloc] = useBloc(IsolatedBloc, { instanceId: 'iso-f', autoTrack: false });
+        const [state, bloc] = useBloc(IsolatedBloc, {
+          instanceId: 'iso-f',
+          autoTrack: false,
+        });
         return { state, bloc };
       });
 
@@ -194,11 +200,17 @@ describe('useBloc', () => {
 
     it('should not update state return when its not accessed because autoTrack is enabled', async () => {
       const { result: result1 } = renderHook(() => {
-        const [state, bloc] = useBloc(IsolatedBloc, { instanceId: 'iso-g', autoTrack: true });
+        const [state, bloc] = useBloc(IsolatedBloc, {
+          instanceId: 'iso-g',
+          autoTrack: true,
+        });
         return { state, bloc };
       });
       const { result: result2 } = renderHook(() => {
-        const [state, bloc] = useBloc(IsolatedBloc, { instanceId: 'iso-h', autoTrack: true });
+        const [state, bloc] = useBloc(IsolatedBloc, {
+          instanceId: 'iso-h',
+          autoTrack: true,
+        });
         return { state, bloc };
       });
 
@@ -219,7 +231,6 @@ describe('useBloc', () => {
       expect(result2.current.bloc.state.count).toBe(0);
       expect(result2.current.state.count).toBe(0);
     });
-
   });
 
   describe('Custom Instance IDs', () => {

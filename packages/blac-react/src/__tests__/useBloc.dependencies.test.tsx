@@ -29,7 +29,6 @@ class CounterCubit extends Cubit<CounterState> {
   setName = (value: string) => {
     this.emit({ ...this.state, name: value });
   };
-
 }
 
 afterEach(() => {
@@ -208,8 +207,7 @@ describe('useBloc with dependencies', () => {
       increment = () => {
         this.emit({ ...this.state, count: this.state.count + 1 });
       };
-
-        }
+    }
 
     const renderSpy = vi.fn();
 
@@ -254,8 +252,7 @@ describe('useBloc with dependencies', () => {
         // Create new object each time to change reference
         this.emit({ value: newValue });
       };
-
-        }
+    }
 
     function TestComponent() {
       const [state, bloc] = useBloc(RefCubit, {

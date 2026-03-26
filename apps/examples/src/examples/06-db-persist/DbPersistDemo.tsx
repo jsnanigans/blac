@@ -134,8 +134,7 @@ function DraftEditor() {
               <code>{actualBloc.hydrationStatus}</code>
             </p>
             <p>
-              <strong>waitForHydration():</strong>{' '}
-              <code>{hydrationReady}</code>
+              <strong>waitForHydration():</strong> <code>{hydrationReady}</code>
             </p>
             <p>
               <strong>Hydrated:</strong>{' '}
@@ -171,15 +170,15 @@ function DraftEditor() {
             </p>
           </div>
           <pre className="code-block">
-{JSON.stringify(
-  {
-    title: state.title,
-    body: state.body,
-    tags: state.tags.join(','),
-  },
-  null,
-  2,
-)}
+            {JSON.stringify(
+              {
+                title: state.title,
+                body: state.body,
+                tags: state.tags.join(','),
+              },
+              null,
+              2,
+            )}
           </pre>
         </Card>
       </div>
@@ -224,7 +223,10 @@ export function DbPersistDemo() {
     >
       <section className="stack-md">
         <Card>
-          <div className="row-xs flex-wrap" style={{ justifyContent: 'space-between' }}>
+          <div
+            className="row-xs flex-wrap"
+            style={{ justifyContent: 'space-between' }}
+          >
             <div className="stack-xs">
               <h4>Debug Controls</h4>
               <p className="text-small text-muted">
@@ -233,7 +235,10 @@ export function DbPersistDemo() {
               </p>
             </div>
             <div className="row-xs flex-wrap">
-              <Button variant="ghost" onClick={() => setMounted((value) => !value)}>
+              <Button
+                variant="ghost"
+                onClick={() => setMounted((value) => !value)}
+              >
                 {mounted ? 'Unmount editor' : 'Mount editor'}
               </Button>
               <Button variant="ghost" onClick={clearDb}>
@@ -241,7 +246,9 @@ export function DbPersistDemo() {
               </Button>
             </div>
           </div>
-          {dbMessage ? <p className="text-small text-muted">{dbMessage}</p> : null}
+          {dbMessage ? (
+            <p className="text-small text-muted">{dbMessage}</p>
+          ) : null}
         </Card>
 
         {pluginReady && mounted ? (

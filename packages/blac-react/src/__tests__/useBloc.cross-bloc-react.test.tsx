@@ -7,7 +7,9 @@ class ExtBlocB extends Cubit<{ x: number }> {
   constructor() {
     super({ x: 10 });
   }
-  set(x: number) { this.emit({ x }); }
+  set(x: number) {
+    this.emit({ x });
+  }
 }
 
 class ExtBlocA extends Cubit<{ multiplier: number }> {
@@ -15,7 +17,9 @@ class ExtBlocA extends Cubit<{ multiplier: number }> {
   constructor() {
     super({ multiplier: 2 });
   }
-  setMultiplier(m: number) { this.emit({ multiplier: m }); }
+  setMultiplier(m: number) {
+    this.emit({ multiplier: m });
+  }
   get result() {
     return this.state.multiplier * this.bGetter().state.x;
   }
@@ -26,7 +30,9 @@ class ConditionalExtA extends Cubit<{ useExt: boolean; base: number }> {
   constructor() {
     super({ useExt: false, base: 5 });
   }
-  toggle() { this.emit({ ...this.state, useExt: !this.state.useExt }); }
+  toggle() {
+    this.emit({ ...this.state, useExt: !this.state.useExt });
+  }
   get result() {
     if (this.state.useExt) {
       return this.state.base + this.bGetter().state.x;
@@ -48,7 +54,9 @@ describe('useBloc — cross-bloc React integration', () => {
     render(<Comp />);
     expect(screen.getByTestId('result').textContent).toBe('20'); // 2 * 10
 
-    act(() => { borrow(ExtBlocB).set(20); });
+    act(() => {
+      borrow(ExtBlocB).set(20);
+    });
 
     expect(screen.getByTestId('result').textContent).toBe('40'); // 2 * 20
     expect(renderCount).toBeGreaterThan(1);
@@ -66,7 +74,9 @@ describe('useBloc — cross-bloc React integration', () => {
 
     unmount();
 
-    act(() => { borrow(ExtBlocB).set(99); });
+    act(() => {
+      borrow(ExtBlocB).set(99);
+    });
     expect(renderCount).toBe(countBeforeUnmount);
   });
 
@@ -79,7 +89,9 @@ describe('useBloc — cross-bloc React integration', () => {
     // Give ExtBlocB a real refCount so we can dispose it properly
     acquire(ExtBlocB);
     expect(() => {
-      act(() => { release(ExtBlocB); }); // refCount → 0 → dispose
+      act(() => {
+        release(ExtBlocB);
+      }); // refCount → 0 → dispose
     }).not.toThrow();
   });
 
@@ -95,12 +107,16 @@ describe('useBloc — cross-bloc React integration', () => {
     expect(screen.getByTestId('result').textContent).toBe('5');
 
     // Toggle to use external dep — component re-renders, getter now accesses ExtBlocB
-    act(() => { borrow(ConditionalExtA).toggle(); });
+    act(() => {
+      borrow(ConditionalExtA).toggle();
+    });
     expect(screen.getByTestId('result').textContent).toBe('15'); // 5 + 10
 
     // Now changing ExtBlocB triggers re-render via ExternalDepsManager
     const countAfterToggle = renderCount;
-    act(() => { borrow(ExtBlocB).set(20); });
+    act(() => {
+      borrow(ExtBlocB).set(20);
+    });
     expect(renderCount).toBeGreaterThan(countAfterToggle);
     expect(screen.getByTestId('result').textContent).toBe('25'); // 5 + 20
   });
@@ -115,19 +131,27 @@ describe('useBloc — cross-bloc React integration', () => {
     render(<Comp />);
 
     // Enable external dep
-    act(() => { borrow(ConditionalExtA).toggle(); }); // useExt = true, result = 5 + 10 = 15
+    act(() => {
+      borrow(ConditionalExtA).toggle();
+    }); // useExt = true, result = 5 + 10 = 15
 
     // ExtBlocB change triggers re-render
-    act(() => { borrow(ExtBlocB).set(20); });
+    act(() => {
+      borrow(ExtBlocB).set(20);
+    });
     expect(screen.getByTestId('result').textContent).toBe('25');
 
     // Disable external dep
-    act(() => { borrow(ConditionalExtA).toggle(); }); // useExt = false, result = 5
+    act(() => {
+      borrow(ConditionalExtA).toggle();
+    }); // useExt = false, result = 5
     expect(screen.getByTestId('result').textContent).toBe('5');
 
     const countAfterDisable = renderCount;
     // ExtBlocB change should no longer trigger re-render (getter doesn't use it)
-    act(() => { borrow(ExtBlocB).set(99); });
+    act(() => {
+      borrow(ExtBlocB).set(99);
+    });
     expect(renderCount).toBe(countAfterDisable);
   });
 
@@ -153,7 +177,9 @@ describe('useBloc — cross-bloc React integration', () => {
     const countA = renderA;
     const countB = renderB;
 
-    act(() => { borrow(ExtBlocB).set(50); });
+    act(() => {
+      borrow(ExtBlocB).set(50);
+    });
 
     expect(renderA).toBeGreaterThan(countA);
     expect(renderB).toBeGreaterThan(countB);

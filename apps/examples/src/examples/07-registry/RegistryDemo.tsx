@@ -215,9 +215,13 @@ export function RegistryDemo() {
               <div className="flex-between">
                 <div className="stack-xs">
                   <h3>Per-Component</h3>
-                  <p className="text-small text-muted" style={{ marginBottom: 0 }}>
-                    <code>instanceId</code> — each counter gets a unique ID so it
-                    owns its own Cubit instance. Removing it disposes the instance.
+                  <p
+                    className="text-small text-muted"
+                    style={{ marginBottom: 0 }}
+                  >
+                    <code>instanceId</code> — each counter gets a unique ID so
+                    it owns its own Cubit instance. Removing it disposes the
+                    instance.
                   </p>
                 </div>
                 <Button

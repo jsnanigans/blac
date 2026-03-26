@@ -42,7 +42,11 @@ function LoadStatus() {
           <Button
             variant="ghost"
             onClick={bloc.retry}
-            style={{ alignSelf: 'flex-start', fontSize: '0.8125rem', padding: '6px 12px' }}
+            style={{
+              alignSelf: 'flex-start',
+              fontSize: '0.8125rem',
+              padding: '6px 12px',
+            }}
           >
             Retry
           </Button>
@@ -144,9 +148,8 @@ export function FeedDemo() {
               <p>
                 <strong>Error + retry:</strong> ~30% of fetches fail with a
                 simulated timeout. <code>retry()</code> re-calls{' '}
-                <code>loadAuthor</code> using the current{' '}
-                <code>authorId</code> stored in state — no props or closures
-                needed.
+                <code>loadAuthor</code> using the current <code>authorId</code>{' '}
+                stored in state — no props or closures needed.
               </p>
               <p>
                 <strong>autoTrack: false:</strong> The parent{' '}

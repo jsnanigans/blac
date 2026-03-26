@@ -377,7 +377,8 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       subscribe: (callback: DevToolsCallback) => this.subscribe(callback),
       getVersion: () => this.getVersion(),
       isEnabled: () => this.enabled,
-      timeTravel: (instanceId: string, state: unknown) => this.timeTravel(instanceId, state),
+      timeTravel: (instanceId: string, state: unknown) =>
+        this.timeTravel(instanceId, state),
     };
   }
 }

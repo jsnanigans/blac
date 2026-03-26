@@ -1,35 +1,19 @@
 import { StateContainer } from './StateContainer';
+import { EMIT, UPDATE } from './symbols';
 
-/**
- * Simple state container with direct state emission.
- * Extends StateContainer with public methods for emitting and updating state.
- *
- * @template S - State type
- */
 export abstract class Cubit<S extends object = any> extends StateContainer<S> {
   constructor(initialState: S) {
     super(initialState);
   }
 
-  /**
-   * Replace state with a new value and notify all listeners
-   * @param newState - The new state value
-   */
   public emit(newState: S): void {
-    super['emit'](newState);
+    this[EMIT](newState);
   }
 
-  /**
-   * Transform current state using an updater function and emit the new state
-   * @param updater - Function that receives current state and returns new state
-   */
   public update(updater: (current: S) => S): void {
-    super['update'](updater);
+    this[UPDATE](updater);
   }
 
-  /**
-   * Merge partial state changes into current state (only for object states)
-   */
   public patch = ((partial: S extends object ? Partial<S> : never): void => {
     if (typeof this.state !== 'object' || this.state === null) {
       throw new Error('patch() is only available for object state types');

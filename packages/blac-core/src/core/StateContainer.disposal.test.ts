@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { StateContainer } from './StateContainer';
 import { acquire, release, clearAll } from '../registry';
+import { EMIT, UPDATE } from './symbols';
 
 class DisposableContainer extends StateContainer<{ v: number }> {
   disposeCount = 0;
@@ -11,10 +12,10 @@ class DisposableContainer extends StateContainer<{ v: number }> {
     });
   }
   doEmit(state: { v: number }) {
-    this.emit(state);
+    this[EMIT](state);
   }
   doUpdate(updater: (s: { v: number }) => { v: number }) {
-    this.update(updater);
+    this[UPDATE](updater);
   }
 }
 

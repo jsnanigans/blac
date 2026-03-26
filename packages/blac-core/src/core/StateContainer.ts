@@ -2,42 +2,23 @@ import { generateSimpleId } from '../utils/idGenerator';
 import { BLAC_DEFAULTS } from '../constants';
 import { globalRegistry } from './StateContainerRegistry';
 import type { StateContainerConstructor } from '../types/utilities';
+import { EMIT, UPDATE } from './symbols';
 
-/**
- * Configuration options for initializing a StateContainer instance
- */
 export interface StateContainerConfig {
-  /** Display name for the instance (defaults to class name) */
   name?: string;
-  /** Enable debug logging for this instance */
   debug?: boolean;
-  /** Custom instance identifier */
   instanceId?: string;
 }
 
 export type HydrationStatus = 'idle' | 'hydrating' | 'hydrated' | 'error';
 
-/**
- * Listener function for state changes
- * @internal
- */
 type StateListener<S> = (state: S) => void;
 
-/**
- * System events emitted by StateContainer lifecycle
- */
 export type SystemEvent = 'stateChanged' | 'dispose' | 'hydrationChanged';
 
-/**
- * Payload types for each system event
- * @template S - State type
- */
 export interface SystemEventPayloads<S> {
-  /** Emitted when state changes via emit() or update() */
   stateChanged: { state: S; previousState: S };
-  /** Emitted when the instance is disposed */
   dispose: void;
-  /** Emitted when hydration status changes */
   hydrationChanged: {
     status: HydrationStatus;
     previousStatus: HydrationStatus;
@@ -46,65 +27,38 @@ export interface SystemEventPayloads<S> {
   };
 }
 
-/**
- * Handler function for system events
- * @internal
- */
 type SystemEventHandler<S, E extends SystemEvent> = (
   payload: SystemEventPayloads<S>[E],
 ) => void;
 
 const EMPTY_DEPS: ReadonlyMap<any, any> = new Map();
 
-/**
- * Abstract base class for all state containers in BlaC.
- * Provides lifecycle management, subscription handling, ref counting,
- * and integration with the global registry.
- *
- * @template S - State type managed by this container
- *
- * @example
- * ```ts
- * class CounterBloc extends StateContainer<{ count: number }> {
- *   constructor() {
- *     super({ count: 0 });
- *   }
- *   increment() {
- *     this.emit({ count: this.state.count + 1 });
- *   }
- * }
- * ```
- */
 export abstract class StateContainer<S extends object = any> {
   static __excludeFromDevTools = false;
   static enableStackTrace = true;
 
   private _state: S;
-  private readonly listeners = new Set<StateListener<S>>();
+  private readonly _listeners = new Set<StateListener<S>>();
   private _disposed = false;
   private _hydrationStatus: HydrationStatus = 'idle';
   private _hydrationError?: Error;
   private _changedWhileHydrating = false;
-  private hydrationPromise: Promise<void> | null = null;
-  private resolveHydrationPromise?: () => void;
-  private rejectHydrationPromise?: (error: Error) => void;
-  private hydrationPromiseSettled = false;
-  private config: StateContainerConfig = {};
-  private readonly systemEventHandlers = new Map<
+  private _hydrationPromise: Promise<void> | null = null;
+  private _resolveHydrationPromise?: () => void;
+  private _rejectHydrationPromise?: (error: Error) => void;
+  private _hydrationPromiseSettled = false;
+  private _config: StateContainerConfig = {};
+  private readonly _systemEventHandlers = new Map<
     SystemEvent,
     Set<SystemEventHandler<S, any>>
   >();
-
-  /** Display name for this instance */
-  name: string = this.constructor.name;
-  /** Whether debug logging is enabled */
-  debug: boolean = false;
-  /** Unique identifier for this instance */
-  instanceId: string = generateSimpleId(this.constructor.name, 'main');
-  /** Timestamp when this instance was created */
-  createdAt: number = Date.now();
-
   private _dependencies: Map<StateContainerConstructor, string> | null = null;
+
+  name: string = this.constructor.name;
+  debug: boolean = false;
+  instanceId: string = generateSimpleId(this.constructor.name, 'main');
+  createdAt: number = Date.now();
+  lastUpdateTimestamp: number = Date.now();
 
   get dependencies(): ReadonlyMap<StateContainerConstructor, string> {
     return this._dependencies ?? EMPTY_DEPS;
@@ -128,71 +82,49 @@ export abstract class StateContainer<S extends object = any> {
     this._state = initialState;
   }
 
-  /**
-   * Initialize configuration for this instance.
-   * Called by the registry after construction.
-   * @param config - Configuration options
-   */
   initConfig(config: StateContainerConfig): void {
-    this.config = { ...config };
-    this.name = this.config.name || this.constructor.name;
-    this.debug = this.config.debug ?? false;
+    this._config = { ...config };
+    this.name = this._config.name || this.constructor.name;
+    this.debug = this._config.debug ?? false;
     this.instanceId = generateSimpleId(
       this.constructor.name,
-      this.config.instanceId,
+      this._config.instanceId,
     );
-
     globalRegistry.emit('created', this);
   }
 
-  /** Current state value */
   get state(): Readonly<S> {
     return this._state;
   }
 
-  /** Whether this instance has been disposed */
   get isDisposed(): boolean {
     return this._disposed;
   }
 
-  /** Current hydration status for this instance */
   get hydrationStatus(): HydrationStatus {
     return this._hydrationStatus;
   }
 
-  /** Error from the latest failed hydration, if any */
   get hydrationError(): Error | undefined {
     return this._hydrationError;
   }
 
-  /** Whether this instance has completed hydration successfully */
   get isHydrated(): boolean {
     return this._hydrationStatus === 'hydrated';
   }
 
-  /** Whether user state changes happened while hydration was pending */
   get changedWhileHydrating(): boolean {
     return this._changedWhileHydrating;
   }
 
-  /**
-   * Subscribe to state changes
-   * @param listener - Function called when state changes
-   * @returns Unsubscribe function
-   */
   subscribe(listener: StateListener<S>): () => void {
     if (this._disposed) {
       throw new Error(`Cannot subscribe to disposed container ${this.name}`);
     }
-
-    this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
+    this._listeners.add(listener);
+    return () => this._listeners.delete(listener);
   }
 
-  /**
-   * Dispose this instance and clean up resources.
-   * Clears all listeners and emits the 'dispose' system event.
-   */
   dispose(): void {
     if (this._disposed) return;
 
@@ -210,8 +142,8 @@ export abstract class StateContainer<S extends object = any> {
 
     this.emitSystemEvent('dispose', undefined as void);
 
-    this.listeners.clear();
-    this.systemEventHandlers.clear();
+    this._listeners.clear();
+    this._systemEventHandlers.clear();
 
     globalRegistry.emit('disposed', this);
 
@@ -220,19 +152,19 @@ export abstract class StateContainer<S extends object = any> {
     }
   }
 
-  /**
-   * Emit a new state value and notify all listeners.
-   * @param newState - The new state value
-   * @protected
-   */
-  protected emit(newState: S): void {
+  protected [EMIT](newState: S): void {
     this.applyState(newState, 'default');
   }
 
-  /**
-   * Mark this instance as hydrating. Plugins should call this before starting
-   * asynchronous rehydration work.
-   */
+  protected [UPDATE](updater: (current: S) => S): void {
+    if (this._disposed) {
+      throw new Error(
+        `Cannot update state from disposed container ${this.name}`,
+      );
+    }
+    this[EMIT](updater(this._state));
+  }
+
   beginHydration(): void {
     if (this._disposed) {
       throw new Error(
@@ -242,18 +174,14 @@ export abstract class StateContainer<S extends object = any> {
 
     this._changedWhileHydrating = false;
     this._hydrationError = undefined;
-    this.hydrationPromise = null;
-    this.resolveHydrationPromise = undefined;
-    this.rejectHydrationPromise = undefined;
-    this.hydrationPromiseSettled = false;
+    this._hydrationPromise = null;
+    this._resolveHydrationPromise = undefined;
+    this._rejectHydrationPromise = undefined;
+    this._hydrationPromiseSettled = false;
     this.ensureHydrationPromise();
     this.setHydrationStatus('hydrating');
   }
 
-  /**
-   * Apply hydrated state if no user writes happened since hydration started.
-   * Returns false when hydration should be skipped.
-   */
   applyHydratedState(newState: S): boolean {
     if (this._disposed) {
       return false;
@@ -267,9 +195,6 @@ export abstract class StateContainer<S extends object = any> {
     return true;
   }
 
-  /**
-   * Mark hydration as completed.
-   */
   finishHydration(): void {
     if (this._hydrationStatus !== 'hydrating') {
       if (this._hydrationStatus === 'hydrated') {
@@ -284,9 +209,6 @@ export abstract class StateContainer<S extends object = any> {
     this.resolveHydration();
   }
 
-  /**
-   * Mark hydration as failed.
-   */
   failHydration(error: Error): void {
     const err =
       error instanceof Error ? error : new Error(`Hydration failed: ${error}`);
@@ -296,11 +218,11 @@ export abstract class StateContainer<S extends object = any> {
     this.rejectHydration(err);
   }
 
-  /**
-   * Wait until the current hydration cycle finishes.
-   */
   waitForHydration(): Promise<void> {
-    if (this._hydrationStatus === 'idle' || this._hydrationStatus === 'hydrated') {
+    if (
+      this._hydrationStatus === 'idle' ||
+      this._hydrationStatus === 'hydrated'
+    ) {
       return Promise.resolve();
     }
 
@@ -336,6 +258,8 @@ export abstract class StateContainer<S extends object = any> {
           line.includes('StateContainer.emit') ||
           line.includes('StateContainer.update') ||
           line.includes('StateContainer.captureStackTrace') ||
+          line.includes('[blac.emit]') ||
+          line.includes('[blac.update]') ||
           line.includes('Cubit.patch')
         ) {
           continue;
@@ -407,23 +331,6 @@ export abstract class StateContainer<S extends object = any> {
     return path;
   }
 
-  /** Timestamp of the last state update */
-  lastUpdateTimestamp: number = Date.now();
-
-  /**
-   * Update state using a transform function.
-   * @param updater - Function that receives current state and returns new state
-   * @protected
-   */
-  protected update(updater: (current: S) => S): void {
-    if (this._disposed) {
-      throw new Error(
-        `Cannot update state from disposed container ${this.name}`,
-      );
-    }
-    this.emit(updater(this._state));
-  }
-
   private applyState(newState: S, source: 'default' | 'hydration'): void {
     if (this._disposed) {
       throw new Error(`Cannot emit state from disposed container ${this.name}`);
@@ -443,7 +350,7 @@ export abstract class StateContainer<S extends object = any> {
       previousState,
     });
 
-    const listeners = Array.from(this.listeners);
+    const listeners = Array.from(this._listeners);
     for (const listener of listeners) {
       try {
         listener(newState);
@@ -478,50 +385,43 @@ export abstract class StateContainer<S extends object = any> {
   }
 
   private ensureHydrationPromise(): Promise<void> {
-    if (!this.hydrationPromise || this.hydrationPromiseSettled) {
-      this.hydrationPromiseSettled = false;
-      this.hydrationPromise = new Promise<void>((resolve, reject) => {
-        this.resolveHydrationPromise = () => {
-          if (this.hydrationPromiseSettled) return;
-          this.hydrationPromiseSettled = true;
+    if (!this._hydrationPromise || this._hydrationPromiseSettled) {
+      this._hydrationPromiseSettled = false;
+      this._hydrationPromise = new Promise<void>((resolve, reject) => {
+        this._resolveHydrationPromise = () => {
+          if (this._hydrationPromiseSettled) return;
+          this._hydrationPromiseSettled = true;
           resolve();
         };
-        this.rejectHydrationPromise = (error: Error) => {
-          if (this.hydrationPromiseSettled) return;
-          this.hydrationPromiseSettled = true;
+        this._rejectHydrationPromise = (error: Error) => {
+          if (this._hydrationPromiseSettled) return;
+          this._hydrationPromiseSettled = true;
           reject(error);
         };
       });
-      this.hydrationPromise.catch(() => {});
+      this._hydrationPromise.catch(() => {});
     }
 
-    return this.hydrationPromise;
+    return this._hydrationPromise;
   }
 
   private resolveHydration(): void {
-    this.resolveHydrationPromise?.();
+    this._resolveHydrationPromise?.();
   }
 
   private rejectHydration(error: Error): void {
     this.ensureHydrationPromise();
-    this.rejectHydrationPromise?.(error);
+    this._rejectHydrationPromise?.(error);
   }
 
-  /**
-   * Subscribe to system lifecycle events.
-   * @param event - The event type to listen for
-   * @param handler - Handler function called when event occurs
-   * @returns Unsubscribe function
-   * @protected
-   */
   protected onSystemEvent = <E extends SystemEvent>(
     event: E,
     handler: SystemEventHandler<S, E>,
   ): (() => void) => {
-    let handlers = this.systemEventHandlers.get(event);
+    let handlers = this._systemEventHandlers.get(event);
     if (!handlers) {
       handlers = new Set();
-      this.systemEventHandlers.set(event, handlers);
+      this._systemEventHandlers.set(event, handlers);
     }
     handlers.add(handler as SystemEventHandler<S, any>);
 
@@ -534,7 +434,7 @@ export abstract class StateContainer<S extends object = any> {
     event: E,
     payload: SystemEventPayloads<S>[E],
   ): void {
-    const handlers = this.systemEventHandlers.get(event);
+    const handlers = this._systemEventHandlers.get(event);
     if (!handlers) return;
 
     for (const handler of handlers) {

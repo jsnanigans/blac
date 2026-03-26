@@ -83,4 +83,3 @@ export function generateSimpleId(prefix: string, affix?: string): string {
 export function __resetIdCounters(): void {
   globalCounters.clear();
 }
-

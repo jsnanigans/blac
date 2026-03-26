@@ -45,7 +45,10 @@ describe('useBloc — SSR', () => {
     const ssrCalls: number[] = [];
     const noTrackCalls: number[] = [];
 
-    const unsubSsr = autoTrackSubscribe(instance, adapterState)(() => {
+    const unsubSsr = autoTrackSubscribe(
+      instance,
+      adapterState,
+    )(() => {
       ssrCalls.push(instance.state.n);
     });
     const unsubNoTrack = noTrackSubscribe(instance)(() => {

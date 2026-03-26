@@ -1,13 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { StateContainer } from './StateContainer';
 import { clearAll } from '../registry';
+import { EMIT } from './symbols';
 
 class SimpleContainer extends StateContainer<{ n: number }> {
   constructor() {
     super({ n: 0 });
   }
   doEmit(state: { n: number }) {
-    this.emit(state);
+    this[EMIT](state);
   }
 }
 

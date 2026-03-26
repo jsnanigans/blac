@@ -54,7 +54,9 @@ export function MessengerApp() {
             <div className="demo-info">
               <h3>What to watch for:</h3>
               <ul>
-                <li>Each channel has its own independent state (ChannelBloc)</li>
+                <li>
+                  Each channel has its own independent state (ChannelBloc)
+                </li>
                 <li>
                   Components only re-render when their specific data changes
                 </li>

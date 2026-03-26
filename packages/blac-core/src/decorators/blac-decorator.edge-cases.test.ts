@@ -1,7 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { blac } from './blac';
 import { Cubit } from '../core/Cubit';
-import { isKeepAliveClass, isExcludedFromDevTools } from '../utils/static-props';
+import {
+  isKeepAliveClass,
+  isExcludedFromDevTools,
+} from '../utils/static-props';
 import { acquire, release, clearAll } from '../registry';
 
 const resetState = () => clearAll();

@@ -8,9 +8,15 @@ class MultiFieldBloc extends Cubit<{ a: number; b: string; c: boolean }> {
   constructor() {
     super({ a: 0, b: 'hello', c: false });
   }
-  setA(v: number) { this.emit({ ...this.state, a: v }); }
-  setB(v: string) { this.emit({ ...this.state, b: v }); }
-  setC(v: boolean) { this.emit({ ...this.state, c: v }); }
+  setA(v: number) {
+    this.emit({ ...this.state, a: v });
+  }
+  setB(v: string) {
+    this.emit({ ...this.state, b: v });
+  }
+  setC(v: boolean) {
+    this.emit({ ...this.state, c: v });
+  }
 }
 
 afterEach(() => {
@@ -30,7 +36,9 @@ describe('useBloc — auto-track optimization', () => {
     }
     render(<Comp />);
     const count = renders.mock.calls.length;
-    act(() => { bloc.setB('world'); });
+    act(() => {
+      bloc.setB('world');
+    });
     expect(renders.mock.calls.length).toBe(count);
   });
 
@@ -45,7 +53,9 @@ describe('useBloc — auto-track optimization', () => {
     }
     render(<Comp />);
     const count = renders.mock.calls.length;
-    act(() => { bloc.setA(99); });
+    act(() => {
+      bloc.setA(99);
+    });
     expect(renders.mock.calls.length).toBeGreaterThan(count);
     expect(screen.getByTestId('a').textContent).toBe('99');
   });
@@ -61,9 +71,15 @@ describe('useBloc — auto-track optimization', () => {
     }
     render(<Comp />);
     const count = renders.mock.calls.length;
-    act(() => { bloc.setA(1); });
-    act(() => { bloc.setB('x'); });
-    act(() => { bloc.setC(true); });
+    act(() => {
+      bloc.setA(1);
+    });
+    act(() => {
+      bloc.setB('x');
+    });
+    act(() => {
+      bloc.setC(true);
+    });
     expect(renders.mock.calls.length).toBe(count);
   });
 
@@ -84,22 +100,32 @@ describe('useBloc — auto-track optimization', () => {
     }
     render(<Comp />);
     // Only tracking 'a' — changing 'b' has no effect
-    act(() => { bloc.setB('first change'); });
+    act(() => {
+      bloc.setB('first change');
+    });
     expect(renders.mock.calls.length).toBe(1);
 
     // Trigger a re-render that also accesses 'b'
     showB = true;
-    act(() => { bloc.setA(1); });
+    act(() => {
+      bloc.setA(1);
+    });
 
     // Now changing 'b' should trigger re-render
     const afterA = renders.mock.calls.length;
-    act(() => { bloc.setB('second change'); });
+    act(() => {
+      bloc.setB('second change');
+    });
     expect(renders.mock.calls.length).toBeGreaterThan(afterA);
   });
 
   it('deeply nested path tracked specifically (profile.age vs profile.name)', () => {
-    class UserBloc extends Cubit<{ user: { profile: { age: number; name: string } } }> {
-      constructor() { super({ user: { profile: { age: 25, name: 'Alice' } } }); }
+    class UserBloc extends Cubit<{
+      user: { profile: { age: number; name: string } };
+    }> {
+      constructor() {
+        super({ user: { profile: { age: 25, name: 'Alice' } } });
+      }
       setAge(age: number) {
         this.emit({ user: { profile: { ...this.state.user.profile, age } } });
       }
@@ -117,9 +143,13 @@ describe('useBloc — auto-track optimization', () => {
     }
     render(<Comp />);
     const count = renders.mock.calls.length;
-    act(() => { bloc.setName('Bob'); });
+    act(() => {
+      bloc.setName('Bob');
+    });
     expect(renders.mock.calls.length).toBe(count);
-    act(() => { bloc.setAge(30); });
+    act(() => {
+      bloc.setAge(30);
+    });
     expect(renders.mock.calls.length).toBeGreaterThan(count);
   });
 
@@ -134,7 +164,9 @@ describe('useBloc — auto-track optimization', () => {
     }
     render(<Comp />);
     const count = renders.mock.calls.length;
-    act(() => { bloc.setC(true); });
+    act(() => {
+      bloc.setC(true);
+    });
     expect(renders.mock.calls.length).toBe(count);
     expect(screen.getByTestId('a').textContent).toBe('0');
   });
@@ -150,7 +182,9 @@ describe('useBloc — auto-track optimization', () => {
     }
     render(<Comp />);
     const count = renders.mock.calls.length;
-    act(() => { bloc.setB('changed'); });
+    act(() => {
+      bloc.setB('changed');
+    });
     expect(renders.mock.calls.length).toBeGreaterThan(count);
   });
 
@@ -166,7 +200,9 @@ describe('useBloc — auto-track optimization', () => {
     }
     render(<Comp />);
     const count = renders.mock.calls.length;
-    act(() => { bloc.setB('changed'); });
+    act(() => {
+      bloc.setB('changed');
+    });
     expect(renders.mock.calls.length).toBeGreaterThan(count);
   });
 
@@ -183,7 +219,9 @@ describe('useBloc — auto-track optimization', () => {
     render(<Comp />);
     const count = renders.mock.calls.length;
     // With per-hook autoTrack: true, only 'a' is tracked — changing 'b' should not re-render
-    act(() => { bloc.setB('changed'); });
+    act(() => {
+      bloc.setB('changed');
+    });
     expect(renders.mock.calls.length).toBe(count);
   });
 
@@ -203,10 +241,14 @@ describe('useBloc — auto-track optimization', () => {
     render(<Comp />);
     const count = renders.mock.calls.length;
     // After remount, tracking is fresh — b change should not re-render
-    act(() => { bloc.setB('new'); });
+    act(() => {
+      bloc.setB('new');
+    });
     expect(renders.mock.calls.length).toBe(count);
     // a change should re-render
-    act(() => { bloc.setA(42); });
+    act(() => {
+      bloc.setA(42);
+    });
     expect(renders.mock.calls.length).toBeGreaterThan(count);
   });
 
@@ -222,11 +264,15 @@ describe('useBloc — auto-track optimization', () => {
     const bloc = result.current[1] as MultiFieldBloc;
 
     // Changing b should not cause hook to update (only a is tracked)
-    act(() => { bloc.setB('changed'); });
+    act(() => {
+      bloc.setB('changed');
+    });
     expect(result.current[0].a).toBe(0);
 
     // Changing a should update
-    act(() => { bloc.setA(7); });
+    act(() => {
+      bloc.setA(7);
+    });
     expect(result.current[0].a).toBe(7);
 
     rerender();

@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { tracked, createTrackedContext, TrackedContext, DependencyManager } from './tracked';
+import {
+  tracked,
+  createTrackedContext,
+  TrackedContext,
+  DependencyManager,
+} from './tracked';
 import { Cubit } from '../core/Cubit';
 import { acquire, clearAll } from '../registry';
 

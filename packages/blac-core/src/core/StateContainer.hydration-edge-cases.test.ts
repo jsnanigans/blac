@@ -1,13 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { StateContainer } from './StateContainer';
 import { clearAll } from '../registry';
+import { EMIT } from './symbols';
 
 class HydratableContainer extends StateContainer<{ v: number }> {
   constructor() {
     super({ v: 0 });
   }
   doEmit(state: { v: number }) {
-    this.emit(state);
+    this[EMIT](state);
   }
 }
 

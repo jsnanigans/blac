@@ -36,8 +36,16 @@ describe('PluginManager edge cases', () => {
   it('multiple plugins all receive onStateChanged', () => {
     const onStateChanged1 = vi.fn();
     const onStateChanged2 = vi.fn();
-    manager.install({ name: 'p1', version: '1.0.0', onStateChanged: onStateChanged1 });
-    manager.install({ name: 'p2', version: '1.0.0', onStateChanged: onStateChanged2 });
+    manager.install({
+      name: 'p1',
+      version: '1.0.0',
+      onStateChanged: onStateChanged1,
+    });
+    manager.install({
+      name: 'p2',
+      version: '1.0.0',
+      onStateChanged: onStateChanged2,
+    });
 
     const bloc = acquire(SimpleBloc, 'default');
     bloc.emit({ n: 99 });
@@ -52,7 +60,13 @@ describe('PluginManager edge cases', () => {
     const onInstanceDisposed = vi.fn();
 
     manager.install(
-      { name: 'disabled', version: '1.0.0', onInstanceCreated, onStateChanged, onInstanceDisposed },
+      {
+        name: 'disabled',
+        version: '1.0.0',
+        onInstanceCreated,
+        onStateChanged,
+        onInstanceDisposed,
+      },
       { enabled: false },
     );
 
@@ -67,10 +81,18 @@ describe('PluginManager edge cases', () => {
 
   it('plugin context queryInstances() returns empty for unregistered type', () => {
     let ctx: any;
-    manager.install({ name: 'p', version: '1.0.0', onInstall: (c) => { ctx = c; } });
+    manager.install({
+      name: 'p',
+      version: '1.0.0',
+      onInstall: (c) => {
+        ctx = c;
+      },
+    });
 
     class UnknownBloc extends Cubit<{ x: number }> {
-      constructor() { super({ x: 0 }); }
+      constructor() {
+        super({ x: 0 });
+      }
     }
 
     const result = ctx.queryInstances(UnknownBloc);
@@ -79,7 +101,13 @@ describe('PluginManager edge cases', () => {
 
   it('plugin context getStats() reflects dynamic changes', () => {
     let ctx: any;
-    manager.install({ name: 'p', version: '1.0.0', onInstall: (c) => { ctx = c; } });
+    manager.install({
+      name: 'p',
+      version: '1.0.0',
+      onInstall: (c) => {
+        ctx = c;
+      },
+    });
 
     const statsBefore = ctx.getStats();
     const instancesBefore = statsBefore.totalInstances;

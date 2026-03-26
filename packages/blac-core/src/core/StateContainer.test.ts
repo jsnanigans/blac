@@ -13,6 +13,7 @@ import {
   clearAll,
 } from '../registry';
 import { Cubit } from './Cubit';
+import { EMIT, UPDATE } from './symbols';
 
 // Test implementation of StateContainer
 class TestContainer extends StateContainer<{ value: number }> {
@@ -22,13 +23,13 @@ class TestContainer extends StateContainer<{ value: number }> {
 
   // Expose protected methods for testing
   public testEmit(state: { value: number }): void {
-    this.emit(state);
+    this[EMIT](state);
   }
 
   public testUpdate(
     updater: (current: { value: number }) => { value: number },
   ): void {
-    this.update(updater);
+    this[UPDATE](updater);
   }
 }
 
@@ -55,7 +56,7 @@ class LifecycleTestContainer extends StateContainer<{ text: string }> {
   }
 
   public testEmit(state: { text: string }): void {
-    this.emit(state);
+    this[EMIT](state);
   }
 }
 
@@ -76,7 +77,7 @@ class HydrationEventTestContainer extends StateContainer<{ value: number }> {
   }
 
   public testEmit(state: { value: number }): void {
-    this.emit(state);
+    this[EMIT](state);
   }
 }
 
@@ -89,7 +90,7 @@ class KeepAliveTestContainer extends StateContainer<{ value: number }> {
   }
 
   public testEmit(state: { value: number }): void {
-    this.emit(state);
+    this[EMIT](state);
   }
 }
 
@@ -105,11 +106,11 @@ class ObjectStateContainer extends StateContainer<ObjectState> {
   }
 
   public increment(): void {
-    this.update((state) => ({ ...state, count: state.count + 1 }));
+    this[UPDATE]((state) => ({ ...state, count: state.count + 1 }));
   }
 
   public setName(name: string): void {
-    this.update((state) => ({ ...state, name }));
+    this[UPDATE]((state) => ({ ...state, name }));
   }
 }
 
@@ -582,7 +583,7 @@ describe('StateContainer', () => {
 
       it('should call stateChanged system event before notifying listeners', () => {
         // Create a container class that tracks call order
-        class OrderTrackingContainer extends StateContainer<{ text: string }> {
+        class OrderTrackingContainer extends Cubit<{ text: string }> {
           callOrder: string[] = [];
 
           constructor() {

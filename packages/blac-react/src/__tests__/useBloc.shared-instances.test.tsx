@@ -61,7 +61,13 @@ describe('useBloc — shared instances', () => {
       return null;
     }
     function Parent({ count }: { count: number }) {
-      return <>{Array.from({ length: count }, (_, i) => <Comp key={i} />)}</>;
+      return (
+        <>
+          {Array.from({ length: count }, (_, i) => (
+            <Comp key={i} />
+          ))}
+        </>
+      );
     }
     const { rerender } = render(<Parent count={2} />);
     expect(getRefCount(SharedBloc)).toBe(2);
@@ -91,7 +97,13 @@ describe('useBloc — shared instances', () => {
       return null;
     }
     function Parent({ count }: { count: number }) {
-      return <>{Array.from({ length: count }, (_, i) => <Comp key={i} />)}</>;
+      return (
+        <>
+          {Array.from({ length: count }, (_, i) => (
+            <Comp key={i} />
+          ))}
+        </>
+      );
     }
     const { rerender } = render(<Parent count={3} />);
     expect(getRefCount(SharedBloc)).toBe(3);

@@ -33,10 +33,18 @@ export const registryPlugin: BlacPlugin = {
   version: '1.0.0',
 
   onInstanceCreated(instance: StateContainer<unknown>) {
-    push({ type: 'created', name: instance.name, time: new Date().toLocaleTimeString() });
+    push({
+      type: 'created',
+      name: instance.name,
+      time: new Date().toLocaleTimeString(),
+    });
   },
 
   onInstanceDisposed(instance: StateContainer<unknown>) {
-    push({ type: 'disposed', name: instance.name, time: new Date().toLocaleTimeString() });
+    push({
+      type: 'disposed',
+      name: instance.name,
+      time: new Date().toLocaleTimeString(),
+    });
   },
 };

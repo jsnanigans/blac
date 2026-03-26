@@ -28,7 +28,6 @@ afterEach(() => {
 // Test Blocs
 
 class CounterBloc extends Cubit<{ count: number; other: string }> {
-
   constructor() {
     super({ count: 0, other: 'initial' });
   }
@@ -47,7 +46,6 @@ class CounterBloc extends Cubit<{ count: number; other: string }> {
 }
 
 class MultiGetterBloc extends Cubit<{ a: number; b: number }> {
-
   constructor() {
     super({ a: 1, b: 2 });
   }
@@ -70,7 +68,6 @@ class MultiGetterBloc extends Cubit<{ a: number; b: number }> {
 }
 
 class NestedGetterBloc extends Cubit<{ value: number }> {
-
   constructor() {
     super({ value: 5 });
   }
@@ -89,7 +86,6 @@ class NestedGetterBloc extends Cubit<{ value: number }> {
 }
 
 class ComplexReturnBloc extends Cubit<{ items: string[] }> {
-
   constructor() {
     super({ items: ['a', 'b', 'c'] });
   }
@@ -120,7 +116,6 @@ class ComplexReturnBloc extends Cubit<{ items: string[] }> {
 }
 
 class ErrorBloc extends Cubit<{ value: number }> {
-
   constructor() {
     super({ value: 5 });
   }
@@ -138,7 +133,6 @@ class ErrorBloc extends Cubit<{ value: number }> {
 }
 
 class StateAndGetterBloc extends Cubit<{ count: number; name: string }> {
-
   constructor() {
     super({ count: 0, name: 'initial' });
   }
@@ -224,7 +218,7 @@ describe('useBloc - Basic Getter Tracking', () => {
     const renderSpy = vi.fn();
 
     class SameValueBloc extends Cubit<{ value: number }> {
-          constructor() {
+      constructor() {
         super({ value: 5 });
       }
       get ten() {
@@ -710,7 +704,7 @@ describe('useBloc - Memory Cleanup', () => {
 describe('useBloc - Getter Tracking Edge Cases', () => {
   it('should handle Object.is edge cases (NaN, +0, -0)', async () => {
     class EdgeCaseBloc extends Cubit<{ value: number }> {
-          constructor() {
+      constructor() {
         super({ value: NaN });
       }
       get computed() {
@@ -762,7 +756,7 @@ describe('useBloc - Getter Tracking Edge Cases', () => {
 
   it('should not track methods (only getters)', async () => {
     class MethodBloc extends Cubit<{ count: number }> {
-          constructor() {
+      constructor() {
         super({ count: 0 });
       }
       // This is a method, not a getter
@@ -807,7 +801,7 @@ describe('useBloc - Getter Tracking Edge Cases', () => {
     const mySymbol = Symbol('myGetter');
 
     class SymbolBloc extends Cubit<{ value: number }> {
-          constructor() {
+      constructor() {
         super({ value: 5 });
       }
       get [mySymbol]() {

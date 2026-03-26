@@ -101,9 +101,7 @@ describe('useBloc — lifecycle edge cases', () => {
     const onUnmount = vi.fn((bloc: LifecycleBloc) => {
       isDisposedAtUnmount = bloc.isDisposed;
     });
-    const { unmount } = renderHook(() =>
-      useBloc(LifecycleBloc, { onUnmount }),
-    );
+    const { unmount } = renderHook(() => useBloc(LifecycleBloc, { onUnmount }));
     unmount();
     expect(onUnmount).toHaveBeenCalledOnce();
     expect(isDisposedAtUnmount).toBe(false);

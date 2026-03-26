@@ -44,8 +44,8 @@ export function Home() {
           </div>
           <p className="text-small text-muted">
             Loading, error, and retry patterns for async operations. Three
-            components share one Cubit but re-render independently based on
-            what each one reads.
+            components share one Cubit but re-render independently based on what
+            each one reads.
           </p>
           <div className="stack-xs text-xs text-muted">
             <div className="row-xs">
@@ -157,9 +157,9 @@ export function Home() {
             <h3>Instance Registry</h3>
           </div>
           <p className="text-small text-muted">
-            Instance lifecycle management. See per-component vs shared instances in
-            action, with a live registry inspector powered by getStats() and a
-            plugin event log.
+            Instance lifecycle management. See per-component vs shared instances
+            in action, with a live registry inspector powered by getStats() and
+            a plugin event log.
           </p>
           <div className="stack-xs text-xs text-muted">
             <div className="row-xs">

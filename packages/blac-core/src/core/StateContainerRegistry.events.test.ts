@@ -5,13 +5,14 @@ import {
 } from './StateContainerRegistry';
 import { acquire, release, clearAll } from '../registry';
 import { StateContainer } from './StateContainer';
+import { EMIT } from './symbols';
 
 class EventBloc extends StateContainer<{ n: number }> {
   constructor() {
     super({ n: 0 });
   }
   doEmit(state: { n: number }) {
-    this.emit(state);
+    this[EMIT](state);
   }
 }
 

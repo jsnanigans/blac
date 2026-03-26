@@ -25,7 +25,9 @@ export interface PersistPluginStatusEvent {
 
 export interface IndexedDbPersistAdapter {
   isAvailable(): boolean;
-  get<TPayload = unknown>(key: string): Promise<PersistedRecord<TPayload> | null>;
+  get<TPayload = unknown>(
+    key: string,
+  ): Promise<PersistedRecord<TPayload> | null>;
   put<TPayload = unknown>(record: PersistedRecord<TPayload>): Promise<void>;
   delete(key: string): Promise<void>;
   clear(): Promise<void>;
@@ -89,7 +91,5 @@ export interface IndexedDbPersistPlugin extends BlacPlugin {
   clearRecord(key: string): Promise<void>;
   clearAll(): Promise<void>;
   getStatus(instance: StateContainer<any>): PersistPluginStatus | undefined;
-  subscribe(
-    listener: (event: PersistPluginStatusEvent) => void,
-  ): () => void;
+  subscribe(listener: (event: PersistPluginStatusEvent) => void): () => void;
 }

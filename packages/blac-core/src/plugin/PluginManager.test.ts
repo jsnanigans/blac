@@ -504,7 +504,9 @@ describe('PluginManager', () => {
 
       capturedContext.finishHydration(counter);
 
-      await expect(capturedContext.waitForHydration(counter)).resolves.toBeUndefined();
+      await expect(
+        capturedContext.waitForHydration(counter),
+      ).resolves.toBeUndefined();
       expect(counter.state).toEqual({ count: 5 });
       expect(capturedContext.getInstanceMetadata(counter)).toMatchObject({
         hydrationStatus: 'hydrated',
@@ -529,7 +531,9 @@ describe('PluginManager', () => {
       capturedContext.startHydration(counter);
       counter.increment();
 
-      const applied = capturedContext.applyHydratedState(counter, { count: 99 });
+      const applied = capturedContext.applyHydratedState(counter, {
+        count: 99,
+      });
 
       expect(applied).toBe(false);
       expect(counter.state).toEqual({ count: 1 });

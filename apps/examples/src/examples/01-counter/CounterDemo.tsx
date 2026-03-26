@@ -66,7 +66,8 @@ export function CounterDemo() {
           </p>
           <p>
             • <strong>Instance management:</strong> Default instances are
-            shared. Use <code>instanceId</code> for separate state per component.
+            shared. Use <code>instanceId</code> for separate state per
+            component.
           </p>
           <p>
             • <strong>Lifecycle hooks:</strong> Open browser console to see

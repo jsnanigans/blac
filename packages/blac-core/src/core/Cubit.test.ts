@@ -226,7 +226,12 @@ describe('Cubit', () => {
         cubit.updateName('First Update');
         expect(listener).toHaveBeenCalledTimes(1);
 
-        cubit.replaceUser({ id: '2', name: 'Replaced', email: 'new@example.com', age: 40 });
+        cubit.replaceUser({
+          id: '2',
+          name: 'Replaced',
+          email: 'new@example.com',
+          age: 40,
+        });
         expect(listener).toHaveBeenCalledTimes(2);
         expect(cubit.state.id).toBe('2');
       });
@@ -571,7 +576,9 @@ describe('Cubit', () => {
         todoCubit.setFilter('active');
         expect(todoCubit.visibleTodos.length).toBe(5);
 
-        const completedIds = todoCubit.state.todos.filter((t) => t.done).map((t) => t.id);
+        const completedIds = todoCubit.state.todos
+          .filter((t) => t.done)
+          .map((t) => t.id);
         completedIds.forEach((id) => todoCubit.removeTodo(id));
 
         expect(todoCubit.state.todos.length).toBe(5);

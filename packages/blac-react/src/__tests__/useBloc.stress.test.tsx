@@ -7,8 +7,12 @@ class CounterBloc extends Cubit<{ count: number }> {
   constructor() {
     super({ count: 0 });
   }
-  inc() { this.emit({ count: this.state.count + 1 }); }
-  set(n: number) { this.emit({ count: n }); }
+  inc() {
+    this.emit({ count: this.state.count + 1 });
+  }
+  set(n: number) {
+    this.emit({ count: n });
+  }
 }
 
 afterEach(() => clearAll());
@@ -38,7 +42,9 @@ describe('useBloc — stress tests', () => {
     }
     render(
       <>
-        {Array.from({ length: 10 }, (_, i) => <Comp key={i} id={i} />)}
+        {Array.from({ length: 10 }, (_, i) => (
+          <Comp key={i} id={i} />
+        ))}
       </>,
     );
     expect(getRefCount(CounterBloc)).toBe(10);
@@ -89,7 +95,9 @@ describe('useBloc — stress tests', () => {
     expect(childBloc).not.toBeNull();
     expect(parentBloc).toBe(childBloc);
 
-    act(() => { (parentBloc as CounterBloc).set(7); });
+    act(() => {
+      (parentBloc as CounterBloc).set(7);
+    });
     expect(screen.getByTestId('parent').textContent).toBe('7');
     expect(screen.getByTestId('child').textContent).toBe('7');
   });
@@ -101,7 +109,9 @@ describe('useBloc — stress tests', () => {
     }
     render(
       <>
-        {Array.from({ length: 50 }, (_, i) => <Comp key={i} id={i} />)}
+        {Array.from({ length: 50 }, (_, i) => (
+          <Comp key={i} id={i} />
+        ))}
       </>,
     );
 

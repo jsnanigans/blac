@@ -16,8 +16,12 @@ afterEach(() => clearAll());
 
 describe('useBloc — instance isolation', () => {
   it('different instanceId produces different instances', () => {
-    const { result: r1 } = renderHook(() => useBloc(IsoBloc, { instanceId: 'a' }));
-    const { result: r2 } = renderHook(() => useBloc(IsoBloc, { instanceId: 'b' }));
+    const { result: r1 } = renderHook(() =>
+      useBloc(IsoBloc, { instanceId: 'a' }),
+    );
+    const { result: r2 } = renderHook(() =>
+      useBloc(IsoBloc, { instanceId: 'b' }),
+    );
     expect(r1.current[1]).not.toBe(r2.current[1]);
   });
 
@@ -53,8 +57,12 @@ describe('useBloc — instance isolation', () => {
   });
 
   it('numeric instanceId is coerced to string — same as the string version', () => {
-    const { result: rNum } = renderHook(() => useBloc(IsoBloc, { instanceId: 1 }));
-    const { result: rStr } = renderHook(() => useBloc(IsoBloc, { instanceId: '1' }));
+    const { result: rNum } = renderHook(() =>
+      useBloc(IsoBloc, { instanceId: 1 }),
+    );
+    const { result: rStr } = renderHook(() =>
+      useBloc(IsoBloc, { instanceId: '1' }),
+    );
     expect(rNum.current[1]).toBe(rStr.current[1]);
   });
 

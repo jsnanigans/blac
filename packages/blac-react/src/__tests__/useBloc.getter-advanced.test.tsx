@@ -8,11 +8,21 @@ class ComputedBloc extends Cubit<{ x: number; y: number }> {
   constructor() {
     super({ x: 2, y: 3 });
   }
-  setX(v: number) { this.emit({ ...this.state, x: v }); }
-  setY(v: number) { this.emit({ ...this.state, y: v }); }
-  get sum() { return this.state.x + this.state.y; }
-  get product() { return this.state.x * this.state.y; }
-  get alwaysFive() { return 5; }
+  setX(v: number) {
+    this.emit({ ...this.state, x: v });
+  }
+  setY(v: number) {
+    this.emit({ ...this.state, y: v });
+  }
+  get sum() {
+    return this.state.x + this.state.y;
+  }
+  get product() {
+    return this.state.x * this.state.y;
+  }
+  get alwaysFive() {
+    return 5;
+  }
 }
 
 afterEach(() => clearAll());
@@ -29,8 +39,12 @@ describe('useBloc — getter advanced', () => {
     }
     render(<Comp />);
     const count = renders.mock.calls.length;
-    act(() => { bloc.setX(99); });
-    act(() => { bloc.setY(99); });
+    act(() => {
+      bloc.setX(99);
+    });
+    act(() => {
+      bloc.setY(99);
+    });
     expect(renders.mock.calls.length).toBe(count);
   });
 
@@ -47,11 +61,15 @@ describe('useBloc — getter advanced', () => {
     expect(screen.getByTestId('sum').textContent).toBe('5');
     const initial = renders.mock.calls.length;
 
-    act(() => { bloc.setX(10); });
+    act(() => {
+      bloc.setX(10);
+    });
     expect(renders.mock.calls.length).toBe(initial + 1);
     expect(screen.getByTestId('sum').textContent).toBe('13');
 
-    act(() => { bloc.setY(10); });
+    act(() => {
+      bloc.setY(10);
+    });
     expect(renders.mock.calls.length).toBe(initial + 2);
     expect(screen.getByTestId('sum').textContent).toBe('20');
   });
@@ -68,7 +86,9 @@ describe('useBloc — getter advanced', () => {
     render(<Comp />);
     const initial = renders.mock.calls.length;
     // With autoTrack: false, ANY state change triggers re-render (including y-only changes)
-    act(() => { bloc.setY(100); });
+    act(() => {
+      bloc.setY(100);
+    });
     expect(renders.mock.calls.length).toBeGreaterThan(initial);
   });
 
@@ -86,11 +106,15 @@ describe('useBloc — getter advanced', () => {
     const initial = renders.mock.calls.length;
 
     // Changing y — not in manual deps, getter tracking disabled → no re-render
-    act(() => { bloc.setY(99); });
+    act(() => {
+      bloc.setY(99);
+    });
     expect(renders.mock.calls.length).toBe(initial);
 
     // Changing x — in manual deps → re-render
-    act(() => { bloc.setX(99); });
+    act(() => {
+      bloc.setX(99);
+    });
     expect(renders.mock.calls.length).toBe(initial + 1);
   });
 
@@ -107,7 +131,9 @@ describe('useBloc — getter advanced', () => {
     render(<Comp />);
     const initial = renders.mock.calls.length;
     // Changing x changes sum — re-render
-    act(() => { bloc.setX(5); });
+    act(() => {
+      bloc.setX(5);
+    });
     expect(renders.mock.calls.length).toBeGreaterThan(initial);
     // Now only access alwaysFive — neither x nor y changes should trigger re-render
     renders.mockClear();
@@ -120,20 +146,31 @@ describe('useBloc — getter advanced', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     class ThrowingBloc extends Cubit<{ safe: boolean; value: number }> {
-      constructor() { super({ safe: true, value: 5 }); }
+      constructor() {
+        super({ safe: true, value: 5 });
+      }
       get risky() {
         if (!this.state.safe) throw new Error('boom');
         return this.state.value * 2;
       }
-      makeUnsafe() { this.emit({ ...this.state, safe: false }); }
+      makeUnsafe() {
+        this.emit({ ...this.state, safe: false });
+      }
     }
-    class ErrorBoundary extends Component<{ children: ReactNode }, { caught: boolean }> {
+    class ErrorBoundary extends Component<
+      { children: ReactNode },
+      { caught: boolean }
+    > {
       state = { caught: false };
-      static getDerivedStateFromError() { return { caught: true }; }
+      static getDerivedStateFromError() {
+        return { caught: true };
+      }
       render() {
-        return this.state.caught
-          ? <div data-testid="error-caught" />
-          : <>{this.props.children}</>;
+        return this.state.caught ? (
+          <div data-testid="error-caught" />
+        ) : (
+          <>{this.props.children}</>
+        );
       }
     }
     let bloc!: ThrowingBloc;
@@ -142,8 +179,16 @@ describe('useBloc — getter advanced', () => {
       bloc = b as ThrowingBloc;
       return <span>{b.risky}</span>;
     }
-    render(<ErrorBoundary><Comp /></ErrorBoundary>);
-    expect(() => act(() => { bloc.makeUnsafe(); })).not.toThrow();
+    render(
+      <ErrorBoundary>
+        <Comp />
+      </ErrorBoundary>,
+    );
+    expect(() =>
+      act(() => {
+        bloc.makeUnsafe();
+      }),
+    ).not.toThrow();
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringContaining('risky'),
       expect.any(Error),
@@ -167,22 +212,34 @@ describe('useBloc — getter advanced', () => {
     const initial = renders.mock.calls.length;
 
     // Sum accesses both x and y — changing x triggers re-render
-    act(() => { bloc.setX(10); });
+    act(() => {
+      bloc.setX(10);
+    });
     expect(renders.mock.calls.length).toBeGreaterThan(initial);
 
     // Switch to product — after re-render, product is tracked (also uses x and y)
     useSum = false;
-    act(() => { bloc.setY(10); });
+    act(() => {
+      bloc.setY(10);
+    });
     expect(renders.mock.calls.length).toBeGreaterThan(initial + 1);
   });
 
   it('symbol-keyed getter is tracked like a regular getter', () => {
     const mySymbol = Symbol('compute');
     class SymbolGetterBloc extends Cubit<{ v: number; other: string }> {
-      constructor() { super({ v: 5, other: 'x' }); }
-      get [mySymbol]() { return this.state.v * 3; }
-      setV(n: number) { this.emit({ ...this.state, v: n }); }
-      setOther(s: string) { this.emit({ ...this.state, other: s }); }
+      constructor() {
+        super({ v: 5, other: 'x' });
+      }
+      get [mySymbol]() {
+        return this.state.v * 3;
+      }
+      setV(n: number) {
+        this.emit({ ...this.state, v: n });
+      }
+      setOther(s: string) {
+        this.emit({ ...this.state, other: s });
+      }
     }
     const renders = vi.fn();
     let bloc!: SymbolGetterBloc;
@@ -197,11 +254,15 @@ describe('useBloc — getter advanced', () => {
     const initial = renders.mock.calls.length;
 
     // Changing unrelated 'other' should not re-render
-    act(() => { bloc.setOther('y'); });
+    act(() => {
+      bloc.setOther('y');
+    });
     expect(renders.mock.calls.length).toBe(initial);
 
     // Changing 'v' changes the getter value — should re-render
-    act(() => { bloc.setV(10); });
+    act(() => {
+      bloc.setV(10);
+    });
     expect(renders.mock.calls.length).toBeGreaterThan(initial);
     expect(screen.getByTestId('val').textContent).toBe('30');
   });

@@ -1,5 +1,11 @@
-export { IndexedDbPersistPluginImpl, createIndexedDbPersistPlugin } from './IndexedDbPersistPlugin';
-export { NativeIndexedDbAdapter, createNativeIndexedDbAdapter } from './IndexedDbAdapter';
+export {
+  IndexedDbPersistPluginImpl,
+  createIndexedDbPersistPlugin,
+} from './IndexedDbPersistPlugin';
+export {
+  NativeIndexedDbAdapter,
+  createNativeIndexedDbAdapter,
+} from './IndexedDbAdapter';
 export type {
   IndexedDbPersistAdapter,
   IndexedDbPersistPlugin,

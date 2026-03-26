@@ -6,6 +6,7 @@ import {
   type LifecycleEvent,
 } from './StateContainerRegistry';
 import { acquire, release } from '../registry';
+import { UPDATE } from './symbols';
 
 // ============ Test Implementations ============
 
@@ -15,11 +16,11 @@ class TestCubit extends StateContainer<{ value: number }> {
   }
 
   increment = () => {
-    this.update((state) => ({ value: state.value + 1 }));
+    this[UPDATE]((state) => ({ value: state.value + 1 }));
   };
 
   setValue = (value: number) => {
-    this.update(() => ({ value }));
+    this[UPDATE](() => ({ value }));
   };
 }
 
@@ -165,7 +166,8 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
     });
 
     it('should only unsubscribe specific listener', () => {
-      const { listener: listener1, unsubscribe: unsubscribe1 } = withCreatedListener();
+      const { listener: listener1, unsubscribe: unsubscribe1 } =
+        withCreatedListener();
       const { listener: listener2 } = withCreatedListener();
 
       unsubscribe1();
@@ -221,9 +223,13 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
 
   describe('Error Handling', () => {
     it('should handle listener errors without breaking other listeners', () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
 
-      const listener1 = vi.fn(() => { throw new Error('Listener 1 error'); });
+      const listener1 = vi.fn(() => {
+        throw new Error('Listener 1 error');
+      });
       const listener2 = vi.fn();
       globalRegistry.on('created', listener1);
       globalRegistry.on('created', listener2);
@@ -248,11 +254,17 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
     });
 
     it('should handle async errors in listeners', async () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      const listener = vi.fn(async () => { throw new Error('Async error'); });
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+      const listener = vi.fn(async () => {
+        throw new Error('Async error');
+      });
       globalRegistry.on('created', listener);
 
-      expect(() => { new TestCubit(); }).not.toThrow();
+      expect(() => {
+        new TestCubit();
+      }).not.toThrow();
 
       consoleErrorSpy.mockRestore();
     });
@@ -345,7 +357,8 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
         const duration = Date.now() - start;
         metrics.stateChanges++;
         metrics.averageStateChangeTime =
-          (metrics.averageStateChangeTime * (metrics.stateChanges - 1) + duration) /
+          (metrics.averageStateChangeTime * (metrics.stateChanges - 1) +
+            duration) /
           metrics.stateChanges;
       });
 

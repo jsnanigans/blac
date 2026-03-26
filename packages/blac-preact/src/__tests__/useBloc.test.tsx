@@ -5,10 +5,10 @@
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/preact';
-import { StateContainer, clearAll } from '@blac/core';
+import { Cubit, clearAll } from '@blac/core';
 import { useBloc } from '../useBloc';
 
-class CounterBloc extends StateContainer<{ count: number }> {
+class CounterBloc extends Cubit<{ count: number }> {
   constructor() {
     super({ count: 0 });
   }
@@ -22,7 +22,7 @@ class CounterBloc extends StateContainer<{ count: number }> {
   };
 }
 
-class IsolatedBloc extends StateContainer<{ count: number }> {
+class IsolatedBloc extends Cubit<{ count: number }> {
   constructor() {
     super({ count: 0 });
   }
@@ -84,8 +84,12 @@ describe('useBloc', () => {
 
   describe('Isolated Instances', () => {
     it('should create new instance for each hook', () => {
-      const { result: result1 } = renderHook(() => useBloc(IsolatedBloc, { instanceId: 'iso-a' }));
-      const { result: result2 } = renderHook(() => useBloc(IsolatedBloc, { instanceId: 'iso-b' }));
+      const { result: result1 } = renderHook(() =>
+        useBloc(IsolatedBloc, { instanceId: 'iso-a' }),
+      );
+      const { result: result2 } = renderHook(() =>
+        useBloc(IsolatedBloc, { instanceId: 'iso-b' }),
+      );
 
       const [, bloc1] = result1.current;
       const [, bloc2] = result2.current;
@@ -95,11 +99,17 @@ describe('useBloc', () => {
 
     it('should maintain separate state for each instance', async () => {
       const { result: result1 } = renderHook(() => {
-        const [state, bloc] = useBloc(IsolatedBloc, { instanceId: 'iso-c', autoTrack: false });
+        const [state, bloc] = useBloc(IsolatedBloc, {
+          instanceId: 'iso-c',
+          autoTrack: false,
+        });
         return { state, bloc };
       });
       const { result: result2 } = renderHook(() => {
-        const [state, bloc] = useBloc(IsolatedBloc, { instanceId: 'iso-d', autoTrack: false });
+        const [state, bloc] = useBloc(IsolatedBloc, {
+          instanceId: 'iso-d',
+          autoTrack: false,
+        });
         return { state, bloc };
       });
 
@@ -110,7 +120,6 @@ describe('useBloc', () => {
       expect(result1.current.state.count).toBe(1);
       expect(result2.current.state.count).toBe(0);
     });
-
   });
 
   describe('Custom Instance IDs', () => {

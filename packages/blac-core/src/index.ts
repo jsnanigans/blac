@@ -7,6 +7,7 @@ export type {
   SystemEventPayloads,
 } from './core/StateContainer';
 export { Cubit } from './core/Cubit';
+export { EMIT, UPDATE } from './core/symbols';
 
 // Registry
 export {
@@ -75,4 +76,3 @@ export type {
 
 export type { Brand, BrandedId, InstanceId } from './types/branded';
 export { instanceId } from './types/branded';
-

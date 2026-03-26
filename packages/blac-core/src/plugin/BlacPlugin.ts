@@ -1,7 +1,4 @@
-import type {
-  HydrationStatus,
-  StateContainer,
-} from '../core/StateContainer';
+import type { HydrationStatus, StateContainer } from '../core/StateContainer';
 
 /**
  * Metadata information about a state container instance for debugging and inspection

@@ -17,6 +17,7 @@ import {
   getStats,
   getRefCount,
 } from '../registry';
+import { UPDATE } from './symbols';
 
 // Test implementations
 class CounterBloc extends StateContainer<{ count: number }> {
@@ -25,7 +26,7 @@ class CounterBloc extends StateContainer<{ count: number }> {
   }
 
   increment = () => {
-    this.update((state) => ({ count: state.count + 1 }));
+    this[UPDATE]((state) => ({ count: state.count + 1 }));
   };
 }
 
@@ -35,7 +36,7 @@ class UserBloc extends StateContainer<{ name: string; age: number }> {
   }
 
   setName = (name: string) => {
-    this.update((state) => ({ ...state, name }));
+    this[UPDATE]((state) => ({ ...state, name }));
   };
 }
 
@@ -69,7 +70,6 @@ describe('StateContainer - Registry Features', () => {
       const stats = getStats();
       expect(stats.registeredTypes).toBe(2);
     });
-
   });
 
   describe('Shared Instances (Default)', () => {
