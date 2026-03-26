@@ -120,6 +120,42 @@ These are available inside your Cubit class but not from the outside:
 | `createdAt` | `number` | Creation timestamp |
 | `hydrationStatus` | `HydrationStatus` | Current hydration phase |
 
+## Async methods
+
+Cubits handle async operations naturally. Model loading/error state explicitly and guard against stale responses:
+
+```ts
+interface ArticleState {
+  articles: Article[];
+  status: 'idle' | 'loading' | 'error' | 'success';
+  error: string | null;
+}
+
+class ArticleCubit extends Cubit<ArticleState> {
+  private requestId = 0;
+
+  constructor() {
+    super({ articles: [], status: 'idle', error: null });
+  }
+
+  load = async (category: string) => {
+    const id = ++this.requestId;
+    this.patch({ status: 'loading', error: null });
+
+    try {
+      const articles = await api.fetchArticles(category);
+      if (id !== this.requestId) return; // stale response
+      this.emit({ articles, status: 'success', error: null });
+    } catch (e) {
+      if (id !== this.requestId) return;
+      this.patch({ status: 'error', error: String(e) });
+    }
+  };
+}
+```
+
+The `requestId` pattern discards responses from superseded requests. Each new `load()` call increments the ID, and callbacks from previous calls see a mismatch and bail out.
+
 ::: tip Form validation pattern
 Cubits work well for form state. Use `patch` for field updates and getters for validation:
 
@@ -146,4 +182,4 @@ class FormCubit extends Cubit<{ email: string; password: string }> {
 ```
 :::
 
-See also: [API Reference](/api/core)
+See also: [Patterns & Recipes](/guide/patterns), [API Reference](/api/core)

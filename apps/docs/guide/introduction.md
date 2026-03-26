@@ -52,4 +52,5 @@ For a simple app with two or three pieces of state, React's built-in `useState` 
 
 - [Quick Start](/guide/getting-started) — Install BlaC and build your first component
 - [Core Concepts](/guide/concepts) — Understand the mental model
+- [Patterns & Recipes](/guide/patterns) — Common patterns for real apps
 - [useBloc Hook](/react/use-bloc) — Full hook reference

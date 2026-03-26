@@ -4,38 +4,54 @@ This page explains the mental model behind BlaC. Understanding these concepts wi
 
 ## State Containers
 
-A state container is a class that holds a typed state value and notifies listeners when it changes. All state containers in BlaC extend `StateContainer<S>`, where `S` is the state type (must be an object).
+A state container is a class that holds a typed state value and notifies listeners when it changes.
 
-**Cubit** is the concrete class you'll extend. It exposes public methods (`emit`, `update`, `patch`) to change state. You add your own methods for business logic.
+Think of it like a mini-store scoped to one concern. An `AuthCubit` holds auth state. A `CartCubit` holds cart state. Each is a self-contained unit with its own state type, methods, and lifecycle.
+
+**Cubit** is the concrete class you'll extend. It gives you three ways to change state:
 
 ```ts
 class AuthCubit extends Cubit<{ user: User | null; loading: boolean }> {
   constructor() {
-    super({ user: null, loading: false });
+    super({ user: null, loading: false }); // initial state
   }
 
   login = async (credentials: Credentials) => {
-    this.patch({ loading: true });
+    this.patch({ loading: true });           // merge partial changes
     const user = await api.login(credentials);
-    this.emit({ user, loading: false });
+    this.emit({ user, loading: false });     // replace entire state
+  };
+
+  logout = () => {
+    this.update((s) => ({ ...s, user: null })); // derive from current
   };
 }
 ```
 
-State containers are framework-agnostic — they work without React, making them easy to test.
+State containers are framework-agnostic — they work without React. You can instantiate them in a test, call methods, and assert on `state` directly. No DOM, no hooks, no providers needed.
 
 ## Registry
 
-The registry is a global singleton that manages state container instances. It maps each class (and optional instance key) to a single instance with a ref count.
+The registry is a global singleton that manages state container instances. When you call `useBloc(CounterCubit)` in two different components, they both get the **same** `CounterCubit` instance. The registry makes this happen.
+
+It maps each class (and optional instance key) to a single instance, plus a ref count tracking how many consumers are using it:
 
 ```
 Registry
-├── CounterCubit (default)  →  instance, refCount: 2
+├── CounterCubit (default)  →  instance, refCount: 2   ← two components
 ├── AuthCubit (default)     →  instance, refCount: 1
 └── EditorCubit ("doc-42")  →  instance, refCount: 3
 ```
 
+### Ref counting
+
+Every `useBloc` call increments the ref count on mount and decrements it on unmount. When the count hits zero, the instance is **automatically disposed** — its resources are cleaned up and it's removed from the registry. This means you don't need to worry about memory leaks from forgotten state containers.
+
+If you want an instance to survive even when nothing is using it, mark it with `@blac({ keepAlive: true })`.
+
 ### Registry functions
+
+In React, `useBloc` handles the registry for you. Outside React (tests, scripts, server-side), you interact with the registry directly:
 
 | Function | Creates? | Ref count | Use when |
 |----------|----------|-----------|----------|
@@ -44,12 +60,6 @@ Registry
 | `borrow(Class)` | No | No change | Instance must already exist (throws if not) |
 | `borrowSafe(Class)` | No | No change | Like `borrow` but returns `{ error, instance }` |
 | `release(Class)` | No | -1 | Done with your reference |
-
-In React, `useBloc` calls `acquire` on mount and `release` on unmount automatically. You rarely need these functions directly.
-
-### Ref counting
-
-Each `acquire` increments the ref count. Each `release` decrements it. When it reaches zero, the instance is disposed (unless `keepAlive` is set). This ensures instances are cleaned up when no component needs them.
 
 ## Instance Modes
 
@@ -71,16 +81,21 @@ With `@blac({ keepAlive: true })`, the instance survives even when all component
 
 ## Dependency Tracking
 
-When you call `useBloc`, the returned `state` object is wrapped in a Proxy that records which properties your component reads during render. On subsequent state changes, the component only re-renders if one of those tracked properties changed.
+This is BlaC's key performance feature. When you call `useBloc`, the returned `state` is wrapped in a Proxy that records which properties your component actually reads during render:
 
 ```tsx
 function UserName() {
   const [state] = useBloc(UserCubit);
-  return <span>{state.name}</span>; // only tracks 'name'
+  return <span>{state.name}</span>; // only 'name' is tracked
 }
 ```
 
-If `state.email` changes but `state.name` doesn't, this component won't re-render.
+If `state.email` changes but `state.name` doesn't, this component **won't re-render**. This happens automatically — no selectors, no `useMemo`, no `React.memo`.
+
+The tracking also works for:
+- Nested properties: `state.user.profile.name`
+- Array access: `state.items.length`, `state.items[0]`
+- Getters on the bloc instance: `bloc.total`, `bloc.isEmpty`
 
 Three tracking modes are available:
 
@@ -117,7 +132,16 @@ Official plugins: [Logging](/plugins/logging), [DevTools](/plugins/devtools), [P
 | **Registry** | Global singleton managing instance creation, sharing, and disposal |
 | **acquire / release** | Increment / decrement an instance's ref count |
 | **Ref count** | Number of active references to an instance; disposed at zero |
-| **Isolated** | One instance per `useBloc` call, disposed on unmount |
+| **Named instance** | An instance keyed by a string, allowing multiple instances of the same class |
 | **Keep alive** | Instance persists even when ref count reaches zero |
 | **Auto-tracking** | Proxy-based detection of which state properties a component reads |
 | **Plugin** | Observer that hooks into state container lifecycle events |
+| **Hydration** | Restoring persisted state into a state container on startup |
+| **depend()** | Declare a cross-bloc dependency; returns a lazy getter |
+
+## What's next?
+
+- [Patterns & Recipes](/guide/patterns) — Common patterns for structuring your app
+- [Cubit](/core/cubit) — Full Cubit API reference
+- [useBloc](/react/use-bloc) — Hook options and tracking modes
+- [DevTools](/plugins/devtools) — Inspect and debug your state

@@ -79,4 +79,4 @@ const stop = watch(UserCubit, (user) => {
 });
 ```
 
-See also: [tracked](/core/tracked), [API Reference](/api/core)
+See also: [tracked](/core/tracked), [Patterns & Recipes](/guide/patterns), [API Reference](/api/core)

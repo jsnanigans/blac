@@ -31,6 +31,7 @@ const referenceSidebar = [
       { text: 'useBloc', link: '/react/use-bloc' },
       { text: 'Dependency Tracking', link: '/react/dependency-tracking' },
       { text: 'Performance', link: '/react/performance' },
+      { text: 'Preact', link: '/react/preact' },
     ],
   },
 ];
@@ -70,6 +71,7 @@ export default defineConfig({
             { text: 'What is BlaC?', link: '/guide/introduction' },
             { text: 'Quick Start', link: '/guide/getting-started' },
             { text: 'Core Concepts', link: '/guide/concepts' },
+            { text: 'Patterns & Recipes', link: '/guide/patterns' },
           ],
         },
       ],

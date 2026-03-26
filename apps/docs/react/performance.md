@@ -141,6 +141,24 @@ function CartIcon() {
 }
 ```
 
+## Pattern: Lifecycle hooks instead of useEffect
+
+Use `onMount` and `onUnmount` to trigger side effects tied to the component lifecycle without writing `useEffect`:
+
+```tsx
+function Feed() {
+  const [state] = useBloc(FeedCubit, {
+    onMount: (feed) => feed.load('latest'),
+    onUnmount: (feed) => feed.cancelPending(),
+  });
+
+  if (state.status === 'loading') return <Spinner />;
+  return <ArticleList articles={state.articles} />;
+}
+```
+
+This keeps the component body clean and avoids the common `useEffect` + dependency array pitfalls.
+
 ## Measuring re-renders
 
 Use React DevTools Profiler to identify components that re-render too often. You can also add a simple render counter during development:
@@ -160,4 +178,14 @@ function MyComponent() {
 }
 ```
 
-See also: [Dependency Tracking](/react/dependency-tracking), [useBloc](/react/use-bloc)
+::: tip
+Increment the ref in the render body, not in `useEffect`. The render body runs on every render, while `useEffect` runs after — so the ref in the body gives you the accurate count.
+:::
+
+## Using DevTools for performance
+
+The [BlaC DevTools](/plugins/devtools) show you exactly which instances are active and when state changes occur. Use the event log to spot rapid state changes or unexpected instance churn that could indicate performance issues.
+
+The [Logging Plugin](/plugins/logging) can also detect rapid lifecycle patterns automatically — instances being created and destroyed in quick succession — and warn you in the console.
+
+See also: [Dependency Tracking](/react/dependency-tracking), [useBloc](/react/use-bloc), [DevTools](/plugins/devtools)

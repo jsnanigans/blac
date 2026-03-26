@@ -70,6 +70,32 @@ class NotificationCubit extends Cubit<NotificationState> {
 | `ensure(Class)` | One-off access; creates if missing |
 | `borrow(Class)` | One-off access; instance must already exist |
 
+## Calling methods on dependencies
+
+Dependencies aren't just for reading state — you can call methods on them to trigger side effects in other blocs.
+
+```ts
+class ChannelCubit extends Cubit<ChannelState> {
+  private getNotifications = this.depend(NotificationCubit);
+
+  receiveMessage = (message: Message) => {
+    this.emit({
+      ...this.state,
+      messages: [...this.state.messages, message],
+    });
+
+    // Trigger a side effect in another bloc
+    this.getNotifications().incrementUnread(this.state.channelId);
+  };
+
+  markAsRead = () => {
+    this.getNotifications().clearUnread(this.state.channelId);
+  };
+}
+```
+
+This keeps notification logic in `NotificationCubit` while letting `ChannelCubit` coordinate when it fires.
+
 ## Derived getters across blocs
 
 Getters that read from multiple blocs are fully tracked. Components only re-render when the computed result changes.
@@ -87,6 +113,74 @@ class DashboardCubit extends Cubit<{}> {
     const user = this.getAuth().state.user;
     const itemCount = this.getCart().state.items.length;
     return `${user?.name ?? 'Guest'} has ${itemCount} items`;
+  }
+}
+```
+
+## On-demand instance creation
+
+Sometimes a dependency doesn't exist yet and needs to be created conditionally. Use `borrowSafe` to check and `acquire` to create on demand:
+
+```ts
+import { Cubit, borrowSafe, acquire } from '@blac/core';
+
+class ChannelCubit extends Cubit<ChannelState> {
+  private ensureUserCubit(userId: string) {
+    const result = borrowSafe(UserCubit, userId);
+    if (!result.error) return; // already exists
+
+    // Create on demand with a named instance
+    acquire(UserCubit, userId).setUserId(userId);
+  }
+
+  receiveMessage = (message: Message) => {
+    this.ensureUserCubit(message.userId);
+    // ...
+  };
+}
+```
+
+::: tip
+Use `borrowSafe` over `borrow` when the instance may not exist yet. `borrow` throws, while `borrowSafe` returns `{ error, instance }` so you can handle the missing case gracefully.
+:::
+
+## Combining patterns
+
+A real-world bloc often combines multiple dependency patterns: declared dependencies via `depend()`, method calls on those dependencies, and on-demand instance creation.
+
+```ts
+class ChannelCubit extends Cubit<ChannelState> {
+  // Declared dependencies — lazy getters
+  private getContacts = this.depend(ContactsCubit);
+  private getNotifications = this.depend(NotificationCubit);
+
+  constructor() {
+    super({ channel: null, messages: [], unreadCount: 0 });
+  }
+
+  // Read state from a dependency during init
+  init = ({ channelId }: { channelId: string }) => {
+    const channel = this.getContacts().state.channels.find(
+      (c) => c.id === channelId,
+    );
+    if (channel) this.emit({ ...this.state, channel });
+  };
+
+  // Call methods on dependencies for side effects
+  receiveMessage = (message: Message) => {
+    this.ensureUserCubit(message.userId);
+    this.emit({
+      ...this.state,
+      messages: [...this.state.messages, message],
+    });
+    this.getNotifications().incrementUnread(this.state.channel!.id);
+  };
+
+  // On-demand instance creation with borrowSafe + acquire
+  private ensureUserCubit(userId: string) {
+    const { error } = borrowSafe(UserCubit, userId);
+    if (!error) return;
+    acquire(UserCubit, userId).setUserId(userId);
   }
 }
 ```

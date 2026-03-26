@@ -7,7 +7,8 @@ BlaC has an official set of plugins for common needs. All plugins implement the 
 | Package | Purpose | Typical environment |
 |---------|---------|-------------------|
 | [`@blac/logging-plugin`](/plugins/logging) | Console logging, instance monitoring, rapid lifecycle detection | Development |
-| [`@blac/devtools-connect`](/plugins/devtools) | Chrome DevTools extension and Redux DevTools integration | Development |
+| [`@blac/devtools-connect`](/plugins/devtools) | Core plugin for instance tracking and state inspection | Development |
+| [`@blac/devtools-ui`](/plugins/devtools#2-add-the-in-app-ui-recommended) | In-app overlay, Picture-in-Picture, and panel UI components | Development |
 | [`@blac/plugin-persist`](/plugins/persistence) | Persist state to IndexedDB with automatic hydration | All |
 
 ## Installing a plugin

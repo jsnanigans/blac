@@ -144,5 +144,7 @@ When you call `useBloc(CounterCubit)`:
 ## What's next?
 
 - [Core Concepts](/guide/concepts) — Registry, tracking, and lifecycle
+- [Patterns & Recipes](/guide/patterns) — Async patterns, cross-bloc communication, persistence
 - [Cubit](/core/cubit) — Full Cubit API
 - [useBloc](/react/use-bloc) — Hook options and tracking modes
+- [DevTools](/plugins/devtools) — Inspect state in real time
