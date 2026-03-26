@@ -1,4 +1,5 @@
 import React, { FC } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { useBloc } from '@blac/react';
 import { DevToolsLogsBloc } from '../blocs';
 import type { LogEntry, LogEventType } from '../types';
@@ -330,10 +331,20 @@ const MultiSelect = <O extends string>({
   );
 };
 
+const ROW_HEIGHT = 28;
+
 export const LogsView: FC = React.memo(() => {
   const [state, logsBloc] = useBloc(DevToolsLogsBloc);
   const { filters } = state;
   const logs = logsBloc.filteredLogs;
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+
+  const virtualizer = useVirtualizer({
+    count: logs.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => ROW_HEIGHT,
+    overscan: 20,
+  });
 
   const availableInstanceIds = React.useMemo(
     () => logsBloc.getAvailableInstanceIdsForClasses(filters.classNames),
@@ -440,7 +451,7 @@ export const LogsView: FC = React.memo(() => {
       </div>
 
       {/* Log rows */}
-      <div style={{ flex: 1, overflow: 'auto' }}>
+      <div ref={scrollRef} style={{ flex: 1, overflow: 'auto' }}>
         {logs.length === 0 ? (
           <div
             style={{
@@ -455,7 +466,23 @@ export const LogsView: FC = React.memo(() => {
             {state.logs.length === 0 ? 'No events yet' : 'No events match filters'}
           </div>
         ) : (
-          logs.map((entry) => <LogEntryRow key={entry.id} entry={entry} />)
+          <div style={{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }}>
+            {virtualizer.getVirtualItems().map((item) => (
+              <div
+                key={item.key}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: `${item.size}px`,
+                  transform: `translateY(${item.start}px)`,
+                }}
+              >
+                <LogEntryRow entry={logs[item.index]} />
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>

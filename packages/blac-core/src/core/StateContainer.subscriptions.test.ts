@@ -81,6 +81,7 @@ describe('StateContainer subscriptions', () => {
 
   it('unsubscribing during emission is safe', () => {
     const container = new SimpleContainer();
+    // eslint-disable-next-line prefer-const
     let unsubscribe: () => void;
     const selfRemoving = vi.fn(() => unsubscribe());
     unsubscribe = container.subscribe(selfRemoving);

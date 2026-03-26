@@ -341,7 +341,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     previousState?: any,
     currentState?: any,
     callstack?: string,
-    trigger?: Trigger,
+    _trigger?: Trigger,
   ): InstanceMetadata {
     const metadata = context.getInstanceMetadata(instance);
     const state = context.getState(instance);

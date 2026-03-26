@@ -2,7 +2,6 @@ import React, { FC, useState } from 'react';
 import { useBloc } from '@blac/react';
 import { DevToolsLayoutBloc, DevToolsDependencyBloc, DevToolsInstancesBloc } from '../blocs';
 import type { DependencyEdge, InstanceData } from '../types';
-import InstanceId from './InstanceId';
 import { CurrentStateView } from './CurrentStateView';
 import { StateHistoryView } from './StateHistoryView';
 import { StateDiffView } from './StateDiffView';
@@ -17,7 +16,7 @@ function classColor(className: string): string {
   for (let i = 0; i < className.length; i++) {
     hash = className.charCodeAt(i) + ((hash << 5) - hash);
   }
-  return `hsl(${Math.abs(hash) % 360}, 60%, 45%)`;
+  return `hsl(${Math.abs(hash) % 360}, 60%, 55%)`;
 }
 
 interface DependenciesViewProps {
@@ -28,9 +27,71 @@ interface DependenciesViewProps {
   onNavigate: (id: string) => void;
 }
 
+const DepCard: FC<{
+  color: string;
+  className: string;
+  instanceName?: string;
+  navigable: boolean;
+  onClick?: () => void;
+}> = ({ color, className, instanceName, navigable, onClick }) => {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        padding: '5px 10px',
+        background: hovered && navigable ? T.bgHover : T.bg2,
+        border: `1px solid ${hovered && navigable ? T.border2 : T.border1}`,
+        borderLeft: `3px solid ${color}`,
+        borderRadius: T.radius,
+        cursor: navigable ? 'pointer' : 'default',
+        gap: '6px',
+        flexShrink: 0,
+      }}
+    >
+      <span
+        style={{
+          fontSize: '11px',
+          fontWeight: 600,
+          color,
+          fontFamily: T.fontMono,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}
+      >
+        {className}
+      </span>
+      {instanceName && (
+        <span
+          style={{
+            fontSize: '10px',
+            color: T.text2,
+            fontFamily: T.fontMono,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {instanceName}
+        </span>
+      )}
+      {navigable && (
+        <span style={{ color: T.textAccent, fontSize: '10px', marginLeft: 'auto', flexShrink: 0 }}>
+          →
+        </span>
+      )}
+    </div>
+  );
+};
+
 const DependenciesView: FC<DependenciesViewProps> = React.memo(
   ({ instanceId, className, edges, instances, onNavigate }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(true);
 
     const outgoing = edges.filter((e) => e.fromId === instanceId);
     const incoming = edges.filter((e) => e.toClass === className);
@@ -44,12 +105,14 @@ const DependenciesView: FC<DependenciesViewProps> = React.memo(
           (inst.name === targetKey || inst.id.endsWith(`:${targetKey}`)),
       ) ?? instances.find((inst) => inst.className === targetClass);
 
+    const total = outgoing.length + incoming.length;
+
     return (
-      <div style={{ marginTop: '20px' }}>
+      <div style={{ marginTop: '16px' }}>
         <div
           onClick={() => setIsExpanded((v) => !v)}
           style={{
-            fontSize: '14px',
+            fontSize: '12px',
             marginBottom: '8px',
             fontWeight: 600,
             cursor: 'pointer',
@@ -58,85 +121,70 @@ const DependenciesView: FC<DependenciesViewProps> = React.memo(
             gap: '6px',
             userSelect: 'none',
             padding: '3px 0',
+            color: T.text1,
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = T.textAccent; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = T.text0; }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = T.text0; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = T.text1; }}
         >
           <span
             style={{
               display: 'inline-block',
-              transition: 'transform 0.2s',
+              transition: 'transform 0.15s',
               transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
-              fontSize: '12px',
+              fontSize: '10px',
+              color: T.text2,
             }}
           >
             ▶
           </span>
           <span>Dependencies</span>
-          <span style={{ fontSize: '11px', color: '#888', fontWeight: 400 }}>
-            ({outgoing.length + incoming.length})
+          <span
+            style={{
+              fontSize: '10px',
+              color: T.text3,
+              fontWeight: 400,
+              background: T.bg3,
+              padding: '1px 5px',
+              borderRadius: T.radiusSm,
+              border: `1px solid ${T.border1}`,
+            }}
+          >
+            {total}
           </span>
         </div>
 
         {isExpanded && (
-          <div
-            style={{
-              border: '1px solid #333',
-              borderRadius: '3px',
-              background: '#1e1e1e',
-              overflow: 'hidden',
-            }}
-          >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {outgoing.length > 0 && (
               <div>
                 <div
                   style={{
-                    padding: '6px 10px',
                     fontSize: '10px',
-                    color: '#666',
-                    background: '#252526',
-                    borderBottom: '1px solid #333',
-                    letterSpacing: '0.5px',
+                    color: T.text3,
+                    letterSpacing: '0.6px',
+                    textTransform: 'uppercase',
+                    marginBottom: '5px',
+                    paddingLeft: '2px',
                   }}
                 >
-                  DEPENDS ON
+                  Depends on
                 </div>
-                {outgoing.map((edge, i) => {
-                  const target = resolveInstance(edge.toClass, edge.toKey);
-                  return (
-                    <div
-                      key={i}
-                      style={{
-                        padding: '6px 10px',
-                        borderBottom: i < outgoing.length - 1 ? '1px solid #2a2a2a' : undefined,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        cursor: target ? 'pointer' : 'default',
-                        fontSize: '11px',
-                      }}
-                      onClick={() => target && onNavigate(target.id)}
-                      onMouseEnter={(e) => {
-                        if (target) (e.currentTarget as HTMLElement).style.background = '#252526';
-                      }}
-                      onMouseLeave={(e) => {
-                        (e.currentTarget as HTMLElement).style.background = 'transparent';
-                      }}
-                    >
-                      <span style={{ color: classColor(edge.toClass), fontFamily: 'monospace' }}>
-                        {edge.toClass}
-                      </span>
-                      <span style={{ color: '#555', fontSize: '10px' }}>
-                        :{edge.toKey}
-                      </span>
-                      {target && (
-                        <span style={{ color: '#569cd6', fontSize: '10px', marginLeft: 'auto' }}>
-                          →
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  {outgoing.map((edge, i) => {
+                    const target = resolveInstance(edge.toClass, edge.toKey);
+                    const color = classColor(edge.toClass);
+                    return (
+                      <DepCard
+                        key={i}
+                        color={color}
+                        className={edge.toClass}
+                        instanceName={edge.toKey}
+                        navigable={!!target}
+                        onClick={target ? () => onNavigate(target.id) : undefined}
+                      />
+                    );
+                  })}
+                </div>
               </div>
             )}
 
@@ -144,55 +192,32 @@ const DependenciesView: FC<DependenciesViewProps> = React.memo(
               <div>
                 <div
                   style={{
-                    padding: '6px 10px',
                     fontSize: '10px',
-                    color: '#666',
-                    background: '#252526',
-                    borderBottom: '1px solid #333',
-                    borderTop: outgoing.length > 0 ? '1px solid #333' : undefined,
-                    letterSpacing: '0.5px',
+                    color: T.text3,
+                    letterSpacing: '0.6px',
+                    textTransform: 'uppercase',
+                    marginBottom: '5px',
+                    paddingLeft: '2px',
                   }}
                 >
-                  DEPENDED ON BY
+                  Depended on by
                 </div>
-                {incoming.map((edge, i) => {
-                  const source = instances.find((inst) => inst.id === edge.fromId);
-                  return (
-                    <div
-                      key={i}
-                      style={{
-                        padding: '6px 10px',
-                        borderBottom: i < incoming.length - 1 ? '1px solid #2a2a2a' : undefined,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        cursor: source ? 'pointer' : 'default',
-                        fontSize: '11px',
-                      }}
-                      onClick={() => source && onNavigate(source.id)}
-                      onMouseEnter={(e) => {
-                        if (source) (e.currentTarget as HTMLElement).style.background = '#252526';
-                      }}
-                      onMouseLeave={(e) => {
-                        (e.currentTarget as HTMLElement).style.background = 'transparent';
-                      }}
-                    >
-                      <span style={{ color: classColor(edge.fromClass), fontFamily: 'monospace' }}>
-                        {edge.fromClass}
-                      </span>
-                      {source && (
-                        <span style={{ color: '#555', fontSize: '10px' }}>
-                          {source.name}
-                        </span>
-                      )}
-                      {source && (
-                        <span style={{ color: '#569cd6', fontSize: '10px', marginLeft: 'auto' }}>
-                          →
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  {incoming.map((edge, i) => {
+                    const source = instances.find((inst) => inst.id === edge.fromId);
+                    const color = classColor(edge.fromClass);
+                    return (
+                      <DepCard
+                        key={i}
+                        color={color}
+                        className={edge.fromClass}
+                        instanceName={source?.name}
+                        navigable={!!source}
+                        onClick={source ? () => onNavigate(source.id) : undefined}
+                      />
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
@@ -234,7 +259,7 @@ export const StateViewer: FC<StateViewerProps> = ({ onTimeTravel }) => {
       >
         <div
           style={{
-            color: '#888',
+            color: T.text2,
             textAlign: 'center',
             marginTop: '50px',
           }}
@@ -245,6 +270,7 @@ export const StateViewer: FC<StateViewerProps> = ({ onTimeTravel }) => {
     );
   }
 
+  const color = classColor(selectedInstance.className);
   const timeTravelForInstance = onTimeTravel
     ? (s: any) => onTimeTravel(selectedInstance.id, s)
     : undefined;
@@ -266,12 +292,26 @@ export const StateViewer: FC<StateViewerProps> = ({ onTimeTravel }) => {
           zIndex: 10,
           background: T.bg2,
           borderBottom: `1px solid ${T.border1}`,
+          borderLeft: `3px solid ${color}`,
           padding: '8px 12px',
+          display: 'flex',
+          alignItems: 'baseline',
+          gap: '6px',
         }}
       >
-        <h2 style={{ fontSize: '14px', margin: 0 }}>
-          <InstanceId id={selectedInstance.id} />
-        </h2>
+        <span
+          style={{
+            fontSize: '14px',
+            fontWeight: 700,
+            color,
+            fontFamily: T.fontMono,
+          }}
+        >
+          {selectedInstance.className}
+        </span>
+        <span style={{ fontSize: '12px', color: T.text2, fontFamily: T.fontMono }}>
+          : {selectedInstance.name}
+        </span>
       </div>
 
       {/* Metrics Bar */}
@@ -288,11 +328,11 @@ export const StateViewer: FC<StateViewerProps> = ({ onTimeTravel }) => {
         }}
       >
         <span>created {formatRelative(selectedInstance.createdAt ?? Date.now())}</span>
-        <span>·</span>
+        <span style={{ color: T.border2 }}>·</span>
         <span>{history.length} change{history.length !== 1 ? 's' : ''}</span>
         {selectedInstance.lastStateChangeTimestamp != null && (
           <>
-            <span>·</span>
+            <span style={{ color: T.border2 }}>·</span>
             <span>last {formatRelative(selectedInstance.lastStateChangeTimestamp)}</span>
           </>
         )}

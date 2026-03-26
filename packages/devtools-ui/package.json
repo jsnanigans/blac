@@ -66,7 +66,10 @@
     "typescript": "catalog:"
   },
   "dependencies": {
+    "@tanstack/react-virtual": "^3.13.0",
     "@uiw/react-json-view": "2.0.0-alpha.39",
+    "@xyflow/react": "^12.10.1",
+    "elkjs": "^0.11.1",
     "json-diff-kit": "^1.0.33"
   }
 }

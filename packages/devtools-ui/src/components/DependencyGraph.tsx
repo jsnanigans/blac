@@ -1,143 +1,251 @@
-import React, { FC, useMemo, useState } from 'react';
+import React, { FC, useCallback, useEffect, useMemo, useRef } from 'react';
+import {
+  ReactFlow,
+  ReactFlowProvider,
+  Controls,
+  Background,
+  BackgroundVariant,
+  Handle,
+  Position,
+  MarkerType,
+  useNodesState,
+  useEdgesState,
+  useReactFlow,
+  type Node,
+  type Edge,
+  type NodeProps,
+} from '@xyflow/react';
+import ELKBundled from 'elkjs/lib/elk.bundled.js';
 import { useBloc } from '@blac/react';
 import { DevToolsInstancesBloc, DevToolsDependencyBloc, DevToolsLayoutBloc } from '../blocs';
-import type { DependencyEdge } from '../types';
 import { T } from '../theme';
+import { injectXyflowStyles } from '../inject-xyflow-styles';
 
-interface GraphNode {
-  id: string;
-  className: string;
-  name: string;
-  x: number;
-  y: number;
-  level: number;
-}
-
-const NODE_WIDTH = 140;
-const NODE_HEIGHT = 40;
-const LEVEL_GAP = 200;
-const NODE_GAP = 60;
-
-/**
- * Simple hierarchical layout:
- * 1. Build adjacency map
- * 2. Assign levels via BFS from roots (no incoming edges)
- * 3. Position nodes within each level
- */
-function computeLayout(
-  nodes: Array<{ id: string; className: string; name: string }>,
-  edges: DependencyEdge[],
-): GraphNode[] {
-  if (nodes.length === 0) return [];
-
-  const incomingCount = new Map<string, number>(nodes.map((n) => [n.id, 0]));
-  const outgoing = new Map<string, string[]>(nodes.map((n) => [n.id, []]));
-
-  for (const edge of edges) {
-    // Find the target node by matching className to find the actual instance
-    const targetNode = nodes.find((n) => n.className === edge.toClass);
-    if (!targetNode) continue;
-    incomingCount.set(targetNode.id, (incomingCount.get(targetNode.id) ?? 0) + 1);
-    outgoing.get(edge.fromId)?.push(targetNode.id);
-  }
-
-  // BFS from roots
-  const levels = new Map<string, number>();
-  const queue: string[] = [];
-  for (const [id, count] of incomingCount) {
-    if (count === 0) {
-      levels.set(id, 0);
-      queue.push(id);
-    }
-  }
-
-  // Any node not reached gets level 0 (disconnected)
-  let head = 0;
-  while (head < queue.length) {
-    const id = queue[head++];
-    const level = levels.get(id) ?? 0;
-    for (const childId of (outgoing.get(id) ?? [])) {
-      const existing = levels.get(childId) ?? -1;
-      if (existing < level + 1) {
-        levels.set(childId, level + 1);
-        queue.push(childId);
-      }
-    }
-  }
-
-  for (const node of nodes) {
-    if (!levels.has(node.id)) levels.set(node.id, 0);
-  }
-
-  // Group by level
-  const byLevel = new Map<number, string[]>();
-  for (const [id, level] of levels) {
-    if (!byLevel.has(level)) byLevel.set(level, []);
-    byLevel.get(level)!.push(id);
-  }
-
-  const nodeMap = new Map(nodes.map((n) => [n.id, n]));
-  const result: GraphNode[] = [];
-
-  for (const [level, ids] of byLevel) {
-    const totalHeight = ids.length * (NODE_HEIGHT + NODE_GAP) - NODE_GAP;
-    ids.forEach((id, i) => {
-      const node = nodeMap.get(id);
-      if (!node) return;
-      result.push({
-        ...node,
-        level,
-        x: level * LEVEL_GAP + 20,
-        y: i * (NODE_HEIGHT + NODE_GAP) + 20 - totalHeight / 2 + 200,
-      });
-    });
-  }
-
-  return result;
-}
+const NODE_WIDTH = 160;
+const NODE_HEIGHT = 48;
 
 function classColor(className: string): string {
   let hash = 0;
   for (let i = 0; i < className.length; i++) {
     hash = className.charCodeAt(i) + ((hash << 5) - hash);
   }
-  const hue = Math.abs(hash) % 360;
-  return `hsl(${hue}, 45%, 55%)`;
+  return `hsl(${Math.abs(hash) % 360}, 45%, 55%)`;
 }
 
-export const DependencyGraph: FC = React.memo(() => {
-  const [{ instances }] = useBloc(DevToolsInstancesBloc);
-  const [{ edges }] = useBloc(DevToolsDependencyBloc);
-  const [, layoutBloc] = useBloc(DevToolsLayoutBloc);
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
-  const [animatingEdges, setAnimatingEdges] = useState<Set<string>>(new Set());
+type BlocNodeData = {
+  label: string;
+  className: string;
+  instanceName: string;
+  color: string;
+};
 
-  const nodes = useMemo(
+const BlocNode: FC<NodeProps<Node<BlocNodeData>>> = ({ data }) => (
+  <div
+    style={{
+      width: NODE_WIDTH,
+      height: NODE_HEIGHT,
+      background: T.bg3,
+      border: `1px solid ${T.border1}`,
+      borderLeft: `3px solid ${data.color}`,
+      borderRadius: T.radius,
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      padding: '0 10px',
+      boxSizing: 'border-box',
+      cursor: 'pointer',
+    }}
+  >
+    <Handle
+      type="target"
+      position={Position.Left}
+      style={{ background: T.border2, border: 'none', width: 8, height: 8 }}
+    />
+    <div
+      style={{
+        fontSize: 11,
+        fontWeight: 600,
+        color: data.color,
+        fontFamily: T.fontMono,
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {data.className}
+    </div>
+    <div
+      style={{
+        fontSize: 10,
+        color: T.text2,
+        fontFamily: T.fontMono,
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {data.instanceName}
+    </div>
+    <Handle
+      type="source"
+      position={Position.Right}
+      style={{ background: T.border2, border: 'none', width: 8, height: 8 }}
+    />
+  </div>
+);
+
+const nodeTypes = { bloc: BlocNode };
+
+injectXyflowStyles();
+
+const elk = new ELKBundled();
+
+interface ELKNode {
+  id: string;
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+}
+
+async function computeELKLayout(
+  rfNodes: Node<BlocNodeData>[],
+  rfEdges: Edge[],
+): Promise<{ nodes: Node<BlocNodeData>[]; edges: Edge[] }> {
+  const graph = {
+    id: 'root',
+    layoutOptions: {
+      'elk.algorithm': 'layered',
+      'elk.direction': 'RIGHT',
+      'elk.spacing.nodeNode': '50',
+      'elk.layered.spacing.nodeNodeBetweenLayers': '80',
+      'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP',
+      'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
+    },
+    children: rfNodes.map((n: Node<BlocNodeData>) => ({
+      id: n.id,
+      width: NODE_WIDTH,
+      height: NODE_HEIGHT,
+    })),
+    edges: rfEdges.map((e) => ({
+      id: e.id,
+      sources: [e.source],
+      targets: [e.target],
+    })),
+  };
+
+  const layouted = await elk.layout(graph);
+
+  return {
+    nodes: rfNodes.map((n) => {
+      const ln = layouted.children?.find((c: ELKNode) => c.id === n.id);
+      return { ...n, position: { x: ln?.x ?? 0, y: ln?.y ?? 0 } } as Node<BlocNodeData>;
+    }),
+    edges: rfEdges,
+  };
+}
+
+const DependencyGraphFlow: FC = () => {
+  const [{ instances }] = useBloc(DevToolsInstancesBloc);
+  const [{ edges: depEdges }] = useBloc(DevToolsDependencyBloc);
+  const [, layoutBloc] = useBloc(DevToolsLayoutBloc);
+  const { fitView } = useReactFlow();
+
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node<BlocNodeData>>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+
+  const rfNodes = useMemo<Node<BlocNodeData>[]>(
     () =>
       instances.map((inst) => ({
         id: inst.id,
-        className: inst.className,
-        name: inst.name,
+        type: 'bloc',
+        position: { x: 0, y: 0 },
+        data: {
+          label: inst.className,
+          className: inst.className,
+          instanceName: inst.name,
+          color: classColor(inst.className),
+        },
       })),
     [instances],
   );
 
-  const layoutNodes = useMemo(() => computeLayout(nodes, edges), [nodes, edges]);
+  const rfEdges = useMemo<Edge[]>(() => {
+    const classByName = new Map(instances.map((i) => [i.className, i.id]));
+    return depEdges
+      .map((e, i): Edge | null => {
+        const targetId = classByName.get(e.toClass);
+        if (!targetId) return null;
+        return {
+          id: `${e.fromId}-${e.toClass}-${i}`,
+          source: e.fromId,
+          target: targetId,
+          type: 'smoothstep',
+          style: { stroke: T.border3, strokeWidth: 1.5 },
+          markerEnd: { type: MarkerType.ArrowClosed, color: T.border3 },
+        };
+      })
+      .filter((e): e is Edge => e !== null);
+  }, [depEdges, instances]);
 
-  const nodeMap = useMemo(
-    () => new Map(layoutNodes.map((n) => [n.id, n])),
-    [layoutNodes],
+  // Only re-run ELK when graph structure changes, not on data updates
+  const graphKey = useMemo(() => {
+    const nodeIds = instances.map((i) => i.id).sort().join(',');
+    const edgeIds = depEdges.map((e) => `${e.fromId}>${e.toClass}`).sort().join(',');
+    return `${nodeIds}|${edgeIds}`;
+  }, [instances, depEdges]);
+
+  const rfNodesRef = useRef(rfNodes);
+  rfNodesRef.current = rfNodes;
+  const rfEdgesRef = useRef(rfEdges);
+  rfEdgesRef.current = rfEdges;
+
+  useEffect(() => {
+    if (rfNodesRef.current.length === 0) return;
+    computeELKLayout(rfNodesRef.current, rfEdgesRef.current).then(({ nodes: ln, edges: le }) => {
+      setNodes(ln);
+      setEdges(le);
+      requestAnimationFrame(() => fitView({ padding: 0.15, duration: 300 }));
+    });
+  }, [graphKey, fitView, setNodes, setEdges]);
+
+  const onNodeClick = useCallback(
+    (_: React.MouseEvent, node: Node) => {
+      layoutBloc.setActiveTab('Instances');
+      layoutBloc.setSelectedId(node.id);
+    },
+    [layoutBloc],
   );
 
-  const svgWidth = useMemo(() => {
-    if (layoutNodes.length === 0) return 400;
-    return Math.max(...layoutNodes.map((n) => n.x + NODE_WIDTH + 40));
-  }, [layoutNodes]);
+  return (
+    <ReactFlow
+      nodes={nodes}
+      edges={edges}
+      onNodesChange={onNodesChange}
+      onEdgesChange={onEdgesChange}
+      nodeTypes={nodeTypes}
+      onNodeClick={onNodeClick}
+      fitView
+      colorMode="dark"
+      style={{ background: T.bg1 }}
+    >
+      <Controls
+        style={{
+          background: T.bg3,
+          border: `1px solid ${T.border1}`,
+          borderRadius: T.radius,
+          overflow: 'hidden',
+        }}
+      />
+      <Background variant={BackgroundVariant.Dots} color={T.border0} gap={24} />
+    </ReactFlow>
+  );
+};
 
-  const svgHeight = useMemo(() => {
-    if (layoutNodes.length === 0) return 300;
-    return Math.max(...layoutNodes.map((n) => n.y + NODE_HEIGHT + 40));
-  }, [layoutNodes]);
+export const DependencyGraph: FC = React.memo(() => {
+  const [{ instances }] = useBloc(DevToolsInstancesBloc);
+  const [{ edges: depEdges }] = useBloc(DevToolsDependencyBloc);
+  const [, layoutBloc] = useBloc(DevToolsLayoutBloc);
 
   if (instances.length === 0) {
     return (
@@ -147,8 +255,8 @@ export const DependencyGraph: FC = React.memo(() => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: '#666',
-          fontSize: '13px',
+          color: T.text2,
+          fontSize: 13,
         }}
       >
         No instances to display
@@ -156,7 +264,7 @@ export const DependencyGraph: FC = React.memo(() => {
     );
   }
 
-  if (edges.length === 0) {
+  if (depEdges.length === 0) {
     return (
       <div
         style={{
@@ -164,49 +272,39 @@ export const DependencyGraph: FC = React.memo(() => {
           display: 'flex',
           flexDirection: 'column',
           overflow: 'auto',
-          padding: '16px',
+          padding: 16,
         }}
       >
-        <div
-          style={{
-            marginBottom: '12px',
-            fontSize: '11px',
-            color: T.text1,
-          }}
-        >
-          No dependencies detected. Use <code style={{ color: T.textAccent }}>this.depend(OtherBloc)</code> in your blocs to track dependencies.
+        <div style={{ marginBottom: 12, fontSize: 11, color: T.text1 }}>
+          No dependencies detected. Use{' '}
+          <code style={{ color: T.textAccent }}>this.depend(OtherBloc)</code> in your blocs to
+          track dependencies.
         </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
           {instances.map((inst) => {
             const color = classColor(inst.className);
             return (
               <div
                 key={inst.id}
+                onClick={() => {
+                  layoutBloc.setActiveTab('Instances');
+                  layoutBloc.setSelectedId(inst.id);
+                }}
                 style={{
                   padding: '5px 10px',
                   background: T.bg3,
                   border: `1px solid ${T.border1}`,
                   borderLeft: `3px solid ${color}`,
                   borderRadius: T.radius,
-                  fontSize: '11px',
+                  fontSize: 11,
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '6px',
-                }}
-                onClick={() => {
-                  layoutBloc.setActiveTab('Instances');
-                  layoutBloc.setSelectedId(inst.id);
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.background = T.bgHover;
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.background = T.bg3;
+                  gap: 6,
                 }}
               >
                 <span style={{ color }}>{inst.className}</span>
-                <span style={{ color: T.text2, fontSize: '10px' }}>{inst.name}</span>
+                <span style={{ color: T.text2, fontSize: 10 }}>{inst.name}</span>
               </div>
             );
           })}
@@ -216,137 +314,10 @@ export const DependencyGraph: FC = React.memo(() => {
   }
 
   return (
-    <div style={{ flex: 1, overflow: 'auto', background: '#1a1a1a', position: 'relative' }}>
-      <svg
-        width={svgWidth}
-        height={Math.max(svgHeight, 300)}
-        style={{ display: 'block' }}
-      >
-        <defs>
-          <marker
-            id="arrowhead"
-            markerWidth="8"
-            markerHeight="6"
-            refX="8"
-            refY="3"
-            orient="auto"
-          >
-            <polygon points="0 0, 8 3, 0 6" fill="#555" />
-          </marker>
-          <marker
-            id="arrowhead-hover"
-            markerWidth="8"
-            markerHeight="6"
-            refX="8"
-            refY="3"
-            orient="auto"
-          >
-            <polygon points="0 0, 8 3, 0 6" fill="#569cd6" />
-          </marker>
-        </defs>
-
-        {/* Edges */}
-        {edges.map((edge, i) => {
-          const from = nodeMap.get(edge.fromId);
-          const toNode = layoutNodes.find((n) => n.className === edge.toClass);
-          if (!from || !toNode) return null;
-
-          const isHighlighted =
-            hoveredId === edge.fromId || hoveredId === toNode.id;
-          const edgeKey = `${edge.fromId}-${edge.toClass}-${i}`;
-          const isAnimating = animatingEdges.has(edgeKey);
-
-          const x1 = from.x + NODE_WIDTH;
-          const y1 = from.y + NODE_HEIGHT / 2;
-          const x2 = toNode.x;
-          const y2 = toNode.y + NODE_HEIGHT / 2;
-
-          // Cubic bezier control points
-          const cx1 = x1 + (x2 - x1) * 0.5;
-          const cy1 = y1;
-          const cx2 = x2 - (x2 - x1) * 0.5;
-          const cy2 = y2;
-
-          return (
-            <path
-              key={edgeKey}
-              d={`M ${x1} ${y1} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x2} ${y2}`}
-              fill="none"
-              stroke={isHighlighted || isAnimating ? '#569cd6' : '#3a3a3a'}
-              strokeWidth={isHighlighted ? 2 : 1.5}
-              markerEnd={`url(#${isHighlighted ? 'arrowhead-hover' : 'arrowhead'})`}
-              style={{ transition: 'stroke 0.2s' }}
-            />
-          );
-        })}
-
-        {/* Nodes */}
-        {layoutNodes.map((node) => {
-          const color = classColor(node.className);
-          const isHovered = hoveredId === node.id;
-
-          return (
-            <g
-              key={node.id}
-              transform={`translate(${node.x}, ${node.y})`}
-              style={{ cursor: 'pointer' }}
-              onMouseEnter={() => setHoveredId(node.id)}
-              onMouseLeave={() => setHoveredId(null)}
-              onClick={() => {
-                layoutBloc.setActiveTab('Instances');
-                layoutBloc.setSelectedId(node.id);
-              }}
-            >
-              <rect
-                width={NODE_WIDTH}
-                height={NODE_HEIGHT}
-                rx={4}
-                fill={isHovered ? '#2a2a2a' : '#252526'}
-                stroke={isHovered ? color : '#3a3a3a'}
-                strokeWidth={isHovered ? 2 : 1}
-                style={{ transition: 'all 0.15s' }}
-              />
-              <rect
-                width={3}
-                height={NODE_HEIGHT}
-                rx={2}
-                fill={color}
-              />
-              <text
-                x={12}
-                y={15}
-                fill={color}
-                fontSize={11}
-                fontWeight={600}
-                fontFamily="monospace"
-              >
-                {node.className.length > 16 ? node.className.slice(0, 14) + '…' : node.className}
-              </text>
-              <text
-                x={12}
-                y={29}
-                fill="#666"
-                fontSize={10}
-                fontFamily="monospace"
-              >
-                {node.name.length > 18 ? node.name.slice(0, 16) + '…' : node.name}
-              </text>
-            </g>
-          );
-        })}
-      </svg>
-
-      <div
-        style={{
-          position: 'absolute',
-          bottom: '12px',
-          right: '12px',
-          fontSize: '10px',
-          color: '#555',
-        }}
-      >
-        {instances.length} instances · {edges.length} {edges.length === 1 ? 'dependency' : 'dependencies'} · click node to inspect
-      </div>
+    <div style={{ flex: 1, height: '100%', minHeight: 0 }}>
+      <ReactFlowProvider>
+        <DependencyGraphFlow />
+      </ReactFlowProvider>
     </div>
   );
 });
