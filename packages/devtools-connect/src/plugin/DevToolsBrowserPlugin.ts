@@ -117,12 +117,16 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
 
     // Capture dependency edges from this instance
     this.captureDependencies(instance, data.id, data.className);
-    const instanceEdges = this.dependencyEdges.filter((e) => e.fromId === data.id);
+    const instanceEdges = this.dependencyEdges.filter(
+      (e) => e.fromId === data.id,
+    );
 
     this.emit({
       type: 'instance-created',
       timestamp: Date.now(),
-      data: instanceEdges.length ? { ...data, dependencies: instanceEdges } : data,
+      data: instanceEdges.length
+        ? { ...data, dependencies: instanceEdges }
+        : data,
     });
   }
 
@@ -158,7 +162,10 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     );
 
     // Update performance metrics
-    this.recordUpdate(data.id, currSerialized.success ? JSON.stringify(currSerialized.data).length : 0);
+    this.recordUpdate(
+      data.id,
+      currSerialized.success ? JSON.stringify(currSerialized.data).length : 0,
+    );
 
     // Check for performance warnings and emit if needed
     const metrics = this.computeMetrics(data.id);
@@ -233,7 +240,9 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     };
   }
 
-  getPerformanceMetrics(instanceId?: string): InstanceMetrics | InstanceMetrics[] {
+  getPerformanceMetrics(
+    instanceId?: string,
+  ): InstanceMetrics | InstanceMetrics[] {
     if (instanceId) {
       return this.computeMetrics(instanceId);
     }
@@ -394,9 +403,15 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
   /**
    * Capture dependency edges from an instance's dependencies map.
    */
-  private captureDependencies(instance: any, instanceId: string, className: string): void {
+  private captureDependencies(
+    instance: any,
+    instanceId: string,
+    className: string,
+  ): void {
     try {
-      const deps = instance.dependencies as ReadonlyMap<{ name: string }, string> | undefined;
+      const deps = instance.dependencies as
+        | ReadonlyMap<{ name: string }, string>
+        | undefined;
       if (!deps || deps.size === 0) return;
 
       // Remove old edges from this instance before re-adding

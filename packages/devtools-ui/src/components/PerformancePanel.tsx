@@ -1,4 +1,4 @@
-import React, { FC, useState } from 'react';
+import React, { FC, useEffect, useState } from 'react';
 import { useBloc } from '@blac/react';
 import { DevToolsMetricsBloc, DevToolsLayoutBloc } from '../blocs';
 import type { InstanceMetrics } from '../blocs/DevToolsMetricsBloc';
@@ -65,6 +65,8 @@ export const PerformancePanel: FC = React.memo(() => {
   const [, layoutBloc] = useBloc(DevToolsLayoutBloc);
   const [sortKey, setSortKey] = useState<SortKey>('updatesPerSecond');
   const [sortDesc, setSortDesc] = useState(true);
+  const [showAll, setShowAll] = useState(false);
+  const ROW_LIMIT = 30;
 
   const allMetrics = Array.from(metricsState.metrics.values());
 
@@ -73,6 +75,7 @@ export const PerformancePanel: FC = React.memo(() => {
     return sortDesc ? diff : -diff;
   });
 
+  const visibleRows = showAll ? sorted : sorted.slice(0, ROW_LIMIT);
   const maxUps = Math.max(1, ...allMetrics.map((m) => m.updatesPerSecond));
   const maxSize = Math.max(1, ...allMetrics.map((m) => m.stateSizeBytes));
 
@@ -198,7 +201,7 @@ export const PerformancePanel: FC = React.memo(() => {
             </tr>
           </thead>
           <tbody>
-            {sorted.map((m) => {
+            {visibleRows.map((m) => {
               const hasWarning = m.warnings.length > 0;
               return (
                 <tr
@@ -268,6 +271,30 @@ export const PerformancePanel: FC = React.memo(() => {
                 </tr>
               );
             })}
+            {sorted.length > ROW_LIMIT && (
+              <tr>
+                <td
+                  colSpan={6}
+                  style={{ padding: '8px 10px', textAlign: 'center', fontSize: '11px' }}
+                >
+                  {showAll ? (
+                    <span
+                      style={{ cursor: 'pointer', color: '#569cd6' }}
+                      onClick={() => setShowAll(false)}
+                    >
+                      Showing all {sorted.length} — collapse
+                    </span>
+                  ) : (
+                    <span
+                      style={{ cursor: 'pointer', color: '#569cd6' }}
+                      onClick={() => setShowAll(true)}
+                    >
+                      Showing {ROW_LIMIT} of {sorted.length} — show all
+                    </span>
+                  )}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -285,6 +312,12 @@ PerformancePanel.displayName = 'PerformancePanel';
  */
 const UpdateTimeline: FC<{ metrics: InstanceMetrics[] }> = React.memo(({ metrics }) => {
   const [metricsState] = useBloc(DevToolsMetricsBloc);
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   const now = Date.now();
   const WINDOW = 60000; // 60 seconds
