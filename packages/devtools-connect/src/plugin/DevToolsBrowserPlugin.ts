@@ -17,6 +17,11 @@ import type {
   DevToolsEvent,
   DevToolsCallback,
   DevToolsBrowserPluginConfig,
+  Trigger,
+  DependencyEdge,
+  DevToolsGraph,
+  InstanceMetrics,
+  PerformanceWarning,
 } from '../types';
 
 // Re-export types for backward compatibility
@@ -42,9 +47,17 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
   private config: Required<DevToolsBrowserPluginConfig>;
   private instanceTimestamps = new Map<string, number>();
 
+  // Dependency graph tracking
+  private dependencyEdges: DependencyEdge[] = [];
+
+  // Performance metrics tracking: instanceId -> sorted array of update timestamps
+  private updateTimestamps = new Map<string, number[]>();
+  private stateSizeCache = new Map<string, number>();
+  private totalUpdateCounts = new Map<string, number>();
+
   // Persistent event history storage (complete log from app startup)
   private eventHistory: DevToolsEvent[] = [];
-  private readonly MAX_HISTORY_SIZE = 10000; // Store up to 10k events
+  private readonly MAX_HISTORY_SIZE = 10000;
 
   // State manager for structured state history (backend for DevTools panels)
   private stateManager: DevToolsStateManager;
@@ -54,57 +67,44 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       enabled: true,
       maxInstances: 2000,
       maxSnapshots: 20,
+      highFrequencyThreshold: 30,
+      largeStateSizeThreshold: 102400,
       ...config,
     };
 
-    // Initialize state manager
     this.stateManager = new DevToolsStateManager({
       maxInstances: this.config.maxInstances,
       maxSnapshots: this.config.maxSnapshots,
     });
   }
 
-  /**
-   * Called when plugin is installed
-   */
   onInstall(context: PluginContext): void {
     this.context = context;
-
-    // Scan for existing instances
     this.scanExistingInstances();
-
-    // Expose global API in browser
     this.exposeGlobalAPI();
   }
 
-  /**
-   * Called when plugin is uninstalled
-   */
   onUninstall(): void {
     this.listeners.clear();
     this.instanceCache.clear();
     this.instanceTimestamps.clear();
     this.eventHistory = [];
+    this.dependencyEdges = [];
+    this.updateTimestamps.clear();
+    this.stateSizeCache.clear();
+    this.totalUpdateCounts.clear();
 
-    // Remove global API
     if (typeof window !== 'undefined') {
       delete (window as any).__BLAC_DEVTOOLS__;
     }
   }
 
-  /**
-   * Called when instance is created
-   */
   onInstanceCreated(instance: any, context: PluginContext): void {
-    // Skip instances marked as internal (DevTools Blocs tracking themselves)
-    if (this.shouldExcludeInstance(instance)) {
-      return;
-    }
+    if (this.shouldExcludeInstance(instance)) return;
 
     const data = this.createInstanceData(instance, context);
     this.instanceCache.set(data.id, data);
 
-    // Add to state manager
     const createdAt = Date.now();
     this.instanceTimestamps.set(data.id, createdAt);
     this.stateManager.addInstance({
@@ -115,6 +115,9 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       createdAt,
     });
 
+    // Capture dependency edges from this instance
+    this.captureDependencies(instance, data.id, data.className);
+
     this.emit({
       type: 'instance-created',
       timestamp: Date.now(),
@@ -122,9 +125,6 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     });
   }
 
-  /**
-   * Called when state changes
-   */
   onStateChanged(
     instance: any,
     previousState: any,
@@ -132,10 +132,9 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     callstack: string | undefined,
     context: PluginContext,
   ): void {
-    // Skip instances marked as internal (DevTools Blocs tracking themselves)
-    if (this.shouldExcludeInstance(instance)) {
-      return;
-    }
+    if (this.shouldExcludeInstance(instance)) return;
+
+    const trigger = this.extractTriggerFromCallstack(callstack);
 
     const data = this.createInstanceData(
       instance,
@@ -143,10 +142,10 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       previousState,
       currentState,
       callstack,
+      trigger,
     );
     this.instanceCache.set(data.id, data);
 
-    // Update state manager with history
     const prevSerialized = safeSerialize(previousState);
     const currSerialized = safeSerialize(currentState);
     this.stateManager.updateState(
@@ -154,30 +153,46 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       prevSerialized.success ? prevSerialized.data : previousState,
       currSerialized.success ? currSerialized.data : currentState,
       callstack,
+      trigger,
     );
+
+    // Update performance metrics
+    this.recordUpdate(data.id, currSerialized.success ? JSON.stringify(currSerialized.data).length : 0);
+
+    // Check for performance warnings and emit if needed
+    const metrics = this.computeMetrics(data.id);
+    if (metrics.warnings.length > 0) {
+      this.emit({
+        type: 'performance-warning',
+        timestamp: Date.now(),
+        data: metrics,
+      });
+    }
 
     this.emit({
       type: 'instance-updated',
       timestamp: Date.now(),
-      data,
+      data: { ...data, trigger },
     });
   }
 
-  /**
-   * Called when instance is disposed
-   */
   onInstanceDisposed(instance: any, context: PluginContext): void {
-    // Skip instances marked as internal (DevTools Blocs tracking themselves)
-    if (this.shouldExcludeInstance(instance)) {
-      return;
-    }
+    if (this.shouldExcludeInstance(instance)) return;
 
     const data = this.createInstanceData(instance, context);
     data.isDisposed = true;
     this.instanceCache.delete(data.id);
-
-    // Remove from state manager
     this.stateManager.removeInstance(data.id);
+
+    // Remove dependency edges from this instance
+    this.dependencyEdges = this.dependencyEdges.filter(
+      (e) => e.fromId !== data.id,
+    );
+
+    // Clean up metrics tracking
+    this.updateTimestamps.delete(data.id);
+    this.stateSizeCache.delete(data.id);
+    this.totalUpdateCounts.delete(data.id);
 
     this.emit({
       type: 'instance-disposed',
@@ -186,57 +201,77 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     });
   }
 
-  /**
-   * Subscribe to DevTools events (real-time events only, not history)
-   */
   subscribe(callback: DevToolsCallback): () => void {
     this.listeners.add(callback);
-
     return () => {
       this.listeners.delete(callback);
     };
   }
 
-  /**
-   * Get all current instances
-   */
   getInstances(): InstanceMetadata[] {
     return Array.from(this.instanceCache.values());
   }
 
-  /**
-   * Get complete event history from app startup
-   * This allows DevTools to request the full log when it opens
-   */
   getEventHistory(): DevToolsEvent[] {
-    return [...this.eventHistory]; // Return copy to prevent external mutation
+    return [...this.eventHistory];
   }
 
-  /**
-   * Get full state dump with complete history (new backend API)
-   * This provides structured state with 20 snapshots per instance
-   */
   getFullState(): { instances: InstanceState[]; timestamp: number } {
     return this.stateManager.getFullState();
   }
 
-  /**
-   * Get version information
-   */
+  getDependencyGraph(): DevToolsGraph {
+    const instances = Array.from(this.instanceCache.values());
+    return {
+      nodes: instances.map((inst) => ({
+        id: inst.id,
+        className: inst.className,
+        name: inst.name,
+      })),
+      edges: [...this.dependencyEdges],
+    };
+  }
+
+  getPerformanceMetrics(instanceId?: string): InstanceMetrics | InstanceMetrics[] {
+    if (instanceId) {
+      return this.computeMetrics(instanceId);
+    }
+    return Array.from(this.instanceCache.keys()).map((id) =>
+      this.computeMetrics(id),
+    );
+  }
+
   getVersion(): string {
     return this.version;
   }
 
-  /**
-   * Check if plugin is enabled
-   */
   get enabled(): boolean {
     return this.config.enabled;
   }
 
-  /**
-   * Scan for existing instances on install
-   */
+  timeTravel(instanceId: string, state: unknown): boolean {
+    if (!this.context) return false;
+
+    const types = this.context.getAllTypes();
+    for (const TypeClass of types) {
+      const instances = this.context.queryInstances(TypeClass);
+      for (const instance of instances) {
+        const metadata = this.context.getInstanceMetadata(instance);
+        if (metadata.id === instanceId) {
+          if (typeof (instance as any).emit === 'function') {
+            (instance as any).emit(state);
+          } else if (typeof (instance as any).update === 'function') {
+            (instance as any).update(() => state);
+          } else {
+            return false;
+          }
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   private scanExistingInstances(): void {
     if (!this.context) return;
 
@@ -244,15 +279,11 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     for (const TypeClass of types) {
       const instances = this.context.queryInstances(TypeClass);
       for (const instance of instances) {
-        // Skip instances marked as internal (DevTools Blocs tracking themselves)
-        if (this.shouldExcludeInstance(instance)) {
-          continue;
-        }
+        if (this.shouldExcludeInstance(instance)) continue;
 
         const data = this.createInstanceData(instance, this.context);
         this.instanceCache.set(data.id, data);
 
-        // Add to state manager
         const createdAt = Date.now();
         this.instanceTimestamps.set(data.id, createdAt);
         this.stateManager.addInstance({
@@ -262,10 +293,11 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
           state: data.state,
           createdAt,
         });
+
+        this.captureDependencies(instance, data.id, data.className);
       }
     }
 
-    // Emit INIT event with all instances
     const allInstances = Array.from(this.instanceCache.values());
     this.emit({
       type: 'init',
@@ -274,20 +306,14 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     });
   }
 
-  /**
-   * Emit event to all listeners AND store in persistent history
-   */
   private emit(event: DevToolsEvent): void {
-    // Always store event in history (persistent log from app startup)
     if (this.eventHistory.length < this.MAX_HISTORY_SIZE) {
       this.eventHistory.push(event);
     } else {
-      // Remove oldest event when history is full (FIFO)
       this.eventHistory.shift();
       this.eventHistory.push(event);
     }
 
-    // Also emit to all current real-time listeners
     if (this.listeners.size > 0) {
       this.listeners.forEach((listener) => {
         try {
@@ -299,20 +325,17 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     }
   }
 
-  /**
-   * Create instance data from a StateContainer
-   */
   private createInstanceData(
     instance: any,
     context: PluginContext,
     previousState?: any,
     currentState?: any,
     callstack?: string,
+    trigger?: Trigger,
   ): InstanceMetadata {
     const metadata = context.getInstanceMetadata(instance);
     const state = context.getState(instance);
 
-    // Track creation time
     if (!this.instanceTimestamps.has(metadata.id)) {
       this.instanceTimestamps.set(metadata.id, Date.now());
     }
@@ -341,48 +364,155 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
         : undefined,
       hydrationStatus: context.getHydrationStatus(instance),
       hydrationError: metadata.hydrationError,
+    } as any;
+  }
+
+  private shouldExcludeInstance(instance: any): boolean {
+    return instance.constructor.__excludeFromDevTools === true;
+  }
+
+  /**
+   * Extract the method/function name that triggered a state change from the callstack.
+   * The first line of the (already-filtered) callstack is the user code entry point.
+   */
+  private extractTriggerFromCallstack(callstack?: string): Trigger | undefined {
+    if (!callstack) return undefined;
+    const firstLine = callstack.split('\n')[0]?.trim();
+    if (!firstLine) return undefined;
+    // Match "at functionName (" or "at ClassName.methodName ("
+    const match = firstLine.match(/at\s+(\S+)\s+\(/);
+    if (!match?.[1]) return undefined;
+    const raw = match[1];
+    // Strip class prefix: "CounterCubit.increment" -> "increment"
+    const dotIdx = raw.lastIndexOf('.');
+    const name = dotIdx !== -1 ? raw.substring(dotIdx + 1) : raw;
+    if (!name || name === '<anonymous>') return undefined;
+    return { name };
+  }
+
+  /**
+   * Capture dependency edges from an instance's dependencies map.
+   */
+  private captureDependencies(instance: any, instanceId: string, className: string): void {
+    try {
+      const deps = instance.dependencies as ReadonlyMap<{ name: string }, string> | undefined;
+      if (!deps || deps.size === 0) return;
+
+      // Remove old edges from this instance before re-adding
+      this.dependencyEdges = this.dependencyEdges.filter(
+        (e) => e.fromId !== instanceId,
+      );
+
+      for (const [TypeClass, instanceKey] of deps) {
+        const toClass = (TypeClass as any).name ?? String(TypeClass);
+        // Avoid duplicates
+        const exists = this.dependencyEdges.some(
+          (e) =>
+            e.fromId === instanceId &&
+            e.toClass === toClass &&
+            e.toKey === instanceKey,
+        );
+        if (!exists) {
+          this.dependencyEdges.push({
+            fromId: instanceId,
+            fromClass: className,
+            toClass,
+            toKey: instanceKey,
+          });
+        }
+      }
+    } catch {
+      // Accessing dependencies on foreign objects can throw — ignore silently
+    }
+  }
+
+  /**
+   * Record a state update for metrics tracking.
+   */
+  private recordUpdate(instanceId: string, stateSizeBytes: number): void {
+    const now = Date.now();
+
+    // Prune timestamps older than 60s
+    const timestamps = (this.updateTimestamps.get(instanceId) || []).filter(
+      (t) => now - t < 60000,
+    );
+    timestamps.push(now);
+    this.updateTimestamps.set(instanceId, timestamps);
+
+    this.stateSizeCache.set(instanceId, stateSizeBytes);
+    this.totalUpdateCounts.set(
+      instanceId,
+      (this.totalUpdateCounts.get(instanceId) ?? 0) + 1,
+    );
+  }
+
+  /**
+   * Compute rolling performance metrics for a given instance.
+   */
+  private computeMetrics(instanceId: string): InstanceMetrics {
+    const now = Date.now();
+    const allTimestamps = this.updateTimestamps.get(instanceId) || [];
+
+    // 5-second window for updates/sec
+    const window5s = allTimestamps.filter((t) => now - t < 5000);
+    const updatesPerSecond = window5s.length / 5;
+
+    // Average interval
+    let avgUpdateInterval = 0;
+    if (allTimestamps.length > 1) {
+      let totalInterval = 0;
+      for (let i = 1; i < allTimestamps.length; i++) {
+        totalInterval += allTimestamps[i] - allTimestamps[i - 1];
+      }
+      avgUpdateInterval = totalInterval / (allTimestamps.length - 1);
+    }
+
+    // Max burst rate (peak in any 1s window)
+    let maxBurstRate = 0;
+    for (let i = 0; i < allTimestamps.length; i++) {
+      const windowStart = allTimestamps[i];
+      const count = allTimestamps.filter(
+        (t) => t >= windowStart && t < windowStart + 1000,
+      ).length;
+      if (count > maxBurstRate) maxBurstRate = count;
+    }
+
+    const stateSizeBytes = this.stateSizeCache.get(instanceId) ?? 0;
+    const totalUpdates = this.totalUpdateCounts.get(instanceId) ?? 0;
+    const lastUpdateTimestamp = allTimestamps[allTimestamps.length - 1] ?? 0;
+
+    const warnings: PerformanceWarning[] = [];
+
+    if (updatesPerSecond > this.config.highFrequencyThreshold) {
+      warnings.push({
+        type: 'high-frequency',
+        message: `${instanceId} is updating ${updatesPerSecond.toFixed(1)} times/sec (threshold: ${this.config.highFrequencyThreshold})`,
+        threshold: this.config.highFrequencyThreshold,
+        actual: updatesPerSecond,
+      });
+    }
+
+    if (stateSizeBytes > this.config.largeStateSizeThreshold) {
+      warnings.push({
+        type: 'large-state',
+        message: `${instanceId} state is ${(stateSizeBytes / 1024).toFixed(1)}KB (threshold: ${(this.config.largeStateSizeThreshold / 1024).toFixed(0)}KB)`,
+        threshold: this.config.largeStateSizeThreshold,
+        actual: stateSizeBytes,
+      });
+    }
+
+    return {
+      instanceId,
+      totalUpdates,
+      updatesPerSecond,
+      avgUpdateInterval,
+      maxBurstRate,
+      stateSizeBytes,
+      lastUpdateTimestamp,
+      warnings,
     };
   }
 
-  /**
-   * Check if an instance should be excluded from DevTools tracking
-   */
-  private shouldExcludeInstance(instance: any): boolean {
-    // Check if the instance's constructor has __excludeFromDevTools set to true
-    const constructor = instance.constructor;
-    return constructor.__excludeFromDevTools === true;
-  }
-
-  /**
-   * Restore a specific instance to a given state (time-travel)
-   * Works with Cubit (emit) and Bloc (update)
-   */
-  timeTravel(instanceId: string, state: unknown): boolean {
-    if (!this.context) return false;
-
-    const types = this.context.getAllTypes();
-    for (const TypeClass of types) {
-      const instances = this.context.queryInstances(TypeClass);
-      for (const instance of instances) {
-        const metadata = this.context.getInstanceMetadata(instance);
-        if (metadata.id === instanceId) {
-          if (typeof (instance as any).emit === 'function') {
-            (instance as any).emit(state);
-          } else if (typeof (instance as any).update === 'function') {
-            (instance as any).update(() => state);
-          } else {
-            return false;
-          }
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  /**
-   * Expose global API for browser extension
-   */
   private exposeGlobalAPI(): void {
     if (typeof window === 'undefined') return;
 
@@ -395,6 +525,9 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       isEnabled: () => this.enabled,
       timeTravel: (instanceId: string, state: unknown) =>
         this.timeTravel(instanceId, state),
+      getDependencyGraph: () => this.getDependencyGraph(),
+      getPerformanceMetrics: (instanceId?: string) =>
+        this.getPerformanceMetrics(instanceId),
     };
   }
 }

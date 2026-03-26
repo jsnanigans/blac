@@ -10,6 +10,7 @@ import type {
   InstanceState,
   DevToolsSnapshot,
   DevToolsStateManagerConfig,
+  Trigger,
 } from '../types';
 
 // Re-export types for backward compatibility
@@ -98,6 +99,7 @@ export class DevToolsStateManager {
     previousState: any,
     currentState: any,
     callstack?: string,
+    trigger?: Trigger,
   ): void {
     const instance = this.instances.get(instanceId);
     if (!instance) {
@@ -116,6 +118,7 @@ export class DevToolsStateManager {
       previousState,
       timestamp: Date.now(),
       callstack,
+      trigger,
     };
 
     instance.history.push(snapshot);
