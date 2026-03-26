@@ -1,4 +1,5 @@
 import React, { FC, useEffect, useState } from 'react';
+import { T } from '../theme';
 import { useBloc } from '@blac/react';
 import { DevToolsMetricsBloc, DevToolsLayoutBloc } from '../blocs';
 import type { InstanceMetrics } from '../blocs/DevToolsMetricsBloc';
@@ -90,7 +91,8 @@ export const PerformancePanel: FC = React.memo(() => {
 
   const colStyle = (key: SortKey): React.CSSProperties => ({
     cursor: 'pointer',
-    color: sortKey === key ? '#569cd6' : '#888',
+    color: sortKey === key ? T.textAccent : T.text2,
+    fontWeight: sortKey === key ? 600 : 500,
     userSelect: 'none',
   });
 
@@ -121,8 +123,8 @@ export const PerformancePanel: FC = React.memo(() => {
       {warnings.length > 0 && (
         <div
           style={{
-            background: '#2a1515',
-            borderBottom: '1px solid #ef4444',
+            background: '#1e1212',
+            borderBottom: `1px solid ${T.error}`,
             padding: '6px 12px',
             fontSize: '11px',
           }}
@@ -154,8 +156,8 @@ export const PerformancePanel: FC = React.memo(() => {
           <thead>
             <tr
               style={{
-                background: '#252526',
-                borderBottom: '1px solid #444',
+                background: T.bg3,
+                borderBottom: `1px solid ${T.border1}`,
                 position: 'sticky',
                 top: 0,
               }}
@@ -164,8 +166,8 @@ export const PerformancePanel: FC = React.memo(() => {
                 style={{
                   padding: '6px 10px',
                   textAlign: 'left',
-                  color: '#888',
-                  fontWeight: 600,
+                  color: T.text2,
+                  fontWeight: 500,
                   minWidth: '150px',
                 }}
               >
@@ -195,7 +197,7 @@ export const PerformancePanel: FC = React.memo(() => {
               >
                 State size {sortKey === 'stateSizeBytes' ? (sortDesc ? '↓' : '↑') : ''}
               </th>
-              <th style={{ padding: '6px 10px', textAlign: 'left', color: '#888', fontWeight: 600 }}>
+              <th style={{ padding: '6px 10px', textAlign: 'left', color: T.text2, fontWeight: 500 }}>
                 Avg interval
               </th>
             </tr>
@@ -279,14 +281,14 @@ export const PerformancePanel: FC = React.memo(() => {
                 >
                   {showAll ? (
                     <span
-                      style={{ cursor: 'pointer', color: '#569cd6' }}
+                      style={{ cursor: 'pointer', color: T.textAccent }}
                       onClick={() => setShowAll(false)}
                     >
                       Showing all {sorted.length} — collapse
                     </span>
                   ) : (
                     <span
-                      style={{ cursor: 'pointer', color: '#569cd6' }}
+                      style={{ cursor: 'pointer', color: T.textAccent }}
                       onClick={() => setShowAll(true)}
                     >
                       Showing {ROW_LIMIT} of {sorted.length} — show all
@@ -329,12 +331,12 @@ const UpdateTimeline: FC<{ metrics: InstanceMetrics[] }> = React.memo(({ metrics
   return (
     <div
       style={{
-        borderTop: '1px solid #333',
+        borderTop: `1px solid ${T.border1}`,
         padding: '10px 12px',
-        background: '#1a1a1a',
+        background: T.bg1,
       }}
     >
-      <div style={{ fontSize: '10px', color: '#666', marginBottom: '6px' }}>
+      <div style={{ fontSize: '10px', color: T.text2, marginBottom: '6px' }}>
         Update activity — last 60 seconds
       </div>
       {activeMetrics.map((m) => {
