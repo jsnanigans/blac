@@ -8,6 +8,8 @@ export interface StateSnapshot {
   timestamp: number;
   /** Call stack trace showing where this state change originated */
   callstack?: string;
+  /** Method or event name that triggered this state change */
+  trigger?: string;
 }
 
 type DiffState = {
@@ -43,6 +45,7 @@ export class DevToolsDiffBloc extends Cubit<DiffState> {
     instanceId: string,
     previousState: any,
     callstack?: string,
+    trigger?: string,
   ) => {
     const stateHistory = new Map(this.state.stateHistory);
     const history = stateHistory.get(instanceId) || [];
@@ -63,6 +66,7 @@ export class DevToolsDiffBloc extends Cubit<DiffState> {
       state: clonedState,
       timestamp: Date.now(),
       callstack,
+      trigger,
     };
 
     const updatedHistory = [newSnapshot, ...history];
@@ -99,7 +103,7 @@ export class DevToolsDiffBloc extends Cubit<DiffState> {
    */
   loadInstanceHistory = (
     instanceId: string,
-    snapshots: Array<{ state: any; timestamp: number; callstack?: string }>,
+    snapshots: Array<{ state: any; timestamp: number; callstack?: string; trigger?: { name: string } }>,
   ) => {
     if (!snapshots.length) return;
     const stateHistory = new Map(this.state.stateHistory);
@@ -107,7 +111,12 @@ export class DevToolsDiffBloc extends Cubit<DiffState> {
     const normalized: StateSnapshot[] = [...snapshots]
       .reverse()
       .slice(0, MAX_HISTORY_SIZE)
-      .map((s) => ({ state: s.state, timestamp: s.timestamp, callstack: s.callstack }));
+      .map((s) => ({
+        state: s.state,
+        timestamp: s.timestamp,
+        callstack: s.callstack,
+        trigger: s.trigger?.name,
+      }));
     stateHistory.set(instanceId, normalized);
     this.patch({ stateHistory });
   };

@@ -118,6 +118,24 @@ const LogEntryRow: FC<{ entry: LogEntry }> = React.memo(({ entry }) => {
         {displayInstanceId}
       </span>
 
+      {/* Trigger badge for state-changed events */}
+      {entry.eventType === 'state-changed' && entry.trigger && (
+        <span
+          style={{
+            fontSize: '10px',
+            padding: '1px 5px',
+            background: '#1a2a3a',
+            border: '1px solid #2a4a6a',
+            borderRadius: '3px',
+            color: '#569cd6',
+            fontFamily: 'monospace',
+          }}
+          title="Method that triggered this state change"
+        >
+          {entry.trigger}()
+        </span>
+      )}
+
       {/* Additional info for specific event types */}
       {entry.eventType === 'init' && entry.data?.instanceCount !== undefined && (
         <span style={{ color: '#666', fontSize: '10px' }}>

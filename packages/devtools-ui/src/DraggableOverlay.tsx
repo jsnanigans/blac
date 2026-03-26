@@ -10,6 +10,8 @@ import {
   DevToolsInstancesBloc,
   DevToolsDiffBloc,
   DevToolsLogsBloc,
+  DevToolsDependencyBloc,
+  DevToolsMetricsBloc,
 } from './blocs';
 
 export interface DraggableOverlayProps {
@@ -29,7 +31,6 @@ export interface DraggableOverlayProps {
 function processEventIntoLogs(event: any, logsBloc: DevToolsLogsBloc): void {
   switch (event.type) {
     case 'init': {
-      // Log init with instance count
       const instances = Array.isArray(event.data) ? event.data : [];
       logsBloc.addLog('init', '__system__', 'System', 'DevTools', {
         instanceCount: instances.length,
@@ -38,7 +39,6 @@ function processEventIntoLogs(event: any, logsBloc: DevToolsLogsBloc): void {
     }
 
     case 'instance-created': {
-      // Log instance creation
       logsBloc.addLog(
         'created',
         event.data.id,
@@ -50,7 +50,6 @@ function processEventIntoLogs(event: any, logsBloc: DevToolsLogsBloc): void {
     }
 
     case 'instance-disposed': {
-      // Log disposal
       logsBloc.addLog(
         'disposed',
         event.data.id,
@@ -72,6 +71,7 @@ function processEventIntoLogs(event: any, logsBloc: DevToolsLogsBloc): void {
           newState: d.state ?? d.currentState,
         },
         d.callstack,
+        d.trigger?.name,
       );
       break;
     }
@@ -97,7 +97,16 @@ function toInstanceData(inst: any): import('./types').InstanceData {
     createdAt: inst.createdAt ?? Date.now(),
     hydrationStatus: inst.hydrationStatus,
     hydrationError: inst.hydrationError,
+    dependencies: inst.dependencies,
   };
+}
+
+function estimateStateSize(state: unknown): number {
+  try {
+    return JSON.stringify(state)?.length ?? 0;
+  } catch {
+    return 0;
+  }
 }
 
 export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
@@ -115,6 +124,8 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
 
   const diffBloc = acquire(DevToolsDiffBloc);
   const logsBloc = acquire(DevToolsLogsBloc);
+  const dependencyBloc = acquire(DevToolsDependencyBloc);
+  const metricsBloc = acquire(DevToolsMetricsBloc);
 
   const fullState = api.getFullState?.();
   const rawInstances = fullState?.instances ?? api.getInstances() ?? [];
@@ -129,6 +140,12 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
     }
   }
 
+  // Load dependency graph
+  const graph = api.getDependencyGraph?.();
+  if (graph?.edges?.length) {
+    dependencyBloc.setEdges(graph.edges);
+  }
+
   const eventHistory = api.getEventHistory?.() ?? [];
   eventHistory.forEach((event: any) => {
     processEventIntoLogs(event, logsBloc);
@@ -141,6 +158,8 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
       case 'init': {
         diffBloc.clearAllPreviousStates();
         logsBloc.clearLogs();
+        metricsBloc.clearAll();
+        dependencyBloc.setEdges([]);
         const initInstances = (Array.isArray(event.data) ? event.data : []).map(
           (inst: any) => toInstanceData({ ...inst, createdAt: inst.createdAt ?? event.timestamp }),
         );
@@ -151,32 +170,30 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
         break;
       }
 
-      case 'instance-created':
+      case 'instance-created': {
+        const d = event.data as any;
         instancesBloc.addInstance(
-          toInstanceData({ ...(event.data as any), createdAt: (event.data as any).createdAt ?? event.timestamp }),
+          toInstanceData({ ...d, createdAt: d.createdAt ?? event.timestamp }),
         );
-        logsBloc.addLog(
-          'created',
-          (event.data as any).id,
-          (event.data as any).className,
-          (event.data as any).name,
-          { initialState: (event.data as any).state },
-        );
+        // Register dependency edges from this new instance
+        if (d.dependencies?.length) {
+          dependencyBloc.addEdgesForInstance(d.id, d.dependencies);
+        }
+        logsBloc.addLog('created', d.id, d.className, d.name, {
+          initialState: d.state,
+        });
         break;
+      }
 
       case 'instance-disposed': {
-        const disposedInstance = instancesBloc.getInstance(
-          (event.data as any).id,
-        );
-        instancesBloc.removeInstance((event.data as any).id);
-        diffBloc.clearPreviousState((event.data as any).id);
+        const d = event.data as any;
+        const disposedInstance = instancesBloc.getInstance(d.id);
+        instancesBloc.removeInstance(d.id);
+        diffBloc.clearPreviousState(d.id);
+        dependencyBloc.removeEdgesForInstance(d.id);
+        metricsBloc.removeInstance(d.id);
         if (disposedInstance) {
-          logsBloc.addLog(
-            'disposed',
-            (event.data as any).id,
-            disposedInstance.className,
-            disposedInstance.name,
-          );
+          logsBloc.addLog('disposed', d.id, disposedInstance.className, disposedInstance.name);
         }
         break;
       }
@@ -186,19 +203,18 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
         const updatedState = d.state ?? d.currentState;
         const currentInstance = instancesBloc.getInstance(d.id);
         if (currentInstance) {
-          diffBloc.storePreviousState(d.id, currentInstance.state, d.callstack);
+          diffBloc.storePreviousState(d.id, currentInstance.state, d.callstack, d.trigger?.name);
         }
         instancesBloc.updateInstanceState(d.id, updatedState);
+        metricsBloc.recordUpdate(d.id, d.className, estimateStateSize(updatedState));
         logsBloc.addLog(
           'state-changed',
           d.id,
           d.className,
           d.name,
-          {
-            previousState: currentInstance?.state,
-            newState: updatedState,
-          },
+          { previousState: currentInstance?.state, newState: updatedState },
           d.callstack,
+          d.trigger?.name,
         );
         break;
       }

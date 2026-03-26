@@ -28,6 +28,8 @@ export {
   DevToolsDiffBloc,
   DevToolsLayoutBloc,
   DevToolsLogsBloc,
+  DevToolsDependencyBloc,
+  DevToolsMetricsBloc,
 } from './blocs';
 
 // Backward compatibility: export DevToolsInstancesBloc as LayoutBloc
@@ -35,8 +37,8 @@ export {
 export { DevToolsInstancesBloc as LayoutBloc } from './blocs';
 
 // Types
-export type { DevToolsUIProps, InstanceData } from './types';
+export type { DevToolsUIProps, InstanceData, DependencyEdge } from './types';
 export type { DraggableOverlayProps } from './DraggableOverlay';
 export type { PictureInPictureDevToolsProps } from './PictureInPictureDevTools';
 export type { BlacDevtoolsUiProps } from './BlacDevtoolsUi';
-export type { DiffResult } from './blocs';
+export type { DiffResult, InstanceMetrics } from './blocs';

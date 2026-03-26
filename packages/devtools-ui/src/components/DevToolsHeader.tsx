@@ -3,7 +3,7 @@ import { useBloc } from '@blac/react';
 import { DevToolsInstancesBloc } from '../blocs';
 import { DevToolsLayoutBloc, type TabName } from '../blocs/DevToolsLayoutBloc';
 
-const TABS: TabName[] = ['Instances', 'Logs'];
+const TABS: TabName[] = ['Instances', 'Logs', 'Graph', 'Performance'];
 
 /**
  * Compact DevTools header with tabs, connection status, and instance count merged into one row

@@ -9,12 +9,16 @@ import {
   DevToolsDiffBloc,
   DevToolsLayoutBloc,
   DevToolsLogsBloc,
+  DevToolsDependencyBloc,
+  DevToolsMetricsBloc,
 } from './blocs';
 import {
   DevToolsHeader,
   InstanceList,
   StateViewer,
   LogsView,
+  DependencyGraph,
+  PerformancePanel,
 } from './components';
 import type { DevToolsUIProps } from './types';
 
@@ -127,6 +131,8 @@ export const DevToolsPanel: FC<DevToolsUIProps> = React.memo(
 
     useBloc(DevToolsDiffBloc);
     useBloc(DevToolsLogsBloc);
+    useBloc(DevToolsDependencyBloc);
+    useBloc(DevToolsMetricsBloc);
 
     const [{ activeTab, leftPanelWidth }, layoutBloc] = useBloc(DevToolsLayoutBloc);
 
@@ -152,9 +158,17 @@ export const DevToolsPanel: FC<DevToolsUIProps> = React.memo(
               <StateViewer onTimeTravel={onTimeTravel} />
             </DetailErrorBoundary>
           </div>
-        ) : (
+        ) : activeTab === 'Logs' ? (
           <LogsView />
-        )}
+        ) : activeTab === 'Graph' ? (
+          <DetailErrorBoundary>
+            <DependencyGraph />
+          </DetailErrorBoundary>
+        ) : activeTab === 'Performance' ? (
+          <DetailErrorBoundary>
+            <PerformancePanel />
+          </DetailErrorBoundary>
+        ) : null}
       </div>
     );
   },
@@ -168,4 +182,6 @@ export {
   DevToolsDiffBloc,
   DevToolsLayoutBloc,
   DevToolsLogsBloc,
+  DevToolsDependencyBloc,
+  DevToolsMetricsBloc,
 } from './blocs';

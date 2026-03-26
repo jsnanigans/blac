@@ -195,6 +195,22 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
                               {formatTime(entry.snapshot.timestamp)}
                             </span>
                           )}
+                          {entry.snapshot.trigger && (
+                            <span
+                              style={{
+                                fontSize: '10px',
+                                padding: '1px 5px',
+                                background: '#1a2a3a',
+                                border: '1px solid #2a4a6a',
+                                borderRadius: '3px',
+                                color: '#569cd6',
+                                fontFamily: 'monospace',
+                              }}
+                              title="Method that triggered this state change"
+                            >
+                              {entry.snapshot.trigger}()
+                            </span>
+                          )}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           {hasChanges && !isInitial && !isCurrent && (
