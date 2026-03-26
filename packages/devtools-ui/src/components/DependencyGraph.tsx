@@ -24,6 +24,11 @@ import { injectXyflowStyles } from '../inject-xyflow-styles';
 const NODE_WIDTH = 160;
 const NODE_HEIGHT = 48;
 
+function instanceKey(id: string): string {
+  const i = id.indexOf(':');
+  return i !== -1 ? id.slice(i + 1) : id;
+}
+
 function classColor(className: string): string {
   let hash = 0;
   for (let i = 0; i < className.length; i++) {
@@ -154,20 +159,33 @@ const DependencyGraphFlow: FC = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<BlocNodeData>>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
+  const connectedIds = useMemo(() => {
+    const ids = new Set<string>();
+    const classByName = new Map(instances.map((i) => [i.className, i.id]));
+    depEdges.forEach((e) => {
+      ids.add(e.fromId);
+      const targetId = classByName.get(e.toClass);
+      if (targetId) ids.add(targetId);
+    });
+    return ids;
+  }, [instances, depEdges]);
+
   const rfNodes = useMemo<Node<BlocNodeData>[]>(
     () =>
-      instances.map((inst) => ({
-        id: inst.id,
-        type: 'bloc',
-        position: { x: 0, y: 0 },
-        data: {
-          label: inst.className,
-          className: inst.className,
-          instanceName: inst.name,
-          color: classColor(inst.className),
-        },
-      })),
-    [instances],
+      instances
+        .filter((inst) => connectedIds.has(inst.id))
+        .map((inst) => ({
+          id: inst.id,
+          type: 'bloc',
+          position: { x: 0, y: 0 },
+          data: {
+            label: inst.className,
+            className: inst.className,
+            instanceName: instanceKey(inst.id),
+            color: classColor(inst.className),
+          },
+        })),
+    [instances, connectedIds],
   );
 
   const rfEdges = useMemo<Edge[]>(() => {
@@ -181,6 +199,10 @@ const DependencyGraphFlow: FC = () => {
           source: e.fromId,
           target: targetId,
           type: 'smoothstep',
+          label: 'uses',
+          labelStyle: { fontSize: 9, fill: T.text2, fontFamily: 'ui-monospace, monospace' },
+          labelBgStyle: { fill: T.bg3, fillOpacity: 0.9 },
+          labelBgPadding: [4, 2] as [number, number],
           style: { stroke: T.border3, strokeWidth: 1.5 },
           markerEnd: { type: MarkerType.ArrowClosed, color: T.border3 },
         };
@@ -190,10 +212,10 @@ const DependencyGraphFlow: FC = () => {
 
   // Only re-run ELK when graph structure changes, not on data updates
   const graphKey = useMemo(() => {
-    const nodeIds = instances.map((i) => i.id).sort().join(',');
+    const nodeIds = [...connectedIds].sort().join(',');
     const edgeIds = depEdges.map((e) => `${e.fromId}>${e.toClass}`).sort().join(',');
     return `${nodeIds}|${edgeIds}`;
-  }, [instances, depEdges]);
+  }, [connectedIds, depEdges]);
 
   const rfNodesRef = useRef(rfNodes);
   rfNodesRef.current = rfNodes;
