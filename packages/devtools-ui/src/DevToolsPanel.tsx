@@ -3,6 +3,7 @@
  */
 
 import React, { FC } from 'react';
+import { T } from './theme';
 import { useBloc } from '@blac/react';
 import {
   DevToolsInstancesBloc,
@@ -58,9 +59,9 @@ class DetailErrorBoundary extends React.Component<
               fontSize: '11px',
               padding: '4px 12px',
               background: 'transparent',
-              border: '1px solid #444',
-              color: '#888',
-              borderRadius: '3px',
+              border: `1px solid ${T.border2}`,
+              color: T.text1,
+              borderRadius: T.radius,
               cursor: 'pointer',
             }}
           >
@@ -102,17 +103,17 @@ function ResizeDivider({
     <div
       onMouseDown={handleMouseDown}
       style={{
-        width: '4px',
+        width: '3px',
         cursor: 'col-resize',
-        background: '#333',
+        background: T.border0,
         flexShrink: 0,
         transition: 'background 0.15s',
       }}
       onMouseEnter={(e) => {
-        (e.currentTarget as HTMLDivElement).style.background = '#569cd6';
+        (e.currentTarget as HTMLDivElement).style.background = T.borderAccent;
       }}
       onMouseLeave={(e) => {
-        (e.currentTarget as HTMLDivElement).style.background = '#333';
+        (e.currentTarget as HTMLDivElement).style.background = T.border0;
       }}
     />
   );
