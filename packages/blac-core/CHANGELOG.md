@@ -1,5 +1,11 @@
 # @blac/core
 
+## 2.0.7
+
+### Patch Changes
+
+- Use private and symbols for internals
+
 ## 2.0.6
 
 ### Patch Changes

@@ -1,5 +1,14 @@
 # @blac/react
 
+## 2.0.7
+
+### Patch Changes
+
+- Use private and symbols for internals
+- Updated dependencies
+  - @blac/adapter@2.0.7
+  - @blac/core@2.0.7
+
 ## 2.0.6
 
 ### Patch Changes
