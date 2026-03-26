@@ -10,8 +10,9 @@ export interface PanelInstance {
   state: any;
   lastStateChangeTimestamp: number;
   createdAt: number;
-  hydrationStatus?: string;
+  hydrationStatus?: 'idle' | 'hydrating' | 'hydrated' | 'error';
   hydrationError?: string;
+  callstack?: string;
   history?: Array<{ state: any; previousState: any; timestamp: number; callstack?: string }>;
 }
 

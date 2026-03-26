@@ -25,6 +25,8 @@ export const StateDiffView: FC<StateDiffViewProps> = React.memo(
     if (!diff) return null;
 
     const hasChanges = diff.changedOnly !== undefined;
+    const safePrevious = diff.previous != null && typeof diff.previous === 'object' ? diff.previous : {};
+    const safeCurrent = diff.current != null && typeof diff.current === 'object' ? diff.current : {};
 
     return (
       <div style={{ marginTop: '30px' }}>
@@ -255,7 +257,7 @@ export const StateDiffView: FC<StateDiffViewProps> = React.memo(
                   </div>
                 ) : (
                   <JsonView
-                    value={diff.changedOnly}
+                    value={typeof diff.changedOnly === 'object' && diff.changedOnly !== null ? diff.changedOnly : { value: diff.changedOnly }}
                     style={
                       {
                         '--w-rjv-font-family': 'Monaco, Menlo, Consolas, monospace',
@@ -300,7 +302,7 @@ export const StateDiffView: FC<StateDiffViewProps> = React.memo(
                 }}
               >
                 <Viewer
-                  diff={differ.diff(diff.previous, diff.current)}
+                  diff={differ.diff(safePrevious, safeCurrent)}
                   indent={2}
                   lineNumbers={true}
                   highlightInlineDiff={true}

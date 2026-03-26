@@ -91,11 +91,15 @@ export const StateViewer: FC<StateViewerProps> = ({ onTimeTravel }) => {
           flexWrap: 'wrap',
         }}
       >
-        <span>created {formatRelative(selectedInstance.createdAt)}</span>
+        <span>created {formatRelative(selectedInstance.createdAt ?? Date.now())}</span>
         <span>·</span>
         <span>{history.length} change{history.length !== 1 ? 's' : ''}</span>
-        <span>·</span>
-        <span>last {formatRelative(selectedInstance.lastStateChangeTimestamp)}</span>
+        {selectedInstance.lastStateChangeTimestamp != null && (
+          <>
+            <span>·</span>
+            <span>last {formatRelative(selectedInstance.lastStateChangeTimestamp)}</span>
+          </>
+        )}
       </div>
 
       {/* Scrollable Content */}

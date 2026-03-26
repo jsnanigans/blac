@@ -18,6 +18,57 @@ import {
 } from './components';
 import type { DevToolsUIProps } from './types';
 
+class DetailErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { error: Error | null }
+> {
+  state = { error: null as Error | null };
+
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+            color: '#ef4444',
+          }}
+        >
+          <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '8px' }}>
+            Error rendering detail view
+          </div>
+          <div style={{ fontSize: '11px', color: '#888', marginBottom: '12px', textAlign: 'center', maxWidth: '300px' }}>
+            {this.state.error.message}
+          </div>
+          <button
+            onClick={() => this.setState({ error: null })}
+            style={{
+              fontSize: '11px',
+              padding: '4px 12px',
+              background: 'transparent',
+              border: '1px solid #444',
+              color: '#888',
+              borderRadius: '3px',
+              cursor: 'pointer',
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function ResizeDivider({
   onResize,
   currentWidth,
@@ -97,7 +148,9 @@ export const DevToolsPanel: FC<DevToolsUIProps> = React.memo(
               onResize={layoutBloc.setLeftPanelWidth}
               currentWidth={leftPanelWidth}
             />
-            <StateViewer onTimeTravel={onTimeTravel} />
+            <DetailErrorBoundary>
+              <StateViewer onTimeTravel={onTimeTravel} />
+            </DetailErrorBoundary>
           </div>
         ) : (
           <LogsView />

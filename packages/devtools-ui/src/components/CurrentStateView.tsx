@@ -14,8 +14,14 @@ export const CurrentStateView: FC<CurrentStateViewProps> = React.memo(
     const [editText, setEditText] = useState('');
     const [editError, setEditError] = useState<string | null>(null);
 
+    const safeState = state ?? null;
+
     const handleEdit = () => {
-      setEditText(JSON.stringify(state, null, 2));
+      try {
+        setEditText(JSON.stringify(safeState, null, 2));
+      } catch {
+        setEditText(String(safeState));
+      }
       setEditError(null);
       setIsEditing(true);
     };
@@ -168,7 +174,7 @@ export const CurrentStateView: FC<CurrentStateViewProps> = React.memo(
               }}
             >
               <JsonView
-                value={state}
+                value={typeof safeState === 'object' && safeState !== null ? safeState : { value: safeState }}
                 className="w-json-view-container"
                 style={
                   {

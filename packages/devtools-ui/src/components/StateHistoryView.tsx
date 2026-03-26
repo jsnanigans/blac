@@ -24,8 +24,10 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
     };
 
     const extractChanges = (previous: any, current: any): any => {
+      if (previous === current) return undefined;
+      if (previous == null || current == null) return current;
       if (typeof previous !== typeof current) return current;
-      if (typeof current !== 'object' || current === null) {
+      if (typeof current !== 'object') {
         return previous !== current ? current : undefined;
       }
       if (Array.isArray(current)) {
@@ -232,7 +234,7 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
                           </div>
                         ) : (
                           <JsonView
-                            value={entry.changes}
+                            value={typeof entry.changes === 'object' && entry.changes !== null ? entry.changes : { value: entry.changes ?? null }}
                             style={
                               {
                                 '--w-rjv-font-family': 'Monaco, Menlo, Consolas, monospace',

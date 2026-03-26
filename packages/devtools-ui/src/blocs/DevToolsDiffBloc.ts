@@ -48,8 +48,19 @@ export class DevToolsDiffBloc extends Cubit<DiffState> {
     const history = stateHistory.get(instanceId) || [];
 
     // Add new snapshot at the beginning (newest first)
+    let clonedState: any;
+    try {
+      clonedState = structuredClone(previousState);
+    } catch {
+      // Fall back to JSON round-trip for uncloneable values
+      try {
+        clonedState = JSON.parse(JSON.stringify(previousState));
+      } catch {
+        clonedState = previousState;
+      }
+    }
     const newSnapshot: StateSnapshot = {
-      state: structuredClone(previousState),
+      state: clonedState,
       timestamp: Date.now(),
       callstack,
     };
@@ -124,8 +135,8 @@ export class DevToolsDiffBloc extends Cubit<DiffState> {
     const instance = this.instancesBloc().getInstance(instanceId);
     if (!instance) return null;
 
-    const previous = previousSnapshot.state;
-    const current = instance.state;
+    const previous = previousSnapshot.state ?? null;
+    const current = instance.state ?? null;
 
     // Calculate what actually changed
     const changedOnly = this.extractChanges(previous, current);
@@ -142,13 +153,16 @@ export class DevToolsDiffBloc extends Cubit<DiffState> {
    * Returns an object containing only changed paths
    */
   private extractChanges = (previous: any, current: any): any => {
+    if (previous === current) return undefined;
+
+    // Either side is null/undefined — treat as full replacement
+    if (previous == null || current == null) return current;
+
     // If types are different, return current
-    if (typeof previous !== typeof current) {
-      return current;
-    }
+    if (typeof previous !== typeof current) return current;
 
     // If not objects, compare directly
-    if (typeof current !== 'object' || current === null) {
+    if (typeof current !== 'object') {
       return previous !== current ? current : undefined;
     }
 
@@ -176,10 +190,8 @@ export class DevToolsDiffBloc extends Cubit<DiffState> {
     const changes: any = {};
     let hasChanges = false;
 
-    // Check all keys in current
     for (const key in current) {
       if (!(key in previous)) {
-        // New key added
         changes[key] = current[key];
         hasChanges = true;
       } else {
@@ -191,10 +203,9 @@ export class DevToolsDiffBloc extends Cubit<DiffState> {
       }
     }
 
-    // Check for deleted keys
     for (const key in previous) {
       if (!(key in current)) {
-        changes[key] = undefined; // Mark as deleted
+        changes[key] = undefined;
         hasChanges = true;
       }
     }

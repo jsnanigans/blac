@@ -147,10 +147,12 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     this.instanceCache.set(data.id, data);
 
     // Update state manager with history
+    const prevSerialized = safeSerialize(previousState);
+    const currSerialized = safeSerialize(currentState);
     this.stateManager.updateState(
       data.id,
-      safeSerialize(previousState).data,
-      safeSerialize(currentState).data,
+      prevSerialized.success ? prevSerialized.data : previousState,
+      currSerialized.success ? currSerialized.data : currentState,
       callstack,
     );
 
@@ -315,14 +317,28 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       this.instanceTimestamps.set(metadata.id, Date.now());
     }
 
+    const serializedState = safeSerialize(state);
+    const serializedPrevious = previousState
+      ? safeSerialize(previousState)
+      : undefined;
+    const serializedCurrent = currentState
+      ? safeSerialize(currentState)
+      : undefined;
+
     return {
       ...metadata,
-      state: safeSerialize(state).data,
+      state: serializedState.success ? serializedState.data : state,
       callstack,
-      previousState: previousState
-        ? safeSerialize(previousState).data
+      previousState: serializedPrevious
+        ? serializedPrevious.success
+          ? serializedPrevious.data
+          : previousState
         : undefined,
-      currentState: currentState ? safeSerialize(currentState).data : undefined,
+      currentState: serializedCurrent
+        ? serializedCurrent.success
+          ? serializedCurrent.data
+          : currentState
+        : undefined,
       hydrationStatus: context.getHydrationStatus(instance),
       hydrationError: metadata.hydrationError,
     };

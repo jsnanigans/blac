@@ -61,17 +61,17 @@ function processEventIntoLogs(event: any, logsBloc: DevToolsLogsBloc): void {
     }
 
     case 'instance-updated': {
-      // Log state change
+      const d = event.data;
       logsBloc.addLog(
         'state-changed',
-        event.data.id,
-        event.data.className,
-        event.data.name,
+        d.id,
+        d.className,
+        d.name,
         {
-          previousState: event.data.previousState,
-          newState: event.data.state || event.data.currentState,
+          previousState: d.previousState,
+          newState: d.state ?? d.currentState,
         },
-        event.data.callstack,
+        d.callstack,
       );
       break;
     }
@@ -79,8 +79,27 @@ function processEventIntoLogs(event: any, logsBloc: DevToolsLogsBloc): void {
 }
 
 /**
- * Default mount handler that connects to window.__BLAC_DEVTOOLS__ API
+ * Maps raw instance data from the plugin API to the InstanceData shape expected by the UI.
+ * Handles both InstanceState (from getFullState) and InstanceMetadata (from getInstances).
  */
+function toInstanceData(inst: any): import('./types').InstanceData {
+  return {
+    id: inst.id ?? '',
+    className: inst.className ?? '',
+    name: inst.name ?? inst.id ?? '',
+    isDisposed: inst.isDisposed ?? false,
+    state: inst.state ?? inst.currentState ?? null,
+    lastStateChangeTimestamp:
+      inst.lastStateChangeTimestamp ??
+      (inst.history?.length
+        ? inst.history[inst.history.length - 1].timestamp
+        : inst.createdAt ?? Date.now()),
+    createdAt: inst.createdAt ?? Date.now(),
+    hydrationStatus: inst.hydrationStatus,
+    hydrationError: inst.hydrationError,
+  };
+}
+
 export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
   const api = (window as any).__BLAC_DEVTOOLS__;
 
@@ -96,21 +115,21 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
 
   const diffBloc = acquire(DevToolsDiffBloc);
   const logsBloc = acquire(DevToolsLogsBloc);
-  const state = logsBloc.state;
 
   const fullState = api.getFullState?.();
-  const initialInstances = fullState?.instances ?? api.getInstances();
+  const rawInstances = fullState?.instances ?? api.getInstances() ?? [];
+  const initialInstances = rawInstances.map(toInstanceData);
   instancesBloc.setConnected(true);
   instancesBloc.setAllInstances(initialInstances);
 
   // Load backend state history into DiffBloc
-  for (const inst of initialInstances) {
+  for (const inst of rawInstances) {
     if (inst.history?.length) {
       diffBloc.loadInstanceHistory(inst.id, inst.history);
     }
   }
 
-  const eventHistory = api.getEventHistory();
+  const eventHistory = api.getEventHistory?.() ?? [];
   eventHistory.forEach((event: any) => {
     processEventIntoLogs(event, logsBloc);
   });
@@ -123,15 +142,7 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
         diffBloc.clearAllPreviousStates();
         logsBloc.clearLogs();
         const initInstances = (Array.isArray(event.data) ? event.data : []).map(
-          (inst: any) => ({
-            id: inst.id,
-            className: inst.className,
-            name: inst.name,
-            isDisposed: inst.isDisposed,
-            state: inst.state,
-            lastStateChangeTimestamp: event.timestamp,
-            createdAt: event.timestamp,
-          }),
+          (inst: any) => toInstanceData({ ...inst, createdAt: inst.createdAt ?? event.timestamp }),
         );
         instancesBloc.setAllInstances(initInstances);
         logsBloc.addLog('init', '__system__', 'System', 'DevTools', {
@@ -141,15 +152,9 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
       }
 
       case 'instance-created':
-        instancesBloc.addInstance({
-          id: (event.data as any).id,
-          className: (event.data as any).className,
-          name: (event.data as any).name,
-          isDisposed: (event.data as any).isDisposed,
-          state: (event.data as any).state,
-          lastStateChangeTimestamp: event.timestamp,
-          createdAt: event.timestamp,
-        });
+        instancesBloc.addInstance(
+          toInstanceData({ ...(event.data as any), createdAt: (event.data as any).createdAt ?? event.timestamp }),
+        );
         logsBloc.addLog(
           'created',
           (event.data as any).id,
@@ -177,30 +182,23 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
       }
 
       case 'instance-updated': {
-        const currentInstance = instancesBloc.getInstance(
-          (event.data as any).id,
-        );
+        const d = event.data as any;
+        const updatedState = d.state ?? d.currentState;
+        const currentInstance = instancesBloc.getInstance(d.id);
         if (currentInstance) {
-          diffBloc.storePreviousState(
-            (event.data as any).id,
-            currentInstance.state,
-            (event.data as any).callstack,
-          );
+          diffBloc.storePreviousState(d.id, currentInstance.state, d.callstack);
         }
-        instancesBloc.updateInstanceState(
-          (event.data as any).id,
-          (event.data as any).state,
-        );
+        instancesBloc.updateInstanceState(d.id, updatedState);
         logsBloc.addLog(
           'state-changed',
-          (event.data as any).id,
-          (event.data as any).className,
-          (event.data as any).name,
+          d.id,
+          d.className,
+          d.name,
           {
             previousState: currentInstance?.state,
-            newState: (event.data as any).state,
+            newState: updatedState,
           },
-          (event.data as any).callstack,
+          d.callstack,
         );
         break;
       }
