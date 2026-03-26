@@ -16,7 +16,7 @@ function parseCallstack(stack: string): StackFrame[] {
         fn: match[1],
         file: match[2],
         line: parseInt(match[3]),
-        isUser: !match[2].includes('node_modules'),
+        isUser: !match[2].includes('node_modules') && !match[2].includes('blac-core/dist') && !match[2].includes('@blac/core'),
       });
     }
   }

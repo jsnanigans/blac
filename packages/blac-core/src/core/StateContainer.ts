@@ -260,7 +260,9 @@ export abstract class StateContainer<S extends object = any> {
           line.includes('StateContainer.captureStackTrace') ||
           line.includes('[blac.emit]') ||
           line.includes('[blac.update]') ||
-          line.includes('Cubit.patch')
+          line.includes('Cubit.patch') ||
+          line.includes('/blac-core/dist/') ||
+          line.includes('@blac/core/')
         ) {
           continue;
         }

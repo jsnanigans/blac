@@ -117,11 +117,12 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
 
     // Capture dependency edges from this instance
     this.captureDependencies(instance, data.id, data.className);
+    const instanceEdges = this.dependencyEdges.filter((e) => e.fromId === data.id);
 
     this.emit({
       type: 'instance-created',
       timestamp: Date.now(),
-      data,
+      data: instanceEdges.length ? { ...data, dependencies: instanceEdges } : data,
     });
   }
 
