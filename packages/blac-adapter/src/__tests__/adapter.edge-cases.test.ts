@@ -10,6 +10,7 @@ import {
   manualDepsSnapshot,
   ExternalDepsManager,
   DependencyManager,
+  ManualDepsConfig,
 } from '../index';
 
 class SimpleBloc extends Cubit<{ count: number; name: string }> {
@@ -47,8 +48,8 @@ describe('@blac/adapter edge cases', () => {
   it('manualDepsSubscribe with equal array deps prevents callback', () => {
     const bloc = new SimpleBloc();
     const adapterState = manualDepsInit(bloc);
-    const config = {
-      dependencies: (s: { count: number; name: string }) => [s.count],
+    const config: ManualDepsConfig<typeof SimpleBloc> = {
+      dependencies: (s) => [s.count],
     };
     const callback = vi.fn();
 
@@ -68,8 +69,8 @@ describe('@blac/adapter edge cases', () => {
   it('manualDepsSubscribe with changed deps triggers callback', () => {
     const bloc = new SimpleBloc();
     const adapterState = manualDepsInit(bloc);
-    const config = {
-      dependencies: (s: { count: number; name: string }) => [s.count],
+    const config: ManualDepsConfig<typeof SimpleBloc> = {
+      dependencies: (s) => [s.count],
     };
     const callback = vi.fn();
 
