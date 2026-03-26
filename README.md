@@ -44,7 +44,6 @@ function Counter() {
 | [`@blac/react`](packages/blac-react) | React hook (`useBloc`) with auto-tracking |
 | [`@blac/preact`](packages/blac-preact) | Preact integration |
 | [`@blac/adapter`](packages/blac-adapter) | Framework-agnostic adapter layer |
-| [`@blac/test`](packages/blac-test) | Test utilities |
 | [`@blac/logging-plugin`](packages/logging-plugin) | Console logging and monitoring plugin |
 | [`@blac/devtools-connect`](packages/devtools-connect) | DevTools and Redux DevTools integration |
 | [`@blac/plugin-persist`](packages/plugin-persist) | IndexedDB state persistence |
