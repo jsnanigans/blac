@@ -4,9 +4,9 @@
   "description": "Chrome DevTools extension for BlaC state management",
   "private": true,
   "scripts": {
-    "dev": "vite",
-    "build:app": "vite build",
-    "preview": "vite preview",
+    "dev": "vp dev",
+    "build:app": "vp build",
+    "preview": "vp preview",
     "typecheck": "tsc --project tsconfig.typecheck.json --noEmit",
     "typecheck:all": "tsc --noEmit",
     "clean": "rm -rf dist",
@@ -26,6 +26,7 @@
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "typescript": "^5.3.3",
-    "vite": "^5.0.10"
+    "vite": "catalog:",
+    "vite-plus": "catalog:"
   }
 }
