@@ -1,6 +1,50 @@
 import { defineConfig } from 'vite-plus';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@blac/core/testing': path.resolve(
+        __dirname,
+        'packages/blac-core/src/testing',
+      ),
+      '@blac/core': path.resolve(__dirname, 'packages/blac-core/src'),
+      '@blac/react/testing': path.resolve(
+        __dirname,
+        'packages/blac-react/src/testing',
+      ),
+      '@blac/react': path.resolve(__dirname, 'packages/blac-react/src'),
+      '@blac/adapter': path.resolve(__dirname, 'packages/blac-adapter/src'),
+      '@blac/preact': path.resolve(__dirname, 'packages/blac-preact/src'),
+      '@blac/devtools-connect': path.resolve(
+        __dirname,
+        'packages/devtools-connect/src',
+      ),
+    },
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    environmentMatchGlobs: [
+      ['packages/blac-react/**', 'happy-dom'],
+      ['packages/blac-preact/**', 'happy-dom'],
+      ['apps/examples/**', 'happy-dom'],
+    ],
+    setupFiles: [
+      './packages/blac-react/vitest-setup.ts',
+      './packages/blac-preact/vitest-setup.ts',
+    ],
+    hookTimeout: 30000,
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/__archived__/**',
+      '**/.*/**',
+    ],
+  },
   run: {
     cache: {
       scripts: true,
