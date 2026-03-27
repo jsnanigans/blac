@@ -1,4 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vite-plus/test';
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  vi,
+} from 'vite-plus/test';
 import { PluginManager } from './PluginManager';
 import { globalRegistry } from '../core/StateContainerRegistry';
 import { Cubit } from '../core/Cubit';

@@ -1,4 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vite-plus/test';
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  vi,
+} from 'vite-plus/test';
 import { StateContainer } from './StateContainer';
 import { acquire, release, clearAll } from '../registry';
 import { EMIT, UPDATE } from './symbols';

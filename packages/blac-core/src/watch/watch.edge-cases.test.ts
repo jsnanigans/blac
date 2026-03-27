@@ -1,4 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vite-plus/test';
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  vi,
+} from 'vite-plus/test';
 import { watch, instance } from './watch';
 import { Cubit } from '../core/Cubit';
 import { acquire, release, clearAll } from '../registry';
