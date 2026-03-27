@@ -14,7 +14,7 @@ jobs:
         with:
           node-version: lts
           cache: true
-      - run: vp lint
+      - run: pnpm run lint
 
   format:
     name: Format
@@ -26,7 +26,7 @@ jobs:
         with:
           node-version: lts
           cache: true
-      - run: vp format:check
+      - run: pnpm run format:check
 
   typecheck:
     name: Typecheck
@@ -38,7 +38,7 @@ jobs:
         with:
           node-version: lts
           cache: true
-      - run: vp typecheck
+      - run: pnpm run typecheck
 
   build:
     name: Build
@@ -50,7 +50,7 @@ jobs:
         with:
           node-version: lts
           cache: true
-      - run: vp build
+      - run: pnpm run build
 
   test:
     name: Test
@@ -62,4 +62,4 @@ jobs:
         with:
           node-version: lts
           cache: true
-      - run: vp test
+      - run: pnpm run test
