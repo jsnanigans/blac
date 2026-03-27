@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-disable no-undef */
 
 import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';

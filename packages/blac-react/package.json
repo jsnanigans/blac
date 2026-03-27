@@ -107,7 +107,6 @@
     "@types/react-dom": "^19.1.7",
     "@vitejs/plugin-react": "^4.7.0",
     "babel-plugin-react-compiler": "^1.0.0",
-    "eslint-plugin-react-compiler": "19.1.0-rc.2",
     "happy-dom": "catalog:",
     "jsdom": "catalog:",
     "publint": "catalog:",

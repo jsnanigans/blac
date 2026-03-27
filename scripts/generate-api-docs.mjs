@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-disable no-undef */
 /**
  * Custom API documenter for VitePress
  * Reads api-extractor .api.json files and generates clean markdown

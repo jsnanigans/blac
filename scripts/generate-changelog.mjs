@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-disable no-undef */
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
