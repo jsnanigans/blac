@@ -100,6 +100,7 @@
     "build": "vp pack && tsc -p tsconfig.build.json && for f in dist/*.d.ts; do cp \"$f\" \"${f%.d.ts}.d.cts\"; done",
     "clean": "rm -rf dist",
     "format": "vp fmt \".\"",
+    "format:check": "vp fmt \".\" --check",
     "lint": "vp lint src",
     "lint:fix": "vp lint src --fix",
     "test": "vp test run",

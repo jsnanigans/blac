@@ -9,6 +9,7 @@
   "main": "index.js",
   "scripts": {
     "format": "vp fmt src",
+    "format:check": "vp fmt src --check",
     "_lint": "vp lint .",
     "_lint:fix": "vp lint . --fix",
     "_typecheck": "tsc --noEmit",

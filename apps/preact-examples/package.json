@@ -9,6 +9,7 @@
   "main": "index.js",
   "scripts": {
     "format": "vp fmt src",
+    "format:check": "vp fmt src --check",
     "dev": "vp dev",
     "build:app": "vp build",
     "preview": "vp preview"
