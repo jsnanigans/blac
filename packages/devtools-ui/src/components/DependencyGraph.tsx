@@ -25,8 +25,8 @@ import {
 import { T } from '../theme';
 import { injectXyflowStyles } from '../inject-xyflow-styles';
 
-const NODE_WIDTH = 160;
-const NODE_HEIGHT = 48;
+const NODE_WIDTH = 180;
+const NODE_HEIGHT = 52;
 
 function instanceKey(id: string): string {
   const i = id.indexOf(':');
@@ -48,6 +48,17 @@ type BlocNodeData = {
   color: string;
 };
 
+const hiddenHandle: React.CSSProperties = {
+  background: 'transparent',
+  border: 'none',
+  width: 1,
+  height: 1,
+  minWidth: 0,
+  minHeight: 0,
+  opacity: 0,
+  pointerEvents: 'none',
+};
+
 const BlocNode: FC<NodeProps<Node<BlocNodeData>>> = ({ data }) => (
   <div
     style={{
@@ -60,25 +71,22 @@ const BlocNode: FC<NodeProps<Node<BlocNodeData>>> = ({ data }) => (
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'center',
-      padding: '0 10px',
+      padding: '0 12px',
       boxSizing: 'border-box',
       cursor: 'pointer',
     }}
   >
-    <Handle
-      type="target"
-      position={Position.Left}
-      style={{ background: T.border2, border: 'none', width: 8, height: 8 }}
-    />
+    <Handle type="target" position={Position.Left} style={hiddenHandle} />
     <div
       style={{
-        fontSize: 11,
+        fontSize: 12,
         fontWeight: 600,
         color: data.color,
         fontFamily: T.fontMono,
         overflow: 'hidden',
         textOverflow: 'ellipsis',
         whiteSpace: 'nowrap',
+        lineHeight: '16px',
       }}
     >
       {data.className}
@@ -86,20 +94,17 @@ const BlocNode: FC<NodeProps<Node<BlocNodeData>>> = ({ data }) => (
     <div
       style={{
         fontSize: 10,
-        color: T.text2,
+        color: T.text1,
         fontFamily: T.fontMono,
         overflow: 'hidden',
         textOverflow: 'ellipsis',
         whiteSpace: 'nowrap',
+        lineHeight: '14px',
       }}
     >
       {data.instanceName}
     </div>
-    <Handle
-      type="source"
-      position={Position.Right}
-      style={{ background: T.border2, border: 'none', width: 8, height: 8 }}
-    />
+    <Handle type="source" position={Position.Right} style={hiddenHandle} />
   </div>
 );
 
@@ -126,8 +131,8 @@ async function computeELKLayout(
     layoutOptions: {
       'elk.algorithm': 'layered',
       'elk.direction': 'RIGHT',
-      'elk.spacing.nodeNode': '50',
-      'elk.layered.spacing.nodeNodeBetweenLayers': '80',
+      'elk.spacing.nodeNode': '40',
+      'elk.layered.spacing.nodeNodeBetweenLayers': '60',
       'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP',
       'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
     },
@@ -208,16 +213,14 @@ const DependencyGraphFlow: FC = () => {
           source: e.fromId,
           target: targetId,
           type: 'smoothstep',
-          label: 'uses',
-          labelStyle: {
-            fontSize: 9,
-            fill: T.text2,
-            fontFamily: 'ui-monospace, monospace',
+          animated: true,
+          style: { stroke: T.text2, strokeWidth: 1.5 },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: T.text2,
+            width: 16,
+            height: 16,
           },
-          labelBgStyle: { fill: T.bg3, fillOpacity: 0.9 },
-          labelBgPadding: [4, 2] as [number, number],
-          style: { stroke: T.border3, strokeWidth: 1.5 },
-          markerEnd: { type: MarkerType.ArrowClosed, color: T.border3 },
         };
       })
       .filter((e): e is Edge => e !== null);
@@ -265,11 +268,16 @@ const DependencyGraphFlow: FC = () => {
       onEdgesChange={onEdgesChange}
       nodeTypes={nodeTypes}
       onNodeClick={onNodeClick}
+      nodesDraggable={false}
+      nodesConnectable={false}
+      nodesFocusable={false}
+      edgesFocusable={false}
       fitView
       colorMode="dark"
       style={{ background: T.bg1 }}
     >
       <Controls
+        showInteractive={false}
         style={{
           background: T.bg3,
           border: `1px solid ${T.border1}`,
@@ -278,6 +286,38 @@ const DependencyGraphFlow: FC = () => {
         }}
       />
       <Background variant={BackgroundVariant.Dots} color={T.border0} gap={24} />
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 8,
+          right: 8,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          fontSize: 10,
+          color: T.text2,
+          fontFamily: T.fontMono,
+          background: T.bg3,
+          border: `1px solid ${T.border1}`,
+          borderRadius: T.radius,
+          padding: '4px 8px',
+        }}
+      >
+        <span>A</span>
+        <svg width="24" height="8" viewBox="0 0 24 8">
+          <line
+            x1="0"
+            y1="4"
+            x2="18"
+            y2="4"
+            stroke={T.text2}
+            strokeWidth="1.5"
+            strokeDasharray="3 2"
+          />
+          <polygon points="18,1 24,4 18,7" fill={T.text2} />
+        </svg>
+        <span>depends on B</span>
+      </div>
     </ReactFlow>
   );
 };

@@ -32,18 +32,34 @@ function App() {
         const dependencyBloc = acquire(DevToolsDependencyBloc);
         const metricsBloc = acquire(DevToolsMetricsBloc);
 
+        const resetAll = () => {
+          flushSync(() => {
+            instancesBloc.setConnected(false);
+            instancesBloc.setAllInstances([]);
+            diffBloc.clearAllPreviousStates();
+            logsBloc.clearLogs();
+            dependencyBloc.setEdges([]);
+            metricsBloc.clearAll();
+          });
+        };
+
+        comm.onDisconnect(() => {
+          resetAll();
+        });
+
         comm.connect();
         comm.onMessage((message) => {
           switch (message.type) {
+            case 'PONG':
+              comm.receivedPong();
+              if (!instancesBloc.state.connected) {
+                // We got a pong but panel thinks we're disconnected — re-request
+                comm.sendMessage({ type: 'GET_INSTANCES' });
+              }
+              break;
+
             case 'PAGE_RELOAD':
-              flushSync(() => {
-                instancesBloc.setConnected(false);
-                instancesBloc.setAllInstances([]);
-                diffBloc.clearAllPreviousStates();
-                logsBloc.clearLogs();
-                dependencyBloc.setEdges([]);
-                metricsBloc.clearAll();
-              });
+              resetAll();
               break;
 
             case 'BLAC_NOT_AVAILABLE':
@@ -54,6 +70,7 @@ function App() {
               break;
 
             case 'INITIAL_STATE':
+              comm.receivedData();
               if (message.payload?.instances) {
                 flushSync(() => {
                   instancesBloc.setAllInstances(message.payload.instances);
@@ -137,6 +154,7 @@ function App() {
               break;
 
             case 'ATOMIC_UPDATE': {
+              comm.receivedData();
               if (!message.payload) break;
               const event = message.payload;
 

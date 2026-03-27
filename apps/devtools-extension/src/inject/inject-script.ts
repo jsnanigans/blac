@@ -141,6 +141,18 @@
 
   // Handle commands from DevTools panel
   function handleCommand(command: Record<string, any>) {
+    // PING always responds immediately regardless of init state
+    if (command.type === 'PING') {
+      const api = window.__BLAC_DEVTOOLS__;
+      sendMessage({
+        type: api?.isEnabled() ? 'PONG' : 'BLAC_NOT_AVAILABLE',
+        payload: api?.isEnabled()
+          ? { timestamp: Date.now() }
+          : { reason: 'BlaC API not available' },
+      });
+      return;
+    }
+
     // If not initialized yet, queue the command
     if (!isInitialized) {
       queuedCommands.push(command);
