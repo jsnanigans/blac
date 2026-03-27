@@ -28,7 +28,10 @@ export {
   getStats,
 } from './registry';
 
-export { globalRegistry } from './core/StateContainerRegistry';
+export {
+  globalRegistry,
+  StateContainerRegistry,
+} from './core/StateContainerRegistry';
 export type {
   LifecycleEvent,
   LifecycleListener,
