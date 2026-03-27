@@ -52,7 +52,7 @@
     "format": "vp fmt \".\"",
     "lint": "vp lint src",
     "lint:fix": "vp lint src --fix",
-    "test": "node ../../scripts/run-workspace-bin.mjs vitest run --passWithNoTests",
+    "test": "vp test run --passWithNoTests",
     "verify": "node ../../scripts/run-workspace-bin.mjs publint",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "echo 'Skipping prepublishOnly - build should be done at root level'",

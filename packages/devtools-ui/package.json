@@ -45,7 +45,7 @@
     "dev": "vp pack --watch",
     "build": "vp pack && tsc -p tsconfig.build.json && cp dist/index.d.ts dist/index.d.cts",
     "clean": "rm -rf dist",
-    "test": "node ../../scripts/run-workspace-bin.mjs vitest run --passWithNoTests",
+    "test": "vp test run --passWithNoTests",
     "verify": "node ../../scripts/run-workspace-bin.mjs publint",
     "typecheck": "tsc --noEmit"
   },
