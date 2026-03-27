@@ -1,6 +1,6 @@
 import { generateSimpleId } from '../utils/idGenerator';
 import { BLAC_DEFAULTS } from '../constants';
-import { globalRegistry } from './StateContainerRegistry';
+import { getRegistry } from '../registry/config';
 import type { StateContainerConstructor } from '../types/utilities';
 import { EMIT, UPDATE } from './symbols';
 
@@ -75,7 +75,7 @@ export abstract class StateContainer<S extends object = any> {
       Type,
       instanceKey ?? BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
     );
-    return () => globalRegistry.ensure(Type, instanceKey);
+    return () => getRegistry().ensure(Type, instanceKey);
   }
 
   constructor(initialState: S) {
@@ -90,7 +90,7 @@ export abstract class StateContainer<S extends object = any> {
       this.constructor.name,
       this._config.instanceId,
     );
-    globalRegistry.emit('created', this);
+    getRegistry().emit('created', this);
   }
 
   get state(): Readonly<S> {
@@ -145,7 +145,7 @@ export abstract class StateContainer<S extends object = any> {
     this._listeners.clear();
     this._systemEventHandlers.clear();
 
-    globalRegistry.emit('disposed', this);
+    getRegistry().emit('disposed', this);
 
     if (this.debug) {
       console.log(`[${this.name}] Disposed successfully`);
@@ -363,7 +363,7 @@ export abstract class StateContainer<S extends object = any> {
 
     const stackTrace = this.captureStackTrace();
 
-    globalRegistry.emit(
+    getRegistry().emit(
       'stateChanged',
       this,
       previousState,

@@ -1,4 +1,4 @@
-import { globalRegistry } from '../core/StateContainerRegistry';
+import { getRegistry } from './config';
 import type {
   StateContainerConstructor,
   InstanceReadonlyState,
@@ -8,25 +8,25 @@ export function hasInstance<T extends StateContainerConstructor>(
   BlocClass: T,
   instanceKey?: string,
 ): boolean {
-  return globalRegistry.hasInstance(BlocClass, instanceKey);
+  return getRegistry().hasInstance(BlocClass, instanceKey);
 }
 
 export function getRefCount<T extends StateContainerConstructor>(
   BlocClass: T,
   instanceKey?: string,
 ): number {
-  return globalRegistry.getRefCount(BlocClass, instanceKey);
+  return getRegistry().getRefCount(BlocClass, instanceKey);
 }
 
 export function getAll<T extends StateContainerConstructor>(
   BlocClass: T,
 ): InstanceReadonlyState<T>[] {
-  return globalRegistry.getAll(BlocClass);
+  return getRegistry().getAll(BlocClass);
 }
 
 export function forEach<T extends StateContainerConstructor>(
   BlocClass: T,
   callback: (instance: InstanceReadonlyState<T>) => void,
 ): void {
-  globalRegistry.forEach(BlocClass, callback);
+  getRegistry().forEach(BlocClass, callback);
 }
