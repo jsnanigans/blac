@@ -2,6 +2,6 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "blac-examples",
   "pages": {
-    "build_output_dir": "./dist"
-  }
+    "build_output_dir": "./dist",
+  },
 }
