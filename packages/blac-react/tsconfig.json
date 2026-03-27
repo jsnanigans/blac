@@ -17,7 +17,9 @@
     "resolveJsonModule": true,
     "paths": {
       "@blac/core": ["../blac-core/src/index.ts"],
-      "@blac/core/testing": ["../blac-core/src/testing.ts"]
+      "@blac/core/testing": ["../blac-core/src/testing.ts"],
+      "@blac/core/tracking": ["../blac-core/src/tracking.ts"],
+      "@blac/adapter": ["../blac-adapter/src/index.ts"]
     }
   },
   "include": [
