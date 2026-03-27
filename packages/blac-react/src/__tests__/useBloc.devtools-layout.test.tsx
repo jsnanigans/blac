@@ -21,7 +21,6 @@ type LayoutState = {
 };
 
 // Simplified LayoutBloc
-@blac({ excludeFromDevTools: true })
 class LayoutBloc extends Cubit<LayoutState> {
   constructor() {
     super({
@@ -78,6 +77,7 @@ class LayoutBloc extends Cubit<LayoutState> {
     );
   }
 }
+blac({ excludeFromDevTools: true })(LayoutBloc);
 
 // Simplified test component
 const SimpleDevToolsPanel: React.FC = () => {
