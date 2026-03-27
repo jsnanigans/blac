@@ -16,7 +16,10 @@ export default defineConfig({
     },
   },
   pack: {
-    entry: 'src/index.ts',
+    entry: {
+      index: 'src/index.ts',
+      testing: 'src/testing.ts',
+    },
     format: ['esm', 'cjs'],
     clean: true,
     dts: false,

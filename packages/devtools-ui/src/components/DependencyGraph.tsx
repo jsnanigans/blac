@@ -240,7 +240,7 @@ const DependencyGraphFlow: FC = () => {
 
   useEffect(() => {
     if (rfNodesRef.current.length === 0) return;
-    computeELKLayout(rfNodesRef.current, rfEdgesRef.current).then(
+    void computeELKLayout(rfNodesRef.current, rfEdgesRef.current).then(
       ({ nodes: ln, edges: le }) => {
         setNodes(ln);
         setEdges(le);

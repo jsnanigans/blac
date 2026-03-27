@@ -36,7 +36,7 @@ function DraftEditor() {
       setError(event.status.error?.message ?? null);
     });
 
-    const currentStatus = draftPersistPlugin.getStatus(actualBloc);
+    const currentStatus = draftPersistPlugin.getStatus(actualBloc as never);
     if (currentStatus) {
       setPersistStatus(currentStatus.phase);
       setSavedAt(

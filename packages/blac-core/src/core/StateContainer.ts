@@ -178,7 +178,7 @@ export abstract class StateContainer<S extends object = any> {
     this._resolveHydrationPromise = undefined;
     this._rejectHydrationPromise = undefined;
     this._hydrationPromiseSettled = false;
-    this.ensureHydrationPromise();
+    void this.ensureHydrationPromise();
     this.setHydrationStatus('hydrating');
   }
 
@@ -201,7 +201,7 @@ export abstract class StateContainer<S extends object = any> {
         return;
       }
       if (this._hydrationStatus === 'error') {
-        this.ensureHydrationPromise();
+        void this.ensureHydrationPromise();
       }
     }
 
@@ -211,7 +211,9 @@ export abstract class StateContainer<S extends object = any> {
 
   failHydration(error: Error): void {
     const err =
-      error instanceof Error ? error : new Error(`Hydration failed: ${error}`);
+      error instanceof Error
+        ? error
+        : new Error(`Hydration failed: ${String(error)}`);
 
     this._hydrationError = err;
     this.setHydrationStatus('error', err);
@@ -412,7 +414,7 @@ export abstract class StateContainer<S extends object = any> {
   }
 
   private rejectHydration(error: Error): void {
-    this.ensureHydrationPromise();
+    void this.ensureHydrationPromise();
     this._rejectHydrationPromise?.(error);
   }
 

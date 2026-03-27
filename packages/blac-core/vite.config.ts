@@ -21,6 +21,7 @@ export default defineConfig({
       plugins: 'src/plugins.ts',
       'watch-entry': 'src/watch-entry.ts',
       types: 'src/types.ts',
+      testing: 'src/testing.ts',
     },
     format: ['esm', 'cjs'],
     clean: true,

@@ -387,8 +387,8 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
 
   private shouldExcludeInstance(instance: any): boolean {
     return (
-      (instance as Record<string, any>)?.constructor?.__excludeFromDevTools ===
-      true
+      ((instance as Record<string, any>)?.constructor as any)
+        ?.__excludeFromDevTools === true
     );
   }
 
@@ -432,7 +432,8 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
 
       for (const [TypeClass, instanceKey] of deps) {
         const toClass =
-          (TypeClass as any as Record<string, any>).name ?? String(TypeClass);
+          (TypeClass as any as Record<string, any>).name ??
+          (TypeClass as any).toString();
         // Avoid duplicates
         const exists = this.dependencyEdges.some(
           (e) =>

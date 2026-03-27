@@ -44,7 +44,7 @@ export const CallStackView: FC<CallStackViewProps> = ({ callstack }) => {
   const libFrames = frames.filter((f) => !f.isUser);
 
   const handleCopy = () => {
-    navigator.clipboard?.writeText(callstack).then(() => {
+    void navigator.clipboard?.writeText(callstack).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     });

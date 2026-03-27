@@ -19,7 +19,7 @@ export interface PersistPluginStatus {
 }
 
 export interface PersistPluginStatusEvent {
-  instance: StateContainer<unknown>;
+  instance: StateContainer<object>;
   status: PersistPluginStatus;
 }
 
@@ -90,6 +90,6 @@ export interface IndexedDbPersistPlugin extends BlacPlugin {
   ): IndexedDbPersistPlugin;
   clearRecord(key: string): Promise<void>;
   clearAll(): Promise<void>;
-  getStatus(instance: StateContainer<any>): PersistPluginStatus | undefined;
+  getStatus(instance: StateContainer<object>): PersistPluginStatus | undefined;
   subscribe(listener: (event: PersistPluginStatusEvent) => void): () => void;
 }

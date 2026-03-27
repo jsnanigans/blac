@@ -5,7 +5,7 @@
  * Falls back to DraggableOverlay for unsupported browsers.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
 import { DevToolsPanel } from './DevToolsPanel';
 import { defaultDevToolsMount } from './DraggableOverlay';
@@ -163,27 +163,26 @@ export function PictureInPictureDevTools({
   };
 
   // Toggle PiP window
-  const togglePiP = () => {
+  const togglePiPRef = useRef(() => {});
+  togglePiPRef.current = () => {
     if (visible && pipWindow && !pipWindow.closed) {
       closePiP();
     } else {
-      openPiP();
+      void openPiP();
     }
   };
 
   // Keyboard shortcut: Alt+D
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.altKey && (e.key === 'd' || e.key === 'D')) {
         e.preventDefault();
-        togglePiP();
+        togglePiPRef.current();
       }
     };
 
-    // Listen for custom toggle event
     const handleToggleEvent = () => {
-      togglePiP();
+      togglePiPRef.current();
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -193,13 +192,14 @@ export function PictureInPictureDevTools({
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('blac-devtools-toggle', handleToggleEvent);
     };
-  }, [togglePiP]);
+  }, []);
 
   // Cleanup on unmount
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const closePiPRef = useRef(closePiP);
+  closePiPRef.current = closePiP;
   useEffect(() => {
     return () => {
-      closePiP();
+      closePiPRef.current();
     };
   }, []);
 
@@ -223,7 +223,7 @@ export function PictureInPictureDevTools({
           pointerEvents: 'auto',
         }}
         onClick={() => {
-          openPiP();
+          void openPiP();
         }}
         title="Open BlaC DevTools in Picture-in-Picture (Alt+D)"
       >

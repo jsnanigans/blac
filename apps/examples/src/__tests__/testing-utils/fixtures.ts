@@ -179,13 +179,13 @@ export class NotificationCubit extends Cubit<NotificationState> {
 
 // ─── Primitive state cubit ──────────────────────────────────────
 
-export class LoadingCubit extends Cubit<boolean> {
+export class LoadingCubit extends Cubit<{ loading: boolean }> {
   constructor() {
-    super(false);
+    super({ loading: false });
   }
 
-  start = () => this.emit(true);
-  stop = () => this.emit(false);
+  start = () => this.emit({ loading: true });
+  stop = () => this.emit({ loading: false });
 }
 
 // ─── Async cubit ────────────────────────────────────────────────

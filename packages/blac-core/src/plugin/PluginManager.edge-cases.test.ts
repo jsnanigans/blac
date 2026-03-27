@@ -1,3 +1,4 @@
+/// <reference types="vitest/globals" />
 import { describe, it, expect, vi } from 'vite-plus/test';
 import { PluginManager, createPluginManager } from './PluginManager';
 import {

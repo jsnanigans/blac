@@ -77,8 +77,8 @@ describe('getter-tracker', () => {
     it('should get descriptor for getters', () => {
       const descriptor = getDescriptor(bloc, 'doubled');
       expect(descriptor).toBeDefined();
-      expect(descriptor?.get).toBeDefined();
-      expect(typeof descriptor?.get).toBe('function');
+      expect(descriptor).toHaveProperty('get');
+      expect(typeof descriptor?.['get']).toBe('function');
     });
 
     it('should cache descriptors', () => {

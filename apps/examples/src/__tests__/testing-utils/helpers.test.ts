@@ -45,8 +45,8 @@ describe('withBlocState', () => {
   });
 
   it('emits full state on a primitive-state cubit', () => {
-    const cubit = withBlocState(LoadingCubit, true);
-    expect(cubit.state).toBe(true);
+    const cubit = withBlocState(LoadingCubit, { loading: true });
+    expect(cubit.state.loading).toBe(true);
   });
 
   it('returns the cubit for chaining', () => {
@@ -117,7 +117,7 @@ describe('withBlocMethod', () => {
 describe('flushBlocUpdates', () => {
   it('flushes microtasks so async state changes are visible', async () => {
     const cubit = ensure(AsyncDataCubit);
-    cubit.fetchData();
+    void cubit.fetchData();
 
     // State is loading immediately
     expect(cubit.state.loading).toBe(true);

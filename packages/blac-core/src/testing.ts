@@ -9,6 +9,9 @@ import type {
   StateContainerConstructor,
 } from './types/utilities';
 
+declare const beforeEach: (fn: () => void) => void;
+declare const afterEach: (fn: () => void) => void;
+
 // --- createTestRegistry + withTestRegistry ---
 
 export function createTestRegistry(): StateContainerRegistry {

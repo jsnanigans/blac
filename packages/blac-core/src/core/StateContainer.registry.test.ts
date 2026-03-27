@@ -166,7 +166,7 @@ describe('StateContainer - Registry Features', () => {
       });
 
       expect(states).toHaveLength(3);
-      expect(states.sort()).toEqual([1, 2, 3]);
+      expect(states.sort((a, b) => a - b)).toEqual([1, 2, 3]);
     });
 
     it('should skip disposed instances during iteration', () => {

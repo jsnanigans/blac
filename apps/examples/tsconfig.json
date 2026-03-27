@@ -18,6 +18,8 @@
     "types": ["vite/client"],
     "paths": {
       "@blac/core": ["../../packages/blac-core/src/index.ts"],
+      "@blac/core/testing": ["../../packages/blac-core/src/testing.ts"],
+      "@blac/react/testing": ["../../packages/blac-react/src/testing.ts"],
       "@blac/plugin-persist": ["../../packages/plugin-persist/src/index.ts"]
     }
   },

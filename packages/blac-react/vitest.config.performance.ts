@@ -23,11 +23,6 @@ export default defineConfig({
     maxConcurrency: 1,
     maxWorkers: 1,
     pool: 'forks', // Use forks instead of threads for better isolation
-    poolOptions: {
-      forks: {
-        singleFork: true, // Run all tests in a single fork for consistent memory measurements
-      },
-    },
     environment: 'happy-dom',
     setupFiles: './vitest-setup.ts',
     hookTimeout: 60000, // 60 seconds for performance tests

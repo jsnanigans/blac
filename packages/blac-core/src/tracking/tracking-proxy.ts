@@ -166,7 +166,7 @@ export function createInternal<T>(
   }
 
   if (state.proxyCache.has(target)) {
-    return state.proxyCache.get(target);
+    return state.proxyCache.get(target) as T;
   }
 
   if (Array.isArray(target)) {

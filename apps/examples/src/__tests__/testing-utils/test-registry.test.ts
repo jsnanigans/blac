@@ -37,7 +37,7 @@ describe('withTestRegistry', () => {
     ensure(CounterCubit);
     expect(hasInstance(CounterCubit)).toBe(true);
 
-    withTestRegistry((registry) => {
+    withTestRegistry((registry: ReturnType<typeof getRegistry>) => {
       // Inside the test registry: no instances from the outer scope
       expect(hasInstance(CounterCubit)).toBe(false);
       expect(registry.getStats().totalInstances).toBe(0);

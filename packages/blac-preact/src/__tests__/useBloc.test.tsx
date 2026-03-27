@@ -52,7 +52,7 @@ describe('useBloc', () => {
         return { state, bloc };
       });
 
-      act(() => {
+      await act(async () => {
         result.current.bloc.increment();
       });
 
@@ -73,7 +73,7 @@ describe('useBloc', () => {
 
       expect(result1.current.bloc).toBe(result2.current.bloc);
 
-      act(() => {
+      await act(async () => {
         result1.current.bloc.increment();
       });
 
@@ -113,7 +113,7 @@ describe('useBloc', () => {
         return { state, bloc };
       });
 
-      act(() => {
+      await act(async () => {
         result1.current.bloc.increment();
       });
 

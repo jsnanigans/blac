@@ -35,7 +35,7 @@ chrome.runtime.onConnect.addListener((port) => {
     // Handle messages from DevTools panel
     port.onMessage.addListener((message) => {
       // Forward to content script
-      chrome.tabs.sendMessage(tabId, {
+      void chrome.tabs.sendMessage(tabId, {
         source: 'blac-devtools-panel',
         ...message,
       });

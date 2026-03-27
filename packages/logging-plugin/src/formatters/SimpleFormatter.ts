@@ -80,7 +80,7 @@ export class SimpleFormatter {
         return '[Object]';
       }
     }
-    return String(state);
+    return JSON.stringify(state);
   }
 
   private formatDuration(ms: number): string {

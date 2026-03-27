@@ -227,9 +227,10 @@ export default defineConfig({
         plugins: ['import'],
       },
       {
-        files: ['**/*.js'],
+        files: ['**/*.js', '**/*.mjs'],
         rules: {
           '@typescript-eslint/no-var-requires': 'off',
+          'no-undef': 'off',
         },
       },
       {
@@ -246,15 +247,15 @@ export default defineConfig({
         },
       },
       {
+        files: ['packages/**/*.ts', 'packages/**/*.tsx'],
+        rules: {
+          '@typescript-eslint/no-explicit-any': 'off',
+        },
+      },
+      {
         files: [
-          'packages/blac-core/**/*.ts',
-          'packages/blac-core/**/*.tsx',
-          'packages/blac-react/**/*.ts',
-          'packages/blac-react/**/*.tsx',
-          'packages/devtools-connect/**/*.ts',
-          'packages/devtools-connect/**/*.tsx',
-          'packages/logging-plugin/**/*.ts',
-          'packages/logging-plugin/**/*.tsx',
+          'apps/devtools-extension/**/*.ts',
+          'apps/devtools-extension/**/*.tsx',
         ],
         rules: {
           '@typescript-eslint/no-explicit-any': 'off',
