@@ -5,7 +5,11 @@
     "declaration": true,
     "declarationMap": true,
     "outDir": "./dist",
-    "rootDir": "./src"
+    "rootDir": "../..",
+    "paths": {
+      "@blac/core": ["../blac-core/src/index.ts"],
+      "@blac/react": ["../blac-react/src/index.ts"]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.test.tsx"]

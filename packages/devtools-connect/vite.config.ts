@@ -1,6 +1,12 @@
 import { defineConfig } from 'vite-plus';
+import path from 'path';
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@blac/core': path.resolve(__dirname, '../blac-core/src'),
+    },
+  },
   pack: {
     entry: 'src/index.ts',
     format: ['esm', 'cjs'],
