@@ -39,7 +39,6 @@ jobs:
         with:
           node-version: lts
           cache: true
-      - run: pnpm run build
       - run: pnpm run typecheck
 
   build:
