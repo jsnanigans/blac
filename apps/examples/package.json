@@ -8,7 +8,7 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "format": "vp fmt \".\"",
+    "format": "vp fmt src",
     "_lint": "vp lint .",
     "_lint:fix": "vp lint . --fix",
     "_typecheck": "tsc --noEmit",

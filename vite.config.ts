@@ -290,45 +290,5 @@ export default defineConfig({
       "/coverage"
     ]
   },
-  run: {
-    tasks: {
-      build: {
-        dependsOn: ["^build"],
-        outputs: ["dist/**", ".tsbuildinfo", ".vitepress/dist/**"],
-      },
-      "build:esm": {
-        dependsOn: ["^build"],
-        outputs: ["dist/**", ".tsbuildinfo"],
-      },
-      "build:cjs": {
-        dependsOn: ["build:esm"],
-        outputs: ["dist/**"],
-      },
-      clean: {
-        cache: false,
-      },
-      typecheck: {
-        dependsOn: ["^typecheck"],
-      },
-      verify: {
-        dependsOn: ["build"],
-      },
-      lint: {},
-      "lint:fix": {},
-      format: {},
-      test: {},
-      "test:watch": {
-        persistent: true,
-        cache: false,
-      },
-      dev: {
-        persistent: true,
-        cache: false,
-      },
-      prepublishOnly: {
-        dependsOn: ["build", "test", "typecheck"],
-        cache: false,
-      },
-    },
-  },
+
 });
