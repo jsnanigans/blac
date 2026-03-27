@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { render, act, screen } from '@testing-library/react';
 import { Cubit, getRefCount, hasInstance } from '@blac/core';
 import { useBloc } from '../useBloc';
-import { blacTestSetup } from '@blac/test';
+import { blacTestSetup } from '@blac/core/testing';
 
 class SharedBloc extends Cubit<{ count: number }> {
   constructor() {

@@ -10,7 +10,7 @@ import {
   noTrackSubscribe,
 } from '@blac/adapter';
 import { useBloc } from '../useBloc';
-import { blacTestSetup } from '@blac/test';
+import { blacTestSetup } from '@blac/core/testing';
 
 blacTestSetup();
 

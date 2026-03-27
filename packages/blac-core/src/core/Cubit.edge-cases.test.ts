@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { blacTestSetup } from '@blac/test';
+import { blacTestSetup } from '@blac/core/testing';
 import { Cubit } from './Cubit';
 
 class CountCubit extends Cubit<{ count: number; label: string }> {

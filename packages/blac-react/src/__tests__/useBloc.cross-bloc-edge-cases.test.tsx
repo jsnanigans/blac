@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { Cubit, acquire, borrow } from '@blac/core';
 import { useBloc } from '../useBloc';
-import { blacTestSetup } from '@blac/test';
+import { blacTestSetup } from '@blac/core/testing';
 
 // Deep dependency chain blocs
 class DeepABloc extends Cubit<{ value: number }> {

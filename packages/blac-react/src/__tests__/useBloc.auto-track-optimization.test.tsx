@@ -3,7 +3,7 @@ import { render, act, screen, renderHook } from '@testing-library/react';
 import { Cubit } from '@blac/core';
 import { useBloc } from '../useBloc';
 import { configureBlacReact, resetBlacReactConfig } from '../config';
-import { blacTestSetup } from '@blac/test';
+import { blacTestSetup } from '@blac/core/testing';
 
 class MultiFieldBloc extends Cubit<{ a: number; b: string; c: boolean }> {
   constructor() {

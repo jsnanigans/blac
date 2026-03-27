@@ -7,7 +7,7 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { StrictMode } from 'react';
 import { useBloc } from '../useBloc';
 import { Cubit } from '@blac/core';
-import { blacTestSetup } from '@blac/test';
+import { blacTestSetup } from '@blac/core/testing';
 
 // Test state shape
 interface TestState {

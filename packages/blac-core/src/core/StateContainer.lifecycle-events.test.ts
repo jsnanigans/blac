@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import { blacTestSetup } from '@blac/test';
+import { blacTestSetup } from '@blac/core/testing';
 import { Cubit } from './Cubit';
 import { acquire, release, getRegistry } from '../registry';
 

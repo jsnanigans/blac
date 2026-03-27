@@ -8,7 +8,7 @@ import { render, screen, act } from '@testing-library/react';
 import { Cubit, acquire } from '@blac/core';
 import { useBloc } from '../useBloc';
 import { describe, it, expect } from 'vitest';
-import { blacTestSetup } from '@blac/test';
+import { blacTestSetup } from '@blac/core/testing';
 
 interface TestState {
   items: number[];

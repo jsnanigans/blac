@@ -77,6 +77,16 @@
         "types": "./dist/types.d.cts",
         "default": "./dist/types.cjs"
       }
+    },
+    "./testing": {
+      "import": {
+        "types": "./dist/testing.d.ts",
+        "default": "./dist/testing.js"
+      },
+      "require": {
+        "types": "./dist/testing.d.cts",
+        "default": "./dist/testing.cjs"
+      }
     }
   },
   "files": [
@@ -111,7 +121,6 @@
     "deploy": "pnpm publish --access public"
   },
   "devDependencies": {
-    "@blac/test": "workspace:*",
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/user-event": "catalog:",
     "@vitest/browser": "catalog:",

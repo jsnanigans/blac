@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { blacTestSetup } from '@blac/test';
+import { blacTestSetup } from '@blac/core/testing';
 import { Cubit } from './Cubit';
 import { acquire, hasInstance, getRefCount } from '../registry';
 

@@ -16,7 +16,8 @@
     "resolveJsonModule": true,
     "types": ["vitest/globals", "@testing-library/jest-dom"],
     "paths": {
-      "@blac/core": ["../blac-core/src/index.ts"]
+      "@blac/core": ["../blac-core/src/index.ts"],
+      "@blac/core/testing": ["../blac-core/src/testing.ts"]
     }
   },
   "include": [

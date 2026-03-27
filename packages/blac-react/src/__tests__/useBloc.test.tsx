@@ -8,7 +8,7 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { renderToString } from 'react-dom/server';
 import { Cubit } from '@blac/core';
 import { useBloc } from '../useBloc';
-import { blacTestSetup } from '@blac/test';
+import { blacTestSetup } from '@blac/core/testing';
 
 blacTestSetup();
 

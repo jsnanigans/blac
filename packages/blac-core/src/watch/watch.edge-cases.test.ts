@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { blacTestSetup } from '@blac/test';
+import { blacTestSetup } from '@blac/core/testing';
 import { watch, instance } from './watch';
 import { Cubit } from '../core/Cubit';
 import { acquire, release, clearAll } from '../registry';

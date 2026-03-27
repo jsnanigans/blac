@@ -1,13 +1,12 @@
 import type { ReactElement } from 'react';
 import type { StateContainerConstructor } from '@blac/core';
+import { StateContainerRegistry, getRegistry, setRegistry } from '@blac/core';
 import {
-  StateContainerRegistry,
-  getRegistry,
-  setRegistry,
-} from '@blac/core';
+  registerOverride,
+  createCubitStub,
+  type CubitStubOptions,
+} from '@blac/core/testing';
 import { render } from '@testing-library/react';
-import { registerOverride } from '../registry/overrides';
-import { createCubitStub, type CubitStubOptions } from '../stubs/cubit-stub';
 
 interface RenderWithBlocOptions<T extends StateContainerConstructor>
   extends CubitStubOptions<T> {
@@ -40,4 +39,25 @@ export function renderWithBloc<T extends StateContainerConstructor>(
     ...renderResult,
     bloc: instance,
   };
+}
+
+export function renderWithRegistry(
+  ui: ReactElement,
+  setup: (registry: StateContainerRegistry) => void,
+) {
+  const previous = getRegistry();
+  const testRegistry = new StateContainerRegistry();
+  setRegistry(testRegistry);
+
+  setup(testRegistry);
+
+  const renderResult = render(ui);
+
+  const originalUnmount = renderResult.unmount;
+  renderResult.unmount = () => {
+    originalUnmount();
+    setRegistry(previous);
+  };
+
+  return renderResult;
 }

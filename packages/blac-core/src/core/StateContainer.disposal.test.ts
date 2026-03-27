@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { blacTestSetup } from '@blac/test';
+import { blacTestSetup } from '@blac/core/testing';
 import { StateContainer } from './StateContainer';
 import { acquire, release } from '../registry';
 import { EMIT, UPDATE } from './symbols';

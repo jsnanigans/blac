@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { StrictMode } from 'react';
 import { Cubit } from '@blac/core';
-import { blacTestSetup } from '@blac/test';
+import { blacTestSetup } from '@blac/core/testing';
 import { useBloc } from '../useBloc';
 
 class LifecycleBloc extends Cubit<{ n: number }> {

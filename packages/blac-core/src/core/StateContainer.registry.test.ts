@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { blacTestSetup } from '@blac/test';
+import { blacTestSetup } from '@blac/core/testing';
 import { StateContainer } from './StateContainer';
 import {
   acquire,

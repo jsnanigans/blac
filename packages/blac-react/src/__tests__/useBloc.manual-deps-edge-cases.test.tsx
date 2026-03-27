@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, act, screen, renderHook } from '@testing-library/react';
 import { Cubit } from '@blac/core';
-import { blacTestSetup } from '@blac/test';
+import { blacTestSetup } from '@blac/core/testing';
 import { useBloc } from '../useBloc';
 
 class FieldBloc extends Cubit<{ a: number; b: string; name: string }> {

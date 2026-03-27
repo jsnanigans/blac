@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { Component, type ReactNode } from 'react';
 import { render, act, screen } from '@testing-library/react';
 import { Cubit } from '@blac/core';
-import { blacTestSetup } from '@blac/test';
+import { blacTestSetup } from '@blac/core/testing';
 import { useBloc } from '../useBloc';
 
 class ComputedBloc extends Cubit<{ x: number; y: number }> {

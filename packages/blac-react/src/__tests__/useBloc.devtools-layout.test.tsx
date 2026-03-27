@@ -6,7 +6,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { useBloc } from '../useBloc';
 import { Cubit, blac, acquire } from '@blac/core';
 import React from 'react';
-import { blacTestSetup } from '@blac/test';
+import { blacTestSetup } from '@blac/core/testing';
 
 // Simplified types
 type InstanceData = {

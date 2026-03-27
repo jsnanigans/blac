@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, renderHook, act, screen } from '@testing-library/react';
 import { Cubit, hasInstance } from '@blac/core';
-import { blacTestSetup } from '@blac/test';
+import { blacTestSetup } from '@blac/core/testing';
 import { useBloc } from '../useBloc';
 
 class IsoBloc extends Cubit<{ n: number }> {

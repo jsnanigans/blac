@@ -18,7 +18,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor, renderHook } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Cubit } from '@blac/core';
-import { blacTestSetup } from '@blac/test';
+import { blacTestSetup } from '@blac/core/testing';
 import { useBloc } from '../useBloc';
 import React, { StrictMode } from 'react';
 
