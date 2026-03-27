@@ -1,5 +1,14 @@
 # @blac/preact
 
+## 2.0.8
+
+### Patch Changes
+
+- update devtools
+- Updated dependencies
+  - @blac/adapter@2.0.8
+  - @blac/core@2.0.8
+
 ## 2.0.7
 
 ### Patch Changes

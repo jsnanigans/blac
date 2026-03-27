@@ -1,6 +1,6 @@
 {
   "name": "@blac/logging-plugin",
-  "version": "2.0.7",
+  "version": "2.0.8",
   "license": "MIT",
   "author": "Brendan Mullins <jsnanigans@gmail.com>",
   "description": "Logging and debugging plugin for BlaC state management",
