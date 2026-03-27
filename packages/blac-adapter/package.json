@@ -45,14 +45,14 @@
     "bloc"
   ],
   "scripts": {
-    "dev": "tsdown --watch",
-    "build": "tsdown && tsc -p tsconfig.build.json && cp dist/index.d.ts dist/index.d.cts",
+    "dev": "vp pack --watch",
+    "build": "vp pack && tsc -p tsconfig.build.json && cp dist/index.d.ts dist/index.d.cts",
     "clean": "rm -rf dist",
-    "format": "prettier --write \".\"",
-    "lint": "eslint src --ext .ts,.tsx",
-    "lint:fix": "eslint src --ext .ts,.tsx --fix",
-    "test": "vitest run",
-    "test:watch": "vitest --watch",
+    "format": "vp fmt \".\"",
+    "lint": "vp lint src",
+    "lint:fix": "vp lint src --fix",
+    "test": "vp test run",
+    "test:watch": "vp test --watch",
     "verify": "node ../../scripts/run-workspace-bin.mjs publint",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "echo 'Skipping prepublishOnly - build should be done at root level'",
@@ -64,10 +64,9 @@
   "devDependencies": {
     "@blac/core": "workspace:*",
     "jsdom": "catalog:",
-    "prettier": "catalog:",
-    "tsdown": "catalog:",
     "typescript": "catalog:",
     "publint": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "vite-plus": "catalog:"
   }
 }

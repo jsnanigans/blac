@@ -96,15 +96,15 @@
     "bloc-pattern"
   ],
   "scripts": {
-    "dev": "tsdown --watch",
-    "build": "tsdown && tsc -p tsconfig.build.json && for f in dist/*.d.ts; do cp \"$f\" \"${f%.d.ts}.d.cts\"; done",
+    "dev": "vp pack --watch",
+    "build": "vp pack && tsc -p tsconfig.build.json && for f in dist/*.d.ts; do cp \"$f\" \"${f%.d.ts}.d.cts\"; done",
     "clean": "rm -rf dist",
-    "format": "prettier --write \".\"",
-    "lint": "eslint src --ext .ts,.tsx",
-    "lint:fix": "eslint src --ext .ts,.tsx --fix",
-    "test": "vitest run",
-    "test:watch": "vitest --watch",
-    "coverage": "vitest run --coverage",
+    "format": "vp fmt \".\"",
+    "lint": "vp lint src",
+    "lint:fix": "vp lint src --fix",
+    "test": "vp test run",
+    "test:watch": "vp test --watch",
+    "coverage": "vp test run --coverage",
     "verify": "node ../../scripts/run-workspace-bin.mjs publint",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "echo 'Skipping prepublishOnly - build should be done at root level'",
@@ -113,16 +113,14 @@
   "devDependencies": {
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/user-event": "catalog:",
-    "@vitest/browser": "catalog:",
     "arktype": "^2.1.23",
     "fast-check": "^4.3.0",
     "jsdom": "catalog:",
-    "prettier": "catalog:",
-    "tsdown": "catalog:",
     "typescript": "catalog:",
     "valibot": "^1.1.0",
     "vitest": "catalog:",
     "publint": "catalog:",
-    "zod": "^4.1.12"
+    "zod": "^4.1.12",
+    "vite-plus": "catalog:"
   }
 }
