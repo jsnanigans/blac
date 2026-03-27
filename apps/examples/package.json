@@ -14,7 +14,9 @@
     "_typecheck": "tsc --noEmit",
     "dev": "vite",
     "build:app": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy": "wrangler pages deploy",
+    "deploy:preview": "wrangler pages deploy --branch preview"
   },
   "keywords": [],
   "author": "",
@@ -29,13 +31,14 @@
     "@blac/logging-plugin": "workspace:*",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "vite": "^7.0.6"
+    "vite": "^8.0.3"
   },
   "devDependencies": {
     "prettier": "catalog:",
-    "@vitejs/plugin-react": "^4.7.0",
+    "@vitejs/plugin-react": "^6.0.1",
     "typescript": "catalog:",
     "@types/react": "^19.1.9",
-    "@types/react-dom": "^19.1.7"
+    "@types/react-dom": "^19.1.7",
+    "wrangler": "^4"
   }
 }
