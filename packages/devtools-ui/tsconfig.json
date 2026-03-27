@@ -9,7 +9,8 @@
     "rootDir": "../..",
     "paths": {
       "@blac/core": ["../blac-core/src/index.ts"],
-      "@blac/react": ["../blac-react/src/index.ts"]
+      "@blac/react": ["../blac-react/src/index.ts"],
+      "@blac/adapter": ["../blac-adapter/src/index.ts"]
     }
   },
   "include": ["src/**/*"],
