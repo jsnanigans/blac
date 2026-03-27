@@ -101,15 +101,17 @@ export function PictureInPictureDevTools({
     }
 
     // Check if already open
-    if (window.documentPictureInPicture!.window) {
+    if (window.documentPictureInPicture?.window) {
       return;
     }
 
     try {
-      const pip = await window.documentPictureInPicture!.requestWindow({
+      const pip = await window.documentPictureInPicture?.requestWindow({
         width: 800,
         height: 600,
       });
+
+      if (!pip) return;
 
       setPipWindow(pip);
 
@@ -170,6 +172,7 @@ export function PictureInPictureDevTools({
   };
 
   // Keyboard shortcut: Alt+D
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.altKey && (e.key === 'd' || e.key === 'D')) {
@@ -190,9 +193,10 @@ export function PictureInPictureDevTools({
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('blac-devtools-toggle', handleToggleEvent);
     };
-  }, [visible, pipWindow]);
+  }, [togglePiP]);
 
   // Cleanup on unmount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     return () => {
       closePiP();

@@ -10,7 +10,6 @@ export function getRegistry(): StateContainerRegistry {
 }
 
 export function setRegistry(registry: StateContainerRegistry): void {
-  _registry.clearAll();
   _registry = registry;
 }
 

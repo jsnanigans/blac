@@ -38,7 +38,7 @@ export default defineConfig({
       '**/__archived__/**',
       '**/.*/**',
     ],
-    onConsoleLog(log) {
+    onConsoleLog(_log) {
       return true; // Show console logs for performance metrics
     },
     // Disable coverage for performance tests

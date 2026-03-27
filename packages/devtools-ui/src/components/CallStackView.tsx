@@ -16,7 +16,10 @@ function parseCallstack(stack: string): StackFrame[] {
         fn: match[1],
         file: match[2],
         line: parseInt(match[3]),
-        isUser: !match[2].includes('node_modules') && !match[2].includes('blac-core/dist') && !match[2].includes('@blac/core'),
+        isUser:
+          !match[2].includes('node_modules') &&
+          !match[2].includes('blac-core/dist') &&
+          !match[2].includes('@blac/core'),
       });
     }
   }
@@ -137,7 +140,8 @@ export const CallStackView: FC<CallStackViewProps> = ({ callstack }) => {
               padding: 0,
             }}
           >
-            {libExpanded ? '▾' : '▸'} {libFrames.length} library frame{libFrames.length !== 1 ? 's' : ''}
+            {libExpanded ? '▾' : '▸'} {libFrames.length} library frame
+            {libFrames.length !== 1 ? 's' : ''}
           </button>
           {libExpanded && (
             <div style={{ paddingLeft: '10px', marginTop: '3px' }}>

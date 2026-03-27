@@ -19,7 +19,7 @@ chrome.devtools.panels.create(
     panel.onHidden.addListener(() => {
       // Panel hidden
     });
-  }
+  },
 );
 
 // Export for TypeScript

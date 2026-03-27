@@ -1,12 +1,12 @@
 # Data Richness — Dependency Graph, Action Tracking & Performance Metrics
 
-Make the devtools capture and surface the *full picture* of what's happening inside a BlaC app, not just state snapshots.
+Make the devtools capture and surface the _full picture_ of what's happening inside a BlaC app, not just state snapshots.
 
 ---
 
 ## Phase 1: Action / Event Tracking
 
-**Goal:** Show *why* state changed, not just *what* changed. For Blocs this means the event that triggered the transition; for Cubits it means the method name.
+**Goal:** Show _why_ state changed, not just _what_ changed. For Blocs this means the event that triggered the transition; for Cubits it means the method name.
 
 ### Tasks
 
@@ -37,14 +37,14 @@ Make the devtools capture and surface the *full picture* of what's happening ins
 
 ### Files to modify
 
-| Package | File | Change |
-|---------|------|--------|
-| `@blac/core` | `StateContainer.ts`, `Bloc.ts`, `Cubit.ts` | Emit trigger metadata |
-| `devtools-connect` | `DevToolsBrowserPlugin.ts` | Capture & store trigger |
-| `devtools-connect` | `DevToolsStateManager.ts` | Add trigger to snapshot |
-| `devtools-connect` | `types/index.ts` | New `Trigger` type |
-| `devtools-extension` | `inject/inject-script.ts`, `panel/comm.ts` | Forward trigger |
-| `devtools-ui` | `StateHistoryView.tsx`, `LogsView.tsx` | Render trigger |
+| Package              | File                                       | Change                  |
+| -------------------- | ------------------------------------------ | ----------------------- |
+| `@blac/core`         | `StateContainer.ts`, `Bloc.ts`, `Cubit.ts` | Emit trigger metadata   |
+| `devtools-connect`   | `DevToolsBrowserPlugin.ts`                 | Capture & store trigger |
+| `devtools-connect`   | `DevToolsStateManager.ts`                  | Add trigger to snapshot |
+| `devtools-connect`   | `types/index.ts`                           | New `Trigger` type      |
+| `devtools-extension` | `inject/inject-script.ts`, `panel/comm.ts` | Forward trigger         |
+| `devtools-ui`        | `StateHistoryView.tsx`, `LogsView.tsx`     | Render trigger          |
 
 ---
 
@@ -97,14 +97,14 @@ Recommend option 1 for Phase 2, upgrade to canvas in Phase 4 if needed.
 
 ### Files to modify
 
-| Package | File | Change |
-|---------|------|--------|
-| `@blac/core` | `StateContainer.ts` | Emit dependency hook |
-| `devtools-connect` | `DevToolsBrowserPlugin.ts` | Track edges |
-| `devtools-connect` | `types/index.ts` | `DependencyEdge` type |
-| `devtools-ui` | `StateViewer.tsx` | Dependencies section |
-| `devtools-ui` | `components/DependencyGraph.tsx` | New component |
-| `devtools-ui` | `blocs/DevToolsDependencyBloc.ts` | New bloc for graph state |
+| Package            | File                              | Change                   |
+| ------------------ | --------------------------------- | ------------------------ |
+| `@blac/core`       | `StateContainer.ts`               | Emit dependency hook     |
+| `devtools-connect` | `DevToolsBrowserPlugin.ts`        | Track edges              |
+| `devtools-connect` | `types/index.ts`                  | `DependencyEdge` type    |
+| `devtools-ui`      | `StateViewer.tsx`                 | Dependencies section     |
+| `devtools-ui`      | `components/DependencyGraph.tsx`  | New component            |
+| `devtools-ui`      | `blocs/DevToolsDependencyBloc.ts` | New bloc for graph state |
 
 ---
 
@@ -150,10 +150,10 @@ Recommend option 1 for Phase 2, upgrade to canvas in Phase 4 if needed.
 interface InstanceMetrics {
   instanceId: string;
   totalUpdates: number;
-  updatesPerSecond: number;       // rolling 5s window
-  avgUpdateInterval: number;      // ms
-  maxBurstRate: number;           // peak updates/sec in any 1s window
-  stateSizeBytes: number;         // estimated
+  updatesPerSecond: number; // rolling 5s window
+  avgUpdateInterval: number; // ms
+  maxBurstRate: number; // peak updates/sec in any 1s window
+  stateSizeBytes: number; // estimated
   lastUpdateTimestamp: number;
   warnings: PerformanceWarning[];
 }
@@ -168,15 +168,15 @@ interface PerformanceWarning {
 
 ### Files to modify
 
-| Package | File | Change |
-|---------|------|--------|
-| `devtools-connect` | `DevToolsBrowserPlugin.ts` | Collect timing data |
-| `devtools-connect` | `DevToolsStateManager.ts` | Store metrics |
-| `devtools-connect` | `types/index.ts` | Metrics types |
-| `devtools-ui` | `StateViewer.tsx` | Enhanced metrics bar |
-| `devtools-ui` | `components/PerformancePanel.tsx` | New component |
-| `devtools-ui` | `components/UpdateTimeline.tsx` | New component |
-| `devtools-ui` | `blocs/DevToolsMetricsBloc.ts` | New bloc |
+| Package            | File                              | Change               |
+| ------------------ | --------------------------------- | -------------------- |
+| `devtools-connect` | `DevToolsBrowserPlugin.ts`        | Collect timing data  |
+| `devtools-connect` | `DevToolsStateManager.ts`         | Store metrics        |
+| `devtools-connect` | `types/index.ts`                  | Metrics types        |
+| `devtools-ui`      | `StateViewer.tsx`                 | Enhanced metrics bar |
+| `devtools-ui`      | `components/PerformancePanel.tsx` | New component        |
+| `devtools-ui`      | `components/UpdateTimeline.tsx`   | New component        |
+| `devtools-ui`      | `blocs/DevToolsMetricsBloc.ts`    | New bloc             |
 
 ---
 
@@ -197,7 +197,7 @@ This phase depends on core async primitives being stabilized first.
 
 ## Success Criteria
 
-- A developer can open devtools and immediately see *what event* caused a state change, not just the before/after diff
+- A developer can open devtools and immediately see _what event_ caused a state change, not just the before/after diff
 - Dependency relationships are visible without reading source code
 - Performance problems (tight update loops, oversized state) are surfaced automatically with warnings
 - All new data flows through the existing plugin → extension → UI pipeline with no new communication channels

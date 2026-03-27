@@ -342,7 +342,7 @@ export class IndexedDbPersistPluginImpl implements IndexedDbPersistPlugin {
     instance: StateContainer<any>,
     context: PluginContext,
     definition: InternalDefinition,
-    error: unknown,
+    error: any,
   ): void {
     const runtime = this.runtimes.get(instance);
     const err = error instanceof Error ? error : new Error(String(error));

@@ -13,14 +13,19 @@ interface StateHistoryViewProps {
 
 export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
   ({ history, currentState, isExpanded, onToggleExpanded, onTimeTravel }) => {
-    const [restoredTimestamp, setRestoredTimestamp] = useState<number | null>(null);
+    const [restoredTimestamp, setRestoredTimestamp] = useState<number | null>(
+      null,
+    );
     const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const handleRestore = (state: any, timestamp: number) => {
       onTimeTravel?.(state);
       setRestoredTimestamp(timestamp);
       if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-      flashTimerRef.current = setTimeout(() => setRestoredTimestamp(null), 1500);
+      flashTimerRef.current = setTimeout(
+        () => setRestoredTimestamp(null),
+        1500,
+      );
     };
 
     const extractChanges = (previous: any, current: any): any => {
@@ -31,12 +36,16 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
         return previous !== current ? current : undefined;
       }
       if (Array.isArray(current)) {
-        if (!Array.isArray(previous) || previous.length !== current.length) return current;
+        if (!Array.isArray(previous) || previous.length !== current.length)
+          return current;
         const changes: any[] = [];
         let hasChanges = false;
         for (let i = 0; i < current.length; i++) {
           const itemChange = extractChanges(previous[i], current[i]);
-          if (itemChange !== undefined) { hasChanges = true; changes[i] = itemChange; }
+          if (itemChange !== undefined) {
+            hasChanges = true;
+            changes[i] = itemChange;
+          }
         }
         return hasChanges ? current : undefined;
       }
@@ -44,14 +53,21 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
       let hasChanges = false;
       for (const key in current) {
         if (!(key in previous)) {
-          changes[key] = current[key]; hasChanges = true;
+          changes[key] = current[key];
+          hasChanges = true;
         } else {
           const change = extractChanges(previous[key], current[key]);
-          if (change !== undefined) { changes[key] = change; hasChanges = true; }
+          if (change !== undefined) {
+            changes[key] = change;
+            hasChanges = true;
+          }
         }
       }
       for (const key in previous) {
-        if (!(key in current)) { changes[key] = undefined; hasChanges = true; }
+        if (!(key in current)) {
+          changes[key] = undefined;
+          hasChanges = true;
+        }
       }
       return hasChanges ? changes : undefined;
     };
@@ -75,7 +91,11 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
       const mostRecent = history[0];
       const changes = extractChanges(mostRecent.state, currentState);
       historyEntries.push({
-        snapshot: { state: currentState, timestamp: Date.now(), callstack: mostRecent.callstack },
+        snapshot: {
+          state: currentState,
+          timestamp: Date.now(),
+          callstack: mostRecent.callstack,
+        },
         changes,
         previousState: mostRecent.state,
       });
@@ -91,7 +111,11 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
           previousState: nextSnapshot.state,
         });
       } else {
-        historyEntries.push({ snapshot, changes: snapshot.state, previousState: null });
+        historyEntries.push({
+          snapshot,
+          changes: snapshot.state,
+          previousState: null,
+        });
       }
     }
 
@@ -110,8 +134,12 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
             userSelect: 'none',
             padding: '3px 0',
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = '#569cd6'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = '#fff'; }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = '#569cd6';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = '#fff';
+          }}
         >
           <span
             style={{
@@ -125,7 +153,14 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
           </span>
           <span>State History</span>
           {history.length > 0 && (
-            <span style={{ fontSize: '11px', color: '#888', fontWeight: 400, marginLeft: '4px' }}>
+            <span
+              style={{
+                fontSize: '11px',
+                color: '#888',
+                fontWeight: 400,
+                marginLeft: '4px',
+              }}
+            >
               ({historyEntries.length} snapshots)
             </span>
           )}
@@ -148,12 +183,19 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
                 No state changes recorded yet
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                }}
+              >
                 {historyEntries.map((entry, index) => {
                   const hasChanges = entry.changes !== undefined;
                   const isCurrent = index === 0;
                   const isInitial = entry.previousState === null;
-                  const isRestored = restoredTimestamp === entry.snapshot.timestamp;
+                  const isRestored =
+                    restoredTimestamp === entry.snapshot.timestamp;
 
                   return (
                     <div
@@ -176,7 +218,13 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
                           justifyContent: 'space-between',
                         }}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                          }}
+                        >
                           <span
                             style={{
                               fontSize: '11px',
@@ -187,8 +235,8 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
                             {isCurrent
                               ? 'CURRENT'
                               : isInitial
-                              ? 'INITIAL'
-                              : `SNAPSHOT ${historyEntries.length - index}`}
+                                ? 'INITIAL'
+                                : `SNAPSHOT ${historyEntries.length - index}`}
                           </span>
                           {!isCurrent && (
                             <span style={{ fontSize: '10px', color: '#666' }}>
@@ -212,19 +260,38 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
                             </span>
                           )}
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                          }}
+                        >
                           {hasChanges && !isInitial && !isCurrent && (
-                            <span style={{ fontSize: '10px', color: '#10b981', fontWeight: 600 }}>
+                            <span
+                              style={{
+                                fontSize: '10px',
+                                color: '#10b981',
+                                fontWeight: 600,
+                              }}
+                            >
                               CHANGED
                             </span>
                           )}
                           {!isCurrent && onTimeTravel && (
                             <button
-                              onClick={() => handleRestore(entry.snapshot.state, entry.snapshot.timestamp)}
+                              onClick={() =>
+                                handleRestore(
+                                  entry.snapshot.state,
+                                  entry.snapshot.timestamp,
+                                )
+                              }
                               style={{
                                 fontSize: '10px',
                                 padding: '2px 7px',
-                                background: isRestored ? '#10b981' : 'transparent',
+                                background: isRestored
+                                  ? '#10b981'
+                                  : 'transparent',
                                 border: `1px solid ${isRestored ? '#10b981' : '#444'}`,
                                 color: isRestored ? '#fff' : '#888',
                                 borderRadius: '3px',
@@ -245,15 +312,27 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
                       {/* Content */}
                       <div style={{ padding: '10px' }}>
                         {!hasChanges && !isInitial ? (
-                          <div style={{ color: '#666', fontSize: '12px', fontStyle: 'italic' }}>
+                          <div
+                            style={{
+                              color: '#666',
+                              fontSize: '12px',
+                              fontStyle: 'italic',
+                            }}
+                          >
                             No changes
                           </div>
                         ) : (
                           <JsonView
-                            value={typeof entry.changes === 'object' && entry.changes !== null ? entry.changes : { value: entry.changes ?? null }}
+                            value={
+                              typeof entry.changes === 'object' &&
+                              entry.changes !== null
+                                ? entry.changes
+                                : { value: entry.changes ?? null }
+                            }
                             style={
                               {
-                                '--w-rjv-font-family': 'Monaco, Menlo, Consolas, monospace',
+                                '--w-rjv-font-family':
+                                  'Monaco, Menlo, Consolas, monospace',
                                 '--w-rjv-background-color': '#1e1e1e',
                                 '--w-rjv-color': '#d4d4d4',
                                 '--w-rjv-key-string': '#9cdcfe',

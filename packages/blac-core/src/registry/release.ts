@@ -1,4 +1,4 @@
-import { globalRegistry } from '../core/StateContainerRegistry';
+import { getRegistry } from './config';
 import type { StateContainerConstructor } from '../types/utilities';
 
 export function release<T extends StateContainerConstructor>(
@@ -6,5 +6,5 @@ export function release<T extends StateContainerConstructor>(
   instanceKey?: string,
   forceDispose = false,
 ): void {
-  globalRegistry.release(BlocClass, instanceKey, forceDispose);
+  getRegistry().release(BlocClass, instanceKey, forceDispose);
 }

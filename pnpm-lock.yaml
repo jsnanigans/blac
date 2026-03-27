@@ -152,6 +152,12 @@ importers:
         specifier: npm:@voidzero-dev/vite-plus-core@latest
         version: '@voidzero-dev/vite-plus-core@0.1.14(@types/node@24.1.0)(esbuild@0.27.3)(jiti@2.6.1)(publint@0.3.17)(terser@5.39.0)(tsx@4.20.6)(typescript@5.9.2)(yaml@2.7.0)'
     devDependencies:
+      '@testing-library/jest-dom':
+        specifier: 'catalog:'
+        version: 6.6.4
+      '@testing-library/react':
+        specifier: ^16.0.0
+        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react-dom@19.1.7(@types/react@19.1.9))(@types/react@19.1.9)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@types/react':
         specifier: ^19.1.9
         version: 19.1.9
@@ -161,12 +167,18 @@ importers:
       '@vitejs/plugin-react':
         specifier: ^6.0.1
         version: 6.0.1(@voidzero-dev/vite-plus-core@0.1.14(@types/node@24.1.0)(esbuild@0.27.3)(jiti@2.6.1)(publint@0.3.17)(terser@5.39.0)(tsx@4.20.6)(typescript@5.9.2)(yaml@2.7.0))(babel-plugin-react-compiler@1.0.0)
+      happy-dom:
+        specifier: 'catalog:'
+        version: 18.0.1
       typescript:
         specifier: 'catalog:'
         version: 5.9.2
       vite-plus:
         specifier: 'catalog:'
         version: 0.1.14(@types/node@24.1.0)(@voidzero-dev/vite-plus-core@0.1.14(@types/node@24.1.0)(esbuild@0.27.3)(jiti@2.6.1)(publint@0.3.17)(terser@5.39.0)(tsx@4.20.6)(typescript@5.9.2)(yaml@2.7.0))(esbuild@0.27.3)(happy-dom@18.0.1)(jiti@2.6.1)(jsdom@26.1.0)(publint@0.3.17)(terser@5.39.0)(tsx@4.20.6)(typescript@5.9.2)(yaml@2.7.0)
+      vitest:
+        specifier: npm:@voidzero-dev/vite-plus-test@latest
+        version: '@voidzero-dev/vite-plus-test@0.1.14(@types/node@24.1.0)(@voidzero-dev/vite-plus-core@0.1.14(@types/node@24.1.0)(esbuild@0.27.3)(jiti@2.6.1)(publint@0.3.17)(terser@5.39.0)(tsx@4.20.6)(typescript@5.9.2)(yaml@2.7.0))(esbuild@0.27.3)(happy-dom@18.0.1)(jiti@2.6.1)(jsdom@26.1.0)(publint@0.3.17)(terser@5.39.0)(tsx@4.20.6)(typescript@5.9.2)(yaml@2.7.0)'
       wrangler:
         specifier: ^4
         version: 4.73.0

@@ -25,8 +25,14 @@ export const StateDiffView: FC<StateDiffViewProps> = React.memo(
     if (!diff) return null;
 
     const hasChanges = diff.changedOnly !== undefined;
-    const safePrevious = diff.previous != null && typeof diff.previous === 'object' ? diff.previous : {};
-    const safeCurrent = diff.current != null && typeof diff.current === 'object' ? diff.current : {};
+    const safePrevious =
+      diff.previous != null && typeof diff.previous === 'object'
+        ? diff.previous
+        : {};
+    const safeCurrent =
+      diff.current != null && typeof diff.current === 'object'
+        ? diff.current
+        : {};
 
     return (
       <div style={{ marginTop: '30px' }}>
@@ -190,14 +196,16 @@ export const StateDiffView: FC<StateDiffViewProps> = React.memo(
               <button
                 onClick={() => setMode('changes-only')}
                 style={{
-                  background: mode === 'changes-only' ? '#252526' : 'transparent',
+                  background:
+                    mode === 'changes-only' ? '#252526' : 'transparent',
                   border: 'none',
                   color: mode === 'changes-only' ? '#569cd6' : '#888',
                   padding: '8px 16px',
                   cursor: 'pointer',
                   fontSize: '13px',
                   fontWeight: 600,
-                  borderBottom: mode === 'changes-only' ? '2px solid #569cd6' : 'none',
+                  borderBottom:
+                    mode === 'changes-only' ? '2px solid #569cd6' : 'none',
                   transition: 'all 0.2s',
                 }}
                 onMouseEnter={(e) => {
@@ -223,7 +231,8 @@ export const StateDiffView: FC<StateDiffViewProps> = React.memo(
                   cursor: 'pointer',
                   fontSize: '13px',
                   fontWeight: 600,
-                  borderBottom: mode === 'full-diff' ? '2px solid #569cd6' : 'none',
+                  borderBottom:
+                    mode === 'full-diff' ? '2px solid #569cd6' : 'none',
                   transition: 'all 0.2s',
                 }}
                 onMouseEnter={(e) => {
@@ -257,10 +266,16 @@ export const StateDiffView: FC<StateDiffViewProps> = React.memo(
                   </div>
                 ) : (
                   <JsonView
-                    value={typeof diff.changedOnly === 'object' && diff.changedOnly !== null ? diff.changedOnly : { value: diff.changedOnly }}
+                    value={
+                      typeof diff.changedOnly === 'object' &&
+                      diff.changedOnly !== null
+                        ? diff.changedOnly
+                        : { value: diff.changedOnly }
+                    }
                     style={
                       {
-                        '--w-rjv-font-family': 'Monaco, Menlo, Consolas, monospace',
+                        '--w-rjv-font-family':
+                          'Monaco, Menlo, Consolas, monospace',
                         '--w-rjv-background-color': '#1e1e1e',
                         '--w-rjv-color': '#d4d4d4',
                         '--w-rjv-key-string': '#9cdcfe',
@@ -287,7 +302,7 @@ export const StateDiffView: FC<StateDiffViewProps> = React.memo(
                         '--w-rjv-type-null-color': '#569cd6',
                         '--w-rjv-type-nan-color': '#ef4444',
                         '--w-rjv-type-undefined-color': '#569cd6',
-                      } as any
+                      } as React.CSSProperties
                     }
                   />
                 )}

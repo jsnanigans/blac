@@ -3,12 +3,15 @@
 ## Installation
 
 ::: code-group
+
 ```bash [pnpm]
 pnpm add @blac/core @blac/react
 ```
+
 ```bash [npm]
 npm install @blac/core @blac/react
 ```
+
 :::
 
 Requires React 18+ and TypeScript is recommended.
@@ -44,6 +47,7 @@ function Counter() {
 ```
 
 `useBloc` returns `[state, bloc]`:
+
 - **state** — current state, tracked for re-renders (only properties you read trigger updates)
 - **bloc** — the Cubit instance (call methods on it)
 
@@ -61,20 +65,20 @@ configureBlacReact({
 
 ## Tracking modes at a glance
 
-| Mode | How to enable | Re-renders when |
-|------|--------------|-----------------|
-| Auto-tracking | Default | Tracked properties change |
-| Manual deps | `dependencies: (s) => [s.count]` | Dependency values change |
-| No tracking | `autoTrack: false` | Any state change |
+| Mode          | How to enable                    | Re-renders when           |
+| ------------- | -------------------------------- | ------------------------- |
+| Auto-tracking | Default                          | Tracked properties change |
+| Manual deps   | `dependencies: (s) => [s.count]` | Dependency values change  |
+| No tracking   | `autoTrack: false`               | Any state change          |
 
 See [Dependency Tracking](/react/dependency-tracking) for details.
 
 ## Instance modes at a glance
 
-| Mode | How to enable | Behavior |
-|------|--------------|----------|
-| Shared | Default | All components share one instance |
-| Named | `{ instanceId: 'key' }` | Shared within same key |
+| Mode   | How to enable           | Behavior                          |
+| ------ | ----------------------- | --------------------------------- |
+| Shared | Default                 | All components share one instance |
+| Named  | `{ instanceId: 'key' }` | Shared within same key            |
 
 ## What's next?
 

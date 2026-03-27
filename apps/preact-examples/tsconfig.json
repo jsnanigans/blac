@@ -16,7 +16,6 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "jsxImportSource": "preact",
-    "baseUrl": ".",
     "types": ["vite/client"]
   },
   "include": ["src", "main.tsx", "vite.config.ts"]

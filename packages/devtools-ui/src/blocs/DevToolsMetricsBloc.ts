@@ -44,7 +44,11 @@ export class DevToolsMetricsBloc extends Cubit<MetricsState> {
   /**
    * Record a state update for an instance and recompute its metrics.
    */
-  recordUpdate = (instanceId: string, className: string, stateSizeBytes: number) => {
+  recordUpdate = (
+    instanceId: string,
+    className: string,
+    stateSizeBytes: number,
+  ) => {
     const now = Date.now();
 
     // Get and prune timestamps older than 60s

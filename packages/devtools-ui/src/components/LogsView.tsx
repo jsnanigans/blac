@@ -16,19 +16,27 @@ function formatAbsoluteTime(timestamp: number): string {
 
 function getEventTypeColor(eventType: LogEventType): string {
   switch (eventType) {
-    case 'init': return T.success;
-    case 'created': return T.info;
-    case 'disposed': return T.error;
-    case 'state-changed': return T.warning;
+    case 'init':
+      return T.success;
+    case 'created':
+      return T.info;
+    case 'disposed':
+      return T.error;
+    case 'state-changed':
+      return T.warning;
   }
 }
 
 function getEventTypeLabel(eventType: LogEventType): string {
   switch (eventType) {
-    case 'init': return 'INIT';
-    case 'created': return 'CREATED';
-    case 'disposed': return 'DISPOSED';
-    case 'state-changed': return 'STATE';
+    case 'init':
+      return 'INIT';
+    case 'created':
+      return 'CREATED';
+    case 'disposed':
+      return 'DISPOSED';
+    case 'state-changed':
+      return 'STATE';
   }
 }
 
@@ -99,11 +107,12 @@ const LogEntryRow: FC<{ entry: LogEntry }> = React.memo(({ entry }) => {
         </span>
       )}
 
-      {entry.eventType === 'init' && entry.data?.instanceCount !== undefined && (
-        <span style={{ color: T.text2, fontSize: '10px' }}>
-          {entry.data.instanceCount} instances
-        </span>
-      )}
+      {entry.eventType === 'init' &&
+        entry.data?.instanceCount !== undefined && (
+          <span style={{ color: T.text2, fontSize: '10px' }}>
+            {entry.data.instanceCount} instances
+          </span>
+        )}
     </div>
   );
 });
@@ -183,7 +192,10 @@ const MultiSelect = <O extends string>({
             onClick={handleClose}
             style={{
               position: 'fixed',
-              top: 0, left: 0, right: 0, bottom: 0,
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
               zIndex: 999,
             }}
           />
@@ -282,7 +294,13 @@ const MultiSelect = <O extends string>({
             </div>
 
             {filteredOptions.length === 0 ? (
-              <div style={{ padding: '8px 10px', fontSize: '11px', color: T.text2 }}>
+              <div
+                style={{
+                  padding: '8px 10px',
+                  fontSize: '11px',
+                  color: T.text2,
+                }}
+              >
                 {options.length === 0 ? 'No options' : 'No matches'}
               </div>
             ) : (
@@ -304,10 +322,12 @@ const MultiSelect = <O extends string>({
                       background: isSelected ? T.bgAccent : 'transparent',
                     }}
                     onMouseEnter={(e) => {
-                      if (!isSelected) e.currentTarget.style.background = T.bgHover;
+                      if (!isSelected)
+                        e.currentTarget.style.background = T.bgHover;
                     }}
                     onMouseLeave={(e) => {
-                      if (!isSelected) e.currentTarget.style.background = 'transparent';
+                      if (!isSelected)
+                        e.currentTarget.style.background = 'transparent';
                     }}
                   >
                     <input
@@ -318,7 +338,9 @@ const MultiSelect = <O extends string>({
                     />
                     <span style={{ flex: 1, color: T.text0 }}>{option}</span>
                     {showCount && (
-                      <span style={{ color: T.text2, fontSize: '10px' }}>({count})</span>
+                      <span style={{ color: T.text2, fontSize: '10px' }}>
+                        ({count})
+                      </span>
                     )}
                   </div>
                 );
@@ -368,7 +390,14 @@ export const LogsView: FC = React.memo(() => {
     filters.instanceIds.length > 0;
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div
+      style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+      }}
+    >
       {/* Toolbar */}
       <div
         style={{
@@ -423,8 +452,12 @@ export const LogsView: FC = React.memo(() => {
                 fontSize: '11px',
                 cursor: 'pointer',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = T.bgHover; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = T.bgHover;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+              }}
             >
               Clear Filters
             </button>
@@ -441,8 +474,12 @@ export const LogsView: FC = React.memo(() => {
                 fontSize: '11px',
                 cursor: 'pointer',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = T.bgHover; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = T.bgHover;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+              }}
             >
               Clear Logs
             </button>
@@ -463,10 +500,17 @@ export const LogsView: FC = React.memo(() => {
               fontSize: '13px',
             }}
           >
-            {state.logs.length === 0 ? 'No events yet' : 'No events match filters'}
+            {state.logs.length === 0
+              ? 'No events yet'
+              : 'No events match filters'}
           </div>
         ) : (
-          <div style={{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }}>
+          <div
+            style={{
+              height: `${virtualizer.getTotalSize()}px`,
+              position: 'relative',
+            }}
+          >
             {virtualizer.getVirtualItems().map((item) => (
               <div
                 key={item.key}

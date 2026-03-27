@@ -20,7 +20,7 @@ type DiffState = {
 export type DiffResult = {
   previous: any;
   current: any;
-  changedOnly: any; // Only the properties that changed
+  changedOnly: any;
 } | null;
 
 /**
@@ -103,7 +103,12 @@ export class DevToolsDiffBloc extends Cubit<DiffState> {
    */
   loadInstanceHistory = (
     instanceId: string,
-    snapshots: Array<{ state: any; timestamp: number; callstack?: string; trigger?: { name: string } }>,
+    snapshots: Array<{
+      state: any;
+      timestamp: number;
+      callstack?: string;
+      trigger?: { name: string };
+    }>,
   ) => {
     if (!snapshots.length) return;
     const stateHistory = new Map(this.state.stateHistory);
@@ -196,7 +201,7 @@ export class DevToolsDiffBloc extends Cubit<DiffState> {
     }
 
     // Handle objects
-    const changes: any = {};
+    const changes: Record<string, any> = {};
     let hasChanges = false;
 
     for (const key in current) {

@@ -49,6 +49,7 @@ export default defineConfig({
       { text: 'Guide', link: '/guide/introduction' },
       { text: 'Reference', link: '/core/cubit' },
       { text: 'Plugins', link: '/plugins/overview' },
+      { text: 'Testing', link: '/testing/overview' },
       { text: 'API', link: '/api/core' },
       {
         text: `v${version}`,
@@ -85,6 +86,16 @@ export default defineConfig({
             { text: 'Logging', link: '/plugins/logging' },
             { text: 'DevTools', link: '/plugins/devtools' },
             { text: 'Persistence', link: '/plugins/persistence' },
+          ],
+        },
+      ],
+      '/testing/': [
+        {
+          text: 'Testing',
+          items: [
+            { text: 'Overview', link: '/testing/overview' },
+            { text: 'Core Testing API', link: '/testing/core' },
+            { text: 'React Testing', link: '/testing/react' },
           ],
         },
       ],

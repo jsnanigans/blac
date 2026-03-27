@@ -8,12 +8,12 @@ Core state management primitives.
 
 ## API Sections
 
-| Section | Description |
-| --- | --- |
-| [Registry](./core/registry.md) | Instance management and lifecycle |
-| [Plugins](./core/plugins.md) | Plugin system |
-| [Tracking](./core/adapter.md) | Dependency tracking utilities |
-| [Utilities](./core/utilities.md) | Helpers and types |
+| Section                          | Description                       |
+| -------------------------------- | --------------------------------- |
+| [Registry](./core/registry.md)   | Instance management and lifecycle |
+| [Plugins](./core/plugins.md)     | Plugin system                     |
+| [Tracking](./core/adapter.md)    | Dependency tracking utilities     |
+| [Utilities](./core/utilities.md) | Helpers and types                 |
 
 ## Classes
 

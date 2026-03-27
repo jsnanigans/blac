@@ -4,6 +4,7 @@ import path from 'path';
 export default defineConfig({
   resolve: {
     alias: {
+      '@blac/core/testing': path.resolve(__dirname, './src/testing'),
       '@blac/core': path.resolve(__dirname, './src'),
       '@blac/react': path.resolve(__dirname, '../blac-react/src'),
       '@blac/devtools-connect': path.resolve(

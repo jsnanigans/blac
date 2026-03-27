@@ -45,11 +45,24 @@ export interface PanelInstance {
  */
 export type AtomicEvent =
   | { type: 'init'; timestamp: number; data: PanelInstance[] }
-  | { type: 'instance-created' | 'instance-updated' | 'instance-disposed'; timestamp: number; data: PanelInstance }
-  | { type: 'performance-warning'; timestamp: number; data: unknown };
+  | {
+      type: 'instance-created' | 'instance-updated' | 'instance-disposed';
+      timestamp: number;
+      data: PanelInstance;
+    }
+  | { type: 'performance-warning'; timestamp: number; data: any };
 
 export type MessageIn =
-  | { type: 'INITIAL_STATE'; payload: { instances: PanelInstance[]; eventHistory?: AtomicEvent[]; version?: string; timestamp?: number; dependencyGraph?: DependencyGraph } }
+  | {
+      type: 'INITIAL_STATE';
+      payload: {
+        instances: PanelInstance[];
+        eventHistory?: AtomicEvent[];
+        version?: string;
+        timestamp?: number;
+        dependencyGraph?: DependencyGraph;
+      };
+    }
   | { type: 'ATOMIC_UPDATE'; payload: AtomicEvent }
   | { type: 'CACHED_STATE'; payload: { instances: PanelInstance[] } }
   | { type: 'BLAC_NOT_AVAILABLE'; payload: { reason: string } }

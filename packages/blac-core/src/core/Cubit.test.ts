@@ -1,14 +1,7 @@
-import {
-  describe,
-  it,
-  expect,
-  beforeEach,
-  afterEach,
-  vi,
-} from 'vite-plus/test';
+import { describe, it, expect, beforeEach, vi } from 'vite-plus/test';
+import { blacTestSetup } from '@blac/core/testing';
 import { Cubit } from './Cubit';
 import { StateContainer } from './StateContainer';
-import { clearAll } from '../registry';
 
 // ============ Test Implementations ============
 
@@ -139,12 +132,6 @@ class UserCubit extends Cubit<UserState> {
   };
 }
 
-// ============ Test Helpers ============
-
-const resetState = () => {
-  clearAll();
-};
-
 // ============ Fixtures ============
 
 const fixture = {
@@ -156,8 +143,7 @@ const fixture = {
 // ============ Tests ============
 
 describe('Cubit', () => {
-  beforeEach(resetState);
-  afterEach(resetState);
+  blacTestSetup();
 
   describe('Basic Functionality', () => {
     it('should extend StateContainer properly', () => {

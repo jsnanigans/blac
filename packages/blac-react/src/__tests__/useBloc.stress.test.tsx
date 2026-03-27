@@ -1,7 +1,10 @@
-import { describe, it, expect, afterEach } from 'vite-plus/test';
+import { describe, it, expect } from 'vite-plus/test';
 import { render, act, screen } from '@testing-library/react';
-import { Cubit, clearAll, getRefCount, hasInstance, borrow } from '@blac/core';
+import { Cubit, getRefCount, hasInstance, borrow } from '@blac/core';
 import { useBloc } from '../useBloc';
+import { blacTestSetup } from '@blac/core/testing';
+
+blacTestSetup();
 
 class CounterBloc extends Cubit<{ count: number }> {
   constructor() {
@@ -14,8 +17,6 @@ class CounterBloc extends Cubit<{ count: number }> {
     this.emit({ count: n });
   }
 }
-
-afterEach(() => clearAll());
 
 describe('useBloc — stress tests', () => {
   it('100 rapid state changes — renders complete without error, shows final state', () => {

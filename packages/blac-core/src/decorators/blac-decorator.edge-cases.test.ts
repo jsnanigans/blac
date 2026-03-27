@@ -1,17 +1,15 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vite-plus/test';
+import { describe, it, expect } from 'vite-plus/test';
+import { blacTestSetup } from '@blac/core/testing';
 import { blac } from './blac';
 import { Cubit } from '../core/Cubit';
 import {
   isKeepAliveClass,
   isExcludedFromDevTools,
 } from '../utils/static-props';
-import { acquire, release, clearAll } from '../registry';
-
-const resetState = () => clearAll();
+import { acquire, release } from '../registry';
 
 describe('blac decorator edge cases', () => {
-  beforeEach(resetState);
-  afterEach(resetState);
+  blacTestSetup();
 
   it('@blac({ keepAlive: true }) — instance survives release to refCount 0', () => {
     const KABloc = blac({ keepAlive: true })(

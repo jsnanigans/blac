@@ -6,7 +6,8 @@ import { describe, it, expect, vi, beforeEach } from 'vite-plus/test';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { StrictMode } from 'react';
 import { useBloc } from '../useBloc';
-import { Cubit, clearAll } from '@blac/core';
+import { Cubit } from '@blac/core';
+import { blacTestSetup } from '@blac/core/testing';
 
 // Test state shape
 interface TestState {
@@ -105,10 +106,10 @@ class TestCubit extends Cubit<TestState> {
   };
 }
 
+blacTestSetup();
+
 describe('useBloc with Proxy Tracking', () => {
   beforeEach(() => {
-    // Clear any cached bloc instances between tests to ensure isolation
-    clearAll();
     vi.clearAllMocks();
   });
 

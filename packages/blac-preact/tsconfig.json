@@ -6,6 +6,7 @@
     "jsx": "react-jsx",
     "jsxImportSource": "preact",
     "sourceMap": true,
+    "rootDir": "src",
     "outDir": "dist",
     "strict": true,
     "moduleResolution": "node",

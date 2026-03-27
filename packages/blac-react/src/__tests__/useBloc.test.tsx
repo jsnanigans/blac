@@ -3,11 +3,14 @@
  */
 
 /// <reference types="@testing-library/jest-dom" />
-import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vite-plus/test';
+import { renderHook, act } from '@testing-library/react';
 import { renderToString } from 'react-dom/server';
-import { Cubit, clearAll } from '@blac/core';
+import { Cubit } from '@blac/core';
 import { useBloc } from '../useBloc';
+import { blacTestSetup } from '@blac/core/testing';
+
+blacTestSetup();
 
 // Test implementations
 class CounterBloc extends Cubit<{ count: number }> {
@@ -36,8 +39,6 @@ class IsolatedBloc extends Cubit<{ count: number }> {
 
 describe('useBloc', () => {
   afterEach(() => {
-    // Clear all bloc instances between tests
-    clearAll();
     vi.unstubAllGlobals();
   });
 

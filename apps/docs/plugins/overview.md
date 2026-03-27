@@ -4,12 +4,12 @@ BlaC has an official set of plugins for common needs. All plugins implement the 
 
 ## Official plugins
 
-| Package | Purpose | Typical environment |
-|---------|---------|-------------------|
-| [`@blac/logging-plugin`](/plugins/logging) | Console logging, instance monitoring, rapid lifecycle detection | Development |
-| [`@blac/devtools-connect`](/plugins/devtools) | Core plugin for instance tracking and state inspection | Development |
-| [`@blac/devtools-ui`](/plugins/devtools#2-add-the-in-app-ui-recommended) | In-app overlay, Picture-in-Picture, and panel UI components | Development |
-| [`@blac/plugin-persist`](/plugins/persistence) | Persist state to IndexedDB with automatic hydration | All |
+| Package                                                                  | Purpose                                                         | Typical environment |
+| ------------------------------------------------------------------------ | --------------------------------------------------------------- | ------------------- |
+| [`@blac/logging-plugin`](/plugins/logging)                               | Console logging, instance monitoring, rapid lifecycle detection | Development         |
+| [`@blac/devtools-connect`](/plugins/devtools)                            | Core plugin for instance tracking and state inspection          | Development         |
+| [`@blac/devtools-ui`](/plugins/devtools#2-add-the-in-app-ui-recommended) | In-app overlay, Picture-in-Picture, and panel UI components     | Development         |
+| [`@blac/plugin-persist`](/plugins/persistence)                           | Persist state to IndexedDB with automatic hydration             | All                 |
 
 ## Installing a plugin
 
@@ -36,7 +36,9 @@ import { createIndexedDbPersistPlugin } from '@blac/plugin-persist';
 
 const pm = getPluginManager();
 
-pm.install(new LoggingPlugin({ level: 'info' }), { environment: 'development' });
+pm.install(new LoggingPlugin({ level: 'info' }), {
+  environment: 'development',
+});
 pm.install(createDevToolsBrowserPlugin(), { environment: 'development' });
 pm.install(createIndexedDbPersistPlugin());
 ```

@@ -12,7 +12,6 @@ import type { BlacPlugin, PluginContext, InstanceMetadata } from '@blac/core';
 import { safeSerialize } from '../serialization/serialize';
 import { DevToolsStateManager } from '../state/DevToolsStateManager';
 import type {
-  InstanceState,
   DevToolsEventType,
   DevToolsEvent,
   DevToolsCallback,
@@ -95,7 +94,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     this.totalUpdateCounts.clear();
 
     if (typeof window !== 'undefined') {
-      delete (window as any).__BLAC_DEVTOOLS__;
+      delete (window as any as Record<string, any>).__BLAC_DEVTOOLS__;
     }
   }
 
@@ -224,7 +223,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     return [...this.eventHistory];
   }
 
-  getFullState(): { instances: InstanceState[]; timestamp: number } {
+  getFullState(): { instances: any[]; timestamp: any } {
     return this.stateManager.getFullState();
   }
 
@@ -259,7 +258,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     return this.config.enabled;
   }
 
-  timeTravel(instanceId: string, state: unknown): boolean {
+  timeTravel(instanceId: string, state: any): boolean {
     if (!this.context) return false;
 
     const types = this.context.getAllTypes();
@@ -268,10 +267,19 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       for (const instance of instances) {
         const metadata = this.context.getInstanceMetadata(instance);
         if (metadata.id === instanceId) {
-          if (typeof (instance as any).emit === 'function') {
-            (instance as any).emit(state);
-          } else if (typeof (instance as any).update === 'function') {
-            (instance as any).update(() => state);
+          if (
+            typeof (instance as any as Record<string, any>).emit === 'function'
+          ) {
+            (instance as any as Record<string, (state: any) => void>).emit(
+              state,
+            );
+          } else if (
+            typeof (instance as any as Record<string, any>).update ===
+            'function'
+          ) {
+            (instance as any as Record<string, (cb: () => any) => void>).update(
+              () => state,
+            );
           } else {
             return false;
           }
@@ -374,11 +382,14 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
         : undefined,
       hydrationStatus: context.getHydrationStatus(instance),
       hydrationError: metadata.hydrationError,
-    } as any;
+    } as any as InstanceMetadata;
   }
 
   private shouldExcludeInstance(instance: any): boolean {
-    return instance.constructor.__excludeFromDevTools === true;
+    return (
+      (instance as Record<string, any>)?.constructor?.__excludeFromDevTools ===
+      true
+    );
   }
 
   /**
@@ -420,7 +431,8 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       );
 
       for (const [TypeClass, instanceKey] of deps) {
-        const toClass = (TypeClass as any).name ?? String(TypeClass);
+        const toClass =
+          (TypeClass as any as Record<string, any>).name ?? String(TypeClass);
         // Avoid duplicates
         const exists = this.dependencyEdges.some(
           (e) =>
@@ -532,18 +544,20 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
   private exposeGlobalAPI(): void {
     if (typeof window === 'undefined') return;
 
-    (window as any).__BLAC_DEVTOOLS__ = {
+    (window as any as Record<string, any>).__BLAC_DEVTOOLS__ = {
       getInstances: () => this.getInstances(),
       getEventHistory: () => this.getEventHistory(),
       getFullState: () => this.getFullState(),
       subscribe: (callback: DevToolsCallback) => this.subscribe(callback),
       getVersion: () => this.getVersion(),
       isEnabled: () => this.enabled,
-      timeTravel: (instanceId: string, state: unknown) =>
+      timeTravel: (instanceId: string, state: any) =>
         this.timeTravel(instanceId, state),
       getDependencyGraph: () => this.getDependencyGraph(),
-      getPerformanceMetrics: (instanceId?: string) =>
-        this.getPerformanceMetrics(instanceId),
+      getPerformanceMetrics: (instanceId?: string) => {
+        const result = this.getPerformanceMetrics(instanceId);
+        return result;
+      },
     };
   }
 }

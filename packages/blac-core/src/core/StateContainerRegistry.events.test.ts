@@ -6,11 +6,8 @@ import {
   afterEach,
   vi,
 } from 'vite-plus/test';
-import {
-  globalRegistry,
-  StateContainerRegistry,
-} from './StateContainerRegistry';
-import { acquire, release, clearAll } from '../registry';
+import { globalRegistry } from './StateContainerRegistry';
+import { acquire, clearAll } from '../registry';
 import { StateContainer } from './StateContainer';
 import { EMIT } from './symbols';
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable no-undef */
 /**
  * Custom API documenter for VitePress
  * Reads api-extractor .api.json files and generates clean markdown
@@ -638,7 +639,7 @@ function generateTopicPage(
   return md;
 }
 
-function generateMainPageNavigation(packageName) {
+function generateMainPageNavigation(_packageName) {
   let md = '';
   md += `## API Sections\n\n`;
   md += `| Section | Description |\n`;

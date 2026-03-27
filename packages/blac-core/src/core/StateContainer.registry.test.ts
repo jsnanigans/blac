@@ -2,7 +2,8 @@
  * Tests for StateContainer Registry Features
  */
 
-import { describe, it, expect, beforeEach } from 'vite-plus/test';
+import { describe, it, expect } from 'vite-plus/test';
+import { blacTestSetup } from '@blac/core/testing';
 import { StateContainer } from './StateContainer';
 import {
   acquire,
@@ -41,10 +42,7 @@ class UserBloc extends StateContainer<{ name: string; age: number }> {
 }
 
 describe('StateContainer - Registry Features', () => {
-  beforeEach(() => {
-    // Clear all instances before each test
-    clearAll();
-  });
+  blacTestSetup();
 
   describe('Type Registration', () => {
     it('should register a bloc type', () => {
@@ -195,7 +193,7 @@ describe('StateContainer - Registry Features', () => {
       });
 
       // Should have processed all 3 instances
-      expect(states.sort()).toEqual([1, 2, 3]);
+      expect(states.sort((a, b) => a - b)).toEqual([1, 2, 3]);
 
       // c2 should now be disposed
       expect(c2.isDisposed).toBe(true);
@@ -206,7 +204,7 @@ describe('StateContainer - Registry Features', () => {
         secondStates.push(instance.state.count);
       });
 
-      expect(secondStates.sort()).toEqual([1, 3]);
+      expect(secondStates.sort((a, b) => a - b)).toEqual([1, 3]);
     });
 
     it('should not throw when callback throws', () => {

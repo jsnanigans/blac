@@ -1,11 +1,5 @@
-import {
-  describe,
-  it,
-  expect,
-  beforeEach,
-  afterEach,
-  vi,
-} from 'vite-plus/test';
+import { describe, it, expect, vi } from 'vite-plus/test';
+import { blacTestSetup } from '@blac/core/testing';
 import {
   tracked,
   createTrackedContext,
@@ -13,7 +7,6 @@ import {
   DependencyManager,
 } from './tracked';
 import { Cubit } from '../core/Cubit';
-import { acquire, clearAll } from '../registry';
 
 class TrackedCubit extends Cubit<{ val: number; other: number }> {
   constructor() {
@@ -27,11 +20,8 @@ class SecondCubit extends Cubit<{ label: string }> {
   }
 }
 
-const resetState = () => clearAll();
-
 describe('tracking edge cases', () => {
-  beforeEach(resetState);
-  afterEach(resetState);
+  blacTestSetup();
 
   it('tracked() returns result and dependencies as a Set', () => {
     const { result, dependencies } = tracked(() => 42);

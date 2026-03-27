@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeEach, vi } from 'vite-plus/test';
+import { describe, it, expect, vi } from 'vite-plus/test';
+import { blacTestSetup } from '@blac/core/testing';
 import { watch, instance } from './watch';
 import { Cubit } from '../core/Cubit';
-import { clearAll, acquire } from '../registry';
+import { acquire } from '../registry';
 
 interface CounterState {
   count: number;
@@ -47,9 +48,7 @@ class DependentCubit extends Cubit<{ value: number }> {
 }
 
 describe('watch', () => {
-  beforeEach(() => {
-    clearAll();
-  });
+  blacTestSetup();
 
   describe('single bloc', () => {
     it('should run callback immediately with bloc instance', () => {

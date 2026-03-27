@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable no-undef */
 
 import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
@@ -12,7 +13,9 @@ if (!binName) {
   process.exit(1);
 }
 
-const repoRoot = path.dirname(fileURLToPath(new URL('../package.json', import.meta.url)));
+const repoRoot = path.dirname(
+  fileURLToPath(new URL('../package.json', import.meta.url)),
+);
 const searchRoots = [
   repoRoot,
   ...['packages', 'apps'].flatMap((dir) => {

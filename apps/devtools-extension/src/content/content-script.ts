@@ -32,7 +32,9 @@ window.addEventListener('message', (event) => {
 
   // Check if extension context is still valid
   if (!chrome.runtime?.id) {
-    console.warn('[BlaC DevTools] Extension context invalidated, ignoring message');
+    console.warn(
+      '[BlaC DevTools] Extension context invalidated, ignoring message',
+    );
     return;
   }
 
@@ -121,4 +123,3 @@ observer.observe(document.documentElement, {
 
 // Export for TypeScript
 export {};
-

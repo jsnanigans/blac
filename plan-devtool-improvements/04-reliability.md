@@ -14,7 +14,7 @@ Harden the devtools pipeline so it performs well under pressure and doesn't degr
   - Add a per-instance throttle: if an instance emits more than N updates within a window, batch them
   - Strategy: buffer updates for 16ms (1 frame), then emit the latest state + count of skipped updates
   - Configurable: `throttleMs` option in `createDevToolsBrowserPlugin()` config (default 16)
-  - Always emit the *first* and *last* update in a burst (first for responsiveness, last for correctness)
+  - Always emit the _first_ and _last_ update in a burst (first for responsiveness, last for correctness)
   - Include `skippedUpdates: number` in the event so the UI can show "12 updates batched"
 
 - [ ] **Batch extension messages**
@@ -39,15 +39,15 @@ Harden the devtools pipeline so it performs well under pressure and doesn't degr
 
 ### Files to modify
 
-| Package | File | Change |
-|---------|------|--------|
-| `devtools-connect` | `DevToolsBrowserPlugin.ts` | Per-instance throttle |
-| `devtools-connect` | `types/index.ts` | `throttleMs` config, `skippedUpdates` field |
-| `devtools-extension` | `inject/inject-script.ts` | Batch message collection |
-| `devtools-extension` | `panel/comm.ts` | Handle `BATCH_UPDATE` messages |
-| `devtools-ui` | `DraggableOverlay.tsx` / `DevToolsPanel.tsx` | Remove `flushSync`, handle batches |
-| `devtools-ui` | `DevToolsHeader.tsx` | Update rate indicator |
-| `devtools-ui` | `blocs/DevToolsSearchBloc.ts` | Debounce search |
+| Package              | File                                         | Change                                      |
+| -------------------- | -------------------------------------------- | ------------------------------------------- |
+| `devtools-connect`   | `DevToolsBrowserPlugin.ts`                   | Per-instance throttle                       |
+| `devtools-connect`   | `types/index.ts`                             | `throttleMs` config, `skippedUpdates` field |
+| `devtools-extension` | `inject/inject-script.ts`                    | Batch message collection                    |
+| `devtools-extension` | `panel/comm.ts`                              | Handle `BATCH_UPDATE` messages              |
+| `devtools-ui`        | `DraggableOverlay.tsx` / `DevToolsPanel.tsx` | Remove `flushSync`, handle batches          |
+| `devtools-ui`        | `DevToolsHeader.tsx`                         | Update rate indicator                       |
+| `devtools-ui`        | `blocs/DevToolsSearchBloc.ts`                | Debounce search                             |
 
 ---
 
@@ -92,13 +92,13 @@ Harden the devtools pipeline so it performs well under pressure and doesn't degr
 
 ### Files to modify
 
-| Package | File | Change |
-|---------|------|--------|
-| `devtools-connect` | `serialization/serialize.ts` | Size limit truncation |
-| `devtools-connect` | `DevToolsStateManager.ts` | LRU eviction, memory tracking |
-| `devtools-connect` | `DevToolsBrowserPlugin.ts` | WeakRef caching, gc(), memory API |
-| `devtools-connect` | `types/index.ts` | Memory config options, `MemoryUsage` type |
-| `devtools-ui` | `DevToolsHeader.tsx` | Memory usage badge |
+| Package            | File                         | Change                                    |
+| ------------------ | ---------------------------- | ----------------------------------------- |
+| `devtools-connect` | `serialization/serialize.ts` | Size limit truncation                     |
+| `devtools-connect` | `DevToolsStateManager.ts`    | LRU eviction, memory tracking             |
+| `devtools-connect` | `DevToolsBrowserPlugin.ts`   | WeakRef caching, gc(), memory API         |
+| `devtools-connect` | `types/index.ts`             | Memory config options, `MemoryUsage` type |
+| `devtools-ui`      | `DevToolsHeader.tsx`         | Memory usage badge                        |
 
 ---
 
@@ -150,16 +150,16 @@ Harden the devtools pipeline so it performs well under pressure and doesn't degr
 
 ### Files to create
 
-| File | Purpose |
-|------|---------|
-| `src/serialization/__tests__/serialize.test.ts` | Serialization edge cases |
-| `src/state/__tests__/DevToolsStateManager.test.ts` | State manager logic |
-| `src/__tests__/integration.test.ts` | End-to-end plugin lifecycle |
+| File                                               | Purpose                     |
+| -------------------------------------------------- | --------------------------- |
+| `src/serialization/__tests__/serialize.test.ts`    | Serialization edge cases    |
+| `src/state/__tests__/DevToolsStateManager.test.ts` | State manager logic         |
+| `src/__tests__/integration.test.ts`                | End-to-end plugin lifecycle |
 
 ### Files to modify
 
-| File | Change |
-|------|--------|
+| File                                                 | Change                |
+| ---------------------------------------------------- | --------------------- |
 | `src/plugin/__tests__/DevToolsBrowserPlugin.test.ts` | Extend existing tests |
 
 ---
@@ -192,15 +192,15 @@ Harden the devtools pipeline so it performs well under pressure and doesn't degr
 
 ### Files to create
 
-| File | Purpose |
-|------|---------|
-| `src/blocs/__tests__/DevToolsInstancesBloc.test.ts` | Instances bloc |
-| `src/blocs/__tests__/DevToolsLayoutBloc.test.ts` | Layout bloc |
-| `src/blocs/__tests__/DevToolsDiffBloc.test.ts` | Diff bloc |
-| `src/blocs/__tests__/DevToolsSearchBloc.test.ts` | Search bloc |
-| `src/blocs/__tests__/DevToolsLogsBloc.test.ts` | Logs bloc |
-| `src/components/__tests__/InstanceList.test.tsx` | Instance list rendering |
-| `src/components/__tests__/StateViewer.test.tsx` | State viewer rendering |
+| File                                                | Purpose                 |
+| --------------------------------------------------- | ----------------------- |
+| `src/blocs/__tests__/DevToolsInstancesBloc.test.ts` | Instances bloc          |
+| `src/blocs/__tests__/DevToolsLayoutBloc.test.ts`    | Layout bloc             |
+| `src/blocs/__tests__/DevToolsDiffBloc.test.ts`      | Diff bloc               |
+| `src/blocs/__tests__/DevToolsSearchBloc.test.ts`    | Search bloc             |
+| `src/blocs/__tests__/DevToolsLogsBloc.test.ts`      | Logs bloc               |
+| `src/components/__tests__/InstanceList.test.tsx`    | Instance list rendering |
+| `src/components/__tests__/StateViewer.test.tsx`     | State viewer rendering  |
 
 ---
 
@@ -243,14 +243,14 @@ Harden the devtools pipeline so it performs well under pressure and doesn't degr
 
 ### Files to modify
 
-| Package | File | Change |
-|---------|------|--------|
-| `devtools-connect` | `DevToolsBrowserPlugin.ts` | Try/catch all hooks |
-| `devtools-connect` | `serialization/serialize.ts` | Timeout, defensive wrapping |
-| `devtools-extension` | `content/content-script.ts` | Auto-reconnection |
-| `devtools-extension` | `panel/comm.ts` | Reconnection, stale detection |
-| `devtools-ui` | `DevToolsPanel.tsx` | Top-level error boundary |
-| `devtools-ui` | `DevToolsHeader.tsx` | Connection status, version warning |
+| Package              | File                         | Change                             |
+| -------------------- | ---------------------------- | ---------------------------------- |
+| `devtools-connect`   | `DevToolsBrowserPlugin.ts`   | Try/catch all hooks                |
+| `devtools-connect`   | `serialization/serialize.ts` | Timeout, defensive wrapping        |
+| `devtools-extension` | `content/content-script.ts`  | Auto-reconnection                  |
+| `devtools-extension` | `panel/comm.ts`              | Reconnection, stale detection      |
+| `devtools-ui`        | `DevToolsPanel.tsx`          | Top-level error boundary           |
+| `devtools-ui`        | `DevToolsHeader.tsx`         | Connection status, version warning |
 
 ---
 
@@ -278,12 +278,12 @@ Harden the devtools pipeline so it performs well under pressure and doesn't degr
 
 ### Files to modify
 
-| Package | File | Change |
-|---------|------|--------|
-| `@blac/core` | `StateContainer.ts` | Ensure callstack capture |
-| `devtools-connect` | `DevToolsBrowserPlugin.ts` | Forward callstack |
-| `devtools-ui` | `CallStackView.tsx` | Parse frames, clickable links |
-| `devtools-extension` | `panel/comm.ts` | File link handling |
+| Package              | File                       | Change                        |
+| -------------------- | -------------------------- | ----------------------------- |
+| `@blac/core`         | `StateContainer.ts`        | Ensure callstack capture      |
+| `devtools-connect`   | `DevToolsBrowserPlugin.ts` | Forward callstack             |
+| `devtools-ui`        | `CallStackView.tsx`        | Parse frames, clickable links |
+| `devtools-extension` | `panel/comm.ts`            | File link handling            |
 
 ---
 

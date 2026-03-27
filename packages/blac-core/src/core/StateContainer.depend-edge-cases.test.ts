@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vite-plus/test';
+import { describe, it, expect } from 'vite-plus/test';
+import { blacTestSetup } from '@blac/core/testing';
 import { Cubit } from './Cubit';
-import { acquire, getRefCount, hasInstance, clearAll } from '../registry';
+import { acquire, getRefCount, hasInstance } from '../registry';
 
 class DepTarget extends Cubit<{ val: number }> {
   constructor() {
@@ -8,7 +9,7 @@ class DepTarget extends Cubit<{ val: number }> {
   }
 }
 
-class DepTargetB extends Cubit<{ val: number }> {
+class _DepTargetB extends Cubit<{ val: number }> {
   constructor() {
     super({ val: 0 });
   }
@@ -21,11 +22,8 @@ class DepOwner extends Cubit<{ x: number }> {
   }
 }
 
-const resetState = () => clearAll();
-
 describe('StateContainer depend() edge cases', () => {
-  beforeEach(resetState);
-  afterEach(resetState);
+  blacTestSetup();
 
   it('depend() returns a getter function, not an instance', () => {
     const owner = new DepOwner();

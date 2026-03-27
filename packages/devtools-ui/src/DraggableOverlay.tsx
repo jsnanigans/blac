@@ -93,7 +93,7 @@ function toInstanceData(inst: any): import('./types').InstanceData {
       inst.lastStateChangeTimestamp ??
       (inst.history?.length
         ? inst.history[inst.history.length - 1].timestamp
-        : inst.createdAt ?? Date.now()),
+        : (inst.createdAt ?? Date.now())),
     createdAt: inst.createdAt ?? Date.now(),
     hydrationStatus: inst.hydrationStatus,
     hydrationError: inst.hydrationError,
@@ -101,7 +101,7 @@ function toInstanceData(inst: any): import('./types').InstanceData {
   };
 }
 
-function estimateStateSize(state: unknown): number {
+function estimateStateSize(state: any): number {
   try {
     return JSON.stringify(state)?.length ?? 0;
   } catch {
@@ -110,7 +110,7 @@ function estimateStateSize(state: unknown): number {
 }
 
 export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
-  const api = (window as any).__BLAC_DEVTOOLS__;
+  const api = (window as any as Record<string, any>).__BLAC_DEVTOOLS__;
 
   if (!api) {
     console.error('[BlaC DevTools] window.__BLAC_DEVTOOLS__ is undefined');
@@ -154,14 +154,24 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
   const unsubscribe = api.subscribe((event: any) => {
     if (instancesBloc.isDisposed) return;
 
-    switch (event.type) {
+    const evt = event as Record<string, any> & {
+      type: string;
+      data?: any;
+      timestamp?: number;
+    };
+    switch (evt.type) {
       case 'init': {
         diffBloc.clearAllPreviousStates();
         logsBloc.clearLogs();
         metricsBloc.clearAll();
         dependencyBloc.setEdges([]);
-        const initInstances = (Array.isArray(event.data) ? event.data : []).map(
-          (inst: any) => toInstanceData({ ...inst, createdAt: inst.createdAt ?? event.timestamp }),
+        const initInstances = (Array.isArray(evt.data) ? evt.data : []).map(
+          (inst: any) =>
+            toInstanceData({
+              ...(inst as Record<string, any>),
+              createdAt:
+                (inst as Record<string, any>)?.createdAt ?? evt.timestamp,
+            }),
         );
         instancesBloc.setAllInstances(initInstances);
         logsBloc.addLog('init', '__system__', 'System', 'DevTools', {
@@ -171,9 +181,12 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
       }
 
       case 'instance-created': {
-        const d = event.data as any;
+        const d = evt.data as Record<string, any>;
         instancesBloc.addInstance(
-          toInstanceData({ ...d, createdAt: d.createdAt ?? event.timestamp }),
+          toInstanceData({
+            ...d,
+            createdAt: (d?.createdAt ?? evt.timestamp) as number,
+          }),
         );
         // Register dependency edges from this new instance
         if (d.dependencies?.length) {
@@ -186,35 +199,49 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
       }
 
       case 'instance-disposed': {
-        const d = event.data as any;
-        const disposedInstance = instancesBloc.getInstance(d.id);
-        instancesBloc.removeInstance(d.id);
-        diffBloc.clearPreviousState(d.id);
-        dependencyBloc.removeEdgesForInstance(d.id);
-        metricsBloc.removeInstance(d.id);
+        const d = evt.data as Record<string, any>;
+        const disposedInstance = instancesBloc.getInstance(d.id as string);
+        instancesBloc.removeInstance(d.id as string);
+        diffBloc.clearPreviousState(d.id as string);
+        dependencyBloc.removeEdgesForInstance(d.id as string);
+        metricsBloc.removeInstance(d.id as string);
         if (disposedInstance) {
-          logsBloc.addLog('disposed', d.id, disposedInstance.className, disposedInstance.name);
+          logsBloc.addLog(
+            'disposed',
+            d.id,
+            disposedInstance.className,
+            disposedInstance.name,
+          );
         }
         break;
       }
 
       case 'instance-updated': {
-        const d = event.data as any;
-        const updatedState = d.state ?? d.currentState;
-        const currentInstance = instancesBloc.getInstance(d.id);
+        const d = evt.data as Record<string, any>;
+        const updatedState = (d.state ?? d.currentState) as any;
+        const currentInstance = instancesBloc.getInstance(d.id as string);
         if (currentInstance) {
-          diffBloc.storePreviousState(d.id, currentInstance.state, d.callstack, d.trigger?.name);
+          diffBloc.storePreviousState(
+            d.id as string,
+            currentInstance.state,
+            d.callstack as string | undefined,
+            (d.trigger as Record<string, any>)?.name as string | undefined,
+          );
         }
-        instancesBloc.updateInstanceState(d.id, updatedState);
-        metricsBloc.recordUpdate(d.id, d.className, estimateStateSize(updatedState));
+        instancesBloc.updateInstanceState(d.id as string, updatedState);
+        metricsBloc.recordUpdate(
+          d.id as string,
+          d.className as string,
+          estimateStateSize(updatedState),
+        );
         logsBloc.addLog(
           'state-changed',
-          d.id,
-          d.className,
-          d.name,
+          d.id as string,
+          d.className as string,
+          d.name as string,
           { previousState: currentInstance?.state, newState: updatedState },
-          d.callstack,
-          d.trigger?.name,
+          d.callstack as string | undefined,
+          (d.trigger as Record<string, any>)?.name as string | undefined,
         );
         break;
       }
@@ -394,7 +421,10 @@ export function DraggableOverlay({ onMount }: DraggableOverlayProps = {}) {
         <DevToolsPanel
           onMount={onMount ?? defaultDevToolsMount}
           onTimeTravel={(instanceId, state) =>
-            (window as any).__BLAC_DEVTOOLS__?.timeTravel?.(instanceId, state)
+            (
+              (window as any as Record<string, any>)
+                .__BLAC_DEVTOOLS__ as Record<string, any>
+            )?.timeTravel?.(instanceId, state)
           }
         />
       </div>

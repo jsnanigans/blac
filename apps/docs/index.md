@@ -36,7 +36,7 @@ features:
 
   - icon: ⚛️
     title: Concurrent-Safe
-    details: "Built on useSyncExternalStore for React 18+ concurrent mode, Suspense, and transitions."
+    details: 'Built on useSyncExternalStore for React 18+ concurrent mode, Suspense, and transitions.'
 ---
 
 ## Quick Example
@@ -63,13 +63,17 @@ function Counter() {
 ## Installation
 
 ::: code-group
+
 ```bash [pnpm]
 pnpm add @blac/core @blac/react
 ```
+
 ```bash [npm]
 npm install @blac/core @blac/react
 ```
+
 ```bash [yarn]
 yarn add @blac/core @blac/react
 ```
+
 :::

@@ -1,4 +1,4 @@
-import { globalRegistry } from '../core/StateContainerRegistry';
+import { getRegistry } from '../registry/config';
 import type { StateContainerInstance } from '../types/utilities';
 
 /**
@@ -22,7 +22,7 @@ export function resolveDependencies(
       const visitKey = `${Type.name}::${key}`;
       if (visited.has(visitKey)) continue;
       visited.add(visitKey);
-      const dep = globalRegistry.ensure(Type, key);
+      const dep = getRegistry().ensure(Type, key);
       result.add(dep);
       if (dep.dependencies.size > 0) {
         queue.push(dep);

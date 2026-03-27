@@ -1,6 +1,7 @@
-import { describe, it, expect, afterEach, vi } from 'vite-plus/test';
+import { describe, it, expect } from 'vite-plus/test';
 import { render, renderHook, act, screen } from '@testing-library/react';
-import { Cubit, clearAll, hasInstance } from '@blac/core';
+import { Cubit, hasInstance } from '@blac/core';
+import { blacTestSetup } from '@blac/core/testing';
 import { useBloc } from '../useBloc';
 
 class IsoBloc extends Cubit<{ n: number }> {
@@ -12,7 +13,7 @@ class IsoBloc extends Cubit<{ n: number }> {
   }
 }
 
-afterEach(() => clearAll());
+blacTestSetup();
 
 describe('useBloc — instance isolation', () => {
   it('different instanceId produces different instances', () => {

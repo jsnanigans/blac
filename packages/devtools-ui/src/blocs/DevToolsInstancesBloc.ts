@@ -81,10 +81,7 @@ export class DevToolsInstancesBloc extends Cubit<InstancesState> {
   /**
    * Update state of an existing instance
    */
-  updateInstanceState = (
-    instanceId: string,
-    currentState: any,
-  ) => {
+  updateInstanceState = (instanceId: string, currentState: any) => {
     debug.log(`updateInstanceState: ${instanceId}`);
 
     const instances = this.state.instances.map((inst) => {

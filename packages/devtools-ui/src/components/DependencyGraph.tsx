@@ -17,7 +17,11 @@ import {
 } from '@xyflow/react';
 import ELKBundled from 'elkjs/lib/elk.bundled.js';
 import { useBloc } from '@blac/react';
-import { DevToolsInstancesBloc, DevToolsDependencyBloc, DevToolsLayoutBloc } from '../blocs';
+import {
+  DevToolsInstancesBloc,
+  DevToolsDependencyBloc,
+  DevToolsLayoutBloc,
+} from '../blocs';
 import { T } from '../theme';
 import { injectXyflowStyles } from '../inject-xyflow-styles';
 
@@ -144,7 +148,10 @@ async function computeELKLayout(
   return {
     nodes: rfNodes.map((n) => {
       const ln = layouted.children?.find((c: ELKNode) => c.id === n.id);
-      return { ...n, position: { x: ln?.x ?? 0, y: ln?.y ?? 0 } } as Node<BlocNodeData>;
+      return {
+        ...n,
+        position: { x: ln?.x ?? 0, y: ln?.y ?? 0 },
+      } as Node<BlocNodeData>;
     }),
     edges: rfEdges,
   };
@@ -156,7 +163,9 @@ const DependencyGraphFlow: FC = () => {
   const [, layoutBloc] = useBloc(DevToolsLayoutBloc);
   const { fitView } = useReactFlow();
 
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node<BlocNodeData>>([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node<BlocNodeData>>(
+    [],
+  );
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
   const connectedIds = useMemo(() => {
@@ -200,7 +209,11 @@ const DependencyGraphFlow: FC = () => {
           target: targetId,
           type: 'smoothstep',
           label: 'uses',
-          labelStyle: { fontSize: 9, fill: T.text2, fontFamily: 'ui-monospace, monospace' },
+          labelStyle: {
+            fontSize: 9,
+            fill: T.text2,
+            fontFamily: 'ui-monospace, monospace',
+          },
           labelBgStyle: { fill: T.bg3, fillOpacity: 0.9 },
           labelBgPadding: [4, 2] as [number, number],
           style: { stroke: T.border3, strokeWidth: 1.5 },
@@ -213,7 +226,10 @@ const DependencyGraphFlow: FC = () => {
   // Only re-run ELK when graph structure changes, not on data updates
   const graphKey = useMemo(() => {
     const nodeIds = [...connectedIds].sort().join(',');
-    const edgeIds = depEdges.map((e) => `${e.fromId}>${e.toClass}`).sort().join(',');
+    const edgeIds = depEdges
+      .map((e) => `${e.fromId}>${e.toClass}`)
+      .sort()
+      .join(',');
     return `${nodeIds}|${edgeIds}`;
   }, [connectedIds, depEdges]);
 
@@ -224,11 +240,13 @@ const DependencyGraphFlow: FC = () => {
 
   useEffect(() => {
     if (rfNodesRef.current.length === 0) return;
-    computeELKLayout(rfNodesRef.current, rfEdgesRef.current).then(({ nodes: ln, edges: le }) => {
-      setNodes(ln);
-      setEdges(le);
-      requestAnimationFrame(() => fitView({ padding: 0.15, duration: 300 }));
-    });
+    computeELKLayout(rfNodesRef.current, rfEdgesRef.current).then(
+      ({ nodes: ln, edges: le }) => {
+        setNodes(ln);
+        setEdges(le);
+        requestAnimationFrame(() => fitView({ padding: 0.15, duration: 300 }));
+      },
+    );
   }, [graphKey, fitView, setNodes, setEdges]);
 
   const onNodeClick = useCallback(
@@ -299,8 +317,8 @@ export const DependencyGraph: FC = React.memo(() => {
       >
         <div style={{ marginBottom: 12, fontSize: 11, color: T.text1 }}>
           No dependencies detected. Use{' '}
-          <code style={{ color: T.textAccent }}>this.depend(OtherBloc)</code> in your blocs to
-          track dependencies.
+          <code style={{ color: T.textAccent }}>this.depend(OtherBloc)</code> in
+          your blocs to track dependencies.
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
           {instances.map((inst) => {
@@ -326,7 +344,9 @@ export const DependencyGraph: FC = React.memo(() => {
                 }}
               >
                 <span style={{ color }}>{inst.className}</span>
-                <span style={{ color: T.text2, fontSize: 10 }}>{inst.name}</span>
+                <span style={{ color: T.text2, fontSize: 10 }}>
+                  {inst.name}
+                </span>
               </div>
             );
           })}

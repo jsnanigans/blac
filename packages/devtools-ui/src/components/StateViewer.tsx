@@ -1,6 +1,10 @@
 import React, { FC, useState } from 'react';
 import { useBloc } from '@blac/react';
-import { DevToolsLayoutBloc, DevToolsDependencyBloc, DevToolsInstancesBloc } from '../blocs';
+import {
+  DevToolsLayoutBloc,
+  DevToolsDependencyBloc,
+  DevToolsInstancesBloc,
+} from '../blocs';
 import type { DependencyEdge, InstanceData } from '../types';
 import { CurrentStateView } from './CurrentStateView';
 import { StateHistoryView } from './StateHistoryView';
@@ -81,7 +85,14 @@ const DepCard: FC<{
       : {key}
     </span>
     {navigable && (
-      <span style={{ color: T.textAccent, fontSize: '10px', marginLeft: 'auto', flexShrink: 0 }}>
+      <span
+        style={{
+          color: T.textAccent,
+          fontSize: '10px',
+          marginLeft: 'auto',
+          flexShrink: 0,
+        }}
+      >
         →
       </span>
     )}
@@ -122,8 +133,12 @@ const DependenciesView: FC<DependenciesViewProps> = React.memo(
             padding: '3px 0',
             color: T.text1,
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = T.text0; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = T.text1; }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = T.text0;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = T.text1;
+          }}
         >
           <span
             style={{
@@ -168,7 +183,13 @@ const DependenciesView: FC<DependenciesViewProps> = React.memo(
                 >
                   Depends on
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                  }}
+                >
                   {outgoing.map((edge, i) => {
                     const target = resolveInstance(edge.toClass, edge.toKey);
                     const color = classColor(edge.toClass);
@@ -177,9 +198,13 @@ const DependenciesView: FC<DependenciesViewProps> = React.memo(
                         key={i}
                         color={color}
                         className={edge.toClass}
-                        instanceKey={target ? instanceKey(target.id) : edge.toKey}
+                        instanceKey={
+                          target ? instanceKey(target.id) : edge.toKey
+                        }
                         navigable={!!target}
-                        onClick={target ? () => onNavigate(target.id) : undefined}
+                        onClick={
+                          target ? () => onNavigate(target.id) : undefined
+                        }
                       />
                     );
                   })}
@@ -201,18 +226,30 @@ const DependenciesView: FC<DependenciesViewProps> = React.memo(
                 >
                   Depended on by
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                  }}
+                >
                   {incoming.map((edge, i) => {
-                    const source = instances.find((inst) => inst.id === edge.fromId);
+                    const source = instances.find(
+                      (inst) => inst.id === edge.fromId,
+                    );
                     const color = classColor(edge.fromClass);
                     return (
                       <DepCard
                         key={i}
                         color={color}
                         className={edge.fromClass}
-                        instanceKey={source ? instanceKey(source.id) : edge.fromClass}
+                        instanceKey={
+                          source ? instanceKey(source.id) : edge.fromClass
+                        }
                         navigable={!!source}
-                        onClick={source ? () => onNavigate(source.id) : undefined}
+                        onClick={
+                          source ? () => onNavigate(source.id) : undefined
+                        }
                       />
                     );
                   })}
@@ -238,7 +275,10 @@ function formatRelative(timestamp: number): string {
 }
 
 export const StateViewer: FC<StateViewerProps> = ({ onTimeTravel }) => {
-  const [{ isCurrentStateExpanded, isHistoryExpanded, isDiffExpanded }, layoutBloc] = useBloc(DevToolsLayoutBloc);
+  const [
+    { isCurrentStateExpanded, isHistoryExpanded, isDiffExpanded },
+    layoutBloc,
+  ] = useBloc(DevToolsLayoutBloc);
   const [{ edges }] = useBloc(DevToolsDependencyBloc);
   const [{ instances }] = useBloc(DevToolsInstancesBloc);
 
@@ -308,7 +348,9 @@ export const StateViewer: FC<StateViewerProps> = ({ onTimeTravel }) => {
         >
           {selectedInstance.className}
         </span>
-        <span style={{ fontSize: '12px', color: T.text2, fontFamily: T.fontMono }}>
+        <span
+          style={{ fontSize: '12px', color: T.text2, fontFamily: T.fontMono }}
+        >
           : {instanceKey(selectedInstance.id)}
         </span>
       </div>
@@ -326,13 +368,19 @@ export const StateViewer: FC<StateViewerProps> = ({ onTimeTravel }) => {
           flexWrap: 'wrap',
         }}
       >
-        <span>created {formatRelative(selectedInstance.createdAt ?? Date.now())}</span>
+        <span>
+          created {formatRelative(selectedInstance.createdAt ?? Date.now())}
+        </span>
         <span style={{ color: T.border2 }}>·</span>
-        <span>{history.length} change{history.length !== 1 ? 's' : ''}</span>
+        <span>
+          {history.length} change{history.length !== 1 ? 's' : ''}
+        </span>
         {selectedInstance.lastStateChangeTimestamp != null && (
           <>
             <span style={{ color: T.border2 }}>·</span>
-            <span>last {formatRelative(selectedInstance.lastStateChangeTimestamp)}</span>
+            <span>
+              last {formatRelative(selectedInstance.lastStateChangeTimestamp)}
+            </span>
           </>
         )}
       </div>

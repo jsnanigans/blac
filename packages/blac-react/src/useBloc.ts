@@ -173,7 +173,7 @@ export function useBloc<
       rawInstance,
       forceUpdate,
     );
-  });
+  }, [adapterState, rawInstance, forceUpdate]);
 
   useEffect(() => {
     const manager = externalDepsManager.current;

@@ -1,13 +1,6 @@
-import {
-  describe,
-  it,
-  expect,
-  beforeEach,
-  afterEach,
-  vi,
-} from 'vite-plus/test';
+import { describe, it, expect, vi } from 'vite-plus/test';
+import { blacTestSetup } from '@blac/core/testing';
 import { Cubit } from './Cubit';
-import { clearAll } from '../registry';
 
 class CountCubit extends Cubit<{ count: number; label: string }> {
   constructor() {
@@ -15,11 +8,8 @@ class CountCubit extends Cubit<{ count: number; label: string }> {
   }
 }
 
-const resetState = () => clearAll();
-
 describe('Cubit edge cases', () => {
-  beforeEach(resetState);
-  afterEach(resetState);
+  blacTestSetup();
 
   it('patch() merges partial state, leaves other fields unchanged', () => {
     const cubit = new CountCubit();

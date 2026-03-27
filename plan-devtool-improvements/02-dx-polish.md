@@ -37,13 +37,13 @@ Quality-of-life improvements that make the devtools feel professional and effici
 
 ### Files to modify
 
-| File | Change |
-|------|--------|
-| `utils/clipboard.ts` | New utility |
-| `CurrentStateView.tsx` | Copy button |
-| `StateDiffView.tsx` | Copy button |
-| `StateHistoryView.tsx` | Copy buttons (per-entry + all) |
-| `LogsView.tsx` | Copy buttons (per-entry + filtered) |
+| File                   | Change                              |
+| ---------------------- | ----------------------------------- |
+| `utils/clipboard.ts`   | New utility                         |
+| `CurrentStateView.tsx` | Copy button                         |
+| `StateDiffView.tsx`    | Copy button                         |
+| `StateHistoryView.tsx` | Copy buttons (per-entry + all)      |
+| `LogsView.tsx`         | Copy buttons (per-entry + filtered) |
 
 ---
 
@@ -90,21 +90,21 @@ Quality-of-life improvements that make the devtools feel professional and effici
 
 ### Files to modify
 
-| File | Change |
-|------|--------|
-| `hooks/useKeyboardNav.ts` | New hook |
-| `InstanceList.tsx` | Arrow nav, focus management |
-| `SearchBar.tsx` | Shortcut focus, escape handling |
-| `DevToolsHeader.tsx` | Tab switching shortcuts |
-| `StateViewer.tsx` | Section toggle shortcuts |
-| `DevToolsPanel.tsx` | Global shortcut registration |
-| `components/KeyboardHelp.tsx` | New help overlay |
+| File                          | Change                          |
+| ----------------------------- | ------------------------------- |
+| `hooks/useKeyboardNav.ts`     | New hook                        |
+| `InstanceList.tsx`            | Arrow nav, focus management     |
+| `SearchBar.tsx`               | Shortcut focus, escape handling |
+| `DevToolsHeader.tsx`          | Tab switching shortcuts         |
+| `StateViewer.tsx`             | Section toggle shortcuts        |
+| `DevToolsPanel.tsx`           | Global shortcut registration    |
+| `components/KeyboardHelp.tsx` | New help overlay                |
 
 ---
 
 ## Phase 3: State Search & Filter
 
-**Goal:** Search *within* state values to find specific data across all instances.
+**Goal:** Search _within_ state values to find specific data across all instances.
 
 ### Tasks
 
@@ -135,13 +135,13 @@ Quality-of-life improvements that make the devtools feel professional and effici
 
 ### Files to modify
 
-| File | Change |
-|------|--------|
-| `components/StateSearchBar.tsx` | New component |
-| `components/StateSearchResults.tsx` | New component |
-| `blocs/DevToolsStateSearchBloc.ts` | New bloc |
-| `CurrentStateView.tsx` | Path highlighting |
-| `DevToolsPanel.tsx` | Search bar placement |
+| File                                | Change               |
+| ----------------------------------- | -------------------- |
+| `components/StateSearchBar.tsx`     | New component        |
+| `components/StateSearchResults.tsx` | New component        |
+| `blocs/DevToolsStateSearchBloc.ts`  | New bloc             |
+| `CurrentStateView.tsx`              | Path highlighting    |
+| `DevToolsPanel.tsx`                 | Search bar placement |
 
 ---
 
@@ -182,9 +182,9 @@ Quality-of-life improvements that make the devtools feel professional and effici
 
 ```typescript
 interface DevToolsExport {
-  version: string;              // export format version
-  blacVersion: string;          // @blac/core version
-  exportedAt: number;           // timestamp
+  version: string; // export format version
+  blacVersion: string; // @blac/core version
+  exportedAt: number; // timestamp
   instances: ExportedInstance[];
   logs: ExportedLogEntry[];
   dependencies?: DependencyEdge[];
@@ -203,13 +203,13 @@ interface ExportedInstance {
 
 ### Files to modify
 
-| File | Change |
-|------|--------|
-| `utils/export.ts` | Export logic |
-| `utils/import.ts` | Import + validation |
-| `DevToolsHeader.tsx` | Export/Import buttons |
+| File                          | Change                   |
+| ----------------------------- | ------------------------ |
+| `utils/export.ts`             | Export logic             |
+| `utils/import.ts`             | Import + validation      |
+| `DevToolsHeader.tsx`          | Export/Import buttons    |
 | `components/ImportBanner.tsx` | Read-only mode indicator |
-| `blocs/DevToolsImportBloc.ts` | Manages imported state |
+| `blocs/DevToolsImportBloc.ts` | Manages imported state   |
 
 ---
 
@@ -235,11 +235,11 @@ interface ExportedInstance {
 
 ### Files to modify
 
-| File | Change |
-|------|--------|
-| `StateHistoryView.tsx` | Selection UI |
-| `StateDiffView.tsx` | Accept arbitrary left/right snapshots |
-| `blocs/DevToolsDiffBloc.ts` | Store comparison pair |
+| File                        | Change                                |
+| --------------------------- | ------------------------------------- |
+| `StateHistoryView.tsx`      | Selection UI                          |
+| `StateDiffView.tsx`         | Accept arbitrary left/right snapshots |
+| `blocs/DevToolsDiffBloc.ts` | Store comparison pair                 |
 
 ---
 

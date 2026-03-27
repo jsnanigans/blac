@@ -3,7 +3,8 @@
  * Testing the foundation of the entire state management system
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vite-plus/test';
+import { describe, it, expect, vi } from 'vite-plus/test';
+import { blacTestSetup } from '@blac/core/testing';
 import { StateContainer } from './StateContainer';
 import {
   acquire,
@@ -115,10 +116,7 @@ class ObjectStateContainer extends StateContainer<ObjectState> {
 }
 
 describe('StateContainer', () => {
-  beforeEach(() => {
-    // Clear all instances before each test
-    clearAll();
-  });
+  blacTestSetup();
 
   // Static Instance Management
 

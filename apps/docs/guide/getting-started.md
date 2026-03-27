@@ -3,15 +3,19 @@
 ## Installation
 
 ::: code-group
+
 ```bash [pnpm]
 pnpm add @blac/core @blac/react
 ```
+
 ```bash [npm]
 npm install @blac/core @blac/react
 ```
+
 ```bash [yarn]
 yarn add @blac/core @blac/react
 ```
+
 :::
 
 BlaC requires React 18+ and TypeScript is strongly recommended.
@@ -36,11 +40,11 @@ class CounterCubit extends Cubit<{ count: number }> {
 
 Three ways to change state:
 
-| Method | What it does | When to use |
-|--------|-------------|-------------|
-| `emit(newState)` | Replace the entire state | You have the full new state ready |
-| `update(fn)` | Derive new state from current | You need to read current state first |
-| `patch(partial)` | Shallow-merge partial changes | You want to update some fields |
+| Method           | What it does                  | When to use                          |
+| ---------------- | ----------------------------- | ------------------------------------ |
+| `emit(newState)` | Replace the entire state      | You have the full new state ready    |
+| `update(fn)`     | Derive new state from current | You need to read current state first |
+| `patch(partial)` | Shallow-merge partial changes | You want to update some fields       |
 
 ## Step 2: Use it in React
 
@@ -64,6 +68,7 @@ function Counter() {
 ```
 
 `useBloc` returns a tuple:
+
 - `state` — the current state snapshot (tracked for re-renders)
 - `counter` — the Cubit instance (call methods on it)
 

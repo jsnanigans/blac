@@ -101,7 +101,7 @@ function ArticleCard({ article }: { article: Article }) {
 export function FeedDemo() {
   // Owns the FeedCubit instance and triggers the initial load.
   // autoTrack: false means this component never re-renders from state.
-  const [, bloc] = useBloc(FeedCubit, {
+  const [, _bloc] = useBloc(FeedCubit, {
     autoTrack: false,
     onMount: (b) => void b.loadAuthor(AUTHORS[0].id),
   });

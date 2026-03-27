@@ -59,7 +59,14 @@ export const InstanceListItem: FC<InstanceListItemProps> = React.memo(
           }}
         >
           <InstanceId id={instance.id} />
-          <div style={{ display: 'flex', gap: '3px', alignItems: 'center', flexShrink: 0 }}>
+          <div
+            style={{
+              display: 'flex',
+              gap: '3px',
+              alignItems: 'center',
+              flexShrink: 0,
+            }}
+          >
             {instance.hydrationStatus === 'hydrating' && (
               <span
                 style={{

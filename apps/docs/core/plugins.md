@@ -60,13 +60,13 @@ getPluginManager().uninstall('my-plugin');
 
 The `context` parameter provides safe, read-only access to registry data:
 
-| Method | Returns |
-|--------|---------|
+| Method                          | Returns                                           |
+| ------------------------------- | ------------------------------------------------- |
 | `getInstanceMetadata(instance)` | `{ className, instanceId, isIsolated, refCount }` |
-| `getState(instance)` | Current state of the instance |
-| `queryInstances(Type)` | All instances of a given class |
-| `getAllTypes()` | All registered state container classes |
-| `getStats()` | `{ totalInstances, totalRefCount, types }` |
+| `getState(instance)`            | Current state of the instance                     |
+| `queryInstances(Type)`          | All instances of a given class                    |
+| `getAllTypes()`                 | All registered state container classes            |
+| `getStats()`                    | `{ totalInstances, totalRefCount, types }`        |
 
 ## Example: analytics plugin
 

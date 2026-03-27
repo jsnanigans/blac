@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vite-plus/test';
 import { renderToString } from 'react-dom/server';
 import { createElement } from 'react';
-import { Cubit, clearAll, acquire } from '@blac/core';
+import { Cubit, acquire } from '@blac/core';
 import {
   autoTrackInit,
   autoTrackSubscribe,
@@ -10,6 +10,9 @@ import {
   noTrackSubscribe,
 } from '@blac/adapter';
 import { useBloc } from '../useBloc';
+import { blacTestSetup } from '@blac/core/testing';
+
+blacTestSetup();
 
 class SsrBloc extends Cubit<{ n: number }> {
   constructor() {
@@ -19,7 +22,6 @@ class SsrBloc extends Cubit<{ n: number }> {
 
 afterEach(() => {
   vi.unstubAllGlobals();
-  clearAll();
 });
 
 describe('useBloc — SSR', () => {

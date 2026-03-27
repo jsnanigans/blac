@@ -1,11 +1,11 @@
-import { globalRegistry } from '../core/StateContainerRegistry';
+import { getRegistry } from './config';
 import type { StateContainerConstructor } from '../types/utilities';
 
 export function acquire<T extends StateContainerConstructor>(
   BlocClass: T,
   instanceKey?: string,
 ): InstanceType<T> {
-  return globalRegistry.acquire(BlocClass, instanceKey, {
+  return getRegistry().acquire(BlocClass, instanceKey, {
     canCreate: true,
     countRef: true,
   });

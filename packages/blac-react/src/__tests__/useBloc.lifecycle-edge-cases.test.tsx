@@ -1,7 +1,8 @@
-import { describe, it, expect, afterEach, vi } from 'vite-plus/test';
+import { describe, it, expect } from 'vite-plus/test';
 import { renderHook, act } from '@testing-library/react';
 import { StrictMode } from 'react';
-import { Cubit, clearAll } from '@blac/core';
+import { Cubit } from '@blac/core';
+import { blacTestSetup } from '@blac/core/testing';
 import { useBloc } from '../useBloc';
 
 class LifecycleBloc extends Cubit<{ n: number }> {
@@ -13,7 +14,7 @@ class LifecycleBloc extends Cubit<{ n: number }> {
   }
 }
 
-afterEach(() => clearAll());
+blacTestSetup();
 
 describe('useBloc — lifecycle edge cases', () => {
   it('onMount is called exactly once on mount', () => {

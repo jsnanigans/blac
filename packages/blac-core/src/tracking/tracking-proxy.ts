@@ -33,7 +33,7 @@ export function isProxyable(value: unknown): value is object {
 export interface ProxyState<T> {
   trackedPaths: Set<string>;
   isTracking: boolean;
-  proxyCache: WeakMap<object, any>;
+  proxyCache: WeakMap<object, unknown>;
   // oxlint-disable-next-line @typescript-eslint/no-unsafe-function-type
   boundFunctionsCache: WeakMap<Function, Function> | null;
   lastProxiedState: T | null;
@@ -49,7 +49,7 @@ export function createProxyState<T>(): ProxyState<T> {
   return {
     trackedPaths: new Set<string>(),
     isTracking: false,
-    proxyCache: new WeakMap<object, any>(),
+    proxyCache: new WeakMap<object, unknown>(),
     boundFunctionsCache: null,
     lastProxiedState: null,
     lastProxy: null,
@@ -172,7 +172,7 @@ export function createInternal<T>(
   if (Array.isArray(target)) {
     return createArrayProxy(
       state,
-      target as unknown as any[],
+      target as unknown[],
       path,
       depth,
     ) as unknown as T;
@@ -268,7 +268,7 @@ export function createForTarget<T>(state: ProxyState<T>, target: T): T {
  */
 export interface PathInfo {
   segments: string[];
-  value: any;
+  value: unknown;
 }
 
 /**
@@ -280,7 +280,7 @@ export interface DependencyState<T> {
   currentRenderPaths: Set<string>;
   pathCache: Map<string, PathInfo>;
   lastCheckedState: T | null;
-  lastCheckedValues: Map<string, any>;
+  lastCheckedValues: Map<string, unknown>;
 }
 
 function isChildPath(child: string, parent: string): boolean {

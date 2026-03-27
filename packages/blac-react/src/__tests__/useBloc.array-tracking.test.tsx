@@ -7,9 +7,10 @@
  */
 
 import { render, screen, act } from '@testing-library/react';
-import { Cubit, clearAll, acquire } from '@blac/core';
+import { Cubit, acquire } from '@blac/core';
 import { useBloc } from '../useBloc';
 import { describe, it, expect } from 'vite-plus/test';
+import { blacTestSetup } from '@blac/core/testing';
 
 // Message type similar to the messenger example
 interface Message {
@@ -58,10 +59,7 @@ class MessageListCubit extends Cubit<MessageListState> {
   };
 }
 
-afterEach(() => {
-  // Clear all bloc instances between tests
-  clearAll();
-});
+blacTestSetup();
 
 describe('useBloc - Array Tracking (MessageList Use Case)', () => {
   it('should re-render when a new message is added to the array', () => {

@@ -121,10 +121,10 @@ Start with auto-tracking (default)
     └─ Otherwise: auto-tracking is fine
 ```
 
-| Mode | Re-renders when | Best for |
-|------|----------------|----------|
-| Auto-tracking | Tracked properties change | Most components |
-| Manual deps | Dependency values change | Computed conditions, narrowing |
-| No tracking | Any state change | Action-only, debug views |
+| Mode          | Re-renders when           | Best for                       |
+| ------------- | ------------------------- | ------------------------------ |
+| Auto-tracking | Tracked properties change | Most components                |
+| Manual deps   | Dependency values change  | Computed conditions, narrowing |
+| No tracking   | Any state change          | Action-only, debug views       |
 
 See also: [useBloc](/react/use-bloc), [Performance](/react/performance)

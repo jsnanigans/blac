@@ -36,7 +36,7 @@ export default defineConfig({
     globals: true,
     environment: 'happy-dom',
     setupFiles: './vitest-setup.ts',
-    onConsoleLog(log) {
+    onConsoleLog(_log) {
       return true;
     },
   },

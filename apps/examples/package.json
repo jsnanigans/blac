@@ -17,7 +17,9 @@
     "build:app": "vp build",
     "preview": "vp preview",
     "deploy": "wrangler pages deploy",
-    "deploy:preview": "wrangler pages deploy --branch preview"
+    "deploy:preview": "wrangler pages deploy --branch preview",
+    "test": "vitest run",
+    "test:watch": "vitest --watch"
   },
   "keywords": [],
   "author": "",
@@ -40,6 +42,10 @@
     "@types/react": "^19.1.9",
     "@types/react-dom": "^19.1.7",
     "wrangler": "^4",
-    "vite-plus": "catalog:"
+    "vite-plus": "catalog:",
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/react": "^16.0.0",
+    "vitest": "catalog:",
+    "happy-dom": "catalog:"
   }
 }

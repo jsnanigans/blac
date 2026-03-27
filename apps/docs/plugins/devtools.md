@@ -4,11 +4,11 @@ BlaC ships with a full DevTools suite: an in-app overlay, a Chrome DevTools pane
 
 ## Packages
 
-| Package | What it does |
-|---------|-------------|
+| Package                  | What it does                                                 |
+| ------------------------ | ------------------------------------------------------------ |
 | `@blac/devtools-connect` | Core plugin that tracks instances and exposes the global API |
-| `@blac/devtools-ui` | React UI components (overlay, Picture-in-Picture, panel) |
-| BlaC Chrome Extension | Chrome DevTools panel that connects automatically |
+| `@blac/devtools-ui`      | React UI components (overlay, Picture-in-Picture, panel)     |
+| BlaC Chrome Extension    | Chrome DevTools panel that connects automatically            |
 
 ## Setup
 
@@ -22,10 +22,9 @@ pnpm add @blac/devtools-connect
 import { getPluginManager } from '@blac/core';
 import { createDevToolsBrowserPlugin } from '@blac/devtools-connect';
 
-getPluginManager().install(
-  createDevToolsBrowserPlugin(),
-  { environment: 'development' },
-);
+getPluginManager().install(createDevToolsBrowserPlugin(), {
+  environment: 'development',
+});
 ```
 
 This is the minimum setup. The plugin starts tracking all state containers and exposes `window.__BLAC_DEVTOOLS__` for programmatic access.
@@ -63,9 +62,9 @@ The extension connects automatically when the browser plugin is active — no ex
 
 ```ts
 createDevToolsBrowserPlugin({
-  enabled: true,        // kill switch (default: true)
-  maxInstances: 2000,   // max tracked instances before FIFO eviction
-  maxSnapshots: 20,     // state snapshots kept per instance
+  enabled: true, // kill switch (default: true)
+  maxInstances: 2000, // max tracked instances before FIFO eviction
+  maxSnapshots: 20, // state snapshots kept per instance
 });
 ```
 
@@ -83,10 +82,10 @@ When you select an instance, the detail panel shows a side-by-side diff of the p
 
 The Logs tab shows a timeline of all lifecycle events:
 
-| Event | When |
-|-------|------|
-| `instance-created` | A state container is created |
-| `instance-updated` | State changes |
+| Event               | When                          |
+| ------------------- | ----------------------------- |
+| `instance-created`  | A state container is created  |
+| `instance-updated`  | State changes                 |
 | `instance-disposed` | A state container is disposed |
 
 ### Time-travel

@@ -19,7 +19,7 @@ export interface PersistPluginStatus {
 }
 
 export interface PersistPluginStatusEvent {
-  instance: StateContainer<any>;
+  instance: StateContainer<unknown>;
   status: PersistPluginStatus;
 }
 

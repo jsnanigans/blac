@@ -67,13 +67,13 @@ Evolve the devtools UI from "functional dark panel" to a polished, customizable 
 
 ### Files to create
 
-| File | Purpose |
-|------|---------|
-| `theme/tokens.ts` | Token name constants |
-| `theme/dark.ts` | Dark theme values |
-| `theme/light.ts` | Light theme values |
-| `theme/ThemeProvider.tsx` | CSS variable injection |
-| `theme/useTheme.ts` | Theme hook |
+| File                         | Purpose                |
+| ---------------------------- | ---------------------- |
+| `theme/tokens.ts`            | Token name constants   |
+| `theme/dark.ts`              | Dark theme values      |
+| `theme/light.ts`             | Light theme values     |
+| `theme/ThemeProvider.tsx`    | CSS variable injection |
+| `theme/useTheme.ts`          | Theme hook             |
 | `blocs/DevToolsThemeBloc.ts` | Theme state management |
 
 ### Files to modify
@@ -118,13 +118,13 @@ Every component file in `devtools-ui/src/components/` — inline `style={{}}` ob
 
 ### Files to modify
 
-| File | Change |
-|------|--------|
-| `InstanceList.tsx` | Grouping, sorting, virtual scroll |
-| `InstanceListItem.tsx` | Badges, pin button, activity indicator |
-| `components/InstanceGroup.tsx` | New — group header component |
-| `blocs/DevToolsSearchBloc.ts` | Grouping logic (already partially there) |
-| `blocs/DevToolsLayoutBloc.ts` | Sort preference, pinned instances |
+| File                           | Change                                   |
+| ------------------------------ | ---------------------------------------- |
+| `InstanceList.tsx`             | Grouping, sorting, virtual scroll        |
+| `InstanceListItem.tsx`         | Badges, pin button, activity indicator   |
+| `components/InstanceGroup.tsx` | New — group header component             |
+| `blocs/DevToolsSearchBloc.ts`  | Grouping logic (already partially there) |
+| `blocs/DevToolsLayoutBloc.ts`  | Sort preference, pinned instances        |
 
 ---
 
@@ -163,12 +163,12 @@ Every component file in `devtools-ui/src/components/` — inline `style={{}}` ob
 
 ### Files to modify
 
-| File | Change |
-|------|--------|
-| `StateDiffView.tsx` | Mode toggle, inline diff rendering |
+| File                            | Change                             |
+| ------------------------------- | ---------------------------------- |
+| `StateDiffView.tsx`             | Mode toggle, inline diff rendering |
 | `components/InlineTreeDiff.tsx` | New — recursive tree diff renderer |
-| `utils/deepDiff.ts` | New — structural diff algorithm |
-| `blocs/DevToolsDiffBloc.ts` | Diff mode preference |
+| `utils/deepDiff.ts`             | New — structural diff algorithm    |
+| `blocs/DevToolsDiffBloc.ts`     | Diff mode preference               |
 
 ---
 
@@ -208,13 +208,13 @@ Every component file in `devtools-ui/src/components/` — inline `style={{}}` ob
 
 ### Files to modify
 
-| File | Change |
-|------|--------|
-| `DevToolsPanel.tsx` | Responsive layout, breakpoints |
-| `InstanceList.tsx` | Collapsible mode |
-| `components/ResizeDivider.tsx` | Enhanced divider |
-| `blocs/DevToolsLayoutBloc.ts` | Persistence, responsive state |
-| All components | Overflow audit |
+| File                           | Change                         |
+| ------------------------------ | ------------------------------ |
+| `DevToolsPanel.tsx`            | Responsive layout, breakpoints |
+| `InstanceList.tsx`             | Collapsible mode               |
+| `components/ResizeDivider.tsx` | Enhanced divider               |
+| `blocs/DevToolsLayoutBloc.ts`  | Persistence, responsive state  |
+| All components                 | Overflow audit                 |
 
 ---
 

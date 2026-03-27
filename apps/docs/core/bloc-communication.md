@@ -64,11 +64,11 @@ class NotificationCubit extends Cubit<NotificationState> {
 
 ### When to use which
 
-| Approach | Use when |
-|----------|----------|
+| Approach             | Use when                                               |
+| -------------------- | ------------------------------------------------------ |
 | `this.depend(Class)` | Ongoing dependency used in getters or multiple methods |
-| `ensure(Class)` | One-off access; creates if missing |
-| `borrow(Class)` | One-off access; instance must already exist |
+| `ensure(Class)`      | One-off access; creates if missing                     |
+| `borrow(Class)`      | One-off access; instance must already exist            |
 
 ## Calling methods on dependencies
 

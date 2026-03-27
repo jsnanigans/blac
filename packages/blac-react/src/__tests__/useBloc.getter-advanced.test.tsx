@@ -1,7 +1,8 @@
-import { describe, it, expect, afterEach, vi } from 'vite-plus/test';
+import { describe, it, expect } from 'vite-plus/test';
 import { Component, type ReactNode } from 'react';
 import { render, act, screen } from '@testing-library/react';
-import { Cubit, clearAll } from '@blac/core';
+import { Cubit } from '@blac/core';
+import { blacTestSetup } from '@blac/core/testing';
 import { useBloc } from '../useBloc';
 
 class ComputedBloc extends Cubit<{ x: number; y: number }> {
@@ -25,7 +26,7 @@ class ComputedBloc extends Cubit<{ x: number; y: number }> {
   }
 }
 
-afterEach(() => clearAll());
+blacTestSetup();
 
 describe('useBloc — getter advanced', () => {
   it('constant-returning getter never triggers re-render', () => {
