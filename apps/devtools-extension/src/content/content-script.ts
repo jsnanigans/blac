@@ -11,12 +11,6 @@ function injectScript() {
   injectScript.src = chrome.runtime.getURL('dist/inject/inject-script.js');
   injectScript.onload = () => injectScript.remove();
   (document.head || document.documentElement).appendChild(injectScript);
-
-  // Inject the overlay UI script
-  const overlayScript = document.createElement('script');
-  overlayScript.src = chrome.runtime.getURL('dist/overlay/overlay.js');
-  overlayScript.onload = () => overlayScript.remove();
-  (document.head || document.documentElement).appendChild(overlayScript);
 }
 
 // Inject immediately

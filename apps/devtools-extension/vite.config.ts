@@ -14,7 +14,7 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
     minify: false,
-    sourcemap: true,
+    sourcemap: false,
     rollupOptions: {
       input: {
         'background/service-worker': resolve(
@@ -29,7 +29,6 @@ export default defineConfig({
           __dirname,
           'src/inject/inject-script.ts',
         ),
-        'overlay/overlay': resolve(__dirname, 'src/overlay/overlay.tsx'),
         'devtools/devtools': resolve(__dirname, 'src/devtools/devtools.html'),
         'panel/index': resolve(__dirname, 'src/panel/index.html'),
         'popup/popup': resolve(__dirname, 'src/popup/popup.html'),
