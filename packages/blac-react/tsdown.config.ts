@@ -10,6 +10,7 @@ export default defineConfig({
   dts: false,
   sourcemap: true,
   external: [
+    '@blac/adapter',
     '@blac/core',
     '@blac/core/testing',
     '@testing-library/react',
