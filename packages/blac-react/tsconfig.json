@@ -5,17 +5,15 @@
     "lib": ["esnext", "dom"],
     "jsx": "react-jsx",
     "sourceMap": true,
-    "rootDir": ".",
     "outDir": "dist",
     "strict": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "experimentalDecorators": false,
     "resolveJsonModule": true,
-    "types": ["vitest/globals", "@testing-library/jest-dom"],
     "paths": {
       "@blac/core": ["../blac-core/src/index.ts"],
       "@blac/core/testing": ["../blac-core/src/testing.ts"]
