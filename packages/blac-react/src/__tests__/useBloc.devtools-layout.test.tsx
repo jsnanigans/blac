@@ -2,7 +2,7 @@
  * Simplified DevTools Layout Test - tests instance management and sorting
  */
 import { render, screen, waitFor, act, cleanup } from '@testing-library/react';
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach } from 'vite-plus/test';
 import { useBloc } from '../useBloc';
 import { Cubit, blac, clearAll, acquire } from '@blac/core';
 import React from 'react';

@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach, vi } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vite-plus/test';
 import { Component, type ReactNode } from 'react';
 import { render, act, screen } from '@testing-library/react';
 import { Cubit, clearAll } from '@blac/core';

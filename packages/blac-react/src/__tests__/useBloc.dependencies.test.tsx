@@ -2,7 +2,7 @@
  * Tests for useBloc with dependencies option
  */
 
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
 import { render, screen, act } from '@testing-library/react';
 import { Cubit, clearAll } from '@blac/core';
 import { useBloc } from '../useBloc';

@@ -3,7 +3,7 @@
  * Testing the foundation of the entire state management system
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vite-plus/test';
 import { StateContainer } from './StateContainer';
 import {
   acquire,

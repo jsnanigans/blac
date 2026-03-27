@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vite-plus/test';
 import { Cubit } from './Cubit';
 import { acquire, getRefCount, hasInstance, clearAll } from '../registry';
 

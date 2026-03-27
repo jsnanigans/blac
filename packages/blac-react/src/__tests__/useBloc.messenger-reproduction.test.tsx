@@ -16,7 +16,7 @@
 import { render, screen, act } from '@testing-library/react';
 import { Cubit, clearAll, acquire } from '@blac/core';
 import { useBloc } from '../useBloc';
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach } from 'vite-plus/test';
 
 // ============================================================================
 // Types - Exactly as in messenger example

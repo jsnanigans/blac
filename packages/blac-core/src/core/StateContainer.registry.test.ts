@@ -2,7 +2,7 @@
  * Tests for StateContainer Registry Features
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vite-plus/test';
 import { StateContainer } from './StateContainer';
 import {
   acquire,

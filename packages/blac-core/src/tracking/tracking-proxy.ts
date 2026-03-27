@@ -34,7 +34,7 @@ export interface ProxyState<T> {
   trackedPaths: Set<string>;
   isTracking: boolean;
   proxyCache: WeakMap<object, any>;
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+  // oxlint-disable-next-line @typescript-eslint/no-unsafe-function-type
   boundFunctionsCache: WeakMap<Function, Function> | null;
   lastProxiedState: T | null;
   lastProxy: T | null;
@@ -95,7 +95,7 @@ export function createArrayProxy<T, U>(
 
       if (typeof value === 'function') {
         if (!state.boundFunctionsCache) {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+          // oxlint-disable-next-line @typescript-eslint/no-unsafe-function-type
           state.boundFunctionsCache = new WeakMap<Function, Function>();
         }
         const cached = state.boundFunctionsCache.get(value);
@@ -188,7 +188,7 @@ export function createInternal<T>(
 
       if (typeof value === 'function') {
         if (!state.boundFunctionsCache) {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+          // oxlint-disable-next-line @typescript-eslint/no-unsafe-function-type
           state.boundFunctionsCache = new WeakMap<Function, Function>();
         }
         const cached = state.boundFunctionsCache.get(value);
@@ -477,7 +477,7 @@ export interface GetterState {
 }
 
 const descriptorCache = new WeakMap<
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+  // oxlint-disable-next-line @typescript-eslint/no-unsafe-function-type
   Function,
   Map<string | symbol, PropertyDescriptor | undefined>
 >();

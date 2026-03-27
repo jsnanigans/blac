@@ -3,7 +3,7 @@
  */
 
 /// <reference types="@testing-library/jest-dom" />
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { renderToString } from 'react-dom/server';
 import { Cubit, clearAll } from '@blac/core';

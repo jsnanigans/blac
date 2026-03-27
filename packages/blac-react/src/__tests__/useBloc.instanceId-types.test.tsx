@@ -3,7 +3,7 @@
  * And rejects null and other invalid types
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { render, screen } from '@testing-library/react';
 import { Cubit } from '@blac/core';
 import { useBloc } from '../useBloc';

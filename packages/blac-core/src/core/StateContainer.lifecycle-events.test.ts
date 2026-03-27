@@ -2,7 +2,7 @@
  * Test to verify lifecycle events are emitted correctly for DevTools integration
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vite-plus/test';
 import { Cubit } from './Cubit';
 import { acquire, release, clearAll, getRegistry } from '../registry';
 

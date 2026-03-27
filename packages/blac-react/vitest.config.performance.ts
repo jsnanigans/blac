@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vite-plus';
 import path from 'path';
 
 // Vitest config for PERFORMANCE TESTING
