@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
+import { blacTestSetup } from '@blac/test';
 import { Cubit } from './Cubit';
-import { acquire, getRefCount, hasInstance, clearAll } from '../registry';
+import { acquire, getRefCount, hasInstance } from '../registry';
 
 class DepTarget extends Cubit<{ val: number }> {
   constructor() {
@@ -21,11 +22,8 @@ class DepOwner extends Cubit<{ x: number }> {
   }
 }
 
-const resetState = () => clearAll();
-
 describe('StateContainer depend() edge cases', () => {
-  beforeEach(resetState);
-  afterEach(resetState);
+  blacTestSetup();
 
   it('depend() returns a getter function, not an instance', () => {
     const owner = new DepOwner();

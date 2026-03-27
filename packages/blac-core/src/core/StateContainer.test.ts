@@ -4,6 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { blacTestSetup } from '@blac/test';
 import { StateContainer } from './StateContainer';
 import {
   acquire,
@@ -115,10 +116,7 @@ class ObjectStateContainer extends StateContainer<ObjectState> {
 }
 
 describe('StateContainer', () => {
-  beforeEach(() => {
-    // Clear all instances before each test
-    clearAll();
-  });
+  blacTestSetup();
 
   // Static Instance Management
 

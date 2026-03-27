@@ -300,6 +300,9 @@ importers:
 
   packages/blac-core:
     devDependencies:
+      '@blac/test':
+        specifier: workspace:*
+        version: link:../blac-test
       '@testing-library/jest-dom':
         specifier: 'catalog:'
         version: 6.6.4

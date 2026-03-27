@@ -2,7 +2,8 @@
  * Tests for StateContainer Registry Features
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
+import { blacTestSetup } from '@blac/test';
 import { StateContainer } from './StateContainer';
 import {
   acquire,
@@ -41,10 +42,7 @@ class UserBloc extends StateContainer<{ name: string; age: number }> {
 }
 
 describe('StateContainer - Registry Features', () => {
-  beforeEach(() => {
-    // Clear all instances before each test
-    clearAll();
-  });
+  blacTestSetup();
 
   describe('Type Registration', () => {
     it('should register a bloc type', () => {

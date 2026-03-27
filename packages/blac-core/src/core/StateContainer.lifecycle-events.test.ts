@@ -2,14 +2,13 @@
  * Test to verify lifecycle events are emitted correctly for DevTools integration
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import { blacTestSetup } from '@blac/test';
 import { Cubit } from './Cubit';
-import { acquire, release, clearAll, getRegistry } from '../registry';
+import { acquire, release, getRegistry } from '../registry';
 
 describe('StateContainer Lifecycle Events', () => {
-  beforeEach(() => {
-    clearAll();
-  });
+  blacTestSetup();
 
   it('should emit "created" event when instance is created', () => {
     const createdListener = vi.fn();

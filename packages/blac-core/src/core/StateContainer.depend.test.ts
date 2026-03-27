@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
+import { blacTestSetup } from '@blac/test';
 import { Cubit } from './Cubit';
-import { acquire, clearAll, hasInstance, getRefCount } from '../registry';
+import { acquire, hasInstance, getRefCount } from '../registry';
 
 // --- Test blocs ---
 
@@ -41,9 +42,7 @@ class CartBloc extends Cubit<{ items: string[] }> {
 }
 
 describe('StateContainer.depend()', () => {
-  beforeEach(() => {
-    clearAll();
-  });
+  blacTestSetup();
 
   describe('multiple dependencies', () => {
     class DashboardBloc extends Cubit<{ ready: boolean }> {

@@ -111,6 +111,7 @@
     "deploy": "pnpm publish --access public"
   },
   "devDependencies": {
+    "@blac/test": "workspace:*",
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/user-event": "catalog:",
     "@vitest/browser": "catalog:",

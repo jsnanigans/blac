@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import { blacTestSetup } from '@blac/test';
 import { StateContainer } from './StateContainer';
-import { acquire, release, clearAll } from '../registry';
+import { acquire, release } from '../registry';
 import { EMIT, UPDATE } from './symbols';
 
 class DisposableContainer extends StateContainer<{ v: number }> {
@@ -19,11 +20,8 @@ class DisposableContainer extends StateContainer<{ v: number }> {
   }
 }
 
-const resetState = () => clearAll();
-
 describe('StateContainer disposal', () => {
-  beforeEach(resetState);
-  afterEach(resetState);
+  blacTestSetup();
 
   it('dispose() sets isDisposed to true', () => {
     const container = new DisposableContainer();

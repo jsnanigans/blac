@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import { blacTestSetup } from '@blac/test';
 import { watch, instance } from './watch';
 import { Cubit } from '../core/Cubit';
 import { acquire, release, clearAll } from '../registry';
@@ -15,11 +16,8 @@ class NameCubit extends Cubit<{ name: string }> {
   }
 }
 
-const resetState = () => clearAll();
-
 describe('watch edge cases', () => {
-  beforeEach(resetState);
-  afterEach(resetState);
+  blacTestSetup();
 
   it('watch single bloc — callback receives correct state on initial call', () => {
     const cubit = acquire(CounterCubit);

@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
+import { blacTestSetup } from '@blac/test';
 import { StateContainer } from './StateContainer';
-import { clearAll } from '../registry';
 import { EMIT } from './symbols';
 
 class HydratableContainer extends StateContainer<{ v: number }> {
@@ -12,11 +12,8 @@ class HydratableContainer extends StateContainer<{ v: number }> {
   }
 }
 
-const resetState = () => clearAll();
-
 describe('StateContainer hydration edge cases', () => {
-  beforeEach(resetState);
-  afterEach(resetState);
+  blacTestSetup();
 
   it('waitForHydration() resolves immediately when status is idle', async () => {
     const container = new HydratableContainer();

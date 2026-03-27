@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
+import { blacTestSetup } from '@blac/test';
 import {
   acquire,
   release,
@@ -7,7 +8,6 @@ import {
   ensure,
   hasInstance,
   getRefCount,
-  clearAll,
 } from '../registry';
 import { StateContainer } from './StateContainer';
 
@@ -24,11 +24,8 @@ class KeepAliveBloc extends StateContainer<{ n: number }> {
   }
 }
 
-const resetState = () => clearAll();
-
 describe('StateContainerRegistry ref counting', () => {
-  beforeEach(resetState);
-  afterEach(resetState);
+  blacTestSetup();
 
   it('acquire() creates instance with refCount = 1', () => {
     acquire(RefCountBloc);

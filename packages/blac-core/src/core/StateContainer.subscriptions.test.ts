@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import { blacTestSetup } from '@blac/test';
 import { StateContainer } from './StateContainer';
-import { clearAll } from '../registry';
 import { EMIT } from './symbols';
 
 class SimpleContainer extends StateContainer<{ n: number }> {
@@ -12,11 +12,8 @@ class SimpleContainer extends StateContainer<{ n: number }> {
   }
 }
 
-const resetState = () => clearAll();
-
 describe('StateContainer subscriptions', () => {
-  beforeEach(resetState);
-  afterEach(resetState);
+  blacTestSetup();
 
   it('subscribe() returns an unsubscribe function', () => {
     const container = new SimpleContainer();
