@@ -1,0 +1,334 @@
+import { defineConfig } from 'vite-plus';
+
+export default defineConfig({
+  staged: {
+    "*": "vp check --fix"
+  },
+  lint: {
+    "plugins": [
+      "oxc",
+      "typescript",
+      "unicorn",
+      "react"
+    ],
+    "categories": {
+      "correctness": "warn"
+    },
+    "env": {
+      "builtin": true
+    },
+    "ignorePatterns": [
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/build/**",
+      "**/.turbo/**",
+      "**/coverage/**",
+      "**/*.config.js",
+      "**/*.config.ts",
+      "**/vite.config.ts",
+      "**/vitest.config.ts",
+      "**/.vitepress/**",
+      "**/out/**",
+      "**/output/**",
+      "**/.next/**",
+      "**/.nuxt/**",
+      "**/public/**",
+      "**/.cache/**",
+      "**/temp/**",
+      "**/tmp/**"
+    ],
+    "rules": {
+      "constructor-super": "error",
+      "for-direction": "error",
+      "getter-return": "error",
+      "no-async-promise-executor": "error",
+      "no-case-declarations": "error",
+      "no-class-assign": "error",
+      "no-compare-neg-zero": "error",
+      "no-cond-assign": "error",
+      "no-const-assign": "error",
+      "no-constant-binary-expression": "error",
+      "no-constant-condition": "error",
+      "no-control-regex": "error",
+      "no-debugger": "error",
+      "no-delete-var": "error",
+      "no-dupe-class-members": "error",
+      "no-dupe-else-if": "error",
+      "no-dupe-keys": "error",
+      "no-duplicate-case": "error",
+      "no-empty": "error",
+      "no-empty-character-class": "error",
+      "no-empty-pattern": "error",
+      "no-empty-static-block": "error",
+      "no-ex-assign": "error",
+      "no-extra-boolean-cast": "error",
+      "no-fallthrough": "error",
+      "no-func-assign": "error",
+      "no-global-assign": "error",
+      "no-import-assign": "error",
+      "no-invalid-regexp": "error",
+      "no-irregular-whitespace": "error",
+      "no-loss-of-precision": "error",
+      "no-misleading-character-class": "error",
+      "no-new-native-nonconstructor": "error",
+      "no-nonoctal-decimal-escape": "error",
+      "no-obj-calls": "error",
+      "no-prototype-builtins": "error",
+      "no-redeclare": "error",
+      "no-regex-spaces": "error",
+      "no-self-assign": "error",
+      "no-setter-return": "error",
+      "no-shadow-restricted-names": "error",
+      "no-sparse-arrays": "error",
+      "no-this-before-super": "error",
+      "no-undef": "error",
+      "no-unexpected-multiline": "error",
+      "no-unreachable": "error",
+      "no-unsafe-finally": "error",
+      "no-unsafe-negation": "error",
+      "no-unsafe-optional-chaining": "error",
+      "no-unused-labels": "error",
+      "no-unused-private-class-members": "error",
+      "no-unused-vars": "error",
+      "no-useless-backreference": "error",
+      "no-useless-catch": "error",
+      "no-useless-escape": "error",
+      "no-with": "error",
+      "require-yield": "error",
+      "use-isnan": "error",
+      "valid-typeof": "error",
+      "@typescript-eslint/ban-ts-comment": "error",
+      "no-array-constructor": "error",
+      "@typescript-eslint/no-duplicate-enum-values": "error",
+      "@typescript-eslint/no-empty-object-type": "error",
+      "@typescript-eslint/no-explicit-any": "error",
+      "@typescript-eslint/no-extra-non-null-assertion": "error",
+      "@typescript-eslint/no-misused-new": "error",
+      "@typescript-eslint/no-namespace": "error",
+      "@typescript-eslint/no-non-null-asserted-optional-chain": "error",
+      "@typescript-eslint/no-require-imports": "error",
+      "@typescript-eslint/no-this-alias": "error",
+      "@typescript-eslint/no-unnecessary-type-constraint": "error",
+      "@typescript-eslint/no-unsafe-declaration-merging": "error",
+      "@typescript-eslint/no-unsafe-function-type": "error",
+      "no-unused-expressions": "error",
+      "@typescript-eslint/no-wrapper-object-types": "error",
+      "@typescript-eslint/prefer-as-const": "error",
+      "@typescript-eslint/prefer-namespace-keyword": "error",
+      "@typescript-eslint/triple-slash-reference": "error"
+    },
+    "overrides": [
+      {
+        "files": [
+          "**/*.ts",
+          "**/*.tsx",
+          "**/*.mts",
+          "**/*.cts"
+        ],
+        "rules": {
+          "constructor-super": "off",
+          "getter-return": "off",
+          "no-class-assign": "off",
+          "no-const-assign": "off",
+          "no-dupe-class-members": "off",
+          "no-dupe-keys": "off",
+          "no-func-assign": "off",
+          "no-import-assign": "off",
+          "no-new-native-nonconstructor": "off",
+          "no-obj-calls": "off",
+          "no-redeclare": "off",
+          "no-setter-return": "off",
+          "no-this-before-super": "off",
+          "no-undef": "off",
+          "no-unreachable": "off",
+          "no-unsafe-negation": "off",
+          "no-var": "error",
+          "no-with": "off",
+          "prefer-const": "error",
+          "prefer-rest-params": "error",
+          "prefer-spread": "error"
+        }
+      },
+      {
+        "files": [
+          "**/*.ts",
+          "**/*.tsx"
+        ],
+        "rules": {
+          "@typescript-eslint/explicit-module-boundary-types": "off",
+          "@typescript-eslint/no-explicit-any": "warn",
+          "@typescript-eslint/no-non-null-assertion": "warn",
+          "react/react-in-jsx-scope": "off",
+          "react-hooks/rules-of-hooks": "error",
+          "react-hooks/exhaustive-deps": "warn",
+          "import/named": "error",
+          "import/default": "error",
+          "import/namespace": "error",
+          "import/no-duplicates": "error",
+          "no-undef": "off",
+          "no-console": "off",
+          "no-debugger": "warn",
+          "no-unused-vars": [
+            "error",
+            {
+              "argsIgnorePattern": "^_",
+              "varsIgnorePattern": "^_"
+            }
+          ]
+        },
+        "globals": {
+          "console": "readonly",
+          "process": "readonly",
+          "Buffer": "readonly",
+          "__dirname": "readonly",
+          "__filename": "readonly",
+          "exports": "writable",
+          "module": "writable",
+          "require": "readonly",
+          "global": "writable",
+          "window": "readonly",
+          "document": "readonly",
+          "localStorage": "readonly",
+          "sessionStorage": "readonly",
+          "setTimeout": "readonly",
+          "clearTimeout": "readonly",
+          "setInterval": "readonly",
+          "clearInterval": "readonly",
+          "Promise": "readonly",
+          "performance": "readonly",
+          "crypto": "readonly",
+          "btoa": "readonly",
+          "atob": "readonly",
+          "NodeJS": "readonly",
+          "WeakRef": "readonly",
+          "FinalizationRegistry": "readonly",
+          "queueMicrotask": "readonly",
+          "structuredClone": "readonly",
+          "AbortController": "readonly",
+          "AbortSignal": "readonly",
+          "Event": "readonly",
+          "EventTarget": "readonly",
+          "MessageChannel": "readonly",
+          "MessagePort": "readonly",
+          "TextDecoder": "readonly",
+          "TextEncoder": "readonly",
+          "URL": "readonly",
+          "URLSearchParams": "readonly",
+          "FormData": "readonly",
+          "Headers": "readonly",
+          "Request": "readonly",
+          "Response": "readonly",
+          "fetch": "readonly",
+          "Blob": "readonly",
+          "File": "readonly",
+          "FileReader": "readonly",
+          "afterEach": "readonly",
+          "beforeEach": "readonly",
+          "describe": "readonly",
+          "expect": "readonly",
+          "it": "readonly",
+          "test": "readonly",
+          "vi": "readonly",
+          "jest": "readonly"
+        },
+        "plugins": [
+          "import"
+        ]
+      },
+      {
+        "files": [
+          "**/*.js"
+        ],
+        "rules": {
+          "@typescript-eslint/no-var-requires": "off"
+        }
+      },
+      {
+        "files": [
+          "**/*.test.ts",
+          "**/*.test.tsx",
+          "**/*.typetest.ts"
+        ],
+        "rules": {
+          "@typescript-eslint/no-explicit-any": "off",
+          "no-unused-vars": [
+            "warn",
+            {
+              "argsIgnorePattern": "^_",
+              "varsIgnorePattern": "^_"
+            }
+          ]
+        }
+      },
+      {
+        "files": [
+          "packages/blac-core/**/*.ts",
+          "packages/blac-core/**/*.tsx",
+          "packages/blac-react/**/*.ts",
+          "packages/blac-react/**/*.tsx",
+          "packages/devtools-connect/**/*.ts",
+          "packages/devtools-connect/**/*.tsx",
+          "packages/logging-plugin/**/*.ts",
+          "packages/logging-plugin/**/*.tsx"
+        ],
+        "rules": {
+          "@typescript-eslint/no-explicit-any": "off"
+        }
+      }
+    ],
+    "options": {
+      "typeAware": true,
+      "typeCheck": true
+    }
+  },
+  fmt: {
+    "singleQuote": true,
+    "printWidth": 80,
+    "sortPackageJson": false,
+    "ignorePatterns": [
+      "/dist",
+      "/coverage"
+    ]
+  },
+  run: {
+    tasks: {
+      build: {
+        dependsOn: ["^build"],
+        outputs: ["dist/**", ".tsbuildinfo", ".vitepress/dist/**"],
+      },
+      "build:esm": {
+        dependsOn: ["^build"],
+        outputs: ["dist/**", ".tsbuildinfo"],
+      },
+      "build:cjs": {
+        dependsOn: ["build:esm"],
+        outputs: ["dist/**"],
+      },
+      clean: {
+        cache: false,
+      },
+      typecheck: {
+        dependsOn: ["^typecheck"],
+      },
+      verify: {
+        dependsOn: ["build"],
+      },
+      lint: {},
+      "lint:fix": {},
+      format: {},
+      test: {},
+      "test:watch": {
+        persistent: true,
+        cache: false,
+      },
+      dev: {
+        persistent: true,
+        cache: false,
+      },
+      prepublishOnly: {
+        dependsOn: ["build", "test", "typecheck"],
+        cache: false,
+      },
+    },
+  },
+});
