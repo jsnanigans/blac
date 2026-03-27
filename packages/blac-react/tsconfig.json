@@ -5,6 +5,7 @@
     "lib": ["esnext", "dom"],
     "jsx": "react-jsx",
     "sourceMap": true,
+    "rootDir": "../..",
     "outDir": "dist",
     "strict": true,
     "moduleResolution": "bundler",
