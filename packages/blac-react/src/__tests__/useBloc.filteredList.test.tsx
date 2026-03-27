@@ -1,7 +1,10 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { render, screen, waitFor, act } from '@testing-library/react';
-import { Cubit, clear } from '@blac/core';
+import { Cubit } from '@blac/core';
+import { blacTestSetup } from '@blac/test';
 import { useBloc } from '../useBloc';
+
+blacTestSetup();
 
 interface Profile {
   id: string;
@@ -43,11 +46,6 @@ describe('useBloc - filtered list with getter', () => {
     { id: '2', name: 'Bob', active: true },
     { id: '3', name: 'Charlie', active: false },
   ];
-
-  beforeEach(() => {
-    // Clear any existing instances
-    clear(ProfileCubit);
-  });
 
   it('should return filtered profiles through getter', () => {
     let renderCount = 0;

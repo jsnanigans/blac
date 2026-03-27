@@ -14,16 +14,15 @@
  * 10. Memory cleanup
  */
 
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor, renderHook } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Cubit, clearAll } from '@blac/core';
+import { Cubit } from '@blac/core';
+import { blacTestSetup } from '@blac/test';
 import { useBloc } from '../useBloc';
 import React, { StrictMode } from 'react';
 
-afterEach(() => {
-  clearAll();
-});
+blacTestSetup();
 
 // Test Blocs
 

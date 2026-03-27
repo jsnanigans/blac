@@ -6,8 +6,11 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { renderToString } from 'react-dom/server';
-import { Cubit, clearAll } from '@blac/core';
+import { Cubit } from '@blac/core';
 import { useBloc } from '../useBloc';
+import { blacTestSetup } from '@blac/test';
+
+blacTestSetup();
 
 // Test implementations
 class CounterBloc extends Cubit<{ count: number }> {
@@ -36,8 +39,6 @@ class IsolatedBloc extends Cubit<{ count: number }> {
 
 describe('useBloc', () => {
   afterEach(() => {
-    // Clear all bloc instances between tests
-    clearAll();
     vi.unstubAllGlobals();
   });
 

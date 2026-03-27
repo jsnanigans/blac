@@ -1,6 +1,7 @@
-import { describe, it, expect, afterEach, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, act, screen, renderHook } from '@testing-library/react';
-import { Cubit, clearAll } from '@blac/core';
+import { Cubit } from '@blac/core';
+import { blacTestSetup } from '@blac/test';
 import { useBloc } from '../useBloc';
 
 class FieldBloc extends Cubit<{ a: number; b: string; name: string }> {
@@ -21,7 +22,7 @@ class FieldBloc extends Cubit<{ a: number; b: string; name: string }> {
   }
 }
 
-afterEach(() => clearAll());
+blacTestSetup();
 
 describe('useBloc — manual deps edge cases', () => {
   it('dependencies: () => [] never re-renders after mount', () => {

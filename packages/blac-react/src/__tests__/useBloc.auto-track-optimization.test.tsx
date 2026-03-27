@@ -1,8 +1,9 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, act, screen, renderHook } from '@testing-library/react';
-import { Cubit, clearAll } from '@blac/core';
+import { Cubit } from '@blac/core';
 import { useBloc } from '../useBloc';
 import { configureBlacReact, resetBlacReactConfig } from '../config';
+import { blacTestSetup } from '@blac/test';
 
 class MultiFieldBloc extends Cubit<{ a: number; b: string; c: boolean }> {
   constructor() {
@@ -19,8 +20,9 @@ class MultiFieldBloc extends Cubit<{ a: number; b: string; c: boolean }> {
   }
 }
 
+blacTestSetup();
+
 afterEach(() => {
-  clearAll();
   resetBlacReactConfig();
 });
 

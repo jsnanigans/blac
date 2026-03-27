@@ -1,7 +1,8 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
-import { Cubit, acquire, borrow, clearAll } from '@blac/core';
+import { Cubit, acquire, borrow } from '@blac/core';
 import { useBloc } from '../useBloc';
+import { blacTestSetup } from '@blac/test';
 
 // Deep dependency chain blocs
 class DeepABloc extends Cubit<{ value: number }> {
@@ -72,11 +73,9 @@ class ConditionalBloc extends Cubit<{ count: number }> {
   increment = () => this.emit({ count: this.state.count + 1 });
 }
 
-describe('useBloc - cross-bloc edge cases', () => {
-  afterEach(() => {
-    clearAll();
-  });
+blacTestSetup();
 
+describe('useBloc - cross-bloc edge cases', () => {
   it('should cleanup external subscriptions on unmount', () => {
     // Create external bloc with object state
     acquire(ConditionalBloc);

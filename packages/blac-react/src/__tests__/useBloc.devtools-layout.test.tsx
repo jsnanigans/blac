@@ -4,8 +4,9 @@
 import { render, screen, waitFor, act, cleanup } from '@testing-library/react';
 import { describe, it, expect, afterEach } from 'vitest';
 import { useBloc } from '../useBloc';
-import { Cubit, blac, clearAll, acquire } from '@blac/core';
+import { Cubit, blac, acquire } from '@blac/core';
 import React from 'react';
+import { blacTestSetup } from '@blac/test';
 
 // Simplified types
 type InstanceData = {
@@ -107,10 +108,11 @@ const SimpleDevToolsPanel: React.FC = () => {
   );
 };
 
+blacTestSetup();
+
 describe('DevTools Layout - Instance Management', () => {
   afterEach(() => {
     cleanup();
-    clearAll();
   });
 
   it('should start with empty instances', () => {

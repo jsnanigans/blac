@@ -5,9 +5,10 @@
  */
 
 import { render, screen, act } from '@testing-library/react';
-import { Cubit, clearAll, acquire } from '@blac/core';
+import { Cubit, acquire } from '@blac/core';
 import { useBloc } from '../useBloc';
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
+import { blacTestSetup } from '@blac/test';
 
 interface TestState {
   items: number[];
@@ -23,9 +24,7 @@ class ArrayMethodCubit extends Cubit<TestState> {
   };
 }
 
-afterEach(() => {
-  clearAll();
-});
+blacTestSetup();
 
 describe('Array Methods Tracking', () => {
   // Currently tracked methods

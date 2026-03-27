@@ -14,7 +14,8 @@
  */
 
 import { render, screen, act } from '@testing-library/react';
-import { Cubit, clearAll, acquire } from '@blac/core';
+import { Cubit, acquire } from '@blac/core';
+import { blacTestSetup } from '@blac/test';
 import { useBloc } from '../useBloc';
 import { describe, it, expect, afterEach } from 'vitest';
 
@@ -206,8 +207,9 @@ function MessageList({ channelId, currentUserId }: MessageListProps) {
 // Tests
 // ============================================================================
 
+blacTestSetup();
+
 afterEach(() => {
-  clearAll();
   messageListRenderCount = 0;
   _messageItemRenderCount = 0;
 });

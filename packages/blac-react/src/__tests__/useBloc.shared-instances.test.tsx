@@ -1,7 +1,8 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { render, act, screen } from '@testing-library/react';
-import { Cubit, clearAll, getRefCount, hasInstance } from '@blac/core';
+import { Cubit, getRefCount, hasInstance } from '@blac/core';
 import { useBloc } from '../useBloc';
+import { blacTestSetup } from '@blac/test';
 
 class SharedBloc extends Cubit<{ count: number }> {
   constructor() {
@@ -12,7 +13,7 @@ class SharedBloc extends Cubit<{ count: number }> {
   }
 }
 
-afterEach(() => clearAll());
+blacTestSetup();
 
 describe('useBloc — shared instances', () => {
   it('two components using same class get the same instance', () => {

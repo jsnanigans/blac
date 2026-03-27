@@ -1,7 +1,8 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { render, act, screen } from '@testing-library/react';
-import { Cubit, clearAll, acquire, borrow, release } from '@blac/core';
+import { Cubit, acquire, borrow, release } from '@blac/core';
 import { useBloc } from '../useBloc';
+import { blacTestSetup } from '@blac/test';
 
 class ExtBlocB extends Cubit<{ x: number }> {
   constructor() {
@@ -41,7 +42,7 @@ class ConditionalExtA extends Cubit<{ useExt: boolean; base: number }> {
   }
 }
 
-afterEach(() => clearAll());
+blacTestSetup();
 
 describe('useBloc — cross-bloc React integration', () => {
   it('component re-renders when external dependency changes', () => {

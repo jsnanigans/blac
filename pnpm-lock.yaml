@@ -401,6 +401,9 @@ importers:
       '@blac/core':
         specifier: workspace:*
         version: link:../blac-core
+      '@blac/test':
+        specifier: workspace:*
+        version: link:../blac-test
       '@testing-library/dom':
         specifier: 'catalog:'
         version: 10.4.1
