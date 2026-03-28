@@ -29,6 +29,11 @@ export interface PictureInPictureDevToolsProps {
    * If not provided, will use defaultDevToolsMount.
    */
   onMount?: DraggableOverlayProps['onMount'];
+
+  /**
+   * Callback to time-travel an instance to a given state.
+   */
+  onTimeTravel?: (instanceId: string, state: any) => void;
 }
 
 /**
@@ -88,6 +93,7 @@ function copyStylesToPiP(pipWindow: Window) {
  */
 export function PictureInPictureDevTools({
   onMount,
+  onTimeTravel,
 }: PictureInPictureDevToolsProps = {}) {
   const [visible, setVisible] = useState(false);
   const [pipWindow, setPipWindow] = useState<Window | null>(null);
@@ -133,7 +139,22 @@ export function PictureInPictureDevTools({
       // Render DevTools into PiP window
       const root = ReactDOM.createRoot(container);
       setPipRoot(root);
-      root.render(<DevToolsPanel onMount={onMount ?? defaultDevToolsMount} />);
+      const timeTravelHandler =
+        onTimeTravel ??
+        ((instanceId: string, state: any) =>
+          (
+            (window as any as Record<string, any>).__BLAC_DEVTOOLS__ as Record<
+              string,
+              any
+            >
+          )?.timeTravel?.(instanceId, state));
+
+      root.render(
+        <DevToolsPanel
+          onMount={onMount ?? defaultDevToolsMount}
+          onTimeTravel={timeTravelHandler}
+        />,
+      );
 
       // Handle PiP window closing
       pip.addEventListener('pagehide', () => {
