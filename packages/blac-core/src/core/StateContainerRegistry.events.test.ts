@@ -1,9 +1,13 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
-  globalRegistry,
-  StateContainerRegistry,
-} from './StateContainerRegistry';
-import { acquire, release, clearAll } from '../registry';
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  vi,
+} from 'vite-plus/test';
+import { globalRegistry } from './StateContainerRegistry';
+import { acquire, clearAll } from '../registry';
 import { StateContainer } from './StateContainer';
 import { EMIT } from './symbols';
 

@@ -12,25 +12,26 @@ import { T } from '../theme';
 /**
  * Left panel containing search and instance list
  */
-export const InstanceList: FC<{ width?: number }> = React.memo(({ width = 300 }) => {
-  const [{ instances, animationTriggers }] = useBloc(DevToolsInstancesBloc);
-  const [, searchBloc] = useBloc(DevToolsSearchBloc);
-  const [{ selectedId }, layoutBloc] = useBloc(DevToolsLayoutBloc);
+export const InstanceList: FC<{ width?: number }> = React.memo(
+  ({ width = 300 }) => {
+    const [{ instances, animationTriggers }] = useBloc(DevToolsInstancesBloc);
+    const [, searchBloc] = useBloc(DevToolsSearchBloc);
+    const [{ selectedId }, layoutBloc] = useBloc(DevToolsLayoutBloc);
 
-  const groupedInstances = searchBloc.getGroupedInstances();
+    const groupedInstances = searchBloc.getGroupedInstances();
 
-  return (
-    <div
-      style={{
-        width: `${width}px`,
-        borderRight: `1px solid ${T.border1}`,
-        display: 'flex',
-        flexDirection: 'column',
-        background: T.bg2,
-      }}
-    >
-      {/* Sweep line animation CSS */}
-      <style>{`
+    return (
+      <div
+        style={{
+          width: `${width}px`,
+          borderRight: `1px solid ${T.border1}`,
+          display: 'flex',
+          flexDirection: 'column',
+          background: T.bg2,
+        }}
+      >
+        {/* Sweep line animation CSS */}
+        <style>{`
         @keyframes sweepLine {
           0% {
             left: -2px;
@@ -54,47 +55,48 @@ export const InstanceList: FC<{ width?: number }> = React.memo(({ width = 300 })
         }
       `}</style>
 
-      {/* Search Input */}
-      <SearchBar />
+        {/* Search Input */}
+        <SearchBar />
 
-      {/* Instance List */}
-      <div style={{ flex: 1, overflow: 'auto' }}>
-        {instances.length === 0 ? (
-          <div
-            style={{
-              padding: '20px',
-              color: '#888',
-              textAlign: 'center',
-            }}
-          >
-            No instances detected
-          </div>
-        ) : groupedInstances.length === 0 ? (
-          <div
-            style={{
-              padding: '20px',
-              color: '#888',
-              textAlign: 'center',
-            }}
-          >
-            No matches found
-          </div>
-        ) : (
-          groupedInstances.map((group) =>
-            group.instances.map((instance) => (
-              <InstanceListItem
-                key={instance.id}
-                instance={instance}
-                isSelected={selectedId === instance.id}
-                animationTriggers={animationTriggers.get(instance.id) || []}
-                onSelect={() => layoutBloc.setSelectedId(instance.id)}
-              />
-            )),
-          )
-        )}
+        {/* Instance List */}
+        <div style={{ flex: 1, overflow: 'auto' }}>
+          {instances.length === 0 ? (
+            <div
+              style={{
+                padding: '20px',
+                color: '#888',
+                textAlign: 'center',
+              }}
+            >
+              No instances detected
+            </div>
+          ) : groupedInstances.length === 0 ? (
+            <div
+              style={{
+                padding: '20px',
+                color: '#888',
+                textAlign: 'center',
+              }}
+            >
+              No matches found
+            </div>
+          ) : (
+            groupedInstances.map((group) =>
+              group.instances.map((instance) => (
+                <InstanceListItem
+                  key={instance.id}
+                  instance={instance}
+                  isSelected={selectedId === instance.id}
+                  animationTriggers={animationTriggers.get(instance.id) || []}
+                  onSelect={() => layoutBloc.setSelectedId(instance.id)}
+                />
+              )),
+            )
+          )}
+        </div>
       </div>
-    </div>
-  );
-});
+    );
+  },
+);
 
 InstanceList.displayName = 'InstanceList';

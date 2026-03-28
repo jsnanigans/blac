@@ -74,14 +74,14 @@ const random = (max: number): number => Math.round(Math.random() * 1000) % max;
 
 let nextId = 1;
 function buildData(count: number): DataItem[] {
-  const data = new Array<DataItem>(count);
+  const result: DataItem[] = [];
   for (let i = 0; i < count; i++) {
-    data[i] = {
+    result.push({
       id: nextId++,
       label: `${A[random(A.length)]} ${C[random(C.length)]} ${N[random(N.length)]}`,
-    };
+    });
   }
-  return data;
+  return result;
 }
 
 class DemoBloc extends Cubit<{

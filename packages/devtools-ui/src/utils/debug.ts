@@ -13,7 +13,8 @@ const isDebugEnabled = (): boolean => {
   if (typeof window === 'undefined') return false;
 
   // Check global flag first (for runtime toggling)
-  if ((window as any).__BLAC_DEVTOOLS_DEBUG__) return true;
+  if ((window as any as Record<string, any>).__BLAC_DEVTOOLS_DEBUG__)
+    return true;
 
   // Check localStorage
   try {
@@ -24,19 +25,19 @@ const isDebugEnabled = (): boolean => {
 };
 
 export const debug = {
-  log: (...args: unknown[]): void => {
+  log: (...args: any[]): void => {
     if (isDebugEnabled()) {
       console.log('[DevTools]', ...args);
     }
   },
 
-  warn: (...args: unknown[]): void => {
+  warn: (...args: any[]): void => {
     if (isDebugEnabled()) {
       console.warn('[DevTools]', ...args);
     }
   },
 
-  error: (...args: unknown[]): void => {
+  error: (...args: any[]): void => {
     // Always log errors
     console.error('[DevTools]', ...args);
   },

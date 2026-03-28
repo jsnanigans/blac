@@ -6,9 +6,30 @@ import { T } from '../theme';
 
 const TABS: TabName[] = ['Instances', 'Logs', 'Graph', 'Performance'];
 
+const pulseKeyframes = `
+@keyframes blac-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+`;
+
+let styleInjected = false;
+function injectPulseStyle() {
+  if (styleInjected) return;
+  styleInjected = true;
+  const style = document.createElement('style');
+  style.textContent = pulseKeyframes;
+  document.head.appendChild(style);
+}
+
 export const DevToolsHeader: FC = React.memo(() => {
   const [{ connected, instances }] = useBloc(DevToolsInstancesBloc);
   const [{ activeTab }, layoutBloc] = useBloc(DevToolsLayoutBloc);
+
+  injectPulseStyle();
+
+  const statusColor = connected ? T.success : T.warning;
+  const statusText = connected ? 'Connected' : 'Waiting for page\u2026';
 
   return (
     <div
@@ -102,22 +123,28 @@ export const DevToolsHeader: FC = React.memo(() => {
             width: '6px',
             height: '6px',
             borderRadius: '50%',
-            background: connected ? T.success : T.error,
+            background: statusColor,
             flexShrink: 0,
+            animation: connected
+              ? 'none'
+              : 'blac-pulse 1.5s ease-in-out infinite',
           }}
         />
-        <span style={{ color: T.text1 }}>
-          {connected ? 'Connected' : 'Disconnected'}
+        <span style={{ color: connected ? T.text1 : T.warning }}>
+          {statusText}
         </span>
-        <span
-          style={{
-            color: T.text2,
-            borderLeft: `1px solid ${T.border1}`,
-            paddingLeft: '6px',
-          }}
-        >
-          {instances.length} {instances.length === 1 ? 'instance' : 'instances'}
-        </span>
+        {connected && (
+          <span
+            style={{
+              color: T.text2,
+              borderLeft: `1px solid ${T.border1}`,
+              paddingLeft: '6px',
+            }}
+          >
+            {instances.length}{' '}
+            {instances.length === 1 ? 'instance' : 'instances'}
+          </span>
+        )}
       </div>
     </div>
   );

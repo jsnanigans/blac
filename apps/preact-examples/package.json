@@ -8,10 +8,11 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "format": "prettier --write \".\"",
-    "dev": "vite",
-    "build:app": "vite build",
-    "preview": "vite preview"
+    "format": "vp fmt src",
+    "format:check": "vp fmt src --check",
+    "dev": "vp dev",
+    "build:app": "vp build",
+    "preview": "vp preview"
   },
   "keywords": [],
   "author": "",
@@ -24,8 +25,8 @@
   },
   "devDependencies": {
     "@preact/preset-vite": "^2.9.4",
-    "prettier": "catalog:",
     "typescript": "catalog:",
-    "vite": "catalog:"
+    "vite": "catalog:",
+    "vite-plus": "catalog:"
   }
 }

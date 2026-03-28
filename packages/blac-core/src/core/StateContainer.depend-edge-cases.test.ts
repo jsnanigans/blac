@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { blacTestSetup } from '@blac/core/testing';
 import { Cubit } from './Cubit';
 import { acquire, getRefCount, hasInstance } from '../registry';
@@ -9,7 +9,7 @@ class DepTarget extends Cubit<{ val: number }> {
   }
 }
 
-class DepTargetB extends Cubit<{ val: number }> {
+class _DepTargetB extends Cubit<{ val: number }> {
   constructor() {
     super({ val: 0 });
   }

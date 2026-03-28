@@ -17,31 +17,38 @@
    */
   function transformInstancesForPanel(instances: any[]): any[] {
     return instances.map((inst) => {
+      const i = inst as Record<string, any>;
       // If already in panel format (legacy getInstances), pass through
-      if ('state' in inst && !('currentState' in inst)) {
+      if ('state' in i && !('currentState' in i)) {
         return inst;
       }
 
       // Transform new format to panel format
-      const history = inst.history || [];
+      const history = (i.history as any[] | undefined) || [];
       // Get the most recent change (last element in history array)
-      const lastChange = history.length > 0 ? history[history.length - 1] : null;
+      const lastChange =
+        history.length > 0
+          ? (history[history.length - 1] as Record<string, any> | null)
+          : null;
 
       return {
-        id: inst.id,
-        className: inst.className,
-        name: inst.name,
-        isDisposed: inst.isDisposed || false,
-        isIsolated: inst.isIsolated || false,
-        state: inst.currentState !== undefined ? inst.currentState : inst.state,
-        lastStateChangeTimestamp: lastChange?.timestamp || inst.createdAt || Date.now(),
-        createdAt: inst.createdAt || Date.now(),
-        hydrationStatus: inst.hydrationStatus,
-        hydrationError: inst.hydrationError,
-        callstack: inst.callstack,
-        trigger: inst.trigger,
-        history: inst.history,
-        dependencies: inst.dependencies,
+        id: i.id,
+        className: i.className,
+        name: i.name,
+        isDisposed: i.isDisposed || false,
+        isIsolated: i.isIsolated || false,
+        state: i.currentState !== undefined ? i.currentState : i.state,
+        lastStateChangeTimestamp:
+          (lastChange?.timestamp as number) ||
+          (i.createdAt as number) ||
+          Date.now(),
+        createdAt: (i.createdAt as number) || Date.now(),
+        hydrationStatus: i.hydrationStatus,
+        hydrationError: i.hydrationError,
+        callstack: i.callstack,
+        trigger: i.trigger,
+        history: i.history,
+        dependencies: i.dependencies,
       };
     });
   }
@@ -56,7 +63,7 @@
         // Notify panel that BlaC is not available
         sendMessage({
           type: 'BLAC_NOT_AVAILABLE',
-          payload: { reason: 'BlaC plugin not installed on page' }
+          payload: { reason: 'BlaC plugin not installed on page' },
         });
         return;
       }
@@ -79,10 +86,18 @@
     isInitialized = true;
 
     // Send initial state with full history (backend API)
-    const fullState = api.getFullState?.() || { instances: api.getInstances(), timestamp: Date.now() };
-    const transformedInstances = transformInstancesForPanel(fullState.instances);
+    const fullState = api.getFullState?.() || {
+      instances: api.getInstances(),
+      timestamp: Date.now(),
+    };
+    const transformedInstances = transformInstancesForPanel(
+      fullState.instances,
+    );
     const eventHistory = api.getEventHistory?.() || [];
-    const dependencyGraph = api.getDependencyGraph?.() || { nodes: [], edges: [] };
+    const dependencyGraph = api.getDependencyGraph?.() || {
+      nodes: [],
+      edges: [],
+    };
     sendMessage({
       type: 'INITIAL_STATE',
       payload: {
@@ -114,7 +129,7 @@
   }
 
   // Send message to content script
-  function sendMessage(data: any) {
+  function sendMessage(data: Record<string, any>) {
     window.postMessage(
       {
         source: 'blac-devtools-inject',
@@ -125,7 +140,19 @@
   }
 
   // Handle commands from DevTools panel
-  function handleCommand(command: any) {
+  function handleCommand(command: Record<string, any>) {
+    // PING always responds immediately regardless of init state
+    if (command.type === 'PING') {
+      const api = window.__BLAC_DEVTOOLS__;
+      sendMessage({
+        type: api?.isEnabled() ? 'PONG' : 'BLAC_NOT_AVAILABLE',
+        payload: api?.isEnabled()
+          ? { timestamp: Date.now() }
+          : { reason: 'BlaC API not available' },
+      });
+      return;
+    }
+
     // If not initialized yet, queue the command
     if (!isInitialized) {
       queuedCommands.push(command);
@@ -141,10 +168,18 @@
     switch (command.type) {
       case 'GET_INSTANCES': {
         // Send full state dump with history (for late panel connections)
-        const fullState = api.getFullState?.() || { instances: api.getInstances(), timestamp: Date.now() };
-        const transformedInstances = transformInstancesForPanel(fullState.instances);
+        const fullState = api.getFullState?.() || {
+          instances: api.getInstances(),
+          timestamp: Date.now(),
+        };
+        const transformedInstances = transformInstancesForPanel(
+          fullState.instances,
+        );
         const eventHistory = api.getEventHistory?.() || [];
-        const dependencyGraph = api.getDependencyGraph?.() || { nodes: [], edges: [] };
+        const dependencyGraph = api.getDependencyGraph?.() || {
+          nodes: [],
+          edges: [],
+        };
         sendMessage({
           type: 'INITIAL_STATE',
           payload: {
@@ -178,4 +213,3 @@
   // Start checking for API
   checkForAPI();
 })();
-

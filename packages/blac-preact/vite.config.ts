@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vite-plus';
 import preact from '@preact/preset-vite';
 import path from 'path';
 
@@ -9,6 +9,19 @@ export default defineConfig({
       '@blac/core': path.resolve(__dirname, '../blac-core/src'),
       '@blac/adapter': path.resolve(__dirname, '../blac-adapter/src'),
       '@blac/preact': path.resolve(__dirname, './src'),
+    },
+  },
+  pack: {
+    entry: 'src/index.ts',
+    format: ['esm', 'cjs'],
+    clean: true,
+    dts: false,
+    sourcemap: true,
+    external: ['@blac/core', 'preact', 'preact/hooks', 'preact/compat'],
+    outExtensions({ format }) {
+      return {
+        js: format === 'es' ? '.js' : '.cjs',
+      };
     },
   },
   test: {

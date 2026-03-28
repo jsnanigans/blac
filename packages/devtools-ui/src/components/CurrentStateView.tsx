@@ -98,11 +98,13 @@ export const CurrentStateView: FC<CurrentStateViewProps> = React.memo(
               }}
               onMouseEnter={(e) => {
                 (e.currentTarget as HTMLButtonElement).style.color = T.text0;
-                (e.currentTarget as HTMLButtonElement).style.background = T.bgHover;
+                (e.currentTarget as HTMLButtonElement).style.background =
+                  T.bgHover;
               }}
               onMouseLeave={(e) => {
                 (e.currentTarget as HTMLButtonElement).style.color = T.text1;
-                (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+                (e.currentTarget as HTMLButtonElement).style.background =
+                  'transparent';
               }}
             >
               Edit
@@ -130,7 +132,9 @@ export const CurrentStateView: FC<CurrentStateViewProps> = React.memo(
               }}
             />
             {editError && (
-              <div style={{ color: T.error, fontSize: '11px', marginTop: '4px' }}>
+              <div
+                style={{ color: T.error, fontSize: '11px', marginTop: '4px' }}
+              >
                 {editError}
               </div>
             )}
@@ -177,7 +181,11 @@ export const CurrentStateView: FC<CurrentStateViewProps> = React.memo(
               }}
             >
               <JsonView
-                value={typeof safeState === 'object' && safeState !== null ? safeState : { value: safeState }}
+                value={
+                  typeof safeState === 'object' && safeState !== null
+                    ? safeState
+                    : { value: safeState }
+                }
                 className="w-json-view-container"
                 style={
                   {

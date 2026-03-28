@@ -21,12 +21,12 @@ This means shared instances are automatically cleaned up when no component needs
 import { acquire, ensure, borrow, borrowSafe } from '@blac/core';
 ```
 
-| Function | Creates if missing? | Affects ref count? | Throws? |
-|----------|--------------------|--------------------|---------|
-| `acquire(Class, key?)` | Yes | +1 | No |
-| `ensure(Class, key?)` | Yes | No | No |
-| `borrow(Class, key?)` | No | No | Yes, if not found |
-| `borrowSafe(Class, key?)` | No | No | No, returns `{ error, instance }` |
+| Function                  | Creates if missing? | Affects ref count? | Throws?                           |
+| ------------------------- | ------------------- | ------------------ | --------------------------------- |
+| `acquire(Class, key?)`    | Yes                 | +1                 | No                                |
+| `ensure(Class, key?)`     | Yes                 | No                 | No                                |
+| `borrow(Class, key?)`     | No                  | No                 | Yes, if not found                 |
+| `borrowSafe(Class, key?)` | No                  | No                 | No, returns `{ error, instance }` |
 
 **`acquire`** — Use when you own the reference and will `release` it later. This is what `useBloc` calls internally.
 
@@ -48,7 +48,7 @@ if (error) {
 ```ts
 import { release } from '@blac/core';
 
-release(CounterCubit);          // release default instance
+release(CounterCubit); // release default instance
 release(EditorCubit, 'doc-42'); // release named instance
 ```
 
@@ -57,13 +57,19 @@ At ref count zero, the instance is disposed automatically (unless `keepAlive` is
 ### Querying the registry
 
 ```ts
-import { hasInstance, getRefCount, getAll, forEach, getStats } from '@blac/core';
+import {
+  hasInstance,
+  getRefCount,
+  getAll,
+  forEach,
+  getStats,
+} from '@blac/core';
 
-hasInstance(CounterCubit);              // boolean
-getRefCount(CounterCubit);             // number
-getAll(CounterCubit);                  // all instances of this class
-forEach(CounterCubit, (inst) => { });  // iterate instances
-getStats();                            // { totalInstances, totalRefCount, types }
+hasInstance(CounterCubit); // boolean
+getRefCount(CounterCubit); // number
+getAll(CounterCubit); // all instances of this class
+forEach(CounterCubit, (inst) => {}); // iterate instances
+getStats(); // { totalInstances, totalRefCount, types }
 ```
 
 ### Cleanup
@@ -71,8 +77,8 @@ getStats();                            // { totalInstances, totalRefCount, types
 ```ts
 import { clear, clearAll } from '@blac/core';
 
-clear(CounterCubit);   // dispose and remove all instances of this class
-clearAll();            // dispose and remove everything
+clear(CounterCubit); // dispose and remove all instances of this class
+clearAll(); // dispose and remove everything
 ```
 
 ## Named instances

@@ -41,15 +41,15 @@ export const analyticsPlugin: BlacPlugin = {
     addEntry('installed', 'AnalyticsPlugin');
   },
 
-  onInstanceCreated(instance: StateContainer<any>) {
+  onInstanceCreated(instance: StateContainer<object>) {
     addEntry('created', instance.name);
   },
 
-  onStateChanged(instance: StateContainer<any>) {
+  onStateChanged(instance) {
     addEntry('stateChanged', instance.name);
   },
 
-  onInstanceDisposed(instance: StateContainer<any>) {
+  onInstanceDisposed(instance: StateContainer<object>) {
     addEntry('disposed', instance.name);
   },
 

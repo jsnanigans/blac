@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { ensure, hasInstance, acquire, release } from '@blac/core';
+import { ensure, acquire, release } from '@blac/core';
 import {
   blacTestSetup,
   withTestRegistry,

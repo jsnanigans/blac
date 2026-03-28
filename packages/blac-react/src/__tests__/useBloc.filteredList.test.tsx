@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import { Cubit } from '@blac/core';
 import { blacTestSetup } from '@blac/core/testing';

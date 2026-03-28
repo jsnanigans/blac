@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vite-plus/test';
 import { blacTestSetup } from '@blac/core/testing';
 import { StateContainer } from './StateContainer';
 import { EMIT } from './symbols';
@@ -78,7 +78,7 @@ describe('StateContainer subscriptions', () => {
 
   it('unsubscribing during emission is safe', () => {
     const container = new SimpleContainer();
-    // eslint-disable-next-line prefer-const
+    // oxlint-disable-next-line prefer-const
     let unsubscribe: () => void;
     const selfRemoving = vi.fn(() => unsubscribe());
     unsubscribe = container.subscribe(selfRemoving);

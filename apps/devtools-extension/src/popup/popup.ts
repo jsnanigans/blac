@@ -7,7 +7,9 @@ document.getElementById('openDevTools')?.addEventListener('click', () => {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     if (tabs[0]?.id) {
       // This doesn't directly open DevTools, but we can show instructions
-      alert('Press F12 or Cmd+Option+I to open Developer Tools, then navigate to the "BlaC" tab.');
+      alert(
+        'Press F12 or Cmd+Option+I to open Developer Tools, then navigate to the "BlaC" tab.',
+      );
     }
   });
 });

@@ -6,13 +6,17 @@
     "sourceMap": true,
     "outDir": "dist",
     "strict": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "experimentalDecorators": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "paths": {
+      "@blac/core/testing": ["./src/testing.ts"],
+      "@blac/core": ["./src/index.ts"]
+    }
   },
   "include": ["src", "tests", "vite.config.ts"],
   "exclude": []

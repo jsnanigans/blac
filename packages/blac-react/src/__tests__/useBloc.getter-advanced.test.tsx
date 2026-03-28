@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { Component, type ReactNode } from 'react';
 import { render, act, screen } from '@testing-library/react';
 import { Cubit } from '@blac/core';

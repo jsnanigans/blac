@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import type { RenderResult } from '@testing-library/react';
 import type { StateContainerConstructor } from '@blac/core';
 import { StateContainerRegistry, getRegistry, setRegistry } from '@blac/core';
 import {
@@ -8,8 +9,9 @@ import {
 } from '@blac/core/testing';
 import { render } from '@testing-library/react';
 
-interface RenderWithBlocOptions<T extends StateContainerConstructor>
-  extends CubitStubOptions<T> {
+interface RenderWithBlocOptions<
+  T extends StateContainerConstructor,
+> extends CubitStubOptions<T> {
   bloc: T;
   instanceKey?: string;
 }
@@ -17,7 +19,7 @@ interface RenderWithBlocOptions<T extends StateContainerConstructor>
 export function renderWithBloc<T extends StateContainerConstructor>(
   ui: ReactElement,
   options: RenderWithBlocOptions<T>,
-) {
+): RenderResult & { bloc: InstanceType<T> } {
   const { bloc: BlocClass, instanceKey, ...stubOptions } = options;
 
   const previous = getRegistry();
@@ -44,7 +46,7 @@ export function renderWithBloc<T extends StateContainerConstructor>(
 export function renderWithRegistry(
   ui: ReactElement,
   setup: (registry: StateContainerRegistry) => void,
-) {
+): RenderResult {
   const previous = getRegistry();
   const testRegistry = new StateContainerRegistry();
   setRegistry(testRegistry);

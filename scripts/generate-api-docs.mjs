@@ -638,7 +638,7 @@ function generateTopicPage(
   return md;
 }
 
-function generateMainPageNavigation(packageName) {
+function generateMainPageNavigation(_packageName) {
   let md = '';
   md += `## API Sections\n\n`;
   md += `| Section | Description |\n`;

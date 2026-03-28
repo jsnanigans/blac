@@ -11,10 +11,7 @@
 
 // Main components
 export { DevToolsPanel } from './DevToolsPanel';
-export {
-  DraggableOverlay,
-  defaultDevToolsMount,
-} from './DraggableOverlay';
+export { DraggableOverlay, defaultDevToolsMount } from './DraggableOverlay';
 export {
   PictureInPictureDevTools,
   isPiPSupported,

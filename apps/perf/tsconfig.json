@@ -15,12 +15,11 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "react-jsx",
-    "baseUrl": ".",
     "paths": {
       "@blac/core": ["../../packages/blac-core/src/index.ts"],
       "@blac/react": ["../../packages/blac-react/src/index.ts"]
     },
     "types": ["vite/client"]
   },
-  "include": ["src", "main.ts", "vite.config.ts"]
+  "include": ["src", "main.tsx", "vite.config.ts"]
 }

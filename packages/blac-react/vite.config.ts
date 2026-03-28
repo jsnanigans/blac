@@ -1,9 +1,6 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vite-plus';
 import path from 'path';
 
-// Vitest config WITHOUT React Compiler (default)
-// Use vitest.config.compiler.ts to test with React 19 compiler enabled
-// https://vitejs.dev/config/
 export default defineConfig({
   resolve: {
     alias: {
@@ -18,13 +15,29 @@ export default defineConfig({
       ),
     },
   },
+  pack: {
+    entry: {
+      index: 'src/index.ts',
+      testing: 'src/testing.ts',
+    },
+    format: ['esm', 'cjs'],
+    clean: true,
+    dts: false,
+    sourcemap: true,
+    external: ['@blac/core'],
+    outExtensions({ format }) {
+      return {
+        js: format === 'es' ? '.js' : '.cjs',
+      };
+    },
+  },
   test: {
     globals: true,
     maxConcurrency: 2,
     maxWorkers: 2,
     environment: 'happy-dom',
     setupFiles: './vitest-setup.ts',
-    hookTimeout: 30000, // 30 seconds for hooks (afterEach cleanup)
+    hookTimeout: 30000,
     exclude: [
       '**/node_modules/**',
       '**/dist/**',

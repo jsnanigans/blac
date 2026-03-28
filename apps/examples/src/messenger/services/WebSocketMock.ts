@@ -129,7 +129,8 @@ export class WebSocketMock {
    * Simulate message delivery confirmation
    */
   private simulateMessageDelivery(outgoing: OutgoingMessage) {
-    const messageId = outgoing.payload.id;
+    const messageId = (outgoing.payload as Record<string, unknown>)
+      .id as string;
 
     // Simulate network delay for "sent" status
     setTimeout(
@@ -264,7 +265,7 @@ export class WebSocketMock {
             if (!ch.error) {
               ch.instance.userTyping(botUserId, false);
             }
-          } catch (error) {
+          } catch {
             // Channel might be disposed, ignore
           }
         },
@@ -303,7 +304,7 @@ export class WebSocketMock {
               statuses[Math.floor(Math.random() * statuses.length)];
             result.instance.setStatus(randomStatus);
           }
-        } catch (error) {
+        } catch {
           // User might be disposed, ignore
         }
       });

@@ -53,7 +53,7 @@ const registry = createTestRegistry();
 ### `withTestRegistry(fn)`
 
 ```ts
-function withTestRegistry<T>(fn: (registry: StateContainerRegistry) => T): T
+function withTestRegistry<T>(fn: (registry: StateContainerRegistry) => T): T;
 ```
 
 Runs a callback with a temporary isolated registry, then restores the previous one. Works with both sync and async callbacks. The registry is always restored — even if the callback throws.
@@ -107,7 +107,7 @@ function withBlocState<T extends StateContainerConstructor>(
   BlocClass: T,
   state: Partial<ExtractState<T>>,
   instanceKey?: string,
-): InstanceType<T>
+): InstanceType<T>;
 ```
 
 Ensures an instance exists in the registry and seeds its state. For object-state cubits, the state is merged via `patch()` so you only need to provide the fields you care about. Returns the instance.
@@ -142,7 +142,7 @@ function withBlocMethod<T extends StateContainerConstructor>(
   methodName: keyof InstanceType<T>,
   impl: (...args: any[]) => any,
   instanceKey?: string,
-): InstanceType<T>
+): InstanceType<T>;
 ```
 
 Ensures an instance exists and replaces a single method. Other methods remain fully functional.
@@ -175,7 +175,7 @@ function createCubitStub<T extends StateContainerConstructor>(
     state?: Partial<ExtractState<T>>;
     methods?: Partial<Record<MethodKeys<InstanceType<T>>, Function>>;
   },
-): InstanceType<T>
+): InstanceType<T>;
 ```
 
 Creates a real instance of the cubit with optional pre-set state and method overrides. The stub is a fully functional instance — subscriptions, `emit`, `patch`, and `dispose` all work normally. Only the explicitly overridden methods are replaced.
@@ -213,7 +213,7 @@ function registerOverride<T extends StateContainerConstructor>(
   BlocClass: T,
   instance: InstanceType<T>,
   instanceKey?: string,
-): void
+): void;
 ```
 
 Injects a specific instance into the registry, replacing any existing one. The previous instance is disposed if it exists. Use this when you need full control over what instance the registry returns for a given class.
@@ -241,7 +241,7 @@ function overrideEnsure<T extends StateContainerConstructor, R>(
   instance: InstanceType<T>,
   fn: () => R,
   instanceKey?: string,
-): R
+): R;
 ```
 
 Scoped override — registers the instance inside a temporary registry, runs the callback, then cleans up. Useful for one-off assertions without affecting other tests.
@@ -264,7 +264,7 @@ it('computes total with shipping', () => {
 ### `flushBlocUpdates()`
 
 ```ts
-function flushBlocUpdates(): Promise<void>
+function flushBlocUpdates(): Promise<void>;
 ```
 
 Flushes pending microtasks by awaiting a `setTimeout(0)`. Use this after triggering state changes that may propagate asynchronously.
@@ -341,8 +341,10 @@ class CartCubit extends Cubit<CartState> {
   private getShipping = this.depend(ShippingCubit);
 
   get total() {
-    return this.state.items.reduce((s, i) => s + i.price, 0)
-      + this.getShipping().state.rate;
+    return (
+      this.state.items.reduce((s, i) => s + i.price, 0) +
+      this.getShipping().state.rate
+    );
   }
 }
 ```

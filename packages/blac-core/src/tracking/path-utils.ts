@@ -65,12 +65,12 @@ export function parsePath(path: string): string[] {
  *
  * @internal
  */
-export function getValueAtPath(obj: any, segments: string[]): any {
+export function getValueAtPath(obj: unknown, segments: string[]): unknown {
   if (obj == null) return undefined;
 
-  let current = obj;
+  let current: unknown = obj;
   for (let i = 0; i < segments.length; i++) {
-    current = current[segments[i]];
+    current = (current as Record<string, unknown>)[segments[i]];
     if (current == null) return undefined;
   }
   return current;

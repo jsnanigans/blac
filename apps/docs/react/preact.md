@@ -5,12 +5,15 @@ BlaC supports Preact through the `@blac/preact` package. It provides the same `u
 ## Installation
 
 ::: code-group
+
 ```bash [pnpm]
 pnpm add @blac/core @blac/preact
 ```
+
 ```bash [npm]
 npm install @blac/core @blac/preact
 ```
+
 :::
 
 Requires Preact 10.x.
@@ -48,8 +51,12 @@ const [state, bloc, ref] = useBloc(MyCubit, {
   instanceId: 'optional-key',
   autoTrack: true,
   dependencies: (state, bloc) => [bloc.someGetter],
-  onMount: (bloc) => { /* ... */ },
-  onUnmount: (bloc) => { /* ... */ },
+  onMount: (bloc) => {
+    /* ... */
+  },
+  onUnmount: (bloc) => {
+    /* ... */
+  },
 });
 ```
 

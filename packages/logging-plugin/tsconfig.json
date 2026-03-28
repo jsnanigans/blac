@@ -1,6 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "moduleResolution": "bundler",
     "outDir": "./dist",
     "paths": {
       "@blac/core": ["../blac-core/src/index.ts"]

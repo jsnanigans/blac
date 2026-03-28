@@ -21,7 +21,7 @@ function renderWithBloc<T extends StateContainerConstructor>(
     methods?: Partial<Record<MethodKeys<InstanceType<T>>, Function>>;
     instanceKey?: string;
   },
-): RenderResult & { bloc: InstanceType<T> }
+): RenderResult & { bloc: InstanceType<T> };
 ```
 
 Renders a React component with a single bloc pre-configured in an isolated registry. Under the hood it:
@@ -107,7 +107,7 @@ it('renders the correct editor', () => {
 function renderWithRegistry(
   ui: ReactElement,
   setup: (registry: StateContainerRegistry) => void,
-): RenderResult
+): RenderResult;
 ```
 
 Renders a component with a fresh registry that you configure via a callback. Use this when a component depends on multiple blocs, or when you need more control than `renderWithBloc` provides.
@@ -116,10 +116,7 @@ Renders a component with a fresh registry that you configure via a callback. Use
 
 ```tsx
 import { renderWithRegistry } from '@blac/react/testing';
-import {
-  createCubitStub,
-  registerOverride,
-} from '@blac/core/testing';
+import { createCubitStub, registerOverride } from '@blac/core/testing';
 
 it('shows dashboard with user and cart data', () => {
   renderWithRegistry(<Dashboard />, () => {

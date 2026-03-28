@@ -6,18 +6,20 @@
     "jsx": "react-jsx",
     "jsxImportSource": "preact",
     "sourceMap": true,
+    "rootDir": "../..",
     "outDir": "dist",
     "strict": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "experimentalDecorators": false,
     "resolveJsonModule": true,
-    "types": ["vitest/globals", "@testing-library/jest-dom"],
     "paths": {
-      "@blac/core": ["../blac-core/src/index.ts"]
+      "@blac/core": ["../blac-core/src/index.ts"],
+      "@blac/core/tracking": ["../blac-core/src/tracking.ts"],
+      "@blac/adapter": ["../blac-adapter/src/index.ts"]
     }
   },
   "include": ["src", "vitest.config.ts", "vitest-setup.ts"],

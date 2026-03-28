@@ -67,11 +67,7 @@ Components that only trigger actions and never display state don't need tracking
 function QuickAdd() {
   const [, todo] = useBloc(TodoCubit, { autoTrack: false });
 
-  return (
-    <button onClick={() => todo.addItem('New item')}>
-      Add Item
-    </button>
-  );
+  return <button onClick={() => todo.addItem('New item')}>Add Item</button>;
 }
 ```
 
@@ -94,7 +90,12 @@ function FormPage() {
 function FormSection({ instanceId }: { instanceId: string }) {
   const [state, form] = useBloc(FormCubit, { instanceId });
   // Each section has independent state
-  return <input value={state.email} onChange={(e) => form.setEmail(e.target.value)} />;
+  return (
+    <input
+      value={state.email}
+      onChange={(e) => form.setEmail(e.target.value)}
+    />
+  );
 }
 ```
 
@@ -269,7 +270,11 @@ class TodoCubit extends Cubit<TodoState> {
 function TodoStats() {
   const [, todo] = useBloc(TodoCubit);
   // Only re-renders when activeCount or completedCount changes
-  return <span>{todo.activeCount} active, {todo.completedCount} done</span>;
+  return (
+    <span>
+      {todo.activeCount} active, {todo.completedCount} done
+    </span>
+  );
 }
 ```
 

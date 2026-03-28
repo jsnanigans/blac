@@ -12,29 +12,37 @@ Both are tree-shakable and shipped as separate entry points, so they are never i
 The core testing utilities have no extra dependencies. Install your test runner of choice (Vitest is recommended):
 
 ::: code-group
+
 ```bash [pnpm]
 pnpm add -D vitest
 ```
+
 ```bash [npm]
 npm install -D vitest
 ```
+
 ```bash [yarn]
 yarn add -D vitest
 ```
+
 :::
 
 For React component tests, you also need `@testing-library/react`:
 
 ::: code-group
+
 ```bash [pnpm]
 pnpm add -D @testing-library/react
 ```
+
 ```bash [npm]
 npm install -D @testing-library/react
 ```
+
 ```bash [yarn]
 yarn add -D @testing-library/react
 ```
+
 :::
 
 ## Why registry isolation matters

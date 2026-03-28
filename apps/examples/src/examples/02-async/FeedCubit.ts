@@ -125,7 +125,7 @@ async function fakeFetch(
   if (Math.random() < 0.3) {
     throw new Error('Network timeout — please try again.');
   }
-  const author = AUTHORS.find((a) => a.id === authorId)!;
+  const author = AUTHORS.find((a) => a.id === authorId) ?? AUTHORS[0];
   return { author, articles: ARTICLES[authorId] ?? [] };
 }
 

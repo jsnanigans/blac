@@ -117,7 +117,7 @@ export function serialize(data: any, options: SerializeOptions = {}): any {
           return value.map((item) => serializeInternal(item, depth + 1));
         }
 
-        const result: any = {};
+        const result: Record<string, any> = {};
         for (const key in value) {
           if (Object.prototype.hasOwnProperty.call(value, key)) {
             try {

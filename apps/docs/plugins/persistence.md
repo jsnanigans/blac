@@ -25,11 +25,11 @@ That's it. `UserSettingsCubit` state is now saved to IndexedDB on every change a
 
 ```ts
 createIndexedDbPersistPlugin({
-  databaseName: 'my-app',       // default: 'blac-persist'
-  storeName: 'app-state',       // default: 'blac-state'
-  pluginName: 'my-persist',     // default: 'indexeddb-persist'
-  adapter: customAdapter,       // custom storage adapter
-})
+  databaseName: 'my-app', // default: 'blac-persist'
+  storeName: 'app-state', // default: 'blac-state'
+  pluginName: 'my-persist', // default: 'indexeddb-persist'
+  adapter: customAdapter, // custom storage adapter
+});
 ```
 
 ## Registering containers
@@ -47,27 +47,29 @@ persist
 
 ```ts
 persist.persist(CartCubit, {
-  key: 'cart',                          // custom storage key (default: ClassName:instanceId)
-  debounceMs: 500,                      // debounce saves (default: 0)
-  stateToDb: (state) => state.items,    // transform before saving
+  key: 'cart', // custom storage key (default: ClassName:instanceId)
+  debounceMs: 500, // debounce saves (default: 0)
+  stateToDb: (state) => state.items, // transform before saving
   dbToState: (payload) => ({ items: payload }), // transform on load
-  onHydrated: (state, ctx) => {         // called after restore
+  onHydrated: (state, ctx) => {
+    // called after restore
     console.log('Cart restored with', state.items.length, 'items');
   },
-  onError: (error, ctx) => {            // called on save or load error
+  onError: (error, ctx) => {
+    // called on save or load error
     console.error('Persist error:', error);
   },
 });
 ```
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `key` | `string \| (ctx) => string` | `ClassName:instanceId` | Storage key |
-| `debounceMs` | `number` | `0` | Debounce save operations |
-| `stateToDb` | `(state, ctx) => TPayload` | Identity | Transform state before saving |
-| `dbToState` | `(payload, ctx) => S` | Identity | Transform persisted data back to state |
-| `onHydrated` | `(state, ctx) => void` | — | Called after successful hydration |
-| `onError` | `(error, ctx) => void` | — | Called on error |
+| Option       | Type                        | Default                | Description                            |
+| ------------ | --------------------------- | ---------------------- | -------------------------------------- |
+| `key`        | `string \| (ctx) => string` | `ClassName:instanceId` | Storage key                            |
+| `debounceMs` | `number`                    | `0`                    | Debounce save operations               |
+| `stateToDb`  | `(state, ctx) => TPayload`  | Identity               | Transform state before saving          |
+| `dbToState`  | `(payload, ctx) => S`       | Identity               | Transform persisted data back to state |
+| `onHydrated` | `(state, ctx) => void`      | —                      | Called after successful hydration      |
+| `onError`    | `(error, ctx) => void`      | —                      | Called on error                        |
 
 ### Dynamic keys
 
@@ -124,8 +126,8 @@ const unsub = persist.subscribe((event) => {
 ## Clearing stored data
 
 ```ts
-await persist.clearRecord('cart');  // clear one record
-await persist.clearAll();           // clear everything
+await persist.clearRecord('cart'); // clear one record
+await persist.clearAll(); // clear everything
 ```
 
 ## Custom storage adapter
@@ -133,14 +135,23 @@ await persist.clearAll();           // clear everything
 Implement the `IndexedDbPersistAdapter` interface to use a different storage backend:
 
 ```ts
-import type { IndexedDbPersistAdapter, PersistedRecord } from '@blac/plugin-persist';
+import type {
+  IndexedDbPersistAdapter,
+  PersistedRecord,
+} from '@blac/plugin-persist';
 
 const memoryAdapter: IndexedDbPersistAdapter = {
   isAvailable: () => true,
   get: async (key) => store.get(key) ?? null,
-  put: async (record) => { store.set(record.id, record); },
-  delete: async (key) => { store.delete(key); },
-  clear: async () => { store.clear(); },
+  put: async (record) => {
+    store.set(record.id, record);
+  },
+  delete: async (key) => {
+    store.delete(key);
+  },
+  clear: async () => {
+    store.clear();
+  },
 };
 
 const persist = createIndexedDbPersistPlugin({ adapter: memoryAdapter });

@@ -10,4 +10,5 @@ export class SharedCounterCubit extends Cubit<SharedCounterState> {
   }
 
   increment = () => this.patch({ count: this.state.count + 1 });
+  decrement = () => this.patch({ count: this.state.count - 1 });
 }

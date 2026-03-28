@@ -2,7 +2,7 @@
  * Tests for StateContainer Registry Features
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { blacTestSetup } from '@blac/core/testing';
 import { StateContainer } from './StateContainer';
 import {
@@ -166,7 +166,7 @@ describe('StateContainer - Registry Features', () => {
       });
 
       expect(states).toHaveLength(3);
-      expect(states.sort()).toEqual([1, 2, 3]);
+      expect(states.sort((a, b) => a - b)).toEqual([1, 2, 3]);
     });
 
     it('should skip disposed instances during iteration', () => {
@@ -193,7 +193,7 @@ describe('StateContainer - Registry Features', () => {
       });
 
       // Should have processed all 3 instances
-      expect(states.sort()).toEqual([1, 2, 3]);
+      expect(states.sort((a, b) => a - b)).toEqual([1, 2, 3]);
 
       // c2 should now be disposed
       expect(c2.isDisposed).toBe(true);
@@ -204,7 +204,7 @@ describe('StateContainer - Registry Features', () => {
         secondStates.push(instance.state.count);
       });
 
-      expect(secondStates.sort()).toEqual([1, 3]);
+      expect(secondStates.sort((a, b) => a - b)).toEqual([1, 3]);
     });
 
     it('should not throw when callback throws', () => {

@@ -9,7 +9,7 @@
 import { render, screen, act } from '@testing-library/react';
 import { Cubit, acquire } from '@blac/core';
 import { useBloc } from '../useBloc';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { blacTestSetup } from '@blac/core/testing';
 
 // Message type similar to the messenger example

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { renderHook, act } from '@testing-library/react';
 import { StrictMode } from 'react';
 import { Cubit } from '@blac/core';

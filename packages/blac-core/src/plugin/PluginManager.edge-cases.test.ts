@@ -1,11 +1,12 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+/// <reference types="vitest/globals" />
+import { describe, it, expect, vi } from 'vite-plus/test';
 import { PluginManager, createPluginManager } from './PluginManager';
 import {
   StateContainerRegistry,
   globalRegistry,
 } from '../core/StateContainerRegistry';
 import { Cubit } from '../core/Cubit';
-import { acquire, release, clearAll } from '../registry';
+import { acquire, release } from '../registry';
 import type { BlacPlugin } from './BlacPlugin';
 
 class SimpleBloc extends Cubit<{ n: number }> {
@@ -145,7 +146,7 @@ describe('PluginManager edge cases', () => {
   });
 
   it('plugin installed after instance creation does NOT receive retroactive onInstanceCreated', () => {
-    const bloc = acquire(SimpleBloc, 'pre-existing');
+    acquire(SimpleBloc, 'pre-existing');
 
     const onInstanceCreated = vi.fn();
     manager.install({ name: 'late', version: '1.0.0', onInstanceCreated });

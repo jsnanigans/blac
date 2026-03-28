@@ -3,9 +3,7 @@
  */
 
 import { InstanceMetadata } from '@blac/core';
-import type {
-  DevToolsCallback,
-} from '@blac/devtools-connect';
+import type { DevToolsCallback } from '@blac/devtools-connect';
 
 /**
  * DevTools API exposed on window by the DevToolsBrowserPlugin
@@ -45,7 +43,7 @@ interface BlacDevToolsAPI {
   /**
    * Restore an instance to a specific state (time-travel)
    */
-  timeTravel?(instanceId: string, state: unknown): boolean;
+  timeTravel?(instanceId: string, state: any): boolean;
 
   /**
    * Get the dependency graph between bloc instances
@@ -57,7 +55,10 @@ interface BlacDevToolsAPI {
  * Window message event types
  */
 interface DevToolsWindowMessage {
-  source: 'blac-devtools-inject' | 'blac-devtools-content' | 'blac-devtools-app';
+  source:
+    | 'blac-devtools-inject'
+    | 'blac-devtools-content'
+    | 'blac-devtools-app';
   type?: string;
   payload?: any;
   [key: string]: any;

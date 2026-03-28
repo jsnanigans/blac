@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from 'vite-plus';
 import path from 'path';
 
 export default defineConfig({
@@ -13,21 +13,41 @@ export default defineConfig({
       ),
     },
   },
+  pack: {
+    entry: {
+      index: 'src/index.ts',
+      tracking: 'src/tracking.ts',
+      debug: 'src/debug.ts',
+      plugins: 'src/plugins.ts',
+      'watch-entry': 'src/watch-entry.ts',
+      types: 'src/types.ts',
+      testing: 'src/testing.ts',
+    },
+    format: ['esm', 'cjs'],
+    clean: true,
+    dts: false,
+    sourcemap: true,
+    outExtensions({ format }) {
+      return {
+        js: format === 'es' ? '.js' : '.cjs',
+      };
+    },
+  },
   test: {
-    environment: 'jsdom', // Using jsdom as it's in devDependencies
+    environment: 'jsdom',
     maxConcurrency: 2,
     maxWorkers: 2,
-    globals: true, // Optional: consider if explicit imports are preferred
+    globals: true,
     coverage: {
-      provider: 'v8', // or 'istanbul'
+      provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
       reportsDirectory: './coverage',
       include: ['src/**/*.{ts,tsx}'],
       exclude: [
-        'src/index.ts', // Often excluded if it only re-exports
-        'src/types.ts', // Or any other type definition files
-        'src/**/*.test.ts', // Test files themselves
-        'src/**/*.spec.ts', // Spec files themselves
+        'src/index.ts',
+        'src/types.ts',
+        'src/**/*.test.ts',
+        'src/**/*.spec.ts',
       ],
     },
     onConsoleLog(log) {

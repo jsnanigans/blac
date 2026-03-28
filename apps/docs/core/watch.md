@@ -56,12 +56,12 @@ const stop = watch(instance(UserCubit, 'user-123'), (user) => {
 
 ## When to use watch
 
-| Scenario | Use |
-|----------|-----|
-| React component needs state | `useBloc` |
-| Non-React side effects (logging, analytics, syncing) | `watch` |
-| Test assertions on state changes | `watch` |
-| Connecting BlaC to non-React UI | `watch` |
+| Scenario                                             | Use       |
+| ---------------------------------------------------- | --------- |
+| React component needs state                          | `useBloc` |
+| Non-React side effects (logging, analytics, syncing) | `watch`   |
+| Test assertions on state changes                     | `watch`   |
+| Connecting BlaC to non-React UI                      | `watch`   |
 
 ## watch vs subscribe
 

@@ -1,11 +1,19 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "moduleResolution": "bundler",
     "jsx": "react",
     "declaration": true,
     "declarationMap": true,
     "outDir": "./dist",
-    "rootDir": "./src"
+    "rootDir": "../..",
+    "paths": {
+      "@blac/core": ["../blac-core/src/index.ts"],
+      "@blac/core/tracking": ["../blac-core/src/tracking.ts"],
+      "@blac/core/testing": ["../blac-core/src/testing.ts"],
+      "@blac/react": ["../blac-react/src/index.ts"],
+      "@blac/adapter": ["../blac-adapter/src/index.ts"]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.test.tsx"]

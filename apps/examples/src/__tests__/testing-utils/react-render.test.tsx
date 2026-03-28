@@ -2,7 +2,6 @@
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { act, screen } from '@testing-library/react';
-import { ensure, hasInstance, clearAll } from '@blac/core';
 import {
   blacTestSetup,
   registerOverride,
@@ -10,15 +9,7 @@ import {
   withBlocState,
 } from '@blac/core/testing';
 import { renderWithBloc, renderWithRegistry } from '@blac/react/testing';
-import {
-  CounterCubit,
-  AuthCubit,
-  SettingsCubit,
-  TodoCubit,
-  DashboardCubit,
-  NotificationCubit,
-  LoadingCubit,
-} from './fixtures';
+import { CounterCubit, AuthCubit, SettingsCubit, TodoCubit } from './fixtures';
 import {
   Counter,
   AuthStatus,
@@ -26,7 +17,6 @@ import {
   TodoList,
   Dashboard,
   NotificationBadge,
-  LoadingIndicator,
 } from './fixtures-react';
 
 blacTestSetup();

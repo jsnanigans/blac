@@ -65,9 +65,9 @@ describe('createCubitStub', () => {
   describe('state seeding with primitive state', () => {
     it('emits the full primitive state', () => {
       const stub = createCubitStub(LoadingCubit, {
-        state: true,
+        state: { loading: true },
       });
-      expect(stub.state).toBe(true);
+      expect(stub.state.loading).toBe(true);
     });
   });
 

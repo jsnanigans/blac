@@ -47,10 +47,20 @@ class DetailErrorBoundary extends React.Component<
             color: '#ef4444',
           }}
         >
-          <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '8px' }}>
+          <div
+            style={{ fontSize: '13px', fontWeight: 600, marginBottom: '8px' }}
+          >
             Error rendering detail view
           </div>
-          <div style={{ fontSize: '11px', color: '#888', marginBottom: '12px', textAlign: 'center', maxWidth: '300px' }}>
+          <div
+            style={{
+              fontSize: '11px',
+              color: '#888',
+              marginBottom: '12px',
+              textAlign: 'center',
+              maxWidth: '300px',
+            }}
+          >
             {this.state.error.message}
           </div>
           <button
@@ -135,7 +145,8 @@ export const DevToolsPanel: FC<DevToolsUIProps> = React.memo(
     useBloc(DevToolsDependencyBloc);
     useBloc(DevToolsMetricsBloc);
 
-    const [{ activeTab, leftPanelWidth }, layoutBloc] = useBloc(DevToolsLayoutBloc);
+    const [{ activeTab, leftPanelWidth }, layoutBloc] =
+      useBloc(DevToolsLayoutBloc);
 
     return (
       <div

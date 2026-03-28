@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { render, act, screen } from '@testing-library/react';
 import { Cubit, getRefCount, hasInstance, borrow } from '@blac/core';
 import { useBloc } from '../useBloc';

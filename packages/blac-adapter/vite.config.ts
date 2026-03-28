@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from 'vite-plus';
 import path from 'path';
 
 export default defineConfig({
@@ -6,6 +6,18 @@ export default defineConfig({
     alias: {
       '@blac/core': path.resolve(__dirname, '../blac-core/src'),
       '@blac/adapter': path.resolve(__dirname, './src'),
+    },
+  },
+  pack: {
+    entry: 'src/index.ts',
+    format: ['esm', 'cjs'],
+    clean: true,
+    dts: false,
+    sourcemap: true,
+    outExtensions({ format }) {
+      return {
+        js: format === 'es' ? '.js' : '.cjs',
+      };
     },
   },
   test: {

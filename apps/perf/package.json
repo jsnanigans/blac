@@ -8,11 +8,12 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "format": "prettier --write \".\"",
-    "lint": "eslint . --ext .ts,.tsx",
-    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "format": "vp fmt src",
+    "format:check": "vp fmt src --check",
+    "lint": "vp lint .",
+    "lint:fix": "vp lint . --fix",
     "_typecheck": "tsc --noEmit",
-    "dev": "vite"
+    "dev": "vp dev"
   },
   "keywords": [],
   "author": "",
@@ -23,13 +24,13 @@
     "@blac/react": "workspace:*",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "vite": "^7.0.6"
+    "vite": "catalog:"
   },
   "devDependencies": {
-    "prettier": "catalog:",
     "@vitejs/plugin-react": "^4.7.0",
     "typescript": "catalog:",
     "@types/react": "^19.1.9",
-    "@types/react-dom": "^19.1.7"
+    "@types/react-dom": "^19.1.7",
+    "vite-plus": "catalog:"
   }
 }

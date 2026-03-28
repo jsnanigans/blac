@@ -1,7 +1,6 @@
 import { useBloc } from '@blac/react';
 import { TodoCubit } from './TodoCubit';
-import { RenderCounter } from '../../shared/components';
-import { Button } from '../../shared/components';
+import { RenderCounter, Button } from '../../shared/components';
 
 export function TodoList() {
   const [, bloc] = useBloc(TodoCubit, {

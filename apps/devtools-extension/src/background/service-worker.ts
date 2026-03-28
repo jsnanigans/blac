@@ -35,7 +35,7 @@ chrome.runtime.onConnect.addListener((port) => {
     // Handle messages from DevTools panel
     port.onMessage.addListener((message) => {
       // Forward to content script
-      chrome.tabs.sendMessage(tabId, {
+      void chrome.tabs.sendMessage(tabId, {
         source: 'blac-devtools-panel',
         ...message,
       });
@@ -89,6 +89,27 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // Send acknowledgment
   sendResponse({ received: true });
   return true; // Keep channel open for async response
+});
+
+// Reliable page navigation/reload detection via webNavigation API
+// This fires even when beforeunload messages don't make it
+chrome.webNavigation.onCommitted.addListener((details) => {
+  // Only top-level frame navigations
+  if (details.frameId !== 0) return;
+
+  const tabId = details.tabId;
+
+  // Clear cached state
+  stateCache.delete(tabId);
+
+  // Notify DevTools panel
+  const connection = devToolsConnections.get(tabId);
+  if (connection) {
+    connection.port.postMessage({
+      type: 'PAGE_RELOAD',
+      payload: { tabId, timestamp: Date.now() },
+    });
+  }
 });
 
 // Clean up cache when tab is closed

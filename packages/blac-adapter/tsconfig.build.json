@@ -6,7 +6,8 @@
     "noEmit": false,
     "declaration": true,
     "declarationMap": false,
-    "emitDeclarationOnly": true
+    "emitDeclarationOnly": true,
+    "paths": {}
   },
   "include": ["src"],
   "exclude": ["src/__tests__", "**/*.test.ts"]

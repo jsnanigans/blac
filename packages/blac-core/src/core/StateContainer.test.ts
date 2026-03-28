@@ -3,7 +3,7 @@
  * Testing the foundation of the entire state management system
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vite-plus/test';
 import { blacTestSetup } from '@blac/core/testing';
 import { StateContainer } from './StateContainer';
 import {

@@ -12,16 +12,16 @@ const [state, bloc] = useBloc(CounterCubit);
 function useBloc<T extends StateContainerConstructor>(
   BlocClass: T,
   options?: UseBlocOptions<T>,
-): [state: ExtractState<T>, bloc: InstanceType<T>, ref: ComponentRef]
+): [state: ExtractState<T>, bloc: InstanceType<T>, ref: ComponentRef];
 ```
 
 ## Return values
 
-| Index | Name | Description |
-|-------|------|-------------|
-| 0 | `state` | Current state snapshot. In auto-tracking mode, this is a Proxy that records property access. |
-| 1 | `bloc` | The Cubit instance. Call methods on it (`bloc.increment()`). Also proxied for getter tracking. |
-| 2 | `ref` | Internal component ref. Rarely needed outside of advanced use cases. |
+| Index | Name    | Description                                                                                    |
+| ----- | ------- | ---------------------------------------------------------------------------------------------- |
+| 0     | `state` | Current state snapshot. In auto-tracking mode, this is a Proxy that records property access.   |
+| 1     | `bloc`  | The Cubit instance. Call methods on it (`bloc.increment()`). Also proxied for getter tracking. |
+| 2     | `ref`   | Internal component ref. Rarely needed outside of advanced use cases.                           |
 
 Typically you destructure just the first two:
 

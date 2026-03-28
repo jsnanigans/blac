@@ -13,7 +13,9 @@
   "devDependencies": {
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vitepress": "^1.6.4",
-    "wrangler": "^4"
+    "oxc-minify": "latest",
+    "vitepress": "^2.0.0-alpha.17",
+    "wrangler": "^4",
+    "vite-plus": "catalog:"
   }
 }

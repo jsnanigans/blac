@@ -80,9 +80,11 @@ export function usePerformanceMetrics(enabled = true): PerformanceMetrics {
 
       // Get memory usage if available
       let memoryUsed = 0;
-      if ('memory' in performance && (performance as any).memory) {
-        const memory = (performance as any).memory;
-        memoryUsed = Math.round(memory.usedJSHeapSize / 1024 / 1024);
+      const perf = performance as unknown as {
+        memory?: { usedJSHeapSize?: number };
+      };
+      if (perf.memory?.usedJSHeapSize) {
+        memoryUsed = Math.round(perf.memory.usedJSHeapSize / 1024 / 1024);
       }
 
       // Update metrics every 500ms to avoid excessive re-renders
@@ -135,7 +137,7 @@ export function useRenderDuration(): number {
     const renderTime = endTime - startTimeRef.current;
     setDuration(renderTime);
     startTimeRef.current = performance.now();
-  });
+  }, []);
 
   return duration;
 }

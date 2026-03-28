@@ -38,16 +38,16 @@ function Counter() {
 
 ## Packages
 
-| Package | Description |
-|---------|-------------|
-| [`@blac/core`](packages/blac-core) | State containers, registry, plugins, watch & tracking utilities |
-| [`@blac/react`](packages/blac-react) | React hook (`useBloc`) with auto-tracking |
-| [`@blac/preact`](packages/blac-preact) | Preact integration |
-| [`@blac/adapter`](packages/blac-adapter) | Framework-agnostic adapter layer |
-| [`@blac/logging-plugin`](packages/logging-plugin) | Console logging and monitoring plugin |
-| [`@blac/devtools-connect`](packages/devtools-connect) | DevTools and Redux DevTools integration |
-| [`@blac/plugin-persist`](packages/plugin-persist) | IndexedDB state persistence |
-| [`@blac/devtools-ui`](packages/devtools-ui) | DevTools UI components |
+| Package                                               | Description                                                     |
+| ----------------------------------------------------- | --------------------------------------------------------------- |
+| [`@blac/core`](packages/blac-core)                    | State containers, registry, plugins, watch & tracking utilities |
+| [`@blac/react`](packages/blac-react)                  | React hook (`useBloc`) with auto-tracking                       |
+| [`@blac/preact`](packages/blac-preact)                | Preact integration                                              |
+| [`@blac/adapter`](packages/blac-adapter)              | Framework-agnostic adapter layer                                |
+| [`@blac/logging-plugin`](packages/logging-plugin)     | Console logging and monitoring plugin                           |
+| [`@blac/devtools-connect`](packages/devtools-connect) | DevTools and Redux DevTools integration                         |
+| [`@blac/plugin-persist`](packages/plugin-persist)     | IndexedDB state persistence                                     |
+| [`@blac/devtools-ui`](packages/devtools-ui)           | DevTools UI components                                          |
 
 ## Development
 

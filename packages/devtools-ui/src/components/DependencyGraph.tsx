@@ -17,12 +17,16 @@ import {
 } from '@xyflow/react';
 import ELKBundled from 'elkjs/lib/elk.bundled.js';
 import { useBloc } from '@blac/react';
-import { DevToolsInstancesBloc, DevToolsDependencyBloc, DevToolsLayoutBloc } from '../blocs';
+import {
+  DevToolsInstancesBloc,
+  DevToolsDependencyBloc,
+  DevToolsLayoutBloc,
+} from '../blocs';
 import { T } from '../theme';
 import { injectXyflowStyles } from '../inject-xyflow-styles';
 
-const NODE_WIDTH = 160;
-const NODE_HEIGHT = 48;
+const NODE_WIDTH = 180;
+const NODE_HEIGHT = 52;
 
 function instanceKey(id: string): string {
   const i = id.indexOf(':');
@@ -44,6 +48,17 @@ type BlocNodeData = {
   color: string;
 };
 
+const hiddenHandle: React.CSSProperties = {
+  background: 'transparent',
+  border: 'none',
+  width: 1,
+  height: 1,
+  minWidth: 0,
+  minHeight: 0,
+  opacity: 0,
+  pointerEvents: 'none',
+};
+
 const BlocNode: FC<NodeProps<Node<BlocNodeData>>> = ({ data }) => (
   <div
     style={{
@@ -56,25 +71,22 @@ const BlocNode: FC<NodeProps<Node<BlocNodeData>>> = ({ data }) => (
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'center',
-      padding: '0 10px',
+      padding: '0 12px',
       boxSizing: 'border-box',
       cursor: 'pointer',
     }}
   >
-    <Handle
-      type="target"
-      position={Position.Left}
-      style={{ background: T.border2, border: 'none', width: 8, height: 8 }}
-    />
+    <Handle type="target" position={Position.Left} style={hiddenHandle} />
     <div
       style={{
-        fontSize: 11,
+        fontSize: 12,
         fontWeight: 600,
         color: data.color,
         fontFamily: T.fontMono,
         overflow: 'hidden',
         textOverflow: 'ellipsis',
         whiteSpace: 'nowrap',
+        lineHeight: '16px',
       }}
     >
       {data.className}
@@ -82,20 +94,17 @@ const BlocNode: FC<NodeProps<Node<BlocNodeData>>> = ({ data }) => (
     <div
       style={{
         fontSize: 10,
-        color: T.text2,
+        color: T.text1,
         fontFamily: T.fontMono,
         overflow: 'hidden',
         textOverflow: 'ellipsis',
         whiteSpace: 'nowrap',
+        lineHeight: '14px',
       }}
     >
       {data.instanceName}
     </div>
-    <Handle
-      type="source"
-      position={Position.Right}
-      style={{ background: T.border2, border: 'none', width: 8, height: 8 }}
-    />
+    <Handle type="source" position={Position.Right} style={hiddenHandle} />
   </div>
 );
 
@@ -122,8 +131,8 @@ async function computeELKLayout(
     layoutOptions: {
       'elk.algorithm': 'layered',
       'elk.direction': 'RIGHT',
-      'elk.spacing.nodeNode': '50',
-      'elk.layered.spacing.nodeNodeBetweenLayers': '80',
+      'elk.spacing.nodeNode': '40',
+      'elk.layered.spacing.nodeNodeBetweenLayers': '60',
       'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP',
       'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
     },
@@ -144,7 +153,10 @@ async function computeELKLayout(
   return {
     nodes: rfNodes.map((n) => {
       const ln = layouted.children?.find((c: ELKNode) => c.id === n.id);
-      return { ...n, position: { x: ln?.x ?? 0, y: ln?.y ?? 0 } } as Node<BlocNodeData>;
+      return {
+        ...n,
+        position: { x: ln?.x ?? 0, y: ln?.y ?? 0 },
+      } as Node<BlocNodeData>;
     }),
     edges: rfEdges,
   };
@@ -156,7 +168,9 @@ const DependencyGraphFlow: FC = () => {
   const [, layoutBloc] = useBloc(DevToolsLayoutBloc);
   const { fitView } = useReactFlow();
 
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node<BlocNodeData>>([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node<BlocNodeData>>(
+    [],
+  );
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
   const connectedIds = useMemo(() => {
@@ -199,12 +213,14 @@ const DependencyGraphFlow: FC = () => {
           source: e.fromId,
           target: targetId,
           type: 'smoothstep',
-          label: 'uses',
-          labelStyle: { fontSize: 9, fill: T.text2, fontFamily: 'ui-monospace, monospace' },
-          labelBgStyle: { fill: T.bg3, fillOpacity: 0.9 },
-          labelBgPadding: [4, 2] as [number, number],
-          style: { stroke: T.border3, strokeWidth: 1.5 },
-          markerEnd: { type: MarkerType.ArrowClosed, color: T.border3 },
+          animated: true,
+          style: { stroke: T.text2, strokeWidth: 1.5 },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: T.text2,
+            width: 16,
+            height: 16,
+          },
         };
       })
       .filter((e): e is Edge => e !== null);
@@ -213,7 +229,10 @@ const DependencyGraphFlow: FC = () => {
   // Only re-run ELK when graph structure changes, not on data updates
   const graphKey = useMemo(() => {
     const nodeIds = [...connectedIds].sort().join(',');
-    const edgeIds = depEdges.map((e) => `${e.fromId}>${e.toClass}`).sort().join(',');
+    const edgeIds = depEdges
+      .map((e) => `${e.fromId}>${e.toClass}`)
+      .sort()
+      .join(',');
     return `${nodeIds}|${edgeIds}`;
   }, [connectedIds, depEdges]);
 
@@ -224,11 +243,13 @@ const DependencyGraphFlow: FC = () => {
 
   useEffect(() => {
     if (rfNodesRef.current.length === 0) return;
-    computeELKLayout(rfNodesRef.current, rfEdgesRef.current).then(({ nodes: ln, edges: le }) => {
-      setNodes(ln);
-      setEdges(le);
-      requestAnimationFrame(() => fitView({ padding: 0.15, duration: 300 }));
-    });
+    void computeELKLayout(rfNodesRef.current, rfEdgesRef.current).then(
+      ({ nodes: ln, edges: le }) => {
+        setNodes(ln);
+        setEdges(le);
+        requestAnimationFrame(() => fitView({ padding: 0.15, duration: 300 }));
+      },
+    );
   }, [graphKey, fitView, setNodes, setEdges]);
 
   const onNodeClick = useCallback(
@@ -247,11 +268,16 @@ const DependencyGraphFlow: FC = () => {
       onEdgesChange={onEdgesChange}
       nodeTypes={nodeTypes}
       onNodeClick={onNodeClick}
+      nodesDraggable={false}
+      nodesConnectable={false}
+      nodesFocusable={false}
+      edgesFocusable={false}
       fitView
       colorMode="dark"
       style={{ background: T.bg1 }}
     >
       <Controls
+        showInteractive={false}
         style={{
           background: T.bg3,
           border: `1px solid ${T.border1}`,
@@ -260,6 +286,38 @@ const DependencyGraphFlow: FC = () => {
         }}
       />
       <Background variant={BackgroundVariant.Dots} color={T.border0} gap={24} />
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 8,
+          right: 8,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          fontSize: 10,
+          color: T.text2,
+          fontFamily: T.fontMono,
+          background: T.bg3,
+          border: `1px solid ${T.border1}`,
+          borderRadius: T.radius,
+          padding: '4px 8px',
+        }}
+      >
+        <span>A</span>
+        <svg width="24" height="8" viewBox="0 0 24 8">
+          <line
+            x1="0"
+            y1="4"
+            x2="18"
+            y2="4"
+            stroke={T.text2}
+            strokeWidth="1.5"
+            strokeDasharray="3 2"
+          />
+          <polygon points="18,1 24,4 18,7" fill={T.text2} />
+        </svg>
+        <span>depends on B</span>
+      </div>
     </ReactFlow>
   );
 };
@@ -299,8 +357,8 @@ export const DependencyGraph: FC = React.memo(() => {
       >
         <div style={{ marginBottom: 12, fontSize: 11, color: T.text1 }}>
           No dependencies detected. Use{' '}
-          <code style={{ color: T.textAccent }}>this.depend(OtherBloc)</code> in your blocs to
-          track dependencies.
+          <code style={{ color: T.textAccent }}>this.depend(OtherBloc)</code> in
+          your blocs to track dependencies.
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
           {instances.map((inst) => {
@@ -326,7 +384,9 @@ export const DependencyGraph: FC = React.memo(() => {
                 }}
               >
                 <span style={{ color }}>{inst.className}</span>
-                <span style={{ color: T.text2, fontSize: 10 }}>{inst.name}</span>
+                <span style={{ color: T.text2, fontSize: 10 }}>
+                  {inst.name}
+                </span>
               </div>
             );
           })}

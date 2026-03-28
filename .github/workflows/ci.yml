@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  pull_request:
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: voidzero-dev/setup-vp@v1
+        with:
+          node-version: lts
+          cache: true
+      - run: pnpm run build
+      - run: pnpm run lint
+
+  format:
+    name: Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: voidzero-dev/setup-vp@v1
+        with:
+          node-version: lts
+          cache: true
+      - run: pnpm run format:check
+
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: voidzero-dev/setup-vp@v1
+        with:
+          node-version: lts
+          cache: true
+      - run: pnpm run typecheck
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: voidzero-dev/setup-vp@v1
+        with:
+          node-version: lts
+          cache: true
+      - run: pnpm run build
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: voidzero-dev/setup-vp@v1
+        with:
+          node-version: lts
+          cache: true
+      - run: pnpm run test

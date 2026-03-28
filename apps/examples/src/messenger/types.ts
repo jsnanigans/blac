@@ -42,10 +42,10 @@ export interface OutgoingMessage {
   type: OutgoingMessageType;
   channelId: string;
   userId: string;
-  payload: any;
+  payload: unknown;
 }
 
 export interface IncomingMessage {
   type: IncomingMessageType;
-  payload: any;
+  payload: unknown;
 }

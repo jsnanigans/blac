@@ -111,8 +111,9 @@ export class ExternalDepsManager {
       }
       if (allValid) return this.cachedDeps;
     }
-    this.cachedDeps = resolveDependencies(rawInstance);
-    return this.cachedDeps;
+    const deps = resolveDependencies(rawInstance);
+    this.cachedDeps = deps;
+    return deps;
   }
 
   /**

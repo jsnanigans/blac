@@ -20,13 +20,13 @@
  * }, 300);
  * ```
  */
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: unknown[]) => unknown>(
   fn: T,
   delay: number,
 ): (...args: Parameters<T>) => void {
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-  return function (this: any, ...args: Parameters<T>) {
+  return function (this: unknown, ...args: Parameters<T>) {
     if (timeoutId !== null) {
       clearTimeout(timeoutId);
     }
@@ -53,14 +53,14 @@ export function debounce<T extends (...args: any[]) => any>(
  * }, 100);
  * ```
  */
-export function throttle<T extends (...args: any[]) => any>(
+export function throttle<T extends (...args: unknown[]) => unknown>(
   fn: T,
   delay: number,
 ): (...args: Parameters<T>) => void {
   let lastCall = 0;
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-  return function (this: any, ...args: Parameters<T>) {
+  return function (this: unknown, ...args: Parameters<T>) {
     const now = Date.now();
     const timeSinceLastCall = now - lastCall;
 
@@ -325,7 +325,7 @@ export function chunk<T>(array: T[], size: number): T[][] {
  * groupBy(users, 'role'); // { admin: [...], user: [...] }
  * ```
  */
-export function groupBy<T extends Record<string, any>>(
+export function groupBy<T extends Record<string, unknown>>(
   array: T[],
   key: keyof T,
 ): Record<string, T[]> {
@@ -416,19 +416,21 @@ export function generateId(length = 8): string {
  * deepEqual({ a: 1 }, { a: 1 }); // true
  * ```
  */
-export function deepEqual(a: any, b: any): boolean {
+export function deepEqual(a: unknown, b: unknown): boolean {
   if (a === b) return true;
   if (a == null || b == null) return false;
   if (typeof a !== 'object' || typeof b !== 'object') return false;
 
-  const keysA = Object.keys(a);
-  const keysB = Object.keys(b);
+  const objA = a as Record<string, unknown>;
+  const objB = b as Record<string, unknown>;
+  const keysA = Object.keys(objA);
+  const keysB = Object.keys(objB);
 
   if (keysA.length !== keysB.length) return false;
 
   for (const key of keysA) {
     if (!keysB.includes(key)) return false;
-    if (!deepEqual(a[key], b[key])) return false;
+    if (!deepEqual(objA[key], objB[key])) return false;
   }
 
   return true;
@@ -472,7 +474,7 @@ export async function retry<T>(
   maxAttempts = 3,
   delay = 1000,
 ): Promise<T> {
-  let lastError: any;
+  let lastError: unknown;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {

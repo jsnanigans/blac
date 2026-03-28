@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vite-plus/test';
 import { blacTestSetup } from '@blac/core/testing';
 import {
   tracked,
@@ -7,7 +7,6 @@ import {
   DependencyManager,
 } from './tracked';
 import { Cubit } from '../core/Cubit';
-import { acquire } from '../registry';
 
 class TrackedCubit extends Cubit<{ val: number; other: number }> {
   constructor() {

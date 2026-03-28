@@ -17,9 +17,9 @@ class AuthCubit extends Cubit<{ user: User | null; loading: boolean }> {
   }
 
   login = async (credentials: Credentials) => {
-    this.patch({ loading: true });           // merge partial changes
+    this.patch({ loading: true }); // merge partial changes
     const user = await api.login(credentials);
-    this.emit({ user, loading: false });     // replace entire state
+    this.emit({ user, loading: false }); // replace entire state
   };
 
   logout = () => {
@@ -53,13 +53,13 @@ If you want an instance to survive even when nothing is using it, mark it with `
 
 In React, `useBloc` handles the registry for you. Outside React (tests, scripts, server-side), you interact with the registry directly:
 
-| Function | Creates? | Ref count | Use when |
-|----------|----------|-----------|----------|
-| `acquire(Class)` | Yes | +1 | You own this reference (must `release` later) |
-| `ensure(Class)` | Yes | No change | You need the instance but don't own a reference |
-| `borrow(Class)` | No | No change | Instance must already exist (throws if not) |
-| `borrowSafe(Class)` | No | No change | Like `borrow` but returns `{ error, instance }` |
-| `release(Class)` | No | -1 | Done with your reference |
+| Function            | Creates? | Ref count | Use when                                        |
+| ------------------- | -------- | --------- | ----------------------------------------------- |
+| `acquire(Class)`    | Yes      | +1        | You own this reference (must `release` later)   |
+| `ensure(Class)`     | Yes      | No change | You need the instance but don't own a reference |
+| `borrow(Class)`     | No       | No change | Instance must already exist (throws if not)     |
+| `borrowSafe(Class)` | No       | No change | Like `borrow` but returns `{ error, instance }` |
+| `release(Class)`    | No       | -1        | Done with your reference                        |
 
 ## Instance Modes
 
@@ -93,17 +93,18 @@ function UserName() {
 If `state.email` changes but `state.name` doesn't, this component **won't re-render**. This happens automatically — no selectors, no `useMemo`, no `React.memo`.
 
 The tracking also works for:
+
 - Nested properties: `state.user.profile.name`
 - Array access: `state.items.length`, `state.items[0]`
 - Getters on the bloc instance: `bloc.total`, `bloc.isEmpty`
 
 Three tracking modes are available:
 
-| Mode | How | Best for |
-|------|-----|----------|
-| **Auto-tracking** (default) | Proxy records property access | Most components |
-| **Manual dependencies** | You provide a dependency array | Complex conditions, computed values |
-| **No tracking** | Re-renders on every state change | Action-only components, debugging |
+| Mode                        | How                              | Best for                            |
+| --------------------------- | -------------------------------- | ----------------------------------- |
+| **Auto-tracking** (default) | Proxy records property access    | Most components                     |
+| **Manual dependencies**     | You provide a dependency array   | Complex conditions, computed values |
+| **No tracking**             | Re-renders on every state change | Action-only components, debugging   |
 
 See [Dependency Tracking](/react/dependency-tracking) for details.
 
@@ -125,19 +126,19 @@ Official plugins: [Logging](/plugins/logging), [DevTools](/plugins/devtools), [P
 
 ## Glossary
 
-| Term | Meaning |
-|------|---------|
-| **StateContainer** | Abstract base class for all state containers |
-| **Cubit** | Concrete state container with public `emit`, `update`, `patch` |
-| **Registry** | Global singleton managing instance creation, sharing, and disposal |
-| **acquire / release** | Increment / decrement an instance's ref count |
-| **Ref count** | Number of active references to an instance; disposed at zero |
-| **Named instance** | An instance keyed by a string, allowing multiple instances of the same class |
-| **Keep alive** | Instance persists even when ref count reaches zero |
-| **Auto-tracking** | Proxy-based detection of which state properties a component reads |
-| **Plugin** | Observer that hooks into state container lifecycle events |
-| **Hydration** | Restoring persisted state into a state container on startup |
-| **depend()** | Declare a cross-bloc dependency; returns a lazy getter |
+| Term                  | Meaning                                                                      |
+| --------------------- | ---------------------------------------------------------------------------- |
+| **StateContainer**    | Abstract base class for all state containers                                 |
+| **Cubit**             | Concrete state container with public `emit`, `update`, `patch`               |
+| **Registry**          | Global singleton managing instance creation, sharing, and disposal           |
+| **acquire / release** | Increment / decrement an instance's ref count                                |
+| **Ref count**         | Number of active references to an instance; disposed at zero                 |
+| **Named instance**    | An instance keyed by a string, allowing multiple instances of the same class |
+| **Keep alive**        | Instance persists even when ref count reaches zero                           |
+| **Auto-tracking**     | Proxy-based detection of which state properties a component reads            |
+| **Plugin**            | Observer that hooks into state container lifecycle events                    |
+| **Hydration**         | Restoring persisted state into a state container on startup                  |
+| **depend()**          | Declare a cross-bloc dependency; returns a lazy getter                       |
 
 ## What's next?
 

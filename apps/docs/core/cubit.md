@@ -61,13 +61,13 @@ this.patch({ loading: true });
 
 ### Choosing a method
 
-| Scenario | Method |
-|----------|--------|
-| Full state replacement | `emit` |
+| Scenario                   | Method   |
+| -------------------------- | -------- |
+| Full state replacement     | `emit`   |
 | Derived from current state | `update` |
-| Update a few fields | `patch` |
-| Toggle a boolean | `update` |
-| Reset to initial state | `emit` |
+| Update a few fields        | `patch`  |
+| Toggle a boolean           | `update` |
+| Reset to initial state     | `emit`   |
 
 ## Getters
 
@@ -111,14 +111,14 @@ These are available inside your Cubit class but not from the outside:
 
 ## Public properties
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `state` | `Readonly<S>` | Current state value |
-| `isDisposed` | `boolean` | Whether the instance has been disposed |
-| `name` | `string` | Display name (defaults to class name) |
-| `instanceId` | `string` | Unique instance identifier |
-| `createdAt` | `number` | Creation timestamp |
-| `hydrationStatus` | `HydrationStatus` | Current hydration phase |
+| Property          | Type              | Description                            |
+| ----------------- | ----------------- | -------------------------------------- |
+| `state`           | `Readonly<S>`     | Current state value                    |
+| `isDisposed`      | `boolean`         | Whether the instance has been disposed |
+| `name`            | `string`          | Display name (defaults to class name)  |
+| `instanceId`      | `string`          | Unique instance identifier             |
+| `createdAt`       | `number`          | Creation timestamp                     |
+| `hydrationStatus` | `HydrationStatus` | Current hydration phase                |
 
 ## Async methods
 
@@ -180,6 +180,7 @@ class FormCubit extends Cubit<{ email: string; password: string }> {
   }
 }
 ```
+
 :::
 
 See also: [Patterns & Recipes](/guide/patterns), [API Reference](/api/core)

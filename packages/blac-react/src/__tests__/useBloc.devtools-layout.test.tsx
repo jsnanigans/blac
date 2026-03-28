@@ -2,7 +2,7 @@
  * Simplified DevTools Layout Test - tests instance management and sorting
  */
 import { render, screen, waitFor, act, cleanup } from '@testing-library/react';
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach } from 'vite-plus/test';
 import { useBloc } from '../useBloc';
 import { Cubit, blac, acquire } from '@blac/core';
 import React from 'react';
@@ -22,7 +22,6 @@ type LayoutState = {
 };
 
 // Simplified LayoutBloc
-@blac({ excludeFromDevTools: true })
 class LayoutBloc extends Cubit<LayoutState> {
   constructor() {
     super({
@@ -79,6 +78,7 @@ class LayoutBloc extends Cubit<LayoutState> {
     );
   }
 }
+blac({ excludeFromDevTools: true })(LayoutBloc);
 
 // Simplified test component
 const SimpleDevToolsPanel: React.FC = () => {

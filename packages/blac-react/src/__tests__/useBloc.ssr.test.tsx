@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach, vi } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vite-plus/test';
 import { renderToString } from 'react-dom/server';
 import { createElement } from 'react';
 import { Cubit, acquire } from '@blac/core';

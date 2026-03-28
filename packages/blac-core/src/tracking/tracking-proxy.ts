@@ -33,8 +33,8 @@ export function isProxyable(value: unknown): value is object {
 export interface ProxyState<T> {
   trackedPaths: Set<string>;
   isTracking: boolean;
-  proxyCache: WeakMap<object, any>;
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+  proxyCache: WeakMap<object, unknown>;
+  // oxlint-disable-next-line @typescript-eslint/no-unsafe-function-type
   boundFunctionsCache: WeakMap<Function, Function> | null;
   lastProxiedState: T | null;
   lastProxy: T | null;
@@ -49,7 +49,7 @@ export function createProxyState<T>(): ProxyState<T> {
   return {
     trackedPaths: new Set<string>(),
     isTracking: false,
-    proxyCache: new WeakMap<object, any>(),
+    proxyCache: new WeakMap<object, unknown>(),
     boundFunctionsCache: null,
     lastProxiedState: null,
     lastProxy: null,
@@ -95,7 +95,7 @@ export function createArrayProxy<T, U>(
 
       if (typeof value === 'function') {
         if (!state.boundFunctionsCache) {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+          // oxlint-disable-next-line @typescript-eslint/no-unsafe-function-type
           state.boundFunctionsCache = new WeakMap<Function, Function>();
         }
         const cached = state.boundFunctionsCache.get(value);
@@ -166,13 +166,13 @@ export function createInternal<T>(
   }
 
   if (state.proxyCache.has(target)) {
-    return state.proxyCache.get(target);
+    return state.proxyCache.get(target) as T;
   }
 
   if (Array.isArray(target)) {
     return createArrayProxy(
       state,
-      target as unknown as any[],
+      target as unknown[],
       path,
       depth,
     ) as unknown as T;
@@ -188,7 +188,7 @@ export function createInternal<T>(
 
       if (typeof value === 'function') {
         if (!state.boundFunctionsCache) {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+          // oxlint-disable-next-line @typescript-eslint/no-unsafe-function-type
           state.boundFunctionsCache = new WeakMap<Function, Function>();
         }
         const cached = state.boundFunctionsCache.get(value);
@@ -268,7 +268,7 @@ export function createForTarget<T>(state: ProxyState<T>, target: T): T {
  */
 export interface PathInfo {
   segments: string[];
-  value: any;
+  value: unknown;
 }
 
 /**
@@ -280,7 +280,7 @@ export interface DependencyState<T> {
   currentRenderPaths: Set<string>;
   pathCache: Map<string, PathInfo>;
   lastCheckedState: T | null;
-  lastCheckedValues: Map<string, any>;
+  lastCheckedValues: Map<string, unknown>;
 }
 
 function isChildPath(child: string, parent: string): boolean {
@@ -477,7 +477,7 @@ export interface GetterState {
 }
 
 const descriptorCache = new WeakMap<
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+  // oxlint-disable-next-line @typescript-eslint/no-unsafe-function-type
   Function,
   Map<string | symbol, PropertyDescriptor | undefined>
 >();

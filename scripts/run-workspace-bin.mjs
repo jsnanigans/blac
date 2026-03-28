@@ -12,7 +12,9 @@ if (!binName) {
   process.exit(1);
 }
 
-const repoRoot = path.dirname(fileURLToPath(new URL('../package.json', import.meta.url)));
+const repoRoot = path.dirname(
+  fileURLToPath(new URL('../package.json', import.meta.url)),
+);
 const searchRoots = [
   repoRoot,
   ...['packages', 'apps'].flatMap((dir) => {

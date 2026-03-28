@@ -15,7 +15,7 @@ import {
 } from '@blac/devtools-ui';
 import comm from './comm';
 
-function estimateStateSize(state: unknown): number {
+function estimateStateSize(state: any): number {
   try {
     return JSON.stringify(state)?.length ?? 0;
   } catch {
@@ -32,18 +32,34 @@ function App() {
         const dependencyBloc = acquire(DevToolsDependencyBloc);
         const metricsBloc = acquire(DevToolsMetricsBloc);
 
+        const resetAll = () => {
+          flushSync(() => {
+            instancesBloc.setConnected(false);
+            instancesBloc.setAllInstances([]);
+            diffBloc.clearAllPreviousStates();
+            logsBloc.clearLogs();
+            dependencyBloc.setEdges([]);
+            metricsBloc.clearAll();
+          });
+        };
+
+        comm.onDisconnect(() => {
+          resetAll();
+        });
+
         comm.connect();
         comm.onMessage((message) => {
           switch (message.type) {
+            case 'PONG':
+              comm.receivedPong();
+              if (!instancesBloc.state.connected) {
+                // We got a pong but panel thinks we're disconnected — re-request
+                comm.sendMessage({ type: 'GET_INSTANCES' });
+              }
+              break;
+
             case 'PAGE_RELOAD':
-              flushSync(() => {
-                instancesBloc.setConnected(false);
-                instancesBloc.setAllInstances([]);
-                diffBloc.clearAllPreviousStates();
-                logsBloc.clearLogs();
-                dependencyBloc.setEdges([]);
-                metricsBloc.clearAll();
-              });
+              resetAll();
               break;
 
             case 'BLAC_NOT_AVAILABLE':
@@ -54,6 +70,7 @@ function App() {
               break;
 
             case 'INITIAL_STATE':
+              comm.receivedData();
               if (message.payload?.instances) {
                 flushSync(() => {
                   instancesBloc.setAllInstances(message.payload.instances);
@@ -63,35 +80,62 @@ function App() {
                       diffBloc.loadInstanceHistory(inst.id, inst.history);
                     }
                     if (inst.dependencies?.length) {
-                      dependencyBloc.addEdgesForInstance(inst.id, inst.dependencies);
+                      dependencyBloc.addEdgesForInstance(
+                        inst.id,
+                        inst.dependencies,
+                      );
                     }
                   }
                   // Load dependency graph edges from initial state dump
                   if (message.payload.dependencyGraph?.edges?.length) {
-                    dependencyBloc.setEdges(message.payload.dependencyGraph.edges);
+                    dependencyBloc.setEdges(
+                      message.payload.dependencyGraph.edges,
+                    );
                   }
                 });
               }
               if (message.payload?.eventHistory) {
                 flushSync(() => {
-                  message.payload.eventHistory!.forEach((event: any) => {
+                  message.payload.eventHistory?.forEach((event: any) => {
                     if (event.type === 'init') {
-                      logsBloc.addLog('init', '__system__', 'System', 'DevTools', {
-                        instanceCount: Array.isArray(event.data) ? event.data.length : 0,
-                      });
+                      logsBloc.addLog(
+                        'init',
+                        '__system__',
+                        'System',
+                        'DevTools',
+                        {
+                          instanceCount: Array.isArray(event.data)
+                            ? event.data.length
+                            : 0,
+                        },
+                      );
                     } else if (event.type === 'instance-created') {
-                      logsBloc.addLog('created', event.data.id, event.data.className, event.data.name, {
-                        initialState: event.data.state,
-                      });
+                      logsBloc.addLog(
+                        'created',
+                        event.data.id,
+                        event.data.className,
+                        event.data.name,
+                        {
+                          initialState: event.data.state,
+                        },
+                      );
                     } else if (event.type === 'instance-disposed') {
-                      logsBloc.addLog('disposed', event.data.id, event.data.className, event.data.name);
+                      logsBloc.addLog(
+                        'disposed',
+                        event.data.id,
+                        event.data.className,
+                        event.data.name,
+                      );
                     } else if (event.type === 'instance-updated') {
                       logsBloc.addLog(
                         'state-changed',
                         event.data.id,
                         event.data.className,
                         event.data.name,
-                        { previousState: event.data.previousState, newState: event.data.state || event.data.currentState },
+                        {
+                          previousState: event.data.previousState,
+                          newState: event.data.state || event.data.currentState,
+                        },
                         event.data.callstack,
                         event.data.trigger?.name,
                       );
@@ -110,6 +154,7 @@ function App() {
               break;
 
             case 'ATOMIC_UPDATE': {
+              comm.receivedData();
               if (!message.payload) break;
               const event = message.payload;
 
@@ -120,21 +165,27 @@ function App() {
                     logsBloc.clearLogs();
                     dependencyBloc.setEdges([]);
                     metricsBloc.clearAll();
-                    const initInstances = (Array.isArray(event.data) ? event.data : []).map(
-                      (inst: any) => ({
-                        id: inst.id,
-                        className: inst.className,
-                        name: inst.name,
-                        isDisposed: inst.isDisposed,
-                        state: inst.state,
-                        lastStateChangeTimestamp: event.timestamp,
-                        createdAt: event.timestamp,
-                      }),
-                    );
+                    const initInstances = (
+                      Array.isArray(event.data) ? event.data : []
+                    ).map((inst: any) => ({
+                      id: inst.id,
+                      className: inst.className,
+                      name: inst.name,
+                      isDisposed: inst.isDisposed,
+                      state: inst.state,
+                      lastStateChangeTimestamp: event.timestamp,
+                      createdAt: event.timestamp,
+                    }));
                     instancesBloc.setAllInstances(initInstances);
-                    logsBloc.addLog('init', '__system__', 'System', 'DevTools', {
-                      instanceCount: initInstances.length,
-                    });
+                    logsBloc.addLog(
+                      'init',
+                      '__system__',
+                      'System',
+                      'DevTools',
+                      {
+                        instanceCount: initInstances.length,
+                      },
+                    );
                     break;
                   }
 
@@ -167,7 +218,12 @@ function App() {
                     dependencyBloc.removeEdgesForInstance(d.id);
                     metricsBloc.removeInstance(d.id);
                     if (disposedInst) {
-                      logsBloc.addLog('disposed', d.id, disposedInst.className, disposedInst.name);
+                      logsBloc.addLog(
+                        'disposed',
+                        d.id,
+                        disposedInst.className,
+                        disposedInst.name,
+                      );
                     }
                     break;
                   }
@@ -176,10 +232,19 @@ function App() {
                     const d = event.data;
                     const current = instancesBloc.getInstance(d.id);
                     if (current) {
-                      diffBloc.storePreviousState(d.id, current.state, d.callstack, d.trigger?.name);
+                      diffBloc.storePreviousState(
+                        d.id,
+                        current.state,
+                        d.callstack,
+                        d.trigger?.name,
+                      );
                     }
                     instancesBloc.updateInstanceState(d.id, d.state);
-                    metricsBloc.recordUpdate(d.id, d.className, estimateStateSize(d.state));
+                    metricsBloc.recordUpdate(
+                      d.id,
+                      d.className,
+                      estimateStateSize(d.state),
+                    );
                     logsBloc.addLog(
                       'state-changed',
                       d.id,
@@ -208,5 +273,8 @@ function App() {
   );
 }
 
-const root = ReactDOM.createRoot(document.getElementById('root')!);
-root.render(<App />);
+const rootEl = document.getElementById('root');
+if (rootEl) {
+  const root = ReactDOM.createRoot(rootEl);
+  root.render(<App />);
+}

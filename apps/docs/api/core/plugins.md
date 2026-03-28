@@ -9,7 +9,10 @@ interface BlacPlugin {
 
   onInstall?(context: PluginContext): void;
   onUninstall?(): void;
-  onInstanceCreated?(instance: StateContainer<any>, context: PluginContext): void;
+  onInstanceCreated?(
+    instance: StateContainer<any>,
+    context: PluginContext,
+  ): void;
   onStateChanged?<S extends object = any>(
     instance: StateContainer<S>,
     previousState: S,
@@ -17,7 +20,10 @@ interface BlacPlugin {
     callstack: string | undefined,
     context: PluginContext,
   ): void;
-  onInstanceDisposed?(instance: StateContainer<any>, context: PluginContext): void;
+  onInstanceDisposed?(
+    instance: StateContainer<any>,
+    context: PluginContext,
+  ): void;
 }
 ```
 

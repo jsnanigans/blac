@@ -1,4 +1,4 @@
-import type { BlacPlugin, StateContainer } from '@blac/core';
+import type { BlacPlugin } from '@blac/core';
 
 export interface RegistryEvent {
   type: 'created' | 'disposed';
@@ -32,7 +32,7 @@ export const registryPlugin: BlacPlugin = {
   name: 'registry-example',
   version: '1.0.0',
 
-  onInstanceCreated(instance: StateContainer<unknown>) {
+  onInstanceCreated(instance) {
     push({
       type: 'created',
       name: instance.name,
@@ -40,7 +40,7 @@ export const registryPlugin: BlacPlugin = {
     });
   },
 
-  onInstanceDisposed(instance: StateContainer<unknown>) {
+  onInstanceDisposed(instance) {
     push({
       type: 'disposed',
       name: instance.name,

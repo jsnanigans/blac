@@ -156,7 +156,7 @@ export function useBloc<
         adapterState,
         instance,
       ];
-      // eslint-disable-next-line react-hooks/exhaustive-deps
+      // oxlint-disable-next-line react-hooks/exhaustive-deps
     }, [BlocClass, instanceId]);
 
   const state = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
@@ -173,7 +173,7 @@ export function useBloc<
       rawInstance,
       forceUpdate,
     );
-  });
+  }, [adapterState, rawInstance, forceUpdate]);
 
   useEffect(() => {
     const manager = externalDepsManager.current;
@@ -190,7 +190,7 @@ export function useBloc<
 
       release(BlocClass, instanceKey);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return [state, bloc, componentRef] as UseBlocReturn<T, ExtractState<T>>;
