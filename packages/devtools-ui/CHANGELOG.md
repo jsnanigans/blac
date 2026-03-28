@@ -1,5 +1,20 @@
 # @blac/devtools-ui
 
+## 2.0.11
+
+### Patch Changes
+
+- fix types for testing helpers
+- Updated dependencies
+  - @blac/core@2.0.10
+  - @blac/react@2.0.10
+
+## 2.0.10
+
+### Patch Changes
+
+- fix types for the testing helpers
+
 ## 2.0.9
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @blac/core
 
+## 2.0.10
+
+### Patch Changes
+
+- fix types for testing helpers
+
 ## 2.0.9
 
 ### Patch Changes

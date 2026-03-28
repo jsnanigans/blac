@@ -1,5 +1,19 @@
 # @blac/plugin-persist
 
+## 0.0.7
+
+### Patch Changes
+
+- fix types for testing helpers
+- Updated dependencies
+  - @blac/core@2.0.10
+
+## 0.0.6
+
+### Patch Changes
+
+- fix types for the testing helpers
+
 ## 0.0.5
 
 ### Patch Changes
