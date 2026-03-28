@@ -1,6 +1,6 @@
 {
   "name": "@blac/react",
-  "version": "2.0.8",
+  "version": "2.0.9",
   "license": "MIT",
   "author": "Brendan Mullins <jsnanigans@gmail.com>",
   "description": "React bindings for BlaC — useBloc hook with automatic re-render optimization",
@@ -59,7 +59,7 @@
   ],
   "scripts": {
     "dev": "vp pack --watch",
-    "build": "vp pack && tsc -p tsconfig.build.json && cp dist/index.d.ts dist/index.d.cts",
+    "build": "vp pack && tsc -p tsconfig.build.json && cp dist/index.d.ts dist/index.d.cts && cp dist/testing.d.ts dist/testing.d.cts",
     "clean": "rm -rf dist",
     "format": "vp fmt \".\"",
     "format:check": "vp fmt \".\" --check",

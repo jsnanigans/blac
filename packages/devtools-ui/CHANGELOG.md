@@ -1,5 +1,14 @@
 # @blac/devtools-ui
 
+## 2.0.9
+
+### Patch Changes
+
+- vite-plus
+- Updated dependencies
+  - @blac/react@2.0.9
+  - @blac/core@2.0.9
+
 ## 2.0.8
 
 ### Patch Changes
