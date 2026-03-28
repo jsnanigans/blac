@@ -76,7 +76,15 @@ case $choice in
     echo "  3. Run option 4 to publish, or push your version commit"
     ;;
   4)
-    echo -e "${BLUE}Building and publishing...${NC}"
+    echo -e "${YELLOW}Run release checks before publishing? (y/n)${NC}"
+    read -p "" -n 1 -r run_checks
+    echo ""
+    if [[ $run_checks =~ ^[Yy]$ ]]; then
+      echo -e "${BLUE}Running release checks...${NC}"
+      pnpm release:check
+      echo ""
+    fi
+    echo -e "${BLUE}Publishing...${NC}"
     echo ""
     pnpm release:publish
     echo ""
