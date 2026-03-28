@@ -1,5 +1,11 @@
 # @blac/core
 
+## 2.0.9
+
+### Patch Changes
+
+- vite-plus
+
 ## 2.0.8
 
 ### Patch Changes
