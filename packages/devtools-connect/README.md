@@ -1,24 +1,18 @@
 # @blac/devtools-connect
 
-DevTools connection plugin for [BlaC](https://github.com/jsnanigans/blac) state management library.
+DevTools connection plugin for BlaC. Exposes a `window.__BLAC_DEVTOOLS__` API that the DevTools UI reads from.
 
-**[Full documentation](https://jsnanigans.github.io/blac/plugins/devtools)**
+**[Documentation](https://blac-docs.pages.dev/plugins/devtools)** · **[npm](https://www.npmjs.com/package/@blac/devtools-connect)**
 
 ## Installation
 
 ```bash
-npm install @blac/devtools-connect
-# or
 pnpm add @blac/devtools-connect
-# or
-yarn add @blac/devtools-connect
 ```
 
-## Quick Start
+## Setup
 
-Add the plugin to your app:
-
-```typescript
+```ts
 import { getPluginManager } from '@blac/core';
 import { createDevToolsBrowserPlugin } from '@blac/devtools-connect';
 
@@ -29,57 +23,37 @@ getPluginManager().install(
 );
 ```
 
-Then add the UI component (see `@blac/devtools-ui` package).
+Then add the UI component from [`@blac/devtools-ui`](../devtools-ui/README.md).
 
-## Configuration
+## Options
 
-```typescript
-import { createDevToolsBrowserPlugin } from '@blac/devtools-connect';
-
+```ts
 createDevToolsBrowserPlugin({
-  // Enable/disable the plugin (default: true)
-  enabled: import.meta.env.DEV,
-
-  // Maximum instances to track (default: 2000)
-  maxInstances: 2000,
-
-  // Maximum state snapshots per instance (default: 20)
-  maxSnapshots: 20,
+  enabled: true, // default: true
+  maxInstances: 2000, // max tracked instances (default: 2000)
+  maxSnapshots: 20, // state snapshots per instance (default: 20)
 });
 ```
 
-This plugin exposes a global `window.__BLAC_DEVTOOLS__` API for the DevTools UI.
+## Global API
 
-## API
+The plugin exposes `window.__BLAC_DEVTOOLS__`:
 
-The plugin exposes a global API at `window.__BLAC_DEVTOOLS__`:
-
-```typescript
+```ts
 const api = window.__BLAC_DEVTOOLS__;
 
-// Check if enabled
 api.isEnabled();
-
-// Get all current instances
 api.getInstances();
-
-// Get event history
 api.getEventHistory();
 
-// Subscribe to events
 const unsubscribe = api.subscribe((event) => {
   console.log(event.type, event.data);
 });
-
-// Cleanup
-unsubscribe();
 ```
 
 ## Security
 
-- ✅ Safe serialization with circular reference handling
-- ✅ Depth limits to prevent infinite recursion
-- ⚠️ **Only enable in development** - Never ship DevTools to production
+Only enable in development — never ship DevTools to production. The plugin includes safe serialization with circular reference handling and depth limits.
 
 ## License
 

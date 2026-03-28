@@ -1,8 +1,8 @@
 # @blac/logging-plugin
 
-Logging and debugging plugin for BlaC state management. Logs instance lifecycle, state changes, events, and monitors for potential memory issues.
+Logging and debugging plugin for BlaC. Logs lifecycle events, state changes, and monitors for potential memory issues like leaked instances and rapid create/dispose cycles.
 
-**[Full documentation](https://jsnanigans.github.io/blac/plugins/logging)**
+**[Documentation](https://blac-docs.pages.dev/plugins/logging)** · **[npm](https://www.npmjs.com/package/@blac/logging-plugin)**
 
 ## Installation
 
@@ -12,7 +12,7 @@ pnpm add @blac/logging-plugin
 
 ## Usage
 
-```typescript
+```ts
 import { getPluginManager } from '@blac/core';
 import { LoggingPlugin } from '@blac/logging-plugin';
 
@@ -23,37 +23,37 @@ getPluginManager().install(new LoggingPlugin(), {
 
 ## Configuration
 
-```typescript
+```ts
 new LoggingPlugin({
-  // Log verbosity: 'minimal' | 'info' | 'debug' | 'verbose'
+  // Verbosity: 'minimal' | 'info' | 'debug' | 'verbose'
   level: 'info',
 
-  // Output format: 'simple' (one-line) | 'grouped' (console.group)
+  // Output: 'simple' (one-line) | 'grouped' (console.group)
   format: 'grouped',
 
   // Filtering
-  include: ['CounterCubit', 'CartCubit'], // Only log these classes
-  exclude: ['AnalyticsCubit'], // Exclude these classes
-  filter: ({ className, isIsolated }) => !isIsolated, // Custom filter
+  include: ['CounterCubit', 'CartCubit'],
+  exclude: ['AnalyticsCubit'],
+  filter: ({ className, isIsolated }) => !isIsolated,
 
-  // Feature toggles
-  logLifecycle: true, // Log create/dispose
-  logStateChanges: true, // Log state transitions
-  includeCallstack: false, // Include callstack in logs
+  // What to log
+  logLifecycle: true,
+  logStateChanges: true,
+  includeCallstack: false,
 
   // Memory monitoring
-  instanceCountWarningThreshold: 50, // Warn when exceeded
-  detectRapidLifecycles: true, // Detect create/dispose loops
-  rapidLifecycleWindowMs: 1000, // Time window for detection
-  rapidLifecycleThreshold: 5, // Cycles to trigger warning
+  instanceCountWarningThreshold: 50,
+  detectRapidLifecycles: true,
+  rapidLifecycleWindowMs: 1000,
+  rapidLifecycleThreshold: 5,
 
   // State change batching
-  debounceStateChanges: true, // Group rapid successive changes
-  debounceWindowMs: 100, // Time window for batching
+  debounceStateChanges: true,
+  debounceWindowMs: 100,
 
   // Customization
-  prefix: '[BlaC]', // Log prefix
-  logger: console, // Custom logger
+  prefix: '[BlaC]',
+  logger: console,
 });
 ```
 
@@ -84,22 +84,10 @@ new LoggingPlugin({
     Current: 1
 ```
 
-**Batched state changes (when multiple changes happen rapidly):**
+**Batched:**
 
 ```
 [BlaC] CounterCubit#abc12345 state: 0 → 5 (5 changes batched)
-```
-
-```
-▼ [BlaC] CounterCubit#abc12345 state changed (5 batched)
-    Initial: 0
-    Final: 5
-  ▼ All changes
-      1. 0 → 1
-      2. 1 → 2
-      3. 2 → 3
-      4. 3 → 4
-      5. 4 → 5
 ```
 
 **Warnings:**
@@ -109,3 +97,7 @@ new LoggingPlugin({
 [BlaC] ⚠️ Rapid lifecycle: CounterCubit created/disposed 5 times in 1000ms
 [BlaC] ⚠️ Unused instance: FormCubit#abc12345 disposed without state changes
 ```
+
+## License
+
+MIT
