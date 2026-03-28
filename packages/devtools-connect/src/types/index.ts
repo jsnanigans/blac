@@ -13,6 +13,12 @@ export interface Trigger {
 /**
  * Snapshot of state at a point in time
  */
+export interface GetterInfo {
+  value: unknown;
+  error?: string;
+  dependsOn?: string[];
+}
+
 export interface StateSnapshot {
   /** Current state after change */
   state: unknown;
@@ -24,6 +30,8 @@ export interface StateSnapshot {
   callstack?: string;
   /** What triggered this state change */
   trigger?: Trigger;
+  /** Computed getter values at this point in time */
+  getters?: Record<string, GetterInfo>;
 }
 
 /**
@@ -42,6 +50,8 @@ export interface InstanceState {
   history: StateSnapshot[];
   /** Creation timestamp */
   createdAt: number;
+  /** Current computed getter values */
+  getters?: Record<string, GetterInfo>;
 }
 
 /**

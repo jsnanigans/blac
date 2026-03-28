@@ -28,6 +28,12 @@ export interface DependencyEdge {
   toKey: string;
 }
 
+export interface GetterInfo {
+  value: unknown;
+  error?: string;
+  dependsOn?: string[];
+}
+
 export interface InstanceData {
   /** Unique instance ID */
   id: string;
@@ -49,6 +55,8 @@ export interface InstanceData {
   hydrationError?: string;
   /** Dependency edges from this instance to other blocs */
   dependencies?: DependencyEdge[];
+  /** Computed getter values */
+  getters?: Record<string, GetterInfo>;
 }
 
 /**

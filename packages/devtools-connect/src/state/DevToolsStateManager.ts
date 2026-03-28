@@ -11,6 +11,7 @@ import type {
   DevToolsSnapshot,
   DevToolsStateManagerConfig,
   Trigger,
+  GetterInfo,
 } from '../types';
 
 // Re-export types for backward compatibility
@@ -62,6 +63,7 @@ export class DevToolsStateManager {
     name: string;
     state: any;
     createdAt: number;
+    getters?: Record<string, GetterInfo>;
   }): void {
     // Check if we need to evict oldest instance
     if (
@@ -81,9 +83,11 @@ export class DevToolsStateManager {
           state: instance.state,
           previousState: null,
           timestamp: instance.createdAt,
+          ...(instance.getters ? { getters: instance.getters } : {}),
         },
       ],
       createdAt: instance.createdAt,
+      ...(instance.getters ? { getters: instance.getters } : {}),
     };
 
     this.instances.set(instance.id, instanceState);
@@ -100,6 +104,7 @@ export class DevToolsStateManager {
     currentState: any,
     callstack?: string,
     trigger?: Trigger,
+    getters?: Record<string, GetterInfo>,
   ): void {
     const instance = this.instances.get(instanceId);
     if (!instance) {
@@ -109,8 +114,11 @@ export class DevToolsStateManager {
       return;
     }
 
-    // Update current state
+    // Update current state and getters
     instance.currentState = currentState;
+    if (getters) {
+      instance.getters = getters;
+    }
 
     // Add snapshot to history (circular buffer)
     const snapshot: StateSnapshot = {
@@ -119,6 +127,7 @@ export class DevToolsStateManager {
       timestamp: Date.now(),
       callstack,
       trigger,
+      ...(getters ? { getters } : {}),
     };
 
     instance.history.push(snapshot);

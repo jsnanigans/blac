@@ -13,6 +13,7 @@ type LayoutState = {
   activeTab: TabName;
   selectedId: string | null;
   isCurrentStateExpanded: boolean;
+  isGettersExpanded: boolean;
   isHistoryExpanded: boolean;
   isDiffExpanded: boolean;
   leftPanelWidth: number;
@@ -32,6 +33,7 @@ export class DevToolsLayoutBloc extends Cubit<LayoutState> {
       activeTab: 'Instances',
       selectedId: null,
       isCurrentStateExpanded: true,
+      isGettersExpanded: false,
       isHistoryExpanded: false,
       isDiffExpanded: false,
       leftPanelWidth: 300,
@@ -59,9 +61,10 @@ export class DevToolsLayoutBloc extends Cubit<LayoutState> {
     this.patch({ isCurrentStateExpanded: !this.state.isCurrentStateExpanded });
   };
 
-  /**
-   * Toggle history panel expansion
-   */
+  toggleGettersExpanded = () => {
+    this.patch({ isGettersExpanded: !this.state.isGettersExpanded });
+  };
+
   toggleHistoryExpanded = () => {
     this.patch({ isHistoryExpanded: !this.state.isHistoryExpanded });
   };

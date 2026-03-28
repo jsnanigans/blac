@@ -98,6 +98,7 @@ function toInstanceData(inst: any): import('./types').InstanceData {
     hydrationStatus: inst.hydrationStatus,
     hydrationError: inst.hydrationError,
     dependencies: inst.dependencies,
+    getters: inst.getters,
   };
 }
 
@@ -228,7 +229,11 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
             (d.trigger as Record<string, any>)?.name as string | undefined,
           );
         }
-        instancesBloc.updateInstanceState(d.id as string, updatedState);
+        instancesBloc.updateInstanceState(
+          d.id as string,
+          updatedState,
+          d.getters,
+        );
         metricsBloc.recordUpdate(
           d.id as string,
           d.className as string,

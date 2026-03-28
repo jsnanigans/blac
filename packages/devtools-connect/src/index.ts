@@ -14,5 +14,8 @@ export {
   SerializationError,
 } from './serialization/serialize';
 
+// Getters
+export { enumerateGetters } from './getters/enumerateGetters';
+
 // State management
 export { DevToolsStateManager } from './state/DevToolsStateManager';

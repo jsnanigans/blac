@@ -81,7 +81,11 @@ export class DevToolsInstancesBloc extends Cubit<InstancesState> {
   /**
    * Update state of an existing instance
    */
-  updateInstanceState = (instanceId: string, currentState: any) => {
+  updateInstanceState = (
+    instanceId: string,
+    currentState: any,
+    getters?: InstanceData['getters'],
+  ) => {
     debug.log(`updateInstanceState: ${instanceId}`);
 
     const instances = this.state.instances.map((inst) => {
@@ -90,6 +94,7 @@ export class DevToolsInstancesBloc extends Cubit<InstancesState> {
           ...inst,
           state: currentState,
           lastStateChangeTimestamp: Date.now(),
+          ...(getters !== undefined ? { getters } : {}),
         };
       }
       return inst;

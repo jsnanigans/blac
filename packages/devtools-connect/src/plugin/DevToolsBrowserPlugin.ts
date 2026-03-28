@@ -10,6 +10,7 @@
 
 import type { BlacPlugin, PluginContext, InstanceMetadata } from '@blac/core';
 import { safeSerialize } from '../serialization/serialize';
+import { enumerateGetters } from '../getters/enumerateGetters';
 import { DevToolsStateManager } from '../state/DevToolsStateManager';
 import type {
   DevToolsEventType,
@@ -112,6 +113,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       name: data.name || data.id,
       state: data.state,
       createdAt,
+      getters: (data as any).getters,
     });
 
     // Capture dependency edges from this instance
@@ -158,6 +160,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       currSerialized.success ? currSerialized.data : currentState,
       callstack,
       trigger,
+      (data as any).getters,
     );
 
     // Update performance metrics
@@ -310,6 +313,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
           name: data.name || data.id,
           state: data.state,
           createdAt,
+          getters: (data as any).getters,
         });
 
         this.captureDependencies(instance, data.id, data.className);
@@ -366,6 +370,8 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       ? safeSerialize(currentState)
       : undefined;
 
+    const getters = enumerateGetters(instance);
+
     return {
       ...metadata,
       state: serializedState.success ? serializedState.data : state,
@@ -382,6 +388,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
         : undefined,
       hydrationStatus: context.getHydrationStatus(instance),
       hydrationError: metadata.hydrationError,
+      ...(getters ? { getters } : {}),
     } as any as InstanceMetadata;
   }
 

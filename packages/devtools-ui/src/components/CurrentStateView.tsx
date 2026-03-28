@@ -46,65 +46,60 @@ export const CurrentStateView: FC<CurrentStateViewProps> = React.memo(
     return (
       <div>
         <div
+          onClick={onToggleExpanded}
           style={{
-            fontSize: '14px',
-            marginBottom: '8px',
-            fontWeight: 600,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
+            gap: '6px',
+            padding: '6px 0',
+            cursor: 'pointer',
+            userSelect: 'none',
+            color: T.text1,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = T.text0;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = T.text1;
           }}
         >
-          <div
-            onClick={onToggleExpanded}
+          <span
             style={{
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              userSelect: 'none',
-              padding: '3px 0',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = T.textAccent;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = T.text0;
+              display: 'inline-block',
+              transition: 'transform 0.15s',
+              transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+              fontSize: '10px',
+              color: T.text2,
             }}
           >
-            <span
-              style={{
-                display: 'inline-block',
-                transition: 'transform 0.2s',
-                transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
-                fontSize: '12px',
-              }}
-            >
-              ▶
-            </span>
-            <span>Current State</span>
-          </div>
+            ▶
+          </span>
+          <span style={{ fontSize: '12px', fontWeight: 600 }}>
+            Current State
+          </span>
           {onTimeTravel && !isEditing && (
             <button
-              onClick={handleEdit}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEdit();
+              }}
               style={{
-                fontSize: '11px',
-                padding: '2px 8px',
+                marginLeft: 'auto',
+                fontSize: '10px',
+                padding: '1px 6px',
                 background: 'transparent',
                 border: `1px solid ${T.border2}`,
-                color: T.text1,
-                borderRadius: T.radius,
+                color: T.text2,
+                borderRadius: T.radiusSm,
                 cursor: 'pointer',
               }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.color = T.text0;
-                (e.currentTarget as HTMLButtonElement).style.background =
-                  T.bgHover;
+                e.currentTarget.style.color = T.text0;
+                e.currentTarget.style.background = T.bgHover;
               }}
               onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.color = T.text1;
-                (e.currentTarget as HTMLButtonElement).style.background =
-                  'transparent';
+                e.currentTarget.style.color = T.text2;
+                e.currentTarget.style.background = 'transparent';
               }}
             >
               Edit
@@ -144,7 +139,7 @@ export const CurrentStateView: FC<CurrentStateViewProps> = React.memo(
                 style={{
                   fontSize: '11px',
                   padding: '3px 10px',
-                  background: '#10b981',
+                  background: T.success,
                   border: 'none',
                   color: '#fff',
                   borderRadius: T.radius,
@@ -174,7 +169,7 @@ export const CurrentStateView: FC<CurrentStateViewProps> = React.memo(
             <div
               style={{
                 background: T.bg3,
-                padding: '10px',
+                padding: '8px 10px',
                 borderRadius: T.radius,
                 overflow: 'auto',
                 border: `1px solid ${T.border1}`,
@@ -190,8 +185,8 @@ export const CurrentStateView: FC<CurrentStateViewProps> = React.memo(
                 style={
                   {
                     fontSize: '12px',
-                    fontFamily: 'Monaco, Consolas, monospace',
-                    '--w-rjv-background-color': '#252526',
+                    fontFamily: T.fontMono,
+                    '--w-rjv-background-color': T.bg3,
                     '--w-rjv-color': '#d4d4d4',
                     '--w-rjv-key-string': '#9cdcfe',
                     '--w-rjv-type-string-color': '#ce9178',
