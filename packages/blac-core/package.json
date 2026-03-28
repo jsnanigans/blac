@@ -17,6 +17,28 @@
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "testing": [
+        "./dist/testing.d.ts"
+      ],
+      "tracking": [
+        "./dist/tracking.d.ts"
+      ],
+      "debug": [
+        "./dist/debug.d.ts"
+      ],
+      "plugins": [
+        "./dist/plugins.d.ts"
+      ],
+      "watch": [
+        "./dist/watch-entry.d.ts"
+      ],
+      "types": [
+        "./dist/types.d.ts"
+      ]
+    }
+  },
   "exports": {
     ".": {
       "import": {
