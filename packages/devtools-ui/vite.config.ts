@@ -12,7 +12,7 @@ export default defineConfig({
     entry: ['src/index.tsx'],
     format: ['esm', 'cjs'],
     dts: false,
-    clean: true,
+    clean: false,
     sourcemap: true,
     fixedExtension: false,
     external: ['react', 'react-dom', '@blac/core', '@blac/react'],

@@ -10,7 +10,7 @@ export default defineConfig({
   pack: {
     entry: 'src/index.ts',
     format: ['esm', 'cjs'],
-    clean: true,
+    clean: false,
     dts: false,
     sourcemap: true,
     external: ['@blac/core'],

@@ -21,7 +21,7 @@ export default defineConfig({
       testing: 'src/testing.ts',
     },
     format: ['esm', 'cjs'],
-    clean: true,
+    clean: false,
     dts: false,
     sourcemap: true,
     external: ['@blac/core'],
