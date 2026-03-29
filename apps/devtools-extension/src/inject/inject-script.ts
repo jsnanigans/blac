@@ -49,6 +49,7 @@
         trigger: i.trigger,
         history: i.history,
         dependencies: i.dependencies,
+        consumers: i.consumers,
       };
     });
   }

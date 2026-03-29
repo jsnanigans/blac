@@ -200,6 +200,7 @@ function App() {
                       lastStateChangeTimestamp: event.timestamp,
                       createdAt: event.timestamp,
                       dependencies: d.dependencies,
+                      consumers: d.consumers,
                     });
                     if (d.dependencies?.length) {
                       dependencyBloc.addEdgesForInstance(d.id, d.dependencies);
@@ -254,6 +255,12 @@ function App() {
                       d.callstack,
                       d.trigger?.name,
                     );
+                    break;
+                  }
+
+                  case 'consumers-changed': {
+                    const d = event.data;
+                    instancesBloc.updateConsumers(d.instanceId, d.consumers);
                     break;
                   }
                 }

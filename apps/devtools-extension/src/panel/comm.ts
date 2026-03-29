@@ -17,6 +17,12 @@ export interface DependencyGraph {
 /**
  * Panel-format instance (transformed by inject-script from backend format)
  */
+export interface ConsumerInfo {
+  id: string;
+  componentName: string;
+  mountedAt: number;
+}
+
 export interface PanelInstance {
   id: string;
   className: string;
@@ -31,6 +37,7 @@ export interface PanelInstance {
   callstack?: string;
   trigger?: Trigger;
   dependencies?: DependencyEdge[];
+  consumers?: ConsumerInfo[];
   history?: Array<{
     state: any;
     previousState: any;
@@ -50,7 +57,12 @@ export type AtomicEvent =
       timestamp: number;
       data: PanelInstance;
     }
-  | { type: 'performance-warning'; timestamp: number; data: any };
+  | { type: 'performance-warning'; timestamp: number; data: any }
+  | {
+      type: 'consumers-changed';
+      timestamp: number;
+      data: { instanceId: string; consumers: ConsumerInfo[] };
+    };
 
 export type MessageIn =
   | {
