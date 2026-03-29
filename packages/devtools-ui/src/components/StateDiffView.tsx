@@ -3,8 +3,9 @@ import JsonView from '@uiw/react-json-view';
 import { Viewer, Differ } from 'json-diff-kit';
 import 'json-diff-kit/dist/viewer.css';
 import type { DiffResult } from '../blocs';
+import { SectionHeader } from './SectionHeader';
+import { T } from '../theme';
 
-// Create a differ instance for state comparisons
 const differ = new Differ();
 
 type DiffMode = 'changes-only' | 'full-diff';
@@ -15,9 +16,6 @@ interface StateDiffViewProps {
   onToggleExpanded: () => void;
 }
 
-/**
- * Displays collapsible diff view comparing previous and current states
- */
 export const StateDiffView: FC<StateDiffViewProps> = React.memo(
   ({ diff, isExpanded, onToggleExpanded }) => {
     const [mode, setMode] = useState<DiffMode>('changes-only');
@@ -35,49 +33,38 @@ export const StateDiffView: FC<StateDiffViewProps> = React.memo(
         : {};
 
     return (
-      <div style={{ marginTop: '30px' }}>
+      <div>
         <style>{`
-          /* Enhanced diff styling */
           .json-diff-viewer {
-            font-family: 'Monaco', 'Menlo', 'Consolas', monospace !important;
-            font-size: 13px !important;
+            font-family: ${T.fontMono} !important;
+            font-size: 12px !important;
             line-height: 1.6 !important;
             border-collapse: collapse !important;
             width: 100%;
           }
-
-          /* Line backgrounds for modified lines */
           .json-diff-viewer td.line-modify {
             background-color: rgba(59, 130, 246, 0.1) !important;
           }
-
           .json-diff-viewer td.line-add {
             background-color: rgba(16, 185, 129, 0.15) !important;
           }
-
           .json-diff-viewer td.line-delete {
             background-color: rgba(239, 68, 68, 0.15) !important;
           }
-
-          /* Line numbers */
           .json-diff-viewer td.line-number {
-            color: #6b7280 !important;
-            background-color: #1a1a1a !important;
+            color: ${T.text2} !important;
+            background-color: ${T.bg1} !important;
             padding: 2px 12px !important;
             text-align: right !important;
             user-select: none !important;
-            border-right: 1px solid #333 !important;
+            border-right: 1px solid ${T.border1} !important;
             vertical-align: top !important;
             width: 50px !important;
           }
-
-          /* Content cells */
           .json-diff-viewer td:not(.line-number) {
             padding: 2px 12px !important;
             vertical-align: top !important;
           }
-
-          /* Inline diff highlights - ADDITIONS */
           .json-diff-viewer .inline-diff-add {
             background-color: rgba(16, 185, 129, 0.35) !important;
             color: #10b981 !important;
@@ -85,8 +72,6 @@ export const StateDiffView: FC<StateDiffViewProps> = React.memo(
             padding: 1px 2px !important;
             border-radius: 2px !important;
           }
-
-          /* Inline diff highlights - REMOVALS */
           .json-diff-viewer .inline-diff-remove {
             background-color: rgba(239, 68, 68, 0.35) !important;
             color: #ef4444 !important;
@@ -95,13 +80,9 @@ export const StateDiffView: FC<StateDiffViewProps> = React.memo(
             padding: 1px 2px !important;
             border-radius: 2px !important;
           }
-
-          /* Regular token colors (unchanged values) */
           .json-diff-viewer .token.plain {
             color: #d4d4d4 !important;
           }
-
-          /* Pre tags inside cells */
           .json-diff-viewer pre {
             margin: 0 !important;
             padding: 0 !important;
@@ -110,158 +91,83 @@ export const StateDiffView: FC<StateDiffViewProps> = React.memo(
             word-wrap: normal !important;
             font-family: inherit !important;
           }
-
-          /* Improved JsonView styles */
-          .w-json-view-container {
-            line-height: 1.8 !important;
-          }
-
-          /* Remove ugly highlight backgrounds on changed values */
-          .w-json-view-container mark {
-            background: transparent !important;
-            color: inherit !important;
-          }
-
-          /* Improve collapse/expand arrows */
-          .w-json-view-container .w-rjv-arrow {
-            opacity: 0.7;
-            transition: opacity 0.2s;
-          }
-
-          .w-json-view-container .w-rjv-arrow:hover {
-            opacity: 1;
-          }
-
-          /* Better spacing for nested objects */
-          .w-json-view-container .w-rjv-line {
-            padding: 2px 0;
-          }
         `}</style>
 
-        <div
-          onClick={onToggleExpanded}
-          style={{
-            fontSize: '16px',
-            marginBottom: '10px',
-            fontWeight: 600,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            userSelect: 'none',
-            padding: '4px 0',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.color = '#569cd6';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = '#fff';
-          }}
-        >
-          <span
-            style={{
-              display: 'inline-block',
-              transition: 'transform 0.2s',
-              transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
-            }}
-          >
-            ▶
-          </span>
-          <span>State Diff</span>
-          {hasChanges && (
-            <span
-              style={{
-                fontSize: '12px',
-                color: '#10b981',
-                fontWeight: 400,
-                marginLeft: '4px',
-              }}
-            >
-              (changes detected)
-            </span>
-          )}
-        </div>
+        <SectionHeader
+          label="State Diff"
+          isExpanded={isExpanded}
+          onToggle={onToggleExpanded}
+          trailing={
+            hasChanges ? (
+              <span
+                style={{
+                  fontSize: '10px',
+                  color: T.success,
+                  fontWeight: 400,
+                }}
+              >
+                changes detected
+              </span>
+            ) : undefined
+          }
+        />
 
         {isExpanded && (
           <div>
-            {/* Tab Selector */}
             <div
               style={{
                 display: 'flex',
-                gap: '8px',
-                marginBottom: '12px',
-                borderBottom: '1px solid #333',
+                gap: '2px',
+                marginBottom: '6px',
               }}
             >
-              <button
-                onClick={() => setMode('changes-only')}
-                style={{
-                  background:
-                    mode === 'changes-only' ? '#252526' : 'transparent',
-                  border: 'none',
-                  color: mode === 'changes-only' ? '#569cd6' : '#888',
-                  padding: '8px 16px',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  borderBottom:
-                    mode === 'changes-only' ? '2px solid #569cd6' : 'none',
-                  transition: 'all 0.2s',
-                }}
-                onMouseEnter={(e) => {
-                  if (mode !== 'changes-only') {
-                    e.currentTarget.style.color = '#aaa';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (mode !== 'changes-only') {
-                    e.currentTarget.style.color = '#888';
-                  }
-                }}
-              >
-                Changes Only
-              </button>
-              <button
-                onClick={() => setMode('full-diff')}
-                style={{
-                  background: mode === 'full-diff' ? '#252526' : 'transparent',
-                  border: 'none',
-                  color: mode === 'full-diff' ? '#569cd6' : '#888',
-                  padding: '8px 16px',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  borderBottom:
-                    mode === 'full-diff' ? '2px solid #569cd6' : 'none',
-                  transition: 'all 0.2s',
-                }}
-                onMouseEnter={(e) => {
-                  if (mode !== 'full-diff') {
-                    e.currentTarget.style.color = '#aaa';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (mode !== 'full-diff') {
-                    e.currentTarget.style.color = '#888';
-                  }
-                }}
-              >
-                Full Diff
-              </button>
+              {(['changes-only', 'full-diff'] as DiffMode[]).map((m) => {
+                const isActive = mode === m;
+                return (
+                  <button
+                    key={m}
+                    onClick={() => setMode(m)}
+                    style={{
+                      padding: '4px 10px',
+                      background: isActive ? T.bgAccent : 'transparent',
+                      color: isActive ? T.text0 : T.text1,
+                      border: 'none',
+                      borderRadius: T.radius,
+                      cursor: 'pointer',
+                      fontSize: '11px',
+                      fontWeight: isActive ? 500 : 400,
+                      transition: 'background 0.15s, color 0.15s',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isActive) {
+                        e.currentTarget.style.background = T.bgHover;
+                        e.currentTarget.style.color = T.text0;
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isActive) {
+                        e.currentTarget.style.background = 'transparent';
+                        e.currentTarget.style.color = T.text1;
+                      }
+                    }}
+                  >
+                    {m === 'changes-only' ? 'Changes Only' : 'Full Diff'}
+                  </button>
+                );
+              })}
             </div>
 
-            {/* Content */}
             {mode === 'changes-only' ? (
               <div
                 style={{
-                  background: '#1e1e1e',
-                  borderRadius: '4px',
-                  padding: '16px',
-                  border: '1px solid #333',
+                  background: T.bg2,
+                  borderRadius: T.radius,
+                  padding: '10px',
+                  border: `1px solid ${T.border1}`,
                 }}
               >
                 {!hasChanges ? (
-                  <div style={{ color: '#888', fontSize: '13px' }}>
+                  <div style={{ color: T.text2, fontSize: '12px' }}>
                     No changes detected
                   </div>
                 ) : (
@@ -274,14 +180,14 @@ export const StateDiffView: FC<StateDiffViewProps> = React.memo(
                     }
                     style={
                       {
-                        '--w-rjv-font-family':
-                          'Monaco, Menlo, Consolas, monospace',
-                        '--w-rjv-background-color': '#1e1e1e',
+                        fontSize: '12px',
+                        fontFamily: T.fontMono,
+                        '--w-rjv-background-color': T.bg2,
                         '--w-rjv-color': '#d4d4d4',
                         '--w-rjv-key-string': '#9cdcfe',
                         '--w-rjv-info-color': '#6a9955',
-                        '--w-rjv-border-left': '1px solid #333',
-                        '--w-rjv-line-color': '#1e1e1e',
+                        '--w-rjv-border-left': `1px solid ${T.border1}`,
+                        '--w-rjv-line-color': T.bg2,
                         '--w-rjv-arrow-color': '#858585',
                         '--w-rjv-edit-color': '#569cd6',
                         '--w-rjv-add-color': '#10b981',
@@ -310,10 +216,10 @@ export const StateDiffView: FC<StateDiffViewProps> = React.memo(
             ) : (
               <div
                 style={{
-                  background: '#1e1e1e',
-                  borderRadius: '4px',
+                  background: T.bg2,
+                  borderRadius: T.radius,
                   overflow: 'auto',
-                  border: '1px solid #333',
+                  border: `1px solid ${T.border1}`,
                 }}
               >
                 <Viewer
