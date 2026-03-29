@@ -130,6 +130,19 @@ export interface InstanceMetrics {
 }
 
 // =============================================================================
+// Consumer Tracking Types
+// =============================================================================
+
+export interface ConsumerInfo {
+  /** Unique consumer ID (one per useBloc call site per component mount) */
+  id: string;
+  /** React component name (from fiber or displayName) */
+  componentName: string;
+  /** Timestamp when the component mounted */
+  mountedAt: number;
+}
+
+// =============================================================================
 // Event Types (for DevToolsBrowserPlugin)
 // =============================================================================
 
@@ -138,7 +151,8 @@ export type DevToolsEventType =
   | 'instance-created'
   | 'instance-updated'
   | 'instance-disposed'
-  | 'performance-warning';
+  | 'performance-warning'
+  | 'consumers-changed';
 
 export interface DevToolsEvent {
   type: DevToolsEventType;

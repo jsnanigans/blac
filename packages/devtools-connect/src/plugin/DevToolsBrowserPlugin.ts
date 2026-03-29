@@ -22,6 +22,7 @@ import type {
   DevToolsGraph,
   InstanceMetrics,
   PerformanceWarning,
+  ConsumerInfo,
 } from '../types';
 
 // Re-export types for backward compatibility
@@ -54,6 +55,9 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
   private updateTimestamps = new Map<string, number[]>();
   private stateSizeCache = new Map<string, number>();
   private totalUpdateCounts = new Map<string, number>();
+
+  // Consumer tracking: instanceId -> Map<consumerId, ConsumerInfo>
+  private consumers = new Map<string, Map<string, ConsumerInfo>>();
 
   // Persistent event history storage (complete log from app startup)
   private eventHistory: DevToolsEvent[] = [];
@@ -90,6 +94,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     this.instanceTimestamps.clear();
     this.eventHistory = [];
     this.dependencyEdges = [];
+    this.consumers.clear();
     this.updateTimestamps.clear();
     this.stateSizeCache.clear();
     this.totalUpdateCounts.clear();
@@ -199,7 +204,8 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       (e) => e.fromId !== data.id,
     );
 
-    // Clean up metrics tracking
+    // Clean up consumers and metrics tracking
+    this.consumers.delete(data.id);
     this.updateTimestamps.delete(data.id);
     this.stateSizeCache.delete(data.id);
     this.totalUpdateCounts.delete(data.id);
@@ -219,7 +225,13 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
   }
 
   getInstances(): InstanceMetadata[] {
-    return Array.from(this.instanceCache.values());
+    return Array.from(this.instanceCache.values()).map((inst) => {
+      const consumers = this.consumers.get(inst.id);
+      if (consumers && consumers.size > 0) {
+        return { ...inst, consumers: Array.from(consumers.values()) } as any;
+      }
+      return inst;
+    });
   }
 
   getEventHistory(): DevToolsEvent[] {
@@ -291,6 +303,71 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       }
     }
     return false;
+  }
+
+  registerConsumer(
+    instanceId: string,
+    consumerId: string,
+    componentName: string,
+  ): void {
+    if (!this.instanceCache.has(instanceId)) return;
+
+    let instanceConsumers = this.consumers.get(instanceId);
+    if (!instanceConsumers) {
+      instanceConsumers = new Map();
+      this.consumers.set(instanceId, instanceConsumers);
+    }
+
+    const info: ConsumerInfo = {
+      id: consumerId,
+      componentName,
+      mountedAt: Date.now(),
+    };
+    instanceConsumers.set(consumerId, info);
+
+    this.emit({
+      type: 'consumers-changed',
+      timestamp: Date.now(),
+      data: {
+        instanceId,
+        consumers: Array.from(instanceConsumers.values()),
+      },
+    });
+  }
+
+  unregisterConsumer(instanceId: string, consumerId: string): void {
+    const instanceConsumers = this.consumers.get(instanceId);
+    if (!instanceConsumers) return;
+
+    instanceConsumers.delete(consumerId);
+    if (instanceConsumers.size === 0) {
+      this.consumers.delete(instanceId);
+    }
+
+    this.emit({
+      type: 'consumers-changed',
+      timestamp: Date.now(),
+      data: {
+        instanceId,
+        consumers: instanceConsumers.size
+          ? Array.from(instanceConsumers.values())
+          : [],
+      },
+    });
+  }
+
+  getConsumers(
+    instanceId?: string,
+  ): ConsumerInfo[] | Record<string, ConsumerInfo[]> {
+    if (instanceId) {
+      const map = this.consumers.get(instanceId);
+      return map ? Array.from(map.values()) : [];
+    }
+    const result: Record<string, ConsumerInfo[]> = {};
+    for (const [id, map] of this.consumers) {
+      result[id] = Array.from(map.values());
+    }
+    return result;
   }
 
   private scanExistingInstances(): void {
@@ -566,6 +643,14 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
         const result = this.getPerformanceMetrics(instanceId);
         return result;
       },
+      registerConsumer: (
+        instanceId: string,
+        consumerId: string,
+        componentName: string,
+      ) => this.registerConsumer(instanceId, consumerId, componentName),
+      unregisterConsumer: (instanceId: string, consumerId: string) =>
+        this.unregisterConsumer(instanceId, consumerId),
+      getConsumers: (instanceId?: string) => this.getConsumers(instanceId),
     };
   }
 }
