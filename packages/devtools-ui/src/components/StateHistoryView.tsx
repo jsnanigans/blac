@@ -2,6 +2,8 @@ import React, { FC, useState, useRef } from 'react';
 import JsonView from '@uiw/react-json-view';
 import type { StateSnapshot } from '../blocs';
 import { CallStackView } from './CallStackView';
+import { SectionHeader } from './SectionHeader';
+import { T } from '../theme';
 
 interface StateHistoryViewProps {
   history: StateSnapshot[];
@@ -120,64 +122,30 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
     }
 
     return (
-      <div style={{ marginTop: '20px' }}>
-        <div
-          onClick={onToggleExpanded}
-          style={{
-            fontSize: '14px',
-            marginBottom: '8px',
-            fontWeight: 600,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            userSelect: 'none',
-            padding: '3px 0',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.color = '#569cd6';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = '#fff';
-          }}
-        >
-          <span
-            style={{
-              display: 'inline-block',
-              transition: 'transform 0.2s',
-              transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
-              fontSize: '12px',
-            }}
-          >
-            ▶
-          </span>
-          <span>State History</span>
-          {history.length > 0 && (
-            <span
-              style={{
-                fontSize: '11px',
-                color: '#888',
-                fontWeight: 400,
-                marginLeft: '4px',
-              }}
-            >
-              ({historyEntries.length} snapshots)
-            </span>
-          )}
-        </div>
+      <div>
+        <SectionHeader
+          label="State History"
+          isExpanded={isExpanded}
+          onToggle={onToggleExpanded}
+          badge={
+            history.length > 0
+              ? `${historyEntries.length} snapshots`
+              : undefined
+          }
+        />
 
         {isExpanded && (
-          <div style={{ marginTop: '10px' }}>
+          <div>
             {historyEntries.length === 0 ? (
               <div
                 style={{
-                  color: '#888',
+                  color: T.text2,
                   fontSize: '12px',
                   padding: '15px',
                   textAlign: 'center',
-                  border: '1px solid #333',
-                  borderRadius: '3px',
-                  background: '#1e1e1e',
+                  border: `1px solid ${T.border1}`,
+                  borderRadius: T.radius,
+                  background: T.bg2,
                 }}
               >
                 No state changes recorded yet
@@ -201,9 +169,9 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
                     <div
                       key={entry.snapshot.timestamp}
                       style={{
-                        border: '1px solid #333',
-                        borderRadius: '3px',
-                        background: '#1e1e1e',
+                        border: `1px solid ${T.border1}`,
+                        borderRadius: T.radius,
+                        background: T.bg2,
                         overflow: 'hidden',
                       }}
                     >
@@ -211,8 +179,8 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
                       <div
                         style={{
                           padding: '8px 10px',
-                          background: isCurrent ? '#1a3a1a' : '#252526',
-                          borderBottom: '1px solid #333',
+                          background: isCurrent ? '#1a3a1a' : T.bg3,
+                          borderBottom: `1px solid ${T.border1}`,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'space-between',
@@ -229,7 +197,7 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
                             style={{
                               fontSize: '11px',
                               fontWeight: 600,
-                              color: isCurrent ? '#10b981' : '#888',
+                              color: isCurrent ? T.success : T.text2,
                             }}
                           >
                             {isCurrent
@@ -239,7 +207,7 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
                                 : `SNAPSHOT ${historyEntries.length - index}`}
                           </span>
                           {!isCurrent && (
-                            <span style={{ fontSize: '10px', color: '#666' }}>
+                            <span style={{ fontSize: '10px', color: T.text2 }}>
                               {formatTime(entry.snapshot.timestamp)}
                             </span>
                           )}
@@ -248,11 +216,11 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
                               style={{
                                 fontSize: '10px',
                                 padding: '1px 5px',
-                                background: '#1a2a3a',
-                                border: '1px solid #2a4a6a',
-                                borderRadius: '3px',
-                                color: '#569cd6',
-                                fontFamily: 'monospace',
+                                background: T.bgAccent,
+                                border: `1px solid ${T.borderAccent}40`,
+                                borderRadius: T.radiusSm,
+                                color: T.textAccent,
+                                fontFamily: T.fontMono,
                               }}
                               title="Method that triggered this state change"
                             >
@@ -271,7 +239,7 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
                             <span
                               style={{
                                 fontSize: '10px',
-                                color: '#10b981',
+                                color: T.success,
                                 fontWeight: 600,
                               }}
                             >
@@ -290,11 +258,11 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
                                 fontSize: '10px',
                                 padding: '2px 7px',
                                 background: isRestored
-                                  ? '#10b981'
+                                  ? T.success
                                   : 'transparent',
-                                border: `1px solid ${isRestored ? '#10b981' : '#444'}`,
-                                color: isRestored ? '#fff' : '#888',
-                                borderRadius: '3px',
+                                border: `1px solid ${isRestored ? T.success : T.border3}`,
+                                color: isRestored ? '#fff' : T.text2,
+                                borderRadius: T.radiusSm,
                                 cursor: 'pointer',
                               }}
                             >
@@ -314,7 +282,7 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
                         {!hasChanges && !isInitial ? (
                           <div
                             style={{
-                              color: '#666',
+                              color: T.text2,
                               fontSize: '12px',
                               fontStyle: 'italic',
                             }}
@@ -341,9 +309,9 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
                                 '--w-rjv-line-color': '#1e1e1e',
                                 '--w-rjv-arrow-color': '#858585',
                                 '--w-rjv-edit-color': '#569cd6',
-                                '--w-rjv-add-color': '#10b981',
+                                '--w-rjv-add-color': T.success,
                                 '--w-rjv-del-color': '#ef4444',
-                                '--w-rjv-copied-color': '#10b981',
+                                '--w-rjv-copied-color': T.success,
                                 '--w-rjv-curlybraces-color': '#d4d4d4',
                                 '--w-rjv-brackets-color': '#d4d4d4',
                                 '--w-rjv-ellipsis-color': '#858585',

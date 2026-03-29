@@ -1,5 +1,5 @@
 import { Cubit, blac } from '@blac/core';
-import type { InstanceData } from '../types';
+import type { ConsumerInfo, InstanceData } from '../types';
 import { debug } from '../utils/debug';
 
 type InstancesState = {
@@ -112,6 +112,19 @@ export class DevToolsInstancesBloc extends Cubit<InstancesState> {
 
     this.patch({ instances, animationTriggers });
     debug.log(`Instance state updated: ${instanceId}`);
+  };
+
+  /**
+   * Update consumer list for an instance
+   */
+  updateConsumers = (instanceId: string, consumers: ConsumerInfo[]) => {
+    const instances = this.state.instances.map((inst) => {
+      if (inst.id === instanceId) {
+        return { ...inst, consumers };
+      }
+      return inst;
+    });
+    this.patch({ instances });
   };
 
   /**

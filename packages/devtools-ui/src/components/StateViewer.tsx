@@ -5,10 +5,16 @@ import {
   DevToolsDependencyBloc,
   DevToolsInstancesBloc,
 } from '../blocs';
-import type { DependencyEdge, GetterInfo, InstanceData } from '../types';
+import type {
+  ConsumerInfo,
+  DependencyEdge,
+  GetterInfo,
+  InstanceData,
+} from '../types';
 import { CurrentStateView } from './CurrentStateView';
 import { StateHistoryView } from './StateHistoryView';
 import { StateDiffView } from './StateDiffView';
+import { SectionHeader } from './SectionHeader';
 import { T } from '../theme';
 
 interface StateViewerProps {
@@ -36,72 +42,6 @@ function formatRelative(timestamp: number): string {
   if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
   return `${Math.floor(diff / 86400000)}d ago`;
 }
-
-// ============================================================================
-// Shared Section Header
-// ============================================================================
-
-const SectionHeader: FC<{
-  label: string;
-  isExpanded: boolean;
-  onToggle: () => void;
-  badge?: string | number;
-  trailing?: React.ReactNode;
-}> = ({ label, isExpanded, onToggle, badge, trailing }) => (
-  <div
-    onClick={onToggle}
-    style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: '6px',
-      padding: '6px 0',
-      cursor: 'pointer',
-      userSelect: 'none',
-      color: T.text1,
-    }}
-    onMouseEnter={(e) => {
-      e.currentTarget.style.color = T.text0;
-    }}
-    onMouseLeave={(e) => {
-      e.currentTarget.style.color = T.text1;
-    }}
-  >
-    <span
-      style={{
-        display: 'inline-block',
-        transition: 'transform 0.15s',
-        transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
-        fontSize: '10px',
-        color: T.text2,
-      }}
-    >
-      ▶
-    </span>
-    <span style={{ fontSize: '12px', fontWeight: 600 }}>{label}</span>
-    {badge !== undefined && (
-      <span
-        style={{
-          fontSize: '10px',
-          color: T.text2,
-          fontWeight: 400,
-          background: T.bg3,
-          padding: '1px 6px',
-          borderRadius: T.radiusSm,
-          border: `1px solid ${T.border1}`,
-        }}
-      >
-        {badge}
-      </span>
-    )}
-    {trailing && (
-      <div
-        style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}
-      >
-        {trailing}
-      </div>
-    )}
-  </div>
-);
 
 // ============================================================================
 // Computed Getters Section
@@ -201,7 +141,6 @@ const GetterValue: FC<{ value: unknown }> = ({ value }) => {
   if (typeof value === 'boolean')
     return <span style={{ color: '#569cd6' }}>{String(value)}</span>;
 
-  // Object/array — show compact preview
   try {
     const str = JSON.stringify(value);
     if (str.length <= 80) {
@@ -467,6 +406,79 @@ const DependenciesSection: FC<DependenciesSectionProps> = React.memo(
 DependenciesSection.displayName = 'DependenciesSection';
 
 // ============================================================================
+// Consumers Section
+// ============================================================================
+
+const ConsumerRow: FC<{ consumer: ConsumerInfo }> = ({ consumer }) => (
+  <div
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      padding: '4px 8px',
+      background: T.bg2,
+      border: `1px solid ${T.border1}`,
+      borderLeft: `3px solid ${T.textAccent}`,
+      borderRadius: T.radius,
+      gap: '8px',
+    }}
+  >
+    <span
+      style={{
+        fontSize: '11px',
+        fontWeight: 600,
+        color: T.text0,
+        fontFamily: T.fontMono,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {consumer.componentName}
+    </span>
+    <span
+      style={{
+        fontSize: '10px',
+        color: T.text3,
+        marginLeft: 'auto',
+        flexShrink: 0,
+      }}
+    >
+      mounted {formatRelative(consumer.mountedAt)}
+    </span>
+  </div>
+);
+
+interface ConsumersSectionProps {
+  consumers?: ConsumerInfo[];
+}
+
+const ConsumersSection: FC<ConsumersSectionProps> = React.memo(
+  ({ consumers }) => {
+    const [isExpanded, setIsExpanded] = useState(true);
+
+    if (!consumers || consumers.length === 0) return null;
+
+    return (
+      <div>
+        <SectionHeader
+          label="Consumers"
+          isExpanded={isExpanded}
+          onToggle={() => setIsExpanded((v) => !v)}
+          badge={consumers.length}
+        />
+        {isExpanded && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+            {consumers.map((consumer) => (
+              <ConsumerRow key={consumer.id} consumer={consumer} />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  },
+);
+
+ConsumersSection.displayName = 'ConsumersSection';
+
+// ============================================================================
 // State Viewer (main component)
 // ============================================================================
 
@@ -585,6 +597,16 @@ export const StateViewer: FC<StateViewerProps> = ({ onTimeTravel }) => {
               </span>
             </>
           )}
+          {selectedInstance.consumers &&
+            selectedInstance.consumers.length > 0 && (
+              <>
+                <span style={{ color: T.border2 }}>·</span>
+                <span>
+                  {selectedInstance.consumers.length} consumer
+                  {selectedInstance.consumers.length !== 1 ? 's' : ''}
+                </span>
+              </>
+            )}
         </div>
       </div>
 
@@ -593,12 +615,14 @@ export const StateViewer: FC<StateViewerProps> = ({ onTimeTravel }) => {
         style={{
           flex: 1,
           overflow: 'auto',
-          padding: '8px 12px',
+          padding: '4px 12px 12px',
           display: 'flex',
           flexDirection: 'column',
-          gap: '4px',
+          gap: '2px',
         }}
       >
+        <ConsumersSection consumers={selectedInstance.consumers} />
+
         <CurrentStateView
           state={selectedInstance.state}
           isExpanded={isCurrentStateExpanded}

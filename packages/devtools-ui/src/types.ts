@@ -34,6 +34,12 @@ export interface GetterInfo {
   dependsOn?: string[];
 }
 
+export interface ConsumerInfo {
+  id: string;
+  componentName: string;
+  mountedAt: number;
+}
+
 export interface InstanceData {
   /** Unique instance ID */
   id: string;
@@ -57,6 +63,8 @@ export interface InstanceData {
   dependencies?: DependencyEdge[];
   /** Computed getter values */
   getters?: Record<string, GetterInfo>;
+  /** React components consuming this instance via useBloc */
+  consumers?: ConsumerInfo[];
 }
 
 /**

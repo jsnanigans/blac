@@ -1,5 +1,11 @@
 # @blac/devtools-ui
 
+## 2.0.13
+
+### Patch Changes
+
+- Update list view in devtools
+
 ## 2.0.12
 
 ### Patch Changes
