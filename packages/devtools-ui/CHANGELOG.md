@@ -1,5 +1,11 @@
 # @blac/devtools-ui
 
+## 2.0.12
+
+### Patch Changes
+
+- Add computed getters and edit state to devtools
+
 ## 2.0.11
 
 ### Patch Changes
