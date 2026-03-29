@@ -31,8 +31,10 @@ let nextConsumerId = 0;
 
 function getComponentName(): string | undefined {
   try {
-    const internals = (React as any)
-      .__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+    const internals =
+      (React as any)
+        .__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE ??
+      (React as any).__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
     const owner = internals?.ReactCurrentOwner?.current;
     if (owner?.type) {
       return owner.type.displayName || owner.type.name || undefined;
