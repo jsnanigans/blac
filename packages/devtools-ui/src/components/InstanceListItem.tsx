@@ -11,18 +11,35 @@ interface InstanceListItemProps {
   onSelect: () => void;
 }
 
+function statePreview(state: unknown): string {
+  if (state === null) return 'null';
+  if (state === undefined) return 'undefined';
+  if (typeof state === 'string')
+    return `"${state.length > 32 ? state.slice(0, 32) + '…' : state}"`;
+  if (typeof state === 'number' || typeof state === 'boolean')
+    return String(state);
+  if (Array.isArray(state)) return `Array(${state.length})`;
+  if (typeof state === 'object') {
+    const keys = Object.keys(state as Record<string, unknown>);
+    if (keys.length === 0) return '{}';
+    if (keys.length <= 3) return `{ ${keys.join(', ')} }`;
+    return `{ ${keys.slice(0, 3).join(', ')}, … }`;
+  }
+  return String(state);
+}
+
 export const InstanceListItem: FC<InstanceListItemProps> = React.memo(
   ({ instance, isSelected, animationTriggers, onSelect }) => {
     const borderColor = stringToColor(instance.className);
     const now = Date.now();
-
     const activeTriggers = animationTriggers.filter((t) => now - t < 300);
+    const preview = statePreview(instance.state);
 
     return (
       <div
         onClick={onSelect}
         style={{
-          padding: '6px 10px',
+          padding: '5px 10px 5px 0',
           borderBottom: `1px solid ${T.border0}`,
           borderLeft: `3px solid ${borderColor}`,
           cursor: 'pointer',
@@ -30,6 +47,7 @@ export const InstanceListItem: FC<InstanceListItemProps> = React.memo(
           transition: 'background 0.15s',
           position: 'relative',
           overflow: 'hidden',
+          paddingLeft: '8px',
         }}
         onMouseEnter={(e) => {
           if (!isSelected) {
@@ -50,12 +68,14 @@ export const InstanceListItem: FC<InstanceListItemProps> = React.memo(
           />
         ))}
 
+        {/* Line 1: Instance ID + badges */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: '6px',
+            minWidth: 0,
           }}
         >
           <InstanceId id={instance.id} />
@@ -68,50 +88,41 @@ export const InstanceListItem: FC<InstanceListItemProps> = React.memo(
             }}
           >
             {instance.hydrationStatus === 'hydrating' && (
-              <span
-                style={{
-                  fontSize: '9px',
-                  padding: '1px 5px',
-                  background: T.warningBg,
-                  color: T.warningText,
-                  borderRadius: T.radiusSm,
-                  letterSpacing: '0.3px',
-                }}
-              >
+              <StatusBadge bg={T.warningBg} color={T.warningText}>
                 HYDRATING
-              </span>
+              </StatusBadge>
             )}
             {instance.hydrationStatus === 'error' && (
-              <span
+              <StatusBadge
+                bg={T.errorBg}
+                color={T.errorText}
                 title={instance.hydrationError}
-                style={{
-                  fontSize: '9px',
-                  padding: '1px 5px',
-                  background: T.errorBg,
-                  color: T.errorText,
-                  borderRadius: T.radiusSm,
-                  cursor: 'help',
-                  letterSpacing: '0.3px',
-                }}
               >
                 ERR
-              </span>
+              </StatusBadge>
             )}
             {instance.isDisposed && (
-              <span
-                style={{
-                  fontSize: '9px',
-                  padding: '1px 5px',
-                  background: '#3a1a1a',
-                  color: T.error,
-                  borderRadius: T.radiusSm,
-                  letterSpacing: '0.3px',
-                }}
-              >
+              <StatusBadge bg="#3a1a1a" color={T.error}>
                 DISPOSED
-              </span>
+              </StatusBadge>
             )}
           </div>
+        </div>
+
+        {/* Line 2: State preview */}
+        <div
+          style={{
+            fontSize: '10px',
+            color: T.textCode,
+            opacity: 0.7,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            marginTop: '1px',
+            fontFamily: T.fontMono,
+          }}
+        >
+          {preview}
         </div>
       </div>
     );
@@ -119,3 +130,26 @@ export const InstanceListItem: FC<InstanceListItemProps> = React.memo(
 );
 
 InstanceListItem.displayName = 'InstanceListItem';
+
+const StatusBadge: FC<{
+  bg: string;
+  color: string;
+  title?: string;
+  children: React.ReactNode;
+}> = ({ bg, color, title, children }) => (
+  <span
+    title={title}
+    style={{
+      fontSize: '8px',
+      padding: '0px 4px',
+      background: bg,
+      color,
+      borderRadius: T.radiusSm,
+      letterSpacing: '0.3px',
+      lineHeight: '16px',
+      cursor: title ? 'help' : undefined,
+    }}
+  >
+    {children}
+  </span>
+);

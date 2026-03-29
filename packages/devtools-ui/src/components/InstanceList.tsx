@@ -9,16 +9,14 @@ import { SearchBar } from './SearchBar';
 import { InstanceListItem } from './InstanceListItem';
 import { T } from '../theme';
 
-/**
- * Left panel containing search and instance list
- */
 export const InstanceList: FC<{ width?: number }> = React.memo(
   ({ width = 300 }) => {
     const [{ instances, animationTriggers }] = useBloc(DevToolsInstancesBloc);
-    const [, searchBloc] = useBloc(DevToolsSearchBloc);
+    const [, searchBloc] = useBloc(DevToolsSearchBloc, { autoTrack: false });
     const [{ selectedId }, layoutBloc] = useBloc(DevToolsLayoutBloc);
 
     const groupedInstances = searchBloc.getGroupedInstances();
+    const hasMultipleGroups = groupedInstances.length > 1;
 
     return (
       <div
@@ -81,17 +79,51 @@ export const InstanceList: FC<{ width?: number }> = React.memo(
               No matches found
             </div>
           ) : (
-            groupedInstances.map((group) =>
-              group.instances.map((instance) => (
-                <InstanceListItem
-                  key={instance.id}
-                  instance={instance}
-                  isSelected={selectedId === instance.id}
-                  animationTriggers={animationTriggers.get(instance.id) || []}
-                  onSelect={() => layoutBloc.setSelectedId(instance.id)}
-                />
-              )),
-            )
+            groupedInstances.map((group) => (
+              <div key={group.className}>
+                {hasMultipleGroups && (
+                  <div
+                    style={{
+                      padding: '4px 10px',
+                      fontSize: '10px',
+                      color: T.text1,
+                      background: T.bg3,
+                      borderBottom: `1px solid ${T.border0}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      letterSpacing: '0.3px',
+                      position: 'sticky',
+                      top: 0,
+                      zIndex: 5,
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: '6px',
+                        height: '6px',
+                        borderRadius: '50%',
+                        background: group.color,
+                        flexShrink: 0,
+                      }}
+                    />
+                    <span style={{ fontWeight: 600 }}>{group.className}</span>
+                    <span style={{ color: T.text2 }}>
+                      ({group.instances.length})
+                    </span>
+                  </div>
+                )}
+                {group.instances.map((instance) => (
+                  <InstanceListItem
+                    key={instance.id}
+                    instance={instance}
+                    isSelected={selectedId === instance.id}
+                    animationTriggers={animationTriggers.get(instance.id) || []}
+                    onSelect={() => layoutBloc.setSelectedId(instance.id)}
+                  />
+                ))}
+              </div>
+            ))
           )}
         </div>
       </div>

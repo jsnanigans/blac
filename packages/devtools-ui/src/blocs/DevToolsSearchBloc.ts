@@ -26,9 +26,6 @@ export class DevToolsSearchBloc extends Cubit<SearchState> {
     super({ query: '' });
   }
 
-  /**
-   * Update search query
-   */
   setQuery = (query: string) => {
     this.patch({ query });
   };
@@ -39,14 +36,12 @@ export class DevToolsSearchBloc extends Cubit<SearchState> {
    */
   getFilteredInstances = (): InstanceData[] => {
     const { query } = this.state;
-
     const instances = this.instancesBloc().sortedInstances;
 
     if (!query.trim()) {
       return instances;
     }
 
-    // Fuzzy search
     const normalizedQuery = query.toLowerCase();
     const filtered = instances
       .map((instance) => {
@@ -55,15 +50,16 @@ export class DevToolsSearchBloc extends Cubit<SearchState> {
           instance.className.toLowerCase(),
         );
         const idScore = fuzzyMatch(normalizedQuery, instance.id.toLowerCase());
-        const score = Math.max(classNameScore, idScore);
+        const nameScore = instance.name
+          ? fuzzyMatch(normalizedQuery, instance.name.toLowerCase())
+          : 0;
+        const score = Math.max(classNameScore, idScore, nameScore);
 
         return { instance, score };
       })
       .filter(({ score }) => score > 0)
       .sort((a, b) => {
-        // Sort by score first (higher is better)
         if (b.score !== a.score) return b.score - a.score;
-        // Then by creation time (newest first)
         return b.instance.createdAt - a.instance.createdAt;
       })
       .map(({ instance }) => instance);
