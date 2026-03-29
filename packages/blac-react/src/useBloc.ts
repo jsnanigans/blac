@@ -1,4 +1,4 @@
-import {
+import React, {
   useMemo,
   useSyncExternalStore,
   useEffect,
@@ -26,6 +26,22 @@ import {
 } from '@blac/adapter';
 import type { UseBlocOptions, UseBlocReturn, ComponentRef } from './types';
 import { getBlacReactConfig } from './config';
+
+let nextConsumerId = 0;
+
+function getComponentName(): string | undefined {
+  try {
+    const internals = (React as any)
+      .__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+    const owner = internals?.ReactCurrentOwner?.current;
+    if (owner?.type) {
+      return owner.type.displayName || owner.type.name || undefined;
+    }
+  } catch {
+    // ignore — React internals may not be available
+  }
+  return undefined;
+}
 
 interface TrackingMode {
   useManualDeps: boolean;
@@ -88,6 +104,17 @@ export function useBloc<
   type TBloc = InstanceState<T>;
 
   const componentRef = useRef<ComponentRef>({});
+
+  // Capture component name from React fiber during render (for devtools consumer tracking)
+  const consumerIdRef = useRef<string | null>(null);
+  if (consumerIdRef.current === null) {
+    consumerIdRef.current = String(nextConsumerId++);
+  }
+  const componentNameRef = useRef<string | null>(null);
+  if (componentNameRef.current === null) {
+    componentNameRef.current = getComponentName() || null;
+  }
+
   const depsRef = useRef(options?.dependencies);
   depsRef.current = options?.dependencies;
   const instanceId = options?.instanceId;
@@ -177,11 +204,33 @@ export function useBloc<
 
   useEffect(() => {
     const manager = externalDepsManager.current;
+
+    // Register as consumer in devtools (if available)
+    const devtools =
+      typeof window !== 'undefined'
+        ? (window as any).__BLAC_DEVTOOLS__
+        : undefined;
+    if (devtools?.registerConsumer && rawInstance) {
+      devtools.registerConsumer(
+        (rawInstance as any).instanceId,
+        consumerIdRef.current,
+        componentNameRef.current || 'Unknown',
+      );
+    }
+
     if (options?.onMount) {
       options.onMount(bloc as InstanceType<T>);
     }
 
     return () => {
+      // Unregister consumer from devtools
+      if (devtools?.unregisterConsumer && rawInstance) {
+        devtools.unregisterConsumer(
+          (rawInstance as any).instanceId,
+          consumerIdRef.current,
+        );
+      }
+
       manager.cleanup();
 
       if (options?.onUnmount) {
