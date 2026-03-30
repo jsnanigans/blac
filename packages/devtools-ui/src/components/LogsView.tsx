@@ -1,9 +1,10 @@
-import React, { FC } from 'react';
+import React, { FC, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useBloc } from '@blac/react';
 import { DevToolsLogsBloc } from '../blocs';
 import type { LogEntry, LogEventType } from '../types';
 import { T } from '../theme';
+import { CallStackView } from './CallStackView';
 
 function formatAbsoluteTime(timestamp: number): string {
   const date = new Date(timestamp);
@@ -45,74 +46,158 @@ function extractInstanceId(fullId: string): string {
   return colonIndex !== -1 ? fullId.substring(colonIndex + 1) : fullId;
 }
 
+// Grid column definition shared between header and every row
+const GRID_COLS = '16px 92px 64px minmax(0, 1.4fr) minmax(0, 1fr) 140px';
+
+const LogsTableHeader: FC = () => (
+  <div
+    style={{
+      display: 'grid',
+      gridTemplateColumns: GRID_COLS,
+      columnGap: '8px',
+      padding: '4px 10px',
+      borderBottom: `1px solid ${T.border1}`,
+      background: T.bg3,
+      fontSize: '10px',
+      color: T.text2,
+      fontFamily: T.fontMono,
+      letterSpacing: '0.5px',
+      flexShrink: 0,
+    }}
+  >
+    <span />
+    <span>TIME</span>
+    <span>EVENT</span>
+    <span>CLASS</span>
+    <span>INSTANCE</span>
+    <span>TRIGGER</span>
+  </div>
+);
+
 const LogEntryRow: FC<{ entry: LogEntry }> = React.memo(({ entry }) => {
+  const [expanded, setExpanded] = useState(false);
   const color = getEventTypeColor(entry.eventType);
   const label = getEventTypeLabel(entry.eventType);
   const displayInstanceId = extractInstanceId(entry.instanceId);
+  const hasCallstack = entry.eventType === 'state-changed' && !!entry.callstack;
 
   return (
-    <div
-      style={{
-        padding: '4px 10px',
-        borderBottom: `1px solid ${T.border0}`,
-        fontSize: '11px',
-        fontFamily: T.fontMono,
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        lineHeight: '1.3',
-      }}
-    >
-      <span style={{ color: T.text2, minWidth: '95px', fontSize: '10px' }}>
-        {formatAbsoluteTime(entry.timestamp)}
-      </span>
-
-      <span
+    <div style={{ borderBottom: `1px solid ${T.border0}` }}>
+      <div
+        onClick={hasCallstack ? () => setExpanded((v) => !v) : undefined}
         style={{
-          color,
-          fontWeight: 600,
-          minWidth: '65px',
-          fontSize: '10px',
-          letterSpacing: '0.5px',
+          display: 'grid',
+          gridTemplateColumns: GRID_COLS,
+          columnGap: '8px',
+          alignItems: 'center',
+          padding: '4px 10px',
+          fontSize: '11px',
+          fontFamily: T.fontMono,
+          lineHeight: '1.3',
+          cursor: hasCallstack ? 'pointer' : 'default',
+          background: expanded ? T.bg4 : 'transparent',
+          minHeight: '28px',
         }}
+        onMouseEnter={
+          hasCallstack
+            ? (e) => {
+                if (!expanded) e.currentTarget.style.background = T.bgHover;
+              }
+            : undefined
+        }
+        onMouseLeave={
+          hasCallstack
+            ? (e) => {
+                if (!expanded) e.currentTarget.style.background = 'transparent';
+              }
+            : undefined
+        }
       >
-        {label}
-      </span>
+        {/* Toggle */}
+        <span style={{ color: T.text2, fontSize: '8px', userSelect: 'none' }}>
+          {hasCallstack ? (expanded ? '▼' : '▶') : ''}
+        </span>
 
-      <span style={{ color: T.textCode, minWidth: '110px', fontSize: '11px' }}>
-        {entry.className}
-      </span>
+        {/* Time */}
+        <span style={{ color: T.text2, fontSize: '10px' }}>
+          {formatAbsoluteTime(entry.timestamp)}
+        </span>
 
-      <span
-        style={{ color: T.warning, fontSize: '10px', minWidth: '90px' }}
-        title={entry.instanceId}
-      >
-        {displayInstanceId}
-      </span>
-
-      {entry.eventType === 'state-changed' && entry.trigger && (
+        {/* Event type */}
         <span
           style={{
+            color,
+            fontWeight: 600,
             fontSize: '10px',
-            padding: '1px 5px',
-            background: '#1a2a3a',
-            border: '1px solid #2a4a6a',
-            borderRadius: T.radiusSm,
-            color: T.textAccent,
-            fontFamily: T.fontMono,
+            letterSpacing: '0.5px',
           }}
-          title="Method that triggered this state change"
         >
-          {entry.trigger}()
+          {label}
         </span>
-      )}
 
-      {entry.eventType === 'init' &&
-        entry.data?.instanceCount !== undefined && (
-          <span style={{ color: T.text2, fontSize: '10px' }}>
-            {entry.data.instanceCount} instances
-          </span>
-        )}
+        {/* Class */}
+        <span
+          style={{
+            color: T.textCode,
+            fontSize: '11px',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+          title={entry.className}
+        >
+          {entry.className}
+        </span>
+
+        {/* Instance */}
+        <span
+          style={{
+            color: T.warning,
+            fontSize: '10px',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+          title={entry.instanceId}
+        >
+          {displayInstanceId}
+        </span>
+
+        {/* Trigger / detail — always rendered to hold its grid column */}
+        <span style={{ overflow: 'hidden' }}>
+          {entry.eventType === 'state-changed' && entry.trigger && (
+            <span
+              style={{
+                fontSize: '10px',
+                padding: '1px 5px',
+                background: '#1a2a3a',
+                border: '1px solid #2a4a6a',
+                borderRadius: T.radiusSm,
+                color: T.textAccent,
+                fontFamily: T.fontMono,
+                display: 'inline-block',
+                maxWidth: '100%',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+              title={`${entry.trigger}()`}
+            >
+              {entry.trigger}()
+            </span>
+          )}
+          {entry.eventType === 'init' &&
+            entry.data?.instanceCount !== undefined && (
+              <span style={{ color: T.text2, fontSize: '10px' }}>
+                {entry.data.instanceCount} instances
+              </span>
+            )}
+        </span>
+      </div>
+
+      {expanded && entry.callstack && (
+        <CallStackView callstack={entry.callstack} />
+      )}
     </div>
   );
 });
@@ -353,8 +438,6 @@ const MultiSelect = <O extends string>({
   );
 };
 
-const ROW_HEIGHT = 28;
-
 export const LogsView: FC = React.memo(() => {
   const [state, logsBloc] = useBloc(DevToolsLogsBloc);
   const { filters } = state;
@@ -364,7 +447,7 @@ export const LogsView: FC = React.memo(() => {
   const virtualizer = useVirtualizer({
     count: logs.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => ROW_HEIGHT,
+    estimateSize: () => 28,
     overscan: 20,
   });
 
@@ -487,6 +570,9 @@ export const LogsView: FC = React.memo(() => {
         </div>
       </div>
 
+      {/* Table header */}
+      <LogsTableHeader />
+
       {/* Log rows */}
       <div ref={scrollRef} style={{ flex: 1, overflow: 'auto' }}>
         {logs.length === 0 ? (
@@ -514,12 +600,13 @@ export const LogsView: FC = React.memo(() => {
             {virtualizer.getVirtualItems().map((item) => (
               <div
                 key={item.key}
+                data-index={item.index}
+                ref={virtualizer.measureElement}
                 style={{
                   position: 'absolute',
                   top: 0,
                   left: 0,
                   width: '100%',
-                  height: `${item.size}px`,
                   transform: `translateY(${item.start}px)`,
                 }}
               >
