@@ -1,5 +1,13 @@
 # @blac/devtools-connect
 
+## 2.0.14
+
+### Patch Changes
+
+- Update devtools UI and start consumer registeration
+- Updated dependencies
+  - @blac/core@2.0.11
+
 ## 2.0.13
 
 ### Patch Changes

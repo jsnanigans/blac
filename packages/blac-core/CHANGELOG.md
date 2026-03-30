@@ -1,5 +1,11 @@
 # @blac/core
 
+## 2.0.11
+
+### Patch Changes
+
+- Update devtools UI and start consumer registeration
+
 ## 2.0.10
 
 ### Patch Changes

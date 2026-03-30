@@ -1,6 +1,6 @@
 {
   "name": "@blac/devtools-ui",
-  "version": "2.0.13",
+  "version": "2.0.14",
   "license": "MIT",
   "author": "Brendan Mullins <jsnanigans@gmail.com>",
   "description": "DevTools UI components for BlaC state management",

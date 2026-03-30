@@ -1,5 +1,13 @@
 # @blac/adapter
 
+## 2.0.12
+
+### Patch Changes
+
+- Update devtools UI and start consumer registeration
+- Updated dependencies
+  - @blac/core@2.0.11
+
 ## 2.0.11
 
 ### Patch Changes

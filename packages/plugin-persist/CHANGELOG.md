@@ -1,5 +1,13 @@
 # @blac/plugin-persist
 
+## 0.0.8
+
+### Patch Changes
+
+- Update devtools UI and start consumer registeration
+- Updated dependencies
+  - @blac/core@2.0.11
+
 ## 0.0.7
 
 ### Patch Changes
