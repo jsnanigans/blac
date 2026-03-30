@@ -266,7 +266,9 @@ export abstract class StateContainer<S extends object = any> {
           line.includes('[blac.update]') ||
           line.includes('Cubit.patch') ||
           line.includes('/blac-core/dist/') ||
-          line.includes('@blac/core/')
+          line.includes('@blac/core/') ||
+          line.includes('/blac-react/dist/') ||
+          line.includes('@blac/react/')
         ) {
           continue;
         }
@@ -305,36 +307,13 @@ export abstract class StateContainer<S extends object = any> {
       const simpleMatch = line.match(/at\s+(.+?):(\d+):(\d+)/);
       if (simpleMatch) {
         const [, url, lineNum, col] = simpleMatch;
-        const cleanPath = this.cleanFilePath(url);
-        return `  at ${cleanPath}:${lineNum}:${col}`;
+        return `  at ${url}:${lineNum}:${col}`;
       }
       return null;
     }
 
     const [, functionName, url, lineNum, col] = match;
-    const cleanPath = this.cleanFilePath(url);
-
-    return `  at ${functionName} (${cleanPath}:${lineNum}:${col})`;
-  }
-
-  private cleanFilePath(url: string): string {
-    let path = url
-      .replace(/http:\/\/localhost:\d+\/@fs/, '')
-      .replace(/http:\/\/localhost:\d+\//, '')
-      .replace(/\?t=\d+/, '')
-      .replace(/\?v=[a-f0-9]+/, '');
-
-    const projectMatch = path.match(/\/Projects\/blac\/(.+)/);
-    if (projectMatch) {
-      path = projectMatch[1];
-    }
-
-    const segments = path.split('/');
-    if (segments.length > 3) {
-      path = segments.slice(-3).join('/');
-    }
-
-    return path;
+    return `  at ${functionName} (${url}:${lineNum}:${col})`;
   }
 
   private applyState(newState: S, source: 'default' | 'hydration'): void {
