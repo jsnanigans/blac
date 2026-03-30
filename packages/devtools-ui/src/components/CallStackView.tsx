@@ -1,53 +1,176 @@
-import React, { FC, useState } from 'react';
+import React, { FC, useEffect, useMemo, useState } from 'react';
+import { SourceMapConsumer } from 'source-map-js';
 
 interface StackFrame {
   fn: string;
   file: string;
   line: number;
+  col: number;
   isUser: boolean;
+}
+
+interface ResolvedFrame extends StackFrame {
+  displayFile: string;
+  displayLine: number;
 }
 
 function parseCallstack(stack: string): StackFrame[] {
   const frames: StackFrame[] = [];
   for (const line of stack.split('\n')) {
-    const match = line.match(/at (.+?) \((.+?):(\d+):\d+\)/);
+    const match = line.match(/at (.+?) \((.+?):(\d+):(\d+)\)/);
     if (match) {
       frames.push({
         fn: match[1],
         file: match[2],
         line: parseInt(match[3]),
+        col: parseInt(match[4]),
         isUser:
           !match[2].includes('node_modules') &&
           !match[2].includes('blac-core/dist') &&
-          !match[2].includes('@blac/core'),
+          !match[2].includes('@blac/core') &&
+          !match[2].includes('blac-react/dist') &&
+          !match[2].includes('@blac/react'),
       });
     }
   }
   return frames;
 }
 
-function shortPath(filePath: string): string {
-  const parts = filePath.replace(/\?.*$/, '').split('/');
-  return parts.length > 2 ? parts.slice(-2).join('/') : filePath;
+function cleanFilePath(path: string): string {
+  let cleaned = path
+    .replace(/^https?:\/\/[^/]+\/@fs/, '')
+    .replace(/^https?:\/\/[^/]+\//, '')
+    .replace(/\?.*$/, '');
+
+  const projectMatch = cleaned.match(/\/Projects\/blac\/(.+)/);
+  if (projectMatch) {
+    cleaned = projectMatch[1];
+  }
+
+  return cleaned.replace(/^\//, '');
+}
+
+// Module-level cache so source maps are only fetched once across all component instances
+const sourceMapCache = new Map<string, SourceMapConsumer | null>();
+const pendingFetches = new Map<string, Promise<SourceMapConsumer | null>>();
+
+async function getSourceMap(
+  fileUrl: string,
+): Promise<SourceMapConsumer | null> {
+  const baseUrl = fileUrl.replace(/\?.*$/, '');
+
+  if (sourceMapCache.has(baseUrl)) return sourceMapCache.get(baseUrl)!;
+
+  if (!pendingFetches.has(baseUrl)) {
+    const promise = fetch(`${baseUrl}.map`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((raw) => (raw ? new SourceMapConsumer(raw) : null))
+      .catch(() => null);
+    pendingFetches.set(baseUrl, promise);
+  }
+
+  const consumer = await pendingFetches.get(baseUrl)!;
+  sourceMapCache.set(baseUrl, consumer);
+  return consumer;
+}
+
+function useSourceMappedFrames(frames: StackFrame[]): ResolvedFrame[] {
+  const [resolved, setResolved] = useState<ResolvedFrame[]>([]);
+
+  useEffect(() => {
+    setResolved(
+      frames.map((f) => ({
+        ...f,
+        displayFile: cleanFilePath(f.file),
+        displayLine: f.line,
+      })),
+    );
+
+    let cancelled = false;
+    void (async () => {
+      const result = await Promise.all(
+        frames.map(async (frame) => {
+          if (!frame.file.startsWith('http')) {
+            return {
+              ...frame,
+              displayFile: cleanFilePath(frame.file),
+              displayLine: frame.line,
+            };
+          }
+          const consumer = await getSourceMap(frame.file);
+          if (!consumer) {
+            return {
+              ...frame,
+              displayFile: cleanFilePath(frame.file),
+              displayLine: frame.line,
+            };
+          }
+          const pos = consumer.originalPositionFor({
+            line: frame.line,
+            column: frame.col,
+          });
+          return {
+            ...frame,
+            displayFile: cleanFilePath(frame.file),
+            displayLine: pos.line ?? frame.line,
+          };
+        }),
+      );
+      if (!cancelled) setResolved(result);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [frames]);
+
+  return resolved;
 }
 
 interface CallStackViewProps {
   callstack: string;
 }
 
+function copyViaExecCommand(text: string) {
+  const el = document.createElement('textarea');
+  el.value = text;
+  el.style.position = 'fixed';
+  el.style.opacity = '0';
+  document.body.appendChild(el);
+  el.focus();
+  el.select();
+  document.execCommand('copy');
+  document.body.removeChild(el);
+}
+
 export const CallStackView: FC<CallStackViewProps> = ({ callstack }) => {
   const [libExpanded, setLibExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const frames = parseCallstack(callstack);
-  const userFrames = frames.filter((f) => f.isUser);
-  const libFrames = frames.filter((f) => !f.isUser);
+  const frames = useMemo(() => parseCallstack(callstack), [callstack]);
+  const resolvedFrames = useSourceMappedFrames(frames);
+
+  const userFrames = resolvedFrames.filter((f) => f.isUser);
+  const libFrames = resolvedFrames.filter((f) => !f.isUser);
 
   const handleCopy = () => {
-    void navigator.clipboard?.writeText(callstack).then(() => {
+    const finish = () => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
-    });
+    };
+
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard
+        .writeText(callstack)
+        .then(finish)
+        .catch(() => {
+          copyViaExecCommand(callstack);
+          finish();
+        });
+    } else {
+      copyViaExecCommand(callstack);
+      finish();
+    }
   };
 
   return (
@@ -104,7 +227,7 @@ export const CallStackView: FC<CallStackViewProps> = ({ callstack }) => {
                   fontFamily: 'Monaco, Menlo, Consolas, monospace',
                 }}
               >
-                {shortPath(frame.file)}:{frame.line}
+                {frame.displayFile}:{frame.displayLine}
               </span>
             </div>
           ))}
@@ -157,7 +280,7 @@ export const CallStackView: FC<CallStackViewProps> = ({ callstack }) => {
                 >
                   {frame.fn}{' '}
                   <span style={{ color: '#444' }}>
-                    {shortPath(frame.file)}:{frame.line}
+                    {frame.displayFile}:{frame.displayLine}
                   </span>
                 </div>
               ))}

@@ -219,6 +219,7 @@ export class PluginManager {
           isHydrated: instance.isHydrated,
           hydrationError: instance.hydrationError,
           changedWhileHydrating: instance.changedWhileHydrating,
+          createdFrom: instance.createdFrom || undefined,
         };
       },
 

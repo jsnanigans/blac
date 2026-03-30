@@ -35,6 +35,7 @@ export interface PanelInstance {
   hydrationStatus?: 'idle' | 'hydrating' | 'hydrated' | 'error';
   hydrationError?: string;
   callstack?: string;
+  createdFrom?: string;
   trigger?: Trigger;
   dependencies?: DependencyEdge[];
   consumers?: ConsumerInfo[];

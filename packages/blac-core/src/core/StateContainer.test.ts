@@ -762,6 +762,37 @@ describe('StateContainer', () => {
     });
   });
 
+  describe('createdFrom', () => {
+    it('should capture stack trace on initConfig when enableStackTrace is true', () => {
+      const original = StateContainer.enableStackTrace;
+      StateContainer.enableStackTrace = true;
+
+      const container = acquire(TestContainer);
+
+      expect(container.createdFrom).toBeTruthy();
+      expect(typeof container.createdFrom).toBe('string');
+      expect(container.createdFrom.length).toBeGreaterThan(0);
+
+      StateContainer.enableStackTrace = original;
+    });
+
+    it('should return empty string when enableStackTrace is false', () => {
+      const original = StateContainer.enableStackTrace;
+      StateContainer.enableStackTrace = false;
+
+      const container = acquire(TestContainer, 'no-stack');
+
+      expect(container.createdFrom).toBe('');
+
+      StateContainer.enableStackTrace = original;
+    });
+
+    it('should default to empty string before initConfig', () => {
+      const container = new TestContainer();
+      expect(container.createdFrom).toBe('');
+    });
+  });
+
   describe('depend()', () => {
     class DepTarget extends StateContainer<{ value: number }> {
       constructor() {

@@ -20,6 +20,8 @@ export interface InstanceMetadata {
   createdAt: number;
   /** Stack trace from when instance was created (for debugging) */
   callstack?: string;
+  /** Stack trace showing where the instance was first created (e.g. which useBloc/ensure call) */
+  createdFrom?: string;
   /** Previous state value */
   previousState?: any;
   /** Current state value */
