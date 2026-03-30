@@ -64,6 +64,7 @@ export class DevToolsStateManager {
     state: any;
     createdAt: number;
     getters?: Record<string, GetterInfo>;
+    createdFrom?: string;
   }): void {
     // Check if we need to evict oldest instance
     if (
@@ -88,6 +89,7 @@ export class DevToolsStateManager {
       ],
       createdAt: instance.createdAt,
       ...(instance.getters ? { getters: instance.getters } : {}),
+      ...(instance.createdFrom ? { createdFrom: instance.createdFrom } : {}),
     };
 
     this.instances.set(instance.id, instanceState);

@@ -119,6 +119,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       state: data.state,
       createdAt,
       getters: (data as any).getters,
+      createdFrom: (data as any).createdFrom,
     });
 
     // Capture dependency edges from this instance
@@ -391,6 +392,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
           state: data.state,
           createdAt,
           getters: (data as any).getters,
+          createdFrom: (data as any).createdFrom,
         });
 
         this.captureDependencies(instance, data.id, data.className);
