@@ -8,8 +8,8 @@
     "48": "icons/icon-48.png",
     "128": "icons/icon-128.png"
   },
-  "permissions": ["webNavigation"],
-  "host_permissions": ["http://*/*", "https://*/*"],
+  "permissions": [],
+  "host_permissions": [],
   "background": {
     "service_worker": "dist/background/service-worker.js",
     "type": "module"
