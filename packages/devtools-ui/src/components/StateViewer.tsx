@@ -13,6 +13,7 @@ import type {
 } from '../types';
 import { CurrentStateView } from './CurrentStateView';
 import { StateHistoryView } from './StateHistoryView';
+import { CallStackView } from './CallStackView';
 import { StateDiffView } from './StateDiffView';
 import { SectionHeader } from './SectionHeader';
 import { T } from '../theme';
@@ -426,25 +427,7 @@ const InitiatorSection: FC<InitiatorSectionProps> = React.memo(
           isExpanded={isExpanded}
           onToggle={() => setIsExpanded((v) => !v)}
         />
-        {isExpanded && (
-          <pre
-            style={{
-              margin: 0,
-              padding: '8px',
-              fontSize: '11px',
-              fontFamily: 'monospace',
-              lineHeight: '1.5',
-              color: T.text2,
-              background: T.bg2,
-              borderRadius: '4px',
-              overflowX: 'auto',
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-all',
-            }}
-          >
-            {createdFrom}
-          </pre>
-        )}
+        {isExpanded && <CallStackView callstack={createdFrom} />}
       </div>
     );
   },
