@@ -67,6 +67,7 @@
   },
   "dependencies": {
     "@tanstack/react-virtual": "^3.13.0",
+    "source-map-js": "^1.2.1",
     "@uiw/react-json-view": "2.0.0-alpha.39",
     "@xyflow/react": "^12.10.1",
     "elkjs": "^0.11.1",

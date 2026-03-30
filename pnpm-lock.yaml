@@ -184,7 +184,7 @@ importers:
         version: 0.1.14(@types/node@24.1.0)(@voidzero-dev/vite-plus-core@0.1.14(@types/node@24.1.0)(esbuild@0.27.3)(jiti@2.6.1)(publint@0.3.17)(terser@5.39.0)(tsx@4.20.6)(typescript@5.9.2)(yaml@2.7.0))(esbuild@0.27.3)(happy-dom@18.0.1)(jiti@2.6.1)(jsdom@26.1.0)(publint@0.3.17)(terser@5.39.0)(tsx@4.20.6)(typescript@5.9.2)(yaml@2.7.0)
       vitest:
         specifier: npm:@voidzero-dev/vite-plus-test@latest
-        version: '@voidzero-dev/vite-plus-test@0.1.14(@types/node@24.1.0)(@voidzero-dev/vite-plus-core@0.1.14(@types/node@24.1.0)(esbuild@0.27.3)(jiti@2.6.1)(publint@0.3.17)(terser@5.39.0)(tsx@4.20.6)(typescript@5.9.2)(yaml@2.7.0))(esbuild@0.27.3)(happy-dom@18.0.1)(jiti@2.6.1)(jsdom@26.1.0)(publint@0.3.17)(terser@5.39.0)(tsx@4.20.6)(typescript@5.9.2)(yaml@2.7.0)'
+        version: '@voidzero-dev/vite-plus-test@0.1.14(@types/node@24.1.0)(esbuild@0.27.3)(happy-dom@18.0.1)(jiti@2.6.1)(jsdom@26.1.0)(publint@0.3.17)(terser@5.39.0)(tsx@4.20.6)(typescript@5.9.2)(vite@8.0.3(@types/node@24.1.0)(esbuild@0.27.3)(jiti@2.6.1)(terser@5.39.0)(tsx@4.20.6)(yaml@2.7.0))(yaml@2.7.0)'
       wrangler:
         specifier: ^4
         version: 4.73.0
@@ -349,7 +349,7 @@ importers:
         version: 0.1.14(@types/node@24.1.0)(@voidzero-dev/vite-plus-core@0.1.14(@types/node@24.1.0)(esbuild@0.27.3)(jiti@2.6.1)(publint@0.3.17)(terser@5.39.0)(tsx@4.20.6)(typescript@5.9.2)(yaml@2.7.0))(esbuild@0.27.3)(happy-dom@18.0.1)(jiti@2.6.1)(jsdom@26.1.0)(publint@0.3.17)(terser@5.39.0)(tsx@4.20.6)(typescript@5.9.2)(yaml@2.7.0)
       vitest:
         specifier: npm:@voidzero-dev/vite-plus-test@latest
-        version: '@voidzero-dev/vite-plus-test@0.1.14(@types/node@24.1.0)(@voidzero-dev/vite-plus-core@0.1.14(@types/node@24.1.0)(esbuild@0.27.3)(jiti@2.6.1)(publint@0.3.17)(terser@5.39.0)(tsx@4.20.6)(typescript@5.9.2)(yaml@2.7.0))(esbuild@0.27.3)(happy-dom@18.0.1)(jiti@2.6.1)(jsdom@26.1.0)(publint@0.3.17)(terser@5.39.0)(tsx@4.20.6)(typescript@5.9.2)(yaml@2.7.0)'
+        version: '@voidzero-dev/vite-plus-test@0.1.14(@types/node@24.1.0)(esbuild@0.27.3)(happy-dom@18.0.1)(jiti@2.6.1)(jsdom@26.1.0)(publint@0.3.17)(terser@5.39.0)(tsx@4.20.6)(typescript@5.9.2)(vite@8.0.3(@types/node@24.1.0)(esbuild@0.27.3)(jiti@2.6.1)(terser@5.39.0)(tsx@4.20.6)(yaml@2.7.0))(yaml@2.7.0)'
 
   packages/blac-react:
     dependencies:
@@ -410,7 +410,7 @@ importers:
         version: 0.1.14(@types/node@24.1.0)(@voidzero-dev/vite-plus-core@0.1.14(@types/node@24.1.0)(esbuild@0.27.3)(jiti@2.6.1)(publint@0.3.17)(terser@5.39.0)(tsx@4.20.6)(typescript@5.9.2)(yaml@2.7.0))(esbuild@0.27.3)(happy-dom@18.0.1)(jiti@2.6.1)(jsdom@26.1.0)(publint@0.3.17)(terser@5.39.0)(tsx@4.20.6)(typescript@5.9.2)(yaml@2.7.0)
       vitest:
         specifier: npm:@voidzero-dev/vite-plus-test@latest
-        version: '@voidzero-dev/vite-plus-test@0.1.14(@types/node@24.1.0)(@voidzero-dev/vite-plus-core@0.1.14(@types/node@24.1.0)(esbuild@0.27.3)(jiti@2.6.1)(publint@0.3.17)(terser@5.39.0)(tsx@4.20.6)(typescript@5.9.2)(yaml@2.7.0))(esbuild@0.27.3)(happy-dom@18.0.1)(jiti@2.6.1)(jsdom@26.1.0)(publint@0.3.17)(terser@5.39.0)(tsx@4.20.6)(typescript@5.9.2)(yaml@2.7.0)'
+        version: '@voidzero-dev/vite-plus-test@0.1.14(@types/node@24.1.0)(esbuild@0.27.3)(happy-dom@18.0.1)(jiti@2.6.1)(jsdom@26.1.0)(publint@0.3.17)(terser@5.39.0)(tsx@4.20.6)(typescript@5.9.2)(vite@8.0.3(@types/node@24.1.0)(esbuild@0.27.3)(jiti@2.6.1)(terser@5.39.0)(tsx@4.20.6)(yaml@2.7.0))(yaml@2.7.0)'
 
   packages/devtools-connect:
     devDependencies:
@@ -447,6 +447,9 @@ importers:
       json-diff-kit:
         specifier: ^1.0.33
         version: 1.0.33
+      source-map-js:
+        specifier: ^1.2.1
+        version: 1.2.1
     devDependencies:
       '@blac/core':
         specifier: workspace:*
