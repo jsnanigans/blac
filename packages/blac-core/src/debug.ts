@@ -30,7 +30,13 @@
  */
 
 // Registry introspection
-export { hasInstance, getRefCount, getAll, forEach } from './registry/queries';
+export {
+  hasInstance,
+  getRefCount,
+  getRefIds,
+  getAll,
+  forEach,
+} from './registry/queries';
 export { register } from './registry/management';
 export { getRegistry, setRegistry, getStats } from './registry/config';
 

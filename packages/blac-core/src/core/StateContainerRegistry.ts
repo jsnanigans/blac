@@ -14,9 +14,11 @@ import {
 export interface InstanceEntry<T = any> {
   /** The state container instance */
   instance: T;
-  /** Number of active references to this instance */
-  refCount: number;
+  /** Named references holding this instance alive */
+  refs: Set<string>;
 }
+
+let autoRefIdCounter = 0;
 
 /**
  * Lifecycle events emitted by the registry
@@ -132,6 +134,7 @@ export class StateContainerRegistry {
     options: {
       canCreate?: boolean;
       countRef?: boolean;
+      refId?: string;
     } = {},
   ): InstanceType<T> {
     const { canCreate = true, countRef = true } = options;
@@ -150,7 +153,8 @@ export class StateContainerRegistry {
     }
 
     if (entry && countRef) {
-      entry.refCount++;
+      const refId = options.refId ?? `_auto_${autoRefIdCounter++}`;
+      entry.refs.add(refId);
     }
 
     if (entry) {
@@ -163,10 +167,17 @@ export class StateContainerRegistry {
       );
     }
 
+    const refId = countRef
+      ? (options.refId ?? `_auto_${autoRefIdCounter++}`)
+      : undefined;
+
     // Create new shared instance
     const instance = new Type() as InstanceType<T>;
     instance.initConfig(config);
-    instances.set(instanceKey, { instance, refCount: 1 });
+    instances.set(instanceKey, {
+      instance,
+      refs: new Set(refId ? [refId] : []),
+    });
 
     // Register type for lifecycle coordination
     this.registerType(Type);
@@ -245,6 +256,7 @@ export class StateContainerRegistry {
     Type: T,
     instanceKey: string = BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
     forceDispose = false,
+    refId?: string,
   ): void {
     const instances = this.ensureInstancesMap(Type);
     const entry = instances.get(instanceKey);
@@ -260,14 +272,19 @@ export class StateContainerRegistry {
       return;
     }
 
-    // Decrement ref count
-    entry.refCount--;
+    // Remove named ref, or one arbitrary ref if no refId provided
+    if (refId) {
+      entry.refs.delete(refId);
+    } else {
+      const first = entry.refs.values().next().value;
+      if (first !== undefined) entry.refs.delete(first);
+    }
 
     // Check static keepAlive property
     const keepAlive = isKeepAliveClass(Type);
 
-    // Auto-dispose when ref count reaches 0 (unless keepAlive)
-    if (entry.refCount <= 0 && !keepAlive) {
+    // Auto-dispose when no refs remain (unless keepAlive)
+    if (entry.refs.size === 0 && !keepAlive) {
       if (!entry.instance.isDisposed) {
         entry.instance.dispose();
       }
@@ -345,7 +362,16 @@ export class StateContainerRegistry {
   ): number {
     const instances = this.ensureInstancesMap(Type);
     const entry = instances.get(instanceKey);
-    return entry?.refCount ?? 0;
+    return entry?.refs.size ?? 0;
+  }
+
+  getRefIds<T extends StateContainerConstructor>(
+    Type: T,
+    instanceKey: string = BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
+  ): ReadonlySet<string> {
+    const instances = this.ensureInstancesMap(Type);
+    const entry = instances.get(instanceKey);
+    return entry?.refs ?? new Set();
   }
 
   /**

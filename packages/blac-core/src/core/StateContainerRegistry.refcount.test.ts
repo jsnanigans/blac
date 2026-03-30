@@ -8,6 +8,7 @@ import {
   ensure,
   hasInstance,
   getRefCount,
+  getRefIds,
 } from '../registry';
 import { StateContainer } from './StateContainer';
 
@@ -126,5 +127,50 @@ describe('StateContainerRegistry ref counting', () => {
     expect(defaultInstance).not.toBe(customInstance);
     expect(getRefCount(RefCountBloc, 'default')).toBe(1);
     expect(getRefCount(RefCountBloc, 'custom')).toBe(1);
+  });
+
+  it('acquire() with explicit refId tracks the named ref', () => {
+    acquire(RefCountBloc, undefined, 'component-A');
+    acquire(RefCountBloc, undefined, 'component-B');
+    expect(getRefCount(RefCountBloc)).toBe(2);
+    const ids = getRefIds(RefCountBloc);
+    expect(ids.has('component-A')).toBe(true);
+    expect(ids.has('component-B')).toBe(true);
+  });
+
+  it('release() with refId removes only that ref', () => {
+    acquire(RefCountBloc, undefined, 'ref-A');
+    acquire(RefCountBloc, undefined, 'ref-B');
+    release(RefCountBloc, undefined, false, 'ref-A');
+    expect(getRefCount(RefCountBloc)).toBe(1);
+    const ids = getRefIds(RefCountBloc);
+    expect(ids.has('ref-A')).toBe(false);
+    expect(ids.has('ref-B')).toBe(true);
+  });
+
+  it('double-release with same refId is a no-op (idempotent)', () => {
+    const instance = acquire(RefCountBloc, undefined, 'ref-A');
+    acquire(RefCountBloc, undefined, 'ref-B');
+    release(RefCountBloc, undefined, false, 'ref-A');
+    release(RefCountBloc, undefined, false, 'ref-A');
+    expect(getRefCount(RefCountBloc)).toBe(1);
+    expect(instance.isDisposed).toBe(false);
+  });
+
+  it('getRefIds() returns empty set when no instance exists', () => {
+    const ids = getRefIds(RefCountBloc);
+    expect(ids.size).toBe(0);
+  });
+
+  it('getRefIds() reflects acquire and release of named refs', () => {
+    acquire(RefCountBloc, undefined, 'x');
+    acquire(RefCountBloc, undefined, 'y');
+    acquire(RefCountBloc, undefined, 'z');
+    expect(getRefIds(RefCountBloc).size).toBe(3);
+    release(RefCountBloc, undefined, false, 'y');
+    const ids = getRefIds(RefCountBloc);
+    expect(ids.size).toBe(2);
+    expect(ids.has('x')).toBe(true);
+    expect(ids.has('z')).toBe(true);
   });
 });
