@@ -144,6 +144,23 @@ describe('DevToolsBrowserPlugin Lifecycle Integration', () => {
     );
   });
 
+  it('should include createdFrom in instance-created event data', () => {
+    const plugin = fixture.plugin();
+    withPluginInstalled(plugin);
+
+    const subscriber = vi.fn();
+    plugin.subscribe(subscriber);
+
+    acquire(TestCubit);
+
+    const createdEvent = subscriber.mock.calls.find(
+      (call: any[]) => call[0]?.type === 'instance-created',
+    );
+    expect(createdEvent).toBeDefined();
+    expect(createdEvent![0].data).toHaveProperty('createdFrom');
+    expect(typeof createdEvent![0].data.createdFrom).toBe('string');
+  });
+
   it('should scan existing instances on install', () => {
     acquire(TestCubit);
 

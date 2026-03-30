@@ -201,6 +201,7 @@ function App() {
                       createdAt: event.timestamp,
                       dependencies: d.dependencies,
                       consumers: d.consumers,
+                      createdFrom: d.createdFrom,
                     });
                     if (d.dependencies?.length) {
                       dependencyBloc.addEdgesForInstance(d.id, d.dependencies);

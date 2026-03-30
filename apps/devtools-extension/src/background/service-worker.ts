@@ -35,10 +35,12 @@ chrome.runtime.onConnect.addListener((port) => {
     // Handle messages from DevTools panel
     port.onMessage.addListener((message) => {
       // Forward to content script
-      void chrome.tabs.sendMessage(tabId, {
-        source: 'blac-devtools-panel',
-        ...message,
-      });
+      chrome.tabs
+        .sendMessage(tabId, {
+          source: 'blac-devtools-panel',
+          ...message,
+        })
+        .catch(() => {});
     });
 
     // Clean up on disconnect
@@ -91,18 +93,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return true; // Keep channel open for async response
 });
 
-// Reliable page navigation/reload detection via webNavigation API
-// This fires even when beforeunload messages don't make it
-chrome.webNavigation.onCommitted.addListener((details) => {
-  // Only top-level frame navigations
-  if (details.frameId !== 0) return;
+// Detect page navigation/reload via tabs.onUpdated (no extra permissions needed)
+chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+  if (changeInfo.status !== 'loading') return;
 
-  const tabId = details.tabId;
-
-  // Clear cached state
   stateCache.delete(tabId);
 
-  // Notify DevTools panel
   const connection = devToolsConnections.get(tabId);
   if (connection) {
     connection.port.postMessage({

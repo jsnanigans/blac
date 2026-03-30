@@ -406,6 +406,7 @@ describe('PluginManager', () => {
       });
       expect(metadata.lastStateChangeTimestamp).toBeGreaterThan(0);
       expect(metadata.createdAt).toBeGreaterThan(0);
+      expect(typeof metadata.createdFrom).toBe('string');
     });
 
     it('should provide getState', () => {

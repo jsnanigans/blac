@@ -13,6 +13,7 @@ import type {
 } from '../types';
 import { CurrentStateView } from './CurrentStateView';
 import { StateHistoryView } from './StateHistoryView';
+import { CallStackView } from './CallStackView';
 import { StateDiffView } from './StateDiffView';
 import { SectionHeader } from './SectionHeader';
 import { T } from '../theme';
@@ -406,6 +407,35 @@ const DependenciesSection: FC<DependenciesSectionProps> = React.memo(
 DependenciesSection.displayName = 'DependenciesSection';
 
 // ============================================================================
+// Initiator Section
+// ============================================================================
+
+interface InitiatorSectionProps {
+  createdFrom?: string;
+}
+
+const InitiatorSection: FC<InitiatorSectionProps> = React.memo(
+  ({ createdFrom }) => {
+    const [isExpanded, setIsExpanded] = useState(true);
+
+    if (!createdFrom) return null;
+
+    return (
+      <div>
+        <SectionHeader
+          label="Initiator"
+          isExpanded={isExpanded}
+          onToggle={() => setIsExpanded((v) => !v)}
+        />
+        {isExpanded && <CallStackView callstack={createdFrom} />}
+      </div>
+    );
+  },
+);
+
+InitiatorSection.displayName = 'InitiatorSection';
+
+// ============================================================================
 // Consumers Section
 // ============================================================================
 
@@ -659,6 +689,8 @@ export const StateViewer: FC<StateViewerProps> = ({ onTimeTravel }) => {
           instances={instances}
           onNavigate={(id) => layoutBloc.setSelectedId(id)}
         />
+
+        <InitiatorSection createdFrom={selectedInstance.createdFrom} />
       </div>
     </div>
   );
