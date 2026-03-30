@@ -406,6 +406,53 @@ const DependenciesSection: FC<DependenciesSectionProps> = React.memo(
 DependenciesSection.displayName = 'DependenciesSection';
 
 // ============================================================================
+// Initiator Section
+// ============================================================================
+
+interface InitiatorSectionProps {
+  createdFrom?: string;
+}
+
+const InitiatorSection: FC<InitiatorSectionProps> = React.memo(
+  ({ createdFrom }) => {
+    const [isExpanded, setIsExpanded] = useState(true);
+
+    if (!createdFrom) return null;
+
+    return (
+      <div>
+        <SectionHeader
+          label="Initiator"
+          isExpanded={isExpanded}
+          onToggle={() => setIsExpanded((v) => !v)}
+        />
+        {isExpanded && (
+          <pre
+            style={{
+              margin: 0,
+              padding: '8px',
+              fontSize: '11px',
+              fontFamily: 'monospace',
+              lineHeight: '1.5',
+              color: T.text2,
+              background: T.bg2,
+              borderRadius: '4px',
+              overflowX: 'auto',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-all',
+            }}
+          >
+            {createdFrom}
+          </pre>
+        )}
+      </div>
+    );
+  },
+);
+
+InitiatorSection.displayName = 'InitiatorSection';
+
+// ============================================================================
 // Consumers Section
 // ============================================================================
 
@@ -659,6 +706,8 @@ export const StateViewer: FC<StateViewerProps> = ({ onTimeTravel }) => {
           instances={instances}
           onNavigate={(id) => layoutBloc.setSelectedId(id)}
         />
+
+        <InitiatorSection createdFrom={selectedInstance.createdFrom} />
       </div>
     </div>
   );

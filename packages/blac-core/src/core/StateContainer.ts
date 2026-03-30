@@ -59,6 +59,7 @@ export abstract class StateContainer<S extends object = any> {
   instanceId: string = generateSimpleId(this.constructor.name, 'main');
   createdAt: number = Date.now();
   lastUpdateTimestamp: number = Date.now();
+  createdFrom: string = '';
 
   get dependencies(): ReadonlyMap<StateContainerConstructor, string> {
     return this._dependencies ?? EMPTY_DEPS;
@@ -90,6 +91,7 @@ export abstract class StateContainer<S extends object = any> {
       this.constructor.name,
       this._config.instanceId,
     );
+    this.createdFrom = this.captureStackTrace();
     getRegistry().emit('created', this);
   }
 

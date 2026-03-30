@@ -52,6 +52,8 @@ export interface InstanceState {
   createdAt: number;
   /** Current computed getter values */
   getters?: Record<string, GetterInfo>;
+  /** Stack trace showing where the instance was first created */
+  createdFrom?: string;
 }
 
 /**

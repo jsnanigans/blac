@@ -99,6 +99,7 @@ function toInstanceData(inst: any): import('./types').InstanceData {
     hydrationError: inst.hydrationError,
     dependencies: inst.dependencies,
     getters: inst.getters,
+    createdFrom: inst.createdFrom,
   };
 }
 

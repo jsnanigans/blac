@@ -50,6 +50,7 @@
         history: i.history,
         dependencies: i.dependencies,
         consumers: i.consumers,
+        createdFrom: i.createdFrom,
       };
     });
   }
