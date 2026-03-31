@@ -34,7 +34,7 @@ describe('PluginManager edge cases', () => {
     expect(manager.hasPlugin('bare')).toBe(true);
   });
 
-  it('multiple plugins all receive onStateChanged', () => {
+  it('multiple plugins all receive onStateChanged', async () => {
     const onStateChanged1 = vi.fn();
     const onStateChanged2 = vi.fn();
     manager.install({
@@ -51,6 +51,7 @@ describe('PluginManager edge cases', () => {
     const bloc = acquire(SimpleBloc, 'default');
     bloc.emit({ n: 99 });
 
+    await new Promise<void>((r) => queueMicrotask(r));
     expect(onStateChanged1).toHaveBeenCalledOnce();
     expect(onStateChanged2).toHaveBeenCalledOnce();
   });

@@ -91,7 +91,7 @@ describe('StateContainer Lifecycle Events', () => {
     expect(disposedListener).toHaveBeenCalledTimes(1);
   });
 
-  it('should emit "stateChanged" event when state changes', () => {
+  it('should emit "stateChanged" event when state changes', async () => {
     const stateChangedListener = vi.fn();
     getRegistry().on('stateChanged', stateChangedListener);
 
@@ -109,6 +109,9 @@ describe('StateContainer Lifecycle Events', () => {
 
     // Change state
     instance.increment();
+
+    // stateChanged is deferred to microtask
+    await new Promise<void>((r) => queueMicrotask(r));
 
     // Verify stateChanged event was emitted
     expect(stateChangedListener).toHaveBeenCalledTimes(1);

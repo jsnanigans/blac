@@ -80,12 +80,13 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       unsubscribe();
     });
 
-    it('should subscribe to stateChanged events', () => {
+    it('should subscribe to stateChanged events', async () => {
       const { listener } = withStateChangedListener();
 
       const bloc = fixture.cubit(0);
       bloc.increment();
 
+      await new Promise<void>((r) => queueMicrotask(r));
       expect(listener).toHaveBeenCalledTimes(1);
       expect(listener).toHaveBeenCalledWith(bloc, { value: 0 }, { value: 1 });
     });
@@ -113,7 +114,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       expect(listener3).toHaveBeenCalledTimes(1);
     });
 
-    it('should allow subscribing to multiple event types', () => {
+    it('should allow subscribing to multiple event types', async () => {
       const { listener: createdListener } = withCreatedListener();
       const { listener: stateChangedListener } = withStateChangedListener();
       const { listener: disposedListener } = withDisposedListener();
@@ -124,8 +125,10 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       bloc.dispose();
 
       expect(createdListener).toHaveBeenCalledTimes(1);
-      expect(stateChangedListener).toHaveBeenCalledTimes(1);
       expect(disposedListener).toHaveBeenCalledTimes(1);
+
+      await new Promise<void>((r) => queueMicrotask(r));
+      expect(stateChangedListener).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -144,15 +147,17 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       expect(listener).toHaveBeenCalledTimes(1);
     });
 
-    it('should unsubscribe from stateChanged events', () => {
+    it('should unsubscribe from stateChanged events', async () => {
       const bloc = fixture.cubit(0);
       const { listener, unsubscribe } = withStateChangedListener();
 
       bloc.increment();
+      await new Promise<void>((r) => queueMicrotask(r));
       expect(listener).toHaveBeenCalledTimes(1);
 
       unsubscribe();
       bloc.increment();
+      await new Promise<void>((r) => queueMicrotask(r));
       expect(listener).toHaveBeenCalledTimes(1);
     });
 
@@ -193,15 +198,17 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       expect(listener).toHaveBeenCalledWith(bloc);
     });
 
-    it('should emit stateChanged after state actually changes', () => {
+    it('should emit stateChanged after state actually changes', async () => {
       const { listener } = withStateChangedListener();
 
       const bloc = fixture.cubit(0);
 
       bloc.setValue(0);
+      await new Promise<void>((r) => queueMicrotask(r));
       expect(listener).toHaveBeenCalledTimes(1);
 
       bloc.increment();
+      await new Promise<void>((r) => queueMicrotask(r));
       expect(listener).toHaveBeenCalledTimes(2);
       expect(listener).toHaveBeenCalledWith(bloc, { value: 0 }, { value: 1 });
     });
@@ -268,7 +275,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
   });
 
   describe('Plugin Use Cases', () => {
-    it('should support Redux DevTools plugin pattern', () => {
+    it('should support Redux DevTools plugin pattern', async () => {
       const actions: any[] = [];
       const states: any[] = [];
 
@@ -285,6 +292,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       bloc.increment();
       bloc.increment();
 
+      await new Promise<void>((r) => queueMicrotask(r));
       expect(actions).toHaveLength(2);
       expect(states).toEqual([
         { prev: { value: 0 }, next: { value: 1 } },
@@ -292,7 +300,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       ]);
     });
 
-    it('should support logging plugin pattern', () => {
+    it('should support logging plugin pattern', async () => {
       const logs: string[] = [];
 
       globalRegistry.on('created', (container) => {
@@ -314,13 +322,17 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       bloc.increment();
       bloc.dispose();
 
-      expect(logs).toHaveLength(3);
+      // created and disposed are synchronous; stateChanged is deferred
+      expect(logs).toHaveLength(2);
       expect(logs[0]).toMatch(/\[CREATED\] TestCubit/);
-      expect(logs[1]).toBe('[STATE] TestCubit: {"value":0} -> {"value":1}');
-      expect(logs[2]).toMatch(/\[DISPOSED\] TestCubit/);
+      expect(logs[1]).toMatch(/\[DISPOSED\] TestCubit/);
+
+      await new Promise<void>((r) => queueMicrotask(r));
+      expect(logs).toHaveLength(3);
+      expect(logs[2]).toBe('[STATE] TestCubit: {"value":0} -> {"value":1}');
     });
 
-    it('should support time-travel debugging plugin pattern', () => {
+    it('should support time-travel debugging plugin pattern', async () => {
       const history: Array<{ state: any; timestamp: number }> = [];
       let _currentIndex = -1;
 
@@ -334,6 +346,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       bloc.increment();
       bloc.increment();
 
+      await new Promise<void>((r) => queueMicrotask(r));
       expect(history).toHaveLength(3);
       expect(history.map((h) => h.state)).toEqual([
         { value: 1 },
@@ -345,7 +358,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       expect(previousState).toEqual({ value: 2 });
     });
 
-    it('should support performance monitoring plugin pattern', () => {
+    it('should support performance monitoring plugin pattern', async () => {
       const metrics = { stateChanges: 0, averageStateChangeTime: 0 };
       const startTimes = new Map<any, number>();
 
@@ -364,6 +377,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       bloc.increment();
       bloc.increment();
 
+      await new Promise<void>((r) => queueMicrotask(r));
       expect(metrics.stateChanges).toBe(2);
     });
   });

@@ -317,7 +317,7 @@ describe('PluginManager', () => {
     });
 
     describe('onStateChanged', () => {
-      it('should call onStateChanged when state changes', () => {
+      it('should call onStateChanged when state changes', async () => {
         const onStateChanged = vi.fn();
         const plugin: BlacPlugin = {
           name: 'test-plugin',
@@ -330,6 +330,7 @@ describe('PluginManager', () => {
         const counter = acquire(CounterCubit, 'main');
         counter.increment();
 
+        await new Promise<void>((r) => queueMicrotask(r));
         expect(onStateChanged).toHaveBeenCalledWith(
           counter,
           { count: 0 },
