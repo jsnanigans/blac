@@ -13,7 +13,9 @@
     "lint": "vp lint .",
     "lint:fix": "vp lint . --fix",
     "_typecheck": "tsc --noEmit",
-    "dev": "vp dev"
+    "dev": "vp dev",
+    "build:app": "vp build",
+    "serve": "vite preview"
   },
   "keywords": [],
   "author": "",
@@ -22,15 +24,18 @@
   "dependencies": {
     "@blac/core": "workspace:*",
     "@blac/react": "workspace:*",
+    "@reduxjs/toolkit": "^2.11.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "vite": "catalog:"
+    "react-redux": "^9.2.0",
+    "vite": "catalog:",
+    "zustand": "^5.0.12"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^4.7.0",
-    "typescript": "catalog:",
     "@types/react": "^19.1.9",
     "@types/react-dom": "^19.1.7",
+    "@vitejs/plugin-react": "^4.7.0",
+    "typescript": "catalog:",
     "vite-plus": "catalog:"
   }
 }
