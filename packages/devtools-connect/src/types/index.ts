@@ -142,6 +142,17 @@ export interface ConsumerInfo {
   componentName: string;
   /** Timestamp when the component mounted */
   mountedAt: number;
+  /** Stack trace captured at consumer registration (dev mode only) */
+  stackTrace?: string;
+}
+
+export interface RefHolderInfo {
+  /** Reference ID string */
+  refId: string;
+  /** Timestamp when the ref was acquired */
+  acquiredAt: number;
+  /** Stack trace captured at acquire() call (dev mode only) */
+  stackTrace?: string;
 }
 
 // =============================================================================

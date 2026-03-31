@@ -23,6 +23,7 @@ import type {
   InstanceMetrics,
   PerformanceWarning,
   ConsumerInfo,
+  RefHolderInfo,
 } from '../types';
 
 // Re-export types for backward compatibility
@@ -59,9 +60,41 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
   // Consumer tracking: instanceId -> Map<consumerId, ConsumerInfo>
   private consumers = new Map<string, Map<string, ConsumerInfo>>();
 
+  // Ref holder tracking: instanceId -> Map<refId, RefHolderInfo>
+  private refHolders = new Map<string, Map<string, RefHolderInfo>>();
+
+  // Unique per plugin instance — new page load = new session ID
+  private readonly sessionId: string =
+    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+
   // Persistent event history storage (complete log from app startup)
   private eventHistory: DevToolsEvent[] = [];
   private readonly MAX_HISTORY_SIZE = 10000;
+
+  private readonly FULL_SYNC_INTERVAL = 3000;
+  private fullSyncTimer: ReturnType<typeof setInterval> | undefined;
+  private handleExtensionMessage = (event: MessageEvent): void => {
+    if (event.source !== window) return;
+    if ((event.data as Record<string, any>)?.source !== 'blac-devtools-content')
+      return;
+    const cmd = event.data as Record<string, any>;
+    switch (cmd.type) {
+      case 'PING':
+        this.broadcastToExtension({
+          type: 'PONG',
+          payload: { timestamp: Date.now() },
+        });
+        break;
+      case 'GET_INSTANCES':
+        this.broadcastFullState();
+        break;
+      case 'TIME_TRAVEL':
+        this.timeTravel(cmd.instanceId as string, cmd.state);
+        break;
+    }
+  };
 
   // State manager for structured state history (backend for DevTools panels)
   private stateManager: DevToolsStateManager;
@@ -84,11 +117,14 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
 
   onInstall(context: PluginContext): void {
     this.context = context;
-    this.scanExistingInstances();
     this.exposeGlobalAPI();
+    this.scanExistingInstances();
+    this.startExtensionBridge();
+    this.broadcastFullState();
   }
 
   onUninstall(): void {
+    this.stopExtensionBridge();
     this.listeners.clear();
     this.instanceCache.clear();
     this.instanceTimestamps.clear();
@@ -205,8 +241,9 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       (e) => e.fromId !== data.id,
     );
 
-    // Clean up consumers and metrics tracking
+    // Clean up consumers, ref holders, and metrics tracking
     this.consumers.delete(data.id);
+    this.refHolders.delete(data.id);
     this.updateTimestamps.delete(data.id);
     this.stateSizeCache.delete(data.id);
     this.totalUpdateCounts.delete(data.id);
@@ -216,6 +253,53 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       timestamp: Date.now(),
       data,
     });
+  }
+
+  onRefAcquired(instance: any, refId: string, _context: PluginContext): void {
+    if (this.shouldExcludeInstance(instance)) return;
+
+    const instanceId = (instance as any).instanceId as string;
+    if (!instanceId || !this.instanceCache.has(instanceId)) return;
+
+    let stackTrace: string | undefined;
+    try {
+      stackTrace = new Error().stack;
+    } catch {
+      /* ignore */
+    }
+
+    let holders = this.refHolders.get(instanceId);
+    if (!holders) {
+      holders = new Map();
+      this.refHolders.set(instanceId, holders);
+    }
+
+    holders.set(refId, {
+      refId,
+      acquiredAt: Date.now(),
+      stackTrace,
+    });
+
+    this.emitConsumersChanged(instanceId);
+  }
+
+  onRefReleased(instance: any, refId: string, _context: PluginContext): void {
+    if (this.shouldExcludeInstance(instance)) return;
+
+    const instanceId = (instance as any).instanceId as string;
+    if (!instanceId) return;
+
+    const holders = this.refHolders.get(instanceId);
+    if (holders) {
+      holders.delete(refId);
+      if (holders.size === 0) {
+        this.refHolders.delete(instanceId);
+      }
+    }
+
+    if (this.instanceCache.has(instanceId)) {
+      this.emitConsumersChanged(instanceId);
+    }
   }
 
   subscribe(callback: DevToolsCallback): () => void {
@@ -228,10 +312,16 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
   getInstances(): InstanceMetadata[] {
     return Array.from(this.instanceCache.values()).map((inst) => {
       const consumers = this.consumers.get(inst.id);
-      if (consumers && consumers.size > 0) {
-        return { ...inst, consumers: Array.from(consumers.values()) } as any;
-      }
-      return inst;
+      const refIds = this.context?.getRefIds(inst.id) ?? [];
+      const refHolders = this.getRefHoldersForInstance(inst.id);
+      return {
+        ...inst,
+        ...(consumers && consumers.size > 0
+          ? { consumers: Array.from(consumers.values()) }
+          : {}),
+        ...(refIds.length > 0 ? { refIds } : {}),
+        ...(refHolders.length > 0 ? { refHolders } : {}),
+      } as any;
     });
   }
 
@@ -313,6 +403,13 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
   ): void {
     if (!this.instanceCache.has(instanceId)) return;
 
+    let stackTrace: string | undefined;
+    try {
+      stackTrace = new Error().stack;
+    } catch {
+      /* ignore */
+    }
+
     let instanceConsumers = this.consumers.get(instanceId);
     if (!instanceConsumers) {
       instanceConsumers = new Map();
@@ -323,17 +420,11 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       id: consumerId,
       componentName,
       mountedAt: Date.now(),
+      stackTrace,
     };
     instanceConsumers.set(consumerId, info);
 
-    this.emit({
-      type: 'consumers-changed',
-      timestamp: Date.now(),
-      data: {
-        instanceId,
-        consumers: Array.from(instanceConsumers.values()),
-      },
-    });
+    this.emitConsumersChanged(instanceId);
   }
 
   unregisterConsumer(instanceId: string, consumerId: string): void {
@@ -345,16 +436,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       this.consumers.delete(instanceId);
     }
 
-    this.emit({
-      type: 'consumers-changed',
-      timestamp: Date.now(),
-      data: {
-        instanceId,
-        consumers: instanceConsumers.size
-          ? Array.from(instanceConsumers.values())
-          : [],
-      },
-    });
+    this.emitConsumersChanged(instanceId);
   }
 
   getConsumers(
@@ -369,6 +451,10 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       result[id] = Array.from(map.values());
     }
     return result;
+  }
+
+  getRefIds(instanceId: string): string[] {
+    return this.context?.getRefIds(instanceId) ?? [];
   }
 
   private scanExistingInstances(): void {
@@ -407,6 +493,27 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     });
   }
 
+  private getRefHoldersForInstance(instanceId: string): RefHolderInfo[] {
+    const holders = this.refHolders.get(instanceId);
+    return holders ? Array.from(holders.values()) : [];
+  }
+
+  private emitConsumersChanged(instanceId: string): void {
+    const instanceConsumers = this.consumers.get(instanceId);
+    this.emit({
+      type: 'consumers-changed',
+      timestamp: Date.now(),
+      data: {
+        instanceId,
+        consumers: instanceConsumers
+          ? Array.from(instanceConsumers.values())
+          : [],
+        refIds: this.context?.getRefIds(instanceId) ?? [],
+        refHolders: this.getRefHoldersForInstance(instanceId),
+      },
+    });
+  }
+
   private emit(event: DevToolsEvent): void {
     if (this.eventHistory.length < this.MAX_HISTORY_SIZE) {
       this.eventHistory.push(event);
@@ -414,6 +521,8 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       this.eventHistory.shift();
       this.eventHistory.push(event);
     }
+
+    this.broadcastToExtension({ type: 'ATOMIC_UPDATE', payload: event });
 
     if (this.listeners.size > 0) {
       this.listeners.forEach((listener) => {
@@ -628,6 +737,81 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     };
   }
 
+  private broadcastToExtension(data: Record<string, any>): void {
+    if (typeof window === 'undefined') return;
+    window.postMessage(
+      { source: 'blac-devtools-plugin', ...data },
+      window.location.origin,
+    );
+  }
+
+  private toExtensionInstances(): any[] {
+    const { instances } = this.stateManager.getFullState();
+    return instances.map((inst) => {
+      const history = inst.history ?? [];
+      const lastChange =
+        history.length > 0 ? history[history.length - 1] : null;
+      const instanceConsumers = this.consumers.get(inst.id);
+      const instanceEdges = this.dependencyEdges.filter(
+        (e) => e.fromId === inst.id,
+      );
+      const refIds = this.context?.getRefIds(inst.id) ?? [];
+      const refHolders = this.getRefHoldersForInstance(inst.id);
+      return {
+        id: inst.id,
+        className: inst.className,
+        name: inst.name,
+        isDisposed: false,
+        isIsolated: false,
+        state: inst.currentState,
+        lastStateChangeTimestamp: lastChange?.timestamp ?? inst.createdAt,
+        createdAt: inst.createdAt,
+        getters: inst.getters,
+        history: inst.history,
+        createdFrom: inst.createdFrom,
+        dependencies: instanceEdges.length ? instanceEdges : undefined,
+        consumers: instanceConsumers
+          ? Array.from(instanceConsumers.values())
+          : undefined,
+        refIds: refIds.length > 0 ? refIds : undefined,
+        refHolders: refHolders.length > 0 ? refHolders : undefined,
+      };
+    });
+  }
+
+  private broadcastFullState(): void {
+    if (typeof window === 'undefined') return;
+    this.broadcastToExtension({
+      type: 'INITIAL_STATE',
+      payload: {
+        instances: this.toExtensionInstances(),
+        eventHistory: this.getEventHistory(),
+        version: this.getVersion(),
+        timestamp: Date.now(),
+        dependencyGraph: this.getDependencyGraph(),
+        sessionId: this.sessionId,
+      },
+    });
+  }
+
+  private startExtensionBridge(): void {
+    if (typeof window === 'undefined') return;
+    window.addEventListener('message', this.handleExtensionMessage);
+    this.fullSyncTimer = setInterval(() => {
+      this.broadcastFullState();
+    }, this.FULL_SYNC_INTERVAL);
+  }
+
+  private stopExtensionBridge(): void {
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('message', this.handleExtensionMessage);
+    }
+    if (this.fullSyncTimer !== undefined) {
+      clearInterval(this.fullSyncTimer);
+      this.fullSyncTimer = undefined;
+    }
+  }
+
   private exposeGlobalAPI(): void {
     if (typeof window === 'undefined') return;
 
@@ -653,6 +837,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       unregisterConsumer: (instanceId: string, consumerId: string) =>
         this.unregisterConsumer(instanceId, consumerId),
       getConsumers: (instanceId?: string) => this.getConsumers(instanceId),
+      getRefIds: (instanceId: string) => this.getRefIds(instanceId),
     };
   }
 }
