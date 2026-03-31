@@ -87,12 +87,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
       bloc.increment();
 
       expect(listener).toHaveBeenCalledTimes(1);
-      expect(listener).toHaveBeenCalledWith(
-        bloc,
-        { value: 0 },
-        { value: 1 },
-        expect.any(String),
-      );
+      expect(listener).toHaveBeenCalledWith(bloc, { value: 0 }, { value: 1 });
     });
 
     it('should subscribe to disposed events', () => {
@@ -208,12 +203,7 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
 
       bloc.increment();
       expect(listener).toHaveBeenCalledTimes(2);
-      expect(listener).toHaveBeenCalledWith(
-        bloc,
-        { value: 0 },
-        { value: 1 },
-        expect.any(String),
-      );
+      expect(listener).toHaveBeenCalledWith(bloc, { value: 0 }, { value: 1 });
     });
 
     it('should emit disposed after cleanup', () => {

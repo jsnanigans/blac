@@ -161,13 +161,12 @@ export class PluginManager {
     // State changed
     this.registry.on(
       'stateChanged',
-      (instance, previousState, currentState, callstack) => {
+      (instance, previousState, currentState) => {
         this.notifyPlugins(
           'onStateChanged',
           instance,
           previousState,
           currentState,
-          callstack,
         );
       },
     );
@@ -222,14 +221,12 @@ export class PluginManager {
           className: instance.constructor.name,
           isDisposed: instance.isDisposed,
           name: instance.name,
-          lastStateChangeTimestamp: instance.lastUpdateTimestamp,
           createdAt: instance.createdAt,
           state: instance.state,
           hydrationStatus: instance.hydrationStatus,
           isHydrated: instance.isHydrated,
           hydrationError: instance.hydrationError,
           changedWhileHydrating: instance.changedWhileHydrating,
-          createdFrom: instance.createdFrom || undefined,
         };
       },
 

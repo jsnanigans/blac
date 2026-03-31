@@ -762,34 +762,14 @@ describe('StateContainer', () => {
     });
   });
 
-  describe('createdFrom', () => {
-    it('should capture stack trace on initConfig when enableStackTrace is true', () => {
-      const original = StateContainer.enableStackTrace;
-      StateContainer.enableStackTrace = true;
-
-      const container = acquire(TestContainer);
-
-      expect(container.createdFrom).toBeTruthy();
-      expect(typeof container.createdFrom).toBe('string');
-      expect(container.createdFrom.length).toBeGreaterThan(0);
-
-      StateContainer.enableStackTrace = original;
-    });
-
-    it('should return empty string when enableStackTrace is false', () => {
-      const original = StateContainer.enableStackTrace;
-      StateContainer.enableStackTrace = false;
-
-      const container = acquire(TestContainer, 'no-stack');
-
-      expect(container.createdFrom).toBe('');
-
-      StateContainer.enableStackTrace = original;
-    });
-
-    it('should default to empty string before initConfig', () => {
+  describe('createdFrom was removed (stack traces moved to devtools plugin)', () => {
+    it('should not have createdFrom property', () => {
       const container = new TestContainer();
-      expect(container.createdFrom).toBe('');
+      expect('createdFrom' in container).toBe(false);
+    });
+
+    it('should not have enableStackTrace static', () => {
+      expect('enableStackTrace' in StateContainer).toBe(false);
     });
   });
 

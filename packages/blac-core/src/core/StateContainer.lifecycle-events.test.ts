@@ -116,7 +116,6 @@ describe('StateContainer Lifecycle Events', () => {
       instance,
       { count: 0 },
       { count: 1 },
-      expect.any(String), // callstack
     );
   });
 });

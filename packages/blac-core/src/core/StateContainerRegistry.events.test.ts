@@ -58,17 +58,12 @@ describe('StateContainerRegistry lifecycle events', () => {
     errorSpy.mockRestore();
   });
 
-  it('stateChanged event receives (instance, previousState, newState, stackTrace)', () => {
+  it('stateChanged event receives (instance, previousState, newState)', () => {
     const listener = vi.fn();
     globalRegistry.on('stateChanged', listener);
     const instance = acquire(EventBloc);
     instance.doEmit({ n: 42 });
-    expect(listener).toHaveBeenCalledWith(
-      instance,
-      { n: 0 },
-      { n: 42 },
-      expect.any(String),
-    );
+    expect(listener).toHaveBeenCalledWith(instance, { n: 0 }, { n: 42 });
   });
 
   it('no listeners = no throw on emit', () => {

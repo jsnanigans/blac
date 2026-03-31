@@ -35,7 +35,6 @@ const EMPTY_DEPS: ReadonlyMap<any, any> = new Map();
 
 export abstract class StateContainer<S extends object = any> {
   static __excludeFromDevTools = false;
-  static enableStackTrace = true;
 
   private _state: S;
   private readonly _listeners = new Set<StateListener<S>>();
@@ -58,8 +57,6 @@ export abstract class StateContainer<S extends object = any> {
   debug: boolean = false;
   instanceId: string = generateSimpleId(this.constructor.name, 'main');
   createdAt: number = Date.now();
-  lastUpdateTimestamp: number = Date.now();
-  createdFrom: string = '';
 
   get dependencies(): ReadonlyMap<StateContainerConstructor, string> {
     return this._dependencies ?? EMPTY_DEPS;
@@ -91,7 +88,6 @@ export abstract class StateContainer<S extends object = any> {
       this.constructor.name,
       this._config.instanceId,
     );
-    this.createdFrom = this.captureStackTrace();
     getRegistry().emit('created', this);
   }
 
@@ -240,82 +236,6 @@ export abstract class StateContainer<S extends object = any> {
     return this.ensureHydrationPromise();
   }
 
-  private captureStackTrace(): string {
-    if (
-      !StateContainer.enableStackTrace ||
-      (typeof process !== 'undefined' && process.env?.NODE_ENV === 'production')
-    ) {
-      return '';
-    }
-
-    try {
-      const error = new Error();
-      const stack = error.stack || '';
-      const lines = stack.split('\n');
-      const relevantLines = lines.slice(1);
-      const formattedLines: string[] = [];
-
-      for (const line of relevantLines) {
-        if (!line.trim()) continue;
-
-        if (
-          line.includes('StateContainer.emit') ||
-          line.includes('StateContainer.update') ||
-          line.includes('StateContainer.captureStackTrace') ||
-          line.includes('[blac.emit]') ||
-          line.includes('[blac.update]') ||
-          line.includes('Cubit.patch') ||
-          line.includes('/blac-core/dist/') ||
-          line.includes('@blac/core/') ||
-          line.includes('/blac-react/dist/') ||
-          line.includes('@blac/react/')
-        ) {
-          continue;
-        }
-
-        if (
-          line.includes('node_modules') ||
-          line.includes('react-dom') ||
-          line.includes('react_jsx') ||
-          line.includes('.vite/deps') ||
-          line.includes('executeDispatch') ||
-          line.includes('runWithFiber') ||
-          line.includes('invokeGuarded') ||
-          line.includes('callCallback') ||
-          line.includes('processDispatchQueue') ||
-          line.includes('dispatchEvent') ||
-          line.includes('batchedUpdates')
-        ) {
-          continue;
-        }
-
-        const formatted = this.formatStackLine(line);
-        if (formatted) {
-          formattedLines.push(formatted);
-        }
-      }
-
-      return formattedLines.join('\n');
-    } catch {
-      return '';
-    }
-  }
-
-  private formatStackLine(line: string): string | null {
-    const match = line.match(/at\s+(.+?)\s+\((.+?):(\d+):(\d+)\)/);
-    if (!match) {
-      const simpleMatch = line.match(/at\s+(.+?):(\d+):(\d+)/);
-      if (simpleMatch) {
-        const [, url, lineNum, col] = simpleMatch;
-        return `  at ${url}:${lineNum}:${col}`;
-      }
-      return null;
-    }
-
-    const [, functionName, url, lineNum, col] = match;
-    return `  at ${functionName} (${url}:${lineNum}:${col})`;
-  }
-
   private applyState(newState: S, source: 'default' | 'hydration'): void {
     if (this._disposed) {
       throw new Error(`Cannot emit state from disposed container ${this.name}`);
@@ -335,25 +255,18 @@ export abstract class StateContainer<S extends object = any> {
       previousState,
     });
 
-    const listeners = Array.from(this._listeners);
-    for (const listener of listeners) {
-      try {
-        listener(newState);
-      } catch (error) {
-        console.error(`[${this.name}] Error in listener:`, error);
+    if (this._listeners.size > 0) {
+      const listeners = Array.from(this._listeners);
+      for (const listener of listeners) {
+        try {
+          listener(newState);
+        } catch (error) {
+          console.error(`[${this.name}] Error in listener:`, error);
+        }
       }
     }
 
-    const stackTrace = this.captureStackTrace();
-
-    getRegistry().emit(
-      'stateChanged',
-      this,
-      previousState,
-      newState,
-      stackTrace,
-    );
-    this.lastUpdateTimestamp = Date.now();
+    getRegistry().emit('stateChanged', this, previousState, newState);
   }
 
   private setHydrationStatus(status: HydrationStatus, error?: Error): void {

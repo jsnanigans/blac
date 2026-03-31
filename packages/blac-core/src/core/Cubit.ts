@@ -27,7 +27,7 @@ export abstract class Cubit<S extends object = any> extends StateContainer<S> {
       }
     }
     if (hasChanges) {
-      this.update((c) => ({ ...c, ...partial }) as S);
+      this[EMIT]({ ...current, ...partial } as S);
     }
   }) as S extends object ? (partial: Partial<S>) => void : never;
 }

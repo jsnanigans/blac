@@ -334,7 +334,6 @@ describe('PluginManager', () => {
           counter,
           { count: 0 },
           { count: 1 },
-          expect.any(String),
           expect.any(Object),
         );
       });
@@ -404,9 +403,7 @@ describe('PluginManager', () => {
         isHydrated: false,
         changedWhileHydrating: false,
       });
-      expect(metadata.lastStateChangeTimestamp).toBeGreaterThan(0);
       expect(metadata.createdAt).toBeGreaterThan(0);
-      expect(typeof metadata.createdFrom).toBe('string');
     });
 
     it('should provide getState', () => {
