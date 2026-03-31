@@ -176,16 +176,18 @@ describe('DevToolsBrowserPlugin Consumer Tracking', () => {
       expect.objectContaining({
         type: 'consumers-changed',
         timestamp: expect.any(Number),
-        data: {
+        data: expect.objectContaining({
           instanceId,
           consumers: [
             expect.objectContaining({
               id: 'consumer-1',
               componentName: 'MyComponent',
               mountedAt: expect.any(Number),
+              stackTrace: expect.any(String),
             }),
           ],
-        },
+          refIds: expect.any(Array),
+        }),
       }),
     );
   });
@@ -208,15 +210,17 @@ describe('DevToolsBrowserPlugin Consumer Tracking', () => {
     expect(subscriber).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'consumers-changed',
-        data: {
+        data: expect.objectContaining({
           instanceId,
           consumers: [
             expect.objectContaining({
               id: 'consumer-2',
               componentName: 'ComponentB',
+              stackTrace: expect.any(String),
             }),
           ],
-        },
+          refIds: expect.any(Array),
+        }),
       }),
     );
   });
@@ -238,10 +242,11 @@ describe('DevToolsBrowserPlugin Consumer Tracking', () => {
     expect(subscriber).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'consumers-changed',
-        data: {
+        data: expect.objectContaining({
           instanceId,
           consumers: [],
-        },
+          refIds: expect.any(Array),
+        }),
       }),
     );
   });
