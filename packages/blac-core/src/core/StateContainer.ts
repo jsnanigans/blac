@@ -52,6 +52,7 @@ export abstract class StateContainer<S extends object = any> {
     Set<SystemEventHandler<S, any>>
   >();
   private _dependencies: Map<StateContainerConstructor, string> | null = null;
+  private _registry = getRegistry();
 
   name: string = this.constructor.name;
   debug: boolean = false;
@@ -73,7 +74,7 @@ export abstract class StateContainer<S extends object = any> {
       Type,
       instanceKey ?? BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
     );
-    return () => getRegistry().ensure(Type, instanceKey);
+    return () => this._registry.ensure(Type, instanceKey);
   }
 
   constructor(initialState: S) {
@@ -88,7 +89,7 @@ export abstract class StateContainer<S extends object = any> {
       this.constructor.name,
       this._config.instanceId,
     );
-    getRegistry().emit('created', this);
+    this._registry.emit('created', this);
   }
 
   get state(): Readonly<S> {
@@ -143,7 +144,7 @@ export abstract class StateContainer<S extends object = any> {
     this._listeners.clear();
     this._systemEventHandlers.clear();
 
-    getRegistry().emit('disposed', this);
+    this._registry.emit('disposed', this);
 
     if (this.debug) {
       console.log(`[${this.name}] Disposed successfully`);
@@ -250,10 +251,17 @@ export abstract class StateContainer<S extends object = any> {
     const previousState = this._state;
     this._state = newState;
 
-    this.emitSystemEvent('stateChanged', {
-      state: newState,
-      previousState,
-    });
+    const handlers = this._systemEventHandlers.get('stateChanged');
+    if (handlers && handlers.size > 0) {
+      const payload = { state: newState, previousState };
+      for (const handler of handlers) {
+        try {
+          handler(payload);
+        } catch (error) {
+          console.error(`[${this.name}] Error in system event handler:`, error);
+        }
+      }
+    }
 
     if (this._listeners.size > 0) {
       const listeners = Array.from(this._listeners);
@@ -266,7 +274,7 @@ export abstract class StateContainer<S extends object = any> {
       }
     }
 
-    getRegistry().emit('stateChanged', this, previousState, newState);
+    this._registry.notifyStateChanged(this, previousState, newState);
   }
 
   private setHydrationStatus(status: HydrationStatus, error?: Error): void {

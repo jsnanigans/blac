@@ -77,6 +77,10 @@ export class StateContainerRegistry {
     Set<(...args: any[]) => void>
   >();
 
+  private _stateChangedListenerCount = 0;
+  private _pendingStateChanges: Array<[StateContainer<any>, any, any]> | null =
+    null;
+
   private _autoRefIdCounter = 0;
 
   /**
@@ -504,9 +508,18 @@ export class StateContainerRegistry {
 
     instance.add(listener as (...args: any[]) => void);
 
+    if (event === 'stateChanged') {
+      this._stateChangedListenerCount++;
+    }
+
     // Return unsubscribe function
     return () => {
-      this.listeners.get(event)?.delete(listener as (...args: any[]) => void);
+      const deleted = this.listeners
+        .get(event)
+        ?.delete(listener as (...args: any[]) => void);
+      if (deleted && event === 'stateChanged') {
+        this._stateChangedListenerCount--;
+      }
     };
   }
 
@@ -527,6 +540,35 @@ export class StateContainerRegistry {
           error,
         );
       }
+    }
+  }
+
+  /**
+   * Schedule a deferred stateChanged notification via microtask.
+   * Skips entirely when no stateChanged listeners are registered.
+   * @internal - Called by StateContainer.applyState
+   */
+  notifyStateChanged(
+    container: StateContainer<any>,
+    previousState: any,
+    newState: any,
+  ): void {
+    if (this._stateChangedListenerCount === 0) return;
+
+    if (!this._pendingStateChanges) {
+      this._pendingStateChanges = [];
+      queueMicrotask(() => this.flushStateChanged());
+    }
+    this._pendingStateChanges.push([container, previousState, newState]);
+  }
+
+  private flushStateChanged(): void {
+    const pending = this._pendingStateChanges;
+    this._pendingStateChanges = null;
+    if (!pending) return;
+
+    for (const [container, prev, next] of pending) {
+      this.emit('stateChanged', container, prev, next);
     }
   }
 }
