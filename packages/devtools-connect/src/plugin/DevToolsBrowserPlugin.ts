@@ -143,6 +143,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
   onInstanceCreated(instance: any, context: PluginContext): void {
     if (this.shouldExcludeInstance(instance)) return;
 
+    const createdFrom = this.captureCallstack();
     const data = this.createInstanceData(instance, context);
     this.instanceCache.set(data.id, data);
 
@@ -155,7 +156,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       state: data.state,
       createdAt,
       getters: (data as any).getters,
-      createdFrom: (data as any).createdFrom,
+      createdFrom,
     });
 
     // Capture dependency edges from this instance
@@ -164,12 +165,13 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       (e) => e.fromId === data.id,
     );
 
+    const eventData = { ...data, createdFrom };
     this.emit({
       type: 'instance-created',
       timestamp: Date.now(),
       data: instanceEdges.length
-        ? { ...data, dependencies: instanceEdges }
-        : data,
+        ? { ...eventData, dependencies: instanceEdges }
+        : eventData,
     });
   }
 
@@ -177,11 +179,11 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     instance: any,
     previousState: any,
     currentState: any,
-    callstack: string | undefined,
     context: PluginContext,
   ): void {
     if (this.shouldExcludeInstance(instance)) return;
 
+    const callstack = this.captureCallstack();
     const trigger = this.extractTriggerFromCallstack(callstack);
 
     const data = this.createInstanceData(
@@ -496,7 +498,6 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
           state: data.state,
           createdAt,
           getters: (data as any).getters,
-          createdFrom: (data as any).createdFrom,
         });
 
         this.captureDependencies(instance, data.id, data.className);
@@ -609,15 +610,88 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
    * Extract the method/function name that triggered a state change from the callstack.
    * The first line of the (already-filtered) callstack is the user code entry point.
    */
+  private captureCallstack(): string | undefined {
+    if ((globalThis as any).process?.env?.NODE_ENV === 'production') {
+      return undefined;
+    }
+    try {
+      const error = new Error();
+      const stack = error.stack || '';
+      const lines = stack.split('\n');
+      const relevantLines = lines.slice(1);
+      const formattedLines: string[] = [];
+
+      for (const line of relevantLines) {
+        if (!line.trim()) continue;
+
+        if (
+          line.includes('DevToolsBrowserPlugin') ||
+          line.includes('PluginManager') ||
+          line.includes('StateContainer.emit') ||
+          line.includes('StateContainer.update') ||
+          line.includes('[blac.emit]') ||
+          line.includes('[blac.update]') ||
+          line.includes('Cubit.patch') ||
+          line.includes('/blac-core/dist/') ||
+          line.includes('@blac/core/') ||
+          line.includes('/blac-react/dist/') ||
+          line.includes('@blac/react/') ||
+          line.includes('/devtools-connect/dist/') ||
+          line.includes('@blac/devtools-connect/')
+        ) {
+          continue;
+        }
+
+        if (
+          line.includes('node_modules') ||
+          line.includes('react-dom') ||
+          line.includes('react_jsx') ||
+          line.includes('.vite/deps') ||
+          line.includes('executeDispatch') ||
+          line.includes('runWithFiber') ||
+          line.includes('invokeGuarded') ||
+          line.includes('callCallback') ||
+          line.includes('processDispatchQueue') ||
+          line.includes('dispatchEvent') ||
+          line.includes('batchedUpdates')
+        ) {
+          continue;
+        }
+
+        const formatted = this.formatStackLine(line);
+        if (formatted) {
+          formattedLines.push(formatted);
+        }
+      }
+
+      return formattedLines.length > 0 ? formattedLines.join('\n') : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  private formatStackLine(line: string): string | null {
+    const match = line.match(/at\s+(.+?)\s+\((.+?):(\d+):(\d+)\)/);
+    if (!match) {
+      const simpleMatch = line.match(/at\s+(.+?):(\d+):(\d+)/);
+      if (simpleMatch) {
+        const [, url, lineNum, col] = simpleMatch;
+        return `  at ${url}:${lineNum}:${col}`;
+      }
+      return null;
+    }
+
+    const [, functionName, url, lineNum, col] = match;
+    return `  at ${functionName} (${url}:${lineNum}:${col})`;
+  }
+
   private extractTriggerFromCallstack(callstack?: string): Trigger | undefined {
     if (!callstack) return undefined;
     const firstLine = callstack.split('\n')[0]?.trim();
     if (!firstLine) return undefined;
-    // Match "at functionName (" or "at ClassName.methodName ("
     const match = firstLine.match(/at\s+(\S+)\s+\(/);
     if (!match?.[1]) return undefined;
     const raw = match[1];
-    // Strip class prefix: "CounterCubit.increment" -> "increment"
     const dotIdx = raw.lastIndexOf('.');
     const name = dotIdx !== -1 ? raw.substring(dotIdx + 1) : raw;
     if (!name || name === '<anonymous>') return undefined;
