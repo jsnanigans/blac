@@ -99,6 +99,9 @@ function toInstanceData(inst: any): import('./types').InstanceData {
     hydrationError: inst.hydrationError,
     dependencies: inst.dependencies,
     getters: inst.getters,
+    consumers: inst.consumers,
+    refIds: inst.refIds,
+    refHolders: inst.refHolders,
     createdFrom: inst.createdFrom,
   };
 }
@@ -248,6 +251,17 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
           { previousState: currentInstance?.state, newState: updatedState },
           d.callstack as string | undefined,
           (d.trigger as Record<string, any>)?.name as string | undefined,
+        );
+        break;
+      }
+
+      case 'consumers-changed': {
+        const d = evt.data as Record<string, any>;
+        instancesBloc.updateConsumers(
+          d.instanceId as string,
+          (d.consumers as import('./types').ConsumerInfo[]) ?? [],
+          (d.refIds as string[]) ?? [],
+          (d.refHolders as import('./types').RefHolderInfo[]) ?? undefined,
         );
         break;
       }

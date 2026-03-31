@@ -24,12 +24,9 @@ chrome.runtime.onConnect.addListener((port) => {
     // Store connection
     devToolsConnections.set(tabId, { port, tabId });
 
-    // Send cached state if available
+    // Send cached full state if available (panel gets an immediate INITIAL_STATE on reconnect)
     if (stateCache.has(tabId)) {
-      port.postMessage({
-        type: 'CACHED_STATE',
-        payload: stateCache.get(tabId),
-      });
+      port.postMessage(stateCache.get(tabId));
     }
 
     // Handle messages from DevTools panel
@@ -77,9 +74,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
-  // Cache the state
-  if (message.type === 'STATE_UPDATE') {
-    stateCache.set(tabId, message.payload);
+  // Cache full state snapshots for reconnecting panels
+  if (message.type === 'INITIAL_STATE') {
+    stateCache.set(tabId, message);
   }
 
   // Forward to DevTools panel if connected

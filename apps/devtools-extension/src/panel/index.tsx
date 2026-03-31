@@ -32,6 +32,8 @@ function App() {
         const dependencyBloc = acquire(DevToolsDependencyBloc);
         const metricsBloc = acquire(DevToolsMetricsBloc);
 
+        let currentSessionId: string | null = null;
+
         const resetAll = () => {
           flushSync(() => {
             instancesBloc.setConnected(false);
@@ -59,7 +61,11 @@ function App() {
               break;
 
             case 'PAGE_RELOAD':
-              resetAll();
+              // Only mark as disconnected — session ID in the next INITIAL_STATE
+              // decides whether to actually reset (full reload) or just reconnect (SPA nav)
+              flushSync(() => {
+                instancesBloc.setConnected(false);
+              });
               break;
 
             case 'BLAC_NOT_AVAILABLE':
@@ -69,89 +75,93 @@ function App() {
               });
               break;
 
-            case 'INITIAL_STATE':
+            case 'INITIAL_STATE': {
               comm.receivedData();
-              if (message.payload?.instances) {
-                flushSync(() => {
-                  instancesBloc.setAllInstances(message.payload.instances);
-                  instancesBloc.setConnected(true);
-                  for (const inst of message.payload.instances) {
-                    if (inst.history?.length) {
-                      diffBloc.loadInstanceHistory(inst.id, inst.history);
-                    }
-                    if (inst.dependencies?.length) {
-                      dependencyBloc.addEdgesForInstance(
-                        inst.id,
-                        inst.dependencies,
-                      );
-                    }
-                  }
-                  // Load dependency graph edges from initial state dump
-                  if (message.payload.dependencyGraph?.edges?.length) {
-                    dependencyBloc.setEdges(
-                      message.payload.dependencyGraph.edges,
-                    );
-                  }
-                });
+              const incomingSessionId = message.payload?.sessionId ?? null;
+              const sessionChanged =
+                currentSessionId !== null &&
+                incomingSessionId !== null &&
+                incomingSessionId !== currentSessionId;
+
+              if (sessionChanged) {
+                resetAll();
               }
-              if (message.payload?.eventHistory) {
-                flushSync(() => {
-                  message.payload.eventHistory?.forEach((event: any) => {
-                    if (event.type === 'init') {
-                      logsBloc.addLog(
-                        'init',
-                        '__system__',
-                        'System',
-                        'DevTools',
-                        {
-                          instanceCount: Array.isArray(event.data)
-                            ? event.data.length
-                            : 0,
-                        },
-                      );
-                    } else if (event.type === 'instance-created') {
-                      logsBloc.addLog(
-                        'created',
-                        event.data.id,
-                        event.data.className,
-                        event.data.name,
-                        {
-                          initialState: event.data.state,
-                        },
-                      );
-                    } else if (event.type === 'instance-disposed') {
-                      logsBloc.addLog(
-                        'disposed',
-                        event.data.id,
-                        event.data.className,
-                        event.data.name,
-                      );
-                    } else if (event.type === 'instance-updated') {
-                      logsBloc.addLog(
-                        'state-changed',
-                        event.data.id,
-                        event.data.className,
-                        event.data.name,
-                        {
-                          previousState: event.data.previousState,
-                          newState: event.data.state || event.data.currentState,
-                        },
-                        event.data.callstack,
-                        event.data.trigger?.name,
+              currentSessionId = incomingSessionId;
+
+              if (!instancesBloc.state.connected) {
+                if (message.payload?.instances) {
+                  flushSync(() => {
+                    instancesBloc.setAllInstances(message.payload.instances);
+                    instancesBloc.setConnected(true);
+                    for (const inst of message.payload.instances) {
+                      if (inst.history?.length) {
+                        diffBloc.loadInstanceHistory(inst.id, inst.history);
+                      }
+                      if (inst.dependencies?.length) {
+                        dependencyBloc.addEdgesForInstance(
+                          inst.id,
+                          inst.dependencies,
+                        );
+                      }
+                    }
+                    if (message.payload.dependencyGraph?.edges?.length) {
+                      dependencyBloc.setEdges(
+                        message.payload.dependencyGraph.edges,
                       );
                     }
                   });
-                });
+                }
+                if (message.payload?.eventHistory) {
+                  flushSync(() => {
+                    message.payload.eventHistory?.forEach((event: any) => {
+                      if (event.type === 'init') {
+                        logsBloc.addLog(
+                          'init',
+                          '__system__',
+                          'System',
+                          'DevTools',
+                          {
+                            instanceCount: Array.isArray(event.data)
+                              ? event.data.length
+                              : 0,
+                          },
+                        );
+                      } else if (event.type === 'instance-created') {
+                        logsBloc.addLog(
+                          'created',
+                          event.data.id,
+                          event.data.className,
+                          event.data.name,
+                          { initialState: event.data.state },
+                        );
+                      } else if (event.type === 'instance-disposed') {
+                        logsBloc.addLog(
+                          'disposed',
+                          event.data.id,
+                          event.data.className,
+                          event.data.name,
+                        );
+                      } else if (event.type === 'instance-updated') {
+                        logsBloc.addLog(
+                          'state-changed',
+                          event.data.id,
+                          event.data.className,
+                          event.data.name,
+                          {
+                            previousState: event.data.previousState,
+                            newState:
+                              event.data.state || event.data.currentState,
+                          },
+                          event.data.callstack,
+                          event.data.trigger?.name,
+                        );
+                      }
+                    });
+                  });
+                }
               }
               break;
-
-            case 'CACHED_STATE':
-              if (message.payload?.instances) {
-                flushSync(() => {
-                  instancesBloc.setAllInstances(message.payload.instances);
-                });
-              }
-              break;
+            }
 
             case 'ATOMIC_UPDATE': {
               comm.receivedData();
@@ -241,7 +251,7 @@ function App() {
                         d.trigger?.name,
                       );
                     }
-                    instancesBloc.updateInstanceState(d.id, d.state);
+                    instancesBloc.updateInstanceState(d.id, d.state, d.getters);
                     metricsBloc.recordUpdate(
                       d.id,
                       d.className,
@@ -261,7 +271,12 @@ function App() {
 
                   case 'consumers-changed': {
                     const d = event.data;
-                    instancesBloc.updateConsumers(d.instanceId, d.consumers);
+                    instancesBloc.updateConsumers(
+                      d.instanceId,
+                      d.consumers,
+                      d.refIds,
+                      d.refHolders,
+                    );
                     break;
                   }
                 }

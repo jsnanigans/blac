@@ -1,4 +1,4 @@
-import React, { FC } from 'react';
+import React, { FC, useState } from 'react';
 import type { InstanceData } from '../types';
 import InstanceId from './InstanceId';
 import { stringToColor } from '../utils/stringToColor';
@@ -25,7 +25,7 @@ function statePreview(state: unknown): string {
     if (keys.length <= 3) return `{ ${keys.join(', ')} }`;
     return `{ ${keys.slice(0, 3).join(', ')}, … }`;
   }
-  return String(state);
+  return JSON.stringify(state);
 }
 
 export const InstanceListItem: FC<InstanceListItemProps> = React.memo(
@@ -87,6 +87,24 @@ export const InstanceListItem: FC<InstanceListItemProps> = React.memo(
               flexShrink: 0,
             }}
           >
+            {(instance.consumers?.length ?? 0) > 0 && (
+              <StatusBadge
+                bg={`${T.textAccent}18`}
+                color={T.textAccent}
+                title={`${instance.consumers?.length ?? 0} consumer${(instance.consumers?.length ?? 0) !== 1 ? 's' : ''}`}
+              >
+                C:{instance.consumers?.length ?? 0}
+              </StatusBadge>
+            )}
+            {(instance.refIds?.length ?? 0) > 0 && (
+              <StatusBadge
+                bg="#2d2500"
+                color="#d4a017"
+                title={`${instance.refIds?.length ?? 0} ref holder${(instance.refIds?.length ?? 0) !== 1 ? 's' : ''}`}
+              >
+                R:{instance.refIds?.length ?? 0}
+              </StatusBadge>
+            )}
             {instance.hydrationStatus === 'hydrating' && (
               <StatusBadge bg={T.warningBg} color={T.warningText}>
                 HYDRATING
@@ -106,6 +124,17 @@ export const InstanceListItem: FC<InstanceListItemProps> = React.memo(
                 DISPOSED
               </StatusBadge>
             )}
+            {!instance.isDisposed &&
+              (instance.refIds?.length ?? 0) > 0 &&
+              (instance.consumers?.length ?? 0) === 0 && (
+                <StatusBadge
+                  bg="#2d2500"
+                  color="#d4a017"
+                  title={`Held by: ${instance.refIds?.join(', ') ?? ''}`}
+                >
+                  HELD
+                </StatusBadge>
+              )}
           </div>
         </div>
 
@@ -136,20 +165,51 @@ const StatusBadge: FC<{
   color: string;
   title?: string;
   children: React.ReactNode;
-}> = ({ bg, color, title, children }) => (
-  <span
-    title={title}
-    style={{
-      fontSize: '8px',
-      padding: '0px 4px',
-      background: bg,
-      color,
-      borderRadius: T.radiusSm,
-      letterSpacing: '0.3px',
-      lineHeight: '16px',
-      cursor: title ? 'help' : undefined,
-    }}
-  >
-    {children}
-  </span>
-);
+}> = ({ bg, color, title, children }) => {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <span
+      style={{ position: 'relative', display: 'inline-block' }}
+      onMouseEnter={() => title && setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <span
+        style={{
+          fontSize: '8px',
+          padding: '0px 4px',
+          background: bg,
+          color,
+          borderRadius: T.radiusSm,
+          letterSpacing: '0.3px',
+          lineHeight: '16px',
+          cursor: title ? 'help' : undefined,
+          display: 'inline-block',
+        }}
+      >
+        {children}
+      </span>
+      {hovered && title && (
+        <span
+          style={{
+            position: 'absolute',
+            bottom: 'calc(100% + 4px)',
+            right: 0,
+            background: T.bg4,
+            border: `1px solid ${T.border2}`,
+            borderRadius: T.radius,
+            color: T.text0,
+            fontSize: '10px',
+            fontFamily: T.fontMono,
+            padding: '4px 6px',
+            whiteSpace: 'nowrap',
+            zIndex: 9999,
+            pointerEvents: 'none',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+          }}
+        >
+          {title}
+        </span>
+      )}
+    </span>
+  );
+};

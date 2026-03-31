@@ -21,6 +21,13 @@ export interface ConsumerInfo {
   id: string;
   componentName: string;
   mountedAt: number;
+  stackTrace?: string;
+}
+
+export interface RefHolderInfo {
+  refId: string;
+  acquiredAt: number;
+  stackTrace?: string;
 }
 
 export interface PanelInstance {
@@ -39,6 +46,9 @@ export interface PanelInstance {
   trigger?: Trigger;
   dependencies?: DependencyEdge[];
   consumers?: ConsumerInfo[];
+  refIds?: string[];
+  refHolders?: RefHolderInfo[];
+  getters?: Record<string, any>;
   history?: Array<{
     state: any;
     previousState: any;
@@ -62,7 +72,12 @@ export type AtomicEvent =
   | {
       type: 'consumers-changed';
       timestamp: number;
-      data: { instanceId: string; consumers: ConsumerInfo[] };
+      data: {
+        instanceId: string;
+        consumers: ConsumerInfo[];
+        refIds?: string[];
+        refHolders?: RefHolderInfo[];
+      };
     };
 
 export type MessageIn =
@@ -74,10 +89,10 @@ export type MessageIn =
         version?: string;
         timestamp?: number;
         dependencyGraph?: DependencyGraph;
+        sessionId?: string;
       };
     }
   | { type: 'ATOMIC_UPDATE'; payload: AtomicEvent }
-  | { type: 'CACHED_STATE'; payload: { instances: PanelInstance[] } }
   | { type: 'BLAC_NOT_AVAILABLE'; payload: { reason: string } }
   | { type: 'PAGE_RELOAD'; payload: { tabId: number; timestamp: number } }
   | { type: 'PONG'; payload: { timestamp: number } };

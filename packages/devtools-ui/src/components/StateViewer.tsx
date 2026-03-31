@@ -10,6 +10,7 @@ import type {
   DependencyEdge,
   GetterInfo,
   InstanceData,
+  RefHolderInfo,
 } from '../types';
 import { CurrentStateView } from './CurrentStateView';
 import { StateHistoryView } from './StateHistoryView';
@@ -439,42 +440,77 @@ InitiatorSection.displayName = 'InitiatorSection';
 // Consumers Section
 // ============================================================================
 
-const ConsumerRow: FC<{ consumer: ConsumerInfo }> = ({ consumer }) => (
-  <div
-    style={{
-      display: 'flex',
-      alignItems: 'center',
-      padding: '4px 8px',
-      background: T.bg2,
-      border: `1px solid ${T.border1}`,
-      borderLeft: `3px solid ${T.textAccent}`,
-      borderRadius: T.radius,
-      gap: '8px',
-    }}
-  >
-    <span
+const ConsumerRow: FC<{ consumer: ConsumerInfo }> = ({ consumer }) => {
+  const [expanded, setExpanded] = useState(false);
+  const hasStack = !!consumer.stackTrace;
+
+  return (
+    <div
       style={{
-        fontSize: '11px',
-        fontWeight: 600,
-        color: T.text0,
-        fontFamily: T.fontMono,
-        whiteSpace: 'nowrap',
+        background: T.bg2,
+        border: `1px solid ${T.border1}`,
+        borderLeft: `3px solid ${T.textAccent}`,
+        borderRadius: T.radius,
+        overflow: 'hidden',
       }}
     >
-      {consumer.componentName}
-    </span>
-    <span
-      style={{
-        fontSize: '10px',
-        color: T.text3,
-        marginLeft: 'auto',
-        flexShrink: 0,
-      }}
-    >
-      mounted {formatRelative(consumer.mountedAt)}
-    </span>
-  </div>
-);
+      <div
+        onClick={hasStack ? () => setExpanded((v) => !v) : undefined}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          padding: '4px 8px',
+          gap: '8px',
+          cursor: hasStack ? 'pointer' : 'default',
+        }}
+      >
+        {hasStack && (
+          <span style={{ fontSize: '9px', color: T.text3, flexShrink: 0 }}>
+            {expanded ? '\u25BE' : '\u25B8'}
+          </span>
+        )}
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <span
+            style={{
+              fontSize: '11px',
+              fontWeight: 600,
+              color: T.text0,
+              fontFamily: T.fontMono,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {consumer.componentName}
+          </span>
+          <div
+            style={{
+              fontSize: '9px',
+              color: T.text3,
+              fontFamily: T.fontMono,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {consumer.id}
+          </div>
+        </div>
+        <span
+          style={{
+            fontSize: '10px',
+            color: T.text3,
+            marginLeft: 'auto',
+            flexShrink: 0,
+          }}
+        >
+          mounted {formatRelative(consumer.mountedAt)}
+        </span>
+      </div>
+      {expanded && consumer.stackTrace && (
+        <CallStackView callstack={consumer.stackTrace} />
+      )}
+    </div>
+  );
+};
 
 interface ConsumersSectionProps {
   consumers?: ConsumerInfo[];
@@ -486,6 +522,8 @@ const ConsumersSection: FC<ConsumersSectionProps> = React.memo(
 
     if (!consumers || consumers.length === 0) return null;
 
+    const named = consumers.filter((c) => c.componentName !== 'Unknown');
+
     return (
       <div>
         <SectionHeader
@@ -496,7 +534,7 @@ const ConsumersSection: FC<ConsumersSectionProps> = React.memo(
         />
         {isExpanded && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-            {consumers.map((consumer) => (
+            {named.map((consumer) => (
               <ConsumerRow key={consumer.id} consumer={consumer} />
             ))}
           </div>
@@ -507,6 +545,151 @@ const ConsumersSection: FC<ConsumersSectionProps> = React.memo(
 );
 
 ConsumersSection.displayName = 'ConsumersSection';
+
+// ============================================================================
+// Reference Holders Section
+// ============================================================================
+
+const isAutoRef = (refId: string) => /^_auto_\d+$/.test(refId);
+const isReactRef = (refId: string) => refId.startsWith('useBloc@');
+
+const RefIdRow: FC<{ refId: string; holder?: RefHolderInfo }> = ({
+  refId,
+  holder,
+}) => {
+  const [expanded, setExpanded] = useState(false);
+  const auto = isAutoRef(refId);
+  const react = isReactRef(refId);
+  const color = auto ? '#d4a017' : react ? T.textAccent : T.text0;
+  const bg = auto ? '#2d2500' : react ? `${T.textAccent}18` : T.bg2;
+  const border = auto ? '#d4a01740' : react ? `${T.textAccent}40` : T.border1;
+  const label = react ? refId.replace('useBloc@', '') : refId;
+  const hasStack = !!holder?.stackTrace;
+  const tooltip = auto
+    ? 'Anonymous ref — consider passing an explicit refId to acquire() for better debugging'
+    : react
+      ? 'React component via useBloc'
+      : undefined;
+
+  return (
+    <div
+      style={{
+        background: bg,
+        border: `1px solid ${border}`,
+        borderLeft: `3px solid ${color}`,
+        borderRadius: T.radius,
+        overflow: 'hidden',
+      }}
+    >
+      <div
+        title={tooltip}
+        onClick={hasStack ? () => setExpanded((v) => !v) : undefined}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          padding: '4px 8px',
+          gap: '6px',
+          cursor: hasStack ? 'pointer' : tooltip ? 'help' : 'default',
+        }}
+      >
+        {hasStack && (
+          <span style={{ fontSize: '9px', color: T.text3, flexShrink: 0 }}>
+            {expanded ? '\u25BE' : '\u25B8'}
+          </span>
+        )}
+        <span
+          style={{
+            fontSize: '11px',
+            fontWeight: 600,
+            color,
+            fontFamily: T.fontMono,
+            whiteSpace: 'nowrap',
+            flex: 1,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {label}
+        </span>
+        {auto && (
+          <span
+            style={{
+              fontSize: '9px',
+              color: '#d4a017',
+              background: '#d4a01720',
+              border: '1px solid #d4a01740',
+              borderRadius: '2px',
+              padding: '0 3px',
+              lineHeight: '14px',
+              flexShrink: 0,
+            }}
+          >
+            ANON
+          </span>
+        )}
+        {react && (
+          <span
+            style={{
+              fontSize: '9px',
+              color: T.textAccent,
+              background: `${T.textAccent}20`,
+              border: `1px solid ${T.textAccent}40`,
+              borderRadius: '2px',
+              padding: '0 3px',
+              lineHeight: '14px',
+              flexShrink: 0,
+            }}
+          >
+            REACT
+          </span>
+        )}
+      </div>
+      {expanded && holder?.stackTrace && (
+        <CallStackView callstack={holder.stackTrace} />
+      )}
+    </div>
+  );
+};
+
+interface ReferenceHoldersSectionProps {
+  refIds?: string[];
+  refHolders?: RefHolderInfo[];
+}
+
+const ReferenceHoldersSection: FC<ReferenceHoldersSectionProps> = React.memo(
+  ({ refIds, refHolders }) => {
+    const [isExpanded, setIsExpanded] = useState(true);
+
+    if (!refIds || refIds.length === 0) return null;
+
+    const holdersByRefId = new Map(refHolders?.map((h) => [h.refId, h]));
+    const namedRefs = refIds.filter((id) => !isAutoRef(id));
+
+    return (
+      <div>
+        <SectionHeader
+          label="Reference Holders"
+          isExpanded={isExpanded}
+          onToggle={() => setIsExpanded((v) => !v)}
+          badge={refIds.length}
+        />
+        {isExpanded && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+            {namedRefs.map((refId) => (
+              <RefIdRow
+                key={refId}
+                refId={refId}
+                holder={holdersByRefId.get(refId)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  },
+);
+
+ReferenceHoldersSection.displayName = 'ReferenceHoldersSection';
 
 // ============================================================================
 // State Viewer (main component)
@@ -651,8 +834,6 @@ export const StateViewer: FC<StateViewerProps> = ({ onTimeTravel }) => {
           gap: '2px',
         }}
       >
-        <ConsumersSection consumers={selectedInstance.consumers} />
-
         <CurrentStateView
           state={selectedInstance.state}
           isExpanded={isCurrentStateExpanded}
@@ -691,6 +872,13 @@ export const StateViewer: FC<StateViewerProps> = ({ onTimeTravel }) => {
         />
 
         <InitiatorSection createdFrom={selectedInstance.createdFrom} />
+
+        <ReferenceHoldersSection
+          refIds={selectedInstance.refIds}
+          refHolders={selectedInstance.refHolders}
+        />
+
+        <ConsumersSection consumers={selectedInstance.consumers} />
       </div>
     </div>
   );

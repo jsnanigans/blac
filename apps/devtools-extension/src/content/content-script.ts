@@ -1,30 +1,17 @@
 /**
  * Content Script - Bridges page context and extension
  *
- * Runs in ISOLATED world, communicates with injected script via postMessage
+ * Listens for messages posted by DevToolsBrowserPlugin (blac-devtools-plugin source)
+ * and forwards them to the service worker. Also forwards commands from the DevTools
+ * panel back to the page via window.postMessage.
  */
 
-// Inject script into MAIN world to access window.__BLAC_DEVTOOLS__
-function injectScript() {
-  // Inject the API monitoring script
-  const injectScript = document.createElement('script');
-  injectScript.src = chrome.runtime.getURL('dist/inject/inject-script.js');
-  injectScript.onload = () => injectScript.remove();
-  (document.head || document.documentElement).appendChild(injectScript);
-}
-
-// Inject immediately
-injectScript();
-
-// Listen for messages from injected script
+// Listen for messages from DevToolsBrowserPlugin
 window.addEventListener('message', (event) => {
-  // Only accept messages from same origin
   if (event.source !== window) return;
+  if ((event.data as Record<string, any>)?.source !== 'blac-devtools-plugin')
+    return;
 
-  // Check for our message format
-  if (event.data?.source !== 'blac-devtools-inject') return;
-
-  // Check if extension context is still valid
   if (!chrome.runtime?.id) {
     console.warn(
       '[BlaC DevTools] Extension context invalidated, ignoring message',
@@ -32,35 +19,30 @@ window.addEventListener('message', (event) => {
     return;
   }
 
-  // Forward to service worker (spread first to preserve our source)
   chrome.runtime
     .sendMessage({
-      ...event.data,
+      ...(event.data as Record<string, any>),
       source: 'blac-devtools-content',
     })
-    .catch((error) => {
-      // Ignore errors if extension context is invalidated or no receivers
+    .catch((error: Error) => {
       if (
         error.message.includes('Extension context invalidated') ||
         error.message.includes('Receiving end does not exist') ||
         error.message.includes('Could not establish connection')
       ) {
-        // Silent ignore - this is expected when devtools is not open
         return;
       }
       console.warn('[BlaC DevTools] Failed to send message:', error);
     });
 });
 
-// Listen for messages from DevTools panel (via service worker)
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  // Only process messages from our extension
-  if (message.source !== 'blac-devtools-panel') return;
+// Listen for commands from DevTools panel (via service worker) and forward to page
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if ((message as Record<string, any>).source !== 'blac-devtools-panel') return;
 
-  // Forward to injected script
   window.postMessage(
     {
-      ...message,
+      ...(message as Record<string, any>),
       source: 'blac-devtools-content',
     },
     window.location.origin,
@@ -70,50 +52,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return true;
 });
 
-// Handle page navigation
-let isNavigating = false;
-
-// Clean up on navigation
+// Notify service worker when page unloads
 window.addEventListener('beforeunload', () => {
-  isNavigating = true;
-
-  // Check if extension context is still valid
   if (!chrome.runtime?.id) return;
-
-  // Notify service worker (ignore errors during unload)
   chrome.runtime
     .sendMessage({
       source: 'blac-devtools-content',
       type: 'PAGE_UNLOAD',
     })
-    .catch(() => {
-      // Ignore errors during page unload
-    });
+    .catch(() => {});
 });
 
-// Re-inject on navigation without page reload (SPA)
-const observer = new MutationObserver(() => {
-  if (isNavigating) {
-    isNavigating = false;
-
-    // Check if we need to re-inject
-    const checkInterval = setInterval(() => {
-      if (document.readyState === 'complete') {
-        clearInterval(checkInterval);
-
-        // Re-inject script after navigation
-        setTimeout(() => {
-          injectScript();
-        }, 100);
-      }
-    }, 100);
-  }
-});
-
-observer.observe(document.documentElement, {
-  childList: true,
-  subtree: true,
-});
-
-// Export for TypeScript
 export {};

@@ -28,7 +28,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["dist/inject/inject-script.js", "dist/chunks/*.js"],
+      "resources": ["dist/chunks/*.js"],
       "matches": ["<all_urls>"]
     }
   ]

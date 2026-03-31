@@ -25,10 +25,6 @@ export default defineConfig({
           __dirname,
           'src/content/content-script.ts',
         ),
-        'inject/inject-script': resolve(
-          __dirname,
-          'src/inject/inject-script.ts',
-        ),
         'devtools/devtools': resolve(__dirname, 'src/devtools/devtools.html'),
         'panel/index': resolve(__dirname, 'src/panel/index.html'),
         'popup/popup': resolve(__dirname, 'src/popup/popup.html'),
