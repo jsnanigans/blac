@@ -304,6 +304,24 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
 
   subscribe(callback: DevToolsCallback): () => void {
     this.listeners.add(callback);
+
+    // Immediately emit current full state so late subscribers get all data
+    const instances = Array.from(this.instanceCache.values());
+    if (instances.length > 0) {
+      try {
+        callback({
+          type: 'init',
+          timestamp: Date.now(),
+          data: instances,
+        });
+      } catch (error) {
+        console.error(
+          '[DevToolsBrowserPlugin] Error in initial subscriber callback:',
+          error,
+        );
+      }
+    }
+
     return () => {
       this.listeners.delete(callback);
     };

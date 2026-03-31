@@ -132,29 +132,33 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
   const dependencyBloc = acquire(DevToolsDependencyBloc);
   const metricsBloc = acquire(DevToolsMetricsBloc);
 
-  const fullState = api.getFullState?.();
-  const rawInstances = fullState?.instances ?? api.getInstances() ?? [];
-  const initialInstances = rawInstances.map(toInstanceData);
-  instancesBloc.setConnected(true);
-  instancesBloc.setAllInstances(initialInstances);
+  const loadFullData = () => {
+    const fullState = api.getFullState?.();
+    const rawInstances = fullState?.instances ?? api.getInstances() ?? [];
+    const instances = rawInstances.map(toInstanceData);
 
-  // Load backend state history into DiffBloc
-  for (const inst of rawInstances) {
-    if (inst.history?.length) {
-      diffBloc.loadInstanceHistory(inst.id, inst.history);
+    instancesBloc.setConnected(true);
+    instancesBloc.setAllInstances(instances);
+
+    diffBloc.clearAllPreviousStates();
+    for (const inst of rawInstances) {
+      if (inst.history?.length) {
+        diffBloc.loadInstanceHistory(inst.id, inst.history);
+      }
     }
-  }
 
-  // Load dependency graph
-  const graph = api.getDependencyGraph?.();
-  if (graph?.edges?.length) {
-    dependencyBloc.setEdges(graph.edges);
-  }
+    const graph = api.getDependencyGraph?.();
+    dependencyBloc.setEdges(graph?.edges?.length ? graph.edges : []);
 
-  const eventHistory = api.getEventHistory?.() ?? [];
-  eventHistory.forEach((event: any) => {
-    processEventIntoLogs(event, logsBloc);
-  });
+    logsBloc.clearLogs();
+    const eventHistory = api.getEventHistory?.() ?? [];
+    eventHistory.forEach((event: any) => processEventIntoLogs(event, logsBloc));
+
+    metricsBloc.clearAll();
+  };
+
+  // Load initial data
+  loadFullData();
 
   const unsubscribe = api.subscribe((event: any) => {
     if (instancesBloc.isDisposed) return;
@@ -166,22 +170,8 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
     };
     switch (evt.type) {
       case 'init': {
-        diffBloc.clearAllPreviousStates();
-        logsBloc.clearLogs();
-        metricsBloc.clearAll();
-        dependencyBloc.setEdges([]);
-        const initInstances = (Array.isArray(evt.data) ? evt.data : []).map(
-          (inst: any) =>
-            toInstanceData({
-              ...(inst as Record<string, any>),
-              createdAt:
-                (inst as Record<string, any>)?.createdAt ?? evt.timestamp,
-            }),
-        );
-        instancesBloc.setAllInstances(initInstances);
-        logsBloc.addLog('init', '__system__', 'System', 'DevTools', {
-          instanceCount: initInstances.length,
-        });
+        // Reload full data from API (handles both auto-init and real re-init)
+        loadFullData();
         break;
       }
 
@@ -193,7 +183,6 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
             createdAt: (d?.createdAt ?? evt.timestamp) as number,
           }),
         );
-        // Register dependency edges from this new instance
         if (d.dependencies?.length) {
           dependencyBloc.addEdgesForInstance(d.id, d.dependencies);
         }

@@ -88,77 +88,78 @@ function App() {
               }
               currentSessionId = incomingSessionId;
 
-              if (!instancesBloc.state.connected) {
-                if (message.payload?.instances) {
-                  flushSync(() => {
-                    instancesBloc.setAllInstances(message.payload.instances);
-                    instancesBloc.setConnected(true);
-                    for (const inst of message.payload.instances) {
-                      if (inst.history?.length) {
-                        diffBloc.loadInstanceHistory(inst.id, inst.history);
-                      }
-                      if (inst.dependencies?.length) {
-                        dependencyBloc.addEdgesForInstance(
-                          inst.id,
-                          inst.dependencies,
-                        );
-                      }
+              const isFirstConnect = !instancesBloc.state.connected;
+
+              if (message.payload?.instances) {
+                flushSync(() => {
+                  instancesBloc.setAllInstances(message.payload.instances);
+                  instancesBloc.setConnected(true);
+                  for (const inst of message.payload.instances) {
+                    if (inst.history?.length) {
+                      diffBloc.loadInstanceHistory(inst.id, inst.history);
                     }
-                    if (message.payload.dependencyGraph?.edges?.length) {
-                      dependencyBloc.setEdges(
-                        message.payload.dependencyGraph.edges,
+                    if (inst.dependencies?.length) {
+                      dependencyBloc.addEdgesForInstance(
+                        inst.id,
+                        inst.dependencies,
+                      );
+                    }
+                  }
+                  if (message.payload.dependencyGraph?.edges?.length) {
+                    dependencyBloc.setEdges(
+                      message.payload.dependencyGraph.edges,
+                    );
+                  }
+                });
+              }
+
+              // Only replay event history on first connect to avoid duplicating logs
+              if (isFirstConnect && message.payload?.eventHistory) {
+                flushSync(() => {
+                  message.payload.eventHistory?.forEach((event: any) => {
+                    if (event.type === 'init') {
+                      logsBloc.addLog(
+                        'init',
+                        '__system__',
+                        'System',
+                        'DevTools',
+                        {
+                          instanceCount: Array.isArray(event.data)
+                            ? event.data.length
+                            : 0,
+                        },
+                      );
+                    } else if (event.type === 'instance-created') {
+                      logsBloc.addLog(
+                        'created',
+                        event.data.id,
+                        event.data.className,
+                        event.data.name,
+                        { initialState: event.data.state },
+                      );
+                    } else if (event.type === 'instance-disposed') {
+                      logsBloc.addLog(
+                        'disposed',
+                        event.data.id,
+                        event.data.className,
+                        event.data.name,
+                      );
+                    } else if (event.type === 'instance-updated') {
+                      logsBloc.addLog(
+                        'state-changed',
+                        event.data.id,
+                        event.data.className,
+                        event.data.name,
+                        {
+                          previousState: event.data.previousState,
+                          newState: event.data.state || event.data.currentState,
+                        },
+                        event.data.callstack,
+                        event.data.trigger?.name,
                       );
                     }
                   });
-                }
-                if (message.payload?.eventHistory) {
-                  flushSync(() => {
-                    message.payload.eventHistory?.forEach((event: any) => {
-                      if (event.type === 'init') {
-                        logsBloc.addLog(
-                          'init',
-                          '__system__',
-                          'System',
-                          'DevTools',
-                          {
-                            instanceCount: Array.isArray(event.data)
-                              ? event.data.length
-                              : 0,
-                          },
-                        );
-                      } else if (event.type === 'instance-created') {
-                        logsBloc.addLog(
-                          'created',
-                          event.data.id,
-                          event.data.className,
-                          event.data.name,
-                          { initialState: event.data.state },
-                        );
-                      } else if (event.type === 'instance-disposed') {
-                        logsBloc.addLog(
-                          'disposed',
-                          event.data.id,
-                          event.data.className,
-                          event.data.name,
-                        );
-                      } else if (event.type === 'instance-updated') {
-                        logsBloc.addLog(
-                          'state-changed',
-                          event.data.id,
-                          event.data.className,
-                          event.data.name,
-                          {
-                            previousState: event.data.previousState,
-                            newState:
-                              event.data.state || event.data.currentState,
-                          },
-                          event.data.callstack,
-                          event.data.trigger?.name,
-                        );
-                      }
-                    });
-                  });
-                }
+                });
               }
               break;
             }
