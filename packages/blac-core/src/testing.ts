@@ -77,7 +77,10 @@ export function registerOverride<T extends StateContainerConstructor>(
     existing.dispose();
   }
   const instancesMap = registry.getInstancesMap(BlocClass);
-  const entry: InstanceEntry<InstanceType<T>> = { instance, refCount: 1 };
+  const entry: InstanceEntry<InstanceType<T>> = {
+    instance,
+    refs: new Map([['testing-override', 1]]),
+  };
   instancesMap.set(instanceKey, entry);
 }
 

@@ -176,6 +176,16 @@ export class PluginManager {
     this.registry.on('disposed', (instance) => {
       this.notifyPlugins('onInstanceDisposed', instance);
     });
+
+    // Ref acquired
+    this.registry.on('refAcquired', (instance, refId) => {
+      this.notifyPlugins('onRefAcquired', instance, refId);
+    });
+
+    // Ref released
+    this.registry.on('refReleased', (instance, refId) => {
+      this.notifyPlugins('onRefReleased', instance, refId);
+    });
   }
 
   /**
@@ -266,6 +276,18 @@ export class PluginManager {
 
       getStats: () => {
         return this.registry.getStats();
+      },
+
+      getRefIds: (instanceId: string): string[] => {
+        for (const Type of this.registry.getTypes()) {
+          const map = this.registry.getInstancesMap(Type);
+          for (const [, entry] of map) {
+            if ((entry.instance as any).instanceId === instanceId) {
+              return Array.from(entry.refs.keys());
+            }
+          }
+        }
+        return [];
       },
     };
   }

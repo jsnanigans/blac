@@ -137,7 +137,8 @@ export function useBloc<
       const instanceKey =
         instanceId !== undefined ? String(instanceId) : undefined;
 
-      const instance = acquire(BlocClass, instanceKey) as TBloc;
+      const refId = `useBloc@${componentNameRef.current ?? 'Unknown'}-${consumerIdRef.current}`;
+      const instance = acquire(BlocClass, instanceKey, refId) as TBloc;
 
       const { useManualDeps, autoTrackEnabled } = determineTrackingMode({
         autoTrack,
@@ -239,7 +240,8 @@ export function useBloc<
         options.onUnmount(bloc as InstanceType<T>);
       }
 
-      release(BlocClass, instanceKey);
+      const refId = `useBloc@${componentNameRef.current ?? 'Unknown'}-${consumerIdRef.current}`;
+      release(BlocClass, instanceKey, false, refId);
     };
     // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, []);

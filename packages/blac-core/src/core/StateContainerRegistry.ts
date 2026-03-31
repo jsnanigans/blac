@@ -8,20 +8,25 @@ import {
 } from '../types/utilities';
 
 /**
- * Entry in the instance registry, tracking the instance and its reference count
+ * Entry in the instance registry, tracking the instance and its named references
  * @template T - Instance type
  */
 export interface InstanceEntry<T = any> {
   /** The state container instance */
   instance: T;
-  /** Number of active references to this instance */
-  refCount: number;
+  /** Map of active reference IDs to their acquire count (supports paired acquire/release) */
+  refs: Map<string, number>;
 }
 
 /**
  * Lifecycle events emitted by the registry
  */
-export type LifecycleEvent = 'created' | 'stateChanged' | 'disposed';
+export type LifecycleEvent =
+  | 'created'
+  | 'stateChanged'
+  | 'disposed'
+  | 'refAcquired'
+  | 'refReleased';
 
 /**
  * Listener function type for each lifecycle event
@@ -38,11 +43,15 @@ export type LifecycleListener<E extends LifecycleEvent> = E extends 'created'
       ) => void
     : E extends 'disposed'
       ? (container: StateContainer<any>) => void
-      : never;
+      : E extends 'refAcquired'
+        ? (container: StateContainer<any>, refId: string) => void
+        : E extends 'refReleased'
+          ? (container: StateContainer<any>, refId: string) => void
+          : never;
 
 /**
  * Central registry for managing StateContainer instances.
- * Handles instance lifecycle, ref counting, and lifecycle event emission.
+ * Handles instance lifecycle, named ref tracking, and lifecycle event emission.
  *
  * @example
  * ```ts
@@ -68,6 +77,8 @@ export class StateContainerRegistry {
     LifecycleEvent,
     Set<(...args: any[]) => void>
   >();
+
+  private _autoRefIdCounter = 0;
 
   /**
    * Register a type for lifecycle event tracking
@@ -116,14 +127,15 @@ export class StateContainerRegistry {
   }
 
   /**
-   * Acquire an instance with ref counting (ownership semantics).
-   * Creates a new instance if one doesn't exist, or returns existing and increments ref count.
-   * You must call `release()` when done to decrement the ref count.
+   * Acquire an instance with ref tracking (ownership semantics).
+   * Creates a new instance if one doesn't exist, or returns existing and adds a ref.
+   * You must call `release()` with the same refId when done.
    * @param Type - The StateContainer class constructor
    * @param instanceKey - Instance key (defaults to 'default')
    * @param options - Acquisition options
    * @param options.canCreate - Whether to create new instance if not found (default: true)
-   * @param options.countRef - Whether to increment ref count (default: true)
+   * @param options.countRef - Whether to add a reference (default: true)
+   * @param options.refId - Named reference ID for debugging; auto-generated if omitted
    * @returns The state container instance
    */
   acquire<T extends StateContainerConstructor = StateContainerConstructor>(
@@ -132,6 +144,7 @@ export class StateContainerRegistry {
     options: {
       canCreate?: boolean;
       countRef?: boolean;
+      refId?: string;
     } = {},
   ): InstanceType<T> {
     const { canCreate = true, countRef = true } = options;
@@ -150,7 +163,9 @@ export class StateContainerRegistry {
     }
 
     if (entry && countRef) {
-      entry.refCount++;
+      const refId = options.refId ?? `_auto_${this._autoRefIdCounter++}`;
+      entry.refs.set(refId, (entry.refs.get(refId) ?? 0) + 1);
+      this.emit('refAcquired', entry.instance, refId);
     }
 
     if (entry) {
@@ -166,16 +181,26 @@ export class StateContainerRegistry {
     // Create new shared instance
     const instance = new Type() as InstanceType<T>;
     instance.initConfig(config);
-    instances.set(instanceKey, { instance, refCount: 1 });
+    const initialRefs = new Map<string, number>();
+    let initialRefId: string | undefined;
+    if (countRef) {
+      initialRefId = options.refId ?? `_auto_${this._autoRefIdCounter++}`;
+      initialRefs.set(initialRefId, 1);
+    }
+    instances.set(instanceKey, { instance, refs: initialRefs });
 
     // Register type for lifecycle coordination
     this.registerType(Type);
+
+    if (initialRefId) {
+      this.emit('refAcquired', instance, initialRefId);
+    }
 
     return instance;
   }
 
   /**
-   * Borrow an existing instance without incrementing ref count (borrowing semantics).
+   * Borrow an existing instance without adding a ref (borrowing semantics).
    * Tracks cross-bloc dependency for reactive updates.
    * @param Type - The StateContainer class constructor
    * @param instanceKey - Instance key (defaults to 'default')
@@ -215,11 +240,11 @@ export class StateContainerRegistry {
 
   /**
    * Ensure an instance exists without taking ownership (for bloc-to-bloc communication).
-   * Gets existing instance OR creates it if it doesn't exist, without incrementing ref count.
+   * Gets existing instance OR creates it if it doesn't exist, without adding a ref.
    * Tracks cross-bloc dependency for reactive updates.
    *
    * Use this in bloc-to-bloc communication when you need to ensure an instance exists
-   * but don't want to claim ownership (no ref count increment).
+   * but don't want to claim ownership (no ref added).
    * @param Type - The StateContainer class constructor
    * @param instanceKey - Instance key (defaults to 'default')
    * @returns The state container instance
@@ -236,15 +261,18 @@ export class StateContainerRegistry {
 
   /**
    * Release a reference to an instance.
-   * Decrements ref count and disposes when it reaches 0 (unless keepAlive).
+   * Removes the ref and disposes when refs is empty (unless keepAlive).
+   * Releasing an already-removed refId is a no-op (idempotent).
    * @param Type - The StateContainer class constructor
    * @param instanceKey - Instance key (defaults to 'default')
-   * @param forceDispose - Force immediate disposal regardless of ref count
+   * @param forceDispose - Force immediate disposal regardless of refs
+   * @param refId - The specific ref to remove; removes one arbitrary ref if omitted
    */
   release<T extends StateContainerConstructor>(
     Type: T,
     instanceKey: string = BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
     forceDispose = false,
+    refId?: string,
   ): void {
     const instances = this.ensureInstancesMap(Type);
     const entry = instances.get(instanceKey);
@@ -260,14 +288,38 @@ export class StateContainerRegistry {
       return;
     }
 
-    // Decrement ref count
-    entry.refCount--;
+    // Decrement the ref count, or pick one arbitrary ref for backward compat
+    let releasedRefId: string | undefined;
+    if (refId !== undefined) {
+      const count = entry.refs.get(refId) ?? 0;
+      if (count <= 1) {
+        entry.refs.delete(refId);
+      } else {
+        entry.refs.set(refId, count - 1);
+      }
+      releasedRefId = refId;
+    } else {
+      const firstKey = entry.refs.keys().next().value;
+      if (firstKey !== undefined) {
+        const count = entry.refs.get(firstKey)!;
+        if (count <= 1) {
+          entry.refs.delete(firstKey);
+        } else {
+          entry.refs.set(firstKey, count - 1);
+        }
+        releasedRefId = firstKey;
+      }
+    }
+
+    if (releasedRefId) {
+      this.emit('refReleased', entry.instance, releasedRefId);
+    }
 
     // Check static keepAlive property
     const keepAlive = isKeepAliveClass(Type);
 
-    // Auto-dispose when ref count reaches 0 (unless keepAlive)
-    if (entry.refCount <= 0 && !keepAlive) {
+    // Auto-dispose when refs are empty (unless keepAlive)
+    if (entry.refs.size === 0 && !keepAlive) {
       if (!entry.instance.isDisposed) {
         entry.instance.dispose();
       }
@@ -334,7 +386,7 @@ export class StateContainerRegistry {
   }
 
   /**
-   * Get reference count for an instance.
+   * Get reference count for an instance (number of active refs).
    * @param Type - The StateContainer class constructor
    * @param instanceKey - Instance key (defaults to 'default')
    * @returns Current ref count (0 if instance doesn't exist)
@@ -345,7 +397,23 @@ export class StateContainerRegistry {
   ): number {
     const instances = this.ensureInstancesMap(Type);
     const entry = instances.get(instanceKey);
-    return entry?.refCount ?? 0;
+    return entry?.refs.size ?? 0;
+  }
+
+  /**
+   * Get all active reference IDs for an instance.
+   * @param Type - The StateContainer class constructor
+   * @param instanceKey - Instance key (defaults to 'default')
+   * @returns Array of ref ID strings (empty if instance doesn't exist)
+   */
+  getRefIds<T extends StateContainerConstructor>(
+    Type: T,
+    instanceKey: string = BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
+  ): string[] {
+    const instances = this.instancesByConstructor.get(Type);
+    if (!instances) return [];
+    const entry = instances.get(instanceKey);
+    return entry ? Array.from(entry.refs.keys()) : [];
   }
 
   /**

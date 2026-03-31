@@ -21,6 +21,7 @@ export {
   register,
   hasInstance,
   getRefCount,
+  getRefIds,
   getAll,
   forEach,
   getRegistry,

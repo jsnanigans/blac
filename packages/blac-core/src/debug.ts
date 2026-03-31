@@ -9,7 +9,7 @@
  *
  * @example
  * ```typescript
- * import { getStats, globalRegistry, hasInstance } from '@blac/core/debug';
+ * import { getStats, globalRegistry, hasInstance, getRefIds } from '@blac/core/debug';
  *
  * // Get registry statistics
  * const stats = getStats();
@@ -20,17 +20,22 @@
  *   console.log('UserBloc is registered');
  * }
  *
- * // Iterate over all instances of a type
- * forEach(UserBloc, (instance) => {
- *   console.log(instance.state);
- * });
+ * // See who holds a reference
+ * const refs = getRefIds(UserBloc);
+ * console.log('Ref holders:', refs);
  * ```
  *
  * @packageDocumentation
  */
 
 // Registry introspection
-export { hasInstance, getRefCount, getAll, forEach } from './registry/queries';
+export {
+  hasInstance,
+  getRefCount,
+  getRefIds,
+  getAll,
+  forEach,
+} from './registry/queries';
 export { register } from './registry/management';
 export { getRegistry, setRegistry, getStats } from './registry/config';
 

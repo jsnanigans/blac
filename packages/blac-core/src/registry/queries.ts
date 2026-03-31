@@ -18,6 +18,13 @@ export function getRefCount<T extends StateContainerConstructor>(
   return getRegistry().getRefCount(BlocClass, instanceKey);
 }
 
+export function getRefIds<T extends StateContainerConstructor>(
+  BlocClass: T,
+  instanceKey?: string,
+): string[] {
+  return getRegistry().getRefIds(BlocClass, instanceKey);
+}
+
 export function getAll<T extends StateContainerConstructor>(
   BlocClass: T,
 ): InstanceReadonlyState<T>[] {

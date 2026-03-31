@@ -834,7 +834,7 @@ describe('StateContainer', () => {
       owner.getTarget();
       owner.getTarget();
 
-      expect(getRefCount(DepTarget)).toBe(1);
+      expect(getRefCount(DepTarget)).toBe(0);
     });
 
     it('exposes declared dependencies via getter', () => {

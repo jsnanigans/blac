@@ -104,6 +104,12 @@ export interface PluginContext {
     totalInstances: number;
     typeBreakdown: Record<string, number>;
   };
+
+  /**
+   * Get all active reference IDs for an instance by its instanceId string.
+   * Useful for debugging which callers are holding an instance alive.
+   */
+  getRefIds(instanceId: string): string[];
 }
 
 /**
@@ -149,6 +155,24 @@ export interface BlacPlugin {
    */
   onInstanceDisposed?(
     instance: StateContainer<any>,
+    context: PluginContext,
+  ): void;
+
+  /**
+   * Called when a reference is acquired on an instance
+   */
+  onRefAcquired?(
+    instance: StateContainer<any>,
+    refId: string,
+    context: PluginContext,
+  ): void;
+
+  /**
+   * Called when a reference is released from an instance
+   */
+  onRefReleased?(
+    instance: StateContainer<any>,
+    refId: string,
     context: PluginContext,
   ): void;
 }
