@@ -102,7 +102,6 @@ export class LoggingPlugin implements BlacPlugin {
     instance: StateContainer<S>,
     previousState: S,
     currentState: S,
-    callstack: string | undefined,
     context: PluginContext,
   ): void {
     const metadata = context.getInstanceMetadata(instance);
@@ -134,6 +133,10 @@ export class LoggingPlugin implements BlacPlugin {
       );
       return;
     }
+
+    const callstack = this.config.includeCallstack
+      ? new Error().stack
+      : undefined;
 
     if (this.config.format === 'simple') {
       this.simpleFormatter.logStateChanged(

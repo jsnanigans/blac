@@ -141,7 +141,6 @@ export class IndexedDbPersistPluginImpl implements IndexedDbPersistPlugin {
     instance: StateContainer<any>,
     _previousState: any,
     currentState: any,
-    _callstack: string | undefined,
     context: PluginContext,
   ): void {
     const definition = this.registrations.get(
