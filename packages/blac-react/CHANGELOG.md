@@ -1,5 +1,14 @@
 # @blac/react
 
+## 2.0.12
+
+### Patch Changes
+
+- Maintainance
+- Updated dependencies
+  - @blac/adapter@2.0.13
+  - @blac/core@2.0.12
+
 ## 2.0.11
 
 ### Patch Changes

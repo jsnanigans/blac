@@ -4,13 +4,8 @@
   "commit": false,
   "fixed": [],
   "linked": [],
+  "access": "restricted",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": [
-    "@blac/devtools-extension",
-    "@blac/docs",
-    "examples",
-    "perf",
-    "preact-examples"
-  ]
+  "ignore": []
 }

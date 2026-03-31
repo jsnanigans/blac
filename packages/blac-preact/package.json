@@ -1,6 +1,6 @@
 {
   "name": "@blac/preact",
-  "version": "2.0.12",
+  "version": "2.0.13",
   "license": "MIT",
   "author": "Brendan Mullins <jsnanigans@gmail.com>",
   "description": "Preact bindings for BlaC — useBloc hook with automatic re-render optimization",

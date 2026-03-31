@@ -1,5 +1,13 @@
 # @blac/logging-plugin
 
+## 2.0.13
+
+### Patch Changes
+
+- Maintainance
+- Updated dependencies
+  - @blac/core@2.0.12
+
 ## 2.0.12
 
 ### Patch Changes

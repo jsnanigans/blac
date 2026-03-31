@@ -1,5 +1,11 @@
 # @blac/core
 
+## 2.0.12
+
+### Patch Changes
+
+- Maintainance
+
 ## 2.0.11
 
 ### Patch Changes
