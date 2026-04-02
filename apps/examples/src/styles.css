@@ -177,14 +177,14 @@ code {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: var(--border-width) solid var(--color-border);
-  height: var(--nav-height);
+  min-height: var(--nav-height);
 }
 
 .nav-content {
   max-width: var(--content-width);
   margin: 0 auto;
-  height: 100%;
-  padding: 0 var(--space-lg);
+  min-height: var(--nav-height);
+  padding: var(--space-sm) var(--space-lg);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -207,17 +207,19 @@ code {
 .nav-links {
   list-style: none;
   display: flex;
-  gap: var(--space-md);
+  gap: var(--space-xs);
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .nav-links a {
   color: var(--color-text-muted);
   font-weight: 500;
-  padding: 0.5rem 1rem;
+  padding: 0.375rem 0.75rem;
   border-radius: var(--border-radius-full);
   transition: var(--transition-base);
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
+  white-space: nowrap;
 }
 
 .nav-links a:hover {
@@ -361,6 +363,8 @@ select:focus {
   border-radius: var(--border-radius-full);
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  background-color: var(--color-surface-hover);
+  color: var(--color-text-muted);
 }
 
 .badge.primary {
@@ -1252,11 +1256,17 @@ select:focus {
   .nav-content {
     flex-direction: column;
     align-items: flex-start;
-    gap: var(--space-md);
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
   }
 
   .nav-links {
-    margin-left: 0;
+    gap: var(--space-xs);
+  }
+
+  .nav-links a {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8125rem;
   }
 
   .view-wrapper {

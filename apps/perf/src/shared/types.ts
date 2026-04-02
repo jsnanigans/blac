@@ -1,3 +1,4 @@
+import type React from 'react';
 import type { ProfilerOnRenderCallback } from 'react';
 
 export interface DataItem {
@@ -148,4 +149,69 @@ export interface LibraryDefinition {
   name: string;
   Component: React.ComponentType<{ onReady: (api: BenchmarkAPI) => void }>;
   pureState: PureStateBenchmark;
+}
+
+// ── Re-render Benchmark Types ──
+
+export type RerenderScenario =
+  | 'singleField'
+  | 'manyConsumers'
+  | 'nestedPaths'
+  | 'mixedReads'
+  | 'unrelatedUpdate';
+
+export const RERENDER_SCENARIO_LABELS: Record<RerenderScenario, string> = {
+  singleField: 'Single Field Update (20 consumers)',
+  manyConsumers: 'Many Consumers (100 consumers)',
+  nestedPaths: 'Nested Path Tracking (4 consumers)',
+  mixedReads: 'Mixed Read Patterns (15 consumers)',
+  unrelatedUpdate: 'Unrelated Field Update (10 consumers)',
+};
+
+export interface RerenderBenchmarkAPI {
+  trigger(): void;
+  getRenderCounts(): number[];
+  resetRenderCounts(): void;
+  getConsumerCount(): number;
+  getOptimalRenders(): number;
+}
+
+export interface RerenderBenchmarkProps {
+  scenario: RerenderScenario;
+  onReady: (api: RerenderBenchmarkAPI) => void;
+}
+
+export interface RerenderOperationResult {
+  scenario: RerenderScenario;
+  totalRenders: StatResult;
+  optimalRenders: number;
+  endToEnd: StatResult;
+  renderActual: StatResult;
+}
+
+export interface RerenderLibraryResults {
+  library: string;
+  scenarios: RerenderOperationResult[];
+  timestamp: number;
+}
+
+export interface RerenderLibraryDefinition {
+  name: string;
+  Component: React.ComponentType<RerenderBenchmarkProps>;
+}
+
+export interface DeepNestedState {
+  user: {
+    profile: { name: string; age: number };
+    settings: { theme: string; lang: string };
+  };
+}
+
+export function createDeepNestedState(): DeepNestedState {
+  return {
+    user: {
+      profile: { name: 'Alice', age: 30 },
+      settings: { theme: 'dark', lang: 'en' },
+    },
+  };
 }

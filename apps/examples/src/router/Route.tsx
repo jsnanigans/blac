@@ -15,7 +15,7 @@ export function Route({ path, children }: RouteProps) {
 
   // Simple exact path matching
   if (state.path === path) {
-    return <span>{children}</span>;
+    return <>{children}</>;
   }
 
   return null;
