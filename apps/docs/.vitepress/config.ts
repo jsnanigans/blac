@@ -50,11 +50,9 @@ export default defineConfig({
       { text: 'Reference', link: '/core/cubit' },
       { text: 'Plugins', link: '/plugins/overview' },
       { text: 'Testing', link: '/testing/overview' },
-      { text: 'API', link: '/api/core' },
       {
         text: `v${version}`,
         items: [
-          { text: 'Changelog', link: '/changelog' },
           { text: 'npm', link: 'https://www.npmjs.com/package/@blac/core' },
           {
             text: 'GitHub Releases',
@@ -96,25 +94,6 @@ export default defineConfig({
             { text: 'Overview', link: '/testing/overview' },
             { text: 'Core Testing API', link: '/testing/core' },
             { text: 'React Testing', link: '/testing/react' },
-          ],
-        },
-      ],
-      '/api/': [
-        {
-          text: 'API Reference',
-          items: [
-            {
-              text: '@blac/core',
-              collapsed: false,
-              items: [
-                { text: 'Overview', link: '/api/core' },
-                { text: 'Registry', link: '/api/core/registry' },
-                { text: 'Plugins', link: '/api/core/plugins' },
-                { text: 'Framework Adapter', link: '/api/core/adapter' },
-                { text: 'Utilities', link: '/api/core/utilities' },
-              ],
-            },
-            { text: '@blac/react', link: '/api/react' },
           ],
         },
       ],

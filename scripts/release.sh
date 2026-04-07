@@ -67,7 +67,6 @@ case $choice in
     pnpm release:version
     echo ""
     echo -e "${GREEN}Done! Review the changes:${NC}"
-    echo "  - CHANGELOGs have been updated"
     echo "  - Package versions have been bumped"
     echo ""
     echo -e "${YELLOW}Next steps:${NC}"

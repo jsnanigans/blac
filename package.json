@@ -13,7 +13,6 @@
     "typecheck": "vp run -F './packages/*' typecheck",
     "format": "vp run -F './packages/*' -F './apps/*' format",
     "format:check": "vp run -F './packages/*' -F './apps/*' format:check",
-    "docs:api": "node scripts/generate-api-docs.mjs",
     "docs:dev": "pnpm --filter @blac/docs dev",
     "docs:build": "pnpm --filter @blac/docs build",
     "docs:preview": "pnpm --filter @blac/docs preview",
@@ -24,7 +23,6 @@
     "release:publish": "changeset publish",
     "release": "./scripts/release.sh",
     "release:helper": "./scripts/release.sh",
-    "docs:changelog": "node scripts/generate-changelog.mjs",
     "prepare": "vp config"
   },
   "type": "module",
