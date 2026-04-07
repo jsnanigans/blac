@@ -23,12 +23,20 @@ const myPlugin: BlacPlugin = {
     // called when any state container is created
   },
 
-  onStateChanged(instance, previousState, currentState, callstack, context) {
+  onStateChanged(instance, previousState, currentState, context) {
     // called on every state change across all containers
   },
 
   onInstanceDisposed(instance, context) {
     // called when any state container is disposed
+  },
+
+  onRefAcquired(instance, refId, context) {
+    // called when a ref is acquired on an instance
+  },
+
+  onRefReleased(instance, refId, context) {
+    // called when a ref is released from an instance
   },
 };
 ```
@@ -60,13 +68,20 @@ getPluginManager().uninstall('my-plugin');
 
 The `context` parameter provides safe, read-only access to registry data:
 
-| Method                          | Returns                                           |
-| ------------------------------- | ------------------------------------------------- |
-| `getInstanceMetadata(instance)` | `{ className, instanceId, isIsolated, refCount }` |
-| `getState(instance)`            | Current state of the instance                     |
-| `queryInstances(Type)`          | All instances of a given class                    |
-| `getAllTypes()`                 | All registered state container classes            |
-| `getStats()`                    | `{ totalInstances, totalRefCount, types }`        |
+| Method                                | Returns                                                      |
+| ------------------------------------- | ------------------------------------------------------------ |
+| `getInstanceMetadata(instance)`       | `{ id, className, isDisposed, name, state, createdAt, ... }` |
+| `getState(instance)`                  | Current state of the instance                                |
+| `getHydrationStatus(instance)`        | Current `HydrationStatus` of the instance                    |
+| `startHydration(instance)`            | Begin hydration for the instance                             |
+| `applyHydratedState(instance, state)` | Apply restored state during hydration                        |
+| `finishHydration(instance)`           | Mark hydration as complete                                   |
+| `failHydration(instance, error)`      | Mark hydration as failed                                     |
+| `waitForHydration(instance)`          | `Promise<void>` that resolves when hydration completes       |
+| `queryInstances(Type)`                | All instances of a given class                               |
+| `getAllTypes()`                       | All registered state container classes                       |
+| `getStats()`                          | `{ registeredTypes, totalInstances, typeBreakdown }`         |
+| `getRefIds(instanceId)`               | Array of ref holder IDs for an instance                      |
 
 ## Example: analytics plugin
 
@@ -75,13 +90,13 @@ const analyticsPlugin: BlacPlugin = {
   name: 'analytics',
   version: '1.0.0',
 
-  onStateChanged(instance, _prev, current, _callstack, context) {
+  onStateChanged(instance, _prev, current, context) {
     const meta = context.getInstanceMetadata(instance);
     if (!meta) return;
 
     analytics.track('state_changed', {
       className: meta.className,
-      instanceId: meta.instanceId,
+      id: meta.id,
     });
   },
 
@@ -104,4 +119,4 @@ Use system events (`this.onSystemEvent`) for logic that belongs to a single inst
 - [DevTools](/plugins/devtools) — Chrome DevTools integration
 - [Persistence](/plugins/persistence) — IndexedDB state persistence
 
-See also: [System Events](/core/system-events), [API Reference](/api/core/plugins)
+See also: [System Events](/core/system-events), [Plugin Overview](/plugins/overview)
