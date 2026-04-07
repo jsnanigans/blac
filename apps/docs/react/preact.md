@@ -74,8 +74,7 @@ configureBlacPreact({
 
 ## Differences from React
 
-- Uses `preact/hooks` internally instead of React hooks
-- No `useSyncExternalStore` — uses `useState` + `useEffect` subscription pattern
+- Uses `preact/compat` for `useSyncExternalStore` instead of the React import
 - Everything else (core, registry, plugins, tracking) is shared
 
 See also: [useBloc](/react/use-bloc), [Dependency Tracking](/react/dependency-tracking)

@@ -143,16 +143,6 @@ __BLAC_DEVTOOLS__.timeTravel(instanceId, previousState);
 __BLAC_DEVTOOLS__.getVersion();
 ```
 
-## Redux DevTools integration
-
-If you already use the Redux DevTools browser extension, you can connect BlaC to it instead of (or alongside) the BlaC-specific tools:
-
-```ts
-import { ReduxDevToolsAdapter } from '@blac/devtools-connect';
-```
-
-This gives you the Redux DevTools time-travel UI, action log, and state inspector for BlaC state containers.
-
 ## Programmatic access
 
 You can also interact with the plugin instance directly in your code:

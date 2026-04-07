@@ -107,4 +107,4 @@ const [state] = useBloc(StreamCubit, {
 
 `useBloc` is built on React's `useSyncExternalStore`, making it safe for concurrent features like Suspense and transitions. State reads are consistent within a single render.
 
-See also: [Dependency Tracking](/react/dependency-tracking), [API Reference](/api/react)
+See also: [Dependency Tracking](/react/dependency-tracking), [Performance](/react/performance)

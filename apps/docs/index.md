@@ -10,8 +10,8 @@ hero:
       text: Get Started
       link: /guide/getting-started
     - theme: alt
-      text: API Reference
-      link: /api/core
+      text: Reference
+      link: /core/cubit
 
 features:
   - icon: 🎯

@@ -116,7 +116,7 @@ Plugins observe lifecycle events across all state containers. They receive callb
 const plugin: BlacPlugin = {
   name: 'my-plugin',
   version: '1.0.0',
-  onStateChanged(instance, prev, next) { ... },
+  onStateChanged(instance, prev, next, context) { ... },
 };
 
 getPluginManager().install(plugin);

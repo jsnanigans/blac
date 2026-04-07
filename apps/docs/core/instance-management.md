@@ -69,7 +69,7 @@ hasInstance(CounterCubit); // boolean
 getRefCount(CounterCubit); // number
 getAll(CounterCubit); // all instances of this class
 forEach(CounterCubit, (inst) => {}); // iterate instances
-getStats(); // { totalInstances, totalRefCount, types }
+getStats(); // { registeredTypes, totalInstances, typeBreakdown }
 ```
 
 ### Cleanup
@@ -115,4 +115,4 @@ console.log(counter.state.count);
 release(CounterCubit);
 ```
 
-See also: [Configuration](/core/configuration), [API Reference](/api/core/registry)
+See also: [Configuration](/core/configuration), [System Events](/core/system-events)

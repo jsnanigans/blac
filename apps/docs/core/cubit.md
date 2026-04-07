@@ -183,4 +183,4 @@ class FormCubit extends Cubit<{ email: string; password: string }> {
 
 :::
 
-See also: [Patterns & Recipes](/guide/patterns), [API Reference](/api/core)
+See also: [Patterns & Recipes](/guide/patterns), [Instance Management](/core/instance-management)

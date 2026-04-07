@@ -209,7 +209,7 @@ const analyticsPlugin: BlacPlugin = {
     analytics.track('bloc_created', { name: instance.name });
   },
 
-  onStateChanged(instance, prev, next) {
+  onStateChanged(instance, prev, next, context) {
     analytics.track('state_changed', {
       name: instance.name,
       from: prev,
