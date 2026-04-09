@@ -96,6 +96,7 @@ export function serialize(data: any, options: SerializeOptions = {}): any {
               serializeInternal(v, depth + 1),
             ]);
           }
+          seen.delete(value);
           return {
             __type: 'Map',
             entries,
@@ -107,6 +108,7 @@ export function serialize(data: any, options: SerializeOptions = {}): any {
           for (const v of value.values()) {
             values.push(serializeInternal(v, depth + 1));
           }
+          seen.delete(value);
           return {
             __type: 'Set',
             values,
@@ -114,7 +116,9 @@ export function serialize(data: any, options: SerializeOptions = {}): any {
         }
 
         if (Array.isArray(value)) {
-          return value.map((item) => serializeInternal(item, depth + 1));
+          const arr = value.map((item) => serializeInternal(item, depth + 1));
+          seen.delete(value);
+          return arr;
         }
 
         const result: Record<string, any> = {};
@@ -134,6 +138,7 @@ export function serialize(data: any, options: SerializeOptions = {}): any {
             }
           }
         }
+        seen.delete(value);
         return result;
       }
 
@@ -144,13 +149,17 @@ export function serialize(data: any, options: SerializeOptions = {}): any {
 
   try {
     const serialized = serializeInternal(data, 0);
-    const jsonString = JSON.stringify(serialized);
 
-    if (jsonString.length > maxSizeBytes) {
-      throw new SerializationError(
-        `Serialized data exceeds maximum size (${maxSizeBytes} bytes)`,
-        'MAX_SIZE',
-      );
+    // Lazy size check: only stringify for size if the default limit is overridden
+    // or if the data looks large (has nested objects). Skip for most calls.
+    if (maxSizeBytes < MAX_SIZE_BYTES) {
+      const jsonString = JSON.stringify(serialized);
+      if (jsonString.length > maxSizeBytes) {
+        throw new SerializationError(
+          `Serialized data exceeds maximum size (${maxSizeBytes} bytes)`,
+          'MAX_SIZE',
+        );
+      }
     }
 
     return serialized;

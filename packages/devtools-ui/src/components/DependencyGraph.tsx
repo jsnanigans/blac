@@ -485,11 +485,14 @@ const DependencyGraphFlow: FC = () => {
       const depsIn = depEdges.filter(
         (e) => classByName.get(e.toClass) === inst.id,
       ).length;
-      const stateStr = JSON.stringify(inst.state);
+      let stateStr: string;
+      try {
+        stateStr = JSON.stringify(inst.state) ?? '';
+      } catch {
+        stateStr = '[Unserializable]';
+      }
       const preview =
-        stateStr && stateStr.length > 100
-          ? stateStr.slice(0, 100) + '\u2026'
-          : stateStr;
+        stateStr.length > 100 ? stateStr.slice(0, 100) + '\u2026' : stateStr;
       tooltipContent = (
         <div
           style={{

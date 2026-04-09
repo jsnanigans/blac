@@ -2,6 +2,7 @@ import React, { FC, useState } from 'react';
 import { EditableJsonTree } from './EditableJsonTree';
 import JsonView from '@uiw/react-json-view';
 import { T } from '../theme';
+import { jsonViewTheme } from '../utils/jsonViewTheme';
 
 interface CurrentStateViewProps {
   state: any;
@@ -196,16 +197,7 @@ export const CurrentStateView: FC<CurrentStateViewProps> = React.memo(
                     {
                       fontSize: '12px',
                       fontFamily: T.fontMono,
-                      '--w-rjv-background-color': T.bg3,
-                      '--w-rjv-color': '#d4d4d4',
-                      '--w-rjv-key-string': '#9cdcfe',
-                      '--w-rjv-type-string-color': '#ce9178',
-                      '--w-rjv-type-int-color': '#b5cea8',
-                      '--w-rjv-type-float-color': '#b5cea8',
-                      '--w-rjv-type-bigint-color': '#b5cea8',
-                      '--w-rjv-type-boolean-color': '#569cd6',
-                      '--w-rjv-type-null-color': '#569cd6',
-                      '--w-rjv-type-undefined-color': '#569cd6',
+                      ...jsonViewTheme(T.bg3),
                       '--w-rjv-brackets-color': '#808080',
                       '--w-rjv-arrow-color': '#808080',
                       '--w-rjv-quotes-color': '#808080',

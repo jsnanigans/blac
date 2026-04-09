@@ -1,10 +1,5 @@
 import { safeSerialize } from '../serialization/serialize';
-
-export interface GetterInfo {
-  value: unknown;
-  error?: string;
-  dependsOn?: string[];
-}
+import type { GetterInfo } from '../types';
 
 const BASE_GETTERS = new Set([
   'state',

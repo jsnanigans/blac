@@ -3,7 +3,7 @@
  * Toggle with Alt+D or custom event
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { acquire } from '@blac/core';
 import { DevToolsPanel } from './DevToolsPanel';
 import {
@@ -268,6 +268,13 @@ export function DraggableOverlay({ onMount }: DraggableOverlayProps = {}) {
   const [position, setPosition] = useState({ x: 100, y: 100 });
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [size, setSize] = useState({ width: 800, height: 600 });
+  const resizeCleanupRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    return () => {
+      resizeCleanupRef.current?.();
+    };
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -466,10 +473,12 @@ export function DraggableOverlay({ onMount }: DraggableOverlayProps = {}) {
           const handleResizeEnd = () => {
             window.removeEventListener('mousemove', handleResize);
             window.removeEventListener('mouseup', handleResizeEnd);
+            resizeCleanupRef.current = null;
           };
 
           window.addEventListener('mousemove', handleResize);
           window.addEventListener('mouseup', handleResizeEnd);
+          resizeCleanupRef.current = handleResizeEnd;
         }}
       />
     </div>

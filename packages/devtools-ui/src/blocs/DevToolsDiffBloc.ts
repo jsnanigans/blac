@@ -1,4 +1,5 @@
 import { Cubit, blac } from '@blac/core';
+import { extractChanges } from '../utils/extractChanges';
 import { DevToolsInstancesBloc } from './DevToolsInstancesBloc';
 
 const MAX_HISTORY_SIZE = 50;
@@ -153,77 +154,12 @@ export class DevToolsDiffBloc extends Cubit<DiffState> {
     const current = instance.state ?? null;
 
     // Calculate what actually changed
-    const changedOnly = this.extractChanges(previous, current);
+    const changedOnly = extractChanges(previous, current);
 
     return {
       previous,
       current,
       changedOnly,
     };
-  };
-
-  /**
-   * Extract only the properties that changed between two states
-   * Returns an object containing only changed paths
-   */
-  private extractChanges = (previous: any, current: any): any => {
-    if (previous === current) return undefined;
-
-    // Either side is null/undefined — treat as full replacement
-    if (previous == null || current == null) return current;
-
-    // If types are different, return current
-    if (typeof previous !== typeof current) return current;
-
-    // If not objects, compare directly
-    if (typeof current !== 'object') {
-      return previous !== current ? current : undefined;
-    }
-
-    // Handle arrays
-    if (Array.isArray(current)) {
-      if (!Array.isArray(previous) || previous.length !== current.length) {
-        return current;
-      }
-
-      const changes: any[] = [];
-      let hasChanges = false;
-
-      for (let i = 0; i < current.length; i++) {
-        const itemChange = this.extractChanges(previous[i], current[i]);
-        if (itemChange !== undefined) {
-          hasChanges = true;
-          changes[i] = itemChange;
-        }
-      }
-
-      return hasChanges ? current : undefined;
-    }
-
-    // Handle objects
-    const changes: Record<string, any> = {};
-    let hasChanges = false;
-
-    for (const key in current) {
-      if (!(key in previous)) {
-        changes[key] = current[key];
-        hasChanges = true;
-      } else {
-        const change = this.extractChanges(previous[key], current[key]);
-        if (change !== undefined) {
-          changes[key] = change;
-          hasChanges = true;
-        }
-      }
-    }
-
-    for (const key in previous) {
-      if (!(key in current)) {
-        changes[key] = undefined;
-        hasChanges = true;
-      }
-    }
-
-    return hasChanges ? changes : undefined;
   };
 }

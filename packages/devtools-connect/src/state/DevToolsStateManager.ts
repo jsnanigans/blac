@@ -14,14 +14,6 @@ import type {
   GetterInfo,
 } from '../types';
 
-// Re-export types for backward compatibility
-export type {
-  StateSnapshot,
-  InstanceState,
-  DevToolsSnapshot,
-  DevToolsStateManagerConfig,
-};
-
 export interface StateManagerStats {
   /** Total number of tracked instances */
   totalInstances: number;
@@ -92,8 +84,11 @@ export class DevToolsStateManager {
       ...(instance.createdFrom ? { createdFrom: instance.createdFrom } : {}),
     };
 
+    const isNew = !this.instances.has(instance.id);
     this.instances.set(instance.id, instanceState);
-    this.insertionOrder.push(instance.id);
+    if (isNew) {
+      this.insertionOrder.push(instance.id);
+    }
   }
 
   /**

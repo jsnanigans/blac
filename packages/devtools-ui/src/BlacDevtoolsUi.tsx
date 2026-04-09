@@ -128,6 +128,8 @@ export function BlacDevtoolsUi({
 }: BlacDevtoolsUiProps = {}) {
   const [usePiP, setUsePiP] = useState<boolean | null>(null);
 
+  const [pipError, setPipError] = useState<string | null>(null);
+
   useEffect(() => {
     // Determine which mode to use
     let shouldUsePiP = false;
@@ -137,9 +139,10 @@ export function BlacDevtoolsUi({
         console.error(
           '[BlaC DevTools] PiP mode forced but Document Picture-in-Picture API is not supported',
         );
-        throw new Error(
+        setPipError(
           'Document Picture-in-Picture API is not supported in this browser',
         );
+        return;
       }
       shouldUsePiP = true;
     } else if (mode === 'overlay') {
@@ -170,6 +173,10 @@ export function BlacDevtoolsUi({
       }
     };
   }, [onMount, mode]);
+
+  if (pipError) {
+    throw new Error(pipError);
+  }
 
   // Still loading - render nothing
   if (usePiP === null) {

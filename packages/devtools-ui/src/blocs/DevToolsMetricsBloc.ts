@@ -133,13 +133,17 @@ export class DevToolsMetricsBloc extends Cubit<MetricsState> {
       avgUpdateInterval = total / (timestamps.length - 1);
     }
 
-    // Max burst rate (peak in any 1s window, max with previous)
+    // Max burst rate (peak in any 1s window, max with previous) — sliding window O(n)
     let burstRate = prevMaxBurstRate;
-    for (let i = 0; i < timestamps.length; i++) {
-      const count = timestamps.filter(
-        (t) => t >= timestamps[i] && t < timestamps[i] + 1000,
-      ).length;
-      if (count > burstRate) burstRate = count;
+    if (timestamps.length > 0) {
+      let left = 0;
+      for (let right = 0; right < timestamps.length; right++) {
+        while (timestamps[right] - timestamps[left] >= 1000) {
+          left++;
+        }
+        const count = right - left + 1;
+        if (count > burstRate) burstRate = count;
+      }
     }
 
     const warnings: InstanceMetrics['warnings'] = [];

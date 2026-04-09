@@ -9,6 +9,8 @@ import { SearchBar } from './SearchBar';
 import { InstanceListItem } from './InstanceListItem';
 import { T } from '../theme';
 
+const EMPTY_TRIGGERS: number[] = [];
+
 export const InstanceList: FC<{ width?: number }> = React.memo(
   ({ width = 300 }) => {
     const [{ instances, animationTriggers }] = useBloc(DevToolsInstancesBloc);
@@ -118,7 +120,9 @@ export const InstanceList: FC<{ width?: number }> = React.memo(
                     key={instance.id}
                     instance={instance}
                     isSelected={selectedId === instance.id}
-                    animationTriggers={animationTriggers.get(instance.id) || []}
+                    animationTriggers={
+                      animationTriggers.get(instance.id) ?? EMPTY_TRIGGERS
+                    }
                     onSelect={() => layoutBloc.setSelectedId(instance.id)}
                   />
                 ))}

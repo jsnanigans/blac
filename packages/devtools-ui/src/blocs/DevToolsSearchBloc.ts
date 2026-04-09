@@ -1,6 +1,7 @@
 import { Cubit, blac } from '@blac/core';
 import type { InstanceData } from '../types';
 import { fuzzyMatch } from '../utils/fuzzyMatch';
+import { stringToColor } from '../utils/stringToColor';
 import { DevToolsInstancesBloc } from './DevToolsInstancesBloc';
 
 type SearchState = {
@@ -98,7 +99,7 @@ export class DevToolsSearchBloc extends Cubit<SearchState> {
           className,
           instances: sortedInstances,
           firstCreatedAt: sortedInstances[0].createdAt,
-          color: this.generateColorForClassName(className),
+          color: stringToColor(className),
         };
       },
     );
@@ -107,23 +108,5 @@ export class DevToolsSearchBloc extends Cubit<SearchState> {
     groups.sort((a, b) => a.firstCreatedAt - b.firstCreatedAt);
 
     return groups;
-  };
-
-  /**
-   * Generate consistent HSL color from className using hash function
-   * Same className = same color across all instances
-   */
-  private generateColorForClassName = (className: string): string => {
-    let hash = 0;
-    for (let i = 0; i < className.length; i++) {
-      hash = className.charCodeAt(i) + ((hash << 5) - hash);
-      hash = hash & hash; // Convert to 32-bit integer
-    }
-
-    // Use hash to generate hue (0-360)
-    const hue = Math.abs(hash % 360);
-
-    // 70% saturation, 60% lightness for good visibility on dark theme
-    return `hsl(${hue}, 70%, 60%)`;
   };
 }

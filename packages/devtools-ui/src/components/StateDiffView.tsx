@@ -5,6 +5,7 @@ import 'json-diff-kit/dist/viewer.css';
 import type { DiffResult } from '../blocs';
 import { SectionHeader } from './SectionHeader';
 import { T } from '../theme';
+import { jsonViewTheme } from '../utils/jsonViewTheme';
 
 const differ = new Differ();
 
@@ -182,32 +183,10 @@ export const StateDiffView: FC<StateDiffViewProps> = React.memo(
                       {
                         fontSize: '12px',
                         fontFamily: T.fontMono,
-                        '--w-rjv-background-color': T.bg2,
-                        '--w-rjv-color': '#d4d4d4',
-                        '--w-rjv-key-string': '#9cdcfe',
-                        '--w-rjv-info-color': '#6a9955',
+                        ...jsonViewTheme(T.bg2),
                         '--w-rjv-border-left': `1px solid ${T.border1}`,
-                        '--w-rjv-line-color': T.bg2,
-                        '--w-rjv-arrow-color': '#858585',
-                        '--w-rjv-edit-color': '#569cd6',
                         '--w-rjv-add-color': '#10b981',
-                        '--w-rjv-del-color': '#ef4444',
                         '--w-rjv-copied-color': '#10b981',
-                        '--w-rjv-curlybraces-color': '#d4d4d4',
-                        '--w-rjv-brackets-color': '#d4d4d4',
-                        '--w-rjv-ellipsis-color': '#858585',
-                        '--w-rjv-quotes-color': '#ce9178',
-                        '--w-rjv-quotes-string-color': '#ce9178',
-                        '--w-rjv-type-string-color': '#ce9178',
-                        '--w-rjv-type-int-color': '#b5cea8',
-                        '--w-rjv-type-float-color': '#b5cea8',
-                        '--w-rjv-type-bigint-color': '#b5cea8',
-                        '--w-rjv-type-boolean-color': '#569cd6',
-                        '--w-rjv-type-date-color': '#c586c0',
-                        '--w-rjv-type-url-color': '#3b82f6',
-                        '--w-rjv-type-null-color': '#569cd6',
-                        '--w-rjv-type-nan-color': '#ef4444',
-                        '--w-rjv-type-undefined-color': '#569cd6',
                       } as React.CSSProperties
                     }
                   />

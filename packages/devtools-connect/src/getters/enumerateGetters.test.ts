@@ -276,7 +276,7 @@ describe('DevToolsBrowserPlugin getter integration', () => {
     expect(evt.data.getters.itemCount).toBeDefined();
   });
 
-  it('includes getters in instance-updated event data', () => {
+  it('includes getters in instance-updated event data', async () => {
     const plugin = new DevToolsBrowserPlugin();
     getPluginManager().install(plugin);
 
@@ -286,6 +286,8 @@ describe('DevToolsBrowserPlugin getter integration', () => {
     plugin.subscribe(subscriber);
 
     instance.emit({ value: 100 });
+    // stateChanged notification is deferred via queueMicrotask
+    await Promise.resolve();
 
     const evt = findEvent(subscriber, 'instance-updated');
     expect(evt.data.getters).toBeDefined();
@@ -327,12 +329,14 @@ describe('DevToolsBrowserPlugin getter integration', () => {
     expect(getters.plain.dependsOn).toBeUndefined();
   });
 
-  it('stores getters in state manager snapshots', () => {
+  it('stores getters in state manager snapshots', async () => {
     const plugin = new DevToolsBrowserPlugin();
     getPluginManager().install(plugin);
 
     const instance = acquire(CubitWithPrimitiveGetter);
     instance.emit({ value: 50 });
+    // stateChanged notification is deferred via queueMicrotask
+    await Promise.resolve();
 
     const fullState = plugin.getFullState();
     const tracked = defined(

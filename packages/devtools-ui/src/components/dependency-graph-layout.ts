@@ -1,5 +1,7 @@
 import type { Node, Edge } from '@xyflow/react';
 import ELKBundled from 'elkjs/lib/elk.bundled.js';
+import { stringToColor } from '../utils/stringToColor';
+import { instanceKey } from '../utils/instanceKey';
 
 export const NODE_WIDTH = 240;
 export const NODE_HEIGHT = 52;
@@ -23,17 +25,10 @@ export type BlocNodeData = {
 };
 
 export function classColor(className: string): string {
-  let hash = 0;
-  for (let i = 0; i < className.length; i++) {
-    hash = className.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return `hsl(${Math.abs(hash) % 360}, 45%, 55%)`;
+  return stringToColor(className, 45, 55);
 }
 
-export function instanceKey(id: string): string {
-  const i = id.indexOf(':');
-  return i !== -1 ? id.slice(i + 1) : id;
-}
+export { instanceKey };
 
 export function getSubgraph(nodeId: string, edges: Edge[]): Set<string> {
   const adj = new Map<string, Set<string>>();

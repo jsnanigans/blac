@@ -91,6 +91,14 @@ function ResizeDivider({
   onResize: (width: number) => void;
   currentWidth: number;
 }) {
+  const cleanupRef = React.useRef<(() => void) | null>(null);
+
+  React.useEffect(() => {
+    return () => {
+      cleanupRef.current?.();
+    };
+  }, []);
+
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
     const startX = e.clientX;
@@ -103,10 +111,12 @@ function ResizeDivider({
     const handleUp = () => {
       window.removeEventListener('mousemove', handleMove);
       window.removeEventListener('mouseup', handleUp);
+      cleanupRef.current = null;
     };
 
     window.addEventListener('mousemove', handleMove);
     window.addEventListener('mouseup', handleUp);
+    cleanupRef.current = handleUp;
   };
 
   return (

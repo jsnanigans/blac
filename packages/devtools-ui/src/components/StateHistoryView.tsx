@@ -4,6 +4,9 @@ import type { StateSnapshot } from '../blocs';
 import { CallStackView } from './CallStackView';
 import { SectionHeader } from './SectionHeader';
 import { T } from '../theme';
+import { extractChanges } from '../utils/extractChanges';
+import { formatRelative } from '../utils/formatRelative';
+import { jsonViewTheme } from '../utils/jsonViewTheme';
 
 interface StateHistoryViewProps {
   history: StateSnapshot[];
@@ -28,59 +31,6 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
         () => setRestoredTimestamp(null),
         1500,
       );
-    };
-
-    const extractChanges = (previous: any, current: any): any => {
-      if (previous === current) return undefined;
-      if (previous == null || current == null) return current;
-      if (typeof previous !== typeof current) return current;
-      if (typeof current !== 'object') {
-        return previous !== current ? current : undefined;
-      }
-      if (Array.isArray(current)) {
-        if (!Array.isArray(previous) || previous.length !== current.length)
-          return current;
-        const changes: any[] = [];
-        let hasChanges = false;
-        for (let i = 0; i < current.length; i++) {
-          const itemChange = extractChanges(previous[i], current[i]);
-          if (itemChange !== undefined) {
-            hasChanges = true;
-            changes[i] = itemChange;
-          }
-        }
-        return hasChanges ? current : undefined;
-      }
-      const changes: any = {};
-      let hasChanges = false;
-      for (const key in current) {
-        if (!(key in previous)) {
-          changes[key] = current[key];
-          hasChanges = true;
-        } else {
-          const change = extractChanges(previous[key], current[key]);
-          if (change !== undefined) {
-            changes[key] = change;
-            hasChanges = true;
-          }
-        }
-      }
-      for (const key in previous) {
-        if (!(key in current)) {
-          changes[key] = undefined;
-          hasChanges = true;
-        }
-      }
-      return hasChanges ? changes : undefined;
-    };
-
-    const formatTime = (timestamp: number): string => {
-      const diff = Date.now() - timestamp;
-      if (diff < 1000) return 'just now';
-      if (diff < 60000) return `${Math.floor(diff / 1000)}s ago`;
-      if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-      if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-      return `${Math.floor(diff / 86400000)}d ago`;
     };
 
     const historyEntries: Array<{
@@ -208,7 +158,7 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
                           </span>
                           {!isCurrent && (
                             <span style={{ fontSize: '10px', color: T.text2 }}>
-                              {formatTime(entry.snapshot.timestamp)}
+                              {formatRelative(entry.snapshot.timestamp)}
                             </span>
                           )}
                           {entry.snapshot.trigger && (
@@ -297,38 +247,7 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
                                 ? entry.changes
                                 : { value: entry.changes ?? null }
                             }
-                            style={
-                              {
-                                '--w-rjv-font-family':
-                                  'Monaco, Menlo, Consolas, monospace',
-                                '--w-rjv-background-color': '#1e1e1e',
-                                '--w-rjv-color': '#d4d4d4',
-                                '--w-rjv-key-string': '#9cdcfe',
-                                '--w-rjv-info-color': '#6a9955',
-                                '--w-rjv-border-left': '1px solid #333',
-                                '--w-rjv-line-color': '#1e1e1e',
-                                '--w-rjv-arrow-color': '#858585',
-                                '--w-rjv-edit-color': '#569cd6',
-                                '--w-rjv-add-color': T.success,
-                                '--w-rjv-del-color': '#ef4444',
-                                '--w-rjv-copied-color': T.success,
-                                '--w-rjv-curlybraces-color': '#d4d4d4',
-                                '--w-rjv-brackets-color': '#d4d4d4',
-                                '--w-rjv-ellipsis-color': '#858585',
-                                '--w-rjv-quotes-color': '#ce9178',
-                                '--w-rjv-quotes-string-color': '#ce9178',
-                                '--w-rjv-type-string-color': '#ce9178',
-                                '--w-rjv-type-int-color': '#b5cea8',
-                                '--w-rjv-type-float-color': '#b5cea8',
-                                '--w-rjv-type-bigint-color': '#b5cea8',
-                                '--w-rjv-type-boolean-color': '#569cd6',
-                                '--w-rjv-type-date-color': '#c586c0',
-                                '--w-rjv-type-url-color': '#3b82f6',
-                                '--w-rjv-type-null-color': '#569cd6',
-                                '--w-rjv-type-nan-color': '#ef4444',
-                                '--w-rjv-type-undefined-color': '#569cd6',
-                              } as any
-                            }
+                            style={jsonViewTheme('#1e1e1e') as any}
                           />
                         )}
                       </div>

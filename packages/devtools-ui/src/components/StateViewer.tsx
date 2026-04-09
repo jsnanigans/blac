@@ -18,31 +18,16 @@ import { CallStackView } from './CallStackView';
 import { StateDiffView } from './StateDiffView';
 import { SectionHeader } from './SectionHeader';
 import { T } from '../theme';
+import { stringToColor } from '../utils/stringToColor';
+import { instanceKey } from '../utils/instanceKey';
+import { formatRelative } from '../utils/formatRelative';
 
 interface StateViewerProps {
   onTimeTravel?: (instanceId: string, state: any) => void;
 }
 
 function classColor(className: string): string {
-  let hash = 0;
-  for (let i = 0; i < className.length; i++) {
-    hash = className.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return `hsl(${Math.abs(hash) % 360}, 60%, 55%)`;
-}
-
-function instanceKey(id: string): string {
-  const i = id.indexOf(':');
-  return i !== -1 ? id.slice(i + 1) : id;
-}
-
-function formatRelative(timestamp: number): string {
-  const diff = Date.now() - timestamp;
-  if (diff < 1000) return 'just now';
-  if (diff < 60000) return `${Math.floor(diff / 1000)}s ago`;
-  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-  return `${Math.floor(diff / 86400000)}d ago`;
+  return stringToColor(className, 60, 55);
 }
 
 // ============================================================================

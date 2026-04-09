@@ -13,7 +13,6 @@ import { safeSerialize } from '../serialization/serialize';
 import { enumerateGetters } from '../getters/enumerateGetters';
 import { DevToolsStateManager } from '../state/DevToolsStateManager';
 import type {
-  DevToolsEventType,
   DevToolsEvent,
   DevToolsCallback,
   DevToolsBrowserPluginConfig,
@@ -25,14 +24,6 @@ import type {
   ConsumerInfo,
   RefHolderInfo,
 } from '../types';
-
-// Re-export types for backward compatibility
-export type {
-  DevToolsEventType,
-  DevToolsEvent,
-  DevToolsCallback,
-  DevToolsBrowserPluginConfig,
-};
 
 /**
  * DevTools browser plugin for BlaC
@@ -49,8 +40,8 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
   private config: Required<DevToolsBrowserPluginConfig>;
   private instanceTimestamps = new Map<string, number>();
 
-  // Dependency graph tracking
-  private dependencyEdges: DependencyEdge[] = [];
+  // Dependency graph tracking: fromId -> edges
+  private dependencyEdgesByFrom = new Map<string, DependencyEdge[]>();
 
   // Performance metrics tracking: instanceId -> sorted array of update timestamps
   private updateTimestamps = new Map<string, number[]>();
@@ -69,17 +60,21 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       ? crypto.randomUUID()
       : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 
-  // Persistent event history storage (complete log from app startup)
-  private eventHistory: DevToolsEvent[] = [];
+  // Persistent event history storage (ring buffer for O(1) insert)
+  private eventHistoryBuffer: DevToolsEvent[] = [];
+  private eventHistoryHead = 0;
+  private eventHistoryCount = 0;
   private readonly MAX_HISTORY_SIZE = 10000;
 
   private readonly FULL_SYNC_INTERVAL = 3000;
   private fullSyncTimer: ReturnType<typeof setInterval> | undefined;
+  private extensionConnected = false;
   private handleExtensionMessage = (event: MessageEvent): void => {
     if (event.source !== window) return;
     if ((event.data as Record<string, any>)?.source !== 'blac-devtools-content')
       return;
     const cmd = event.data as Record<string, any>;
+    this.extensionConnected = true;
     switch (cmd.type) {
       case 'PING':
         this.broadcastToExtension({
@@ -117,6 +112,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
 
   onInstall(context: PluginContext): void {
     this.context = context;
+    if (!this.config.enabled) return;
     this.exposeGlobalAPI();
     this.scanExistingInstances();
     this.startExtensionBridge();
@@ -128,9 +124,12 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     this.listeners.clear();
     this.instanceCache.clear();
     this.instanceTimestamps.clear();
-    this.eventHistory = [];
-    this.dependencyEdges = [];
+    this.eventHistoryBuffer = [];
+    this.eventHistoryHead = 0;
+    this.eventHistoryCount = 0;
+    this.dependencyEdgesByFrom.clear();
     this.consumers.clear();
+    this.refHolders.clear();
     this.updateTimestamps.clear();
     this.stateSizeCache.clear();
     this.totalUpdateCounts.clear();
@@ -141,34 +140,33 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
   }
 
   onInstanceCreated(instance: any, context: PluginContext): void {
+    if (!this.config.enabled) return;
     if (this.shouldExcludeInstance(instance)) return;
 
+    const now = Date.now();
     const createdFrom = this.captureCallstack();
     const data = this.createInstanceData(instance, context);
     this.instanceCache.set(data.id, data);
 
-    const createdAt = Date.now();
-    this.instanceTimestamps.set(data.id, createdAt);
+    this.instanceTimestamps.set(data.id, now);
     this.stateManager.addInstance({
       id: data.id,
       className: data.className,
       name: data.name || data.id,
       state: data.state,
-      createdAt,
+      createdAt: now,
       getters: (data as any).getters,
       createdFrom,
     });
 
     // Capture dependency edges from this instance
     this.captureDependencies(instance, data.id, data.className);
-    const instanceEdges = this.dependencyEdges.filter(
-      (e) => e.fromId === data.id,
-    );
+    const instanceEdges = this.dependencyEdgesByFrom.get(data.id) ?? [];
 
     const eventData = { ...data, createdFrom };
     this.emit({
       type: 'instance-created',
-      timestamp: Date.now(),
+      timestamp: now,
       data: instanceEdges.length
         ? { ...eventData, dependencies: instanceEdges }
         : eventData,
@@ -181,6 +179,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     currentState: any,
     context: PluginContext,
   ): void {
+    if (!this.config.enabled) return;
     if (this.shouldExcludeInstance(instance)) return;
 
     const callstack = this.captureCallstack();
@@ -192,26 +191,24 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       previousState,
       currentState,
       callstack,
-      trigger,
     );
     this.instanceCache.set(data.id, data);
 
-    const prevSerialized = safeSerialize(previousState);
-    const currSerialized = safeSerialize(currentState);
+    // Reuse already-serialized states from createInstanceData
     this.stateManager.updateState(
       data.id,
-      prevSerialized.success ? prevSerialized.data : previousState,
-      currSerialized.success ? currSerialized.data : currentState,
+      (data as any).previousState ?? previousState,
+      (data as any).currentState ?? currentState,
       callstack,
       trigger,
       (data as any).getters,
     );
 
-    // Update performance metrics
-    this.recordUpdate(
-      data.id,
-      currSerialized.success ? JSON.stringify(currSerialized.data).length : 0,
-    );
+    // Update performance metrics — estimate size from current state
+    const stateStr = (data as any).currentState;
+    const estimatedSize =
+      stateStr !== undefined ? JSON.stringify(stateStr).length : 0;
+    this.recordUpdate(data.id, estimatedSize);
 
     // Check for performance warnings and emit if needed
     const metrics = this.computeMetrics(data.id);
@@ -231,6 +228,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
   }
 
   onInstanceDisposed(instance: any, context: PluginContext): void {
+    if (!this.config.enabled) return;
     if (this.shouldExcludeInstance(instance)) return;
 
     const data = this.createInstanceData(instance, context);
@@ -239,9 +237,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     this.stateManager.removeInstance(data.id);
 
     // Remove dependency edges from this instance
-    this.dependencyEdges = this.dependencyEdges.filter(
-      (e) => e.fromId !== data.id,
-    );
+    this.dependencyEdgesByFrom.delete(data.id);
 
     // Clean up consumers, ref holders, and metrics tracking
     this.consumers.delete(data.id);
@@ -258,6 +254,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
   }
 
   onRefAcquired(instance: any, refId: string, _context: PluginContext): void {
+    if (!this.config.enabled) return;
     if (this.shouldExcludeInstance(instance)) return;
 
     const instanceId = (instance as any).instanceId as string;
@@ -286,6 +283,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
   }
 
   onRefReleased(instance: any, refId: string, _context: PluginContext): void {
+    if (!this.config.enabled) return;
     if (this.shouldExcludeInstance(instance)) return;
 
     const instanceId = (instance as any).instanceId as string;
@@ -346,7 +344,15 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
   }
 
   getEventHistory(): DevToolsEvent[] {
-    return [...this.eventHistory];
+    if (this.eventHistoryCount === 0) return [];
+    if (this.eventHistoryCount < this.MAX_HISTORY_SIZE) {
+      return [...this.eventHistoryBuffer];
+    }
+    // Ring buffer: return in order from head
+    return [
+      ...this.eventHistoryBuffer.slice(this.eventHistoryHead),
+      ...this.eventHistoryBuffer.slice(0, this.eventHistoryHead),
+    ];
   }
 
   getFullState(): { instances: any[]; timestamp: any } {
@@ -361,7 +367,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
         className: inst.className,
         name: inst.name,
       })),
-      edges: [...this.dependencyEdges],
+      edges: Array.from(this.dependencyEdgesByFrom.values()).flat(),
     };
   }
 
@@ -534,11 +540,16 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
   }
 
   private emit(event: DevToolsEvent): void {
-    if (this.eventHistory.length < this.MAX_HISTORY_SIZE) {
-      this.eventHistory.push(event);
+    if (this.eventHistoryCount < this.MAX_HISTORY_SIZE) {
+      this.eventHistoryBuffer.push(event);
+      this.eventHistoryCount++;
     } else {
-      this.eventHistory.shift();
-      this.eventHistory.push(event);
+      const idx =
+        (this.eventHistoryHead + this.eventHistoryCount) %
+        this.MAX_HISTORY_SIZE;
+      this.eventHistoryBuffer[idx] = event;
+      this.eventHistoryHead =
+        (this.eventHistoryHead + 1) % this.MAX_HISTORY_SIZE;
     }
 
     this.broadcastToExtension({ type: 'ATOMIC_UPDATE', payload: event });
@@ -560,7 +571,6 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     previousState?: any,
     currentState?: any,
     callstack?: string,
-    _trigger?: Trigger,
   ): InstanceMetadata {
     const metadata = context.getInstanceMetadata(instance);
     const state = context.getState(instance);
@@ -712,31 +722,20 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
         | undefined;
       if (!deps || deps.size === 0) return;
 
-      // Remove old edges from this instance before re-adding
-      this.dependencyEdges = this.dependencyEdges.filter(
-        (e) => e.fromId !== instanceId,
-      );
-
+      // Replace edges for this instance
+      const newEdges: DependencyEdge[] = [];
       for (const [TypeClass, instanceKey] of deps) {
         const toClass =
           (TypeClass as any as Record<string, any>).name ??
           (TypeClass as any).toString();
-        // Avoid duplicates
-        const exists = this.dependencyEdges.some(
-          (e) =>
-            e.fromId === instanceId &&
-            e.toClass === toClass &&
-            e.toKey === instanceKey,
-        );
-        if (!exists) {
-          this.dependencyEdges.push({
-            fromId: instanceId,
-            fromClass: className,
-            toClass,
-            toKey: instanceKey,
-          });
-        }
+        newEdges.push({
+          fromId: instanceId,
+          fromClass: className,
+          toClass,
+          toKey: instanceKey,
+        });
       }
+      this.dependencyEdgesByFrom.set(instanceId, newEdges);
     } catch {
       // Accessing dependencies on foreign objects can throw — ignore silently
     }
@@ -783,14 +782,17 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       avgUpdateInterval = totalInterval / (allTimestamps.length - 1);
     }
 
-    // Max burst rate (peak in any 1s window)
+    // Max burst rate (peak in any 1s window) — sliding window O(n)
     let maxBurstRate = 0;
-    for (let i = 0; i < allTimestamps.length; i++) {
-      const windowStart = allTimestamps[i];
-      const count = allTimestamps.filter(
-        (t) => t >= windowStart && t < windowStart + 1000,
-      ).length;
-      if (count > maxBurstRate) maxBurstRate = count;
+    if (allTimestamps.length > 0) {
+      let left = 0;
+      for (let right = 0; right < allTimestamps.length; right++) {
+        while (allTimestamps[right] - allTimestamps[left] >= 1000) {
+          left++;
+        }
+        const count = right - left + 1;
+        if (count > maxBurstRate) maxBurstRate = count;
+      }
     }
 
     const stateSizeBytes = this.stateSizeCache.get(instanceId) ?? 0;
@@ -844,9 +846,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       const lastChange =
         history.length > 0 ? history[history.length - 1] : null;
       const instanceConsumers = this.consumers.get(inst.id);
-      const instanceEdges = this.dependencyEdges.filter(
-        (e) => e.fromId === inst.id,
-      );
+      const instanceEdges = this.dependencyEdgesByFrom.get(inst.id) ?? [];
       const refIds = this.context?.getRefIds(inst.id) ?? [];
       const refHolders = this.getRefHoldersForInstance(inst.id);
       return {
@@ -890,7 +890,9 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     if (typeof window === 'undefined') return;
     window.addEventListener('message', this.handleExtensionMessage);
     this.fullSyncTimer = setInterval(() => {
-      this.broadcastFullState();
+      if (this.extensionConnected) {
+        this.broadcastFullState();
+      }
     }, this.FULL_SYNC_INTERVAL);
   }
 

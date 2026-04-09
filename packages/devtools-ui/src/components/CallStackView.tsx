@@ -37,15 +37,10 @@ function parseCallstack(stack: string): StackFrame[] {
 }
 
 function cleanFilePath(path: string): string {
-  let cleaned = path
+  const cleaned = path
     .replace(/^https?:\/\/[^/]+\/@fs/, '')
     .replace(/^https?:\/\/[^/]+\//, '')
     .replace(/\?.*$/, '');
-
-  const projectMatch = cleaned.match(/\/Projects\/blac\/(.+)/);
-  if (projectMatch) {
-    cleaned = projectMatch[1];
-  }
 
   return cleaned.replace(/^\//, '');
 }

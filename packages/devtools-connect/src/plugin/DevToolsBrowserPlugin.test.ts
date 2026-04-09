@@ -157,8 +157,8 @@ describe('DevToolsBrowserPlugin Lifecycle Integration', () => {
       (call: any[]) => call[0]?.type === 'instance-created',
     );
     expect(createdEvent).toBeDefined();
-    expect(createdEvent![0].data).toHaveProperty('createdFrom');
-    expect(typeof createdEvent![0].data.createdFrom).toBe('string');
+    expect(createdEvent?.[0].data).toHaveProperty('createdFrom');
+    expect(typeof createdEvent?.[0].data.createdFrom).toBe('string');
   });
 
   it('should scan existing instances on install', () => {
