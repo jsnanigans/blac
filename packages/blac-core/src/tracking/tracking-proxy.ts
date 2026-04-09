@@ -303,30 +303,25 @@ function getArrayParentPath(path: string): string | null {
  * @internal
  */
 export function optimizeTrackedPaths(paths: Set<string>): Set<string> {
-  if (paths.size === 0) {
-    return new Set();
-  }
-
-  if (paths.size === 1) {
+  if (paths.size <= 1) {
     return new Set(paths);
   }
 
-  const sortedPaths = Array.from(paths).sort((a, b) => b.length - a.length);
+  // Sort reverse-lexicographically so children come before their parents
+  const sortedPaths = Array.from(paths).sort((a, b) =>
+    a > b ? -1 : a < b ? 1 : 0,
+  );
   const optimized = new Set<string>();
 
+  // Walk sorted list: skip any path that is a parent of the last kept path.
+  // In reverse-lex order, all children of a parent appear before the parent itself.
+  let lastKept: string | undefined;
   for (const path of sortedPaths) {
-    let hasMoreSpecificChild = false;
-
-    for (const optimizedPath of optimized) {
-      if (isChildPath(optimizedPath, path)) {
-        hasMoreSpecificChild = true;
-        break;
-      }
+    if (lastKept !== undefined && isChildPath(lastKept, path)) {
+      continue;
     }
-
-    if (!hasMoreSpecificChild) {
-      optimized.add(path);
-    }
+    optimized.add(path);
+    lastKept = path;
   }
 
   const arrayParents = new Set<string>();

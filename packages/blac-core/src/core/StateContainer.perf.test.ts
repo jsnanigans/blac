@@ -12,17 +12,11 @@ import {
   StateContainerRegistry,
 } from './StateContainerRegistry';
 import { clearAll } from '../registry';
-import { getRegistry, setRegistry } from '../registry/config';
+import { setRegistry } from '../registry/config';
 
 class TestCubit extends Cubit<{ count: number }> {
   constructor() {
     super({ count: 0 });
-  }
-}
-
-class MultiFieldCubit extends Cubit<{ a: number; b: number; c: number }> {
-  constructor() {
-    super({ a: 0, b: 0, c: 0 });
   }
 }
 

@@ -264,8 +264,8 @@ export abstract class StateContainer<S extends object = any> {
     }
 
     if (this._listeners.size > 0) {
-      const listeners = Array.from(this._listeners);
-      for (const listener of listeners) {
+      const snapshot = Array.from(this._listeners);
+      for (const listener of snapshot) {
         try {
           listener(newState);
         } catch (error) {

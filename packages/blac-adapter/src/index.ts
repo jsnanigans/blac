@@ -58,7 +58,7 @@ export interface AdapterState<TBloc extends StateContainerConstructor> {
   /** Getter state for computed property tracking */
   getterState: GetterState | null;
   /** Proxied bloc instance for auto-tracking */
-  proxiedBloc: InstanceState<TBloc> | null;
+  proxiedBloc: InstanceState<TBloc>;
 }
 
 /**
@@ -177,6 +177,7 @@ export function autoTrackSubscribe<TBloc extends StateContainerConstructor>(
   }
 
   return (callback: SubscriptionCallback) => {
+    if (instance.isDisposed) return () => {};
     return instance.subscribe(() => {
       const depState =
         adapterState.dependencyState ||
@@ -234,6 +235,7 @@ export function manualDepsSubscribe<TBloc extends StateContainerConstructor>(
   config: ManualDepsConfig<TBloc>,
 ): SubscribeFunction {
   return (callback: SubscriptionCallback) => {
+    if (instance.isDisposed) return () => {};
     return instance.subscribe(() => {
       const newDeps = config.dependencies(instance.state, instance);
       if (
@@ -256,7 +258,10 @@ export function manualDepsSubscribe<TBloc extends StateContainerConstructor>(
 export function noTrackSubscribe<TBloc extends StateContainerInstance>(
   instance: TBloc,
 ): SubscribeFunction {
-  return (callback: SubscriptionCallback) => instance.subscribe(callback);
+  return (callback: SubscriptionCallback) => {
+    if (instance.isDisposed) return () => {};
+    return instance.subscribe(callback);
+  };
 }
 
 /**

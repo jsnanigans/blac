@@ -1,5 +1,8 @@
 import type { StateContainer, StateContainerConfig } from './StateContainer';
-import { createPluginManager } from '../plugin/PluginManager';
+import {
+  createPluginManager,
+  type PluginManager,
+} from '../plugin/PluginManager';
 import { BLAC_DEFAULTS, BLAC_ERROR_PREFIX } from '../constants';
 import { isKeepAliveClass } from '../utils/static-props';
 import {
@@ -304,7 +307,7 @@ export class StateContainerRegistry {
     } else {
       const firstKey = entry.refs.keys().next().value;
       if (firstKey !== undefined) {
-        const count = entry.refs.get(firstKey)!;
+        const count = entry.refs.get(firstKey) ?? 0;
         if (count <= 1) {
           entry.refs.delete(firstKey);
         } else {
@@ -323,10 +326,28 @@ export class StateContainerRegistry {
 
     // Auto-dispose when refs are empty (unless keepAlive)
     if (entry.refs.size === 0 && !keepAlive) {
+      // Collect dependencies before disposing so we can clean up orphans
+      const deps = entry.instance.dependencies;
+
       if (!entry.instance.isDisposed) {
         entry.instance.dispose();
       }
       instances.delete(instanceKey);
+
+      // Clean up ensure-created dependencies that now have no refs
+      for (const [DepType, depKey] of deps) {
+        const depInstances = this.ensureInstancesMap(DepType);
+        const depEntry = depInstances.get(depKey);
+        if (
+          depEntry &&
+          depEntry.refs.size === 0 &&
+          !isKeepAliveClass(DepType) &&
+          !depEntry.instance.isDisposed
+        ) {
+          depEntry.instance.dispose();
+          depInstances.delete(depKey);
+        }
+      }
     }
   }
 
@@ -527,6 +548,24 @@ export class StateContainerRegistry {
    * Emit lifecycle event to all listeners
    * @internal - Called by StateContainer lifecycle methods
    */
+  emit(event: 'created', container: StateContainer<any>): void;
+  emit(event: 'disposed', container: StateContainer<any>): void;
+  emit(
+    event: 'stateChanged',
+    container: StateContainer<any>,
+    previousState: any,
+    currentState: any,
+  ): void;
+  emit(
+    event: 'refAcquired',
+    container: StateContainer<any>,
+    refId: string,
+  ): void;
+  emit(
+    event: 'refReleased',
+    container: StateContainer<any>,
+    refId: string,
+  ): void;
   emit(event: LifecycleEvent, ...args: any[]): void {
     const listeners = this.listeners.get(event);
     if (!listeners || listeners.size === 0) return; // Zero overhead when no listeners
@@ -581,12 +620,12 @@ export const globalRegistry = new StateContainerRegistry();
 /**
  * Global plugin manager (initialized lazily)
  */
-let _globalPluginManager: any = null;
+let _globalPluginManager: PluginManager | null = null;
 
 /**
  * Get the global plugin manager
  */
-export function getPluginManager(): any {
+export function getPluginManager(): PluginManager {
   if (!_globalPluginManager) {
     _globalPluginManager = createPluginManager(globalRegistry);
   }

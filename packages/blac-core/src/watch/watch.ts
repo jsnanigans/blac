@@ -184,6 +184,8 @@ function watchImpl(
   const externalDepsManager = new DependencyManager();
 
   let disposed = false;
+  let isRunning = false;
+  let pendingRerun = false;
   const primarySubscriptions: (() => void)[] = [];
 
   const cleanup = () => {
@@ -195,6 +197,12 @@ function watchImpl(
 
   const runCallback = () => {
     if (disposed) return;
+
+    if (isRunning) {
+      pendingRerun = true;
+      return;
+    }
+    isRunning = true;
 
     startTracking(tracker);
 
@@ -219,10 +227,17 @@ function watchImpl(
       }
 
       externalDepsManager.sync(externalDeps, runCallback);
+      isRunning = false;
     }
 
     if (result === STOP) {
       cleanup();
+      return;
+    }
+
+    if (pendingRerun) {
+      pendingRerun = false;
+      runCallback();
     }
   };
 

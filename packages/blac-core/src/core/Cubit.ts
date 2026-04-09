@@ -20,8 +20,9 @@ export abstract class Cubit<S extends object = any> extends StateContainer<S> {
     }
     const current = this.state;
     let hasChanges = false;
-    for (const key in partial) {
-      if (!Object.is((current as any)[key], (partial as any)[key])) {
+    const p = partial as Partial<S>;
+    for (const key of Object.keys(p) as Array<keyof S>) {
+      if (!Object.is(current[key], p[key])) {
         hasChanges = true;
         break;
       }

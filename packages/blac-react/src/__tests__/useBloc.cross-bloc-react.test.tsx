@@ -64,6 +64,8 @@ describe('useBloc — cross-bloc React integration', () => {
   });
 
   it('unmounting unsubscribes from external dependency', () => {
+    // Give ExtBlocB its own ref so it survives orphan cleanup when ExtBlocA is released
+    acquire(ExtBlocB);
     let renderCount = 0;
     function Comp() {
       renderCount++;
@@ -79,6 +81,7 @@ describe('useBloc — cross-bloc React integration', () => {
       borrow(ExtBlocB).set(99);
     });
     expect(renderCount).toBe(countBeforeUnmount);
+    release(ExtBlocB);
   });
 
   it('external dependency being disposed does not crash the component', () => {

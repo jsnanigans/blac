@@ -30,6 +30,7 @@ interface InstalledPlugin {
 export class PluginManager {
   private plugins = new Map<string, InstalledPlugin>();
   private registry: StateContainerRegistry;
+  private lifecycleUnsubscribers: (() => void)[] = [];
 
   /**
    * Create a new PluginManager
@@ -149,42 +150,43 @@ export class PluginManager {
     }
   }
 
+  destroy(): void {
+    this.clear();
+    for (const unsub of this.lifecycleUnsubscribers) {
+      unsub();
+    }
+    this.lifecycleUnsubscribers = [];
+  }
+
   /**
    * Setup lifecycle hooks to notify plugins
    */
   private setupLifecycleHooks(): void {
-    // Instance created
-    this.registry.on('created', (instance) => {
-      this.notifyPlugins('onInstanceCreated', instance);
-    });
-
-    // State changed
-    this.registry.on(
-      'stateChanged',
-      (instance, previousState, currentState) => {
-        this.notifyPlugins(
-          'onStateChanged',
-          instance,
-          previousState,
-          currentState,
-        );
-      },
-    );
-
-    // Instance disposed
-    this.registry.on('disposed', (instance) => {
-      this.notifyPlugins('onInstanceDisposed', instance);
-    });
-
-    // Ref acquired
-    this.registry.on('refAcquired', (instance, refId) => {
-      this.notifyPlugins('onRefAcquired', instance, refId);
-    });
-
-    // Ref released
-    this.registry.on('refReleased', (instance, refId) => {
-      this.notifyPlugins('onRefReleased', instance, refId);
-    });
+    this.lifecycleUnsubscribers = [
+      this.registry.on('created', (instance) => {
+        this.notifyPlugins('onInstanceCreated', instance);
+      }),
+      this.registry.on(
+        'stateChanged',
+        (instance, previousState, currentState) => {
+          this.notifyPlugins(
+            'onStateChanged',
+            instance,
+            previousState,
+            currentState,
+          );
+        },
+      ),
+      this.registry.on('disposed', (instance) => {
+        this.notifyPlugins('onInstanceDisposed', instance);
+      }),
+      this.registry.on('refAcquired', (instance, refId) => {
+        this.notifyPlugins('onRefAcquired', instance, refId);
+      }),
+      this.registry.on('refReleased', (instance, refId) => {
+        this.notifyPlugins('onRefReleased', instance, refId);
+      }),
+    ];
   }
 
   /**

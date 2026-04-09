@@ -29,7 +29,13 @@ export function renderWithBloc<T extends StateContainerConstructor>(
   const instance = createCubitStub(BlocClass, stubOptions);
   registerOverride(BlocClass, instance, instanceKey);
 
-  const renderResult = render(ui);
+  let renderResult: RenderResult;
+  try {
+    renderResult = render(ui);
+  } catch (e) {
+    setRegistry(previous);
+    throw e;
+  }
 
   const originalUnmount = renderResult.unmount;
   renderResult.unmount = () => {
@@ -51,9 +57,20 @@ export function renderWithRegistry(
   const testRegistry = new StateContainerRegistry();
   setRegistry(testRegistry);
 
-  setup(testRegistry);
+  try {
+    setup(testRegistry);
+  } catch (e) {
+    setRegistry(previous);
+    throw e;
+  }
 
-  const renderResult = render(ui);
+  let renderResult: RenderResult;
+  try {
+    renderResult = render(ui);
+  } catch (e) {
+    setRegistry(previous);
+    throw e;
+  }
 
   const originalUnmount = renderResult.unmount;
   renderResult.unmount = () => {

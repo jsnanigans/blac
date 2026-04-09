@@ -119,6 +119,10 @@ export function useBloc<
 
   const depsRef = useRef(options?.dependencies);
   depsRef.current = options?.dependencies;
+  const onMountRef = useRef(options?.onMount);
+  onMountRef.current = options?.onMount;
+  const onUnmountRef = useRef(options?.onUnmount);
+  onUnmountRef.current = options?.onUnmount;
   const instanceId = options?.instanceId;
   const autoTrack = options?.autoTrack;
   const dependencies = options?.dependencies;
@@ -173,14 +177,9 @@ export function useBloc<
         getSnapshotFn = autoTrackSnapshot(instance, adapterState);
       }
 
-      const safeSubscribeFn = (callback: () => void) => {
-        if (instance.isDisposed) return () => {};
-        return subscribeFn(callback);
-      };
-
       return [
         adapterState.proxiedBloc as TBloc,
-        safeSubscribeFn,
+        subscribeFn,
         getSnapshotFn,
         instanceKey,
         adapterState,
@@ -193,10 +192,15 @@ export function useBloc<
 
   const [, forceUpdate] = useReducer((x: number) => x + 1, 0);
 
-  const externalDepsManager = useRef(new ExternalDepsManager());
+  const externalDepsManager = useRef<ExternalDepsManager>(null);
+  if (externalDepsManager.current === null) {
+    (
+      externalDepsManager as React.MutableRefObject<ExternalDepsManager>
+    ).current = new ExternalDepsManager();
+  }
 
   useEffect(() => {
-    const manager = externalDepsManager.current;
+    const manager = externalDepsManager.current!;
     disableGetterTracking(adapterState, rawInstance);
     manager.updateSubscriptions(
       adapterState.getterState,
@@ -206,45 +210,43 @@ export function useBloc<
   }, [adapterState, rawInstance, forceUpdate]);
 
   useEffect(() => {
-    const manager = externalDepsManager.current;
+    const manager = externalDepsManager.current!;
+    const currentInstanceKey = instanceKey;
+    const currentRawInstance = rawInstance;
+    const currentBloc = bloc;
 
     // Register as consumer in devtools (if available)
     const devtools =
       typeof window !== 'undefined'
         ? (window as any).__BLAC_DEVTOOLS__
         : undefined;
-    if (devtools?.registerConsumer && rawInstance) {
+    if (devtools?.registerConsumer && currentRawInstance) {
       devtools.registerConsumer(
-        (rawInstance as any).instanceId,
+        (currentRawInstance as any).instanceId,
         consumerIdRef.current,
         componentNameRef.current || 'Unknown',
       );
     }
 
-    if (options?.onMount) {
-      options.onMount(bloc as InstanceType<T>);
-    }
+    onMountRef.current?.(currentBloc as InstanceType<T>);
 
     return () => {
-      // Unregister consumer from devtools
-      if (devtools?.unregisterConsumer && rawInstance) {
+      if (devtools?.unregisterConsumer && currentRawInstance) {
         devtools.unregisterConsumer(
-          (rawInstance as any).instanceId,
+          (currentRawInstance as any).instanceId,
           consumerIdRef.current,
         );
       }
 
       manager.cleanup();
 
-      if (options?.onUnmount) {
-        options.onUnmount(bloc as InstanceType<T>);
-      }
+      onUnmountRef.current?.(currentBloc as InstanceType<T>);
 
       const refId = `useBloc@${componentNameRef.current ?? 'Unknown'}-${consumerIdRef.current}`;
-      release(BlocClass, instanceKey, false, refId);
+      release(BlocClass, currentInstanceKey, false, refId);
     };
     // oxlint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [bloc, instanceKey, rawInstance]);
 
   return [state, bloc, componentRef] as UseBlocReturn<T, ExtractState<T>>;
 }
