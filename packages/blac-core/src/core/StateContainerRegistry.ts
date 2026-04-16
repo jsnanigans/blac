@@ -81,6 +81,9 @@ export class StateContainerRegistry {
   >();
 
   private _stateChangedListenerCount = 0;
+  get hasStateChangedListeners(): boolean {
+    return this._stateChangedListenerCount > 0;
+  }
   private _pendingStateChanges: Array<[StateContainer<any>, any, any]> | null =
     null;
 

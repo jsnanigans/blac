@@ -52,6 +52,7 @@ export abstract class StateContainer<S extends object = any> {
     Set<SystemEventHandler<S, any>>
   >();
   private _dependencies: Map<StateContainerConstructor, string> | null = null;
+  private _hasStateChangeHandlers = false;
   private _registry = getRegistry();
 
   name: string = this.constructor.name;
@@ -235,15 +236,26 @@ export abstract class StateContainer<S extends object = any> {
 
     if (this._state === newState) return;
 
+    const previousState = this._state;
+    this._state = newState;
+
+    if (
+      this._listeners.size === 0 &&
+      !this._hasStateChangeHandlers &&
+      this._hydrationStatus !== 'hydrating'
+    ) {
+      if (this._registry.hasStateChangedListeners) {
+        this._registry.notifyStateChanged(this, previousState, newState);
+      }
+      return;
+    }
+
     if (this._hydrationStatus === 'hydrating' && source !== 'hydration') {
       this._changedWhileHydrating = true;
     }
 
-    const previousState = this._state;
-    this._state = newState;
-
-    const handlers = this._systemEventHandlers.get('stateChanged');
-    if (handlers && handlers.size > 0) {
+    if (this._hasStateChangeHandlers) {
+      const handlers = this._systemEventHandlers.get('stateChanged')!;
       const payload = { state: newState, previousState };
       for (const handler of handlers) {
         try {
@@ -322,8 +334,15 @@ export abstract class StateContainer<S extends object = any> {
     }
     handlers.add(handler as SystemEventHandler<S, any>);
 
+    if (event === 'stateChanged') {
+      this._hasStateChangeHandlers = true;
+    }
+
     return () => {
       handlers?.delete(handler as SystemEventHandler<S, any>);
+      if (event === 'stateChanged' && handlers?.size === 0) {
+        this._hasStateChangeHandlers = false;
+      }
     };
   };
 

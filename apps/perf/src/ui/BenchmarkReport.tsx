@@ -24,16 +24,19 @@ const CATEGORIES: Record<string, string[]> = {
     'redundant emit',
     'redundant patch',
     'patch 1 of 20 fields',
-    'rapid counter',
     'nested object update',
+    'batch rapid updates',
   ],
   'Subscription & Notification': [
     'notify 100 subscribers',
-    'selective subscription',
-    'subscribe/unsubscribe churn',
-    'listener with selector filter',
+    'selector notification skip',
+    'subscriber with computed filter',
   ],
-  'Multi-Store & Derived': ['derived state read', 'multi-store coordination'],
+  'Derived & Cross-Store': [
+    'derived state computation',
+    'cross-store propagation',
+    'multi-store coordination',
+  ],
 };
 
 interface ComparisonRow {
