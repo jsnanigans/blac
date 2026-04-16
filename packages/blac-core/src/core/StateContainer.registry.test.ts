@@ -18,7 +18,7 @@ import {
   getStats,
   getRefCount,
 } from '../registry';
-import { UPDATE } from './symbols';
+import { EMIT } from './symbols';
 
 // Test implementations
 class CounterBloc extends StateContainer<{ count: number }> {
@@ -27,7 +27,7 @@ class CounterBloc extends StateContainer<{ count: number }> {
   }
 
   increment = () => {
-    this[UPDATE]((state) => ({ count: state.count + 1 }));
+    this[EMIT]({ count: this.state.count + 1 });
   };
 }
 
@@ -37,7 +37,7 @@ class UserBloc extends StateContainer<{ name: string; age: number }> {
   }
 
   setName = (name: string) => {
-    this[UPDATE]((state) => ({ ...state, name }));
+    this[EMIT]({ ...this.state, name });
   };
 }
 

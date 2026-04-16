@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vite-plus/test';
 import { blacTestSetup } from '@blac/core/testing';
 import { StateContainer } from './StateContainer';
 import { acquire, release } from '../registry';
-import { EMIT, UPDATE } from './symbols';
+import { EMIT } from './symbols';
 
 class DisposableContainer extends StateContainer<{ v: number }> {
   disposeCount = 0;
@@ -14,9 +14,6 @@ class DisposableContainer extends StateContainer<{ v: number }> {
   }
   doEmit(state: { v: number }) {
     this[EMIT](state);
-  }
-  doUpdate(updater: (s: { v: number }) => { v: number }) {
-    this[UPDATE](updater);
   }
 }
 
@@ -40,12 +37,6 @@ describe('StateContainer disposal', () => {
     const container = new DisposableContainer();
     container.dispose();
     expect(() => container.doEmit({ v: 1 })).toThrow();
-  });
-
-  it('update() throws on disposed container', () => {
-    const container = new DisposableContainer();
-    container.dispose();
-    expect(() => container.doUpdate((s) => ({ v: s.v + 1 }))).toThrow();
   });
 
   it('dispose() fires dispose system event exactly once', () => {

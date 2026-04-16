@@ -13,7 +13,7 @@ import {
   type LifecycleEvent,
 } from './StateContainerRegistry';
 import { acquire, release } from '../registry';
-import { UPDATE } from './symbols';
+import { EMIT } from './symbols';
 
 // ============ Test Implementations ============
 
@@ -23,11 +23,11 @@ class TestCubit extends StateContainer<{ value: number }> {
   }
 
   increment = () => {
-    this[UPDATE]((state) => ({ value: state.value + 1 }));
+    this[EMIT]({ value: this.state.value + 1 });
   };
 
   setValue = (value: number) => {
-    this[UPDATE](() => ({ value }));
+    this[EMIT]({ value });
   };
 }
 

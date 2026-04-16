@@ -24,14 +24,6 @@ describe('Cubit edge cases', () => {
     expect(() => cubit.patch({ count: 1 })).toThrow();
   });
 
-  it('update() returning same reference does NOT notify listeners', () => {
-    const cubit = new CountCubit();
-    const listener = vi.fn();
-    cubit.subscribe(listener);
-    cubit.update((s) => s);
-    expect(listener).not.toHaveBeenCalled();
-  });
-
   it('emit() with same reference does NOT notify listeners', () => {
     const cubit = new CountCubit();
     const sameRef = cubit.state;

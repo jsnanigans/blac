@@ -405,13 +405,6 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
             (instance as any as Record<string, (state: any) => void>).emit(
               state,
             );
-          } else if (
-            typeof (instance as any as Record<string, any>).update ===
-            'function'
-          ) {
-            (instance as any as Record<string, (cb: () => any) => void>).update(
-              () => state,
-            );
           } else {
             return false;
           }
@@ -638,9 +631,7 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
           line.includes('DevToolsBrowserPlugin') ||
           line.includes('PluginManager') ||
           line.includes('StateContainer.emit') ||
-          line.includes('StateContainer.update') ||
           line.includes('[blac.emit]') ||
-          line.includes('[blac.update]') ||
           line.includes('Cubit.patch') ||
           line.includes('/blac-core/dist/') ||
           line.includes('@blac/core/') ||

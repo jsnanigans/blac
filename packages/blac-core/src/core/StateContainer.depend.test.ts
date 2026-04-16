@@ -37,7 +37,7 @@ class CartBloc extends Cubit<{ items: string[] }> {
   }
 
   addItem(item: string) {
-    this.update((s) => ({ items: [...s.items, item] }));
+    this.emit({ items: [...this.state.items, item] });
   }
 }
 
@@ -377,7 +377,7 @@ describe('StateContainer.depend()', () => {
       }
 
       push(msg: string) {
-        this.update((s) => ({ messages: [...s.messages, msg] }));
+        this.emit({ messages: [...this.state.messages, msg] });
       }
     }
 

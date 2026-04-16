@@ -1,5 +1,5 @@
 import { StateContainer } from './StateContainer';
-import { EMIT, UPDATE } from './symbols';
+import { EMIT } from './symbols';
 
 export abstract class Cubit<S extends object = any> extends StateContainer<S> {
   constructor(initialState: S) {
@@ -10,25 +10,10 @@ export abstract class Cubit<S extends object = any> extends StateContainer<S> {
     this[EMIT](newState);
   }
 
-  public update(updater: (current: S) => S): void {
-    this[UPDATE](updater);
-  }
-
   public patch = ((partial: S extends object ? Partial<S> : never): void => {
     if (typeof this.state !== 'object' || this.state === null) {
       throw new Error('patch() is only available for object state types');
     }
-    const current = this.state;
-    let hasChanges = false;
-    const p = partial as Partial<S>;
-    for (const key of Object.keys(p) as Array<keyof S>) {
-      if (!Object.is(current[key], p[key])) {
-        hasChanges = true;
-        break;
-      }
-    }
-    if (hasChanges) {
-      this[EMIT]({ ...current, ...partial } as S);
-    }
+    this[EMIT]({ ...this.state, ...partial } as S);
   }) as S extends object ? (partial: Partial<S>) => void : never;
 }

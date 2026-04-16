@@ -8,11 +8,11 @@ export class CounterCubit extends Cubit<{ count: number }> {
   }
 
   increment = () => {
-    this.update((s) => ({ count: s.count + 1 }));
+    this.emit({ count: this.state.count + 1 });
   };
 
   decrement = () => {
-    this.update((s) => ({ count: s.count - 1 }));
+    this.emit({ count: this.state.count - 1 });
   };
 
   reset = () => {
@@ -20,7 +20,7 @@ export class CounterCubit extends Cubit<{ count: number }> {
   };
 
   addAmount = (amount: number) => {
-    this.update((s) => ({ count: s.count + amount }));
+    this.emit({ count: this.state.count + amount });
   };
 }
 
@@ -68,7 +68,7 @@ export class SettingsCubit extends Cubit<SettingsState> {
   };
 
   toggleNotifications = () => {
-    this.update((s) => ({ ...s, notifications: !s.notifications }));
+    this.emit({ ...this.state, notifications: !this.state.notifications });
   };
 }
 
@@ -93,17 +93,22 @@ export class TodoCubit extends Cubit<TodoState> {
   }
 
   addTodo = (text: string) => {
-    this.update((s) => ({
-      ...s,
-      todos: [...s.todos, { id: `todo-${this.nextId++}`, text, done: false }],
-    }));
+    this.emit({
+      ...this.state,
+      todos: [
+        ...this.state.todos,
+        { id: `todo-${this.nextId++}`, text, done: false },
+      ],
+    });
   };
 
   toggleTodo = (id: string) => {
-    this.update((s) => ({
-      ...s,
-      todos: s.todos.map((t) => (t.id === id ? { ...t, done: !t.done } : t)),
-    }));
+    this.emit({
+      ...this.state,
+      todos: this.state.todos.map((t) =>
+        t.id === id ? { ...t, done: !t.done } : t,
+      ),
+    });
   };
 
   setFilter = (filter: TodoState['filter']) => {

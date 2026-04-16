@@ -2,7 +2,7 @@ import { generateSimpleId } from '../utils/idGenerator';
 import { BLAC_DEFAULTS } from '../constants';
 import { getRegistry } from '../registry/config';
 import type { StateContainerConstructor } from '../types/utilities';
-import { EMIT, UPDATE } from './symbols';
+import { EMIT } from './symbols';
 
 export interface StateContainerConfig {
   name?: string;
@@ -153,15 +153,6 @@ export abstract class StateContainer<S extends object = any> {
 
   protected [EMIT](newState: S): void {
     this.applyState(newState, 'default');
-  }
-
-  protected [UPDATE](updater: (current: S) => S): void {
-    if (this._disposed) {
-      throw new Error(
-        `Cannot update state from disposed container ${this.name}`,
-      );
-    }
-    this[EMIT](updater(this._state));
   }
 
   beginHydration(): void {

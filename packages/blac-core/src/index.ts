@@ -7,7 +7,7 @@ export type {
   SystemEventPayloads,
 } from './core/StateContainer';
 export { Cubit } from './core/Cubit';
-export { EMIT, UPDATE } from './core/symbols';
+export { EMIT } from './core/symbols';
 
 // Registry
 export {

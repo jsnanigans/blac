@@ -14,7 +14,7 @@ import {
   clearAll,
 } from '../registry';
 import { Cubit } from './Cubit';
-import { EMIT, UPDATE } from './symbols';
+import { EMIT } from './symbols';
 
 // Test implementation of StateContainer
 class TestContainer extends StateContainer<{ value: number }> {
@@ -22,15 +22,8 @@ class TestContainer extends StateContainer<{ value: number }> {
     super({ value: initialState });
   }
 
-  // Expose protected methods for testing
   public testEmit(state: { value: number }): void {
     this[EMIT](state);
-  }
-
-  public testUpdate(
-    updater: (current: { value: number }) => { value: number },
-  ): void {
-    this[UPDATE](updater);
   }
 }
 
@@ -107,11 +100,11 @@ class ObjectStateContainer extends StateContainer<ObjectState> {
   }
 
   public increment(): void {
-    this[UPDATE]((state) => ({ ...state, count: state.count + 1 }));
+    this[EMIT]({ ...this.state, count: this.state.count + 1 });
   }
 
   public setName(name: string): void {
-    this[UPDATE]((state) => ({ ...state, name }));
+    this[EMIT]({ ...this.state, name });
   }
 }
 
@@ -606,35 +599,6 @@ describe('StateContainer', () => {
         container.testEmit({ text: 'updated' });
 
         expect(container.callOrder).toEqual(['stateChanged', 'listener']);
-      });
-    });
-
-    describe('update()', () => {
-      it('should transform state correctly', () => {
-        const container = new TestContainer(10);
-
-        container.testUpdate((current) => ({ value: current.value * 2 }));
-
-        expect(container.state).toEqual({ value: 20 });
-      });
-
-      it('should throw when disposed', () => {
-        const container = new TestContainer(0);
-        container.dispose();
-
-        expect(() =>
-          container.testUpdate((s) => ({ value: s.value + 1 })),
-        ).toThrow('Cannot update state from disposed container');
-      });
-
-      it('should notify listeners', () => {
-        const container = new TestContainer(5);
-        const listener = vi.fn();
-        container.subscribe(listener);
-
-        container.testUpdate((s) => ({ value: s.value + 10 }));
-
-        expect(listener).toHaveBeenCalledWith({ value: 15 });
       });
     });
 
