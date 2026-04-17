@@ -14,11 +14,11 @@ class CounterBloc extends Cubit<{ count: number }> {
   }
 
   increment = () => {
-    this.update((state) => ({ count: state.count + 1 }));
+    this.patch({ count: this.state.count + 1 });
   };
 
   reset = () => {
-    this.update(() => ({ count: 0 }));
+    this.patch({ count: 0 });
   };
 }
 
@@ -28,7 +28,7 @@ class IsolatedBloc extends Cubit<{ count: number }> {
   }
 
   increment = () => {
-    this.update((state) => ({ count: state.count + 1 }));
+    this.patch({ count: this.state.count + 1 });
   };
 }
 

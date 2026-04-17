@@ -36,11 +36,11 @@ class CounterBloc extends Cubit<{ count: number; other: string }> {
   }
 
   increment = () => {
-    this.update((s) => ({ ...s, count: s.count + 1 }));
+    this.patch({ count: this.state.count + 1 });
   };
 
   updateOther = (value: string) => {
-    this.update((s) => ({ ...s, other: value }));
+    this.patch({ other: value });
   };
 }
 
@@ -58,11 +58,11 @@ class MultiGetterBloc extends Cubit<{ a: number; b: number }> {
   }
 
   updateA = (value: number) => {
-    this.update((s) => ({ ...s, a: value }));
+    this.patch({ a: value });
   };
 
   updateB = (value: number) => {
-    this.update((s) => ({ ...s, b: value }));
+    this.patch({ b: value });
   };
 }
 
@@ -80,7 +80,7 @@ class NestedGetterBloc extends Cubit<{ value: number }> {
   }
 
   updateValue = (value: number) => {
-    this.update(() => ({ value }));
+    this.patch({ value });
   };
 }
 
@@ -106,11 +106,11 @@ class ComplexReturnBloc extends Cubit<{ items: string[] }> {
   }
 
   addItem = (item: string) => {
-    this.update((s) => ({ items: [...s.items, item] }));
+    this.patch({ items: [...this.state.items, item] });
   };
 
   removeItem = (item: string) => {
-    this.update((s) => ({ items: s.items.filter((x) => x !== item) }));
+    this.patch({ items: this.state.items.filter((x) => x !== item) });
   };
 }
 
@@ -127,7 +127,7 @@ class ErrorBloc extends Cubit<{ value: number }> {
   }
 
   updateValue = (value: number) => {
-    this.update(() => ({ value }));
+    this.patch({ value });
   };
 }
 
@@ -141,11 +141,11 @@ class StateAndGetterBloc extends Cubit<{ count: number; name: string }> {
   }
 
   incrementCount = () => {
-    this.update((s) => ({ ...s, count: s.count + 1 }));
+    this.patch({ count: this.state.count + 1 });
   };
 
   updateName = (name: string) => {
-    this.update((s) => ({ ...s, name }));
+    this.patch({ name });
   };
 }
 
@@ -625,11 +625,11 @@ describe('useBloc - React Strict Mode', () => {
       }
 
       increment = () => {
-        this.update((s) => ({ ...s, count: s.count + 1 }));
+        this.patch({ count: this.state.count + 1 });
       };
 
       reset = () => {
-        this.update(() => ({ count: 0 }));
+        this.patch({ count: 0 });
       };
     }
 
@@ -710,7 +710,7 @@ describe('useBloc - Getter Tracking Edge Cases', () => {
         return this.state.value;
       }
       updateValue = (value: number) => {
-        this.update(() => ({ value }));
+        this.patch({ value });
       };
     }
 
@@ -763,7 +763,7 @@ describe('useBloc - Getter Tracking Edge Cases', () => {
         return this.state.count * 2;
       }
       increment = () => {
-        this.update((s) => ({ ...s, count: s.count + 1 }));
+        this.patch({ count: this.state.count + 1 });
       };
     }
 
@@ -807,7 +807,7 @@ describe('useBloc - Getter Tracking Edge Cases', () => {
         return this.state.value * 2;
       }
       updateValue = (value: number) => {
-        this.update(() => ({ value }));
+        this.patch({ value });
       };
     }
 

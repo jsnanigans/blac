@@ -24,7 +24,7 @@ class CounterCubit extends Cubit<{ count: number }> {
   }
 
   increment = () => {
-    this.update((state) => ({ count: state.count + 1 }));
+    this.patch({ count: this.state.count + 1 });
   };
 }
 

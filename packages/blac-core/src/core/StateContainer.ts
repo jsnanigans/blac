@@ -156,6 +156,10 @@ export abstract class StateContainer<S extends object = any> {
     this.applyState(newState, 'default');
   }
 
+  protected emit(newState: S): void {
+    this[EMIT](newState);
+  }
+
   beginHydration(): void {
     if (this._disposed) {
       throw new Error(
