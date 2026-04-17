@@ -271,8 +271,10 @@ export abstract class StateContainer<S extends object = any> {
     }
 
     if (this._listeners.size > 0) {
-      const snapshot = Array.from(this._listeners);
-      for (const listener of snapshot) {
+      let count = 0;
+      const size = this._listeners.size;
+      for (const listener of this._listeners) {
+        if (++count > size) break;
         try {
           listener(newState);
         } catch (error) {
@@ -281,7 +283,9 @@ export abstract class StateContainer<S extends object = any> {
       }
     }
 
-    this._registry.notifyStateChanged(this, previousState, newState);
+    if (this._registry.hasStateChangedListeners) {
+      this._registry.notifyStateChanged(this, previousState, newState);
+    }
   }
 
   private setHydrationStatus(status: HydrationStatus, error?: Error): void {

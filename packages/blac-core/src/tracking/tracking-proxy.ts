@@ -72,7 +72,9 @@ export function startProxy<T>(state: ProxyState<T>): void {
  */
 export function stopProxy<T>(state: ProxyState<T>): Set<string> {
   state.isTracking = false;
-  return new Set(state.trackedPaths);
+  const paths = state.trackedPaths;
+  state.trackedPaths = new Set<string>();
+  return paths;
 }
 
 /**
@@ -250,7 +252,9 @@ export function createForTarget<T>(state: ProxyState<T>, target: T): T {
     return state.lastProxy;
   }
 
-  state.proxyCache = new WeakMap<object, any>();
+  if (state.lastProxiedState !== null) {
+    state.proxyCache.delete(state.lastProxiedState as object);
+  }
   state.boundFunctionsCache = null;
 
   const proxy = createInternal(state, target, '', 0);
@@ -304,10 +308,20 @@ function getArrayParentPath(path: string): string | null {
  */
 export function optimizeTrackedPaths(paths: Set<string>): Set<string> {
   if (paths.size <= 1) {
-    return new Set(paths);
+    return paths;
   }
 
-  // Sort reverse-lexicographically so children come before their parents
+  let allFlat = true;
+  for (const path of paths) {
+    if (path.charCodeAt(path.length - 1) === 93 || path.includes('.')) {
+      allFlat = false;
+      break;
+    }
+  }
+  if (allFlat) {
+    return paths;
+  }
+
   const sortedPaths = Array.from(paths).sort((a, b) =>
     a > b ? -1 : a < b ? 1 : 0,
   );
