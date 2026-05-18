@@ -2,9 +2,12 @@
 
 These are the changes proposed against this repo (`/Users/brendanmullins/Projects/blac`) before any user-fe migration starts. User decisions are noted inline.
 
-## E1 — `BlocProvider` for instance-id context (REDUCED, APPROVED)
+> **Status (2026-05-18).** E1, E2, E3 are all landed on `main` (`ea04a518`).
+> See per-section "Landed in" pointers below.
 
-**Original proposal.** A Provider that supplies a *specific* cubit instance to its subtree.
+## E1 — `BlocProvider` for instance-id context (REDUCED, APPROVED — LANDED)
+
+**Original proposal.** A Provider that supplies a _specific_ cubit instance to its subtree.
 
 **User's reshape.** Smaller and cleaner: a Provider that puts an `instanceId` into React context. The `useBloc` hook reads the context when no `instanceId` is given by the caller.
 
@@ -22,8 +25,8 @@ export function BlocProvider({
 }): JSX.Element;
 
 // hook reads context if option not given
-useBloc(C);                              // uses context instanceId if any
-useBloc(C, { instanceId: 'override' });  // explicit wins over context
+useBloc(C); // uses context instanceId if any
+useBloc(C, { instanceId: 'override' }); // explicit wins over context
 ```
 
 ### Implementation sketch
@@ -59,7 +62,7 @@ const instanceKey =
 
 ### Why this is enough for user-fe
 
-The 3 existing `<BlocProvider bloc={instance}>` sites in user-fe don't need the *instance* to be passed — they need descendants to look up the same logical cubit by id. The shim translates v0's API:
+The 3 existing `<BlocProvider bloc={instance}>` sites in user-fe don't need the _instance_ to be passed — they need descendants to look up the same logical cubit by id. The shim translates v0's API:
 
 ```tsx
 // v0 user code (unchanged)
@@ -79,15 +82,23 @@ The shim's `BlocProvider` derives an instance id from the bloc instance (e.g., t
 
 ~half a day including tests.
 
+### Landed in
+
+- `packages/blac-react/src/BlocProvider.tsx` — `BlocProvider`, `useInstanceIdFromContext`.
+- `packages/blac-react/src/useBloc.ts` — reads context as the final fallback after explicit `instanceId` and auto-keying.
+- Index re-exports in `packages/blac-react/src/index.ts`.
+- Tests: `packages/blac-react/src/__tests__/BlocProvider.test.tsx` (8 tests).
+- Precedence resolved: explicit `instanceId` > `autoInstance` / `static isolated` > context > default key.
+
 ---
 
-## E2 — Honor `static keepAlive` in addition to `@blac({ keepAlive })` (APPROVED)
+## E2 — Honor `static keepAlive` in addition to `@blac({ keepAlive })` (APPROVED — LANDED)
 
-**Why.** user-fe has 26 classes with `static keepAlive = true`. Asking the codemod to also convert these to a decorator is *possible*, but the decorator transform requires TS config changes and the static is harmless to read.
+**Why.** user-fe has 26 classes with `static keepAlive = true`. Asking the codemod to also convert these to a decorator is _possible_, but the decorator transform requires TS config changes and the static is harmless to read.
 
 ### API
 
-No new API. Behavior change in the registry only: when looking up `keepAlive`, the registry checks both the decorator metadata *and* `(Class as any).keepAlive === true`.
+No new API. Behavior change in the registry only: when looking up `keepAlive`, the registry checks both the decorator metadata _and_ `(Class as any).keepAlive === true`.
 
 ### Implementation sketch
 
@@ -95,7 +106,9 @@ Wherever the decorator's keepAlive flag is read today (likely a `Symbol.for('bla
 
 ```ts
 function isKeepAlive(Class: StateContainerConstructor): boolean {
-  return decoratorKeepAlive(Class) === true || (Class as any).keepAlive === true;
+  return (
+    decoratorKeepAlive(Class) === true || (Class as any).keepAlive === true
+  );
 }
 ```
 
@@ -109,9 +122,15 @@ function isKeepAlive(Class: StateContainerConstructor): boolean {
 
 ~2 hours including tests.
 
+### Landed in
+
+- Already supported when audited: `isKeepAliveClass` in `packages/blac-core/src/utils/static-props.ts` reads `(Class as any).keepAlive`, and the `@blac/core` decorator sets exactly that static property. So `class X { static keepAlive = true }` and `@blac({ keepAlive: true })` are equivalent at the registry layer (`packages/blac-core/src/core/StateContainerRegistry.ts:328`).
+- Parity documented by 2 new tests in `packages/blac-core/src/decorators/blac.test.ts` ("static property parity (E2)").
+- `isKeepAliveClass` is now publicly exported from `@blac/core` for adapters that want to read it directly.
+
 ---
 
-## E3 — `static isolated` / `autoInstance: true` for per-mount instances (APPROVED)
+## E3 — `static isolated` / `autoInstance: true` for per-mount instances (APPROVED — LANDED)
 
 **Why.** user-fe has 11 classes with `static isolated = true` that today get a fresh instance per mount. We want to preserve this without rewriting every call site.
 
@@ -120,7 +139,7 @@ function isKeepAlive(Class: StateContainerConstructor): boolean {
 ```ts
 // Option A — class declares it
 class MyBloc extends Cubit<State> {
-  static isolated = true;          // legacy form; still respected
+  static isolated = true; // legacy form; still respected
 }
 // useBloc(MyBloc) auto-keys with useId()
 
@@ -139,11 +158,13 @@ In `useBloc.ts`:
 const isolatedByClass = (BlocClass as any).isolated === true;
 const autoInstance = options?.autoInstance ?? isolatedByClass;
 
-const reactId = React.useId();   // always called — hook rules
+const reactId = React.useId(); // always called — hook rules
 const effectiveInstanceId =
-  options?.instanceId !== undefined ? String(options.instanceId)
-    : autoInstance ? reactId
-    : ctxInstanceIdFromContext;   // E1
+  options?.instanceId !== undefined
+    ? String(options.instanceId)
+    : autoInstance
+      ? reactId
+      : ctxInstanceIdFromContext; // E1
 ```
 
 ### Tests
@@ -157,11 +178,19 @@ const effectiveInstanceId =
 
 ~half a day including tests.
 
+### Landed in
+
+- `packages/blac-core/src/constants.ts` — `BLAC_STATIC_PROPS.ISOLATED = 'isolated'`.
+- `packages/blac-core/src/utils/static-props.ts` — `isIsolatedClass(Type)` helper, exported from the package root.
+- `packages/blac-react/src/types.ts` — new option `autoInstance?: boolean` on `UseBlocOptions`.
+- `packages/blac-react/src/useBloc.ts` — `React.useId()` is always called; the resolved `instanceKey` uses it whenever `autoInstance: true` or `static isolated = true`. Explicit `instanceId` still wins; otherwise the context id from E1 is the final fallback.
+- Tests: `packages/blac-react/src/__tests__/useBloc.autoInstance.test.tsx` (9 tests covering sibling isolation, dispose-on-unmount, keepAlive interaction, autoInstance per call, explicit-override precedence).
+
 ---
 
 ## E4 — Constructor-arg / props through `useBloc` (REJECTED)
 
-**User quote.** *"this is a hard no, the new v2 design is to not pass the constructor params through the hook like consumers at all, instead it requires to add something like `const b = useBloc(C); useEffect(() => b.initWithProps(props), [])` or similar."*
+**User quote.** _"this is a hard no, the new v2 design is to not pass the constructor params through the hook like consumers at all, instead it requires to add something like `const b = useBloc(C); useEffect(() => b.initWithProps(props), [])` or similar."_
 
 **Reason.** Hook-passed props are messy and cause sync issues — when props change, the bloc is already constructed and the caller has to remember to re-sync.
 
@@ -194,3 +223,5 @@ Push developers toward `this.depend()`. Implement once Phase 3 starts so the rul
 ## Total v2 work before Phase 1 can begin
 
 E1 + E2 + E3 ≈ **1.5–2 engineer-days**, tests included.
+
+> **Done.** All three landed in commit `ea04a518` on `main`. 24 new tests added (2 core + 9 + 8 + the existing keepAlive tests still passing). v2 is ready for the `packages/blac-compat` shim to consume.
