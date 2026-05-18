@@ -64,7 +64,8 @@ export function MessengerApp() {
                   Bots will randomly send messages and show typing indicators
                 </li>
                 <li>
-                  Open DevTools (Alt+D) to see instance management in action
+                  Switching channels creates isolated state without disturbing
+                  the rest of the workspace
                 </li>
               </ul>
             </div>

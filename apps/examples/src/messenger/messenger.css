@@ -595,3 +595,102 @@
 .channel-messages::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* Messenger redesign overrides */
+
+.messenger-app {
+  height: clamp(640px, 78vh, 880px);
+  min-height: 640px;
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(187, 108, 59, 0.12),
+      transparent 28%
+    ),
+    rgba(255, 251, 245, 0.7);
+  border: 1px solid rgba(39, 47, 61, 0.1);
+  border-radius: 2rem;
+  box-shadow: 0 36px 90px rgba(55, 37, 22, 0.18);
+}
+
+.sidebar,
+.sidebar-footer {
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(255, 255, 255, 0.08),
+      transparent 34%
+    ),
+    linear-gradient(180deg, #233544 0%, #172833 100%);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-header {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.user-name,
+.section-header h3,
+.app-info strong,
+.channel-list-item.active,
+.channel-list-item.active .channel-icon {
+  color: #f6efe4;
+}
+
+.user-custom-status,
+.app-info small,
+.channel-list-item,
+.channel-icon {
+  color: rgba(246, 239, 228, 0.62);
+}
+
+.channel-list-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff9f2;
+}
+
+.channel-list-item.active {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.14),
+    rgba(187, 108, 59, 0.24)
+  );
+}
+
+.main-content {
+  background: rgba(255, 251, 245, 0.9);
+}
+
+.no-channel-selected {
+  background:
+    radial-gradient(circle at top, rgba(187, 108, 59, 0.12), transparent 28%),
+    linear-gradient(
+      180deg,
+      rgba(255, 251, 245, 0.82),
+      rgba(243, 236, 226, 0.92)
+    );
+}
+
+.demo-info {
+  background: rgba(255, 251, 245, 0.84);
+  border: 1px solid rgba(39, 47, 61, 0.08);
+  box-shadow: var(--shadow-md);
+}
+
+.message-input,
+.channel-messages,
+.channel-header {
+  background: rgba(255, 251, 245, 0.9);
+}
+
+.message-bubble {
+  background: rgba(238, 232, 223, 0.9);
+}
+
+@media (max-width: 768px) {
+  .messenger-app {
+    height: 78vh;
+    min-height: 560px;
+    border-radius: 1.5rem;
+  }
+}

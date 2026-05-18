@@ -10,192 +10,152 @@ import { DashboardDemo } from './examples/05-dashboard/DashboardDemo';
 import { DbPersistDemo } from './examples/06-db-persist/DbPersistDemo';
 import { RegistryDemo } from './examples/07-registry/RegistryDemo';
 import { useState } from 'react';
-import { BlacDevtoolsUi } from '@blac/devtools-ui';
 import { useBloc } from '@blac/react';
 import { PerformanceOverlay } from './shared/components';
+import { exampleCatalog, getRouteMeta } from './exampleCatalog';
 import './messenger/messenger.css';
-
-const Logo = () => {
-  return (
-    <div className="nav-brand">
-      BlaC <span style={{ fontWeight: 400, opacity: 0.8 }}>Examples</span>
-    </div>
-  );
-};
-
-const DevToolsBanner = () => {
-  const [dismissed, setDismissed] = useState(false);
-
-  const openDevTools = () => {
-    // Dispatch custom event to toggle overlay
-    window.dispatchEvent(new Event('blac-devtools-toggle'));
-  };
-
-  if (dismissed) return null;
-
-  return (
-    <div
-      style={{
-        background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-        color: 'white',
-        padding: '10px 20px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        fontSize: '14px',
-        position: 'relative',
-        zIndex: 100,
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <span style={{ fontSize: '20px' }}>🛠️</span>
-        <div>
-          <div style={{ fontWeight: 600 }}>BlaC DevTools Ready</div>
-          <div style={{ fontSize: '12px', opacity: 0.9 }}>
-            Press{' '}
-            <kbd
-              style={{
-                background: 'rgba(255,255,255,0.2)',
-                padding: '1px 5px',
-                borderRadius: '4px',
-                fontFamily: 'monospace',
-                border: '1px solid rgba(255,255,255,0.3)',
-              }}
-            >
-              Alt+D
-            </kbd>{' '}
-            to toggle overlay
-          </div>
-        </div>
-      </div>
-      <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-        <button
-          onClick={openDevTools}
-          style={{
-            background: 'rgba(255,255,255,0.15)',
-            border: '1px solid rgba(255,255,255,0.3)',
-            color: 'white',
-            cursor: 'pointer',
-            fontSize: '12px',
-            padding: '6px 12px',
-            borderRadius: '6px',
-            fontWeight: 500,
-            transition: 'all 0.2s',
-          }}
-          title="Open BlaC DevTools Overlay"
-        >
-          Open DevTools
-        </button>
-        <button
-          onClick={() => setDismissed(true)}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            color: 'white',
-            cursor: 'pointer',
-            fontSize: '18px',
-            padding: '4px',
-            opacity: 0.8,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          title="Dismiss"
-        >
-          ×
-        </button>
-      </div>
-    </div>
-  );
-};
 
 export function App() {
   const [showPerf, setShowPerf] = useState(false);
 
   // Initialize the router - the hook manages lifecycle (acquire on mount, release on unmount)
-  useBloc(RouterBloc);
+  const [routerState] = useBloc(RouterBloc);
+  const activeRoute = getRouteMeta(routerState.path);
+  const isMessengerRoute = routerState.path === '/messenger';
 
   return (
     <>
-      <BlacDevtoolsUi />
       {showPerf && <PerformanceOverlay position="bottom-right" detailed />}
       <div className="app-container">
-        <DevToolsBanner />
+        <div className="app-ornaments" aria-hidden="true">
+          <span className="app-orb app-orb-primary" />
+          <span className="app-orb app-orb-secondary" />
+          <span className="app-grid" />
+        </div>
 
-        <nav className="nav">
-          <div className="nav-content">
-            <Logo />
-            <ul className="nav-links">
-              <li>
-                <Link to="/">Home</Link>
-              </li>
-              <li>
-                <Link to="/counter">Counter</Link>
-              </li>
-              <li>
-                <Link to="/async">Async</Link>
-              </li>
-              <li>
-                <Link to="/todo">Todo</Link>
-              </li>
-              <li>
-                <Link to="/form">Form</Link>
-              </li>
-              <li>
-                <Link to="/dashboard">Dashboard</Link>
-              </li>
-              <li>
-                <Link to="/db-persist">DB Persist</Link>
-              </li>
-              <li>
-                <Link to="/registry">Registry</Link>
-              </li>
-              <li>
-                <Link to="/messenger">Messenger</Link>
-              </li>
-              <li>
+        <header className="site-header">
+          <div className="site-header__inner">
+            <div className="site-header__topline">
+              <div className="site-mark">
+                <span className="site-mark__word">BlaC</span>
+                <span className="site-mark__label">Examples Atlas</span>
+              </div>
+              <div className="site-status">
+                <span>{exampleCatalog.length} demos</span>
+                <span>React + BlaC</span>
+                <span>Live state patterns</span>
+              </div>
+            </div>
+
+            <div className="site-header__hero">
+              <div className="site-header__copy">
+                <span className="site-eyebrow">
+                  Interactive pattern library
+                </span>
+                <h1>
+                  Examples that feel like working software, not toy demos.
+                </h1>
+                <p>
+                  Move from single Cubits to a multi-panel messenger workspace.
+                  Every route isolates one architectural idea while keeping the
+                  UI tactile enough to inspect how state really behaves.
+                </p>
+              </div>
+
+              <aside className="site-header__focus">
+                <div className="site-focus__eyebrow">
+                  <span className="badge primary">{activeRoute.category}</span>
+                  <span className="site-focus__route">{activeRoute.path}</span>
+                </div>
+
+                <div className="stack-sm">
+                  <span className="site-focus__label">Current stop</span>
+                  <h2>{activeRoute.title}</h2>
+                  <p>{activeRoute.blurb}</p>
+                </div>
+
+                <div className="site-focus__stats">
+                  <div>
+                    <strong>{activeRoute.id}</strong>
+                    <span>route marker</span>
+                  </div>
+                  <div>
+                    <strong>{activeRoute.badge}</strong>
+                    <span>difficulty</span>
+                  </div>
+                  <div>
+                    <strong>{showPerf ? 'ON' : 'OFF'}</strong>
+                    <span>perf overlay</span>
+                  </div>
+                </div>
+
                 <button
-                  className="ghost"
-                  onClick={() => setShowPerf((p) => !p)}
-                  style={{ fontSize: '0.8125rem', padding: '0.375rem 0.75rem' }}
+                  className="ghost site-focus__button"
+                  onClick={() => setShowPerf((current) => !current)}
                   title="Toggle Performance Overlay"
                 >
-                  {showPerf ? 'Perf: ON' : 'Perf: OFF'}
+                  <span>
+                    {showPerf
+                      ? 'Hide performance overlay'
+                      : 'Show performance overlay'}
+                  </span>
+                  <span aria-hidden="true">{showPerf ? '−' : '+'}</span>
                 </button>
-              </li>
-            </ul>
-          </div>
-        </nav>
+              </aside>
+            </div>
 
-        <main className="view-wrapper">
-          <div className="view-stack">
-            <Route path="/">
-              <Home />
-            </Route>
-            <Route path="/counter">
-              <CounterDemo />
-            </Route>
-            <Route path="/async">
-              <FeedDemo />
-            </Route>
-            <Route path="/todo">
-              <TodoDemo />
-            </Route>
-            <Route path="/form">
-              <FormDemo />
-            </Route>
-            <Route path="/dashboard">
-              <DashboardDemo />
-            </Route>
-            <Route path="/db-persist">
-              <DbPersistDemo />
-            </Route>
-            <Route path="/registry">
-              <RegistryDemo />
-            </Route>
-            <Route path="/messenger">
-              <MessengerApp />
-            </Route>
+            <nav className="example-nav" aria-label="Examples navigation">
+              <div className="example-nav__scroll">
+                <Link to="/" className="nav-pill">
+                  <span className="nav-pill__index">00</span>
+                  <span>Overview</span>
+                </Link>
+                {exampleCatalog.map((route) => (
+                  <Link key={route.path} to={route.path} className="nav-pill">
+                    <span className="nav-pill__index">{route.id}</span>
+                    <span>{route.navLabel}</span>
+                  </Link>
+                ))}
+              </div>
+            </nav>
+          </div>
+        </header>
+
+        <main
+          className={`view-wrapper ${isMessengerRoute ? 'view-wrapper--messenger' : ''}`}
+        >
+          <div
+            className={`view-frame ${isMessengerRoute ? 'view-frame--messenger' : ''}`}
+          >
+            <div className="view-stack">
+              <Route path="/">
+                <Home />
+              </Route>
+              <Route path="/counter">
+                <CounterDemo />
+              </Route>
+              <Route path="/async">
+                <FeedDemo />
+              </Route>
+              <Route path="/todo">
+                <TodoDemo />
+              </Route>
+              <Route path="/form">
+                <FormDemo />
+              </Route>
+              <Route path="/dashboard">
+                <DashboardDemo />
+              </Route>
+              <Route path="/db-persist">
+                <DbPersistDemo />
+              </Route>
+              <Route path="/registry">
+                <RegistryDemo />
+              </Route>
+              <Route path="/messenger">
+                <MessengerApp />
+              </Route>
+            </div>
           </div>
         </main>
       </div>

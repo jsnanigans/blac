@@ -19,25 +19,33 @@ export function ExampleLayout({
 }: ExampleLayoutProps) {
   return (
     <div className="example-layout">
-      <header className="example-header">
-        <div className="stack-sm">
-          <span className="text-xs text-muted">EXAMPLE</span>
-          <h1>{title}</h1>
+      <header className="example-hero">
+        <div className="example-hero__eyebrow">
+          <span className="badge primary">Example Study</span>
+          <span className="example-hero__code">patterns / {title}</span>
         </div>
-        <p className="text-muted">{description}</p>
-        {features.length > 0 && (
+
+        <div className="example-hero__grid">
           <div className="stack-sm">
-            <h4 className="text-small">Key Features</h4>
-            <ul className="stack-xs">
-              {features.map((feature, i) => (
-                <li key={i} className="text-small text-muted">
-                  • {feature}
-                </li>
-              ))}
-            </ul>
+            <h1>{title}</h1>
+            <p className="text-muted">{description}</p>
           </div>
-        )}
+
+          {features.length > 0 && (
+            <aside className="example-hero__aside">
+              <span className="example-hero__aside-label">Key features</span>
+              <ul className="feature-list">
+                {features.map((feature, i) => (
+                  <li key={i} className="text-small text-muted">
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+            </aside>
+          )}
+        </div>
       </header>
+
       <main className="example-content">{children}</main>
     </div>
   );

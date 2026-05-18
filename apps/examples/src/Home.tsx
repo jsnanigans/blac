@@ -1,201 +1,111 @@
 import { Link } from './router';
+import { exampleCatalog } from './exampleCatalog';
+
+const quickFacts = [
+  {
+    label: 'Start here',
+    value: 'Counter → Async → Todo',
+    detail: 'Learn the reactive primitives in a clean order.',
+  },
+  {
+    label: 'What scales',
+    value: 'Dashboard + Registry',
+    detail: 'See plugins, dependency wiring, and instance introspection.',
+  },
+  {
+    label: 'Full surface',
+    value: 'Messenger',
+    detail: 'Named instances, coordination, and persistence in one app.',
+  },
+];
+
+const recommendedPath = ['Counter', 'Async Data', 'Todo List', 'Messenger'];
 
 export function Home() {
   return (
     <div className="home">
-      <header className="home-header">
-        <span className="badge primary">BlaC Examples</span>
-        <h1>State Management Reimagined</h1>
-        <p>
-          Explore the power of BlaC through these interactive examples. From
-          simple counters to complex real-world apps, each example is focused on
-          a specific set of patterns.
-        </p>
+      <header className="home-hero">
+        <div className="home-hero__copy">
+          <span className="badge primary">BlaC Examples</span>
+          <h1>Pattern-first demos with enough polish to feel real.</h1>
+          <p>
+            These examples are arranged like a guided tour. The early screens
+            teach the primitives, the middle set shows coordination and
+            persistence, and the final app proves the patterns still read well
+            once the surface gets busy.
+          </p>
+        </div>
+
+        <aside className="home-hero__panel">
+          <span className="home-hero__panel-label">Suggested route</span>
+          <div className="home-route-list">
+            {recommendedPath.map((step, index) => (
+              <div key={step} className="home-route-list__item">
+                <span className="home-route-list__index">{index + 1}</span>
+                <span>{step}</span>
+              </div>
+            ))}
+          </div>
+        </aside>
       </header>
 
+      <section className="home-intel-grid">
+        {quickFacts.map((fact) => (
+          <article key={fact.label} className="home-intel-card">
+            <span className="home-intel-card__label">{fact.label}</span>
+            <h2>{fact.value}</h2>
+            <p>{fact.detail}</p>
+          </article>
+        ))}
+      </section>
+
+      <section className="home-section-heading">
+        <div className="stack-sm">
+          <span className="home-section-heading__eyebrow">Choose a route</span>
+          <h2>Eight examples, from fundamentals to app-scale state</h2>
+        </div>
+        <p>
+          Open any card to inspect one architectural idea in isolation, then
+          move laterally once you want to compare patterns.
+        </p>
+      </section>
+
       <div className="examples-grid">
-        <Link to="/counter" className="example-card">
-          <div className="stack-xs">
-            <span className="badge primary">01</span>
-            <h3>Counter</h3>
-          </div>
-          <p className="text-small text-muted">
-            The classic counter, reimagined. Start here to understand Cubits,
-            auto-tracking, and how shared vs named instances work.
-          </p>
-          <div className="stack-xs text-xs text-muted">
-            <div className="row-xs">
-              <span className="text-bold">Key Concepts:</span>
+        {exampleCatalog.map((example) => (
+          <Link key={example.path} to={example.path} className="example-card">
+            <div className="example-card__header">
+              <div className="stack-xs">
+                <span className="example-card__index">{example.id}</span>
+                <span className="example-card__category">
+                  {example.category}
+                </span>
+              </div>
+              <span
+                className={`badge ${example.badge === 'Advanced' ? 'warning' : 'primary'}`}
+              >
+                {example.badge}
+              </span>
             </div>
-            <div className="row-xs flex-wrap">
-              <span className="tag">Cubit</span>
-              <span className="tag">useBloc</span>
-              <span className="tag">emit / patch</span>
-              <span className="tag">Auto-Tracking</span>
-              <span className="tag">Shared vs Isolated</span>
-            </div>
-          </div>
-        </Link>
 
-        <Link to="/async" className="example-card">
-          <div className="stack-xs">
-            <span className="badge primary">02</span>
-            <h3>Async Data</h3>
-          </div>
-          <p className="text-small text-muted">
-            Loading, error, and retry patterns for async operations. Three
-            components share one Cubit but re-render independently based on what
-            each one reads.
-          </p>
-          <div className="stack-xs text-xs text-muted">
-            <div className="row-xs">
-              <span className="text-bold">Key Concepts:</span>
+            <div className="stack-sm">
+              <h3>{example.title}</h3>
+              <p className="text-small text-muted">{example.blurb}</p>
             </div>
-            <div className="row-xs flex-wrap">
-              <span className="tag">Async Methods</span>
-              <span className="tag">Loading State</span>
-              <span className="tag">Error + Retry</span>
-              <span className="tag">Request Cancellation</span>
-              <span className="tag">autoTrack: false</span>
-            </div>
-          </div>
-        </Link>
 
-        <Link to="/todo" className="example-card">
-          <div className="stack-xs">
-            <span className="badge primary">03</span>
-            <h3>Todo List</h3>
-          </div>
-          <p className="text-small text-muted">
-            A full-featured todo app with localStorage persistence via watch(),
-            lifecycle hooks, and the action-only pattern.
-          </p>
-          <div className="stack-xs text-xs text-muted">
-            <div className="row-xs">
-              <span className="text-bold">Key Concepts:</span>
+            <div className="row-xs flex-wrap example-card__concepts">
+              {example.concepts.map((concept) => (
+                <span key={concept} className="tag">
+                  {concept}
+                </span>
+              ))}
             </div>
-            <div className="row-xs flex-wrap">
-              <span className="tag">watch()</span>
-              <span className="tag">onMount / onUnmount</span>
-              <span className="tag">Manual Dependencies</span>
-              <span className="tag">Action-Only Pattern</span>
-            </div>
-          </div>
-        </Link>
 
-        <Link to="/form" className="example-card">
-          <div className="stack-xs">
-            <span className="badge primary">04</span>
-            <h3>Form Validation</h3>
-          </div>
-          <p className="text-small text-muted">
-            Two independent forms using instanceId, with getter-based tracking
-            for computed validation so components only re-render when computed
-            values change.
-          </p>
-          <div className="stack-xs text-xs text-muted">
-            <div className="row-xs">
-              <span className="text-bold">Key Concepts:</span>
+            <div className="example-card__footer">
+              <span className="example-card__cta">Open example</span>
+              <span className="example-card__path">{example.path}</span>
             </div>
-            <div className="row-xs flex-wrap">
-              <span className="tag">Getter Tracking</span>
-              <span className="tag">instanceId</span>
-              <span className="tag">Computed State</span>
-              <span className="tag">Validation</span>
-            </div>
-          </div>
-        </Link>
-
-        <Link to="/dashboard" className="example-card">
-          <div className="stack-xs">
-            <span className="badge primary">05</span>
-            <h3>Dashboard</h3>
-          </div>
-          <p className="text-small text-muted">
-            A widget-based dashboard with a custom plugin for analytics,
-            cross-bloc dependencies via depend(), and keepAlive state that
-            persists across navigations.
-          </p>
-          <div className="stack-xs text-xs text-muted">
-            <div className="row-xs">
-              <span className="text-bold">Key Concepts:</span>
-            </div>
-            <div className="row-xs flex-wrap">
-              <span className="tag">Custom Plugin</span>
-              <span className="tag">depend()</span>
-              <span className="tag">keepAlive</span>
-              <span className="tag">Cross-Bloc Deps</span>
-            </div>
-          </div>
-        </Link>
-
-        <Link to="/db-persist" className="example-card">
-          <div className="stack-xs">
-            <span className="badge primary">06</span>
-            <h3>DB Persist</h3>
-          </div>
-          <p className="text-small text-muted">
-            IndexedDB persistence plugin with async hydration, debounced saves,
-            and stateToDb / dbToState transforms for custom record shapes.
-          </p>
-          <div className="stack-xs text-xs text-muted">
-            <div className="row-xs">
-              <span className="text-bold">Key Concepts:</span>
-            </div>
-            <div className="row-xs flex-wrap">
-              <span className="tag">IndexedDB</span>
-              <span className="tag">BlacPlugin</span>
-              <span className="tag">Hydration</span>
-              <span className="tag">stateToDb / dbToState</span>
-            </div>
-          </div>
-        </Link>
-
-        <Link to="/registry" className="example-card">
-          <div className="stack-xs">
-            <span className="badge primary">07</span>
-            <h3>Instance Registry</h3>
-          </div>
-          <p className="text-small text-muted">
-            Instance lifecycle management. See per-component vs shared instances
-            in action, with a live registry inspector powered by getStats() and
-            a plugin event log.
-          </p>
-          <div className="stack-xs text-xs text-muted">
-            <div className="row-xs">
-              <span className="text-bold">Key Concepts:</span>
-            </div>
-            <div className="row-xs flex-wrap">
-              <span className="tag">instanceId</span>
-              <span className="tag">getStats()</span>
-              <span className="tag">Lifecycle Events</span>
-            </div>
-          </div>
-        </Link>
-
-        <Link to="/messenger" className="example-card">
-          <div className="stack-xs">
-            <span className="badge">Advanced</span>
-            <h3>Messenger</h3>
-          </div>
-          <p className="text-small text-muted">
-            A full chat application showcasing advanced patterns: named
-            instances per channel, cross-bloc dependencies, on-demand instance
-            creation, and persistence on dispose.
-          </p>
-          <div className="stack-xs text-xs text-muted">
-            <div className="row-xs">
-              <span className="text-bold">Key Concepts:</span>
-            </div>
-            <div className="row-xs flex-wrap">
-              <span className="tag">Named Instances</span>
-              <span className="tag">acquire / borrow</span>
-              <span className="tag">depend()</span>
-              <span className="tag">onSystemEvent</span>
-              <span className="tag">Persistence</span>
-            </div>
-          </div>
-        </Link>
+          </Link>
+        ))}
       </div>
     </div>
   );
