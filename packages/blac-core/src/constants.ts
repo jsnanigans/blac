@@ -33,6 +33,12 @@ export const BLAC_STATIC_PROPS = {
    * Exclude a bloc from DevTools reporting (prevents infinite loops)
    */
   EXCLUDE_FROM_DEVTOOLS: '__excludeFromDevTools',
+
+  /**
+   * Mark a bloc so each `useBloc` call site gets its own per-mount instance.
+   * The React adapter auto-keys via `useId()` when this is set.
+   */
+  ISOLATED: 'isolated',
 } as const;
 
 /**

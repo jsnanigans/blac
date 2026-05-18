@@ -89,6 +89,39 @@ describe('blac decorator', () => {
     });
   });
 
+  describe('static property parity (E2)', () => {
+    it('honors `static keepAlive = true` without the decorator', () => {
+      class StaticKeepAliveBloc extends Cubit<{ count: number }> {
+        static keepAlive = true;
+        constructor() {
+          super({ count: 0 });
+        }
+      }
+
+      expect(isKeepAliveClass(StaticKeepAliveBloc)).toBe(true);
+    });
+
+    it('treats decorator and static property as equivalent', () => {
+      class StaticKeepAliveBloc extends Cubit<{ count: number }> {
+        static keepAlive = true;
+        constructor() {
+          super({ count: 0 });
+        }
+      }
+      const DecoratedKeepAliveBloc = blac({ keepAlive: true })(
+        class extends Cubit<{ count: number }> {
+          constructor() {
+            super({ count: 0 });
+          }
+        },
+      );
+
+      expect(isKeepAliveClass(StaticKeepAliveBloc)).toBe(
+        isKeepAliveClass(DecoratedKeepAliveBloc),
+      );
+    });
+  });
+
   describe('instance creation', () => {
     it('should allow creating instances of decorated keepAlive class', () => {
       const CounterBloc = blac({ keepAlive: true })(

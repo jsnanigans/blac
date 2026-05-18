@@ -9,6 +9,12 @@ import type { RefObject } from 'react';
 export interface UseBlocOptions<TBloc extends StateContainerConstructor> {
   /** Custom instance identifier */
   instanceId?: string | number;
+  /**
+   * When true, this call site gets its own per-mount instance, auto-keyed via
+   * React's `useId()`. Equivalent to declaring `static isolated = true` on the
+   * bloc class. Ignored when an explicit `instanceId` is provided.
+   */
+  autoInstance?: boolean;
   /** Manual dependency array like useEffect (disables autoTrack) */
   dependencies?: (
     state: ExtractState<TBloc>,

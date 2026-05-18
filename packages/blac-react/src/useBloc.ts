@@ -24,6 +24,8 @@ import {
   acquire,
   release,
 } from '@blac/adapter';
+import { isIsolatedClass } from '@blac/core';
+import { useInstanceIdFromContext } from './BlocProvider';
 import type { UseBlocOptions, UseBlocReturn, ComponentRef } from './types';
 import { getBlacReactConfig } from './config';
 
@@ -127,6 +129,16 @@ export function useBloc<
   const autoTrack = options?.autoTrack;
   const dependencies = options?.dependencies;
 
+  // Auto-keyed per-mount instance: either declared on the class
+  // (`static isolated = true`) or opted into per call (`autoInstance: true`).
+  // `useId()` is always called to satisfy the rules of hooks.
+  const autoInstanceId = React.useId();
+  const autoInstance =
+    options?.autoInstance === true || isIsolatedClass(BlocClass);
+  // Resolve `instanceId` from a surrounding <BlocProvider> when not given
+  // explicitly and not auto-keyed.
+  const ctxInstanceId = useInstanceIdFromContext();
+
   const [bloc, subscribe, getSnapshot, instanceKey, adapterState, rawInstance] =
     useMemo<
       readonly [
@@ -139,7 +151,11 @@ export function useBloc<
       ]
     >(() => {
       const instanceKey =
-        instanceId !== undefined ? String(instanceId) : undefined;
+        instanceId !== undefined
+          ? String(instanceId)
+          : autoInstance
+            ? autoInstanceId
+            : ctxInstanceId;
 
       const refId = `useBloc@${componentNameRef.current ?? 'Unknown'}-${consumerIdRef.current}`;
       const instance = acquire(BlocClass, instanceKey, refId) as TBloc;
@@ -186,7 +202,7 @@ export function useBloc<
         instance,
       ];
       // oxlint-disable-next-line react-hooks/exhaustive-deps
-    }, [BlocClass, instanceId]);
+    }, [BlocClass, instanceId, autoInstance, autoInstanceId, ctxInstanceId]);
 
   const state = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 

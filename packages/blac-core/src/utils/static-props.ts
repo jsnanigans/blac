@@ -47,3 +47,17 @@ export function isExcludedFromDevTools<T extends StateContainerConstructor>(
     true
   );
 }
+
+/**
+ * Check if a class is marked as isolated.
+ * Isolated classes get a fresh, per-mount instance from `useBloc`
+ * (auto-keyed via React's `useId()`), instead of sharing the default
+ * instance with sibling call sites.
+ * @param Type - The class constructor to check
+ * @returns true if the class has `static isolated = true`
+ */
+export function isIsolatedClass<T extends StateContainerConstructor>(
+  Type: T,
+): boolean {
+  return getStaticProp<boolean>(Type, BLAC_STATIC_PROPS.ISOLATED) === true;
+}

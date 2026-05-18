@@ -10,3 +10,8 @@ export { useBloc } from './useBloc';
 export { configureBlacReact } from './config';
 export type { BlacReactConfig } from './config';
 export type { UseBlocOptions, UseBlocReturn } from './types';
+export {
+  BlocProvider,
+  useInstanceIdFromContext,
+  type BlocProviderProps,
+} from './BlocProvider';
