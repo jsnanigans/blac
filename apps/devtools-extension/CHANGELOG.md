@@ -1,5 +1,16 @@
 # @blac/devtools-extension
 
+## 2.0.3
+
+### Patch Changes
+
+- prepare compat support for v0 and v1
+- Updated dependencies
+  - @blac/core@2.0.13
+  - @blac/react@2.0.13
+  - @blac/devtools-connect@2.0.16
+  - @blac/devtools-ui@2.0.16
+
 ## 2.0.2
 
 ### Patch Changes

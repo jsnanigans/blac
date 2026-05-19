@@ -1,5 +1,13 @@
 # @blac/plugin-persist
 
+## 0.0.10
+
+### Patch Changes
+
+- prepare compat support for v0 and v1
+- Updated dependencies
+  - @blac/core@2.0.13
+
 ## 0.0.9
 
 ### Patch Changes

@@ -1,5 +1,17 @@
 # examples
 
+## 1.0.4
+
+### Patch Changes
+
+- Updated dependencies
+  - @blac/core@2.0.13
+  - @blac/react@2.0.13
+  - @blac/devtools-connect@2.0.16
+  - @blac/devtools-ui@2.0.16
+  - @blac/logging-plugin@2.0.14
+  - @blac/plugin-persist@0.0.10
+
 ## 1.0.3
 
 ### Patch Changes

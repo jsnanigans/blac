@@ -1,5 +1,14 @@
 # @blac/react
 
+## 2.0.13
+
+### Patch Changes
+
+- prepare compat support for v0 and v1
+- Updated dependencies
+  - @blac/adapter@2.0.14
+  - @blac/core@2.0.13
+
 ## 2.0.12
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@9amhealth/blac-compat",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "description": "Compatibility shim exposing v0 (blac) and v1 (blac-next + @blac/react) APIs backed by v2 (@blac/core + @blac/react) internals. Intended to be moved to user-fe-reviews.",
   "type": "module",
