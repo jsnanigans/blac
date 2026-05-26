@@ -405,12 +405,23 @@ export function capturePaths<T>(tracker: DependencyState<T>, state: T): void {
     tracker.previousRenderPaths.size === 0 &&
     tracker.currentRenderPaths.size === 0
   ) {
+    tracker.pathCache.clear(); // <-- ensure no leftover from prior life
+    tracker.lastCheckedValues.clear();
     return;
   }
 
   const trackedPathsUnion = new Set(tracker.previousRenderPaths);
   for (const path of tracker.currentRenderPaths) {
     trackedPathsUnion.add(path);
+  }
+
+  // Prune entries that fell out of both renders.
+  if (tracker.pathCache.size > trackedPathsUnion.size) {
+    for (const path of tracker.pathCache.keys()) {
+      if (!trackedPathsUnion.has(path)) {
+        tracker.pathCache.delete(path);
+      }
+    }
   }
 
   const canReuseCache = tracker.lastCheckedState === state;
@@ -422,7 +433,6 @@ export function capturePaths<T>(tracker: DependencyState<T>, state: T): void {
         canReuseCache && tracker.lastCheckedValues.has(path)
           ? tracker.lastCheckedValues.get(path)
           : getValueAtPath(state, segments);
-
       tracker.pathCache.set(path, { segments, value });
     } else {
       const info = tracker.pathCache.get(path);

@@ -807,4 +807,63 @@ describe('Dependency Tracker', () => {
       expect(hasDependencyChanges(tracker, newState2)).toBe(true);
     });
   });
+
+  describe('capturePaths — prunes stale paths', () => {
+    it('removes paths accessed in old renders but not in current or previous', () => {
+      const tracker = createDependencyState();
+      const state1 = { a: 1, b: 2, c: 3 };
+      type S1 = typeof state1;
+
+      // Render 1: access a and b
+      startDependency(tracker);
+      const p1 = createDependencyProxy(tracker, state1) as S1;
+      void p1.a;
+      void p1.b;
+      capturePaths(tracker, state1);
+      expect(tracker.pathCache.has('a')).toBe(true);
+      expect(tracker.pathCache.has('b')).toBe(true);
+
+      // Render 2: access b and c (a should age out of the union after render 3)
+      startDependency(tracker);
+      const p2 = createDependencyProxy(tracker, state1) as S1;
+      void p2.b;
+      void p2.c;
+      capturePaths(tracker, state1);
+      // 'a' still in previousRenderPaths from render 1
+      expect(tracker.pathCache.has('a')).toBe(true);
+
+      // Render 3: access only c
+      startDependency(tracker);
+      const p3 = createDependencyProxy(tracker, state1) as S1;
+      void p3.c;
+      capturePaths(tracker, state1);
+      // Now 'a' is not in current and not in previous (which is render 2's set)
+      expect(tracker.pathCache.has('a')).toBe(false);
+    });
+
+    it('clears cache entirely when both prev and current are empty', () => {
+      const tracker = createDependencyState();
+      const state = { a: 1 };
+      type S = typeof state;
+
+      startDependency(tracker);
+      const p1 = createDependencyProxy(tracker, state) as S;
+      void p1.a;
+      capturePaths(tracker, state);
+      expect(tracker.pathCache.size).toBe(1);
+
+      // Render with no access
+      startDependency(tracker);
+      createDependencyProxy(tracker, state);
+      capturePaths(tracker, state);
+      // 'a' still alive (previousRenderPaths from prior)
+      expect(tracker.pathCache.has('a')).toBe(true);
+
+      // Another empty render
+      startDependency(tracker);
+      createDependencyProxy(tracker, state);
+      capturePaths(tracker, state);
+      expect(tracker.pathCache.size).toBe(0);
+    });
+  });
 });
