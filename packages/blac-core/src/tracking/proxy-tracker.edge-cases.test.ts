@@ -48,6 +48,27 @@ describe('proxy-tracker edge cases', () => {
       expect(paths.size).toBe(0);
       expect(result).toEqual([2, 4, 6]);
     });
+
+    describe('array index tracking', () => {
+      it('tracks the index path when value is a proxyable object', () => {
+        const state = createProxyState<unknown>();
+        state.isTracking = true;
+        const obj = { items: [{ name: 'a' }, { name: 'b' }] };
+        const proxy = createForTarget(state, obj) as typeof obj;
+        // Access items[0] but do NOT deref further:
+        void proxy.items[0];
+        expect(state.trackedPaths.has('items[0]')).toBe(true);
+      });
+
+      it('still tracks the path when value is a primitive', () => {
+        const state = createProxyState<unknown>();
+        state.isTracking = true;
+        const obj = { items: [1, 2, 3] };
+        const proxy = createForTarget(state, obj) as typeof obj;
+        void proxy.items[0];
+        expect(state.trackedPaths.has('items[0]')).toBe(true);
+      });
+    });
   });
 
   describe('Circular State', () => {

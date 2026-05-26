@@ -129,12 +129,12 @@ export function createArrayProxy<T, U>(
         return value;
       }
 
-      if (isProxyable(value)) {
-        return createInternal(state, value as T, fullPath, depth + 1);
-      }
-
       if (state.isTracking) {
         state.trackedPaths.add(fullPath);
+      }
+
+      if (isProxyable(value)) {
+        return createInternal(state, value as T, fullPath, depth + 1);
       }
 
       return value;
