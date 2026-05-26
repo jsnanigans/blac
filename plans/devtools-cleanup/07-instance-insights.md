@@ -132,7 +132,7 @@ exported thresholds; adding a new rule is one switch case.
 
 ## Completion
 
-- Commit: (see below)
-- Files touched: 2 added (`computeInsights.ts`, `computeInsights.test.ts`), 4 modified (`DevToolsInstancesBloc.ts`, `InstanceListItem.tsx`, `InstanceList.tsx`, `StateViewer.tsx`)
+- Commit: `facd036d`
+- Files touched: 2 added (`computeInsights.ts`, `computeInsights.test.ts`), 4 modified (`DevToolsInstancesBloc.ts`, `InstanceListItem.tsx`, `InstanceList.tsx`, `StateViewer.tsx`); plus `package.json` + `pnpm-lock.yaml` (added `vitest: catalog:` devDep) and two non-null-assertion refactors caught by the pre-commit lint hook on first attempt.
 - Typecheck: only pre-existing TS2686 in `@blac/react` — no new errors
 - Tests: 4/4 passed (`computeInsights` unit tests)

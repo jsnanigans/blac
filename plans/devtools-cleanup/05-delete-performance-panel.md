@@ -70,7 +70,7 @@ Body (optional): "Replaced in 07-instance-insights by inline insight badges on e
 
 ## Completion
 
-SHA: (pending)
+SHA: 6ce35ea6
 Files deleted: 2 (PerformancePanel.tsx, DevToolsMetricsBloc.ts)
 Files modified: 9
 Typecheck: devtools-ui (pre-existing TS2686 noise), devtools-extension (passing)
