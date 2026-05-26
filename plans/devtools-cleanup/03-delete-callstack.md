@@ -61,7 +61,7 @@ chore(devtools-ui): remove CallStackView and source-map resolution
 
 ## Completion
 
-**Commit SHA**: 50d18335
+**Commit SHA**: 64f76145
 
 **Files touched**: 6 (CallStackView.tsx deleted, components/index.ts, LogsView.tsx, StateHistoryView.tsx, StateViewer.tsx, package.json)
 
