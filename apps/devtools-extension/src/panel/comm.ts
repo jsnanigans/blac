@@ -2,13 +2,6 @@ export interface Trigger {
   name: string;
 }
 
-export interface DependencyEdge {
-  fromId: string;
-  fromClass: string;
-  toClass: string;
-  toKey: string;
-}
-
 /**
  * Panel-format instance (transformed by inject-script from backend format)
  */
@@ -39,7 +32,6 @@ export interface PanelInstance {
   callstack?: string;
   createdFrom?: string;
   trigger?: Trigger;
-  dependencies?: DependencyEdge[];
   consumers?: ConsumerInfo[];
   refIds?: string[];
   refHolders?: RefHolderInfo[];

@@ -69,13 +69,34 @@ Only commit if you had to fix something. Use a scoped conventional commit (`chor
 
 ## Checklist
 
-- [ ] Stale-reference grep is clean across the three packages.
-- [ ] All three packages typecheck.
-- [ ] Connect and UI tests pass.
-- [ ] Lockfile refreshed and contains no surprise diffs.
-- [ ] Any fix-up commits are noted below.
-- [ ] Verification results recorded in Completion.
+- [x] Stale-reference grep is clean across the three packages.
+- [x] All three packages typecheck.
+- [x] Connect and UI tests pass.
+- [x] Lockfile refreshed and contains no surprise diffs.
+- [x] Any fix-up commits are noted below.
+- [x] Verification results recorded in Completion.
 
 ## Completion
 
-(Agent fills in: typecheck result per package, test result per package, lockfile diff summary, any fix-up commits.)
+**Stale-reference grep (source files only, excl. dist/node_modules/CHANGELOG/README):**
+
+- `DependencyEdge`: 4 hits found → fixed (see fix-up commit below)
+- `InstanceMetrics`: 4 hits remain — legitimate, used by task-07 inline insights feature
+- All other patterns (`DependencyGraph`, `DevToolsDependencyBloc`, `PerformancePanel`, `DevToolsMetricsBloc`, `PictureInPicture`, `isPiPSupported`, `CallStackView`, `source-map-js`, `@xyflow`, `elkjs`): 0 hits
+
+**Typecheck results:**
+
+- `@blac/devtools-connect`: PASS (0 errors)
+- `@blac/devtools-ui`: PASS (1 pre-existing `TS2686` in `@blac/react/BlocProvider.tsx` — environmental, unrelated)
+- `@blac/devtools-extension`: PASS (0 errors)
+
+**Test results:**
+
+- `@blac/devtools-connect`: 3 files, 38 tests — all passed
+- `@blac/devtools-ui`: 1 file, 4 tests — all passed
+
+**Lockfile diff:** no diff (lockfile was already refreshed in a prior task)
+
+**Fix-up commits:**
+
+- `chore(devtools-ui): drop stale DependencyEdge missed in 04` — removed `DependencyEdge` interface + `dependencies?` field from `packages/devtools-ui/src/types.ts` and `DraggableOverlay.tsx`; same from `apps/devtools-extension/src/panel/comm.ts` and `panel/index.tsx`

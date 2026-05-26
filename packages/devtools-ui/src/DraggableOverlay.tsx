@@ -95,7 +95,6 @@ function toInstanceData(inst: any): import('./types').InstanceData {
     createdAt: inst.createdAt ?? Date.now(),
     hydrationStatus: inst.hydrationStatus,
     hydrationError: inst.hydrationError,
-    dependencies: inst.dependencies,
     getters: inst.getters,
     consumers: inst.consumers,
     refIds: inst.refIds,

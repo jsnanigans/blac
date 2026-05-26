@@ -21,13 +21,6 @@ export interface DevToolsUIProps {
   onTimeTravel?: (instanceId: string, state: any) => void;
 }
 
-export interface DependencyEdge {
-  fromId: string;
-  fromClass: string;
-  toClass: string;
-  toKey: string;
-}
-
 export interface GetterInfo {
   value: unknown;
   error?: string;
@@ -66,8 +59,6 @@ export interface InstanceData {
   hydrationStatus?: 'idle' | 'hydrating' | 'hydrated' | 'error';
   /** Hydration error message if present */
   hydrationError?: string;
-  /** Dependency edges from this instance to other blocs */
-  dependencies?: DependencyEdge[];
   /** Computed getter values */
   getters?: Record<string, GetterInfo>;
   /** React components consuming this instance via useBloc */

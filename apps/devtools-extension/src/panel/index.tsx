@@ -183,7 +183,6 @@ function App() {
                       state: d.state,
                       lastStateChangeTimestamp: event.timestamp,
                       createdAt: event.timestamp,
-                      dependencies: d.dependencies,
                       consumers: d.consumers,
                       createdFrom: d.createdFrom,
                     });
