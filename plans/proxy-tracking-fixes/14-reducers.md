@@ -223,7 +223,7 @@ Body: "reduce and reduceRight now proxy each iterated item at path[i] so reducer
 
 ## Completion
 
-**Commit SHA:** (see below — filled after commit)
+**Commit SHA:** 33bc647d
 **Files touched:**
 - `packages/blac-core/src/tracking/tracking-proxy.ts`
 - `packages/blac-core/src/tracking/proxy-tracker.edge-cases.test.ts`
