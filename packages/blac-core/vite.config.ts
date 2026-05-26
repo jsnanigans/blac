@@ -38,6 +38,10 @@ export default defineConfig({
     maxConcurrency: 2,
     maxWorkers: 2,
     globals: true,
+    include: [
+      '**/*.{test,spec}.?(c|m)[jt]s?(x)',
+      '**/*.bench.[jt]s?(x)',
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
