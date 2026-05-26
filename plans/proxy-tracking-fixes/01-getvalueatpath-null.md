@@ -135,7 +135,7 @@ Body (optional): "Path tracking previously collapsed missing keys and intermedia
 
 ## Completion
 
-**Commit SHA:** (see below — filled after commit)
+**Commit SHA:** 6c162095e74989138beb2d132f7833e5e5991a82
 **Files touched:**
 
 - `packages/blac-core/src/tracking/path-utils.ts` — rewrote `getValueAtPath`; added `MISSING` symbol + `PATH_MISSING` export
