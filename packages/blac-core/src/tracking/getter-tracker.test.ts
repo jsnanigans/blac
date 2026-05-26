@@ -564,4 +564,36 @@ describe('resolveDependencies', () => {
     const deps = resolveDependencies(bloc);
     expect(deps.has(bloc)).toBe(false);
   });
+
+  it('distinguishes classes with the same name in different scopes', () => {
+    function makeNamed(name: string) {
+      const klass = class extends Cubit<{ n: number }> {
+        constructor() {
+          super({ n: 0 });
+        }
+      };
+      Object.defineProperty(klass, 'name', { value: name });
+      return klass;
+    }
+    const A = makeNamed('Foo');
+    const B = makeNamed('Foo');
+
+    class Root extends Cubit<{ n: number }> {
+      getA = this.depend(A);
+      getB = this.depend(B);
+      constructor() {
+        super({ n: 0 });
+      }
+    }
+
+    globalRegistry.acquire(A);
+    globalRegistry.acquire(B);
+    const root = new Root();
+    const deps = resolveDependencies(root);
+
+    // both A's and B's instances must appear; pre-fix only one would.
+    const classes = new Set(Array.from(deps).map((d) => d.constructor));
+    expect(classes.size).toBe(2);
+    expect(deps.size).toBe(2);
+  });
 });

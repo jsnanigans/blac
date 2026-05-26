@@ -140,4 +140,72 @@ describe('@blac/adapter edge cases', () => {
 
     manager.cleanup();
   });
+
+  describe('autoTrack — nullable state transitions', () => {
+    // NullableBloc uses `any` to bypass Cubit's `S extends object` constraint;
+    // the runtime behaviour under test is what matters here.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    class NullableBloc extends Cubit<any> {
+      constructor(initial: { value: number } | null) {
+        super(initial);
+      }
+      set(v: { value: number } | null) {
+        this.emit(v);
+      }
+    }
+
+    it('re-renders when state transitions null → object', () => {
+      const bloc = new NullableBloc(null);
+      const adapterState = autoTrackInit(bloc);
+      const snapshot = autoTrackSnapshot(bloc, adapterState);
+      const callback = vi.fn();
+      const unsubscribe = autoTrackSubscribe(bloc, adapterState)(callback);
+
+      // Take a snapshot so lastSnapshotState is recorded as null
+      snapshot();
+
+      // Transition null → object
+      bloc.set({ value: 1 });
+
+      expect(callback).toHaveBeenCalledOnce();
+      unsubscribe();
+    });
+
+    it('re-renders when state transitions object → null', () => {
+      const bloc = new NullableBloc({ value: 1 });
+      const adapterState = autoTrackInit(bloc);
+      const snapshot = autoTrackSnapshot(bloc, adapterState);
+      const callback = vi.fn();
+
+      // Take snapshot and access .value so pathCache is non-empty
+      const state = snapshot() as { value: number };
+      void state.value;
+
+      const unsubscribe = autoTrackSubscribe(bloc, adapterState)(callback);
+
+      // Transition object → null
+      bloc.set(null);
+
+      expect(callback).toHaveBeenCalledOnce();
+      unsubscribe();
+    });
+
+    it('does not re-render when null state emits another null', () => {
+      const bloc = new NullableBloc(null);
+      const adapterState = autoTrackInit(bloc);
+      const snapshot = autoTrackSnapshot(bloc, adapterState);
+      const callback = vi.fn();
+
+      // Take snapshot so lastSnapshotState is null
+      snapshot();
+
+      const unsubscribe = autoTrackSubscribe(bloc, adapterState)(callback);
+
+      // null → null: StateContainer deduplicates via Object.is, so no event fires
+      bloc.set(null);
+
+      expect(callback).not.toHaveBeenCalled();
+      unsubscribe();
+    });
+  });
 });

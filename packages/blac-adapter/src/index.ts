@@ -59,6 +59,13 @@ export interface AdapterState<TBloc extends StateContainerConstructor> {
   getterState: GetterState | null;
   /** Proxied bloc instance for auto-tracking */
   proxiedBloc: InstanceState<TBloc>;
+  /**
+   * The last state value returned by the snapshot function. Used to detect
+   * transitions between trackable (object/function) and untrackable
+   * (null/undefined/primitive) shapes so that null↔object transitions always
+   * trigger a re-render even when pathCache is empty.
+   */
+  lastSnapshotState: ExtractState<TBloc> | undefined;
 }
 
 /**
@@ -189,12 +196,28 @@ export function autoTrackSubscribe<TBloc extends StateContainerConstructor>(
         adapterState.getterState &&
         adapterState.getterState.trackedGetters.size > 0;
 
-      const isPrimitiveState =
+      const wasTrackable =
+        adapterState.lastSnapshotState !== null &&
+        adapterState.lastSnapshotState !== undefined &&
+        (typeof adapterState.lastSnapshotState === 'object' ||
+          typeof adapterState.lastSnapshotState === 'function');
+      const isTrackable =
         instance.state !== null &&
-        typeof instance.state !== 'object' &&
-        typeof instance.state !== 'function';
+        instance.state !== undefined &&
+        (typeof instance.state === 'object' ||
+          typeof instance.state === 'function');
 
-      if (!hasStateDeps && !hasGetterDeps && !isPrimitiveState) {
+      if (wasTrackable !== isTrackable) {
+        callback();
+        return;
+      }
+
+      if (!isTrackable) {
+        callback(); // primitive / null / undefined — no tracking possible
+        return;
+      }
+
+      if (!hasStateDeps && !hasGetterDeps) {
         return;
       }
 
@@ -300,6 +323,7 @@ export function autoTrackSnapshot<TBloc extends StateContainerConstructor>(
     }
 
     startDependency(depState);
+    adapterState.lastSnapshotState = instance.state;
     return createDependencyProxy(depState, instance.state);
   };
 }
@@ -322,6 +346,7 @@ export function manualDepsSnapshot<TBloc extends StateContainerConstructor>(
       instance.state,
       instance,
     );
+    adapterState.lastSnapshotState = instance.state;
     return instance.state;
   };
 }
@@ -356,6 +381,7 @@ export function autoTrackInit<TBloc extends StateContainerConstructor>(
     manualDepsCache: null,
     getterState: createGetterState(),
     proxiedBloc: createBlocProxy(instance),
+    lastSnapshotState: undefined,
   };
 }
 
@@ -373,6 +399,7 @@ export function manualDepsInit<TBloc extends StateContainerConstructor>(
     manualDepsCache: null,
     getterState: null,
     proxiedBloc: instance,
+    lastSnapshotState: undefined,
   };
 }
 
@@ -390,6 +417,7 @@ export function noTrackInit<TBloc extends StateContainerConstructor>(
     manualDepsCache: null,
     getterState: null,
     proxiedBloc: instance,
+    lastSnapshotState: undefined,
   };
 }
 
