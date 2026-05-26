@@ -687,26 +687,31 @@ describe('Dependency Tracker', () => {
         expect(optimized.size).toBe(2);
       });
 
-      it('should handle array indices separately but keep parent', () => {
+      it('should handle array indices — drop bare array ref when indexed children present', () => {
+        // items[0] and items[1] are children of items (bracket), so items is dropped.
+        // The per-index paths are more specific; the bare array ref is redundant.
         const optimized = optimizeTrackedPaths(
           new Set(['items', 'items[0]', 'items[1]']),
         );
 
         expect(optimized.has('items[0]')).toBe(true);
         expect(optimized.has('items[1]')).toBe(true);
-        expect(optimized.has('items')).toBe(true);
-        expect(optimized.size).toBe(3);
+        expect(optimized.has('items')).toBe(false);
+        expect(optimized.size).toBe(2);
       });
 
-      it('should handle array properties and restore parent', () => {
+      it('should handle array properties — keep per-index and length, drop bare array ref', () => {
+        // items.length is a child of items (dot separator), so items is dropped by dedup.
+        // items[0] is also a child of items (bracket), so items is dropped.
+        // No recovery re-adds items — the final set contains only the more specific paths.
         const optimized = optimizeTrackedPaths(
           new Set(['items', 'items.length', 'items[0]']),
         );
 
         expect(optimized.has('items.length')).toBe(true);
         expect(optimized.has('items[0]')).toBe(true);
-        expect(optimized.has('items')).toBe(true);
-        expect(optimized.size).toBe(3);
+        expect(optimized.has('items')).toBe(false);
+        expect(optimized.size).toBe(2);
       });
 
       it('should handle empty set correctly', () => {
@@ -864,6 +869,77 @@ describe('Dependency Tracker', () => {
       createDependencyProxy(tracker, state);
       capturePaths(tracker, state);
       expect(tracker.pathCache.size).toBe(0);
+    });
+  });
+
+  describe('per-index isolation across immutable array updates', () => {
+    it('does not re-render an items[N] consumer when items[M] (M!=N) is replaced', () => {
+      const tracker = createDependencyState();
+      const item1 = { id: 'a', title: 'Wire up', done: true };
+      const item2 = { id: 'b', title: 'Survive', done: false };
+      const item3 = { id: 'c', title: 'Track',   done: false };
+      const state1 = { items: [item1, item2, item3] };
+      type S1 = typeof state1;
+
+      // Render 1: a consumer reads items[1].title (and nothing else)
+      startDependency(tracker);
+      const p1 = createDependencyProxy(tracker, state1) as S1;
+      void p1.items[1].title;
+      capturePaths(tracker, state1);
+
+      // Toggle items[0] — items[1] and items[2] keep their refs
+      const state2 = {
+        items: state1.items.map((it) =>
+          it.id === 'a' ? { ...it, done: !it.done } : it,
+        ),
+      };
+      expect(state2.items[1]).toBe(item2);
+      expect(state2.items[2]).toBe(item3);
+
+      expect(hasDependencyChanges(tracker, state2)).toBe(false);
+    });
+
+    it('does re-render an items[N] consumer when items[N] is replaced', () => {
+      const tracker = createDependencyState();
+      const state1 = { items: [{ id: 'a', title: 'old' }, { id: 'b', title: 'unchanged' }] };
+      type S1 = typeof state1;
+
+      startDependency(tracker);
+      const p1 = createDependencyProxy(tracker, state1) as S1;
+      void p1.items[0].title;
+      capturePaths(tracker, state1);
+
+      const state2 = { items: [{ id: 'a', title: 'new' }, state1.items[1]] };
+      expect(hasDependencyChanges(tracker, state2)).toBe(true);
+    });
+
+    it('still re-renders when consumer observed state.items directly and array is replaced', () => {
+      const tracker = createDependencyState();
+      const state1 = { items: [{ id: 'a' }] };
+      type S1 = typeof state1;
+
+      startDependency(tracker);
+      const p1 = createDependencyProxy(tracker, state1) as S1;
+      // Observe the array itself (e.g., to iterate via for-of or .map)
+      void p1.items;
+      capturePaths(tracker, state1);
+
+      const state2 = { items: [...state1.items] }; // same content, new array ref
+      expect(hasDependencyChanges(tracker, state2)).toBe(true);
+    });
+
+    it('still re-renders on items.length change', () => {
+      const tracker = createDependencyState();
+      const state1 = { items: [{ id: 'a' }, { id: 'b' }] };
+      type S1 = typeof state1;
+
+      startDependency(tracker);
+      const p1 = createDependencyProxy(tracker, state1) as S1;
+      void p1.items.length;
+      capturePaths(tracker, state1);
+
+      const state2 = { items: [...state1.items, { id: 'c' }] };
+      expect(hasDependencyChanges(tracker, state2)).toBe(true);
     });
   });
 });

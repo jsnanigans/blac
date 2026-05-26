@@ -299,17 +299,6 @@ function isChildPath(child: string, parent: string): boolean {
   return child.startsWith(parent + '.') || child.startsWith(parent + '[');
 }
 
-function getArrayParentPath(path: string): string | null {
-  if (path.endsWith('.length')) {
-    return path.slice(0, -7);
-  }
-  const arrayIndexMatch = path.match(/^(.+?)\[\d+\]/);
-  if (arrayIndexMatch) {
-    return arrayIndexMatch[1];
-  }
-  return null;
-}
-
 /**
  * @internal
  */
@@ -343,18 +332,6 @@ export function optimizeTrackedPaths(paths: Set<string>): Set<string> {
     }
     optimized.add(path);
     lastKept = path;
-  }
-
-  const arrayParents = new Set<string>();
-  for (const path of optimized) {
-    const arrayParent = getArrayParentPath(path);
-    if (arrayParent) {
-      arrayParents.add(arrayParent);
-    }
-  }
-
-  for (const arrayParent of arrayParents) {
-    optimized.add(arrayParent);
   }
 
   return optimized;
