@@ -55,7 +55,7 @@ Body (optional, only if non-obvious): "Popup just told users to press F12; delet
 
 ## Completion
 
-**Commit SHA:** (filled after commit)
-**Files touched:** 3 (manifest.json, vite.config.ts, src/popup/ deleted)
+**Commit SHA:** f45eb852dea36a6560d60c2d9ce2ec89a0062868
+**Files touched:** 2 (manifest.json, vite.config.ts; src/popup/ directory deleted with all contents)
 **Typecheck result:** TS2688 error pre-existing (unrelated to popup removal; vite/client type defs unavailable in typecheck environment)
 **Test result:** N/A (pure deletion)
