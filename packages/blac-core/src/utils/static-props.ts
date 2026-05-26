@@ -3,6 +3,7 @@
  */
 
 import { BLAC_STATIC_PROPS } from '../constants';
+import type { EqualityFn } from '../config';
 import { StateContainerConstructor } from '../types/utilities';
 
 /**
@@ -60,4 +61,16 @@ export function isIsolatedClass<T extends StateContainerConstructor>(
   Type: T,
 ): boolean {
   return getStaticProp<boolean>(Type, BLAC_STATIC_PROPS.ISOLATED) === true;
+}
+
+/**
+ * Get the per-class equality function set via `@blac({ equality })`, if any.
+ * @param Type - The class constructor to check
+ * @returns the equality function or `undefined`
+ */
+export function getClassEquality<T extends StateContainerConstructor>(
+  Type: T,
+): EqualityFn | undefined {
+  const fn = getStaticProp<EqualityFn>(Type, BLAC_STATIC_PROPS.EQUALITY);
+  return typeof fn === 'function' ? fn : undefined;
 }

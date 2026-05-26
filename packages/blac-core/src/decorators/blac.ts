@@ -1,4 +1,5 @@
 import { BLAC_STATIC_PROPS } from '../constants';
+import type { EqualityFn } from '../config';
 
 /**
  * Configuration options for the @blac decorator.
@@ -8,7 +9,12 @@ export type BlacOptions =
   /** Mark bloc to never be auto-disposed when ref count reaches 0 */
   | { keepAlive: true }
   /** Exclude bloc from DevTools tracking (prevents infinite loops) */
-  | { excludeFromDevTools: true };
+  | { excludeFromDevTools: true }
+  /**
+   * Override the global equality check for this bloc.
+   * Return `true` to skip the emit (states considered equal).
+   */
+  | { equality: EqualityFn };
 
 /**
  * Decorator to configure StateContainer classes.
@@ -39,6 +45,9 @@ export function blac(options: BlacOptions) {
     }
     if ('excludeFromDevTools' in options && options.excludeFromDevTools) {
       (target as any)[BLAC_STATIC_PROPS.EXCLUDE_FROM_DEVTOOLS] = true;
+    }
+    if ('equality' in options && typeof options.equality === 'function') {
+      (target as any)[BLAC_STATIC_PROPS.EQUALITY] = options.equality;
     }
     return target;
   };

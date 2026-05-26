@@ -39,6 +39,13 @@ export const BLAC_STATIC_PROPS = {
    * The React adapter auto-keys via `useId()` when this is set.
    */
   ISOLATED: 'isolated',
+
+  /**
+   * Per-class equality function used to short-circuit `emit`/`patch` when the
+   * new state is structurally equal to the previous state. Falls back to the
+   * global `configureBlac({ equality })` value when unset.
+   */
+  EQUALITY: '__equality',
 } as const;
 
 /**

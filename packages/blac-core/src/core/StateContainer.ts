@@ -3,6 +3,8 @@ import { BLAC_DEFAULTS } from '../constants';
 import { getRegistry } from '../registry/config';
 import type { StateContainerConstructor } from '../types/utilities';
 import { EMIT } from './symbols';
+import { type EqualityFn, getBlacConfig } from '../config';
+import { getClassEquality } from '../utils/static-props';
 
 export interface StateContainerConfig {
   name?: string;
@@ -54,6 +56,7 @@ export abstract class StateContainer<S extends object = any> {
   private _dependencies: Map<StateContainerConstructor, string> | null = null;
   private _hasStateChangeHandlers = false;
   private _registry = getRegistry();
+  private _equalityFn: EqualityFn = getBlacConfig().equality;
 
   name: string = this.constructor.name;
   debug: boolean = false;
@@ -90,6 +93,10 @@ export abstract class StateContainer<S extends object = any> {
       this.constructor.name,
       this._config.instanceId,
     );
+    const perClass = getClassEquality(
+      this.constructor as StateContainerConstructor,
+    );
+    this._equalityFn = perClass ?? getBlacConfig().equality;
     this._registry.emit('created', this);
   }
 
@@ -239,6 +246,7 @@ export abstract class StateContainer<S extends object = any> {
     }
 
     if (this._state === newState) return;
+    if (this._equalityFn(this._state, newState)) return;
 
     const previousState = this._state;
     this._state = newState;

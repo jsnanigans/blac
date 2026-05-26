@@ -203,14 +203,14 @@ describe('StateContainerRegistry - Lifecycle Events (Plugin API)', () => {
 
       const bloc = fixture.cubit(0);
 
-      bloc.setValue(0);
+      bloc.setValue(5);
       await new Promise<void>((r) => queueMicrotask(r));
       expect(listener).toHaveBeenCalledTimes(1);
 
       bloc.increment();
       await new Promise<void>((r) => queueMicrotask(r));
       expect(listener).toHaveBeenCalledTimes(2);
-      expect(listener).toHaveBeenCalledWith(bloc, { value: 0 }, { value: 1 });
+      expect(listener).toHaveBeenCalledWith(bloc, { value: 5 }, { value: 6 });
     });
 
     it('should emit disposed after cleanup', () => {

@@ -1,3 +1,13 @@
+// Global config
+export {
+  configureBlac,
+  getBlacConfig,
+  resetBlacConfig,
+  shallowEqualState,
+  type BlacConfig,
+  type EqualityFn,
+} from './config';
+
 // Core Classes
 export { StateContainer } from './core/StateContainer';
 export type {

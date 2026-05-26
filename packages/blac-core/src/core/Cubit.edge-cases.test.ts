@@ -33,11 +33,19 @@ describe('Cubit edge cases', () => {
     expect(listener).not.toHaveBeenCalled();
   });
 
-  it('emit() with different reference but equal value DOES notify', () => {
+  it('emit() with structurally equal value does NOT notify (shallow-equal default)', () => {
     const cubit = new CountCubit();
     const listener = vi.fn();
     cubit.subscribe(listener);
     cubit.emit({ ...cubit.state });
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('emit() notifies when at least one key differs', () => {
+    const cubit = new CountCubit();
+    const listener = vi.fn();
+    cubit.subscribe(listener);
+    cubit.emit({ ...cubit.state, count: cubit.state.count + 1 });
     expect(listener).toHaveBeenCalledTimes(1);
   });
 
