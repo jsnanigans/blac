@@ -380,7 +380,7 @@ Body: "map, filter, forEach, find, findIndex, findLast, findLastIndex, some, eve
 
 ## Completion
 
-**Commit SHA:** _filled in follow-up `chore(plans):` commit_
+**Commit SHA:** d9956789
 **Files touched:**
 - `packages/blac-core/src/tracking/tracking-proxy.ts` — added `getOrCacheBound` helper (`getBoundFunction` rewritten on top of it); added module-level `ITERATING_METHODS` set; in `createArrayProxy` forward-declared `proxyRef`, added `makeIteratingWrapper(methodName)` factory, dispatched iterating methods through `getOrCacheBound` in the get trap's function branch (preserving the task 12 `Symbol.iterator` wrapper).
 - `packages/blac-core/src/tracking/proxy-tracker.edge-cases.test.ts` — imported dependency-tracker helpers (`createDependencyState`, `startDependency`, `createDependencyProxy`, `capturePaths`, `hasDependencyChanges`); added `describe('array iterating methods — proxied callbacks', ...)` with all 13 regression tests; updated the stale "should NOT track array iteration methods" test to assert per-index paths ARE tracked now.
