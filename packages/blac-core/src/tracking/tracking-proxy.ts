@@ -147,6 +147,13 @@ const ITERATING_METHODS: ReadonlySet<string> = new Set([
 ]);
 
 /**
+ * Array folding methods whose callback has the reduce signature
+ * (acc, item, index, arr) => acc. Items are proxied; accumulator passes raw.
+ * @internal
+ */
+const REDUCING_METHODS: ReadonlySet<string> = new Set(['reduce', 'reduceRight']);
+
+/**
  * Create a proxy for an array with property access tracking
  * @internal
  */
@@ -188,6 +195,33 @@ export function createArrayProxy<T, U>(
     };
   }
 
+  function makeReducingWrapper(methodName: string) {
+    // oxlint-disable-next-line @typescript-eslint/no-explicit-any
+    const realMethod = (Array.prototype as any)[methodName] as Function;
+    return function (
+      this: unknown,
+      // oxlint-disable-next-line @typescript-eslint/no-explicit-any
+      callback: (acc: any, item: any, index: number, arr: U[]) => any,
+      ...rest: unknown[]
+    ) {
+      const wrapped = (acc: unknown, item: U, index: number /*, _rawArr */) => {
+        const indexPath = path ? `${path}[${index}]` : `[${index}]`;
+        if (state.isTracking) {
+          state.trackedPaths.add(indexPath);
+        }
+        const proxiedItem = isProxyable(item)
+          ? createInternal(state, item as unknown as T, indexPath, depth + 1)
+          : item;
+        return callback(acc, proxiedItem, index, proxyRef);
+      };
+      // Forward `initialValue` only when actually provided — reduce/reduceRight
+      // treat absence specially (use first/last element as seed).
+      return rest.length > 0
+        ? realMethod.call(target, wrapped, rest[0])
+        : realMethod.call(target, wrapped);
+    };
+  }
+
   const proxy = new Proxy(target, {
     get: (arr, prop: string | symbol) => {
       if (prop === Symbol.iterator) {
@@ -222,6 +256,14 @@ export function createArrayProxy<T, U>(
             arr,
             value,
             () => makeIteratingWrapper(prop),
+          );
+        }
+        if (typeof prop === 'string' && REDUCING_METHODS.has(prop)) {
+          return getOrCacheBound(
+            state as ProxyState<unknown>,
+            arr,
+            value,
+            () => makeReducingWrapper(prop),
           );
         }
         return getBoundFunction(state as ProxyState<unknown>, arr, value);

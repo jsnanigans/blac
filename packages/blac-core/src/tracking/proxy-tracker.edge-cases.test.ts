@@ -440,4 +440,94 @@ describe('proxy-tracker edge cases', () => {
       expect(hasDependencyChanges(tracker, state2)).toBe(false);
     });
   });
+
+  describe('reduce / reduceRight — proxied items, raw accumulator', () => {
+    function makeProxy<T>(obj: T) {
+      const state = createProxyState<unknown>();
+      state.isTracking = true;
+      const p = createForTarget(state, obj) as T;
+      return { state, p };
+    }
+
+    it('reduce with initial value sums proxied items', () => {
+      const { state, p } = makeProxy({ items: [{ n: 1 }, { n: 2 }, { n: 3 }] });
+      const sum = (p as any).items.reduce((acc: number, it: { n: number }) => acc + it.n, 0);
+      expect(sum).toBe(6);
+      expect(state.trackedPaths.has('items[0].n')).toBe(true);
+      expect(state.trackedPaths.has('items[1].n')).toBe(true);
+      expect(state.trackedPaths.has('items[2].n')).toBe(true);
+    });
+
+    it('reduce without initial value uses first element as seed', () => {
+      const { state, p } = makeProxy({ items: [{ n: 1 }, { n: 2 }, { n: 3 }] });
+      // First call is (acc=items[0], item=items[1]) — both must remain proxied
+      // when the user dereferences them.
+      const out = (p as any).items.reduce((acc: { n: number }, it: { n: number }) => ({ n: acc.n + it.n }));
+      expect(out.n).toBe(6);
+      // items[0] is used as seed (raw acc on the first invocation), but
+      // subsequent items[1], items[2] are proxied → tracked.
+      expect(state.trackedPaths.has('items[1].n')).toBe(true);
+      expect(state.trackedPaths.has('items[2].n')).toBe(true);
+    });
+
+    it('reduceRight iterates right-to-left and tracks the visited indices', () => {
+      const { state, p } = makeProxy({ items: [{ s: 'a' }, { s: 'b' }, { s: 'c' }] });
+      const joined = (p as any).items.reduceRight((acc: string, it: { s: string }) => acc + it.s, '');
+      expect(joined).toBe('cba');
+      expect(state.trackedPaths.has('items[0].s')).toBe(true);
+      expect(state.trackedPaths.has('items[1].s')).toBe(true);
+      expect(state.trackedPaths.has('items[2].s')).toBe(true);
+    });
+
+    it('reduce on empty array without initial value throws', () => {
+      const { p } = makeProxy({ items: [] as { n: number }[] });
+      expect(() => (p as any).items.reduce((acc: number, it: { n: number }) => acc + it.n)).toThrow(TypeError);
+    });
+
+    it('reduce on empty array with initial value returns the initial', () => {
+      const { p } = makeProxy({ items: [] as { n: number }[] });
+      expect((p as any).items.reduce((acc: number, it: { n: number }) => acc + it.n, 42)).toBe(42);
+    });
+
+    it('explicit undefined initial value is treated as a seed (matches native behavior)', () => {
+      const { p } = makeProxy({ items: [{ n: 1 }] });
+      // Native: passing explicit undefined IS treated as a provided seed.
+      const out = (p as any).items.reduce(
+        (acc: undefined | { n: number }, it: { n: number }) => (acc ? { n: acc.n + it.n } : it),
+        undefined,
+      );
+      expect(out?.n).toBe(1);
+    });
+
+    it('method identity is stable across renders for reduce', () => {
+      const { p } = makeProxy({ items: [{ n: 1 }] });
+      expect((p as any).items.reduce).toBe((p as any).items.reduce);
+    });
+
+    it('per-index tracking via reduce — no re-render when an unread item changes ref', () => {
+      const tracker = createDependencyState();
+      const a = { done: true };
+      const b = { done: false };
+      const c = { done: false };
+      const state1 = { items: [a, b, c] };
+
+      startDependency(tracker);
+      const p1 = createDependencyProxy(tracker, state1);
+      // Compute a value depending on all .done props
+      const count = (p1 as any).items.reduce((acc: number, it: { done: boolean }) => acc + (it.done ? 1 : 0), 0);
+      expect(count).toBe(1);
+      capturePaths(tracker, state1);
+
+      // Replace items[1] ref only, but with same .done value
+      const state2 = { items: [a, { done: b.done }, c] };
+      // Hmm — items[1].done same value, but items[1] itself is a different ref.
+      // Path tracked is 'items[1].done' which compares by value (Object.is on the
+      // boolean). No change.
+      expect(hasDependencyChanges(tracker, state2)).toBe(false);
+
+      // Now actually flip items[1].done
+      const state3 = { items: [a, { done: !b.done }, c] };
+      expect(hasDependencyChanges(tracker, state3)).toBe(true);
+    });
+  });
 });
