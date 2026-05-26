@@ -14,7 +14,6 @@ import type {
 } from '../types';
 import { CurrentStateView } from './CurrentStateView';
 import { StateHistoryView } from './StateHistoryView';
-import { CallStackView } from './CallStackView';
 import { StateDiffView } from './StateDiffView';
 import { SectionHeader } from './SectionHeader';
 import { T } from '../theme';
@@ -413,7 +412,26 @@ const InitiatorSection: FC<InitiatorSectionProps> = React.memo(
           isExpanded={isExpanded}
           onToggle={() => setIsExpanded((v) => !v)}
         />
-        {isExpanded && <CallStackView callstack={createdFrom} />}
+        {isExpanded && (
+          <pre
+            style={{
+              margin: '0',
+              padding: '8px 10px',
+              background: '#252526',
+              borderBottom: `1px solid ${T.border0}`,
+              fontSize: '9px',
+              color: '#d4d4d4',
+              fontFamily: 'Monaco, Menlo, Consolas, monospace',
+              lineHeight: '1.3',
+              overflow: 'auto',
+              maxHeight: '100px',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-all',
+            }}
+          >
+            {createdFrom}
+          </pre>
+        )}
       </div>
     );
   },
@@ -491,7 +509,24 @@ const ConsumerRow: FC<{ consumer: ConsumerInfo }> = ({ consumer }) => {
         </span>
       </div>
       {expanded && consumer.stackTrace && (
-        <CallStackView callstack={consumer.stackTrace} />
+        <pre
+          style={{
+            margin: '0',
+            padding: '8px 10px',
+            background: '#252526',
+            borderTop: `1px solid ${T.border0}`,
+            fontSize: '9px',
+            color: '#d4d4d4',
+            fontFamily: 'Monaco, Menlo, Consolas, monospace',
+            lineHeight: '1.3',
+            overflow: 'auto',
+            maxHeight: '100px',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-all',
+          }}
+        >
+          {consumer.stackTrace}
+        </pre>
       )}
     </div>
   );
@@ -630,7 +665,24 @@ const RefIdRow: FC<{ refId: string; holder?: RefHolderInfo }> = ({
         )}
       </div>
       {expanded && holder?.stackTrace && (
-        <CallStackView callstack={holder.stackTrace} />
+        <pre
+          style={{
+            margin: '0',
+            padding: '8px 10px',
+            background: '#252526',
+            borderTop: `1px solid ${T.border0}`,
+            fontSize: '9px',
+            color: '#d4d4d4',
+            fontFamily: 'Monaco, Menlo, Consolas, monospace',
+            lineHeight: '1.3',
+            overflow: 'auto',
+            maxHeight: '100px',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-all',
+          }}
+        >
+          {holder.stackTrace}
+        </pre>
       )}
     </div>
   );

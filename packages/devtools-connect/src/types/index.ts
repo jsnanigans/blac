@@ -16,7 +16,6 @@ export interface Trigger {
 export interface GetterInfo {
   value: unknown;
   error?: string;
-  dependsOn?: string[];
 }
 
 export interface StateSnapshot {

@@ -50,15 +50,21 @@ chore(devtools-ui): remove CallStackView and source-map resolution
 
 ## Checklist
 
-- [ ] Deleted `CallStackView.tsx`.
-- [ ] Removed `CallStackView` export from `components/index.ts`.
-- [ ] Removed/replaced usage in `LogsView.tsx`.
-- [ ] Removed/replaced usage in `StateHistoryView.tsx`.
-- [ ] Removed `source-map-js` from `package.json` (if unused).
-- [ ] No remaining references to `CallStackView` or `source-map-js`.
-- [ ] Typecheck passes.
-- [ ] Committed.
+- [x] Deleted `CallStackView.tsx`.
+- [x] Removed `CallStackView` export from `components/index.ts`.
+- [x] Removed/replaced usage in `LogsView.tsx`.
+- [x] Removed/replaced usage in `StateHistoryView.tsx`.
+- [x] Removed `source-map-js` from `package.json` (if unused).
+- [x] No remaining references to `CallStackView` or `source-map-js`.
+- [x] Typecheck passes.
+- [x] Committed.
 
 ## Completion
 
-(Agent fills in after committing.)
+**Commit SHA**: 50d18335
+
+**Files touched**: 6 (CallStackView.tsx deleted, components/index.ts, LogsView.tsx, StateHistoryView.tsx, StateViewer.tsx, package.json)
+
+**Typecheck result**: Passes (pre-existing TS2686 in @blac/react unrelated)
+
+**Raw-stack decision**: Kept minimal raw-stack `<pre>` in LogsView, StateHistoryView, and StateViewer (3 locations). No source-map resolution. Stack remains readable for debugging without extra dependencies.

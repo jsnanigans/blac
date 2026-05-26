@@ -4,7 +4,6 @@ import { useBloc } from '@blac/react';
 import { DevToolsLogsBloc } from '../blocs';
 import type { LogEntry, LogEventType } from '../types';
 import { T } from '../theme';
-import { CallStackView } from './CallStackView';
 
 function formatAbsoluteTime(timestamp: number): string {
   const date = new Date(timestamp);
@@ -196,7 +195,24 @@ const LogEntryRow: FC<{ entry: LogEntry }> = React.memo(({ entry }) => {
       </div>
 
       {expanded && entry.callstack && (
-        <CallStackView callstack={entry.callstack} />
+        <pre
+          style={{
+            margin: '0',
+            padding: '8px 10px',
+            background: '#252526',
+            borderBottom: `1px solid ${T.border0}`,
+            fontSize: '9px',
+            color: '#d4d4d4',
+            fontFamily: 'Monaco, Menlo, Consolas, monospace',
+            lineHeight: '1.3',
+            overflow: 'auto',
+            maxHeight: '100px',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-all',
+          }}
+        >
+          {entry.callstack}
+        </pre>
       )}
     </div>
   );

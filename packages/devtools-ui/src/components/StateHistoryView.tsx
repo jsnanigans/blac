@@ -1,7 +1,6 @@
 import React, { FC, useState, useRef } from 'react';
 import JsonView from '@uiw/react-json-view';
 import type { StateSnapshot } from '../blocs';
-import { CallStackView } from './CallStackView';
 import { SectionHeader } from './SectionHeader';
 import { T } from '../theme';
 import { extractChanges } from '../utils/extractChanges';
@@ -224,7 +223,24 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
 
                       {/* Callstack */}
                       {entry.snapshot.callstack && (
-                        <CallStackView callstack={entry.snapshot.callstack} />
+                        <pre
+                          style={{
+                            margin: '0',
+                            padding: '8px 10px',
+                            background: '#252526',
+                            borderBottom: `1px solid ${T.border1}`,
+                            fontSize: '9px',
+                            color: '#d4d4d4',
+                            fontFamily: 'Monaco, Menlo, Consolas, monospace',
+                            lineHeight: '1.3',
+                            overflow: 'auto',
+                            maxHeight: '100px',
+                            whiteSpace: 'pre-wrap',
+                            wordBreak: 'break-all',
+                          }}
+                        >
+                          {entry.snapshot.callstack}
+                        </pre>
                       )}
 
                       {/* Content */}

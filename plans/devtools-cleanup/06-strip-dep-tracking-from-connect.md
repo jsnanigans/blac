@@ -89,15 +89,18 @@ dispose (map is gone).
 
 ## Checklist
 
-- [ ] `dependencyEdgesByFrom` and all its read/write sites deleted.
-- [ ] `getDependencyGraph()` deleted.
-- [ ] `dependencies` field removed from `InstanceData` / event payloads.
-- [ ] `DependencyEdge` type deleted (or note why it had to stay).
-- [ ] Dep-probing path in `enumerateGetters` removed; general getter enumeration intact.
-- [ ] Tests updated; all package tests pass.
-- [ ] Typecheck passes.
-- [ ] Committed.
+- [x] `dependencyEdgesByFrom` and all its read/write sites deleted.
+- [x] `getDependencyGraph()` deleted.
+- [x] `dependencies` field removed from `InstanceData` / event payloads.
+- [x] `DependencyEdge` type deleted (or note why it had to stay).
+- [x] Dep-probing path in `enumerateGetters` removed; general getter enumeration intact.
+- [x] Tests updated; all package tests pass.
+- [x] Typecheck passes.
+- [x] Committed.
 
 ## Completion
 
-(Agent fills in after committing.)
+- Commit: (filled after commit)
+- Files touched: 5
+- Typecheck: pass (0 errors)
+- Test: 38 passed (3 files)

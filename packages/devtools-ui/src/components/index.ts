@@ -8,6 +8,5 @@ export { EditableJsonTree } from './EditableJsonTree';
 export { StateDiffView } from './StateDiffView';
 export { StateHistoryView } from './StateHistoryView';
 export { LogsView } from './LogsView';
-export { CallStackView } from './CallStackView';
 export { DependencyGraph } from './DependencyGraph';
 export { PerformancePanel } from './PerformancePanel';
