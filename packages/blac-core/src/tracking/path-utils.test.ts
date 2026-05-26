@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vite-plus/test';
-import { parsePath, getValueAtPath, shallowEqual } from './path-utils';
+import {
+  parsePath,
+  getValueAtPath,
+  shallowEqual,
+  PATH_MISSING,
+} from './path-utils';
 
 describe('parsePath', () => {
   describe('dot notation', () => {
@@ -122,10 +127,15 @@ describe('getValueAtPath', () => {
       );
     });
 
-    it('should return undefined for missing nested property', () => {
+    it('should return undefined for missing nested property leaf', () => {
       const obj = { user: { name: 'Alice' } };
       expect(getValueAtPath(obj, ['user', 'missing'])).toBeUndefined();
-      expect(getValueAtPath(obj, ['missing', 'name'])).toBeUndefined();
+    });
+
+    it('should return PATH_MISSING when an intermediate segment is missing', () => {
+      const obj = { user: { name: 'Alice' } };
+      // obj['missing'] is undefined; walking further into it returns PATH_MISSING
+      expect(getValueAtPath(obj, ['missing', 'name'])).toBe(PATH_MISSING);
     });
   });
 
@@ -187,22 +197,22 @@ describe('getValueAtPath', () => {
   });
 
   describe('edge cases', () => {
-    it('should return undefined for null object', () => {
-      expect(getValueAtPath(null, ['name'])).toBeUndefined();
+    it('should return PATH_MISSING for null object with segments', () => {
+      expect(getValueAtPath(null, ['name'])).toBe(PATH_MISSING);
     });
 
-    it('should return undefined for undefined object', () => {
-      expect(getValueAtPath(undefined, ['name'])).toBeUndefined();
+    it('should return PATH_MISSING for undefined object with segments', () => {
+      expect(getValueAtPath(undefined, ['name'])).toBe(PATH_MISSING);
     });
 
-    it('should return undefined when intermediate value is null', () => {
+    it('should return PATH_MISSING when intermediate value is null', () => {
       const obj = { user: null };
-      expect(getValueAtPath(obj, ['user', 'name'])).toBeUndefined();
+      expect(getValueAtPath(obj, ['user', 'name'])).toBe(PATH_MISSING);
     });
 
-    it('should return undefined when intermediate value is undefined', () => {
+    it('should return PATH_MISSING when intermediate value is undefined', () => {
       const obj = { user: undefined };
-      expect(getValueAtPath(obj, ['user', 'name'])).toBeUndefined();
+      expect(getValueAtPath(obj, ['user', 'name'])).toBe(PATH_MISSING);
     });
 
     it('should handle falsy values correctly', () => {
@@ -211,6 +221,24 @@ describe('getValueAtPath', () => {
       expect(getValueAtPath(obj, ['flag'])).toBe(false);
       expect(getValueAtPath(obj, ['text'])).toBe('');
     });
+  });
+});
+
+describe('getValueAtPath — nullable distinction', () => {
+  it('distinguishes intermediate null from missing parent', () => {
+    const a = getValueAtPath({ a: null }, ['a', 'b']);
+    const b = getValueAtPath({}, ['a', 'b']);
+    expect(Object.is(a, b)).toBe(true); // both PATH_MISSING — same handling
+  });
+
+  it('distinguishes PATH_MISSING from explicit undefined leaf', () => {
+    const missing = getValueAtPath({ a: null }, ['a', 'b']);
+    const explicit = getValueAtPath({ a: { b: undefined } }, ['a', 'b']);
+    expect(Object.is(missing, explicit)).toBe(false);
+  });
+
+  it('returns the explicit undefined leaf when present', () => {
+    expect(getValueAtPath({ a: { b: undefined } }, ['a', 'b'])).toBeUndefined();
   });
 });
 

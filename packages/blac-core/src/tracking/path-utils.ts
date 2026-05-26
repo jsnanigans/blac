@@ -53,7 +53,21 @@ export function parsePath(path: string): string[] {
 }
 
 /**
+ * Sentinel value returned by `getValueAtPath` when the path cannot be fully
+ * walked because an intermediate segment is null or undefined. This is
+ * distinct from `undefined`, which is a legitimate leaf value.
+ *
+ * @internal
+ */
+const MISSING = Symbol('missing');
+export { MISSING as PATH_MISSING };
+
+/**
  * Get a value from an object using a path of segments
+ *
+ * Returns `PATH_MISSING` (not `undefined`) when the path cannot be walked
+ * because an intermediate parent is null or undefined. This lets callers
+ * distinguish "the leaf is explicitly `undefined`" from "the path is broken".
  *
  * @example
  * ```ts
@@ -61,17 +75,20 @@ export function parsePath(path: string): string[] {
  * getValueAtPath(obj, ['user', 'name']) // 'Alice'
  * getValueAtPath(obj, ['user', 'age']) // 30
  * getValueAtPath(obj, ['user', 'missing']) // undefined
+ * getValueAtPath({ a: null }, ['a', 'b']) // PATH_MISSING
  * ```
  *
  * @internal
  */
 export function getValueAtPath(obj: unknown, segments: string[]): unknown {
-  if (obj == null) return undefined;
-
   let current: unknown = obj;
   for (let i = 0; i < segments.length; i++) {
+    if (current === null || current === undefined) {
+      // Asked to descend into a nullish value. Return MISSING so that
+      // hasDependencyChanges can distinguish this from a real `undefined` leaf.
+      return MISSING;
+    }
     current = (current as Record<string, unknown>)[segments[i]];
-    if (current == null) return undefined;
   }
   return current;
 }
