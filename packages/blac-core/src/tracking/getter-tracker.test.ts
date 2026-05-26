@@ -153,14 +153,18 @@ describe('getter-tracker', () => {
 
       expect(tracker.currentlyAccessing.size).toBe(0);
     });
+  });
 
-    it('should not clear trackedGetters if nothing was accessing', () => {
-      const tracker = createGetterState();
-      tracker.trackedGetters.add('doubled');
+  describe('commitTrackedGetters — clears stale entries', () => {
+    it('drops getters that were tracked previously but not accessed this commit', () => {
+      const state = createGetterState();
+      state.currentlyAccessing.add('computedA');
+      commitTrackedGetters(state);
+      expect(state.trackedGetters.has('computedA')).toBe(true);
 
-      commitTrackedGetters(tracker);
-
-      expect(tracker.trackedGetters.has('doubled')).toBe(true);
+      // Next render: no getter accessed
+      commitTrackedGetters(state);
+      expect(state.trackedGetters.size).toBe(0);
     });
   });
 

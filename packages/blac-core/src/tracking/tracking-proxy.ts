@@ -590,9 +590,7 @@ export function getActiveTracker<TBloc extends StateContainerInstance>(
  * @internal
  */
 export function commitTrackedGetters(tracker: GetterState): void {
-  if (tracker.currentlyAccessing.size > 0) {
-    tracker.trackedGetters = new Set(tracker.currentlyAccessing);
-  }
+  tracker.trackedGetters = new Set(tracker.currentlyAccessing);
   tracker.currentlyAccessing.clear();
 }
 
