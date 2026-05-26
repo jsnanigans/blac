@@ -10,7 +10,6 @@ import {
   DevToolsInstancesBloc,
   DevToolsDiffBloc,
   DevToolsLogsBloc,
-  DevToolsDependencyBloc,
   DevToolsMetricsBloc,
 } from '@blac/devtools-ui';
 import comm from './comm';
@@ -29,7 +28,6 @@ function App() {
       onMount={(instancesBloc: DevToolsInstancesBloc) => {
         const diffBloc = acquire(DevToolsDiffBloc);
         const logsBloc = acquire(DevToolsLogsBloc);
-        const dependencyBloc = acquire(DevToolsDependencyBloc);
         const metricsBloc = acquire(DevToolsMetricsBloc);
 
         let currentSessionId: string | null = null;
@@ -40,7 +38,6 @@ function App() {
             instancesBloc.setAllInstances([]);
             diffBloc.clearAllPreviousStates();
             logsBloc.clearLogs();
-            dependencyBloc.setEdges([]);
             metricsBloc.clearAll();
           });
         };
@@ -98,17 +95,6 @@ function App() {
                     if (inst.history?.length) {
                       diffBloc.loadInstanceHistory(inst.id, inst.history);
                     }
-                    if (inst.dependencies?.length) {
-                      dependencyBloc.addEdgesForInstance(
-                        inst.id,
-                        inst.dependencies,
-                      );
-                    }
-                  }
-                  if (message.payload.dependencyGraph?.edges?.length) {
-                    dependencyBloc.setEdges(
-                      message.payload.dependencyGraph.edges,
-                    );
                   }
                 });
               }
@@ -174,7 +160,6 @@ function App() {
                   case 'init': {
                     diffBloc.clearAllPreviousStates();
                     logsBloc.clearLogs();
-                    dependencyBloc.setEdges([]);
                     metricsBloc.clearAll();
                     const initInstances = (
                       Array.isArray(event.data) ? event.data : []
@@ -214,9 +199,6 @@ function App() {
                       consumers: d.consumers,
                       createdFrom: d.createdFrom,
                     });
-                    if (d.dependencies?.length) {
-                      dependencyBloc.addEdgesForInstance(d.id, d.dependencies);
-                    }
                     logsBloc.addLog('created', d.id, d.className, d.name, {
                       initialState: d.state,
                     });
@@ -228,7 +210,6 @@ function App() {
                     const disposedInst = instancesBloc.getInstance(d.id);
                     instancesBloc.removeInstance(d.id);
                     diffBloc.clearPreviousState(d.id);
-                    dependencyBloc.removeEdgesForInstance(d.id);
                     metricsBloc.removeInstance(d.id);
                     if (disposedInst) {
                       logsBloc.addLog(

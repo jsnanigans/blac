@@ -1,10 +1,6 @@
 import React, { FC, useState } from 'react';
 import { useBloc } from '@blac/react';
-import {
-  DevToolsLayoutBloc,
-  DevToolsDependencyBloc,
-  DevToolsInstancesBloc,
-} from '../blocs';
+import { DevToolsLayoutBloc, DevToolsInstancesBloc } from '../blocs';
 import type {
   ConsumerInfo,
   DependencyEdge,
@@ -197,193 +193,22 @@ ComputedGettersSection.displayName = 'ComputedGettersSection';
 // Dependencies Section
 // ============================================================================
 
-const DepCard: FC<{
-  color: string;
-  className: string;
-  instanceKey: string;
-  navigable: boolean;
-  onClick?: () => void;
-}> = ({ color, className, instanceKey: key, navigable, onClick }) => (
-  <div
-    onClick={onClick}
-    onMouseEnter={(e) => {
-      if (navigable) e.currentTarget.style.background = T.bgHover;
-    }}
-    onMouseLeave={(e) => {
-      e.currentTarget.style.background = T.bg2;
-    }}
-    style={{
-      display: 'flex',
-      alignItems: 'center',
-      padding: '4px 8px',
-      background: T.bg2,
-      border: `1px solid ${T.border1}`,
-      borderLeft: `3px solid ${color}`,
-      borderRadius: T.radius,
-      cursor: navigable ? 'pointer' : 'default',
-      gap: '6px',
-    }}
-  >
-    <span
-      style={{
-        fontSize: '11px',
-        fontWeight: 600,
-        color,
-        fontFamily: T.fontMono,
-        whiteSpace: 'nowrap',
-      }}
-    >
-      {className}
-    </span>
-    <span
-      style={{
-        fontSize: '10px',
-        color: T.text2,
-        fontFamily: T.fontMono,
-        whiteSpace: 'nowrap',
-      }}
-    >
-      : {key}
-    </span>
-    {navigable && (
-      <span
-        style={{
-          color: T.textAccent,
-          fontSize: '10px',
-          marginLeft: 'auto',
-          flexShrink: 0,
-        }}
-      >
-        →
-      </span>
-    )}
-  </div>
-);
-
 interface DependenciesSectionProps {
-  instanceId: string;
-  className: string;
-  edges: DependencyEdge[];
-  instances: InstanceData[];
-  onNavigate: (id: string) => void;
+  dependencies?: DependencyEdge[];
 }
 
 const DependenciesSection: FC<DependenciesSectionProps> = React.memo(
-  ({ instanceId, className, edges, instances, onNavigate }) => {
-    const [isExpanded, setIsExpanded] = useState(true);
-
-    const outgoing = edges.filter((e) => e.fromId === instanceId);
-    const incoming = edges.filter((e) => e.toClass === className);
-
-    if (outgoing.length === 0 && incoming.length === 0) return null;
-
-    const resolveInstance = (targetClass: string, targetKey: string) =>
-      instances.find(
-        (inst) =>
-          inst.className === targetClass &&
-          (inst.name === targetKey || inst.id.endsWith(`:${targetKey}`)),
-      ) ?? instances.find((inst) => inst.className === targetClass);
-
-    const total = outgoing.length + incoming.length;
+  ({ dependencies = [] }) => {
+    if (dependencies.length === 0) return null;
 
     return (
       <div>
         <SectionHeader
           label="Dependencies"
-          isExpanded={isExpanded}
-          onToggle={() => setIsExpanded((v) => !v)}
-          badge={total}
+          isExpanded={false}
+          onToggle={() => {}}
+          badge={dependencies.length}
         />
-        {isExpanded && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {outgoing.length > 0 && (
-              <div>
-                <div
-                  style={{
-                    fontSize: '10px',
-                    color: T.text3,
-                    letterSpacing: '0.5px',
-                    textTransform: 'uppercase',
-                    marginBottom: '4px',
-                    paddingLeft: '2px',
-                  }}
-                >
-                  Depends on
-                </div>
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '3px',
-                  }}
-                >
-                  {outgoing.map((edge, i) => {
-                    const target = resolveInstance(edge.toClass, edge.toKey);
-                    const color = classColor(edge.toClass);
-                    return (
-                      <DepCard
-                        key={i}
-                        color={color}
-                        className={edge.toClass}
-                        instanceKey={
-                          target ? instanceKey(target.id) : edge.toKey
-                        }
-                        navigable={!!target}
-                        onClick={
-                          target ? () => onNavigate(target.id) : undefined
-                        }
-                      />
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-            {incoming.length > 0 && (
-              <div>
-                <div
-                  style={{
-                    fontSize: '10px',
-                    color: T.text3,
-                    letterSpacing: '0.5px',
-                    textTransform: 'uppercase',
-                    marginBottom: '4px',
-                    paddingLeft: '2px',
-                  }}
-                >
-                  Depended on by
-                </div>
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '3px',
-                  }}
-                >
-                  {incoming.map((edge, i) => {
-                    const source = instances.find(
-                      (inst) => inst.id === edge.fromId,
-                    );
-                    const color = classColor(edge.fromClass);
-                    return (
-                      <DepCard
-                        key={i}
-                        color={color}
-                        className={edge.fromClass}
-                        instanceKey={
-                          source ? instanceKey(source.id) : edge.fromClass
-                        }
-                        navigable={!!source}
-                        onClick={
-                          source ? () => onNavigate(source.id) : undefined
-                        }
-                      />
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
       </div>
     );
   },
@@ -742,7 +567,6 @@ export const StateViewer: FC<StateViewerProps> = ({ onTimeTravel }) => {
     },
     layoutBloc,
   ] = useBloc(DevToolsLayoutBloc);
-  const [{ edges }] = useBloc(DevToolsDependencyBloc);
   const [{ instances }] = useBloc(DevToolsInstancesBloc);
 
   const selectedInstance = layoutBloc.selectedInstance;
@@ -900,13 +724,7 @@ export const StateViewer: FC<StateViewerProps> = ({ onTimeTravel }) => {
           onTimeTravel={timeTravelForInstance}
         />
 
-        <DependenciesSection
-          instanceId={selectedInstance.id}
-          className={selectedInstance.className}
-          edges={edges}
-          instances={instances}
-          onNavigate={(id) => layoutBloc.setSelectedId(id)}
-        />
+        <DependenciesSection dependencies={selectedInstance.dependencies} />
 
         <InitiatorSection createdFrom={selectedInstance.createdFrom} />
 

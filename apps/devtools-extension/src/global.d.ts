@@ -44,11 +44,6 @@ interface BlacDevToolsAPI {
    * Restore an instance to a specific state (time-travel)
    */
   timeTravel?(instanceId: string, state: any): boolean;
-
-  /**
-   * Get the dependency graph between bloc instances
-   */
-  getDependencyGraph?(): { nodes: any[]; edges: any[] };
 }
 
 /**

@@ -20,7 +20,6 @@ export {
   DevToolsDiffBloc,
   DevToolsLayoutBloc,
   DevToolsLogsBloc,
-  DevToolsDependencyBloc,
   DevToolsMetricsBloc,
 } from './blocs';
 
@@ -29,7 +28,7 @@ export {
 export { DevToolsInstancesBloc as LayoutBloc } from './blocs';
 
 // Types
-export type { DevToolsUIProps, InstanceData, DependencyEdge } from './types';
+export type { DevToolsUIProps, InstanceData } from './types';
 export type { DraggableOverlayProps } from './DraggableOverlay';
 export type { BlacDevtoolsUiProps } from './BlacDevtoolsUi';
 export type { DiffResult, InstanceMetrics } from './blocs';

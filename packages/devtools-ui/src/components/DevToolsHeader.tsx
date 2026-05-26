@@ -4,7 +4,7 @@ import { DevToolsInstancesBloc } from '../blocs';
 import { DevToolsLayoutBloc, type TabName } from '../blocs/DevToolsLayoutBloc';
 import { T } from '../theme';
 
-const TABS: TabName[] = ['Instances', 'Logs', 'Graph', 'Performance'];
+const TABS: TabName[] = ['Instances', 'Logs', 'Performance'];
 
 const pulseKeyframes = `
 @keyframes blac-pulse {

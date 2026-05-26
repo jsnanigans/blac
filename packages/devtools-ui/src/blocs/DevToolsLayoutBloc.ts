@@ -7,7 +7,7 @@ import {
   type StateSnapshot,
 } from './DevToolsDiffBloc';
 
-export type TabName = 'Instances' | 'Logs' | 'Graph' | 'Performance';
+export type TabName = 'Instances' | 'Logs' | 'Performance';
 
 type LayoutState = {
   activeTab: TabName;

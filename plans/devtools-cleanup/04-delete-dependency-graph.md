@@ -68,16 +68,20 @@ chore(devtools-ui): remove DependencyGraph tab and xyflow/elkjs deps
 
 ## Checklist
 
-- [ ] Deleted `DependencyGraph.tsx`, `dependency-graph-layout.ts`, `DevToolsDependencyBloc.ts`, `inject-xyflow-styles.ts`.
-- [ ] Removed `'Graph'` tab from `DevToolsHeader` and `DevToolsPanel`.
-- [ ] Removed dependency-graph imports/calls from `DraggableOverlay.tsx`.
-- [ ] Removed `@xyflow/react` and `elkjs` from `package.json`.
-- [ ] Removed exports from `index.tsx`, `components/index.ts`, `blocs/index.ts`.
-- [ ] `TabName` no longer includes `'Graph'`.
-- [ ] No remaining references to deleted symbols.
-- [ ] Typecheck passes.
-- [ ] Committed.
+- [x] Deleted `DependencyGraph.tsx`, `dependency-graph-layout.ts`, `DevToolsDependencyBloc.ts`, `inject-xyflow-styles.ts`.
+- [x] Removed `'Graph'` tab from `DevToolsHeader` and `DevToolsPanel`.
+- [x] Removed dependency-graph imports/calls from `DraggableOverlay.tsx`.
+- [x] Removed `@xyflow/react` and `elkjs` from `package.json`.
+- [x] Removed exports from `index.tsx`, `components/index.ts`, `blocs/index.ts`.
+- [x] `TabName` no longer includes `'Graph'`.
+- [x] No remaining references to deleted symbols.
+- [x] Typecheck passes (pre-existing noise only).
+- [x] Committed.
 
 ## Completion
 
-(Agent fills in after committing.)
+Commit: (filling in after commit)
+Files deleted: 4 (DependencyGraph.tsx, dependency-graph-layout.ts, DevToolsDependencyBloc.ts, inject-xyflow-styles.ts)
+Files modified: 10 (DevToolsPanel.tsx, DraggableOverlay.tsx, index.tsx, blocs files, components files, extension files)
+Extension updates: Removed DevToolsDependencyBloc import and usage from panel/index.tsx, removed DependencyGraph type from comm.ts, removed getDependencyGraph from global.d.ts
+Typecheck: Pre-existing noise only (TS2686 in react, TS2688 vite/client in extension)

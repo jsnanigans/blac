@@ -9,11 +9,6 @@ export interface DependencyEdge {
   toKey: string;
 }
 
-export interface DependencyGraph {
-  nodes: Array<{ id: string; className: string; name: string }>;
-  edges: DependencyEdge[];
-}
-
 /**
  * Panel-format instance (transformed by inject-script from backend format)
  */
@@ -88,7 +83,6 @@ export type MessageIn =
         eventHistory?: AtomicEvent[];
         version?: string;
         timestamp?: number;
-        dependencyGraph?: DependencyGraph;
         sessionId?: string;
       };
     }

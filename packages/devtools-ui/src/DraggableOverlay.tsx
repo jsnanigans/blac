@@ -10,7 +10,6 @@ import {
   DevToolsInstancesBloc,
   DevToolsDiffBloc,
   DevToolsLogsBloc,
-  DevToolsDependencyBloc,
   DevToolsMetricsBloc,
 } from './blocs';
 
@@ -129,7 +128,6 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
 
   const diffBloc = acquire(DevToolsDiffBloc);
   const logsBloc = acquire(DevToolsLogsBloc);
-  const dependencyBloc = acquire(DevToolsDependencyBloc);
   const metricsBloc = acquire(DevToolsMetricsBloc);
 
   const loadFullData = () => {
@@ -146,9 +144,6 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
         diffBloc.loadInstanceHistory(inst.id, inst.history);
       }
     }
-
-    const graph = api.getDependencyGraph?.();
-    dependencyBloc.setEdges(graph?.edges?.length ? graph.edges : []);
 
     logsBloc.clearLogs();
     const eventHistory = api.getEventHistory?.() ?? [];
@@ -183,9 +178,6 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
             createdAt: (d?.createdAt ?? evt.timestamp) as number,
           }),
         );
-        if (d.dependencies?.length) {
-          dependencyBloc.addEdgesForInstance(d.id, d.dependencies);
-        }
         logsBloc.addLog('created', d.id, d.className, d.name, {
           initialState: d.state,
         });
@@ -197,7 +189,6 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
         const disposedInstance = instancesBloc.getInstance(d.id as string);
         instancesBloc.removeInstance(d.id as string);
         diffBloc.clearPreviousState(d.id as string);
-        dependencyBloc.removeEdgesForInstance(d.id as string);
         metricsBloc.removeInstance(d.id as string);
         if (disposedInstance) {
           logsBloc.addLog(
