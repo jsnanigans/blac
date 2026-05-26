@@ -204,7 +204,7 @@ Body: "Adds vitest bench + a CI-enforced ratio gate (tracked ≤ 4x baseline) fo
 
 ## Completion
 
-**Commit SHA:** (filled after commit)
+**Commit SHA:** 54ab95d3
 **Files touched:**
 - `packages/blac-core/src/tracking/iteration-perf.bench.ts` (new)
 - `packages/blac-core/vite.config.ts` (added `*.bench.[jt]s?(x)` to test `include`)
