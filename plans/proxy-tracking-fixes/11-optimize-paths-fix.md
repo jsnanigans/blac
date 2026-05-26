@@ -217,7 +217,7 @@ Body: "Path optimization re-added the array reference for any indexed access, wh
 
 ## Completion
 
-**Commit SHA:** (to be filled after commit)
+**Commit SHA:** 2cf289d8
 **Files touched:**
 - `packages/blac-core/src/tracking/tracking-proxy.ts` — removed `getArrayParentPath` helper and the array-parent re-add block in `optimizeTrackedPaths`; `isChildPath` bracket case retained (see implementation note below)
 - `packages/blac-core/src/tracking/dependency-tracker.test.ts` — added four regression tests under `per-index isolation across immutable array updates`; updated two existing `optimizeTrackedPaths` tests that were asserting old recovery behavior
