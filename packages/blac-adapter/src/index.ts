@@ -28,8 +28,6 @@ import {
   createGetterState,
   createBlocProxy,
   hasGetterChanges,
-  setActiveTracker,
-  clearActiveTracker,
   commitTrackedGetters,
   invalidateRenderCache,
   resolveDependencies,
@@ -318,8 +316,6 @@ export function autoTrackSnapshot<TBloc extends StateContainerConstructor>(
       commitTrackedGetters(adapterState.getterState);
 
       adapterState.getterState.isTracking = true;
-
-      setActiveTracker(instance, adapterState.getterState);
     }
 
     startDependency(depState);
@@ -376,11 +372,12 @@ export function autoTrackInit<TBloc extends StateContainerConstructor>(
     return noTrackInit(instance);
   }
 
+  const getterState = createGetterState();
   return {
     dependencyState: null,
     manualDepsCache: null,
-    getterState: createGetterState(),
-    proxiedBloc: createBlocProxy(instance),
+    getterState,
+    proxiedBloc: createBlocProxy(instance, getterState),
     lastSnapshotState: undefined,
   };
 }
@@ -423,17 +420,15 @@ export function noTrackInit<TBloc extends StateContainerConstructor>(
 
 /**
  * Disable getter tracking after render phase completes.
- * Clears the active tracker to prevent tracking outside of render.
+ * Flips the per-consumer tracker off so post-commit getter access is not
+ * recorded into this render's tracked set.
  * @param adapterState - The adapter state
- * @param rawInstance - The raw bloc instance
  */
 export function disableGetterTracking<TBloc extends StateContainerConstructor>(
   adapterState: AdapterState<TBloc>,
-  rawInstance: InstanceState<TBloc>,
 ): void {
   if (adapterState.getterState) {
     adapterState.getterState.isTracking = false;
-    clearActiveTracker(rawInstance);
     commitTrackedGetters(adapterState.getterState);
   }
 }

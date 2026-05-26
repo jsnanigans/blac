@@ -217,7 +217,7 @@ export function useBloc<
 
   useEffect(() => {
     const manager = externalDepsManager.current!;
-    disableGetterTracking(adapterState, rawInstance);
+    disableGetterTracking(adapterState);
     manager.updateSubscriptions(
       adapterState.getterState,
       rawInstance,

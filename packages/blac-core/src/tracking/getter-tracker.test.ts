@@ -2,9 +2,6 @@ import { describe, it, expect, beforeEach } from 'vite-plus/test';
 import { Cubit } from '../core/Cubit';
 import {
   createGetterState,
-  setActiveTracker,
-  clearActiveTracker,
-  getActiveTracker,
   commitTrackedGetters,
   createBlocProxy,
   hasGetterChanges,
@@ -51,7 +48,6 @@ describe('getter-tracker', () => {
 
   beforeEach(() => {
     bloc = new TestBloc();
-    clearActiveTracker(bloc);
   });
 
   describe('isGetter', () => {
@@ -112,25 +108,6 @@ describe('getter-tracker', () => {
     });
   });
 
-  describe('tracker management', () => {
-    it('should set and get active tracker', () => {
-      const tracker = createGetterState();
-      setActiveTracker(bloc, tracker);
-      expect(getActiveTracker(bloc)).toBe(tracker);
-    });
-
-    it('should clear active tracker', () => {
-      const tracker = createGetterState();
-      setActiveTracker(bloc, tracker);
-      clearActiveTracker(bloc);
-      expect(getActiveTracker(bloc)).toBeUndefined();
-    });
-
-    it('should return undefined for bloc without tracker', () => {
-      expect(getActiveTracker(bloc)).toBeUndefined();
-    });
-  });
-
   describe('commitTrackedGetters', () => {
     it('should commit currently accessing getters to tracked getters', () => {
       const tracker = createGetterState();
@@ -172,9 +149,8 @@ describe('getter-tracker', () => {
     it('should create a proxy that tracks getter access', () => {
       const tracker = createGetterState();
       tracker.isTracking = true;
-      setActiveTracker(bloc, tracker);
 
-      const proxy = createBlocProxy(bloc);
+      const proxy = createBlocProxy(bloc, tracker);
       const value = proxy.doubled;
 
       expect(value).toBe(0); // count is 0, so doubled is 0
@@ -185,9 +161,8 @@ describe('getter-tracker', () => {
     it('should not track when isTracking is false', () => {
       const tracker = createGetterState();
       tracker.isTracking = false;
-      setActiveTracker(bloc, tracker);
 
-      const proxy = createBlocProxy(bloc);
+      const proxy = createBlocProxy(bloc, tracker);
       const value = proxy.doubled;
 
       expect(value).toBe(0);
@@ -197,19 +172,20 @@ describe('getter-tracker', () => {
     it('should not track non-getter properties', () => {
       const tracker = createGetterState();
       tracker.isTracking = true;
-      setActiveTracker(bloc, tracker);
 
-      const proxy = createBlocProxy(bloc);
+      const proxy = createBlocProxy(bloc, tracker);
       const incrementFn = proxy.increment; // Access arrow function (not a getter)
 
       expect(incrementFn).toBeDefined();
       expect(tracker.currentlyAccessing.has('increment')).toBe(false);
     });
 
-    it('should cache proxies per bloc instance', () => {
-      const proxy1 = createBlocProxy(bloc);
-      const proxy2 = createBlocProxy(bloc);
-      expect(proxy1).toBe(proxy2);
+    it('creates a fresh proxy per call (no global cache)', () => {
+      const tracker1 = createGetterState();
+      const tracker2 = createGetterState();
+      const proxy1 = createBlocProxy(bloc, tracker1);
+      const proxy2 = createBlocProxy(bloc, tracker2);
+      expect(proxy1).not.toBe(proxy2);
     });
 
     it('should use render cache when available', () => {
@@ -217,9 +193,8 @@ describe('getter-tracker', () => {
       tracker.isTracking = true;
       tracker.cacheValid = true;
       tracker.renderCache.set('doubled', 999);
-      setActiveTracker(bloc, tracker);
 
-      const proxy = createBlocProxy(bloc);
+      const proxy = createBlocProxy(bloc, tracker);
       const value = proxy.doubled;
 
       expect(value).toBe(999); // Should use cached value
@@ -363,24 +338,23 @@ describe('getter-tracker', () => {
 
   describe('circular dependency detection', () => {
     it('should detect and handle simple circular dependencies', () => {
+      const tracker = createGetterState();
+      tracker.isTracking = true;
+
       class CircularBloc extends Cubit<{ count: number }> {
         constructor() {
           super({ count: 0 });
         }
 
         get circular(): any {
-          // Access via proxy to trigger circular detection
-          const proxy = createBlocProxy(this);
+          // Access via proxy with the same tracker to trigger circular detection
+          const proxy = createBlocProxy(this, tracker);
           return proxy.circular; // Recursive access through proxy
         }
       }
 
       const circularBloc = new CircularBloc();
-      const tracker = createGetterState();
-      tracker.isTracking = true;
-      setActiveTracker(circularBloc, tracker);
-
-      const proxy = createBlocProxy(circularBloc);
+      const proxy = createBlocProxy(circularBloc, tracker);
 
       // Should throw a circular dependency error instead of causing stack overflow
       expect(() => proxy.circular).toThrowError(/Circular dependency detected/);
@@ -408,9 +382,8 @@ describe('getter-tracker', () => {
       const deepBloc = new DeepBloc();
       const tracker = createGetterState();
       tracker.isTracking = true;
-      setActiveTracker(deepBloc, tracker);
 
-      const proxy = createBlocProxy(deepBloc);
+      const proxy = createBlocProxy(deepBloc, tracker);
       const value = proxy.level1;
 
       expect(value).toBe(2); // 0 + 1 + 1
@@ -421,9 +394,8 @@ describe('getter-tracker', () => {
     it('should handle getters that access other getters', () => {
       const tracker = createGetterState();
       tracker.isTracking = true;
-      setActiveTracker(bloc, tracker);
 
-      const proxy = createBlocProxy(bloc);
+      const proxy = createBlocProxy(bloc, tracker);
       const value = proxy.complex;
 
       expect(value).toEqual({

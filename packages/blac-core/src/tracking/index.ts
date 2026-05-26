@@ -23,8 +23,6 @@ export {
   createGetterState,
   createBlocProxy,
   hasGetterChanges,
-  setActiveTracker,
-  clearActiveTracker,
   commitTrackedGetters,
   invalidateRenderCache,
 } from './tracking-proxy';

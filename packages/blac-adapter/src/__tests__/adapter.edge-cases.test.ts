@@ -208,4 +208,87 @@ describe('@blac/adapter edge cases', () => {
       unsubscribe();
     });
   });
+
+  describe('per-consumer active tracker', () => {
+    class TwoGettersBloc extends Cubit<{ count: number }> {
+      constructor() {
+        super({ count: 0 });
+      }
+      get computedA() {
+        return this.state.count + 1;
+      }
+      get computedB() {
+        return this.state.count + 2;
+      }
+    }
+
+    it('two consumers of the same bloc track getters independently', () => {
+      const bloc = new TwoGettersBloc();
+
+      // Simulate two useBloc consumers sharing the same bloc instance.
+      const state1 = autoTrackInit(bloc);
+      const state2 = autoTrackInit(bloc);
+
+      // The cleanest assertion: each consumer owns a distinct proxy + tracker.
+      expect(state1.proxiedBloc).not.toBe(state2.proxiedBloc);
+      expect(state1.getterState).not.toBe(state2.getterState);
+
+      // Consumer 1 render: snapshot, access computedA, commit (via disable).
+      autoTrackSnapshot(bloc, state1)();
+      void (state1.proxiedBloc as TwoGettersBloc).computedA;
+      // disableGetterTracking would normally run in useEffect; emulate it
+      // here by committing directly.
+      state1.getterState!.isTracking = false;
+      // Snapshot already commits on entry; force one more commit so trackedGetters
+      // mirrors what was accessed this render.
+      const committed1 = new Set(state1.getterState!.currentlyAccessing);
+      state1.getterState!.trackedGetters = committed1;
+      state1.getterState!.currentlyAccessing.clear();
+
+      // Consumer 2 render: snapshot, access computedB, commit.
+      autoTrackSnapshot(bloc, state2)();
+      void (state2.proxiedBloc as TwoGettersBloc).computedB;
+      state2.getterState!.isTracking = false;
+      const committed2 = new Set(state2.getterState!.currentlyAccessing);
+      state2.getterState!.trackedGetters = committed2;
+      state2.getterState!.currentlyAccessing.clear();
+
+      expect(Array.from(state1.getterState!.trackedGetters)).toEqual([
+        'computedA',
+      ]);
+      expect(Array.from(state2.getterState!.trackedGetters)).toEqual([
+        'computedB',
+      ]);
+    });
+
+    it('interleaved renders do not contaminate each others trackers', () => {
+      const bloc = new TwoGettersBloc();
+      const state1 = autoTrackInit(bloc);
+      const state2 = autoTrackInit(bloc);
+
+      // Both consumers start their render concurrently.
+      autoTrackSnapshot(bloc, state1)();
+      autoTrackSnapshot(bloc, state2)();
+
+      // Access happens interleaved.
+      void (state1.proxiedBloc as TwoGettersBloc).computedA;
+      void (state2.proxiedBloc as TwoGettersBloc).computedB;
+
+      // Both commit.
+      const c1 = new Set(state1.getterState!.currentlyAccessing);
+      state1.getterState!.trackedGetters = c1;
+      state1.getterState!.currentlyAccessing.clear();
+      state1.getterState!.isTracking = false;
+
+      const c2 = new Set(state2.getterState!.currentlyAccessing);
+      state2.getterState!.trackedGetters = c2;
+      state2.getterState!.currentlyAccessing.clear();
+      state2.getterState!.isTracking = false;
+
+      expect(state1.getterState!.trackedGetters.has('computedA')).toBe(true);
+      expect(state1.getterState!.trackedGetters.has('computedB')).toBe(false);
+      expect(state2.getterState!.trackedGetters.has('computedB')).toBe(true);
+      expect(state2.getterState!.trackedGetters.has('computedA')).toBe(false);
+    });
+  });
 });

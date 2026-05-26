@@ -508,13 +508,6 @@ const descriptorCache = new WeakMap<
   Map<string | symbol, PropertyDescriptor | undefined>
 >();
 
-const blocProxyCache = new WeakMap<
-  StateContainerInstance,
-  StateContainerInstance
->();
-
-const activeTrackerMap = new WeakMap<StateContainerInstance, GetterState>();
-
 const MAX_GETTER_DEPTH = BLAC_DEFAULTS.MAX_GETTER_DEPTH;
 
 /**
@@ -573,34 +566,6 @@ export function createGetterState(): GetterState {
     depth: 0,
     visitedBlocs: new Set(),
   };
-}
-
-/**
- * @internal
- */
-export function setActiveTracker<TBloc extends StateContainerInstance>(
-  bloc: TBloc,
-  tracker: GetterState,
-): void {
-  activeTrackerMap.set(bloc, tracker);
-}
-
-/**
- * @internal
- */
-export function clearActiveTracker<TBloc extends StateContainerInstance>(
-  bloc: TBloc,
-): void {
-  activeTrackerMap.delete(bloc);
-}
-
-/**
- * @internal
- */
-export function getActiveTracker<TBloc extends StateContainerInstance>(
-  bloc: TBloc,
-): GetterState | undefined {
-  return activeTrackerMap.get(bloc);
 }
 
 /**
@@ -665,30 +630,27 @@ function executeTrackedGetter<T extends StateContainerInstance>(
 }
 
 /**
+ * Create a per-consumer bloc proxy that closes over its own getter tracker.
+ *
+ * Each useBloc consumer owns its own proxy and tracker, eliminating the
+ * cross-component contamination that a shared module-level tracker map
+ * caused under interleaved/concurrent rendering.
+ *
  * @internal
  */
 export function createBlocProxy<TBloc extends StateContainerInstance>(
   bloc: TBloc,
+  tracker: GetterState,
 ): TBloc {
-  const cached = blocProxyCache.get(bloc);
-  if (cached) {
-    return cached as TBloc;
-  }
-
-  const proxy = new Proxy(bloc, {
+  return new Proxy(bloc, {
     get(target, prop, receiver) {
-      const tracker = activeTrackerMap.get(target);
-
-      if (tracker?.isTracking && isGetter(target, prop)) {
+      if (tracker.isTracking && isGetter(target, prop)) {
         return executeTrackedGetter(target, prop, tracker);
       }
 
       return Reflect.get(target, prop, receiver);
     },
-  });
-
-  blocProxyCache.set(bloc, proxy);
-  return proxy as TBloc;
+  }) as TBloc;
 }
 
 /**

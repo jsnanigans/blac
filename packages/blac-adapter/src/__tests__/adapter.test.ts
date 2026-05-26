@@ -241,7 +241,7 @@ describe('@blac/adapter', () => {
         throw new Error('Expected getterState to be initialized');
       }
       adapterState.getterState.isTracking = true;
-      disableGetterTracking(adapterState, bloc);
+      disableGetterTracking(adapterState);
 
       expect(adapterState.getterState.isTracking).toBe(false);
     });
@@ -250,7 +250,7 @@ describe('@blac/adapter', () => {
       const bloc = new CounterCubit();
       const adapterState = noTrackInit(bloc);
 
-      expect(() => disableGetterTracking(adapterState, bloc)).not.toThrow();
+      expect(() => disableGetterTracking(adapterState)).not.toThrow();
     });
   });
 
