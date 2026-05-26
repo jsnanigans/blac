@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vite-plus/test';
 import { render, renderHook, act, screen } from '@testing-library/react';
-import { Cubit, hasInstance } from '@blac/core';
+import { Cubit, hasInstance, borrow } from '@blac/core';
 import { blacTestSetup } from '@blac/core/testing';
 import { useBloc } from '../useBloc';
 
@@ -64,7 +64,14 @@ describe('useBloc — instance isolation', () => {
     const { result: rStr } = renderHook(() =>
       useBloc(IsoBloc, { instanceId: '1' }),
     );
-    expect(rNum.current[1]).toBe(rStr.current[1]);
+    // Per-consumer design: compare via the raw instance registered under '1'.
+    const raw = borrow(IsoBloc, '1');
+    act(() => {
+      raw.inc();
+    });
+    expect(rNum.current[1].state.n).toBe(1);
+    expect(rStr.current[1].state.n).toBe(1);
+    expect(rNum.current[1].state).toBe(rStr.current[1].state);
   });
 
   it('instanceId: undefined falls back to the default key', () => {
@@ -72,7 +79,14 @@ describe('useBloc — instance isolation', () => {
       useBloc(IsoBloc, { instanceId: undefined }),
     );
     const { result: r2 } = renderHook(() => useBloc(IsoBloc));
-    expect(r1.current[1]).toBe(r2.current[1]);
+    // Per-consumer design: compare via the raw default-key instance.
+    const raw = borrow(IsoBloc);
+    act(() => {
+      raw.inc();
+    });
+    expect(r1.current[1].state.n).toBe(1);
+    expect(r2.current[1].state.n).toBe(1);
+    expect(r1.current[1].state).toBe(r2.current[1].state);
   });
 
   it('unmounting instanceId a disposes only that instance, leaving b alive', () => {

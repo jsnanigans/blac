@@ -215,6 +215,10 @@ export function useBloc<
     ).current = new ExternalDepsManager();
   }
 
+  // Run on every commit: commit the per-render getter accesses into the
+  // authoritative `trackedGetters` set, and re-sync external-bloc subscriptions
+  // so dynamically-added/removed cross-bloc deps re-establish listeners.
+  // No dep array — both operations are idempotent / guarded internally.
   useEffect(() => {
     const manager = externalDepsManager.current!;
     disableGetterTracking(adapterState);
@@ -223,7 +227,7 @@ export function useBloc<
       rawInstance,
       forceUpdate,
     );
-  }, [adapterState, rawInstance, forceUpdate]);
+  });
 
   useEffect(() => {
     const manager = externalDepsManager.current!;

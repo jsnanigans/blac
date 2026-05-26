@@ -132,16 +132,33 @@ describe('getter-tracker', () => {
     });
   });
 
-  describe('commitTrackedGetters — clears stale entries', () => {
-    it('drops getters that were tracked previously but not accessed this commit', () => {
+  describe('commitTrackedGetters — preserves on empty commit', () => {
+    it('replaces trackedGetters with the new accesses on a real render', () => {
       const state = createGetterState();
       state.currentlyAccessing.add('computedA');
       commitTrackedGetters(state);
       expect(state.trackedGetters.has('computedA')).toBe(true);
 
-      // Next render: no getter accessed
+      // Next render accesses a different getter
+      state.currentlyAccessing.add('computedB');
       commitTrackedGetters(state);
-      expect(state.trackedGetters.size).toBe(0);
+      expect(state.trackedGetters.has('computedB')).toBe(true);
+      expect(state.trackedGetters.has('computedA')).toBe(false);
+    });
+
+    it('preserves trackedGetters when commit fires with no accesses (StrictMode safety)', () => {
+      const state = createGetterState();
+      state.currentlyAccessing.add('computedA');
+      commitTrackedGetters(state);
+      expect(state.trackedGetters.has('computedA')).toBe(true);
+
+      // React StrictMode can fire useEffect twice for one logical commit; the
+      // second call has an empty currentlyAccessing set. We must not wipe
+      // trackedGetters in that case — the subscription established by the
+      // first commit is still valid.
+      commitTrackedGetters(state);
+      expect(state.trackedGetters.size).toBe(1);
+      expect(state.trackedGetters.has('computedA')).toBe(true);
     });
   });
 

@@ -5,7 +5,7 @@
 /// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
 import { renderHook, act } from '@testing-library/preact';
-import { Cubit, clearAll } from '@blac/core';
+import { Cubit, clearAll, borrow } from '@blac/core';
 import { useBloc } from '../useBloc';
 
 class CounterBloc extends Cubit<{ count: number }> {
@@ -71,14 +71,16 @@ describe('useBloc', () => {
         return { state, bloc };
       });
 
-      expect(result1.current.bloc).toBe(result2.current.bloc);
-
+      // Per-consumer design: each useBloc consumer returns its own proxy.
+      // Identity is asserted via the shared underlying raw bloc.
+      const raw = borrow(CounterBloc);
       await act(async () => {
-        result1.current.bloc.increment();
+        raw.increment();
       });
 
       expect(result1.current.state.count).toBe(1);
       expect(result2.current.state.count).toBe(1);
+      expect(result1.current.bloc.state).toBe(result2.current.bloc.state);
     });
   });
 
@@ -137,7 +139,7 @@ describe('useBloc', () => {
       expect(bloc1).not.toBe(bloc2);
     });
 
-    it('should share instance with same custom ID', () => {
+    it('should share instance with same custom ID', async () => {
       const { result: result1 } = renderHook(() =>
         useBloc(CounterBloc, { instanceId: 'shared-counter' }),
       );
@@ -148,7 +150,15 @@ describe('useBloc', () => {
       const [, bloc1] = result1.current;
       const [, bloc2] = result2.current;
 
-      expect(bloc1).toBe(bloc2);
+      // Per-consumer design: each consumer returns its own proxy. Identity is
+      // asserted via the shared underlying raw instance.
+      const raw = borrow(CounterBloc, 'shared-counter');
+      await act(async () => {
+        raw.increment();
+      });
+      expect(bloc1.state.count).toBe(1);
+      expect(bloc2.state.count).toBe(1);
+      expect(bloc1.state).toBe(bloc2.state);
     });
   });
 

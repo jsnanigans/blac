@@ -571,7 +571,24 @@ export function createGetterState(): GetterState {
 /**
  * @internal
  */
+/**
+ * Commit getters accessed during the active tracking window into the
+ * authoritative `trackedGetters` set used by change-detection.
+ *
+ * When `currentlyAccessing` is empty (e.g. React StrictMode firing
+ * `useEffect` setup → cleanup → setup for one logical render, where the
+ * second setup runs with no intervening render and therefore no accesses)
+ * we deliberately preserve the previous commit's `trackedGetters`. This
+ * keeps consumer subscriptions stable across StrictMode double-invocation.
+ *
+ * The next legitimate render that records accesses replaces the set in full;
+ * components that conditionally drop a getter incur at most one extra
+ * re-render before `trackedGetters` self-corrects on the subsequent commit.
+ *
+ * @internal
+ */
 export function commitTrackedGetters(tracker: GetterState): void {
+  if (tracker.currentlyAccessing.size === 0) return;
   tracker.trackedGetters = new Set(tracker.currentlyAccessing);
   tracker.currentlyAccessing.clear();
 }

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vite-plus/test';
 import { render, renderHook, act, screen } from '@testing-library/react';
-import { Cubit, hasInstance, getRefCount } from '@blac/core';
+import { Cubit, hasInstance, getRefCount, borrow } from '@blac/core';
 import { blacTestSetup } from '@blac/core/testing';
 import { useBloc } from '../useBloc';
 
@@ -176,7 +176,15 @@ describe('useBloc — E3: static isolated / autoInstance', () => {
         </>,
       );
 
-      expect(blocA).toBe(blocB);
+      // Per-consumer design: each useBloc returns its own proxy. Assert via
+      // the shared raw default instance.
+      const raw = borrow(SharedCubit);
+      act(() => {
+        raw.inc();
+      });
+      expect(blocA.state.n).toBe(1);
+      expect(blocB.state.n).toBe(1);
+      expect(blocA.state).toBe(blocB.state);
       expect(hasInstance(SharedCubit, 'default')).toBe(true);
     });
 
@@ -188,7 +196,14 @@ describe('useBloc — E3: static isolated / autoInstance', () => {
         useBloc(SharedCubit, { instanceId: 'pinned' }),
       );
 
-      expect(r1.current[1]).toBe(r2.current[1]);
+      // Per-consumer design: identity via the raw instance under 'pinned'.
+      const raw = borrow(SharedCubit, 'pinned');
+      act(() => {
+        raw.inc();
+      });
+      expect(r1.current[1].state.n).toBe(1);
+      expect(r2.current[1].state.n).toBe(1);
+      expect(r1.current[1].state).toBe(r2.current[1].state);
       expect(hasInstance(SharedCubit, 'pinned')).toBe(true);
     });
 
@@ -200,7 +215,14 @@ describe('useBloc — E3: static isolated / autoInstance', () => {
         useBloc(IsoCubit, { instanceId: 'shared' }),
       );
 
-      expect(r1.current[1]).toBe(r2.current[1]);
+      // Per-consumer design: identity via the raw instance under 'shared'.
+      const raw = borrow(IsoCubit, 'shared');
+      act(() => {
+        raw.inc();
+      });
+      expect(r1.current[1].state.n).toBe(1);
+      expect(r2.current[1].state.n).toBe(1);
+      expect(r1.current[1].state).toBe(r2.current[1].state);
     });
 
     it('autoInstance unmount drops the refcount on the auto-keyed instance', () => {

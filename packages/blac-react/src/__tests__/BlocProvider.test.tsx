@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vite-plus/test';
 import { render, act, screen } from '@testing-library/react';
-import { Cubit, hasInstance } from '@blac/core';
+import { Cubit, hasInstance, borrow } from '@blac/core';
 import { blacTestSetup } from '@blac/core/testing';
 import { useBloc } from '../useBloc';
 import { BlocProvider } from '../BlocProvider';
@@ -51,6 +51,9 @@ describe('E1 — BlocProvider instance-id context', () => {
   });
 
   it('two descendants under the same provider share the same instance', () => {
+    // Per-consumer design: each useBloc consumer returns its own proxy. The
+    // shared-instance contract is verified against the raw bloc registered
+    // under the provider's instanceId.
     let blocA!: CounterCubit;
     let blocB!: CounterCubit;
 
@@ -67,7 +70,13 @@ describe('E1 — BlocProvider instance-id context', () => {
       </BlocProvider>,
     );
 
-    expect(blocA).toBe(blocB);
+    const raw = borrow(CounterCubit, 'shared');
+    act(() => {
+      raw.inc();
+    });
+    expect(blocA.state.n).toBe(1);
+    expect(blocB.state.n).toBe(1);
+    expect(blocA.state).toBe(blocB.state);
     expect(hasInstance(CounterCubit, 'shared')).toBe(true);
   });
 
@@ -234,6 +243,14 @@ describe('E1 — BlocProvider instance-id context', () => {
       </>,
     );
 
-    expect(blocNum).toBe(blocStr);
+    // Per-consumer design: compare via the raw instance registered under "7".
+    const raw = borrow(CounterCubit, '7');
+    act(() => {
+      raw.inc();
+    });
+    expect(blocNum.state.n).toBe(1);
+    expect(blocStr.state.n).toBe(1);
+    expect(blocNum.state).toBe(blocStr.state);
+    expect(hasInstance(CounterCubit, '7')).toBe(true);
   });
 });

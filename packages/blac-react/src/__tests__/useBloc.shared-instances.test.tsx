@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vite-plus/test';
 import { render, act, screen } from '@testing-library/react';
-import { Cubit, getRefCount, hasInstance } from '@blac/core';
+import { Cubit, getRefCount, hasInstance, borrow } from '@blac/core';
 import { useBloc } from '../useBloc';
 import { blacTestSetup } from '@blac/core/testing';
 
@@ -17,6 +17,9 @@ blacTestSetup();
 
 describe('useBloc — shared instances', () => {
   it('two components using same class get the same instance', () => {
+    // Per-consumer design: each useBloc consumer returns its own proxy that
+    // closes over a per-consumer getter tracker. Identity is asserted on the
+    // raw underlying instance via the registry.
     const seen: SharedBloc[] = [];
     function Comp() {
       const [, b] = useBloc(SharedBloc);
@@ -29,7 +32,14 @@ describe('useBloc — shared instances', () => {
         <Comp />
       </>,
     );
-    expect(seen[0]).toBe(seen[1]);
+    const raw = borrow(SharedBloc);
+    // Both consumer proxies should target the same underlying raw instance.
+    act(() => {
+      raw.increment();
+    });
+    expect(seen[0].state.count).toBe(1);
+    expect(seen[1].state.count).toBe(1);
+    expect(seen[0].state).toBe(seen[1].state);
   });
 
   it('state change in one component is visible in the other', () => {

@@ -311,11 +311,19 @@ export function autoTrackSnapshot<TBloc extends StateContainerConstructor>(
     }
 
     if (adapterState.getterState) {
+      // Enable per-consumer getter tracking for the upcoming render. Only
+      // clear `currentlyAccessing` on the false→true transition (the first
+      // snapshot call after a post-render commit) — `useSyncExternalStore`
+      // can invoke `getSnapshot` multiple times per render attempt, and
+      // clearing on every call would wipe accesses already recorded during
+      // the same render. Across React StrictMode double-invocation no
+      // commit runs between the two render passes, so accesses are
+      // idempotently re-added and the post-effect commit captures them once.
       invalidateRenderCache(adapterState.getterState);
-
-      commitTrackedGetters(adapterState.getterState);
-
-      adapterState.getterState.isTracking = true;
+      if (!adapterState.getterState.isTracking) {
+        adapterState.getterState.currentlyAccessing.clear();
+        adapterState.getterState.isTracking = true;
+      }
     }
 
     startDependency(depState);
@@ -427,8 +435,19 @@ export function noTrackInit<TBloc extends StateContainerConstructor>(
 export function disableGetterTracking<TBloc extends StateContainerConstructor>(
   adapterState: AdapterState<TBloc>,
 ): void {
-  if (adapterState.getterState) {
-    adapterState.getterState.isTracking = false;
-    commitTrackedGetters(adapterState.getterState);
-  }
+  const gs = adapterState.getterState;
+  if (!gs) return;
+  // Only act if a render phase actually ran since the last commit. The
+  // useEffect that calls us has no dep array (runs on every commit) and React
+  // StrictMode double-invocation can fire it twice for one logical render.
+  // `isTracking` doubles as the dirty flag: snapshot flips it to true at the
+  // start of a render phase, and we flip it back to false here. A subsequent
+  // call with `isTracking` already false is a no-op so the committed
+  // `trackedGetters` from the prior commit is preserved.
+  //
+  // `commitTrackedGetters` itself also guards against empty `currentlyAccessing`
+  // (see its docstring) so the two checks are mutually reinforcing.
+  if (!gs.isTracking) return;
+  gs.isTracking = false;
+  commitTrackedGetters(gs);
 }

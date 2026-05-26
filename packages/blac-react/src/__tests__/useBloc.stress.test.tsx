@@ -94,7 +94,11 @@ describe('useBloc — stress tests', () => {
 
     expect(parentBloc).not.toBeNull();
     expect(childBloc).not.toBeNull();
-    expect(parentBloc).toBe(childBloc);
+    // Per-consumer design: each useBloc returns its own proxy. The shared
+    // raw bloc is the source of truth — both proxies forward to it.
+    const raw = borrow(CounterBloc);
+    expect(parentBloc!.state).toBe(raw.state);
+    expect(childBloc!.state).toBe(raw.state);
 
     act(() => {
       (parentBloc as CounterBloc).set(7);
