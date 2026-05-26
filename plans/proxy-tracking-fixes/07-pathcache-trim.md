@@ -190,7 +190,7 @@ Body: "pathCache previously grew without bound — entries from old renders that
 
 ## Completion
 
-**Commit SHA:** (to be filled after commit)
+**Commit SHA:** 29da613a
 **Files touched:**
 
 - `packages/blac-core/src/tracking/tracking-proxy.ts`
