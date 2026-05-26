@@ -100,7 +100,9 @@ dispose (map is gone).
 
 ## Completion
 
-- Commit: (filled after commit)
-- Files touched: 5
-- Typecheck: pass (0 errors)
-- Test: 38 passed (3 files)
+- **Status:** Functionally complete.
+- **Substantive code change:** the plugin/getters dep tracking was already removed in an earlier commit (`db608347 refactor(devtools): optimize plugin perf and extract utilities`), which is why the agent found the source files already clean. Only residue was `dependsOn?: string[]` on `GetterInfo` in `src/types/index.ts`.
+- **Commit:** `64f76145` — the residual `dependsOn` removal was accidentally bundled into task 03's commit by the task-03 agent's broad `git add`. The originally-planned `refactor(devtools-connect): drop bloc-to-bloc dependency tracking` commit was not created because there was effectively nothing left to commit in isolation.
+- **Typecheck:** pass (0 errors).
+- **Tests:** 38 passed across 3 files.
+- **Lesson for follow-up agents:** when running in parallel against a shared working tree, stage **only the specific files** your brief lists. Do not use `git add .` or `git add -A`.
