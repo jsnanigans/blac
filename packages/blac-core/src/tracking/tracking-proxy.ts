@@ -78,16 +78,22 @@ export function stopProxy<T>(state: ProxyState<T>): Set<string> {
 }
 
 /**
- * Return a bound copy of `fn` keyed by (target, fn) so that the same
- * prototype method (e.g. Array.prototype.map) bound to different targets
- * produces different cached values.
+ * Cache (or create + cache) a function keyed by (target, fn). The cached
+ * value is whatever `factory()` returns the first time the pair is seen.
+ *
+ * Used for both:
+ *   - plain bound copies (see `getBoundFunction`)
+ *   - custom wrappers (e.g. iterating-array-method wrappers in
+ *     `createArrayProxy`) that need stable identity across renders
  * @internal
  */
-function getBoundFunction(
+function getOrCacheBound(
   state: ProxyState<unknown>,
   target: object,
   // oxlint-disable-next-line @typescript-eslint/no-unsafe-function-type
   fn: Function,
+  // oxlint-disable-next-line @typescript-eslint/no-unsafe-function-type
+  factory: () => Function,
   // oxlint-disable-next-line @typescript-eslint/no-unsafe-function-type
 ): Function {
   if (!state.boundFunctionsCache) {
@@ -100,10 +106,45 @@ function getBoundFunction(
   }
   const cached = perTarget.get(fn);
   if (cached) return cached;
-  const bound = fn.bind(target);
-  perTarget.set(fn, bound);
-  return bound;
+  const made = factory();
+  perTarget.set(fn, made);
+  return made;
 }
+
+/**
+ * Return a bound copy of `fn` keyed by (target, fn) so that the same
+ * prototype method (e.g. Array.prototype.map) bound to different targets
+ * produces different cached values.
+ * @internal
+ */
+function getBoundFunction(
+  state: ProxyState<unknown>,
+  target: object,
+  // oxlint-disable-next-line @typescript-eslint/no-unsafe-function-type
+  fn: Function,
+  // oxlint-disable-next-line @typescript-eslint/no-unsafe-function-type
+): Function {
+  return getOrCacheBound(state, target, fn, () => fn.bind(target));
+}
+
+/**
+ * Array methods whose callback we wrap so each item is proxied at its
+ * own per-index path. Excludes mutators, derived-array returners, and
+ * the iterator-returning helpers (handled elsewhere).
+ * @internal
+ */
+const ITERATING_METHODS: ReadonlySet<string> = new Set([
+  'forEach',
+  'map',
+  'filter',
+  'find',
+  'findIndex',
+  'findLast',
+  'findLastIndex',
+  'some',
+  'every',
+  'flatMap',
+]);
 
 /**
  * Create a proxy for an array with property access tracking
@@ -115,6 +156,38 @@ export function createArrayProxy<T, U>(
   path: string,
   depth: number = 0,
 ): U[] {
+  // Forward-declare so iterating-method wrappers can close over the proxy
+  // itself and pass it as the third callback argument.
+  let proxyRef: U[];
+
+  function makeIteratingWrapper(methodName: string) {
+    // oxlint-disable-next-line @typescript-eslint/no-explicit-any
+    const realMethod = (Array.prototype as any)[methodName] as (
+      // oxlint-disable-next-line @typescript-eslint/no-explicit-any
+      ...args: any[]
+    ) => unknown;
+    return function (
+      this: unknown,
+      // oxlint-disable-next-line @typescript-eslint/no-explicit-any
+      callback: (item: any, index: number, arr: U[]) => unknown,
+      thisArg?: unknown,
+    ) {
+      return realMethod.call(
+        target,
+        (item: U, index: number /*, _rawArr */) => {
+          const indexPath = path ? `${path}[${index}]` : `[${index}]`;
+          if (state.isTracking) {
+            state.trackedPaths.add(indexPath);
+          }
+          const proxiedItem = isProxyable(item)
+            ? createInternal(state, item as unknown as T, indexPath, depth + 1)
+            : item;
+          return callback.call(thisArg, proxiedItem, index, proxyRef);
+        },
+      );
+    };
+  }
+
   const proxy = new Proxy(target, {
     get: (arr, prop: string | symbol) => {
       if (prop === Symbol.iterator) {
@@ -143,6 +216,14 @@ export function createArrayProxy<T, U>(
       const value = Reflect.get(arr, prop);
 
       if (typeof value === 'function') {
+        if (typeof prop === 'string' && ITERATING_METHODS.has(prop)) {
+          return getOrCacheBound(
+            state as ProxyState<unknown>,
+            arr,
+            value,
+            () => makeIteratingWrapper(prop),
+          );
+        }
         return getBoundFunction(state as ProxyState<unknown>, arr, value);
       }
 
@@ -178,6 +259,7 @@ export function createArrayProxy<T, U>(
     },
   });
 
+  proxyRef = proxy;
   state.proxyCache.set(target, proxy);
   return proxy;
 }
