@@ -35,7 +35,7 @@ export interface ProxyState<T> {
   isTracking: boolean;
   proxyCache: WeakMap<object, unknown>;
   // oxlint-disable-next-line @typescript-eslint/no-unsafe-function-type
-  boundFunctionsCache: WeakMap<Function, Function> | null;
+  boundFunctionsCache: WeakMap<object, WeakMap<Function, Function>> | null;
   lastProxiedState: T | null;
   lastProxy: T | null;
   maxDepth: number;
@@ -78,6 +78,34 @@ export function stopProxy<T>(state: ProxyState<T>): Set<string> {
 }
 
 /**
+ * Return a bound copy of `fn` keyed by (target, fn) so that the same
+ * prototype method (e.g. Array.prototype.map) bound to different targets
+ * produces different cached values.
+ * @internal
+ */
+function getBoundFunction(
+  state: ProxyState<unknown>,
+  target: object,
+  // oxlint-disable-next-line @typescript-eslint/no-unsafe-function-type
+  fn: Function,
+  // oxlint-disable-next-line @typescript-eslint/no-unsafe-function-type
+): Function {
+  if (!state.boundFunctionsCache) {
+    state.boundFunctionsCache = new WeakMap();
+  }
+  let perTarget = state.boundFunctionsCache.get(target);
+  if (!perTarget) {
+    perTarget = new WeakMap();
+    state.boundFunctionsCache.set(target, perTarget);
+  }
+  const cached = perTarget.get(fn);
+  if (cached) return cached;
+  const bound = fn.bind(target);
+  perTarget.set(fn, bound);
+  return bound;
+}
+
+/**
  * Create a proxy for an array with property access tracking
  * @internal
  */
@@ -96,17 +124,7 @@ export function createArrayProxy<T, U>(
       const value = Reflect.get(arr, prop);
 
       if (typeof value === 'function') {
-        if (!state.boundFunctionsCache) {
-          // oxlint-disable-next-line @typescript-eslint/no-unsafe-function-type
-          state.boundFunctionsCache = new WeakMap<Function, Function>();
-        }
-        const cached = state.boundFunctionsCache.get(value);
-        if (cached) {
-          return cached;
-        }
-        const bound = value.bind(arr);
-        state.boundFunctionsCache.set(value, bound);
-        return bound;
+        return getBoundFunction(state as ProxyState<unknown>, arr, value);
       }
 
       if (prop === 'length') {
@@ -189,17 +207,7 @@ export function createInternal<T>(
       const value = Reflect.get(obj, prop);
 
       if (typeof value === 'function') {
-        if (!state.boundFunctionsCache) {
-          // oxlint-disable-next-line @typescript-eslint/no-unsafe-function-type
-          state.boundFunctionsCache = new WeakMap<Function, Function>();
-        }
-        const cached = state.boundFunctionsCache.get(value);
-        if (cached) {
-          return cached;
-        }
-        const bound = value.bind(obj);
-        state.boundFunctionsCache.set(value, bound);
-        return bound;
+        return getBoundFunction(state as ProxyState<unknown>, obj, value);
       }
 
       const fullPath = path ? `${path}.${String(prop)}` : String(prop);

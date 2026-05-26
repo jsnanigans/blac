@@ -125,4 +125,39 @@ describe('proxy-tracker edge cases', () => {
       expect(paths.has('set')).toBe(true);
     });
   });
+
+  describe('boundFunctionsCache — per-target', () => {
+    it('binds Array.prototype methods to the correct target', () => {
+      const state = createProxyState<unknown>();
+      state.isTracking = true;
+      const obj = { users: [1, 2, 3], posts: [10, 20, 30] };
+      const proxy = createForTarget(state, obj) as typeof obj;
+
+      const r1 = proxy.users.map((x) => x * 100);
+      const r2 = proxy.posts.map((x) => x * 100);
+
+      expect(r1).toEqual([100, 200, 300]);
+      expect(r2).toEqual([1000, 2000, 3000]); // pre-fix: [100,200,300]
+    });
+
+    it('returns stable identity for the same (target, method) pair', () => {
+      const state = createProxyState<unknown>();
+      state.isTracking = true;
+      const obj = { items: [1, 2, 3] };
+      const proxy = createForTarget(state, obj) as typeof obj;
+
+      const m1 = proxy.items.map;
+      const m2 = proxy.items.map;
+      expect(m1).toBe(m2);
+    });
+
+    it('returns distinct identity for the same method on different targets', () => {
+      const state = createProxyState<unknown>();
+      state.isTracking = true;
+      const obj = { a: [1], b: [2] };
+      const proxy = createForTarget(state, obj) as typeof obj;
+
+      expect(proxy.a.map).not.toBe(proxy.b.map);
+    });
+  });
 });
