@@ -27,7 +27,6 @@ export default defineConfig({
         ),
         'devtools/devtools': resolve(__dirname, 'src/devtools/devtools.html'),
         'panel/index': resolve(__dirname, 'src/panel/index.html'),
-        'popup/popup': resolve(__dirname, 'src/popup/popup.html'),
       },
       output: {
         entryFileNames: '[name].js',

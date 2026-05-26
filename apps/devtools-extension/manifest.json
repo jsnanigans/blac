@@ -23,9 +23,6 @@
     }
   ],
   "devtools_page": "dist/src/devtools/devtools.html",
-  "action": {
-    "default_popup": "dist/src/popup/popup.html"
-  },
   "web_accessible_resources": [
     {
       "resources": ["dist/chunks/*.js"],
