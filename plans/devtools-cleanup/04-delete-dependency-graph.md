@@ -80,8 +80,9 @@ chore(devtools-ui): remove DependencyGraph tab and xyflow/elkjs deps
 
 ## Completion
 
-Commit: (filling in after commit)
+Commit: 592e5117
 Files deleted: 4 (DependencyGraph.tsx, dependency-graph-layout.ts, DevToolsDependencyBloc.ts, inject-xyflow-styles.ts)
-Files modified: 10 (DevToolsPanel.tsx, DraggableOverlay.tsx, index.tsx, blocs files, components files, extension files)
+Files modified: 14 (DevToolsPanel.tsx, DraggableOverlay.tsx, StateViewer.tsx, index.tsx, blocs files, components files, extension files, tsconfig.base.json)
 Extension updates: Removed DevToolsDependencyBloc import and usage from panel/index.tsx, removed DependencyGraph type from comm.ts, removed getDependencyGraph from global.d.ts
-Typecheck: Pre-existing noise only (TS2686 in react, TS2688 vite/client in extension)
+Typecheck devtools-ui: Pre-existing noise (TS2686 in @blac/react)
+Typecheck devtools-extension: PASS
