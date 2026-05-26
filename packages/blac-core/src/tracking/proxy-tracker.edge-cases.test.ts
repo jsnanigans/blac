@@ -441,6 +441,63 @@ describe('proxy-tracker edge cases', () => {
     });
   });
 
+  describe('values() / entries() / keys() — proxied iteration', () => {
+    function makeProxy<T>(obj: T) {
+      const state = createProxyState<unknown>();
+      state.isTracking = true;
+      const p = createForTarget(state, obj) as T;
+      return { state, p };
+    }
+
+    it('values() yields proxied items', () => {
+      const { state, p } = makeProxy({ items: [{ t: 'a' }, { t: 'b' }] });
+      const out: string[] = [];
+      for (const it of (p as any).items.values()) out.push((it as any).t);
+      expect(out).toEqual(['a', 'b']);
+      expect(state.trackedPaths.has('items[0].t')).toBe(true);
+      expect(state.trackedPaths.has('items[1].t')).toBe(true);
+    });
+
+    it('entries() yields [index, proxiedItem]', () => {
+      const { state, p } = makeProxy({ items: [{ x: 1 }, { x: 2 }] });
+      const pairs: [number, number][] = [];
+      for (const [i, it] of (p as any).items.entries()) pairs.push([i, (it as any).x]);
+      expect(pairs).toEqual([
+        [0, 1],
+        [1, 2],
+      ]);
+      expect(state.trackedPaths.has('items[0].x')).toBe(true);
+      expect(state.trackedPaths.has('items[1].x')).toBe(true);
+    });
+
+    it('keys() returns raw indices (no item tracking from keys themselves)', () => {
+      const { state, p } = makeProxy({ items: [{ x: 1 }, { x: 2 }] });
+      const ks = Array.from((p as any).items.keys());
+      expect(ks).toEqual([0, 1]);
+      // keys() iteration alone does not record per-index data paths
+      expect(state.trackedPaths.has('items[0].x')).toBe(false);
+    });
+
+    it('lazy iteration — early break only tracks consumed indices', () => {
+      const { state, p } = makeProxy({
+        items: [{ x: 1 }, { x: 2 }, { x: 3 }],
+      });
+      for (const it of (p as any).items.values()) {
+        void (it as any).x;
+        break;
+      }
+      expect(state.trackedPaths.has('items[0].x')).toBe(true);
+      expect(state.trackedPaths.has('items[1].x')).toBe(false);
+      expect(state.trackedPaths.has('items[2].x')).toBe(false);
+    });
+
+    it('method identity is stable', () => {
+      const { p } = makeProxy({ items: [{ x: 1 }] });
+      expect((p as any).items.values).toBe((p as any).items.values);
+      expect((p as any).items.entries).toBe((p as any).items.entries);
+    });
+  });
+
   describe('reduce / reduceRight — proxied items, raw accumulator', () => {
     function makeProxy<T>(obj: T) {
       const state = createProxyState<unknown>();

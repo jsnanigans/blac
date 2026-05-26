@@ -195,6 +195,38 @@ export function createArrayProxy<T, U>(
     };
   }
 
+  /**
+   * Iterator-returning array methods whose yielded items need to be proxied.
+   * `keys()` is excluded — it yields numeric indices (primitives, no proxying needed).
+   */
+  const ITERATOR_METHODS = new Set(['values', 'entries']);
+
+  function makeIteratorMethod(methodName: 'values' | 'entries') {
+    return function () {
+      return (function* () {
+        const len = target.length;
+        if (state.isTracking && path) {
+          state.trackedPaths.add(`${path}.length`);
+        }
+        for (let i = 0; i < len; i++) {
+          const indexPath = path ? `${path}[${i}]` : `[${i}]`;
+          if (state.isTracking) {
+            state.trackedPaths.add(indexPath);
+          }
+          const item = target[i];
+          const proxied = isProxyable(item)
+            ? createInternal(state, item as unknown as T, indexPath, depth + 1)
+            : item;
+          if (methodName === 'entries') {
+            yield [i, proxied] as [number, U];
+          } else {
+            yield proxied;
+          }
+        }
+      })();
+    };
+  }
+
   function makeReducingWrapper(methodName: string) {
     // oxlint-disable-next-line @typescript-eslint/no-explicit-any
     const realMethod = (Array.prototype as any)[methodName] as Function;
@@ -264,6 +296,14 @@ export function createArrayProxy<T, U>(
             arr,
             value,
             () => makeReducingWrapper(prop),
+          );
+        }
+        if (typeof prop === 'string' && ITERATOR_METHODS.has(prop)) {
+          return getOrCacheBound(
+            state as ProxyState<unknown>,
+            arr,
+            value,
+            () => makeIteratorMethod(prop as 'values' | 'entries'),
           );
         }
         return getBoundFunction(state as ProxyState<unknown>, arr, value);
