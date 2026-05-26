@@ -3,8 +3,6 @@ export { DevToolsSearchBloc } from './DevToolsSearchBloc';
 export { DevToolsDiffBloc } from './DevToolsDiffBloc';
 export { DevToolsLayoutBloc } from './DevToolsLayoutBloc';
 export { DevToolsLogsBloc } from './DevToolsLogsBloc';
-export { DevToolsMetricsBloc } from './DevToolsMetricsBloc';
 export type { DiffResult, StateSnapshot } from './DevToolsDiffBloc';
 export type { InstanceGroup } from './DevToolsSearchBloc';
 export type { TabName } from './DevToolsLayoutBloc';
-export type { InstanceMetrics } from './DevToolsMetricsBloc';

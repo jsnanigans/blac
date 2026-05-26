@@ -10,17 +10,8 @@ import {
   DevToolsInstancesBloc,
   DevToolsDiffBloc,
   DevToolsLogsBloc,
-  DevToolsMetricsBloc,
 } from '@blac/devtools-ui';
 import comm from './comm';
-
-function estimateStateSize(state: any): number {
-  try {
-    return JSON.stringify(state)?.length ?? 0;
-  } catch {
-    return 0;
-  }
-}
 
 function App() {
   return (
@@ -28,7 +19,6 @@ function App() {
       onMount={(instancesBloc: DevToolsInstancesBloc) => {
         const diffBloc = acquire(DevToolsDiffBloc);
         const logsBloc = acquire(DevToolsLogsBloc);
-        const metricsBloc = acquire(DevToolsMetricsBloc);
 
         let currentSessionId: string | null = null;
 
@@ -38,7 +28,6 @@ function App() {
             instancesBloc.setAllInstances([]);
             diffBloc.clearAllPreviousStates();
             logsBloc.clearLogs();
-            metricsBloc.clearAll();
           });
         };
 
@@ -160,7 +149,6 @@ function App() {
                   case 'init': {
                     diffBloc.clearAllPreviousStates();
                     logsBloc.clearLogs();
-                    metricsBloc.clearAll();
                     const initInstances = (
                       Array.isArray(event.data) ? event.data : []
                     ).map((inst: any) => ({
@@ -210,7 +198,6 @@ function App() {
                     const disposedInst = instancesBloc.getInstance(d.id);
                     instancesBloc.removeInstance(d.id);
                     diffBloc.clearPreviousState(d.id);
-                    metricsBloc.removeInstance(d.id);
                     if (disposedInst) {
                       logsBloc.addLog(
                         'disposed',
@@ -234,11 +221,6 @@ function App() {
                       );
                     }
                     instancesBloc.updateInstanceState(d.id, d.state, d.getters);
-                    metricsBloc.recordUpdate(
-                      d.id,
-                      d.className,
-                      estimateStateSize(d.state),
-                    );
                     logsBloc.addLog(
                       'state-changed',
                       d.id,

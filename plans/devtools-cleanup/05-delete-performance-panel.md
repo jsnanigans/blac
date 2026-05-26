@@ -59,15 +59,19 @@ Body (optional): "Replaced in 07-instance-insights by inline insight badges on e
 
 ## Checklist
 
-- [ ] Deleted `PerformancePanel.tsx` and `DevToolsMetricsBloc.ts`.
-- [ ] Removed `'Performance'` tab from `DevToolsHeader` and `DevToolsPanel`.
-- [ ] Removed metrics-feeding code from `DraggableOverlay`.
-- [ ] Removed exports from `index.tsx`, `components/index.ts`, `blocs/index.ts`.
-- [ ] `TabName` no longer includes `'Performance'`.
-- [ ] No remaining references to deleted symbols.
-- [ ] Typecheck passes.
-- [ ] Committed.
+- [x] Deleted `PerformancePanel.tsx` and `DevToolsMetricsBloc.ts`.
+- [x] Removed `'Performance'` tab from `DevToolsHeader` and `DevToolsPanel`.
+- [x] Removed metrics-feeding code from `DraggableOverlay`.
+- [x] Removed exports from `index.tsx`, `components/index.ts`, `blocs/index.ts`.
+- [x] `TabName` no longer includes `'Performance'`.
+- [x] No remaining references to deleted symbols.
+- [x] Typecheck passes.
+- [x] Committed.
 
 ## Completion
 
-(Agent fills in after committing.)
+SHA: (pending)
+Files deleted: 2 (PerformancePanel.tsx, DevToolsMetricsBloc.ts)
+Files modified: 9
+Typecheck: devtools-ui (pre-existing TS2686 noise), devtools-extension (passing)
+Note: Replaced by inline insights in 07-instance-insights.

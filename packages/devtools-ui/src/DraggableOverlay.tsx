@@ -10,7 +10,6 @@ import {
   DevToolsInstancesBloc,
   DevToolsDiffBloc,
   DevToolsLogsBloc,
-  DevToolsMetricsBloc,
 } from './blocs';
 
 export interface DraggableOverlayProps {
@@ -105,14 +104,6 @@ function toInstanceData(inst: any): import('./types').InstanceData {
   };
 }
 
-function estimateStateSize(state: any): number {
-  try {
-    return JSON.stringify(state)?.length ?? 0;
-  } catch {
-    return 0;
-  }
-}
-
 export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
   const api = (window as any as Record<string, any>).__BLAC_DEVTOOLS__;
 
@@ -128,7 +119,6 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
 
   const diffBloc = acquire(DevToolsDiffBloc);
   const logsBloc = acquire(DevToolsLogsBloc);
-  const metricsBloc = acquire(DevToolsMetricsBloc);
 
   const loadFullData = () => {
     const fullState = api.getFullState?.();
@@ -148,8 +138,6 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
     logsBloc.clearLogs();
     const eventHistory = api.getEventHistory?.() ?? [];
     eventHistory.forEach((event: any) => processEventIntoLogs(event, logsBloc));
-
-    metricsBloc.clearAll();
   };
 
   // Load initial data
@@ -189,7 +177,6 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
         const disposedInstance = instancesBloc.getInstance(d.id as string);
         instancesBloc.removeInstance(d.id as string);
         diffBloc.clearPreviousState(d.id as string);
-        metricsBloc.removeInstance(d.id as string);
         if (disposedInstance) {
           logsBloc.addLog(
             'disposed',
@@ -217,11 +204,6 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
           d.id as string,
           updatedState,
           d.getters,
-        );
-        metricsBloc.recordUpdate(
-          d.id as string,
-          d.className as string,
-          estimateStateSize(updatedState),
         );
         logsBloc.addLog(
           'state-changed',
