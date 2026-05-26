@@ -197,4 +197,88 @@ describe('proxy-tracker edge cases', () => {
       expect(proxy.a.map).not.toBe(proxy.b.map);
     });
   });
+
+  describe('Symbol.iterator — proxied iteration', () => {
+    it('yields proxied items so property access is tracked', () => {
+      const state = createProxyState<unknown>();
+      state.isTracking = true;
+      const obj = {
+        items: [{ id: 'a', title: 'first' }, { id: 'b', title: 'second' }],
+      };
+      const proxy = createForTarget(state, obj) as typeof obj;
+
+      let titles = '';
+      for (const item of proxy.items) {
+        titles += item.title + ',';
+      }
+
+      expect(titles).toBe('first,second,');
+      expect(state.trackedPaths.has('items[0].title')).toBe(true);
+      expect(state.trackedPaths.has('items[1].title')).toBe(true);
+    });
+
+    it('tracks length and each index even if the user does not dereference', () => {
+      const state = createProxyState<unknown>();
+      state.isTracking = true;
+      const obj = { items: [{ a: 1 }, { a: 2 }, { a: 3 }] };
+      const proxy = createForTarget(state, obj) as typeof obj;
+
+      for (const _ of proxy.items) {
+        // no dereference
+      }
+      expect(state.trackedPaths.has('items.length')).toBe(true);
+      expect(state.trackedPaths.has('items[0]')).toBe(true);
+      expect(state.trackedPaths.has('items[1]')).toBe(true);
+      expect(state.trackedPaths.has('items[2]')).toBe(true);
+    });
+
+    it('preserves primitive items', () => {
+      const state = createProxyState<unknown>();
+      state.isTracking = true;
+      const obj = { nums: [1, 2, 3] };
+      const proxy = createForTarget(state, obj) as typeof obj;
+
+      const out: number[] = [];
+      for (const n of proxy.nums) out.push(n);
+      expect(out).toEqual([1, 2, 3]);
+    });
+
+    it('Array.from on the proxy yields proxied items', () => {
+      // Array.from uses Symbol.iterator
+      const state = createProxyState<unknown>();
+      state.isTracking = true;
+      const obj = { items: [{ x: 1 }, { x: 2 }] };
+      const proxy = createForTarget(state, obj) as typeof obj;
+
+      const copies = Array.from(proxy.items, (item) => item.x);
+      expect(copies).toEqual([1, 2]);
+      expect(state.trackedPaths.has('items[0].x')).toBe(true);
+      expect(state.trackedPaths.has('items[1].x')).toBe(true);
+    });
+
+    it('destructuring iterates via Symbol.iterator', () => {
+      const state = createProxyState<unknown>();
+      state.isTracking = true;
+      const obj = { items: [{ y: 'a' }, { y: 'b' }] };
+      const proxy = createForTarget(state, obj) as typeof obj;
+
+      const [first, second] = proxy.items;
+      void first.y;
+      void second.y;
+      expect(state.trackedPaths.has('items[0].y')).toBe(true);
+      expect(state.trackedPaths.has('items[1].y')).toBe(true);
+    });
+
+    it('iterator on an empty array tracks length only', () => {
+      const state = createProxyState<unknown>();
+      state.isTracking = true;
+      const obj = { items: [] as { x: number }[] };
+      const proxy = createForTarget(state, obj) as typeof obj;
+      for (const _ of proxy.items) {
+        /* no-op */
+      }
+      expect(state.trackedPaths.has('items.length')).toBe(true);
+      expect(state.trackedPaths.has('items[0]')).toBe(false);
+    });
+  });
 });

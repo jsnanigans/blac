@@ -117,6 +117,25 @@ export function createArrayProxy<T, U>(
 ): U[] {
   const proxy = new Proxy(target, {
     get: (arr, prop: string | symbol) => {
+      if (prop === Symbol.iterator) {
+        return function* () {
+          const len = arr.length;
+          if (state.isTracking && path) {
+            state.trackedPaths.add(`${path}.length`);
+          }
+          for (let i = 0; i < len; i++) {
+            const indexPath = path ? `${path}[${i}]` : `[${i}]`;
+            if (state.isTracking) {
+              state.trackedPaths.add(indexPath);
+            }
+            const item = arr[i];
+            yield isProxyable(item)
+              ? createInternal(state, item as T, indexPath, depth + 1)
+              : item;
+          }
+        };
+      }
+
       if (typeof prop === 'symbol') {
         return Reflect.get(arr, prop);
       }
