@@ -79,7 +79,7 @@ const wasTrackable =
   adapterState.lastSnapshotState !== null &&
   adapterState.lastSnapshotState !== undefined &&
   (typeof adapterState.lastSnapshotState === 'object' ||
-   typeof adapterState.lastSnapshotState === 'function');
+    typeof adapterState.lastSnapshotState === 'function');
 const isTrackable =
   instance.state !== null &&
   instance.state !== undefined &&
@@ -91,7 +91,7 @@ if (wasTrackable !== isTrackable) {
 }
 
 if (!isTrackable) {
-  callback();   // primitive / null / undefined — no tracking possible
+  callback(); // primitive / null / undefined — no tracking possible
   return;
 }
 
@@ -159,17 +159,18 @@ Body: "autoTrackSubscribe early-returned when current state was an object with e
 
 ## Checklist
 
-- [ ] `AdapterState.lastSnapshotState` added; all three `*Init` initialize it.
-- [ ] Each snapshot function updates `lastSnapshotState` before returning.
-- [ ] `autoTrackSubscribe` listener uses the new logic.
-- [ ] Three new regression tests pass.
-- [ ] Existing adapter tests still pass.
-- [ ] Committed.
+- [x] `AdapterState.lastSnapshotState` added; all three `*Init` initialize it.
+- [x] Each snapshot function updates `lastSnapshotState` before returning.
+- [x] `autoTrackSubscribe` listener uses the new logic.
+- [x] Three new regression tests pass.
+- [x] Existing adapter tests still pass.
+- [x] Committed.
 
 ## Completion
 
-**Commit SHA:** (see git log)
+**Commit SHA:** 437b93db
 **Files touched:**
+
 - `packages/blac-adapter/src/index.ts`
 - `packages/blac-adapter/src/__tests__/adapter.edge-cases.test.ts`
 
