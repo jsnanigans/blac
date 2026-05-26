@@ -126,6 +126,43 @@ describe('proxy-tracker edge cases', () => {
     });
   });
 
+  describe('nested proxy cache — path correctness across state shapes', () => {
+    it('uses the correct path when a shared nested object moves between states', () => {
+      const state = createProxyState<unknown>();
+      state.isTracking = true;
+
+      const shared = { x: 1 };
+      const stateA = { a: shared };
+      const pA = createForTarget(state, stateA) as typeof stateA;
+      void pA.a.x;
+      expect(state.trackedPaths.has('a.x')).toBe(true);
+
+      // Move to stateB where `shared` lives at a different key.
+      state.trackedPaths.clear();
+      const stateB = { other: shared };
+      const pB = createForTarget(state, stateB) as typeof stateB;
+      void pB.other.x;
+
+      expect(state.trackedPaths.has('other.x')).toBe(true);
+      expect(state.trackedPaths.has('a.x')).toBe(false); // pre-fix this leaks
+    });
+
+    it('drops nested proxies from the cache after a state swap', () => {
+      const state = createProxyState<unknown>();
+      state.isTracking = true;
+      const inner = { x: 1 };
+      const s1 = { a: inner };
+      const p1 = createForTarget(state, s1) as typeof s1;
+      void p1.a;
+      const cachedBefore = state.proxyCache.has(inner);
+      expect(cachedBefore).toBe(true);
+
+      const s2 = { b: 2 };
+      createForTarget(state, s2);
+      expect(state.proxyCache.has(inner)).toBe(false);
+    });
+  });
+
   describe('boundFunctionsCache — per-target', () => {
     it('binds Array.prototype methods to the correct target', () => {
       const state = createProxyState<unknown>();

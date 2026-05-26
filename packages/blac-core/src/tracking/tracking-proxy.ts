@@ -260,9 +260,8 @@ export function createForTarget<T>(state: ProxyState<T>, target: T): T {
     return state.lastProxy;
   }
 
-  if (state.lastProxiedState !== null) {
-    state.proxyCache.delete(state.lastProxiedState as object);
-  }
+  // New state — discard all nested proxies. They might point at the wrong path.
+  state.proxyCache = new WeakMap<object, unknown>();
   state.boundFunctionsCache = null;
 
   const proxy = createInternal(state, target, '', 0);
