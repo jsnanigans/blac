@@ -86,26 +86,6 @@ export interface DevToolsStateManagerConfig {
 }
 
 // =============================================================================
-// Dependency Graph Types
-// =============================================================================
-
-export interface DependencyEdge {
-  /** Instance ID of the bloc that has the dependency */
-  fromId: string;
-  /** Class name of the dependent bloc */
-  fromClass: string;
-  /** Class name of the dependency target */
-  toClass: string;
-  /** Instance key of the dependency target */
-  toKey: string;
-}
-
-export interface DevToolsGraph {
-  nodes: Array<{ id: string; className: string; name: string }>;
-  edges: DependencyEdge[];
-}
-
-// =============================================================================
 // Performance Metrics Types
 // =============================================================================
 

@@ -65,17 +65,6 @@ import { DraggableOverlay } from '@blac/devtools-ui';
 />;
 ```
 
-### PictureInPictureDevTools
-
-Opens DevTools in a separate PiP window (Chrome 116+).
-
-```tsx
-import { PictureInPictureDevTools, isPiPSupported } from '@blac/devtools-ui';
-if (isPiPSupported()) {
-  <PictureInPictureDevTools />;
-}
-```
-
 ### DevToolsPanel
 
 Core panel for custom integrations (browser extensions, etc.).

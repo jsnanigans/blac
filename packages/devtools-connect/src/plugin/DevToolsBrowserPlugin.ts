@@ -17,8 +17,6 @@ import type {
   DevToolsCallback,
   DevToolsBrowserPluginConfig,
   Trigger,
-  DependencyEdge,
-  DevToolsGraph,
   InstanceMetrics,
   PerformanceWarning,
   ConsumerInfo,
@@ -39,9 +37,6 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
   private context?: PluginContext;
   private config: Required<DevToolsBrowserPluginConfig>;
   private instanceTimestamps = new Map<string, number>();
-
-  // Dependency graph tracking: fromId -> edges
-  private dependencyEdgesByFrom = new Map<string, DependencyEdge[]>();
 
   // Performance metrics tracking: instanceId -> sorted array of update timestamps
   private updateTimestamps = new Map<string, number[]>();
@@ -127,7 +122,6 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     this.eventHistoryBuffer = [];
     this.eventHistoryHead = 0;
     this.eventHistoryCount = 0;
-    this.dependencyEdgesByFrom.clear();
     this.consumers.clear();
     this.refHolders.clear();
     this.updateTimestamps.clear();
@@ -159,17 +153,11 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       createdFrom,
     });
 
-    // Capture dependency edges from this instance
-    this.captureDependencies(instance, data.id, data.className);
-    const instanceEdges = this.dependencyEdgesByFrom.get(data.id) ?? [];
-
     const eventData = { ...data, createdFrom };
     this.emit({
       type: 'instance-created',
       timestamp: now,
-      data: instanceEdges.length
-        ? { ...eventData, dependencies: instanceEdges }
-        : eventData,
+      data: eventData,
     });
   }
 
@@ -235,9 +223,6 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     data.isDisposed = true;
     this.instanceCache.delete(data.id);
     this.stateManager.removeInstance(data.id);
-
-    // Remove dependency edges from this instance
-    this.dependencyEdgesByFrom.delete(data.id);
 
     // Clean up consumers, ref holders, and metrics tracking
     this.consumers.delete(data.id);
@@ -357,18 +342,6 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
 
   getFullState(): { instances: any[]; timestamp: any } {
     return this.stateManager.getFullState();
-  }
-
-  getDependencyGraph(): DevToolsGraph {
-    const instances = Array.from(this.instanceCache.values());
-    return {
-      nodes: instances.map((inst) => ({
-        id: inst.id,
-        className: inst.className,
-        name: inst.name,
-      })),
-      edges: Array.from(this.dependencyEdgesByFrom.values()).flat(),
-    };
   }
 
   getPerformanceMetrics(
@@ -498,8 +471,6 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
           createdAt,
           getters: (data as any).getters,
         });
-
-        this.captureDependencies(instance, data.id, data.className);
       }
     }
 
@@ -700,39 +671,6 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
   }
 
   /**
-   * Capture dependency edges from an instance's dependencies map.
-   */
-  private captureDependencies(
-    instance: any,
-    instanceId: string,
-    className: string,
-  ): void {
-    try {
-      const deps = instance.dependencies as
-        | ReadonlyMap<{ name: string }, string>
-        | undefined;
-      if (!deps || deps.size === 0) return;
-
-      // Replace edges for this instance
-      const newEdges: DependencyEdge[] = [];
-      for (const [TypeClass, instanceKey] of deps) {
-        const toClass =
-          (TypeClass as any as Record<string, any>).name ??
-          (TypeClass as any).toString();
-        newEdges.push({
-          fromId: instanceId,
-          fromClass: className,
-          toClass,
-          toKey: instanceKey,
-        });
-      }
-      this.dependencyEdgesByFrom.set(instanceId, newEdges);
-    } catch {
-      // Accessing dependencies on foreign objects can throw — ignore silently
-    }
-  }
-
-  /**
    * Record a state update for metrics tracking.
    */
   private recordUpdate(instanceId: string, stateSizeBytes: number): void {
@@ -837,7 +775,6 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       const lastChange =
         history.length > 0 ? history[history.length - 1] : null;
       const instanceConsumers = this.consumers.get(inst.id);
-      const instanceEdges = this.dependencyEdgesByFrom.get(inst.id) ?? [];
       const refIds = this.context?.getRefIds(inst.id) ?? [];
       const refHolders = this.getRefHoldersForInstance(inst.id);
       return {
@@ -852,7 +789,6 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
         getters: inst.getters,
         history: inst.history,
         createdFrom: inst.createdFrom,
-        dependencies: instanceEdges.length ? instanceEdges : undefined,
         consumers: instanceConsumers
           ? Array.from(instanceConsumers.values())
           : undefined,
@@ -871,7 +807,6 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
         eventHistory: this.getEventHistory(),
         version: this.getVersion(),
         timestamp: Date.now(),
-        dependencyGraph: this.getDependencyGraph(),
         sessionId: this.sessionId,
       },
     });
@@ -909,7 +844,6 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
       isEnabled: () => this.enabled,
       timeTravel: (instanceId: string, state: any) =>
         this.timeTravel(instanceId, state),
-      getDependencyGraph: () => this.getDependencyGraph(),
       getPerformanceMetrics: (instanceId?: string) => {
         const result = this.getPerformanceMetrics(instanceId);
         return result;

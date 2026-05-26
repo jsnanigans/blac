@@ -88,27 +88,6 @@ class ThrowingGetterCubit extends Cubit<{ x: number }> {
   }
 }
 
-class MultiDepCubit extends Cubit<{ val: number }> {
-  private getA = this.depend(DepTargetCubit);
-  private getB = this.depend(SimpleCubit);
-
-  constructor() {
-    super({ val: 1 });
-  }
-
-  get usesA(): string {
-    return this.getA().state.mode;
-  }
-
-  get usesBoth(): string {
-    return `${this.getA().state.mode}-${this.getB().state.count}`;
-  }
-
-  get usesNone(): number {
-    return this.state.val;
-  }
-}
-
 // ============ Helpers ============
 
 const resetState = () => {
@@ -216,31 +195,6 @@ describe('enumerateGetters', () => {
     });
   });
 
-  describe('per-getter dependency tracking', () => {
-    it('tracks which dependencies a getter accesses', () => {
-      acquire(DepTargetCubit);
-      const instance = acquire(CubitWithDependency);
-      const result = defined(enumerateGetters(instance));
-
-      expect(result.formatted.dependsOn).toEqual(['DepTargetCubit']);
-      expect(result.plain.dependsOn).toBeUndefined();
-    });
-
-    it('tracks multiple dependencies per getter', () => {
-      acquire(DepTargetCubit);
-      acquire(SimpleCubit);
-      const instance = acquire(MultiDepCubit);
-      const result = defined(enumerateGetters(instance));
-
-      expect(result.usesA.dependsOn).toEqual(['DepTargetCubit']);
-      expect(result.usesBoth.dependsOn).toEqual(
-        expect.arrayContaining(['DepTargetCubit', 'SimpleCubit']),
-      );
-      expect(result.usesBoth.dependsOn).toHaveLength(2);
-      expect(result.usesNone.dependsOn).toBeUndefined();
-    });
-  });
-
   describe('reentrancy guard', () => {
     it('returns undefined when called reentrantly (no infinite loop)', () => {
       const plugin = new DevToolsBrowserPlugin();
@@ -306,27 +260,6 @@ describe('DevToolsBrowserPlugin getter integration', () => {
 
     const evt = findEvent(subscriber, 'instance-created');
     expect(evt.data.getters).toBeUndefined();
-  });
-
-  it('includes dependency annotations in getter data', () => {
-    const plugin = new DevToolsBrowserPlugin();
-    getPluginManager().install(plugin);
-
-    acquire(DepTargetCubit);
-
-    const subscriber = vi.fn();
-    plugin.subscribe(subscriber);
-
-    acquire(CubitWithDependency);
-
-    const evt = findEvent(
-      subscriber,
-      'instance-created',
-      'CubitWithDependency',
-    );
-    const getters = evt.data.getters;
-    expect(getters.formatted.dependsOn).toEqual(['DepTargetCubit']);
-    expect(getters.plain.dependsOn).toBeUndefined();
   });
 
   it('stores getters in state manager snapshots', async () => {
