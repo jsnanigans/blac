@@ -202,7 +202,7 @@ Body: "for-of, destructuring and Array.from over a proxied array now record per-
 
 ## Completion
 
-**Commit SHA:** (filled after commit)
+**Commit SHA:** 39f143cf
 **Files touched:**
 - `packages/blac-core/src/tracking/tracking-proxy.ts` — `Symbol.iterator` interception added before the generic symbol passthrough in `createArrayProxy`
 - `packages/blac-core/src/tracking/proxy-tracker.edge-cases.test.ts` — six regression tests added under `describe('Symbol.iterator — proxied iteration', ...)`
