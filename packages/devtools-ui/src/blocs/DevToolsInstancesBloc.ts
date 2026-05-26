@@ -2,11 +2,18 @@ import { Cubit, blac } from '@blac/core';
 import type { ConsumerInfo, InstanceData, RefHolderInfo } from '../types';
 import { debug } from '../utils/debug';
 
+/** Maximum timestamps kept per instance in the update-rate ring buffer. */
+const UPDATE_RING_MAX = 200;
+/** Rolling window used to compute update rate (milliseconds). */
+const UPDATE_RATE_WINDOW_MS = 10_000;
+
 type InstancesState = {
   instances: InstanceData[];
   connected: boolean;
   // Track animation triggers: instanceId -> array of timestamps
   animationTriggers: Map<string, number[]>;
+  // Ring buffer of state-change timestamps per instance (for update-rate insight)
+  updateTimestamps: Map<string, number[]>;
 };
 
 /**
@@ -20,6 +27,7 @@ export class DevToolsInstancesBloc extends Cubit<InstancesState> {
       instances: [],
       connected: false,
       animationTriggers: new Map(),
+      updateTimestamps: new Map(),
     });
   }
 
@@ -54,11 +62,14 @@ export class DevToolsInstancesBloc extends Cubit<InstancesState> {
 
     const instances = this.state.instances.filter((i) => i.id !== instanceId);
 
-    // Clean up animation triggers
+    // Clean up animation triggers and update-rate ring buffer
     const animationTriggers = new Map(this.state.animationTriggers);
     animationTriggers.delete(instanceId);
 
-    this.patch({ instances, animationTriggers });
+    const updateTimestamps = new Map(this.state.updateTimestamps);
+    updateTimestamps.delete(instanceId);
+
+    this.patch({ instances, animationTriggers, updateTimestamps });
     debug.log(`Instance removed (total: ${instances.length})`);
   };
 
@@ -110,7 +121,18 @@ export class DevToolsInstancesBloc extends Cubit<InstancesState> {
     recentTriggers.push(now);
     animationTriggers.set(instanceId, recentTriggers);
 
-    this.patch({ instances, animationTriggers });
+    // Record timestamp in update-rate ring buffer; prune old + cap size
+    const updateTimestamps = new Map(this.state.updateTimestamps);
+    const prevTs = updateTimestamps.get(instanceId) ?? [];
+    const windowStart = now - UPDATE_RATE_WINDOW_MS;
+    let nextTs = prevTs.filter((t) => t >= windowStart);
+    nextTs.push(now);
+    if (nextTs.length > UPDATE_RING_MAX) {
+      nextTs = nextTs.slice(nextTs.length - UPDATE_RING_MAX);
+    }
+    updateTimestamps.set(instanceId, nextTs);
+
+    this.patch({ instances, animationTriggers, updateTimestamps });
     debug.log(`Instance state updated: ${instanceId}`);
   };
 
@@ -162,6 +184,14 @@ export class DevToolsInstancesBloc extends Cubit<InstancesState> {
    */
   getInstance = (instanceId: string): InstanceData | null => {
     return this.state.instances.find((inst) => inst.id === instanceId) || null;
+  };
+
+  /**
+   * Returns the number of state-changed events for an instance in the last 10 s.
+   * Reads from the in-memory ring buffer; pruning is done on write, so this is O(1).
+   */
+  getUpdatesIn10s = (instanceId: string): number => {
+    return this.state.updateTimestamps.get(instanceId)?.length ?? 0;
   };
 
   /**

@@ -13,7 +13,9 @@ const EMPTY_TRIGGERS: number[] = [];
 
 export const InstanceList: FC<{ width?: number }> = React.memo(
   ({ width = 300 }) => {
-    const [{ instances, animationTriggers }] = useBloc(DevToolsInstancesBloc);
+    const [{ instances, animationTriggers }, instancesBloc] = useBloc(
+      DevToolsInstancesBloc,
+    );
     const [, searchBloc] = useBloc(DevToolsSearchBloc, { autoTrack: false });
     const [{ selectedId }, layoutBloc] = useBloc(DevToolsLayoutBloc);
 
@@ -123,6 +125,7 @@ export const InstanceList: FC<{ width?: number }> = React.memo(
                     animationTriggers={
                       animationTriggers.get(instance.id) ?? EMPTY_TRIGGERS
                     }
+                    updatesIn10s={instancesBloc.getUpdatesIn10s(instance.id)}
                     onSelect={() => layoutBloc.setSelectedId(instance.id)}
                   />
                 ))}

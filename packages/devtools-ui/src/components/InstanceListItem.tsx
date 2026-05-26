@@ -1,13 +1,38 @@
-import React, { FC, useState } from 'react';
+import React, { FC, useMemo, useState } from 'react';
 import type { InstanceData } from '../types';
 import InstanceId from './InstanceId';
 import { stringToColor } from '../utils/stringToColor';
 import { T } from '../theme';
+import {
+  computeInsights,
+  measureStateBytes,
+  type Insight,
+} from './computeInsights';
+
+// ---------------------------------------------------------------------------
+// State-size cache: keyed by `${instanceId}:${lastStateChangeTimestamp}` so
+// we never re-serialise the same state object on every render.
+// ---------------------------------------------------------------------------
+const stateSizeCache = new Map<string, number>();
+
+function getCachedStateBytes(instance: InstanceData): number {
+  const key = `${instance.id}:${instance.lastStateChangeTimestamp ?? 0}`;
+  const cached = stateSizeCache.get(key);
+  if (cached !== undefined) return cached;
+  // Evict stale entries for this instance (different timestamp)
+  for (const k of stateSizeCache.keys()) {
+    if (k.startsWith(`${instance.id}:`)) stateSizeCache.delete(k);
+  }
+  const bytes = measureStateBytes(instance.state);
+  stateSizeCache.set(key, bytes);
+  return bytes;
+}
 
 interface InstanceListItemProps {
   instance: InstanceData;
   isSelected: boolean;
   animationTriggers: number[];
+  updatesIn10s: number;
   onSelect: () => void;
 }
 
@@ -29,11 +54,22 @@ function statePreview(state: unknown): string {
 }
 
 export const InstanceListItem: FC<InstanceListItemProps> = React.memo(
-  ({ instance, isSelected, animationTriggers, onSelect }) => {
+  ({ instance, isSelected, animationTriggers, updatesIn10s, onSelect }) => {
     const borderColor = stringToColor(instance.className);
     const now = Date.now();
     const activeTriggers = animationTriggers.filter((t) => now - t < 300);
     const preview = statePreview(instance.state);
+
+    const insights = useMemo(
+      () =>
+        computeInsights({
+          state: instance.state,
+          stateSizeBytes: getCachedStateBytes(instance),
+          updatesIn10s,
+        }),
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [instance.id, instance.lastStateChangeTimestamp, updatesIn10s],
+    );
 
     return (
       <div
@@ -153,12 +189,106 @@ export const InstanceListItem: FC<InstanceListItemProps> = React.memo(
         >
           {preview}
         </div>
+
+        {/* Line 3: Insight pills (only when warnings apply) */}
+        {insights.length > 0 && (
+          <div
+            style={{
+              display: 'flex',
+              gap: '3px',
+              flexWrap: 'wrap',
+              marginTop: '3px',
+            }}
+          >
+            {insights.map((insight) => (
+              <InsightPill key={insight.kind} insight={insight} />
+            ))}
+          </div>
+        )}
       </div>
     );
   },
 );
 
 InstanceListItem.displayName = 'InstanceListItem';
+
+// ---------------------------------------------------------------------------
+// InsightPill — warning pill used in InstanceListItem and StateViewer
+// ---------------------------------------------------------------------------
+
+function insightLabel(insight: Insight): string {
+  switch (insight.kind) {
+    case 'large-state':
+      return `${(insight.sizeBytes / 1024).toFixed(0)} KB state`;
+    case 'high-update-rate':
+      return `${insight.updatesPer10s} updates/10s`;
+  }
+}
+
+function insightTitle(insight: Insight): string {
+  switch (insight.kind) {
+    case 'large-state':
+      return `State is ${(insight.sizeBytes / 1024).toFixed(1)} KB (threshold: ${(insight.threshold / 1024).toFixed(0)} KB)`;
+    case 'high-update-rate':
+      return `${insight.updatesPer10s} updates in the last 10 s (threshold: ${insight.threshold})`;
+  }
+}
+
+export const InsightPill: FC<{ insight: Insight; large?: boolean }> = ({
+  insight,
+  large,
+}) => {
+  const [hovered, setHovered] = useState(false);
+  const label = insightLabel(insight);
+  const title = insightTitle(insight);
+
+  return (
+    <span
+      style={{ position: 'relative', display: 'inline-block' }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <span
+        style={{
+          fontSize: large ? '10px' : '8px',
+          padding: large ? '1px 5px' : '0px 4px',
+          background: T.warningBg,
+          color: T.warningText,
+          borderRadius: T.radiusSm,
+          letterSpacing: '0.3px',
+          lineHeight: large ? '18px' : '16px',
+          cursor: 'help',
+          display: 'inline-block',
+          fontFamily: T.fontMono,
+        }}
+      >
+        ⚠ {label}
+      </span>
+      {hovered && (
+        <span
+          style={{
+            position: 'absolute',
+            bottom: 'calc(100% + 4px)',
+            right: 0,
+            background: T.bg4,
+            border: `1px solid ${T.border2}`,
+            borderRadius: T.radius,
+            color: T.text0,
+            fontSize: '10px',
+            fontFamily: T.fontMono,
+            padding: '4px 6px',
+            whiteSpace: 'nowrap',
+            zIndex: 9999,
+            pointerEvents: 'none',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+          }}
+        >
+          {title}
+        </span>
+      )}
+    </span>
+  );
+};
 
 const StatusBadge: FC<{
   bg: string;

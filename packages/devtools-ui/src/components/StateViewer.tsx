@@ -1,13 +1,14 @@
-import React, { FC, useState } from 'react';
+import React, { FC, useMemo, useState } from 'react';
 import { useBloc } from '@blac/react';
 import { DevToolsLayoutBloc, DevToolsInstancesBloc } from '../blocs';
 import type {
   ConsumerInfo,
-  DependencyEdge,
   GetterInfo,
   InstanceData,
   RefHolderInfo,
 } from '../types';
+import { computeInsights, measureStateBytes } from './computeInsights';
+import { InsightPill } from './InstanceListItem';
 import { CurrentStateView } from './CurrentStateView';
 import { StateHistoryView } from './StateHistoryView';
 import { StateDiffView } from './StateDiffView';
@@ -188,33 +189,6 @@ const ComputedGettersSection: FC<ComputedGettersSectionProps> = React.memo(
 );
 
 ComputedGettersSection.displayName = 'ComputedGettersSection';
-
-// ============================================================================
-// Dependencies Section
-// ============================================================================
-
-interface DependenciesSectionProps {
-  dependencies?: DependencyEdge[];
-}
-
-const DependenciesSection: FC<DependenciesSectionProps> = React.memo(
-  ({ dependencies = [] }) => {
-    if (dependencies.length === 0) return null;
-
-    return (
-      <div>
-        <SectionHeader
-          label="Dependencies"
-          isExpanded={false}
-          onToggle={() => {}}
-          badge={dependencies.length}
-        />
-      </div>
-    );
-  },
-);
-
-DependenciesSection.displayName = 'DependenciesSection';
 
 // ============================================================================
 // Initiator Section
@@ -567,11 +541,33 @@ export const StateViewer: FC<StateViewerProps> = ({ onTimeTravel }) => {
     },
     layoutBloc,
   ] = useBloc(DevToolsLayoutBloc);
-  const [{ instances }] = useBloc(DevToolsInstancesBloc);
+  const [{ instances }, instancesBloc] = useBloc(DevToolsInstancesBloc);
 
   const selectedInstance = layoutBloc.selectedInstance;
   const history = layoutBloc.selectedHistory;
   const diff = layoutBloc.selectedDiff;
+
+  const updatesIn10s = selectedInstance
+    ? instancesBloc.getUpdatesIn10s(selectedInstance.id)
+    : 0;
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const insights = useMemo(
+    () =>
+      selectedInstance
+        ? computeInsights({
+            state: selectedInstance.state,
+            stateSizeBytes: measureStateBytes(selectedInstance.state),
+            updatesIn10s,
+          })
+        : [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      selectedInstance?.id,
+      selectedInstance?.lastStateChangeTimestamp,
+      updatesIn10s,
+    ],
+  );
 
   if (!selectedInstance) {
     return (
@@ -681,7 +677,33 @@ export const StateViewer: FC<StateViewerProps> = ({ onTimeTravel }) => {
                 </span>
               </>
             )}
+          {(() => {
+            const refCount = selectedInstance.refIds?.length ?? 0;
+            if (refCount === 0) return null;
+            return (
+              <>
+                <span style={{ color: T.border2 }}>·</span>
+                <span>
+                  {refCount} ref holder{refCount !== 1 ? 's' : ''}
+                </span>
+              </>
+            );
+          })()}
         </div>
+        {insights.length > 0 && (
+          <div
+            style={{
+              display: 'flex',
+              gap: '4px',
+              flexWrap: 'wrap',
+              marginTop: '6px',
+            }}
+          >
+            {insights.map((insight) => (
+              <InsightPill key={insight.kind} insight={insight} large />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Scrollable Content */}
@@ -723,8 +745,6 @@ export const StateViewer: FC<StateViewerProps> = ({ onTimeTravel }) => {
           onToggleExpanded={layoutBloc.toggleHistoryExpanded}
           onTimeTravel={timeTravelForInstance}
         />
-
-        <DependenciesSection dependencies={selectedInstance.dependencies} />
 
         <InitiatorSection createdFrom={selectedInstance.createdFrom} />
 

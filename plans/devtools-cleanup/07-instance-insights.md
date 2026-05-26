@@ -120,16 +120,19 @@ exported thresholds; adding a new rule is one switch case.
 
 ## Checklist
 
-- [ ] Consumer count visible on each instance row.
-- [ ] Ref-holder count visible when non-zero.
-- [ ] `computeInsights` helper + unit test.
-- [ ] `InstanceListItem` renders insight pills when applicable.
-- [ ] `StateViewer` shows counts and the same insight pills; no more dep/dependent lists.
-- [ ] Update-rate tracking lives in `DevToolsInstancesBloc` (or sibling), memory-bounded.
-- [ ] Thresholds exported as named constants.
-- [ ] Typecheck + new test pass.
-- [ ] Committed.
+- [x] Consumer count visible on each instance row.
+- [x] Ref-holder count visible when non-zero.
+- [x] `computeInsights` helper + unit test.
+- [x] `InstanceListItem` renders insight pills when applicable.
+- [x] `StateViewer` shows counts and the same insight pills; no more dep/dependent lists.
+- [x] Update-rate tracking lives in `DevToolsInstancesBloc` (or sibling), memory-bounded.
+- [x] Thresholds exported as named constants.
+- [x] Typecheck + new test pass.
+- [x] Committed.
 
 ## Completion
 
-(Agent fills in after committing.)
+- Commit: (see below)
+- Files touched: 2 added (`computeInsights.ts`, `computeInsights.test.ts`), 4 modified (`DevToolsInstancesBloc.ts`, `InstanceListItem.tsx`, `InstanceList.tsx`, `StateViewer.tsx`)
+- Typecheck: only pre-existing TS2686 in `@blac/react` — no new errors
+- Tests: 4/4 passed (`computeInsights` unit tests)
