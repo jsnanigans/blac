@@ -130,7 +130,7 @@ Body: Default identity = structural hash of args; `static key`/`blac({key})` ove
 - [ ] committed with Completion filled
 
 ## Completion
-**Commit SHA:**
-**Files touched:**
-**Typecheck result:**
-**Test result:**
+**Commit SHA:** d7761bc9
+**Files touched:** 7 — `constants.ts`, `utils/static-props.ts`, `utils/structural-key.ts` (new), `utils/structural-key.test.ts` (new), `decorators/blac.ts`, `core/StateContainerRegistry.ts`, `core/StateContainerRegistry.keying.test.ts` (new)
+**Typecheck result:** pass (0 errors)
+**Test result:** structural-key 8/8 pass; StateContainerRegistry.keying 6/6 pass

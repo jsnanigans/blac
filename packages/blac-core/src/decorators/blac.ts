@@ -14,7 +14,14 @@ export type BlacOptions =
    * Override the global equality check for this bloc.
    * Return `true` to skip the emit (states considered equal).
    */
-  | { equality: EqualityFn };
+  | { equality: EqualityFn }
+  /**
+   * Override the default structural-hash identity key.
+   * The function receives `args` and returns the instance key string.
+   * Distinct return values → distinct instances; identical values → shared instance.
+   * Non-identity fields can be excluded so they don't fork new instances.
+   */
+  | { key: (args: any) => string };
 
 /**
  * Decorator to configure StateContainer classes.
@@ -48,6 +55,9 @@ export function blac(options: BlacOptions) {
     }
     if ('equality' in options && typeof options.equality === 'function') {
       (target as any)[BLAC_STATIC_PROPS.EQUALITY] = options.equality;
+    }
+    if ('key' in options && typeof options.key === 'function') {
+      (target as any)[BLAC_STATIC_PROPS.KEY] = options.key;
     }
     return target;
   };

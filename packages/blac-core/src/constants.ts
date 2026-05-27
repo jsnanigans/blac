@@ -46,6 +46,14 @@ export const BLAC_STATIC_PROPS = {
    * global `configureBlac({ equality })` value when unset.
    */
   EQUALITY: '__equality',
+
+  /**
+   * Per-class key function: `static key = (args) => string`.
+   * When set, the registry calls `Type.key(args)` to derive the instance key
+   * instead of using a structural hash of `args`. Allows blocs to ignore
+   * non-identity fields (e.g., `readonly` flags) while still keying by id.
+   */
+  KEY: 'key',
 } as const;
 
 /**

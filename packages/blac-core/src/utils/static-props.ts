@@ -74,3 +74,20 @@ export function getClassEquality<T extends StateContainerConstructor>(
   const fn = getStaticProp<EqualityFn>(Type, BLAC_STATIC_PROPS.EQUALITY);
   return typeof fn === 'function' ? fn : undefined;
 }
+
+/**
+ * Get the per-class key function set via `@blac({ key })` or `static key = …`, if any.
+ * Used by the registry to derive a stable instance key from `args`.
+ * @param Type - The class constructor to check
+ * @returns the key function or `undefined`
+ */
+export function getClassKey(
+  Type: unknown,
+): ((args: any) => string) | undefined {
+  const fn = getStaticProp<(args: any) => string>(
+    Type as StateContainerConstructor,
+    BLAC_STATIC_PROPS.KEY,
+    undefined,
+  );
+  return typeof fn === 'function' ? fn : undefined;
+}

@@ -4,7 +4,11 @@ import {
   type PluginManager,
 } from '../plugin/PluginManager';
 import { BLAC_DEFAULTS, BLAC_ERROR_PREFIX } from '../constants';
-import { isKeepAliveClass } from '../utils/static-props';
+import { isKeepAliveClass, getClassKey } from '../utils/static-props';
+import {
+  structuralKey,
+  DEFAULT_STRUCTURAL_KEY,
+} from '../utils/structural-key';
 import {
   InstanceReadonlyState,
   StateContainerConstructor,
@@ -19,6 +23,8 @@ export interface InstanceEntry<T = any> {
   instance: T;
   /** Map of active reference IDs to their acquire count (supports paired acquire/release) */
   refs: Map<string, number>;
+  /** The args used when this entry was first created; used for dev-warn on arg mismatch. */
+  args?: unknown;
 }
 
 /**
@@ -149,7 +155,7 @@ export class StateContainerRegistry {
    */
   acquire<T extends StateContainerConstructor = StateContainerConstructor>(
     Type: T,
-    instanceKey: string = BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
+    instanceKey: string | undefined = undefined,
     options: {
       canCreate?: boolean;
       countRef?: boolean;
@@ -158,34 +164,69 @@ export class StateContainerRegistry {
     } = {},
   ): InstanceType<T> {
     const { canCreate = true, countRef = true } = options;
+    const args = options.args;
+
+    // Derive instanceKey when caller doesn't supply one explicitly.
+    // Resolution order: explicit key > static key fn > structural hash > default sentinel.
+    let resolvedKey: string;
+    if (instanceKey !== undefined) {
+      resolvedKey = instanceKey;
+    } else {
+      const keyFn = getClassKey(Type);
+      if (keyFn) {
+        resolvedKey = keyFn(args);
+      } else if (args !== undefined) {
+        resolvedKey = structuralKey(args);
+      } else {
+        resolvedKey = DEFAULT_STRUCTURAL_KEY;
+      }
+    }
 
     const config: StateContainerConfig = {
-      instanceId: instanceKey,
-      args: options.args,
+      instanceId: resolvedKey,
+      args,
     };
 
     const instances = this.ensureInstancesMap(Type);
-    let entry = instances.get(instanceKey);
+    let entry = instances.get(resolvedKey);
 
     // Detect stale disposed entries (disposed directly, not through release)
     if (entry?.instance.isDisposed) {
-      instances.delete(instanceKey);
+      instances.delete(resolvedKey);
       entry = undefined;
     }
 
-    if (entry && countRef) {
-      const refId = options.refId ?? `_auto_${this._autoRefIdCounter++}`;
-      entry.refs.set(refId, (entry.refs.get(refId) ?? 0) + 1);
-      this.emit('refAcquired', entry.instance, refId);
-    }
-
     if (entry) {
+      // Dev-warn when the same key is reused with structurally different args.
+      if (
+        process.env['NODE_ENV'] !== 'production' &&
+        args !== undefined &&
+        entry.args !== undefined
+      ) {
+        const incomingKey = structuralKey(args);
+        const storedKey = structuralKey(entry.args);
+        if (incomingKey !== storedKey) {
+          console.warn(
+            `${BLAC_ERROR_PREFIX} ${Type.name} instance key "${resolvedKey}" was acquired with different args. ` +
+              `Existing args: ${storedKey}, new args: ${incomingKey}. ` +
+              `The existing instance will be reused. If distinct args should produce distinct instances, ` +
+              `either remove the explicit instanceKey or provide a \`static key\` function that reflects the difference.`,
+          );
+        }
+      }
+
+      if (countRef) {
+        const refId = options.refId ?? `_auto_${this._autoRefIdCounter++}`;
+        entry.refs.set(refId, (entry.refs.get(refId) ?? 0) + 1);
+        this.emit('refAcquired', entry.instance, refId);
+      }
+
       return entry.instance;
     }
 
     if (!canCreate) {
       throw new Error(
-        `${BLAC_ERROR_PREFIX} ${Type.name} instance "${instanceKey}" not found and creation is disabled.`,
+        `${BLAC_ERROR_PREFIX} ${Type.name} instance "${resolvedKey}" not found and creation is disabled.`,
       );
     }
 
@@ -198,7 +239,7 @@ export class StateContainerRegistry {
       initialRefId = options.refId ?? `_auto_${this._autoRefIdCounter++}`;
       initialRefs.set(initialRefId, 1);
     }
-    instances.set(instanceKey, { instance, refs: initialRefs });
+    instances.set(resolvedKey, { instance, refs: initialRefs, args });
 
     // Register type for lifecycle coordination
     this.registerType(Type);
