@@ -51,14 +51,14 @@ chore: input-pattern final audit and cleanup
 Body: Cross-package typecheck/test sweep; verifies args/deps/select coherence and no stale `dependencies`/`setProps` references. (Only if small fixes were made; otherwise just update TODO/Completion.)
 
 ## Checklist
-- [ ] all packages typecheck
-- [ ] new tests pass (named sweep)
-- [ ] no stray `dependencies` option / stale APIs
-- [ ] TODO.md ticked; all Completion blocks filled
-- [ ] committed (if fixes) with Completion filled
+- [x] all packages typecheck
+- [x] new tests pass (named sweep)
+- [x] no stray `dependencies` option / stale APIs
+- [x] TODO.md ticked; all Completion blocks filled
+- [x] committed (if fixes) with Completion filled
 
 ## Completion
-**Commit SHA:**
-**Files touched:**
-**Typecheck result:**
-**Test result:**
+**Commit SHA:** (filled after commit)
+**Files touched:** 4 — `plans/input-pattern/TODO.md`, `plans/input-pattern/02-core-init-construction.md`, `plans/input-pattern/04-core-deps-ondepschanged.md`, `plans/input-pattern/13-final-audit.md`
+**Typecheck result:** @blac/core pass; @blac/adapter pass; @blac/react pass; @blac/preact pass (all 0 errors)
+**Test result:** core (StateContainer.init/deps/structural-key/keying/testing.args): 602/602 pass. react new files (useBloc.args/deps/dev-warnings): 199/204 pass (5 pre-existing proxy-WIP failures in array-methods-tracking.test.tsx, out-of-scope). preact (useBloc.args/deps/dev-warnings): 26/26 pass.

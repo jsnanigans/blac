@@ -120,7 +120,7 @@ Body: Registry passes acquire-time `args` to a new `init(args)` hook run once be
 - [x] committed with Completion filled
 
 ## Completion
-**Commit SHA:** (to be filled after commit)
+**Commit SHA:** 732b025a
 **Files touched:** 5 — `packages/blac-core/src/core/StateContainer.ts`, `packages/blac-core/src/core/StateContainerRegistry.ts`, `packages/blac-core/src/registry/acquire.ts`, `packages/blac-core/src/registry/ensure.ts`, `packages/blac-core/src/core/StateContainer.init.test.ts` (new)
 **Typecheck result:** clean (0 errors)
 **Test result:** 571 passed (2 new: "calls init once with args, before first read, and seeds state", "does not re-init when the same key is acquired again")

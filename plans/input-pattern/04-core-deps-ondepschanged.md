@@ -136,7 +136,7 @@ Body: Instance-level `deps` object merged per consumer (owner id), lazily read, 
 - [x] committed with Completion filled
 
 ## Completion
-**Commit SHA:** _(this commit)_
+**Commit SHA:** 5c9c77d3
 **Files touched:** 4 —
 - `packages/blac-core/src/core/symbols.ts` (added `APPLY_DEPS`, `REMOVE_DEPS_OWNER`)
 - `packages/blac-core/src/core/StateContainer.ts` (replaced task-01 `_deps` stub with owner-attributed `_depsByOwner` + merged `_deps` + `[APPLY_DEPS]`/`[REMOVE_DEPS_OWNER]` + `reconcileDeps` + `onDepsChanged`; dispose clears deps and fires final empty merge; added `shallowEqualRecord` helper)
