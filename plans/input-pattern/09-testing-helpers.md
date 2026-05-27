@@ -63,7 +63,7 @@ Body: `renderWithBloc` and core stub helpers accept `args` (runs init) and `deps
 - [ ] committed with Completion filled
 
 ## Completion
-**Commit SHA:** (filled post-commit)
+**Commit SHA:** 75608b51
 **Files touched:** 5
 - `packages/blac-core/src/core/StateContainerRegistry.ts` — added `insertInstance` public method
 - `packages/blac-core/src/testing.ts` — `CubitStubOptions` gets `args`/`deps`; `createCubitStub` runs `init` + pre-wires deps; `registerOverride` simplified to use `insertInstance`
