@@ -66,13 +66,13 @@ chore(adapter): pass through Args/Deps generics and deps symbols
 Body: Type-compat with core's new `<S, Args, Deps>`; re-export `ExtractArgs`/`ExtractDeps` and the deps merge symbols for the React layer.
 
 ## Checklist
-- [ ] adapter typechecks against widened core base
-- [ ] re-exports `ExtractArgs`/`ExtractDeps`/`APPLY_DEPS`/`REMOVE_DEPS_OWNER`
-- [ ] existing adapter tests still pass
-- [ ] committed with Completion filled
+- [x] adapter typechecks against widened core base
+- [x] re-exports `ExtractArgs`/`ExtractDeps`/`APPLY_DEPS`/`REMOVE_DEPS_OWNER`
+- [x] existing adapter tests still pass
+- [x] committed with Completion filled
 
 ## Completion
-**Commit SHA:**
-**Files touched:**
-**Typecheck result:**
-**Test result:**
+**Commit SHA:** 2fdba2c5
+**Files touched:** 3 — `packages/blac-adapter/src/index.ts`, `packages/blac-adapter/src/__tests__/adapter.types.test.ts`, `plans/input-pattern/05-adapter-typecompat.md`
+**Typecheck result:** pass (0 errors)
+**Test result:** 3 files, 36 tests passed (includes 2 new symbol re-export assertions)
