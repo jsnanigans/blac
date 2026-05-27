@@ -101,11 +101,99 @@ function CartSummary() {
 }
 ```
 
+## Args: typed construction data
+
+Declare an `Args` type as the second generic parameter to let the bloc receive external construction data. The framework calls `init(args)` **once per instance**, synchronously after `new Type()` and before the first state snapshot.
+
+```ts
+class UserCardCubit extends Cubit<UserCardState, { userId: string }> {
+  // Constructor stays zero-arg. The framework calls init(args) before first snapshot.
+  init(args: { userId: string }) {
+    void this.loadUser(args.userId);
+  }
+}
+```
+
+`init(args)` is a protected lifecycle method — not callable from outside the class. It replaces the old `setConfig`/`setProps` patterns.
+
+When `useBloc` is called with `{ args }`, those args are:
+- Required at the call site (type error if omitted when `Args != void`)
+- Used to derive the instance identity (different args ⇒ different instance)
+- Available synchronously in `init` before any consumer sees state
+
+See [Passing Inputs](/guide/inputs) for the full args/identity model.
+
+### `static key`: explicit identity declaration
+
+By default, instance identity is the structural hash of all args. Override with a static property on the class to control exactly which args distinguish one instance from another:
+
+```ts
+class DocumentCubit extends Cubit<DocState, { docId: string; readonly: boolean }> {
+  static key = (args: DocumentCubit['args']) => args.docId;
+  // `readonly` rides along as config but does NOT fork instances
+}
+```
+
+`static key` is a function `(args: Args) => string`. It is declared once on the class, not at every call site. When absent, BlaC hashes the full args object.
+
+## Deps: non-serializable handles
+
+Declare a `Deps` type as the third generic parameter to receive non-serializable values (refs, callbacks, controller instances) that can't go in `args`. Deps are read lazily via `this.deps.x` and may be `undefined` — always guard.
+
+```ts
+class FileUploadCubit extends Cubit<
+  UploadState,
+  { endpoint: string },                       // Args
+  { inputRef?: RefObject<HTMLInputElement> }  // Deps
+> {
+  init(args: { endpoint: string }) {
+    this.endpoint = args.endpoint;
+  }
+
+  openPicker() {
+    this.deps.inputRef?.current?.click?.();   // lazy read, may be undefined
+  }
+}
+```
+
+**Key properties of deps:**
+- **Never key identity** — different refs don't fork the instance
+- **Per-consumer merged** — each `useBloc` call contributes its own slice; the bloc sees the union
+- **Live** — updated after each commit; may change over time
+
+### `onDepsChanged(next, prev)`
+
+For handles that require initialization when they arrive (a canvas element, a rich-text-editor controller), implement `onDepsChanged`. It fires after each deps merge with the new and previous combined views:
+
+```ts
+class CanvasRendererCubit extends Cubit<
+  RenderState,
+  { sceneId: string },
+  { canvas?: HTMLCanvasElement; controller?: RteController }
+> {
+  onDepsChanged(next: this['deps'], prev: this['deps']) {
+    if (next.canvas && next.canvas !== prev.canvas) {
+      this.initRenderer(next.canvas);
+    }
+    if (!next.canvas && prev.canvas) {
+      this.disposeRenderer();
+    }
+    if (next.controller !== prev.controller) {
+      this.bindController(next.controller);
+    }
+  }
+}
+```
+
+`onDepsChanged` is optional — blocs that don't declare it just read `this.deps.x` lazily. When declared, it gives the bloc clean acquire/release edges without any consumer-side cleanup wiring.
+
 ## Protected APIs
 
 These are available inside your Cubit class but not from the outside:
 
 - `this.state` — read the current state
+- `this.init(args)` — lifecycle called once by the framework before first snapshot (optional; override when `Args` is declared)
+- `this.onDepsChanged(next, prev)` — lifecycle called after each `deps` merge (optional; override when `Deps` is declared)
 - `this.onSystemEvent(event, handler)` — listen to lifecycle events (see [System Events](/core/system-events))
 - `this.depend(OtherClass)` — declare a dependency on another state container (see [Bloc Communication](/core/bloc-communication))
 

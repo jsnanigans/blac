@@ -48,14 +48,14 @@ function CountButtons() {
 
 `CountButtons` never re-renders because `autoTrack: false` disables tracking and it doesn't read state.
 
-## Pattern: Manual deps for coarse control
+## Pattern: Manual select for coarse control
 
 When auto-tracking is too fine-grained (tracking many properties) or you want to depend on a computed value:
 
 ```tsx
 function CartBadge() {
   const [, cart] = useBloc(CartCubit, {
-    dependencies: (_, bloc) => [bloc.isEmpty],
+    select: (_, bloc) => [bloc.isEmpty],
   });
   return cart.isEmpty ? null : <Badge />;
 }

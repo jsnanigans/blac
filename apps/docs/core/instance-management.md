@@ -96,11 +96,27 @@ release(EditorCubit, 'doc-42');
 release(EditorCubit, 'doc-99');
 ```
 
-In React, use the `instanceId` option:
+In React, use the `instanceId` option as an escape hatch for explicit keys:
 
 ```tsx
 const [state] = useBloc(EditorCubit, { instanceId: 'doc-42' });
 ```
+
+### Args-derived identity (preferred)
+
+When a bloc declares `Args`, the preferred way to get distinct instances is to pass `args` — the instance key is derived automatically (structural hash by default, or `static key` if declared). This avoids threading the same value through both `instanceId` and a separate data channel:
+
+```ts
+// Before — id is opaque, userId had to be passed a second time
+const [s] = useBloc(UserCardCubit, { instanceId: userId });
+
+// After — the meaningful value keys the instance AND feeds init(args)
+const [s] = useBloc(UserCardCubit, { args: { userId } });
+```
+
+Identity precedence: explicit `instanceId` > `autoInstance` > `static key(args)` / structural hash > `<BlocProvider>` context > `'default'`.
+
+See [Passing Inputs](/guide/inputs) for the full model.
 
 ## In React vs outside React
 

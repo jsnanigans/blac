@@ -65,11 +65,11 @@ configureBlacReact({
 
 ## Tracking modes at a glance
 
-| Mode          | How to enable                    | Re-renders when           |
-| ------------- | -------------------------------- | ------------------------- |
-| Auto-tracking | Default                          | Tracked properties change |
-| Manual deps   | `dependencies: (s) => [s.count]` | Dependency values change  |
-| No tracking   | `autoTrack: false`               | Any state change          |
+| Mode          | How to enable               | Re-renders when           |
+| ------------- | --------------------------- | ------------------------- |
+| Auto-tracking | Default                     | Tracked properties change |
+| Manual select | `select: (s) => [s.count]` | Selected values change    |
+| No tracking   | `autoTrack: false`          | Any state change          |
 
 See [Dependency Tracking](/react/dependency-tracking) for details.
 

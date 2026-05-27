@@ -50,7 +50,7 @@ The hook signature and options are identical to the React version:
 const [state, bloc, ref] = useBloc(MyCubit, {
   instanceId: 'optional-key',
   autoTrack: true,
-  dependencies: (state, bloc) => [bloc.someGetter],
+  select: (state, bloc) => [bloc.someGetter],
   onMount: (bloc) => {
     /* ... */
   },
@@ -60,7 +60,7 @@ const [state, bloc, ref] = useBloc(MyCubit, {
 });
 ```
 
-All three tracking modes (auto-tracking, manual dependencies, no tracking) work the same way.
+All three tracking modes (auto-tracking, manual `select`, no tracking) work the same way.
 
 ## Global configuration
 

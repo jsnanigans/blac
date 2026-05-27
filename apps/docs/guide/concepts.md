@@ -100,11 +100,11 @@ The tracking also works for:
 
 Three tracking modes are available:
 
-| Mode                        | How                              | Best for                            |
-| --------------------------- | -------------------------------- | ----------------------------------- |
-| **Auto-tracking** (default) | Proxy records property access    | Most components                     |
-| **Manual dependencies**     | You provide a dependency array   | Complex conditions, computed values |
-| **No tracking**             | Re-renders on every state change | Action-only components, debugging   |
+| Mode                        | How                                | Best for                            |
+| --------------------------- | ---------------------------------- | ----------------------------------- |
+| **Auto-tracking** (default) | Proxy records property access      | Most components                     |
+| **`select`** (manual)       | You provide a selector array       | Complex conditions, computed values |
+| **No tracking**             | Re-renders on every state change   | Action-only components, debugging   |
 
 See [Dependency Tracking](/react/dependency-tracking) for details.
 

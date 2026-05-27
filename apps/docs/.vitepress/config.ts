@@ -70,6 +70,7 @@ export default defineConfig({
             { text: 'What is BlaC?', link: '/guide/introduction' },
             { text: 'Quick Start', link: '/guide/getting-started' },
             { text: 'Core Concepts', link: '/guide/concepts' },
+            { text: 'Passing Inputs', link: '/guide/inputs' },
             { text: 'Patterns & Recipes', link: '/guide/patterns' },
           ],
         },

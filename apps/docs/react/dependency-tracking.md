@@ -55,14 +55,14 @@ function UserInfo() {
 
 This works correctly because `showEmail` is always read, and when it changes from `false` to `true`, the component re-renders and `email` gets tracked on that render.
 
-## Manual dependencies
+## Manual selection (`select`)
 
 Provide an explicit dependency array. The component re-renders only when the shallow-compared values change.
 
 ```tsx
 function CountOnly() {
   const [state] = useBloc(CounterCubit, {
-    dependencies: (state) => [state.count],
+    select: (state) => [state.count],
   });
   return <span>{state.count}</span>;
 }
@@ -72,11 +72,11 @@ The callback receives both state and the bloc instance:
 
 ```tsx
 const [state, cart] = useBloc(CartCubit, {
-  dependencies: (state, bloc) => [bloc.total, state.items.length],
+  select: (state, bloc) => [bloc.total, state.items.length],
 });
 ```
 
-### When to use
+### When to use `select`
 
 - Auto-tracking picks up too many properties and you want to narrow it down
 - You need to depend on a computed value (getter) with specific inputs
@@ -121,10 +121,10 @@ Start with auto-tracking (default)
     └─ Otherwise: auto-tracking is fine
 ```
 
-| Mode          | Re-renders when           | Best for                       |
-| ------------- | ------------------------- | ------------------------------ |
-| Auto-tracking | Tracked properties change | Most components                |
-| Manual deps   | Dependency values change  | Computed conditions, narrowing |
-| No tracking   | Any state change          | Action-only, debug views       |
+| Mode             | Re-renders when             | Best for                       |
+| ---------------- | --------------------------- | ------------------------------ |
+| Auto-tracking    | Tracked properties change   | Most components                |
+| `select` (manual)| Selected values change      | Computed conditions, narrowing |
+| No tracking      | Any state change            | Action-only, debug views       |
 
 See also: [useBloc](/react/use-bloc), [Performance](/react/performance)
