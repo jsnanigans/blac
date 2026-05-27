@@ -65,6 +65,27 @@ export function serialize(data: any, options: SerializeOptions = {}): any {
 
         seen.add(value);
 
+        // DOM nodes: never traverse. In a browser, React stores its fiber as an
+        // own property (`__reactFiber$…`) on the node, so walking a node would
+        // serialize the entire (huge, circular) fiber tree and freeze the tab.
+        // Duck-typed so it stays SSR-safe (no `Node` reference).
+        if (
+          typeof (value as { nodeType?: unknown }).nodeType === 'number' &&
+          typeof (value as { nodeName?: unknown }).nodeName === 'string'
+        ) {
+          seen.delete(value);
+          return {
+            __type: 'DOMNode',
+            nodeName: (value as { nodeName: string }).nodeName,
+          };
+        }
+
+        // Window / global host objects are likewise unbounded graphs.
+        if (typeof window !== 'undefined' && value === window) {
+          seen.delete(value);
+          return { __type: 'Window' };
+        }
+
         if (value instanceof Error) {
           return {
             __type: 'Error',
@@ -123,6 +144,15 @@ export function serialize(data: any, options: SerializeOptions = {}): any {
 
         const result: Record<string, any> = {};
         for (const key in value) {
+          // React stores its fiber/props on host objects under these expandos;
+          // following them serializes the whole fiber tree. Skip defensively.
+          if (
+            key.startsWith('__reactFiber$') ||
+            key.startsWith('__reactProps$') ||
+            key.startsWith('__reactContainer$')
+          ) {
+            continue;
+          }
           if (Object.prototype.hasOwnProperty.call(value, key)) {
             try {
               result[key] = serializeInternal(value[key], depth + 1);

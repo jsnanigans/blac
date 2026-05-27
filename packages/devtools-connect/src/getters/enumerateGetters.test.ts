@@ -148,6 +148,14 @@ describe('enumerateGetters', () => {
       expect(keys).not.toContain('isHydrated');
       expect(keys).not.toContain('changedWhileHydrating');
     });
+
+    it('excludes the `deps` getter (non-serializable handles lane)', () => {
+      // `deps` holds DOM refs/callbacks; serializing it (esp. a DOM node with a
+      // React fiber) would freeze the tab. It must never be enumerated.
+      const instance = acquire(CubitWithGetters);
+      const result = defined(enumerateGetters(instance));
+      expect(Object.keys(result)).not.toContain('deps');
+    });
   });
 
   describe('getter evaluation', () => {

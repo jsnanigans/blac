@@ -4,6 +4,11 @@ import type { GetterInfo } from '../types';
 const BASE_GETTERS = new Set([
   'state',
   'dependencies',
+  // `deps` is the NON-serializable lane by design — it holds DOM refs,
+  // callbacks, and controllers. Evaluating + serializing it would drag a live
+  // DOM node (and, via React's `__reactFiber$` expando, the entire fiber tree)
+  // through the serializer and freeze the tab. Never touch it.
+  'deps',
   'isDisposed',
   'hydrationStatus',
   'hydrationError',
