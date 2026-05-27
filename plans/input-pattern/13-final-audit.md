@@ -58,7 +58,7 @@ Body: Cross-package typecheck/test sweep; verifies args/deps/select coherence an
 - [x] committed (if fixes) with Completion filled
 
 ## Completion
-**Commit SHA:** (filled after commit)
+**Commit SHA:** 6a1354cb
 **Files touched:** 4 — `plans/input-pattern/TODO.md`, `plans/input-pattern/02-core-init-construction.md`, `plans/input-pattern/04-core-deps-ondepschanged.md`, `plans/input-pattern/13-final-audit.md`
 **Typecheck result:** @blac/core pass; @blac/adapter pass; @blac/react pass; @blac/preact pass (all 0 errors)
 **Test result:** core (StateContainer.init/deps/structural-key/keying/testing.args): 602/602 pass. react new files (useBloc.args/deps/dev-warnings): 199/204 pass (5 pre-existing proxy-WIP failures in array-methods-tracking.test.tsx, out-of-scope). preact (useBloc.args/deps/dev-warnings): 26/26 pass.
