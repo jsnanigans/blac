@@ -19,9 +19,10 @@
     "paths": {
       "@blac/core": ["../blac-core/src/index.ts"],
       "@blac/core/tracking": ["../blac-core/src/tracking.ts"],
+      "@blac/core/testing": ["../blac-core/src/testing.ts"],
       "@blac/adapter": ["../blac-adapter/src/index.ts"]
     }
   },
-  "include": ["src", "vitest.config.ts", "vitest-setup.ts"],
+  "include": ["src", "vitest.config.ts", "vitest-setup.ts", "vitest.d.ts"],
   "exclude": ["src/__archived__/**/*"]
 }
