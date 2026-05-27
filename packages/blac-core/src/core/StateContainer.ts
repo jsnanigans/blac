@@ -2,7 +2,7 @@ import { generateSimpleId } from '../utils/idGenerator';
 import { BLAC_DEFAULTS } from '../constants';
 import { getRegistry } from '../registry/config';
 import type { StateContainerConstructor } from '../types/utilities';
-import { EMIT } from './symbols';
+import { APPLY_DEPS, EMIT, REMOVE_DEPS_OWNER } from './symbols';
 import { type EqualityFn, getBlacConfig } from '../config';
 import { getClassEquality } from '../utils/static-props';
 
@@ -37,6 +37,25 @@ type SystemEventHandler<S, E extends SystemEvent> = (
 
 const EMPTY_DEPS: ReadonlyMap<any, any> = new Map();
 
+/**
+ * Shallow per-key `Object.is` comparison of two plain records. Keys are
+ * considered: a key present in one but not the other (regardless of value)
+ * makes the records unequal. Used to detect real deps changes.
+ */
+function shallowEqualRecord(
+  a: Record<string, unknown>,
+  b: Record<string, unknown>,
+): boolean {
+  if (a === b) return true;
+  const aKeys = Object.keys(a);
+  if (aKeys.length !== Object.keys(b).length) return false;
+  for (const key of aKeys) {
+    if (!(key in b)) return false;
+    if (!Object.is(a[key], b[key])) return false;
+  }
+  return true;
+}
+
 export abstract class StateContainer<
   S extends object = any,
   Args = void,
@@ -50,18 +69,113 @@ export abstract class StateContainer<
   declare readonly __deps: Deps;
 
   /**
-   * Backing store for injected deps. Task 04 replaces the merge-aware impl;
-   * declared here so the `deps` getter type is stable for tasks 02/03.
+   * Per-owner declared slices. ownerId -> that consumer's deps slice.
+   * Lazily allocated; null until the first owner applies a slice.
    */
-  protected _deps: Partial<Deps> | null = null;
+  private _depsByOwner: Map<string, Partial<Deps>> | null = null;
+
+  /**
+   * Merged view of all owners' slices, recomputed whenever a slice is
+   * applied or withdrawn. Read lazily via the `deps` getter.
+   */
+  private _deps: Partial<Deps> = {};
 
   /**
    * Injected non-serializable handles (refs, callbacks, controllers).
    * Read lazily — never assume a dep is present at init().
    */
   get deps(): Readonly<Deps> {
-    return (this._deps ?? {}) as Readonly<Deps>;
+    return this._deps as Readonly<Deps>;
   }
+
+  /**
+   * @internal Apply one owner's (consumer's) deps slice. Shallow-merges the
+   * slice, reconciles keys the owner dropped since its last apply (other
+   * owners' keys untouched), dev-warns on cross-owner key collisions, then
+   * recomputes the merged view and fires onDepsChanged if it changed.
+   *
+   * Idempotent: re-applying an identical slice for the same owner is a no-op.
+   */
+  [APPLY_DEPS](ownerId: string, slice: Partial<Deps>): void {
+    if (this._disposed) return;
+
+    const owners = (this._depsByOwner ??= new Map());
+    const prevSlice = owners.get(ownerId);
+
+    if (prevSlice && shallowEqualRecord(prevSlice, slice)) {
+      // Idempotent re-apply (e.g. StrictMode double-invoke): nothing changed.
+      return;
+    }
+
+    if (process.env.NODE_ENV !== 'production') {
+      for (const key of Object.keys(slice) as (keyof Deps)[]) {
+        for (const [otherOwner, otherSlice] of owners) {
+          if (otherOwner === ownerId) continue;
+          if (
+            key in otherSlice &&
+            (otherSlice as Record<keyof Deps, unknown>)[key] !==
+              (slice as Record<keyof Deps, unknown>)[key]
+          ) {
+            console.warn(
+              `[${this.name}] multiple owners writing dep \`${String(
+                key,
+              )}\`; last write wins`,
+            );
+          }
+        }
+      }
+    }
+
+    // Store a defensive copy so later external mutation of the caller's
+    // object can't desync our per-owner snapshot.
+    owners.set(ownerId, { ...slice });
+    this.reconcileDeps();
+  }
+
+  /**
+   * @internal Withdraw an owner's entire deps slice (consumer unmounted).
+   * Recomputes the merged view; keys only that owner provided go absent.
+   */
+  [REMOVE_DEPS_OWNER](ownerId: string): void {
+    if (this._disposed) return;
+    if (!this._depsByOwner?.delete(ownerId)) return;
+    this.reconcileDeps();
+  }
+
+  /**
+   * Rebuild the merged `_deps` view from all owners' slices and fire
+   * onDepsChanged(next, prev) if the merged view changed (shallow compare).
+   * A key whose last owner was removed appears in `next` as undefined.
+   */
+  private reconcileDeps(): void {
+    const prev = this._deps;
+    const next: Partial<Deps> = {};
+    if (this._depsByOwner) {
+      for (const slice of this._depsByOwner.values()) {
+        Object.assign(next, slice);
+      }
+    }
+    // Surface dropped keys explicitly as undefined so the merged view (and
+    // the onDepsChanged diff) reflects a handle disappearing.
+    for (const key of Object.keys(prev) as (keyof Deps)[]) {
+      if (!(key in next)) {
+        (next as Record<keyof Deps, unknown>)[key] = undefined;
+      }
+    }
+
+    if (shallowEqualRecord(prev, next)) return;
+
+    this._deps = next;
+    this.onDepsChanged(next as Readonly<Deps>, prev as Readonly<Deps>);
+  }
+
+  /**
+   * Override to react when an injected handle appears, changes, or disappears
+   * (post-merge). Receives readonly snapshots; diff `next.x !== prev.x` to run
+   * setup/teardown (canvas init, controller bind). A disappeared handle is
+   * present in `next` as `undefined`.
+   */
+  protected onDepsChanged(_next: Readonly<Deps>, _prev: Readonly<Deps>): void {}
 
   private _state: S;
   private readonly _listeners = new Set<StateListener<S>>();
@@ -178,6 +292,16 @@ export abstract class StateContainer<
 
     if (this.debug) {
       console.log(`[${this.name}] Disposing...`);
+    }
+
+    // Release injected handles before flipping the disposed flag: reconcile
+    // to an empty merged view so a final onDepsChanged(next, prev) fires with
+    // all keys absent (undefined), letting renderers release handles. The
+    // APPLY_DEPS/REMOVE_DEPS_OWNER guards below then reject any post-dispose
+    // emits, so this is the last onDepsChanged for the instance.
+    if (this._depsByOwner) {
+      this._depsByOwner.clear();
+      this.reconcileDeps();
     }
 
     this._disposed = true;

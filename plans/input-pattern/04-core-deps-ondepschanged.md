@@ -128,15 +128,21 @@ feat(core): per-owner deps merge with onDepsChanged lifecycle
 Body: Instance-level `deps` object merged per consumer (owner id), lazily read, with `onDepsChanged(next, prev)`; cross-owner collision dev-warn; idempotent re-apply.
 
 ## Checklist
-- [ ] `APPLY_DEPS`/`REMOVE_DEPS_OWNER` symbols
-- [ ] owner-attributed `_depsByOwner` + merged `_deps` + `deps` getter
-- [ ] `onDepsChanged` fires only on real change; collision dev-warn
-- [ ] dispose clears deps; idempotent under StrictMode
-- [ ] symbols exported for cross-package use; tests pass; typecheck & lint clean
-- [ ] committed with Completion filled
+- [x] `APPLY_DEPS`/`REMOVE_DEPS_OWNER` symbols
+- [x] owner-attributed `_depsByOwner` + merged `_deps` + `deps` getter
+- [x] `onDepsChanged` fires only on real change; collision dev-warn
+- [x] dispose clears deps; idempotent under StrictMode
+- [x] symbols exported for cross-package use; tests pass; typecheck & lint clean
+- [x] committed with Completion filled
 
 ## Completion
-**Commit SHA:**
-**Files touched:**
-**Typecheck result:**
-**Test result:**
+**Commit SHA:** _(this commit)_
+**Files touched:** 4 —
+- `packages/blac-core/src/core/symbols.ts` (added `APPLY_DEPS`, `REMOVE_DEPS_OWNER`)
+- `packages/blac-core/src/core/StateContainer.ts` (replaced task-01 `_deps` stub with owner-attributed `_depsByOwner` + merged `_deps` + `[APPLY_DEPS]`/`[REMOVE_DEPS_OWNER]` + `reconcileDeps` + `onDepsChanged`; dispose clears deps and fires final empty merge; added `shallowEqualRecord` helper)
+- `packages/blac-core/src/index.ts` (export `APPLY_DEPS`, `REMOVE_DEPS_OWNER`)
+- `packages/blac-core/src/core/StateContainer.deps.test.ts` (new)
+
+**Typecheck result:** `pnpm --filter @blac/core typecheck` — clean (tsc --noEmit, 0 errors).
+**Test result:** `StateContainer.deps.test.ts` — 9/9 passing (disjoint merge; per-owner withdrawal; idempotent re-apply fires once; cross-owner collision dev-warn + last-write-wins; same-owner value change no warn; key→undefined on last-owner removal with onDepsChanged; unknown-owner remove no-op; owner dropping a key reconciles; dispose fires final empty onDepsChanged and rejects post-dispose applies). Full core suite: 594/594 passing.
+**Lint note:** `pnpm --filter @blac/core lint` reports 1 warning + 2 errors, all pre-existing in untouched code (`StateContainer.ts` `emitSystemEvent` non-null assertion; `tracking/tracking-proxy.ts`). No findings in the new deps code; line numbers shifted only because code was added above.

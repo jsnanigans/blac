@@ -17,7 +17,8 @@ export type {
   SystemEventPayloads,
 } from './core/StateContainer';
 export { Cubit } from './core/Cubit';
-export { EMIT } from './core/symbols';
+/** @internal symbols — needed by framework adapters (e.g. @blac/react) across the package boundary */
+export { EMIT, APPLY_DEPS, REMOVE_DEPS_OWNER } from './core/symbols';
 
 // Registry
 export {
