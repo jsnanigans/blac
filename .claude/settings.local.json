@@ -64,7 +64,10 @@
       "Bash(grep -v \":0$\")",
       "Bash(git restore *)",
       "Bash(git *)",
-      "Read(//Users/brendanmullins/Projects/cells/insomni/apps/phylon/**)"
+      "Read(//Users/brendanmullins/Projects/cells/insomni/apps/phylon/**)",
+      "Bash(rm src/__probe.ts)",
+      "Bash(rm packages/blac-core/src/__probe.ts)",
+      "Bash(grep *)"
     ]
   }
 }

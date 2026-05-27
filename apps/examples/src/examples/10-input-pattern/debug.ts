@@ -4,17 +4,15 @@
  * Enable in the browser console with:  localStorage.setItem('ip-debug', '1')
  * (then reload). Disable with:          localStorage.removeItem('ip-debug')
  *
- * On by default in dev so the freeze investigation has a trail. Every logged
- * event also bumps a counter exposed on `window.__IP_DEBUG__` so you can inspect
- * rates from the console even if the UI is busy:
+ * Off by default. Every logged event still bumps a counter exposed on
+ * `window.__IP_DEBUG__` so you can inspect rates from the console:
  *
- *     __IP_DEBUG__.counts            // { 'CanvasCubit.start': 3, ... }
+ *     __IP_DEBUG__.counts            // { 'Canvas.start': 3, ... }
  *     __IP_DEBUG__.reset()
  */
 const enabled = (): boolean => {
-  if (typeof localStorage === 'undefined') return true;
-  const v = localStorage.getItem('ip-debug');
-  return v === null ? true : v === '1';
+  if (typeof localStorage === 'undefined') return false;
+  return localStorage.getItem('ip-debug') === '1';
 };
 
 interface DebugBag {

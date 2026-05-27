@@ -1,30 +1,16 @@
 import { useState } from 'react';
 import { ExampleLayout } from '../../shared/ExampleLayout';
 import { UserCard } from './UserCard';
-import { DepsView } from './DepsView';
-import { MultiSourceTicker } from './MultiSourceTicker';
+import { CanvasView } from './CanvasView';
+import { MultiSourceCanvas } from './MultiSourceCanvas';
 
 const USERS = ['alice', 'bob', 'carol'] as const;
 
-type DemoSection = 'none' | 'args' | 'deps' | 'multi';
-
-const SECTIONS: { id: DemoSection; label: string }[] = [
-  { id: 'none', label: 'None (baseline)' },
-  { id: 'args', label: '1 — args' },
-  { id: 'deps', label: '2 — deps' },
-  { id: 'multi', label: '3 — multi-source' },
-];
-
 /**
  * Demo for the three input lanes: args, deps, and multi-source deps.
- *
- * A submenu renders only ONE section at a time so each lane can be tested in
- * isolation — useful for pinning down which one causes a freeze. Defaults to
- * "None" so the page mounts with nothing running.
  */
 export function InputPatternDemo() {
   const [selectedUser, setSelectedUser] = useState<string>('alice');
-  const [section, setSection] = useState<DemoSection>('none');
 
   return (
     <ExampleLayout
@@ -38,29 +24,7 @@ export function InputPatternDemo() {
         'Multi-source deps: two components contribute partial slices',
       ]}
     >
-      {/* Submenu — render only one section at a time to isolate the culprit */}
-      <div
-        className="card stack-sm"
-        style={{ position: 'sticky', top: 0, zIndex: 1 }}
-      >
-        <span className="text-small text-muted">
-          Show one section at a time (isolation):
-        </span>
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          {SECTIONS.map((s) => (
-            <button
-              key={s.id}
-              className={section === s.id ? 'primary' : 'ghost'}
-              onClick={() => setSection(s.id)}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* Section 1 — args as identity */}
-      {section === 'args' && (
       <section className="stack-lg">
         <div className="stack-sm">
           <h2>1 — args as identity</h2>
@@ -105,44 +69,40 @@ export function InputPatternDemo() {
           </div>
         </div>
       </section>
-      )}
 
       {/* Section 2 — deps + onDepsChanged */}
-      {section === 'deps' && (
       <section className="stack-lg">
         <div className="stack-sm">
           <h2>2 — deps + onDepsChanged</h2>
           <p className="text-muted">
-            A DOM element ref is passed via{' '}
-            <code>useBloc(TickerCubit, {'{ autoInstance: true, deps: { display } }'})</code>.
-            <code>onDepsChanged</code> fires when the element appears or
-            disappears; the cubit writes the tick count into it imperatively. The
-            loop is opt-in (Start/Stop) and runs at a slow 500ms cadence.
+            A canvas element ref is passed via{' '}
+            <code>useBloc(CanvasCubit, {'{ autoInstance: true, deps: { canvas } }'})</code>.
+            <code>onDepsChanged</code> fires when the canvas appears (starts the
+            loop) or disappears (stops it). Unmounting the canvas element is
+            enough to halt the RAF loop — no cleanup code needed in the
+            component.
           </p>
         </div>
 
-        <DepsView />
+        <CanvasView />
       </section>
-      )}
 
       {/* Section 3 — multi-source deps */}
-      {section === 'multi' && (
       <section className="stack-lg">
         <div className="stack-sm">
           <h2>3 — multi-source deps</h2>
           <p className="text-muted">
-            Three components share one cubit instance. <code>DisplayProvider</code>{' '}
-            supplies <code>{'{ display }'}</code>, <code>TickLogger</code>{' '}
-            supplies <code>{'{ onTick }'}</code>, and a controls panel drives
-            start/stop/step. The core engine merges the slices. Removing{' '}
-            <code>TickLogger</code> withdraws only its slice; the display keeps
-            updating.
+            Two components contribute partial slices to the same cubit's deps.{' '}
+            <code>CanvasProvider</code> supplies{' '}
+            <code>{'{ canvas }'}</code> and <code>TickLogger</code> supplies{' '}
+            <code>{'{ onTick }'}</code>. The core engine merges them. Removing{' '}
+            <code>TickLogger</code> withdraws only its slice; the canvas
+            animation continues unaffected.
           </p>
         </div>
 
-        <MultiSourceTicker />
+        <MultiSourceCanvas />
       </section>
-      )}
 
       {/* Concept summary */}
       <section className="stack-md">

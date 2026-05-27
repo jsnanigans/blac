@@ -65,7 +65,7 @@ Body: Reference usage of the new input lanes — args-keyed instances, deps + on
 - [x] committed with Completion filled
 
 ## Completion
-**Commit SHA:** (filled after commit)
+**Commit SHA:** 19b8840c
 **Files touched:** 9 files — UserCardCubit.ts, CanvasCubit.ts, UserCard.tsx, CanvasView.tsx, MultiSourceCanvas.tsx, InputPatternDemo.tsx, exampleCatalog.ts, App.tsx, tsconfig.json (path aliases for @blac/react + @blac/adapter + @blac/core/tracking)
 **Typecheck result:** 0 errors in 10-input-pattern files; pre-existing errors in 03-todo, 04-form, messenger (old `dependencies` API + ChannelBloc.init) are unrelated to this task
 **Test result:** No unit tests required (manual demo); typecheck passes for all new files
