@@ -95,14 +95,14 @@ feat(react): add typed args option to useBloc with identity keying
 Body: `useBloc(C, { args })` — required when the bloc declares Args; feeds `init` and derives the instance key (different args → different instance).
 
 ## Checklist
-- [ ] conditional `args` typing (required iff `Args != void`)
-- [ ] args threaded into resolution `useMemo`, `acquire`, and dep array (structural key)
-- [ ] precedence preserved; args passed even with explicit key
-- [ ] tests pass; typecheck & lint clean
-- [ ] committed with Completion filled
+- [x] conditional `args` typing (required iff `Args != void`)
+- [x] args threaded into resolution `useMemo`, `acquire`, and dep array (structural key)
+- [x] precedence preserved; args passed even with explicit key
+- [x] tests pass; typecheck & lint clean
+- [x] committed with Completion filled
 
 ## Completion
-**Commit SHA:**
-**Files touched:**
-**Typecheck result:**
-**Test result:**
+**Commit SHA:** 821b9929
+**Files touched:** 3 — `packages/blac-react/src/types.ts`, `packages/blac-react/src/useBloc.ts`, `packages/blac-react/src/__tests__/useBloc.args.test.tsx`
+**Typecheck result:** pass (0 errors)
+**Test result:** 4/4 new args tests pass; 5 pre-existing failures in `useBloc.array-methods-tracking.test.tsx` unrelated to this task

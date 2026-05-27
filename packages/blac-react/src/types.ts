@@ -1,32 +1,43 @@
 import type { ExtractState, StateContainerConstructor } from '@blac/core';
 import { InstanceReadonlyState } from '@blac/core';
+import type { ExtractArgs } from '@blac/adapter';
 import type { RefObject } from 'react';
+
+/**
+ * Conditional `args` field: required when the bloc declares Args, forbidden
+ * (type `never`) when the bloc uses the default `void` Args.
+ */
+type ArgsOption<T extends StateContainerConstructor> =
+  ExtractArgs<T> extends void
+    ? { args?: never }
+    : { args: ExtractArgs<T> };
 
 /**
  * Configuration options for useBloc hook
  * @template TBloc - The state container type
  */
-export interface UseBlocOptions<TBloc extends StateContainerConstructor> {
-  /** Custom instance identifier */
-  instanceId?: string | number;
-  /**
-   * When true, this call site gets its own per-mount instance, auto-keyed via
-   * React's `useId()`. Equivalent to declaring `static isolated = true` on the
-   * bloc class. Ignored when an explicit `instanceId` is provided.
-   */
-  autoInstance?: boolean;
-  /** Manual dependency array like useEffect (disables autoTrack) */
-  dependencies?: (
-    state: ExtractState<TBloc>,
-    bloc: InstanceReadonlyState<TBloc>,
-  ) => unknown[];
-  /** Enable automatic property tracking via Proxy (default: true) */
-  autoTrack?: boolean;
-  /** Callback invoked when bloc instance mounts */
-  onMount?: (bloc: InstanceType<TBloc>) => void;
-  /** Callback invoked when bloc instance unmounts */
-  onUnmount?: (bloc: InstanceType<TBloc>) => void;
-}
+export type UseBlocOptions<TBloc extends StateContainerConstructor> =
+  ArgsOption<TBloc> & {
+    /** Custom instance identifier */
+    instanceId?: string | number;
+    /**
+     * When true, this call site gets its own per-mount instance, auto-keyed via
+     * React's `useId()`. Equivalent to declaring `static isolated = true` on the
+     * bloc class. Ignored when an explicit `instanceId` is provided.
+     */
+    autoInstance?: boolean;
+    /** Manual dependency array like useEffect (disables autoTrack) */
+    dependencies?: (
+      state: ExtractState<TBloc>,
+      bloc: InstanceReadonlyState<TBloc>,
+    ) => unknown[];
+    /** Enable automatic property tracking via Proxy (default: true) */
+    autoTrack?: boolean;
+    /** Callback invoked when bloc instance mounts */
+    onMount?: (bloc: InstanceType<TBloc>) => void;
+    /** Callback invoked when bloc instance unmounts */
+    onUnmount?: (bloc: InstanceType<TBloc>) => void;
+  };
 
 /**
  * Tuple return type from useBloc hook containing state, bloc instance, and ref

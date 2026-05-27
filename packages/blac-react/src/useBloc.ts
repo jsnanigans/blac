@@ -6,6 +6,7 @@ import React, {
   useReducer,
 } from 'react';
 import {
+  type ExtractArgs,
   type ExtractState,
   type AdapterState,
   ExternalDepsManager,
@@ -52,8 +53,11 @@ interface TrackingMode {
   autoTrackEnabled: boolean;
 }
 
-function determineTrackingMode<TBloc extends StateContainerConstructor>(
-  options?: Pick<UseBlocOptions<TBloc>, 'autoTrack' | 'dependencies'>,
+function determineTrackingMode(
+  options?: {
+    autoTrack?: boolean;
+    dependencies?: (...args: any[]) => unknown[];
+  },
 ): TrackingMode {
   const globalConfig = getBlacReactConfig();
   const autoTrackEnabled =
@@ -129,6 +133,15 @@ export function useBloc<
   const autoTrack = options?.autoTrack;
   const dependencies = options?.dependencies;
 
+  // Stable structural key for args so that different args → different instance
+  // resolution, without re-running the useMemo on every render due to object
+  // reference churn. undefined args (void-args blocs) produce an undefined key.
+  const args = (options as { args?: ExtractArgs<T> })?.args;
+  const argsRef = useRef(args);
+  argsRef.current = args;
+  const argsKey =
+    args === undefined ? undefined : JSON.stringify(args);
+
   // Auto-keyed per-mount instance: either declared on the class
   // (`static isolated = true`) or opted into per call (`autoInstance: true`).
   // `useId()` is always called to satisfy the rules of hooks.
@@ -158,7 +171,7 @@ export function useBloc<
             : ctxInstanceId;
 
       const refId = `useBloc@${componentNameRef.current ?? 'Unknown'}-${consumerIdRef.current}`;
-      const instance = acquire(BlocClass, instanceKey, refId) as TBloc;
+      const instance = acquire(BlocClass, instanceKey, refId, argsRef.current) as TBloc;
 
       const { useManualDeps, autoTrackEnabled } = determineTrackingMode({
         autoTrack,
@@ -202,7 +215,7 @@ export function useBloc<
         instance,
       ];
       // oxlint-disable-next-line react-hooks/exhaustive-deps
-    }, [BlocClass, instanceId, autoInstance, autoInstanceId, ctxInstanceId]);
+    }, [BlocClass, instanceId, autoInstance, autoInstanceId, ctxInstanceId, argsKey]);
 
   const state = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
