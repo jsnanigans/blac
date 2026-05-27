@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useBloc as v2UseBloc } from '@blac/react';
+import type { UseBlocOptions } from '@blac/react';
 import type {
   ExtractState,
   InstanceReadonlyState,
@@ -13,7 +14,7 @@ import type {
 export interface V1UseBlocOptions<TBloc extends StateContainerConstructor> {
   /** v1 instance id (was named `id`, not `instanceId`). */
   id?: string | number;
-  /** v1 manual-deps selector — same shape as v2's `dependencies`. */
+  /** v1 manual-deps selector — same shape as v2's `select`. */
   dependencySelector?: (
     state: ExtractState<TBloc>,
     bloc: InstanceReadonlyState<TBloc>,
@@ -41,11 +42,14 @@ export function useBloc<TBloc extends StateContainerConstructor>(
   BlocClass: TBloc,
   options?: V1UseBlocOptions<TBloc>,
 ): V1UseBlocReturn<TBloc> {
+  // v1 had no concept of `args`, so we can't statically satisfy v2's
+  // conditional `args` field for a generic bloc. Cast at the adapter boundary;
+  // v1 blocs always used the default `void` Args.
   const [state, bloc] = v2UseBloc(BlocClass, {
     instanceId: options?.id,
-    dependencies: options?.dependencySelector,
+    select: options?.dependencySelector,
     onMount: options?.onMount,
-  });
+  } as UseBlocOptions<TBloc>);
 
   // Always run a useEffect on mount — branching inside keeps hook order stable
   // even if a caller toggles `options.props` between defined/undefined.
