@@ -36,19 +36,19 @@ export type LifecycleEvent =
  * @template E - The lifecycle event type
  */
 export type LifecycleListener<E extends LifecycleEvent> = E extends 'created'
-  ? (container: StateContainer<any>) => void
+  ? (container: StateContainer<any, any, any>) => void
   : E extends 'stateChanged'
     ? (
-        container: StateContainer<any>,
+        container: StateContainer<any, any, any>,
         previousState: any,
         currentState: any,
       ) => void
     : E extends 'disposed'
-      ? (container: StateContainer<any>) => void
+      ? (container: StateContainer<any, any, any>) => void
       : E extends 'refAcquired'
-        ? (container: StateContainer<any>, refId: string) => void
+        ? (container: StateContainer<any, any, any>, refId: string) => void
         : E extends 'refReleased'
-          ? (container: StateContainer<any>, refId: string) => void
+          ? (container: StateContainer<any, any, any>, refId: string) => void
           : never;
 
 /**
@@ -84,7 +84,7 @@ export class StateContainerRegistry {
   get hasStateChangedListeners(): boolean {
     return this._stateChangedListenerCount > 0;
   }
-  private _pendingStateChanges: Array<[StateContainer<any>, any, any]> | null =
+  private _pendingStateChanges: Array<[StateContainer<any, any, any>, any, any]> | null =
     null;
 
   private _autoRefIdCounter = 0;
@@ -551,22 +551,22 @@ export class StateContainerRegistry {
    * Emit lifecycle event to all listeners
    * @internal - Called by StateContainer lifecycle methods
    */
-  emit(event: 'created', container: StateContainer<any>): void;
-  emit(event: 'disposed', container: StateContainer<any>): void;
+  emit(event: 'created', container: StateContainer<any, any, any>): void;
+  emit(event: 'disposed', container: StateContainer<any, any, any>): void;
   emit(
     event: 'stateChanged',
-    container: StateContainer<any>,
+    container: StateContainer<any, any, any>,
     previousState: any,
     currentState: any,
   ): void;
   emit(
     event: 'refAcquired',
-    container: StateContainer<any>,
+    container: StateContainer<any, any, any>,
     refId: string,
   ): void;
   emit(
     event: 'refReleased',
-    container: StateContainer<any>,
+    container: StateContainer<any, any, any>,
     refId: string,
   ): void;
   emit(event: LifecycleEvent, ...args: any[]): void {
@@ -591,7 +591,7 @@ export class StateContainerRegistry {
    * @internal - Called by StateContainer.applyState
    */
   notifyStateChanged(
-    container: StateContainer<any>,
+    container: StateContainer<any, any, any>,
     previousState: any,
     newState: any,
   ): void {

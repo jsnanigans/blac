@@ -35,8 +35,31 @@ type SystemEventHandler<S, E extends SystemEvent> = (
 
 const EMPTY_DEPS: ReadonlyMap<any, any> = new Map();
 
-export abstract class StateContainer<S extends object = any> {
+export abstract class StateContainer<
+  S extends object = any,
+  Args = void,
+  Deps extends object = Record<string, never>,
+> {
   static __excludeFromDevTools = false;
+
+  /** @internal phantom — the args type this bloc is constructed with (see init()) */
+  declare readonly __args: Args;
+  /** @internal phantom — the injected deps type */
+  declare readonly __deps: Deps;
+
+  /**
+   * Backing store for injected deps. Task 04 replaces the merge-aware impl;
+   * declared here so the `deps` getter type is stable for tasks 02/03.
+   */
+  protected _deps: Partial<Deps> | null = null;
+
+  /**
+   * Injected non-serializable handles (refs, callbacks, controllers).
+   * Read lazily — never assume a dep is present at init().
+   */
+  get deps(): Readonly<Deps> {
+    return (this._deps ?? {}) as Readonly<Deps>;
+  }
 
   private _state: S;
   private readonly _listeners = new Set<StateListener<S>>();

@@ -88,6 +88,8 @@ export type {
   ExtractState,
   ExtractStateMutable,
   ExtractConstructorArgs,
+  ExtractArgs,
+  ExtractDeps,
   BlocInstanceType,
   BlocConstructor,
   InstanceReadonlyState,

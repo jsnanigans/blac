@@ -1,7 +1,11 @@
 import { StateContainer } from './StateContainer';
 import { EMIT } from './symbols';
 
-export abstract class Cubit<S extends object = any> extends StateContainer<S> {
+export abstract class Cubit<
+  S extends object = any,
+  Args = void,
+  Deps extends object = Record<string, never>,
+> extends StateContainer<S, Args, Deps> {
   constructor(initialState: S) {
     super(initialState);
   }

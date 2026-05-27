@@ -116,7 +116,18 @@ Body: New `<S, Args, Deps>` type params (defaults `void`/`{}`) + `ExtractArgs`/`
 - [ ] committed with Completion filled
 
 ## Completion
-**Commit SHA:**
-**Files touched:**
-**Typecheck result:**
-**Test result:**
+**Commit SHA:** 4662df77 (HEAD of this task; a commit cannot embed its own final hash, so this names the commit prior to the doc-only SHA stamp — `git log` shows the live HEAD)
+**Files touched:** 8
+- `packages/blac-core/src/core/StateContainer.ts` — `<S, Args, Deps>` params, `__args`/`__deps` phantoms, `_deps` field, `deps` getter stub.
+- `packages/blac-core/src/core/Cubit.ts` — mirrored `<S, Args, Deps>` params, extends `StateContainer<S, Args, Deps>`.
+- `packages/blac-core/src/types/utilities.ts` — widened `StateContainerConstructor`/`StateContainerInstance`/`BlocConstructor` to `<S, any, any>`; added `ExtractArgs`/`ExtractDeps`.
+- `packages/blac-core/src/index.ts` — exported `ExtractArgs`/`ExtractDeps`.
+- `packages/blac-core/src/core/StateContainerRegistry.ts` — widened `StateContainer<any>` refs to `<any, any, any>`.
+- `packages/blac-core/src/plugin/BlacPlugin.ts` — same widening.
+- `packages/blac-core/src/plugin/PluginManager.ts` — same widening.
+- `packages/blac-core/src/core/StateContainer.args-types.test.ts` — (new) type-level tests.
+
+**Typecheck result:** `pnpm --filter @blac/core typecheck` — pass (no errors).
+**Test result:** `pnpm --filter @blac/core test` — 569 tests pass, incl. new `extracts args/deps/state` (StateContainer.args-types.test.ts). Lint: no new findings (3 pre-existing in tracking-proxy.ts / StateContainer.ts unrelated to this task).
+
+Notes: `Deps` default is `Record<string, never>` (not literal `{}`) to satisfy the `no-empty-object-type` lint rule while keeping the "empty object" semantics. `ExtractState` assertion expects `Readonly<{ n: number }>` since `ExtractState` wraps state in `Readonly<>`.

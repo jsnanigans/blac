@@ -16,7 +16,25 @@ export type ExtractStateMutable<T> =
  */
 export type StateContainerConstructor<S extends object = any> = new (
   ...args: any[]
-) => StateContainer<S>;
+) => StateContainer<S, any, any>;
+
+/**
+ * Extract the args type (serializable construction/identity data) from a
+ * StateContainer subclass.
+ * @template T - The StateContainer constructor type
+ */
+export type ExtractArgs<T> =
+  T extends new () => StateContainer<any, infer A, any> ? A : void;
+
+/**
+ * Extract the deps type (injected non-serializable handles) from a
+ * StateContainer subclass.
+ * @template T - The StateContainer constructor type
+ */
+export type ExtractDeps<T> =
+  T extends new () => StateContainer<any, any, infer D>
+    ? D
+    : Record<string, never>;
 
 export type InstanceReadonlyState<T extends StateContainerConstructor = any> =
   Omit<InstanceType<T>, 'state'> & { state: ExtractState<T> };
@@ -27,7 +45,7 @@ export type InstanceState<T extends StateContainerConstructor = any> = Omit<
 > & { state: ExtractStateMutable<T> };
 
 export type StateContainerInstance<S extends object = any> = Omit<
-  StateContainer<S>,
+  StateContainer<S, any, any>,
   'state'
 > & { state: Readonly<S> };
 
@@ -53,9 +71,9 @@ export type BlocInstanceType<T extends abstract new (...args: any) => any> =
  */
 export type BlocConstructor<
   S extends object = any,
-  T extends new (...args: any[]) => StateContainer<S> = new (
+  T extends new (...args: any[]) => StateContainer<S, any, any> = new (
     ...args: any[]
-  ) => StateContainer<S>,
+  ) => StateContainer<S, any, any>,
 > = (new (...args: any[]) => InstanceType<T>) & {
   acquire(instanceKey?: string, ...args: any[]): InstanceType<T>;
   borrow(instanceKey?: string, ...args: any[]): InstanceType<T> | null;

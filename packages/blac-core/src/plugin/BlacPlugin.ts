@@ -16,30 +16,30 @@ export interface InstanceMetadata {
 }
 
 export interface PluginContext {
-  getInstanceMetadata(instance: StateContainer<any>): InstanceMetadata;
+  getInstanceMetadata(instance: StateContainer<any, any, any>): InstanceMetadata;
 
   getState<S extends object = any>(instance: StateContainer<S>): S;
 
-  getHydrationStatus(instance: StateContainer<any>): HydrationStatus;
+  getHydrationStatus(instance: StateContainer<any, any, any>): HydrationStatus;
 
-  startHydration(instance: StateContainer<any>): void;
+  startHydration(instance: StateContainer<any, any, any>): void;
 
   applyHydratedState<S extends object = any>(
     instance: StateContainer<S>,
     state: S,
   ): boolean;
 
-  finishHydration(instance: StateContainer<any>): void;
+  finishHydration(instance: StateContainer<any, any, any>): void;
 
-  failHydration(instance: StateContainer<any>, error: Error): void;
+  failHydration(instance: StateContainer<any, any, any>, error: Error): void;
 
-  waitForHydration(instance: StateContainer<any>): Promise<void>;
+  waitForHydration(instance: StateContainer<any, any, any>): Promise<void>;
 
-  queryInstances<T extends StateContainer<any>>(
+  queryInstances<T extends StateContainer<any, any, any>>(
     typeClass: new (...args: any[]) => T,
   ): T[];
 
-  getAllTypes(): Array<new (...args: any[]) => StateContainer<any>>;
+  getAllTypes(): Array<new (...args: any[]) => StateContainer<any, any, any>>;
 
   getStats(): {
     registeredTypes: number;
@@ -59,7 +59,7 @@ export interface BlacPlugin {
   onUninstall?(): void;
 
   onInstanceCreated?(
-    instance: StateContainer<any>,
+    instance: StateContainer<any, any, any>,
     context: PluginContext,
   ): void;
 
@@ -71,18 +71,18 @@ export interface BlacPlugin {
   ): void;
 
   onInstanceDisposed?(
-    instance: StateContainer<any>,
+    instance: StateContainer<any, any, any>,
     context: PluginContext,
   ): void;
 
   onRefAcquired?(
-    instance: StateContainer<any>,
+    instance: StateContainer<any, any, any>,
     refId: string,
     context: PluginContext,
   ): void;
 
   onRefReleased?(
-    instance: StateContainer<any>,
+    instance: StateContainer<any, any, any>,
     refId: string,
     context: PluginContext,
   ): void;

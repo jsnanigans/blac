@@ -216,7 +216,7 @@ export class PluginManager {
   private createPluginContext(): PluginContext {
     return {
       getInstanceMetadata: (
-        instance: StateContainer<any>,
+        instance: StateContainer<any, any, any>,
       ): InstanceMetadata => {
         return {
           id: instance.instanceId,
@@ -236,11 +236,11 @@ export class PluginManager {
         return instance.state;
       },
 
-      getHydrationStatus: (instance: StateContainer<any>) => {
+      getHydrationStatus: (instance: StateContainer<any, any, any>) => {
         return instance.hydrationStatus;
       },
 
-      startHydration: (instance: StateContainer<any>) => {
+      startHydration: (instance: StateContainer<any, any, any>) => {
         instance.beginHydration();
       },
 
@@ -251,19 +251,19 @@ export class PluginManager {
         return instance.applyHydratedState(state);
       },
 
-      finishHydration: (instance: StateContainer<any>) => {
+      finishHydration: (instance: StateContainer<any, any, any>) => {
         instance.finishHydration();
       },
 
-      failHydration: (instance: StateContainer<any>, error: Error) => {
+      failHydration: (instance: StateContainer<any, any, any>, error: Error) => {
         instance.failHydration(error);
       },
 
-      waitForHydration: (instance: StateContainer<any>) => {
+      waitForHydration: (instance: StateContainer<any, any, any>) => {
         return instance.waitForHydration();
       },
 
-      queryInstances: <T extends StateContainer<any>>(
+      queryInstances: <T extends StateContainer<any, any, any>>(
         typeClass: new (...args: any[]) => T,
       ): T[] => {
         return this.registry.getAll(typeClass as any);
