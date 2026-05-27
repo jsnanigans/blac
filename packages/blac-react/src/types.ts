@@ -1,6 +1,6 @@
 import type { ExtractState, StateContainerConstructor } from '@blac/core';
 import { InstanceReadonlyState } from '@blac/core';
-import type { ExtractArgs } from '@blac/adapter';
+import type { ExtractArgs, ExtractDeps } from '@blac/adapter';
 import type { RefObject } from 'react';
 
 /**
@@ -31,6 +31,13 @@ export type UseBlocOptions<TBloc extends StateContainerConstructor> =
       state: ExtractState<TBloc>,
       bloc: InstanceReadonlyState<TBloc>,
     ) => unknown[];
+    /**
+     * Per-consumer slice of non-serializable handles (refs, callbacks,
+     * controllers) merged into `bloc.deps`. Always partial — each consumer
+     * contributes a slice keyed by its stable id. Never affects instance
+     * identity; drives the core merge engine + `onDepsChanged`.
+     */
+    deps?: Partial<ExtractDeps<TBloc>>;
     /** Enable automatic property tracking via Proxy (default: true) */
     autoTrack?: boolean;
     /** Callback invoked when bloc instance mounts */

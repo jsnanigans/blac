@@ -22,8 +22,11 @@ import {
   disableGetterTracking,
   type StateContainerConstructor,
   type InstanceState,
+  type ExtractDeps,
   acquire,
   release,
+  APPLY_DEPS,
+  REMOVE_DEPS_OWNER,
 } from '@blac/adapter';
 import { isIsolatedClass } from '@blac/core';
 import { useInstanceIdFromContext } from './BlocProvider';
@@ -129,6 +132,10 @@ export function useBloc<
   onMountRef.current = options?.onMount;
   const onUnmountRef = useRef(options?.onUnmount);
   onUnmountRef.current = options?.onUnmount;
+  // Per-consumer deps slice, read by the commit effect so it always merges the
+  // latest ref/callback identities without re-resolving the instance.
+  const depsSliceRef = useRef(options?.deps);
+  depsSliceRef.current = options?.deps;
   const instanceId = options?.instanceId;
   const autoTrack = options?.autoTrack;
   const dependencies = options?.dependencies;
@@ -240,6 +247,14 @@ export function useBloc<
       rawInstance,
       forceUpdate,
     );
+    // Merge this consumer's deps slice into the un-proxied instance. The core
+    // engine shallow-diffs per owner, so re-applying an identical slice (e.g.
+    // StrictMode double-commit) is a no-op; changed ref/callback identities are
+    // picked up because we read the latest slice from a ref each commit.
+    (rawInstance as any)[APPLY_DEPS](
+      consumerIdRef.current,
+      (depsSliceRef.current ?? {}) as Partial<ExtractDeps<T>>,
+    );
   });
 
   useEffect(() => {
@@ -272,6 +287,11 @@ export function useBloc<
       }
 
       manager.cleanup();
+
+      // Withdraw this consumer's deps slice while the instance is still alive,
+      // so onDepsChanged can fire teardown before release. Removing an absent
+      // owner is a no-op (StrictMode double-cleanup safe).
+      (currentRawInstance as any)?.[REMOVE_DEPS_OWNER](consumerIdRef.current);
 
       onUnmountRef.current?.(currentBloc as InstanceType<T>);
 

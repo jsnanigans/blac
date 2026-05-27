@@ -98,7 +98,16 @@ Body: `useBloc(C, { deps })` merges a per-consumer slice into `bloc.deps` on com
 - [ ] committed with Completion filled
 
 ## Completion
-**Commit SHA:**
-**Files touched:**
-**Typecheck result:**
+**Commit SHA:** 35e7ed86 (see `git log` for the canonical hash; this block was embedded via amend)
+**Files touched:** 3 source/test + this task file —
+- `packages/blac-react/src/types.ts` (import `ExtractDeps`; add `deps?: Partial<ExtractDeps<TBloc>>` to `UseBlocOptions`)
+- `packages/blac-react/src/useBloc.ts` (import `APPLY_DEPS`/`REMOVE_DEPS_OWNER`/`ExtractDeps`; add `depsSliceRef` updated each render; `[APPLY_DEPS](consumerId, slice)` on `rawInstance` in the commit-every-render effect; `[REMOVE_DEPS_OWNER](consumerId)` in the keyed cleanup before `release`; deps NOT added to the resolution `useMemo` dep array)
+- `packages/blac-react/src/__tests__/useBloc.deps.test.tsx` (new — 3 tests)
+- `plans/input-pattern/07-react-deps.md` (this block)
+
+**Typecheck result:** `pnpm --filter @blac/react typecheck` — clean (tsc --noEmit, 0 errors).
 **Test result:**
+- Default config: `useBloc.deps.test.tsx` — 3/3 pass (`wires a dep post-commit and fires onDepsChanged`, `merges slices from two consumers and withdraws on unmount`, `does NOT re-create the instance when deps identity changes`).
+- Compiler config (`vitest.config.compiler.ts`): same 3/3 pass.
+- Lint: 0 errors (6 pre-existing warnings unrelated to this change).
+- Note: the 5 known-pre-existing failures in `useBloc.array-methods-tracking.test.tsx` (proxy-tracking WIP) are unaffected/ignored per task scope.
