@@ -133,6 +133,23 @@ export const exampleCatalog: RouteMeta[] = [
       'Persistence',
     ],
   },
+  {
+    id: '10',
+    path: '/input-pattern',
+    title: 'Args · Deps · onDepsChanged',
+    navLabel: 'Input Pattern',
+    category: 'Input Lanes',
+    badge: 'Advanced',
+    blurb:
+      'Reference demo for the three input lanes: args for identity-keyed instances, deps for non-serializable handles, and multi-source deps merged across consumers.',
+    concepts: [
+      'args identity keying',
+      'static key()',
+      'deps handles',
+      'onDepsChanged',
+      'Multi-source deps',
+    ],
+  },
 ];
 
 export function getRouteMeta(path: string): RouteMeta {

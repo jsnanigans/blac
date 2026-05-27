@@ -10,6 +10,7 @@ import { DashboardDemo } from './examples/05-dashboard/DashboardDemo';
 import { DbPersistDemo } from './examples/06-db-persist/DbPersistDemo';
 import { RegistryDemo } from './examples/07-registry/RegistryDemo';
 import { TrackingDemo } from './examples/08-tracking/TrackingDemo';
+import { InputPatternDemo } from './examples/10-input-pattern/InputPatternDemo';
 import { useState } from 'react';
 import { useBloc } from '@blac/react';
 import { PerformanceOverlay } from './shared/components';
@@ -155,6 +156,9 @@ export function App() {
               </Route>
               <Route path="/tracking-lab">
                 <TrackingDemo />
+              </Route>
+              <Route path="/input-pattern">
+                <InputPatternDemo />
               </Route>
               <Route path="/messenger">
                 <MessengerApp />
