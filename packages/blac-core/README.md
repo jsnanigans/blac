@@ -14,7 +14,7 @@ pnpm add @blac/core
 
 ### Cubit
 
-The primary building block. Extends `StateContainer` with public `emit`, `update`, and `patch` methods.
+The primary building block. Extends `StateContainer` with public `emit`, `update`, and `patch` methods. Supports typed `Args` for construction data and `Deps` for non-serializable handles.
 
 ```ts
 import { Cubit } from '@blac/core';
@@ -33,6 +33,86 @@ class CounterCubit extends Cubit<{ count: number }> {
 - `emit(newState)` — replace the entire state
 - `update(fn)` — derive new state from current
 - `patch(partial)` — shallow merge (object state only)
+
+### Args and Identity Keying
+
+Blocs can declare an `Args` type to receive typed construction data, which derives instance identity by default:
+
+```ts
+import { Cubit } from '@blac/core';
+
+class UserCardCubit extends Cubit<UserCardState, { userId: string }> {
+  // Constructor is always zero-arg
+  init(args: { userId: string }) {
+    // Called by framework once, synchronously at creation, before first snapshot
+    this.userId = args.userId;
+    void this.loadUser(args.userId);
+  }
+
+  // Optional: control how args map to identity (default = structural hash)
+  static key = (args) => args.userId;
+}
+```
+
+**Key mechanics:**
+- **Different args ⇒ different instance** (structural hash by default, or `static key` if declared).
+- **`init(args)` called once** per instance, right after `new Type()`, before the first state snapshot — no flash, correct initial state.
+- **Serializable only** — refs, callbacks, DOM elements belong in the `deps` lane (below).
+
+### Deps: Non-Serializable Handles
+
+Non-serializable values (refs, callbacks, class instances) use the `Deps` generic type and are read via `this.deps.x`:
+
+```ts
+import { Cubit } from '@blac/core';
+
+class FileUploadCubit extends Cubit<
+  UploadState,
+  { endpoint: string },                      // Args
+  { inputRef?: RefObject<HTMLInputElement> } // Deps
+> {
+  init(args: { endpoint: string }) {
+    this.endpoint = args.endpoint;
+  }
+
+  openPicker() {
+    // Read deps lazily; may be undefined
+    this.deps.inputRef?.current?.click?.();
+  }
+}
+```
+
+**Properties of `deps`:**
+- **Per-consumer merged** — each `useBloc` call contributes its own slice; the bloc sees the union.
+- **Never keying** — different refs/callbacks don't fork the instance.
+- **Live** — can change over time; merged on every commit.
+- **Optional `onDepsChanged` hook** — fires after each merge (see below).
+
+### `onDepsChanged` Lifecycle Hook
+
+For handles that require initialization (canvas setup, RTE editor binding), use `onDepsChanged` to react when a dep arrives or changes:
+
+```ts
+class CanvasRendererCubit extends Cubit<
+  RenderState,
+  { sceneId: string },
+  { canvas?: HTMLCanvasElement; controller?: RteController }
+> {
+  onDepsChanged(next: this['deps'], prev: this['deps']) {
+    if (next.canvas && next.canvas !== prev.canvas) {
+      // Wait for canvas, then init GPU/render loop
+      this.initRenderer(next.canvas);
+    }
+    if (!next.canvas && prev.canvas) {
+      // Canvas unmounted → tear down
+      this.disposeRenderer();
+    }
+    if (next.controller !== prev.controller) {
+      this.bindController(next.controller);
+    }
+  }
+}
+```
 
 ### StateContainer
 
@@ -56,9 +136,9 @@ class AuthContainer extends StateContainer<{ token: string | null }> {
 }
 ```
 
-**Public API:** `state`, `subscribe(listener)`, `dispose()`, `isDisposed`, `name`, `instanceId`, `createdAt`, `lastUpdateTimestamp`
+**Public API:** `state`, `subscribe(listener)`, `dispose()`, `isDisposed`, `name`, `instanceId`, `createdAt`
 
-**Protected API:** `emit(state)`, `update(fn)`, `onSystemEvent(event, handler)`, `depend(BlocClass, instanceKey?)`
+**Protected API:** `emit(state)`, `update(fn)`, `init(args)` (optional), `onDepsChanged(next, prev)` (optional), `onSystemEvent(event, handler)`, `depend(BlocClass, instanceKey?)`
 
 ## Registry
 

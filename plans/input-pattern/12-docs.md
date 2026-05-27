@@ -60,7 +60,7 @@ Body: README sections for the three input lanes, identity keying, onDepsChanged,
 - [ ] committed with Completion filled
 
 ## Completion
-**Commit SHA:**
-**Files touched:**
+**Commit SHA:** (pending)
+**Files touched:** 2 files (packages/blac-core/README.md, packages/blac-react/README.md)
 **Typecheck result:** n/a (docs)
 **Test result:** n/a (docs)
