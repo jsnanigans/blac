@@ -142,6 +142,31 @@ export class StateContainerRegistry {
   }
 
   /**
+   * Directly insert an instance entry into the registry without going through
+   * acquire/release. Creates the internal WeakMap bucket for the constructor if
+   * it does not exist yet. Replaces any existing entry for the same key.
+   *
+   * The provided instance is NOT configured or disposed here — callers are
+   * responsible for any initConfig / dispose calls. Intended for testing
+   * helpers that create stubs outside the normal acquisition path.
+   *
+   * @internal Used by testing helpers only.
+   */
+  insertInstance<T extends StateContainerConstructor>(
+    Type: T,
+    instanceKey: string,
+    instance: InstanceType<T>,
+    refs: Map<string, number> = new Map(),
+  ): void {
+    const instances = this.ensureInstancesMap(Type);
+    const existingEntry = instances.get(instanceKey);
+    if (existingEntry && existingEntry.instance !== instance && !existingEntry.instance.isDisposed) {
+      existingEntry.instance.dispose();
+    }
+    instances.set(instanceKey, { instance, refs });
+  }
+
+  /**
    * Acquire an instance with ref tracking (ownership semantics).
    * Creates a new instance if one doesn't exist, or returns existing and adds a ref.
    * You must call `release()` with the same refId when done.

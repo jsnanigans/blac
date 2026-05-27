@@ -1,13 +1,16 @@
 import { Cubit } from './core/Cubit';
-import {
-  type InstanceEntry,
-  StateContainerRegistry,
-} from './core/StateContainerRegistry';
+import { StateContainerRegistry } from './core/StateContainerRegistry';
+import { APPLY_DEPS } from './core/symbols';
 import { ensure, getRegistry, setRegistry } from './registry';
 import type {
+  ExtractArgs,
+  ExtractDeps,
   ExtractState,
   StateContainerConstructor,
 } from './types/utilities';
+
+/** Synthetic owner id used by test helpers for pre-wired deps. */
+const TESTING_DEPS_OWNER = 'testing-deps';
 
 declare const beforeEach: (fn: () => void) => void;
 declare const afterEach: (fn: () => void) => void;
@@ -66,22 +69,11 @@ const DEFAULT_KEY = 'default';
 export function registerOverride<T extends StateContainerConstructor>(
   BlocClass: T,
   instance: InstanceType<T>,
-  instanceKey: string = DEFAULT_KEY,
+  instanceKey?: string,
 ): void {
+  const key = instanceKey ?? DEFAULT_KEY;
   const registry = getRegistry();
-  const existing = registry.acquire(BlocClass, instanceKey, {
-    canCreate: true,
-    countRef: false,
-  });
-  if (existing !== instance && !existing.isDisposed) {
-    existing.dispose();
-  }
-  const instancesMap = registry.getInstancesMap(BlocClass);
-  const entry: InstanceEntry<InstanceType<T>> = {
-    instance,
-    refs: new Map([['testing-override', 1]]),
-  };
-  instancesMap.set(instanceKey, entry);
+  registry.insertInstance(BlocClass, key, instance, new Map([['testing-override', 1]]));
 }
 
 export function overrideEnsure<T extends StateContainerConstructor, R>(
@@ -109,6 +101,16 @@ export interface CubitStubOptions<T extends StateContainerConstructor> {
   methods?: Partial<
     Record<MethodKeys<InstanceType<T>>, (...args: any[]) => any>
   >;
+  /**
+   * Args to pass to init(). If the bloc's Args type is not void, supplying
+   * args here causes initConfig({ args }) to be called so init() runs.
+   */
+  args?: ExtractArgs<T> extends void ? never : ExtractArgs<T>;
+  /**
+   * Deps slice to pre-wire via the core [APPLY_DEPS] path (synthetic owner
+   * "testing-deps"), so onDepsChanged fires during tests.
+   */
+  deps?: Partial<ExtractDeps<T>>;
 }
 
 export function createCubitStub<T extends StateContainerConstructor>(
@@ -116,6 +118,13 @@ export function createCubitStub<T extends StateContainerConstructor>(
   options?: CubitStubOptions<T>,
 ): InstanceType<T> {
   const instance = new BlocClass() as InstanceType<T>;
+
+  // Run init() if args are supplied — goes through the same initConfig path
+  // that the registry uses, so lifecycle hooks fire correctly.
+  if (options?.args != null) {
+    instance.initConfig({ args: options.args });
+  }
+
   if (options?.state != null) {
     if (instance instanceof Cubit) {
       const currentState = instance.state;
@@ -138,6 +147,12 @@ export function createCubitStub<T extends StateContainerConstructor>(
       }
     }
   }
+
+  // Pre-wire deps via the core merge path so onDepsChanged fires in tests.
+  if (options?.deps != null) {
+    (instance as any)[APPLY_DEPS](TESTING_DEPS_OWNER, options.deps);
+  }
+
   return instance;
 }
 

@@ -63,7 +63,13 @@ Body: `renderWithBloc` and core stub helpers accept `args` (runs init) and `deps
 - [ ] committed with Completion filled
 
 ## Completion
-**Commit SHA:**
-**Files touched:**
-**Typecheck result:**
-**Test result:**
+**Commit SHA:** (filled post-commit)
+**Files touched:** 5
+- `packages/blac-core/src/core/StateContainerRegistry.ts` — added `insertInstance` public method
+- `packages/blac-core/src/testing.ts` — `CubitStubOptions` gets `args`/`deps`; `createCubitStub` runs `init` + pre-wires deps; `registerOverride` simplified to use `insertInstance`
+- `packages/blac-core/src/testing.args-deps.test.ts` — new test file (8 tests)
+- `packages/blac-react/src/testing.ts` — no interface change needed (inherits via `CubitStubOptions`)
+- `packages/blac-react/src/__tests__/renderWithBloc.testing.test.tsx` — new test file (4 tests)
+- `plans/input-pattern/09-testing-helpers.md` — this file
+**Typecheck result:** clean (both @blac/core and @blac/react)
+**Test result:** core 602 passed (0 new failures); react 199 passed, 5 pre-existing proxy-WIP failures ignored
