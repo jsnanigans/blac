@@ -66,7 +66,7 @@ Body: Ports the input-pattern API (args keying, deps lane + onDepsChanged, depen
 - [x] committed with Completion filled
 
 ## Completion
-**Commit SHA:** (filled after commit)
+**Commit SHA:** 289f0b2b
 **Files touched:** 7 — packages/blac-preact/src/useBloc.ts, packages/blac-preact/src/types.ts, packages/blac-preact/tsconfig.json, packages/blac-preact/vitest.d.ts, packages/blac-preact/src/__tests__/useBloc.args.test.tsx, packages/blac-preact/src/__tests__/useBloc.deps.test.tsx, packages/blac-preact/src/__tests__/useBloc.dev-warnings.test.tsx
 **Typecheck result:** pass (tsc --noEmit, 0 errors)
 **Test result:** 26 tests pass (useBloc.args: 4, useBloc.deps: 3, useBloc.dev-warnings: 9, pre-existing: 10)
