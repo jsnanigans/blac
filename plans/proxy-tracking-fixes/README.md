@@ -126,3 +126,34 @@ Commit the updated task file **as part of** the implementation commit. No separa
 8. [`08-stale-proxy-cache.md`](./08-stale-proxy-cache.md) — Phase 2, serial — sonnet / medium
 9. [`09-active-tracker-per-consumer.md`](./09-active-tracker-per-consumer.md) — Phase 3 — opus / high
 10. [`10-final-verify.md`](./10-final-verify.md) — Phase 4 — sonnet / low
+
+## Phase 5 — Deeper iteration tracking (Option B)
+
+After 01-10 land, this phase makes per-index tracking work through array iteration (`for-of`, `.map`, `.filter`, etc.) so consumers reading a single item don't re-render when an unrelated item changes. See `apps/examples/src/examples/08-tracking/` for the demo case driving this.
+
+```
+11  optimize-paths fix              tracking-proxy.ts          sonnet / medium
+12  Symbol.iterator wrapper         tracking-proxy.ts          sonnet / medium
+13  callback-iterating methods      tracking-proxy.ts          opus   / high
+14  reduce / reduceRight            tracking-proxy.ts          sonnet / medium
+15  values / entries iterators      tracking-proxy.ts          sonnet / low
+16  perf benchmark                  new bench file             sonnet / low
+```
+
+All Phase 5 tasks touch `tracking-proxy.ts` → **strictly serial**. Each depends on the previous in the order listed.
+
+11. [`11-optimize-paths-fix.md`](./11-optimize-paths-fix.md) — Phase 5, serial — sonnet / medium
+12. [`12-symbol-iterator.md`](./12-symbol-iterator.md) — Phase 5, serial — sonnet / medium
+13. [`13-iterating-methods.md`](./13-iterating-methods.md) — Phase 5, serial — opus / high
+14. [`14-reducers.md`](./14-reducers.md) — Phase 5, serial — sonnet / medium
+15. [`15-iterator-methods.md`](./15-iterator-methods.md) — Phase 5, serial — sonnet / low
+16. [`16-perf-bench.md`](./16-perf-bench.md) — Phase 5, serial — sonnet / low
+
+### Design decisions (locked)
+
+- **Third callback arg** to `.map`/`.filter`/etc. = the array proxy itself (`this`). No extra allocation.
+- **Iterator path tagging:** eager — yielding index `i` adds `path[i]` and `path.length` to trackedPaths immediately, even if the user doesn't dereference the yielded item.
+- **Derived arrays** (`.slice`, `.concat`, `.flat`, `.toReversed`, `.toSorted`, `.toSpliced`, `.join`): return raw. These produce data outside state; tracking their iteration would record paths that don't correspond to real state locations.
+- **Lookup methods** (`.indexOf`, `.lastIndexOf`, `.includes`): bind to raw (current behavior). Caller-supplied comparand is compared by `===`.
+- **Mutators** (`.push`, `.sort`, `.reverse`, etc.): **out of scope.** Tracked separately as a future task; current bind-to-raw silently mutates bloc state if called.
+- **`Object.values`/`Object.entries`** on plain objects: **out of scope.** Future task.

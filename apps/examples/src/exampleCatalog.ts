@@ -101,6 +101,24 @@ export const exampleCatalog: RouteMeta[] = [
   },
   {
     id: '08',
+    path: '/tracking-lab',
+    title: 'Tracking Lab',
+    navLabel: 'Tracking',
+    category: 'Reactivity',
+    badge: 'Lab',
+    blurb:
+      'Probe the auto-tracking proxy with deeply nested state, array indices, getters, and null transitions — every card stays still unless its slice actually changed.',
+    concepts: [
+      'Auto-Tracking',
+      'Array indices',
+      'Nested paths',
+      'Null transitions',
+      'Bound methods',
+      'Per-consumer tracker',
+    ],
+  },
+  {
+    id: '09',
     path: '/messenger',
     title: 'Messenger',
     navLabel: 'Messenger',

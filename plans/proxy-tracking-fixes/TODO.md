@@ -28,6 +28,17 @@ Run one at a time. Each must commit before the next starts.
 
 - [ ] **10** Cross-package verification — sonnet / low
 
+## Phase 5 — Deeper iteration tracking (Option B)
+
+All serial; each depends on the previous. Land after 01-10.
+
+- [ ] **11** Optimize-paths fix (drop array-parent recovery; bracket-aware `isChildPath`) — sonnet / medium
+- [ ] **12** `Symbol.iterator` wrapper yields proxied items — sonnet / medium
+- [ ] **13** Wrap callback-iterating methods (map, filter, forEach, find, findIndex, findLast, findLastIndex, some, every) — opus / high
+- [ ] **14** Wrap reduce / reduceRight — sonnet / medium
+- [ ] **15** Wrap values / entries iterators — sonnet / low
+- [ ] **16** Perf benchmark for iteration overhead — sonnet / low
+
 ---
 
 ## Dispatch reminder

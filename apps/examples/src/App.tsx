@@ -9,6 +9,7 @@ import { FormDemo } from './examples/04-form/FormDemo';
 import { DashboardDemo } from './examples/05-dashboard/DashboardDemo';
 import { DbPersistDemo } from './examples/06-db-persist/DbPersistDemo';
 import { RegistryDemo } from './examples/07-registry/RegistryDemo';
+import { TrackingDemo } from './examples/08-tracking/TrackingDemo';
 import { useState } from 'react';
 import { useBloc } from '@blac/react';
 import { PerformanceOverlay } from './shared/components';
@@ -151,6 +152,9 @@ export function App() {
               </Route>
               <Route path="/registry">
                 <RegistryDemo />
+              </Route>
+              <Route path="/tracking-lab">
+                <TrackingDemo />
               </Route>
               <Route path="/messenger">
                 <MessengerApp />

@@ -60,7 +60,11 @@
       "Read(//private/tmp/**)",
       "Bash(npm pack *)",
       "Bash(grep -v \"^$\")",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(grep -v \":0$\")",
+      "Bash(git restore *)",
+      "Bash(git *)",
+      "Read(//Users/brendanmullins/Projects/cells/insomni/apps/phylon/**)"
     ]
   }
 }
