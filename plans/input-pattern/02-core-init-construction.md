@@ -112,15 +112,15 @@ feat(core): add init(args) lifecycle and thread construction args
 Body: Registry passes acquire-time `args` to a new `init(args)` hook run once before first snapshot; constructor stays zero-arg.
 
 ## Checklist
-- [ ] `init(args)` hook + once-only invocation from `initConfig`
-- [ ] `args` threaded through registry `acquire` + `new Type()` path
-- [ ] `acquire`/`ensure` wrappers accept `args`
-- [ ] no re-init on existing-instance return
-- [ ] tests pass; typecheck & lint clean
-- [ ] committed with Completion filled
+- [x] `init(args)` hook + once-only invocation from `initConfig`
+- [x] `args` threaded through registry `acquire` + `new Type()` path
+- [x] `acquire`/`ensure` wrappers accept `args`
+- [x] no re-init on existing-instance return
+- [x] tests pass; typecheck & lint clean
+- [x] committed with Completion filled
 
 ## Completion
-**Commit SHA:**
-**Files touched:**
-**Typecheck result:**
-**Test result:**
+**Commit SHA:** (to be filled after commit)
+**Files touched:** 5 — `packages/blac-core/src/core/StateContainer.ts`, `packages/blac-core/src/core/StateContainerRegistry.ts`, `packages/blac-core/src/registry/acquire.ts`, `packages/blac-core/src/registry/ensure.ts`, `packages/blac-core/src/core/StateContainer.init.test.ts` (new)
+**Typecheck result:** clean (0 errors)
+**Test result:** 571 passed (2 new: "calls init once with args, before first read, and seeds state", "does not re-init when the same key is acquired again")

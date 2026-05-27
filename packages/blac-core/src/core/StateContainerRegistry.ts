@@ -154,12 +154,14 @@ export class StateContainerRegistry {
       canCreate?: boolean;
       countRef?: boolean;
       refId?: string;
+      args?: unknown;
     } = {},
   ): InstanceType<T> {
     const { canCreate = true, countRef = true } = options;
 
     const config: StateContainerConfig = {
       instanceId: instanceKey,
+      args: options.args,
     };
 
     const instances = this.ensureInstancesMap(Type);
@@ -261,10 +263,12 @@ export class StateContainerRegistry {
   ensure<T extends StateContainerConstructor = StateContainerConstructor>(
     Type: T,
     instanceKey: string = BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
+    args?: unknown,
   ): InstanceType<T> {
     return this.acquire(Type, instanceKey, {
       canCreate: true,
       countRef: false,
+      args,
     });
   }
 

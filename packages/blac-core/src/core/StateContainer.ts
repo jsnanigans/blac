@@ -10,6 +10,8 @@ export interface StateContainerConfig {
   name?: string;
   debug?: boolean;
   instanceId?: string;
+  /** Args passed at acquire time; forwarded to init(). */
+  args?: unknown;
 }
 
 export type HydrationStatus = 'idle' | 'hydrating' | 'hydrated' | 'error';
@@ -72,6 +74,7 @@ export abstract class StateContainer<
   private _rejectHydrationPromise?: (error: Error) => void;
   private _hydrationPromiseSettled = false;
   private _config: StateContainerConfig = {};
+  private _initCalled = false;
   private readonly _systemEventHandlers = new Map<
     SystemEvent,
     Set<SystemEventHandler<S, any>>
@@ -108,6 +111,17 @@ export abstract class StateContainer<
     this._state = initialState;
   }
 
+  /**
+   * Called once after construction with the args passed at acquire time, before the first
+   * state snapshot is read by any consumer. Override to seed args-derived state (via
+   * this.emit(...)) or kick off loads. Because init runs before any subscriber exists, the
+   * emit is safe and flash-free.
+   *
+   * Static initial state still comes from the subclass `state` field / `super(initialState)`.
+   * For blocs where Args = void, init(undefined) is called — the default no-op ignores it.
+   */
+  protected init(_args: Args): void {}
+
   initConfig(config: StateContainerConfig): void {
     this._config = { ...config };
     this.name = this._config.name || this.constructor.name;
@@ -121,6 +135,10 @@ export abstract class StateContainer<
     );
     this._equalityFn = perClass ?? getBlacConfig().equality;
     this._registry.emit('created', this);
+    if (!this._initCalled) {
+      this._initCalled = true;
+      this.init(this._config.args as Args);
+    }
   }
 
   get state(): Readonly<S> {
