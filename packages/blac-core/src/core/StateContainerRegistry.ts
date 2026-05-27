@@ -4,6 +4,7 @@ import {
   type PluginManager,
 } from '../plugin/PluginManager';
 import { BLAC_DEFAULTS, BLAC_ERROR_PREFIX } from '../constants';
+import { getBlacConfig } from '../config';
 import { isKeepAliveClass, getClassKey } from '../utils/static-props';
 import {
   structuralKey,
@@ -167,6 +168,80 @@ export class StateContainerRegistry {
   }
 
   /**
+   * Resolve the storage key for an instance. This is the single source of truth
+   * for keying — `acquire` and `release` MUST agree, otherwise a ref taken under
+   * an args-derived key is never dropped (instance leaks).
+   *
+   * Resolution order (explicit beats derived):
+   * explicit key > `static key(args)` > structural hash of args > default sentinel.
+   *
+   * @param Type - The StateContainer class constructor
+   * @param instanceKey - Explicit key, or undefined to derive from args
+   * @param args - Construction args used for structural/`static key` derivation
+   */
+  resolveKey<T extends StateContainerConstructor = StateContainerConstructor>(
+    Type: T,
+    instanceKey: string | undefined,
+    args: unknown,
+  ): string {
+    if (instanceKey !== undefined) {
+      return instanceKey;
+    }
+    const keyFn = getClassKey(Type);
+    if (keyFn) {
+      return keyFn(args);
+    }
+    if (args !== undefined) {
+      return structuralKey(args);
+    }
+    return DEFAULT_STRUCTURAL_KEY;
+  }
+
+  /**
+   * Circuit breaker for runaway instance creation. Throws when a single
+   * constructor would exceed `maxInstancesPerType` live instances — almost
+   * always an unstable instance key (e.g. a new object/array passed as `args`
+   * every render, or a missing `static key`) leaking an instance per render.
+   */
+  private assertInstanceLimit(
+    Type: StateContainerConstructor,
+    currentCount: number,
+  ): void {
+    const limit = getBlacConfig().maxInstancesPerType;
+    if (limit > 0 && currentCount >= limit) {
+      throw new Error(
+        `${BLAC_ERROR_PREFIX} ${Type.name} exceeded the maximum of ${limit} live instances. ` +
+          `This usually means the instance key is unstable — e.g. \`args\` that ` +
+          `change identity every render, or a missing \`static key\` — so a new ` +
+          `instance is created and never disposed (memory leak). Stabilize the key, ` +
+          `add a \`static key(args)\`, or raise \`configureBlac({ maxInstancesPerType })\`.`,
+      );
+    }
+  }
+
+  /**
+   * Circuit breaker for runaway reference growth. Throws when one instance
+   * accumulates more than `maxRefsPerInstance` distinct live refs — almost
+   * always consumer cleanup (e.g. `useBloc`'s unmount `release`) never firing.
+   */
+  private assertRefLimit(
+    Type: StateContainerConstructor,
+    resolvedKey: string,
+    refCount: number,
+  ): void {
+    const limit = getBlacConfig().maxRefsPerInstance;
+    if (limit > 0 && refCount > limit) {
+      throw new Error(
+        `${BLAC_ERROR_PREFIX} ${Type.name} instance "${resolvedKey}" exceeded the maximum of ${limit} live references. ` +
+          `This usually means references are acquired without a matching release ` +
+          `(e.g. a consumer that never unmounts/cleans up), leaking refs that keep ` +
+          `the instance alive forever. Ensure every acquire is paired with a release, ` +
+          `or raise \`configureBlac({ maxRefsPerInstance })\`.`,
+      );
+    }
+  }
+
+  /**
    * Acquire an instance with ref tracking (ownership semantics).
    * Creates a new instance if one doesn't exist, or returns existing and adds a ref.
    * You must call `release()` with the same refId when done.
@@ -191,21 +266,7 @@ export class StateContainerRegistry {
     const { canCreate = true, countRef = true } = options;
     const args = options.args;
 
-    // Derive instanceKey when caller doesn't supply one explicitly.
-    // Resolution order: explicit key > static key fn > structural hash > default sentinel.
-    let resolvedKey: string;
-    if (instanceKey !== undefined) {
-      resolvedKey = instanceKey;
-    } else {
-      const keyFn = getClassKey(Type);
-      if (keyFn) {
-        resolvedKey = keyFn(args);
-      } else if (args !== undefined) {
-        resolvedKey = structuralKey(args);
-      } else {
-        resolvedKey = DEFAULT_STRUCTURAL_KEY;
-      }
-    }
+    const resolvedKey = this.resolveKey(Type, instanceKey, args);
 
     const config: StateContainerConfig = {
       instanceId: resolvedKey,
@@ -224,7 +285,7 @@ export class StateContainerRegistry {
     if (entry) {
       // Dev-warn when the same key is reused with structurally different args.
       if (
-        process.env['NODE_ENV'] !== 'production' &&
+        process.env.NODE_ENV !== 'production' &&
         args !== undefined &&
         entry.args !== undefined
       ) {
@@ -243,6 +304,7 @@ export class StateContainerRegistry {
       if (countRef) {
         const refId = options.refId ?? `_auto_${this._autoRefIdCounter++}`;
         entry.refs.set(refId, (entry.refs.get(refId) ?? 0) + 1);
+        this.assertRefLimit(Type, resolvedKey, entry.refs.size);
         this.emit('refAcquired', entry.instance, refId);
       }
 
@@ -254,6 +316,10 @@ export class StateContainerRegistry {
         `${BLAC_ERROR_PREFIX} ${Type.name} instance "${resolvedKey}" not found and creation is disabled.`,
       );
     }
+
+    // Circuit breaker: refuse to create when this type already holds too many
+    // live instances — a runaway key (unstable/args-derived) never disposing.
+    this.assertInstanceLimit(Type, instances.size);
 
     // Create new shared instance
     const instance = new Type() as InstanceType<T>;
@@ -323,12 +389,14 @@ export class StateContainerRegistry {
    * Use this in bloc-to-bloc communication when you need to ensure an instance exists
    * but don't want to claim ownership (no ref added).
    * @param Type - The StateContainer class constructor
-   * @param instanceKey - Instance key (defaults to 'default')
+   * @param instanceKey - Explicit instance key, or undefined to derive from `args`
+   *   (`static key(args)` / structural hash), matching `acquire`.
+   * @param args - Construction args; used for keying when no explicit key is given
    * @returns The state container instance
    */
   ensure<T extends StateContainerConstructor = StateContainerConstructor>(
     Type: T,
-    instanceKey: string = BLAC_DEFAULTS.DEFAULT_INSTANCE_KEY,
+    instanceKey: string | undefined = undefined,
     args?: unknown,
   ): InstanceType<T> {
     return this.acquire(Type, instanceKey, {

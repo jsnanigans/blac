@@ -189,6 +189,11 @@ export abstract class StateContainer<
   private _hydrationPromiseSettled = false;
   private _config: StateContainerConfig = {};
   private _initCalled = false;
+
+  // Dev-only emit-rate circuit breaker state (see configureBlac.maxEmitsPerSecond).
+  private _emitWindowStart = 0;
+  private _emitCount = 0;
+  private _emitRateWarned = false;
   private readonly _systemEventHandlers = new Map<
     SystemEvent,
     Set<SystemEventHandler<S, any>>
@@ -405,6 +410,38 @@ export abstract class StateContainer<
     return this.ensureHydrationPromise();
   }
 
+  /**
+   * Dev-only soft circuit breaker. Counts real state changes in a rolling 1s
+   * window and warns once if the rate exceeds `maxEmitsPerSecond` — the
+   * signature of a runaway loop (RAF/animation or emit-on-every-commit) pushing
+   * high-frequency data through state, which freezes subscribers/plugins.
+   */
+  private _checkEmitRate(): void {
+    const limit = getBlacConfig().maxEmitsPerSecond;
+    if (!(limit > 0) || !Number.isFinite(limit) || this._emitRateWarned) return;
+
+    const now = Date.now();
+    if (now - this._emitWindowStart >= 1000) {
+      this._emitWindowStart = now;
+      this._emitCount = 1;
+      return;
+    }
+
+    this._emitCount++;
+    if (this._emitCount > limit) {
+      this._emitRateWarned = true;
+      console.warn(
+        `[${this.name}] emitted more than ${limit} state changes in under a second. ` +
+          `This is usually a runaway loop pushing high-frequency data through state ` +
+          `(e.g. \`emit\`/\`patch\` inside a requestAnimationFrame loop, or an effect ` +
+          `that emits on every render). It can freeze the app by saturating ` +
+          `subscribers and plugins (logging/devtools). Keep high-frequency work ` +
+          `imperative and emit only coarse/throttled state, or raise ` +
+          `\`configureBlac({ maxEmitsPerSecond })\`. (This warning fires once.)`,
+      );
+    }
+  }
+
   private applyState(newState: S, source: 'default' | 'hydration'): void {
     if (this._disposed) {
       throw new Error(`Cannot emit state from disposed container ${this.name}`);
@@ -412,6 +449,10 @@ export abstract class StateContainer<
 
     if (this._state === newState) return;
     if (this._equalityFn(this._state, newState)) return;
+
+    if (process.env.NODE_ENV !== 'production') {
+      this._checkEmitRate();
+    }
 
     const previousState = this._state;
     this._state = newState;

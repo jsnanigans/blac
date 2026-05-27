@@ -1,4 +1,4 @@
-export { acquire } from './acquire';
+export { acquire, resolveInstanceKey } from './acquire';
 export { borrow, borrowSafe } from './borrow';
 export { ensure } from './ensure';
 export { release } from './release';

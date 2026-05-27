@@ -81,6 +81,22 @@ describe('useBloc args option', () => {
     );
     expect(result.current[0].id).toBe('carol');
   });
+
+  it('disposes the args-keyed instance on unmount (no leak)', () => {
+    const args = { userId: 'leaky' };
+    const key = JSON.stringify(args);
+
+    const { unmount } = renderHook(() => useBloc(UserCard, { args }));
+    // Instance exists while mounted.
+    expect(borrow(UserCard, key)).not.toBeNull();
+
+    unmount();
+
+    // After unmount the ref must be dropped and the instance disposed.
+    // Before the fix, release looked up 'default' instead of the args key,
+    // so the instance lingered here forever.
+    expect(() => borrow(UserCard, key)).toThrow();
+  });
 });
 
 // ---------------------------------------------------------------------------

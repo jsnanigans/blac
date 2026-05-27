@@ -23,6 +23,7 @@ export { EMIT, APPLY_DEPS, REMOVE_DEPS_OWNER } from './core/symbols';
 // Registry
 export {
   acquire,
+  resolveInstanceKey,
   borrow,
   borrowSafe,
   ensure,

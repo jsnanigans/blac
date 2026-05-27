@@ -44,7 +44,13 @@ export type {
   StateContainerInstance,
 } from '@blac/core';
 
-export { acquire, release, APPLY_DEPS, REMOVE_DEPS_OWNER } from '@blac/core';
+export {
+  acquire,
+  resolveInstanceKey,
+  release,
+  APPLY_DEPS,
+  REMOVE_DEPS_OWNER,
+} from '@blac/core';
 
 /**
  * Internal state for framework adapters, holding tracking and caching data.

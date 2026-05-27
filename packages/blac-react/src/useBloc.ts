@@ -24,6 +24,7 @@ import {
   type InstanceState,
   type ExtractDeps,
   acquire,
+  resolveInstanceKey,
   release,
   APPLY_DEPS,
   REMOVE_DEPS_OWNER,
@@ -211,12 +212,21 @@ export function useBloc<
         TBloc,
       ]
     >(() => {
-      const instanceKey =
+      const explicitKey =
         instanceId !== undefined
           ? String(instanceId)
           : autoInstance
             ? autoInstanceId
             : ctxInstanceId;
+
+      // Resolve the args-derived storage key up front so acquire and the unmount
+      // release agree on it. Passing only the args-less key to release would
+      // look up the wrong slot, never drop the ref, and leak the instance.
+      const instanceKey = resolveInstanceKey(
+        BlocClass,
+        explicitKey,
+        argsRef.current,
+      );
 
       const refId = `useBloc@${componentNameRef.current ?? 'Unknown'}-${consumerIdRef.current}`;
       const instance = acquire(BlocClass, instanceKey, refId, argsRef.current) as TBloc;
