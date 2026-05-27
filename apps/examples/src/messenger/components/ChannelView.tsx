@@ -11,11 +11,10 @@ interface ChannelViewProps {
 
 export function ChannelView({ channelId, currentUserId }: ChannelViewProps) {
   const [channel, channelBloc] = useBloc(ChannelBloc, {
-    instanceId: channelId,
+    args: { channelId },
   });
 
   useEffect(() => {
-    channelBloc.init({ channelId });
     channelBloc.markAsRead();
   }, [channelId, channelBloc]);
 

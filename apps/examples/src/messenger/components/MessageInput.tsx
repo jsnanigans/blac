@@ -9,7 +9,7 @@ interface MessageInputProps {
 
 export function MessageInput({ channelId, currentUserId }: MessageInputProps) {
   const [{ draftMessage }, channelBloc] = useBloc(ChannelBloc, {
-    instanceId: channelId,
+    args: { channelId },
   });
 
   const inputRef = useRef<HTMLInputElement>(null);

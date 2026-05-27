@@ -4,7 +4,7 @@ import { RenderCounter, Button } from '../../shared/components';
 
 export function TodoList() {
   const [, bloc] = useBloc(TodoCubit, {
-    dependencies: (_state, b) => [b.filteredItems],
+    select: (_state, b) => [b.filteredItems],
   });
 
   const items = bloc.filteredItems;

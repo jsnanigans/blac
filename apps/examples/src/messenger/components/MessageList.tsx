@@ -10,7 +10,7 @@ interface MessageListProps {
 
 export function MessageList({ channelId, currentUserId }: MessageListProps) {
   const [{ messages }] = useBloc(ChannelBloc, {
-    instanceId: channelId,
+    args: { channelId },
   });
   const messagesEndRef = useRef<HTMLDivElement>(null);
 

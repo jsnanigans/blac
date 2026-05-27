@@ -4,7 +4,7 @@ import { Card, RenderCounter, StatCard } from '../../shared/components';
 
 export function TodoStats() {
   const [, bloc] = useBloc(TodoCubit, {
-    dependencies: (_state, b) => [b.activeCount, b.completedCount],
+    select: (_state, b) => [b.activeCount, b.completedCount],
   });
 
   return (

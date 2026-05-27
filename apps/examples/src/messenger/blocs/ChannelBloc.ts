@@ -15,7 +15,11 @@ export interface ChannelState {
   draftMessage: string;
 }
 
-export class ChannelBloc extends Cubit<ChannelState> {
+export type ChannelArgs = { channelId: string };
+
+export class ChannelBloc extends Cubit<ChannelState, ChannelArgs> {
+  static key = ({ channelId }: ChannelArgs) => channelId;
+
   private _contactsDep = this.depend(ContactsCubit);
   private _notificationsDep = this.depend(NotificationCubit);
 
@@ -46,7 +50,7 @@ export class ChannelBloc extends Cubit<ChannelState> {
     this.setupDispose();
   }
 
-  init = ({ channelId }: { channelId: string }) => {
+  protected override init({ channelId }: ChannelArgs): void {
     const channelInfo = this._contactsDep().state.channels.find(
       (c: Channel) => c.id === channelId,
     );
@@ -60,7 +64,7 @@ export class ChannelBloc extends Cubit<ChannelState> {
       unreadCount: 0,
       draftMessage: '',
     });
-  };
+  }
 
   get typingIndicator(): string {
     const typingCount = this.state.typingUsers.size;

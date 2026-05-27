@@ -5,7 +5,7 @@ import { RenderCounter } from '../../shared/components';
 export function FormProgress({ instanceId }: { instanceId: string }) {
   const [, bloc] = useBloc(FormCubit, {
     instanceId,
-    dependencies: (_state, b) => [b.completionPercent],
+    select: (_state, b) => [b.completionPercent],
   });
 
   const percent = bloc.completionPercent;
