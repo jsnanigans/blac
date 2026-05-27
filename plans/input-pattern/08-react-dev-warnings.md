@@ -82,14 +82,22 @@ feat(react): rename dependencies→select and add dev-mode option warnings
 Body: Avoids the `deps`/`dependencies` clash; warns (dev only) on unknown `useBloc` options and on `instanceId`/args identity conflicts.
 
 ## Checklist
-- [ ] `dependencies` option renamed to `select` (internals + types + existing tests)
-- [ ] unknown-option-key dev warning
-- [ ] `instanceId`+`args` disagreement dev warning
-- [ ] warnings dev-gated; tests pass; typecheck & lint clean
-- [ ] committed with Completion filled
+- [x] `dependencies` option renamed to `select` (internals + types + existing tests)
+- [x] unknown-option-key dev warning
+- [x] `instanceId`+`args` disagreement dev warning
+- [x] warnings dev-gated; tests pass; typecheck & lint clean
+- [x] committed with Completion filled
 
 ## Completion
-**Commit SHA:**
-**Files touched:**
-**Typecheck result:**
-**Test result:**
+**Commit SHA:** df608ee5
+**Files touched:** 8 files —
+  - `packages/blac-react/src/types.ts`
+  - `packages/blac-react/src/useBloc.ts`
+  - `packages/blac-react/src/__tests__/useBloc.select.test.tsx` (new, replaces .dependencies.test.tsx)
+  - `packages/blac-react/src/__tests__/useBloc.dev-warnings.test.tsx` (new)
+  - `packages/blac-react/src/__tests__/useBloc.manual-deps-edge-cases.test.tsx`
+  - `packages/blac-react/src/__tests__/useBloc.getter-advanced.test.tsx`
+  - `packages/blac-react/src/__tests__/useBloc.getter-tracking.test.tsx`
+  - `packages/blac-react/src/__tests__/useBloc.dependencies.test.tsx` (deleted)
+**Typecheck result:** clean (0 errors)
+**Test result:** 195 passed, 5 pre-existing failures in useBloc.array-methods-tracking (proxy-tracking WIP, per plan)

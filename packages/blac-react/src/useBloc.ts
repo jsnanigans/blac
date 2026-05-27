@@ -56,10 +56,22 @@ interface TrackingMode {
   autoTrackEnabled: boolean;
 }
 
+/** Known valid option keys for useBloc — used for the dev-only unknown-key warning. */
+const KNOWN_OPTION_KEYS = new Set([
+  'instanceId',
+  'autoInstance',
+  'select',
+  'autoTrack',
+  'onMount',
+  'onUnmount',
+  'args',
+  'deps',
+]);
+
 function determineTrackingMode(
   options?: {
     autoTrack?: boolean;
-    dependencies?: (...args: any[]) => unknown[];
+    select?: (...args: any[]) => unknown[];
   },
 ): TrackingMode {
   const globalConfig = getBlacReactConfig();
@@ -69,7 +81,7 @@ function determineTrackingMode(
       : globalConfig.autoTrack;
 
   return {
-    useManualDeps: options?.dependencies !== undefined,
+    useManualDeps: options?.select !== undefined,
     autoTrackEnabled,
   };
 }
@@ -92,10 +104,10 @@ function determineTrackingMode(
  * const [state, myBloc, ref] = useBloc(MyBloc);
  * ```
  *
- * @example With manual dependencies
+ * @example With manual select (re-render selector)
  * ```ts
  * const [state, myBloc] = useBloc(MyBloc, {
- *   dependencies: (state) => [state.count]
+ *   select: (state) => [state.count]
  * });
  * ```
  *
@@ -126,8 +138,8 @@ export function useBloc<
     componentNameRef.current = getComponentName() || null;
   }
 
-  const depsRef = useRef(options?.dependencies);
-  depsRef.current = options?.dependencies;
+  const selectRef = useRef(options?.select);
+  selectRef.current = options?.select;
   const onMountRef = useRef(options?.onMount);
   onMountRef.current = options?.onMount;
   const onUnmountRef = useRef(options?.onUnmount);
@@ -138,7 +150,20 @@ export function useBloc<
   depsSliceRef.current = options?.deps;
   const instanceId = options?.instanceId;
   const autoTrack = options?.autoTrack;
-  const dependencies = options?.dependencies;
+  const select = options?.select;
+
+  // Dev-only: warn on unknown option keys (catches v1-isms and typos).
+  if (process.env.NODE_ENV !== 'production' && options != null) {
+    const unknownKeys = Object.keys(options).filter(
+      (k) => !KNOWN_OPTION_KEYS.has(k),
+    );
+    if (unknownKeys.length > 0) {
+      console.warn(
+        `[useBloc] Unknown option key(s): ${unknownKeys.join(', ')}. ` +
+          `Known keys: ${[...KNOWN_OPTION_KEYS].join(', ')}.`,
+      );
+    }
+  }
 
   // Stable structural key for args so that different args → different instance
   // resolution, without re-running the useMemo on every render due to object
@@ -148,6 +173,22 @@ export function useBloc<
   argsRef.current = args;
   const argsKey =
     args === undefined ? undefined : JSON.stringify(args);
+
+  // Dev-only: warn when an explicit instanceId and args-derived key disagree.
+  // The explicit instanceId wins, but this is almost always a mistake.
+  if (
+    process.env.NODE_ENV !== 'production' &&
+    instanceId !== undefined &&
+    argsKey !== undefined &&
+    String(instanceId) !== argsKey
+  ) {
+    console.warn(
+      `[useBloc] Explicit instanceId "${String(instanceId)}" and args-derived ` +
+        `key "${argsKey}" disagree — the explicit instanceId takes precedence. ` +
+        `Either remove instanceId to use args-based identity, or remove args if ` +
+        `you are managing the instance key manually.`,
+    );
+  }
 
   // Auto-keyed per-mount instance: either declared on the class
   // (`static isolated = true`) or opted into per call (`autoInstance: true`).
@@ -182,19 +223,19 @@ export function useBloc<
 
       const { useManualDeps, autoTrackEnabled } = determineTrackingMode({
         autoTrack,
-        dependencies,
+        select,
       });
 
       let subscribeFn: (callback: () => void) => () => void;
       let getSnapshotFn: () => ExtractState<T>;
       let adapterState: AdapterState<T>;
 
-      if (useManualDeps && dependencies) {
+      if (useManualDeps && select) {
         adapterState = manualDepsInit(instance);
         const stableConfig = {
           dependencies: (state: ExtractState<T>, bloc: InstanceState<T>) => {
-            const deps = depsRef.current;
-            return deps ? deps(state, bloc) : [];
+            const fn = selectRef.current;
+            return fn ? fn(state, bloc) : [];
           },
         };
         subscribeFn = manualDepsSubscribe(instance, adapterState, stableConfig);

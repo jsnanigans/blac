@@ -26,8 +26,8 @@ export type UseBlocOptions<TBloc extends StateContainerConstructor> =
      * bloc class. Ignored when an explicit `instanceId` is provided.
      */
     autoInstance?: boolean;
-    /** Manual dependency array like useEffect (disables autoTrack) */
-    dependencies?: (
+    /** Manual re-render selector (disables autoTrack). Replaces the old `dependencies` option. */
+    select?: (
       state: ExtractState<TBloc>,
       bloc: InstanceReadonlyState<TBloc>,
     ) => unknown[];

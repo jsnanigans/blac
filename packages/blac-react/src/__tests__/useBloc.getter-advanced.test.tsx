@@ -99,7 +99,7 @@ describe('useBloc — getter advanced', () => {
     function Comp() {
       renders();
       // Track only x explicitly — changing y should not trigger re-render via getter
-      const [, b] = useBloc(ComputedBloc, { dependencies: (s) => [s.x] });
+      const [, b] = useBloc(ComputedBloc, { select: (s) => [s.x] });
       bloc = b as ComputedBloc;
       return <span>{b.sum}</span>;
     }

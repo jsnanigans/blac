@@ -25,12 +25,12 @@ class FieldBloc extends Cubit<{ a: number; b: string; name: string }> {
 blacTestSetup();
 
 describe('useBloc — manual deps edge cases', () => {
-  it('dependencies: () => [] never re-renders after mount', () => {
+  it('select: () => [] never re-renders after mount', () => {
     const renders = vi.fn();
     let bloc!: FieldBloc;
     function Comp() {
       renders();
-      const [state, b] = useBloc(FieldBloc, { dependencies: () => [] });
+      const [state, b] = useBloc(FieldBloc, { select: () => [] });
       bloc = b as FieldBloc;
       return <span>{state.a}</span>;
     }
@@ -48,13 +48,13 @@ describe('useBloc — manual deps edge cases', () => {
     expect(renders.mock.calls.length).toBe(count);
   });
 
-  it('dependencies: (s) => [s.a, s.b] triggers on either change', () => {
+  it('select: (s) => [s.a, s.b] triggers on either change', () => {
     const renders = vi.fn();
     let bloc!: FieldBloc;
     function Comp() {
       renders();
       const [state, b] = useBloc(FieldBloc, {
-        dependencies: (s) => [s.a, s.b],
+        select: (s) => [s.a, s.b],
       });
       bloc = b as FieldBloc;
       return (
@@ -88,7 +88,7 @@ describe('useBloc — manual deps edge cases', () => {
       (s: { a: number; b: string; name: string }, _bloc: FieldBloc) => [s.a],
     );
     const { result } = renderHook(() =>
-      useBloc(FieldBloc, { dependencies: depsFn as any }),
+      useBloc(FieldBloc, { select: depsFn as any }),
     );
     const bloc = result.current[1] as FieldBloc;
     act(() => {
@@ -108,7 +108,7 @@ describe('useBloc — manual deps edge cases', () => {
       renders();
       // Only track 'name' — accessing doubled getter should not cause re-render on 'a' change
       const [, b] = useBloc(FieldBloc, {
-        dependencies: (s) => [s.name],
+        select: (s) => [s.name],
       });
       bloc = b as FieldBloc;
       // Access the getter — in manual mode this does NOT register getter tracking
@@ -134,7 +134,7 @@ describe('useBloc — manual deps edge cases', () => {
     let bloc!: FieldBloc;
     function Comp() {
       const [state, b] = useBloc(FieldBloc, {
-        dependencies: (s) => [s.a, null as unknown as number, s.b],
+        select: (s) => [s.a, null as unknown as number, s.b],
       });
       bloc = b as FieldBloc;
       return <span data-testid="a">{state.a}</span>;
@@ -157,7 +157,7 @@ describe('useBloc — manual deps edge cases', () => {
       renders();
       // Inline arrow: new function reference each render — should not cause loops
       const [state, b] = useBloc(FieldBloc, {
-        dependencies: (s) => [s.a],
+        select: (s) => [s.a],
       });
       bloc = b as FieldBloc;
       return <span>{state.a}</span>;
@@ -179,7 +179,7 @@ describe('useBloc — manual deps edge cases', () => {
     function Comp() {
       renders();
       const [, b] = useBloc(FieldBloc, {
-        dependencies: (_s) => [undefined],
+        select: (_s) => [undefined],
       });
       bloc = b as FieldBloc;
       return <span>x</span>;

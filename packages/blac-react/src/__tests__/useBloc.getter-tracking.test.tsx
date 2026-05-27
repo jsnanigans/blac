@@ -536,7 +536,7 @@ describe('useBloc - Manual Dependencies Mode', () => {
 
     function TestComponent() {
       const [state, bloc] = useBloc(CounterBloc, {
-        dependencies: (state, _bloc) => [state.count],
+        select: (state, _bloc) => [state.count],
       });
       renderSpy();
       return (

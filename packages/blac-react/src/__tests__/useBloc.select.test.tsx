@@ -1,5 +1,5 @@
 /**
- * Tests for useBloc with dependencies option
+ * Tests for useBloc with select option (renamed from dependencies)
  */
 
 import { describe, it, expect } from 'vite-plus/test';
@@ -34,13 +34,13 @@ class CounterCubit extends Cubit<CounterState> {
 
 blacTestSetup();
 
-describe('useBloc with dependencies', () => {
-  it('should only re-render when dependencies change', () => {
+describe('useBloc with select', () => {
+  it('should only re-render when selected values change', () => {
     const renderSpy = vi.fn();
 
     function TestComponent() {
       const [state, bloc] = useBloc(CounterCubit, {
-        dependencies: (state) => [state.count],
+        select: (state) => [state.count],
       });
 
       renderSpy();
@@ -65,7 +65,7 @@ describe('useBloc with dependencies', () => {
     expect(screen.getByTestId('multiplier').textContent).toBe('2');
     expect(screen.getByTestId('name').textContent).toBe('test');
 
-    // Change count (in dependencies) - should re-render
+    // Change count (in select) - should re-render
     act(() => {
       screen.getByText('Increment').click();
     });
@@ -73,7 +73,7 @@ describe('useBloc with dependencies', () => {
     expect(renderSpy).toHaveBeenCalledTimes(2);
     expect(screen.getByTestId('count').textContent).toBe('1');
 
-    // Change multiplier (not in dependencies) - should NOT re-render
+    // Change multiplier (not in select) - should NOT re-render
     act(() => {
       screen.getByText('Set Multiplier').click();
     });
@@ -81,7 +81,7 @@ describe('useBloc with dependencies', () => {
     // Should still be 2 renders (no new render from multiplier change)
     expect(renderSpy).toHaveBeenCalledTimes(2);
 
-    // Change name (not in dependencies) - should NOT re-render
+    // Change name (not in select) - should NOT re-render
     act(() => {
       screen.getByText('Set Name').click();
     });
@@ -98,12 +98,12 @@ describe('useBloc with dependencies', () => {
     expect(screen.getByTestId('count').textContent).toBe('2');
   });
 
-  it('should re-render when any dependency changes', () => {
+  it('should re-render when any selected value changes', () => {
     const renderSpy = vi.fn();
 
     function TestComponent() {
       const [state, bloc] = useBloc(CounterCubit, {
-        dependencies: (state) => [state.count, state.multiplier],
+        select: (state) => [state.count, state.multiplier],
       });
 
       renderSpy();
@@ -137,7 +137,7 @@ describe('useBloc with dependencies', () => {
 
     expect(renderSpy).toHaveBeenCalledTimes(3);
 
-    // Change name (not in dependencies) - should NOT re-render
+    // Change name (not in select) - should NOT re-render
     act(() => {
       screen.getByText('Set Name').click();
     });
@@ -145,13 +145,13 @@ describe('useBloc with dependencies', () => {
     expect(renderSpy).toHaveBeenCalledTimes(3);
   });
 
-  it('should re-render if dependency array length changes', () => {
+  it('should re-render if select array length changes', () => {
     const renderSpy = vi.fn();
     let dynamicDepsCount = 1;
 
     function TestComponent() {
       const [state, bloc] = useBloc(CounterCubit, {
-        dependencies: (state) => {
+        select: (state) => {
           // Return different length arrays based on count
           const deps = [state.count];
           if (dynamicDepsCount === 2) {
@@ -175,14 +175,14 @@ describe('useBloc with dependencies', () => {
 
     expect(renderSpy).toHaveBeenCalledTimes(1);
 
-    // Increment to trigger deps check
+    // Increment to trigger select check
     act(() => {
       screen.getByText('Increment').click();
     });
 
     expect(renderSpy).toHaveBeenCalledTimes(2);
 
-    // Change deps length
+    // Change select length
     dynamicDepsCount = 2;
 
     // Increment again - should detect length change
@@ -193,7 +193,7 @@ describe('useBloc with dependencies', () => {
     expect(renderSpy).toHaveBeenCalledTimes(3);
   });
 
-  it('should work with bloc instance in dependencies', () => {
+  it('should work with bloc instance in select', () => {
     class ComputedCubit extends Cubit<CounterState> {
       constructor() {
         super({ count: 0, multiplier: 2, name: 'test' });
@@ -212,7 +212,7 @@ describe('useBloc with dependencies', () => {
 
     function TestComponent() {
       const [_state, bloc] = useBloc(ComputedCubit, {
-        dependencies: (state, bloc) => [bloc.doubled],
+        select: (_state, bloc) => [bloc.doubled],
       });
 
       renderSpy();
@@ -255,7 +255,7 @@ describe('useBloc with dependencies', () => {
 
     function TestComponent() {
       const [state, bloc] = useBloc(RefCubit, {
-        dependencies: (state) => [state.value],
+        select: (state) => [state.value],
       });
 
       renderSpy();
