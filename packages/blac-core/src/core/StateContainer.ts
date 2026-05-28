@@ -534,21 +534,8 @@ export abstract class StateContainer<
     // Iterate against a fixed-size snapshot so a listener that subscribes a
     // new listener mid-drain does not get the late one called in this flush.
     // (Matches the pre-C0 contract; restored by counting against the size
-    // captured at drain entry.)
-    if (this._listeners.size > 0) {
-      const current = this.state;
-      let count = 0;
-      const size = this._listeners.size;
-      for (const listener of this._listeners) {
-        if (++count > size) break;
-        try {
-          listener(current);
-        } catch (error) {
-          console.error(`[${this.name}] Error in listener:`, error);
-        }
-      }
-    }
-
+    // captured at drain entry.) Order matches pre-C0: 'stateChanged' system
+    // event fires *before* legacy subscribe() listeners.
     const handlers = this._systemEventHandlers.get('stateChanged');
     if (handlers && handlers.size > 0) {
       const payload = { state: pending.next, previousState: pending.prev };
@@ -560,6 +547,20 @@ export abstract class StateContainer<
           handler(payload);
         } catch (error) {
           console.error(`[${this.name}] Error in system event handler:`, error);
+        }
+      }
+    }
+
+    if (this._listeners.size > 0) {
+      const current = this.state;
+      let count = 0;
+      const size = this._listeners.size;
+      for (const listener of this._listeners) {
+        if (++count > size) break;
+        try {
+          listener(current);
+        } catch (error) {
+          console.error(`[${this.name}] Error in listener:`, error);
         }
       }
     }
