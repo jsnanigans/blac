@@ -17,8 +17,20 @@ export type {
   SystemEventPayloads,
 } from './core/StateContainer';
 export { Cubit } from './core/Cubit';
-/** @internal symbols — needed by framework adapters (e.g. @blac/react) across the package boundary */
+/**
+ * @internal symbols — read by framework adapters (`@blac/react` via the
+ * `@blac/adapter` re-export). Kept until D0 ports `useBloc` off this surface.
+ *
+ * `EMIT` is deprecated: zero external consumers per A2 audit, but the
+ * in-package legacy tests still index `[EMIT]`. Kept as a thin alias for
+ * `emit()` so those tests typecheck and run unchanged; C5 deletes it.
+ */
 export { EMIT, APPLY_DEPS, REMOVE_DEPS_OWNER } from './core/symbols';
+
+// Structural primitives — re-exported for plugins that need to compose
+// channel subscriptions on top of a `StateContainer`.
+export { ALL_PATHS } from '@dirtytalk/structural';
+export type { PathSet } from '@dirtytalk/structural';
 
 // Registry
 export {

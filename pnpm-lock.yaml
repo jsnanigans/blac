@@ -306,6 +306,10 @@ importers:
         version: '@voidzero-dev/vite-plus-test@0.1.21(@types/node@24.1.0)(@voidzero-dev/vite-plus-core@0.1.21(@types/node@24.1.0)(esbuild@0.27.3)(jiti@2.6.1)(publint@0.3.17)(terser@5.39.0)(tsx@4.20.6)(typescript@5.9.2)(yaml@2.7.0))(esbuild@0.27.3)(happy-dom@18.0.1)(jiti@2.6.1)(jsdom@26.1.0)(publint@0.3.17)(terser@5.39.0)(tsx@4.20.6)(typescript@5.9.2)(yaml@2.7.0)'
 
   packages/blac-core:
+    dependencies:
+      '@dirtytalk/structural':
+        specifier: workspace:*
+        version: link:../dirtytalk-structural
     devDependencies:
       '@testing-library/jest-dom':
         specifier: 'catalog:'

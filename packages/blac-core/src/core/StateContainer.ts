@@ -1,3 +1,8 @@
+import {
+  ALL_PATHS,
+  StructuralContainer,
+  type StructuralContainerOptions,
+} from '@dirtytalk/structural';
 import { generateSimpleId } from '../utils/idGenerator';
 import { BLAC_DEFAULTS } from '../constants';
 import { getRegistry } from '../registry/config';
@@ -56,11 +61,36 @@ function shallowEqualRecord(
   return true;
 }
 
+/**
+ * BlaC's lifecycle/identity/dependency layer on top of `StructuralContainer`.
+ *
+ * StructuralContainer provides:
+ *   - `state` getter
+ *   - `emit` / `patch` / `update` (path-tracked, microtask-flushed)
+ *   - `channel` (the underlying `DirtyChannel`)
+ *   - `registerConsumerPaths` / `unregisterConsumer` (for fine-grained consumers)
+ *   - per-class `PathInterner`
+ *
+ * StateContainer layers on:
+ *   - identity (`name`, `instanceId`, `createdAt`, `debug`)
+ *   - lifecycle (`dispose`, `isDisposed`, `onSystemEvent`)
+ *   - hydration (`beginHydration` / `applyHydratedState` / `finishHydration` / `failHydration` / `waitForHydration`)
+ *   - cross-bloc deps (`depend()`, `dependencies` getter)
+ *   - per-consumer deps slices (`APPLY_DEPS` / `REMOVE_DEPS_OWNER` / `onDepsChanged`)
+ *   - registry integration (config-driven equality, emit-rate circuit breaker)
+ *
+ * Subscribers can attach via:
+ *   - `subscribe(listener)` — legacy state listener (back-compat); fires on
+ *     every flush with the latest state.
+ *   - `onSystemEvent('stateChanged' | 'dispose' | 'hydrationChanged', cb)` —
+ *     coarse lifecycle events.
+ *   - `this.channel.subscribe(interest, cb)` — path-scoped (new code).
+ */
 export abstract class StateContainer<
   S extends object = any,
   Args = void,
   Deps extends object = Record<string, never>,
-> {
+> extends StructuralContainer<S> {
   static __excludeFromDevTools = false;
 
   /** @internal phantom — the args type this bloc is constructed with (see init()) */
@@ -68,22 +98,17 @@ export abstract class StateContainer<
   /** @internal phantom — the injected deps type */
   declare readonly __deps: Deps;
 
-  /**
-   * Per-owner declared slices. ownerId -> that consumer's deps slice.
-   * Lazily allocated; null until the first owner applies a slice.
-   */
-  private _depsByOwner: Map<string, Partial<Deps>> | null = null;
+  // ---------------------------------------------------------------------------
+  // Per-consumer deps slices (APPLY_DEPS / REMOVE_DEPS_OWNER)
+  //
+  // Kept until D0 ports `useBloc` off the adapter surface. See A2 audit:
+  // `@blac/react/src/useBloc.ts` calls these via the `@blac/adapter`
+  // re-export. EMIT is gone; APPLY_DEPS / REMOVE_DEPS_OWNER stay.
+  // ---------------------------------------------------------------------------
 
-  /**
-   * Merged view of all owners' slices, recomputed whenever a slice is
-   * applied or withdrawn. Read lazily via the `deps` getter.
-   */
+  private _depsByOwner: Map<string, Partial<Deps>> | null = null;
   private _deps: Partial<Deps> = {};
 
-  /**
-   * Injected non-serializable handles (refs, callbacks, controllers).
-   * Read lazily — never assume a dep is present at init().
-   */
   get deps(): Readonly<Deps> {
     return this._deps as Readonly<Deps>;
   }
@@ -103,7 +128,6 @@ export abstract class StateContainer<
     const prevSlice = owners.get(ownerId);
 
     if (prevSlice && shallowEqualRecord(prevSlice, slice)) {
-      // Idempotent re-apply (e.g. StrictMode double-invoke): nothing changed.
       return;
     }
 
@@ -126,15 +150,12 @@ export abstract class StateContainer<
       }
     }
 
-    // Store a defensive copy so later external mutation of the caller's
-    // object can't desync our per-owner snapshot.
     owners.set(ownerId, { ...slice });
     this.reconcileDeps();
   }
 
   /**
    * @internal Withdraw an owner's entire deps slice (consumer unmounted).
-   * Recomputes the merged view; keys only that owner provided go absent.
    */
   [REMOVE_DEPS_OWNER](ownerId: string): void {
     if (this._disposed) return;
@@ -142,11 +163,6 @@ export abstract class StateContainer<
     this.reconcileDeps();
   }
 
-  /**
-   * Rebuild the merged `_deps` view from all owners' slices and fire
-   * onDepsChanged(next, prev) if the merged view changed (shallow compare).
-   * A key whose last owner was removed appears in `next` as undefined.
-   */
   private reconcileDeps(): void {
     const prev = this._deps;
     const next: Partial<Deps> = {};
@@ -155,8 +171,6 @@ export abstract class StateContainer<
         Object.assign(next, slice);
       }
     }
-    // Surface dropped keys explicitly as undefined so the merged view (and
-    // the onDepsChanged diff) reflects a handle disappearing.
     for (const key of Object.keys(prev) as (keyof Deps)[]) {
       if (!(key in next)) {
         (next as Record<keyof Deps, unknown>)[key] = undefined;
@@ -175,16 +189,12 @@ export abstract class StateContainer<
     );
   }
 
-  /**
-   * Override to react when an injected handle appears, changes, or disappears
-   * (post-merge). Receives readonly snapshots; diff `next.x !== prev.x` to run
-   * setup/teardown (canvas init, controller bind). A disappeared handle is
-   * present in `next` as `undefined`.
-   */
   protected onDepsChanged(_next: Readonly<Deps>, _prev: Readonly<Deps>): void {}
 
-  private _state: S;
-  private readonly _listeners = new Set<StateListener<S>>();
+  // ---------------------------------------------------------------------------
+  // Identity / lifecycle
+  // ---------------------------------------------------------------------------
+
   private _disposed = false;
   private _hydrationStatus: HydrationStatus = 'idle';
   private _hydrationError?: Error;
@@ -200,12 +210,30 @@ export abstract class StateContainer<
   private _emitWindowStart = 0;
   private _emitCount = 0;
   private _emitRateWarned = false;
+
+  // Legacy listener-style subscribers (subscribe(listener)). Fires on every
+  // channel flush with the latest state. Kept for back-compat with code that
+  // hasn't migrated to `channel.subscribe(interest, cb)`.
+  private readonly _listeners = new Set<StateListener<S>>();
+
+  // System-event handlers (stateChanged | dispose | hydrationChanged).
   private readonly _systemEventHandlers = new Map<
     SystemEvent,
     Set<SystemEventHandler<S, any>>
   >();
+
+  // Cross-bloc dependencies recorded by depend(). Map<DepCtor, instanceKey>.
   private _dependencies: Map<StateContainerConstructor, string> | null = null;
-  private _hasStateChangeHandlers = false;
+
+  // Pending state-change capture; set by emit(), drained by the channel-bridge
+  // callback on flush. Coalesced: multiple emits in one tick collapse to one
+  // (prev = the first prev, next = the latest next), matching Decision 7.
+  private _pendingChange: { prev: S; next: S } | null = null;
+
+  // Unsubscribe from the internal bridge that turns channel flushes into
+  // legacy listener calls + 'stateChanged' system events.
+  private _bridgeUnsub: (() => void) | null = null;
+
   private _registry = getRegistry();
   private _equalityFn: EqualityFn = getBlacConfig().equality;
 
@@ -222,6 +250,17 @@ export abstract class StateContainer<
     return this._config.args as Args | undefined;
   }
 
+  /**
+   * Declare a cross-bloc dependency. Returns a getter so callers write
+   * `this.user()` lazily — the dep is resolved against the registry on each
+   * call, which keeps the surface immune to dep-instance churn.
+   *
+   * Note: this does NOT auto-resubscribe to the dep's channel. Consumers that
+   * need reactive updates from a dep should subscribe explicitly (typically
+   * via the framework adapter / `useBloc`'s tracker). A naive auto-bridge
+   * here would cycle on mutual deps; the channel's same-tick coalescing
+   * limits the blast radius but a true mutual cycle is still a user bug.
+   */
   protected depend<T extends StateContainerConstructor>(
     Type: T,
     instanceKey?: string,
@@ -236,18 +275,23 @@ export abstract class StateContainer<
     return () => this._registry.ensure(Type, instanceKey);
   }
 
-  constructor(initialState: S) {
-    this._state = initialState;
+  constructor(initialState: S, options?: StructuralContainerOptions) {
+    super(initialState, options);
+
+    // Bridge channel flushes -> legacy listeners + 'stateChanged' system event.
+    // Interest is ALL_PATHS so we wake on every flush. Coalesced via
+    // `_pendingChange`: if no emit happened (e.g. a no-op patch), the bridge
+    // sees null and skips.
+    this._bridgeUnsub = this.channel.subscribe(
+      () => ALL_PATHS,
+      () => this._drainPending(),
+    );
   }
 
   /**
    * Called once after construction with the args passed at acquire time, before the first
    * state snapshot is read by any consumer. Override to seed args-derived state (via
-   * this.emit(...)) or kick off loads. Because init runs before any subscriber exists, the
-   * emit is safe and flash-free.
-   *
-   * Static initial state still comes from the subclass `state` field / `super(initialState)`.
-   * For blocs where Args = void, init(undefined) is called — the default no-op ignores it.
+   * this.emit(...)) or kick off loads.
    */
   protected init(_args: Args): void {}
 
@@ -270,10 +314,6 @@ export abstract class StateContainer<
     }
   }
 
-  get state(): Readonly<S> {
-    return this._state;
-  }
-
   get isDisposed(): boolean {
     return this._disposed;
   }
@@ -294,13 +334,28 @@ export abstract class StateContainer<
     return this._changedWhileHydrating;
   }
 
+  // ---------------------------------------------------------------------------
+  // Subscribe (legacy listener-style) — back-compat.
+  //
+  // Old surface: subscribe(listener: (state) => void). New code should use
+  // `this.channel.subscribe(interest, cb)` directly. This override shadows
+  // `StructuralContainer.subscribe`'s richer signature on purpose — only one
+  // legacy consumer pattern exists (per A2 audit: tracking/, watch/, adapter).
+  // ---------------------------------------------------------------------------
+
   subscribe(listener: StateListener<S>): () => void {
     if (this._disposed) {
       throw new Error(`Cannot subscribe to disposed container ${this.name}`);
     }
     this._listeners.add(listener);
-    return () => this._listeners.delete(listener);
+    return () => {
+      this._listeners.delete(listener);
+    };
   }
+
+  // ---------------------------------------------------------------------------
+  // Lifecycle: dispose
+  // ---------------------------------------------------------------------------
 
   dispose(): void {
     if (this._disposed) return;
@@ -309,11 +364,9 @@ export abstract class StateContainer<
       console.log(`[${this.name}] Disposing...`);
     }
 
-    // Release injected handles before flipping the disposed flag: reconcile
-    // to an empty merged view so a final onDepsChanged(next, prev) fires with
-    // all keys absent (undefined), letting renderers release handles. The
-    // APPLY_DEPS/REMOVE_DEPS_OWNER guards below then reject any post-dispose
-    // emits, so this is the last onDepsChanged for the instance.
+    // Reconcile to an empty deps view so a final onDepsChanged(next, prev)
+    // fires with all keys absent (undefined). After this, APPLY_DEPS /
+    // REMOVE_DEPS_OWNER are guarded by _disposed.
     if (this._depsByOwner) {
       this._depsByOwner.clear();
       this.reconcileDeps();
@@ -329,8 +382,13 @@ export abstract class StateContainer<
 
     this.emitSystemEvent('dispose', undefined as void);
 
+    // Tear down the channel bridge so we don't leak a subscription.
+    this._bridgeUnsub?.();
+    this._bridgeUnsub = null;
+
     this._listeners.clear();
     this._systemEventHandlers.clear();
+    this._pendingChange = null;
 
     this._registry.emit('disposed', this);
 
@@ -339,13 +397,104 @@ export abstract class StateContainer<
     }
   }
 
-  protected [EMIT](newState: S): void {
-    this.applyState(newState, 'default');
+  // ---------------------------------------------------------------------------
+  // Mutation: emit / patch / update.
+  //
+  // We override `emit` to layer in:
+  //   - disposed guard
+  //   - equality-fn short-circuit (consults getBlacConfig().equality or the
+  //     per-class override via @blac decorator)
+  //   - emit-rate circuit breaker (dev-only)
+  //   - `_changedWhileHydrating` flag tracking
+  //   - registry-level stateChanged notification (microtask-deferred)
+  //   - pending-change capture so the channel-bridge callback can fire the
+  //     legacy listeners + 'stateChanged' system event with prev/next.
+  //
+  // The actual change-detection (path diff, channel mark, single-consumer
+  // skip) is delegated to `super.emit`.
+  // ---------------------------------------------------------------------------
+
+  override emit(next: S): void {
+    this.applyState(next, 'default');
   }
 
-  protected emit(newState: S): void {
-    this[EMIT](newState);
+  /**
+   * @internal @deprecated Symbol-keyed alias for `emit`. Kept only so legacy
+   * in-package tests that index with `[EMIT]` typecheck/run unchanged. C5
+   * removes this along with the `EMIT` symbol.
+   */
+  protected [EMIT](next: S): void {
+    this.applyState(next, 'default');
   }
+
+  private applyState(next: S, source: 'default' | 'hydration'): void {
+    if (this._disposed) {
+      throw new Error(`Cannot emit state from disposed container ${this.name}`);
+    }
+
+    const prev = this.state;
+    if (prev === next) return;
+    if (this._equalityFn(prev, next)) return;
+
+    if (process.env.NODE_ENV !== 'production') {
+      this._checkEmitRate();
+    }
+
+    if (this._hydrationStatus === 'hydrating' && source !== 'hydration') {
+      this._changedWhileHydrating = true;
+    }
+
+    // Coalesce: keep the first prev seen this tick, take the latest next.
+    if (this._pendingChange) {
+      this._pendingChange.next = next;
+    } else {
+      this._pendingChange = { prev, next };
+    }
+
+    super.emit(next);
+
+    if (this._registry.hasStateChangedListeners) {
+      this._registry.notifyStateChanged(this, prev, next);
+    }
+  }
+
+  /**
+   * Called by the channel-bridge subscriber on each flush. Drains the
+   * pending change (if any) into legacy listeners and the 'stateChanged'
+   * system event. No pending change == flush from a no-op patch == skip.
+   */
+  private _drainPending(): void {
+    const pending = this._pendingChange;
+    if (!pending) return;
+    this._pendingChange = null;
+
+    if (this._listeners.size > 0) {
+      const current = this.state;
+      for (const listener of this._listeners) {
+        try {
+          listener(current);
+        } catch (error) {
+          console.error(`[${this.name}] Error in listener:`, error);
+        }
+      }
+    }
+
+    const handlers = this._systemEventHandlers.get('stateChanged');
+    if (handlers && handlers.size > 0) {
+      const payload = { state: pending.next, previousState: pending.prev };
+      for (const handler of handlers) {
+        try {
+          handler(payload);
+        } catch (error) {
+          console.error(`[${this.name}] Error in system event handler:`, error);
+        }
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Hydration
+  // ---------------------------------------------------------------------------
 
   beginHydration(): void {
     if (this._disposed) {
@@ -364,7 +513,7 @@ export abstract class StateContainer<
     this.setHydrationStatus('hydrating');
   }
 
-  applyHydratedState(newState: S): boolean {
+  applyHydratedState(next: S): boolean {
     if (this._disposed) {
       return false;
     }
@@ -373,7 +522,7 @@ export abstract class StateContainer<
       return false;
     }
 
-    this.applyState(newState, 'hydration');
+    this.applyState(next, 'hydration');
     return true;
   }
 
@@ -420,98 +569,6 @@ export abstract class StateContainer<
     return this.ensureHydrationPromise();
   }
 
-  /**
-   * Dev-only soft circuit breaker. Counts real state changes in a rolling 1s
-   * window and warns once if the rate exceeds `maxEmitsPerSecond` — the
-   * signature of a runaway loop (RAF/animation or emit-on-every-commit) pushing
-   * high-frequency data through state, which freezes subscribers/plugins.
-   */
-  private _checkEmitRate(): void {
-    const limit = getBlacConfig().maxEmitsPerSecond;
-    if (!(limit > 0) || !Number.isFinite(limit) || this._emitRateWarned) return;
-
-    const now = Date.now();
-    if (now - this._emitWindowStart >= 1000) {
-      this._emitWindowStart = now;
-      this._emitCount = 1;
-      return;
-    }
-
-    this._emitCount++;
-    if (this._emitCount > limit) {
-      this._emitRateWarned = true;
-      console.warn(
-        `[${this.name}] emitted more than ${limit} state changes in under a second. ` +
-          `This is usually a runaway loop pushing high-frequency data through state ` +
-          `(e.g. \`emit\`/\`patch\` inside a requestAnimationFrame loop, or an effect ` +
-          `that emits on every render). It can freeze the app by saturating ` +
-          `subscribers and plugins (logging/devtools). Keep high-frequency work ` +
-          `imperative and emit only coarse/throttled state, or raise ` +
-          `\`configureBlac({ maxEmitsPerSecond })\`. (This warning fires once.)`,
-      );
-    }
-  }
-
-  private applyState(newState: S, source: 'default' | 'hydration'): void {
-    if (this._disposed) {
-      throw new Error(`Cannot emit state from disposed container ${this.name}`);
-    }
-
-    if (this._state === newState) return;
-    if (this._equalityFn(this._state, newState)) return;
-
-    if (process.env.NODE_ENV !== 'production') {
-      this._checkEmitRate();
-    }
-
-    const previousState = this._state;
-    this._state = newState;
-
-    if (
-      this._listeners.size === 0 &&
-      !this._hasStateChangeHandlers &&
-      this._hydrationStatus !== 'hydrating'
-    ) {
-      if (this._registry.hasStateChangedListeners) {
-        this._registry.notifyStateChanged(this, previousState, newState);
-      }
-      return;
-    }
-
-    if (this._hydrationStatus === 'hydrating' && source !== 'hydration') {
-      this._changedWhileHydrating = true;
-    }
-
-    if (this._hasStateChangeHandlers) {
-      const handlers = this._systemEventHandlers.get('stateChanged')!;
-      const payload = { state: newState, previousState };
-      for (const handler of handlers) {
-        try {
-          handler(payload);
-        } catch (error) {
-          console.error(`[${this.name}] Error in system event handler:`, error);
-        }
-      }
-    }
-
-    if (this._listeners.size > 0) {
-      let count = 0;
-      const size = this._listeners.size;
-      for (const listener of this._listeners) {
-        if (++count > size) break;
-        try {
-          listener(newState);
-        } catch (error) {
-          console.error(`[${this.name}] Error in listener:`, error);
-        }
-      }
-    }
-
-    if (this._registry.hasStateChangedListeners) {
-      this._registry.notifyStateChanged(this, previousState, newState);
-    }
-  }
-
   private setHydrationStatus(status: HydrationStatus, error?: Error): void {
     const previousStatus = this._hydrationStatus;
     this._hydrationStatus = status;
@@ -555,6 +612,10 @@ export abstract class StateContainer<
     this._rejectHydrationPromise?.(error);
   }
 
+  // ---------------------------------------------------------------------------
+  // System events
+  // ---------------------------------------------------------------------------
+
   protected onSystemEvent = <E extends SystemEvent>(
     event: E,
     handler: SystemEventHandler<S, E>,
@@ -566,15 +627,8 @@ export abstract class StateContainer<
     }
     handlers.add(handler as SystemEventHandler<S, any>);
 
-    if (event === 'stateChanged') {
-      this._hasStateChangeHandlers = true;
-    }
-
     return () => {
       handlers?.delete(handler as SystemEventHandler<S, any>);
-      if (event === 'stateChanged' && handlers?.size === 0) {
-        this._hasStateChangeHandlers = false;
-      }
     };
   };
 
@@ -591,6 +645,42 @@ export abstract class StateContainer<
       } catch (error) {
         console.error(`[${this.name}] Error in system event handler:`, error);
       }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Emit-rate circuit breaker (dev-only)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Dev-only soft circuit breaker. Counts real state changes in a rolling 1s
+   * window and warns once if the rate exceeds `maxEmitsPerSecond` — the
+   * signature of a runaway loop (RAF/animation or emit-on-every-commit) pushing
+   * high-frequency data through state, which freezes subscribers/plugins.
+   */
+  private _checkEmitRate(): void {
+    const limit = getBlacConfig().maxEmitsPerSecond;
+    if (!(limit > 0) || !Number.isFinite(limit) || this._emitRateWarned) return;
+
+    const now = Date.now();
+    if (now - this._emitWindowStart >= 1000) {
+      this._emitWindowStart = now;
+      this._emitCount = 1;
+      return;
+    }
+
+    this._emitCount++;
+    if (this._emitCount > limit) {
+      this._emitRateWarned = true;
+      console.warn(
+        `[${this.name}] emitted more than ${limit} state changes in under a second. ` +
+          `This is usually a runaway loop pushing high-frequency data through state ` +
+          `(e.g. \`emit\`/\`patch\` inside a requestAnimationFrame loop, or an effect ` +
+          `that emits on every render). It can freeze the app by saturating ` +
+          `subscribers and plugins (logging/devtools). Keep high-frequency work ` +
+          `imperative and emit only coarse/throttled state, or raise ` +
+          `\`configureBlac({ maxEmitsPerSecond })\`. (This warning fires once.)`,
+      );
     }
   }
 }

@@ -143,6 +143,9 @@
     "prepublishOnly": "echo 'Skipping prepublishOnly - build should be done at root level'",
     "deploy": "pnpm publish --access public"
   },
+  "dependencies": {
+    "@dirtytalk/structural": "workspace:*"
+  },
   "devDependencies": {
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/user-event": "catalog:",
