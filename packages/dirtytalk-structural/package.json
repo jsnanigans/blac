@@ -93,6 +93,9 @@
     "vite-plus": "catalog:",
     "publint": "catalog:",
     "react": "catalog:",
-    "@types/react": "catalog:"
+    "react-dom": "catalog:",
+    "@types/react": "catalog:",
+    "@testing-library/react": "^16.3.0",
+    "jsdom": "catalog:"
   }
 }
