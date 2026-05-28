@@ -187,4 +187,4 @@ Returns an unsubscribe function. Safe to call at any time, including from inside
 
 ## License
 
-MIT — see LICENSE.
+MIT
