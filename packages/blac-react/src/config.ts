@@ -1,32 +1,24 @@
 /**
- * Global configuration for @blac/react
+ * Global configuration for `@blac/react`.
+ *
+ * The hook's tracking model is fixed: when `useBloc` is called without a
+ * `select`, render-time auto-tracking is used (via
+ * `@dirtytalk/structural`'s `trackRender`). When `select` is provided,
+ * re-renders are driven by per-index `Object.is` over the returned array.
+ *
+ * Reserved for forwards-compatible knobs; currently empty.
  */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface BlacReactConfig {}
 
-export interface BlacReactConfig {
-  /** Enable automatic property tracking via Proxy (default: true) */
-  autoTrack: boolean;
-}
-
-const defaultConfig: BlacReactConfig = {
-  autoTrack: true,
-};
+const defaultConfig: BlacReactConfig = {};
 
 let globalConfig: BlacReactConfig = { ...defaultConfig };
 
 /**
- * Configure global defaults for @blac/react hooks.
+ * Configure global defaults for `@blac/react` hooks.
  *
- * @example
- * ```ts
- * import { configureBlacReact } from '@blac/react';
- *
- * // Disable auto-tracking globally
- * configureBlacReact({
- *   autoTrack: false
- * });
- * ```
- *
- * @param config - Partial configuration to merge with defaults
+ * @param config - Partial configuration to merge with current globals
  */
 export function configureBlacReact(config: Partial<BlacReactConfig>): void {
   globalConfig = { ...globalConfig, ...config };

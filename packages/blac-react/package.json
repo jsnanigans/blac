@@ -85,7 +85,7 @@
     "deploy": "pnpm publish --access public"
   },
   "dependencies": {
-    "@blac/adapter": "workspace:^"
+    "@dirtytalk/structural": "workspace:*"
   },
   "peerDependencies": {
     "@blac/core": "workspace:^",
