@@ -432,9 +432,30 @@ export abstract class StateContainer<
     if (this._disposed) {
       throw new Error(`Cannot emit state from disposed container ${this.name}`);
     }
-    if (Object.keys(partial as object).length === 0) return;
+    const partialKeys = Object.keys(partial as object);
+    if (partialKeys.length === 0) return;
 
     const prev = this.state;
+
+    // Pre-spread skip: if every top-level key in `partial` is already
+    // `Object.is`-equal to the current state's value at that key, the
+    // merge is a structural no-op — skip entirely. Matches the pre-C0
+    // `Cubit.patch` semantics (per-key Object.is short-circuit). This is
+    // shallow on purpose; deep no-op detection lives in `super.patch`'s
+    // path-diff path which still wakes consumers if anything truly moved.
+    let allEqual = true;
+    for (const key of partialKeys) {
+      if (
+        !Object.is(
+          (prev as Record<string, unknown>)[key],
+          (partial as Record<string, unknown>)[key],
+        )
+      ) {
+        allEqual = false;
+        break;
+      }
+    }
+    if (allEqual) return;
 
     if (process.env.NODE_ENV !== 'production') {
       this._checkEmitRate();
