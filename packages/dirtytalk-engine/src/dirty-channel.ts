@@ -127,7 +127,10 @@ export class DirtyChannel<Region> {
     // Step 8 — surface errors after all callbacks have run and state is clean.
     if (errors.length === 1) throw errors[0];
     if (errors.length > 1) {
-      throw new AggregateError(errors, 'DirtyChannel: subscriber errors during flush');
+      throw new AggregateError(
+        errors,
+        'DirtyChannel: subscriber errors during flush',
+      );
     }
   }
 }

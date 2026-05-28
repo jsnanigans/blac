@@ -99,17 +99,25 @@ describe('Signal', () => {
   it('continues to invoke remaining subscribers after one throws, then re-throws', () => {
     const s = new Signal(0);
     const secondCb = vi.fn();
-    s.subscribe(() => { throw new Error('boom'); });
+    s.subscribe(() => {
+      throw new Error('boom');
+    });
     s.subscribe(secondCb);
 
-    expect(() => { s.value = 1; }).toThrow('boom');
+    expect(() => {
+      s.value = 1;
+    }).toThrow('boom');
     expect(secondCb).toHaveBeenCalledTimes(1);
   });
 
   it('wraps multiple subscriber errors in AggregateError', () => {
     const s = new Signal(0);
-    s.subscribe(() => { throw new Error('err1'); });
-    s.subscribe(() => { throw new Error('err2'); });
+    s.subscribe(() => {
+      throw new Error('err1');
+    });
+    s.subscribe(() => {
+      throw new Error('err2');
+    });
 
     let caught: unknown;
     try {

@@ -30,7 +30,8 @@ export class Signal<T> implements Observable<T> {
       }
     }
     if (errors.length === 1) throw errors[0];
-    if (errors.length > 1) throw new AggregateError(errors, 'Signal: multiple subscriber errors');
+    if (errors.length > 1)
+      throw new AggregateError(errors, 'Signal: multiple subscriber errors');
   }
 
   peek(): T {

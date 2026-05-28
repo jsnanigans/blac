@@ -5,7 +5,7 @@ A reactive dirty-tracking and notification engine. Zero deps, pluggable space, p
 ## Why this exists
 
 Both insomni (a WebGPU renderer) and blac (a state container library) solve the same problem
-in different domains: after a mutation, *what changed, who cares, and when do we tell them?*
+in different domains: after a mutation, _what changed, who cares, and when do we tell them?_
 Today both answer this per-consumer — insomni repaints the entire canvas because it has no
 rect-level damage info; blac walks state N times for N consumers.
 
@@ -40,10 +40,7 @@ import { Signal } from '@dirtytalk/engine/primitives';
 ## Quick example
 
 ```ts
-import {
-  DirtyChannel,
-  SyncScheduler,
-} from '@dirtytalk/engine';
+import { DirtyChannel, SyncScheduler } from '@dirtytalk/engine';
 import type { Space } from '@dirtytalk/engine';
 
 // A trivial Space where Region = Set<string>.
@@ -105,12 +102,13 @@ the default `Object.is` check. Notification is synchronous at this layer; coales
 interface Space<Region> {
   empty(): Region;
   isEmpty(r: Region): boolean;
-  union(a: Region, b: Region): Region;       // accumulate dirty marks
+  union(a: Region, b: Region): Region; // accumulate dirty marks
   intersects(interest: Region, dirty: Region): boolean; // delivery predicate
 }
 ```
 
 Contracts:
+
 - `union(empty(), r)` is equivalent to `r`.
 - `intersects(empty(), _)` returns `false`.
 - Both operations must be **pure** — no side effects, stable output for stable inputs.
@@ -123,19 +121,19 @@ libraries. Insomni's `RectSpace` and blac's `PathSetSpace` are the motivating ex
 ```ts
 interface Scheduler {
   request(flush: () => void): void; // call flush at most once per scheduling window
-  cancel?(): void;                  // optional teardown
+  cancel?(): void; // optional teardown
 }
 ```
 
 `request` must be idempotent within a window: ten calls before the first flush produce
 one flush, not ten.
 
-| Scheduler | When it flushes | Intended use |
-|---|---|---|
-| `SyncScheduler` | Immediately on `request` | Tests, sync emit compatibility |
-| `ManualScheduler` | When `.pump()` is called | Tests, replay, SSR |
-| `MicrotaskScheduler` | End of current microtask queue | blac (default) |
-| `RAFScheduler` | Next `requestAnimationFrame` (falls back to `setTimeout(_, 16)`) | insomni |
+| Scheduler            | When it flushes                                                  | Intended use                   |
+| -------------------- | ---------------------------------------------------------------- | ------------------------------ |
+| `SyncScheduler`      | Immediately on `request`                                         | Tests, sync emit compatibility |
+| `ManualScheduler`    | When `.pump()` is called                                         | Tests, replay, SSR             |
+| `MicrotaskScheduler` | End of current microtask queue                                   | blac (default)                 |
+| `RAFScheduler`       | Next `requestAnimationFrame` (falls back to `setTimeout(_, 16)`) | insomni                        |
 
 ## `DirtyChannel<Region>`
 
@@ -153,7 +151,7 @@ subscribe time.
 
 ```ts
 const unsub = channel.subscribe(
-  () => myNode.bounds(),   // re-evaluated every flush
+  () => myNode.bounds(), // re-evaluated every flush
   (dirty) => myNode.repaint(dirty),
 );
 ```
@@ -167,7 +165,7 @@ Returns an unsubscribe function. Safe to call at any time, including from inside
 - **Interest is a thunk.** Re-evaluated on every flush, so subscribers can move, resize, or
   reconfigure freely between flushes. If you snapshot at subscribe time, you miss updates.
 - **Re-entrant marks defer.** Calling `mark` from inside a subscriber callback accumulates
-  into the *next* flush. No infinite loops; bounded work per flush tick.
+  into the _next_ flush. No infinite loops; bounded work per flush tick.
 - **Error isolation.** If a subscriber callback throws, the error is collected and the flush
   continues to completion. A single error is re-thrown as-is; multiple errors are wrapped in
   an `AggregateError`.

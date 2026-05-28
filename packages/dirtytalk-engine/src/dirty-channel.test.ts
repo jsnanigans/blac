@@ -15,9 +15,17 @@ const NumberBitsetSpace: Space<number> = {
 
 class TestScheduler {
   private pending: (() => void) | null = null;
-  request(flush: () => void) { this.pending = flush; }
-  pump() { const f = this.pending; this.pending = null; f?.(); }
-  get isPending() { return this.pending != null; }
+  request(flush: () => void) {
+    this.pending = flush;
+  }
+  pump() {
+    const f = this.pending;
+    this.pending = null;
+    f?.();
+  }
+  get isPending() {
+    return this.pending != null;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -93,9 +101,18 @@ describe('DirtyChannel — flush behaviour', () => {
   it('7. registration order is preserved', () => {
     const { sched, ch } = make();
     const order: number[] = [];
-    ch.subscribe(() => 0b001, () => order.push(1));
-    ch.subscribe(() => 0b001, () => order.push(2));
-    ch.subscribe(() => 0b001, () => order.push(3));
+    ch.subscribe(
+      () => 0b001,
+      () => order.push(1),
+    );
+    ch.subscribe(
+      () => 0b001,
+      () => order.push(2),
+    );
+    ch.subscribe(
+      () => 0b001,
+      () => order.push(3),
+    );
     ch.mark(0b001);
     sched.pump();
     expect(order).toEqual([1, 2, 3]);
@@ -162,7 +179,10 @@ describe('DirtyChannel — subscribe / unsubscribe', () => {
     const cb2 = vi.fn();
     const unsub = ch.subscribe(() => 0b001, cb1);
     ch.subscribe(() => 0b001, cb2);
-    expect(() => { unsub(); unsub(); }).not.toThrow();
+    expect(() => {
+      unsub();
+      unsub();
+    }).not.toThrow();
     ch.mark(0b001);
     sched.pump();
     expect(cb1).not.toHaveBeenCalled();
@@ -175,12 +195,25 @@ describe('DirtyChannel — subscribe / unsubscribe', () => {
     // Use a wrapper object so the reference can be captured by the first
     // callback without a let/reassignment (satisfies prefer-const).
     const ref = { unsub: () => {} };
-    ch.subscribe(() => 0b001, () => {
-      called.push(1);
-      ref.unsub(); // unsubscribe #3 before it runs
-    });
-    ch.subscribe(() => 0b001, () => { called.push(2); });
-    ref.unsub = ch.subscribe(() => 0b001, () => { called.push(3); });
+    ch.subscribe(
+      () => 0b001,
+      () => {
+        called.push(1);
+        ref.unsub(); // unsubscribe #3 before it runs
+      },
+    );
+    ch.subscribe(
+      () => 0b001,
+      () => {
+        called.push(2);
+      },
+    );
+    ref.unsub = ch.subscribe(
+      () => 0b001,
+      () => {
+        called.push(3);
+      },
+    );
     ch.mark(0b001);
     sched.pump();
     expect(called).toEqual([1, 2]);
@@ -189,10 +222,13 @@ describe('DirtyChannel — subscribe / unsubscribe', () => {
   it('14. subscriber added during flush does not run in the current flush', () => {
     const { sched, ch } = make();
     const lateCallback = vi.fn();
-    ch.subscribe(() => 0b001, () => {
-      // Subscribe a new subscriber mid-flush
-      ch.subscribe(() => 0b001, lateCallback);
-    });
+    ch.subscribe(
+      () => 0b001,
+      () => {
+        // Subscribe a new subscriber mid-flush
+        ch.subscribe(() => 0b001, lateCallback);
+      },
+    );
     ch.mark(0b001);
     sched.pump(); // flush #1 — lateCallback should NOT run
     expect(lateCallback).not.toHaveBeenCalled();
@@ -208,9 +244,12 @@ describe('DirtyChannel — re-entrancy', () => {
   it('15. mark during flush defers to next flush', () => {
     const { sched, ch } = make();
     const secondFlushCb = vi.fn();
-    ch.subscribe(() => 0b001, () => {
-      ch.mark(0b100); // re-entrant mark
-    });
+    ch.subscribe(
+      () => 0b001,
+      () => {
+        ch.mark(0b100); // re-entrant mark
+      },
+    );
     ch.subscribe(() => 0b100, secondFlushCb);
     ch.mark(0b001);
     sched.pump(); // flush #1 — re-entrant mark should schedule flush #2
@@ -225,9 +264,12 @@ describe('DirtyChannel — re-entrancy', () => {
     const cb = vi.fn();
     // Subscriber A marks bit 0b010 re-entrantly (different from its own interest 0b001)
     // so flush #2 only notifies cb (interested in 0b010), not subscriber A again.
-    ch.subscribe(() => 0b001, () => {
-      ch.mark(0b010); // re-entrant mark of a different bit
-    });
+    ch.subscribe(
+      () => 0b001,
+      () => {
+        ch.mark(0b010); // re-entrant mark of a different bit
+      },
+    );
     ch.subscribe(() => 0b010, cb);
     ch.mark(0b001);
     sched.pump(); // flush #1 — triggers re-entrant mark which defers
@@ -240,10 +282,13 @@ describe('DirtyChannel — re-entrancy', () => {
   it('17. re-entrant mark in a throwing subscriber still defers correctly', () => {
     const { sched, ch } = make();
     const afterCb = vi.fn();
-    ch.subscribe(() => 0b001, () => {
-      ch.mark(0b100); // re-entrant
-      throw new Error('subscriber boom');
-    });
+    ch.subscribe(
+      () => 0b001,
+      () => {
+        ch.mark(0b100); // re-entrant
+        throw new Error('subscriber boom');
+      },
+    );
     ch.subscribe(() => 0b100, afterCb);
     ch.mark(0b001);
     expect(() => sched.pump()).toThrow('subscriber boom');
@@ -258,7 +303,12 @@ describe('DirtyChannel — errors', () => {
   it('18. one subscriber throws — error re-thrown after all subscribers run', () => {
     const { sched, ch } = make();
     const afterCb = vi.fn();
-    ch.subscribe(() => 0b001, () => { throw new Error('first boom'); });
+    ch.subscribe(
+      () => 0b001,
+      () => {
+        throw new Error('first boom');
+      },
+    );
     ch.subscribe(() => 0b001, afterCb); // must still be called
     ch.mark(0b001);
     expect(() => sched.pump()).toThrow('first boom');
@@ -269,11 +319,25 @@ describe('DirtyChannel — errors', () => {
     const { sched, ch } = make();
     const err1 = new Error('boom1');
     const err2 = new Error('boom2');
-    ch.subscribe(() => 0b001, () => { throw err1; });
-    ch.subscribe(() => 0b001, () => { throw err2; });
+    ch.subscribe(
+      () => 0b001,
+      () => {
+        throw err1;
+      },
+    );
+    ch.subscribe(
+      () => 0b001,
+      () => {
+        throw err2;
+      },
+    );
     ch.mark(0b001);
     let thrown: unknown;
-    try { sched.pump(); } catch (e) { thrown = e; }
+    try {
+      sched.pump();
+    } catch (e) {
+      thrown = e;
+    }
     expect(thrown).toBeInstanceOf(AggregateError);
     const agg = thrown as AggregateError;
     expect(agg.message).toBe('DirtyChannel: subscriber errors during flush');
@@ -286,11 +350,17 @@ describe('DirtyChannel — errors', () => {
     const thunkError = new Error('bad thunk');
     const goodCb = vi.fn();
     const badCb = vi.fn();
-    ch.subscribe(() => { throw thunkError; }, badCb);
+    ch.subscribe(() => {
+      throw thunkError;
+    }, badCb);
     ch.subscribe(() => 0b001, goodCb); // should still run
     ch.mark(0b001);
     let thrown: unknown;
-    try { sched.pump(); } catch (e) { thrown = e; }
+    try {
+      sched.pump();
+    } catch (e) {
+      thrown = e;
+    }
     expect(badCb).not.toHaveBeenCalled();
     expect(goodCb).toHaveBeenCalledTimes(1);
     // Single error: re-thrown directly (not AggregateError)
