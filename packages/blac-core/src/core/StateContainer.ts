@@ -510,9 +510,16 @@ export abstract class StateContainer<
     if (!pending) return;
     this._pendingChange = null;
 
+    // Iterate against a fixed-size snapshot so a listener that subscribes a
+    // new listener mid-drain does not get the late one called in this flush.
+    // (Matches the pre-C0 contract; restored by counting against the size
+    // captured at drain entry.)
     if (this._listeners.size > 0) {
       const current = this.state;
+      let count = 0;
+      const size = this._listeners.size;
       for (const listener of this._listeners) {
+        if (++count > size) break;
         try {
           listener(current);
         } catch (error) {
@@ -524,7 +531,10 @@ export abstract class StateContainer<
     const handlers = this._systemEventHandlers.get('stateChanged');
     if (handlers && handlers.size > 0) {
       const payload = { state: pending.next, previousState: pending.prev };
+      let count = 0;
+      const size = handlers.size;
       for (const handler of handlers) {
+        if (++count > size) break;
         try {
           handler(payload);
         } catch (error) {
