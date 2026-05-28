@@ -34,40 +34,40 @@ describe('PluginManager edge cases', () => {
     expect(manager.hasPlugin('bare')).toBe(true);
   });
 
-  it('multiple plugins all receive onStateChanged', async () => {
-    const onStateChanged1 = vi.fn();
-    const onStateChanged2 = vi.fn();
+  it('multiple plugins all receive onStateChange', async () => {
+    const onStateChange1 = vi.fn();
+    const onStateChange2 = vi.fn();
     manager.install({
       name: 'p1',
       version: '1.0.0',
-      onStateChanged: onStateChanged1,
+      onStateChange: onStateChange1,
     });
     manager.install({
       name: 'p2',
       version: '1.0.0',
-      onStateChanged: onStateChanged2,
+      onStateChange: onStateChange2,
     });
 
     const bloc = acquire(SimpleBloc, 'default');
     bloc.emit({ n: 99 });
 
     await new Promise<void>((r) => queueMicrotask(r));
-    expect(onStateChanged1).toHaveBeenCalledOnce();
-    expect(onStateChanged2).toHaveBeenCalledOnce();
+    expect(onStateChange1).toHaveBeenCalledOnce();
+    expect(onStateChange2).toHaveBeenCalledOnce();
   });
 
   it('plugin with enabled: false never receives any hooks', () => {
-    const onInstanceCreated = vi.fn();
-    const onStateChanged = vi.fn();
-    const onInstanceDisposed = vi.fn();
+    const onCreated = vi.fn();
+    const onStateChange = vi.fn();
+    const onDestroyed = vi.fn();
 
     manager.install(
       {
         name: 'disabled',
         version: '1.0.0',
-        onInstanceCreated,
-        onStateChanged,
-        onInstanceDisposed,
+        onCreated,
+        onStateChange,
+        onDestroyed,
       },
       { enabled: false },
     );
@@ -76,9 +76,9 @@ describe('PluginManager edge cases', () => {
     bloc.emit({ n: 1 });
     release(SimpleBloc, 'default');
 
-    expect(onInstanceCreated).not.toHaveBeenCalled();
-    expect(onStateChanged).not.toHaveBeenCalled();
-    expect(onInstanceDisposed).not.toHaveBeenCalled();
+    expect(onCreated).not.toHaveBeenCalled();
+    expect(onStateChange).not.toHaveBeenCalled();
+    expect(onDestroyed).not.toHaveBeenCalled();
   });
 
   it('plugin context queryInstances() returns empty for unregistered type', () => {
@@ -128,31 +128,32 @@ describe('PluginManager edge cases', () => {
     fresh.clear();
   });
 
-  it('isolated registry: plugin on registryA does NOT receive events from registryB', () => {
+  it('isolated registry: plugin on registryA does NOT receive events from registryB', async () => {
     const registryA = new StateContainerRegistry();
     const registryB = new StateContainerRegistry();
 
-    const onStateChanged = vi.fn();
+    const onStateChange = vi.fn();
     const managerA = new PluginManager(registryA);
-    managerA.install({ name: 'plugin-a', version: '1.0.0', onStateChanged });
+    managerA.install({ name: 'plugin-a', version: '1.0.0', onStateChange });
 
     const bloc = registryB.acquire(SimpleBloc, 'default');
     bloc.emit({ n: 42 });
 
-    expect(onStateChanged).not.toHaveBeenCalled();
+    await new Promise<void>((r) => queueMicrotask(r));
+    expect(onStateChange).not.toHaveBeenCalled();
 
     managerA.clear();
     registryA.clearAll();
     registryB.clearAll();
   });
 
-  it('plugin installed after instance creation does NOT receive retroactive onInstanceCreated', () => {
+  it('plugin installed after instance creation does NOT receive retroactive onCreated', () => {
     acquire(SimpleBloc, 'pre-existing');
 
-    const onInstanceCreated = vi.fn();
-    manager.install({ name: 'late', version: '1.0.0', onInstanceCreated });
+    const onCreated = vi.fn();
+    manager.install({ name: 'late', version: '1.0.0', onCreated });
 
-    expect(onInstanceCreated).not.toHaveBeenCalled();
+    expect(onCreated).not.toHaveBeenCalled();
   });
 
   it('clear() with no plugins is a no-op', () => {
@@ -160,14 +161,16 @@ describe('PluginManager edge cases', () => {
     expect(manager.getAllPlugins()).toEqual([]);
   });
 
-  it('onInstanceDisposed called when instance is released', () => {
-    const onInstanceDisposed = vi.fn();
-    manager.install({ name: 'watcher', version: '1.0.0', onInstanceDisposed });
+  it('onDestroyed called when instance is released', () => {
+    const onDestroyed = vi.fn();
+    manager.install({ name: 'watcher', version: '1.0.0', onDestroyed });
 
     const bloc = acquire(SimpleBloc, 'default');
     release(SimpleBloc, 'default');
 
-    expect(onInstanceDisposed).toHaveBeenCalledOnce();
-    expect(onInstanceDisposed).toHaveBeenCalledWith(bloc, expect.any(Object));
+    expect(onDestroyed).toHaveBeenCalledOnce();
+    expect(onDestroyed).toHaveBeenCalledWith(
+      expect.objectContaining({ container: bloc }),
+    );
   });
 });

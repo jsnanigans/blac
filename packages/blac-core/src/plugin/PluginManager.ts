@@ -1,3 +1,4 @@
+import { ALL_PATHS, type PathSet } from '@dirtytalk/structural';
 import type { StateContainer } from '../core/StateContainer';
 import type { StateContainerRegistry } from '../core/StateContainerRegistry';
 import type {
@@ -8,18 +9,55 @@ import type {
 } from './BlacPlugin';
 
 /**
- * Internal structure for tracking installed plugins
+ * Internal structure for tracking installed plugins.
+ *
+ * `installContext` is the context handed to `onInstall` — it has no
+ * `container`. Per-container contexts are built on demand by
+ * `buildContext()` so each event carries the right focal container
+ * without mutating a shared object.
  * @internal
  */
 interface InstalledPlugin {
   plugin: BlacPlugin;
   config: PluginConfig;
-  context: PluginContext;
+  installContext: PluginContext;
+}
+
+/**
+ * Per-container bookkeeping for the channel-bridge plugin dispatcher.
+ *
+ * - `unsub` tears down the channel subscription on dispose.
+ * - `prevState` is the state snapshot the manager will hand plugins as
+ *   `prev` on the next flush; it is updated to the post-flush state after
+ *   each dispatch.
+ * @internal
+ */
+interface ContainerBridge {
+  unsub: () => void;
+  prevState: any;
 }
 
 /**
  * Manages plugin lifecycle for the BlaC state management system.
- * Plugins receive notifications about state container lifecycle events.
+ *
+ * The manager hooks into two surfaces:
+ *
+ * 1. **Registry lifecycle events** (`created`, `disposed`, `refAcquired`,
+ *    `refReleased`, `depsChanged`) — synchronous, fired by the registry.
+ *
+ * 2. **Per-container channel flushes** — microtask-coalesced. For each
+ *    container, the manager subscribes once at create-time with
+ *    `ALL_PATHS` interest and stashes `prevState`. On every flush it
+ *    captures the new state + the changed `PathSet` and dispatches
+ *    `onStateChange(ctx, prev, next, paths)` to every enabled plugin.
+ *
+ * The `ALL_PATHS` subscription cost: plugins counted as a consumer with
+ * `ALL_PATHS` interest will defeat the single-consumer-skip optimization
+ * in `StructuralContainer`. This is the intended trade-off — devtools /
+ * persist plugins genuinely want every change, and stateful plugins
+ * (logging) can decode `paths` via `container.interner.lookup(id)` to log
+ * only relevant fields. Plugins that want low overhead should remain
+ * uninstalled or environment-gated.
  *
  * @example
  * ```ts
@@ -31,6 +69,16 @@ export class PluginManager {
   private plugins = new Map<string, InstalledPlugin>();
   private registry: StateContainerRegistry;
   private lifecycleUnsubscribers: (() => void)[] = [];
+
+  /**
+   * Per-container channel-bridge bookkeeping. Subscribed at `created`,
+   * torn down at `disposed`. Holds the rolling `prevState` snapshot the
+   * manager hands plugins on each flush.
+   */
+  private containerBridges = new WeakMap<
+    StateContainer<any, any, any>,
+    ContainerBridge
+  >();
 
   /**
    * Create a new PluginManager
@@ -65,17 +113,17 @@ export class PluginManager {
       throw new Error(`Plugin "${plugin.name}" is already installed`);
     }
 
-    const context = this.createPluginContext();
+    const installContext = this.buildContext(undefined);
 
     this.plugins.set(plugin.name, {
       plugin,
       config: effectiveConfig,
-      context,
+      installContext,
     });
 
     if (plugin.onInstall) {
       try {
-        plugin.onInstall(context);
+        plugin.onInstall(installContext);
       } catch (error) {
         console.error(
           `[BlaC] Error installing plugin "${plugin.name}":`,
@@ -159,26 +207,22 @@ export class PluginManager {
   }
 
   /**
-   * Setup lifecycle hooks to notify plugins
+   * Wire registry lifecycle events into plugin dispatch.
+   *
+   * `onStateChange` is NOT wired through `registry.on('stateChanged', …)` —
+   * that event lacks the `PathSet` payload. Instead, on each `created` we
+   * subscribe to the container's channel directly so we get
+   * `(paths)` and capture `(prev, next)` via the per-container snapshot.
    */
   private setupLifecycleHooks(): void {
     this.lifecycleUnsubscribers = [
       this.registry.on('created', (instance) => {
-        this.notifyPlugins('onInstanceCreated', instance);
+        this.attachStateBridge(instance);
+        this.notifyPlugins('onCreated', instance);
       }),
-      this.registry.on(
-        'stateChanged',
-        (instance, previousState, currentState) => {
-          this.notifyPlugins(
-            'onStateChanged',
-            instance,
-            previousState,
-            currentState,
-          );
-        },
-      ),
       this.registry.on('disposed', (instance) => {
-        this.notifyPlugins('onInstanceDisposed', instance);
+        this.notifyPlugins('onDestroyed', instance);
+        this.detachStateBridge(instance);
       }),
       this.registry.on('refAcquired', (instance, refId) => {
         this.notifyPlugins('onRefAcquired', instance, refId);
@@ -198,31 +242,120 @@ export class PluginManager {
   }
 
   /**
-   * Notify all plugins of a lifecycle event
+   * Subscribe to the container's channel with `ALL_PATHS` interest, so we
+   * fire on every flush. Capture `prev` from the snapshot taken on the
+   * previous flush (or at create-time for the first flush) and pass the
+   * channel's `paths` argument straight through to plugins.
+   *
+   * Per-container bookkeeping is stored in a `WeakMap` keyed by the
+   * container itself, so a disposed/GC'd container drops cleanly.
    */
-  private notifyPlugins(hookName: keyof BlacPlugin, ...args: any[]): void {
-    for (const { plugin, config, context } of this.plugins.values()) {
-      if (!config.enabled) continue;
+  private attachStateBridge(container: StateContainer<any, any, any>): void {
+    // Defensive: if a container is somehow created twice (it shouldn't be),
+    // don't double-subscribe — the existing bridge is canonical.
+    if (this.containerBridges.has(container)) return;
 
-      const hook = plugin[hookName];
-      if (typeof hook === 'function') {
-        try {
-          (hook as any).apply(plugin, [...args, context]);
-        } catch (error) {
-          console.error(
-            `[BlaC] Error in plugin "${plugin.name}" ${hookName}:`,
-            error,
-          );
-        }
+    const bridge: ContainerBridge = {
+      unsub: () => {},
+      prevState: container.state,
+    };
+    this.containerBridges.set(container, bridge);
+
+    bridge.unsub = container.channel.subscribe(
+      () => ALL_PATHS,
+      (paths) => this.dispatchStateChange(container, paths),
+    );
+  }
+
+  private detachStateBridge(container: StateContainer<any, any, any>): void {
+    const bridge = this.containerBridges.get(container);
+    if (!bridge) return;
+    bridge.unsub();
+    this.containerBridges.delete(container);
+  }
+
+  /**
+   * Channel-flush callback. Snapshots `next`, hands `(prev, next, paths)`
+   * to every enabled plugin's `onStateChange`, then updates `prevState`
+   * for the next flush.
+   *
+   * Note: `prev` is captured once and reused across plugins — every
+   * plugin sees the same `prev`/`next`/`paths` regardless of dispatch
+   * order, matching the "snapshot prev once per flush" invariant called
+   * out in the C2 spec pitfalls.
+   */
+  private dispatchStateChange(
+    container: StateContainer<any, any, any>,
+    paths: PathSet,
+  ): void {
+    const bridge = this.containerBridges.get(container);
+    if (!bridge) return;
+
+    const prev = bridge.prevState;
+    const next = container.state;
+    bridge.prevState = next;
+
+    for (const { plugin, config } of this.plugins.values()) {
+      if (!config.enabled) continue;
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- invoked via .call below
+      const hook = plugin.onStateChange;
+      if (typeof hook !== 'function') continue;
+
+      try {
+        hook.call(plugin, this.buildContext(container), prev, next, paths);
+      } catch (error) {
+        console.error(
+          `[BlaC] Error in plugin "${plugin.name}" onStateChange:`,
+          error,
+        );
       }
     }
   }
 
   /**
-   * Create plugin context with safe API access
+   * Notify all plugins of a lifecycle event.
+   *
+   * Builds a fresh `PluginContext` per dispatch (instance becomes
+   * `ctx.container`), so plugins can reach the focal bloc through
+   * `ctx.container` per Decision 6.
    */
-  private createPluginContext(): PluginContext {
+  private notifyPlugins(
+    hookName: Exclude<keyof BlacPlugin, 'onStateChange'>,
+    instance: StateContainer<any, any, any>,
+    ...extraArgs: any[]
+  ): void {
+    for (const { plugin, config } of this.plugins.values()) {
+      if (!config.enabled) continue;
+
+      const hook = plugin[hookName];
+      if (typeof hook !== 'function') continue;
+
+      try {
+        (hook as any).call(plugin, this.buildContext(instance), ...extraArgs);
+      } catch (error) {
+        console.error(
+          `[BlaC] Error in plugin "${plugin.name}" ${hookName}:`,
+          error,
+        );
+      }
+    }
+  }
+
+  /**
+   * Build a `PluginContext` for a given focal container. The context is
+   * cheap to build — its methods close over `this.registry` directly —
+   * so we create one per dispatch rather than caching per container.
+   * This sidesteps the lifetime question of "when do we evict a cached
+   * context?" and keeps `paths`-vs-`container` lifetimes cleanly
+   * separated per the C2 spec.
+   */
+  private buildContext(
+    container: StateContainer<any, any, any> | undefined,
+  ): PluginContext {
+    const registry = this.registry;
     return {
+      container,
+
       getInstanceMetadata: (
         instance: StateContainer<any, any, any>,
       ): InstanceMetadata => {
@@ -264,7 +397,10 @@ export class PluginManager {
         instance.finishHydration();
       },
 
-      failHydration: (instance: StateContainer<any, any, any>, error: Error) => {
+      failHydration: (
+        instance: StateContainer<any, any, any>,
+        error: Error,
+      ) => {
         instance.failHydration(error);
       },
 
@@ -275,20 +411,20 @@ export class PluginManager {
       queryInstances: <T extends StateContainer<any, any, any>>(
         typeClass: new (...args: any[]) => T,
       ): T[] => {
-        return this.registry.getAll(typeClass as any);
+        return registry.getAll(typeClass as any);
       },
 
       getAllTypes: () => {
-        return this.registry.getTypes();
+        return registry.getTypes();
       },
 
       getStats: () => {
-        return this.registry.getStats();
+        return registry.getStats();
       },
 
       getRefIds: (instanceId: string): string[] => {
-        for (const Type of this.registry.getTypes()) {
-          const map = this.registry.getInstancesMap(Type);
+        for (const Type of registry.getTypes()) {
+          const map = registry.getInstancesMap(Type);
           for (const [, entry] of map) {
             if ((entry.instance as any).instanceId === instanceId) {
               return Array.from(entry.refs.keys());

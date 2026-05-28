@@ -65,13 +65,13 @@ describe('PluginManager', () => {
       expect(onInstall).toHaveBeenCalledOnce();
       expect(onInstall).toHaveBeenCalledWith(
         expect.objectContaining({
+          container: undefined,
           getInstanceMetadata: expect.any(Function),
           getState: expect.any(Function),
           getHydrationStatus: expect.any(Function),
           startHydration: expect.any(Function),
           applyHydratedState: expect.any(Function),
           finishHydration: expect.any(Function),
-          failHydration: expect.any(Function),
           waitForHydration: expect.any(Function),
           queryInstances: expect.any(Function),
           getAllTypes: expect.any(Function),
@@ -281,23 +281,22 @@ describe('PluginManager', () => {
   });
 
   describe('lifecycle hooks', () => {
-    describe('onInstanceCreated', () => {
-      it('should call onInstanceCreated when instance is created', () => {
-        const onInstanceCreated = vi.fn();
+    describe('onCreated', () => {
+      it('should call onCreated when instance is created', () => {
+        const onCreated = vi.fn();
         const plugin: BlacPlugin = {
           name: 'test-plugin',
           version: '1.0.0',
-          onInstanceCreated,
+          onCreated,
         };
 
         manager.install(plugin);
 
         const counter = acquire(CounterCubit, 'main');
 
-        expect(onInstanceCreated).toHaveBeenCalledOnce();
-        expect(onInstanceCreated).toHaveBeenCalledWith(
-          counter,
-          expect.any(Object),
+        expect(onCreated).toHaveBeenCalledOnce();
+        expect(onCreated).toHaveBeenCalledWith(
+          expect.objectContaining({ container: counter }),
         );
       });
 
@@ -305,7 +304,7 @@ describe('PluginManager', () => {
         const plugin: BlacPlugin = {
           name: 'test-plugin',
           version: '1.0.0',
-          onInstanceCreated: () => {
+          onCreated: () => {
             throw new Error('Hook error');
           },
         };
@@ -316,13 +315,13 @@ describe('PluginManager', () => {
       });
     });
 
-    describe('onStateChanged', () => {
-      it('should call onStateChanged when state changes', async () => {
-        const onStateChanged = vi.fn();
+    describe('onStateChange', () => {
+      it('should call onStateChange with prev/next/paths on flush', async () => {
+        const onStateChange = vi.fn();
         const plugin: BlacPlugin = {
           name: 'test-plugin',
           version: '1.0.0',
-          onStateChanged,
+          onStateChange,
         };
 
         manager.install(plugin);
@@ -331,22 +330,67 @@ describe('PluginManager', () => {
         counter.increment();
 
         await new Promise<void>((r) => queueMicrotask(r));
-        expect(onStateChanged).toHaveBeenCalledWith(
-          counter,
-          { count: 0 },
-          { count: 1 },
-          expect.any(Object),
+        expect(onStateChange).toHaveBeenCalledOnce();
+        const callArgs = onStateChange.mock.calls[0];
+        expect(callArgs[0]).toEqual(
+          expect.objectContaining({ container: counter }),
         );
+        expect(callArgs[1]).toEqual({ count: 0 });
+        expect(callArgs[2]).toEqual({ count: 1 });
+        // `paths` is a PathSet (Set<PathId> or the ALL_PATHS sentinel)
+        expect(callArgs[3]).toBeDefined();
+      });
+
+      it('rolling prev: second flush sees first flush state as prev', async () => {
+        const calls: Array<{ prev: any; next: any }> = [];
+        const plugin: BlacPlugin = {
+          name: 'rolling',
+          version: '1.0.0',
+          onStateChange: (_ctx, prev, next) => {
+            calls.push({ prev, next });
+          },
+        };
+
+        manager.install(plugin);
+
+        const counter = acquire(CounterCubit, 'main');
+        counter.increment();
+        await new Promise<void>((r) => queueMicrotask(r));
+        counter.increment();
+        await new Promise<void>((r) => queueMicrotask(r));
+
+        expect(calls).toEqual([
+          { prev: { count: 0 }, next: { count: 1 } },
+          { prev: { count: 1 }, next: { count: 2 } },
+        ]);
+      });
+
+      it('multiple plugins receive identical (prev, next, paths) per flush', async () => {
+        const p1 = vi.fn();
+        const p2 = vi.fn();
+        manager.install({ name: 'p1', version: '1.0.0', onStateChange: p1 });
+        manager.install({ name: 'p2', version: '1.0.0', onStateChange: p2 });
+
+        const counter = acquire(CounterCubit, 'main');
+        counter.increment();
+        await new Promise<void>((r) => queueMicrotask(r));
+
+        expect(p1).toHaveBeenCalledOnce();
+        expect(p2).toHaveBeenCalledOnce();
+        // prev/next/paths must match across plugins
+        expect(p1.mock.calls[0][1]).toEqual(p2.mock.calls[0][1]);
+        expect(p1.mock.calls[0][2]).toEqual(p2.mock.calls[0][2]);
+        expect(p1.mock.calls[0][3]).toBe(p2.mock.calls[0][3]);
       });
     });
 
-    describe('onInstanceDisposed', () => {
-      it('should call onInstanceDisposed when instance is disposed', () => {
-        const onInstanceDisposed = vi.fn();
+    describe('onDestroyed', () => {
+      it('should call onDestroyed when instance is disposed', () => {
+        const onDestroyed = vi.fn();
         const plugin: BlacPlugin = {
           name: 'test-plugin',
           version: '1.0.0',
-          onInstanceDisposed,
+          onDestroyed,
         };
 
         manager.install(plugin);
@@ -354,19 +398,18 @@ describe('PluginManager', () => {
         const counter = acquire(CounterCubit, 'main');
         release(CounterCubit, 'main');
 
-        expect(onInstanceDisposed).toHaveBeenCalledWith(
-          counter,
-          expect.any(Object),
+        expect(onDestroyed).toHaveBeenCalledWith(
+          expect.objectContaining({ container: counter }),
         );
       });
     });
 
     it('should only call hooks for enabled plugins', () => {
-      const onStateChanged = vi.fn();
+      const onStateChange = vi.fn();
       const plugin: BlacPlugin = {
         name: 'test-plugin',
         version: '1.0.0',
-        onStateChanged,
+        onStateChange,
       };
 
       manager.install(plugin, { enabled: false });
@@ -374,7 +417,7 @@ describe('PluginManager', () => {
       const counter = acquire(CounterCubit, 'main');
       counter.increment();
 
-      expect(onStateChanged).not.toHaveBeenCalled();
+      expect(onStateChange).not.toHaveBeenCalled();
     });
   });
 
