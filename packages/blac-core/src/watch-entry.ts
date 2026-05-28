@@ -8,10 +8,9 @@
  * ```typescript
  * import { watch, instance } from '@blac/core/watch';
  *
- * // Watch a bloc with automatic dependency tracking
+ * // Watch a bloc
  * const unwatch = watch(UserBloc, (userBloc) => {
  *   console.log(userBloc.state.name);
- *   console.log(userBloc.fullName); // getter also tracked
  * });
  *
  * // Watch a specific instance
@@ -24,12 +23,3 @@
  */
 
 export { watch, instance, type WatchFn, type BlocRef } from './watch';
-
-// Also export tracked utilities for advanced use cases
-export {
-  tracked,
-  createTrackedContext,
-  TrackedContext,
-  type TrackedResult,
-  type TrackedOptions,
-} from './tracking/tracked';

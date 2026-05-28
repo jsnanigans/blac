@@ -1,20 +1,13 @@
+import { ALL_PATHS } from '@dirtytalk/structural';
 import { ensure } from '../registry';
+import { BLAC_DEFAULTS } from '../constants';
 import type {
   StateContainerConstructor,
   StateContainerInstance,
 } from '../types/utilities';
-import { BLAC_DEFAULTS } from '../constants';
-import {
-  createState,
-  startTracking,
-  stopTracking,
-  createTrackingProxy,
-  type TrackingProxyState,
-} from '../tracking/tracking-proxy';
-import { DependencyManager } from '../tracking/dependency-manager';
-import { resolveDependencies } from '../tracking/resolve-dependencies';
 
 const STOP: unique symbol = Symbol('watch.STOP');
+type StopSymbol = typeof STOP;
 
 const BLOC_REF_MARKER = Symbol('BlocRef');
 
@@ -69,8 +62,6 @@ type ExtractInstances<T extends readonly BlocInput[]> = {
   [K in keyof T]: ExtractInstance<T[K]>;
 };
 
-type StopSymbol = typeof STOP;
-
 /**
  * Watch function signature for single bloc.
  */
@@ -118,13 +109,19 @@ function isArray(input: unknown): input is readonly BlocInput[] {
 
 /**
  * Watch one or more blocs for state changes.
- * Automatically tracks state property and getter accesses.
+ *
+ * Thin wrapper around `container.channel.subscribe(ALL_PATHS, ...)`. The
+ * callback fires once immediately, then on every state change of any of the
+ * passed blocs. Returning `watch.STOP` from the callback tears down all
+ * subscriptions.
+ *
+ * Note: subscriptions are microtask-deferred (per the DirtyChannel default
+ * scheduler), so callbacks land asynchronously after `emit()`.
  *
  * @example Single bloc
  * ```ts
  * const unwatch = watch(UserBloc, (userBloc) => {
  *   console.log(userBloc.state.name);
- *   console.log(userBloc.fullName); // getter also tracked
  * });
  * ```
  *
@@ -176,80 +173,28 @@ function watchImpl(
 
   const instances = inputs.map(resolveBloc);
 
-  const tracker: TrackingProxyState = createState();
-  const proxiedInstances = instances.map((inst) =>
-    createTrackingProxy(inst, tracker),
-  );
-
-  const externalDepsManager = new DependencyManager();
-
   let disposed = false;
-  let isRunning = false;
-  let pendingRerun = false;
-  const primarySubscriptions: (() => void)[] = [];
+  const subscriptions: (() => void)[] = [];
 
   const cleanup = () => {
     if (disposed) return;
     disposed = true;
-    primarySubscriptions.forEach((unsub) => unsub());
-    externalDepsManager.cleanup();
+    for (const unsub of subscriptions) unsub();
+    subscriptions.length = 0;
   };
 
   const runCallback = () => {
     if (disposed) return;
-
-    if (isRunning) {
-      pendingRerun = true;
-      return;
-    }
-    isRunning = true;
-
-    startTracking(tracker);
-
-    let result: void | StopSymbol;
-    try {
-      const arg = isSingle ? proxiedInstances[0] : proxiedInstances;
-      result = callback(arg);
-    } finally {
-      const externalDeps = new Set<StateContainerInstance>();
-      for (const inst of instances) {
-        const deps = stopTracking(tracker, inst);
-        for (const dep of deps) {
-          externalDeps.add(dep);
-        }
-        for (const dep of resolveDependencies(inst)) {
-          externalDeps.add(dep);
-        }
-      }
-
-      for (const inst of instances) {
-        externalDeps.delete(inst);
-      }
-
-      externalDepsManager.sync(externalDeps, runCallback);
-      isRunning = false;
-    }
-
-    if (result === STOP) {
-      cleanup();
-      return;
-    }
-
-    if (pendingRerun) {
-      pendingRerun = false;
-      runCallback();
-    }
-  };
-
-  const onChange = () => {
-    if (disposed) return;
-    runCallback();
+    const arg = isSingle ? instances[0] : instances;
+    const result = callback(arg);
+    if (result === STOP) cleanup();
   };
 
   for (const inst of instances) {
-    primarySubscriptions.push(inst.subscribe(onChange));
+    subscriptions.push(inst.channel.subscribe(() => ALL_PATHS, runCallback));
   }
 
+  // Fire once immediately so the consumer sees the current state.
   runCallback();
 
   return cleanup;
