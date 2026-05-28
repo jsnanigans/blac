@@ -87,15 +87,6 @@ export { PluginManager } from './plugin/PluginManager';
 // Watch
 export { watch, instance, type WatchFn, type BlocRef } from './watch';
 
-// Tracked
-export {
-  tracked,
-  createTrackedContext,
-  TrackedContext,
-  type TrackedResult,
-  type TrackedOptions,
-} from './tracking/tracked';
-
 // Types
 export type {
   StateContainerConstructor,

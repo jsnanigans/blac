@@ -10,8 +10,8 @@
  *
  * const myPlugin: BlacPlugin = {
  *   name: 'my-plugin',
- *   onInstanceCreated(context) {
- *     console.log('Instance created:', context.instance);
+ *   onCreated(context) {
+ *     console.log('Instance created:', context.container);
  *   },
  * };
  *
