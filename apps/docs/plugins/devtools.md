@@ -7,7 +7,7 @@ BlaC ships with a full DevTools suite: an in-app overlay, a Chrome DevTools pane
 | Package                  | What it does                                                 |
 | ------------------------ | ------------------------------------------------------------ |
 | `@blac/devtools-connect` | Core plugin that tracks instances and exposes the global API |
-| `@blac/devtools-ui`      | React UI components (overlay, Picture-in-Picture, panel)     |
+| `@blac/devtools-ui`      | React UI components (floating overlay and panel)             |
 | BlaC Chrome Extension    | Chrome DevTools panel that connects automatically            |
 
 ## Setup
@@ -48,9 +48,7 @@ function App() {
 }
 ```
 
-Drop `<BlacDevtoolsUi />` anywhere in your tree. It renders a floating overlay that you toggle with **Alt+D** (or by dispatching a `blac-devtools-toggle` custom event).
-
-On Chrome 116+, it automatically uses **Picture-in-Picture** mode — the DevTools open in a separate always-on-top window so they don't cover your app.
+Drop `<BlacDevtoolsUi />` anywhere in your tree. It renders a draggable floating overlay that you toggle with **Alt+D** (or by dispatching a `blac-devtools-toggle` custom event).
 
 ### 3. Chrome extension (optional)
 
@@ -72,7 +70,15 @@ createDevToolsBrowserPlugin({
 
 ### Inspect instances
 
-The Instances tab shows every active state container: class name, instance ID, current state, and creation time. Click an instance to see its full state tree.
+The Instances tab lists every active state container with everything you need to identify and triage it at a glance:
+
+- **Class name + instance ID** with a state preview.
+- **`args`** that keyed the instance — surfaced inline so two instances of the same class with different `args` are easy to tell apart.
+- **Consumer count** (`C:n`) — React components currently subscribed via `useBloc`.
+- **Ref count** (`R:n`) — manual ref holders (e.g. from `acquire()`).
+- **Insight pills** — inline warnings: large state size, high update rate, hydration status.
+
+Click an instance to see its full state tree and a side-by-side diff history.
 
 ### View state diffs
 
@@ -82,11 +88,12 @@ When you select an instance, the detail panel shows a side-by-side diff of the p
 
 The Logs tab shows a timeline of all lifecycle events:
 
-| Event               | When                          |
-| ------------------- | ----------------------------- |
-| `instance-created`  | A state container is created  |
-| `instance-updated`  | State changes                 |
-| `instance-disposed` | A state container is disposed |
+| Event               | When                                                              |
+| ------------------- | ----------------------------------------------------------------- |
+| `instance-created`  | A state container is created                                      |
+| `instance-updated`  | State changes                                                     |
+| `instance-disposed` | A state container is disposed                                     |
+| `deps-changed`      | The merged `deps` view changes — entries include `prev` and `next` |
 
 ### Time-travel
 
@@ -98,7 +105,7 @@ Use the search bar to filter instances by class name. Useful when you have dozen
 
 ## Keyboard shortcut
 
-Press **Alt+D** to toggle the in-app DevTools overlay. This works with both the draggable overlay and Picture-in-Picture modes.
+Press **Alt+D** to toggle the in-app DevTools overlay.
 
 ## Excluding instances from DevTools
 

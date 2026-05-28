@@ -38,6 +38,12 @@ const myPlugin: BlacPlugin = {
   onRefReleased(instance, refId, context) {
     // called when a ref is released from an instance
   },
+
+  onDepsChanged(instance, previousDeps, currentDeps, context) {
+    // called when an instance's merged `deps` view changes
+    // (a consumer added/changed/dropped a handle). Fires after the
+    // protected `onDepsChanged` hook on the StateContainer itself.
+  },
 };
 ```
 
@@ -70,7 +76,7 @@ The `context` parameter provides safe, read-only access to registry data:
 
 | Method                                | Returns                                                      |
 | ------------------------------------- | ------------------------------------------------------------ |
-| `getInstanceMetadata(instance)`       | `{ id, className, isDisposed, name, state, createdAt, ... }` |
+| `getInstanceMetadata(instance)`       | `{ id, className, isDisposed, name, state, createdAt, args, ... }` |
 | `getState(instance)`                  | Current state of the instance                                |
 | `getHydrationStatus(instance)`        | Current `HydrationStatus` of the instance                    |
 | `startHydration(instance)`            | Begin hydration for the instance                             |
