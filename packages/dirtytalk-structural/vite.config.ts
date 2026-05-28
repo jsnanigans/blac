@@ -20,6 +20,5 @@ export default defineConfig({
     environment: 'node',
     globals: true,
     include: ['**/*.{test,spec}.?(c|m)[jt]s?(x)'],
-    environmentMatchGlobs: [['src/react-hook.test.ts', 'jsdom']],
   },
 });
