@@ -1,6 +1,7 @@
 import {
   ALL_PATHS,
   StructuralContainer,
+  type DeepPartial,
   type StructuralContainerOptions,
 } from '@dirtytalk/structural';
 import { generateSimpleId } from '../utils/idGenerator';
@@ -416,6 +417,47 @@ export abstract class StateContainer<
 
   override emit(next: S): void {
     this.applyState(next, 'default');
+  }
+
+  /**
+   * Override of `StructuralContainer.patch` that routes through the
+   * StateContainer concerns: disposed guard, dev-only emit-rate check,
+   * `_changedWhileHydrating` flag, pending-change capture (so legacy
+   * listeners and `stateChanged` system events see the merged prev/next),
+   * and the registry-level `stateChanged` notification. We still call
+   * `super.patch` so path-marking semantics (the whole point of patch) are
+   * preserved.
+   */
+  override patch(partial: DeepPartial<S>): void {
+    if (this._disposed) {
+      throw new Error(`Cannot emit state from disposed container ${this.name}`);
+    }
+    if (Object.keys(partial as object).length === 0) return;
+
+    const prev = this.state;
+
+    if (process.env.NODE_ENV !== 'production') {
+      this._checkEmitRate();
+    }
+
+    super.patch(partial);
+
+    const next = this.state;
+    if (Object.is(prev, next)) return;
+
+    if (this._hydrationStatus === 'hydrating') {
+      this._changedWhileHydrating = true;
+    }
+
+    if (this._pendingChange) {
+      this._pendingChange.next = next;
+    } else {
+      this._pendingChange = { prev, next };
+    }
+
+    if (this._registry.hasStateChangedListeners) {
+      this._registry.notifyStateChanged(this, prev, next);
+    }
   }
 
   /**
