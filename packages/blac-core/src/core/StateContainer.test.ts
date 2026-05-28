@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, vi } from 'vite-plus/test';
-import { blacTestSetup } from '@blac/core/testing';
+import { blacTestSetup, flush } from '@blac/core/testing';
 import { StateContainer } from './StateContainer';
 import {
   acquire,
@@ -429,7 +429,7 @@ describe('StateContainer', () => {
     });
 
     describe('subscribe()', () => {
-      it('should add listener and return unsubscribe function', () => {
+      it('should add listener and return unsubscribe function', async () => {
         const container = new TestContainer(0);
         const listener = vi.fn();
 
@@ -437,6 +437,7 @@ describe('StateContainer', () => {
 
         expect(typeof unsubscribe).toBe('function');
         container.testEmit({ value: 1 });
+        await flush();
         expect(listener).toHaveBeenCalledWith({ value: 1 });
       });
 
@@ -449,7 +450,7 @@ describe('StateContainer', () => {
         );
       });
 
-      it('should notify multiple subscribers', () => {
+      it('should notify multiple subscribers', async () => {
         const container = new TestContainer(0);
         const listener1 = vi.fn();
         const listener2 = vi.fn();
@@ -460,13 +461,14 @@ describe('StateContainer', () => {
         container.subscribe(listener3);
 
         container.testEmit({ value: 5 });
+        await flush();
 
         expect(listener1).toHaveBeenCalledWith({ value: 5 });
         expect(listener2).toHaveBeenCalledWith({ value: 5 });
         expect(listener3).toHaveBeenCalledWith({ value: 5 });
       });
 
-      it('should unsubscribe correctly', () => {
+      it('should unsubscribe correctly', async () => {
         const container = new TestContainer(0);
         const listener1 = vi.fn();
         const listener2 = vi.fn();
@@ -476,6 +478,7 @@ describe('StateContainer', () => {
 
         unsubscribe1();
         container.testEmit({ value: 1 });
+        await flush();
 
         expect(listener1).not.toHaveBeenCalled();
         expect(listener2).toHaveBeenCalledWith({ value: 1 });
@@ -542,12 +545,13 @@ describe('StateContainer', () => {
 
   describe('Protected Methods', () => {
     describe('emit()', () => {
-      it('should update state and notify listeners', () => {
+      it('should update state and notify listeners', async () => {
         const container = new TestContainer(0);
         const listener = vi.fn();
         container.subscribe(listener);
 
         container.testEmit({ value: 42 });
+        await flush();
 
         expect(container.state).toEqual({ value: 42 });
         expect(listener).toHaveBeenCalledWith({ value: 42 });
@@ -562,17 +566,18 @@ describe('StateContainer', () => {
         );
       });
 
-      it('should call stateChanged system event hook', () => {
+      it('should call stateChanged system event hook', async () => {
         const container = new LifecycleTestContainer('initial');
 
         container.testEmit({ text: 'updated' });
+        await flush();
 
         expect(container.stateChangeCallCount).toBe(1);
         expect(container.lastPreviousState).toEqual({ text: 'initial' });
         expect(container.lastNewState).toEqual({ text: 'updated' });
       });
 
-      it('should call stateChanged system event before notifying listeners', () => {
+      it('should call stateChanged system event before notifying listeners', async () => {
         // Create a container class that tracks call order
         class OrderTrackingContainer extends Cubit<{ text: string }> {
           callOrder: string[] = [];
@@ -597,13 +602,14 @@ describe('StateContainer', () => {
         });
 
         container.testEmit({ text: 'updated' });
+        await flush();
 
         expect(container.callOrder).toEqual(['stateChanged', 'listener']);
       });
     });
 
     describe('Error handling in listeners', () => {
-      it('should not break notification chain if listener throws', () => {
+      it('should not break notification chain if listener throws', async () => {
         const container = new TestContainer(0);
         const listener1 = vi.fn();
         const listener2 = vi.fn(() => {
@@ -621,6 +627,7 @@ describe('StateContainer', () => {
         container.subscribe(listener3);
 
         container.testEmit({ value: 1 });
+        await flush();
 
         expect(listener1).toHaveBeenCalledWith({ value: 1 });
         expect(listener2).toHaveBeenCalledWith({ value: 1 });
@@ -667,16 +674,18 @@ describe('StateContainer', () => {
   // Integration Scenarios
 
   describe('Integration Scenarios', () => {
-    it('should handle complex object state updates', () => {
+    it('should handle complex object state updates', async () => {
       const container = new ObjectStateContainer();
       const listener = vi.fn();
       container.subscribe(listener);
 
       container.increment();
+      await flush();
       expect(container.state.count).toBe(1);
       expect(listener).toHaveBeenCalledWith({ count: 1, name: 'test' });
 
       container.setName('updated');
+      await flush();
       expect(container.state.name).toBe('updated');
       expect(listener).toHaveBeenCalledWith({ count: 1, name: 'updated' });
     });
@@ -692,7 +701,7 @@ describe('StateContainer', () => {
       expect(container2.state).toEqual({ value: 25 });
     });
 
-    it('should handle rapid state updates', () => {
+    it('should handle rapid state updates', async () => {
       const container = new TestContainer(0);
       const states: { value: number }[] = [];
       container.subscribe((state) => states.push(state));
@@ -700,14 +709,17 @@ describe('StateContainer', () => {
       for (let i = 1; i <= 100; i++) {
         container.testEmit({ value: i });
       }
+      await flush();
 
-      expect(states.length).toBe(100);
-      expect(states[0]).toEqual({ value: 1 });
-      expect(states[99]).toEqual({ value: 100 });
+      // Post-C0: synchronous emits coalesce into a single channel flush, so
+      // the listener fires once with the latest state. Pre-C0 expected
+      // one listener call per emit.
+      expect(states.length).toBe(1);
+      expect(states[0]).toEqual({ value: 100 });
       expect(container.state).toEqual({ value: 100 });
     });
 
-    it('should work with attach lifecycle', () => {
+    it('should work with attach lifecycle', async () => {
       const instance1 = acquire(TestContainer, 'shared');
       const listener = vi.fn();
       instance1.subscribe(listener);
@@ -716,6 +728,7 @@ describe('StateContainer', () => {
       expect(instance1).toBe(instance2);
 
       instance2.testEmit({ value: 42 });
+      await flush();
       expect(listener).toHaveBeenCalledWith({ value: 42 });
 
       release(TestContainer, 'shared');

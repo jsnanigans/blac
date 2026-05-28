@@ -2,9 +2,14 @@ import { acquire, clearAll } from '../registry';
 import { Cubit } from './Cubit';
 
 class Loader extends Cubit<{ id: string | null }, { id: string }> {
-  constructor() { super({ id: null }); }
+  constructor() {
+    super({ id: null });
+  }
   initialized = 0;
-  protected init(args: { id: string }) { this.initialized++; this.emit({ id: args.id }); }
+  protected init(args: { id: string }) {
+    this.initialized++;
+    this.emit({ id: args.id });
+  }
 }
 
 afterEach(() => clearAll());
@@ -19,5 +24,5 @@ it('does not re-init when the same key is acquired again', () => {
   const a = acquire(Loader, 'k2', 'r1', { id: 'x' });
   const b = acquire(Loader, 'k2', 'r2', { id: 'y' });
   expect(a).toBe(b);
-  expect(b.initialized).toBe(1);   // not re-run
+  expect(b.initialized).toBe(1); // not re-run
 });

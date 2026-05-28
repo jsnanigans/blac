@@ -90,9 +90,14 @@ describe('StateContainerRegistry circuit breaker', () => {
         acquire(Item, key, `ref-${i}`, { id: 'x' });
       }
       for (let i = 0; i < 50; i++) {
-        acquire(Item, resolveInstanceKey(Item, undefined, { id: `k${i}` }), 'r', {
-          id: `k${i}`,
-        });
+        acquire(
+          Item,
+          resolveInstanceKey(Item, undefined, { id: `k${i}` }),
+          'r',
+          {
+            id: `k${i}`,
+          },
+        );
       }
     }).not.toThrow();
   });

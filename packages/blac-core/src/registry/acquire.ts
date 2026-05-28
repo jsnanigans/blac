@@ -1,5 +1,8 @@
 import { getRegistry } from './config';
-import type { ExtractArgs, StateContainerConstructor } from '../types/utilities';
+import type {
+  ExtractArgs,
+  StateContainerConstructor,
+} from '../types/utilities';
 
 export function acquire<T extends StateContainerConstructor>(
   BlocClass: T,

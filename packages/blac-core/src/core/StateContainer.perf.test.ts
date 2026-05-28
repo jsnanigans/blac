@@ -38,7 +38,7 @@ describe('StateContainer performance optimizations', () => {
   // ─── Fix 1: System event handler short-circuit ───────────────────────
 
   describe('system event payload allocation short-circuit', () => {
-    it('direct subscribers still called when no system event handlers exist', () => {
+    it('direct subscribers still called when no system event handlers exist', async () => {
       const cubit = new TestCubit();
       const listener = vi.fn();
       cubit.subscribe(listener);
@@ -46,12 +46,17 @@ describe('StateContainer performance optimizations', () => {
       for (let i = 1; i <= 100; i++) {
         cubit.patch({ count: i });
       }
+      await flushMicrotasks();
 
-      expect(listener).toHaveBeenCalledTimes(100);
+      // 100 synchronous patches coalesce into a single channel flush →
+      // one listener call with the final state. Pre-C0 fired once per
+      // patch synchronously.
+      expect(listener).toHaveBeenCalledTimes(1);
+      expect(listener).toHaveBeenLastCalledWith({ count: 100 });
       expect(cubit.state.count).toBe(100);
     });
 
-    it('system event handlers still called when registered', () => {
+    it('system event handlers still called when registered', async () => {
       class ObservableCubit extends Cubit<{ count: number }> {
         changes: Array<{ state: any; previousState: any }> = [];
         constructor() {
@@ -64,7 +69,9 @@ describe('StateContainer performance optimizations', () => {
 
       const cubit = new ObservableCubit();
       cubit.patch({ count: 1 });
+      await flushMicrotasks();
       cubit.patch({ count: 2 });
+      await flushMicrotasks();
 
       expect(cubit.changes).toEqual([
         { state: { count: 1 }, previousState: { count: 0 } },

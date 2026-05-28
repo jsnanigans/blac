@@ -55,6 +55,7 @@ class UserCardCubit extends Cubit<UserCardState, { userId: string }> {
 ```
 
 **Key mechanics:**
+
 - **Different args ⇒ different instance** (structural hash by default, or `static key` if declared).
 - **`init(args)` called once** per instance, right after `new Type()`, before the first state snapshot — no flash, correct initial state.
 - **Serializable only** — refs, callbacks, DOM elements belong in the `deps` lane (below).
@@ -68,7 +69,7 @@ import { Cubit } from '@blac/core';
 
 class FileUploadCubit extends Cubit<
   UploadState,
-  { endpoint: string },                      // Args
+  { endpoint: string }, // Args
   { inputRef?: RefObject<HTMLInputElement> } // Deps
 > {
   init(args: { endpoint: string }) {
@@ -83,6 +84,7 @@ class FileUploadCubit extends Cubit<
 ```
 
 **Properties of `deps`:**
+
 - **Per-consumer merged** — each `useBloc` call contributes its own slice; the bloc sees the union.
 - **Never keying** — different refs/callbacks don't fork the instance.
 - **Live** — can change over time; merged on every commit.

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
-import { blacTestSetup } from '@blac/core/testing';
+import { blacTestSetup, flush } from '@blac/core/testing';
 import { Cubit } from './Cubit';
 import { ensure } from '../registry';
 import { configureBlac, resetBlacConfig, shallowEqualState } from '../config';
@@ -36,12 +36,13 @@ describe('StateContainer shallow-equal short-circuit', () => {
     expect(c.state).toEqual({ count: 0, label: 'a' });
   });
 
-  it('proceeds when at least one key differs', () => {
+  it('proceeds when at least one key differs', async () => {
     const c = ensure(CounterCubit);
     const listener = vi.fn();
     c.subscribe(listener);
 
     c.emit({ ...c.state, count: 1 });
+    await flush();
 
     expect(listener).toHaveBeenCalledTimes(1);
     expect(c.state).toEqual({ count: 1, label: 'a' });
@@ -62,7 +63,7 @@ describe('StateContainer shallow-equal short-circuit', () => {
     expect(c.state).toEqual({ count: 0, label: 'a' });
   });
 
-  it('per-class @blac equality overrides the global config', () => {
+  it('per-class @blac equality overrides the global config', async () => {
     const globalEq = vi.fn(() => true);
     const perClassEq = vi.fn(() => false);
     configureBlac({ equality: globalEq });
@@ -79,6 +80,7 @@ describe('StateContainer shallow-equal short-circuit', () => {
     c.subscribe(listener);
 
     c.emit({ n: 0 });
+    await flush();
 
     expect(perClassEq).toHaveBeenCalled();
     expect(globalEq).not.toHaveBeenCalled();
@@ -98,17 +100,19 @@ describe('StateContainer shallow-equal short-circuit', () => {
     expect(shallowEqualState({ a: 1 }, null)).toBe(false);
   });
 
-  it('primitive Cubit state still emits on equal primitive (falls through to false)', () => {
+  it('primitive Cubit state still emits on equal primitive (falls through to false)', async () => {
     const c = ensure(PrimitiveCubit);
     const listener = vi.fn();
     c.subscribe(listener);
 
     // 0 -> 0 still bails because of the `===` early return, not shallowEqualState
     c.emit(0);
+    await flush();
     expect(listener).not.toHaveBeenCalled();
 
     // Different primitive value proceeds
     c.emit(1);
+    await flush();
     expect(listener).toHaveBeenCalledTimes(1);
   });
 

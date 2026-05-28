@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vite-plus/test';
-import { blacTestSetup } from '@blac/core/testing';
+import { blacTestSetup, flush } from '@blac/core/testing';
 import { Cubit } from './Cubit';
 
 class CountCubit extends Cubit<{ count: number; label: string }> {
@@ -41,11 +41,12 @@ describe('Cubit edge cases', () => {
     expect(listener).not.toHaveBeenCalled();
   });
 
-  it('emit() notifies when at least one key differs', () => {
+  it('emit() notifies when at least one key differs', async () => {
     const cubit = new CountCubit();
     const listener = vi.fn();
     cubit.subscribe(listener);
     cubit.emit({ ...cubit.state, count: cubit.state.count + 1 });
+    await flush();
     expect(listener).toHaveBeenCalledTimes(1);
   });
 
@@ -62,7 +63,11 @@ describe('Cubit edge cases', () => {
     expect(cubit.state).toEqual({ count: 0, label: '' });
   });
 
-  it('patch() with nested objects is shallow merge only', () => {
+  it('patch() with nested plain objects deep-merges (post-StructuralContainer)', () => {
+    // Pre-C0 `Cubit.patch` was a shallow merge — `patch({ a: { x: 99 } })`
+    // replaced `a` wholesale. Post-C0 `patch` goes through
+    // `StructuralContainer.deepMerge`, which recurses into plain-object
+    // branches so sibling keys under `a` are preserved.
     class NestedCubit extends Cubit<{ a: Record<string, number>; b: number }> {
       constructor() {
         super({ a: { x: 1, y: 2 }, b: 10 });
@@ -70,7 +75,7 @@ describe('Cubit edge cases', () => {
     }
     const cubit = new NestedCubit();
     cubit.patch({ a: { x: 99 } });
-    expect(cubit.state.a).toEqual({ x: 99 });
+    expect(cubit.state.a).toEqual({ x: 99, y: 2 });
     expect(cubit.state.b).toBe(10);
   });
 

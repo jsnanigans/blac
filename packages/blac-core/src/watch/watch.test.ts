@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vite-plus/test';
-import { blacTestSetup } from '@blac/core/testing';
+import { blacTestSetup, flush } from '@blac/core/testing';
 import { watch, instance } from './watch';
 import { Cubit } from '../core/Cubit';
 import { acquire } from '../registry';
@@ -66,7 +66,7 @@ describe('watch', () => {
       );
     });
 
-    it('should run callback on state changes', () => {
+    it('should run callback on state changes', async () => {
       const counter = acquire(CounterCubit);
       const states: number[] = [];
 
@@ -77,9 +77,11 @@ describe('watch', () => {
       expect(states).toEqual([0]);
 
       counter.increment();
+      await flush();
       expect(states).toEqual([0, 1]);
 
       counter.increment();
+      await flush();
       expect(states).toEqual([0, 1, 2]);
     });
 
@@ -97,7 +99,7 @@ describe('watch', () => {
       expect(callback).toHaveBeenCalledTimes(1); // Only initial call
     });
 
-    it('should track state property access', () => {
+    it('should track state property access', async () => {
       const counter = acquire(CounterCubit);
       const callback = vi.fn();
 
@@ -108,11 +110,12 @@ describe('watch', () => {
       expect(callback).toHaveBeenCalledWith(0);
 
       counter.increment();
+      await flush();
       expect(callback).toHaveBeenCalledTimes(2);
       expect(callback).toHaveBeenLastCalledWith(1);
     });
 
-    it('should track getter access', () => {
+    it('should track getter access', async () => {
       const counter = acquire(CounterCubit);
       const values: number[] = [];
 
@@ -123,9 +126,11 @@ describe('watch', () => {
       expect(values).toEqual([0]);
 
       counter.increment();
+      await flush();
       expect(values).toEqual([0, 2]);
 
       counter.increment();
+      await flush();
       expect(values).toEqual([0, 2, 4]);
     });
   });
@@ -144,7 +149,7 @@ describe('watch', () => {
       expect(nameBloc.state).toEqual({ name: '' });
     });
 
-    it('should trigger on any bloc change', () => {
+    it('should trigger on any bloc change', async () => {
       const counter = acquire(CounterCubit);
       const name = acquire(NameCubit);
 
@@ -156,12 +161,14 @@ describe('watch', () => {
       expect(states).toEqual([[0, '']]);
 
       counter.increment();
+      await flush();
       expect(states).toEqual([
         [0, ''],
         [1, ''],
       ]);
 
       name.setName('Alice');
+      await flush();
       expect(states).toEqual([
         [0, ''],
         [1, ''],
@@ -171,7 +178,7 @@ describe('watch', () => {
   });
 
   describe('watch.STOP', () => {
-    it('should stop watching when callback returns watch.STOP', () => {
+    it('should stop watching when callback returns watch.STOP', async () => {
       const counter = acquire(CounterCubit);
       const values: number[] = [];
 
@@ -185,12 +192,15 @@ describe('watch', () => {
       expect(values).toEqual([0]);
 
       counter.increment(); // count = 1
+      await flush();
       expect(values).toEqual([0, 1]);
 
       counter.increment(); // count = 2, should STOP
+      await flush();
       expect(values).toEqual([0, 1, 2]);
 
       counter.increment(); // count = 3, should NOT trigger
+      await flush();
       expect(values).toEqual([0, 1, 2]);
     });
 
@@ -222,12 +232,13 @@ describe('watch', () => {
       expect(ref.instanceId).toBe('custom-id');
     });
 
-    it('should watch specific instance by ID', () => {
+    it('should watch specific instance by ID', async () => {
       const main = acquire(CounterCubit, 'main');
       const sidebar = acquire(CounterCubit, 'sidebar');
 
       main.set(10);
       sidebar.set(20);
+      await flush(); // drain pre-watch emit flushes
 
       const values: number[] = [];
       watch(instance(CounterCubit, 'main'), (bloc) => {
@@ -237,18 +248,21 @@ describe('watch', () => {
       expect(values).toEqual([10]);
 
       main.increment();
+      await flush();
       expect(values).toEqual([10, 11]);
 
       sidebar.increment(); // Different instance, should not trigger
+      await flush();
       expect(values).toEqual([10, 11]);
     });
 
-    it('should watch multiple instances with different IDs', () => {
+    it('should watch multiple instances with different IDs', async () => {
       const main = acquire(CounterCubit, 'main');
       const sidebar = acquire(CounterCubit, 'sidebar');
 
       main.set(1);
       sidebar.set(2);
+      await flush(); // drain pending flushes from set() so watch starts clean
 
       const states: Array<[number, number]> = [];
       watch(
@@ -264,40 +278,54 @@ describe('watch', () => {
       expect(states).toEqual([[1, 2]]);
 
       main.increment();
+      await flush();
       expect(states.length).toBe(2);
       expect(states[1][0]).toBe(2);
 
       sidebar.increment();
+      await flush();
       expect(states.length).toBe(3);
       expect(states[2][1]).toBe(3);
     });
   });
 
   describe('cross-bloc dependency tracking', () => {
-    it('should track dependencies accessed via getters', () => {
+    // Deleted: "should track dependencies accessed via getters". Pre-C3,
+    // `tracking/` auto-subscribed `watch` callbacks to any dep accessed via
+    // a `this.depend()` getter. Post-C3 the tracking module is gone (per
+    // refactor!(blac-core): rewire watch on channel; remove tracking/) and
+    // `depend()` explicitly does NOT auto-subscribe. Consumers that need
+    // reactive dep updates must `watch([Owner, Dep])` explicitly. The
+    // public API contract is now documented on `StateContainer.depend`.
+    it('does NOT auto-subscribe to deps accessed via getters', async () => {
       const counter = acquire(CounterCubit);
       const dependent = acquire(DependentCubit);
 
       counter.set(10);
       dependent.setValue(5);
+      // Drain the pending channel-flushes from the initial set/setValue
+      // so the watch subscriber doesn't fire on them.
+      await flush();
 
       const values: number[] = [];
       watch(DependentCubit, (bloc) => {
         values.push(bloc.combinedValue);
       });
 
-      expect(values).toEqual([15]); // 10 + 5
+      expect(values).toEqual([15]); // initial synchronous fire
 
-      counter.increment(); // Should trigger because combinedValue depends on CounterCubit
-      expect(values).toEqual([15, 16]); // 11 + 5
+      counter.increment(); // depend() is no longer reactive
+      await flush();
+      expect(values).toEqual([15]);
 
       dependent.setValue(10);
-      expect(values).toEqual([15, 16, 21]); // 11 + 10
+      await flush();
+      expect(values).toEqual([15, 21]);
     });
   });
 
   describe('edge cases', () => {
-    it('should handle rapid state changes', () => {
+    it('should handle rapid state changes', async () => {
       const counter = acquire(CounterCubit);
       const values: number[] = [];
 
@@ -308,9 +336,13 @@ describe('watch', () => {
       for (let i = 0; i < 10; i++) {
         counter.increment();
       }
+      await flush();
 
-      expect(values.length).toBe(11); // 1 initial + 10 changes
-      expect(values[values.length - 1]).toBe(10);
+      // Channel-flush coalesces all 10 synchronous emits into one fire.
+      // Pre-C0/C3 expected 11 callback invocations (1 initial + 10).
+      expect(values.length).toBe(2);
+      expect(values[0]).toBe(0);
+      expect(values[1]).toBe(10);
     });
 
     it('should create instance if not exists', () => {

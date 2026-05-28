@@ -6,10 +6,7 @@ import {
 import { BLAC_DEFAULTS, BLAC_ERROR_PREFIX } from '../constants';
 import { getBlacConfig } from '../config';
 import { isKeepAliveClass, getClassKey } from '../utils/static-props';
-import {
-  structuralKey,
-  DEFAULT_STRUCTURAL_KEY,
-} from '../utils/structural-key';
+import { structuralKey, DEFAULT_STRUCTURAL_KEY } from '../utils/structural-key';
 import {
   InstanceReadonlyState,
   StateContainerConstructor,
@@ -98,8 +95,9 @@ export class StateContainerRegistry {
   get hasStateChangedListeners(): boolean {
     return this._stateChangedListenerCount > 0;
   }
-  private _pendingStateChanges: Array<[StateContainer<any, any, any>, any, any]> | null =
-    null;
+  private _pendingStateChanges: Array<
+    [StateContainer<any, any, any>, any, any]
+  > | null = null;
 
   private _autoRefIdCounter = 0;
 
@@ -168,7 +166,11 @@ export class StateContainerRegistry {
   ): void {
     const instances = this.ensureInstancesMap(Type);
     const existingEntry = instances.get(instanceKey);
-    if (existingEntry && existingEntry.instance !== instance && !existingEntry.instance.isDisposed) {
+    if (
+      existingEntry &&
+      existingEntry.instance !== instance &&
+      !existingEntry.instance.isDisposed
+    ) {
       existingEntry.instance.dispose();
     }
     instances.set(instanceKey, { instance, refs });

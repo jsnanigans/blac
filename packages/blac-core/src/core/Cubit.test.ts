@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vite-plus/test';
-import { blacTestSetup } from '@blac/core/testing';
+import { blacTestSetup, flush } from '@blac/core/testing';
 import { Cubit } from './Cubit';
 import { StateContainer } from './StateContainer';
 
@@ -160,12 +160,13 @@ describe('Cubit', () => {
     });
 
     describe('patch()', () => {
-      it('should merge partial state for object types', () => {
+      it('should merge partial state for object types', async () => {
         const cubit = fixture.user();
         const listener = vi.fn();
         cubit.subscribe(listener);
 
         cubit.updateName('Jane Doe');
+        await flush();
 
         expect(cubit.state.name).toBe('Jane Doe');
         expect(cubit.state.email).toBe('john@example.com');
@@ -198,12 +199,13 @@ describe('Cubit', () => {
         expect(cubit.state.name).toBe('Bob');
       });
 
-      it('should notify listeners on patch', () => {
+      it('should notify listeners on patch', async () => {
         const cubit = fixture.user();
         const listener = vi.fn();
         cubit.subscribe(listener);
 
         cubit.updateEmail('newemail@example.com');
+        await flush();
 
         expect(listener).toHaveBeenCalledOnce();
         expect(listener).toHaveBeenCalledWith(
@@ -211,12 +213,13 @@ describe('Cubit', () => {
         );
       });
 
-      it('should work alongside emit method', () => {
+      it('should work alongside emit method', async () => {
         const cubit = fixture.user();
         const listener = vi.fn();
         cubit.subscribe(listener);
 
         cubit.updateName('First Update');
+        await flush();
         expect(listener).toHaveBeenCalledTimes(1);
 
         cubit.replaceUser({
@@ -225,6 +228,7 @@ describe('Cubit', () => {
           email: 'new@example.com',
           age: 40,
         });
+        await flush();
         expect(listener).toHaveBeenCalledTimes(2);
         expect(cubit.state.id).toBe('2');
       });
@@ -236,12 +240,13 @@ describe('Cubit', () => {
       expect(fixture.counter().state).toEqual({ count: 0 });
     });
 
-    it('should increment correctly', () => {
+    it('should increment correctly', async () => {
       const counter = fixture.counter();
       const listener = vi.fn();
       counter.subscribe(listener);
 
       counter.increment();
+      await flush();
 
       expect(counter.state).toEqual({ count: 1 });
       expect(listener).toHaveBeenCalledWith({ count: 1 });
@@ -511,16 +516,22 @@ describe('Cubit', () => {
     });
 
     describe('Integration Scenarios', () => {
-      it('should handle complete workflow', () => {
+      it('should handle complete workflow', async () => {
         const listener = vi.fn();
         todoCubit.subscribe(listener);
         let callCount = 0;
 
+        // Per-flush coalescing: each operation is awaited so it lands in
+        // its own microtask, producing one listener call apiece. Pre-C0
+        // semantics were one listener call per emit synchronously.
         todoCubit.addTodo('Buy groceries');
+        await flush();
         callCount++;
         todoCubit.addTodo('Write tests');
+        await flush();
         callCount++;
         todoCubit.addTodo('Deploy app');
+        await flush();
         callCount++;
 
         expect(listener).toHaveBeenCalledTimes(callCount);
@@ -529,20 +540,24 @@ describe('Cubit', () => {
 
         const firstId = todoCubit.state.todos[0].id;
         todoCubit.toggleTodo(firstId);
+        await flush();
         callCount++;
 
         expect(listener).toHaveBeenCalledTimes(callCount);
         expect(todoCubit.activeTodoCount).toBe(2);
 
         todoCubit.setFilter('active');
+        await flush();
         callCount++;
         expect(todoCubit.visibleTodos.length).toBe(2);
 
         todoCubit.setFilter('completed');
+        await flush();
         callCount++;
         expect(todoCubit.visibleTodos.length).toBe(1);
 
         todoCubit.removeTodo(firstId);
+        await flush();
         callCount++;
 
         expect(todoCubit.state.todos.length).toBe(2);

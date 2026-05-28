@@ -73,7 +73,12 @@ export function registerOverride<T extends StateContainerConstructor>(
 ): void {
   const key = instanceKey ?? DEFAULT_KEY;
   const registry = getRegistry();
-  registry.insertInstance(BlocClass, key, instance, new Map([['testing-override', 1]]));
+  registry.insertInstance(
+    BlocClass,
+    key,
+    instance,
+    new Map([['testing-override', 1]]),
+  );
 }
 
 export function overrideEnsure<T extends StateContainerConstructor, R>(
@@ -197,8 +202,23 @@ export function withBlocMethod<T extends StateContainerConstructor>(
 
 // --- flushBlocUpdates ---
 
+/**
+ * Drain pending microtasks so any channel-flushed effects (subscribe()
+ * listeners, `onSystemEvent('stateChanged')` handlers, plugin hooks) run
+ * before the next assertion.
+ *
+ * The default `MicrotaskScheduler` coalesces emits within a tick; tests
+ * that emit and then assert on listener side-effects need `await flush()`
+ * (or its alias `flushBlocUpdates()`) between the two.
+ */
+export async function flush(): Promise<void> {
+  // queueMicrotask wins the race against the channel's own queued flush —
+  // we resolve after the channel has drained its current pending flush.
+  await Promise.resolve();
+  await Promise.resolve();
+}
+
+/** @deprecated Alias for `flush()`. */
 export async function flushBlocUpdates(): Promise<void> {
-  await new Promise<void>((resolve) => {
-    setTimeout(resolve, 0);
-  });
+  await flush();
 }

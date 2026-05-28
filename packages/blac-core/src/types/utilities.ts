@@ -23,18 +23,26 @@ export type StateContainerConstructor<S extends object = any> = new (
  * StateContainer subclass.
  * @template T - The StateContainer constructor type
  */
-export type ExtractArgs<T> =
-  T extends new () => StateContainer<any, infer A, any> ? A : void;
+export type ExtractArgs<T> = T extends new () => StateContainer<
+  any,
+  infer A,
+  any
+>
+  ? A
+  : void;
 
 /**
  * Extract the deps type (injected non-serializable handles) from a
  * StateContainer subclass.
  * @template T - The StateContainer constructor type
  */
-export type ExtractDeps<T> =
-  T extends new () => StateContainer<any, any, infer D>
-    ? D
-    : Record<string, never>;
+export type ExtractDeps<T> = T extends new () => StateContainer<
+  any,
+  any,
+  infer D
+>
+  ? D
+  : Record<string, never>;
 
 export type InstanceReadonlyState<T extends StateContainerConstructor = any> =
   Omit<InstanceType<T>, 'state'> & { state: ExtractState<T> };
