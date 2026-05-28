@@ -68,7 +68,9 @@
       "Bash(rm src/__probe.ts)",
       "Bash(rm packages/blac-core/src/__probe.ts)",
       "Bash(grep *)",
-      "Skill(subagents-planner)"
+      "Skill(subagents-planner)",
+      "Bash(vp install *)",
+      "Bash(vp fmt *)"
     ]
   }
 }
