@@ -1,3 +1,16 @@
 // @dirtytalk/structural — core (no React)
-// Phase 1+ tasks extend this barrel.
 export type { PathId, ConsumerId } from './types';
+export { PathInterner } from './path-interner';
+export {
+  ALL_PATHS,
+  emptyPathSet,
+  pathSetUnion,
+  pathSetEquals,
+  PathSetSpace,
+} from './path-set';
+export type { PathSet, AllPaths } from './path-set';
+export { trackRender } from './tracker';
+export type { TrackResult } from './tracker';
+export { diffAlongSkeleton, pathsFromPatch, getAt } from './diff';
+export { StructuralContainer } from './container';
+export type { StructuralContainerOptions } from './container';
