@@ -68,9 +68,23 @@ export class CanvasCubit extends Cubit<CanvasState, void, CanvasDeps> {
     const draw = () => {
       if (gen !== this._gen || this.isDisposed) return;
 
+      // Keep the backing store matched to the displayed size × DPR so the
+      // scene stays crisp and the blob keeps its aspect ratio instead of being
+      // stretched by CSS. Geometry below works in CSS pixels.
+      const dpr = window.devicePixelRatio || 1;
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      if (w === 0 || h === 0) {
+        this._rafId = requestAnimationFrame(draw);
+        return;
+      }
+      const bw = Math.round(w * dpr);
+      const bh = Math.round(h * dpr);
+      if (canvas.width !== bw) canvas.width = bw;
+      if (canvas.height !== bh) canvas.height = bh;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
       const frame = ++this._frame;
-      const w = canvas.width;
-      const h = canvas.height;
 
       ctx.fillStyle = '#0f0f1a';
       ctx.fillRect(0, 0, w, h);
