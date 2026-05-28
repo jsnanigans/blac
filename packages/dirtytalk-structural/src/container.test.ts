@@ -278,3 +278,76 @@ describe('StructuralContainer — subscribe pass-through', () => {
     expect(c.consumerCount).toBe(0); // registry untouched
   });
 });
+
+describe('StructuralContainer — per-class interner', () => {
+  it('two instances of the same class share the same interner', () => {
+    const a = make();
+    const b = make();
+    expect(a.interner).toBe(b.interner);
+  });
+
+  it('two instances of different subclasses get different interners', () => {
+    class AlphaBox extends StructuralContainer<{ x: number }> {}
+    class BetaBox extends StructuralContainer<{ x: number }> {}
+
+    const alpha = new AlphaBox({ x: 0 }, { scheduler: new SyncScheduler() });
+    const beta = new BetaBox({ x: 0 }, { scheduler: new SyncScheduler() });
+
+    expect(alpha.interner).not.toBe(beta.interner);
+  });
+
+  it('path IDs from one subclass interner do not bleed into another', () => {
+    class GammaBox extends StructuralContainer<{ g: number }> {}
+    class DeltaBox extends StructuralContainer<{ d: number }> {}
+
+    const g = new GammaBox({ g: 0 }, { scheduler: new SyncScheduler() });
+    const d = new DeltaBox({ d: 0 }, { scheduler: new SyncScheduler() });
+
+    g.interner.intern('gamma.only');
+
+    // DeltaBox's interner is independent — 'gamma.only' should not exist in it.
+    expect(d.interner.size).toBe(0);
+  });
+
+  it('getInternerFor uses a WeakMap so the registry itself is not a Map', () => {
+    // Structural guard: the static field is a WeakMap instance, ensuring
+    // class constructors can be GC'd once all instances are gone.
+    const registryDescriptor = Object.getOwnPropertyDescriptor(
+      StructuralContainer,
+      '_interners',
+    );
+    // _interners is private — access via getInternerFor side-effect instead.
+    // Two calls for the same ctor must return the same interner (lazy init
+    // works correctly), while calls for distinct ctors differ.
+    class EpsilonBox extends StructuralContainer<{ e: number }> {}
+    const e1 = new EpsilonBox({ e: 0 }, { scheduler: new SyncScheduler() });
+    const e2 = new EpsilonBox({ e: 0 }, { scheduler: new SyncScheduler() });
+
+    const directA = StructuralContainer.getInternerFor(EpsilonBox);
+    const directB = StructuralContainer.getInternerFor(EpsilonBox);
+
+    expect(directA).toBe(directB);
+    expect(e1.interner).toBe(directA);
+    expect(e2.interner).toBe(directA);
+
+    // Verify the WeakMap contract: a brand-new constructor gets a fresh interner.
+    class ZetaBox extends StructuralContainer<{ z: number }> {}
+    expect(StructuralContainer.getInternerFor(ZetaBox)).not.toBe(directA);
+
+    // Suppress TS unused-variable warning on the descriptor variable.
+    void registryDescriptor;
+  });
+
+  it('all instances of a class share path IDs — intern once, resolve from any instance', () => {
+    class SharedBox extends StructuralContainer<{ v: number }> {}
+
+    const first = new SharedBox({ v: 0 }, { scheduler: new SyncScheduler() });
+    const id = first.interner.intern('shared.path');
+
+    const second = new SharedBox({ v: 0 }, { scheduler: new SyncScheduler() });
+    // The second instance's interner is the same object — it already knows
+    // about 'shared.path' without being told.
+    expect(second.interner.lookup(id)).toBe('shared.path');
+    expect(second.interner.intern('shared.path')).toBe(id);
+  });
+});

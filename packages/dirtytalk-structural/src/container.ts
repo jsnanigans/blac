@@ -41,8 +41,20 @@ export interface StructuralContainerOptions {
  * Single-consumer flows short-circuit to `ALL_PATHS` to avoid the diff cost.
  */
 export abstract class StructuralContainer<S> {
-  // TODO: hoist to per-class for memory amortisation (see README scope note).
-  private readonly _interner = new PathInterner();
+  // Per-class interner registry — keyed by constructor so GC can reclaim
+  // interners once all instances of a class are gone (WeakMap, not Map).
+  // Keyed as `object` (constructors are objects) to satisfy no-unsafe-function-type.
+  private static readonly _interners = new WeakMap<object, PathInterner>();
+
+  static getInternerFor(ctor: object): PathInterner {
+    let interner = StructuralContainer._interners.get(ctor);
+    if (interner === undefined) {
+      interner = new PathInterner();
+      StructuralContainer._interners.set(ctor, interner);
+    }
+    return interner;
+  }
+
   private readonly _channel: DirtyChannel<PathSet>;
   private readonly _consumerPaths = new Map<ConsumerId, PathSet>();
   private _state: S;
@@ -60,7 +72,7 @@ export abstract class StructuralContainer<S> {
     this._equalsByPathId = new Map();
     if (options.equality) {
       for (const [path, eq] of options.equality) {
-        this._equalsByPathId.set(this._interner.intern(path), eq);
+        this._equalsByPathId.set(this.interner.intern(path), eq);
       }
     }
   }
@@ -74,7 +86,7 @@ export abstract class StructuralContainer<S> {
   }
 
   get interner(): PathInterner {
-    return this._interner;
+    return StructuralContainer.getInternerFor(this.constructor);
   }
 
   get channel(): DirtyChannel<PathSet> {
@@ -104,7 +116,7 @@ export abstract class StructuralContainer<S> {
         prev,
         next,
         this._skeleton,
-        this._interner,
+        this.interner,
         this._equalsByPathId.size === 0
           ? undefined
           : (id, a, b) => {
@@ -118,7 +130,7 @@ export abstract class StructuralContainer<S> {
 
   patch(partial: Partial<S>): void {
     if (Object.keys(partial as object).length === 0) return;
-    const paths = pathsFromPatch(partial, this._interner);
+    const paths = pathsFromPatch(partial, this.interner);
     // Apply state mutation atomically *before* mark so consumers see the new
     // state when they read it inside the dirty callback.
     this._state = deepMerge(this._state, partial);
