@@ -1,0 +1,82 @@
+{
+  "name": "@dirtytalk/engine",
+  "version": "0.0.1",
+  "license": "MIT",
+  "author": "Brendan Mullins <jsnanigans@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jsnanigans/blac.git",
+    "directory": "packages/dirtytalk-engine"
+  },
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "primitives": [
+        "./dist/primitives.d.ts"
+      ]
+    }
+  },
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./primitives": {
+      "import": {
+        "types": "./dist/primitives.d.ts",
+        "default": "./dist/primitives.js"
+      },
+      "require": {
+        "types": "./dist/primitives.d.cts",
+        "default": "./dist/primitives.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "reactive",
+    "dirty-tracking",
+    "signal",
+    "scheduler",
+    "engine"
+  ],
+  "scripts": {
+    "dev": "vp pack --watch",
+    "build": "vp pack && tsc -p tsconfig.build.json && for f in dist/*.d.ts; do cp \"$f\" \"${f%.d.ts}.d.cts\"; done",
+    "clean": "rm -rf dist",
+    "format": "vp fmt \".\"",
+    "format:check": "vp fmt \".\" --check",
+    "lint": "vp lint src",
+    "lint:fix": "vp lint src --fix",
+    "test": "vp test run --passWithNoTests",
+    "test:watch": "vp test --watch",
+    "coverage": "vp test run --coverage",
+    "verify": "node ../../scripts/run-workspace-bin.mjs publint",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "echo 'Skipping prepublishOnly - build should be done at root level'",
+    "deploy": "pnpm publish --access public"
+  },
+  "devDependencies": {
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "vite-plus": "catalog:",
+    "publint": "catalog:"
+  }
+}
