@@ -9,6 +9,7 @@ const BASE_GETTERS = new Set([
   // DOM node (and, via React's `__reactFiber$` expando, the entire fiber tree)
   // through the serializer and freeze the tab. Never touch it.
   'deps',
+  'args',
   'isDisposed',
   'hydrationStatus',
   'hydrationError',

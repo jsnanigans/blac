@@ -167,6 +167,12 @@ export abstract class StateContainer<
 
     this._deps = next;
     this.onDepsChanged(next as Readonly<Deps>, prev as Readonly<Deps>);
+    this._registry.emit(
+      'depsChanged',
+      this,
+      prev as Readonly<Record<string, unknown>>,
+      next as Readonly<Record<string, unknown>>,
+    );
   }
 
   /**
@@ -210,6 +216,10 @@ export abstract class StateContainer<
 
   get dependencies(): ReadonlyMap<StateContainerConstructor, string> {
     return this._dependencies ?? EMPTY_DEPS;
+  }
+
+  get args(): Args | undefined {
+    return this._config.args as Args | undefined;
   }
 
   protected depend<T extends StateContainerConstructor>(

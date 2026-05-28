@@ -190,6 +190,28 @@ export const InstanceListItem: FC<InstanceListItemProps> = React.memo(
           {preview}
         </div>
 
+        {instance.args !== undefined && (
+          <div
+            style={{
+              fontSize: '10px',
+              color: T.text1,
+              opacity: 0.8,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              marginTop: '1px',
+              fontFamily: T.fontMono,
+            }}
+            title={
+              typeof instance.args === 'object'
+                ? JSON.stringify(instance.args)
+                : String(instance.args)
+            }
+          >
+            args: {statePreview(instance.args)}
+          </div>
+        )}
+
         {/* Line 3: Insight pills (only when warnings apply) */}
         {insights.length > 0 && (
           <div

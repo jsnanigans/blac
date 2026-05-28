@@ -267,6 +267,35 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     this.emitConsumersChanged(instanceId);
   }
 
+  onDepsChanged(
+    instance: any,
+    previousDeps: Readonly<Record<string, unknown>>,
+    currentDeps: Readonly<Record<string, unknown>>,
+    _context: PluginContext,
+  ): void {
+    if (!this.config.enabled) return;
+    if (this.shouldExcludeInstance(instance)) return;
+
+    const instanceId = (instance as any).instanceId as string;
+    if (!instanceId || !this.instanceCache.has(instanceId)) return;
+
+    const prevSer = safeSerialize(previousDeps);
+    const nextSer = safeSerialize(currentDeps);
+    const data = this.instanceCache.get(instanceId);
+
+    this.emit({
+      type: 'deps-changed',
+      timestamp: Date.now(),
+      data: {
+        id: instanceId,
+        className: data?.className,
+        name: data?.name,
+        previousDeps: prevSer.success ? prevSer.data : undefined,
+        currentDeps: nextSer.success ? nextSer.data : undefined,
+      },
+    });
+  }
+
   onRefReleased(instance: any, refId: string, _context: PluginContext): void {
     if (!this.config.enabled) return;
     if (this.shouldExcludeInstance(instance)) return;
@@ -550,6 +579,8 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     const serializedCurrent = currentState
       ? safeSerialize(currentState)
       : undefined;
+    const serializedArgs =
+      metadata.args !== undefined ? safeSerialize(metadata.args) : undefined;
 
     const getters = enumerateGetters(instance);
 
@@ -569,6 +600,11 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
         : undefined,
       hydrationStatus: context.getHydrationStatus(instance),
       hydrationError: metadata.hydrationError,
+      args: serializedArgs
+        ? serializedArgs.success
+          ? serializedArgs.data
+          : undefined
+        : undefined,
       ...(getters ? { getters } : {}),
     } as any as InstanceMetadata;
   }

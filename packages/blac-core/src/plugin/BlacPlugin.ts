@@ -13,6 +13,8 @@ export interface InstanceMetadata {
   isHydrated: boolean;
   hydrationError?: Error;
   changedWhileHydrating: boolean;
+  /** Args passed at acquire time; keys instance identity. */
+  args?: unknown;
 }
 
 export interface PluginContext {
@@ -84,6 +86,13 @@ export interface BlacPlugin {
   onRefReleased?(
     instance: StateContainer<any, any, any>,
     refId: string,
+    context: PluginContext,
+  ): void;
+
+  onDepsChanged?(
+    instance: StateContainer<any, any, any>,
+    previousDeps: Readonly<Record<string, unknown>>,
+    currentDeps: Readonly<Record<string, unknown>>,
     context: PluginContext,
   ): void;
 }

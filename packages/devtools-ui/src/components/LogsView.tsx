@@ -24,6 +24,8 @@ function getEventTypeColor(eventType: LogEventType): string {
       return T.error;
     case 'state-changed':
       return T.warning;
+    case 'deps-changed':
+      return T.textAccent;
   }
 }
 
@@ -37,6 +39,8 @@ function getEventTypeLabel(eventType: LogEventType): string {
       return 'DISPOSED';
     case 'state-changed':
       return 'STATE';
+    case 'deps-changed':
+      return 'DEPS';
   }
 }
 

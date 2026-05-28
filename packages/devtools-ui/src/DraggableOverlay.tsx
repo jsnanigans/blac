@@ -73,6 +73,15 @@ function processEventIntoLogs(event: any, logsBloc: DevToolsLogsBloc): void {
       );
       break;
     }
+
+    case 'deps-changed': {
+      const d = event.data;
+      logsBloc.addLog('deps-changed', d.id, d.className, d.name, {
+        previousDeps: d.previousDeps,
+        currentDeps: d.currentDeps,
+      });
+      break;
+    }
   }
 }
 
@@ -100,6 +109,7 @@ function toInstanceData(inst: any): import('./types').InstanceData {
     refIds: inst.refIds,
     refHolders: inst.refHolders,
     createdFrom: inst.createdFrom,
+    args: inst.args,
   };
 }
 
@@ -223,6 +233,21 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
           (d.consumers as import('./types').ConsumerInfo[]) ?? [],
           (d.refIds as string[]) ?? [],
           (d.refHolders as import('./types').RefHolderInfo[]) ?? undefined,
+        );
+        break;
+      }
+
+      case 'deps-changed': {
+        const d = evt.data as Record<string, any>;
+        logsBloc.addLog(
+          'deps-changed',
+          d.id as string,
+          d.className as string,
+          d.name as string,
+          {
+            previousDeps: d.previousDeps,
+            currentDeps: d.currentDeps,
+          },
         );
         break;
       }

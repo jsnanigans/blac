@@ -144,7 +144,8 @@ export type DevToolsEventType =
   | 'instance-updated'
   | 'instance-disposed'
   | 'performance-warning'
-  | 'consumers-changed';
+  | 'consumers-changed'
+  | 'deps-changed';
 
 export interface DevToolsEvent {
   type: DevToolsEventType;

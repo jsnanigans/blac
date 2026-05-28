@@ -36,7 +36,8 @@ export type LifecycleEvent =
   | 'stateChanged'
   | 'disposed'
   | 'refAcquired'
-  | 'refReleased';
+  | 'refReleased'
+  | 'depsChanged';
 
 /**
  * Listener function type for each lifecycle event
@@ -56,7 +57,13 @@ export type LifecycleListener<E extends LifecycleEvent> = E extends 'created'
         ? (container: StateContainer<any, any, any>, refId: string) => void
         : E extends 'refReleased'
           ? (container: StateContainer<any, any, any>, refId: string) => void
-          : never;
+          : E extends 'depsChanged'
+            ? (
+                container: StateContainer<any, any, any>,
+                previousDeps: Readonly<Record<string, unknown>>,
+                currentDeps: Readonly<Record<string, unknown>>,
+              ) => void
+            : never;
 
 /**
  * Central registry for managing StateContainer instances.
@@ -706,6 +713,12 @@ export class StateContainerRegistry {
     event: 'refReleased',
     container: StateContainer<any, any, any>,
     refId: string,
+  ): void;
+  emit(
+    event: 'depsChanged',
+    container: StateContainer<any, any, any>,
+    previousDeps: Readonly<Record<string, unknown>>,
+    currentDeps: Readonly<Record<string, unknown>>,
   ): void;
   emit(event: LifecycleEvent, ...args: any[]): void {
     const listeners = this.listeners.get(event);

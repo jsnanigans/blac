@@ -69,6 +69,8 @@ export interface InstanceData {
   refHolders?: RefHolderInfo[];
   /** Stack trace showing where the instance was first created */
   createdFrom?: string;
+  /** Args passed at acquire time; keys instance identity (serialized) */
+  args?: any;
 }
 
 /**
@@ -78,7 +80,8 @@ export type LogEventType =
   | 'init' // Initial state load
   | 'created' // Instance created
   | 'disposed' // Instance disposed
-  | 'state-changed'; // State changed
+  | 'state-changed' // State changed
+  | 'deps-changed'; // Injected deps merged view changed
 
 /**
  * Single log entry

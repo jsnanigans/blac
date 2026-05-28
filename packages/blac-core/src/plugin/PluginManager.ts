@@ -186,6 +186,14 @@ export class PluginManager {
       this.registry.on('refReleased', (instance, refId) => {
         this.notifyPlugins('onRefReleased', instance, refId);
       }),
+      this.registry.on('depsChanged', (instance, previousDeps, currentDeps) => {
+        this.notifyPlugins(
+          'onDepsChanged',
+          instance,
+          previousDeps,
+          currentDeps,
+        );
+      }),
     ];
   }
 
@@ -229,6 +237,7 @@ export class PluginManager {
           isHydrated: instance.isHydrated,
           hydrationError: instance.hydrationError,
           changedWhileHydrating: instance.changedWhileHydrating,
+          args: instance.args,
         };
       },
 
