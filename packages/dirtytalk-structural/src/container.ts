@@ -5,6 +5,25 @@ import {
 } from '@dirtytalk/engine';
 import { diffAlongSkeleton, pathsFromPatch } from './diff';
 import { PathInterner } from './path-interner';
+
+/**
+ * Recursively make all object-valued properties optional.
+ *
+ * - Plain-object branches recurse so nested patches type-check without casts.
+ * - Arrays are accepted as `ReadonlyArray<DeepPartial<U>>` (matching runtime:
+ *   `pathsFromPatch` treats arrays as leaves, not per-index expandable).
+ * - `Date | Map | Set | RegExp` are kept as-is; without this carve-out TS
+ *   would try to partial their internal prototype properties.
+ * - Primitives and functions pass through unchanged.
+ */
+export type DeepPartial<T> =
+  T extends ReadonlyArray<infer U>
+    ? ReadonlyArray<DeepPartial<U>>
+    : T extends Date | Map<unknown, unknown> | Set<unknown> | RegExp
+      ? T
+      : T extends object
+        ? { [K in keyof T]?: DeepPartial<T[K]> }
+        : T;
 import {
   ALL_PATHS,
   emptyPathSet,
@@ -128,12 +147,19 @@ export abstract class StructuralContainer<S> {
     this._channel.mark(dirty);
   }
 
-  patch(partial: Partial<S>): void {
+  /**
+   * Shallow-or-deep patch: accepts a `DeepPartial<S>` so nested object
+   * branches type-check without casts (deep-partial: nested object branches
+   * are accepted). Runtime behaviour is unchanged — `pathsFromPatch` walks
+   * plain-object branches and treats class instances, arrays, Date, Map, Set,
+   * etc. as atomic leaves.
+   */
+  patch(partial: DeepPartial<S>): void {
     if (Object.keys(partial as object).length === 0) return;
-    const paths = pathsFromPatch(partial, this.interner);
+    const paths = pathsFromPatch(partial as Partial<S>, this.interner);
     // Apply state mutation atomically *before* mark so consumers see the new
     // state when they read it inside the dirty callback.
-    this._state = deepMerge(this._state, partial);
+    this._state = deepMerge(this._state, partial as Partial<S>);
     this._channel.mark(paths);
   }
 

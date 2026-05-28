@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vite-plus/test';
 import { MicrotaskScheduler, SyncScheduler } from '@dirtytalk/engine';
 import {
   StructuralContainer,
+  type DeepPartial,
   type StructuralContainerOptions,
 } from './container';
 import { ALL_PATHS, type PathSet } from './path-set';
@@ -114,9 +115,8 @@ describe('StructuralContainer — patch', () => {
     c.subscribe(() => new Set<PathId>([emailId]), emailCb);
     c.subscribe(() => new Set<PathId>([nameId]), nameCb);
 
-    // Nested patches are partial at every depth at runtime; the static
-    // signature is `Partial<S>` so cast to express the deep-partial shape.
-    c.patch({ user: { email: 'x@x' } } as Partial<UserState>);
+    // DeepPartial<S> means no cast is required for nested patches.
+    c.patch({ user: { email: 'x@x' } });
 
     expect(c.state.user.email).toBe('x@x');
     expect(c.state.user.name).toBe('n'); // merged, not replaced
@@ -135,6 +135,55 @@ describe('StructuralContainer — patch', () => {
     c.patch({});
     expect(c.state).toBe(before);
     expect(cb).not.toHaveBeenCalled();
+  });
+});
+
+describe('StructuralContainer — DeepPartial patch type-checking', () => {
+  interface Nested {
+    user: { name: string; email: string };
+    items: number[];
+    count: number;
+  }
+  class NestedBox extends StructuralContainer<Nested> {}
+  const makeNested = () =>
+    new NestedBox(
+      { user: { name: 'n', email: 'e@e' }, items: [1, 2], count: 0 },
+      { scheduler: new SyncScheduler() },
+    );
+
+  it('nested object patch type-checks without cast', () => {
+    const c = makeNested();
+    // This must compile without `as Partial<Nested>` or any other cast.
+    c.patch({ user: { name: 'updated' } });
+    expect(c.state.user.name).toBe('updated');
+    expect(c.state.user.email).toBe('e@e'); // merged, not replaced
+  });
+
+  it('array replacement type-checks without cast', () => {
+    const c = makeNested();
+    c.patch({ items: [3, 4, 5] });
+    expect(c.state.items).toEqual([3, 4, 5]);
+  });
+
+  it('top-level primitive patch type-checks', () => {
+    const c = makeNested();
+    c.patch({ count: 42 });
+    expect(c.state.count).toBe(42);
+  });
+
+  it('wrong-typed patch fails type-check', () => {
+    const c = makeNested();
+    // @ts-expect-error — `count` is `number`, not `string`
+    c.patch({ count: 'not-a-number' });
+    // runtime still runs (ts-expect-error only suppresses the TS error above)
+    expect(c.state.count).toBe('not-a-number');
+  });
+
+  it('DeepPartial<T> is exported and usable as a standalone type', () => {
+    // Compile-time: confirm the exported type works in user code.
+    type DP = DeepPartial<Nested>;
+    const partial: DP = { user: { name: 'x' } };
+    expect(partial.user?.name).toBe('x');
   });
 });
 

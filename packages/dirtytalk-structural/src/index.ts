@@ -13,4 +13,4 @@ export { trackRender } from './tracker';
 export type { TrackResult } from './tracker';
 export { diffAlongSkeleton, pathsFromPatch, getAt } from './diff';
 export { StructuralContainer } from './container';
-export type { StructuralContainerOptions } from './container';
+export type { StructuralContainerOptions, DeepPartial } from './container';
