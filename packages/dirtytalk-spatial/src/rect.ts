@@ -36,3 +36,10 @@ export const rectClamp = (inner: Rect, outer: Rect): Rect => {
   const y2 = Math.min(inner.y + inner.h, outer.y + outer.h);
   return { x: x1, y: y1, w: Math.max(0, x2 - x1), h: Math.max(0, y2 - y1) };
 };
+
+/**
+ * Half-open point-in-rect test: [x, x+w) × [y, y+h).
+ * Matches CSS pixel-grid convention — top-left corner is in, bottom-right is out.
+ */
+export const pointInRect = (x: number, y: number, r: Rect): boolean =>
+  x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h;
