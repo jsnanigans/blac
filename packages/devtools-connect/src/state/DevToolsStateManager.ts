@@ -102,6 +102,7 @@ export class DevToolsStateManager {
     callstack?: string,
     trigger?: Trigger,
     getters?: Record<string, GetterInfo>,
+    paths?: string[] | 'all',
   ): void {
     const instance = this.instances.get(instanceId);
     if (!instance) {
@@ -125,6 +126,7 @@ export class DevToolsStateManager {
       callstack,
       trigger,
       ...(getters ? { getters } : {}),
+      ...(paths !== undefined ? { paths } : {}),
     };
 
     instance.history.push(snapshot);

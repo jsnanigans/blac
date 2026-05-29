@@ -95,6 +95,12 @@ const resetState = () => {
   getPluginManager().clear();
 };
 
+const withPluginInstalled = (plugin: DevToolsBrowserPlugin) => {
+  getPluginManager().install(
+    plugin as unknown as import('@blac/core').BlacPlugin,
+  );
+};
+
 function defined<T>(val: T | undefined | null): T {
   expect(val).toBeDefined();
   return val as T;
@@ -206,7 +212,7 @@ describe('enumerateGetters', () => {
   describe('reentrancy guard', () => {
     it('returns undefined when called reentrantly (no infinite loop)', () => {
       const plugin = new DevToolsBrowserPlugin();
-      getPluginManager().install(plugin);
+      withPluginInstalled(plugin);
 
       acquire(DepTargetCubit);
       const instance = acquire(CubitWithDependency);
@@ -225,7 +231,7 @@ describe('DevToolsBrowserPlugin getter integration', () => {
 
   it('includes getters in instance-created event data', () => {
     const plugin = new DevToolsBrowserPlugin();
-    getPluginManager().install(plugin);
+    withPluginInstalled(plugin);
 
     const subscriber = vi.fn();
     plugin.subscribe(subscriber);
@@ -240,7 +246,7 @@ describe('DevToolsBrowserPlugin getter integration', () => {
 
   it('includes getters in instance-updated event data', async () => {
     const plugin = new DevToolsBrowserPlugin();
-    getPluginManager().install(plugin);
+    withPluginInstalled(plugin);
 
     const instance = acquire(CubitWithPrimitiveGetter);
 
@@ -259,7 +265,7 @@ describe('DevToolsBrowserPlugin getter integration', () => {
 
   it('does not include getters for cubits without user-defined getters', () => {
     const plugin = new DevToolsBrowserPlugin();
-    getPluginManager().install(plugin);
+    withPluginInstalled(plugin);
 
     const subscriber = vi.fn();
     plugin.subscribe(subscriber);
@@ -272,7 +278,7 @@ describe('DevToolsBrowserPlugin getter integration', () => {
 
   it('stores getters in state manager snapshots', async () => {
     const plugin = new DevToolsBrowserPlugin();
-    getPluginManager().install(plugin);
+    withPluginInstalled(plugin);
 
     const instance = acquire(CubitWithPrimitiveGetter);
     instance.emit({ value: 50 });
@@ -300,7 +306,7 @@ describe('reentrancy during dependency creation', () => {
 
   it('still returns getters when dependency is created during getter eval', () => {
     const plugin = new DevToolsBrowserPlugin();
-    getPluginManager().install(plugin);
+    withPluginInstalled(plugin);
 
     const instance = acquire(CubitWithDependency);
 
@@ -311,7 +317,7 @@ describe('reentrancy during dependency creation', () => {
 
   it('plugin emits getters even when deps are created during enumeration', () => {
     const plugin = new DevToolsBrowserPlugin();
-    getPluginManager().install(plugin);
+    withPluginInstalled(plugin);
 
     const subscriber = vi.fn();
     plugin.subscribe(subscriber);

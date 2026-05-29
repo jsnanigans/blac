@@ -51,7 +51,9 @@ const resetState = () => {
 };
 
 const withPluginInstalled = (plugin: DevToolsBrowserPlugin) => {
-  getPluginManager().install(plugin);
+  getPluginManager().install(
+    plugin as unknown as import('@blac/core').BlacPlugin,
+  );
 };
 
 // ============ Fixtures ============
@@ -66,34 +68,38 @@ describe('DevToolsBrowserPlugin Lifecycle Integration', () => {
   beforeEach(resetState);
   afterEach(resetState);
 
-  it('should receive onInstanceCreated when bloc is resolved', () => {
+  it('should receive onCreated when bloc is resolved', () => {
     const plugin = fixture.plugin();
-    const spy = vi.spyOn(plugin, 'onInstanceCreated');
+    const spy = vi.spyOn(plugin, 'onCreated');
     withPluginInstalled(plugin);
 
-    const instance = acquire(TestCubit);
+    acquire(TestCubit);
 
     expect(spy).toHaveBeenCalledTimes(1);
     expect(spy).toHaveBeenCalledWith(
-      instance,
       expect.objectContaining({
+        container: expect.objectContaining({
+          instanceId: expect.any(String),
+        }),
         getInstanceMetadata: expect.any(Function),
       }),
     );
   });
 
-  it('should receive onInstanceDisposed when bloc is disposed', () => {
+  it('should receive onDestroyed when bloc is disposed', () => {
     const plugin = fixture.plugin();
-    const spy = vi.spyOn(plugin, 'onInstanceDisposed');
+    const spy = vi.spyOn(plugin, 'onDestroyed');
     withPluginInstalled(plugin);
 
-    const instance = acquire(TestCubit);
+    acquire(TestCubit);
     release(TestCubit);
 
     expect(spy).toHaveBeenCalledTimes(1);
     expect(spy).toHaveBeenCalledWith(
-      instance,
       expect.objectContaining({
+        container: expect.objectContaining({
+          instanceId: expect.any(String),
+        }),
         getInstanceMetadata: expect.any(Function),
       }),
     );
@@ -180,5 +186,55 @@ describe('DevToolsBrowserPlugin Lifecycle Integration', () => {
 
     expect(plugin.getInstances()).toHaveLength(1);
     expect(plugin.getInstances()[0].className).toBe('NormalCubit');
+  });
+});
+
+describe('DevToolsBrowserPlugin paths wire field', () => {
+  beforeEach(resetState);
+  afterEach(resetState);
+
+  it('instance-updated event includes paths field as string[] or "all"', async () => {
+    const plugin = fixture.plugin();
+    withPluginInstalled(plugin);
+
+    const instance = acquire(CounterCubit);
+
+    const subscriber = vi.fn();
+    plugin.subscribe(subscriber);
+
+    instance.emit({ count: 1 });
+    // onStateChange fires on the microtask flush
+    await Promise.resolve();
+
+    const updatedEvent = subscriber.mock.calls.find(
+      (call: any[]) => call[0]?.type === 'instance-updated',
+    );
+    expect(updatedEvent).toBeDefined();
+    const eventData = updatedEvent?.[0].data;
+    expect(eventData).toHaveProperty('paths');
+    const { paths } = eventData as { paths: unknown };
+    expect(paths === 'all' || Array.isArray(paths)).toBe(true);
+  });
+
+  it('paths is "all" when emitting a full state replacement', async () => {
+    const plugin = fixture.plugin();
+    withPluginInstalled(plugin);
+
+    const instance = acquire(CounterCubit);
+
+    const subscriber = vi.fn();
+    plugin.subscribe(subscriber);
+
+    // emit() triggers ALL_PATHS in StructuralContainer single-consumer mode
+    instance.emit({ count: 42 });
+    await Promise.resolve();
+
+    const updatedEvent = subscriber.mock.calls.find(
+      (call: any[]) => call[0]?.type === 'instance-updated',
+    );
+    expect(updatedEvent).toBeDefined();
+    // With a single consumer (the plugin's bridge), StructuralContainer short-circuits
+    // to ALL_PATHS, so paths should be 'all'
+    expect(updatedEvent?.[0].data.paths).toBe('all');
   });
 });

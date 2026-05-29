@@ -8,7 +8,13 @@
  * to connection requests from DevTools panels.
  */
 
-import type { BlacPlugin, PluginContext, InstanceMetadata } from '@blac/core';
+import { ALL_PATHS } from '@blac/core';
+import type {
+  BlacPlugin,
+  PathSet,
+  PluginContext,
+  InstanceMetadata,
+} from '@blac/core';
 import { safeSerialize } from '../serialization/serialize';
 import { enumerateGetters } from '../getters/enumerateGetters';
 import { DevToolsStateManager } from '../state/DevToolsStateManager';
@@ -105,8 +111,8 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     });
   }
 
-  onInstall(context: PluginContext): void {
-    this.context = context;
+  onInstall(ctx: PluginContext): void {
+    this.context = ctx;
     if (!this.config.enabled) return;
     this.exposeGlobalAPI();
     this.scanExistingInstances();
@@ -133,13 +139,15 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     }
   }
 
-  onInstanceCreated(instance: any, context: PluginContext): void {
+  onCreated(ctx: PluginContext): void {
     if (!this.config.enabled) return;
+    const instance = ctx.container;
+    if (!instance) return;
     if (this.shouldExcludeInstance(instance)) return;
 
     const now = Date.now();
     const createdFrom = this.captureCallstack();
-    const data = this.createInstanceData(instance, context);
+    const data = this.createInstanceData(instance, ctx);
     this.instanceCache.set(data.id, data);
 
     this.instanceTimestamps.set(data.id, now);
@@ -161,35 +169,68 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     });
   }
 
-  onStateChanged(
-    instance: any,
-    previousState: any,
-    currentState: any,
-    context: PluginContext,
+  /**
+   * Fires once per channel flush with the coalesced prev/next states and the
+   * set of changed paths.
+   *
+   * Wire event shape (type: 'instance-updated') — consumed by F3 devtools-ui:
+   * ```ts
+   * {
+   *   type: 'instance-updated';
+   *   timestamp: number;
+   *   data: {
+   *     id: string;
+   *     className: string;
+   *     name: string;
+   *     state: unknown;          // next (serialized)
+   *     previousState: unknown;  // prev (serialized)
+   *     currentState: unknown;   // next alias (serialized)
+   *     paths: string[] | 'all'; // decoded path names; 'all' = ALL_PATHS
+   *     trigger?: Trigger;
+   *   }
+   * }
+   * ```
+   *
+   * `paths` encoding:
+   *   - `'all'`    — PathSet was the ALL_PATHS sentinel; every path changed.
+   *   - `string[]` — interned ids resolved to dotted-path strings via
+   *                  `ctx.container.interner.lookup(id)`.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- interface requires generic; class impl uses any
+  onStateChange(
+    ctx: PluginContext,
+    prev: any,
+    next: any,
+    paths: PathSet,
   ): void {
     if (!this.config.enabled) return;
+    const instance = ctx.container;
+    if (!instance) return;
     if (this.shouldExcludeInstance(instance)) return;
+
+    // Decode PathSet → wire-safe representation.
+    const decodedPaths: string[] | 'all' =
+      paths === ALL_PATHS
+        ? 'all'
+        : Array.from(paths as Set<number>).map((id) =>
+            instance.interner.lookup(id),
+          );
 
     const callstack = this.captureCallstack();
     const trigger = this.extractTriggerFromCallstack(callstack);
 
-    const data = this.createInstanceData(
-      instance,
-      context,
-      previousState,
-      currentState,
-      callstack,
-    );
+    const data = this.createInstanceData(instance, ctx, prev, next, callstack);
     this.instanceCache.set(data.id, data);
 
     // Reuse already-serialized states from createInstanceData
     this.stateManager.updateState(
       data.id,
-      (data as any).previousState ?? previousState,
-      (data as any).currentState ?? currentState,
+      (data as any).previousState ?? prev,
+      (data as any).currentState ?? next,
       callstack,
       trigger,
       (data as any).getters,
+      decodedPaths,
     );
 
     // Update performance metrics — estimate size from current state
@@ -211,15 +252,17 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     this.emit({
       type: 'instance-updated',
       timestamp: Date.now(),
-      data: { ...data, trigger },
+      data: { ...data, trigger, paths: decodedPaths },
     });
   }
 
-  onInstanceDisposed(instance: any, context: PluginContext): void {
+  onDestroyed(ctx: PluginContext): void {
     if (!this.config.enabled) return;
+    const instance = ctx.container;
+    if (!instance) return;
     if (this.shouldExcludeInstance(instance)) return;
 
-    const data = this.createInstanceData(instance, context);
+    const data = this.createInstanceData(instance, ctx);
     data.isDisposed = true;
     this.instanceCache.delete(data.id);
     this.stateManager.removeInstance(data.id);
@@ -238,11 +281,13 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     });
   }
 
-  onRefAcquired(instance: any, refId: string, _context: PluginContext): void {
+  onRefAcquired(ctx: PluginContext, refId: string): void {
     if (!this.config.enabled) return;
+    const instance = ctx.container;
+    if (!instance) return;
     if (this.shouldExcludeInstance(instance)) return;
 
-    const instanceId = (instance as any).instanceId as string;
+    const instanceId = instance.instanceId as string;
     if (!instanceId || !this.instanceCache.has(instanceId)) return;
 
     let stackTrace: string | undefined;
@@ -268,15 +313,16 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
   }
 
   onDepsChanged(
-    instance: any,
+    ctx: PluginContext,
     previousDeps: Readonly<Record<string, unknown>>,
     currentDeps: Readonly<Record<string, unknown>>,
-    _context: PluginContext,
   ): void {
     if (!this.config.enabled) return;
+    const instance = ctx.container;
+    if (!instance) return;
     if (this.shouldExcludeInstance(instance)) return;
 
-    const instanceId = (instance as any).instanceId as string;
+    const instanceId = instance.instanceId as string;
     if (!instanceId || !this.instanceCache.has(instanceId)) return;
 
     const prevSer = safeSerialize(previousDeps);
@@ -296,11 +342,13 @@ export class DevToolsBrowserPlugin implements BlacPlugin {
     });
   }
 
-  onRefReleased(instance: any, refId: string, _context: PluginContext): void {
+  onRefReleased(ctx: PluginContext, refId: string): void {
     if (!this.config.enabled) return;
+    const instance = ctx.container;
+    if (!instance) return;
     if (this.shouldExcludeInstance(instance)) return;
 
-    const instanceId = (instance as any).instanceId as string;
+    const instanceId = instance.instanceId as string;
     if (!instanceId) return;
 
     const holders = this.refHolders.get(instanceId);

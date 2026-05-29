@@ -34,7 +34,9 @@ const resetState = () => {
 };
 
 const withPluginInstalled = (plugin: DevToolsBrowserPlugin) => {
-  getPluginManager().install(plugin);
+  getPluginManager().install(
+    plugin as unknown as import('@blac/core').BlacPlugin,
+  );
 };
 
 const fixture = {

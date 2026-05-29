@@ -15,6 +15,10 @@ const BASE_GETTERS = new Set([
   'hydrationError',
   'isHydrated',
   'changedWhileHydrating',
+  // StructuralContainer internals added in C2 migration — not user-defined.
+  'interner',
+  'channel',
+  'consumerCount',
 ]);
 
 // Reentrancy guard to prevent infinite loops when evaluating getters

@@ -31,6 +31,69 @@ export interface StateSnapshot {
   trigger?: Trigger;
   /** Computed getter values at this point in time */
   getters?: Record<string, GetterInfo>;
+  /**
+   * Decoded path names that changed during this flush.
+   * `'all'` when the change spans every path (PathSet === ALL_PATHS).
+   * An array of dotted path strings otherwise (e.g. `['count', 'user.name']`).
+   */
+  paths?: string[] | 'all';
+}
+
+// =============================================================================
+// Wire Format (extension bridge / postMessage protocol)
+// =============================================================================
+
+/**
+ * Wire event shape for `instance-updated` messages sent over the extension
+ * bridge (postMessage) and `subscribe()` callbacks.
+ *
+ * F3 (devtools-ui) consumes this exact shape.
+ *
+ * Protocol version: 2 (introduced `paths` field; `prev` was already present
+ * as `previousState` inside `data`).
+ *
+ * Shape:
+ * ```ts
+ * {
+ *   type: 'instance-updated';
+ *   timestamp: number;
+ *   data: {
+ *     // … all InstanceMetadata fields …
+ *     paths: string[] | 'all';  // NEW in v2
+ *     trigger?: Trigger;
+ *   }
+ * }
+ * ```
+ *
+ * `paths` values:
+ *   - `'all'`    — the PathSet was ALL_PATHS; treat as "everything changed"
+ *   - `string[]` — decoded dotted path strings resolved via PathInterner.lookup()
+ */
+export interface DevToolsWireStateEvent {
+  type: 'instance-updated';
+  timestamp: number;
+  data: {
+    /** Instance unique id */
+    id: string;
+    /** Class name */
+    className: string;
+    /** Instance name */
+    name: string;
+    /** State after the flush */
+    state: unknown;
+    /** State before the flush (same shape as `state`) */
+    previousState?: unknown;
+    /** State after the flush (alias kept for compat) */
+    currentState?: unknown;
+    /**
+     * Decoded path names that changed in this flush.
+     * `'all'` when PathSet === ALL_PATHS.
+     * Array of dotted-path strings otherwise.
+     */
+    paths: string[] | 'all';
+    /** What triggered the state change (method name etc.) */
+    trigger?: Trigger;
+  };
 }
 
 /**
