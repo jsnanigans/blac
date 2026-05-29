@@ -82,13 +82,21 @@ blac({ excludeFromDevTools: true })(LayoutBloc);
 
 // Simplified test component
 const SimpleDevToolsPanel: React.FC = () => {
-  const [{ instances }, bloc] = useBloc(LayoutBloc);
+  // Destructure both `instances` and `selectedId` so auto-track observes
+  // both paths. Bloc getters (`bloc.selected`, `bloc.sortedInstances`) are
+  // computed from the already-tracked state, so they recompute correctly on
+  // re-render but do not themselves register paths with the tracker.
+  const [{ instances, selectedId }, bloc] = useBloc(LayoutBloc);
+  const selected = instances.find((inst) => inst.id === selectedId) ?? null;
+  const sortedInstances = [...instances].sort((a, b) =>
+    a.className.localeCompare(b.className),
+  );
 
   return (
     <div data-testid="devtools-panel">
       <div data-testid="instance-count">{instances.length}</div>
       <div data-testid="instance-list">
-        {bloc.sortedInstances.map((instance: InstanceData) => (
+        {sortedInstances.map((instance: InstanceData) => (
           <div
             key={instance.id}
             data-testid={`instance-${instance.id}`}
@@ -99,9 +107,9 @@ const SimpleDevToolsPanel: React.FC = () => {
           </div>
         ))}
       </div>
-      {bloc.selected && (
+      {selected && (
         <div data-testid="selected-instance">
-          {bloc.selected.className}#{bloc.selected.id}
+          {selected.className}#{selected.id}
         </div>
       )}
     </div>
@@ -124,7 +132,7 @@ describe('DevTools Layout - Instance Management', () => {
     render(<SimpleDevToolsPanel />);
     const bloc = acquire(LayoutBloc);
 
-    act(() => {
+    await act(async () => {
       bloc.addInstance({
         id: 'counter-1',
         className: 'CounterCubit',
@@ -163,7 +171,7 @@ describe('DevTools Layout - Instance Management', () => {
     render(<SimpleDevToolsPanel />);
     const bloc = acquire(LayoutBloc);
 
-    act(() => {
+    await act(async () => {
       bloc.addInstance({
         id: 'z-1',
         className: 'ZebraCubit',
@@ -204,7 +212,7 @@ describe('DevTools Layout - Instance Management', () => {
     render(<SimpleDevToolsPanel />);
     const bloc = acquire(LayoutBloc);
 
-    act(() => {
+    await act(async () => {
       bloc.addInstance({
         id: 'keep-1',
         className: 'KeepCubit',
@@ -224,7 +232,7 @@ describe('DevTools Layout - Instance Management', () => {
       expect(screen.getByTestId('instance-count')).toHaveTextContent('2');
     });
 
-    act(() => {
+    await act(async () => {
       bloc.removeInstance('remove-1');
     });
 
@@ -240,7 +248,7 @@ describe('DevTools Layout - Instance Management', () => {
     render(<SimpleDevToolsPanel />);
     const bloc = acquire(LayoutBloc);
 
-    act(() => {
+    await act(async () => {
       bloc.addInstance({
         id: 'select-1',
         className: 'SelectCubit',
@@ -255,7 +263,7 @@ describe('DevTools Layout - Instance Management', () => {
 
     expect(screen.queryByTestId('selected-instance')).not.toBeInTheDocument();
 
-    act(() => {
+    await act(async () => {
       bloc.setSelectedId('select-1');
     });
 
@@ -270,7 +278,7 @@ describe('DevTools Layout - Instance Management', () => {
     render(<SimpleDevToolsPanel />);
     const bloc = acquire(LayoutBloc);
 
-    act(() => {
+    await act(async () => {
       bloc.addInstance({
         id: 'temp-1',
         className: 'TempCubit',
@@ -283,7 +291,7 @@ describe('DevTools Layout - Instance Management', () => {
       expect(screen.getByTestId('instance-temp-1')).toBeInTheDocument();
     });
 
-    act(() => {
+    await act(async () => {
       bloc.setSelectedId('temp-1');
     });
 
@@ -291,7 +299,7 @@ describe('DevTools Layout - Instance Management', () => {
       expect(screen.getByTestId('selected-instance')).toBeInTheDocument();
     });
 
-    act(() => {
+    await act(async () => {
       bloc.removeInstance('temp-1');
     });
 
@@ -304,7 +312,7 @@ describe('DevTools Layout - Instance Management', () => {
     render(<SimpleDevToolsPanel />);
     const bloc = acquire(LayoutBloc);
 
-    act(() => {
+    await act(async () => {
       bloc.addInstance({
         id: 'update-1',
         className: 'UpdateCubit',
@@ -317,7 +325,7 @@ describe('DevTools Layout - Instance Management', () => {
       expect(screen.getByTestId('instance-update-1')).toBeInTheDocument();
     });
 
-    act(() => {
+    await act(async () => {
       bloc.updateInstance('update-1', {
         state: { count: 10 },
       });
@@ -339,7 +347,7 @@ describe('DevTools Layout - Instance Management', () => {
       { id: 'bulk-3', className: 'BulkCubit', state: {}, isDisposed: false },
     ];
 
-    act(() => {
+    await act(async () => {
       bloc.setAllInstances(instances);
     });
 
@@ -356,7 +364,7 @@ describe('DevTools Layout - Instance Management', () => {
     render(<SimpleDevToolsPanel />);
     const bloc = acquire(LayoutBloc);
 
-    act(() => {
+    await act(async () => {
       bloc.addInstance({
         id: 'dup-1',
         className: 'DupCubit',
@@ -369,7 +377,7 @@ describe('DevTools Layout - Instance Management', () => {
       expect(screen.getByTestId('instance-count')).toHaveTextContent('1');
     });
 
-    act(() => {
+    await act(async () => {
       bloc.addInstance({
         id: 'dup-1',
         className: 'DupCubit',

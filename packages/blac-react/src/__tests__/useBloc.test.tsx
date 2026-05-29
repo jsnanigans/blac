@@ -3,7 +3,7 @@
  */
 
 /// <reference types="@testing-library/jest-dom" />
-import { describe, it, expect, vi } from 'vite-plus/test';
+import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
 import { renderHook, act } from '@testing-library/react';
 import { renderToString } from 'react-dom/server';
 import { Cubit, borrow } from '@blac/core';
@@ -42,26 +42,6 @@ describe('useBloc', () => {
     vi.unstubAllGlobals();
   });
 
-  // describe('Generic Bloc', () => {
-  //   it('should work with generic bloc and explicit state type', () => {
-  //     const { result } = renderHook(() => {
-  //       const [state, bloc] =
-  //         useBloc<GenericBloc<{ items: string[] }>>(GenericBloc);
-  //       return { state, bloc };
-  //     });
-  //
-  //     const { state, bloc } = result.current;
-  //     expect(state).toEqual({ items: [] });
-  //     expect(bloc).toBeInstanceOf(GenericBloc);
-  //
-  //     act(() => {
-  //       bloc.setState({ items: ['a', 'b', 'c'] });
-  //     });
-  //
-  //     expect(result.current.state).toEqual({ items: ['a', 'b', 'c'] });
-  //   });
-  // });
-
   describe('Basic Usage', () => {
     it('should create bloc instance and subscribe to state', () => {
       const { result } = renderHook(() => useBloc(CounterBloc));
@@ -77,7 +57,7 @@ describe('useBloc', () => {
         return { state, bloc };
       });
 
-      act(() => {
+      await act(async () => {
         result.current.bloc.increment();
       });
 
@@ -100,7 +80,7 @@ describe('useBloc', () => {
       // Per-consumer design: each useBloc consumer returns its own proxy.
       // Identity is asserted via the shared underlying raw bloc.
       const raw = borrow(CounterBloc);
-      act(() => {
+      await act(async () => {
         raw.increment();
       });
 
@@ -127,7 +107,7 @@ describe('useBloc', () => {
   });
 
   describe('Isolated Instances', () => {
-    it('should create new instance for each hook', () => {
+    it('should create new instance for each instanceId', () => {
       const { result: result1 } = renderHook(() =>
         useBloc(IsolatedBloc, { instanceId: 'iso-a' }),
       );
@@ -146,92 +126,25 @@ describe('useBloc', () => {
       const { result: result1 } = renderHook(() => {
         const [state, bloc] = useBloc(IsolatedBloc, {
           instanceId: 'iso-c',
-          autoTrack: false,
+          select: () => [],
         });
         return { state, bloc };
       });
       const { result: result2 } = renderHook(() => {
         const [state, bloc] = useBloc(IsolatedBloc, {
           instanceId: 'iso-d',
-          autoTrack: false,
+          select: () => [],
         });
         return { state, bloc };
       });
 
-      act(() => {
+      await act(async () => {
         result1.current.bloc.increment();
       });
 
-      expect(result1.current.state.count).toBe(1);
-      expect(result2.current.state.count).toBe(0);
-    });
-
-    it('should update state return when its not accessed because autoTrack is disabled', async () => {
-      const { result: result1 } = renderHook(() => {
-        const [state, bloc] = useBloc(IsolatedBloc, {
-          instanceId: 'iso-e',
-          autoTrack: false,
-        });
-        return { state, bloc };
-      });
-      const { result: result2 } = renderHook(() => {
-        const [state, bloc] = useBloc(IsolatedBloc, {
-          instanceId: 'iso-f',
-          autoTrack: false,
-        });
-        return { state, bloc };
-      });
-
-      expect(result1.current.bloc.state.count).toBe(0);
-      expect(result1.current.state.count).toBe(0);
-      expect(result2.current.bloc.state.count).toBe(0);
-      expect(result2.current.state.count).toBe(0);
-
-      act(() => {
-        result1.current.bloc.increment();
-      });
-
-      // result1 bloc.state is always uptodate, should show 1 after increment
+      // bloc.state always reflects current value regardless of select mode.
       expect(result1.current.bloc.state.count).toBe(1);
-      // but result1 state is not accessed, so should not trigger update, remains 0
-      expect(result1.current.state.count).toBe(1);
-      // result2 remains unaffected
       expect(result2.current.bloc.state.count).toBe(0);
-      expect(result2.current.state.count).toBe(0);
-    });
-
-    it('should not update state return when its not accessed because autoTrack is enabled', async () => {
-      const { result: result1 } = renderHook(() => {
-        const [state, bloc] = useBloc(IsolatedBloc, {
-          instanceId: 'iso-g',
-          autoTrack: true,
-        });
-        return { state, bloc };
-      });
-      const { result: result2 } = renderHook(() => {
-        const [state, bloc] = useBloc(IsolatedBloc, {
-          instanceId: 'iso-h',
-          autoTrack: true,
-        });
-        return { state, bloc };
-      });
-
-      expect(result1.current.bloc.state.count).toBe(0);
-      expect(result1.current.state.count).toBe(0);
-      expect(result2.current.bloc.state.count).toBe(0);
-      expect(result2.current.state.count).toBe(0);
-
-      act(() => {
-        result1.current.bloc.increment();
-      });
-
-      // result1 bloc.state is always uptodate, should show 1 after increment
-      expect(result1.current.bloc.state.count).toBe(1);
-      // but result1 state is not accessed, so should not trigger update, remains 0
-      expect(result1.current.state.count).toBe(0);
-      // result2 remains unaffected
-      expect(result2.current.bloc.state.count).toBe(0);
-      expect(result2.current.state.count).toBe(0);
     });
   });
 
@@ -251,7 +164,7 @@ describe('useBloc', () => {
       expect(bloc1).not.toBe(bloc2);
     });
 
-    it('should share instance with same custom ID', () => {
+    it('should share instance with same custom ID', async () => {
       const { result: result1 } = renderHook(() =>
         useBloc(CounterBloc, { instanceId: 'shared-counter' }),
       );
@@ -265,7 +178,7 @@ describe('useBloc', () => {
       // Per-consumer design: each consumer returns its own proxy. Identity is
       // asserted via the shared underlying raw instance.
       const raw = borrow(CounterBloc, 'shared-counter');
-      act(() => {
+      await act(async () => {
         raw.increment();
       });
       expect(bloc1.state.count).toBe(1);

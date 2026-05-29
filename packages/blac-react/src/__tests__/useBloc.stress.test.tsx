@@ -19,14 +19,14 @@ class CounterBloc extends Cubit<{ count: number }> {
 }
 
 describe('useBloc — stress tests', () => {
-  it('100 rapid state changes — renders complete without error, shows final state', () => {
+  it('100 rapid state changes — renders complete without error, shows final state', async () => {
     function Comp() {
       const [state] = useBloc(CounterBloc);
       return <span data-testid="count">{state.count}</span>;
     }
     render(<Comp />);
 
-    act(() => {
+    await act(async () => {
       const bloc = borrow(CounterBloc) as CounterBloc;
       for (let i = 1; i <= 100; i++) {
         bloc.set(i);
@@ -36,7 +36,7 @@ describe('useBloc — stress tests', () => {
     expect(screen.getByTestId('count').textContent).toBe('100');
   });
 
-  it('10 components sharing one bloc — all update correctly on state change', () => {
+  it('10 components sharing one bloc — all update correctly on state change', async () => {
     function Comp({ id }: { id: number }) {
       const [state] = useBloc(CounterBloc);
       return <span data-testid={`c${id}`}>{state.count}</span>;
@@ -50,7 +50,7 @@ describe('useBloc — stress tests', () => {
     );
     expect(getRefCount(CounterBloc)).toBe(10);
 
-    act(() => {
+    await act(async () => {
       borrow(CounterBloc).set(42);
     });
 
@@ -71,7 +71,7 @@ describe('useBloc — stress tests', () => {
     }
   });
 
-  it('parent and child both calling useBloc — both get the same correct instance', () => {
+  it('parent and child both calling useBloc — both get the same correct instance', async () => {
     let parentBloc: CounterBloc | null = null;
     let childBloc: CounterBloc | null = null;
 
@@ -100,14 +100,14 @@ describe('useBloc — stress tests', () => {
     expect(parentBloc!.state).toBe(raw.state);
     expect(childBloc!.state).toBe(raw.state);
 
-    act(() => {
+    await act(async () => {
       (parentBloc as CounterBloc).set(7);
     });
     expect(screen.getByTestId('parent').textContent).toBe('7');
     expect(screen.getByTestId('child').textContent).toBe('7');
   });
 
-  it('50 unique instanceIds created simultaneously — all tracked correctly', () => {
+  it('50 unique instanceIds created simultaneously — all tracked correctly', async () => {
     function Comp({ id }: { id: number }) {
       const [state] = useBloc(CounterBloc, { instanceId: `inst-${id}` });
       return <span data-testid={`inst-${id}`}>{state.count}</span>;
@@ -126,7 +126,7 @@ describe('useBloc — stress tests', () => {
     }
 
     // Emit on one instance should not affect others
-    act(() => {
+    await act(async () => {
       borrow(CounterBloc, 'inst-5').set(99);
     });
     expect(screen.getByTestId('inst-5').textContent).toBe('99');

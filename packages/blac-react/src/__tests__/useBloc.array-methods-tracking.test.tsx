@@ -28,7 +28,7 @@ blacTestSetup();
 
 describe('Array Methods Tracking', () => {
   // Currently tracked methods
-  it('should track array when using .map()', () => {
+  it('should track array when using .map()', async () => {
     let renderCount = 0;
 
     function Component() {
@@ -43,7 +43,7 @@ describe('Array Methods Tracking', () => {
     expect(renderCount).toBe(1);
     expect(screen.getByTestId('result')).toHaveTextContent('2,4,6,8,10');
 
-    act(() => {
+    await act(async () => {
       acquire(ArrayMethodCubit).updateItems();
     });
 
@@ -51,7 +51,7 @@ describe('Array Methods Tracking', () => {
     expect(screen.getByTestId('result')).toHaveTextContent('2,4,6,8,10,12');
   });
 
-  it('should track array when using .filter()', () => {
+  it('should track array when using .filter()', async () => {
     let renderCount = 0;
 
     function Component() {
@@ -65,14 +65,14 @@ describe('Array Methods Tracking', () => {
     render(<Component />);
     expect(renderCount).toBe(1);
 
-    act(() => {
+    await act(async () => {
       acquire(ArrayMethodCubit).updateItems();
     });
 
     expect(renderCount).toBe(2); // Should re-render
   });
 
-  it('should track array when using .find()', () => {
+  it('should track array when using .find()', async () => {
     let renderCount = 0;
 
     function Component() {
@@ -86,7 +86,7 @@ describe('Array Methods Tracking', () => {
     render(<Component />);
     expect(renderCount).toBe(1);
 
-    act(() => {
+    await act(async () => {
       acquire(ArrayMethodCubit).updateItems();
     });
 
@@ -94,7 +94,7 @@ describe('Array Methods Tracking', () => {
   });
 
   // Missing methods that SHOULD track
-  it('should track array when using .flatMap()', () => {
+  it('should track array when using .flatMap()', async () => {
     let renderCount = 0;
 
     function Component() {
@@ -108,14 +108,14 @@ describe('Array Methods Tracking', () => {
     render(<Component />);
     expect(renderCount).toBe(1);
 
-    act(() => {
+    await act(async () => {
       acquire(ArrayMethodCubit).updateItems();
     });
 
     expect(renderCount).toBe(2); // Should re-render
   });
 
-  it('should track array when using .findIndex()', () => {
+  it('should track array when using .findIndex()', async () => {
     let renderCount = 0;
 
     function Component() {
@@ -129,14 +129,14 @@ describe('Array Methods Tracking', () => {
     render(<Component />);
     expect(renderCount).toBe(1);
 
-    act(() => {
+    await act(async () => {
       acquire(ArrayMethodCubit).updateItems();
     });
 
     expect(renderCount).toBe(2); // Should re-render
   });
 
-  it('should track array when using .includes()', () => {
+  it('should track array when using .includes()', async () => {
     let renderCount = 0;
 
     function Component() {
@@ -150,14 +150,14 @@ describe('Array Methods Tracking', () => {
     render(<Component />);
     expect(renderCount).toBe(1);
 
-    act(() => {
+    await act(async () => {
       acquire(ArrayMethodCubit).updateItems();
     });
 
     expect(renderCount).toBe(2); // Should re-render
   });
 
-  it('should track array when using .indexOf()', () => {
+  it('should track array when using .indexOf()', async () => {
     let renderCount = 0;
 
     function Component() {
@@ -171,14 +171,14 @@ describe('Array Methods Tracking', () => {
     render(<Component />);
     expect(renderCount).toBe(1);
 
-    act(() => {
+    await act(async () => {
       acquire(ArrayMethodCubit).updateItems();
     });
 
     expect(renderCount).toBe(2); // Should re-render
   });
 
-  it('should track array when using .slice()', () => {
+  it('should track array when using .slice()', async () => {
     let renderCount = 0;
 
     function Component() {
@@ -192,14 +192,14 @@ describe('Array Methods Tracking', () => {
     render(<Component />);
     expect(renderCount).toBe(1);
 
-    act(() => {
+    await act(async () => {
       acquire(ArrayMethodCubit).updateItems();
     });
 
     expect(renderCount).toBe(2); // Should re-render
   });
 
-  it('should track array when using .join()', () => {
+  it('should track array when using .join()', async () => {
     let renderCount = 0;
 
     function Component() {
@@ -213,14 +213,14 @@ describe('Array Methods Tracking', () => {
     render(<Component />);
     expect(renderCount).toBe(1);
 
-    act(() => {
+    await act(async () => {
       acquire(ArrayMethodCubit).updateItems();
     });
 
     expect(renderCount).toBe(2); // Should re-render
   });
 
-  it('should track array when using .at()', () => {
+  it('should track array when using .at()', async () => {
     let renderCount = 0;
 
     function Component() {
@@ -234,7 +234,7 @@ describe('Array Methods Tracking', () => {
     render(<Component />);
     expect(renderCount).toBe(1);
 
-    act(() => {
+    await act(async () => {
       acquire(ArrayMethodCubit).updateItems();
     });
 

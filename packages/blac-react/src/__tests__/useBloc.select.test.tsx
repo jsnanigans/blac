@@ -35,7 +35,7 @@ class CounterCubit extends Cubit<CounterState> {
 blacTestSetup();
 
 describe('useBloc with select', () => {
-  it('should only re-render when selected values change', () => {
+  it('should only re-render when selected values change', async () => {
     const renderSpy = vi.fn();
 
     function TestComponent() {
@@ -66,7 +66,7 @@ describe('useBloc with select', () => {
     expect(screen.getByTestId('name').textContent).toBe('test');
 
     // Change count (in select) - should re-render
-    act(() => {
+    await act(async () => {
       screen.getByText('Increment').click();
     });
 
@@ -74,7 +74,7 @@ describe('useBloc with select', () => {
     expect(screen.getByTestId('count').textContent).toBe('1');
 
     // Change multiplier (not in select) - should NOT re-render
-    act(() => {
+    await act(async () => {
       screen.getByText('Set Multiplier').click();
     });
 
@@ -82,7 +82,7 @@ describe('useBloc with select', () => {
     expect(renderSpy).toHaveBeenCalledTimes(2);
 
     // Change name (not in select) - should NOT re-render
-    act(() => {
+    await act(async () => {
       screen.getByText('Set Name').click();
     });
 
@@ -90,7 +90,7 @@ describe('useBloc with select', () => {
     expect(renderSpy).toHaveBeenCalledTimes(2);
 
     // Increment count again - should re-render
-    act(() => {
+    await act(async () => {
       screen.getByText('Increment').click();
     });
 
@@ -98,7 +98,7 @@ describe('useBloc with select', () => {
     expect(screen.getByTestId('count').textContent).toBe('2');
   });
 
-  it('should re-render when any selected value changes', () => {
+  it('should re-render when any selected value changes', async () => {
     const renderSpy = vi.fn();
 
     function TestComponent() {
@@ -124,28 +124,28 @@ describe('useBloc with select', () => {
     expect(renderSpy).toHaveBeenCalledTimes(1);
 
     // Change count - should re-render
-    act(() => {
+    await act(async () => {
       screen.getByText('Increment').click();
     });
 
     expect(renderSpy).toHaveBeenCalledTimes(2);
 
     // Change multiplier - should re-render
-    act(() => {
+    await act(async () => {
       screen.getByText('Set Multiplier').click();
     });
 
     expect(renderSpy).toHaveBeenCalledTimes(3);
 
     // Change name (not in select) - should NOT re-render
-    act(() => {
+    await act(async () => {
       screen.getByText('Set Name').click();
     });
 
     expect(renderSpy).toHaveBeenCalledTimes(3);
   });
 
-  it('should re-render if select array length changes', () => {
+  it('should re-render if select array length changes', async () => {
     const renderSpy = vi.fn();
     let dynamicDepsCount = 1;
 
@@ -176,7 +176,7 @@ describe('useBloc with select', () => {
     expect(renderSpy).toHaveBeenCalledTimes(1);
 
     // Increment to trigger select check
-    act(() => {
+    await act(async () => {
       screen.getByText('Increment').click();
     });
 
@@ -186,14 +186,14 @@ describe('useBloc with select', () => {
     dynamicDepsCount = 2;
 
     // Increment again - should detect length change
-    act(() => {
+    await act(async () => {
       screen.getByText('Increment').click();
     });
 
     expect(renderSpy).toHaveBeenCalledTimes(3);
   });
 
-  it('should work with bloc instance in select', () => {
+  it('should work with bloc instance in select', async () => {
     class ComputedCubit extends Cubit<CounterState> {
       constructor() {
         super({ count: 0, multiplier: 2, name: 'test' });
@@ -231,7 +231,7 @@ describe('useBloc with select', () => {
     expect(screen.getByTestId('doubled').textContent).toBe('0');
 
     // Increment - doubled changes, should re-render
-    act(() => {
+    await act(async () => {
       screen.getByText('Increment').click();
     });
 
@@ -279,7 +279,7 @@ describe('useBloc with select', () => {
     expect(screen.getByTestId('value').textContent).toBe('initial');
 
     // Change value - should re-render
-    act(() => {
+    await act(async () => {
       screen.getByText('Update Value').click();
     });
 
@@ -287,7 +287,7 @@ describe('useBloc with select', () => {
     expect(screen.getByTestId('value').textContent).toBe('changed');
 
     // Set to same value - should NOT re-render (Object.is('changed', 'changed') = true)
-    act(() => {
+    await act(async () => {
       screen.getByText('Update Same').click();
     });
 

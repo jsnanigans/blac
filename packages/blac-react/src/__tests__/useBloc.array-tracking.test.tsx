@@ -62,7 +62,7 @@ class MessageListCubit extends Cubit<MessageListState> {
 blacTestSetup();
 
 describe('useBloc - Array Tracking (MessageList Use Case)', () => {
-  it('should re-render when a new message is added to the array', () => {
+  it('should re-render when a new message is added to the array', async () => {
     let renderCount = 0;
 
     function MessageList() {
@@ -92,7 +92,7 @@ describe('useBloc - Array Tracking (MessageList Use Case)', () => {
     // Add first message
     const cubit = acquire(MessageListCubit);
     let msg1Id = '';
-    act(() => {
+    await act(async () => {
       msg1Id = cubit.addMessage('Hello', 'user-1');
     });
 
@@ -104,7 +104,7 @@ describe('useBloc - Array Tracking (MessageList Use Case)', () => {
 
     // Add second message
     let msg2Id = '';
-    act(() => {
+    await act(async () => {
       msg2Id = cubit.addMessage('World', 'user-2');
     });
 
@@ -115,7 +115,7 @@ describe('useBloc - Array Tracking (MessageList Use Case)', () => {
     );
   });
 
-  it('should re-render when a message status changes', () => {
+  it('should re-render when a message status changes', async () => {
     let renderCount = 0;
 
     function MessageList() {
@@ -141,7 +141,7 @@ describe('useBloc - Array Tracking (MessageList Use Case)', () => {
     let msg1Id = '';
     let msg2Id = '';
     let msg3Id = '';
-    act(() => {
+    await act(async () => {
       msg1Id = cubit.addMessage('Hello', 'user-1');
       msg2Id = cubit.addMessage('World', 'user-2');
       msg3Id = cubit.addMessage('Test', 'user-3');
@@ -155,7 +155,7 @@ describe('useBloc - Array Tracking (MessageList Use Case)', () => {
     expect(screen.getByTestId(`status-${msg3Id}`)).toHaveTextContent('sending');
 
     // Update first message status
-    act(() => {
+    await act(async () => {
       cubit.updateMessageStatus(msg1Id, 'sent');
     });
 
@@ -165,7 +165,7 @@ describe('useBloc - Array Tracking (MessageList Use Case)', () => {
     expect(screen.getByTestId(`status-${msg3Id}`)).toHaveTextContent('sending');
 
     // Update second message status
-    act(() => {
+    await act(async () => {
       cubit.updateMessageStatus(msg2Id, 'delivered');
     });
 
@@ -177,7 +177,7 @@ describe('useBloc - Array Tracking (MessageList Use Case)', () => {
     expect(screen.getByTestId(`status-${msg3Id}`)).toHaveTextContent('sending');
   });
 
-  it('should re-render when a message at the end of the list changes', () => {
+  it('should re-render when a message at the end of the list changes', async () => {
     let renderCount = 0;
 
     function MessageList() {
@@ -198,12 +198,12 @@ describe('useBloc - Array Tracking (MessageList Use Case)', () => {
 
     // Setup: Add initial messages
     const cubit = acquire(MessageListCubit);
-    act(() => {
+    await act(async () => {
       cubit.addMessage('Message 1', 'user-1');
       cubit.addMessage('Message 2', 'user-2');
     });
     let msg3Id = '';
-    act(() => {
+    await act(async () => {
       msg3Id = cubit.addMessage('Message 3', 'user-3');
     });
 
@@ -215,7 +215,7 @@ describe('useBloc - Array Tracking (MessageList Use Case)', () => {
     );
 
     // Update the last message (which might be at a different index than initially tracked)
-    act(() => {
+    await act(async () => {
       cubit.updateMessageStatus(msg3Id, 'delivered');
     });
 
@@ -225,7 +225,7 @@ describe('useBloc - Array Tracking (MessageList Use Case)', () => {
     );
   });
 
-  it('should re-render when a message is deleted from the middle', () => {
+  it('should re-render when a message is deleted from the middle', async () => {
     let renderCount = 0;
 
     function MessageList() {
@@ -252,7 +252,7 @@ describe('useBloc - Array Tracking (MessageList Use Case)', () => {
     let msg1Id = '';
     let msg2Id = '';
     let msg3Id = '';
-    act(() => {
+    await act(async () => {
       msg1Id = cubit.addMessage('Message 1', 'user-1');
       msg2Id = cubit.addMessage('Message 2', 'user-2');
       msg3Id = cubit.addMessage('Message 3', 'user-3');
@@ -264,7 +264,7 @@ describe('useBloc - Array Tracking (MessageList Use Case)', () => {
     expect(screen.getByTestId('message-count')).toHaveTextContent('3');
 
     // Delete middle message
-    act(() => {
+    await act(async () => {
       cubit.deleteMessage(msg2Id);
     });
 
@@ -275,7 +275,7 @@ describe('useBloc - Array Tracking (MessageList Use Case)', () => {
     expect(screen.getByTestId(`message-${msg3Id}`)).toBeInTheDocument();
   });
 
-  it('should re-render when message order changes', () => {
+  it('should re-render when message order changes', async () => {
     let renderCount = 0;
 
     function MessageList() {
@@ -294,7 +294,7 @@ describe('useBloc - Array Tracking (MessageList Use Case)', () => {
 
     // Setup: Add initial messages
     const cubit = acquire(MessageListCubit);
-    act(() => {
+    await act(async () => {
       cubit.addMessage('Message 1', 'user-1');
       cubit.addMessage('Message 2', 'user-2');
       cubit.addMessage('Message 3', 'user-3');
@@ -308,7 +308,7 @@ describe('useBloc - Array Tracking (MessageList Use Case)', () => {
     );
 
     // Reverse the order
-    act(() => {
+    await act(async () => {
       cubit.emit({
         messages: [...cubit.state.messages].reverse(),
       });

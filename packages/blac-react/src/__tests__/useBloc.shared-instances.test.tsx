@@ -16,7 +16,7 @@ class SharedBloc extends Cubit<{ count: number }> {
 blacTestSetup();
 
 describe('useBloc — shared instances', () => {
-  it('two components using same class get the same instance', () => {
+  it('two components using same class get the same instance', async () => {
     // Per-consumer design: each useBloc consumer returns its own proxy that
     // closes over a per-consumer getter tracker. Identity is asserted on the
     // raw underlying instance via the registry.
@@ -34,7 +34,7 @@ describe('useBloc — shared instances', () => {
     );
     const raw = borrow(SharedBloc);
     // Both consumer proxies should target the same underlying raw instance.
-    act(() => {
+    await act(async () => {
       raw.increment();
     });
     expect(seen[0].state.count).toBe(1);
@@ -42,7 +42,7 @@ describe('useBloc — shared instances', () => {
     expect(seen[0].state).toBe(seen[1].state);
   });
 
-  it('state change in one component is visible in the other', () => {
+  it('state change in one component is visible in the other', async () => {
     let sharedBloc!: SharedBloc;
     function Comp({ id }: { id: string }) {
       const [state, b] = useBloc(SharedBloc);
@@ -58,7 +58,7 @@ describe('useBloc — shared instances', () => {
     expect(screen.getByTestId('a').textContent).toBe('0');
     expect(screen.getByTestId('b').textContent).toBe('0');
 
-    act(() => {
+    await act(async () => {
       sharedBloc.increment();
     });
 

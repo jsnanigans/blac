@@ -25,7 +25,7 @@ class FieldBloc extends Cubit<{ a: number; b: string; name: string }> {
 blacTestSetup();
 
 describe('useBloc — manual deps edge cases', () => {
-  it('select: () => [] never re-renders after mount', () => {
+  it('select: () => [] never re-renders after mount', async () => {
     const renders = vi.fn();
     let bloc!: FieldBloc;
     function Comp() {
@@ -36,19 +36,19 @@ describe('useBloc — manual deps edge cases', () => {
     }
     render(<Comp />);
     const count = renders.mock.calls.length;
-    act(() => {
+    await act(async () => {
       bloc.setA(1);
     });
-    act(() => {
+    await act(async () => {
       bloc.setB('x');
     });
-    act(() => {
+    await act(async () => {
       bloc.setName('y');
     });
     expect(renders.mock.calls.length).toBe(count);
   });
 
-  it('select: (s) => [s.a, s.b] triggers on either change', () => {
+  it('select: (s) => [s.a, s.b] triggers on either change', async () => {
     const renders = vi.fn();
     let bloc!: FieldBloc;
     function Comp() {
@@ -66,24 +66,24 @@ describe('useBloc — manual deps edge cases', () => {
     render(<Comp />);
     const initial = renders.mock.calls.length;
 
-    act(() => {
+    await act(async () => {
       bloc.setA(5);
     });
     expect(renders.mock.calls.length).toBe(initial + 1);
 
-    act(() => {
+    await act(async () => {
       bloc.setB('world');
     });
     expect(renders.mock.calls.length).toBe(initial + 2);
 
     // name is not in deps — no re-render
-    act(() => {
+    await act(async () => {
       bloc.setName('ignored');
     });
     expect(renders.mock.calls.length).toBe(initial + 2);
   });
 
-  it('dependencies function receives both state AND bloc as arguments', () => {
+  it('dependencies function receives both state AND bloc as arguments', async () => {
     const depsFn = vi.fn(
       (s: { a: number; b: string; name: string }, _bloc: FieldBloc) => [s.a],
     );
@@ -91,7 +91,7 @@ describe('useBloc — manual deps edge cases', () => {
       useBloc(FieldBloc, { select: depsFn as any }),
     );
     const bloc = result.current[1] as FieldBloc;
-    act(() => {
+    await act(async () => {
       bloc.setA(1);
     });
 
@@ -101,7 +101,7 @@ describe('useBloc — manual deps edge cases', () => {
     expect(blocArg).toBeInstanceOf(FieldBloc);
   });
 
-  it('manual deps mode disables getter tracking even when getters are accessed', () => {
+  it('manual deps mode disables getter tracking even when getters are accessed', async () => {
     const renders = vi.fn();
     let bloc!: FieldBloc;
     function Comp() {
@@ -118,19 +118,19 @@ describe('useBloc — manual deps edge cases', () => {
     const count = renders.mock.calls.length;
 
     // Change 'a' — doubled would change, but getter tracking is disabled
-    act(() => {
+    await act(async () => {
       bloc.setA(10);
     });
     expect(renders.mock.calls.length).toBe(count);
 
     // Change 'name' — in deps, triggers re-render
-    act(() => {
+    await act(async () => {
       bloc.setName('updated');
     });
     expect(renders.mock.calls.length).toBeGreaterThan(count);
   });
 
-  it('null values in dependency array handled without throw', () => {
+  it('null values in dependency array handled without throw', async () => {
     let bloc!: FieldBloc;
     function Comp() {
       const [state, b] = useBloc(FieldBloc, {
@@ -142,15 +142,15 @@ describe('useBloc — manual deps edge cases', () => {
     expect(() => render(<Comp />)).not.toThrow();
 
     // Emit a change — should not throw
-    expect(() =>
-      act(() => {
+    await expect(
+      act(async () => {
         bloc.setA(5);
       }),
-    ).not.toThrow();
+    ).resolves.not.toThrow();
     expect(screen.getByTestId('a').textContent).toBe('5');
   });
 
-  it('inline arrow function as dependencies is stable across renders (no infinite loop)', () => {
+  it('inline arrow function as dependencies is stable across renders (no infinite loop)', async () => {
     const renders = vi.fn();
     let bloc!: FieldBloc;
     function Comp() {
@@ -163,17 +163,17 @@ describe('useBloc — manual deps edge cases', () => {
       return <span>{state.a}</span>;
     }
     render(<Comp />);
-    act(() => {
+    await act(async () => {
       bloc.setA(1);
     });
-    act(() => {
+    await act(async () => {
       bloc.setA(2);
     });
     // Each a change causes exactly one re-render
     expect(renders.mock.calls.length).toBe(3);
   });
 
-  it('undefined values treated as stable — [undefined] equals [undefined]', () => {
+  it('undefined values treated as stable — [undefined] equals [undefined]', async () => {
     const renders = vi.fn();
     let bloc!: FieldBloc;
     function Comp() {
@@ -187,10 +187,10 @@ describe('useBloc — manual deps edge cases', () => {
     render(<Comp />);
     const count = renders.mock.calls.length;
     // Even with state changes, deps are always [undefined] === [undefined] → no re-render
-    act(() => {
+    await act(async () => {
       bloc.setA(1);
     });
-    act(() => {
+    await act(async () => {
       bloc.setB('changed');
     });
     expect(renders.mock.calls.length).toBe(count);

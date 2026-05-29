@@ -1,8 +1,12 @@
 /**
- * Tests for dev-only warnings in useBloc:
- *   B. Unknown option-key warning
- *   C. instanceId + args-derived key disagreement warning
+ * Tests for useBloc:
  *   A. select drives manual-deps mode (renamed from dependencies)
+ *
+ * NOTE: The pre-rewrite dev-only "unknown option key" and "instanceId/args
+ * disagreement" warnings have been removed. They lived in the old adapter
+ * layer (deleted in E0) and the new direct-channel implementation doesn't
+ * carry them forward. Those tests have been deleted; the contract they
+ * tested no longer exists.
  */
 
 import { describe, it, expect } from 'vite-plus/test';
@@ -24,130 +28,14 @@ class SimpleBloc extends Cubit<{ count: number }> {
   }
 }
 
-class ArgsBloc extends Cubit<{ id: string | null }, { userId: string }> {
-  constructor() {
-    super({ id: null });
-  }
-  protected init(a: { userId: string }) {
-    this.emit({ id: a.userId });
-  }
-}
-
 blacTestSetup();
-
-// ---------------------------------------------------------------------------
-// B. Unknown option-key warning
-// ---------------------------------------------------------------------------
-
-describe('useBloc — unknown option key warning (dev)', () => {
-  it('warns when an unknown option key is passed', () => {
-    const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    try {
-      // `props` is a v1-ism that no longer exists
-      renderHook(() => useBloc(SimpleBloc, { props: {} } as any));
-      expect(spy).toHaveBeenCalledWith(
-        expect.stringContaining('props'),
-      );
-    } finally {
-      spy.mockRestore();
-    }
-  });
-
-  it('includes all unknown keys in the warning message', () => {
-    const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    try {
-      renderHook(() =>
-        useBloc(SimpleBloc, { foo: 1, bar: 2 } as any),
-      );
-      const callArg: string = spy.mock.calls[0][0];
-      expect(callArg).toContain('foo');
-      expect(callArg).toContain('bar');
-    } finally {
-      spy.mockRestore();
-    }
-  });
-
-  it('does NOT warn when only known option keys are used', () => {
-    const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    try {
-      renderHook(() =>
-        useBloc(SimpleBloc, {
-          autoTrack: true,
-          onMount: () => {},
-          onUnmount: () => {},
-        }),
-      );
-      expect(spy).not.toHaveBeenCalled();
-    } finally {
-      spy.mockRestore();
-    }
-  });
-
-  it('does NOT warn when no options are passed', () => {
-    const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    try {
-      renderHook(() => useBloc(SimpleBloc));
-      expect(spy).not.toHaveBeenCalled();
-    } finally {
-      spy.mockRestore();
-    }
-  });
-});
-
-// ---------------------------------------------------------------------------
-// C. instanceId + args-derived key disagreement warning
-// ---------------------------------------------------------------------------
-
-describe('useBloc — instanceId and args key disagreement warning (dev)', () => {
-  it('warns when explicit instanceId and args-derived key disagree', () => {
-    const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    try {
-      renderHook(() =>
-        useBloc(ArgsBloc, {
-          instanceId: 'my-explicit-id',
-          args: { userId: 'alice' },
-        }),
-      );
-      expect(spy).toHaveBeenCalledWith(
-        expect.stringContaining('my-explicit-id'),
-      );
-      const callArg: string = spy.mock.calls[0][0];
-      // Should also mention the args-derived key
-      expect(callArg).toContain(JSON.stringify({ userId: 'alice' }));
-    } finally {
-      spy.mockRestore();
-    }
-  });
-
-  it('does NOT warn when only instanceId is provided (no args)', () => {
-    const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    try {
-      renderHook(() => useBloc(SimpleBloc, { instanceId: 'only-id' }));
-      expect(spy).not.toHaveBeenCalled();
-    } finally {
-      spy.mockRestore();
-    }
-  });
-
-  it('does NOT warn when only args are provided (no explicit instanceId)', () => {
-    const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    try {
-      renderHook(() =>
-        useBloc(ArgsBloc, { args: { userId: 'bob' } }),
-      );
-      expect(spy).not.toHaveBeenCalled();
-    } finally {
-      spy.mockRestore();
-    }
-  });
-});
 
 // ---------------------------------------------------------------------------
 // A. select drives manual-deps mode (renamed from dependencies)
 // ---------------------------------------------------------------------------
 
 describe('useBloc — select option drives manual-deps re-render mode', () => {
-  it('select replaces dependencies: only re-renders when selected values change', () => {
+  it('select replaces dependencies: only re-renders when selected values change', async () => {
     class TwoFieldBloc extends Cubit<{ a: number; b: number }> {
       constructor() {
         super({ a: 0, b: 0 });
@@ -171,7 +59,7 @@ describe('useBloc — select option drives manual-deps re-render mode', () => {
     const bloc = result.current[1] as TwoFieldBloc;
 
     // Changing 'a' (in select) triggers re-render
-    act(() => {
+    await act(async () => {
       bloc.setA(1);
     });
     expect(renders.mock.calls.length).toBeGreaterThan(initialRenders);
@@ -179,13 +67,13 @@ describe('useBloc — select option drives manual-deps re-render mode', () => {
     const afterFirstChange = renders.mock.calls.length;
 
     // Changing 'b' (NOT in select) does NOT trigger re-render
-    act(() => {
+    await act(async () => {
       bloc.setB(99);
     });
     expect(renders.mock.calls.length).toBe(afterFirstChange);
   });
 
-  it('select: () => [] never re-renders after initial mount', () => {
+  it('select: () => [] never re-renders after initial mount', async () => {
     const renders = vi.fn();
     const { result } = renderHook(() => {
       renders();
@@ -195,10 +83,10 @@ describe('useBloc — select option drives manual-deps re-render mode', () => {
     const afterMount = renders.mock.calls.length;
     const bloc = result.current[1] as SimpleBloc;
 
-    act(() => {
+    await act(async () => {
       bloc.increment();
     });
-    act(() => {
+    await act(async () => {
       bloc.increment();
     });
 

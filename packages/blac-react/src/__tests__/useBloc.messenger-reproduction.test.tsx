@@ -215,7 +215,7 @@ afterEach(() => {
 });
 
 describe('Messenger Reproduction - Array Tracking', () => {
-  it('should re-render MessageList when message status changes', () => {
+  it('should re-render MessageList when message status changes', async () => {
     const channelId = 'channel-1';
     const currentUserId = 'user-me';
 
@@ -241,7 +241,7 @@ describe('Messenger Reproduction - Array Tracking', () => {
     // ============================================================================
     // CRITICAL TEST: Update message status (like updateMessageStatusEvent)
     // ============================================================================
-    act(() => {
+    await act(async () => {
       channel.updateMessageStatus(msg1Id, 'sent');
     });
 
@@ -255,7 +255,7 @@ describe('Messenger Reproduction - Array Tracking', () => {
     expect(screen.getByTestId(`status-${msg3Id}`)).toHaveTextContent('⏳');
   });
 
-  it('should re-render when message status changes to delivered', () => {
+  it('should re-render when message status changes to delivered', async () => {
     const channelId = 'channel-2';
     const currentUserId = 'user-me';
 
@@ -268,20 +268,20 @@ describe('Messenger Reproduction - Array Tracking', () => {
     expect(screen.getByTestId(`status-${msg1Id}`)).toHaveTextContent('⏳');
 
     // sending → sent
-    act(() => {
+    await act(async () => {
       channel.updateMessageStatus(msg1Id, 'sent');
     });
 
     expect(screen.getByTestId(`status-${msg1Id}`)).toHaveTextContent('✓');
 
     // sent → delivered
-    act(() => {
+    await act(async () => {
       channel.updateMessageStatus(msg1Id, 'delivered');
     });
     expect(screen.getByTestId(`status-${msg1Id}`)).toHaveTextContent('✓✓');
   });
 
-  it('should re-render when message in the middle of list changes', () => {
+  it('should re-render when message in the middle of list changes', async () => {
     const channelId = 'channel-3';
     const currentUserId = 'user-me';
 
@@ -298,7 +298,7 @@ describe('Messenger Reproduction - Array Tracking', () => {
     expect(messageListRenderCount).toBe(1);
 
     // Update message in the middle
-    act(() => {
+    await act(async () => {
       channel.updateMessageStatus(msg3Id, 'delivered');
     });
 
@@ -313,7 +313,7 @@ describe('Messenger Reproduction - Array Tracking', () => {
     expect(screen.getByTestId(`status-${msg5Id}`)).toHaveTextContent('⏳');
   });
 
-  it('should re-render when last message status changes', () => {
+  it('should re-render when last message status changes', async () => {
     const channelId = 'channel-4';
     const currentUserId = 'user-me';
 
@@ -329,7 +329,7 @@ describe('Messenger Reproduction - Array Tracking', () => {
     expect(screen.getByTestId(`status-${lastMsgId}`)).toHaveTextContent('⏳');
 
     // Update last message
-    act(() => {
+    await act(async () => {
       channel.updateMessageStatus(lastMsgId, 'sent');
     });
 
@@ -337,27 +337,9 @@ describe('Messenger Reproduction - Array Tracking', () => {
     expect(screen.getByTestId(`status-${lastMsgId}`)).toHaveTextContent('✓');
   });
 
-  it('should NOT re-render MessageList when typingUsers changes', () => {
-    const channelId = 'channel-5';
-    const currentUserId = 'user-me';
-
-    const channel = acquire(ChannelBloc, channelId);
-    channel.initialize(channelId);
-    channel.addMessage('Hello', currentUserId);
-
-    render(<MessageList channelId={channelId} currentUserId={currentUserId} />);
-
-    expect(messageListRenderCount).toBe(1);
-
-    // Update typingUsers (not messages)
-    act(() => {
-      channel.emit({
-        ...channel.state,
-        typingUsers: ['user-other'],
-      });
-    });
-
-    // Should NOT re-render because MessageList only tracks messages
-    expect(messageListRenderCount).toBe(1);
-  });
+  // Deleted: `should NOT re-render MessageList when typingUsers changes` —
+  // single-consumer source-side skip is intentionally suppressed in the new
+  // StructuralContainer (size<=1 marks ALL_PATHS). Path-narrowed skipping
+  // only kicks in when 2+ consumers register disjoint interest, which this
+  // single-MessageList test cannot model.
 });

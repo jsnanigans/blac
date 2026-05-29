@@ -47,45 +47,49 @@ describe('useBloc - filtered list with getter', () => {
     { id: '3', name: 'Charlie', active: false },
   ];
 
-  it('should return filtered profiles through getter', () => {
-    let renderCount = 0;
+  // NOTE: The old getter-tracking model was deleted in C0/D0. The new
+  // auto-track records paths via the state proxy only; accessing a bloc
+  // getter like `bloc.filteredProfiles` does NOT register interest in the
+  // underlying state path. These tests therefore access `state.profiles`
+  // via the proxy (which records `profiles` as a tracked path) and only
+  // then call the getter for the filtered result. The re-render contract
+  // becomes: "filtered output stays current as long as the proxy touched
+  // the source path that the getter reads from."
 
+  it('should return filtered profiles through getter', async () => {
     function TestComponent() {
-      renderCount++;
       const [state, bloc] = useBloc(ProfileCubit, {
         onMount: (cubit) => cubit.initializeProfiles(initialProfiles),
       });
-
+      // Touch state.profiles via the proxy so the consumer wakes when it changes.
+      const total = state.profiles.length;
       return (
         <div>
-          <div data-testid="total-count">{state.profiles.length}</div>
+          <div data-testid="total-count">{total}</div>
           <div data-testid="filtered-count">{bloc.filteredProfiles.length}</div>
-          <div data-testid="render-count">{renderCount}</div>
         </div>
       );
     }
 
     render(<TestComponent />);
 
-    // Initial state: 3 total profiles, 2 active
-    expect(screen.getByTestId('total-count').textContent).toBe('3');
-    expect(screen.getByTestId('filtered-count').textContent).toBe('2');
+    await waitFor(() => {
+      expect(screen.getByTestId('total-count').textContent).toBe('3');
+      expect(screen.getByTestId('filtered-count').textContent).toBe('2');
+    });
   });
 
   it('should update getter when profiles are added', async () => {
-    let renderCount = 0;
-
     function TestComponent() {
-      renderCount++;
       const [state, bloc] = useBloc(ProfileCubit, {
         onMount: (cubit) => cubit.initializeProfiles(initialProfiles),
       });
+      const total = state.profiles.length;
 
       return (
         <div>
-          <div data-testid="total-count">{state.profiles.length}</div>
+          <div data-testid="total-count">{total}</div>
           <div data-testid="filtered-count">{bloc.filteredProfiles.length}</div>
-          <div data-testid="render-count">{renderCount}</div>
           <button
             onClick={() => {
               bloc.addProfile({ id: '4', name: 'David', active: true });
@@ -100,12 +104,12 @@ describe('useBloc - filtered list with getter', () => {
 
     render(<TestComponent />);
 
-    // Initial state: 3 total, 2 active
-    expect(screen.getByTestId('total-count').textContent).toBe('3');
-    expect(screen.getByTestId('filtered-count').textContent).toBe('2');
+    await waitFor(() => {
+      expect(screen.getByTestId('total-count').textContent).toBe('3');
+      expect(screen.getByTestId('filtered-count').textContent).toBe('2');
+    });
 
-    // Add profiles (1 active, 1 inactive)
-    act(() => {
+    await act(async () => {
       screen.getByText('Add Profiles').click();
     });
 
@@ -116,17 +120,14 @@ describe('useBloc - filtered list with getter', () => {
   });
 
   it('should render filtered profiles in a list', async () => {
-    let renderCount = 0;
-
     function ProfileList() {
-      renderCount++;
       const [state, bloc] = useBloc(ProfileCubit, {
         onMount: (cubit) => cubit.initializeProfiles(initialProfiles),
       });
+      const profiles = state.profiles;
 
       return (
         <div>
-          <div data-testid="render-count">{renderCount}</div>
           <h2>Active Profiles ({bloc.filteredProfiles.length})</h2>
           <ul data-testid="profile-list">
             {bloc.filteredProfiles.map((profile) => (
@@ -138,7 +139,7 @@ describe('useBloc - filtered list with getter', () => {
           <button
             onClick={() => {
               const newProfiles = [
-                ...state.profiles,
+                ...profiles,
                 { id: '4', name: 'David', active: true },
                 { id: '5', name: 'Eve', active: false },
               ];
@@ -153,44 +154,39 @@ describe('useBloc - filtered list with getter', () => {
 
     render(<ProfileList />);
 
-    // Initial render: should show 2 active profiles
-    expect(screen.getByText('Active Profiles (2)')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Active Profiles (2)')).toBeInTheDocument();
+    });
     expect(screen.getByTestId('profile-1')).toHaveTextContent('Alice');
     expect(screen.getByTestId('profile-2')).toHaveTextContent('Bob');
-    expect(screen.queryByTestId('profile-3')).not.toBeInTheDocument(); // Charlie is inactive
+    expect(screen.queryByTestId('profile-3')).not.toBeInTheDocument();
 
-    // Add profiles
-    act(() => {
+    await act(async () => {
       screen.getByText('Add Profiles').click();
     });
 
     await waitFor(() => {
-      // Should now show 3 active profiles
       expect(screen.getByText('Active Profiles (3)')).toBeInTheDocument();
-      expect(screen.getByTestId('profile-1')).toHaveTextContent('Alice');
-      expect(screen.getByTestId('profile-2')).toHaveTextContent('Bob');
-      expect(screen.getByTestId('profile-4')).toHaveTextContent('David');
-      expect(screen.queryByTestId('profile-3')).not.toBeInTheDocument(); // Charlie still inactive
-      expect(screen.queryByTestId('profile-5')).not.toBeInTheDocument(); // Eve is inactive
     });
+    expect(screen.getByTestId('profile-1')).toHaveTextContent('Alice');
+    expect(screen.getByTestId('profile-2')).toHaveTextContent('Bob');
+    expect(screen.getByTestId('profile-4')).toHaveTextContent('David');
+    expect(screen.queryByTestId('profile-3')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('profile-5')).not.toBeInTheDocument();
   });
 
   it('should track getter and re-render when underlying data changes', async () => {
-    let renderCount = 0;
-
     function TestComponent() {
-      renderCount++;
-      const [, bloc] = useBloc(ProfileCubit, {
+      const [state, bloc] = useBloc(ProfileCubit, {
         onMount: (cubit) => cubit.initializeProfiles(initialProfiles),
       });
+      void state.profiles;
 
       return (
         <div>
-          <div data-testid="render-count">{renderCount}</div>
           <div data-testid="filtered-count">{bloc.filteredProfiles.length}</div>
           <button
             onClick={() => {
-              // Add only inactive profile - profiles array changes
               bloc.addProfile({ id: '4', name: 'David', active: false });
             }}
           >
@@ -198,7 +194,6 @@ describe('useBloc - filtered list with getter', () => {
           </button>
           <button
             onClick={() => {
-              // Add active profile - both array and filtered result change
               bloc.addProfile({ id: '5', name: 'Eve', active: true });
             }}
           >
@@ -210,21 +205,19 @@ describe('useBloc - filtered list with getter', () => {
 
     render(<TestComponent />);
 
-    expect(screen.getByTestId('filtered-count').textContent).toBe('2');
+    await waitFor(() => {
+      expect(screen.getByTestId('filtered-count').textContent).toBe('2');
+    });
 
-    // Add inactive profile - will trigger re-render since profiles array changed
-    // Note: Getter tracking tracks the result, but re-renders when input changes
-    act(() => {
+    await act(async () => {
       screen.getByText('Add Inactive').click();
     });
 
     await waitFor(() => {
-      // Getter result is still 2 (only active profiles)
       expect(screen.getByTestId('filtered-count').textContent).toBe('2');
     });
 
-    // Add active profile - should trigger re-render
-    act(() => {
+    await act(async () => {
       screen.getByText('Add Active').click();
     });
 
@@ -234,28 +227,22 @@ describe('useBloc - filtered list with getter', () => {
   });
 
   it('should track getter dependencies and re-render appropriately', async () => {
-    let renderCount = 0;
-
     function TestComponent() {
-      renderCount++;
-      const [, bloc] = useBloc(ProfileCubit, {
+      const [state, bloc] = useBloc(ProfileCubit, {
         onMount: (cubit) => cubit.initializeProfiles(initialProfiles),
       });
-
-      // Only access the getter, not the full state.profiles array
+      void state.profiles;
       const filteredCount = bloc.filteredProfiles.length;
 
       return (
         <div>
-          <div data-testid="render-count">{renderCount}</div>
           <div data-testid="filtered-count">{filteredCount}</div>
           <button
             onClick={() => {
-              // Toggle active status of Charlie (currently inactive)
               const updated = [
                 { id: '1', name: 'Alice', active: true },
                 { id: '2', name: 'Bob', active: true },
-                { id: '3', name: 'Charlie', active: true }, // Now active!
+                { id: '3', name: 'Charlie', active: true },
               ];
               bloc.updateProfiles(updated);
             }}
@@ -268,10 +255,11 @@ describe('useBloc - filtered list with getter', () => {
 
     render(<TestComponent />);
 
-    expect(screen.getByTestId('filtered-count').textContent).toBe('2');
+    await waitFor(() => {
+      expect(screen.getByTestId('filtered-count').textContent).toBe('2');
+    });
 
-    // Activate Charlie - getter result changes from 2 to 3
-    act(() => {
+    await act(async () => {
       screen.getByText('Activate Charlie').click();
     });
 

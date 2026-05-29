@@ -14,13 +14,6 @@ class CounterCubit extends Cubit<{ n: number }> {
   }
 }
 
-class IsolatedCubit extends Cubit<{ n: number }> {
-  static isolated = true;
-  constructor() {
-    super({ n: 0 });
-  }
-}
-
 blacTestSetup();
 
 describe('E1 — BlocProvider instance-id context', () => {
@@ -50,7 +43,7 @@ describe('E1 — BlocProvider instance-id context', () => {
     expect(hasInstance(CounterCubit, 'ctx-2')).toBe(true);
   });
 
-  it('two descendants under the same provider share the same instance', () => {
+  it('two descendants under the same provider share the same instance', async () => {
     // Per-consumer design: each useBloc consumer returns its own proxy. The
     // shared-instance contract is verified against the raw bloc registered
     // under the provider's instanceId.
@@ -71,7 +64,7 @@ describe('E1 — BlocProvider instance-id context', () => {
     );
 
     const raw = borrow(CounterCubit, 'shared');
-    act(() => {
+    await act(async () => {
       raw.inc();
     });
     expect(blocA.state.n).toBe(1);
@@ -80,7 +73,7 @@ describe('E1 — BlocProvider instance-id context', () => {
     expect(hasInstance(CounterCubit, 'shared')).toBe(true);
   });
 
-  it('a state change under one provider does not re-render a sibling subtree', () => {
+  it('a state change under one provider does not re-render a sibling subtree', async () => {
     let blocA!: CounterCubit;
 
     function CompA() {
@@ -104,7 +97,7 @@ describe('E1 — BlocProvider instance-id context', () => {
       </>,
     );
 
-    act(() => {
+    await act(async () => {
       blocA.inc();
     });
 
@@ -139,35 +132,9 @@ describe('E1 — BlocProvider instance-id context', () => {
     expect(hasInstance(CounterCubit, 'override')).toBe(true);
   });
 
-  it('autoInstance / static isolated overrides provider context', () => {
-    let blocCtx!: CounterCubit;
-    let blocIso!: IsolatedCubit;
-
-    function CtxProbe({ assign }: { assign: (b: CounterCubit) => void }) {
-      const [, b] = useBloc(CounterCubit);
-      assign(b as CounterCubit);
-      return null;
-    }
-    function IsoProbe({ assign }: { assign: (b: IsolatedCubit) => void }) {
-      const [, b] = useBloc(IsolatedCubit);
-      assign(b as IsolatedCubit);
-      return null;
-    }
-
-    render(
-      <BlocProvider instanceId="ctx">
-        <CtxProbe assign={(b) => (blocCtx = b)} />
-        <IsoProbe assign={(b) => (blocIso = b)} />
-      </BlocProvider>,
-    );
-
-    // CounterCubit resolves to "ctx" key.
-    expect(hasInstance(CounterCubit, 'ctx')).toBe(true);
-    expect(blocCtx).toBeDefined();
-    // IsolatedCubit is per-mount; the provider must not have parked it under "ctx".
-    expect(hasInstance(IsolatedCubit, 'ctx')).toBe(false);
-    expect(blocIso).toBeDefined();
-  });
+  // Deleted: `autoInstance / static isolated overrides provider context` —
+  // `static isolated` is gone (use `instanceId` with a unique key instead);
+  // there is nothing left in the public surface that overrides BlocProvider.
 
   it('sibling subtree without a provider falls back to the default key', () => {
     let inside!: CounterCubit;
@@ -222,7 +189,7 @@ describe('E1 — BlocProvider instance-id context', () => {
     expect(hasInstance(CounterCubit, 'ephemeral')).toBe(false);
   });
 
-  it('numeric instanceId on the provider is coerced to string', () => {
+  it('numeric instanceId on the provider is coerced to string', async () => {
     let blocNum!: CounterCubit;
     let blocStr!: CounterCubit;
 
@@ -245,7 +212,7 @@ describe('E1 — BlocProvider instance-id context', () => {
 
     // Per-consumer design: compare via the raw instance registered under "7".
     const raw = borrow(CounterCubit, '7');
-    act(() => {
+    await act(async () => {
       raw.inc();
     });
     expect(blocNum.state.n).toBe(1);

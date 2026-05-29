@@ -39,8 +39,7 @@ describe('useBloc args option', () => {
 
   it('different args produce different instances (re-resolves on args change)', () => {
     const { rerender, result } = renderHook(
-      ({ u }: { u: string }) =>
-        useBloc(UserCard, { args: { userId: u } }),
+      ({ u }: { u: string }) => useBloc(UserCard, { args: { userId: u } }),
       { initialProps: { u: 'a' } },
     );
 
@@ -77,7 +76,10 @@ describe('useBloc args option', () => {
 
   it('args passed alongside explicit instanceId still reach init', () => {
     const { result } = renderHook(() =>
-      useBloc(UserCard, { instanceId: 'explicit-key', args: { userId: 'carol' } }),
+      useBloc(UserCard, {
+        instanceId: 'explicit-key',
+        args: { userId: 'carol' },
+      }),
     );
     expect(result.current[0].id).toBe('carol');
   });
