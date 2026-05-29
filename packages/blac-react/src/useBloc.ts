@@ -1,6 +1,7 @@
 import {
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useReducer,
   useRef,
@@ -247,13 +248,28 @@ export function useBloc<
     );
     state = tracked.value as ExtractState<T>;
     pathRef.current = tracked.paths;
-    // Sync interest with the container on every render so source-side diff
-    // can skip-when-disjoint as soon as the consumer narrows.
+    // NOTE: registerConsumerPaths is intentionally NOT called here. The
+    // proxy hasn't been accessed yet, so `tracked.paths` is an empty Set
+    // that the proxy will mutate during JSX evaluation. Registering at
+    // this point would store an empty interest with the container and
+    // freeze the skeleton at that snapshot — subsequent emits would
+    // diff against an empty skeleton and silently drop wakeups. The
+    // useLayoutEffect below registers the populated set after render.
+  }
+
+  // After the render commits the proxy has been touched and pathRef.current
+  // is the consumer's actual interest. Re-register with the container so the
+  // skeleton reflects the latest paths. useLayoutEffect runs before the
+  // browser paints (and before any emit triggered by another effect), so the
+  // skeleton is fresh by the time the next emit fires.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps
+  useLayoutEffect(() => {
+    if (selectRef.current !== undefined) return;
     (bloc as unknown as StateContainer).registerConsumerPaths(
       consumerId,
-      tracked.paths,
+      pathRef.current,
     );
-  }
+  });
 
   return [
     state,
