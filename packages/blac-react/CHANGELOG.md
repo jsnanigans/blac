@@ -1,5 +1,14 @@
 # @blac/react
 
+## 2.0.14
+
+### Patch Changes
+
+- replace core
+- Updated dependencies
+  - @blac/core@2.0.14
+  - @dirtytalk/structural@0.0.2
+
 ## 2.0.13
 
 ### Patch Changes

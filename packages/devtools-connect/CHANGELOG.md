@@ -1,5 +1,13 @@
 # @blac/devtools-connect
 
+## 2.0.17
+
+### Patch Changes
+
+- replace core
+- Updated dependencies
+  - @blac/core@2.0.14
+
 ## 2.0.16
 
 ### Patch Changes

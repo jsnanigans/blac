@@ -290,7 +290,7 @@ importers:
   packages/blac-core:
     dependencies:
       '@dirtytalk/structural':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../dirtytalk-structural
     devDependencies:
       '@testing-library/jest-dom':
@@ -330,7 +330,7 @@ importers:
   packages/blac-react:
     dependencies:
       '@dirtytalk/structural':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../dirtytalk-structural
     devDependencies:
       '@blac/core':
@@ -464,7 +464,7 @@ importers:
   packages/dirtytalk-spatial:
     dependencies:
       '@dirtytalk/engine':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../dirtytalk-engine
     devDependencies:
       publint:
@@ -483,7 +483,7 @@ importers:
   packages/dirtytalk-structural:
     dependencies:
       '@dirtytalk/engine':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../dirtytalk-engine
     devDependencies:
       '@testing-library/react':

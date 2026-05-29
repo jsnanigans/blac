@@ -6,11 +6,19 @@ import { fileURLToPath } from 'url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = join(__dirname, '..');
 
+// Publishable packages only. Apps (apps/*) and the private
+// @9amhealth/blac-compat shim are intentionally excluded — they are never
+// published to npm (see `ignore` in .changeset/config.json).
 const packages = [
-  { name: '@blac/core', path: 'packages/blac' },
+  { name: '@blac/core', path: 'packages/blac-core' },
   { name: '@blac/react', path: 'packages/blac-react' },
   { name: '@blac/devtools-connect', path: 'packages/devtools-connect' },
   { name: '@blac/devtools-ui', path: 'packages/devtools-ui' },
+  { name: '@blac/logging-plugin', path: 'packages/logging-plugin' },
+  { name: '@blac/plugin-persist', path: 'packages/plugin-persist' },
+  { name: '@dirtytalk/engine', path: 'packages/dirtytalk-engine' },
+  { name: '@dirtytalk/structural', path: 'packages/dirtytalk-structural' },
+  { name: '@dirtytalk/spatial', path: 'packages/dirtytalk-spatial' },
 ];
 
 function getVersion() {
