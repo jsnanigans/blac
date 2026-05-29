@@ -150,6 +150,22 @@ export const exampleCatalog: RouteMeta[] = [
       'Multi-source deps',
     ],
   },
+  {
+    id: '11',
+    path: '/spatial',
+    title: 'Spatial Damage Tracking',
+    navLabel: 'Spatial',
+    category: 'Rendering',
+    badge: 'Lab',
+    blurb:
+      'A canvas scene graph driven by @dirtytalk/spatial — drag boxes and watch only the damaged rectangles repaint. Renderer-agnostic damage tracking, no BlaC in the loop.',
+    concepts: [
+      'Rect damage',
+      'Scissor repaint',
+      'Pointer hit-test + capture',
+      'DirtyChannel coalescing',
+    ],
+  },
 ];
 
 export function getRouteMeta(path: string): RouteMeta {

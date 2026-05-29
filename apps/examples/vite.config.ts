@@ -38,6 +38,14 @@ export default defineConfig({
         find: /^@blac\/plugin-persist$/,
         replacement: src('plugin-persist/src/index.ts'),
       },
+      {
+        find: /^@dirtytalk\/spatial$/,
+        replacement: src('dirtytalk-spatial/src/index.ts'),
+      },
+      {
+        find: /^@dirtytalk\/engine$/,
+        replacement: src('dirtytalk-engine/src/index.ts'),
+      },
     ],
   },
   server: {

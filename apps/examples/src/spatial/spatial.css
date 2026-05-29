@@ -1,0 +1,145 @@
+.spatial-stage {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  align-items: flex-start;
+}
+
+/* Canvas + overlay share one positioned box so the overlay sits exactly on top. */
+.spatial-canvas-wrap {
+  position: relative;
+  flex: 0 0 auto;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  box-shadow: var(--shadow-lg);
+}
+
+.spatial-canvas {
+  display: block;
+  background: #0e1018;
+  touch-action: none; /* pointer drags shouldn't scroll on touch */
+  cursor: default;
+}
+
+.spatial-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* ---- damage HUD (light theme) ---- */
+
+.spatial-hud {
+  flex: 0 0 248px;
+  max-width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.spatial-hud__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.spatial-hud__title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--color-text);
+}
+
+.spatial-hud__count {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--color-text-light);
+  font-variant-numeric: tabular-nums;
+}
+
+.spatial-hud__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.spatial-hud__toggle input {
+  accent-color: var(--color-primary);
+}
+
+.spatial-hud__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.spatial-hud__empty {
+  font-size: 0.8rem;
+  color: var(--color-text-light);
+  padding: 6px 2px;
+}
+
+.dmg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  background: var(--color-bg);
+  animation: dmg-flash 500ms ease-out;
+}
+
+.dmg__kind {
+  flex: 0 0 auto;
+  width: 52px;
+  text-align: center;
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 0;
+  border-radius: 4px;
+}
+
+.dmg__rect {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.dmg--paint .dmg__kind {
+  color: #4f46e5;
+  background: var(--color-primary-light);
+}
+.dmg--layout .dmg__kind {
+  color: #b45309;
+  background: var(--color-warning-light);
+}
+.dmg--data .dmg__kind {
+  color: #047857;
+  background: var(--color-success-light);
+}
+
+@keyframes dmg-flash {
+  from {
+    background: var(--color-primary-light);
+  }
+  to {
+    background: var(--color-bg);
+  }
+}

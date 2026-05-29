@@ -23,7 +23,11 @@
       "@blac/react": ["../../packages/blac-react/src/index.ts"],
       "@blac/react/testing": ["../../packages/blac-react/src/testing.ts"],
       "@blac/plugin-persist": ["../../packages/plugin-persist/src/index.ts"],
-      "@blac/devtools-connect": ["../../packages/devtools-connect/src/index.ts"]
+      "@blac/devtools-connect": [
+        "../../packages/devtools-connect/src/index.ts"
+      ],
+      "@dirtytalk/spatial": ["../../packages/dirtytalk-spatial/src/index.ts"],
+      "@dirtytalk/engine": ["../../packages/dirtytalk-engine/src/index.ts"]
     }
   },
   "include": ["src", "main.tsx", "vite.config.ts"]
