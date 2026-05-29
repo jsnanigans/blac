@@ -1,4 +1,4 @@
-import { useEffect, useId, useReducer, useRef } from 'react';
+import { useEffect, useId, useLayoutEffect, useReducer, useRef } from 'react';
 import { emptyPathSet } from './path-set';
 import type { PathSet } from './path-set';
 import { trackRender } from './tracker';
@@ -39,7 +39,16 @@ export function useStructural<S, C extends StructuralContainer<S>>(
 
   const { value, paths } = trackRender(container.state, container.interner);
   pathRef.current = paths;
-  container.registerConsumerPaths(consumerId, paths);
+  // NOTE: registerConsumerPaths is intentionally NOT called here. The proxy
+  // hasn't been accessed yet, so `paths` is an empty Set that the proxy will
+  // mutate during JSX evaluation. Registering at this point would store an
+  // empty interest with the container and freeze the skeleton at that
+  // snapshot — subsequent emits would diff against an empty skeleton and
+  // silently drop wakeups. The useLayoutEffect below registers the populated
+  // set after render.
+  useLayoutEffect(() => {
+    container.registerConsumerPaths(consumerId, pathRef.current);
+  });
 
   return [value, container] as const;
 }
