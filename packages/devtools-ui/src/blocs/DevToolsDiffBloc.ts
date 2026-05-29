@@ -11,6 +11,11 @@ export interface StateSnapshot {
   callstack?: string;
   /** Method or event name that triggered this state change */
   trigger?: string;
+  /**
+   * Paths that changed during this flush (from the wire event).
+   * `'all'` means every path changed; an array lists specific dotted paths.
+   */
+  paths?: string[] | 'all';
 }
 
 type DiffState = {
@@ -47,6 +52,7 @@ export class DevToolsDiffBloc extends Cubit<DiffState> {
     previousState: any,
     callstack?: string,
     trigger?: string,
+    paths?: string[] | 'all',
   ) => {
     const stateHistory = new Map(this.state.stateHistory);
     const history = stateHistory.get(instanceId) || [];
@@ -68,6 +74,7 @@ export class DevToolsDiffBloc extends Cubit<DiffState> {
       timestamp: Date.now(),
       callstack,
       trigger,
+      ...(paths !== undefined ? { paths } : {}),
     };
 
     const updatedHistory = [newSnapshot, ...history];
@@ -109,6 +116,7 @@ export class DevToolsDiffBloc extends Cubit<DiffState> {
       timestamp: number;
       callstack?: string;
       trigger?: { name: string };
+      paths?: string[] | 'all';
     }>,
   ) => {
     if (!snapshots.length) return;
@@ -122,6 +130,7 @@ export class DevToolsDiffBloc extends Cubit<DiffState> {
         timestamp: s.timestamp,
         callstack: s.callstack,
         trigger: s.trigger?.name,
+        ...(s.paths !== undefined ? { paths: s.paths } : {}),
       }));
     stateHistory.set(instanceId, normalized);
     this.patch({ stateHistory });

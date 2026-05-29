@@ -44,6 +44,7 @@ export class DevToolsLogsBloc extends Cubit<LogsState> {
     data?: any,
     callstack?: string,
     trigger?: string,
+    paths?: string[] | 'all',
   ) => {
     const entry: LogEntry = {
       id: `log-${++logIdCounter}`,
@@ -55,6 +56,7 @@ export class DevToolsLogsBloc extends Cubit<LogsState> {
       data,
       callstack,
       trigger,
+      ...(paths !== undefined ? { paths } : {}),
     };
 
     // Add to beginning (newest first)

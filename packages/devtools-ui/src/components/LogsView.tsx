@@ -49,6 +49,56 @@ function extractInstanceId(fullId: string): string {
   return colonIndex !== -1 ? fullId.substring(colonIndex + 1) : fullId;
 }
 
+// ---- ChangedPathsChips -------------------------------------------------------
+
+/**
+ * Renders a compact inline list of changed paths from the wire event.
+ * `paths === 'all'` → single `<all>` chip.
+ * `paths === string[]` → one chip per path (max 5 shown; "+N" overflow chip).
+ */
+const ChangedPathsChips: FC<{ paths: string[] | 'all' }> = ({ paths }) => {
+  const chipStyle: React.CSSProperties = {
+    fontSize: '9px',
+    padding: '0 4px',
+    background: 'rgba(0,122,204,0.15)',
+    border: '1px solid rgba(0,122,204,0.35)',
+    borderRadius: '3px',
+    color: T.textAccent,
+    fontFamily: T.fontMono,
+    lineHeight: '14px',
+    display: 'inline-block',
+    whiteSpace: 'nowrap',
+  };
+
+  if (paths === 'all') {
+    return (
+      <span style={chipStyle} title="All paths changed">
+        &lt;all&gt;
+      </span>
+    );
+  }
+
+  const MAX_VISIBLE = 5;
+  const visible = paths.slice(0, MAX_VISIBLE);
+  const overflow = paths.length - MAX_VISIBLE;
+
+  return (
+    <span
+      style={{ display: 'inline-flex', gap: '2px', flexWrap: 'nowrap' }}
+      title={paths.join(', ')}
+    >
+      {visible.map((p) => (
+        <span key={p} style={chipStyle}>
+          {p}
+        </span>
+      ))}
+      {overflow > 0 && (
+        <span style={{ ...chipStyle, opacity: 0.7 }}>+{overflow}</span>
+      )}
+    </span>
+  );
+};
+
 // Grid column definition shared between header and every row
 const GRID_COLS = '16px 92px 64px minmax(0, 1.4fr) minmax(0, 1fr) 140px';
 
@@ -83,6 +133,8 @@ const LogEntryRow: FC<{ entry: LogEntry }> = React.memo(({ entry }) => {
   const label = getEventTypeLabel(entry.eventType);
   const displayInstanceId = extractInstanceId(entry.instanceId);
   const hasCallstack = entry.eventType === 'state-changed' && !!entry.callstack;
+  const hasPaths =
+    entry.eventType === 'state-changed' && entry.paths !== undefined;
 
   return (
     <div style={{ borderBottom: `1px solid ${T.border0}` }}>
@@ -217,6 +269,30 @@ const LogEntryRow: FC<{ entry: LogEntry }> = React.memo(({ entry }) => {
         >
           {entry.callstack}
         </pre>
+      )}
+
+      {hasPaths && entry.paths !== undefined && (
+        <div
+          style={{
+            padding: '2px 10px 4px 36px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            flexWrap: 'wrap',
+          }}
+        >
+          <span
+            style={{
+              fontSize: '9px',
+              color: T.text2,
+              fontFamily: T.fontMono,
+              flexShrink: 0,
+            }}
+          >
+            changed:
+          </span>
+          <ChangedPathsChips paths={entry.paths} />
+        </div>
       )}
     </div>
   );

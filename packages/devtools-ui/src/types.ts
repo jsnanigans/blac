@@ -105,4 +105,9 @@ export interface LogEntry {
   callstack?: string;
   /** Method/event that triggered this state change */
   trigger?: string;
+  /**
+   * Paths that changed during this state-changed event.
+   * `'all'` means everything changed; an array lists specific dotted paths.
+   */
+  paths?: string[] | 'all';
 }

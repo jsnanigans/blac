@@ -200,6 +200,7 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
       case 'instance-updated': {
         const d = evt.data as Record<string, any>;
         const updatedState = (d.state ?? d.currentState) as any;
+        const paths = d.paths as string[] | 'all' | undefined;
         const currentInstance = instancesBloc.getInstance(d.id as string);
         if (currentInstance) {
           diffBloc.storePreviousState(
@@ -207,6 +208,7 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
             currentInstance.state,
             d.callstack as string | undefined,
             (d.trigger as Record<string, any>)?.name as string | undefined,
+            paths,
           );
         }
         instancesBloc.updateInstanceState(
@@ -222,6 +224,7 @@ export const defaultDevToolsMount = (instancesBloc: DevToolsInstancesBloc) => {
           { previousState: currentInstance?.state, newState: updatedState },
           d.callstack as string | undefined,
           (d.trigger as Record<string, any>)?.name as string | undefined,
+          paths,
         );
         break;
       }

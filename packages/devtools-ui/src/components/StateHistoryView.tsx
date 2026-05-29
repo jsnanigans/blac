@@ -7,6 +7,51 @@ import { extractChanges } from '../utils/extractChanges';
 import { formatRelative } from '../utils/formatRelative';
 import { jsonViewTheme } from '../utils/jsonViewTheme';
 
+// ---- ChangedPathsChips (inline copy for StateHistoryView) -------------------
+
+const ChangedPathsChips: FC<{ paths: string[] | 'all' }> = ({ paths }) => {
+  const chipStyle: React.CSSProperties = {
+    fontSize: '9px',
+    padding: '0 4px',
+    background: 'rgba(0,122,204,0.15)',
+    border: '1px solid rgba(0,122,204,0.35)',
+    borderRadius: '3px',
+    color: T.textAccent,
+    fontFamily: T.fontMono,
+    lineHeight: '14px',
+    display: 'inline-block',
+    whiteSpace: 'nowrap',
+  };
+
+  if (paths === 'all') {
+    return (
+      <span style={chipStyle} title="All paths changed">
+        &lt;all&gt;
+      </span>
+    );
+  }
+
+  const MAX_VISIBLE = 5;
+  const visible = paths.slice(0, MAX_VISIBLE);
+  const overflow = paths.length - MAX_VISIBLE;
+
+  return (
+    <span
+      style={{ display: 'inline-flex', gap: '2px', flexWrap: 'nowrap' }}
+      title={paths.join(', ')}
+    >
+      {visible.map((p) => (
+        <span key={p} style={chipStyle}>
+          {p}
+        </span>
+      ))}
+      {overflow > 0 && (
+        <span style={{ ...chipStyle, opacity: 0.7 }}>+{overflow}</span>
+      )}
+    </span>
+  );
+};
+
 interface StateHistoryViewProps {
   history: StateSnapshot[];
   currentState: any;
@@ -46,6 +91,8 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
           state: currentState,
           timestamp: Date.now(),
           callstack: mostRecent.callstack,
+          trigger: mostRecent.trigger,
+          paths: mostRecent.paths,
         },
         changes,
         previousState: mostRecent.state,
@@ -175,6 +222,9 @@ export const StateHistoryView: FC<StateHistoryViewProps> = React.memo(
                             >
                               {entry.snapshot.trigger}()
                             </span>
+                          )}
+                          {entry.snapshot.paths !== undefined && (
+                            <ChangedPathsChips paths={entry.snapshot.paths} />
                           )}
                         </div>
                         <div
